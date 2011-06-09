@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757805Ab1FINJL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 09:09:11 -0400
-Received: from hera.kernel.org ([140.211.167.34]:33378 "EHLO hera.kernel.org"
+	id S1757698Ab1FINMK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 09:12:10 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43707 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757685Ab1FINJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 09:09:08 -0400
-Date: Thu, 9 Jun 2011 13:09:01 GMT
-From: tip-bot for Ralf Baechle <ralf@linux-mips.org>
-Message-ID: <tip-8a118c3872945d54e0cacdea06c93527cdfb8782@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        ralf@linux-mips.org, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, tglx@linutronix.de
-In-Reply-To: <20110601180611.061710714@duck.linux-mips.net>
-References: <20110601180611.061710714@duck.linux-mips.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/cleanup] pcpskr: MIPS: Make config dependencies finer grained
-Git-Commit-ID: 8a118c3872945d54e0cacdea06c93527cdfb8782
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1757290Ab1FINMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 09:12:07 -0400
+Date: Thu, 9 Jun 2011 15:12:03 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/8] mm: memcg-aware global reclaim
+Message-ID: <20110609131203.GB3994@tiehlicka.suse.cz>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+ <1306909519-7286-3-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Jun 2011 13:09:02 +0000 (UTC)
+In-Reply-To: <1306909519-7286-3-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8a118c3872945d54e0cacdea06c93527cdfb8782
-Gitweb:     http://git.kernel.org/tip/8a118c3872945d54e0cacdea06c93527cdfb8782
-Author:     Ralf Baechle <ralf@linux-mips.org>
-AuthorDate: Wed, 1 Jun 2011 19:05:10 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 9 Jun 2011 15:01:41 +0200
+On Wed 01-06-11 08:25:13, Johannes Weiner wrote:
+[...]
 
-pcpskr: MIPS: Make config dependencies finer grained
+Just a minor thing. I am really slow at reviewing these days due to
+other work that has to be done...
 
-Only the Siemens-Nixdorf RM series workstations and the Jazz family
-workstations have PC speakers built in; Malta can connect one via the
-infamous AMR connector with an AMR sound card or a little creativity.
-So we don't want to offer the PC speaker driver on all MIPS systems.
+> +struct mem_cgroup *mem_cgroup_hierarchy_walk(struct mem_cgroup *root,
+> +					     struct mem_cgroup *prev)
+> +{
+> +	struct mem_cgroup *mem;
 
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org
-Link: http://lkml.kernel.org/r/20110601180611.061710714@duck.linux-mips.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+You want mem = NULL here because you might end up using it unitialized
+AFAICS (css_get_next returns with NULL).
 
----
- arch/mips/Kconfig |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+> +
+> +	if (mem_cgroup_disabled())
+> +		return NULL;
+> +
+> +	if (!root)
+> +		root = root_mem_cgroup;
+> +	/*
+> +	 * Even without hierarchy explicitely enabled in the root
+> +	 * memcg, it is the ultimate parent of all memcgs.
+> +	 */
+> +	if (!(root == root_mem_cgroup || root->use_hierarchy))
+> +		return root;
+> +	if (prev && prev != root)
+> +		css_put(&prev->css);
+> +	do {
+> +		int id = root->last_scanned_child;
+> +		struct cgroup_subsys_state *css;
+> +
+> +		rcu_read_lock();
+> +		css = css_get_next(&mem_cgroup_subsys, id + 1, &root->css, &id);
+> +		if (css && (css == &root->css || css_tryget(css)))
+> +			mem = container_of(css, struct mem_cgroup, css);
+> +		rcu_read_unlock();
+> +		if (!css)
+> +			id = 0;
+> +		root->last_scanned_child = id;
+> +	} while (!mem);
+> +	return mem;
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index bf35bb6..45f7aac 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -5,7 +5,6 @@ config MIPS
- 	select HAVE_IDE
- 	select HAVE_OPROFILE
- 	select HAVE_IRQ_WORK
--	select HAVE_PCSPKR_PLATFORM
- 	select HAVE_PERF_EVENTS
- 	select PERF_USE_VMALLOC
- 	select HAVE_ARCH_KGDB
-@@ -186,6 +185,7 @@ config MACH_JAZZ
- 	select CSRC_R4K
- 	select DEFAULT_SGI_PARTITION if CPU_BIG_ENDIAN
- 	select GENERIC_ISA_DMA
-+	select HAVE_PCSPKR_PLATFORM
- 	select IRQ_CPU
- 	select I8253
- 	select I8259
-@@ -267,6 +267,7 @@ config MIPS_MALTA
- 	select CSRC_R4K
- 	select DMA_NONCOHERENT
- 	select GENERIC_ISA_DMA
-+	select HAVE_PCSPKR_PLATFORM
- 	select IRQ_CPU
- 	select IRQ_GIC
- 	select HW_HAS_PCI
-@@ -641,6 +642,7 @@ config SNI_RM
- 	select DEFAULT_SGI_PARTITION if CPU_BIG_ENDIAN
- 	select DMA_NONCOHERENT
- 	select GENERIC_ISA_DMA
-+	select HAVE_PCSPKR_PLATFORM
- 	select HW_HAS_EISA
- 	select HW_HAS_PCI
- 	select IRQ_CPU
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
