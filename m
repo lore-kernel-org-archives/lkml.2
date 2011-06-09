@@ -1,85 +1,390 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959Ab1FIOwV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 10:52:21 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:58716 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595Ab1FIOwU (ORCPT
+	id S1752739Ab1FIO5H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 10:57:07 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:50938 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372Ab1FIO5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 10:52:20 -0400
+	Thu, 9 Jun 2011 10:57:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-operating-system
-         :user-agent;
-        b=av7Ht6Y1V+a7zdkF0BDcD3wqqdsFO3W86SxpBcW8QnTSBFetBy8uYuJ2v9aiBYWfHr
-         v6+u4rGaxSC5CKu+c12Q==
-Date: Thu, 9 Jun 2011 07:51:59 -0700
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 1/4] watchdog: fix rounding issues in
- get_sample_period()
-Message-ID: <20110609145159.GG17986@google.com>
-References: <1305588901-8141-1-git-send-email-msb@chromium.org>
- <20110518135302.GM29881@redhat.com>
- <20110519162631.GJ11023@google.com>
- <20110609114745.GQ8162@redhat.com>
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=FesCOG8p0eKl6VaI1YroudKA2Fmq1tTDgbTB+Lc8jaK64D6nl21h48vx78dVNKYHcX
+         5wQJKOsyoi0aW/1Hw0bJ0GqEyGLccRJhUZqRZf251MSyaDAyc356DHtvz6TbLwSGGE8/
+         vGm0Jf2J5FVPmpRQEVub7XPMF5kyCQv6UNp7w=
+Date: Thu, 9 Jun 2011 23:56:55 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v3 02/10] Change isolate mode from int type to enum type
+Message-ID: <20110609145655.GB4878@barrios-laptop>
+References: <cover.1307455422.git.minchan.kim@gmail.com>
+ <4eee88f894f0553aedb696d667967adb7dcf29ab.1307455422.git.minchan.kim@gmail.com>
+ <20110609135132.GU5247@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110609114745.GQ8162@redhat.com>
-X-Operating-System: Linux/2.6.32-gg426-generic (x86_64)
+In-Reply-To: <20110609135132.GU5247@suse.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don Zickus (dzickus@redhat.com) wrote:
-> On Thu, May 19, 2011 at 09:26:31AM -0700, Mandeep Singh Baines wrote:
-> > Don Zickus (dzickus@redhat.com) wrote:
-> > > On Mon, May 16, 2011 at 04:34:58PM -0700, Mandeep Singh Baines wrote:
-> > > > In get_sample_period(), softlockup_thresh is integer divided by 5 before
-> > > > the multiplication by NSEC_PER_SEC. This results in softlockup_thresh
-> > > > being rounded down to the nearest integer multiple of 5.
-> > > > 
-> > > > For example, a softlockup_thresh of 4 rounds down to 0.
-> > > 
-> > > Mandeep,
-> > > 
-> > > Thanks for the patches.  Unfortunately, I am taking some time off so I'll
-> > > shephard these patches when I get back.  For the most part they look fine,
-> > > aside from Ingo's comments.
-> > > 
+On Thu, Jun 09, 2011 at 02:51:32PM +0100, Mel Gorman wrote:
+> On Tue, Jun 07, 2011 at 11:38:15PM +0900, Minchan Kim wrote:
+> > This patch changes macro define with enum variable.
+> > Normally, enum is preferred as it's type-safe and making debugging easier
+> > as symbol can be passed throught to the debugger.
 > > 
-> > No problem. Enjoy your time off:)
+> > This patch doesn't change old behavior.
+> > It is used by next patches.
 > > 
-> > Ingo, since Don is out, would you mind acking the patches (assuming you're
-> > happy). It simplifies pushing these patches into our local ChromiumOS tree
-> > if I have an upstream ack.
+> > Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > Cc: Mel Gorman <mgorman@suse.de>
+> > Cc: Rik van Riel <riel@redhat.com>
+> > Cc: Andrea Arcangeli <aarcange@redhat.com>
+> > Cc: Johannes Weiner <hannes@cmpxchg.org>
+> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> > ---
+> >  include/linux/memcontrol.h    |    5 ++++-
+> >  include/linux/swap.h          |   11 +++++++----
+> >  include/trace/events/vmscan.h |    8 ++++----
+> >  mm/compaction.c               |    3 ++-
+> >  mm/memcontrol.c               |    3 ++-
+> >  mm/migrate.c                  |    4 ++--
+> >  mm/vmscan.c                   |   37 ++++++++++++++++++++-----------------
+> >  7 files changed, 41 insertions(+), 30 deletions(-)
+> > 
+> > diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> > index 5e9840f..91a1162 100644
+> > --- a/include/linux/memcontrol.h
+> > +++ b/include/linux/memcontrol.h
+> > @@ -30,10 +30,13 @@ enum mem_cgroup_page_stat_item {
+> >  	MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
+> >  };
+> >  
+> > +enum ISOLATE_MODE;
+> > +
 > 
-> Hi Mandeep,
+> All caps. Really? It's NOT VERY PRETTY AND MAKES MY EYES DEAF WHICH
+> SHOULD BE IMPOSSIBLE.
 > 
-> It looks like Ingo took most of your patches.  Is there any outstanding
-> ones that didn't make it that you see?
+> What's wrong with
+> 
+> enum isolate_mode {
+> }
+
+No problem.
+I will let you hear in next version. :)
+
+> 
+> ? It's reasonable that the constants themselves are in caps. It's
+> expected for defines and enum values.
+> 
+> >  extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+> >  					struct list_head *dst,
+> >  					unsigned long *scanned, int order,
+> > -					int mode, struct zone *z,
+> > +					enum ISOLATE_MODE mode,
+> 
+> I don't mind as much now because I'm already eye-deaf.
+> 
+> > +					struct zone *z,
+> >  					struct mem_cgroup *mem_cont,
+> >  					int active, int file);
+> >  
+> > diff --git a/include/linux/swap.h b/include/linux/swap.h
+> > index a5c6da5..48d50e6 100644
+> > --- a/include/linux/swap.h
+> > +++ b/include/linux/swap.h
+> > @@ -244,9 +244,11 @@ static inline void lru_cache_add_file(struct page *page)
+> >  }
+> >  
+> >  /* LRU Isolation modes. */
+> > -#define ISOLATE_INACTIVE 0	/* Isolate inactive pages. */
+> > -#define ISOLATE_ACTIVE 1	/* Isolate active pages. */
+> > -#define ISOLATE_BOTH 2		/* Isolate both active and inactive pages. */
+> > +enum ISOLATE_MODE {
+> > +	ISOLATE_NONE,
+> > +	ISOLATE_INACTIVE = 1,	/* Isolate inactive pages */
+> > +	ISOLATE_ACTIVE = 2,	/* Isolate active pages */
+> > +};
+> 
+> No need to explicitly define like this. i.e. drop the = 1, = 2 etc.
+> 
+> The leader does not explain why ISOLATE_BOTH is replaced and what it
+> gains us.
+
+In next patch, I add new modes in next patches and have a plan to add ISOLATE_UNEVICTALBE
+Each mode would be a bit to represent each characteristic.
+In such context, ISOLATE_BOTH is awkward and it can be made by ISOLATE_[ACTIVE & INACTIVE].
+I will add it in description in next version.
+
+
+> 
+> >  
+> >  /* linux/mm/vmscan.c */
+> >  extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+> > @@ -258,7 +260,8 @@ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+> >  						gfp_t gfp_mask, bool noswap,
+> >  						unsigned int swappiness,
+> >  						struct zone *zone);
+> > -extern int __isolate_lru_page(struct page *page, int mode, int file);
+> > +extern int __isolate_lru_page(struct page *page, enum ISOLATE_MODE mode,
+> > +					int file);
+> >  extern unsigned long shrink_all_memory(unsigned long nr_pages);
+> >  extern int vm_swappiness;
+> >  extern int remove_mapping(struct address_space *mapping, struct page *page);
+> > diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
+> > index ea422aa..4f53d43 100644
+> > --- a/include/trace/events/vmscan.h
+> > +++ b/include/trace/events/vmscan.h
+> > @@ -187,7 +187,7 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
+> >  		unsigned long nr_lumpy_taken,
+> >  		unsigned long nr_lumpy_dirty,
+> >  		unsigned long nr_lumpy_failed,
+> > -		int isolate_mode),
+> > +		enum ISOLATE_MODE isolate_mode),
+> >  
+> >  	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode),
+> >  
+> > @@ -199,7 +199,7 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
+> >  		__field(unsigned long, nr_lumpy_taken)
+> >  		__field(unsigned long, nr_lumpy_dirty)
+> >  		__field(unsigned long, nr_lumpy_failed)
+> > -		__field(int, isolate_mode)
+> > +		__field(enum ISOLATE_MODE, isolate_mode)
+> >  	),
+> >  
+> >  	TP_fast_assign(
+> > @@ -233,7 +233,7 @@ DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_lru_isolate,
+> >  		unsigned long nr_lumpy_taken,
+> >  		unsigned long nr_lumpy_dirty,
+> >  		unsigned long nr_lumpy_failed,
+> > -		int isolate_mode),
+> > +		enum ISOLATE_MODE isolate_mode),
+> >  
+> >  	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode)
+> >  
+> > @@ -248,7 +248,7 @@ DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_memcg_isolate,
+> >  		unsigned long nr_lumpy_taken,
+> >  		unsigned long nr_lumpy_dirty,
+> >  		unsigned long nr_lumpy_failed,
+> > -		int isolate_mode),
+> > +		enum ISOLATE_MODE isolate_mode),
+> >  
+> 
+> And the meaning of isolate_mode has changed. This affects users of the
+> tracepoint. Documentation/trace/postprocess/trace-vmscan-postprocess.pl
+> will consider ISOLATE_NONE to be scanning for example.
+
+I missed that part.
+I will consider it.
+
+> 
+> >  	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode)
+> >  
+> > diff --git a/mm/compaction.c b/mm/compaction.c
+> > index 61eab88..f0d75e9 100644
+> > --- a/mm/compaction.c
+> > +++ b/mm/compaction.c
+> > @@ -327,7 +327,8 @@ static unsigned long isolate_migratepages(struct zone *zone,
+> >  		}
+> >  
+> >  		/* Try isolate the page */
+> > -		if (__isolate_lru_page(page, ISOLATE_BOTH, 0) != 0)
+> > +		if (__isolate_lru_page(page,
+> > +				ISOLATE_ACTIVE|ISOLATE_INACTIVE, 0) != 0)
+> 
+> Ahh, so you assign the enum to user it as a flag. That's very
+> unexpected to me. Why did you not do something like gfp_t which is a
+> bitwise type?
 > 
 
-Hi Don,
+Okay. 
 
-Thanks for following up. All the patches are now in.
+> Because mode is a bitmask, it's also impossible to check if
+> ISOLATE_NONE is set. As ISOLATE_NONE is not used in this patch,
+> it's hard to know at this point what it's for.
 
-I am working on a few new NMI issues so I'll be sending out a few patches
-in a day or so. I've committed one critical fix to our 2.6.32 tree and am now
-working on forward-porting it to tip/master:
+I might have some BUG_ON check about 0 flags but I can't remember it exactly.
+I will remove.
 
-http://git.chromium.org/gitweb/?p=chromiumos/third_party/kernel.git;a=commitdiff;h=2a825f5f38f24e655dd655253eaaa5a82460a43e;hp=09ecdd5b43b9df930efd51a3fe317c18907a6c2d
+> 
+> >  			continue;
+> >  
+> >  		VM_BUG_ON(PageTransCompound(page));
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index 010f916..f4c0b71 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -1106,7 +1106,8 @@ mem_cgroup_get_reclaim_stat_from_page(struct page *page)
+> >  unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+> >  					struct list_head *dst,
+> >  					unsigned long *scanned, int order,
+> > -					int mode, struct zone *z,
+> > +					enum ISOLATE_MODE mode,
+> > +					struct zone *z,
+> >  					struct mem_cgroup *mem_cont,
+> >  					int active, int file)
+> >  {
+> > diff --git a/mm/migrate.c b/mm/migrate.c
+> > index 819d233..e797b5c 100644
+> > --- a/mm/migrate.c
+> > +++ b/mm/migrate.c
+> > @@ -1363,10 +1363,10 @@ int migrate_vmas(struct mm_struct *mm, const nodemask_t *to,
+> >  
+> >  	for (vma = mm->mmap; vma && !err; vma = vma->vm_next) {
+> >   		if (vma->vm_ops && vma->vm_ops->migrate) {
+> > - 			err = vma->vm_ops->migrate(vma, to, from, flags);
+> > + 			err = vma->vm_ops->migrate(vma, to, from, flags);   
+> >   			if (err)
+> >   				break;
+> > - 		}
+> > + 		}     
+> 
+> Only modification here is adding whitespace damage.
 
-Regards,
-Mandeep
+Oops. 
 
-> Cheers,
-> Don
+> 
+> >   	}
+> >   	return err;
+> >  }
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index a658dde..4cbe114 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -957,23 +957,27 @@ keep_lumpy:
+> >   *
+> >   * returns 0 on success, -ve errno on failure.
+> >   */
+> > -int __isolate_lru_page(struct page *page, int mode, int file)
+> > +int __isolate_lru_page(struct page *page, enum ISOLATE_MODE mode, int file)
+> >  {
+> > +	bool all_lru_mode;
+> >  	int ret = -EINVAL;
+> >  
+> >  	/* Only take pages on the LRU. */
+> >  	if (!PageLRU(page))
+> >  		return ret;
+> >  
+> > +	all_lru_mode = (mode & (ISOLATE_ACTIVE|ISOLATE_INACTIVE)) == 
+> > +		(ISOLATE_ACTIVE|ISOLATE_INACTIVE);
+> > +
+> 
+> both_lru would be a better name because all LRU implies that UNEVICTABLE
+> is involved which is not the case.
+
+Hmm.. Actually, I am considering another patch set which makes compaction possbile
+on unevictable pages. In such context, I want to use all rather than both.
+But it's future story. If you mind in this version strongly, it's no problem to
+use both word. If you don't have strong mind, I want to keep all.
+
+> 
+> >  	/*
+> >  	 * When checking the active state, we need to be sure we are
+> >  	 * dealing with comparible boolean values.  Take the logical not
+> >  	 * of each.
+> >  	 */
+> > -	if (mode != ISOLATE_BOTH && (!PageActive(page) != !mode))
+> > +	if (!all_lru_mode && !PageActive(page) != !(mode & ISOLATE_ACTIVE))
+> >  		return ret;
+> >  
+> > -	if (mode != ISOLATE_BOTH && page_is_file_cache(page) != file)
+> > +	if (!all_lru_mode && !!page_is_file_cache(page) != file)
+> >  		return ret;
+> >  
+> >  	/*
+> > @@ -1021,7 +1025,8 @@ int __isolate_lru_page(struct page *page, int mode, int file)
+> >   */
+> >  static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+> >  		struct list_head *src, struct list_head *dst,
+> > -		unsigned long *scanned, int order, int mode, int file)
+> > +		unsigned long *scanned, int order, enum ISOLATE_MODE mode,
+> > +		int file)
+> >  {
+> >  	unsigned long nr_taken = 0;
+> >  	unsigned long nr_lumpy_taken = 0;
+> > @@ -1134,8 +1139,8 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+> >  static unsigned long isolate_pages_global(unsigned long nr,
+> >  					struct list_head *dst,
+> >  					unsigned long *scanned, int order,
+> > -					int mode, struct zone *z,
+> > -					int active, int file)
+> > +					enum ISOLATE_MODE mode,
+> > +					struct zone *z,	int active, int file)
+> >  {
+> >  	int lru = LRU_BASE;
+> >  	if (active)
+> > @@ -1382,6 +1387,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+> >  	unsigned long nr_taken;
+> >  	unsigned long nr_anon;
+> >  	unsigned long nr_file;
+> > +	enum ISOLATE_MODE reclaim_mode = ISOLATE_INACTIVE;
+> >  
+> >  	while (unlikely(too_many_isolated(zone, file, sc))) {
+> >  		congestion_wait(BLK_RW_ASYNC, HZ/10);
+> > @@ -1392,15 +1398,15 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+> >  	}
+> >  
+> >  	set_reclaim_mode(priority, sc, false);
+> > +	if (sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM)
+> > +		reclaim_mode |= ISOLATE_ACTIVE;
+> > +
+> >  	lru_add_drain();
+> >  	spin_lock_irq(&zone->lru_lock);
+> >  
+> >  	if (scanning_global_lru(sc)) {
+> > -		nr_taken = isolate_pages_global(nr_to_scan,
+> > -			&page_list, &nr_scanned, sc->order,
+> > -			sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM ?
+> > -					ISOLATE_BOTH : ISOLATE_INACTIVE,
+> > -			zone, 0, file);
+> > +		nr_taken = isolate_pages_global(nr_to_scan, &page_list,
+> > +			&nr_scanned, sc->order, reclaim_mode, zone, 0, file);
+> >  		zone->pages_scanned += nr_scanned;
+> >  		if (current_is_kswapd())
+> >  			__count_zone_vm_events(PGSCAN_KSWAPD, zone,
+> 
+> While this looks ok, I do not see why it's better.
+> 
+> > @@ -1409,12 +1415,9 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+> >  			__count_zone_vm_events(PGSCAN_DIRECT, zone,
+> >  					       nr_scanned);
+> >  	} else {
+> > -		nr_taken = mem_cgroup_isolate_pages(nr_to_scan,
+> > -			&page_list, &nr_scanned, sc->order,
+> > -			sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM ?
+> > -					ISOLATE_BOTH : ISOLATE_INACTIVE,
+> > -			zone, sc->mem_cgroup,
+> > -			0, file);
+> > +		nr_taken = mem_cgroup_isolate_pages(nr_to_scan, &page_list,
+> > +			&nr_scanned, sc->order, reclaim_mode, zone,
+> > +			sc->mem_cgroup, 0, file);
+> >  		/*
+> >  		 * mem_cgroup_isolate_pages() keeps track of
+> >  		 * scanned pages on its own.
+> 
+> Overall, I'm failing to see how this patch helps but maybe it's because
+> I haven't read the rest of the series. My main gripe is that meaning
+> of isolate_mode in the tracepoint has changed without any clear gain.
+
+Thanks for the careful review, Mel.
+
+> 
+> -- 
+> Mel Gorman
+> SUSE Labs
+
+-- 
+Kind regards
+Minchan Kim
