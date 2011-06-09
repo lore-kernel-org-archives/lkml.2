@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936Ab1FITdF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 15:33:05 -0400
-Received: from outmail004.snc4.facebook.com ([66.220.144.136]:62122 "EHLO
-	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754696Ab1FITdC (ORCPT
+	id S1755122Ab1FITht (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 15:37:49 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:56809 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754866Ab1FIThr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 15:33:02 -0400
-Date: Thu, 9 Jun 2011 12:33:00 -0700
-From: Arun Sharma <asharma@fb.com>
-To: Sam Liao <phyomh@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] [perf] Add inverted call graph report support.
-Message-ID: <20110609193300.GA16858@dev1756.snc6.facebook.com>
-References: <BANLkTi=svHgWzyKiEHjMc-j5Hq4y5R8Mow@mail.gmail.com>
+	Thu, 9 Jun 2011 15:37:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Subject: Re: [PATCH v3 06/12] MFD: twl4030-codec -> twl4030-audio: Rename the driver
+Date: Thu, 9 Jun 2011 21:37:28 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Misael Lopez Cruz <misael.lopez@ti.com>
+References: <1307626230-29660-1-git-send-email-peter.ujfalusi@ti.com> <1307626230-29660-7-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1307626230-29660-7-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=svHgWzyKiEHjMc-j5Hq4y5R8Mow@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106092137.28678.arnd@arndb.de>
+X-Provags-ID: V02:K0:thpS92fORp1DItmkJLFSm0BnaLxlnJUZSM0LbacderG
+ UBpsHZE3MtVGM8337kTdIPQFMW2OtlXzpxr4+FSm61zjw/zHbS
+ nT2y3TkCDXzsoiWCBkherD/MxtxER2a0oIek/qXGfLfFGC177T
+ wa82DIhVbtAOeimeATdy1gIytDcw7EYfDdH7NbACw3OnYgjt1H
+ uqs3BAVrKka49jz3K+z8w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 09, 2011 at 02:44:19PM +0800, Sam Liao wrote:
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -247,9 +247,14 @@ int perf_session__resolve_callchain(struct
-> perf_session *self,
->  	callchain_cursor_reset(&self->callchain_cursor);
+On Thursday 09 June 2011 15:30:24 Peter Ujfalusi wrote:
+> Rename the driver, and header file from twl4030-codec to
+> twl4030-audio.
+> To avoid breakage change depending drivers at the same time.
 > 
->  	for (i = 0; i < chain->nr; i++) {
-> -		u64 ip = chain->ips[i];
-> +		u64 ip;
->  		struct addr_location al;
-> 
-> +		if (callchain_param.order == ORDER_CALLEE)
-> +			ip = chain->ips[i];
-> +		else
-> +			ip = chain->ips[chain->nr - i - 1];
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> CC: Misael Lopez Cruz <misael.lopez@ti.com>
+> ---
+>  drivers/input/misc/Kconfig         |    2 +-
+>  drivers/input/misc/twl4030-vibra.c |   10 +-
+>  drivers/mfd/Kconfig                |    2 +-
+>  drivers/mfd/Makefile               |    2 +-
+>  drivers/mfd/twl4030-audio.c        |  277 +++++++++++++++++++++++++++++++++++
+>  drivers/mfd/twl4030-codec.c        |  278 ------------------------------------
+>  include/linux/mfd/twl4030-audio.h  |  272 +++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/twl4030-codec.h  |  272 -----------------------------------
 
-This can dereference a bad pointer if chain->nr == 0.
+Better use the -M flag to git-format-patch when moving files, to make it
+obvious what has or has not changed, and to reduce the size of the email.
 
- -Arun
+Also, shouldn't this file go into the sound/soc/ directory? It seems that this
+is really the device driver, not part of the multi-function layer.
+
+	Arnd
