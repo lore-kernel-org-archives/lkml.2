@@ -1,322 +1,496 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991Ab1FIOX4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 10:23:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36463 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052Ab1FIOXz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 10:23:55 -0400
-Subject: Re: [PATCH 3/3] printk: Avoid all wakeups from printk
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, efault@gmx.de,
-        Arne Jansen <lists@die-jansens.de>
-In-Reply-To: <20110609141959.GF21100@elte.hu>
-References: <20110609130647.937204592@chello.nl>
-	 <20110609131307.590149293@chello.nl> <20110609133228.GB21100@elte.hu>
-	 <1307626856.3941.80.camel@twins> <20110609135542.GD21100@elte.hu>
-	 <1307628393.3941.87.camel@twins>  <20110609141959.GF21100@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 09 Jun 2011 16:23:37 +0200
-Message-ID: <1307629417.3941.89.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752122Ab1FIO17 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 10:27:59 -0400
+Received: from cantor.suse.de ([195.135.220.2]:46319 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751951Ab1FIO15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 10:27:57 -0400
+Date: Thu, 9 Jun 2011 15:27:52 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v3 06/10] In order putback lru core
+Message-ID: <20110609142752.GY5247@suse.de>
+References: <cover.1307455422.git.minchan.kim@gmail.com>
+ <caae35dd91966d7a94bfa407693ff633fcaee040.1307455422.git.minchan.kim@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <caae35dd91966d7a94bfa407693ff633fcaee040.1307455422.git.minchan.kim@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-09 at 16:19 +0200, Ingo Molnar wrote:
+On Tue, Jun 07, 2011 at 11:38:19PM +0900, Minchan Kim wrote:
+> This patch defines new APIs to put back the page into previous position of LRU.
+> The idea I suggested in LSF/MM is simple.
+> 
+> When we try to put back the page into lru list and if friends(prev, next) of the page
+> still is nearest neighbor, we can insert isolated page into prev's next instead of
+> head of LRU list. So it keeps LRU history without losing the LRU information.
+> 
+> Before :
+>        LRU POV : H - P1 - P2 - P3 - P4 -T
+> 
+> Isolate P3 :
+>        LRU POV : H - P1 - P2 - P4 - T
+> 
+> Putback P3 :
+>        if (P2->next == P4)
+>                putback(P3, P2);
+>        So,
+>        LRU POV : H - P1 - P2 - P3 - P4 -T
+> 
+> I implemented this idea in RFC but it had two problems.
+> 
+> 1)
+> For implement, I defined new structure _pages_lru_ which remembers
+> both lru friend pages of isolated one and handling functions.
+> For space of pages_lru, I allocated the space dynamically in kmalloc(GFP_AOTMIC)
 
-> Flipping it won't be enough - we could override another CPU's 
-> protection ...
+ATOMIC
 
-Gah,. well then don't printk() from NMIs ;-) There's way more problems
-than just this one variable when you do that.
+> but as we know, compaction is a reclaim path so it's not good idea to allocate memory
+> dynamically in the path. The space need to store pages_lru is enough to allocate just a page
+> as current compaction migrates unit of chunk of 32 pages.
+> In addition, compaction makes sure lots of order-0 free pages before starting
+> so it wouldn't a big problem, I think. But I admit it can pin some pages
+> so migration successful ratio might be down if concurrent compaction happens.
+> 
+> I decide changing my mind. I don't use dynamic memory space any more.
+> As I see migration, we don't need doubly linked list of page->lru.
+> Whole of operation is performed with enumeration so I think singly linked list is enough.
+> If we can use singly linked list, we can use a pointer as another buffer.
+> In here, we use it to store prev LRU page of page isolated.
+> 
+> 2)
+> The page-relation approach had a problem on contiguous pages.
+> That's because the idea can not work since friend pages are isolated, too.
+> It means prev_page->next == next_page always is _false_ and both pages are not
+> LRU any more at that time. It's pointed out by Rik at LSF/MM summit.
+> So for solving the problem, I changed the idea.
+> We don't need both friend(prev, next) pages relation but just consider
+> either prev or next page that it is still same LRU
+> 
+> Worst case in this approach, prev or next page is free and allocate new
+> so it's in head of LRU and our isolated page is located on next of head.
+> But it's almost same situation with current problem. So it doesn't make worse
+> than now.
+> New idea works below.
+> 
+> ===
+> 
+> assume : we isolate pages P3~P7 and we consider only prev LRU pointer.
+> notation : (P3,P2) = (isolated page,prev LRU page of isolated page)
+> 
+> H - P1 - P2 - P3 - P4 - P5 - P6 - P7 - P8 - P9 - P10 - T
+> 
+> If we isolate P3, following as
+> 
+> H - P1 - P2 - P4 - P5 - P6 - P7 - P8 - P9 - P10 - T
+> Isolated page list - (P3,P2)
+> 
+> If we isolate P4, following as
+> 
+> H - P1 - P2 - P5 - P6 - P7 - P8 - P9 - P10 - T
+> Isolated page list - (P4,P2) - (P3,P2)
+> 
+> If we isolate P5, following as
+> 
+> H - P1 - P2 - P6 - P7 - P8 - P9 - P10 - T
+> Isolated page list - (P5,P2) - (P4,P2) - (P3,P2)
+> 
+> ..
+> ..
+> 
+> If we isolate P7, following as
+> 
+> H - P1 - P2 - P8 - P9 - P10 - T
+> 
+> Isolated page list - (P7,P2) - (P6,P2) - (P5,P2) - (P4,P2) - (P3,P2)
+> 
+> Let's start putback from P7
+> 
+> P7)
+> 
+> H - P1 - P2 - P8 - P9 - P10 - T
+> prev P2 is valid, too. So,
+> 
+> H - P1 - P2 - P7 - P8 - P9 - P10 - T
+> 
+> P6)
+> 
+> H - P1 - P2 - P7 - P8 - P9 - P10 - T
+> Prev P2 is valid, too. So,
+> 
+> H - P1 - P2 - P6 - P7 - P8 - P9 - P10 - T
+> 
+> ..
+> ..
+> 
+> P3)
+> H - P1 - P2 - P4 - P5 - P6 - P7 - P8 - P9 - P10 - T
+> Prev P2 is valid, too. So,
+> 
+> H - P1 - P2 - P3 - P4 - P5 - P6 - P7 - P8 - P9 - P10 - T
+> 
+
+Could move this explanation into migrate.h where you talk about why the
+list is singly-linked instead of doubly-linked.
+
+> ===
+> 
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> ---
+>  include/linux/migrate.h  |   35 ++++++++++++++++++++++
+>  include/linux/mm_types.h |   16 +++++++++-
+>  include/linux/swap.h     |    4 ++-
+>  mm/compaction.c          |    2 +-
+>  mm/internal.h            |    2 +
+>  mm/memcontrol.c          |    2 +-
+>  mm/migrate.c             |   24 +++++++++++++++
+>  mm/swap.c                |    2 +-
+>  mm/vmscan.c              |   72 ++++++++++++++++++++++++++++++++++++++++++++--
+>  9 files changed, 151 insertions(+), 8 deletions(-)
+> 
+> diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+> index e39aeec..5914282 100644
+> --- a/include/linux/migrate.h
+> +++ b/include/linux/migrate.h
+> @@ -9,7 +9,42 @@ typedef struct page *new_page_t(struct page *, unsigned long private, int **);
+>  #ifdef CONFIG_MIGRATION
+>  #define PAGE_MIGRATION 1
+>  
+> +/*
+> + * Migratelist for compaction is singly linked list instead of double linked list.
+> + * Current list utility is useful in some sense but we can't make sure compatibilty.
+> + * Please use below functions instead of common list's ones.
+> + */
+> +static inline void INIT_MIGRATE_LIST(struct inorder_lru *list)
+> +{
+> +	list->prev_page = NULL;
+> +	list->next = list;
+> +}
+> +
+> +static inline int migratelist_empty(const struct inorder_lru *head)
+> +{
+> +	return head->next == head;
+> +}
+> +
+> +static inline void migratelist_add(struct page *page,
+> +			struct page *prev_page, struct inorder_lru *head)
+> +{
+> +	VM_BUG_ON(PageLRU(page));
+> +
+> +	page->ilru.prev_page = prev_page;
+> +	page->ilru.next = head->next;
+> +	head->next = &page->ilru;
+> +}
+> +
+> +static inline void migratelist_del(struct page *page, struct inorder_lru *head)
+> +{
+> +	head->next = page->ilru.next;
+> +}
+> +
+
+Does this sort of list mangling not get upset when CONFIG_LIST_DEBUG is
+set?
+
+> +#define list_for_each_migrate_entry		list_for_each_entry
+> +#define list_for_each_migrate_entry_safe	list_for_each_entry_safe
+> +
+>  extern void putback_lru_pages(struct list_head *l);
+> +extern void putback_ilru_pages(struct inorder_lru *l);
+>  extern int migrate_page(struct address_space *,
+>  			struct page *, struct page *);
+>  extern int migrate_pages(struct list_head *l, new_page_t x,
+> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> index 02aa561..af46614 100644
+> --- a/include/linux/mm_types.h
+> +++ b/include/linux/mm_types.h
+> @@ -24,6 +24,17 @@ struct address_space;
+>  
+>  #define USE_SPLIT_PTLOCKS	(NR_CPUS >= CONFIG_SPLIT_PTLOCK_CPUS)
+>  
+> +struct page;
+> +
+> +/*
+> + * The inorder_lru is used by compaction for keeping LRU order
+> + * during migration.
+> + */
+> +struct inorder_lru {
+> +	struct page *prev_page; 	/* prev LRU page of isolated page */
+> +	struct inorder_lru *next;	/* next pointer for singly linked list*/
+> +};
+> +
+>  /*
+>   * Each physical page in the system has a struct page associated with
+>   * it to keep track of whatever it is we are using the page for at the
+> @@ -72,9 +83,12 @@ struct page {
+>  		pgoff_t index;		/* Our offset within mapping. */
+>  		void *freelist;		/* SLUB: freelist req. slab lock */
+>  	};
+> -	struct list_head lru;		/* Pageout list, eg. active_list
+> +	union {
+> +		struct inorder_lru ilru;/* compaction: migrated page list */
+> +		struct list_head lru;	/* Pageout list, eg. active_list
+>  					 * protected by zone->lru_lock !
+>  					 */
+> +	};
+>  	/*
+>  	 * On machines where all RAM is mapped into kernel address space,
+>  	 * we can simply calculate the virtual address. On machines with
+> diff --git a/include/linux/swap.h b/include/linux/swap.h
+> index 731f5dd..854244a 100644
+> --- a/include/linux/swap.h
+> +++ b/include/linux/swap.h
+> @@ -226,6 +226,8 @@ extern int lru_add_drain_all(void);
+>  extern void rotate_reclaimable_page(struct page *page);
+>  extern void deactivate_page(struct page *page);
+>  extern void swap_setup(void);
+> +extern void update_page_reclaim_stat(struct zone *zone, struct page *page,
+> +		int file, int rotated);
+>  
+>  extern void add_page_to_unevictable_list(struct page *page);
+>  
+> @@ -263,7 +265,7 @@ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+>  						unsigned int swappiness,
+>  						struct zone *zone);
+>  extern int __isolate_lru_page(struct page *page, enum ISOLATE_MODE mode,
+> -					int file);
+> +				int file, struct page **prev_page);
+>  extern unsigned long shrink_all_memory(unsigned long nr_pages);
+>  extern int vm_swappiness;
+>  extern int remove_mapping(struct address_space *mapping, struct page *page);
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 8079346..54dbdbe 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -331,7 +331,7 @@ static unsigned long isolate_migratepages(struct zone *zone,
+>  			mode |= ISOLATE_CLEAN;
+>   
+>  		/* Try isolate the page */
+> -		if (__isolate_lru_page(page, mode, 0) != 0)
+> +		if (__isolate_lru_page(page, mode, 0, NULL) != 0)
+>  			continue;
+>  
+>  		VM_BUG_ON(PageTransCompound(page));
+> diff --git a/mm/internal.h b/mm/internal.h
+> index 9d0ced8..a08d8c6 100644
+> --- a/mm/internal.h
+> +++ b/mm/internal.h
+> @@ -42,6 +42,8 @@ extern unsigned long highest_memmap_pfn;
+>  /*
+>   * in mm/vmscan.c:
+>   */
+> +extern bool same_lru(struct page *page, struct page *prev);
+> +extern void putback_page_to_lru(struct page *page, struct page *head_page);
+>  extern int isolate_lru_page(struct page *page);
+>  extern void putback_lru_page(struct page *page);
+>  
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index f4c0b71..04d460d 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1141,7 +1141,7 @@ unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+>  			continue;
+>  
+>  		scan++;
+> -		ret = __isolate_lru_page(page, mode, file);
+> +		ret = __isolate_lru_page(page, mode, file, NULL);
+>  		switch (ret) {
+>  		case 0:
+>  			list_move(&page->lru, dst);
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index e797b5c..874c081 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -84,6 +84,30 @@ void putback_lru_pages(struct list_head *l)
+>  	}
+>  }
+>  
+> +void putback_ilru_pages(struct inorder_lru *l)
+> +{
+> +	struct zone *zone;
+> +	struct page *page, *page2, *prev;
+> +
+> +	list_for_each_migrate_entry_safe(page, page2, l, ilru) {
+> +		dec_zone_page_state(page, NR_ISOLATED_ANON +
+> +				page_is_file_cache(page));
+> +		zone = page_zone(page);
+> +		spin_lock_irq(&zone->lru_lock);
+> +		prev = page->ilru.prev_page;
+> +		if (same_lru(page, prev)) {
+> +			putback_page_to_lru(page, prev);
+> +			spin_unlock_irq(&zone->lru_lock);
+> +		}
 
 
----
-Subject: printk: Avoid all wakeups from printk
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Wed Jun 08 17:29:59 CEST 2011
+Ouch. So with putback_lru_pages(), pages get added to a pagevec but
+now we are taking the zone LRU lock for every page we want to put
+back? That is very painful. We're talking about THP promotion having to
+take the zone lru lock, many hundreds if not thousands of times.
 
-Since printk() has to acquire the console_sem in order to write its
-data out to the console we have an up() in printk(). Even though
-contention on the console_sem is rare under normal circumstances, when
-it happens printk() will issue a wakeup. If printk us used from a
-context that already owns the scheduler locks or locks that have a
-reverse ordering with the scheduler locks this gives potential for
-deadlocks.
+Minimally, I now think this patchset needs to be split into two -
+the first set which avoids isolating pages from the LRU when it's
+pointless like dirty pages for async compaction and __zone_reclaim. I
+think that has clear merit and should be without cost. The second
+set would be this to determine how taking the lru_lock an excessive
+number of times can be avoided.
 
-Avoid the wakeup by creating special semaphore operations that keep
-the semaphore internal spinlock held, this ensures console_sem
-contention will spin on this lock and not get queued on the wait_list.
+> +		else {
+> +			spin_unlock_irq(&zone->lru_lock);
+> +			putback_lru_page(page);
+> +		}
+> +
+> +		l->next = &page2->ilru;
+> +	}
+> +}
+> +
+>  /*
+>   * Restore a potential migration pte to a working pte entry
+>   */
+> diff --git a/mm/swap.c b/mm/swap.c
+> index 5602f1a..6c24a75 100644
+> --- a/mm/swap.c
+> +++ b/mm/swap.c
+> @@ -252,7 +252,7 @@ void rotate_reclaimable_page(struct page *page)
+>  	}
+>  }
+>  
+> -static void update_page_reclaim_stat(struct zone *zone, struct page *page,
+> +void update_page_reclaim_stat(struct zone *zone, struct page *page,
+>  				     int file, int rotated)
+>  {
+>  	struct zone_reclaim_stat *reclaim_stat = &zone->reclaim_stat;
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index c08911d..7668e8d 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -550,6 +550,56 @@ int remove_mapping(struct address_space *mapping, struct page *page)
+>  	return 0;
+>  }
+>  
+> +/*
+> + * If prev and page are on same LRU still, we can keep LRU order of page.
+> + * zone->lru_lock must be hold.
+> + */
+> +bool same_lru(struct page *page, struct page *prev)
+> +{
+> +	bool ret = false;
+> +	if (!prev || !PageLRU(prev))
+> +		goto out;
+> +
+> +	if (unlikely(PageUnevictable(prev)))
+> +		goto out;
+> +
+> +	if (page_lru_base_type(page) != page_lru_base_type(prev))
+> +		goto out;
+> +
+> +	ret = true;
+> +out:
+> +	return ret;
+> +}
+> +
+> +/**
+> + * putback_page_to_lru - put isolated @page onto @head
+> + * @page: page to be put back to appropriate lru list
+> + * @head_page: lru position to be put back
+> + *
+> + * Insert previously isolated @page to appropriate position of lru list
+> + * zone->lru_lock must be hold.
+> + */
+> +void putback_page_to_lru(struct page *page, struct page *head_page)
+> +{
+> +	int lru, active, file;
+> +	struct zone *zone = page_zone(page);
+> +
+> +	VM_BUG_ON(PageLRU(page));
+> +
+> +	lru = page_lru(head_page);
+> +	active = is_active_lru(lru);
+> +	file = is_file_lru(lru);
+> +
+> +	if (active)
+> +		SetPageActive(page);
+> +	else
+> +		ClearPageActive(page);
+> +
+> +	update_page_reclaim_stat(zone, page, file, active);
+> +	SetPageLRU(page);
+> +	__add_page_to_lru_list(zone, page, lru, &head_page->lru);
+> +}
+> +
+>  /**
+>   * putback_lru_page - put previously isolated page onto appropriate LRU list's head
+>   * @page: page to be put back to appropriate lru list
+> @@ -954,10 +1004,13 @@ keep_lumpy:
+>   *
+>   * page:	page to consider
+>   * mode:	one of the LRU isolation modes defined above
+> + * file:	True [1] if isolating file [!anon] pages
+> + * prev_page:	prev page of isolated page as LRU order
+>   *
+>   * returns 0 on success, -ve errno on failure.
+>   */
+> -int __isolate_lru_page(struct page *page, enum ISOLATE_MODE mode, int file)
+> +int __isolate_lru_page(struct page *page, enum ISOLATE_MODE mode,
+> +			int file, struct page **prev_page)
+>  {
+>  	bool all_lru_mode;
+>  	int ret = -EINVAL;
+> @@ -1003,6 +1056,18 @@ int __isolate_lru_page(struct page *page, enum ISOLATE_MODE mode, int file)
+>  		 * page release code relies on it.
+>  		 */
+>  		ClearPageLRU(page);
+> +		if (prev_page != NULL) {
+> +			struct zone *zone = page_zone(page);
+> +			enum lru_list l = page_lru(page);
+> +						
+> +			if (&zone->lru[l].list == page->lru.prev) {
+> +				*prev_page = NULL;
+> +				goto out;
+> +			}
+> +
+> +			*prev_page = lru_to_page(&page->lru);
+> +		}
+> +out:
+>  		ret = 0;
+>  	}
+>  
+> @@ -1052,7 +1117,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+>  
+>  		VM_BUG_ON(!PageLRU(page));
+>  
+> -		switch (__isolate_lru_page(page, mode, file)) {
+> +		switch (__isolate_lru_page(page, mode, file, NULL)) {
+>  		case 0:
+>  			list_move(&page->lru, dst);
+>  			mem_cgroup_del_lru(page);
+> @@ -1111,7 +1176,8 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+>  			    !PageSwapCache(cursor_page))
+>  				break;
+>  
+> -			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
+> +			if (__isolate_lru_page(cursor_page,
+> +						mode, file, NULL) == 0) {
+>  				list_move(&cursor_page->lru, dst);
+>  				mem_cgroup_del_lru(cursor_page);
+>  				nr_taken += hpage_nr_pages(page);
 
-For now keep these special semaphore operations private to printk,
-if there ever appears another valid user we can move them over to
-semaphore.c (along with extending the interface to provide
-{_irq,_irqsave} versions, as the current ones assume IRQs are disabled
-(as per the use-case in printk).
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- kernel/printk.c |  208 +++++++++++++++++++++++++++-----------------------------
- 1 file changed, 102 insertions(+), 106 deletions(-)
-
-Index: linux-2.6/kernel/printk.c
-===================================================================
---- linux-2.6.orig/kernel/printk.c
-+++ linux-2.6/kernel/printk.c
-@@ -765,47 +765,11 @@ static volatile unsigned int printk_cpu 
-  * being able to cope (CON_ANYTIME) don't call them until
-  * this CPU is officially up.
-  */
--static inline int can_use_console(unsigned int cpu)
-+static inline int can_use_console(void)
- {
--	return cpu_online(cpu) || have_callable_console();
-+	return cpu_online(smp_processor_id()) || have_callable_console();
- }
- 
--/*
-- * Try to get console ownership to actually show the kernel
-- * messages from a 'printk'. Return true (and with the
-- * console_lock held, and 'console_locked' set) if it
-- * is successful, false otherwise.
-- *
-- * This gets called with the 'logbuf_lock' spinlock held and
-- * interrupts disabled. It should return with 'lockbuf_lock'
-- * released but interrupts still disabled.
-- */
--static int console_trylock_for_printk(unsigned int cpu)
--	__releases(&logbuf_lock)
--{
--	int retval = 0, wake = 0;
--
--	if (console_trylock()) {
--		retval = 1;
--
--		/*
--		 * If we can't use the console, we need to release
--		 * the console semaphore by hand to avoid flushing
--		 * the buffer. We need to hold the console semaphore
--		 * in order to do this test safely.
--		 */
--		if (!can_use_console(cpu)) {
--			console_locked = 0;
--			wake = 1;
--			retval = 0;
--		}
--	}
--	printk_cpu = UINT_MAX;
--	spin_unlock(&logbuf_lock);
--	if (wake)
--		up(&console_sem);
--	return retval;
--}
- static const char recursion_bug_msg [] =
- 		KERN_CRIT "BUG: recent printk recursion!\n";
- static int recursion_bug;
-@@ -826,6 +790,97 @@ static inline void printk_delay(void)
- 	}
- }
- 
-+static DEFINE_PER_CPU(int, printk_pending);
-+
-+void printk_tick(void)
-+{
-+	if (__this_cpu_read(printk_pending)) {
-+		__this_cpu_write(printk_pending, 0);
-+		wake_up_interruptible(&log_wait);
-+	}
-+}
-+
-+int printk_needs_cpu(int cpu)
-+{
-+	if (cpu_is_offline(cpu))
-+		printk_tick();
-+	return __this_cpu_read(printk_pending);
-+}
-+
-+void wake_up_klogd(void)
-+{
-+	if (waitqueue_active(&log_wait))
-+		this_cpu_write(printk_pending, 1);
-+}
-+
-+static void __console_flush(void)
-+{
-+	unsigned long flags;
-+	unsigned _con_start, _log_end;
-+	unsigned wake_klogd = 0;
-+
-+	console_may_schedule = 0;
-+
-+	for ( ; ; ) {
-+		spin_lock_irqsave(&logbuf_lock, flags);
-+		wake_klogd |= log_start - log_end;
-+		if (con_start == log_end)
-+			break;			/* Nothing to print */
-+		_con_start = con_start;
-+		_log_end = log_end;
-+		con_start = log_end;		/* Flush */
-+		spin_unlock(&logbuf_lock);
-+		stop_critical_timings();	/* don't trace print latency */
-+		call_console_drivers(_con_start, _log_end);
-+		start_critical_timings();
-+		local_irq_restore(flags);
-+	}
-+	console_locked = 0;
-+
-+	/* Release the exclusive_console once it is used */
-+	if (unlikely(exclusive_console))
-+		exclusive_console = NULL;
-+
-+	spin_unlock_irqrestore(&logbuf_lock, flags);
-+
-+	if (wake_klogd)
-+		wake_up_klogd();
-+}
-+
-+
-+/*
-+ * Special 'atomic' semaphore operations that mimic down_trylock() + up(),
-+ * except they don't release the semaphore internal lock and optimize the
-+ * sem->count fiddling away.
-+ *
-+ * The advantage is that this construct doesn't generate wakeups on atomic_up()
-+ * since any contending semaphore acquisition will still be spinning on the
-+ * internal lock, instead of having gotten queued on the wait_list.
-+ *
-+ * printk() uses this to avoid generating wakeups, which would make it unsafe
-+ * to use in certain contexts (avoids lock inversion or lock recursion with
-+ * the scheduler locks).
-+ *
-+ * Assumes IRQs are disabled.
-+ *
-+ * Note:  We emphatically do *not* want this function exported. Ever.
-+ * Note2: Even asking for that will likely buy you a nasty response.
-+ */
-+static int atomic_down_trylock(struct semaphore *sem)
-+{
-+	spin_lock(&sem->lock);
-+	if (sem->count > 0)
-+		return 0;
-+
-+	spin_unlock(&sem->lock);
-+	return 1;
-+}
-+
-+static void atomic_up(struct semaphore *sem)
-+{
-+	spin_unlock(&sem->lock);
-+}
-+
- asmlinkage int vprintk(const char *fmt, va_list args)
- {
- 	int printed_len = 0;
-@@ -943,19 +998,14 @@ asmlinkage int vprintk(const char *fmt, 
- 		if (*p == '\n')
- 			new_text_line = 1;
- 	}
-+	printk_cpu = UINT_MAX;
-+	spin_unlock(&logbuf_lock);
- 
--	/*
--	 * Try to acquire and then immediately release the
--	 * console semaphore. The release will do all the
--	 * actual magic (print out buffers, wake up klogd,
--	 * etc). 
--	 *
--	 * The console_trylock_for_printk() function
--	 * will release 'logbuf_lock' regardless of whether it
--	 * actually gets the semaphore or not.
--	 */
--	if (console_trylock_for_printk(this_cpu))
--		console_unlock();
-+	if (!atomic_down_trylock(&console_sem)) {
-+		if (can_use_console())
-+			__console_flush();
-+		atomic_up(&console_sem);
-+	}
- 
- out_restore_irqs:
- 	local_irq_restore(flags);
-@@ -1200,29 +1250,6 @@ int is_console_locked(void)
- 	return console_locked;
- }
- 
--static DEFINE_PER_CPU(int, printk_pending);
--
--void printk_tick(void)
--{
--	if (__this_cpu_read(printk_pending)) {
--		__this_cpu_write(printk_pending, 0);
--		wake_up_interruptible(&log_wait);
--	}
--}
--
--int printk_needs_cpu(int cpu)
--{
--	if (cpu_is_offline(cpu))
--		printk_tick();
--	return __this_cpu_read(printk_pending);
--}
--
--void wake_up_klogd(void)
--{
--	if (waitqueue_active(&log_wait))
--		this_cpu_write(printk_pending, 1);
--}
--
- /**
-  * console_unlock - unlock the console system
-  *
-@@ -1239,41 +1266,10 @@ void wake_up_klogd(void)
-  */
- void console_unlock(void)
- {
--	unsigned long flags;
--	unsigned _con_start, _log_end;
--	unsigned wake_klogd = 0;
--
--	if (console_suspended) {
--		up(&console_sem);
--		return;
--	}
--
--	console_may_schedule = 0;
--
--	for ( ; ; ) {
--		spin_lock_irqsave(&logbuf_lock, flags);
--		wake_klogd |= log_start - log_end;
--		if (con_start == log_end)
--			break;			/* Nothing to print */
--		_con_start = con_start;
--		_log_end = log_end;
--		con_start = log_end;		/* Flush */
--		spin_unlock(&logbuf_lock);
--		stop_critical_timings();	/* don't trace print latency */
--		call_console_drivers(_con_start, _log_end);
--		start_critical_timings();
--		local_irq_restore(flags);
--	}
--	console_locked = 0;
-+	if (!console_suspended)
-+		__console_flush();
- 
--	/* Release the exclusive_console once it is used */
--	if (unlikely(exclusive_console))
--		exclusive_console = NULL;
--
--	spin_unlock_irqrestore(&logbuf_lock, flags);
- 	up(&console_sem);
--	if (wake_klogd)
--		wake_up_klogd();
- }
- EXPORT_SYMBOL(console_unlock);
- 
-
+-- 
+Mel Gorman
+SUSE Labs
