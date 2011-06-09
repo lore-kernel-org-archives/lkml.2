@@ -1,112 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757190Ab1FILOL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 07:14:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36506 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753768Ab1FILOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 07:14:07 -0400
-Date: Thu, 9 Jun 2011 13:14:01 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, alsa-devel@alsa-project.org
-Subject: Re: [alsa-devel] Headphone output doesn't work with 3.0.0-rc* anymore
-Message-ID: <20110609111401.GA3994@tiehlicka.suse.cz>
-References: <20110607180522.GA4004@tiehlicka.suse.cz>
- <s5hy61cxqcz.wl%tiwai@suse.de>
- <20110608174855.GA4138@tiehlicka.suse.cz>
- <s5hr573y1rl.wl%tiwai@suse.de>
- <20110609085616.GA4207@tiehlicka.suse.cz>
- <20110609090607.GB4207@tiehlicka.suse.cz>
- <s5hei33xsxn.wl%tiwai@suse.de>
- <20110609092826.GC4207@tiehlicka.suse.cz>
- <s5haadrxrsm.wl%tiwai@suse.de>
+	id S1757227Ab1FILP4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 07:15:56 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34468 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754939Ab1FILPz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 07:15:55 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DF0AB5E.7080909@jp.fujitsu.com>
+Date: Thu, 09 Jun 2011 20:15:42 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5haadrxrsm.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: ebiederm@xmission.com
+CC: seiji.aguchi@hds.com, vgoyal@redhat.com, akpm@linux-foundation.org,
+        xiyou.wangcong@gmail.com, linux-kernel@vger.kernel.org,
+        jwilson@redhat.com
+Subject: Re: [Patch] kexec: remove KMSG_DUMP_KEXEC (was Re: Query about kdump_msg
+ hook into crash_kexec())
+References: <20110203095837.93A2.A69D9226@jp.fujitsu.com>	<20110203020703.GB21603@redhat.com>	<20110203135324.93BC.A69D9226@jp.fujitsu.com>	<20110526131028.7052a893.akpm@linux-foundation.org>	<5C4C569E8A4B9B42A84A977CF070A35B2C17324B79@USINDEVS01.corp.hds.com>	<20110531213704.GV16382@redhat.com>	<5C4C569E8A4B9B42A84A977CF070A35B2C17324BB9@USINDEVS01.corp.hds.com> <m1ei3cq5gj.fsf@fess.ebiederm.org>
+In-Reply-To: <m1ei3cq5gj.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 09-06-11 11:44:41, Takashi Iwai wrote:
-> At Thu, 9 Jun 2011 11:28:26 +0200,
-> Michal Hocko wrote:
-> > 
-> > [1  <text/plain; us-ascii (7bit)>]
-> > On Thu 09-06-11 11:20:04, Takashi Iwai wrote:
-> > > At Thu, 9 Jun 2011 11:06:07 +0200,
-> > > Michal Hocko wrote:
-> > > > 
-> > > > On Thu 09-06-11 10:56:16, Michal Hocko wrote:
-> > > > > On Thu 09-06-11 08:09:18, Takashi Iwai wrote:
-> > > > > > At Wed, 8 Jun 2011 19:48:55 +0200,
-> > > > [...]
-> > > > > > Thanks, that's helpful.
-> > > > > > As a quirk solution, could you try to pass model=auto option to
-> > > > > > snd-hda-intel module?
-> > > > > 
-> > > > > Headphones work now but speakers are quite... I have tried to play
-> > > > > with Headphone and Speaker controls in alsamixer but no changes.
-> > > > > 
-> > > > > Here is what I get in logs when the module is loaded:
-> > > > > [ 5320.360277] HDA Intel 0000:00:1b.0: PCI INT A disabled
-> > > > > [ 5326.920247] HDA Intel 0000:00:1b.0: power state changed by ACPI to D0
-> > > > > [ 5326.920262] HDA Intel 0000:00:1b.0: power state changed by ACPI to D0
-> > > > > [ 5326.920279] HDA Intel 0000:00:1b.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
-> > > > > [ 5326.920375] HDA Intel 0000:00:1b.0: irq 42 for MSI/MSI-X
-> > > > > [ 5326.920405] HDA Intel 0000:00:1b.0: setting latency timer to 64
-> > > > > [ 5326.981085] input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input18
-> > > > > [ 5326.981262] input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input19
-> > > > > [ 5326.987934] input: HDA Intel Headphone as /devices/pci0000:00/0000:00:1b.0/sound/card0/input20
-> > > > > 
-> > > > > [maybe not important but input numbers are increasing for every new load]
-> > > > > 
-> > > > > There is another strange thing. After I stop mplayer and wait for some
-> > > > > time (~1min) I can hear a "click" sound and then there is no sound at
-> > > > > all... If I start mplayer in the meantime it just works...
-> > > > > If I try to remove the module and load it again then things work and stop
-> > > > > working after first playback again.
-> > > > 
-> > > > And I have just found out that I do not have to start any playback to
-> > > > see this. It is sufficient to load the module and wait a minute and
-> > > > there is no sound at all (both from speakers or headphones).
-> > > 
-> > > OK, could you give alsa-info.sh outputs at both working and
-> > > non-working states?
-> > 
-> > Sure. Attached. The only change seems to be:
-> >  Node 0x02 [Audio Output] wcaps 0x11: Stereo
-> >    Device: name="ALC262 Analog", type="Audio", device=0
-> > -  Converter: stream=5, channel=0
-> > +  Converter: stream=0, channel=0
+Hi
+
+> Seiji Aguchi <seiji.aguchi@hds.com> writes:
 > 
-> This is OK.  It shows that the converter was assigned once to this
-> stream when you played back a sound before power-save.
+>> Hi,
+>>
+>>> What are you using kmsg_dump() for? Using mtdoops, ramoops or something
+>>> else?  Is it working reliably for you?
+>>
+>> I plan to use kmsg_dump() for set_variable service of UEFI.
+>> I proposed a prototype patch this month and will improve it.
+>> (kmsg_dump is used inside pstore.)
+>>
+>> https://lkml.org/lkml/2011/5/10/340
 > 
-> As long as the codec registers show the same value, it's not obviously
-> what went wrong.  The symptom sounds like a resume issue.  If so,
-> S3/S4 might show the same problem.
+> Shudder.  Firmware calls in the crash path.
 > 
-> BTW, does my patch fix the problem when you load without model=auto?
+> If that is the use, we need to remove the kmsg_dump(KMSG_DUMP_KEXEC)
+> hook from crash_kexec yesterday.  It is leading to some really ludicrous
+> suggestions that are on the way from making kexec on panic unreliable
+> and useless.
 
-I have just booted to the rc2 with the patch (https://lkml.org/lkml/2011/6/9/25)
-and it looks it didn't solve the problem. Playback works only from
-speakers when headphones are not plugged in - no sound if plugged in.
-See alsa-info.txt-fresh-boot. Same thing happens if I 
-modprobe -r snd-hda-intel and then load it again (without any parameters).
+Do you have concrete example?
 
-> If yes, does the problem appear with it?  I.e. is the silence problem
-> specific to model=auto or not?
+If you only talked about theoretical issue, probably making boot parameter
+is enough and reasonable way.
 
-If I try to modproble with model=auto I get headphones working but not
-output from speakers. Have a look at alsa-info.txt-modprobe_auto.
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+> There will always be EFI implementations where that will not work and
+> there will be no way we can fix those.
+> 
+> There is a long history of people trying to do things in a crashing
+> kernel, things that simply do not work when the system is in a bad
+> state.  kmsg_dump() when I reviewed the code had significant
+> implementation problems for being called from interrupt handlers
+> and the like.
+> 
+> To introduce a different solution for capturing information when a
+> kernel crashes we need to see numbers that in a large number of
+> situations that the mechanism you are proposing is more reliable and/or
+> more maintainable than the current kexec on panic implementation.
+> 
+> The best work I know of on the reliability of the current situation
+> is "Evaluating Linux Kernel Crash Dumping Mechanisms", by Fernando Luis Vazquez Cao.
+> http://www.linuxsymposium.org/archives/OLS/Reprints-2006/cao-reprint.pdf
+
+Every reliability improvement idea is welcome! This also improve embedded too.
+
+
+> Now it does happen to be a fact that our efi support in linux is
+> so buggy kexec does not work let alone kexec on panic (if the target
+> kernel has any efi support).   But our efi support being buggy is not
+> a reason to add more ways to fail when we have a kernel with efi
+> support.  It is an argument to remove our excessive use of EFI
+> calls.
+
+Which part is buggy? As far as I know, IBM, HP and Fujitsu have EFI supported
+server product and it works.
+
+So, if you are suffered from buggy efi, I think the best way is to make config
+option and you disable it and Aguch-san enable it.
+
+
+> So let's just remove the ridiculous kmsg_dump(KMSG_DUMP_KEXEC) hook from
+> crash_kexec and remove any temptation for abuses like wanting to use
+> kmsg_dump() on anything but a deeply embedded system where there simply
+> is not enough memory for 2 kernels.
+
+This sentence has two misunderstands. 1) modern embedded (e.g. Android) has
+lots memory rather than 10 years past PC 2) they often don't need full feature
+second kernel. they often don't need full crash dump.
+
+Thanks.
+
+
+
