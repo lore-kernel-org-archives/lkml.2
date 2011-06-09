@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839Ab1FIOSm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 10:18:42 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:20724 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595Ab1FIOSk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 10:18:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=ljtxJkMjIr69enum4FrXxPbSAqH623FRJSejKD3+xxVJvzI6GDZ0GytIzKbmVFenKS
-         8oGXCZuE+i+cwLyIT6sQ==
+	id S1751804Ab1FIOUI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 10:20:08 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:59329 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750899Ab1FIOUG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 10:20:06 -0400
+Date: Thu, 9 Jun 2011 16:19:59 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, efault@gmx.de,
+        Arne Jansen <lists@die-jansens.de>
+Subject: Re: [PATCH 3/3] printk: Avoid all wakeups from printk
+Message-ID: <20110609141959.GF21100@elte.hu>
+References: <20110609130647.937204592@chello.nl>
+ <20110609131307.590149293@chello.nl>
+ <20110609133228.GB21100@elte.hu>
+ <1307626856.3941.80.camel@twins>
+ <20110609135542.GD21100@elte.hu>
+ <1307628393.3941.87.camel@twins>
 MIME-Version: 1.0
-Date: Thu, 9 Jun 2011 16:18:37 +0200
-Message-ID: <BANLkTikcXcfH2OxD9+tTnS6S2svafWq74w@mail.gmail.com>
-Subject: [BUG] perf: older perf.data files may not be readable
-From: Stephane Eranian <eranian@google.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307628393.3941.87.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo,
 
-I was looking at util/session.c:
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-int perf_file_header__read(struct perf_file_header *header,
-                           struct perf_header *ph, int fd)
-{
-        lseek(fd, 0, SEEK_SET);
+> On Thu, 2011-06-09 at 15:55 +0200, Ingo Molnar wrote:
+> 
+> > > @@ -943,19 +939,14 @@ asmlinkage int vprintk(const char *fmt, 
+> > >  		if (*p == '\n')
+> > >  			new_text_line = 1;
+> > >  	}
+> > > +	printk_cpu = UINT_MAX;
+> > > +	spin_unlock(&logbuf_lock);
+> > 
+> > Hm, is that printk_cpu setting inside the critical section safe? What 
+> > happens if we get an NMI on this CPU in that window?
+> 
+> That's what the old code did, also NMI really shouldn't printk(), but
+> yeah, can flip those two lines, but in that same vein I should also flip
+> the setting of that variable with acquiring the lock.
 
-        if (readn(fd, header, sizeof(*header)) <= 0 ||
-            memcmp(&header->magic, __perf_magic, sizeof(header->magic)))
-                return -1;
+Flipping it won't be enough - we could override another CPU's 
+protection ...
 
-        if (header->attr_size != sizeof(struct perf_file_attr)) {
-                u64 attr_size = bswap_64(header->attr_size);
+Thanks,
 
-                if (attr_size != sizeof(struct perf_file_attr))
-                        return -1;
-
-                mem_bswap_64(header, offsetof(struct perf_file_header,
-                                            adds_features));
-                ph->needs_swap = true;
-        }
-        ...
-}
-
-struct perf_file_attr {
-   struct perf_event_attr attr;
-   struct perf_file_section ids;
-};
-
-The way you detect endianess leads me to believe that perf will not be
-able to cope with growth of perf_event_attr struct AND maintain backward
-compatibility with perf.data files saved with smaller perf_event_attr struct.
-
-It should be possible to read perf.data files written with a smaller
-perf_event_attr struct. You simply ignore leave the extended fields at zero.
-
-Conversely, you can ignore the fields if the perf.data struct is larger
-than that of the tool. But this is the more unlikely scenario, so it's
-not that important.
+	Ingo
