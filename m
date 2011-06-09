@@ -1,72 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036Ab1FIGtS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 02:49:18 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:39718 "EHLO mx3.mail.elte.hu"
+	id S1753366Ab1FIGuw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 02:50:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56298 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751382Ab1FIGtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 02:49:16 -0400
-Date: Thu, 9 Jun 2011 08:48:47 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: pageexec@freemail.hu
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@mit.edu>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
-        Brian Gerst <brgerst@gmail.com>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] x86-64, vsyscalls: Rename UNSAFE_VSYSCALLS to
- COMPAT_VSYSCALLS
-Message-ID: <20110609064847.GC7734@elte.hu>
-References: <cover.1307292171.git.luto@mit.edu>
- <4DED6AAC.12348.14E3578E@pageexec.freemail.hu>
- <20110607095637.GE4133@elte.hu>
- <4DEEB31B.15655.19E64916@pageexec.freemail.hu>
+	id S1751855Ab1FIGuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 02:50:50 -0400
+Date: Thu, 9 Jun 2011 08:50:36 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: Yongqiang Yang <xiaoqiangnk@gmail.com>
+cc: "Amir G." <amir73il@users.sourceforge.net>,
+        Lukas Czerner <lczerner@redhat.com>, linux-ext4@vger.kernel.org,
+        tytso@mit.edu, linux-kernel@vger.kernel.org, sandeen@redhat.com
+Subject: Re: [PATCH v1 00/30] Ext4 snapshots
+In-Reply-To: <BANLkTik9Mnq5yqK795pxyr8SK-3EOzzNhA@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1106090834270.4138@dhcp-27-109.brq.redhat.com>
+References: <1307459283-22130-1-git-send-email-amir73il@users.sourceforge.net> <alpine.LFD.2.00.1106071735100.11385@dhcp-27-109.brq.redhat.com> <BANLkTikAB-RDDS8PMMrFK-OuY6PuavBixA@mail.gmail.com> <alpine.LFD.2.00.1106081114240.5026@dhcp-27-109.brq.redhat.com>
+ <BANLkTi=T1OtyRSWNTA6xhkTy5uaHWqA_XA@mail.gmail.com> <alpine.LFD.2.00.1106081716200.6609@dhcp-27-109.brq.redhat.com> <BANLkTikUXdvMQROYEdxnyfcPuB0e9ozMOg@mail.gmail.com> <BANLkTinU9Hegr3iA5it2vNjE_RYbB+8+RQ@mail.gmail.com>
+ <BANLkTik9Mnq5yqK795pxyr8SK-3EOzzNhA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DEEB31B.15655.19E64916@pageexec.freemail.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1198591031-1307602240=:4138"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-* pageexec@freemail.hu <pageexec@freemail.hu> wrote:
+--8323328-1198591031-1307602240=:4138
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-> On 7 Jun 2011 at 11:56, Ingo Molnar wrote:
+On Thu, 9 Jun 2011, Yongqiang Yang wrote:
+
+> On Thu, Jun 9, 2011 at 11:18 AM, Amir G. <amir73il@users.sourceforge.net> wrote:
+> > On Thu, Jun 9, 2011 at 4:59 AM, Yongqiang Yang <xiaoqiangnk@gmail.com> wrote:
+> >>> But I do understand the difference. And also, when it comes to fs level
+> >>> snapshotting I would suspect that it would do something we can not do
+> >>> with the current solutions, for example per-file or per-directory snapshots,
+> >>> cat ext4 snapshots do that ?
+> >> Hi Lukas,
+> >>
+> >> I noticed that there is no answer to this question in the thread.  I
+> >
+> > I think I answered this question with No it can't ;-)
+> I think this can be implemented easily by chattr and adding check in
+> should_snapshot() or should_move_data().
 > 
-> > Fedora was able to disable the fixed-address vdso in its newer 32-bit 
-> > distro kernels because it *upgraded glibc*.
+> And I thought Lukas are focusing on if ext4-snapshots can do this
+> easily.  So i said YES:-)
+
+Cool, finally something interesting :). So, how it'll work ? Does that
+require any format changes again:) ? Can you exclude the whole root and
+then selectively pick the directories or files you are interested in ?
+
+How does rollback work with ext4 snapshots ? Can you selectively roll
+back one file, or the whole directory subtree even when you're
+snapshotting more ?
+
+You see, when it comes to the full fs snapshots I am not convinced that
+it is *very* useful, yes it might have some users, but you can alway
+take the safe way and do lvm snapshots (or better use the new multisnap)
+for backup, without need to modify stable filesystem code.
+
+Also, I do not buy the whole argument of "not have to create separate disk
+space for snapshot". It is actually better for sysadmins, because you
+have perfect control on what is going on, how much space is used for
+your snapshots and how much is used by your data. You can always easily
+extend the snapshot volume, or let it die silently when it is too old
+and too big.
+
+How does it actually work on ext4 snapshots ? When you're going to
+rewrite a file, you will never know how much disk space it'll take in
+advance, am I right ? Is the filesystem accounting for the snapshot size
+as well ? or is it hidden ?
+
+Thanks!
+-Lukas
+
 > 
-> and what happened to those apps that users statically linked against
-> the older glibc? what happened to their chroots that had dynamically
-> linked binaries with an older glibc? did you not break those either?
-
-There's two reasons why a distributor will generally not worry about 
-that case:
-
- - No such binaries come with a default distro install
-
- - Keeping such old libraries linked or chrooted can be a security
-   hole in itself, so i dou guarantee something like this.
-
-If another distribution considers this a serious enough issue it can 
-keep the COMPAT_VDSO option enabled forever. Few (none?) did.
-
-Thanks,
-
-	Ingo
+> >
+> >> can give the question the answer that ext4 can snapshot per-file or
+> >> per-directory, and can exclude some files or directories from being
+> >> snapshotted.
+> >>
+> >
+> > So the full answer is that ext4 snapshot CAN exclude
+> > certain files/dirs from snapshot, but this feature is not fully implemented yet
+> > (I have it in a dev branch)
+> >
+> >> --
+> >> Best Wishes
+> >> Yongqiang Yang
+> >>
+> >
+> 
+> 
+> 
+> 
+--8323328-1198591031-1307602240=:4138--
