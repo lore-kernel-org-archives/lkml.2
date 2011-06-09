@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757290Ab1FILZu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 07:25:50 -0400
-Received: from mga11.intel.com ([192.55.52.93]:26168 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753649Ab1FILZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 07:25:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,341,1304319600"; 
-   d="scan'208";a="16078883"
-Date: Thu, 9 Jun 2011 14:25:46 +0300
-From: Heikki Krogerus <krohei@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Grazvydas Ignotas <notasas@gmail.com>
-Subject: Re: [PATCH 0/3] Support for SUSPEND and RESUME for USB chargers
-Message-ID: <20110609112546.GA23520@xps8300>
-References: <1307526281-12125-1-git-send-email-krohei@gmail.com>
- <20110608205405.GB27448@kroah.com>
+	id S1757309Ab1FILcp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 07:32:45 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:37028 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756180Ab1FILcl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 07:32:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=TLulXrucD/J+rrqRupyljlXFyzVm47f7RRznsnYNAiyTLiqh42om+91TMCWHM2mPs0
+         ilt9E5ivLeX6utO28eI2Ctk94Qm6PMIcCrHC5153xfgcD4r3xM4pHcEm2fS03X3oAqad
+         Ch8pSRZ0mvN9/bU2BuzMxXhMhMz4x9Ek+bC1o=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110608205405.GB27448@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1307617752-23426-1-git-send-email-gxt@mprc.pku.edu.cn>
+References: <1307617752-23426-1-git-send-email-gxt@mprc.pku.edu.cn>
+Date: Thu, 9 Jun 2011 20:32:40 +0900
+Message-ID: <BANLkTikNC8uh-X_0iJZH3tYd_kf46W1Rwg@mail.gmail.com>
+Subject: Re: [PATCH] unicore32: fix build error for find bitops
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: GuanXuetao <gxt@mprc.pku.edu.cn>
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        greg@kroah.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 01:54:05PM -0700, Greg KH wrote:
-> On Wed, Jun 08, 2011 at 12:44:38PM +0300, Heikki Krogerus wrote:
-> > The charging should be prevented if the bus is suspended.
-> > 
-> > These notifications will come from the udc drivers. I'll create a
-> > separate patch set for those, as I guess the maintainers of the
-> > controller drivers need to approve those.
-> 
-> Can you send them here as well?  These patches never set this value, so
-> I don't see why you did it this way, instead of just getting the
-> "normal" suspend/resume callback and triggering off of that.
+2011/6/9 GuanXuetao <gxt@mprc.pku.edu.cn>:
+> From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+>
+> Remove the __uc32_ prefix in find bitops functions.
+> see commit <19de85ef574c3a2182e3ccad9581805052f14946>
+>  bitops: add #ifndef for each of find bitops
+>
+> Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> Cc: Akinobu Mita <akinobu.mita@gmail.com>
+> ---
+>  arch/unicore32/include/asm/bitops.h |    6 ------
+>  arch/unicore32/kernel/ksyms.c       |    4 ++--
+>  arch/unicore32/lib/findbit.S        |   14 ++++++++------
+>  3 files changed, 10 insertions(+), 14 deletions(-)
+>
+> diff --git a/arch/unicore32/include/asm/bitops.h b/arch/unicore32/include/asm/bitops.h
+> index 1628a63..a9653f0 100644
+> --- a/arch/unicore32/include/asm/bitops.h
+> +++ b/arch/unicore32/include/asm/bitops.h
+> @@ -13,12 +13,6 @@
+>  #ifndef __UNICORE_BITOPS_H__
+>  #define __UNICORE_BITOPS_H__
+>
+> -#define find_next_bit          __uc32_find_next_bit
+> -#define find_next_zero_bit     __uc32_find_next_zero_bit
+> -
+> -#define find_first_bit         __uc32_find_first_bit
+> -#define find_first_zero_bit    __uc32_find_first_zero_bit
+> -
 
-I'm not completely sure what you mean with "normal" suspend/resume
-callback? I want to get the information about the SUSPEND and RESUME
-bus states to the charger drivers and I don't want to tie them with
-any USB transceiver or controller driver. Wasn't this the reason for
-having the otg notifiers in the first place?
+Is this patch really fix the build error?
 
-I'll spend a bit more time with these and resend when I have
-everything ready. GraÅ¾vydas noticed an issue with the
-isp1704_charger.c so that patch is broken in any case.
-
-> Still confused,
-
-I did not think this through. Sorry about that. I should have send
-everything from the beginning and I should have been more clear what
-I'm after with these.
-
--- 
-heikki
+If these find_*_bit macros are removed, vmlinux will have multiple
+definisions of find_*_bit. Because lib/find_next_bit.c is built
+unconditionally after the commit 63e424c84429903c92a0f1e9654c31ccaf6694d0
+("arch: remove CONFIG_GENERIC_FIND_{NEXT_BIT,BIT_LE,LAST_BIT}".
