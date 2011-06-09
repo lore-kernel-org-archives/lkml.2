@@ -1,103 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab1FIRYX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 13:24:23 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:51668 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753278Ab1FIRYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 13:24:22 -0400
-Date: Thu, 9 Jun 2011 19:23:47 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/8] mm: memcg-aware global reclaim
-Message-ID: <20110609172347.GB20333@cmpxchg.org>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
- <1306909519-7286-3-git-send-email-hannes@cmpxchg.org>
- <20110609154839.GF4878@barrios-laptop>
+	id S1753871Ab1FIRXw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 13:23:52 -0400
+Received: from mail3.microsoft.com ([131.107.115.214]:30516 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab1FIRXv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 13:23:51 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>
+Subject: RE: [PATCH 1/3] Staging: hv: netvsc: Fix a bug in accounting
+ transmit slots
+Thread-Topic: [PATCH 1/3] Staging: hv: netvsc: Fix a bug in accounting
+ transmit slots
+Thread-Index: AQHMJJr/4m2Kj0gE0EioJZmkp3ZKoJS1usKA//+PiNA=
+Date: Thu, 9 Jun 2011 17:23:50 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0480814575D@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1307401055-13608-1-git-send-email-kys@microsoft.com>
+ <20110609170437.GA24686@kroah.com>
+In-Reply-To: <20110609170437.GA24686@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.33]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110609154839.GF4878@barrios-laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 12:48:39AM +0900, Minchan Kim wrote:
-> On Wed, Jun 01, 2011 at 08:25:13AM +0200, Johannes Weiner wrote:
-> > When a memcg hits its hard limit, hierarchical target reclaim is
-> > invoked, which goes through all contributing memcgs in the hierarchy
-> > below the offending memcg and reclaims from the respective per-memcg
-> > lru lists.  This distributes pressure fairly among all involved
-> > memcgs, and pages are aged with respect to their list buddies.
-> > 
-> > When global memory pressure arises, however, all this is dropped
-> > overboard.  Pages are reclaimed based on global lru lists that have
-> > nothing to do with container-internal age, and some memcgs may be
-> > reclaimed from much more than others.
-> > 
-> > This patch makes traditional global reclaim consider container
-> > boundaries and no longer scan the global lru lists.  For each zone
-> > scanned, the memcg hierarchy is walked and pages are reclaimed from
-> > the per-memcg lru lists of the respective zone.  For now, the
-> > hierarchy walk is bounded to one full round-trip through the
-> > hierarchy, or if the number of reclaimed pages reach the overall
-> > reclaim target, whichever comes first.
-> > 
-> > Conceptually, global memory pressure is then treated as if the root
-> > memcg had hit its limit.  Since all existing memcgs contribute to the
-> > usage of the root memcg, global reclaim is nothing more than target
-> > reclaim starting from the root memcg.  The code is mostly the same for
-> > both cases, except for a few heuristics and statistics that do not
-> > always apply.  They are distinguished by a newly introduced
-> > global_reclaim() primitive.
-> > 
-> > One implication of this change is that pages have to be linked to the
-> > lru lists of the root memcg again, which could be optimized away with
-> > the old scheme.  The costs are not measurable, though, even with
-> > worst-case microbenchmarks.
-> > 
-> > As global reclaim no longer relies on global lru lists, this change is
-> > also in preparation to remove those completely.
-
-[cut diff]
-
-> I didn't look at all, still. You might change the logic later patches.
-> If I understand this patch right, it does round-robin reclaim in all memcgs
-> when global memory pressure happens.
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Thursday, June 09, 2011 1:05 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang;
+> Abhishek Kane (Mindtree Consulting PVT LTD)
+> Subject: Re: [PATCH 1/3] Staging: hv: netvsc: Fix a bug in accounting transmit slots
 > 
-> Let's consider this memcg size unbalance case.
+> On Mon, Jun 06, 2011 at 03:57:35PM -0700, K. Y. Srinivasan wrote:
 > 
-> If A-memcg has lots of LRU pages, scanning count for reclaim would be bigger
-> so the chance to reclaim the pages would be higher.
-> If we reclaim A-memcg, we can reclaim the number of pages we want easily and break.
-> Next reclaim will happen at some time and reclaim will start the B-memcg of A-memcg
-> we reclaimed successfully before. But unfortunately B-memcg has small lru so
-> scanning count would be small and small memcg's LRU aging is higher than bigger memcg.
-> It means small memcg's working set can be evicted easily than big memcg.
-> my point is that we should not set next memcg easily.
-> We have to consider memcg LRU size.
+> I only got 2 of these three patches, what happened to the third one?
+> 
+> Care to resend all 3 of these to ensure that I get them all?
 
-I may be missing something, but you said yourself that B had a smaller
-scan count compared to A, so the aging speed should be proportional to
-respective size.
+There really were only 2 patches I wanted to send. If you want I could reformat
+and send only the 2 I wanted to send.
 
-The number of pages scanned per iteration is essentially
+Regards,
 
-	number of lru pages in memcg-zone >> priority
+K. Y 
+> 
+> thanks,
+> 
+> greg k-h
 
-so we scan relatively more pages from B than from A each round.
-
-It's the exact same logic we have been applying traditionally to
-distribute pressure fairly among zones to equalize their aging speed.
-
-Is that what you meant or are we talking past each other?
