@@ -1,77 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757041Ab1FIIDX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 04:03:23 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35164 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756937Ab1FIIDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 04:03:09 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 14/14] mm: Account for the number of times direct reclaimers get throttled
-Date: Thu,  9 Jun 2011 09:02:53 +0100
-Message-Id: <1307606573-24704-15-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1307606573-24704-1-git-send-email-mgorman@suse.de>
-References: <1307606573-24704-1-git-send-email-mgorman@suse.de>
+	id S1757060Ab1FIIDb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 04:03:31 -0400
+Received: from ausxipps301.us.dell.com ([143.166.148.223]:35953 "EHLO
+	ausxipps301.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756982Ab1FIIDO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 04:03:14 -0400
+X-Loopcount0: from 10.175.216.250
+From: <Narendra_K@Dell.com>
+To: <kernel@linuxace.com>, <linux-kernel@vger.kernel.org>
+CC: <Jordan_Hargrave@Dell.com>, <jbarnes@virtuousgeek.org>
+Date: Thu, 9 Jun 2011 01:03:00 -0700
+Subject: RE: [PATCH] Fix embedded nic order on Dell PowerEdge systems
+Thread-Topic: [PATCH] Fix embedded nic order on Dell PowerEdge systems
+Thread-Index: AcwmGKvBGW/R5RVvTQeeG3VgoGPEMAAYiy9A
+Message-ID: <E31FB011129F30488D5861F3839049151DA349A086@BLRX7MCDC201.AMER.DELL.COM>
+References: <1307564053-2996-1-git-send-email-kernel@linuxace.com>
+In-Reply-To: <1307564053-2996-1-git-send-email-kernel@linuxace.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Under significant pressure when writing back to network-backed storage,
-direct reclaimers may get throttled. This is expected to be a
-short-lived event and the processes get woken up again but processes do
-get stalled. This patch counts how many times such stalling occurs. It's
-up to the administrator whether to reduce these stalls by increasing
-min_free_kbytes.
+> -----Original Message-----
+> From: Phil Oester [mailto:kernel@linuxace.com]
+> Sent: Thursday, June 09, 2011 1:44 AM
+> To: linux-kernel@vger.kernel.org
+> Cc: K, Narendra; Hargrave, Jordan; jbarnes@virtuousgeek.org
+> Subject: [PATCH] Fix embedded nic order on Dell PowerEdge systems
+> 
+>     In commit 6e8af08dfa40b747002207d3ce8e8b43a050d99f ("PCI: enable
+> pci=bfsort
+>     by default on future Dell systems"), the callback added was placed at the
+>     top of the list, before the specific PowerEdge models.  This ends up
+>     breaking the more specific models listed, since the new callback handles
+>     all Dell systems but the older systems don't have the new 0xB1 smbios
+>     entry.
+> 
+>     Fix this by placing the new check _after_ the more specific PowerEdge
+>     sytems.
+> 
+>     Phil Oester
+> 
+>     Signed-off-by: Phil Oester <kernel@linuxace.com>
+> 
+> diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c index
+> 5fe7502..92df322 100644
+> --- a/arch/x86/pci/common.c
+> +++ b/arch/x86/pci/common.c
+> @@ -247,13 +247,6 @@ static const struct dmi_system_id __devinitconst
+> pciprobe_dmi_table[] = {
+>  	},
+>  #endif		/* __i386__ */
+>  	{
+> -		.callback = find_sort_method,
+> -		.ident = "Dell System",
+> -		.matches = {
+> -			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc"),
+> -		},
+> -	},
+> -	{
+>  		.callback = set_bf_sort,
+>  		.ident = "Dell PowerEdge 1950",
+>  		.matches = {
+> @@ -294,6 +287,13 @@ static const struct dmi_system_id __devinitconst
+> pciprobe_dmi_table[] = {
+>  		},
+>  	},
+>  	{
+> +		.callback = find_sort_method,
+> +		.ident = "Dell System",
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc"),
+> +		},
+> +	},
+> +	{
+>  		.callback = set_bf_sort,
+>  		.ident = "HP ProLiant BL20p G3",
+>  		.matches = {
+[>] 
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/vm_event_item.h |    1 +
- mm/vmscan.c                   |    1 +
- mm/vmstat.c                   |    1 +
- 3 files changed, 3 insertions(+), 0 deletions(-)
+Hi, this issue is fixed and the fix is in Jesse's linux-next tree.
 
-diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-index 03b90cdc..652e5f3 100644
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -29,6 +29,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- 		FOR_ALL_ZONES(PGSTEAL),
- 		FOR_ALL_ZONES(PGSCAN_KSWAPD),
- 		FOR_ALL_ZONES(PGSCAN_DIRECT),
-+		PGSCAN_DIRECT_THROTTLE,
- #ifdef CONFIG_NUMA
- 		PGSCAN_ZONE_RECLAIM_FAILED,
- #endif
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index fe95e4f..f75a5f2 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2189,6 +2189,7 @@ static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
- 		return;
- 
- 	/* Throttle */
-+	count_vm_event(PGSCAN_DIRECT_THROTTLE);
- 	wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,
- 		pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx));
- }
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 20c18b7..0ab4a3d 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -740,6 +740,7 @@ const char * const vmstat_text[] = {
- 	TEXTS_FOR_ZONES("pgsteal")
- 	TEXTS_FOR_ZONES("pgscan_kswapd")
- 	TEXTS_FOR_ZONES("pgscan_direct")
-+	"pgscan_direct_throttle",
- 
- #ifdef CONFIG_NUMA
- 	"zone_reclaim_failed",
--- 
-1.7.3.4
+http://marc.info/?l=linux-pci&m=130108034729082 (x86/PCI: Preserve existing pci=bfsort whitelist for Dell systems)
+
+With regards,
+Narendra K
 
