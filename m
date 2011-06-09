@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757525Ab1FIMZk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 08:25:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38872 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757235Ab1FIMZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 08:25:39 -0400
-Date: Thu, 9 Jun 2011 14:25:36 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Joe Perches <joe@perches.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        H Hartley Sweeten <hartleys@visionengravers.com>
-Subject: Re: [TRIVIAL PATCH v2] treewide: Convert uses of struct resource to
- resource_size(ptr)
-In-Reply-To: <1307482186.22272.29.camel@Joe-Laptop>
-Message-ID: <alpine.LNX.2.00.1106091423400.22872@pobox.suse.cz>
-References: <201106061349.00474.hartleys@visionengravers.com>  <1307397174.4994.26.camel@Joe-Laptop>  <ADE657CA350FB648AAC2C43247A983F001F3820B7C78@AUSP01VMBX24.collaborationhost.net>  <1307408678.4994.46.camel@Joe-Laptop> 
- <ADE657CA350FB648AAC2C43247A983F001F3820B7EB4@AUSP01VMBX24.collaborationhost.net> <1307482186.22272.29.camel@Joe-Laptop>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757538Ab1FIM2q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 08:28:46 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:45904 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757445Ab1FIM2p convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 08:28:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=njwnbQzkN2/xFlXZ5/0D1BVPAu2+nDUwKSNZcYepmIPZjrg/63pkF2XtlFdLMEqslk
+         +5Fs6sXS1Jh9+dxeL8qrtxoCVLKG8VlQJMHCRBXxMd/dQnDseYUc2soEFl4LYrxXuFYd
+         b3lVlDECODI7r2jQ7ahJ0019e97Hce9+vVB0U=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110609113505.GR5247@suse.de>
+References: <1307606573-24704-1-git-send-email-mgorman@suse.de>
+ <1307606573-24704-11-git-send-email-mgorman@suse.de> <BANLkTimUE9yb-DegdUk0BbbOGWoUhEBrqw@mail.gmail.com>
+ <20110609113505.GR5247@suse.de>
+From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
+Date: Thu, 9 Jun 2011 14:28:24 +0200
+Message-ID: <BANLkTi=8jx8B8fR_+Z76UoTe_jhG9G-Tyw@mail.gmail.com>
+Subject: Re: [PATCH 10/14] netvm: Set PF_MEMALLOC as appropriate during SKB processing
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Jun 2011, Joe Perches wrote:
+2011/6/9 Mel Gorman <mgorman@suse.de>:
+> On Thu, Jun 09, 2011 at 12:21:31PM +0200, Micha? Miros?aw wrote:
+>> 2011/6/9 Mel Gorman <mgorman@suse.de>:
+>> [...]
+>> > +/*
+>> > + * Limit which protocols can use the PFMEMALLOC reserves to those that are
+>> > + * expected to be used for communication with swap.
+>> > + */
+>> > +static bool skb_pfmemalloc_protocol(struct sk_buff *skb)
+>> > +{
+>> > +       switch (skb->protocol) {
+>> > +       case __constant_htons(ETH_P_ARP):
+>> > +       case __constant_htons(ETH_P_IP):
+>> > +       case __constant_htons(ETH_P_IPV6):
+>> > +       case __constant_htons(ETH_P_8021Q):
+>> > +               return true;
+>> > +       default:
+>> > +               return false;
+>> > +       }
+>> > +}
+>>
+>> This is not needed and wrong. Whatever list there will be, it's going
+>> to always miss some obscure setup (or not that obscure, like
+>> ATAoverEthernet).
+>>
+>
+> NBD is updated in the series to set the socket information
+> appropriately but the same cannot be said of AoE. The necessary
+> changes have been made IPv4 and IPv6 to handle pfmemalloc sockets
+> but the same cannot be necessarily said for the other protocols. Yes,
+> the check could be removed but leaving it there makes a clear statement
+> on what scenario can be reasonably expected to work.
 
-> Several fixes as well where the +1 was missing.
-> 
-> Done via coccinelle scripts like:
-> 
-> @@
-> struct resource *ptr;
-> @@
-> 
-> - ptr->end - ptr->start + 1
-> + resource_size(ptr)
-> 
-> and some grep and typing.
-> 
-> Mostly uncompiled, no cross-compilers.
-> 
-> Some checkpatch complaints cheerfully ignored.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+Ok. Then the comment before skb_pfmemalloc_protocol() is misleading.
+It should say that this is a list of protocols which implement the
+required special handling of PFMEMALLOC skbs.
 
-Hi Joe,
-
-thanks a lot for the patch. I will be happily taking it. However it seems 
-like some of the files are going away/have been moved in -next. Could you 
-please respin on top of what is still applicable on -next and resend? 
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+Best Regards,
+Michał Mirosław
