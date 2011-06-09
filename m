@@ -1,81 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523Ab1FIAHn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 20:07:43 -0400
-Received: from sh.osrg.net ([192.16.179.4]:58932 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751092Ab1FIAHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 20:07:42 -0400
-Date: Thu, 9 Jun 2011 09:07:02 +0900
-To: dan.j.williams@intel.com
-Cc: fujita.tomonori@lab.ntt.co.jp, cjb@laptop.org, linux@arm.linux.org.uk,
-        patches@linaro.org, vinod.koul@intel.com, gregkh@suse.de,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        shawn.guo@linaro.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/3] dmaengine: add new dma API for
- max_segment_number
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <BANLkTikFKr+3Qph+CR40SUV-DCir1v=KBg@mail.gmail.com>
-References: <BANLkTi=FcNncT_6HpvB_6OnQ94f0_sz7Gw@mail.gmail.com>
-	<20110608160844E.fujita.tomonori@lab.ntt.co.jp>
-	<BANLkTikFKr+3Qph+CR40SUV-DCir1v=KBg@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1751626Ab1FIAMB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 20:12:01 -0400
+Received: from blu0-omc1-s24.blu0.hotmail.com ([65.55.116.35]:2507 "EHLO
+	blu0-omc1-s24.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750890Ab1FIAMA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 20:12:00 -0400
+X-Originating-IP: [184.145.208.36]
+X-Originating-Email: [pdumas9@sympatico.ca]
+Message-ID: <BLU0-SMTP554442FCF79C11301E4AB696650@phx.gbl>
+Date: Wed, 8 Jun 2011 20:11:52 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 05/28] rcu: Move rcu_head definition to
+	types.h
+References: <20110608192943.GA13211@linux.vnet.ibm.com> <1307561407-13809-5-git-send-email-paulmck@linux.vnet.ibm.com> <BLU0-SMTP635E2E394E1488A2717A5B96620@phx.gbl> <20110609000203.GO2324@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Message-Id: <20110609090403I.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 09 Jun 2011 09:07:05 +0900 (JST)
+Content-Disposition: inline
+In-Reply-To: <20110609000203.GO2324@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 20:08:25 up 427 days,  9:58,  3 users,  load average: 0.31, 0.19,
+	0.12
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 09 Jun 2011 00:11:55.0941 (UTC) FILETIME=[D79EED50:01CC2639]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Jun 2011 13:05:57 -0700
-Dan Williams <dan.j.williams@intel.com> wrote:
-
-> Perhaps, but this sounds like the reverse of what happens today where
-> scsi device drivers with knowledge of their own hardware will tell the
-> midlayer/subsystem the restriction.  The change with regard to this
-> patch is that the scsi device driver (for example) will recognize that
-> the device it is driving will not be a bus master and will arrange to
-> allocate a dma channel from dmaengine.  When said scsi driver reports
-> the dma restrictions to the subsystem it will borrow the parameters
-> from the dma channel, not the scsi device.  So yes, I still think it
-> should be whatever the dma channel says.
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> On Wed, Jun 08, 2011 at 07:26:21PM -0400, Mathieu Desnoyers wrote:
+> > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > Take a first step towards untangling Linux kernel header files by
+> > > placing the struct rcu_head definition into include/linux/types.h.
+> > > Once this is in place, then header files that need only rcu_head
+> > > can include types.h rather than rcupdate.h.
+> > > 
+> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > 
+> > Yes! I'm suddenly feeling the temperature drop by a few degrees in
+> > #include hell ;) One detail though: I think rcupdate.h should then
+> > include types.h.
 > 
-> Although, you've been doing scsi work longer than I, so maybe I'm
-> overlooking something...?
+> Glad you like it!
 > 
-> Are there any cases today where the subsystem imposes tighter
-> restrictions on the dma geometry than what the device reports?  Even
+> But please see below.
+> 
+> > Thanks,
+> > 
+> > Mathieu
+> > 
+> > 
+> > > ---
+> > >  include/linux/rcupdate.h |   10 +---------
+> > >  include/linux/types.h    |   10 ++++++++++
+> > >  2 files changed, 11 insertions(+), 9 deletions(-)
+> > > 
+> > > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> > > index 8be0433..ad09eb8 100644
+> > > --- a/include/linux/rcupdate.h
+> > > +++ b/include/linux/rcupdate.h
+> > > @@ -64,15 +64,7 @@ static inline void rcutorture_record_progress(unsigned long vernum)
+> > >  #define ULONG_CMP_GE(a, b)	(ULONG_MAX / 2 >= (a) - (b))
+> > >  #define ULONG_CMP_LT(a, b)	(ULONG_MAX / 2 < (a) - (b))
+> > >  
+> > > -/**
+> > > - * struct rcu_head - callback structure for use with RCU
+> > > - * @next: next update requests in a list
+> > > - * @func: actual update function to call after the grace period.
+> > > - */
+> > > -struct rcu_head {
+> > > -	struct rcu_head *next;
+> > > -	void (*func)(struct rcu_head *head);
+> > > -};
+> > > +#include <linux/types.h>
+> 
+> And here you go!
 
-Yeah, there are already lots.
+Hrm, I see. Here is why I missed it: I was expecting this #include to be
+added at the top of rcupdate.h instead of being added in the middle like
+you do here. Would it be acceptable to move this #include to the top of
+the file, or is there some other obscure reason for not doing so ? (I
+feel the temperature is suddenly rising) ;-)
 
-SCSI-mid layer set the max sg entries to 128 on many architectures
-(see SCSI_MAX_SG_CHAIN_SEGMENTS).
+Thanks,
 
-SCSI HBA drivers stores the max sg entries in scsi_host structure.
+Mathieu
 
-SCSI-mid layer sets the tighter one (see __scsi_alloc_queue).
+> 
+> > >  
+> > >  /* Exported common interfaces */
+> > >  extern void call_rcu_sched(struct rcu_head *head,
+> > > diff --git a/include/linux/types.h b/include/linux/types.h
+> > > index 176da8c..57a9723 100644
+> > > --- a/include/linux/types.h
+> > > +++ b/include/linux/types.h
+> > > @@ -238,6 +238,16 @@ struct ustat {
+> > >  	char			f_fpack[6];
+> > >  };
+> > >  
+> > > +/**
+> > > + * struct rcu_head - callback structure for use with RCU
+> > > + * @next: next update requests in a list
+> > > + * @func: actual update function to call after the grace period.
+> > > + */
+> > > +struct rcu_head {
+> > > +	struct rcu_head *next;
+> > > +	void (*func)(struct rcu_head *head);
+> > > +};
+> > > +
+> > >  #endif	/* __KERNEL__ */
+> > >  #endif /*  __ASSEMBLY__ */
+> > >  #endif /* _LINUX_TYPES_H */
+> > > -- 
+> > > 1.7.3.2
+> > > 
+> > 
+> > -- 
+> > Mathieu Desnoyers
+> > Operating System Efficiency R&D Consultant
+> > EfficiOS Inc.
+> > http://www.efficios.com
 
-	blk_queue_max_segments(q, min_t(unsigned short, shost->sg_tablesize,
-					SCSI_MAX_SG_CHAIN_SEGMENTS));
-
-As you know, modern SCSI HBA can handle more sg entries than 128.
-
-
-> if that were the case it would be same situation that the scsi device
-> driver reports maximum parameters, but the subsystem opts for
-> something tighter.  Whether the maximal parameters come from the scsi
-> device or the dma channel is moot.
-
-If only you convert all the SCSI HBA drivers to store the limit of sg
-entries in struct device_dma_parameters and use the proposed API.
-
-I can't find any description in this patchset about how we will
-convert software that already set the limit of max sg entries in a
-different way.
-
-I don't think that this patchset needs to convert the SCSI (and other
-software layers setting the limit of max sg entries). But I think that
-we need a new rule, the data structure, and the API about how and
-where everyone sets the dma restrictions and tells them to the upper
-software layers.
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
