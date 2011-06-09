@@ -1,97 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757060Ab1FIIDb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 04:03:31 -0400
-Received: from ausxipps301.us.dell.com ([143.166.148.223]:35953 "EHLO
-	ausxipps301.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756982Ab1FIIDO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 04:03:14 -0400
-X-Loopcount0: from 10.175.216.250
-From: <Narendra_K@Dell.com>
-To: <kernel@linuxace.com>, <linux-kernel@vger.kernel.org>
-CC: <Jordan_Hargrave@Dell.com>, <jbarnes@virtuousgeek.org>
-Date: Thu, 9 Jun 2011 01:03:00 -0700
-Subject: RE: [PATCH] Fix embedded nic order on Dell PowerEdge systems
-Thread-Topic: [PATCH] Fix embedded nic order on Dell PowerEdge systems
-Thread-Index: AcwmGKvBGW/R5RVvTQeeG3VgoGPEMAAYiy9A
-Message-ID: <E31FB011129F30488D5861F3839049151DA349A086@BLRX7MCDC201.AMER.DELL.COM>
-References: <1307564053-2996-1-git-send-email-kernel@linuxace.com>
-In-Reply-To: <1307564053-2996-1-git-send-email-kernel@linuxace.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1757210Ab1FIIKG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 04:10:06 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:33360 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757024Ab1FIIJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 04:09:57 -0400
+Date: Thu, 9 Jun 2011 18:09:46 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for June 9
+Message-Id: <20110609180946.645898e1.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__9_Jun_2011_18_09_46_+1000_u/kN5/NRBiuUvdMN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Phil Oester [mailto:kernel@linuxace.com]
-> Sent: Thursday, June 09, 2011 1:44 AM
-> To: linux-kernel@vger.kernel.org
-> Cc: K, Narendra; Hargrave, Jordan; jbarnes@virtuousgeek.org
-> Subject: [PATCH] Fix embedded nic order on Dell PowerEdge systems
-> 
->     In commit 6e8af08dfa40b747002207d3ce8e8b43a050d99f ("PCI: enable
-> pci=bfsort
->     by default on future Dell systems"), the callback added was placed at the
->     top of the list, before the specific PowerEdge models.  This ends up
->     breaking the more specific models listed, since the new callback handles
->     all Dell systems but the older systems don't have the new 0xB1 smbios
->     entry.
-> 
->     Fix this by placing the new check _after_ the more specific PowerEdge
->     sytems.
-> 
->     Phil Oester
-> 
->     Signed-off-by: Phil Oester <kernel@linuxace.com>
-> 
-> diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c index
-> 5fe7502..92df322 100644
-> --- a/arch/x86/pci/common.c
-> +++ b/arch/x86/pci/common.c
-> @@ -247,13 +247,6 @@ static const struct dmi_system_id __devinitconst
-> pciprobe_dmi_table[] = {
->  	},
->  #endif		/* __i386__ */
->  	{
-> -		.callback = find_sort_method,
-> -		.ident = "Dell System",
-> -		.matches = {
-> -			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc"),
-> -		},
-> -	},
-> -	{
->  		.callback = set_bf_sort,
->  		.ident = "Dell PowerEdge 1950",
->  		.matches = {
-> @@ -294,6 +287,13 @@ static const struct dmi_system_id __devinitconst
-> pciprobe_dmi_table[] = {
->  		},
->  	},
->  	{
-> +		.callback = find_sort_method,
-> +		.ident = "Dell System",
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc"),
-> +		},
-> +	},
-> +	{
->  		.callback = set_bf_sort,
->  		.ident = "HP ProLiant BL20p G3",
->  		.matches = {
-[>] 
+--Signature=_Thu__9_Jun_2011_18_09_46_+1000_u/kN5/NRBiuUvdMN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi, this issue is fixed and the fix is in Jesse's linux-next tree.
+Hi all,
 
-http://marc.info/?l=linux-pci&m=130108034729082 (x86/PCI: Preserve existing pci=bfsort whitelist for Dell systems)
+[The kernel.org mirroring is being slow today]
 
-With regards,
-Narendra K
+Changes since 20110608:
 
+New tree: writeback
+
+Removed tree: cpufreq-move (no longer necessary)
+
+The powerpc allyesconfig (and probably others) is broken because we now
+build the staging drivers.
+
+The staging.current tree lost its build failure.
+
+The hid tree lost its build failure.
+
+The net tree lost its build failure but gained more (since we are now
+building the staging drivers) for which I applied a patch.
+
+The staging tree gained conflicts against the staging.current tree.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 194 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging arm-lpae/for-next
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgalloc.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgtable.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/tlb.h
+Merging at91/at91-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging linux-spec/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging xilinx/arm-next
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020ds.dts
+CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020rdb.dts
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+CONFLICT (content): Merge conflict in drivers/rtc/Kconfig
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/dev
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging of-pci/of-pci
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging docs/docs-move
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
+Merging powertools/tools-test
+Merging cpupowerutils/master
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging slave-dma/next
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-agn-=
+rxon.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/rtlwifi/pci.c
+Applying: net/staging: add needed interrupt.h and hardirq.h includes
+Merging wireless/master
+Merging bluetooth/master
+Merging mtd/master
+Merging l2-mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+CONFLICT (delete/modify): drivers/mmc/host/sdhci-of-core.c deleted in mmc/m=
+mc-next and modified in HEAD. Version HEAD of drivers/mmc/host/sdhci-of-cor=
+e.c left in tree.
+$ git rm -f drivers/mmc/host/sdhci-of-core.c
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging suspend/linux-next
+Merging apm/for-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging gpio/gpio/next
+CONFLICT (content): Merge conflict in arch/arm/mach-ep93xx/Makefile
+CONFLICT (content): Merge conflict in drivers/gpio/Kconfig
+Merging tip/auto-latest
+Merging rcu/rcu/next
+CONFLICT (content): Merge conflict in kernel/rcutree.c
+Merging kvm/linux-next
+Merging oprofile/for-next
+Merging ptrace/ptrace
+Merging xen/upstream/xen
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging namespace/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+Merging staging/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/dh=
+d_linux.c
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/wl=
+_iw.c
+CONFLICT (content): Merge conflict in drivers/staging/usbip/stub_dev.c
+Merging bkl-config/config
+Merging tmem/linux-next
+Merging writeback/next
+Merging arm-dt/devicetree/arm-next
+Merging scsi-post-merge/merge-base:master
+
+--Signature=_Thu__9_Jun_2011_18_09_46_+1000_u/kN5/NRBiuUvdMN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN8H/KAAoJEDMEi1NhKgbsD08H/0ffrteyuuoXBpcRHpiJrW53
+FmnNMNGu/2R3+ykMNw1zQ9VcmKi4HRlcaoMQpdo4eQ47dwg6s+dT5XgVGinZsQwN
+ZmRCEFIznhOGJlcVhgfBBmP/G5W9DuZ+FD6YKhlErzrmDoCD1u1jvsLU2gqRBzD6
+98Wcsqs+NimASSjbeYW6Lc0y9d3XZ8Ta6tVLtIKwpiCx+3OH0COaKXuSpySdgMNy
+zykWUxpssdQHnVMcqOjcttm2trSEebjjRV/6m9iPdrAnXWGzvfWHYv+yG+YNkvht
+PYoYrZ2ur2DfTIbc7RkIA/Zi/llhynrnQg5juq5PFPZrhvr+QFnnphe13rfayUM=
+=nuAA
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__9_Jun_2011_18_09_46_+1000_u/kN5/NRBiuUvdMN--
