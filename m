@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755792Ab1FIHsT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 03:48:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46856 "EHLO mx1.redhat.com"
+	id S1755228Ab1FIH4b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 03:56:31 -0400
+Received: from mail.bbaw.de ([194.95.188.6]:33169 "EHLO mail.bbaw.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753501Ab1FIHsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 03:48:15 -0400
-Date: Thu, 9 Jun 2011 09:47:42 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: Lukas Czerner <lczerner@redhat.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, linux-security-module@vger.kernel.org
-Subject: Re: NULL pointer dereference in inode_has_perm() while setquota
-In-Reply-To: <alpine.LFD.2.00.1106090815020.4138@dhcp-27-109.brq.redhat.com>
-Message-ID: <alpine.LFD.2.00.1106090946550.4138@dhcp-27-109.brq.redhat.com>
-References: <alpine.LFD.2.00.1106011019050.13985@dhcp-27-109.brq.redhat.com> <20110608134014.43ac448b.akpm@linux-foundation.org> <alpine.LFD.2.00.1106090815020.4138@dhcp-27-109.brq.redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752929Ab1FIH4a convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 03:56:30 -0400
+Date: Thu, 9 Jun 2011 09:56:26 +0200
+From: Lars =?UTF-8?B?VMOkdWJlcg==?= <taeuber@bbaw.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PROBLEM] reproduceable storage errors on high IO load
+Message-Id: <20110609095626.1eea731c.taeuber@bbaw.de>
+In-Reply-To: <20110608213905.GA26654@khazad-dum.debian.net>
+References: <20110606095127.21d23a70.taeuber@bbaw.de>
+	<20110608123003.3569604f.taeuber@bbaw.de>
+	<20110608213905.GA26654@khazad-dum.debian.net>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-AntiVirus: checked by Avira MailGate (version: 2.1.4-7; AVE: 7.9.5.12; VDF: 7.11.9.105; host: mailhub); id=11270-MxOEAp
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jun 2011, Lukas Czerner wrote:
+Hi Henrique,
 
-> On Wed, 8 Jun 2011, Andrew Morton wrote:
-> 
-> > On Wed, 1 Jun 2011 10:35:51 +0200 (CEST)
-> > Lukas Czerner <lczerner@redhat.com> wrote:
-> > 
-> > > I was running xfstests on ext4 filesystem and I have run into NULL
-> > > pointer dereference in inode_has_perm() while running test no. 234. This
-> > > is on kernel 3.0.0-rc1.
-> > 
-> > Is this a regression?  Was 2.6.39 OK?
-> > 
-> > Thanks.
-> > 
-> 
-> I suppose, since I have never seen that bug before, however I am going
-> to retest.
-> 
-> Thanks!
-> -Lukas
-> 
+thanks for your reply.
 
-I am not able to reproduce it on 3.0.0-rc2, so I guess it got fixed
-already.
+Am Wed, 8 Jun 2011 18:39:05 -0300
+Henrique de Moraes Holschuh <hmh@hmh.eng.br> schrieb:
 
--Lukas
+> On Wed, 08 Jun 2011, Lars Täuber wrote:
+> > Am I the only one using SW-RAID6 and having this problem?
+> 
+> Well, ask Arecca if these disks have problems with their RAID
+> controllers, and whether they can help you get hold of firmware updates
+> for the WD disks.
+> 
+> The WD RE4-GP 2TB might not be the only WD RE4 disk with quirky
+> firmware.
+> 
+> http://blog.fastmail.fm/2009/11/06/western-digital-re4-gp-2tb-drive-problems-and-solutions/
+> http://kb.lsi.com/KnowledgebaseArticle15592.aspx?Keywords=Re4+firmware
+
+According to this thread:
+http://community.wdc.com/t5/Other-Internal-Drives/WD2002FYPS-firmware/td-p/63330
+the WD2002FYPS-02W3B0 models seem to be really bad for RAID systems.
+
+The former models with the most recent firmware seem to work somehow:
+Model: WD2002FYPS-01U1B1
+FW:    04.05G05
+
+Seems I have to exchange the drives to get a working array.
+
+I got an reply from Western Digital that all my disks have the most recent
+firmware available.
+
+I wonder why I had the very same problem with Seagate Barracuda ES 320GB
+drives!
+
+Thanks again and sunny greatings to brazil.
+Lars
