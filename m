@@ -1,83 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757853Ab1FINOc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 09:14:32 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40805 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757820Ab1FINO2 (ORCPT
+	id S1757701Ab1FINO0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 09:14:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39530 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757516Ab1FINOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 09:14:28 -0400
-Message-Id: <20110609131307.539373927@chello.nl>
+	Thu, 9 Jun 2011 09:14:21 -0400
+Message-Id: <20110609131307.590149293@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Thu, 09 Jun 2011 15:06:49 +0200
+Date: Thu, 09 Jun 2011 15:06:50 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, efault@gmx.de,
         Arne Jansen <lists@die-jansens.de>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 2/3] printk, lockdep: Remove lockdep_off() usage
+Subject: [PATCH 3/3] printk: Avoid all wakeups from printk
 References: <20110609130647.937204592@chello.nl>
-Content-Disposition: inline; filename=printk-remove-lockdep_off.patch
+Content-Disposition: inline; filename=printk-funky-locking.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the lockdep_off() usage from printk(). Also add a
-debug_locks_off() call to zap_locks() since that'll mess up the lock
-state in a royal way anyway. Further switch to local_irq_ ops so that
-the irq state is properly tracked (raw_local_irq_* isn't tracked by
-lockdep, causing confusion). Also drop superfluous preempt_disable(),
-disabling IRQs already avoids scheduling.
+Since printk() has to acquire the console_sem in order to write its
+data out to the console we have an up() in printk(). Even though
+contention on the console_sem is rare under normal circumstances, when
+it happens printk() will issue a wakeup. If printk us used from a
+context that already owns the scheduler locks or locks that have a
+reverse ordering with the scheduler locks this gives potential for
+deadlocks.
+
+Avoid the wakeup by creating special semaphore operations that keep
+the semaphore internal spinlock held, this ensures console_sem
+contention will spin on this lock and not get queued on the wait_list.
+
+For now keep these special semaphore operations private to printk,
+if there ever appears another valid user we can move them over to
+semaphore.c (along with extending the interface to provide
+{_irq,_irqsave} versions, as the current ones assume IRQs are disabled
+(as per the use-case in printk).
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- kernel/printk.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ kernel/printk.c |  140 +++++++++++++++++++++++++++-----------------------------
+ 1 file changed, 69 insertions(+), 71 deletions(-)
 
 Index: linux-2.6/kernel/printk.c
 ===================================================================
 --- linux-2.6.orig/kernel/printk.c
 +++ linux-2.6/kernel/printk.c
-@@ -686,6 +686,7 @@ static void zap_locks(void)
- 
- 	oops_timestamp = jiffies;
- 
-+	debug_locks_off();
- 	/* If a crash is occurring, make sure we can't deadlock */
- 	spin_lock_init(&logbuf_lock);
- 	/* And make sure that we print immediately */
-@@ -838,9 +839,8 @@ asmlinkage int vprintk(const char *fmt,
- 	boot_delay_msec();
- 	printk_delay();
- 
--	preempt_disable();
- 	/* This stops the holder of console_sem just where we want him */
--	raw_local_irq_save(flags);
-+	local_irq_save(flags);
- 	this_cpu = smp_processor_id();
- 
- 	/*
-@@ -861,7 +861,6 @@ asmlinkage int vprintk(const char *fmt,
- 		zap_locks();
- 	}
- 
--	lockdep_off();
- 	spin_lock(&logbuf_lock);
- 	printk_cpu = this_cpu;
- 
-@@ -958,11 +957,9 @@ asmlinkage int vprintk(const char *fmt,
- 	if (console_trylock_for_printk(this_cpu))
- 		console_unlock();
- 
--	lockdep_on();
- out_restore_irqs:
--	raw_local_irq_restore(flags);
-+	local_irq_restore(flags);
- 
--	preempt_enable();
- 	return printed_len;
+@@ -765,47 +765,11 @@ static volatile unsigned int printk_cpu 
+  * being able to cope (CON_ANYTIME) don't call them until
+  * this CPU is officially up.
+  */
+-static inline int can_use_console(unsigned int cpu)
++static inline int can_use_console(void)
+ {
+-	return cpu_online(cpu) || have_callable_console();
++	return cpu_online(smp_processor_id()) || have_callable_console();
  }
- EXPORT_SYMBOL(printk);
+ 
+-/*
+- * Try to get console ownership to actually show the kernel
+- * messages from a 'printk'. Return true (and with the
+- * console_lock held, and 'console_locked' set) if it
+- * is successful, false otherwise.
+- *
+- * This gets called with the 'logbuf_lock' spinlock held and
+- * interrupts disabled. It should return with 'lockbuf_lock'
+- * released but interrupts still disabled.
+- */
+-static int console_trylock_for_printk(unsigned int cpu)
+-	__releases(&logbuf_lock)
+-{
+-	int retval = 0, wake = 0;
+-
+-	if (console_trylock()) {
+-		retval = 1;
+-
+-		/*
+-		 * If we can't use the console, we need to release
+-		 * the console semaphore by hand to avoid flushing
+-		 * the buffer. We need to hold the console semaphore
+-		 * in order to do this test safely.
+-		 */
+-		if (!can_use_console(cpu)) {
+-			console_locked = 0;
+-			wake = 1;
+-			retval = 0;
+-		}
+-	}
+-	printk_cpu = UINT_MAX;
+-	spin_unlock(&logbuf_lock);
+-	if (wake)
+-		up(&console_sem);
+-	return retval;
+-}
+ static const char recursion_bug_msg [] =
+ 		KERN_CRIT "BUG: recent printk recursion!\n";
+ static int recursion_bug;
+@@ -826,6 +790,38 @@ static inline void printk_delay(void)
+ 	}
+ }
+ 
++static void __console_flush(void);
++
++/*
++ * Special 'atomic' semaphore operations that mimmick down_trylock() + up(),
++ * except they don't release the semaphore internal lock and optimize the
++ * sem->count fiddling away.
++ *
++ * The advantage is that this construct doesn't generate wakeups on atomic_up()
++ * since any contending semaphore acuiqisition will still be spinning on the
++ * internal lock, instead of having gotten queued on the wait_list.
++ *
++ * printk() uses this to avoid generating wakeups, which would make it unsafe
++ * to use in certain contexts (avoids lock inversion or lock recursion with
++ * the scheduler locks).
++ *
++ * Assumes IRQs are disabled.
++ */
++static int atomic_down_trylock(struct semaphore *sem)
++{
++	spin_lock(&sem->lock);
++	if (sem->count > 0)
++		return 0;
++
++	spin_unlock(&sem->lock);
++	return 1;
++}
++
++static void atomic_up(struct semaphore *sem)
++{
++	spin_unlock(&sem->lock);
++}
++
+ asmlinkage int vprintk(const char *fmt, va_list args)
+ {
+ 	int printed_len = 0;
+@@ -943,19 +939,14 @@ asmlinkage int vprintk(const char *fmt, 
+ 		if (*p == '\n')
+ 			new_text_line = 1;
+ 	}
++	printk_cpu = UINT_MAX;
++	spin_unlock(&logbuf_lock);
+ 
+-	/*
+-	 * Try to acquire and then immediately release the
+-	 * console semaphore. The release will do all the
+-	 * actual magic (print out buffers, wake up klogd,
+-	 * etc). 
+-	 *
+-	 * The console_trylock_for_printk() function
+-	 * will release 'logbuf_lock' regardless of whether it
+-	 * actually gets the semaphore or not.
+-	 */
+-	if (console_trylock_for_printk(this_cpu))
+-		console_unlock();
++	if (!atomic_down_trylock(&console_sem)) {
++		if (can_use_console())
++			__console_flush();
++		atomic_up(&console_sem);
++	}
+ 
+ out_restore_irqs:
+ 	local_irq_restore(flags);
+@@ -1223,31 +1214,12 @@ void wake_up_klogd(void)
+ 		this_cpu_write(printk_pending, 1);
+ }
+ 
+-/**
+- * console_unlock - unlock the console system
+- *
+- * Releases the console_lock which the caller holds on the console system
+- * and the console driver list.
+- *
+- * While the console_lock was held, console output may have been buffered
+- * by printk().  If this is the case, console_unlock(); emits
+- * the output prior to releasing the lock.
+- *
+- * If there is output waiting for klogd, we wake it up.
+- *
+- * console_unlock(); may be called from any context.
+- */
+-void console_unlock(void)
++static void __console_flush(void)
+ {
+ 	unsigned long flags;
+ 	unsigned _con_start, _log_end;
+ 	unsigned wake_klogd = 0;
+ 
+-	if (console_suspended) {
+-		up(&console_sem);
+-		return;
+-	}
+-
+ 	console_may_schedule = 0;
+ 
+ 	for ( ; ; ) {
+@@ -1271,10 +1243,36 @@ void console_unlock(void)
+ 		exclusive_console = NULL;
+ 
+ 	spin_unlock_irqrestore(&logbuf_lock, flags);
+-	up(&console_sem);
++
+ 	if (wake_klogd)
+ 		wake_up_klogd();
+ }
++
++/**
++ * console_unlock - unlock the console system
++ *
++ * Releases the console_lock which the caller holds on the console system
++ * and the console driver list.
++ *
++ * While the console_lock was held, console output may have been buffered
++ * by printk().  If this is the case, console_unlock(); emits
++ * the output prior to releasing the lock.
++ *
++ * If there is output waiting for klogd, we wake it up.
++ *
++ * console_unlock(); may be called from any context.
++ */
++void console_unlock(void)
++{
++	if (console_suspended) {
++		up(&console_sem);
++		return;
++	}
++
++	__console_flush();
++
++	up(&console_sem);
++}
+ EXPORT_SYMBOL(console_unlock);
+ 
+ /**
 
 
