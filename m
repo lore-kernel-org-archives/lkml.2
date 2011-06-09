@@ -1,60 +1,342 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757962Ab1FINt5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 09:49:57 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:46512 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757584Ab1FINtz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 09:49:55 -0400
-Date: Thu, 9 Jun 2011 14:49:47 +0100
-From: Andy Whitcroft <apw@canonical.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: NeilBrown <neilb@suse.de>, Miklos Szeredi <miklos@szeredi.hu>,
-        viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nbd@openwrt.org, hramrach@centrum.cz, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, mszeredi@suse.cz
-Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
-Message-ID: <20110609134947.GD13242@shadowen.org>
-References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu>
- <20110608153208.dc705cda.akpm@linux-foundation.org>
- <20110609115934.3c53f78f@notabene.brown>
- <20110608205233.ebfedc4d.akpm@linux-foundation.org>
+	id S1757982Ab1FINvi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 09:51:38 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45265 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757646Ab1FINvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 09:51:37 -0400
+Date: Thu, 9 Jun 2011 14:51:32 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v3 02/10] Change isolate mode from int type to enum type
+Message-ID: <20110609135132.GU5247@suse.de>
+References: <cover.1307455422.git.minchan.kim@gmail.com>
+ <4eee88f894f0553aedb696d667967adb7dcf29ab.1307455422.git.minchan.kim@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20110608205233.ebfedc4d.akpm@linux-foundation.org>
+In-Reply-To: <4eee88f894f0553aedb696d667967adb7dcf29ab.1307455422.git.minchan.kim@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 08:52:33PM -0700, Andrew Morton wrote:
-
-> > > This sort of thing could be implemented in userspace and wired up via
-> > > fuse, I assume.  Has that been attempted and why is it inadequate?
-> > 
-> > I think that would be a valid question if the proposal was large and
-> > complex.  But overlayfs is really quite small and self-contained.
+On Tue, Jun 07, 2011 at 11:38:15PM +0900, Minchan Kim wrote:
+> This patch changes macro define with enum variable.
+> Normally, enum is preferred as it's type-safe and making debugging easier
+> as symbol can be passed throught to the debugger.
 > 
-> Not merging it would be even smaller and simpler.  If there is a
-> userspace alternative then that option should be evaluated and compared
-> in a rational manner.
+> This patch doesn't change old behavior.
+> It is used by next patches.
+> 
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> ---
+>  include/linux/memcontrol.h    |    5 ++++-
+>  include/linux/swap.h          |   11 +++++++----
+>  include/trace/events/vmscan.h |    8 ++++----
+>  mm/compaction.c               |    3 ++-
+>  mm/memcontrol.c               |    3 ++-
+>  mm/migrate.c                  |    4 ++--
+>  mm/vmscan.c                   |   37 ++++++++++++++++++++-----------------
+>  7 files changed, 41 insertions(+), 30 deletions(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 5e9840f..91a1162 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -30,10 +30,13 @@ enum mem_cgroup_page_stat_item {
+>  	MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
+>  };
+>  
+> +enum ISOLATE_MODE;
+> +
 
-For the Ubuntu liveCD we have tried to use unions via fuse with a view
-to dropping aufs2 as an external module.  The performance was atrocious
-(IIRC of the order of 10x slower), to the point that most people assumed
-it was broken and reset the machine.
+All caps. Really? It's NOT VERY PRETTY AND MAKES MY EYES DEAF WHICH
+SHOULD BE IMPOSSIBLE.
 
-The other use case I have seen here have been for package builders on which
-a virgin chroot has a writable layer dropped on top, allowing simple undo
-at the end of the build.  I have heard of people wanting to use this for
-root filesystems for virtual machines as well.
+What's wrong with
 
-We have done quite a bit of testing with liveCDs built to use overlayfs
-with a view to switching over, and have been very impressed with its
-stability.  It is also pleasing to see an implementation which is small
-enough to actually understand.
+enum isolate_mode {
+}
 
--apw
+? It's reasonable that the constants themselves are in caps. It's
+expected for defines and enum values.
+
+>  extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+>  					struct list_head *dst,
+>  					unsigned long *scanned, int order,
+> -					int mode, struct zone *z,
+> +					enum ISOLATE_MODE mode,
+
+I don't mind as much now because I'm already eye-deaf.
+
+> +					struct zone *z,
+>  					struct mem_cgroup *mem_cont,
+>  					int active, int file);
+>  
+> diff --git a/include/linux/swap.h b/include/linux/swap.h
+> index a5c6da5..48d50e6 100644
+> --- a/include/linux/swap.h
+> +++ b/include/linux/swap.h
+> @@ -244,9 +244,11 @@ static inline void lru_cache_add_file(struct page *page)
+>  }
+>  
+>  /* LRU Isolation modes. */
+> -#define ISOLATE_INACTIVE 0	/* Isolate inactive pages. */
+> -#define ISOLATE_ACTIVE 1	/* Isolate active pages. */
+> -#define ISOLATE_BOTH 2		/* Isolate both active and inactive pages. */
+> +enum ISOLATE_MODE {
+> +	ISOLATE_NONE,
+> +	ISOLATE_INACTIVE = 1,	/* Isolate inactive pages */
+> +	ISOLATE_ACTIVE = 2,	/* Isolate active pages */
+> +};
+
+No need to explicitly define like this. i.e. drop the = 1, = 2 etc.
+
+The leader does not explain why ISOLATE_BOTH is replaced and what it
+gains us.
+
+>  
+>  /* linux/mm/vmscan.c */
+>  extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+> @@ -258,7 +260,8 @@ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+>  						gfp_t gfp_mask, bool noswap,
+>  						unsigned int swappiness,
+>  						struct zone *zone);
+> -extern int __isolate_lru_page(struct page *page, int mode, int file);
+> +extern int __isolate_lru_page(struct page *page, enum ISOLATE_MODE mode,
+> +					int file);
+>  extern unsigned long shrink_all_memory(unsigned long nr_pages);
+>  extern int vm_swappiness;
+>  extern int remove_mapping(struct address_space *mapping, struct page *page);
+> diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
+> index ea422aa..4f53d43 100644
+> --- a/include/trace/events/vmscan.h
+> +++ b/include/trace/events/vmscan.h
+> @@ -187,7 +187,7 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
+>  		unsigned long nr_lumpy_taken,
+>  		unsigned long nr_lumpy_dirty,
+>  		unsigned long nr_lumpy_failed,
+> -		int isolate_mode),
+> +		enum ISOLATE_MODE isolate_mode),
+>  
+>  	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode),
+>  
+> @@ -199,7 +199,7 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
+>  		__field(unsigned long, nr_lumpy_taken)
+>  		__field(unsigned long, nr_lumpy_dirty)
+>  		__field(unsigned long, nr_lumpy_failed)
+> -		__field(int, isolate_mode)
+> +		__field(enum ISOLATE_MODE, isolate_mode)
+>  	),
+>  
+>  	TP_fast_assign(
+> @@ -233,7 +233,7 @@ DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_lru_isolate,
+>  		unsigned long nr_lumpy_taken,
+>  		unsigned long nr_lumpy_dirty,
+>  		unsigned long nr_lumpy_failed,
+> -		int isolate_mode),
+> +		enum ISOLATE_MODE isolate_mode),
+>  
+>  	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode)
+>  
+> @@ -248,7 +248,7 @@ DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_memcg_isolate,
+>  		unsigned long nr_lumpy_taken,
+>  		unsigned long nr_lumpy_dirty,
+>  		unsigned long nr_lumpy_failed,
+> -		int isolate_mode),
+> +		enum ISOLATE_MODE isolate_mode),
+>  
+
+And the meaning of isolate_mode has changed. This affects users of the
+tracepoint. Documentation/trace/postprocess/trace-vmscan-postprocess.pl
+will consider ISOLATE_NONE to be scanning for example.
+
+>  	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode)
+>  
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 61eab88..f0d75e9 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -327,7 +327,8 @@ static unsigned long isolate_migratepages(struct zone *zone,
+>  		}
+>  
+>  		/* Try isolate the page */
+> -		if (__isolate_lru_page(page, ISOLATE_BOTH, 0) != 0)
+> +		if (__isolate_lru_page(page,
+> +				ISOLATE_ACTIVE|ISOLATE_INACTIVE, 0) != 0)
+
+Ahh, so you assign the enum to user it as a flag. That's very
+unexpected to me. Why did you not do something like gfp_t which is a
+bitwise type?
+
+Because mode is a bitmask, it's also impossible to check if
+ISOLATE_NONE is set. As ISOLATE_NONE is not used in this patch,
+it's hard to know at this point what it's for.
+
+>  			continue;
+>  
+>  		VM_BUG_ON(PageTransCompound(page));
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 010f916..f4c0b71 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1106,7 +1106,8 @@ mem_cgroup_get_reclaim_stat_from_page(struct page *page)
+>  unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+>  					struct list_head *dst,
+>  					unsigned long *scanned, int order,
+> -					int mode, struct zone *z,
+> +					enum ISOLATE_MODE mode,
+> +					struct zone *z,
+>  					struct mem_cgroup *mem_cont,
+>  					int active, int file)
+>  {
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index 819d233..e797b5c 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -1363,10 +1363,10 @@ int migrate_vmas(struct mm_struct *mm, const nodemask_t *to,
+>  
+>  	for (vma = mm->mmap; vma && !err; vma = vma->vm_next) {
+>   		if (vma->vm_ops && vma->vm_ops->migrate) {
+> - 			err = vma->vm_ops->migrate(vma, to, from, flags);
+> + 			err = vma->vm_ops->migrate(vma, to, from, flags);   
+>   			if (err)
+>   				break;
+> - 		}
+> + 		}     
+
+Only modification here is adding whitespace damage.
+
+>   	}
+>   	return err;
+>  }
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index a658dde..4cbe114 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -957,23 +957,27 @@ keep_lumpy:
+>   *
+>   * returns 0 on success, -ve errno on failure.
+>   */
+> -int __isolate_lru_page(struct page *page, int mode, int file)
+> +int __isolate_lru_page(struct page *page, enum ISOLATE_MODE mode, int file)
+>  {
+> +	bool all_lru_mode;
+>  	int ret = -EINVAL;
+>  
+>  	/* Only take pages on the LRU. */
+>  	if (!PageLRU(page))
+>  		return ret;
+>  
+> +	all_lru_mode = (mode & (ISOLATE_ACTIVE|ISOLATE_INACTIVE)) == 
+> +		(ISOLATE_ACTIVE|ISOLATE_INACTIVE);
+> +
+
+both_lru would be a better name because all LRU implies that UNEVICTABLE
+is involved which is not the case.
+
+>  	/*
+>  	 * When checking the active state, we need to be sure we are
+>  	 * dealing with comparible boolean values.  Take the logical not
+>  	 * of each.
+>  	 */
+> -	if (mode != ISOLATE_BOTH && (!PageActive(page) != !mode))
+> +	if (!all_lru_mode && !PageActive(page) != !(mode & ISOLATE_ACTIVE))
+>  		return ret;
+>  
+> -	if (mode != ISOLATE_BOTH && page_is_file_cache(page) != file)
+> +	if (!all_lru_mode && !!page_is_file_cache(page) != file)
+>  		return ret;
+>  
+>  	/*
+> @@ -1021,7 +1025,8 @@ int __isolate_lru_page(struct page *page, int mode, int file)
+>   */
+>  static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+>  		struct list_head *src, struct list_head *dst,
+> -		unsigned long *scanned, int order, int mode, int file)
+> +		unsigned long *scanned, int order, enum ISOLATE_MODE mode,
+> +		int file)
+>  {
+>  	unsigned long nr_taken = 0;
+>  	unsigned long nr_lumpy_taken = 0;
+> @@ -1134,8 +1139,8 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+>  static unsigned long isolate_pages_global(unsigned long nr,
+>  					struct list_head *dst,
+>  					unsigned long *scanned, int order,
+> -					int mode, struct zone *z,
+> -					int active, int file)
+> +					enum ISOLATE_MODE mode,
+> +					struct zone *z,	int active, int file)
+>  {
+>  	int lru = LRU_BASE;
+>  	if (active)
+> @@ -1382,6 +1387,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+>  	unsigned long nr_taken;
+>  	unsigned long nr_anon;
+>  	unsigned long nr_file;
+> +	enum ISOLATE_MODE reclaim_mode = ISOLATE_INACTIVE;
+>  
+>  	while (unlikely(too_many_isolated(zone, file, sc))) {
+>  		congestion_wait(BLK_RW_ASYNC, HZ/10);
+> @@ -1392,15 +1398,15 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+>  	}
+>  
+>  	set_reclaim_mode(priority, sc, false);
+> +	if (sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM)
+> +		reclaim_mode |= ISOLATE_ACTIVE;
+> +
+>  	lru_add_drain();
+>  	spin_lock_irq(&zone->lru_lock);
+>  
+>  	if (scanning_global_lru(sc)) {
+> -		nr_taken = isolate_pages_global(nr_to_scan,
+> -			&page_list, &nr_scanned, sc->order,
+> -			sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM ?
+> -					ISOLATE_BOTH : ISOLATE_INACTIVE,
+> -			zone, 0, file);
+> +		nr_taken = isolate_pages_global(nr_to_scan, &page_list,
+> +			&nr_scanned, sc->order, reclaim_mode, zone, 0, file);
+>  		zone->pages_scanned += nr_scanned;
+>  		if (current_is_kswapd())
+>  			__count_zone_vm_events(PGSCAN_KSWAPD, zone,
+
+While this looks ok, I do not see why it's better.
+
+> @@ -1409,12 +1415,9 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+>  			__count_zone_vm_events(PGSCAN_DIRECT, zone,
+>  					       nr_scanned);
+>  	} else {
+> -		nr_taken = mem_cgroup_isolate_pages(nr_to_scan,
+> -			&page_list, &nr_scanned, sc->order,
+> -			sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM ?
+> -					ISOLATE_BOTH : ISOLATE_INACTIVE,
+> -			zone, sc->mem_cgroup,
+> -			0, file);
+> +		nr_taken = mem_cgroup_isolate_pages(nr_to_scan, &page_list,
+> +			&nr_scanned, sc->order, reclaim_mode, zone,
+> +			sc->mem_cgroup, 0, file);
+>  		/*
+>  		 * mem_cgroup_isolate_pages() keeps track of
+>  		 * scanned pages on its own.
+
+Overall, I'm failing to see how this patch helps but maybe it's because
+I haven't read the rest of the series. My main gripe is that meaning
+of isolate_mode in the tracepoint has changed without any clear gain.
+
+-- 
+Mel Gorman
+SUSE Labs
