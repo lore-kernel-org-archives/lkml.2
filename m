@@ -1,169 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756950Ab1FIWfs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 18:35:48 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:16973 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756807Ab1FIWfq (ORCPT
+	id S1757035Ab1FIWo0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 18:44:26 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:34154 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756889Ab1FIWoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 18:35:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=JA8SC+66MaMHKnwUw87uXazRhVt1UK8zZrm0ug0bOBSYvfGdBYk7t4M0T028LPWE0Z
-         5gN86HdvUWwRHi40MeFA==
-Date: Thu, 9 Jun 2011 15:35:42 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 4/7] tmpfs: remove_shmem_readpage
-In-Reply-To: <alpine.LSU.2.00.1106091529060.2200@sister.anvils>
-Message-ID: <alpine.LSU.2.00.1106091534470.2200@sister.anvils>
-References: <alpine.LSU.2.00.1106091529060.2200@sister.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Thu, 9 Jun 2011 18:44:24 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=u39j/kWdDhdWwnpyyhIzcncuxYjCezXTCXoA8kM7KnOT8+UIE0/YRUwuIBNESNk+UWqKaMM87yb2Oyk8+pDXmEqNs9u8LxnjOwqrBbrOzqaTpQHaJAWvSJ5pqutEOYJy;
+Date: Thu, 9 Jun 2011 15:37:42 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Murray <amurray@mpcdata.com>, w.sang@pengutronix.de,
+        geert@linux-m68k.org, linux-embedded@vger.kernel.org,
+        linux-kernel@vger.kernel.org, trivial@kernel.org, udknight@gmail.com,
+        namhyung@gmail.com, Andrew Murray <amurray@mpc-data.co.uk>
+Subject: Re: [PATCH] printk-formats.txt documentation update
+Message-Id: <20110609153742.2ad54aaa.rdunlap@xenotime.net>
+In-Reply-To: <1307656829.13329.53.camel@Joe-Laptop>
+References: <20110609124549.48117a75.rdunlap@xenotime.net>
+	<1307654688-28015-1-git-send-email-amurray@mpcdata.com>
+	<20110609145130.7fda9bd1.rdunlap@xenotime.net>
+	<1307656829.13329.53.camel@Joe-Laptop>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove that pernicious shmem_readpage() at last: the things we needed
-it for (splice, loop, sendfile, i915 GEM) are now fully taken care of
-by shmem_file_splice_read() and shmem_read_mapping_page_gfp().
+On Thu, 09 Jun 2011 15:00:29 -0700 Joe Perches wrote:
 
-This removal clears the way for a simpler shmem_getpage_gfp(), since
-page is never passed in; but leave most of that cleanup until after.
+> On Thu, 2011-06-09 at 14:51 -0700, Randy Dunlap wrote:
+> > On Thu,  9 Jun 2011 22:24:48 +0100 Andrew Murray wrote:
+> > > +	For printing-16 byte UUID/GUIDs addresses. The additional 'l', 'L',
+> > 	For printing 16-byte
+> > You want to resend or shall I just fix it?
+> 
+> Hey Randy.
+> 
+> I find your seeming insistence on using a dash
+> between the numeric count and the word byte to
+> be a bit odd.
+> 
+> Stylistically, why do you want it there?
 
-sys_readahead() and sys_fadvise(POSIX_FADV_WILLNEED) will now EINVAL,
-instead of unexpectedly trying to read ahead on tmpfs: if that proves
-to be an issue for someone, then we can either arrange for them to
-return success instead, or try to implement async readahead on tmpfs.
+Mostly to make it clear.  It's too easy to be ambiguous.
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
+
+> cheers, Joe
+
+Without hyphen:
+
+	For printing 16 byte UUID/GUIDs addresses.
+
+Those adjectives are confusing.  I don't know what that phrase means.
+It could easily mean 16 UUID/GUIDs, but it's ambiguous.
+
+But
+
+	For printing 16-byte UUID/GUIDs addresses.
+
+That means (clearly to me) that UUID/GUIDs are 16-byte entities.
+
+Or see www.incredibleenglish.com/pdf/Hyphens.pdf, section 1,
+"Hyphenate unit modifiers."
+
+Or see http://www.ehow.com/how_4473498_use-hyphen-sentence.html, section 1,
+"Link compound modifiers with hyphens."
+
+Or see http://www.getitwriteonline.com/archive/040201HyphAdj.htm
+
+
+HTH.
 ---
- mm/shmem.c |   40 ++++++----------------------------------
- 1 file changed, 6 insertions(+), 34 deletions(-)
-
---- linux.orig/mm/shmem.c	2011-06-09 11:38:22.912896122 -0700
-+++ linux/mm/shmem.c	2011-06-09 11:39:32.361240481 -0700
-@@ -1246,7 +1246,7 @@ static int shmem_getpage_gfp(struct inod
- 	struct address_space *mapping = inode->i_mapping;
- 	struct shmem_inode_info *info = SHMEM_I(inode);
- 	struct shmem_sb_info *sbinfo;
--	struct page *filepage = *pagep;
-+	struct page *filepage;
- 	struct page *swappage;
- 	struct page *prealloc_page = NULL;
- 	swp_entry_t *entry;
-@@ -1255,18 +1255,8 @@ static int shmem_getpage_gfp(struct inod
- 
- 	if (idx >= SHMEM_MAX_INDEX)
- 		return -EFBIG;
--
--	/*
--	 * Normally, filepage is NULL on entry, and either found
--	 * uptodate immediately, or allocated and zeroed, or read
--	 * in under swappage, which is then assigned to filepage.
--	 * But shmem_readpage (required for splice) passes in a locked
--	 * filepage, which may be found not uptodate by other callers
--	 * too, and may need to be copied from the swappage read in.
--	 */
- repeat:
--	if (!filepage)
--		filepage = find_lock_page(mapping, idx);
-+	filepage = find_lock_page(mapping, idx);
- 	if (filepage && PageUptodate(filepage))
- 		goto done;
- 	if (!filepage) {
-@@ -1513,8 +1503,7 @@ nospace:
- 	 * Perhaps the page was brought in from swap between find_lock_page
- 	 * and taking info->lock?  We allow for that at add_to_page_cache_lru,
- 	 * but must also avoid reporting a spurious ENOSPC while working on a
--	 * full tmpfs.  (When filepage has been passed in to shmem_getpage, it
--	 * is already in page cache, which prevents this race from occurring.)
-+	 * full tmpfs.
- 	 */
- 	if (!filepage) {
- 		struct page *page = find_get_page(mapping, idx);
-@@ -1527,7 +1516,7 @@ nospace:
- 	spin_unlock(&info->lock);
- 	error = -ENOSPC;
- failed:
--	if (*pagep != filepage) {
-+	if (filepage) {
- 		unlock_page(filepage);
- 		page_cache_release(filepage);
- 	}
-@@ -1673,19 +1662,6 @@ static struct inode *shmem_get_inode(str
- static const struct inode_operations shmem_symlink_inode_operations;
- static const struct inode_operations shmem_symlink_inline_operations;
- 
--/*
-- * Normally tmpfs avoids the use of shmem_readpage and shmem_write_begin;
-- * but providing them allows a tmpfs file to be used for splice, sendfile, and
-- * below the loop driver, in the generic fashion that many filesystems support.
-- */
--static int shmem_readpage(struct file *file, struct page *page)
--{
--	struct inode *inode = page->mapping->host;
--	int error = shmem_getpage(inode, page->index, &page, SGP_CACHE, NULL);
--	unlock_page(page);
--	return error;
--}
--
- static int
- shmem_write_begin(struct file *file, struct address_space *mapping,
- 			loff_t pos, unsigned len, unsigned flags,
-@@ -1693,7 +1669,6 @@ shmem_write_begin(struct file *file, str
- {
- 	struct inode *inode = mapping->host;
- 	pgoff_t index = pos >> PAGE_CACHE_SHIFT;
--	*pagep = NULL;
- 	return shmem_getpage(inode, index, pagep, SGP_WRITE, NULL);
- }
- 
-@@ -1893,7 +1868,6 @@ static ssize_t shmem_file_splice_read(st
- 	error = 0;
- 
- 	while (spd.nr_pages < nr_pages) {
--		page = NULL;
- 		error = shmem_getpage(inode, index, &page, SGP_CACHE, NULL);
- 		if (error)
- 			break;
-@@ -1916,7 +1890,6 @@ static ssize_t shmem_file_splice_read(st
- 		page = spd.pages[page_nr];
- 
- 		if (!PageUptodate(page) || page->mapping != mapping) {
--			page = NULL;
- 			error = shmem_getpage(inode, index, &page,
- 							SGP_CACHE, NULL);
- 			if (error)
-@@ -2125,7 +2098,7 @@ static int shmem_symlink(struct inode *d
- 	int error;
- 	int len;
- 	struct inode *inode;
--	struct page *page = NULL;
-+	struct page *page;
- 	char *kaddr;
- 	struct shmem_inode_info *info;
- 
-@@ -2803,7 +2776,6 @@ static const struct address_space_operat
- 	.writepage	= shmem_writepage,
- 	.set_page_dirty	= __set_page_dirty_no_writeback,
- #ifdef CONFIG_TMPFS
--	.readpage	= shmem_readpage,
- 	.write_begin	= shmem_write_begin,
- 	.write_end	= shmem_write_end,
- #endif
-@@ -3175,7 +3147,7 @@ struct page *shmem_read_mapping_page_gfp
- {
- #ifdef CONFIG_SHMEM
- 	struct inode *inode = mapping->host;
--	struct page *page = NULL;
-+	struct page *page;
- 	int error;
- 
- 	BUG_ON(mapping->a_ops != &shmem_aops);
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
