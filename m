@@ -1,300 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757155Ab1FIKyR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 06:54:17 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52813 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753591Ab1FIKyQ convert rfc822-to-8bit (ORCPT
+	id S1757209Ab1FILA0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 07:00:26 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49485 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755004Ab1FILAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 06:54:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=lbRfoO78N7LQdhCh7B7RMU442cWU9w4Swm1oxxO8+0N7MpYwS6OZDQEGPA3vq+ZBwa
-         zAp+7RYJkiRUZvyr4FOJLj8hE9YJKgpEaDhP0ZO2AaSF7eQPqV/+38rE4Yzmc7GoNjpH
-         tTmTt7MiO8Cdb3DGZ1yqNvF0d2QV6DZUAIC8k=
+	Thu, 9 Jun 2011 07:00:24 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DF0A7B8.6030102@jp.fujitsu.com>
+Date: Thu, 09 Jun 2011 20:00:08 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1106091012030.4138@dhcp-27-109.brq.redhat.com>
-References: <1307459283-22130-1-git-send-email-amir73il@users.sourceforge.net>
-	<alpine.LFD.2.00.1106071735100.11385@dhcp-27-109.brq.redhat.com>
-	<BANLkTikAB-RDDS8PMMrFK-OuY6PuavBixA@mail.gmail.com>
-	<alpine.LFD.2.00.1106081114240.5026@dhcp-27-109.brq.redhat.com>
-	<BANLkTi=T1OtyRSWNTA6xhkTy5uaHWqA_XA@mail.gmail.com>
-	<alpine.LFD.2.00.1106081716200.6609@dhcp-27-109.brq.redhat.com>
-	<BANLkTikUXdvMQROYEdxnyfcPuB0e9ozMOg@mail.gmail.com>
-	<BANLkTinU9Hegr3iA5it2vNjE_RYbB+8+RQ@mail.gmail.com>
-	<BANLkTik9Mnq5yqK795pxyr8SK-3EOzzNhA@mail.gmail.com>
-	<alpine.LFD.2.00.1106090834270.4138@dhcp-27-109.brq.redhat.com>
-	<BANLkTi=fugrRE0P5m8nMPrH_kZqPZB7ajA@mail.gmail.com>
-	<alpine.LFD.2.00.1106091012030.4138@dhcp-27-109.brq.redhat.com>
-Date: Thu, 9 Jun 2011 13:54:13 +0300
-X-Google-Sender-Auth: NieS-H7Xp-hjUN0vamQJrIiBIc4
-Message-ID: <BANLkTin0RKZbDmB1movombH9o4HDpTnvFw@mail.gmail.com>
-Subject: Re: [PATCH v1 00/30] Ext4 snapshots
-From: "Amir G." <amir73il@users.sourceforge.net>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: Yongqiang Yang <xiaoqiangnk@gmail.com>, linux-ext4@vger.kernel.org,
-        tytso@mit.edu, linux-kernel@vger.kernel.org, sandeen@redhat.com
+To: vgoyal@redhat.com
+CC: kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
+        xiyou.wangcong@gmail.com, ebiederm@xmission.com,
+        linux-kernel@vger.kernel.org, jwilson@redhat.com, seiji.aguchi@hds.com
+Subject: Re: [Patch] kexec: remove KMSG_DUMP_KEXEC (was Re: Query about kdump_msg
+ hook into crash_kexec())
+References: <20110203095837.93A2.A69D9226@jp.fujitsu.com> <20110203020703.GB21603@redhat.com> <20110203135324.93BC.A69D9226@jp.fujitsu.com> <20110526131028.7052a893.akpm@linux-foundation.org> <4DE3277D.8070109@jp.fujitsu.com> <20110531215126.GW16382@redhat.com>
+In-Reply-To: <20110531215126.GW16382@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 9, 2011 at 11:46 AM, Lukas Czerner <lczerner@redhat.com> wrote:
-> On Thu, 9 Jun 2011, Amir G. wrote:
->
->> On Thu, Jun 9, 2011 at 9:50 AM, Lukas Czerner <lczerner@redhat.com> wrote:
->> > On Thu, 9 Jun 2011, Yongqiang Yang wrote:
->> >
->> >> On Thu, Jun 9, 2011 at 11:18 AM, Amir G. <amir73il@users.sourceforge.net> wrote:
->> >> > On Thu, Jun 9, 2011 at 4:59 AM, Yongqiang Yang <xiaoqiangnk@gmail.com> wrote:
->> >> >>> But I do understand the difference. And also, when it comes to fs level
->> >> >>> snapshotting I would suspect that it would do something we can not do
->> >> >>> with the current solutions, for example per-file or per-directory snapshots,
->> >> >>> cat ext4 snapshots do that ?
->> >> >> Hi Lukas,
->> >> >>
->> >> >> I noticed that there is no answer to this question in the thread.  I
->> >> >
->> >> > I think I answered this question with No it can't ;-)
->> >> I think this can be implemented easily by chattr and adding check in
->> >> should_snapshot() or should_move_data().
->> >>
->> >> And I thought Lukas are focusing on if ext4-snapshots can do this
->> >> easily.  So i said YES:-)
->> >
->> > Cool, finally something interesting :). So, how it'll work ? Does that
->> > require any format changes again:) ? Can you exclude the whole root and
->> > then selectively pick the directories or files you are interested in ?
->>
->> The design is actually very simple and not as powerful as you
->> probably desire.
->> I hate to get into the design of future features, when we haven't
->> even ACKed the current feature yet, but since you're the only one
->> did any review, I owe you that much ;-)
->
-> Thanks Amir!
->
-> You have to understand that I am still not convinced that ext4 snapshot
-> in its current state is really what we want to have in ext4. Especially
-> given the very basic features it provides, without any knowledge on how
-> it can be extended (but you're slowly providing that information, so
-> thanks for that). And especially facing the new dm-multisnap, I really
-> wonder if it is worth it.
+Hi
 
-Did you not see my post on LVM vs. Ext4 snapshots?
-https://lkml.org/lkml/2011/6/8/296
-dm-multisnap is much better than dm-snap, but it's not perfect.
-And ext4 snapshots aren't perfect either, but they do bring some
-new interesting options for sys admins.
+Sorry for the delay. I had got stuck LinuxCon Japan and piled up plenty
+paper works.
 
->
-> If we want filesystem level snapshotting we can try to do it right with
-> all the benefits that snapshots on that level brings. But what I see
-> now, is not even remotely the case. And I have the feeling that all the
-> features that might be interesting for snapshotting at file system
-> level, are just a hack and not inherent from the design. But that is
-> probably because your goal was to snapshot the whole filesystem for the
-> backup purposes, but that's not what I would expect from fs level
-> snapshots. I really hope you understand my point.
->
+>>> I think I can agree your proposal. But could you please explain why do 
+>>> you think kmsg _before_ kdump and kmsg _in_ kdump are so different? 
+>>> I think it is only C level difference. CPU don't care C function and 
+>>> anyway the kernel call kmsg_dump() because invoke second kernel even 
+>>> if you proposal applied. 
+>>> It is only curious. I'm not against your proposal. 
+>>> Thanks. 
+> 
+> Few reasons.
+> 
+> - There is no correlation between crash_kexec() and kdump_msg(). What
+>   you are creating is equivalent of panic notifiers and calling those
+>   notifiers before dump happened. So calling it inside of crash_kexec()
+>   does not make much sense from code point of view.
 
-I think I understand the point. The reason that ext4 snapshots are
-less powerful then, say, btrfs snapshots, is not because of my design,
-it is because I was building on top a 20 year old on-disk format (ext2), which
-was extended 2 times already, but remained mostly backwards compatible.
-There is only so much you can do without block reference counts and this
-is all that I was trying to do.
+Thank you for the replay. I got you _think_ no makes sense, but I haven't
+explain what you talk about the code of "code point of view".
+If you read the code, you can understand kdump_msg() and panic_notifiers
+are not same point.
 
 
->>
->> To exclude a file from snapshot it needs to have the NOCOW_FL flag.
->> Ironically, btrfs have already added that flag in parallel to me (for the
->> same purpose) so the flag it is already reserved in the code :-)
->>
->> To avoid some transition issues and keep it really simple,
->> I disallow changing the NOCOW_FL
->> for regular file and only allow to change it for directories.
->> The NOCOW_FL is inherited from the parent directory,
->> so setting/clearing the flag on a directory means:
->> "All files/subdirs will be created excluded/not-excluded from now on".
->>
->> Inside the snapshot image, excluded directories, which are not really
->> excluded, show normally, but excluded files are shown with zero length,
->> because making the files disappear is hard, but their blocks may have already
->> been reused, so we cannot allow access to them.
->>
->> >
->> > How does rollback work with ext4 snapshots ? Can you selectively roll
->> > back one file, or the whole directory subtree even when you're
->> > snapshotting more ?
->>
->> So there is actually no inherent "rollback" feature, not for a file/dir
->> and not for the entire fs.
->> It's a drawback of ext4 snapshots, but hey, cp/rsync from snapshot
->> still works for file/dir ;-)
->> As for full "fs" rollback. A revert tool has been developed (by students),
->> which requires an external storage to export the "revert patch".
->> This tool is going to be enhanced to use LVM snapshot storage
->> and LVM --merge option to implement ext4 "revert to snapshot" with Yum.
->
-> And that is the problem. Because at this level you should be able to do
-> it without very much trouble, because being at file system level you
-> should have all the information. Do not get me wrong, I am not saying
-> that this is easy, but is should be "from design". Exporting the
-> "revert patch" to the external storage, or exporting snapshot to LVM
-> format to be able to merge it...that is all just hacks, because the
-> design itself does not count with that possibility.
->
+> - Why does somebody need to keep track of event KMSG_DUMP_KEXEC?
 
-The design makes a conscious choice to keep snapshots *inside*
-the filesystem.
-This is both an advantage (no need to change on-disk format and checking tools)
-and disadvantage (you cannot mount a snapshot without mounting the fs first).
+I believe I answered already at last thread.
+
+http://groups.google.com/group/linux.kernel/browse_thread/thread/1084f406573d76ac/daa1a08804385089?q=kexec%3A+remove+KMSG_DUMP_KEXEC&lnk=ol&
 
 
->>
->> >
->> > You see, when it comes to the full fs snapshots I am not convinced that
->> > it is *very* useful, yes it might have some users, but you can alway
->> > take the safe way and do lvm snapshots (or better use the new multisnap)
->> > for backup, without need to modify stable filesystem code.
->> >
->>
->> You think like a developer. Try talking to some sys admins.
->> Especially ones that worked with Solaris/ZFS or NetApp.
->> See what they think about snapshots and about the LVM alternative...
->> Snapshots have addictive qualities. Ones you've used them, you can't
->> go back to not having them.
->> Imagine how people used to live before the 'Undo' button and imagine
->> that your employer forced you to use an editor without an Undo button.
->> This is the kind of feedback I got from sys admins that moved from Solaris
->> to Linux.
->
-> Exactly, so if we want fs level snapshots, it should use that
-> privilege no hack its way to do things like roll back, or
-> excludes+includes. Ext4 was not meant to work that way, nor was your
-> snapshots designed to work that way. If we are considering backups only,
-> because that is what you ext4 snaphosts can provide now, I would prefer
-> to use LVM. But yes, we all need to know how the new multisnap works
-> out.
->
+> - There is one kernel CONFIG option introduce which looks completely
+>   superfluous.
 
-Why do you keep saying 'backup only'?
-There is a huge difference between having long lived snapshots,
-like CTERA products have, and temporary snapshot for backup
-purpose (for which LVM is adequate).
+What you mean "superfluous"? We already have billion kernel CONFIG.
+Is it also bad?
 
->>
->>
->> > Also, I do not buy the whole argument of "not have to create separate disk
->> > space for snapshot". It is actually better for sysadmins, because you
->> > have perfect control on what is going on, how much space is used for
->> > your snapshots and how much is used by your data. You can always easily
->> > extend the snapshot volume, or let it die silently when it is too old
->> > and too big.
->> >
->>
->> Seriously, Lukas, talk to sys admins.
->> Letting the snapshot die silently is the worst possible thing that a snapshots
->> implementation can do (for long lived snapshots).
->
-> Oh, no you misunderstood. Even with your snapshots you'll have to delete
-> old snapshots someday, because otherwise you'll run out of space. With
-> LVM however, you have prereserved space for it, so even if your snapshot
-> volume gets full, it does not affect your filesystem what so ever. And,
-> as a administrator, you can decide whether to extend the snapshot volume
-> to let it live longer, or just let it be and it will die eventually.
->
-> And, as far as I know, the new multisnap will notify the admin when the
-> snapshot volume approaches the watermark the same way that for example
-> thinly provisioned storage would do. But again, with your snapshots it
-> will give you ENOSPC when the snapshot grow too big, and at the end
-> of the day, you need to create data to be able to backup it:), so having
-> snapshots separate from your fs volume makes sense.
->
+> My general take on the whole issue.
+> 
+> - In general I think exporting a hook to module so that they can do
+>   anything before crash is a bad idea. Now this can be overloaded to
+>   do things like sending crash notifications in clustered environement
+>   where we recommend doing it in second kernel.
 
-Yes, one day you will run out of space and will be getting a warning
-before that, if you are using a CTERA product.
-You won't be getting the warning from the kernel snapshots code, but from
-disk space monitoring daemon.
-And when you get the warning (or ENOSPC if you ignored the warnings)
-you will have 2 options:
-1. add disks and resize the fs
-2. delete some snapshots
+??
+It's not my issue and I haven't talked about such thing. I guess you
+confuse I and Aguch-san or someone else.
 
-When using a CTERA product, you not have to pre-partition your disk
-space between fs and snapshots - they are thinly provisioned, which
-is a big advantage for a product which does not require being an IT expert to
-operate it.
+> 
+> - Even if we really have to do it, there seemed to be two concern
+>   areas.
+> 
+> 	- Reliability of kdump_msg() generic infrastructure and its
+>   	  capability in terms of handling races with other cpus and
+> 	  NMIs.
+> 
+> 	- Reliability of module which is getting the callback from
+> 	  kdump_msg().
+
+Indeed. I thought Aguch-san said he promised he work on improve them.
+However it doesn't happen yet. Okay, I
 
 
->>
->>
->> > How does it actually work on ext4 snapshots ? When you're going to
->> > rewrite a file, you will never know how much disk space it'll take in
->> > advance, am I right ? Is the filesystem accounting for the snapshot size
->> > as well ? or is it hidden ?
->>
->> It's not hidden, it's accounted for as a regular file (usually owned by root).
->> You need a bit of scripting to gather the disk space used by snapshots (du).
->>
->> In ANY snapshots implementation, you can get ENOSPC on operations,
->> which traditionally could not produce this error.
->> This statement is also true for thin provisioning implementations.
->> The question is how the implementation handles these situations.
->>
->> What I came to realize on LSF, is that my implementation is the only
->> one (of LVM and btrfs) that tries to deal with the ENOSPC issue and
->> does a good job most of the time.
->>
->> I deal with it by reserving space for metadata COW on snapshot
->> take, so if a future ENOSPC during metadata COW is possible,
->> snapshot take will fail with ENOSPC.
->>
->> As for ENOSPC during regular file rewrite, that's not such a big problem.
->> The application simply gets ENOSPC as if the file was sparse to begin
->> with. It may not be pleasant if the application have fallocated the space
->> and used mmap/close without msync...
->> The only way I see around this issue is reserving space on mmap time
->> (and returning ENOSPC at that time), but again, this issue is shared
->> with btrfs, but is easier to fix (I think) with ext4 snapshots.
->
-> Yes, I do understand that ext4 snaphosts are doing well in that aspect,
-> but as I said, having snapshots separate from your file system gives
-> you advantage of not running into ENOSPC on your file system until you
-> really fill it with data.
+>  I think in one of the mails I was discussing that common infrastructure
+>  between kdump and kmsg_dump() can be put in a separate function, like
+>  stopping all cpus etc to avoid races in generic infrastrucutre and
+>  then first we can all kmsg_dump() and then crash_kexec().
 
-It should be, as David wrote, a choice to the sys admin.
-Because ext4 snapshots are thinly provisioned, you can always say
-"use 10% for snapshots and 90% for data" (like you would with LVM),
-But you cannot say "reserve 10% for snapshots 50% for data and the
-rest to either" when you administer LVM snapshots.
-
-You are confusing user functionality with functionality provided by the kernel.
-LVM happens to check water marks in the kernel because of it's design.
-That doesn't mean that the same thing cannot be accomplished for ext4
-snapshots by user tools.
+Nice idea! Yes. I didn't think enterprise folks start to use this feature
+and it now happen.
+If nobody are working on this, I'll do it.
 
 
->
-> Granted, I have to take a look at the multisnap code, to see what it can
-> do and compare it with ext4 snapshots, because really, if it is good
-> enough and you will be able to do snapshotting backups as you do with
-> your approach, I do not see the reason why to complicate our life in
-> ext4.
->
+>  But this still does not provide us any protection against modules getting
+>  control after crash and possiblly worsen the situation.
 
-I don't know how you intend to determine if dm-multisnap is 'good enough'.
-I don't claim to have the capability myself to determine if ext4 snapshots
-are 'good enough'.
-I just try to present the technical differences between the 3 solutions
-(LVM,ext4,btrfs) and claim that each have their advantages and disadvantages
-over others.
-I wish more sys admins and end users would provide feedback, though I don't
-know how many of them are following LKML.
+I think this doesn't big matter. If module author hope to get hook, they
+can use kprobe in nowadays. I don't think we can make perfect kprobe protection.
+I think I wrote this at last thread too.
 
-Amir.
+Probably most reliability stupid module detect way is, watching lkml and revewing
+kmsg_dump() user conteniously. However, if you strongly worry about this issue,
+I can agree we make tiny foolish module protection. (but I don't have concrete
+idea yet)
+
+
+
