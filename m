@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147Ab1FIGzP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 02:55:15 -0400
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:54541 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753420Ab1FIGzL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 02:55:11 -0400
-Message-ID: <4DF06E29.4010807@st.com>
-Date: Thu, 9 Jun 2011 12:24:33 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: "Koul, Vinod" <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <anemo@mba.ocn.ne.jp>, Shiraz HASHIM <shiraz.hashim@st.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>
-Subject: Why move all map_sg/unmap_sg for slave channel to its client?
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1754606Ab1FIG6K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 02:58:10 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48689 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752633Ab1FIG6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 02:58:08 -0400
+Date: Thu, 9 Jun 2011 16:58:04 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arjan Mels <arjan.mels@gmx.net>, matt mooney <mfm@muteddisk.com>
+Subject: linux-next: manual merge of the staging tree with the
+ staging.current tree
+Message-Id: <20110609165804.2e96bb77.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Greg,
 
-Hi,
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/usbip/stub_dev.c between commit d3ac07788017 ("staging:
+usbip: bugfix prevent driver unbind") from the staging.current tree and
+commit d012c2a5aca1 ("staging: usbip: stub_dev.c: move stub_driver
+definition and update driver name") from the staging tree.
 
-I thought map_sg/unmap_sg for slave channels will be handled according
-to the flags passed in prep_slave_sg(). But then i found following patch:
-
-commit 657a77fa7284d8ae28dfa48f1dc5d919bf5b2843
-Author: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
-Date:   Tue Sep 8 17:53:05 2009 -0700
-
-    dmaengine: Move all map_sg/unmap_sg for slave channel to its client
-    
-    Dan Williams wrote:
-    ... DMA-slave clients request specific channels and know the hardware
-    details at a low level, so it should not be too high an expectation to
-    push dma mapping responsibility to the client.
-    
-    Also this patch includes DMA_COMPL_{SRC,DEST}_UNMAP_SINGLE support for
-    dw_dmac driver.
-    
-    Acked-by: Maciej Sosnowski <maciej.sosnowski@intel.com>
-    Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-    Signed-off-by: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
- drivers/dma/at_hdmac.c       |   43 +++++++++++++++++++++--------------------
- drivers/dma/dw_dmac.c        |   31 ++++++++++++++++++-----------
- drivers/mmc/host/atmel-mci.c |    9 +++++++-
- 3 files changed, 49 insertions(+), 34 deletions(-)
-
-
-I don't have much knowledge about that discussion, but i think this should be left
-configurable. If the client wants to control map/unmap then it can simply pass
-DMA_COMPL_SKIP_DEST_UNMAP | DMA_COMPL_SKIP_SRC_UNMAP in flags. I didn't wanted to
-skip this in my driver and so i don't pass them.
-
-Why to replicate similar code in client drivers if they need to unmap? What do you say?
-
+I fixed it up (see below) and can carry the fix as necessary.
 -- 
-viresh
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/staging/usbip/stub_dev.c
+index 8cbea42,e26b2ee..0000000
+--- a/drivers/staging/usbip/stub_dev.c
++++ b/drivers/staging/usbip/stub_dev.c
+@@@ -546,19 -524,9 +524,28 @@@ static void stub_disconnect(struct usb_
+  	}
+  }
+  
+ +/* 
+ + * Presence of pre_reset and post_reset prevents the driver from being unbound
+ + * when the device is being reset
+ + */
+ + 
+ +int stub_pre_reset(struct usb_interface *interface)
+ +{
+ +	dev_dbg(&interface->dev, "pre_reset\n");
+ +	return 0;
+ +}
+ +
+ +int stub_post_reset(struct usb_interface *interface)
+ +{
+ +	dev_dbg(&interface->dev, "post_reset\n");
+ +	return 0;
+ +}
+++
++ struct usb_driver stub_driver = {
++ 	.name		= "usbip-host",
++ 	.probe		= stub_probe,
++ 	.disconnect	= stub_disconnect,
++ 	.id_table	= stub_table,
+++	.pre_reset	= stub_pre_reset,
+++	.post_reset	= stub_post_reset,
++ };
