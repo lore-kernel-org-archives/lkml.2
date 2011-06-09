@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab1FIWD2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 18:03:28 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:53552 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755444Ab1FIWD1 (ORCPT
+	id S1757171Ab1FIWs4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 18:48:56 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:55353 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756889Ab1FIWsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 18:03:27 -0400
-Date: Thu, 09 Jun 2011 15:03:19 -0700 (PDT)
-Message-Id: <20110609.150319.1816839671339957224.davem@davemloft.net>
-To: fubar@us.ibm.com
-Cc: panweiping3@gmail.com, andy@greyhouse.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 net-next 0/5] bonding:use latest lacp_rate and
- ad_select and delete unused ad_timer and arp_mon_pt
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <31665.1307656691@death>
-References: <cover.1307603621.git.panweiping3@gmail.com>
-	<31665.1307656691@death>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 9 Jun 2011 18:48:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=mZmTpvJdWjGy5YyjJJTmZwuHDIOqtQRm8M+k43W8wCznu+Cle4Bh1qDQp7TiGn5K1k
+         GtF9dKDNMlEw9VmcQJY8sqcCs9tJuDie47FzxyKdJW7bgRCd5gYFmkUPB6AOGU/Bj3xv
+         TW/Yz8h1yvXIew15ul5zoXYh91EMhuoevrYjo=
+Date: Thu, 9 Jun 2011 18:06:04 -0400
+From: Jay Estabrook <jay.estabrook@gmail.com>
+To: linux-alpha <linux-alpha@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Cc: Matt Turner <mattst88@gmail.com>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Jay Estabrook <jay.estabrook@gmail.com>, airlied@linux.ie
+Subject: [PATCH 0/3] alpha, drm: Update Alpha DRM support
+Message-ID: <20110609180604.7cac8b5a.jay.estabrook_gmail.com@gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; alpha-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 09 Jun 2011 15:03:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jay Vosburgh <fubar@us.ibm.com>
-Date: Thu, 09 Jun 2011 14:58:11 -0700
 
-> Weiping Pan <panweiping3@gmail.com> wrote:
-> 
->>There is bug that when you modify lacp_rate via sysfs,
->>802.3ad won't use the new value of lacp_rate to transmit packets.
->>This is because port->actor_oper_port_state isn't changed.
->>
->>As for ad_select, it can work,
->>but both struct bond_params and ad_bond_info have lacp_fast and ad_select,
->>they are duplicate and need extra synchronization.
->>802.3ad can get them from bond_params directly every time.
->>
->>And ad_timer and arp_mon_pt aren't used any more, just delete them.
->>
->>changelog:
->>v2:
->>add bond_3ad_update_lacp_rate() as a helper function,
->>and hold bond->lock when iterates slave list.
->>
->>v3:
->>delete duplicate lacp_fast and agg_select_mode from struct ad_bond_info.
->>
->>v4:
->>delete unused ad_timer and arp_mon_pt.
-> 
-> 	All patches in the series look reasonable.
-> 
-> Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
+This patch set fixes Alpha-specific support in the DRM code,
+allowing Radeon KMS and the MGA driver to work properly on
+Alpha-based machines.
 
-All applied, thanks everyone.
+Jay
+
+Jay Estabrook (3):
+  alpha, drm: Update Alpha DRM support
+  alpha, drm: Cleanup Alpha support in DRM generic code
+  alpha, drm: Remove obsolete Alpha support in MGA DRM code
+  alpha, drm: Add Alpha support to Radeon DRM code
+
+ drivers/gpu/drm/drm_bufs.c          |    3 ---
+ drivers/gpu/drm/drm_vm.c            |    2 +-
+ drivers/gpu/drm/mga/mga_drv.h       |   19 -------------------
+ drivers/gpu/drm/radeon/radeon_ttm.c |   23 +++++++++++++++++++++++
+ 4 files changed, 24 insertions(+), 23 deletions(-)
+
+---
+
