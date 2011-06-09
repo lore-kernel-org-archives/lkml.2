@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757163Ab1FIIEk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 04:04:40 -0400
-Received: from ebb06.tieto.com ([131.207.168.38]:44262 "EHLO ebb06.tieto.com"
+	id S1757126Ab1FIIEb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 04:04:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59210 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756894Ab1FIIDG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 04:03:06 -0400
-X-AuditID: 83cfa826-b7c5dae0000046d4-17-4df07e38fb38
-From: <Waldemar.Rymarkiewicz@tieto.com>
-To: <keithp@keithp.com>, <padovan@profusion.mobi>
-CC: <marcel@holtmann.org>, <linux-bluetooth@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Thu, 9 Jun 2011 11:02:51 +0300
-Subject: RE: Regression caused by "Bluetooth: Map sec_level to link key
- requirements"
-Thread-Topic: Regression caused by "Bluetooth: Map sec_level to link key
- requirements"
-Thread-Index: AcwmdcuZTkZgwxL5TPOpu86NujjU4gABYRnQ
-Message-ID: <99B09243E1A5DA4898CDD8B700111448175AA2DB3B@EXMB04.eu.tieto.com>
-References: <yunboy7a2so.fsf@aiko.keithp.com>
-In-Reply-To: <yunboy7a2so.fsf@aiko.keithp.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Brightmail-Tracker: AAAAAA==
+	id S1756915Ab1FIIDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 04:03:07 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 12/14] nbd: Set SOCK_MEMALLOC for access to PFMEMALLOC reserves
+Date: Thu,  9 Jun 2011 09:02:51 +0100
+Message-Id: <1307606573-24704-13-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1307606573-24704-1-git-send-email-mgorman@suse.de>
+References: <1307606573-24704-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Set SOCK_MEMALLOC on the NBD socket to allow access to PFMEMALLOC
+reserves so pages backed by NBD, particularly if swap related,
+can be cleaned to prevent the machine being deadlocked. It is
+still possible that the PFMEMALLOC reserves get depleted resulting
+in deadlock but this can be resolved by the administrator by
+increasing min_free_kbytes.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ drivers/block/nbd.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+index f533f33..ca7cd81 100644
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -156,6 +156,7 @@ static int sock_xmit(struct nbd_device *lo, int send, void *buf, int size,
+ 	struct msghdr msg;
+ 	struct kvec iov;
+ 	sigset_t blocked, oldset;
++	unsigned long pflags = current->flags;
  
->Patch 13d39315c22b128f4796fc008b04914a7c32bb1a is causing a 
->regression From 2.6.39. I cannot communicate with my Nokia 
->N900 using either the SyncML or DUN RFCOMM services.  I get a 
->connection reset error shortly after startup.
->
->I've reverted this patch on top of something past -rc2 (to be 
->precise, I'm branching from ef2398019b305827ea7130ebaf7bf521b444530e).
->With the following fix-up to make things build again, my 
->bluetooth works again.
->
-
-hcidump -Rt > foo.log  from your test session will help as well
-
-
-Waldek
+ 	if (unlikely(!sock)) {
+ 		printk(KERN_ERR "%s: Attempted %s on closed socket in sock_xmit\n",
+@@ -168,8 +169,9 @@ static int sock_xmit(struct nbd_device *lo, int send, void *buf, int size,
+ 	siginitsetinv(&blocked, sigmask(SIGKILL));
+ 	sigprocmask(SIG_SETMASK, &blocked, &oldset);
+ 
++	current->flags |= PF_MEMALLOC;
+ 	do {
+-		sock->sk->sk_allocation = GFP_NOIO;
++		sock->sk->sk_allocation = GFP_NOIO | __GFP_MEMALLOC;
+ 		iov.iov_base = buf;
+ 		iov.iov_len = size;
+ 		msg.msg_name = NULL;
+@@ -215,6 +217,7 @@ static int sock_xmit(struct nbd_device *lo, int send, void *buf, int size,
+ 	} while (size > 0);
+ 
+ 	sigprocmask(SIG_SETMASK, &oldset, NULL);
++	tsk_restore_flags(current, pflags, PF_MEMALLOC);
+ 
+ 	return result;
+ }
+@@ -405,6 +408,8 @@ static int nbd_do_it(struct nbd_device *lo)
+ 
+ 	BUG_ON(lo->magic != LO_MAGIC);
+ 
++	sk_set_memalloc(lo->sock->sk);
++
+ 	lo->pid = current->pid;
+ 	ret = sysfs_create_file(&disk_to_dev(lo->disk)->kobj, &pid_attr.attr);
+ 	if (ret) {
+-- 
+1.7.3.4
 
