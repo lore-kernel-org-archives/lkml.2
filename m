@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab1FIDy0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 23:54:26 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39834 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755799Ab1FIDyY (ORCPT
+	id S1750895Ab1FIELE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 00:11:04 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:33922 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725Ab1FIELC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 23:54:24 -0400
+	Thu, 9 Jun 2011 00:11:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=ddxC8l2Va7KGvdceZ0sBvrFofldOefkjIHGsPZCLWJ09ogoQ1wBhrWOB9PNl0FWYrw
-         tgl5ZaVLewz+nDhF8KBpSDL+OvDNQVXjgZtTmSisQ8zxmcJq/CbXP0aM9rqNHQjrCdGR
-         XJXNxe2AlGdXhvH5BLf4v7Tc8cVCV3wuadnxY=
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=Nz0dW5DZ0cAenUhMPySCf+DdieKkEpoCGCdrWs9aHkZZfBzcZG/YMJy/G2Q0YU4ef4
+         eNJ/jHnPcRn9S9rygMWWtHjk+t6E+jf5My7n4nDxMosEys/RlAqZ0qDBnxUeBHexyyXY
+         y2A8K8ERfVtQB0dii3cQeAR7FU++Bo6ggJ6wE=
+MIME-Version: 1.0
+In-Reply-To: <1307591659.3980.37.camel@edumazet-laptop>
+References: <20110609004435.14550.qmail@science.horizon.com>
+ <4DF037C6.4000507@linux.intel.com> <BANLkTik62dLMf5PCPGeW=9P=sF2QcnW42g@mail.gmail.com>
+ <1307591659.3980.37.camel@edumazet-laptop>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 9 Jun 2011 00:10:41 -0400
+X-Google-Sender-Auth: a7zX-uw2GiByBgVkdn8Lf6WJH_g
+Message-ID: <BANLkTi=E9gR3JHa4ipHHGGR2AiO9xJri=A@mail.gmail.com>
 Subject: Re: Change in functionality of futex() system call.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andrew Lutomirski <luto@mit.edu>
+To: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: Darren Hart <dvhart@linux.intel.com>, George Spelvin <linux@horizon.com>,
         david@rgmadvisors.com, kyle@moffetthome.net,
         linux-kernel@vger.kernel.org
-In-Reply-To: <BANLkTik62dLMf5PCPGeW=9P=sF2QcnW42g@mail.gmail.com>
-References: <20110609004435.14550.qmail@science.horizon.com>
-	 <4DF037C6.4000507@linux.intel.com>
-	 <BANLkTik62dLMf5PCPGeW=9P=sF2QcnW42g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Jun 2011 05:54:19 +0200
-Message-ID: <1307591659.3980.37.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 08 juin 2011 à 23:38 -0400, Andrew Lutomirski a écrit :
+On Wed, Jun 8, 2011 at 11:54 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>
+> You can not prevent DOS on a machine if you allow a process to RO map
+> your critical files (where you put futexes), because you allow this
+> process to interfere with critical cache lines bouncing between cpus.
 
-> Huh?
-> 
-> I still don't understand why userspace ought to need to deny read
-> access to a file to prevent DoS.  I think it's entirely reasonable for
-> userspace to make the assumption that users with read access cannot
-> make changes visible to writers unless explicitly documented (i.e.
-> file locking, which is so thoroughly broken that it shouldn't be taken
-> as an example of how to design anything).
-> 
-> Given that current kernels make this use safe and the proposal is to
-> make it unsafe, I think it's worth designing the interface to avoid
-> introducing new security problems.
+The cacheline bounce DoS slows things down and they go back to normal
+when you kill the DoS-ing task.
 
-I am very tired of this discussion, you repeat the same arguments over
-and over.
+The wakeup-eating DoS is permanent.  Seems a good deal worse to me.
 
-You can not prevent DOS on a machine if you allow a process to RO map
-your critical files (where you put futexes), because you allow this
-process to interfere with critical cache lines bouncing between cpus.
+If you make this change, please at least document it in the man page.
 
-Really, please forget about this crazy idea of allowing foreigners to
-_read_ or memory _map_ your files. Dont do it.
+>
+> Really, please forget about this crazy idea of allowing foreigners to
+> _read_ or memory _map_ your files. Dont do it.
+>
 
+Then how am I supposed to efficiently broadcast information to
+untrusted processes?  I'll have to put any futexes involved into
+different files, but one way or another the actual data will have to
+be memory mapped to avoid syscall overhead.
 
-
+--Andy
