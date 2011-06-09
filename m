@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754894Ab1FIKUp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 06:20:45 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58251 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827Ab1FIKUn (ORCPT
+	id S1756764Ab1FIKVx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 06:21:53 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:54725 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380Ab1FIKVw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 06:20:43 -0400
+	Thu, 9 Jun 2011 06:21:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Fv0HoCtfBoIuTIjLqjrpXvUkSl5nMUWII+zNCoSlA126Eb5gQWqpemM5X5pg8cQBIo
-         0KSogGN/ML3wz/uMYjl0oPhhWV7E425wH1j+IKxhRfW+NiU2kuUdYzw2F56UdSLFsWSk
-         y2mMtXDy0yhvZeZ7Jd3aiysEzqBhfPKCkx3bo=
-Date: Thu, 9 Jun 2011 12:20:38 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Maxin B John <maxin.john@gmail.com>
-Cc: eike-kernel@sf-tec.de, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, dima@android.com, willy@linux.intel.com,
-        segooon@gmail.com, jkosina@suse.cz, tglx@linutronix.de
-Subject: Re: [PATCH] mm: dmapool: fix possible use after free in
- dmam_pool_destroy()
-Message-ID: <20110609102038.GE11773@htj.dyndns.org>
-References: <20110602142242.GA4115@maxin>
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=FKQ73pL+tgeMGe8K4geoR3tHvLsCM8Qwf+H3d65JPfy9Y1KLG3Apu35aGFJIjp5iCs
+         ukO/s0WD23Vprwsf+fNVFCY5FvIRIpYAdxUGZWApgvVaM+dj9BMRr2yQsyqgYzNp81ZM
+         Kybl4XlvCWI5mbOUx28LgtjnA3lUoWsrRA7iQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110602142242.GA4115@maxin>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1307606573-24704-11-git-send-email-mgorman@suse.de>
+References: <1307606573-24704-1-git-send-email-mgorman@suse.de> <1307606573-24704-11-git-send-email-mgorman@suse.de>
+From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
+Date: Thu, 9 Jun 2011 12:21:31 +0200
+Message-ID: <BANLkTimUE9yb-DegdUk0BbbOGWoUhEBrqw@mail.gmail.com>
+Subject: Re: [PATCH 10/14] netvm: Set PF_MEMALLOC as appropriate during SKB processing
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+2011/6/9 Mel Gorman <mgorman@suse.de>:
+[...]
+> +/*
+> + * Limit which protocols can use the PFMEMALLOC reserves to those that are
+> + * expected to be used for communication with swap.
+> + */
+> +static bool skb_pfmemalloc_protocol(struct sk_buff *skb)
+> +{
+> +       switch (skb->protocol) {
+> +       case __constant_htons(ETH_P_ARP):
+> +       case __constant_htons(ETH_P_IP):
+> +       case __constant_htons(ETH_P_IPV6):
+> +       case __constant_htons(ETH_P_8021Q):
+> +               return true;
+> +       default:
+> +               return false;
+> +       }
+> +}
 
-On Thu, Jun 02, 2011 at 05:22:42PM +0300, Maxin B John wrote:
-> > The pool itself is not used there, only the address where the pool
-> > has been.This will only lead to any trouble if something else is allocated to
-> > the same place and inserted into the devres list of the same device between
-> > the dma_pool_destroy() and devres_destroy().
+This is not needed and wrong. Whatever list there will be, it's going
+to always miss some obscure setup (or not that obscure, like
+ATAoverEthernet).
 
-Which can't happen.  devres release is bound to device driver model
-and a device can't be re-attached before release is complete.
-ie. those operations are serialized, so the failure mode is only
-theoretical.
-
-> Thank you very much for explaining it in detail. 
-> 
-> > But I agree that this is bad style. But if you are going to change
-> > this please also have a look at devm_iounmap() in lib/devres.c. Maybe also the
-> > devm_*irq* functions need the same changes.
-> 
-> As per your suggestion, I have made similar modifications for lib/devres.c and
-> kernel/irq/devres.c
-> 
-> CCed the maintainers of the respective files.
->  
-> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
-
-But it shouldn't hurt and if it helps memleak.
-
-Acked-by: Tejun Heo <tj@kernel.org>
-
-Thanks.
-
--- 
-tejun
+Best Regards,
+Micha³ Miros³aw
