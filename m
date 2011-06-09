@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab1FIT0t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 15:26:49 -0400
-Received: from mail.perches.com ([173.55.12.10]:2708 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751481Ab1FIT0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 15:26:48 -0400
-Subject: Re: [RFC PATCH] checkpatch.pl: Add ability to ignore various
- messages
-From: Joe Perches <joe@perches.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Graeme Russ <graeme.russ@gmail.com>,
-        U-Boot Users <u-boot@lists.denx.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <b41636a5e5756917b07e50a4b8309dbb092b0a17.1303778411.git.joe@perches.com>
-References: <1303713156.1745.38.camel@Joe-Laptop>
-	 <b41636a5e5756917b07e50a4b8309dbb092b0a17.1303778411.git.joe@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Jun 2011 12:26:46 -0700
-Message-ID: <1307647606.13329.40.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1754891Ab1FIT3f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 15:29:35 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:34516 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754696Ab1FIT3e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 15:29:34 -0400
+X-Sasl-enc: XGluJplPrRqQ10OCgXvf8Wk4Szqe95eL4PkLlPORV6uh 1307647773
+Date: Thu, 9 Jun 2011 12:29:29 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: David Miller <davem@davemloft.net>,
+        "<netdev@vger.kernel.org>" <netdev@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: linux-next: build failure after merge of the net tree
+Message-ID: <20110609192929.GA12121@kroah.com>
+References: <20110609145657.96fae0d0.sfr@canb.auug.org.au>
+ <7CA9E653-DABC-470C-BCA6-905D6EBF9283@kroah.com>
+ <20110609153904.e602b317.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110609153904.e602b317.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-25 at 17:43 -0700, Joe Perches wrote:
-> Some users would like the ability to not emit some of the
-> messages that checkpatch produces.
+On Thu, Jun 09, 2011 at 03:39:04PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> Add command line option to "--ignore" various message types.
-> Add .checkpatch.conf file to store a default set of "ignore" flags
-> Categorize all ERROR, WARN and CHK types with flags.
+> On Wed, 8 Jun 2011 22:17:55 -0700 Greg K-H <greg@kroah.com> wrote:
+> >
+> > Sorry, this is something that Linus asked for and will be going to him
+> > tomorrow with the rest of the staging-linus branch.
+> 
+> Yeah, I remember the discussion, just not a conclusion.  At least the
+> x86_64 allmodconfig builds worked before I merged the net tree, so that is
+> something.
+> 
+> The powerpc allyesconfig build is going to be interesting :-(
+> 
+> You might like to check the build results at
+> http://kisskb.ellerman.id.au/kisskb/branch/9/ sometime tomorrow.  Or
+> point your janitors at it :-)
 
-Did anyone object to this?
-Andrew M, would you take a current version of this?
+I don't see any failures in the staging tree in the powerpc allyesconfig
+build, so all must be good :)
 
+thanks,
 
+greg k-h
