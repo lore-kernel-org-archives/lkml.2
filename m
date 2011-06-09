@@ -1,95 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354Ab1FII4T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 04:56:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60809 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751147Ab1FII4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 04:56:18 -0400
-Date: Thu, 9 Jun 2011 10:56:16 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, alsa-devel@alsa-project.org
-Subject: Re: [alsa-devel] Headphone output doesn't work with 3.0.0-rc* anymore
-Message-ID: <20110609085616.GA4207@tiehlicka.suse.cz>
-References: <20110607180522.GA4004@tiehlicka.suse.cz>
- <s5hy61cxqcz.wl%tiwai@suse.de>
- <20110608174855.GA4138@tiehlicka.suse.cz>
- <s5hr573y1rl.wl%tiwai@suse.de>
+	id S1752931Ab1FII4r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 04:56:47 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37023 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752175Ab1FII4p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 04:56:45 -0400
+Message-ID: <4DF08ACA.30507@monstr.eu>
+Date: Thu, 09 Jun 2011 10:56:42 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5hr573y1rl.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Miller <davem@davemloft.net>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] net: emaclite: Add missing linux/interrupt.h header
+References: <1307607333-24612-1-git-send-email-monstr@monstr.eu> <20110609.012944.602872260942727070.davem@davemloft.net>
+In-Reply-To: <20110609.012944.602872260942727070.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 09-06-11 08:09:18, Takashi Iwai wrote:
-> At Wed, 8 Jun 2011 19:48:55 +0200,
-> Michal Hocko wrote:
-> > 
-> > On Wed 08-06-11 18:03:24, Takashi Iwai wrote:
-> > > At Tue, 7 Jun 2011 20:05:58 +0200,
-> > > Michal Hocko wrote:
-> > > > 
-> > > > Hi,
-> > > > before 3.0.0-rc1, when I plugged anything into headphone output of my
-> > > > laptop, speakers were disabled and the sound has been routed to the
-> > > > headphone output. This doesn't seem to work anymore starting with
-> > > > 3.0.0-rc1. Speakers stay on even if I plug something to the headphone
-> > > > output.
-> > > > Is this a bug or a new behavior that userspace has to cope
-> > > > with?
-> > > > 
-> > > > I am sorry for the lack of information but I have no idea what to
-> > > > provide.
-> > > 
-> > > Please give alsa-info.sh output at best.  Run it with --no-upload
-> > > option, and attach the output file.  This will contain most of
-> > > necessary information.
-> > 
-> > See attached. I have added also .39 output where things work as expected
-> > (just in case it could be useful).
+David Miller wrote:
+> From: Michal Simek <monstr@monstr.eu>
+> Date: Thu,  9 Jun 2011 10:15:33 +0200
 > 
-> Thanks, that's helpful.
-> As a quirk solution, could you try to pass model=auto option to
-> snd-hda-intel module?
+>> Log:
+>> drivers/net/xilinx_emaclite.c: In function 'xemaclite_open':
+>> drivers/net/xilinx_emaclite.c:961: error: implicit declaration of function 'request_irq'
+>> drivers/net/xilinx_emaclite.c: In function 'xemaclite_close':
+>> drivers/net/xilinx_emaclite.c:995: error: implicit declaration of function 'free_irq'
+>> make[2]: *** [drivers/net/xilinx_emaclite.o] Error 1
+>> make[1]: *** [drivers/net] Error 2
+>> make: *** [drivers] Error 2
+>>
+>> Signed-off-by: Michal Simek <monstr@monstr.eu>
+> 
+> This is only relevant for the -next tree, you should specify that when
+> submitting patches otherwise the maintainer not apply the patch where
+> it actually belongs.
 
-Headphones work now but speakers are quite... I have tried to play
-with Headphone and Speaker controls in alsamixer but no changes.
+sorry for that. Yes, it is for -next tree.
 
-Here is what I get in logs when the module is loaded:
-[ 5320.360277] HDA Intel 0000:00:1b.0: PCI INT A disabled
-[ 5326.920247] HDA Intel 0000:00:1b.0: power state changed by ACPI to D0
-[ 5326.920262] HDA Intel 0000:00:1b.0: power state changed by ACPI to D0
-[ 5326.920279] HDA Intel 0000:00:1b.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
-[ 5326.920375] HDA Intel 0000:00:1b.0: irq 42 for MSI/MSI-X
-[ 5326.920405] HDA Intel 0000:00:1b.0: setting latency timer to 64
-[ 5326.981085] input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input18
-[ 5326.981262] input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input19
-[ 5326.987934] input: HDA Intel Headphone as /devices/pci0000:00/0000:00:1b.0/sound/card0/input20
+Michal
 
-[maybe not important but input numbers are increasing for every new load]
-
-There is another strange thing. After I stop mplayer and wait for some
-time (~1min) I can hear a "click" sound and then there is no sound at
-all... If I start mplayer in the meantime it just works...
-If I try to remove the module and load it again then things work and stop
-working after first playback again.
-
-> You may need to adjust the mixer after changing
-> this, but it should provide the full (even better) functionality.
-> It'll support also the auto-mic jack switching.
-
-$ amixer | grep -i "auto.*mic"
-What is the control to look at?
-
-Thanks
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
