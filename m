@@ -1,113 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756924Ab1FIINh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 04:13:37 -0400
-Received: from mail.lang.hm ([64.81.33.126]:52027 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754765Ab1FIINe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 04:13:34 -0400
-Date: Thu, 9 Jun 2011 01:13:20 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: "Amir G." <amir73il@users.sourceforge.net>
-cc: Lukas Czerner <lczerner@redhat.com>,
-        Yongqiang Yang <xiaoqiangnk@gmail.com>, linux-ext4@vger.kernel.org,
-        tytso@mit.edu, linux-kernel@vger.kernel.org, sandeen@redhat.com
-Subject: Re: [PATCH v1 00/30] Ext4 snapshots
-In-Reply-To: <BANLkTi=fugrRE0P5m8nMPrH_kZqPZB7ajA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1106090102590.20783@asgard.lang.hm>
-References: <1307459283-22130-1-git-send-email-amir73il@users.sourceforge.net> <alpine.LFD.2.00.1106071735100.11385@dhcp-27-109.brq.redhat.com> <BANLkTikAB-RDDS8PMMrFK-OuY6PuavBixA@mail.gmail.com> <alpine.LFD.2.00.1106081114240.5026@dhcp-27-109.brq.redhat.com>
- <BANLkTi=T1OtyRSWNTA6xhkTy5uaHWqA_XA@mail.gmail.com> <alpine.LFD.2.00.1106081716200.6609@dhcp-27-109.brq.redhat.com> <BANLkTikUXdvMQROYEdxnyfcPuB0e9ozMOg@mail.gmail.com> <BANLkTinU9Hegr3iA5it2vNjE_RYbB+8+RQ@mail.gmail.com> <BANLkTik9Mnq5yqK795pxyr8SK-3EOzzNhA@mail.gmail.com>
- <alpine.LFD.2.00.1106090834270.4138@dhcp-27-109.brq.redhat.com> <BANLkTi=fugrRE0P5m8nMPrH_kZqPZB7ajA@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1757076Ab1FIIOI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 04:14:08 -0400
+Received: from grimli.r00tworld.net ([83.169.44.195]:46531 "EHLO
+	mail.r00tworld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756298Ab1FIIOF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 04:14:05 -0400
+From: Mathias Krause <minipli@googlemail.com>
+To: Chris Metcalf <cmetcalf@tilera.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Zankel <chris@zankel.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Mathias Krause <minipli@googlemail.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Zankel <chris@zankel.net>
+Subject: Re: [PATCH] init: use KERNEL_DS when trying to start init process
+Date: Thu,  9 Jun 2011 10:14:03 +0200
+Message-Id: <1307607243-5737-1-git-send-email-minipli@googlemail.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <4DEFD979.50405@tilera.com>
+References: <4DEFD979.50405@tilera.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jun 2011, Amir G. wrote:
-
-> On Thu, Jun 9, 2011 at 9:50 AM, Lukas Czerner <lczerner@redhat.com> wrote:
->> On Thu, 9 Jun 2011, Yongqiang Yang wrote:
+On Wed, Jun 8, 2011 at 10:20 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+> On 6/8/2011 8:14 AM, Mathias Krause wrote:
+>> On Wed, Jun 8, 2011 at 12:47 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>>> On Tue, Jun 07, 2011 at 07:00:24PM -0700, Linus Torvalds wrote:
+>>>> That said, that commit (it's commit ID 4095b99c09e3d in tglx's tree)
+>>>> predates the "real" BK history too: it's part of the (limited) 2.4.x
+>>>> history that was imported from the release patches into BK at the
+>>>> beginning of the use of BK. So at that point we didn't do indivual
+>>>> commits, it's just the import of the v2.4.3.7 -> v2.4.3.8 patch.
+>>>>
+>>>> But yeah, it's old and crufty. And I agree that usually the correct
+>>>> fix is to remove the set_fs() calls entirely.
+>>> I think these days its job is done by start_thread(), which is where we
+>>> switch to USER_DS; it's called by ->load_binary() when it decides it's past
+>>> the point of no return.  However, it would be a good idea to verify that
+>>> all architectures do it there properly and we are not exposing a hole by
+>>> removal of this set_fs()...
+>> I've checked all implementations of start_thread() and found some candidates:
 >>
->>> On Thu, Jun 9, 2011 at 11:18 AM, Amir G. <amir73il@users.sourceforge.net> wrote:
->>>> On Thu, Jun 9, 2011 at 4:59 AM, Yongqiang Yang <xiaoqiangnk@gmail.com> wrote:
->>
->> You see, when it comes to the full fs snapshots I am not convinced that
->> it is *very* useful, yes it might have some users, but you can alway
->> take the safe way and do lvm snapshots (or better use the new multisnap)
->> for backup, without need to modify stable filesystem code.
->>
+>> SPARC, TILE and Xtensa don't call set_fs(USER_DS), albeit have
+>> different definitions for USER_DS and KERNEL_DS. So those might need
+>> fixing. I'm not familiar with those architectures, so someone else has
+>> to answer this.
 >
-> You think like a developer. Try talking to some sys admins.
-> Especially ones that worked with Solaris/ZFS or NetApp.
-> See what they think about snapshots and about the LVM alternative...
-> Snapshots have addictive qualities. Ones you've used them, you can't
-> go back to not having them.
-> Imagine how people used to live before the 'Undo' button and imagine
-> that your employer forced you to use an editor without an Undo button.
-> This is the kind of feedback I got from sys admins that moved from Solaris
-> to Linux.
+> TILE relies on the set_fs() in search_binary_handler(), but adding
+> set_fs(USER_DS) in in start_thread() should be a valid change if the
+> set_fs() is removed from search_binary_handler().
 
-as a sysadmin, it's a _wonderful_ tool to have for any system that has 
-people editing/saving files on directly.
+To shortcut the decision for the other architectures I've adapted the patch
+and added a set_fs() call to the start_thread() implementations in question.
+They where running under USER_DS before so calling set_fs() in
+start_thread() is safe by any means.
 
->
->> Also, I do not buy the whole argument of "not have to create separate disk
->> space for snapshot". It is actually better for sysadmins, because you
->> have perfect control on what is going on, how much space is used for
->> your snapshots and how much is used by your data. You can always easily
->> extend the snapshot volume, or let it die silently when it is too old
->> and too big.
->>
->
-> Seriously, Lukas, talk to sys admins.
-> Letting the snapshot die silently is the worst possible thing that a snapshots
-> implementation can do (for long lived snapshots).
+> I'm happy to ack the
+> obvious change for tile, or I can put the change to tile's start_thread()
+> in my tree for inclusion in 3.1, either way.
 
-that depends on the site policy.
+Since this patch contains changes for multiple architectures I guess, this
+one has to go in by Linus directly.
 
-sometimes it is better to loose snapshots than to run out of disk space 
-and halt the system, sometimes you would rather halt the system.
+Mathias
 
-the policy of what happens when you run out of space should not be a 
-kernel decision, the desired behavior varies far too much.
+-- >8 --
+Subject: [PATCH v3] exec: keep address limit on exec errors
 
-this includes being able to say things like "I want to always have 10% of 
-my disk allocated to snapshots, but if there's more free space, go ahead 
-and use it, but always keep at least 10% of the disk free so that you 
-don't have to halt new writes while you clear space"
+Unconditionally changing the address limit to USER_DS and not restoring
+it to its old value in the error path is wrong because it prevents us
+using kernel memory on repeated calls to this function. This, in fact,
+breaks the fallback of hard coded paths to the init program from being
+ever successful if the first candidate fails to load.
 
-or
+With this patch applied switching to USER_DS is delayed until the point
+of no return is reached which makes it possible to have a multi-arch
+rootfs with one arch specific init binary for each of the (hard coded)
+probed paths.
 
-"if you run out of space, try and keep the oldest snapshot and the newest 
-snapshot, delete other snapshots in between before touching either of 
-these"
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Chris Zankel <chris@zankel.net>
+---
+v1 was actually the alternative solution in run_init_process()
+v2 was missing the set_fs() calls for SPARC, TILE and Xtensa
 
->> How does it actually work on ext4 snapshots ? When you're going to
->> rewrite a file, you will never know how much disk space it'll take in
->> advance, am I right ? Is the filesystem accounting for the snapshot size
->> as well ? or is it hidden ?
->
-> It's not hidden, it's accounted for as a regular file (usually owned by root).
-> You need a bit of scripting to gather the disk space used by snapshots (du).
+ arch/sparc/include/asm/processor_64.h |    2 ++
+ arch/tile/include/asm/processor.h     |    1 +
+ arch/xtensa/include/asm/processor.h   |    1 +
+ arch/xtensa/kernel/signal.c           |    7 +------
+ fs/exec.c                             |    4 ----
+ 5 files changed, 5 insertions(+), 10 deletions(-)
 
-the worst case when you re-write a file is that it will take the full 
-amount of space that the file currently takes (as if you wrote a new copy 
-of the file and some process had a filehandle open on the old copy, 
-preventing the space from being reclaimed, so it's far from being a new 
-problem)
+diff --git a/arch/sparc/include/asm/processor_64.h b/arch/sparc/include/asm/processor_64.h
+index 59fcebb..eb6b334 100644
+--- a/arch/sparc/include/asm/processor_64.h
++++ b/arch/sparc/include/asm/processor_64.h
+@@ -105,6 +105,7 @@ extern unsigned long thread_saved_pc(struct task_struct *);
+ #define start_thread(regs, pc, sp) \
+ do { \
+ 	unsigned long __asi = ASI_PNF; \
++	set_fs(USER_DS); \
+ 	regs->tstate = (regs->tstate & (TSTATE_CWP)) | (TSTATE_INITIAL_MM|TSTATE_IE) | (__asi << 24UL); \
+ 	regs->tpc = ((pc & (~3)) - 4); \
+ 	regs->tnpc = regs->tpc + 4; \
+@@ -143,6 +144,7 @@ do { \
+ #define start_thread32(regs, pc, sp) \
+ do { \
+ 	unsigned long __asi = ASI_PNF; \
++	set_fs(USER_DS); \
+ 	pc &= 0x00000000ffffffffUL; \
+ 	sp &= 0x00000000ffffffffUL; \
+ 	regs->tstate = (regs->tstate & (TSTATE_CWP))|(TSTATE_INITIAL_MM|TSTATE_IE|TSTATE_AM) | (__asi << 24UL); \
+diff --git a/arch/tile/include/asm/processor.h b/arch/tile/include/asm/processor.h
+index 34c1e01..0890524 100644
+--- a/arch/tile/include/asm/processor.h
++++ b/arch/tile/include/asm/processor.h
+@@ -200,6 +200,7 @@ DECLARE_PER_CPU(unsigned long, boot_pc);
+ static inline void start_thread(struct pt_regs *regs,
+ 				unsigned long pc, unsigned long usp)
+ {
++	set_fs(USER_DS);
+ 	regs->pc = pc;
+ 	regs->sp = usp;
+ }
+diff --git a/arch/xtensa/include/asm/processor.h b/arch/xtensa/include/asm/processor.h
+index 3acb26e..d87a1ee 100644
+--- a/arch/xtensa/include/asm/processor.h
++++ b/arch/xtensa/include/asm/processor.h
+@@ -152,6 +152,7 @@ struct thread_struct {
+ 
+ /* Clearing a0 terminates the backtrace. */
+ #define start_thread(regs, new_pc, new_sp) \
++	set_fs(USER_DS); \
+ 	regs->pc = new_pc; \
+ 	regs->ps = USER_PS_VALUE; \
+ 	regs->areg[1] = new_sp; \
+diff --git a/arch/xtensa/kernel/signal.c b/arch/xtensa/kernel/signal.c
+index f2220b5..8a41e69 100644
+--- a/arch/xtensa/kernel/signal.c
++++ b/arch/xtensa/kernel/signal.c
+@@ -400,7 +400,7 @@ static void setup_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	 * Return context not modified until this point.
+ 	 */
+ 
+-	/* Set up registers for signal handler */
++	/* Set up registers and access mode for signal handler */
+ 	start_thread(regs, (unsigned long) ka->sa.sa_handler, 
+ 		     (unsigned long) frame);
+ 
+@@ -412,11 +412,6 @@ static void setup_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	regs->areg[7] = (unsigned long) &frame->info;
+ 	regs->areg[8] = (unsigned long) &frame->uc;
+ 
+-	/* Set access mode to USER_DS.  Nomenclature is outdated, but
+-	 * functionality is used in uaccess.h
+-	 */
+-	set_fs(USER_DS);
+-
+ #if DEBUG_SIG
+ 	printk("SIG rt deliver (%s:%d): signal=%d sp=%p pc=%08x\n",
+ 		current->comm, current->pid, signal, frame, regs->pc);
+diff --git a/fs/exec.c b/fs/exec.c
+index ea5f748..31df75f 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1357,10 +1357,6 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 	if (retval)
+ 		return retval;
+ 
+-	/* kernel module loader fixup */
+-	/* so we don't try to load run modprobe in kernel space. */
+-	set_fs(USER_DS);
+-
+ 	retval = audit_bprm(bprm);
+ 	if (retval)
+ 		return retval;
+-- 
+1.5.6.5
 
-see the note above about the need to be able to remove snapshots when you 
-are out of space.
-
-since snapshots tend to be small compared to the filesystems they protect 
-(not in all cases, but if you are covering the entire system with one 
-snapshot that would be the way to bet), having the ability to put the 
-snapshot metadata off on a smaller/faster disk would be helpful.
-
-having the ability to snapshot just specific files/directories would be a 
-killer feature IMHO
-
-David Lang
