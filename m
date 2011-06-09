@@ -1,80 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757735Ab1FINOY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 09:14:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39529 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757403Ab1FINOV (ORCPT
+	id S1757853Ab1FINOc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 09:14:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40805 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757820Ab1FINO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 09:14:21 -0400
-Message-Id: <20110609131307.493181962@chello.nl>
+	Thu, 9 Jun 2011 09:14:28 -0400
+Message-Id: <20110609131307.539373927@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Thu, 09 Jun 2011 15:06:48 +0200
+Date: Thu, 09 Jun 2011 15:06:49 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, efault@gmx.de,
         Arne Jansen <lists@die-jansens.de>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 1/3] printk: Release console_sem after logbuf_lock
+Subject: [PATCH 2/3] printk, lockdep: Remove lockdep_off() usage
 References: <20110609130647.937204592@chello.nl>
-Content-Disposition: inline; filename=printk-up-after-unlock.patch
+Content-Disposition: inline; filename=printk-remove-lockdep_off.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Release console_sem after unlocking the logbuf_lock so that we don't
-generate wakeups while holding logbuf_lock. This avoids some lock
-inversion troubles once we remove the lockdep_off bits between
-logbuf_lock and rq->lock (prints while holding rq->lock vs doing
-wakeups while holding logbuf_lock).
-
-There's of course still an actual deadlock where the printk()s under
-rq->lock will issue a wakeup from the up() call.
+Remove the lockdep_off() usage from printk(). Also add a
+debug_locks_off() call to zap_locks() since that'll mess up the lock
+state in a royal way anyway. Further switch to local_irq_ ops so that
+the irq state is properly tracked (raw_local_irq_* isn't tracked by
+lockdep, causing confusion). Also drop superfluous preempt_disable(),
+disabling IRQs already avoids scheduling.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- kernel/printk.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ kernel/printk.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
 Index: linux-2.6/kernel/printk.c
 ===================================================================
 --- linux-2.6.orig/kernel/printk.c
 +++ linux-2.6/kernel/printk.c
-@@ -782,7 +782,7 @@ static inline int can_use_console(unsign
- static int console_trylock_for_printk(unsigned int cpu)
- 	__releases(&logbuf_lock)
- {
--	int retval = 0;
-+	int retval = 0, wake = 0;
+@@ -686,6 +686,7 @@ static void zap_locks(void)
  
- 	if (console_trylock()) {
- 		retval = 1;
-@@ -795,12 +795,14 @@ static int console_trylock_for_printk(un
- 		 */
- 		if (!can_use_console(cpu)) {
- 			console_locked = 0;
--			up(&console_sem);
-+			wake = 1;
- 			retval = 0;
- 		}
+ 	oops_timestamp = jiffies;
+ 
++	debug_locks_off();
+ 	/* If a crash is occurring, make sure we can't deadlock */
+ 	spin_lock_init(&logbuf_lock);
+ 	/* And make sure that we print immediately */
+@@ -838,9 +839,8 @@ asmlinkage int vprintk(const char *fmt,
+ 	boot_delay_msec();
+ 	printk_delay();
+ 
+-	preempt_disable();
+ 	/* This stops the holder of console_sem just where we want him */
+-	raw_local_irq_save(flags);
++	local_irq_save(flags);
+ 	this_cpu = smp_processor_id();
+ 
+ 	/*
+@@ -861,7 +861,6 @@ asmlinkage int vprintk(const char *fmt,
+ 		zap_locks();
  	}
- 	printk_cpu = UINT_MAX;
- 	spin_unlock(&logbuf_lock);
-+	if (wake)
-+		up(&console_sem);
- 	return retval;
- }
- static const char recursion_bug_msg [] =
-@@ -1271,8 +1273,8 @@ void console_unlock(void)
- 	if (unlikely(exclusive_console))
- 		exclusive_console = NULL;
  
--	up(&console_sem);
- 	spin_unlock_irqrestore(&logbuf_lock, flags);
-+	up(&console_sem);
- 	if (wake_klogd)
- 		wake_up_klogd();
+-	lockdep_off();
+ 	spin_lock(&logbuf_lock);
+ 	printk_cpu = this_cpu;
+ 
+@@ -958,11 +957,9 @@ asmlinkage int vprintk(const char *fmt,
+ 	if (console_trylock_for_printk(this_cpu))
+ 		console_unlock();
+ 
+-	lockdep_on();
+ out_restore_irqs:
+-	raw_local_irq_restore(flags);
++	local_irq_restore(flags);
+ 
+-	preempt_enable();
+ 	return printed_len;
  }
+ EXPORT_SYMBOL(printk);
 
 
