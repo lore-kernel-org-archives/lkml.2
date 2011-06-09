@@ -1,113 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab1FIS1M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 14:27:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31528 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751047Ab1FIS1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 14:27:11 -0400
-Date: Thu, 9 Jun 2011 14:27:06 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tao Ma <tm@tao.ma>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: CFQ: async queue blocks the whole system
-Message-ID: <20110609182706.GG29913@redhat.com>
-References: <1307616577-6101-1-git-send-email-tm@tao.ma>
- <20110609141451.GD29913@redhat.com>
- <4DF0DD0F.8090407@tao.ma>
- <20110609153738.GF29913@redhat.com>
- <4DF0EA55.10209@tao.ma>
+	id S1753393Ab1FIS2s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 14:28:48 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:58905 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047Ab1FIS2q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 14:28:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=e3i2gBT5L0Hrrf8a/+nIbFCdHOe0UyPKplVk5JpAYo5ousmCogZjXyO8pquwmE/MjL
+         x/sJTg9/6xjIv69kW2XErzCE3elO5/M5abTM/6RI2wVrh18iO4UuiLp1Y3DN41Q6+ytZ
+         X89uuMLQwB68sWNMvcxXoTUN+Fhx6cocdpLUs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DF0EA55.10209@tao.ma>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTik9kZjJs5H2kvM+xAtd_CR5NA0dDw@mail.gmail.com>
+References: <4DF06E29.4010807@st.com>
+	<BANLkTik9kZjJs5H2kvM+xAtd_CR5NA0dDw@mail.gmail.com>
+Date: Thu, 9 Jun 2011 11:28:43 -0700
+X-Google-Sender-Auth: UoanyleyXYopZEUnwqHPU3WGOpQ
+Message-ID: <BANLkTikzDEx2netonGyhskYFtiAEAxq5XQ@mail.gmail.com>
+Subject: Re: Why move all map_sg/unmap_sg for slave channel to its client?
+From: Dan Williams <dan.j.williams@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: viresh kumar <viresh.kumar@st.com>, "Koul, Vinod" <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        anemo@mba.ocn.ne.jp, Shiraz HASHIM <shiraz.hashim@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        linux-raid <linux-raid@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 09, 2011 at 11:44:21PM +0800, Tao Ma wrote:
+On Thu, Jun 9, 2011 at 2:38 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Thu, Jun 9, 2011 at 8:54 AM, viresh kumar <viresh.kumar@st.com> wrote:
+>
+>> I thought map_sg/unmap_sg for slave channels will be handled according
+>> to the flags passed in prep_slave_sg(). But then i found following patch:
+>> (...)
+>> I don't have much knowledge about that discussion, but i think this should be left
+>> configurable.
+>> If the client wants to control map/unmap then it can simply pass
+>> DMA_COMPL_SKIP_DEST_UNMAP | DMA_COMPL_SKIP_SRC_UNMAP in flags. I didn't wanted to
+>> skip this in my driver and so i don't pass them.
+>
+> What if the same driver is used on many different platforms like say
+> drivers/tty/serial/amba-pl011.c, and some of the platforms using it
+> has DMA engines that does not implement mapping/unmapping of
+> the passed sglist?
+>
+> In that case I think you have to modify all drivers in drivers/dma/*
+> to do this mapping, and then you could just make it a required behaviour
+> and skip the flags altogether.
+>
+> But apparently that approach was blocked at one point so let's see
+> what the others say.
 
-[..]
-> > CFQ in general tries not to drive too deep a queue depth in an effort
-> > to improve latencies. CFQ is generally recommened for slow SATA drives
-> > and dispatching too many requests from a single queue can only serve to
-> > increase the latency.
-> ok, so do you mean that for a fast drive, cfq isn't recommended and
-> deadline is always prefered? ;) We have a SAS with queue_depth=128, so
-> it should be a fast drive I guess. :)
+My problem with automatic unmapping support is that the dma-driver
+really does not have a chance to get it right except for the trivially
+straightforward cases.  One need only look at the current bustage of
+raid5 acceleration with respect to overlapping mappings and arm v6.
+The dma-driver just knows how to perform "this" operation on "this"
+dma address.  It does not know the lifetime of the mapping, or even if
+it has the actual dma handle for unmapping versus an offset
 
-I think in general that has been true in my experience. SSDs are still
-ok with CFQ because that sets nonrotational flag and cuts down on 
-idling. But if it is a rotational media which can handle multiple
-parallel requests at a time you might have better throughput results
-with deadline.
+For the raid case I've currently convinced myself that the raid client
+needs to get directly involved in dma mapping management, rather than
+teach all dma drivers a language of how to unmap and when.  Not only
+will this fix the overlapping, but it also eliminates the need to map
+and remap because the raid client knows the lifetime of  a stripe_head
+while the driver only knows the lifetime of a given stripe operation.
 
-[..]
-> > Its latency vs throughput tradeoff.
-> ok, so it seems that all these are designed, not a bug. Thanks for the
-> clarification.
-> 
-> btw, reverting the patch doesn't work. I can still get the livelock.
+For slave-dma maybe there is a lot of common un-mapping logic that can
+be reused, but I think that comes from a separate smart library that
+understands the dma mapping lifetimes of a given class of clients.
+Leave the dma-drivers to just be dumb operators on anonymous dma
+addresses.
 
-Can you give following patch a try and see if it helps. On my system this
-does allow CFQ to dispatch some writes once in a while.
-
-thanks
-Vivek
-
----
- block/cfq-iosched.c |   25 ++++++++++++++++++++++++-
- 1 file changed, 24 insertions(+), 1 deletion(-)
-
-Index: linux-2.6/block/cfq-iosched.c
-===================================================================
---- linux-2.6.orig/block/cfq-iosched.c	2011-06-09 11:44:40.000000000 -0400
-+++ linux-2.6/block/cfq-iosched.c	2011-06-09 14:04:01.036983301 -0400
-@@ -303,6 +303,8 @@ struct cfq_data {
- 
- 	/* Number of groups which are on blkcg->blkg_list */
- 	unsigned int nr_blkcg_linked_grps;
-+
-+	unsigned long last_async_dispatched;
- };
- 
- static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
-@@ -2063,6 +2065,10 @@ static void cfq_dispatch_insert(struct r
- 
- 	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
- 	cfqq->nr_sectors += blk_rq_sectors(rq);
-+
-+	if (!cfq_cfqq_sync(cfqq))
-+		cfqd->last_async_dispatched = jiffies;
-+
- 	cfq_blkiocg_update_dispatch_stats(&cfqq->cfqg->blkg, blk_rq_bytes(rq),
- 					rq_data_dir(rq), rq_is_sync(rq));
- }
-@@ -3315,8 +3321,25 @@ cfq_should_preempt(struct cfq_data *cfqd
- 	 * if the new request is sync, but the currently running queue is
- 	 * not, let the sync request have priority.
- 	 */
--	if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq))
-+	if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq)) {
-+		unsigned long async_delay = 0;
-+
-+		async_delay = jiffies - cfqd->last_async_dispatched;
-+
-+		/*
-+		 * CFQ is heavily loaded in favor of sync queues and that
-+ 		 * can lead to starvation of async queues. If it has been
-+ 		 * too long since last async request was dispatched, don't
-+ 		 * preempt async queue
-+ 		 *
-+ 		 * Once we have per group async queues, this will need
-+ 		 * modification.
-+ 		 */
-+		if (async_delay > 2 * HZ)
-+			return false;
-+
- 		return true;
-+	}
- 
- 	if (new_cfqq->cfqg != cfqq->cfqg)
- 		return false;
+--
+Dan
