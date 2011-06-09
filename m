@@ -1,83 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751250Ab1FIEsW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 00:48:22 -0400
-Received: from TYO200.gate.nec.co.jp ([202.32.8.215]:57968 "EHLO
-	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855Ab1FIEsU (ORCPT
+	id S1751198Ab1FIEn5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 00:43:57 -0400
+Received: from science.horizon.com ([71.41.210.146]:31887 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750698Ab1FIEnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 00:48:20 -0400
-X-Greylist: delayed 604 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Jun 2011 00:48:19 EDT
-Date: Thu, 9 Jun 2011 13:34:23 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [BUGFIX][PATCH] memcg: fix wrong decision of noswap with
- softlimit.
-Message-Id: <20110609133423.3223aaff.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20110609095445.5f98b752.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110609095445.5f98b752.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Jun 2011 00:43:55 -0400
+Date: 9 Jun 2011 00:43:54 -0400
+Message-ID: <20110609044354.1171.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: eric.dumazet@gmail.com, luto@mit.edu
+Subject: Re: Change in functionality of futex() system call.
+Cc: david@rgmadvisors.com, dvhart@linux.intel.com, kyle@moffetthome.net,
+        linux-kernel@vger.kernel.org, linux@horizon.com
+In-Reply-To: <1307591659.3980.37.camel@edumazet-laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jun 2011 09:54:45 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-
-> I wonder this should go stable...
-hmm, IMHO, it's not necessary just because there have been no bug reports
-about this bug.
-
-> ==
-> From e2565de1c764057b75b4d9a1674d163b6c873cdd Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Thu, 9 Jun 2011 09:54:32 +0900
-> Subject: [PATCH 2/2] Fix softlimit wrong check of noswap
+> You can not prevent DOS on a machine if you allow a process to RO map
+> your critical files (where you put futexes), because you allow this
+> process to interfere with critical cache lines bouncing between cpus.
 > 
-> Now, hierarchical reclaim doesn't make swap if memory's limit is
-> equal to mem+swap limit. Because if reclaim does swap-out,
-> it still hits mem+swap limit and there will be no progress.
-> WHEN HITTING HARD LIMIT.
-> 
-> When it comes to softlimit, it works for kswapd. noswap is nonsense.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Really, please forget about this crazy idea of allowing foreigners to
+> _read_ or memory _map_ your files. Don't do it.
 
-If we implement "softlimit for memsw" in future, we might change the check again,
-but it's another story.
+Hold on.  There's a significant difference between making a system
+run slowly (there are a hundred ways to achieve that, starting with
+the classic fork bomb), and a permanent hard lockup caused by losing
+a FUTEX_WAIT.
 
-Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Among other things, you can notice a DoS after a while and kill it.
+Things should then return to normal.
 
-Thanks,
-Daisuke Nishimura.
+There may well be a reason to share a file containing futexes read-only.
 
-> ---
->  mm/memcontrol.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 3baddcb..06825be 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1663,7 +1663,7 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
->  	excess = res_counter_soft_limit_excess(&root_mem->res) >> PAGE_SHIFT;
->  
->  	/* If memsw_is_minimum==1, swap-out is of-no-use. */
-> -	if (root_mem->memsw_is_minimum)
-> +	if (!check_soft && root_mem->memsw_is_minimum)
->  		noswap = true;
->  
->  	while (1) {
-> -- 
-> 1.7.4.1
-> 
-> 
+Just for example, consider a circular buffer that a few (trusted)
+processes can write to, but many (less trusted) can read.  Obviously,
+being able to sleep on the head pointer is useful.
+
+We are already dealing with one problem caused by a too-narrow idea of
+how futexes would be used.  Let's not add another "nobody would ever
+want to do that!" unnecessarily.
