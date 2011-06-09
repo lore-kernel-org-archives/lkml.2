@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864Ab1FIQgt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 12:36:49 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:40563
-	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751031Ab1FIQgq (ORCPT
+	id S1753124Ab1FIQkb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 12:40:31 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:40322 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753033Ab1FIQk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 12:36:46 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4DF0F672.8040206@freescale.com>
-Date: Thu, 9 Jun 2011 11:36:02 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
+	Thu, 9 Jun 2011 12:40:26 -0400
+Date: Thu, 9 Jun 2011 12:39:57 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: fujita.tomonori@lab.ntt.co.jp
+Subject: [GIT PULL] (swiotlb-2.6) stable/xen-swiotlb.bugfix for 3.0-rcX
+Message-ID: <20110609163957.GA31709@dumpdata.com>
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Arnd Bergmann <arnd@arndb.de>, <linuxppc-dev@lists.ozlabs.org>,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        <konrad.wilk@oracle.com>, <kumar.gala@freescale.com>,
-        <linux-kernel@vger.kernel.org>, <cmetcalf@tilera.com>,
-        <akpm@kernel.org>, <dsaxena@linaro.org>,
-        <linux-console@vger.kernel.org>, <greg@kroah.com>,
-        <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 7/7] [v4] drivers/virt: introduce Freescale hypervisor
- management driver
-References: <1307573154-15838-1-git-send-email-timur@freescale.com> <20110608161009.7b05d305.randy.dunlap@oracle.com> <201106090938.23027.arnd@arndb.de> <4DF0F5A1.5080008@oracle.com>
-In-Reply-To: <4DF0F5A1.5080008@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4DF0F773.0040:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Randy Dunlap wrote:
-> But it sounds like virt/ needs virt/host/ and virt/guest/ to me.
+Hey Linus,
 
-I'm okay with that idea, except there's a consensus that drivers should be in
-drivers/.
+Please git pull the following git tree
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+ git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/swiotlb-2.6.git stable/xen-swiotlb.bugfix
 
+which has one patch since git tag v2.6.37. The bugfix is that the 'swiotlb'
+command line argument was being ignored by Xen-SWIOTLB - this is now fixed.
+
+FUJITA Tomonori (1):
+      swiotlb: Export swioltb_nr_tbl and utilize it as appropiate.
+
+ drivers/xen/swiotlb-xen.c |   12 +++++++++---
+ include/linux/swiotlb.h   |    1 +
+ lib/swiotlb.c             |    5 +++++
+ 3 files changed, 15 insertions(+), 3 deletions(-)
