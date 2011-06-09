@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab1FIUYq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 16:24:46 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:49002
-	"EHLO CH1EHSOBE013.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755782Ab1FIUYm (ORCPT
+	id S1755972Ab1FIUZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 16:25:26 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:63942 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755790Ab1FIUZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 16:24:42 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4DF12BFB.5030102@freescale.com>
-Date: Thu, 9 Jun 2011 15:24:27 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
+	Thu, 9 Jun 2011 16:25:22 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 7/7] [v5] drivers/virt: introduce Freescale hypervisor management driver
+Date: Thu, 9 Jun 2011 22:25:07 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, Timur Tabi <timur@freescale.com>,
+        konrad.wilk@oracle.com, kumar.gala@freescale.com,
+        linux-kernel@vger.kernel.org, cmetcalf@tilera.com, akpm@kernel.org,
+        dsaxena@linaro.org, linux-console@vger.kernel.org, greg@kroah.com,
+        virtualization@lists.linux-foundation.org, alan@lxorguk.ukuu.org.uk
+References: <1307646794-26374-1-git-send-email-timur@freescale.com> <4DF12345.1040409@freescale.com> <4DF123AA.6070402@oracle.com>
+In-Reply-To: <4DF123AA.6070402@oracle.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <alan@lxorguk.ukuu.org.uk>, <kumar.gala@freescale.com>,
-        <benh@kernel.crashing.org>, <greg@kroah.com>, <akpm@kernel.org>,
-        <cmetcalf@tilera.com>, <konrad.wilk@oracle.com>,
-        <linux-console@vger.kernel.org>
-Subject: Re: [PATCH 7/7] [v4] drivers/virt: introduce Freescale hypervisor
- management driver
-References: <1307573154-15838-1-git-send-email-timur@freescale.com> <201106090929.23671.arnd@arndb.de> <4DF11715.5030001@freescale.com> <201106092220.22246.arnd@arndb.de>
-In-Reply-To: <201106092220.22246.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Message-Id: <201106092225.08090.arnd@arndb.de>
+X-Provags-ID: V02:K0:QmSwZjIOymt+KsDKOveUtB/5FUPAUX42WMFeoBDbFOB
+ /bgCec3OHt0c7skGTc7ufTsFOrmoT8Lld6Yl8hghQJJzMWL62v
+ eVR7DvHFKTKAyQ7rIwfNU0aR4SwSfLuLhZNdXUOQZk03Z+kwH3
+ LRgZ5dY87Zsj8FkdjO9Y9wgE0ix5FgO2bAlwLruhRNwIX9XQlr
+ 63Az3OBDbROnF/C4bN9cw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann wrote:
-> The lesson to learn here is obviously not to ship binaries of applications
-> to customers before the driver has been merged in a mainline kernel.
+On Thursday 09 June 2011 21:48:58 Randy Dunlap wrote:
+> > So is it okay to stick with 0, or do I need to pick a new number?
+> 
+> I wasn't suggesting that you change the 0, just note that it has conflicts,
+> like other ioctls do.
 
-Believe me, I know this, but unfortunately I have no control over every aspect
-of our development cycle.
+We normally don't try to maintain binary compatibility with out of tree
+kernel patches. That only leads to inferior interfaces finding their way
+into the kernel.
 
-> The best way out that I can see is to make the driver carry the proper
-> interface in the upstream version, but to have a private patch to support
-> both interface versions in the kernel you ship on machines that require
-> backwards compatibility. Once you have phased out the user application,
-> you can then drop that patch and use the upstream version of the
-> interfaces.
-
-I think I can make that work.
-
--- 
-Timur Tabi
-Linux kernel developer at Freescale
-
+	Arnd
