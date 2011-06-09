@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756000Ab1FIUvI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 16:51:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54749 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754311Ab1FIUvF (ORCPT
+	id S1756130Ab1FIU4f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 16:56:35 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:19498 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756039Ab1FIU4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 16:51:05 -0400
-Subject: Re: [PATCH 1/3] printk: Release console_sem after logbuf_lock
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        efault@gmx.de, Arne Jansen <lists@die-jansens.de>
-In-Reply-To: <20110609202707.GA28951@elte.hu>
-References: <20110609130647.937204592@chello.nl>
-	 <20110609131307.493181962@chello.nl>
-	 <20110609130617.f8aca966.akpm@linux-foundation.org>
-	 <20110609202707.GA28951@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Jun 2011 22:54:43 +0200
-Message-ID: <1307652883.2497.1028.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 9 Jun 2011 16:56:32 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6372"; a="96543729"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: "'Alan Stern'" <stern@rowland.harvard.edu>
+Cc: <greg@kroah.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>, <balbi@ti.com>,
+        <ablay@codeaurora.org>, "'open list'" <linux-kernel@vger.kernel.org>
+References: <1307635009-5741-1-git-send-email-tlinder@codeaurora.org> <Pine.LNX.4.44L0.1106091449490.2081-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1106091449490.2081-100000@iolanthe.rowland.org>
+Subject: RE: [PATCH v2] usb:dummy_hcd: Force FS device connection according to module parameter
+Date: Thu, 9 Jun 2011 23:56:22 +0300
+Message-ID: <027301cc26e7$b5c99690$215cc3b0$@org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+thread-index: Acwm1kF18jy0SMTsTiW2Oax1yb7SnAAEQ50w
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-09 at 22:27 +0200, Ingo Molnar wrote:
-
-> > > @@ -1271,8 +1273,8 @@ void console_unlock(void)
-> > >  	if (unlikely(exclusive_console))
-> > >  		exclusive_console = NULL;
-> > >  
-> > > -	up(&console_sem);
-> > >  	spin_unlock_irqrestore(&logbuf_lock, flags);
-> > > +	up(&console_sem);
-> > >  	if (wake_klogd)
-> > >  		wake_up_klogd();
-> > >  }
-> > 
-> > I have a horrible feeling that I put the up() inside logbuf_lock for
-> > Special And Cunning Reasons.  But I'm struggling to work out what they
-> > might have been and my archives only go back to October 2000(!).
-> > 
-> > Hate it when that happens.
+> > @@ -904,12 +908,15 @@ usb_gadget_probe_driver(struct
+> usb_gadget_driver *driver,
+> >  	dum->gadget.ep0 = &dum->ep [0].ep;
+> >  	if (mod_data.is_super_speed)
+> >  		dum->gadget.speed = driver->speed;
+> > -	else
+> > +	else if (mod_data.is_high_speed)
+> >  		dum->gadget.speed = min((u8)USB_SPEED_HIGH, (u8)driver-
+> >speed);
 > 
-> Heh, here's what i told Peter two days ago when i saw that chunk:
+> Use min_t().
+
+Ok, will update.
+
 > 
->   => Subject: printk: Release console_sem after logbuf_lock
->   => i have some vague memories about some sort of complication in that area ...
->   => but don't remember the specifics
->   => only a 'there be dragons' mental marker
+> > +	else
+> > +		dum->gadget.speed = USB_SPEED_FULL;
+> >  	if (dum->gadget.speed < driver->speed)
+> > -		dev_dbg(udc_dev(dum), "This device can perform faster if"
+> > -				      " you connect it to a "
+> > -				      "SupeSpeed port...\n");
+> > +		dev_dbg(udc_dev(dum), "This device can perform faster"
+> > +				" if you connect it to a %s port...\n",
+> > +			(driver->speed == USB_SPEED_SUPER ?
+> > +			 "SuperSpeed" : "HighSpeed"));
+> >
+> >  	if (dum->gadget.speed == USB_SPEED_SUPER) {
+> >  		for (i = 0; i < DUMMY_ENDPOINTS; i++)
+> > @@ -2417,6 +2424,9 @@ static int __init init (void)
+> >  	if (usb_disabled ())
+> >  		return -ENODEV;
+> >
+> > +	if (!mod_data.is_high_speed && mod_data.is_super_speed)
+> > +		return -EINVAL;
+> 
+> Print an error message in the log so that the user will know why the
+> failure occurred.
+> 
 
-Right, my reply was that I couldn't convince myself unlock order could
-make a difference, but clearly I can easily have missed something
-subtle.
+But when the module fails to load the message sais that it's invalid
+parameter (or something like that). That's why I thought it will be enough. 
+You mean to add something that explains WHY these values are wrong?
 
-> and i have to say that when i found a boot lockup during testing i 
-> was not surprised very much :)
 
-But you found a lockup on the second patch, not this one.
+Thanks,
+Tanya Brokhman
+---
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-Also, this patch is important for #3, where we want to take logbuf_lock
-under the semaphore internal lock, that too would preclude us doing that
-up() in the old location.
 
 
 
