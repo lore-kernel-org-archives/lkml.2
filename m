@@ -1,172 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab1FIReE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 13:34:04 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47335 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab1FIReA (ORCPT
+	id S1753982Ab1FIRg4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 13:36:56 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:39497 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752987Ab1FIRgx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 13:34:00 -0400
-From: Andrew Murray <amurray@mpcdata.com>
-To: joe@perches.com
-Cc: w.sang@pengutronix.de, geert@linux-m68k.org,
-        linux-embedded@vger.kernel.org, linux-kernel@vger.kernel.org,
-        trivial@kernel.org, rdunlap@xenotime.net, udknight@gmail.com,
-        namhyung@gmail.com, Andrew Murray <amurray@mpcdata.com>,
-        Andrew Murray <amurray@mpc-data.co.uk>
-Subject: [PATCH] Revised patch
-Date: Thu,  9 Jun 2011 18:33:46 +0100
-Message-Id: <1307640826-22618-1-git-send-email-amurray@mpcdata.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <AANLkTikbPwMS0VGsMH64CGhDUEmvOwUzYnXSV0q3eW9_@mail.gmail.com>
-References: <AANLkTikbPwMS0VGsMH64CGhDUEmvOwUzYnXSV0q3eW9_@mail.gmail.com>
+	Thu, 9 Jun 2011 13:36:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=QxzgcwdiV7EYQout1w/fR5aWoB4u3NlB9oopLaXiJiKsHQpSzFO5IC6kq/IAfyKFfC
+         UAqF1Bii8Q43lk/iwakQ==
+MIME-Version: 1.0
+In-Reply-To: <20110609083503.GC11603@cmpxchg.org>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+	<BANLkTikgqSsg5+49295h7kdZ=sQpZLs4kw@mail.gmail.com>
+	<BANLkTi=sYtLGk2_VQLejEU2rQ0JBgg_ZmQ@mail.gmail.com>
+	<20110602075028.GB20630@cmpxchg.org>
+	<BANLkTi=AZG4LKUdeODB0uP=_CVBRnGs_Nw@mail.gmail.com>
+	<20110602175142.GH28684@cmpxchg.org>
+	<BANLkTi=9083abfiKdZ5_oXyA+dZqaXJfZg@mail.gmail.com>
+	<20110608153211.GB27827@cmpxchg.org>
+	<BANLkTincHpoay1JtpjG0RY9CCvfepRohTXUH6KKULYJ9jbdo+A@mail.gmail.com>
+	<20110609083503.GC11603@cmpxchg.org>
+Date: Thu, 9 Jun 2011 10:36:47 -0700
+Message-ID: <BANLkTiknpTjj3saw+zS5ABeD+4ESz68xvRot7TTvKs7A_RtrdA@mail.gmail.com>
+Subject: Re: [patch 0/8] mm: memcg naturalization -rc2
+From: Ying Han <yinghan@google.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jun 9, 2011 at 1:35 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> On Wed, Jun 08, 2011 at 08:52:03PM -0700, Ying Han wrote:
+>> On Wed, Jun 8, 2011 at 8:32 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+>> > On Tue, Jun 07, 2011 at 08:53:21PM -0700, Ying Han wrote:
+>> >> 2. The way we treat the per-memcg soft_limit is changed in this patch.
+>> >> The same comment I made on the following patch where we shouldn't
+>> >> change the definition of user API (soft_limit_in_bytes in this case).
+>> >> So I attached the patch to fix that where we should only go to the
+>> >> ones under their soft_limit above certain reclaim priority. Please
+>> >> consider.
+>> >
+>> > Here is your proposal from the other mail:
+>> >
+>> > : Basically, we shouldn't reclaim from a memcg under its soft_limit
+>> > : unless we have trouble reclaim pages from others. Something like the
+>> > : following makes better sense:
+>> > :
+>> > : diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> > : index bdc2fd3..b82ba8c 100644
+>> > : --- a/mm/vmscan.c
+>> > : +++ b/mm/vmscan.c
+>> > : @@ -1989,6 +1989,8 @@ restart:
+>> > :         throttle_vm_writeout(sc->gfp_mask);
+>> > :  }
+>> > :
+>> > : +#define MEMCG_SOFTLIMIT_RECLAIM_PRIORITY       2
+>> > : +
+>> > :  static void shrink_zone(int priority, struct zone *zone,
+>> > :                                 struct scan_control *sc)
+>> > :  {
+>> > : @@ -2001,13 +2003,13 @@ static void shrink_zone(int priority, struct zone *zone,
+>> > :                 unsigned long reclaimed = sc->nr_reclaimed;
+>> > :                 unsigned long scanned = sc->nr_scanned;
+>> > :                 unsigned long nr_reclaimed;
+>> > : -               int epriority = priority;
+>> > :
+>> > : -               if (mem_cgroup_soft_limit_exceeded(root, mem))
+>> > : -                       epriority -= 1;
+>> > : +               if (!mem_cgroup_soft_limit_exceeded(root, mem) &&
+>> > : +                               priority > MEMCG_SOFTLIMIT_RECLAIM_PRIORITY)
+>> > : +                       continue;
+>> >
+>> > I am not sure if you are serious or playing devil's advocate here,
+>> > because it exacerbates the problem you are concerned about in 1. by
+>> > orders of magnitude.
+>>
+>> No, the two are different issues. The first one is a performance
+>> concern of detailed implementation, while the second one is a design
+>> concern.
+>
+> Got ya.
+>
+>> > I guess it would make much more sense to evaluate if reclaiming from
+>> > memcgs while there are others exceeding their soft limit is even a
+>> > problem.  Otherwise this discussion is pretty pointless.
+>>
+>> AFAIK it is a problem since it changes the spec of kernel API
+>> memory.soft_limit_in_bytes. That value is set per-memcg which all the
+>> pages allocated above that are best effort and targeted to reclaim
+>> prior to others.
+>
+> That's not really true.  Quoting the documentation:
+>
+>    When the system detects memory contention or low memory, control groups
+>    are pushed back to their soft limits. If the soft limit of each control
+>    group is very high, they are pushed back as much as possible to make
+>    sure that one control group does not starve the others of memory.
+>
+> I am language lawyering here, but I don't think it says it won't touch
+> other memcgs at all while there are memcgs exceeding their soft limit.
 
-I've updated this patch based on your feedback. This covers all the recent feedback.
+Well... :) I would say that the documentation of soft_limit needs lots
+of work especially after lots of discussions we have after the LSF.
 
-From: Andrew Murray <amurray@mpc-data.co.uk>
+The RFC i sent after our discussion has the following documentation,
+and I only cut & paste the content relevant to our conversation here:
 
-This patch updates the incomplete documentation concerning the printk
-extended format specifiers.
+What is "soft_limit"?
+The "soft_limit was introduced in memcg to support over-committing the
+memory resource on the host. Each cgroup can be configured with
+"hard_limit", where it will be throttled or OOM killed by going over
+the limit. However, the allocation can go above the "soft_limit" as
+long as there is no memory contention. The "soft_limit" is the kernel
+mechanism for re-distributing spare memory resource among cgroups.
 
-Signed-off-by: Andrew Murray <amurray@mpc-data.co.uk>
+What we have now?
+The current implementation of softlimit is based on per-zone RB tree,
+where only the cgroup exceeds the soft_limit the most being selected
+for reclaim.
 
----
- Documentation/printk-formats.txt |  113 +++++++++++++++++++++++++++++++++++++-
- 1 files changed, 111 insertions(+), 2 deletions(-)
+It makes less sense to only reclaim from one cgroup rather than
+reclaiming all cgroups based on calculated propotion. This is required
+for fairness.
 
-diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
-index 1b5a5dd..2968cbf 100644
---- a/Documentation/printk-formats.txt
-+++ b/Documentation/printk-formats.txt
-@@ -9,7 +9,115 @@ If variable is of Type,		use printk format specifier:
- 		size_t			%zu or %zx
- 		ssize_t			%zd or %zx
- 
--Raw pointer value SHOULD be printed with %p.
-+Raw pointer value SHOULD be printed with %p. The kernel supports
-+the following extended format specifiers for pointer types:
-+
-+Symbols/Function Pointers:
-+
-+	%pF	versatile_init+0x0/0x110
-+	%pf	versatile_init
-+	%pS	versatile_init+0x0/0x110
-+	%ps	versatile_init
-+
-+	For printing symbols and function pointers. The 'S' and 's' specifiers
-+	result in the symbol name with ('S') or without ('s') offsets. Where
-+	this is used on a kernel without KALLSYMS - the symbol address is
-+	printed instead.
-+
-+	On ia64, ppc64 and parisc64 architectures function pointers are
-+	actually function descriptors which must first be resolved. The 'F' and
-+	'f' specifiers perform this resolution and then provide the same
-+	functionality as the 'S' and 's' specifiers.
-+
-+Kernel Pointers:
-+
-+	%pK	0x01234567 or 0x0123456789abcdef
-+
-+	For printing kernel pointers which should be hidden from unprivileged
-+	users. The behaviour of %pK depends on the kptr_restrict sysctl - see
-+	Documentation/sysctl/kernel.txt for more details.
-+
-+Struct Resources:
-+
-+	%pr	[mem 0x60000000-0x6fffffff flags 0x2200] or
-+		[mem 0x0000000060000000-0x000000006fffffff flags 0x2200]
-+	%pR	[mem 0x60000000-0x6fffffff pref] or
-+		[mem 0x0000000060000000-0x000000006fffffff pref]
-+
-+	For printing struct resources. The 'R' and 'r' specifiers result in a
-+	printed resource with ('R') or without ('r') a decoded flags member.
-+
-+MAC/FDDI addresses:
-+
-+	%pM	00:01:02:03:04:05
-+	%pMF	00-01-02-03-04-05
-+	%pm	000102030405
-+
-+	For printing 6-byte MAC/FDDI addresses in hex notation. The 'M' and 'm'
-+	specifiers result in a printed address with ('M') or without ('m') byte
-+	separators. The default byte separator is the colon (':').
-+
-+	Where FDDI addresses are concerned the 'F' specifier can be used after
-+	the 'M' specifier to use dash ('-') separators instead of the default
-+	separator.
-+
-+IPv4 addresses:
-+
-+	%pI4	1.2.3.4
-+	%pi4	001.002.003.004
-+	%p[Ii][hnbl]
-+	
-+	For printing IPv4 dot-separated decimal addresses. The 'I4' and 'i4'
-+	specifiers result in a printed address with ('i4') or without ('I4')
-+	leading zeros.
-+
-+	The additional 'h', 'n', 'b', and 'l' specifiers are used to specify
-+	host, network, big or little endian order addresses respectively. Where
-+	no specifier is provided the default network/big endian order is used.
-+
-+IPv6 addresses:
-+
-+	%pI6	0001:0002:0003:0004:0005:0006:0007:0008
-+	%pi6	00010002000300040005000600070008
-+	%pI6c	1:2:3:4:5:6:7:8
-+
-+	For printing IPv6 network-order 16 bit hex addresses. The 'I6' and 'i6'
-+	specifiers result in a printed address with ('I6') or without ('i6')
-+	colon-separators. Leading zeros are always used.
-+
-+	The additional 'c' specifier can be used with the 'I' specifier to
-+	print a compressed IPv6 address as described by
-+	http://tools.ietf.org/html/rfc5952
-+
-+UUID/GUID addresses:
-+
-+	%pUb	00010203-0405-0607-0809-0a0b0c0d0e0f
-+	%pUB	00010203-0405-0607-0809-0A0B0C0D0E0F
-+	%pUl	03020100-0504-0706-0809-0a0b0c0e0e0f
-+	%pUL	03020100-0504-0706-0809-0A0B0C0E0E0F
-+
-+	For printing 16 byte UUID/GUIDs addresses. The additional 'l', 'L',
-+	'b' and 'B' specifiers are used to specify a little endian order in
-+	lower ('l') or upper case ('L') hex characters - and big endian order
-+	in lower ('b') or upper case ('B') hex characters.
-+
-+	Where no additional specifiers are used the default little endian
-+	order with lower case hex characters will be printed.
-+
-+struct va_format:
-+
-+	%pV	
-+
-+	For printing struct va_format structures. These contain a format string
-+	and va_list as follows:
-+
-+	struct va_format {
-+		const char *fmt;
-+		va_list *va;
-+	};
-+
-+	Do not use this feature without some mechanism to verify the
-+	correctness of the format string and va_list arguments.
- 
- u64 SHOULD be printed with %llu/%llx, (unsigned long long):
- 
-@@ -32,4 +140,5 @@ Reminder: sizeof() result is of type size_t.
- Thank you for your cooperation and attention.
- 
- 
--By Randy Dunlap <rdunlap@xenotime.net>
-+By Randy Dunlap <rdunlap@xenotime.net> and
-+Andrew Murray <amurray@mpc-data.co.uk>
--- 
-1.7.4.1
+Proposed design:
+round-robin across the cgroups where they have memory allocated on the
+zone and also exceed the softlimit configured.
 
+there was a question on how to do zone balancing w/o global LRU. This
+could be solved by building another cgroup list per-zone, where we
+also link cgroups under their soft_limit. We won't scan the list
+unless the first list being exhausted and
+the free pages is still under the high_wmark.
+
+Since the per-zone memcg list design is being replaced by your
+patchset, some of the details doesn't apply. But the concept still
+remains where we would like to scan some memcgs first (above
+soft_limit) .
+
+>
+> It would be a lie about the current code in the first place, which
+> does soft limit reclaim and then regular reclaim, no matter the
+> outcome of the soft limit reclaim cycle.  It will go for the soft
+> limit first, but after an allocation under pressure the VM is likely
+> to have reclaimed from other memcgs as well.
+>
+> I saw your patch to fix that and break out of reclaim if soft limit
+> reclaim did enough.  But this fix is not much newer than my changes.
+
+My soft_limit patch was developed in parallel with your patchset, and
+most of that wouldn't apply here.
+Is that what you are referring to?
+
+>
+> The second part of this is:
+>
+>    Please note that soft limits is a best effort feature, it comes with
+>    no guarantees, but it does its best to make sure that when memory is
+>    heavily contended for, memory is allocated based on the soft limit
+>    hints/setup. Currently soft limit based reclaim is setup such that
+>    it gets invoked from balance_pgdat (kswapd).
+
+We had patch merged which add the soft_limit reclaim also in the global ttfp.
+
+memcg-add-the-soft_limit-reclaim-in-global-direct-reclaim.patch
+
+> It's not the pages-over-soft-limit that are best effort.  It says that
+> it tries its best to take soft limits into account while reclaiming.
+Hmm. Both cases are true. The best effort pages I referring to means
+"the page above the soft_limit are targeted to reclaim first under
+memory contention"
+
+>
+> My code does that, so I don't think we are breaking any promises
+> currently made in the documentation.
+>
+> But much more important than keeping documentation promises is not to
+> break actual users.  So if you are yourself a user of soft limits,
+> test the new code pretty please and complain if it breaks your setup!
+
+Yes, I've been running tests on your patchset, but not getting into
+specific configurations yet. But I don't think it is hard to generate
+the following scenario:
+
+on 32G machine, under root I have three cgroups with 20G hard_limit and
+cgroup-A: soft_limit 1g, usage 20g with clean file pages
+cgroup-B: soft_limit 10g, usage 5g with clean file pages
+cgroup-C: soft_limit 10g, usage 5g with clean file pages
+
+I would assume reclaiming from cgroup-A should be sufficient under
+global memory pressure, and no pages needs to be reclaimed from B or
+C, especially both of them have memory usage under their soft_limit.
+
+I see we also have discussion on the soft_limit reclaim on the [patch
+4] with Michal, then i might start working on that.
+
+--Ying
+
+
+
+
+>
