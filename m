@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab1FITuI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 15:50:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:48366 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755141Ab1FITuD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 15:50:03 -0400
-Message-ID: <4DF123AA.6070402@oracle.com>
-Date: Thu, 09 Jun 2011 12:48:58 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	id S1755404Ab1FITtm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 15:49:42 -0400
+Received: from nbd.name ([46.4.11.11]:47706 "EHLO nbd.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755043Ab1FITtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 15:49:39 -0400
+Message-ID: <4DF123C6.4000008@openwrt.org>
+Date: Thu, 09 Jun 2011 21:49:26 +0200
+From: Felix Fietkau <nbd@openwrt.org>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Timur Tabi <timur@freescale.com>
-CC: alan@lxorguk.ukuu.org.uk, arnd@arndb.de, kumar.gala@freescale.com,
-        benh@kernel.crashing.org, greg@kroah.com, akpm@kernel.org,
-        cmetcalf@tilera.com, konrad.wilk@oracle.com, dsaxena@linaro.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-console@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 7/7] [v5] drivers/virt: introduce Freescale hypervisor
- management driver
-References: <1307646794-26374-1-git-send-email-timur@freescale.com> <20110609124010.6335559e.randy.dunlap@oracle.com> <4DF12345.1040409@freescale.com>
-In-Reply-To: <4DF12345.1040409@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Miklos Szeredi <miklos@szeredi.hu>, NeilBrown <neilb@suse.de>,
+        viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        apw@canonical.com, hramrach@centrum.cz, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu
+Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
+References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu>	<20110608153208.dc705cda.akpm@linux-foundation.org>	<20110609115934.3c53f78f@notabene.brown>	<20110608205233.ebfedc4d.akpm@linux-foundation.org>	<87wrgvb28a.fsf@tucsk.pomaz.szeredi.hu> <20110609123843.77153b27.akpm@linux-foundation.org>
+In-Reply-To: <20110609123843.77153b27.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4DF123B7.004C:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/11 12:47, Timur Tabi wrote:
-> Randy Dunlap wrote:
->>>> +enum fsl_hv_ioctl_cmd {
->>>> +	FSL_HV_IOCTL_PARTITION_RESTART = _IOWR(0, 1, struct fsl_hv_ioctl_restart),
->>>> +	FSL_HV_IOCTL_PARTITION_GET_STATUS = _IOWR(0, 2, struct fsl_hv_ioctl_status),
->>>> +	FSL_HV_IOCTL_PARTITION_START = _IOWR(0, 3, struct fsl_hv_ioctl_start),
->>>> +	FSL_HV_IOCTL_PARTITION_STOP = _IOWR(0, 4, struct fsl_hv_ioctl_stop),
->>>> +	FSL_HV_IOCTL_MEMCPY = _IOWR(0, 5, struct fsl_hv_ioctl_memcpy),
->>>> +	FSL_HV_IOCTL_DOORBELL = _IOWR(0, 6, struct fsl_hv_ioctl_doorbell),
->>>> +	FSL_HV_IOCTL_GETPROP = _IOWR(0, 7, struct fsl_hv_ioctl_prop),
->>>> +	FSL_HV_IOCTL_SETPROP = _IOWR(0, 8, struct fsl_hv_ioctl_prop),
->>>> +};
-> 
->> Missing an entry in Documentation/ioctl/ioctl-number.txt for 0 (with conflict!).
-> 
-> If I change it from 0, I'm going to break binary compatibility with our apps.  I
-> agree that maybe I shouldn't have picked 0, but considering how many conflicts
-> there already are, I wonder what the point is.  Even if I pick a number that is
-> currently not listed in the chart, that doesn't mean that it's actually not
-> being used, or that it won't conflict in the future.
+On 2011-06-09 9:38 PM, Andrew Morton wrote:
+>>  >>  >  This sort of thing could be implemented in userspace and wired up via
+>>  >>  >  fuse, I assume.  Has that been attempted and why is it inadequate?
+>>
+>>  Yes, unionfs-fuse and deltafs (written by me) are two examples.
+>>
+>>  One issue that a customer had with deltafs was lack of XIP support.  The
+>>  other one (from the same customer) was the general yuck factor of
+>>  userspace filesystems.
+>>
+>>  There are also performance and resource use issues associated with
+>>  userspace filesystems.  These may or may not be problem depending on the
+>>  actual use.  But it's a fact that out-of-kernel filesystems will never
+>>  be as efficient as in-kernel ones.
+>
+> Yes, userspace filesystems have a good yuck factor.  In a way it's a
+> sad commentary on the concept of FUSE, but I guess one could look at it
+> another way: FUSE is good for prototypes and oddball small-volume stuff
+> but once a FUSE-based setup has proven useful and people are getting
+> benefit from it, it's time to look at an in-kernel implementation.
+We're using overlayfs in OpenWrt for embedded systems with 4 MB flash 
+and 16 MB RAM for using a jffs2 filesystem as an overlay to squashfs. 
+FUSE would add quite a bit of unnecessary bloat to that.
 
-Yes, I understood that.
+overlayfs so far is the only overlay filesystem implementation that I've 
+seen that works well for us with new kernels, and it has all the 
+features that we need (which aren't that many).
 
-> So is it okay to stick with 0, or do I need to pick a new number?
-
-I wasn't suggesting that you change the 0, just note that it has conflicts,
-like other ioctls do.
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+- Felix
