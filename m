@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806Ab1FJRDx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 13:03:53 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47440 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752316Ab1FJRDt (ORCPT
+	id S1754872Ab1FJRGO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 13:06:14 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:56314 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324Ab1FJRGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 13:03:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=cXP5nKagBOzFtlMCz6p+r7zidNK2vkMip0I9f1gtCh+U6lSmyCcQjzdczpr/w8NXib
-         73HF2ridoQbTszZPAOFWjDwNWgyqS7fsHnZeN/g41ovi5ej2Y2JkElwxbJTGs+9vc4sX
-         uCvpsmR1LogFU1D21xvAEeRRhpXsAtXHsKOog=
-Subject: [BUGFIX] [PATCH] APM: Dynamic select of APM_CPU_IDLE on APM
- enabling.
-From: Vitaliy Ivanov <vitalivanov@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: hilld@binarystorm.net, apmbugs@rothwell.emu.id.au, vitalivanov@gmail.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Jun 2011 20:03:45 +0300
-Message-ID: <1307725425.4266.23.camel@vivanov>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 10 Jun 2011 13:06:13 -0400
+Date: Fri, 10 Jun 2011 18:05:35 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Kyungmin Park <kmpark@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
+        thomas.abraham@linaro.org
+Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
+ Power Management
+Message-ID: <20110610170535.GC25774@srcf.ucam.org>
+References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
+ <20110528005640.9076c0b1.akpm@linux-foundation.org>
+ <20110609185259.GA29287@linux.vnet.ibm.com>
+ <BANLkTinxeeSby_+tta8EhzCg3VbD6+=g+g@mail.gmail.com>
+ <20110610151121.GA2230@linux.vnet.ibm.com>
+ <20110610155954.GA25774@srcf.ucam.org>
+ <20110610165529.GC2230@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110610165529.GC2230@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 10, 2011 at 09:55:29AM -0700, Paul E. McKenney wrote:
+> On Fri, Jun 10, 2011 at 04:59:54PM +0100, Matthew Garrett wrote:
+> > For the server case, the low hanging fruit would seem to be 
+> > finer-grained self-refresh. At best we seem to be able to do that on a 
+> > per-CPU socket basis right now. The difference between active and 
+> > self-refresh would seem to be much larger than the difference between 
+> > self-refresh and powered down.
+> 
+> By "finer-grained self-refresh" you mean turning off refresh for banks
+> of memory that are not being used, right?  If so, this is supported by
+> the memory-regions support provided, at least assuming that the regions
+> can be aligned with the self-refresh boundaries.
 
-Bug fix for #36902:
-https://bugzilla.kernel.org/show_bug.cgi?id=36902
+I mean at the hardware level. As far as I know, the best we can do at 
+the moment is to put an entire node into self refresh when the CPU hits 
+package C6.
 
-I saw email about removing APM completely but as of now we can add the following to close build issue.
----
-
-Dynamic select of APM_CPU_IDLE feature for enabling APM.
-
-Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
-
->From f00634bec035f1526266340bf75aa4e2620c8284 Mon Sep 17 00:00:00 2001
-From: Vitaliy Ivanov <vitalivanov@gmail.com>
-Date: Fri, 10 Jun 2011 19:06:37 +0300
-Subject: [PATCH] Dynamic select of APM_CPU_IDLE on APM enabling.
-
----
- arch/x86/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index da34972..3c9b459 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1721,6 +1721,7 @@ config X86_APM_BOOT
- 
- menuconfig APM
- 	tristate "APM (Advanced Power Management) BIOS support"
-+	select APM_CPU_IDLE
- 	depends on X86_32 && PM_SLEEP
- 	---help---
- 	  APM is a BIOS specification for saving power using several different
 -- 
-1.7.0.4
-
-
-
+Matthew Garrett | mjg59@srcf.ucam.org
