@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757323Ab1FJNJY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 09:09:24 -0400
-Received: from grimli.r00tworld.net ([83.169.44.195]:43051 "EHLO
+	id S1757359Ab1FJNJd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 09:09:33 -0400
+Received: from grimli.r00tworld.net ([83.169.44.195]:43065 "EHLO
 	mail.r00tworld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757221Ab1FJNJW (ORCPT
+	with ESMTP id S1757039Ab1FJNJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 09:09:22 -0400
+	Fri, 10 Jun 2011 09:09:29 -0400
 From: Mathias Krause <minipli@googlemail.com>
-To: Mikael Starvik <starvik@axis.com>
+To: David Howells <dhowells@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>
-Subject: [PATCH] cris, exec: remove redundant set_fs(USER_DS)
-Date: Fri, 10 Jun 2011 15:09:21 +0200
-Message-Id: <1307711361-6112-1-git-send-email-minipli@googlemail.com>
+        linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>
+Subject: [PATCH] frv, exec: remove redundant set_fs(USER_DS)
+Date: Fri, 10 Jun 2011 15:09:28 +0200
+Message-Id: <1307711368-7279-1-git-send-email-minipli@googlemail.com>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
 References: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
@@ -28,37 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 The address limit is already set in flush_old_exec() so those calls to
 set_fs(USER_DS) are redundant.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
----
- arch/cris/include/arch-v10/arch/processor.h |    1 -
- arch/cris/include/arch-v32/arch/processor.h |    1 -
- 2 files changed, 0 insertions(+), 2 deletions(-)
+Also removed the dead code in flush_thread().
 
-diff --git a/arch/cris/include/arch-v10/arch/processor.h b/arch/cris/include/arch-v10/arch/processor.h
-index cc692c7..93feb2a 100644
---- a/arch/cris/include/arch-v10/arch/processor.h
-+++ b/arch/cris/include/arch-v10/arch/processor.h
-@@ -53,7 +53,6 @@ struct thread_struct {
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+---
+ arch/frv/include/asm/processor.h |    1 -
+ arch/frv/kernel/process.c        |    5 +----
+ 2 files changed, 1 insertions(+), 5 deletions(-)
+
+diff --git a/arch/frv/include/asm/processor.h b/arch/frv/include/asm/processor.h
+index 4b789ab..81c2e27 100644
+--- a/arch/frv/include/asm/processor.h
++++ b/arch/frv/include/asm/processor.h
+@@ -97,7 +97,6 @@ extern struct task_struct *__kernel_current_task;
   */
+ #define start_thread(_regs, _pc, _usp)			\
+ do {							\
+-	set_fs(USER_DS); /* reads from user space */	\
+ 	__frame = __kernel_frame0_ptr;			\
+ 	__frame->pc	= (_pc);			\
+ 	__frame->psr	&= ~PSR_S;			\
+diff --git a/arch/frv/kernel/process.c b/arch/frv/kernel/process.c
+index 9d35975..3901df1 100644
+--- a/arch/frv/kernel/process.c
++++ b/arch/frv/kernel/process.c
+@@ -143,10 +143,7 @@ void machine_power_off(void)
  
- #define start_thread(regs, ip, usp) do { \
--	set_fs(USER_DS);      \
- 	regs->irp = ip;       \
- 	regs->dccr |= 1 << U_DCCR_BITNR; \
- 	wrusp(usp);           \
-diff --git a/arch/cris/include/arch-v32/arch/processor.h b/arch/cris/include/arch-v32/arch/processor.h
-index f80b477..9603c90 100644
---- a/arch/cris/include/arch-v32/arch/processor.h
-+++ b/arch/cris/include/arch-v32/arch/processor.h
-@@ -47,7 +47,6 @@ struct thread_struct {
-  */
- #define start_thread(regs, ip, usp) \
- do { \
--	set_fs(USER_DS); \
- 	regs->erp = ip; \
- 	regs->ccs |= 1 << (U_CCS_BITNR + CCS_SHIFT); \
- 	wrusp(usp); \
+ void flush_thread(void)
+ {
+-#if 0 //ndef NO_FPU
+-	unsigned long zero = 0;
+-#endif
+-	set_fs(USER_DS);
++	/* nothing */
+ }
+ 
+ inline unsigned long user_stack(const struct pt_regs *regs)
 -- 
 1.5.6.5
 
