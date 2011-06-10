@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932213Ab1FJNK5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 09:10:57 -0400
-Received: from grimli.r00tworld.net ([83.169.44.195]:43863 "EHLO
+	id S932228Ab1FJNLF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 09:11:05 -0400
+Received: from grimli.r00tworld.net ([83.169.44.195]:43904 "EHLO
 	mail.r00tworld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932137Ab1FJNKy (ORCPT
+	with ESMTP id S932137Ab1FJNK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 09:10:54 -0400
+	Fri, 10 Jun 2011 09:10:59 -0400
 From: Mathias Krause <minipli@googlemail.com>
-To: "David S. Miller" <davem@davemloft.net>
+To: Jeff Dike <jdike@addtoit.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>
-Subject: [PATCH] sparc, exec: remove redundant addr_limit assignment
-Date: Fri, 10 Jun 2011 15:10:53 +0200
-Message-Id: <1307711453-17412-1-git-send-email-minipli@googlemail.com>
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH] um, exec: remove redundant set_fs(USER_DS)
+Date: Fri, 10 Jun 2011 15:10:57 +0200
+Message-Id: <1307711457-17613-1-git-send-email-minipli@googlemail.com>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
 References: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
@@ -25,42 +26,26 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 The address limit is already set in flush_old_exec() so this
-assignment of USER_DS is redundant.
+set_fs(USER_DS) is redundant.
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Richard Weinberger <richard@nod.at>
 ---
- arch/sparc/kernel/process_32.c |    3 +--
- arch/sparc/kernel/process_64.c |    3 ---
- 2 files changed, 1 insertions(+), 5 deletions(-)
+ arch/um/kernel/exec.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/arch/sparc/kernel/process_32.c b/arch/sparc/kernel/process_32.c
-index c8cc461..f793742 100644
---- a/arch/sparc/kernel/process_32.c
-+++ b/arch/sparc/kernel/process_32.c
-@@ -380,8 +380,7 @@ void flush_thread(void)
- #endif
- 	}
+diff --git a/arch/um/kernel/exec.c b/arch/um/kernel/exec.c
+index 09bd7b5..939a4a6 100644
+--- a/arch/um/kernel/exec.c
++++ b/arch/um/kernel/exec.c
+@@ -38,7 +38,6 @@ void flush_thread(void)
  
--	/* Now, this task is no longer a kernel thread. */
--	current->thread.current_ds = USER_DS;
-+	/* This task is no longer a kernel thread. */
- 	if (current->thread.flags & SPARC_FLAG_KTHREAD) {
- 		current->thread.flags &= ~SPARC_FLAG_KTHREAD;
- 
-diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
-index c158a95..d959cd0 100644
---- a/arch/sparc/kernel/process_64.c
-+++ b/arch/sparc/kernel/process_64.c
-@@ -368,9 +368,6 @@ void flush_thread(void)
- 
- 	/* Clear FPU register state. */
- 	t->fpsaved[0] = 0;
--	
--	if (get_thread_current_ds() != ASI_AIUS)
--		set_fs(USER_DS);
+ void start_thread(struct pt_regs *regs, unsigned long eip, unsigned long esp)
+ {
+-	set_fs(USER_DS);
+ 	PT_REGS_IP(regs) = eip;
+ 	PT_REGS_SP(regs) = esp;
  }
- 
- /* It's a bit more tricky when 64-bit tasks are involved... */
 -- 
 1.5.6.5
 
