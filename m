@@ -1,68 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab1FJRjv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 13:39:51 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:43584 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753849Ab1FJRjs (ORCPT
+	id S1756969Ab1FJRn2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 13:43:28 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34088 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753849Ab1FJRn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 13:39:48 -0400
+	Fri, 10 Jun 2011 13:43:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=tGRM6Oay7ADKiES3ldnmkwVFLLDhsqGOlbXnTp3ereDtPJD+QUyzDB7kxQ2cFGuiGh
-         5XkNDouaf8SR/CA/XSH+/DW7GM2d3RZjzUxxwue9EdOfRnzq53AlZkl4hk/wET2Jk/Ti
-         eIqC1IsQ97jzhgkHXbtNjU/pQ5ScjjIwBRZmo=
-Message-ID: <4DF256E1.4010703@pobox.com>
-Date: Fri, 10 Jun 2011 13:39:45 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=qyyGkYEYlg3aPNydUzUnNBN3cYkqIwspIpzglbBdWsXBWT6k22HufTB0eT1ftf/uE7
+         KHS+S+w5WSukVj6sYX6G7KEndmDQuId73EqplLSsV1FWqX30IOKbQ1SQnxb2oDxdz04a
+         vbsRgLFo3WAEJRFddmt2yHoEKmVFCC4tJGHZ0=
 MIME-Version: 1.0
-To: Mark Lord <kernel@teksavvy.com>
-CC: Tejun Heo <htejun@gmail.com>, Bruce Stenning <b.stenning@indigovision.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-References: <20110425162242.GB30828@mtj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554BDC@gretna.indigovision.com> <20110426135027.GI878@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554C70@gretna.indigovision.com> <20110426155229.GM878@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554C91@gretna.indigovision.com> <20110430140109.GJ29280@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C777089B2@gretna.indigovision.com> <20110525094127.GF10146@htj.dyndns.org> <4DF20E03.9030502@teksavvy.com> <20110610140155.GJ15235@htj.dyndns.org> <4DF25526.9010800@teksavvy.com>
-In-Reply-To: <4DF25526.9010800@teksavvy.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1307726331-28618-1-git-send-email-lars@metafoo.de>
+References: <1307726331-28618-1-git-send-email-lars@metafoo.de>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Fri, 10 Jun 2011 13:43:05 -0400
+Message-ID: <BANLkTimLAfEj+tgNMWjTsanccgfEt9UW1g@mail.gmail.com>
+Subject: Re: [Device-drivers-devel] [PATCH 1/3] ASoC: Add ADAU1701 codec driver
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, uclinux-dist-devel@blackfin.uclinux.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        device-drivers-devel@blackfin.uclinux.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2011 01:32 PM, Mark Lord wrote:
-> On 11-06-10 10:01 AM, Tejun Heo wrote:
->> Hello,
->>
->> (cc'ing Jeff)
->>
->> On Fri, Jun 10, 2011 at 08:28:51AM -0400, Mark Lord wrote:
->>> Tejun, did this ever go upstream and to -stable ??
->>> I'm asking because I see the same issue with other SATA controllers,
->>> in particular with sata_sil boards.  Hot plug generally works _once_
->>> per port, and then stops working.
->>
->> The patch is still pending,
->>
->>   http://article.gmane.org/gmane.linux.ide/49613
->>
->> I don't think it would be wise to include the patch for -stable tho.
->> It's not a regression fix and has some possibility of introducing
->> regressions, so....
->
-> Not a regression fix?  Excuse me?
-> SATA hotplug always used to work fine,
-> and is more or less essential to reboot-free operations.
+On Fri, Jun 10, 2011 at 13:18, Lars-Peter Clausen wrote:
+> +MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
 
-I can move it from #upstream (linux-next) to #upstream-fixes, if we feel 
-it is sufficient urgent.  It seemed like it needed more testing, but 
-maybe the best way to do that is #upstream-fixes?
+did you actually rewrite this thing from scratch ?  seems like you
+should keep Cliff as the author in git/MODULE_AUTHOR, and then add
+your name to the s-o-b list and this macro.
 
-Was mainly a -rc question, to me.
-
-	Jeff
-
-
-
+friendly git commits can easily be cherry picked from my tree for asoc stuff:
+http://git.kernel.org/?p=linux/kernel/git/vapier/blackfin.git;a=summary
+(see the "trunk" branch)
+-mike
