@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722Ab1FJRUi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 13:20:38 -0400
-Received: from smtp-out-056.synserver.de ([212.40.185.56]:1102 "HELO
-	smtp-out-056.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755219Ab1FJRT5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 13:19:57 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 17578
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: alsa-devel@alsa-project.org, device-drivers-devel@blackfin.uclinux.org,
-        linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: [PATCH 3/3] Blackfin: bf537: Stamp: Register adau1701 codec and ASoC machine driver
-Date: Fri, 10 Jun 2011 19:18:51 +0200
-Message-Id: <1307726331-28618-3-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1307726331-28618-1-git-send-email-lars@metafoo.de>
-References: <1307726331-28618-1-git-send-email-lars@metafoo.de>
+	id S1756381Ab1FJRUU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 13:20:20 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:54739 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755635Ab1FJRUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 13:20:15 -0400
+Date: Fri, 10 Jun 2011 10:19:39 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Kyungmin Park <kmpark@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
+        thomas.abraham@linaro.org
+Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
+ Power Management
+Message-ID: <20110610171939.GE2230@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
+ <20110528005640.9076c0b1.akpm@linux-foundation.org>
+ <20110609185259.GA29287@linux.vnet.ibm.com>
+ <BANLkTinxeeSby_+tta8EhzCg3VbD6+=g+g@mail.gmail.com>
+ <20110610151121.GA2230@linux.vnet.ibm.com>
+ <20110610155954.GA25774@srcf.ucam.org>
+ <20110610165529.GC2230@linux.vnet.ibm.com>
+ <20110610170535.GC25774@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110610170535.GC25774@srcf.ucam.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mike Frysinger <vapier@gentoo.org>
----
- arch/blackfin/mach-bf537/boards/stamp.c |   17 +++++++++++++++++
- 1 files changed, 17 insertions(+), 0 deletions(-)
+On Fri, Jun 10, 2011 at 06:05:35PM +0100, Matthew Garrett wrote:
+> On Fri, Jun 10, 2011 at 09:55:29AM -0700, Paul E. McKenney wrote:
+> > On Fri, Jun 10, 2011 at 04:59:54PM +0100, Matthew Garrett wrote:
+> > > For the server case, the low hanging fruit would seem to be 
+> > > finer-grained self-refresh. At best we seem to be able to do that on a 
+> > > per-CPU socket basis right now. The difference between active and 
+> > > self-refresh would seem to be much larger than the difference between 
+> > > self-refresh and powered down.
+> > 
+> > By "finer-grained self-refresh" you mean turning off refresh for banks
+> > of memory that are not being used, right?  If so, this is supported by
+> > the memory-regions support provided, at least assuming that the regions
+> > can be aligned with the self-refresh boundaries.
+> 
+> I mean at the hardware level. As far as I know, the best we can do at 
+> the moment is to put an entire node into self refresh when the CPU hits 
+> package C6.
 
-diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
-index 76db1d4..1365cbd 100644
---- a/arch/blackfin/mach-bf537/boards/stamp.c
-+++ b/arch/blackfin/mach-bf537/boards/stamp.c
-@@ -2390,6 +2390,11 @@ static struct i2c_board_info __initdata bfin_i2c_board_info[] = {
- 		I2C_BOARD_INFO("adau1361", 0x38),
- 	},
- #endif
-+#if defined(CONFIG_SND_SOC_ADAU1701) || defined(CONFIG_SND_SOC_ADAU1701_MODULE)
-+	{
-+		I2C_BOARD_INFO("adau1701", 0x34),
-+	},
-+#endif
- #if defined(CONFIG_AD525X_DPOT) || defined(CONFIG_AD525X_DPOT_MODULE)
- 	{
- 		I2C_BOARD_INFO("ad5258", 0x18),
-@@ -2760,6 +2765,13 @@ static struct platform_device iio_gpio_trigger = {
- };
- #endif
- 
-+#if defined(CONFIG_SND_BF5XX_SOC_ADAU1701) || \
-+	defined(CONFIG_SND_BF5XX_SOC_ADAU1701_MODULE)
-+static struct platform_device bf5xx_adau1701_device = {
-+	.name = "bf5xx-adau1701",
-+};
-+#endif
-+
- static struct platform_device *stamp_devices[] __initdata = {
- 
- 	&bfin_dpmc,
-@@ -2914,6 +2926,11 @@ static struct platform_device *stamp_devices[] __initdata = {
- 	defined(CONFIG_IIO_GPIO_TRIGGER_MODULE)
- 	&iio_gpio_trigger,
- #endif
-+
-+#if defined(CONFIG_SND_BF5XX_SOC_ADAU1701) || \
-+	defined(CONFIG_SND_BF5XX_SOC_ADAU1701_MODULE)
-+	&bf5xx_adau1701_device,
-+#endif
- };
- 
- static int __init stamp_init(void)
--- 
-1.7.2.5
+But this depends on the type of system and CPU family, right?  If you
+can say, which hardware are you thinking of?  (I am thinking of ARM.)
 
+							Thanx, Paul
