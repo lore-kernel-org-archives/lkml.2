@@ -1,100 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757538Ab1FJAVJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 20:21:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13805 "EHLO mga09.intel.com"
+	id S1757428Ab1FJAX7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 20:23:59 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:58689 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757419Ab1FJAVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 20:21:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,344,1304319600"; 
-   d="scan'208";a="11672495"
-Date: Thu, 9 Jun 2011 17:21:03 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libusb-devel@lists.sourceforge.net
-Cc: Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
-        hector@marcansoft.com, Jan Kiszka <jan.kiszka@siemens.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oliver@neukum.org>, Greg KH <greg@kroah.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: USB mini-summit at LinuxCon Vancouver
-Message-ID: <20110610002103.GA7169@xanatos>
+	id S1755012Ab1FJAX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 20:23:58 -0400
+Date: Thu, 9 Jun 2011 17:23:50 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>
+Subject: Re: [PATCH 1/4] rcu: Detect uses of rcu read side in extended
+ quiescent states
+Message-ID: <20110610002350.GO2285@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1307663247-5397-1-git-send-email-fweisbec@gmail.com>
+ <1307663247-5397-2-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1307663247-5397-2-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm pleased to announce a USB mini-summit at LinuxCon Vancouver.
+On Fri, Jun 10, 2011 at 01:47:24AM +0200, Frederic Weisbecker wrote:
+> Detect uses of rcu that are not supposed to happen when we
+> are in an extended quiescent state.
+> 
+> This can happen for example if we use rcu between the time we
+> stop the tick and the time we restart it. Or inside an irq that
+> didn't use rcu_irq_enter,exit() or other possible kind of rcu API
+> misuse.
+> 
+> v2: Rebase against latest rcu changes, handle tiny RCU as well
 
-What:	USB mini-summit
-When:	Tuesday, August 16th, all day
-Where:	At the conference venue, room TBD pending confirmation from
-	Angela Brown.
+Good idea on checking for RCU read-side critical sections happening
+in dyntick-idle periods!
 
-Proposed topics include USB virtualization, and improved bandwidth APIs
-between the USB core and drivers (especially webcam drivers).  See the
-detailed topic list below.  Anyone is also welcome to propose or show up
-with a USB related topic.  MUSB?  USB 3.0 gadget drivers?  USB-IP?
+But wouldn't it be better to put the checks in rcu_read_lock() and
+friends?  The problem I see with putting them in rcu_dereference_check()
+is that someone can legitimately do something like the following
+while in dyntick-idle mode:
 
-The USB mini-summit does overlap with the virtualization mini-summit by
-a day, but I'm hoping we can schedule talks so some of the
-virtualization folks can make it to the USB mini-summit.  The other
-option was on Friday during the conference which was not ideal.
+	spin_lock(&mylock);
+	/* do a bunch of stuff */
+	p = rcu_dereference_check(myrcuptr, lockdep_is_held(&mylock));
 
-Proposed topics:
+The logic below would complain about this usage, despite the fact
+that it is perfectly safe because the update-side lock is held.
 
-Topic 1
--------
+Make sense, or am I missing something?
 
-The KVM folks suggested that it would be good to get USB and
-virtualization developers together to talk about how to virtualize the
-xHCI host controller.  The xHCI spec architect worked closely with
-VMWare to get some extra goodies in the spec to help virtualization, and
-I'd like to see the other virtualization developers take advantage of
-that.  I'd also like us to hash out any issues they have been finding in
-the USB core or xHCI driver during the virtualization effort.
+						Thanx, Paul
 
-
-Topic 2
--------
-
-I'd also like to get the V4L and audio developers who work with USB
-devices together with the core USB folks to talk about bandwidth
-management under xHCI.
-
-One of the issues is that since the xHCI hardware does bandwidth
-management, not the xHCI driver, a schedule that will take too much
-bandwidth will get rejected much sooner than any USB driver currently
-expects (during a call to usb_set_interface).  This poses issues, since
-most USB video drivers negotiate the video size and frame rate after
-they call usb_set_interface, so they don't know whether they can fall
-back to a less bandwidth-intensive setting.  Currently, they just submit
-URBs with less and less bandwidth until one interval setting gets
-accepted that won't work under xHCI.
-
-A second issue is that that some drivers need less bandwidth than the
-device advertises, and the xHCI driver currently uses whatever periodic
-interval the device advertises in its descriptors.  This is not what the
-video/audio driver wants, especially in the case of buggy high speed
-devices that advertise the interval in frames, not microframes.  There
-needs to be some way for the drivers to communicate their bandwidth
-needs to the USB core.  We've known about this issue for a while, and I
-think it's time to get everyone in the same room and hash out an API.
-
-(I will send out an API proposal later this month.)
-
-Hope to see you there!
-
-Sarah Sharp
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Milton Miller <miltonm@bga.com>
+> ---
+>  include/linux/rcupdate.h |    9 +++++++++
+>  kernel/rcutiny.c         |   13 +++++++++++++
+>  kernel/rcutree.c         |   14 ++++++++++++++
+>  3 files changed, 36 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 9db50df..6cad1f3 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -388,6 +388,12 @@ extern int rcu_my_thread_group_empty(void);
+> 
+>  #endif /* #else #ifdef CONFIG_PROVE_RCU */
+> 
+> +#if defined(CONFIG_PROVE_RCU) && defined(CONFIG_NO_HZ)
+> +extern bool rcu_check_extended_qs(void);
+> +#else
+> +static inline bool rcu_check_extended_qs(void) { return false; }
+> +#endif
+> +
+>  /*
+>   * Helper functions for rcu_dereference_check(), rcu_dereference_protected()
+>   * and rcu_assign_pointer().  Some of these could be folded into their
+> @@ -415,6 +421,9 @@ extern int rcu_my_thread_group_empty(void);
+>  		typeof(*p) *_________p1 = (typeof(*p)*__force )ACCESS_ONCE(p); \
+>  		rcu_lockdep_assert(c, "suspicious rcu_dereference_check()" \
+>  				      " usage"); \
+> +		rcu_lockdep_assert(!rcu_check_extended_qs(), \
+> +				   "use of rcu_dereference_check() in an extended" \
+> +				   " quiescent state");	\
+>  		rcu_dereference_sparse(p, space); \
+>  		smp_read_barrier_depends(); \
+>  		((typeof(*p) __force __kernel *)(_________p1)); \
+> diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+> index 775d69a..44a2a15 100644
+> --- a/kernel/rcutiny.c
+> +++ b/kernel/rcutiny.c
+> @@ -76,6 +76,19 @@ void rcu_exit_nohz(void)
+>  	rcu_dynticks_nesting++;
+>  }
+> 
+> +
+> +#ifdef CONFIG_PROVE_RCU
+> +
+> +bool rcu_check_extended_qs(void)
+> +{
+> +	if (!rcu_dynticks_nesting)
+> +		return true;
+> +
+> +	return false;
+> +}
+> +
+> +#endif
+> +
+>  #endif /* #ifdef CONFIG_NO_HZ */
+> 
+>  /*
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 305dfae..8211527 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -432,6 +432,20 @@ void rcu_irq_exit(void)
+>  	rcu_enter_nohz();
+>  }
+> 
+> +#ifdef CONFIG_PROVE_RCU
+> +
+> +bool rcu_check_extended_qs(void)
+> +{
+> +	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
+> +
+> +	if (atomic_read(&rdtp->dynticks) & 0x1)
+> +		return false;
+> +
+> +	return true;
+> +}
+> +
+> +#endif /* CONFIG_PROVE_RCU */
+> +
+>  #ifdef CONFIG_SMP
+> 
+>  /*
+> -- 
+> 1.7.5.4
+> 
