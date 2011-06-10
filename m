@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755822Ab1FJOgE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 10:36:04 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:58971 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755547Ab1FJOgA (ORCPT
+	id S1755644Ab1FJOnh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 10:43:37 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:36356 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752004Ab1FJOne convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 10:36:00 -0400
-Date: Fri, 10 Jun 2011 10:35:50 -0400 (EDT)
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: Hannes Reinecke <hare@suse.de>
-Cc: Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-        Christoph Hellwig <chellwig@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org
-Message-ID: <1504884387.187692.1307716550265.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <4DF21447.6090005@suse.de>
-Subject: Re: virtio scsi host draft specification, v3
+	Fri, 10 Jun 2011 10:43:34 -0400
+Date: Fri, 10 Jun 2011 15:43:27 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: Re: linux-next: manual merge of the arm-lpae tree with the arm tree
+Message-ID: <20110610144326.GC18133@e102109-lin.cambridge.arm.com>
+References: <20110610105255.3105eef2.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.5.71]
-X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
+In-Reply-To: <20110610105255.3105eef2.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 10 Jun 2011 14:44:01.0768 (UTC) FILETIME=[D6A83E80:01CC277C]
+X-MC-Unique: 111061015433002201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If requests are placed on arbitrary queues you'll inevitably run on
-> locking issues to ensure strict request ordering.
-> I would add here:
+On Fri, Jun 10, 2011 at 01:52:55AM +0100, Stephen Rothwell wrote:
+> Today's linux-next merge of the arm-lpae tree got a conflict in
+> arch/arm/mm/context.c between commit 07989b7ad63a ("Revert "ARM: 6943/1:
+> mm: use TTBR1 instead of reserved context ID"") from the arm tree and
+> commit 21fa7e3ea279 ("ARM: LPAE: Add context switching support") from the
+> arm-lpae tree.
 > 
-> If a device uses more than one queue it is the responsibility of the
-> device to ensure strict request ordering.
+> I fixed it up (I think - see below) and can carry the fix as necessary.
 
-Applied with s/device/guest/g.
+Thanks for this. I replaced the conflicting commit (21fa7e4e ARM: LPAE:
+Add context switching support) with an older version (prior to patch
+6943/1 that Russell reverted). The cpu_set_reserved_ttbr0() is now
+called cpu_set_asid() and does something different.
 
-> Please do not rely in bus/target/lun here. These are leftovers from
-> parallel SCSI and do not have any meaning on modern SCSI
-> implementation (eg FC or SAS). Rephrase that to
-> 
-> The lun field is the Logical Unit Number as defined in SAM.
+In my for-next branch I also included the patches that Russell pushed
+via his tree to be able to solve the conflicts:
 
-Ok.
+51b5dba Revert "ARM: 6943/1: mm: use TTBR1 instead of reserved context ID"
+25194f6 Revert "ARM: 6944/1: mm: allow ASID 0 to be allocated to tasks"
 
-> >      The status byte is written by the device to be the SCSI status
-> >      code.
->
-> ?? I doubt that exists. Make that:
-> 
-> The status byte is written by the device to be the status code as
-> defined in SAM.
+and I removed from my branch:
 
-Ok.
+b488121 ARM: mm: fix racy ASID rollover broadcast on SMP platforms
 
-> >      The response byte is written by the device to be one of the
-> >      following:
-> >
-> >      - VIRTIO_SCSI_S_OK when the request was completed and the
-> >      status byte
-> >        is filled with a SCSI status code (not necessarily "GOOD").
-> >
-> >      - VIRTIO_SCSI_S_UNDERRUN if the content of the CDB requires
-> >      transferring
-> >        more data than is available in the data buffers.
-> >
-> >      - VIRTIO_SCSI_S_ABORTED if the request was cancelled due to a
-> >      reset
-> >        or another task management function.
-> >
-> >      - VIRTIO_SCSI_S_FAILURE for other host or guest error. In
-> >      particular,
-> >        if neither dataout nor datain is empty, and the
-> >        VIRTIO_SCSI_F_INOUT
-> >        feature has not been negotiated, the request will be
-> >        immediately
-> >        returned with a response equal to VIRTIO_SCSI_S_FAILURE.
-> >
-> And, of course:
-> 
-> VIRTIO_SCSI_S_DISCONNECT if the request could not be processed due
-> to a communication failure (eg device was removed or could not be
-> reached).
+Hopefully there shouldn't be further conflicts in tomorrow's -next tree.
 
-Ok.
+-- 
+Catalin
 
-> This specification implies a strict one-to-one mapping between host
-> and target. IE there is no way of specifying more than one target
-> per host.
-
-Actually no, the intention is to use hierarchical LUNs to support
-more than one target per host.
-
-Paolo
