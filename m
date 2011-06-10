@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756525Ab1FJMp2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 08:45:28 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:64994 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756050Ab1FJMpX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 08:45:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=PDwWPcFYImnUpu9vCh4BnIndirEr19KsyiJQsi6kkZ4kW1Rv0vWbS27hEjoj87nwyw
-         zIjJwEwuYpFmBMqMlmeOV40ymrNrp8KGRmZZOxMz+5tg2nSWMv2X+9L3tkLQvXZSHmfp
-         BsGbOli7YPB2+3a5wP8H/uqbLn36e3I8JXs4Y=
+	id S1756968Ab1FJMr1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 08:47:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6568 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756011Ab1FJMr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 08:47:26 -0400
+Message-ID: <4DF21254.6090106@redhat.com>
+Date: Fri, 10 Jun 2011 09:47:16 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <4DF2053F.6080502@itwm.fraunhofer.de>
-References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu>
- <20110608153208.dc705cda.akpm@linux-foundation.org> <20110609115934.3c53f78f@notabene.brown>
- <20110608205233.ebfedc4d.akpm@linux-foundation.org> <20110609134947.GD13242@shadowen.org>
- <20110609123220.6afb9d0f.akpm@linux-foundation.org> <4DF2053F.6080502@itwm.fraunhofer.de>
-From: Michal Suchanek <hramrach@centrum.cz>
-Date: Fri, 10 Jun 2011 14:45:03 +0200
-X-Google-Sender-Auth: -7su_3IvZ4Axb1cC1k7hdxxLXf8
-Message-ID: <BANLkTimc20TDKiZDpSsnJSr-utOrU1oRdw@mail.gmail.com>
-Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
-To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>, NeilBrown <neilb@suse.de>,
-        Miklos Szeredi <miklos@szeredi.hu>, viro@zeniv.linux.org.uk,
-        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nbd@openwrt.org, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-media@vger.kernel.org,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for June 8 (docbook/media)
+References: <20110608161046.4ad95776.sfr@canb.auug.org.au> <20110608125243.e63a07fc.randy.dunlap@oracle.com> <4DF11E15.5030907@infradead.org> <4DF12263.3070900@redhat.com> <4DF12DD1.7060606@oracle.com> <4DF1581E.8050308@redhat.com> <4DF1593A.6080306@oracle.com>
+In-Reply-To: <4DF1593A.6080306@oracle.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 June 2011 13:51, Bernd Schubert <bernd.schubert@itwm.fraunhofer.de> wrote:
-> On 06/09/2011 09:32 PM, Andrew Morton wrote:
->>
->> On Thu, 9 Jun 2011 14:49:47 +0100
->> Andy Whitcroft<apw@canonical.com> Â wrote:
->>
->>> On Wed, Jun 08, 2011 at 08:52:33PM -0700, Andrew Morton wrote:
->>>
->>> The problem with the userspace alternative is that it does not work. I
->>> tried to run my live CD on top of unionfs-fuse and the filesystem
->>> would fail intermittently leading to random errors during boot.
->>
->>
->> If the implementation is slow or buggy then the appropriate action is
->> to speed it up and to fix the bugs, so these are just non-arguments,
->> IMO.
->
-> Exactly. It is rather sad that people never bothered to file bug reports
-> about slow performance issues. I'm one of the upstream authors of
-> unionfs-fuse and also use it on my own for live-USB sticks and NFS-booted
-> systems and do not have such problems.
+Hi Randy,
 
-The issue is that while I can pause the boot process in initramfs and
-the filesystem appears all well and running if I run init off the
-filesystem some filesystem operations just fail at random leading to
-files seemingly missing intermittently and the live CD failing to
-boot.
+Em 09-06-2011 20:37, Randy Dunlap escreveu:
+> 
+> Big hint:  I see these errors not during "make htmldocs" but during a kernel code build
+> when CONFIG_BUILD_DOCSRC=y.
+> 
+> Sorry, I should have mentioned this earlier.
 
-I realize this is tremendously useful information but that's all I can
-say about the issue which is why I did not bother to report it
-anywhere.
+I couldn't reach any troubles there. Documentation build is stopping earlier.
+I'm using the -next tree for 20110610:
 
-I used whatever was packaged in Debian Squeeze.
+$ make defconfig
+$ make CONFIG_BUILD_DOCSRC=y -j 16 Documentation/
 
-Thanks
+Documentation/networking/timestamping/timestamping.c:45:30: error: linux/net_tstamp.h: No such file or directory
+Documentation/networking/timestamping/timestamping.c: In function ‘main’:
+Documentation/networking/timestamping/timestamping.c:331: error: storage size of ‘hwconfig’ isn’t known
+Documentation/networking/timestamping/timestamping.c:331: error: storage size of ‘hwconfig_requested’ isn’t known
+Documentation/networking/timestamping/timestamping.c:355: error: ‘SOF_TIMESTAMPING_TX_HARDWARE’ undeclared (first use in this function)
+Documentation/networking/timestamping/timestamping.c:355: error: (Each undeclared identifier is reported only once
+Documentation/networking/timestamping/timestamping.c:355: error: for each function it appears in.)
+Documentation/networking/timestamping/timestamping.c:357: error: ‘SOF_TIMESTAMPING_TX_SOFTWARE’ undeclared (first use in this function)
+Documentation/networking/timestamping/timestamping.c:359: error: ‘SOF_TIMESTAMPING_RX_HARDWARE’ undeclared (first use in this function)
+Documentation/networking/timestamping/timestamping.c:361: error: ‘SOF_TIMESTAMPING_RX_SOFTWARE’ undeclared (first use in this function)
+Documentation/networking/timestamping/timestamping.c:363: error: ‘SOF_TIMESTAMPING_SOFTWARE’ undeclared (first use in this function)
+Documentation/accounting/getdelays.c: In function ‘main’:
+Documentation/networking/timestamping/timestamping.c:365: error: ‘SOF_TIMESTAMPING_SYS_HARDWARE’ undeclared (first use in this function)Documentation/accounting/getdelays.c:525: error: ‘TASKSTATS_TYPE_NULL’ undeclared (first use in this function)
 
-Michal
+Documentation/accounting/getdelays.c:525: error: (Each undeclared identifier is reported only once
+Documentation/accounting/getdelays.c:525: error: for each function it appears in.)
+Documentation/networking/timestamping/timestamping.c:367: error: ‘SOF_TIMESTAMPING_RAW_HARDWARE’ undeclared (first use in this function)
+Documentation/networking/timestamping/timestamping.c:387: error: ‘HWTSTAMP_TX_ON’ undeclared (first use in this function)
+Documentation/networking/timestamping/timestamping.c:387: error: ‘HWTSTAMP_TX_OFF’ undeclared (first use in this function)
+Documentation/networking/timestamping/timestamping.c:390: error: ‘HWTSTAMP_FILTER_PTP_V1_L4_SYNC’ undeclared (first use in this function)
+Documentation/networking/timestamping/timestamping.c:390: error: ‘HWTSTAMP_FILTER_NONE’ undeclared (first use in this function)
+Documentation/networking/timestamping/timestamping.c:331: warning: unused variable ‘hwconfig_requested’
+Documentation/networking/timestamping/timestamping.c:331: warning: unused variable ‘hwconfig’
+make[2]: *** [Documentation/accounting/getdelays] Error 1
+make[3]: *** [Documentation/networking/timestamping/timestamping] Error 1
+make[1]: *** [Documentation/accounting] Error 2
+make[1]: *** Waiting for unfinished jobs....
+make[2]: *** [Documentation/networking/timestamping] Error 2
+make[2]: *** Waiting for unfinished jobs....
+make[1]: *** [Documentation/networking] Error 2
+make: *** [Documentation/] Error 2
+
+Could you please send me your .config?
+
+Thanks,
+Mauro
