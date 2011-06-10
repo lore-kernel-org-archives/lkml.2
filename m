@@ -1,64 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab1FJDYE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 23:24:04 -0400
-Received: from mail.perches.com ([173.55.12.10]:2763 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752008Ab1FJDYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 23:24:03 -0400
-Subject: Re: [PATCH trival/tree-wide] Change Ryan Mallon's email address
- across the kernel
-From: Joe Perches <joe@perches.com>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
-        Andre Renaud <andre@bluewatersys.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Andrew Victor <avictor.za@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, Anton Vorontsov <cbou@mail.ru>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, trivial@kernel.org
-In-Reply-To: <4DF18BDC.8010306@gmail.com>
-References: <1307661170-9325-1-git-send-email-rmallon@gmail.com>
-	 <20110610025532.GE26006@linux-sh.org>  <4DF189F2.3040009@gmail.com>
-	 <1307675512.20439.2.camel@Joe-Laptop>  <4DF18BDC.8010306@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Jun 2011 20:24:00 -0700
-Message-ID: <1307676240.20439.9.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1753699Ab1FJD1Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 23:27:16 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43814 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171Ab1FJD1P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 23:27:15 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DF18F03.6040304@jp.fujitsu.com>
+Date: Fri, 10 Jun 2011 12:26:59 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: peterz@infradead.org
+CC: dvhart@linux.intel.com, david@rgmadvisors.com, kyle@moffetthome.net,
+        luto@mit.edu, eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
+        sbohrer@rgmadvisors.com, zvonler@rgmadvisors.com, hughd@google.com,
+        tglx@linutronix.de, mingo@elte.hu
+Subject: Re: Change in functionality of futex() system call.
+References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>	 <1307373819.3098.40.camel@edumazet-laptop>	 <1307376672.2322.167.camel@twins>	<1307376989.2322.171.camel@twins>	 <1307377349.3098.65.camel@edumazet-laptop>	 <1307377782.2322.183.camel@twins>	 <1307378564.3098.67.camel@edumazet-laptop>	 <4DED1421.5000300@linux.intel.com>	 <1307383898.3098.90.camel@edumazet-laptop>	<4DED976C.90009@linux.intel.com>	 <4DEE3944.5020005@mit.edu>	<1307462300.3091.39.camel@edumazet-laptop>	 <BANLkTinyuHUGXACJYUT241g8rzg6AzPBiA@mail.gmail.com>	 <BANLkTinHEyRnnJqB=GTwBOAb6aRaHnjQLQ@mail.gmail.com>	 <BANLkTi=uQmePFOJUx=bdTsnFuFa+ZaYqVw@mail.gmail.com>	 <BANLkTi=vwJBgkKSY_Cq_jQS-71gH6uOPaw@mail.gmail.com>	 <BANLkTinL60RXZNH1QW9NdrTv10TckgWFcg@mail.gmail.com>	 <4DEFA18A.2000808@linux.intel.com>  <4DF0B072.8060204@jp.fujitsu.com> <1307621110.3941.78.camel@twins>
+In-Reply-To: <1307621110.3941.78.camel@twins>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-10 at 13:13 +1000, Ryan Mallon wrote:
-> On 10/06/11 13:11, Joe Perches wrote:
-> > On Fri, 2011-06-10 at 13:05 +1000, Ryan Mallon wrote:
-> >> On 10/06/11 12:55, Paul Mundt wrote:
-> >>> On Fri, Jun 10, 2011 at 09:12:50AM +1000, Ryan Mallon wrote:
-> >>>> I no longer work at Bluewater Systems. Update my email address accordingly.
-> >>> Is this sort of churn really necessary?
-> > get_maintainer uses the name and address in the first seen
-> > commit matching on the full name where possible.
-> Okay, what is the correct fix then so that people get the right email 
-> address for me?
+(2011/06/09 21:05), Peter Zijlstra wrote:
+> On Thu, 2011-06-09 at 20:37 +0900, KOSAKI Motohiro wrote:
+>> 1) check the pte of the target address is RW attribute.
+>>  2-1) if yes, it has no COW chance. we can safely use gup result.
+>>  2-2) if no, we have to fallback slow vma walk. maybe, it's okey.
+>>       both RO mappings and COW are rare situation. 
+> 
+> Not so, clean file pages are RO, even if the vma is writable. We use the
+> fault to track dirty state with.
 
-I believe updating the MAINTAINERS file and
-authoring and committing patches that take
-your email address out of files works well.
-
-Some think that it's better to keep current
-email addresses in the files.  I think it
-has to do with European data retention laws.
-
-Not sure if that applies to you.
-
-There've been threads about changing email
-addresses in files before like:
-
-https://lkml.org/lkml/2011/4/10/89
-
-cheers, Joe
+Right you are. Sigh. Please forget my previous mail.
 
