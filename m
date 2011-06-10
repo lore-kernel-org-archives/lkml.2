@@ -1,92 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab1FJKBo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 06:01:44 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:39897 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab1FJKBl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 06:01:41 -0400
-X-IronPort-AV: E=Sophos;i="4.65,345,1304294400"; 
-   d="scan'208";a="6208492"
-Date: Fri, 10 Jun 2011 11:01:39 +0100
-From: Tim Deegan <Tim.Deegan@citrix.com>
-To: Igor Mammedov <imammedo@redhat.com>
-CC: <xen-devel@lists.xensource.com>, Keir Fraser <keir@xen.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Keir Fraser <keir.xen@gmail.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        Paul Menage <menage@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-Subject: Re: [Xen-devel] Possible shadow bug
-Message-ID: <20110610100139.GG5098@whitby.uk.xensource.com>
-References: <4DE66BEB.7040502@redhat.com>
- <BANLkTimbqHPeUdue=_Z31KVdPwcXtbLpeg@mail.gmail.com>
- <4DE8D50F.1090406@redhat.com>
- <BANLkTinMamg_qesEffGxKu3QkT=zyQ2MRQ@mail.gmail.com>
- <4DEE26E7.2060201@redhat.com>
- <20110608123527.479e6991.kamezawa.hiroyu@jp.fujitsu.com>
- <4DF0801F.9050908@redhat.com>
- <alpine.DEB.2.00.1106091311530.12963@kaball-desktop>
- <20110609150133.GF5098@whitby.uk.xensource.com>
- <4DF0F90D.4010900@redhat.com>
+	id S1754785Ab1FJKDm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 06:03:42 -0400
+Received: from vostochny.stro.at ([78.47.22.85]:57933 "EHLO vostochny.stro.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752216Ab1FJKDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 06:03:41 -0400
+Date: Fri, 10 Jun 2011 10:03:39 +0000
+From: maximilian attems <max@stro.at>
+To: Ray Lee <ray-lk@madrabbit.org>
+Cc: Arnaud Lacombe <lacombar@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, pefoley2@verizon.net,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] kbuild fixes for 3.0
+Message-ID: <20110610100339.GE22466@vostochny.stro.at>
+References: <20110609214241.GA4849@sepie.suse.cz>
+ <BANLkTim84t=yeqykZydEjHrVYGnO4xc5ew@mail.gmail.com>
+ <BANLkTi=qaA_AMvq_78eon3Lr86wT2R497g@mail.gmail.com>
+ <BANLkTinbXpFp43+EebWbWvs1Uu5wWvhxQQ@mail.gmail.com>
+ <BANLkTinKMmYG7=KBHr2LfOYzcgbtszwy5g@mail.gmail.com>
+ <BANLkTinQ2mL1eNPzMHjDjXnLyv58annZmA@mail.gmail.com>
+ <BANLkTi=wQaUSagZjptGnvUHNpJeMm0C6yw@mail.gmail.com>
+ <BANLkTinZGuOE3G5Ro0=LB9Y8wcHVgk-3ug@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DF0F90D.4010900@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTinZGuOE3G5Ro0=LB9Y8wcHVgk-3ug@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, 
+On Thu, Jun 09, 2011 at 10:53:34PM -0700, Ray Lee wrote:
+> On Thu, Jun 9, 2011 at 10:16 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> > Beside that, no matter what, you are about to break
+> > `/usr/sbin/sensors-detect' (from my Fedora 14), which rely on a 3
+> > digits version number:
+> 
+> Is there really any compelling technical reason to _not_ have Linus
+> release the kernels with a superfluous .0 on the end, with the
+> understanding that the -stable team gets to increment it for their
+> future releases? It'd make every kernel.org release exactly three
+> dotted decimals from here on out, which certainly simplifies things.
+> 
+> It seems like we're just borrowing trouble here by trying to drop it
+> down to two numbers.
+> 
+> (Not, mind you, that I give a damn at all one way or the other, but it
+> feels like you all are going to be spending a lot of time tripping
+> over poor assumptions in userspace rather than doing actual work.)
 
-At 18:47 +0200 on 09 Jun (1307645229), Igor Mammedov wrote:
-> It's rhel5.6 xen. I've tried to test on SLES 11 that has 4.0.1 xen, however
-> wasn't able to reproduce problem. (I'm not sure if hap was turned
-> off in this case). More detailed info can be found at RHBZ#700565
+you have forgotten the rule that linus himself is allowed to break userland. :P
 
-The best way to be sure whether HAP is in use is to connect to the
-serial line, hit ^A^A^A to switch input to Xen, and hit 'q' to dump
-per-domain state.  The printout for the guest domain should either say 
-"paging assistance: shadow refcounts translate external"
-or 
-"paging assistance: hap refcounts translate external".
-
-(If you don't have serial you can get the same info by running 
-"xm debug-keys q" and then "xm dmesg" to read the output.)
-
-> >you're willing to try recompiling Xen with some small patches that
-> >disable the "cleverer" parts of the shadow pagetable code that might
-> >indicate something.  (Of course, it might just change the timing to
-> >obscure a real linux bug too.)
-> >
-> Haven't got to this part yet. But looks like it's the only option left.
-
-Actually, looking at the disassembly you posted, it looks more like it
-might be an emulator bug in Xen; if Xen finds itself emulating the IMUL
-instruction and either gets the logic wrong or does the memory access
-wrong, it could cause that failure.  And one reason that Xen emulates
-instructions is if the memory operand is on a pagetable that's shadowed
-(which might be a page that was recently a pagetable). 
-
-ISTR that even though the RHEL xen reports a 3.0.x version it has quite
-a lot of backports in it.  Does it have this patch?
-http://hg.uk.xensource.com/xen-3.1-testing.hg/rev/e8fca4c42d05
-
-Cheers,
-
-Tim.
+in Debian an three digit 3.0.0 release would also be very much appreciated as
+dpkg will order wrongly 3.0.0~rcX to 3.0.
 
 -- 
-Tim Deegan <Tim.Deegan@citrix.com>
-Principal Software Engineer, Xen Platform Team
-Citrix Systems UK Ltd.  (Company #02937203, SL9 0BG)
+maks
