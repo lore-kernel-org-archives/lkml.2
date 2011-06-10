@@ -1,44 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757515Ab1FJTZd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 15:25:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33622 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752682Ab1FJTZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 15:25:31 -0400
-Date: Fri, 10 Jun 2011 15:25:29 -0400
-From: Aristeu Rozanski <aris@redhat.com>
-To: Ping Cheng <pinglinux@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Jason Gerecke <Jason.Gerecke@wacom.com>
-Subject: Re: [PATCH] wacom: use only one interface with DTU-2231
-Message-ID: <20110610192529.GE5510@redhat.com>
-References: <20110610182344.GB5510@redhat.com>
- <BANLkTinmm1i1XZ=+8AYFQAR4_-DUxQGb4w@mail.gmail.com>
+	id S1757762Ab1FJT3p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 15:29:45 -0400
+Received: from sentry-two.sandia.gov ([132.175.109.14]:58936 "EHLO
+	sentry-two.sandia.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756617Ab1FJT3m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 15:29:42 -0400
+X-WSS-ID: 0LMLA5G-0B-1VQ-02
+X-M-MSG: 
+X-Server-Uuid: AF72F651-81B1-4134-BA8C-A8E1A4E620FF
+Message-ID: <4DF27087.8020706@sandia.gov>
+Date: Fri, 10 Jun 2011 13:29:11 -0600
+From: "Jim Schutt" <jaschut@sandia.gov>
+User-Agent: Thunderbird 2.0.0.24 (X11/20110418)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTinmm1i1XZ=+8AYFQAR4_-DUxQGb4w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: "Sage Weil" <sage@newdream.net>
+cc: "Josef Bacik" <josef@redhat.com>, "Chris Mason" <chris.mason@oracle.com>,
+        dave <dave@jikos.cz>, miaox <miaox@cn.fujitsu.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>, ceph-devel@vger.kernel.org
+Subject: Re: 3.0-rcX BUG at fs/btrfs/ioctl.c:432 - bisected
+References: <4DF140AB.4030805@sandia.gov>
+ <20110609234553.GN12709@twin.jikos.cz> <4DF24F0E.4040306@sandia.gov>
+ <1307726732-sup-3404@shiny>
+ <Pine.LNX.4.64.1106101100310.5245@cobra.newdream.net>
+ <Pine.LNX.4.64.1106101112470.5245@cobra.newdream.net>
+ <4DF2627F.4030600@redhat.com>
+ <Pine.LNX.4.64.1106101134530.5245@cobra.newdream.net>
+ <4DF263AD.3070901@redhat.com>
+ <Pine.LNX.4.64.1106101139150.5245@cobra.newdream.net>
+In-Reply-To: <Pine.LNX.4.64.1106101139150.5245@cobra.newdream.net>
+X-Originating-IP: [134.253.95.179]
+X-TMWD-Spam-Summary: TS=20110610192919; ID=1; SEV=2.3.1;
+ DFV=B2011061020; IFV=NA; AIF=B2011061020; RPD=5.03.0010; ENG=NA;
+ RPDID=7374723D303030312E30413031303230322E34444632373038462E303032363A534346535441543838363133332C73733D312C6667733D30;
+ CAT=NONE; CON=NONE; SIG=AAABAJsKIgAAAAAAAAAAAAAAAAAAAH0=
+X-MMS-Spam-Filter-ID: B2011061020_5.03.0010
+X-WSS-ID: 61ECAF044FO799952-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+X-RSA-Inspected: yes
+X-RSA-Classifications: public
+X-RSA-Action: allow
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 12:17:51PM -0700, Ping Cheng wrote:
-> On Fri, Jun 10, 2011 at 11:23 AM, Aristeu Rozanski <aris@redhat.com> wrote:
+Sage Weil wrote:
+> On Fri, 10 Jun 2011, Josef Bacik wrote:
+>> On 06/10/2011 02:35 PM, Sage Weil wrote:
+>>> On Fri, 10 Jun 2011, Josef Bacik wrote:
+>>>> On 06/10/2011 02:14 PM, Sage Weil wrote:
+>>>>> On Fri, 10 Jun 2011, Sage Weil wrote:
+>>>>>> On Fri, 10 Jun 2011, Chris Mason wrote:
+>>>>>>> Excerpts from Jim Schutt's message of 2011-06-10 13:06:22 -0400:
+>>>>>>>
+>>>>>>> [ two different btrfs crashes ]
+>>>>>>>
+>>>>>>> I think your two crashes in btrfs were from the uninit variables and
+>>>>>>> those should be fixed in rc2.
+>>>>>>>
+>>>>>>>> When I did my bisection, my criteria for success/failure was
+>>>>>>>> "did mkcephfs succeed?".  When I apply this criteria to a recent
+>>>>>>>> linus kernel (e.g. 06e86849cf4019), which includes the fix you
+>>>>>>>> mentioned (aa0467d8d2a00e), I get still a different failure mode,
+>>>>>>>> which doesn't actually reference btrfs:
+>>>>>>>>
+>>>>>>>> [  276.364178] BUG: unable to handle kernel NULL pointer dereference at 000000000000000a
+>>>>>>>> [  276.365127] IP: [<ffffffffa05434b1>] journal_start+0x3e/0x9c [jbd]
+>>>>>>> Looking at the resulting code in the oops, we're here in journal_start:
+>>>>>>>
+>>>>>>>         if (handle) {
+>>>>>>>                 J_ASSERT(handle->h_transaction->t_journal == journal);
+>>>>>>>
+>>>>>>> handle comes from current->journal_info, and we're doing a deref on
+>>>>>>> handle->h_transaction, which is probably 0xa.
+>>>>>>>
+>>>>>>> So, we're leaving crud in current->journal_info and ext3 is finding it.
+>>>>>>>
+>>>>>>> Perhaps its from ceph starting a transaction but leaving it running?
+>>>>>>> The bug came with Josef's transaction performance fixes, but it is
+>>>>>>> probably a mixture of his code with the ioctls ceph is using.
+>>>>>> Ah, yeah, that's the problem.  We saw a similar problem a while back with 
+>>>>>> the start/stop transaction ioctls.  In this case, create_snapshot is doing
+>>>>>>
+>>>>>> 	trans = btrfs_start_transaction(root->fs_info->extent_root, 5);
+>>>>>> 	if (IS_ERR(trans)) {
+>>>>>> 		ret = PTR_ERR(trans);
+>>>>>> 		goto fail;
+>>>>>> 	}
+>>>>>>
+>>>>>> which sets current->journal_info.  Then
+>>>>>>
+>>>>>> 	ret = btrfs_snap_reserve_metadata(trans, pending_snapshot);
+>>>>>> 	BUG_ON(ret);
+>>>>>>
+>>>>>> 	list_add(&pending_snapshot->list,
+>>>>>> 		 &trans->transaction->pending_snapshots);
+>>>>>> 	if (async_transid) {
+>>>>>> 		*async_transid = trans->transid;
+>>>>>> 		ret = btrfs_commit_transaction_async(trans,
+>>>>>> 				     root->fs_info->extent_root, 1);
+>>>>>> 	} else {
+>>>>>> 		ret = btrfs_commit_transaction(trans,
+>>>>>> 				       root->fs_info->extent_root);
+>>>>>> 	}
+>>>>>>
+>>>>>> but the async snap creation ioctl takes the async path, which runs 
+>>>>>> btrfs_commit_transaction in a worker thread.
+>>>>>>
+>>>>>> I'm not sure what the right thing to do is here is... can whatever is in 
+>>>>>> journal_info be attached to trans instead in 
+>>>>>> btrfs_commit_transaction_async()?
+>>>>> It looks like it's not used for anything in btrfs, actually; it's just set 
+>>>>> and cleared.  What's the point of that?
+>>>>>
+>>>> It is used now, check the beginning of start_transaction().  Thanks,
+>>> Oh I see, okay.
+>>>
+>>> So clearing it in btrfs_commit_transaction_async should be fine then, 
+>>> right?  When btrfs_commit_transaction runs in the other thread it won't 
+>>> care that current->journal_info is NULL.
+>>>
+>> Oh yeah your patch is good :),
 > 
-> > The Wacom DTU-2231 tablet has two interfaces on its default configuration
-> > and
-> > both have HID class, leading to the creation of two input devices
-> > instead of one. Only the first one is used, so filter out the second.
-> >
-> 
-> Reviewed-by: Ping Cheng <pingc@wacom.com>
-> 
-> Thank you for the patch. You forgot to put your s-o-b though.
-oops :)
+> Okay cool.  Here's the fix with a proper changelog and a little 
+> use-after-free paranoia.
 
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+This patch solves my issue - thanks a lot.
 
--- 
-Aristeu
+Tested-by: Jim Schutt <jaschut@sandia.gov>
+
+-- Jim
+
+> 
+> Thanks!
+> sage
+> 
+> 
+>>From 9881c0752293769d5133c01dff3ab04c0c24c61b Mon Sep 17 00:00:00 2001
+> From: Sage Weil <sage@newdream.net>
+> Date: Fri, 10 Jun 2011 11:41:25 -0700
+> Subject: [PATCH] Btrfs: clear current->journal_info on async transaction commit
+> 
+> Normally current->jouranl_info is cleared by commit_transaction.  For an
+> async snap or subvol creation, though, it runs in a work queue.  Clear
+> it in btrfs_commit_transaction_async() to avoid leaking a non-NULL
+> journal_info when we return to userspace.  When the actual commit runs in
+> the other thread it won't care that it's current->journal_info is already
+> NULL.
+> 
+> Signed-off-by: Sage Weil <sage@newdream.net>
+> ---
+>  fs/btrfs/transaction.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/btrfs/transaction.c b/fs/btrfs/transaction.c
+> index dd71966..9d516ed 100644
+> --- a/fs/btrfs/transaction.c
+> +++ b/fs/btrfs/transaction.c
+> @@ -1118,8 +1118,11 @@ int btrfs_commit_transaction_async(struct btrfs_trans_handle *trans,
+>  		wait_current_trans_commit_start_and_unblock(root, cur_trans);
+>  	else
+>  		wait_current_trans_commit_start(root, cur_trans);
+> -	put_transaction(cur_trans);
+>  
+> +	if (current->journal_info == trans)
+> +		current->journal_info = NULL;
+> +
+> +	put_transaction(cur_trans);
+>  	return 0;
+>  }
+>  
+
 
