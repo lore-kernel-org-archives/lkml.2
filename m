@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134Ab1FJQih (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 12:38:37 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:57260 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885Ab1FJQig (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 12:38:36 -0400
-Message-ID: <4DF24868.3040900@vflare.org>
-Date: Fri, 10 Jun 2011 09:38:00 -0700
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1753729Ab1FJQit (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 12:38:49 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:60149 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753521Ab1FJQip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 12:38:45 -0400
+Date: Fri, 10 Jun 2011 09:38:42 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH]rcu: avoid unnecessary thread wakeup
+Message-ID: <20110610163842.GB2230@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1307692251.15392.91.camel@sli10-conroe>
 MIME-Version: 1.0
-To: Jerome Marchand <jmarchan@redhat.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: [PATCH 1/4] Staging: zram: Remove useless offset calculation
- in handle_uncompressed_page()
-References: <1307712529-9757-1-git-send-email-jmarchan@redhat.com>
-In-Reply-To: <1307712529-9757-1-git-send-email-jmarchan@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307692251.15392.91.camel@sli10-conroe>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2011 06:28 AM, Jerome Marchand wrote:
-> The offset of uncompressed page is always zero: handle_uncompressed_page()
-> doesn't have to care about it.
->
-> Signed-off-by: Jerome Marchand<jmarchan@redhat.com>
-> ---
->   drivers/staging/zram/zram_drv.c |    3 +--
->   1 files changed, 1 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index aab4ec4..3305e1a 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -194,8 +194,7 @@ static void handle_uncompressed_page(struct zram *zram,
->   	unsigned char *user_mem, *cmem;
->
->   	user_mem = kmap_atomic(page, KM_USER0);
-> -	cmem = kmap_atomic(zram->table[index].page, KM_USER1) +
-> -			zram->table[index].offset;
-> +	cmem = kmap_atomic(zram->table[index].page, KM_USER1);
->
->   	memcpy(user_mem, cmem, PAGE_SIZE);
->   	kunmap_atomic(user_mem, KM_USER0);
+On Fri, Jun 10, 2011 at 03:50:51PM +0800, Shaohua Li wrote:
+> invoke_rcu_cpu_kthread could be called in the thread itself. In this case,
+> we don't need call wakeup, which is just wasting CPU.
+> 
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 89419ff..f9bd051 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -1475,7 +1475,8 @@ static void invoke_rcu_cpu_kthread(void)
+>  		local_irq_restore(flags);
+>  		return;
+>  	}
+> -	wake_up_process(__this_cpu_read(rcu_cpu_kthread_task));
+> +	if (current != __this_cpu_read(rcu_cpu_kthread_task))
+> +		wake_up_process(__this_cpu_read(rcu_cpu_kthread_task));
+>  	local_irq_restore(flags);
+>  }
 
+Excellent point, thank you!
 
-kmap/kunmap requests needs to be strictly nested, so here kunmap(..., 
-KM_USER1) must be done before kunmap(..., KM_USER0). This needs to be
-fixed in zram_bvec_read() also.  Though these bugs are not introduced
-by your patches, it would be nice to have them include them in your 
-patch series only.
+But how about combining the tests, perhaps something like the
+following?
 
-Thanks for the fixes.
-Nitin
+Unless you have objections or spot problems with it (or it breaks during
+testing), I will queue the patch below with your SOB, since I derived
+it from your patch.
 
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index b4b254d..eda3986 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1523,11 +1523,9 @@ static void invoke_rcu_cpu_kthread(void)
+ 
+ 	local_irq_save(flags);
+ 	__this_cpu_write(rcu_cpu_has_work, 1);
+-	if (__this_cpu_read(rcu_cpu_kthread_task) == NULL) {
+-		local_irq_restore(flags);
+-		return;
+-	}
+-	wake_up_process(__this_cpu_read(rcu_cpu_kthread_task));
++	if (__this_cpu_read(rcu_cpu_kthread_task) != NULL &&
++	    current != __this_cpu_read(rcu_cpu_kthread_task))
++		wake_up_process(__this_cpu_read(rcu_cpu_kthread_task));
+ 	local_irq_restore(flags);
+ }
+ 
