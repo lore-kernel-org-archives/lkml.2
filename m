@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106Ab1FJJTq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 05:19:46 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:35840 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752895Ab1FJJTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 05:19:43 -0400
-X-ASG-Debug-ID: 1307697582-01de280c1e40ea0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DF1E1B0.2090907@fusionio.com>
-Date: Fri, 10 Jun 2011 11:19:44 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/7] tmpfs: clone shmem_file_splice_read
-References: <alpine.LSU.2.00.1106091529060.2200@sister.anvils> <alpine.LSU.2.00.1106091531120.2200@sister.anvils>
-X-ASG-Orig-Subj: Re: [PATCH 1/7] tmpfs: clone shmem_file_splice_read
-In-Reply-To: <alpine.LSU.2.00.1106091531120.2200@sister.anvils>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1754046Ab1FJJSY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 05:18:24 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40543 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750774Ab1FJJSW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 05:18:22 -0400
+Date: Fri, 10 Jun 2011 10:20:26 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matthieu CASTET <matthieu.castet@parrot.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <linux-serial@vger.kernel.org>
+Subject: Re: uart : lost characters when system is busy
+Message-ID: <20110610102026.01f7da05@lxorguk.ukuu.org.uk>
+In-Reply-To: <4DF1DCA9.9060604@parrot.com>
+References: <4DF1DCA9.9060604@parrot.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1307697582
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.65963
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-06-10 00:32, Hugh Dickins wrote:
-> Copy __generic_file_splice_read() and generic_file_splice_read()
-> from fs/splice.c to shmem_file_splice_read() in mm/shmem.c.  Make
-> page_cache_pipe_buf_ops and spd_release_page() accessible to it.
+> uart_throttle/uart_unthrottle is called from a workqueue.
+> If the system is busy, and the uart receive lot's of data, we fill the tty
+> buffer, but the workqueue doesn't run and we never have a chance to call
+> uart_throttle. So the uart is never slow down.
 
-That's a lot of fairly complicated and convoluted code to have
-duplicated. Yes, I know I know, it's already largely duplicated from the
-normal file read, but still... Really no easy way to share this?
+You should have around 64K of buffering (actually n_tty worst case
+should be 63.5Kbyte) that's a lot of slack so what is holding off the
+work queue for so long on your problem system ? I think that should be
+answered first as it sounds like some other part of your kernel is
+misbehaving.
 
--- 
-Jens Axboe
+> A workaround could be to check the buffer threshold in tty_flip_buffer_push and
+> call throttle callback if needed.
 
+tty_flip_buffer_push can be called from an IRQ, the throttle callback
+needs to be able to sleep.
+
+What might work if it is needed though is to provide a tty_is_throttled()
+method that a driver can use to check the instantaneous throttle state.
+Trouble is that will require a lot of care on the drivers part to deal
+with asynchronus throttle/unthrottle events while peering at the state in
+its IRQ handler as well.
+
+Anyway - question for the case you hit, what tasks or work held off the
+serial work queue for 63.5Kbytes of data ?
