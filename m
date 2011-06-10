@@ -1,113 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757826Ab1FJPei (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 11:34:38 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:40336 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757789Ab1FJPeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 11:34:37 -0400
-Subject: Re: BUG on 3.0-rc on commit
- d72bce0e67e8afc6eb959f656013cbb577426f1e
-From: Andrew Theurer <habanero@linux.vnet.ibm.com>
-Reply-To: habanero@linux.vnet.ibm.com
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, rostedt <rostedt@goodmis.org>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1307717156.3941.169.camel@twins>
-References: <1307711837.23688.33.camel@atheurer-ubuntu10>
-	 <1307715084.3941.166.camel@twins>  <1307717156.3941.169.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Jun 2011 10:34:41 -0500
-Message-ID: <1307720081.17297.6.camel@atheurer-w510>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1754949Ab1FJPgv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 11:36:51 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:60133 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381Ab1FJPgr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 11:36:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH 7/7] [v4] drivers/virt: introduce Freescale hypervisor management driver
+Date: Fri, 10 Jun 2011 17:36:14 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linuxppc-dev@lists.ozlabs.org,
+        Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Timur Tabi <timur@freescale.com>, konrad.wilk@oracle.com,
+        kumar.gala@freescale.com, linux-kernel@vger.kernel.org,
+        akpm@kernel.org, dsaxena@linaro.org, linux-console@vger.kernel.org,
+        greg@kroah.com, alan@lxorguk.ukuu.org.uk
+References: <1307573154-15838-1-git-send-email-timur@freescale.com> <201106090938.23027.arnd@arndb.de> <4DF22770.4010103@tilera.com>
+In-Reply-To: <4DF22770.4010103@tilera.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201106101736.14850.arnd@arndb.de>
+X-Provags-ID: V02:K0:c9r/ttdSad43LwMpb/K16hdPHbf7OgQHlk2lHJuzTzC
+ H3FkamlVhKerokjzjQFSiVMINGMz6jRp7VGijud+2YZj++Qnvs
+ tndv84tf/ttKP44T/u8up7ugZbU8cESQgXnLCfre/O0W+08GFK
+ 5rODgYL4j+1nStGuOa/ESyMJIZvSbJ2YhiNCMbf98YNO7SuTDw
+ gghbINHZ0dt5lOhEXvefQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-10 at 16:45 +0200, Peter Zijlstra wrote:
-> On Fri, 2011-06-10 at 16:11 +0200, Peter Zijlstra wrote:
-> > On Fri, 2011-06-10 at 08:17 -0500, Andrew Theurer wrote:
-> > > Looks like commit d72bce0e67e8afc6eb959f656013cbb577426f1e breaks my
-> > > boot:
-> > > 
-> > > BUG: unable to handle kernel NULL pointer dereference at
-> > > 0000000000000004
-> > > IP: [<ffffffff8104e8b1>] find_lowest_rq+0xa1/0x150
-> > > PGD 0
-> > > Oops: 0000 [#1] SMP
-> > > CPU 0
-> > > Modules linked in:
-
-> > 
-> > > 
-> > > This is on a Westmere-EX (4 socket, 40 cores)
-> > 
-> > Hmm, how often does that happen? my wsm-ep (2*6*2) doesn't seem to
-> > suffer said problem. I'll try and see if I can spot the boo-boo. Also,
-> > happen to have a .config handy?
+On Friday 10 June 2011, Chris Metcalf wrote:
+> This still leaves open the question of what really should go in this new
+> directory. Is it just for drivers that manage/control the hypervisor?  Or
+> is it also for drivers that just use the hypervisor to do I/O of some kind,
+> but aren't related to any other "family" of drivers, i.e., a driver that
+> would have been dumped in drivers/char or drivers/misc in the old days?
 > 
-> Does the below cure things?
+> My specific interest at the moment is the proposed tile-srom.c driver
+> (https://patchwork.kernel.org/patch/843892/), which uses a simple
+> hypervisor read/write API to access the portion of the SPI ROM used to hold
+> the boot stream for a TILE processor.
 
-I am afraid not:
+I'd still put that driver in drivers/char for now, because it already contains
+similar drivers. We can probaby group them in a subdirectory of drivers/char
+at some point or move them out to a new directory.
 
-Linux version 3.0.0-rc2-00251-g7f45e5c-dirty (root@vg-host.linuxperf9025.net) (gcc version 4.4.5 20110214 (Red Hat 4.4.5-6) (GCC) ) #34 SMP Fri Jun 10 10:23:06 CDT 2011
-Command line: initrd=vg-host/initramfs.img ro root=UUID=7e96e905-9ec4-45ab-abd4-77d1469d6e5a console=tty0 console=ttyS0,115200 rdshell BOOT_IMAGE=vg-host/vmlinuz
-.
-.
-.
-.
-NMI watchdog enabled, takes one hw-pmu counter.
- #23
-NMI watchdog enabled, takes one hw-pmu counter.
- #24
-BUG: unable to handle kernel NULL pointer dereference at           (null)
-IP: [<ffffffff8104e8c1>] find_lowest_rq+0xa1/0x150
-PGD 0
-Oops: 0000 [#1] SMP
-CPU 0
-Modules linked in:
+For your raw hcall passthrough driver, that would be something that should
+go into drivers/virt/ IMHO.
 
-Pid: 1, comm: swapper Not tainted 3.0.0-rc2-00251-g7f45e5c-dirty #34 IBM  -[7145AC1]-/Node 1, Processor Card
-RIP: 0010:[<ffffffff8104e8c1>]  [<ffffffff8104e8c1>] find_lowest_rq+0xa1/0x150
-RSP: 0018:ffff883732925ca0  EFLAGS: 00010002
-RAX: 0000000000000010 RBX: 0000000000000010 RCX: 0000000000000050
-RDX: 00000000ffffffff RSI: 0000000000000050 RDI: 0000000000000050
-RBP: ffff883732925cd0 R08: ffff8837325b4238 R09: 0000000000000000
-R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000000
-R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000012ac0
-FS:  0000000000000000(0000) GS:ffff88387f800000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000000 CR3: 0000000001a03000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process swapper (pid: 1, threadinfo ffff883732924000, task ffff8837329234c0)
-Stack:
- ffff883732925cd0 0000000000000010 0000000000000010 ffff8837325b4800
- 0000000000000000 0000000000000286 ffff883732925cf0 ffffffff8104e9ea
- ffff883732642040 ffff8837325b4040 ffff883732925d40 ffffffff8105ac79
-Call Trace:
- [<ffffffff8104e9ea>] select_task_rq_rt+0x7a/0x90
- [<ffffffff8105ac79>] try_to_wake_up+0x119/0x2a0
- [<ffffffff8105ae55>] wake_up_process+0x15/0x20
- [<ffffffff814cc59f>] rcu_cpu_notify+0xd6/0x196
- [<ffffffff814d65e5>] notifier_call_chain+0x55/0x80
- [<ffffffff8108a7be>] __raw_notifier_call_chain+0xe/0x10
- [<ffffffff81064590>] __cpu_notify+0x20/0x40
- [<ffffffff814caf5e>] _cpu_up+0xc7/0x10e
- [<ffffffff814cb07c>] cpu_up+0xd7/0xea
- [<ffffffff81c41dfb>] smp_init+0x41/0x96
- [<ffffffff81c227d4>] kernel_init+0x1d6/0x262
- [<ffffffff814dbbc4>] kernel_thread_helper+0x4/0x10
- [<ffffffff81c225fe>] ? do_basic_setup+0x5c/0x5c
- [<ffffffff814dbbc0>] ? gs_change+0x13/0x13
-Code: 2a 01 00 48 89 fe 48 8b 04 c5 40 a3 bf 81 4c 89 e2 49 8b 84 07 88 08 00 00 48 83 c0 38 48 89 c7 e8 85 75 0a 00 85 c0 74 ae 89 d8
- 0f a3 1c 24 19 d2 85 d2 75 a6 45 0f a3 2c 24 19 c0 41 be ff
-RIP  [<ffffffff8104e8c1>] find_lowest_rq+0xa1/0x150
- RSP <ffff883732925ca0>
-CR2: 0000000000000000
----[ end trace 050353be83bb766f ]---
-
--Andrew
-
+	Arnd
