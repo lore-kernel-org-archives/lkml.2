@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757281Ab1FJNJQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 09:09:16 -0400
-Received: from grimli.r00tworld.net ([83.169.44.195]:42975 "EHLO
+	id S1757256Ab1FJNNB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 09:13:01 -0400
+Received: from grimli.r00tworld.net ([83.169.44.195]:43020 "EHLO
 	mail.r00tworld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757221Ab1FJNJH (ORCPT
+	with ESMTP id S1757212Ab1FJNJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 09:09:07 -0400
+	Fri, 10 Jun 2011 09:09:14 -0400
 From: Mathias Krause <minipli@googlemail.com>
-To: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+To: Mike Frysinger <vapier@gentoo.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>
-Subject: [PATCH] avr32, exec: remove redundant set_fs(USER_DS)
-Date: Fri, 10 Jun 2011 15:09:05 +0200
-Message-Id: <1307711345-5564-1-git-send-email-minipli@googlemail.com>
+Subject: [PATCH] blackfin, exec: remove redundant set_fs(USER_DS)
+Date: Fri, 10 Jun 2011 15:09:13 +0200
+Message-Id: <1307711353-5949-1-git-send-email-minipli@googlemail.com>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
 References: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
@@ -28,21 +28,21 @@ set_fs(USER_DS) is redundant.
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
 ---
- arch/avr32/include/asm/processor.h |    1 -
+ arch/blackfin/kernel/process.c |    1 -
  1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/arch/avr32/include/asm/processor.h b/arch/avr32/include/asm/processor.h
-index 49a88f5..108502b 100644
---- a/arch/avr32/include/asm/processor.h
-+++ b/arch/avr32/include/asm/processor.h
-@@ -131,7 +131,6 @@ struct thread_struct {
+diff --git a/arch/blackfin/kernel/process.c b/arch/blackfin/kernel/process.c
+index 6a660fa..6a80a9e 100644
+--- a/arch/blackfin/kernel/process.c
++++ b/arch/blackfin/kernel/process.c
+@@ -140,7 +140,6 @@ EXPORT_SYMBOL(kernel_thread);
   */
- #define start_thread(regs, new_pc, new_sp)	 \
- 	do {					 \
--		set_fs(USER_DS);		 \
- 		memset(regs, 0, sizeof(*regs));	 \
- 		regs->sr = MODE_USER;		 \
- 		regs->pc = new_pc & ~1;		 \
+ void start_thread(struct pt_regs *regs, unsigned long new_ip, unsigned long new_sp)
+ {
+-	set_fs(USER_DS);
+ 	regs->pc = new_ip;
+ 	if (current->mm)
+ 		regs->p5 = current->mm->start_data;
 -- 
 1.5.6.5
 
