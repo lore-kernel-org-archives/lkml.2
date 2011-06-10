@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758027Ab1FJUIH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 16:08:07 -0400
-Received: from aspirin.dii.utk.edu ([160.36.0.81]:39802 "EHLO
-	aspirin.dii.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757925Ab1FJUIE (ORCPT
+	id S1758077Ab1FJUNR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 16:13:17 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:47576 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758006Ab1FJUNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 16:08:04 -0400
-Date: Fri, 10 Jun 2011 16:07:52 -0400 (EDT)
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: linux-kernel@vger.kernel.org
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [patch] perf_event: Return -EINVAL for Offcore Response Events
-Message-ID: <alpine.DEB.2.00.1106101606000.14542@cl320.eecs.utk.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 10 Jun 2011 16:13:15 -0400
+Date: Fri, 10 Jun 2011 21:12:40 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Kyungmin Park <kmpark@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
+        thomas.abraham@linaro.org
+Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
+ Power Management
+Message-ID: <20110610201240.GA31474@srcf.ucam.org>
+References: <20110610155954.GA25774@srcf.ucam.org>
+ <20110610165529.GC2230@linux.vnet.ibm.com>
+ <20110610170535.GC25774@srcf.ucam.org>
+ <20110610171939.GE2230@linux.vnet.ibm.com>
+ <20110610172307.GA27630@srcf.ucam.org>
+ <20110610175248.GF2230@linux.vnet.ibm.com>
+ <20110610180807.GB28500@srcf.ucam.org>
+ <20110610184738.GG2230@linux.vnet.ibm.com>
+ <20110610192329.GA30496@srcf.ucam.org>
+ <20110610193713.GJ2230@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110610193713.GJ2230@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 10, 2011 at 12:37:13PM -0700, Paul E. McKenney wrote:
+> On Fri, Jun 10, 2011 at 08:23:29PM +0100, Matthew Garrett wrote:
+> > On Fri, Jun 10, 2011 at 11:47:38AM -0700, Paul E. McKenney wrote:
+> > 
+> > > And if I understand you correctly, then the patches that Ankita posted
+> > > should help your self-refresh case, along with the originally intended
+> > > the power-down case and special-purpose use of memory case.
+> > 
+> > Yeah, I'd hope so once we actually have capable hardware.
+> 
+> Cool!!!
+> 
+> So Ankita's patchset might be useful to you at some point, then.
+> 
+> Does it look like a reasonable implementation?
 
-If we really are going to ban raw access to Offcore Response events for a 
-while, then we should return a proper error code.  Right now we return "0"
-which gives tools the false impression that opening the event worked.
+I should read it before saying anything, I suspect...
 
-Vince
-vweaver1@eecs.utk.edu
-
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 3a0338b..c6bfa6b 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -598,7 +598,7 @@ static int x86_setup_perfctr(struct perf_event *event)
- 	 * there's no sane user-space generalization yet:
- 	 */
- 	if (attr->type == PERF_TYPE_RAW)
--		return 0;
-+		return -EINVAL;
- 
- 	if (attr->type == PERF_TYPE_HW_CACHE)
- 		return set_ext_hw_attr(hwc, event);
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
