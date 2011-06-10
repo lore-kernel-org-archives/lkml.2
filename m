@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569Ab1FJQns (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 12:43:48 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:41355 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752889Ab1FJQnp (ORCPT
+	id S1755402Ab1FJQrY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 12:47:24 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:33278 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754423Ab1FJQrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 12:43:45 -0400
-X-Sasl-enc: 7fp6se4pkQItnsM86qNv/2Q7YTdNGoGMrm6H2x1mTdqP 1307724224
-Date: Fri, 10 Jun 2011 13:43:41 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Simon Horman <horms@verge.net.au>, Brad Campbell <brad@fnarfbargle.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Patrick McHardy <kaber@trash.net>,
-        Bart De Schuymer <bdschuym@pandora.be>, kvm@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org
-Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
-Message-ID: <20110610164341.GA784@khazad-dum.debian.net>
-References: <4DEE27DE.7060004@trash.net>
- <4DEE3859.6070808@fnarfbargle.com>
- <4DEE4538.1020404@trash.net>
- <1307471484.3091.43.camel@edumazet-laptop>
- <4DEEACC3.3030509@trash.net>
- <4DEEBFC2.4060102@fnarfbargle.com>
- <1307505541.3102.12.camel@edumazet-laptop>
- <4DEFAB15.2060905@fnarfbargle.com>
- <20110610025249.GD643@verge.net.au>
- <4DF21002.3040708@teksavvy.com>
+	Fri, 10 Jun 2011 12:47:21 -0400
+Message-ID: <4DF24A76.50703@vflare.org>
+Date: Fri, 10 Jun 2011 09:46:46 -0700
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DF21002.3040708@teksavvy.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jerome Marchand <jmarchan@redhat.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: [PATCH 4/4] Staging: zram: Replace mutex lock by a R/W semaphore
+References: <1307712529-9757-1-git-send-email-jmarchan@redhat.com> <1307712529-9757-2-git-send-email-jmarchan@redhat.com> <1307712529-9757-3-git-send-email-jmarchan@redhat.com> <1307712529-9757-4-git-send-email-jmarchan@redhat.com>
+In-Reply-To: <1307712529-9757-4-git-send-email-jmarchan@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Jun 2011, Mark Lord wrote:
-> Something many of us don't realize is that nearly all Intel chipsets
-> have a built-in hardware watchdog timer.  This includes chipset for
-> consumer desktop boards as well as the big iron server stuff.
-> 
-> It's the "i8xx_tco" driver in the kernel enables use of them:
+On 06/10/2011 06:28 AM, Jerome Marchand wrote:
+> Currently, nothing protects zram table from concurrent access.
+> For instance, ZRAM_UNCOMPRESSED bit can be cleared by zram_free_page()
+> called from a concurrent write between the time ZRAM_UNCOMPRESSED has
+> been set and the time it is tested to unmap KM_USER0 in
+> zram_bvec_write(). This ultimately leads to kernel panic.
+>
+> Also, a read request can occurs when the page has been freed by a
+> running write request and before it has been updated, leading to
+> zero filled block being incorrectly read and "Read before write"
+> error message.
+>
+> This patch replace the current mutex by a rw_semaphore. It extends
+> the protection to zram table (currently, only compression buffers are
+> protected) and read requests (currently, only write requests are
+> protected).
+>
 
-That's the old module name, but yes, it is very useful in desktops and
-laptops (when it works).   Server-class hardware will have a baseboard
-management unit that can really power-cycle the system instead of just
-rebooting.
+These locking issues are probably remnants of earlier versions where
+zram could be used only as a swap disks under which case it was not
+possible for a read and write on the same sector (page) to happen
+concurrently and thus there was no need to protect the table.
 
-And test it first before you depend on it triggering at a remote location,
-as the firmware might cause the Intel chipset watchdog to actually hang the
-box instead of causing a proper reboot (happens on the IBM thinkpad T43, for
-example).
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+> Signed-off-by: Jerome Marchand<jmarchan@redhat.com>
+
+Reviewed-by: Nitin Gupta <ngupta@vflare.org>
+
+Thanks,
+Nitin
