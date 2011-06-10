@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757793Ab1FJTYG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 15:24:06 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:43065 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755686Ab1FJTYD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 15:24:03 -0400
-Date: Fri, 10 Jun 2011 20:23:29 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Kyungmin Park <kmpark@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
-        thomas.abraham@linaro.org
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-Message-ID: <20110610192329.GA30496@srcf.ucam.org>
-References: <BANLkTinxeeSby_+tta8EhzCg3VbD6+=g+g@mail.gmail.com>
- <20110610151121.GA2230@linux.vnet.ibm.com>
- <20110610155954.GA25774@srcf.ucam.org>
- <20110610165529.GC2230@linux.vnet.ibm.com>
- <20110610170535.GC25774@srcf.ucam.org>
- <20110610171939.GE2230@linux.vnet.ibm.com>
- <20110610172307.GA27630@srcf.ucam.org>
- <20110610175248.GF2230@linux.vnet.ibm.com>
- <20110610180807.GB28500@srcf.ucam.org>
- <20110610184738.GG2230@linux.vnet.ibm.com>
+	id S1757515Ab1FJTZd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 15:25:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33622 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752682Ab1FJTZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 15:25:31 -0400
+Date: Fri, 10 Jun 2011 15:25:29 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: Ping Cheng <pinglinux@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Jason Gerecke <Jason.Gerecke@wacom.com>
+Subject: Re: [PATCH] wacom: use only one interface with DTU-2231
+Message-ID: <20110610192529.GE5510@redhat.com>
+References: <20110610182344.GB5510@redhat.com>
+ <BANLkTinmm1i1XZ=+8AYFQAR4_-DUxQGb4w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110610184738.GG2230@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <BANLkTinmm1i1XZ=+8AYFQAR4_-DUxQGb4w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 11:47:38AM -0700, Paul E. McKenney wrote:
+On Fri, Jun 10, 2011 at 12:17:51PM -0700, Ping Cheng wrote:
+> On Fri, Jun 10, 2011 at 11:23 AM, Aristeu Rozanski <aris@redhat.com> wrote:
+> 
+> > The Wacom DTU-2231 tablet has two interfaces on its default configuration
+> > and
+> > both have HID class, leading to the creation of two input devices
+> > instead of one. Only the first one is used, so filter out the second.
+> >
+> 
+> Reviewed-by: Ping Cheng <pingc@wacom.com>
+> 
+> Thank you for the patch. You forgot to put your s-o-b though.
+oops :)
 
-> And if I understand you correctly, then the patches that Ankita posted
-> should help your self-refresh case, along with the originally intended
-> the power-down case and special-purpose use of memory case.
-
-Yeah, I'd hope so once we actually have capable hardware.
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Aristeu
+
