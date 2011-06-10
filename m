@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758242Ab1FJWrk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 18:47:40 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52299 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758193Ab1FJWrj (ORCPT
+	id S1758251Ab1FJWwT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 18:52:19 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:47122 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758193Ab1FJWwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 18:47:39 -0400
-Date: Fri, 10 Jun 2011 23:47:38 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonas Gorski <jonas.gorski@gmail.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: Why is CONFIG_FHANDLE an option??
-Message-ID: <20110610224738.GB11521@ZenIV.linux.org.uk>
-References: <alpine.LNX.2.00.1106110001180.21722@swampdragon.chaosbits.net>
- <20110610223955.GA11521@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110610223955.GA11521@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 10 Jun 2011 18:52:18 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: "Amir G." <amir73il@users.sourceforge.net>
+Cc: Lukas Czerner <lczerner@redhat.com>,
+        Yongqiang Yang <xiaoqiangnk@gmail.com>, linux-ext4@vger.kernel.org,
+        tytso@mit.edu, linux-kernel@vger.kernel.org, sandeen@redhat.com
+Subject: Re: [PATCH v1 00/30] Ext4 snapshots
+In-Reply-To: Your message of "Thu, 09 Jun 2011 13:54:13 +0300."
+             <BANLkTin0RKZbDmB1movombH9o4HDpTnvFw@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1307459283-22130-1-git-send-email-amir73il@users.sourceforge.net> <alpine.LFD.2.00.1106071735100.11385@dhcp-27-109.brq.redhat.com> <BANLkTikAB-RDDS8PMMrFK-OuY6PuavBixA@mail.gmail.com> <alpine.LFD.2.00.1106081114240.5026@dhcp-27-109.brq.redhat.com> <BANLkTi=T1OtyRSWNTA6xhkTy5uaHWqA_XA@mail.gmail.com> <alpine.LFD.2.00.1106081716200.6609@dhcp-27-109.brq.redhat.com> <BANLkTikUXdvMQROYEdxnyfcPuB0e9ozMOg@mail.gmail.com> <BANLkTinU9Hegr3iA5it2vNjE_RYbB+8+RQ@mail.gmail.com> <BANLkTik9Mnq5yqK795pxyr8SK-3EOzzNhA@mail.gmail.com> <alpine.LFD.2.00.1106090834270.4138@dhcp-27-109.brq.redhat.com> <BANLkTi=fugrRE0P5m8nMPrH_kZqPZB7ajA@mail.gmail.com> <alpine.LFD.2.00.1106091012030.4138@dhcp-27-109.brq.redhat.com>
+            <BANLkTin0RKZbDmB1movombH9o4HDpTnvFw@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1307746288_4421P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 10 Jun 2011 18:51:28 -0400
+Message-ID: <52699.1307746288@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020209.4DF2A019.002D,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 11:39:55PM +0100, Al Viro wrote:
+--==_Exmh_1307746288_4421P
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> Why not?  Software needs to test *anyway*, since it might run on earlier
-> kernels.  And "does that syscall return -ENOSYS" is self-documenting,
-> while "is the version higher than $MAGIC_NUMBER" is *not*.  Especially since
-> there's such thing as backports.
-> 
-> If you need to check that syscall is there, _check_ _it_.  Don't breed
-> dependencies on version numbers.
+On Thu, 09 Jun 2011 13:54:13 +0300, =22Amir G.=22 said:
 
-PS: we have BSD_PROCESS_ACCT doing pretty much the same kind of thing.
-And SYSVIPC.  And POSIX_MQUEUE.  And there's nfsservctl(2), also
-config-dependent.  And eventfd(2), and inotify syscalls, etc.
+> Why do you keep saying 'backup only'?
+> There is a huge difference between having long lived snapshots,
+> like CTERA products have, and temporary snapshot for backup
+> purpose (for which LVM is adequate).
 
-There is such thing as optional system calls.  Always had been.  Deal
-with that...
+I must have blinked somewhere - I'm not convinced LVM is even =22adequate=
+=22 for
+backup purposes.  In particular, how does an LVM-level snapshot deal with=
+ the
+=22metadata in memory=22 problem (basically the exact same problem as run=
+ning fsck
+on a disk partition that is already mounted)?
+
+
+--==_Exmh_1307746288_4421P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFN8p/wcC3lWbTT17ARAkG1AJ4tvLevzsXjKQ6ZoiEUYl8Xldy92gCeOS2V
+H2/Q0E6QhOIiWDjHRD2y14o=
+=ry9L
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1307746288_4421P--
+
