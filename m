@@ -1,43 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758203Ab1FJWYg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 18:24:36 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39613 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758103Ab1FJWYf (ORCPT
+	id S1758211Ab1FJW1V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 18:27:21 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:47554 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753467Ab1FJW1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 18:24:35 -0400
+	Fri, 10 Jun 2011 18:27:17 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-3.tower-132.messagelabs.com!1307744836!28534249!1
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.98]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] fs/partitions/check.c: make local symbols static
+Date: Fri, 10 Jun 2011 15:26:59 -0700
+User-Agent: KMail/1.9.9
+CC: <jaxboe@fusionio.com>, <isimatu.yasuaki@jp.fujitsu.com>,
+        <adobriyan@gmail.com>, <tj@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <1306922672-9012-1-git-send-email-dbaryshkov@gmail.com>
-References: <1306922672-9012-1-git-send-email-dbaryshkov@gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 10 Jun 2011 15:24:11 -0700
-Message-ID: <BANLkTimm_nD77BV8CLSGF95+E7JP1sv6ig@mail.gmail.com>
-Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning
- instead of failing
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        David Rientjes <rientjes@google.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201106101526.59686.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 1, 2011 at 3:04 AM, Dmitry Eremin-Solenikov
-<dbaryshkov@gmail.com> wrote:
-> Please be more polite to other people. After a197b59ae6 all allocations
-> with GFP_DMA set on nodes without ZONE_DMA fail nearly silently (only
-> one warning during bootup is emited, no matter how many things fail).
-> This is a very crude change on behaviour. To be more civil, instead of
-> failing emit noisy warnings each time smbd. tries to allocate a GFP_DMA
-> memory on non-ZONE_DMA node.
+The symbols part_ro_show, part_alignment_offset_show, and
+part_discard_alignment_show are not used outside this file and
+should be marked static.
 
-The whole thing already got reverted in commit 1fa7b6a29c613.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>
 
-                   Linus
+---
+
+diff --git a/fs/partitions/check.c b/fs/partitions/check.c
+index d545e97..e3c63d1 100644
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -237,22 +237,22 @@ ssize_t part_size_show(struct device *dev,
+ 	return sprintf(buf, "%llu\n",(unsigned long long)p->nr_sects);
+ }
+ 
+-ssize_t part_ro_show(struct device *dev,
+-		       struct device_attribute *attr, char *buf)
++static ssize_t part_ro_show(struct device *dev,
++			    struct device_attribute *attr, char *buf)
+ {
+ 	struct hd_struct *p = dev_to_part(dev);
+ 	return sprintf(buf, "%d\n", p->policy ? 1 : 0);
+ }
+ 
+-ssize_t part_alignment_offset_show(struct device *dev,
+-				   struct device_attribute *attr, char *buf)
++static ssize_t part_alignment_offset_show(struct device *dev,
++					  struct device_attribute *attr, char *buf)
+ {
+ 	struct hd_struct *p = dev_to_part(dev);
+ 	return sprintf(buf, "%llu\n", (unsigned long long)p->alignment_offset);
+ }
+ 
+-ssize_t part_discard_alignment_show(struct device *dev,
+-				   struct device_attribute *attr, char *buf)
++static ssize_t part_discard_alignment_show(struct device *dev,
++					   struct device_attribute *attr, char *buf)
+ {
+ 	struct hd_struct *p = dev_to_part(dev);
+ 	return sprintf(buf, "%u\n", p->discard_alignment);
