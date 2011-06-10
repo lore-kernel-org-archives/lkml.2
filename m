@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757309Ab1FJNJA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 09:09:00 -0400
-Received: from grimli.r00tworld.net ([83.169.44.195]:42914 "EHLO
+	id S1757281Ab1FJNJQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 09:09:16 -0400
+Received: from grimli.r00tworld.net ([83.169.44.195]:42975 "EHLO
 	mail.r00tworld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757223Ab1FJNI6 (ORCPT
+	with ESMTP id S1757221Ab1FJNJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 09:08:58 -0400
+	Fri, 10 Jun 2011 09:09:07 -0400
 From: Mathias Krause <minipli@googlemail.com>
-To: Russell King <linux@arm.linux.org.uk>
+To: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>
-Subject: [PATCH] arm, exec: remove redundant set_fs(USER_DS)
-Date: Fri, 10 Jun 2011 15:08:57 +0200
-Message-Id: <1307711337-4042-1-git-send-email-minipli@googlemail.com>
+        linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>
+Subject: [PATCH] avr32, exec: remove redundant set_fs(USER_DS)
+Date: Fri, 10 Jun 2011 15:09:05 +0200
+Message-Id: <1307711345-5564-1-git-send-email-minipli@googlemail.com>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
 References: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
@@ -29,21 +28,21 @@ set_fs(USER_DS) is redundant.
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
 ---
- arch/arm/include/asm/processor.h |    1 -
+ arch/avr32/include/asm/processor.h |    1 -
  1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/include/asm/processor.h b/arch/arm/include/asm/processor.h
-index b2d9df5..3962caf 100644
---- a/arch/arm/include/asm/processor.h
-+++ b/arch/arm/include/asm/processor.h
-@@ -55,7 +55,6 @@ struct thread_struct {
- #define start_thread(regs,pc,sp)					\
- ({									\
- 	unsigned long *stack = (unsigned long *)sp;			\
--	set_fs(USER_DS);						\
- 	memset(regs->uregs, 0, sizeof(regs->uregs));			\
- 	if (current->personality & ADDR_LIMIT_32BIT)			\
- 		regs->ARM_cpsr = USR_MODE;				\
+diff --git a/arch/avr32/include/asm/processor.h b/arch/avr32/include/asm/processor.h
+index 49a88f5..108502b 100644
+--- a/arch/avr32/include/asm/processor.h
++++ b/arch/avr32/include/asm/processor.h
+@@ -131,7 +131,6 @@ struct thread_struct {
+  */
+ #define start_thread(regs, new_pc, new_sp)	 \
+ 	do {					 \
+-		set_fs(USER_DS);		 \
+ 		memset(regs, 0, sizeof(*regs));	 \
+ 		regs->sr = MODE_USER;		 \
+ 		regs->pc = new_pc & ~1;		 \
 -- 
 1.5.6.5
 
