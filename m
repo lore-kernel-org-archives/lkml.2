@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606Ab1FJQlv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 12:41:51 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:55509 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622Ab1FJQls (ORCPT
+	id S1754007Ab1FJQmO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 12:42:14 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:62737 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622Ab1FJQmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 12:41:48 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH v3] arch/tile: add hypervisor-based character driver for SPI flash ROM
-Date: Fri, 10 Jun 2011 18:41:27 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-        Eric Biederman <ebiederm@aristanetworks.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Benjamin Thery <benjamin.thery@bull.net>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>
-References: <201105281516.p4SFGfHg024703@farm-0010.internal.tilera.com> <BANLkTim-d-8w1_idg4u302aB3MqTo7q4Sg@mail.gmail.com> <201106021510.p52FAlmb028120@farm-0023.internal.tilera.com>
-In-Reply-To: <201106021510.p52FAlmb028120@farm-0023.internal.tilera.com>
+	Fri, 10 Jun 2011 12:42:10 -0400
+Message-ID: <4DF2493F.8040507@vflare.org>
+Date: Fri, 10 Jun 2011 09:41:35 -0700
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Jerome Marchand <jmarchan@redhat.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: [PATCH 3/4] Staging: zram: allow partial page operations
+References: <1307712529-9757-1-git-send-email-jmarchan@redhat.com> <1307712529-9757-2-git-send-email-jmarchan@redhat.com> <1307712529-9757-3-git-send-email-jmarchan@redhat.com>
+In-Reply-To: <1307712529-9757-3-git-send-email-jmarchan@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106101841.27771.arnd@arndb.de>
-X-Provags-ID: V02:K0:xoAFqYx/on/G4RVqTPv8zjSfs0MXzOCeOnL8wwsM7e/
- xXJBLPphCrS2GqrM9FSFpX64vtYb7nGlrJPGKOTCnCAEA1DWUN
- WF1bD31BkHsJrnJIrcc6FIODTdIvdxjRiZdS11vSql+MRL84A+
- 5+0uBLnBkcnt6xQ0wHDWOJX/c9FpQelS+69MAzh0VOARkDdbmy
- Iy58+/KgvKtllGBWN/sZw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 02 June 2011, Chris Metcalf wrote:
-> The first version of this patch proposed an arch/tile/drivers/ directory,
-> but the consensus was that this was probably a poor choice for a place to
-> group Tilera-specific drivers, and that in any case grouping by platform
-> was discouraged, and grouping by function was preferred.
-> 
-> This version of the patch addresses various issues raised in the
-> community, primarily the absence of sysfs integration.  The sysfs
-> integration now handles passing information on sector size, page size,
-> and total partition size to userspace as well.  In addition, we now
-> use a single "struct cdev" to manage all the partition minor devices,
-> and dynamically discover the correct number of partitions from the
-> hypervisor rather than using a module_param with a default value.
-> 
-> This driver has no particular "peer" drivers it can be grouped with.
-> It is sort of like an MTD driver for SPI ROM, but it doesn't group well
-> with the other MTD devices since it relies on hypervisor virtualization
-> to handle many of the irritating aspects of flash ROM management: sector
-> awareness, background read for sub-sector writes, bit examination to
-> determine whether a sector erase needs to be issued, etc.  It is in fact
-> more like an EEPROM driver, but the hypervisor virtualization does require
-> a "flush" command if you wish to commit a sector write prior to writing
-> to a different sector, and this is sufficiently different from generic
-> I2C/SPI EEPROMs that as a result it doesn't group well with them either.
-> 
-> The simple character device is already in use by a range of Tilera
-> SPI ROM management tools, as well as by customers.  In addition, using
-> the simple character device actually simplifies the userspace tools,
-> since they don't need to manage sector erase, background read, etc.
-> This both simplifies the code (since we can uniformly manage plain files
-> and the SPI ROM) as well as makes the user code portable to non-Linux
-> platforms that don't offer the same MTD ioctls.
-> 
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+On 06/10/2011 06:28 AM, Jerome Marchand wrote:
+> Commit 7b19b8d45b216ff3186f066b31937bdbde066f08 (zram: Prevent overflow
+> in logical block size) introduced ZRAM_LOGICAL_BLOCK_SIZE constant to
+> prevent overflow of logical block size on 64k page kernel.
+> However, the current implementation of zram only allow operation on block
+> of the same size as a page. That makes theorically legit 4k requests fail
+> on 64k page kernel.
+>
+> This patch makes zram allow operation on partial pages. Basically, it
+> means we still do operations on full pages internally, but only copy the
+> relevent segments from/to the user memory.
+>
 
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+Couldn't we just change struct queue_limits.logical_block_size type to 
+unsigned int or something so it could hold value of 64K? Then we could
+avoid making all these changes to handle partial page requests.
+
+Thanks,
+Nitin
