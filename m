@@ -1,147 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756415Ab1FJMIg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 08:08:36 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:34254
-	"EHLO CH1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756180Ab1FJMId (ORCPT
+	id S1756875Ab1FJMK0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 08:10:26 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50704 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756080Ab1FJMKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 08:08:33 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LMKPQ2-02-3BS-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-CC: Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 9/9] x86/amd-iommu: Store device alias as dev_data pointer
-Date: Fri, 10 Jun 2011 14:08:49 +0200
-Message-ID: <1307707729-29767-10-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1307707729-29767-1-git-send-email-joerg.roedel@amd.com>
-References: <1307707729-29767-1-git-send-email-joerg.roedel@amd.com>
+	Fri, 10 Jun 2011 08:10:21 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DF2099B.7030600@jp.fujitsu.com>
+Date: Fri, 10 Jun 2011 21:10:03 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+To: peterz@infradead.org
+CC: eric.dumazet@gmail.com, david@rgmadvisors.com,
+        linux-kernel@vger.kernel.org, sbohrer@rgmadvisors.com,
+        zvonler@rgmadvisors.com, hughd@google.com, tglx@linutronix.de,
+        dvhart@linux.intel.com, mingo@elte.hu
+Subject: Re: Change in functionality of futex() system call.
+References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>	 <1307373819.3098.40.camel@edumazet-laptop>	 <1307376672.2322.167.camel@twins> <1307376989.2322.171.camel@twins>
+In-Reply-To: <1307376989.2322.171.camel@twins>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This finally allows PCI-Device-IDs to be handled by the
-IOMMU driver that have no corresponding struct device
-present in the system.
+>> Urgh,. maybe something like the below but with more conditionals that
+>> enable the extra logic only for FUTEX_WAIT..
+>>
+>> The idea is to try a RO gup() when the RW gup() fails so as not to slow
+>> down the common path of writable anonymous maps and bail when we used
+>> the RO path on anonymous memory.
+>>
+>> ---
+>> diff --git a/kernel/futex.c b/kernel/futex.c
+>> index fe28dc2..11f2ad1 100644
+>> --- a/kernel/futex.c
+>> +++ b/kernel/futex.c
+>> @@ -234,7 +234,7 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
+>>  	unsigned long address = (unsigned long)uaddr;
+>>  	struct mm_struct *mm = current->mm;
+>>  	struct page *page, *page_head;
+>> -	int err;
+>> +	int err, ro = 0;
+>>  
+>>  	/*
+>>  	 * The futex address must be "naturally" aligned.
+>> @@ -262,6 +262,10 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
+>>  
+>>  again:
+>>  	err = get_user_pages_fast(address, 1, 1, &page);
+>> +	if (err == -EFAULT) {
+>> +		err = get_user_pages_fast(address, 1, 0, &page);
+>> +		ro = 1;
+>> +	}
+>>  	if (err < 0)
+>>  		return err;
+>>  
+>> @@ -316,6 +320,11 @@ again:
+>>  	 * the object not the particular process.
+>>  	 */
+>>  	if (PageAnon(page_head)) {
+>> +		if (ro) {
+>> +			err = -EFAULT;
+>> +			goto out;
+>> +		}
+>> +
+>>  		key->both.offset |= FUT_OFF_MMSHARED; /* ref taken on mm */
+>>  		key->private.mm = mm;
+>>  		key->private.address = address;
+>> @@ -327,9 +336,10 @@ again:
+>>  
+>>  	get_futex_key_refs(key);
+>>  
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- arch/x86/include/asm/amd_iommu_types.h |    2 +-
- arch/x86/kernel/amd_iommu.c            |   34 ++++++++++++++-----------------
- 2 files changed, 16 insertions(+), 20 deletions(-)
+Need err=0 here. (note: get_user_pages_fast() return 1) Other than that looks
+good to me and this patch passed my test.
+	Reviewed-and-tested-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-diff --git a/arch/x86/include/asm/amd_iommu_types.h b/arch/x86/include/asm/amd_iommu_types.h
-index fffbe3c..5b9c507 100644
---- a/arch/x86/include/asm/amd_iommu_types.h
-+++ b/arch/x86/include/asm/amd_iommu_types.h
-@@ -311,7 +311,7 @@ struct protection_domain {
- struct iommu_dev_data {
- 	struct list_head list;		  /* For domain->dev_list */
- 	struct list_head dev_data_list;	  /* For global dev_data_list */
--	struct device *alias;		  /* The Alias Device */
-+	struct iommu_dev_data *alias_data;/* The alias dev_data */
- 	struct protection_domain *domain; /* Domain the device is bound to */
- 	atomic_t bind;			  /* Domain attach reverent count */
- 	u16 devid;			  /* PCI Device ID */
-diff --git a/arch/x86/kernel/amd_iommu.c b/arch/x86/kernel/amd_iommu.c
-index f647998..0ed1c94 100644
---- a/arch/x86/kernel/amd_iommu.c
-+++ b/arch/x86/kernel/amd_iommu.c
-@@ -203,7 +203,6 @@ static bool check_device(struct device *dev)
- static int iommu_init_device(struct device *dev)
- {
- 	struct iommu_dev_data *dev_data;
--	struct pci_dev *pdev;
- 	u16 alias;
- 
- 	if (dev->archdata.iommu)
-@@ -215,13 +214,16 @@ static int iommu_init_device(struct device *dev)
- 
- 	alias = amd_iommu_alias_table[dev_data->devid];
- 	if (alias != dev_data->devid) {
--		pdev = pci_get_bus_and_slot(PCI_BUS(alias), alias & 0xff);
--		if (pdev)
--			dev_data->alias = &pdev->dev;
--		else {
-+		struct iommu_dev_data *alias_data;
-+
-+		alias_data = find_dev_data(alias);
-+		if (alias_data == NULL) {
-+			pr_err("AMD-Vi: Warning: Unhandled device %s\n",
-+					dev_name(dev));
- 			free_dev_data(dev_data);
- 			return -ENOTSUPP;
- 		}
-+		dev_data->alias_data = alias_data;
- 	}
- 
- 	dev->archdata.iommu = dev_data;
-@@ -1642,14 +1644,8 @@ static int __attach_device(struct iommu_dev_data *dev_data,
- 	/* lock domain */
- 	spin_lock(&domain->lock);
- 
--	if (dev_data->alias != NULL) {
--		struct iommu_dev_data *alias_data;
--
--		alias_data = get_dev_data(dev_data->alias);
--
--		ret = -EINVAL;
--		if (!alias_data)
--			goto out_unlock;
-+	if (dev_data->alias_data != NULL) {
-+		struct iommu_dev_data *alias_data = dev_data->alias_data;
- 
- 		/* Some sanity checks */
- 		ret = -EBUSY;
-@@ -1721,7 +1717,6 @@ static int attach_device(struct device *dev,
-  */
- static void __detach_device(struct iommu_dev_data *dev_data)
- {
--	struct iommu_dev_data *alias_data;
- 	struct protection_domain *domain;
- 	unsigned long flags;
- 
-@@ -1731,8 +1726,9 @@ static void __detach_device(struct iommu_dev_data *dev_data)
- 
- 	spin_lock_irqsave(&domain->lock, flags);
- 
--	if (dev_data->alias) {
--		alias_data = get_dev_data(dev_data->alias);
-+	if (dev_data->alias_data != NULL) {
-+		struct iommu_dev_data *alias_data = dev_data->alias_data;
-+
- 		if (atomic_dec_and_test(&alias_data->bind))
- 			do_detach(alias_data);
- 	}
-@@ -1779,7 +1775,7 @@ static void detach_device(struct device *dev)
-  */
- static struct protection_domain *domain_for_device(struct device *dev)
- {
--	struct iommu_dev_data *dev_data, *alias_data;
-+	struct iommu_dev_data *dev_data;
- 	struct protection_domain *dom = NULL;
- 	unsigned long flags;
- 
-@@ -1788,8 +1784,8 @@ static struct protection_domain *domain_for_device(struct device *dev)
- 	if (dev_data->domain)
- 		return dev_data->domain;
- 
--	if (dev_data->alias != NULL) {
--		alias_data = get_dev_data(dev_data->alias);
-+	if (dev_data->alias_data != NULL) {
-+		struct iommu_dev_data *alias_data = dev_data->alias_data;
- 
- 		read_lock_irqsave(&amd_iommu_devtable_lock, flags);
- 		if (alias_data->domain != NULL) {
--- 
-1.7.4.1
+>> +out:
+>>  	unlock_page(page_head);
+>>  	put_page(page_head);
+>> -	return 0;
+>> +	return err;
+>>  }
+>>  
+>>  static inline void put_futex_key(union futex_key *key)
+>>
+> 
+> Hmm, wouldn't that still be susceptible to the zero-page thing if: we
+> create a writable private file map of a sparse file, touch a page and
+> then remap the thing RO?
+
+After while thinking, I've conclude this is ok. Because 1) as Andrew and
+Kyle described, RO mapping usage is not so sane. We need to care it for
+only compatibility. 2) David Oliver's case is real compatibility issue.
+but I doubt such mprotect() vs futex() race is happen on real world.
+3) Anyway, overkill compatibility care might make code slower perhaps.
+
+Off topic: current futex documentations are near terribly unclear and
+many futex op are completely undocumented. They are one of root cause
+that every change can make compatibility issue. (;_;
 
 
