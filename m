@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537Ab1FJKh0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 06:37:26 -0400
-Received: from mail.perches.com ([173.55.12.10]:2788 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753730Ab1FJKhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 06:37:25 -0400
-Subject: [PATCH] get_maintainers.pl: Improve .mailmap parsing
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Florian Mickler <florian@mickler.org>
-Cc: Ryan Mallon <rmallon@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1307679288.20439.15.camel@Joe-Laptop>
-References: <1307661170-9325-1-git-send-email-rmallon@gmail.com>
-	 <20110610025532.GE26006@linux-sh.org> <4DF189F2.3040009@gmail.com>
-	 <1307675512.20439.2.camel@Joe-Laptop> <4DF18BDC.8010306@gmail.com>
-	 <1307676240.20439.9.camel@Joe-Laptop> <4DF1902A.1040305@gmail.com>
-	 <20110610035115.GF26006@linux-sh.org>  <4DF19565.9070601@gmail.com>
-	 <1307679288.20439.15.camel@Joe-Laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Jun 2011 03:37:23 -0700
-Message-ID: <1307702243.20439.31.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1755487Ab1FJKno (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 06:43:44 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45755 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755484Ab1FJKnm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 06:43:42 -0400
+Date: Fri, 10 Jun 2011 11:43:18 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Raju, Sundaram" <sundaram@ti.com>
+Cc: "Koul, Vinod" <vinod.koul@intel.com>, Dan <dan.j.williams@intel.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC] dmaengine: add new api for preparing simple slave
+	transfer
+Message-ID: <20110610104318.GC24636@n2100.arm.linux.org.uk>
+References: <E0D41E29EB0DAC4E9F3FF173962E9E940301FE2DED@dbde02.ent.ti.com> <20110609124723.GA24636@n2100.arm.linux.org.uk> <E0D41E29EB0DAC4E9F3FF173962E9E940301FE2EFB@dbde02.ent.ti.com> <20110609163206.GB24636@n2100.arm.linux.org.uk> <1307686397.10976.116.camel@vkoul-udesk3> <E0D41E29EB0DAC4E9F3FF173962E9E940301FE337F@dbde02.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E0D41E29EB0DAC4E9F3FF173962E9E940301FE337F@dbde02.ent.ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Entries that used formats other than "Proper Name <commit@email.xx>"
-were not parsed properly.
+On Fri, Jun 10, 2011 at 03:51:41PM +0530, Raju, Sundaram wrote:
+> Consider a simple video use case of de-interlacing a video buffer.
+> Odd lines have to be transferred first, and then the even lines are 
+> transferred separately. This can be done by programming the 
+> inter frame gap as the line size of the video buffer in the DMAC.
+> This will require you to have only 2 descriptors, one for the
+> odd lines and another for the even lines. This results in only
+> 2 descriptors being written to DMAC registers.
 
-Try to improve the parsing so that the entries in the forms of:
-    Proper Name <proper@email.xx> <commit@email.xx>
-and
-    Proper Name <proper@email.xx> Commit Name <commit@email.xx>
-are transformed correctly.
+How would this be handled with DMACs which can't 'skip' bytes in the
+buffer?  You would have to generate a list of LLIs separately
+describing each 'line' of video and chain them together.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/get_maintainer.pl |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+How do you handle the situation where a driver uses your new proposed
+API, but it doesn't support that in hardware.
 
-diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-index d29a8d7..eb2f1e6 100755
---- a/scripts/get_maintainer.pl
-+++ b/scripts/get_maintainer.pl
-@@ -328,7 +328,8 @@ sub read_mailmap {
- 	# name1 <mail1> <mail2>
- 	# name1 <mail1> name2 <mail2>
- 	# (see man git-shortlog)
--	if (/^(.+)<(.+)>$/) {
-+
-+	if (/^([^<]+)<([^>]+)>$/) {
- 	    my $real_name = $1;
- 	    my $address = $2;
- 
-@@ -336,13 +337,13 @@ sub read_mailmap {
- 	    ($real_name, $address) = parse_email("$real_name <$address>");
- 	    $mailmap->{names}->{$address} = $real_name;
- 
--	} elsif (/^<([^\s]+)>\s*<([^\s]+)>$/) {
-+	} elsif (/^<([^>]+)>\s*<([^>]+)>$/) {
- 	    my $real_address = $1;
- 	    my $wrong_address = $2;
- 
- 	    $mailmap->{addresses}->{$wrong_address} = $real_address;
- 
--	} elsif (/^(.+)<([^\s]+)>\s*<([^\s]+)>$/) {
-+	} elsif (/^(.+)<([^>]+)>\s*<([^>]+)>$/) {
- 	    my $real_name = $1;
- 	    my $real_address = $2;
- 	    my $wrong_address = $3;
-@@ -353,7 +354,7 @@ sub read_mailmap {
- 	    $mailmap->{names}->{$wrong_address} = $real_name;
- 	    $mailmap->{addresses}->{$wrong_address} = $real_address;
- 
--	} elsif (/^(.+)<([^\s]+)>\s*([^\s].*)<([^\s]+)>$/) {
-+	} elsif (/^(.+)<([^>]+)>\s*(.+)\s*<([^>]+)>$/) {
- 	    my $real_name = $1;
- 	    my $real_address = $2;
- 	    my $wrong_name = $3;
--- 
-1.7.5.rc3.dirty
+> Actually we can deduce the chunk_size from the 
+> dma_slave_config itself. It is either the src_addr_width or
+> dst_addr_width based on the direction. Because at a stretch
+> DMAC cannot transfer more than the slave register width.
 
+I think you're misinterpreting those fields.  (dst|src)_addr_width tells
+the DMA controller the width of each transaction - whether to issue a
+byte, half-word, word or double-word read or write to the peripheral.
+It doesn't say how many of those to issue, it just says what the
+peripheral access size is to be.
 
-
+In other words, they describe the width of the FIFO register.
