@@ -1,122 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755924Ab1FJL2x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 07:28:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33643 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753428Ab1FJL2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 07:28:51 -0400
-Date: Fri, 10 Jun 2011 14:28:28 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, yvugenfi@redhat.com,
-        kvm@vger.kernel.org, herbert@gondor.hengli.com.au
-Subject: Re: [PATCH] virtio_net: introduce VIRTIO_NET_HDR_F_DATA_VALID
-Message-ID: <20110610112828.GA21037@redhat.com>
-References: <1307703377-3798-1-git-send-email-jasowang@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307703377-3798-1-git-send-email-jasowang@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755976Ab1FJL24 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 07:28:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51348 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753428Ab1FJL2y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 07:28:54 -0400
+Subject: Re: [PATCH 1/3] printk: Release console_sem after logbuf_lock
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        efault@gmx.de, Arne Jansen <lists@die-jansens.de>
+In-Reply-To: <alpine.LSU.2.00.1106091655560.2710@sister.anvils>
+References: <20110609130647.937204592@chello.nl>
+	 <20110609131307.493181962@chello.nl>
+	 <20110609130617.f8aca966.akpm@linux-foundation.org>
+	 <20110609202707.GA28951@elte.hu> <1307652883.2497.1028.camel@laptop>
+	 <20110609140714.fc9ea187.akpm@linux-foundation.org>
+	 <alpine.LSU.2.00.1106091655560.2710@sister.anvils>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 10 Jun 2011 13:28:31 +0200
+Message-ID: <1307705311.3941.118.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 06:56:17PM +0800, Jason Wang wrote:
-> There's no need for the guest to validate the checksum if it have been
-> validated by host nics. So this patch introduces a new flag -
-> VIRTIO_NET_HDR_F_DATA_VALID which is used to bypass the checksum
-> examing in guest. The backend (tap/macvtap) may set this flag when
-> met skbs with CHECKSUM_UNNECESSARY to save cpu utilization.
+On Thu, 2011-06-09 at 16:57 -0700, Hugh Dickins wrote:
 > 
-> No feature negotiation is needed as old driver just ignore this flag.
+> All console-related activity curently happens under spin_lock_irqsave(&console_lock). 
+> This causes interrutps to be blocked for 1-2 milliseconds with vgacon, and for
+> hundreds of milliseconds with fbdevs.  This results in network overruns, audio
+> dropouts, dropped characters on serial ports and other such nice things.
 
-This wasn't required by the spec, but maybe it should be.
-
-> Iperf shows 12%-30% performance improvement for UDP traffic. For TCP,
-> when gro is on no difference as it produces skb with partial
-> checksum. But when gro is disabled, 20% or even higher improvement
-> could be measured by netperf.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-
-
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-
-> ---
->  drivers/net/macvtap.c      |    2 ++
->  drivers/net/tun.c          |    2 ++
->  drivers/net/virtio_net.c   |    2 ++
->  include/linux/virtio_net.h |    1 +
->  net/packet/af_packet.c     |    2 ++
->  5 files changed, 9 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> index 6696e56..ecee0fe 100644
-> --- a/drivers/net/macvtap.c
-> +++ b/drivers/net/macvtap.c
-> @@ -508,6 +508,8 @@ static int macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
->  		vnet_hdr->flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
->  		vnet_hdr->csum_start = skb_checksum_start_offset(skb);
->  		vnet_hdr->csum_offset = skb->csum_offset;
-> +	} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
-> +		vnet_hdr->flags = VIRTIO_NET_HDR_F_DATA_VALID;
->  	} /* else everything is zero */
->  
->  	return 0;
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index 74e9405..f43fa45 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -788,6 +788,8 @@ static __inline__ ssize_t tun_put_user(struct tun_struct *tun,
->  			gso.flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
->  			gso.csum_start = skb_checksum_start_offset(skb);
->  			gso.csum_offset = skb->csum_offset;
-> +		} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
-> +			gso.flags = VIRTIO_NET_HDR_F_DATA_VALID;
->  		} /* else everything is zero */
->  
->  		if (unlikely(memcpy_toiovecend(iv, (void *)&gso, total,
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index f685324..be3686a 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -274,6 +274,8 @@ static void receive_buf(struct net_device *dev, void *buf, unsigned int len)
->  					  hdr->hdr.csum_start,
->  					  hdr->hdr.csum_offset))
->  			goto frame_err;
-> +	} else if (hdr->hdr.flags & VIRTIO_NET_HDR_F_DATA_VALID) {
-> +		skb->ip_summed = CHECKSUM_UNNECESSARY;
->  	}
->  
->  	skb->protocol = eth_type_trans(skb, dev);
-> diff --git a/include/linux/virtio_net.h b/include/linux/virtio_net.h
-> index 136040b..970d5a2 100644
-> --- a/include/linux/virtio_net.h
-> +++ b/include/linux/virtio_net.h
-> @@ -63,6 +63,7 @@ struct virtio_net_config {
->   * specify GSO or CSUM features, you can simply ignore the header. */
->  struct virtio_net_hdr {
->  #define VIRTIO_NET_HDR_F_NEEDS_CSUM	1	// Use csum_start, csum_offset
-> +#define VIRTIO_NET_HDR_F_DATA_VALID	2	// Csum is valid
->  	__u8 flags;
->  #define VIRTIO_NET_HDR_GSO_NONE		0	// Not a GSO frame
->  #define VIRTIO_NET_HDR_GSO_TCPV4	1	// GSO frame, IPv4 TCP (TSO)
-> diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-> index c0c3cda..99ca471 100644
-> --- a/net/packet/af_packet.c
-> +++ b/net/packet/af_packet.c
-> @@ -1681,6 +1681,8 @@ static int packet_recvmsg(struct kiocb *iocb, struct socket *sock,
->  			vnet_hdr.flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
->  			vnet_hdr.csum_start = skb_checksum_start_offset(skb);
->  			vnet_hdr.csum_offset = skb->csum_offset;
-> +		} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
-> +			vnet_hdr.flags = VIRTIO_NET_HDR_F_DATA_VALID;
->  		} /* else everything is zero */
->  
->  		err = memcpy_toiovec(msg->msg_iov, (void *)&vnet_hdr,
-> -- 
-> 1.7.1
+Hmm, with these proposed patches we're actually back to that. I wonder
+if fbdev is still that crappy..
