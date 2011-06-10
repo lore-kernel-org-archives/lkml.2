@@ -1,46 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab1FJNUp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 09:20:45 -0400
-Received: from defer-dn03.ocn.ad.jp ([125.170.100.156]:60985 "EHLO
-	defer-dn03.ocn.ad.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755368Ab1FJNUm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 09:20:42 -0400
-Date: Fri, 10 Jun 2011 22:19:01 +0900 (JST)
-Message-Id: <20110610.221901.193681450.anemo@mba.ocn.ne.jp>
-To: viresh.kumar@st.com
-Cc: dan.j.williams@intel.com, linus.walleij@linaro.org, vinod.koul@intel.com,
-        linux-kernel@vger.kernel.org, shiraz.hashim@st.com,
-        armando.visconti@st.com, bhupesh.sharma@st.com,
-        linux-raid@vger.kernel.org
-Subject: Re: Why move all map_sg/unmap_sg for slave channel to its client?
-From: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
-In-Reply-To: <4DF19251.1090100@st.com>
-References: <BANLkTik9kZjJs5H2kvM+xAtd_CR5NA0dDw@mail.gmail.com>
-	<BANLkTikzDEx2netonGyhskYFtiAEAxq5XQ@mail.gmail.com>
-	<4DF19251.1090100@st.com>
-X-Fingerprint: 6ACA 1623 39BD 9A94 9B1A  B746 CA77 FE94 2874 D52F
-X-Pgp-Public-Key: http://wwwkeys.pgp.net/pks/lookup?op=get&search=0x2874D52F
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1756059Ab1FJNUg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 09:20:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48746 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755684Ab1FJNUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 09:20:35 -0400
+Date: Fri, 10 Jun 2011 15:20:29 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, alsa-devel@alsa-project.org
+Subject: Re: [alsa-devel] Headphone output doesn't work with 3.0.0-rc* anymore
+Message-ID: <20110610132029.GA3818@tiehlicka.suse.cz>
+References: <20110609111401.GA3994@tiehlicka.suse.cz>
+ <s5htybyw52q.wl%tiwai@suse.de>
+ <20110610075640.GA4832@tiehlicka.suse.cz>
+ <s5hk4cuw1be.wl%tiwai@suse.de>
+ <20110610085117.GA4110@tiehlicka.suse.cz>
+ <s5haadqvybo.wl%tiwai@suse.de>
+ <20110610093019.GC4110@tiehlicka.suse.cz>
+ <s5hhb7y2e4c.wl%tiwai@suse.de>
+ <20110610124232.GA4383@tiehlicka.suse.cz>
+ <s5hr57126ww.wl%tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hr57126ww.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Jun 2011 09:11:05 +0530, viresh kumar <viresh.kumar@st.com> wrote:
-> >>> I thought map_sg/unmap_sg for slave channels will be handled according
-> >>> to the flags passed in prep_slave_sg(). But then i found following patch:
-...
-> Linus, Dan,
+On Fri 10-06-11 14:43:43, Takashi Iwai wrote:
+> At Fri, 10 Jun 2011 14:42:32 +0200,
+> Michal Hocko wrote:
+> > 
+> > On Fri 10-06-11 12:08:03, Takashi Iwai wrote:
+> > > At Fri, 10 Jun 2011 11:30:19 +0200,
+> > > Michal Hocko wrote:
+> > > > 
+> > > > On Fri 10-06-11 11:18:51, Takashi Iwai wrote:
+> > > > > At Fri, 10 Jun 2011 10:51:17 +0200,
+> > > > > Michal Hocko wrote:
+> > > > > > 
+> > > > > > On Fri 10-06-11 10:14:13, Takashi Iwai wrote:
+> > > > > > > At Fri, 10 Jun 2011 09:56:40 +0200,
+> > > > > > > Michal Hocko wrote:
+> > > > > > > > 
+> > > > > > > > On Fri 10-06-11 08:53:01, Takashi Iwai wrote:
+> > > > > > > > > At Thu, 9 Jun 2011 13:14:01 +0200,
+> > > > [...]
+> > > > > > > > OK, I git checkout v2.6.39 -- sound/pci/*.[ch] (see the patch bellow for
+> > > > > > > > reference). I have kept the earlier patch.
+> > > > > > > 
+> > > > > > > Gah, sorry, a wrong path.  It must be sound/pci/hda/*.[ch].
+> > > > > > > Also, please remove my previous patch.  It's irrelevant with 2.6.39
+> > > > > > > although it should be harmless.
+> > > > > > 
+> > > > > > OK, I have reverted the whole hda directory to 2.6.39 which means AFAIU
+> > > > > > that the driver is at the same state as it was in that kernel. And the
+> > > > > > sound really works. Both outputs are active whem they should be.
+> > > > > 
+> > > > > Thanks, it's really good to know that we have a good working-base.
+> > > > > 
+> > > > > Now, can you switch back to 3.0rc2 with my fix patch and retest?
+> > > > 
+> > > > Sorry, I am confused now. How this would be different from the previous
+> > > > testing where I had that patch applied on top of rc2?
+> > > 
+> > > Never mind, I found the possible spot.
+> > > Could you try the patch below in addition?  There was one missing
+> > > initialization in the transition.
+> > 
+> > I have applied this patch on top of clean rc2.
 > 
-> Got it. Thanks for your replies.
+> And apply my previous patch, too.  There are two fixes.
 
-JFYI, the old discussion was here:
+Sorry, I have missed that I should apply the previous one as well.
+Nevermind, I have good news. With both patches applied, sound works as
+expected.
 
-https://lkml.org/lkml/2009/7/24/114
+Feel free to add my Tested-by.
 
----
-Atsushi Nemoto
+Thanks a lot
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
