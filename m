@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758292Ab1FJXQG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 19:16:06 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:41146 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758264Ab1FJXQD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 19:16:03 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-13.tower-127.messagelabs.com!1307747762!22120639!2
-X-StarScan-Version: 6.2.17; banners=-,-,-
-X-Originating-IP: [216.166.12.97]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] net/ipv4/ipconfig.c: local symbols should be static
-Date: Fri, 10 Jun 2011 16:15:52 -0700
-User-Agent: KMail/1.9.9
-CC: <davem@davemloft.net>, <kuznet@ms2.inr.ac.ru>, <pekkas@netcore.fi>,
-        <jmorris@namei.org>, <yoshfuji@linux-ipv6.org>, <kaber@trash.net>
+	id S1758287Ab1FJXRi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 19:17:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35660 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758176Ab1FJXRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 19:17:36 -0400
+Date: Fri, 10 Jun 2011 16:17:21 -0700
+From: Greg KH <gregkh@suse.de>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Jim Bos <jim876@xs4all.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+Message-ID: <20110610231721.GA18608@suse.de>
+References: <BANLkTikVEj2Uz9N0B-kKA3GJTUWzmwz=zQ@mail.gmail.com>
+ <20110607014127.GA8450@srcf.ucam.org>
+ <4DED8752.5070005@kernel.org>
+ <4DEDEA73.7010900@gmail.com>
+ <20110610164706.GB25774@srcf.ucam.org>
+ <4DF259B2.9070403@gmail.com>
+ <20110610175429.GA28500@srcf.ucam.org>
+ <4DF29E7E.50908@gmail.com>
+ <4DF2A17E.7000103@kernel.org>
+ <20110610230359.GA2084@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-ID: <201106101615.52586.hartleys@visionengravers.com>
+In-Reply-To: <20110610230359.GA2084@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The symbol ic_dev_xid is only used in this file and should be
-marked static.
+On Sat, Jun 11, 2011 at 12:03:59AM +0100, Matthew Garrett wrote:
+> On Fri, Jun 10, 2011 at 03:58:06PM -0700, Yinghai Lu wrote:
+> 
+> > the problem is : overlapping between kernel code with boot services code.
+> 
+> SHouldn't checking against the iomem resource map avoid that?
+> 
+> > now e820 table that is passed from bootloader do not include boot services code range. and also current boot/head_64.S will not
+> > try to find usable range for decompressed kernel ( too early )...
+> > 
+> > So solution will be:
+> > 1. revert Matthew Garrett's patch, because it breaking unknown good platform.
+> 
+> That's acceptable if we can't find a better solution.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: "Pekka Savola (ipv6)" <pekkas@netcore.fi>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
+If no one objects, I'd like to revert the EFI patch that went into
+2.6.39.1 that is causing people problems so as to give everyone some
+time to get 3.0 working properly on these boxes.
 
----
+thanks,
 
-diff --git a/net/ipv4/ipconfig.c b/net/ipv4/ipconfig.c
-index ab7e554..66e4fae7 100644
---- a/net/ipv4/ipconfig.c
-+++ b/net/ipv4/ipconfig.c
-@@ -140,7 +140,7 @@ __be32 ic_servaddr = NONE;	/* Boot server IP address */
- __be32 root_server_addr = NONE;	/* Address of NFS server */
- u8 root_server_path[256] = { 0, };	/* Path to mount as root */
- 
--u32 ic_dev_xid;		/* Device under configuration */
-+static u32 ic_dev_xid;		/* Device under configuration */
- 
- /* vendor class identifier */
- static char vendor_class_identifier[253] __initdata;
+greg k-h
