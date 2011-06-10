@@ -1,37 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab1FJNKi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 09:10:38 -0400
-Received: from www.linutronix.de ([62.245.132.108]:37095 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932167Ab1FJNKe (ORCPT
+	id S932196Ab1FJNKx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 09:10:53 -0400
+Received: from grimli.r00tworld.net ([83.169.44.195]:43853 "EHLO
+	mail.r00tworld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932137Ab1FJNKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 09:10:34 -0400
-Date: Fri, 10 Jun 2011 15:10:32 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Alan Piszcz <ap@solarrain.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: 2.6.39: crash w/threadirqs option enabled
-In-Reply-To: <alpine.DEB.2.02.1106100854250.23139@p34.internal.lan>
-Message-ID: <alpine.LFD.2.02.1106101510110.11814@ionos>
-References: <alpine.DEB.2.02.1105200405210.24033@p34.internal.lan> <alpine.LFD.2.02.1105201445300.3078@ionos> <alpine.DEB.2.02.1105200850080.19553@p34.internal.lan> <alpine.LFD.2.02.1105201528500.3078@ionos> <alpine.DEB.2.02.1105200945300.19553@p34.internal.lan>
- <alpine.LFD.2.02.1105201712501.3078@ionos> <alpine.DEB.2.02.1105201210030.19553@p34.internal.lan> <alpine.LFD.2.02.1105201819310.3078@ionos> <alpine.DEB.2.02.1106100414550.32450@p34.internal.lan> <alpine.LFD.2.02.1106101450030.11814@ionos>
- <alpine.DEB.2.02.1106100854250.23139@p34.internal.lan>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 10 Jun 2011 09:10:49 -0400
+From: Mathias Krause <minipli@googlemail.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mathias Krause <minipli@googlemail.com>
+Subject: [PATCH] sh, exec: remove redundant set_fs(USER_DS)
+Date: Fri, 10 Jun 2011 15:10:48 +0200
+Message-Id: <1307711448-16289-1-git-send-email-minipli@googlemail.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
+References: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
+References: <BANLkTiknCeAxe30MJdVTxDom+ko8+EDQ4A@mail.gmail.com> <1307642718-22257-1-git-send-email-minipli@googlemail.com> <20110609155630.0f734351.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Jun 2011, Justin Piszcz wrote:
-> On Fri, 10 Jun 2011, Thomas Gleixner wrote:
-> > If you remove the threadirqs option from the commandline it does not
-> > happen, right?
-> Yes, most often anyhow (still using that option)
+The address limit is already set in flush_old_exec() so those calls to
+set_fs(USER_DS) are redundant.
 
--ENOPARSE
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+---
+ arch/sh/include/asm/processor_64.h |    1 -
+ arch/sh/kernel/process_32.c        |    2 --
+ 2 files changed, 0 insertions(+), 3 deletions(-)
+
+diff --git a/arch/sh/include/asm/processor_64.h b/arch/sh/include/asm/processor_64.h
+index 2a541dd..e25c4c7 100644
+--- a/arch/sh/include/asm/processor_64.h
++++ b/arch/sh/include/asm/processor_64.h
+@@ -150,7 +150,6 @@ struct thread_struct {
+ #define SR_USER (SR_MMU | SR_FD)
+ 
+ #define start_thread(_regs, new_pc, new_sp)			\
+-	set_fs(USER_DS);					\
+ 	_regs->sr = SR_USER;	/* User mode. */		\
+ 	_regs->pc = new_pc - 4;	/* Compensate syscall exit */	\
+ 	_regs->pc |= 1;		/* Set SHmedia ! */		\
+diff --git a/arch/sh/kernel/process_32.c b/arch/sh/kernel/process_32.c
+index b473f0c..aaf6d59 100644
+--- a/arch/sh/kernel/process_32.c
++++ b/arch/sh/kernel/process_32.c
+@@ -102,8 +102,6 @@ EXPORT_SYMBOL(kernel_thread);
+ void start_thread(struct pt_regs *regs, unsigned long new_pc,
+ 		  unsigned long new_sp)
+ {
+-	set_fs(USER_DS);
+-
+ 	regs->pr = 0;
+ 	regs->sr = SR_FD;
+ 	regs->pc = new_pc;
+-- 
+1.5.6.5
+
