@@ -1,58 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab1FJQrY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 12:47:24 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33278 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754423Ab1FJQrV (ORCPT
+	id S1753934Ab1FJQrK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 12:47:10 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:24981 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324Ab1FJQrG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 12:47:21 -0400
-Message-ID: <4DF24A76.50703@vflare.org>
-Date: Fri, 10 Jun 2011 09:46:46 -0700
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	Fri, 10 Jun 2011 12:47:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=NH3WAMa8vfDjGinG8ulkrSKATx6E2KpG7aPbZNS2et4w40Tn7pmHmasu1EgSFOZy3/
+         NylN1BFn8X8zLHCOmwLQ==
 MIME-Version: 1.0
-To: Jerome Marchand <jmarchan@redhat.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: [PATCH 4/4] Staging: zram: Replace mutex lock by a R/W semaphore
-References: <1307712529-9757-1-git-send-email-jmarchan@redhat.com> <1307712529-9757-2-git-send-email-jmarchan@redhat.com> <1307712529-9757-3-git-send-email-jmarchan@redhat.com> <1307712529-9757-4-git-send-email-jmarchan@redhat.com>
-In-Reply-To: <1307712529-9757-4-git-send-email-jmarchan@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110610164456.cfcdbd0c.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110610164456.cfcdbd0c.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Fri, 10 Jun 2011 09:47:00 -0700
+Message-ID: <BANLkTi=rJVKdhAeAjzfSJ0cMn3GiZpdXusxRL3cPYdJT+Ucneg@mail.gmail.com>
+Subject: Re: [BUGFIX][PATCH] fix memory.numa_stat file permission
+From: Ying Han <yinghan@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2011 06:28 AM, Jerome Marchand wrote:
-> Currently, nothing protects zram table from concurrent access.
-> For instance, ZRAM_UNCOMPRESSED bit can be cleared by zram_free_page()
-> called from a concurrent write between the time ZRAM_UNCOMPRESSED has
-> been set and the time it is tested to unmap KM_USER0 in
-> zram_bvec_write(). This ultimately leads to kernel panic.
+On Fri, Jun 10, 2011 at 12:44 AM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> I'm sorry I missed this bug because I tested as 'root' ...
 >
-> Also, a read request can occurs when the page has been freed by a
-> running write request and before it has been updated, leading to
-> zero filled block being incorrectly read and "Read before write"
-> error message.
+> =
+> From 9fe15b548430635d4bbdc2b39e778dbb08e369c9 Mon Sep 17 00:00:00 2001
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Date: Fri, 10 Jun 2011 16:50:39 +0900
+> Subject: [PATCH][BUGFIX] memcg: fix memory.numa_stat file permission
 >
-> This patch replace the current mutex by a rw_semaphore. It extends
-> the protection to zram table (currently, only compression buffers are
-> protected) and read requests (currently, only write requests are
-> protected).
+>
+>  commit 406eb0c9ba765eb066406fd5ce9d5e2b169a4d5a adds memory.numa_stat
+>  file for memory cgroup. But it's file permission is wrong.
+>
+> [kamezawa@bluextal linux-2.6]$ ls -l /cgroup/memory/A/memory.numa_stat
+> ---------- 1 root root 0 Jun  9 18:36 /cgroup/memory/A/memory.numa_stat
+>
+> This patch fixes the permission as
+>
+> [root@bluextal kamezawa]# ls -l /cgroup/memory/A/memory.numa_stat
+> -r--r--r-- 1 root root 0 Jun 10 16:49 /cgroup/memory/A/memory.numa_stat
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/memcontrol.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index bd9052a..ce05835 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4640,6 +4640,7 @@ static struct cftype mem_cgroup_files[] = {
+>        {
+>                .name = "numa_stat",
+>                .open = mem_control_numa_stat_open,
+> +               .mode = S_IRUGO,
+>        },
+>  #endif
+>  };
+> --
+> 1.7.4.1
+>
+>
 >
 
-These locking issues are probably remnants of earlier versions where
-zram could be used only as a swap disks under which case it was not
-possible for a read and write on the same sector (page) to happen
-concurrently and thus there was no need to protect the table.
+Acked-by: Ying Han <yinghan@google.com>
 
-
-> Signed-off-by: Jerome Marchand<jmarchan@redhat.com>
-
-Reviewed-by: Nitin Gupta <ngupta@vflare.org>
-
-Thanks,
-Nitin
+--Ying
