@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758055Ab1FJUgU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 16:36:20 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:61932 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754736Ab1FJUgR (ORCPT
+	id S1758048Ab1FJU2I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 16:28:08 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40679 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757900Ab1FJU2G convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 16:36:17 -0400
-From: Bryan Freed <bfreed@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: jic23@cam.ac.uk, jbrenner@taosinc.com, gregkh@suse.de, arnd@arndb.de,
-        Bryan Freed <bfreed@chromium.org>
-Subject: [PATCH 2/2] light sensor: Preserve granularity of amplified tsl2583 light sensor values.
-Date: Fri, 10 Jun 2011 13:26:20 -0700
-Message-Id: <1307737580-14131-2-git-send-email-bfreed@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1307737580-14131-1-git-send-email-bfreed@chromium.org>
-References: <1307737580-14131-1-git-send-email-bfreed@chromium.org>
-X-System-Of-Record: true
+	Fri, 10 Jun 2011 16:28:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=i6nGNou1NGKgJ5TYE28C40l6aMhQepM/MGSRDCIUJ1Iso7KJyE7r+gytekbbxkm+f8
+         mBNH8QQfnMD7/GTGmKpC0vSUEQc2EfGP35BrC3WHuBqHXUbNvg1RTidr5IukzXjMJMVn
+         nlTxTifEB+HE6FV+sGxtbjzYoUicRA6FzmH1I=
+MIME-Version: 1.0
+In-Reply-To: <20110609145657.96fae0d0.sfr@canb.auug.org.au>
+References: <20110609145657.96fae0d0.sfr@canb.auug.org.au>
+Date: Fri, 10 Jun 2011 22:28:03 +0200
+X-Google-Sender-Auth: FzBJdeCsR2DdJ8pY3JbHAp1sQ1g
+Message-ID: <BANLkTi=fn1qxcJGs7Ngag6ph2uMECiyWLg@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the net tree
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg KH <greg@kroah.com>, Alexey Dobriyan <adobriyan@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use 64bit lux64 to amplify lux values while preserving granularity.
-Normalize illuminance_calibbias amplification value at 1024 instead of 1000
-so we can avoid 64bit division (div_u64).
+On Thu, Jun 9, 2011 at 06:56, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> I assume that this is fallout from commit a6b7a407865a ("net: remove
+> interrupt.h inclusion from netdevice.h").
 
-Signed-off-by: Bryan Freed <bfreed@chromium.org>
----
- drivers/staging/iio/light/tsl2583.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+Ah, that's were the failures on m68k come from:
+http://kisskb.ellerman.id.au/kisskb/buildresult/4222666/
+http://kisskb.ellerman.id.au/kisskb/buildresult/4223000/
 
-diff --git a/drivers/staging/iio/light/tsl2583.c b/drivers/staging/iio/light/tsl2583.c
-index 5694610..0324ac1 100644
---- a/drivers/staging/iio/light/tsl2583.c
-+++ b/drivers/staging/iio/light/tsl2583.c
-@@ -146,7 +146,7 @@ static void taos_defaults(struct tsl2583_chip *chip)
- 	chip->taos_settings.als_gain = 0;
- 	/* this is actually an index into the gain table */
- 	/* assume clear glass as default */
--	chip->taos_settings.als_gain_trim = 1000;
-+	chip->taos_settings.als_gain_trim = 1024;
- 	/* default gain trim to account for aperture effects */
- 	chip->taos_settings.als_cal_target = 130;
- 	/* Known external ALS reading used for calibration */
-@@ -195,6 +195,7 @@ static int taos_get_lux(struct i2c_client *client)
- {
- 	u16 ch0, ch1; /* separated ch0/ch1 data from device */
- 	u32 lux; /* raw lux calculated from device data */
-+	u64 lux64;
- 	u32 ratio;
- 	u8 buf[5];
- 	struct taos_lux *p;
-@@ -298,8 +299,10 @@ static int taos_get_lux(struct i2c_client *client)
- 			chip->als_time_scale;
- 
- 	/* adjust for active gain scale */
--	lux >>= 13; /* tables have factor of 8192 builtin for accuracy */
--	lux = (lux * chip->taos_settings.als_gain_trim + 500) / 1000;
-+	lux64 = lux;
-+	lux64 = (lux64 * chip->taos_settings.als_gain_trim + 512) >> 10;
-+	lux64 >>= 13; /* tables have factor of 8192 builtin for accuracy */
-+	lux = lux64;
- 	if (lux > TSL258X_LUX_CALC_OVER_FLOW) { /* check for overflow */
- return_max:
- 		lux = TSL258X_LUX_CALC_OVER_FLOW;
--- 
-1.7.3.1
+My first bisection between two successive versions of linux-next failed, but
+the second one between linus and linux-next just finished and points
+to that commit.
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
