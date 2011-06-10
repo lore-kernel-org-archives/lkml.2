@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773Ab1FJMmj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 08:42:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47428 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756011Ab1FJMmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 08:42:38 -0400
-Date: Fri, 10 Jun 2011 14:42:32 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, alsa-devel@alsa-project.org
-Subject: Re: [alsa-devel] Headphone output doesn't work with 3.0.0-rc* anymore
-Message-ID: <20110610124232.GA4383@tiehlicka.suse.cz>
-References: <20110609092826.GC4207@tiehlicka.suse.cz>
- <s5haadrxrsm.wl%tiwai@suse.de>
- <20110609111401.GA3994@tiehlicka.suse.cz>
- <s5htybyw52q.wl%tiwai@suse.de>
- <20110610075640.GA4832@tiehlicka.suse.cz>
- <s5hk4cuw1be.wl%tiwai@suse.de>
- <20110610085117.GA4110@tiehlicka.suse.cz>
- <s5haadqvybo.wl%tiwai@suse.de>
- <20110610093019.GC4110@tiehlicka.suse.cz>
- <s5hhb7y2e4c.wl%tiwai@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5hhb7y2e4c.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756921Ab1FJMnF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 08:43:05 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35633 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755528Ab1FJMnD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 08:43:03 -0400
+Subject: Re: [PATCH 1/3] printk: Release console_sem after logbuf_lock
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        efault@gmx.de, Arne Jansen <lists@die-jansens.de>,
+        PaulMundt <lethal@linux-sh.org>, linux-fbdev@vger.kernel.org
+In-Reply-To: <1307709714.3941.140.camel@twins>
+References: <20110609130647.937204592@chello.nl>
+	 <20110609131307.493181962@chello.nl>
+	 <20110609130617.f8aca966.akpm@linux-foundation.org>
+	 <20110609202707.GA28951@elte.hu> <1307652883.2497.1028.camel@laptop>
+	 <20110609140714.fc9ea187.akpm@linux-foundation.org>
+	 <alpine.LSU.2.00.1106091655560.2710@sister.anvils>
+	 <1307705311.3941.118.camel@twins> <1307709030.3941.134.camel@twins>
+	 <20110610123416.GA12451@elte.hu>  <1307709714.3941.140.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 10 Jun 2011 14:42:44 +0200
+Message-ID: <1307709764.3941.141.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 10-06-11 12:08:03, Takashi Iwai wrote:
-> At Fri, 10 Jun 2011 11:30:19 +0200,
-> Michal Hocko wrote:
+On Fri, 2011-06-10 at 14:41 +0200, Peter Zijlstra wrote:
+> On Fri, 2011-06-10 at 14:34 +0200, Ingo Molnar wrote:
+> > * Peter Zijlstra <peterz@infradead.org> wrote:
 > > 
-> > On Fri 10-06-11 11:18:51, Takashi Iwai wrote:
-> > > At Fri, 10 Jun 2011 10:51:17 +0200,
-> > > Michal Hocko wrote:
-> > > > 
-> > > > On Fri 10-06-11 10:14:13, Takashi Iwai wrote:
-> > > > > At Fri, 10 Jun 2011 09:56:40 +0200,
-> > > > > Michal Hocko wrote:
-> > > > > > 
-> > > > > > On Fri 10-06-11 08:53:01, Takashi Iwai wrote:
-> > > > > > > At Thu, 9 Jun 2011 13:14:01 +0200,
-> > [...]
-> > > > > > OK, I git checkout v2.6.39 -- sound/pci/*.[ch] (see the patch bellow for
-> > > > > > reference). I have kept the earlier patch.
-> > > > > 
-> > > > > Gah, sorry, a wrong path.  It must be sound/pci/hda/*.[ch].
-> > > > > Also, please remove my previous patch.  It's irrelevant with 2.6.39
-> > > > > although it should be harmless.
-> > > > 
-> > > > OK, I have reverted the whole hda directory to 2.6.39 which means AFAIU
-> > > > that the driver is at the same state as it was in that kernel. And the
-> > > > sound really works. Both outputs are active whem they should be.
-> > > 
-> > > Thanks, it's really good to know that we have a good working-base.
-> > > 
-> > > Now, can you switch back to 3.0rc2 with my fix patch and retest?
+> > > thinking that that would have my printk stmts appear on both the 
+> > > fbcon as well as the serial line. But they fail to appear on the 
+> > > latency tracer (current max was 165us waking an idle cpu).
 > > 
-> > Sorry, I am confused now. How this would be different from the previous
-> > testing where I had that patch applied on top of rc2?
+> > Have you removed this bit:
+> > 
+> >                 spin_unlock(&logbuf_lock);
+> >                 stop_critical_timings();        /* don't trace print latency */
+> >                 call_console_drivers(_con_start, _log_end);
+> >                 start_critical_timings();
+> >                 local_irq_restore(flags);
+> > 
+> > which hides the latencies from the latency tracer?
 > 
-> Never mind, I found the possible spot.
-> Could you try the patch below in addition?  There was one missing
-> initialization in the transition.
+> it shouldn't those flags come from spin_lock_irqsave(), which already
+> has IRQs disabled, so the restore shouldn't re-enable them.
+> 
+> Hmm,. that might actually already be true for mainline too, yeah, looks
+> like we call vprintk()->console_unlock() with IRQs-disabled.
+> 
+> Hohumm..
 
-I have applied this patch on top of clean rc2. Unfortunately, the sound
-works only from headphones, now. See alsa-info attached. I have tried to
-get info also when headphones were unplugged but the content is very
-same (except for timestamp when the script ran).
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Also, I used the preemptirqoff tracer, so even if it did re-enable
+interrupts we should still have preemption disabled and still catch the
+latency.
