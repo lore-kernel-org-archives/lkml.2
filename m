@@ -1,65 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758069Ab1FJUw4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 16:52:56 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58758 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757733Ab1FJUwx (ORCPT
+	id S1756368Ab1FJU5n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 16:57:43 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38201 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752393Ab1FJU5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 16:52:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=BAbn4s5ikvFY5b/sX9SyyYMEhvpBpJ/+ZuEuRHG8PSgvpfTJzlSx1JfnoeXFR50cq1
-         SgZFaJ/DHNzaT3Czb6vj+2M4RF920p+4FFUbQBzVedD3SJOtPaoYYSllzNjRk3aOrKrM
-         VhKkFdqMoiRaXJrT+q2ZniRXtJucMzPIUFYck=
-Subject: Re: [PATCH 1/3] posix-timers: remove idr_lock
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        Andi Kleen <ak@linux.intel.com>
-In-Reply-To: <20110610204428.GB10930@one.firstfloor.org>
-References: <1307736788-25457-1-git-send-email-andi@firstfloor.org>
-	 <1307738438.2872.7.camel@edumazet-laptop>
-	 <20110610204428.GB10930@one.firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Jun 2011 22:52:45 +0200
-Message-ID: <1307739165.2872.12.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Fri, 10 Jun 2011 16:57:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <4DF28274.3000708@suse.cz>
+References: <20110609214241.GA4849@sepie.suse.cz> <BANLkTim84t=yeqykZydEjHrVYGnO4xc5ew@mail.gmail.com>
+ <BANLkTi=qaA_AMvq_78eon3Lr86wT2R497g@mail.gmail.com> <BANLkTinbXpFp43+EebWbWvs1Uu5wWvhxQQ@mail.gmail.com>
+ <BANLkTinKMmYG7=KBHr2LfOYzcgbtszwy5g@mail.gmail.com> <BANLkTinQ2mL1eNPzMHjDjXnLyv58annZmA@mail.gmail.com>
+ <BANLkTi=wQaUSagZjptGnvUHNpJeMm0C6yw@mail.gmail.com> <BANLkTinZGuOE3G5Ro0=LB9Y8wcHVgk-3ug@mail.gmail.com>
+ <20110610100339.GE22466@vostochny.stro.at> <BANLkTin+RBL9aYzWeTBZ2Fj_m+8WuA_Ckg@mail.gmail.com>
+ <4DF28274.3000708@suse.cz>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 10 Jun 2011 13:56:44 -0700
+Message-ID: <BANLkTi=dUjVvLmvcvjibYTxWYDCX-WOy_A@mail.gmail.com>
+Subject: Re: [GIT] kbuild fixes for 3.0
+To: Michal Marek <mmarek@suse.cz>
+Cc: maximilian attems <max@stro.at>, Ray Lee <ray-lk@madrabbit.org>,
+        Arnaud Lacombe <lacombar@gmail.com>, pefoley2@verizon.net,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 10 juin 2011 à 22:44 +0200, Andi Kleen a écrit :
-> On Fri, Jun 10, 2011 at 10:40:38PM +0200, Eric Dumazet wrote:
-> > Le vendredi 10 juin 2011 à 13:13 -0700, Andi Kleen a écrit :
-> > > From: Andi Kleen <ak@linux.intel.com>
-> > > 
-> > > idr_lock is only used to protect the global posix_timers idr,
-> > > but idr does its own locking (or RCUing) anyways and doesn't
-> > > need it. So remove it.
-> > 
-> > Are you sure of this assertion Andi ?
-> > 
-> > I believe we need an external synchronization before calling
-> > idr_remove() / idr_get_new()
-> 
-> idr has its own lock and from a quick check it seemed to always
-> take it when needed. Also ipc/* don't take a lock for this as far
-> as I can see, and I think RCU idr was designed for that.
-> 
+On Fri, Jun 10, 2011 at 1:45 PM, Michal Marek <mmarek@suse.cz> wrote:
+>
+> So would pull the branch if I revert "kbuild: Hack for depmod not
+> handling X.Y versions"?
 
-I dont think so. Just read idr_remove() code : its obviously unsafe.
+Umm. I already pulled it yesterday. The reason I then replied to the
+pull request was to report that it isn't enough to actually get things
+working..
 
-RCU permits readers to only hold rcu_read_lock()
-
-But writers need their (external) synchronization.
-
-
-
-
-
-
+                    Linus
