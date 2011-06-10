@@ -1,124 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758151Ab1FJWDr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 18:03:47 -0400
-Received: from mx3.utsp.utwente.nl ([130.89.2.14]:21978 "EHLO mx.utwente.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753467Ab1FJWDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 18:03:44 -0400
-Date: Sat, 11 Jun 2011 00:03:31 +0200 (CEST)
-From: Martijn Uffing <mp3project@sarijopen.student.utwente.nl>
-To: Jeff Layton <jlayton@redhat.com>
-cc: Connor Hansen <cmdkhh@gmail.com>, linux-cifs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sean finney <seanius@seanius.net>
-Subject: Re: [OOPS] 3.0-rc1 cifs
-In-Reply-To: <20110610073702.061bc014@corrin.poochiereds.net>
-Message-ID: <Pine.LNX.4.64.1106102333470.28401@sarijopen.student.utwente.nl>
-References: <Pine.LNX.4.64.1106092211500.19687@sarijopen.student.utwente.nl>
- <20110609183045.01f6f9fc@tlielax.poochiereds.net>
- <BANLkTimPqmkNJMaJE2_C5zD8ESFOEM3=hg@mail.gmail.com>
- <Pine.LNX.4.64.1106100243370.2168@sarijopen.student.utwente.nl>
- <20110610073702.061bc014@corrin.poochiereds.net>
+	id S1758161Ab1FJWJf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 18:09:35 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49663 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753467Ab1FJWJc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 18:09:32 -0400
+Date: Fri, 10 Jun 2011 23:07:48 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: David Rientjes <rientjes@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, tglx@linutronix.de,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, mel@csn.ul.ie,
+        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, pavel@ucw.cz
+Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning
+	instead of failing
+Message-ID: <20110610220748.GO24424@n2100.arm.linux.org.uk>
+References: <alpine.LFD.2.02.1106012043080.3078@ionos> <alpine.DEB.2.00.1106011205410.17065@chino.kir.corp.google.com> <alpine.LFD.2.02.1106012134120.3078@ionos> <4DF1C9DE.4070605@jp.fujitsu.com> <20110610004331.13672278.akpm@linux-foundation.org> <BANLkTimC8K2_H7ZEu2XYoWdA09-3XxpV7Q@mail.gmail.com> <20110610091233.GJ24424@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1106101150280.17197@chino.kir.corp.google.com> <20110610185858.GN24424@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1106101456080.23076@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
-X-UTwente-MailScanner-Information: Scanned by MailScanner. Contact icts.servicedesk@utwente.nl for more information.
-X-UTwente-MailScanner: Found to be clean
-X-UTwente-MailScanner-SpamScore: sss
-X-UTwente-MailScanner-From: mp3project@sarijopen.student.utwente.nl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1106101456080.23076@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 10, 2011 at 03:01:15PM -0700, David Rientjes wrote:
+> On Fri, 10 Jun 2011, Russell King - ARM Linux wrote:
+> > See Linus' reply.  I quote again "on platforms where it doesn't matter it
+> > should be a no-op".  If _you_ have a problem with that _you_ need to
+> > discuss it with _Linus_, not me.  I'm not going to be a middle-man sitting
+> > between two people with different opinions.
+> 
+> We're talking about two different things.  Linus is saying that if GFP_DMA 
+> should be a no-op if the hardware doesn't require DMA memory because the 
+> kernel was correctly compiled without CONFIG_ZONE_DMA.  I'm asking about a 
+> kernel that was incorrectly compiled without CONFIG_ZONE_DMA and now we're 
+> returning memory from anywhere even though we actually require GFP_DMA.
 
-On Fri, 10 Jun 2011, Jeff Layton wrote:
+How do you distinguish between the two states?  Answer: you can't.
 
-> On Fri, 10 Jun 2011 02:57:21 +0200 (CEST)
-> Uffing <mp3project@sarijopen.student.utwente.nl> wrote:
->
->>
->> <snip>
->>> call in get_dfs_path()
->>> rc = CIFSTCon(xid, pSesInfo, temp_unc, NULL, nls_codepage);
->>>
->>> function header for CIFSTCon
->>> int  CIFSTCon(unsigned int xid, struct cifs_ses *ses,
->>>          const char *tree, struct cifs_tcon *tcon,
->>>          const struct nls_table *nls_codepage)
->>>
->>> get_dfs_path() is passing struct cifs_tcon *tcon as NULL
->>>
->>> from config:  CONFIG_CIFS_WEAK_PW_HASH=y
->>>
->>> in CIFSTCon
->>>
->>> #ifdef CONFIG_CIFS_WEAK_PW_HASH
->>> 3222                 if ((global_secflags & CIFSSEC_MAY_LANMAN) &&
->>> 3223                     (ses->server->secType == LANMAN))
->>> 3224                         calc_lanman_hash(tcon->password,
->>> ses->server->cryptkey,
->>>
->>> in calc_lanman_hash tcon is dereferenced(tcon->password) without being
->>> checked if null
->>>
->>> 3225                                          ses->server->sec_mode &
->>> 3226                                             SECMODE_PW_ENCRYPT ?
->>> true : false,
->>> 3227                                          bcc_ptr);
->>> 3228                 else
->>> 3229 #endif /* CIFS_WEAK_PW_HASH */
->>>
->>> Connor
->>
->>
->> Ave all
->>
->> I recompiled  kernel 3.0-rc1 (hadn't enabled CONFIG_DEBUG_INFO=y) and put
->> the oops (with the new adresses) through gdb per instruction of Jeff. And
->> Connor was spot on!
->>
->> <qoute oops>
->> BUG: unable to handle kernel NULL pointer dereference at 00000000000000a0
->> IP: [<ffffffffa041e286>] CIFSTCon+0xf6/0x4d0 [cifs]
->> </qoute oops>
->>
->> <qoute gdb>
->> This GDB was configured as "x86_64-linux-gnu".
->> For bug reporting instructions, please see:
->> <http://www.gnu.org/software/gdb/bugs/>...
->> Reading symbols from
->> /lib/modules/3.0.0-rc1-debug/kernel/fs/cifs/cifs.ko...done.
->> (gdb) list *(CIFSTCon+0xf6)
->> 0xc2b6 is in CIFSTCon (fs/cifs/connect.c:3230).
->> 3225                                             ses->server->sec_mode &
->> 3226                                                SECMODE_PW_ENCRYPT ?
->> true : false,
->> 3227                                             bcc_ptr);
->> 3228                    else
->> 3229    #endif /* CIFS_WEAK_PW_HASH */
->> 3230                    rc = SMBNTencrypt(tcon->password,
->> ses->server->cryptkey,
->> 3231                                            bcc_ptr);
->> 3232
->> 3233                    bcc_ptr += CIFS_AUTH_RESP_SIZE;
->> 3234                    if (ses->capabilities & CAP_UNICODE) {
->> (gdb)
->> </qoute gdb>
->>
->
-> (cc'ing Sean F. since I suspect this regression is due to his changes)
->
-> Thanks for the analysis, Martijn and Connor...
->
-> What sort of server are you mounting here? It looks like it's using
-> share-level security, so it's either very old or is a samba server
-> configured that way.
+> If you don't want to form an opinion of your own, then I have no problem 
+> cc'ing Linus on it.
 
-To be honest ... both :)
-a)server is Debian Etch (samba 3.0.24-6etch10)
-   (yeah i know old, but no time at the moment to upgrade/reinstall the
-   whole system)
-b)share security. (security=share) in smb.conf
-   This is on purpose. (all access is shielded based on hostnames)
+I think I've made my position in this fairly clear with our previous
+discussions on this.  The fact of the matter is that there are some
+drivers which use GFP_DMA because they need that on _some_ platforms
+but not all.
 
-Mu
+Not all platforms are _broken_ with respect to DMA, and those which
+aren't broken don't provide a DMA zone.
 
+Therefore, it is _perfectly_ _legal_ to honor a GFP_DMA allocation on
+a kernel without CONFIG_ZONE_DMA set.
+
+That position appears to be reflected by Linus' response, so
+
+>  I don't think he'd object to a
+> 
+> 	#ifndef CONFIG_ZONE_DMA
+> 	WARN_ON_ONCE(1, "%s (%d): allocating DMA memory without DMA support -- "
+> 			"enable CONFIG_ZONE_DMA if needed.\n",
+> 			current->comm, current->pid);
+> 	#endif
+
+I think he will definitely object to this on the grounds that its
+adding useless noise for conditions which are _perfectly_ _valid_.
