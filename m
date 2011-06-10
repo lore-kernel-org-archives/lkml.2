@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758051Ab1FJUmg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 16:42:36 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:56805 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754222Ab1FJUme convert rfc822-to-8bit (ORCPT
+	id S1757988Ab1FJVE7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 17:04:59 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:57064 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752259Ab1FJVE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 16:42:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=RNK+xal72jgQnGEavz0Z2NcamaFbUDR/qrHtWJ/0+kuLAtcYC2QqUwW8yCoj16p5gy
-         U2jCX5901iJLhv9OnTImTDslZ/a4oUjVce0pT0ahIbF+WSaDMUaAAPOLSdOZ9AEVtFRb
-         kbUy9a3D2SLhyUe1k3hi7XsUKnldYMuMK8C+8=
+	Fri, 10 Jun 2011 17:04:57 -0400
+X-Sasl-enc: pViFGmglxKmzdlt8kcennwjB7VZYYGFvSXyZZJjTUyW2 1307739897
+Date: Fri, 10 Jun 2011 13:44:03 -0700
+From: Greg KH <greg@kroah.com>
+To: Jim Cromie <jim.cromie@gmail.com>, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, rpjday@crashcourse.ca
+Subject: Re: [PATCH] fix bogus use of rc = alloc_chrdev_region()
+Message-ID: <20110610204403.GA13450@kroah.com>
+References: <1307079502-6326-1-git-send-email-jim.cromie@gmail.com>
+ <BANLkTi=8bv54-Z=xCyqUhFAnxM5G40k2WQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4DF1D0EF.7090109@jp.fujitsu.com>
-References: <4df13cae2729896ba5@agluck-desktop.sc.intel.com>
-	<4DF1D0EF.7090109@jp.fujitsu.com>
-Date: Fri, 10 Jun 2011 13:42:33 -0700
-X-Google-Sender-Auth: 0CBG-hksmXau36CJE-CF7QAbUSI
-Message-ID: <BANLkTikkYevvkUeQz4YYGauF52YcDRdokQ@mail.gmail.com>
-Subject: Re: [PATCH 07/10] MCE: replace mce.c use of TIF_MCE_NOTIFY with user_return_notifier
-From: Tony Luck <tony.luck@intel.com>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
-        linux-kernel@vger.kernel.org, "Huang, Ying" <ying.huang@intel.com>,
-        Avi Kivity <avi@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=8bv54-Z=xCyqUhFAnxM5G40k2WQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/6/10 Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>:
-> Now I'm reconsidering the MCE event notification mechanism.
-> One of something nervous is whether it is really required to process
-> "_AO" memory poisoning (i.e. mce_process_ring()) here in a process
-> context that unfortunately interrupted by MCE (or preempted after that).
-> I'm uncertain how long walking though the task_list for unmap will takes,
-> and not sure it is acceptable if the unlucky thread is a kind of latency
-> sensitive...
->
-> If we can move mce_process_ring() to worker thread completely, what
-> we have to do will be:
->  1) from NMI context, request non-NMI context by irq_work()
->  2) from (irq) context, wake up loggers and schedule work if required
->  3) from worker thread, process "_AO" memory poisoning etc.
->
-> So now question is why user_return_notifier is needed here.
-> Is it just an alternative of irq_work() for !LOCAL_APIC ?
+On Fri, Jun 10, 2011 at 02:29:42PM -0600, Jim Cromie wrote:
+> can someone pick this up,
+> for this release or next ?
 
-I switched this notification over from old TIF_MCE_NOTIFY to
-using user_return_notifier to preserve existing semantics, and
-free up that TIF bit for the task notifier for the action required case.
+It was rumored that Arnd wanted to take over drivers/char/.
 
-You are right that we should have some better method - the
-shot-gun approach of hitting every task on every cpu in the hope
-that one of them will run our code soon sounds like overkill.
-Using some NMI-saf method to wake a single worker thread
-sounds a good idea for a subsequent clean up.
+Arnd?
 
--Tony
+
+> 
+> On Thu, Jun 2, 2011 at 11:38 PM, Jim Cromie <jim.cromie@gmail.com> wrote:
+> > Robert P.J. Day noticed a bogus assignment: major = rc, after
+> > the call to alloc_chrdev_region() in pc8736x_gpio_init().
+> >
+> > The code as written expects return-code behavior as for
+> > register_chrdev(), ie on success: rc = reserved-major when
+> > requested-major = 0.  But for alloc_chrdev_region(), this isnt the
+> > case.  Since its used for debug printing only, just excise the mess.
+> >
+> > Signed-of-by: Jim Cromie <jim.cromie@gmail.com>
+> > Reported-by: Robert P.J. Day <rpjday@crashcourse.ca>
+> > cc: Greg KH <greg@kroah.com.
+> > Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+> > ---
+> >  drivers/char/pc8736x_gpio.c |    5 +----
+> >  1 files changed, 1 insertions(+), 4 deletions(-)
+> >
+> > diff --git a/drivers/char/pc8736x_gpio.c b/drivers/char/pc8736x_gpio.c
+> > index b304ec0..30d92fe 100644
+> > --- a/drivers/char/pc8736x_gpio.c
+> > +++ b/drivers/char/pc8736x_gpio.c
+> > @@ -314,10 +314,7 @@ static int __init pc8736x_gpio_init(void)
+> >                dev_err(&pdev->dev, "register-chrdev failed: %d\n", rc);
+> >                goto undo_request_region;
+> >        }
+> > -       if (!major) {
+> > -               major = rc;
+> > -               dev_dbg(&pdev->dev, "got dynamic major %d\n", major);
+> > -       }
+> > +       dev_dbg(&pdev->dev, "using chardev major %d\n", major);
+> >
+> >        pc8736x_init_shadow();
+> >
+> > --
+> > 1.7.4.2
+> >
+> >
