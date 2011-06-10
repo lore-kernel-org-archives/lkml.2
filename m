@@ -1,55 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932240Ab1FJSy0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 14:54:26 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:24842 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753399Ab1FJSyZ (ORCPT
+	id S932284Ab1FJSzZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 14:55:25 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:40470 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932121Ab1FJSzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 14:54:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=co70qOce68CEeUhL46wSyooDniNAYht0pQy/dyv+pEfxxnxpE3u7xJFefaVW5Fp32m
-         VvZsKiVSvN7xry9Q57tw==
-Date: Fri, 10 Jun 2011 11:54:16 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, tglx@linutronix.de,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, mel@csn.ul.ie,
-        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, pavel@ucw.cz
-Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning
- instead of failing
-In-Reply-To: <20110610091233.GJ24424@n2100.arm.linux.org.uk>
-Message-ID: <alpine.DEB.2.00.1106101150280.17197@chino.kir.corp.google.com>
-References: <BANLkTinBkdVd90g3-uiQP41z1S1sXUdRmQ@mail.gmail.com> <BANLkTikrRRzGLbMD47_xJz+xpgftCm1C2A@mail.gmail.com> <alpine.DEB.2.00.1106011017260.13089@chino.kir.corp.google.com> <20110601181918.GO3660@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1106012043080.3078@ionos>
- <alpine.DEB.2.00.1106011205410.17065@chino.kir.corp.google.com> <alpine.LFD.2.02.1106012134120.3078@ionos> <4DF1C9DE.4070605@jp.fujitsu.com> <20110610004331.13672278.akpm@linux-foundation.org> <BANLkTimC8K2_H7ZEu2XYoWdA09-3XxpV7Q@mail.gmail.com>
- <20110610091233.GJ24424@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Fri, 10 Jun 2011 14:55:23 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: Josef Bacik <josef@redhat.com>
+Cc: Sage Weil <sage@newdream.net>, Jim Schutt <jaschut@sandia.gov>,
+        dave <dave@jikos.cz>, miaox <miaox@cn.fujitsu.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        ceph-devel <ceph-devel@vger.kernel.org>
+Subject: Re: 3.0-rcX BUG at fs/btrfs/ioctl.c:432 - bisected
+In-reply-to: <4DF263AD.3070901@redhat.com>
+References: <4DF140AB.4030805@sandia.gov> <20110609234553.GN12709@twin.jikos.cz> <4DF24F0E.4040306@sandia.gov> <1307726732-sup-3404@shiny> <Pine.LNX.4.64.1106101100310.5245@cobra.newdream.net> <Pine.LNX.4.64.1106101112470.5245@cobra.newdream.net> <4DF2627F.4030600@redhat.com> <Pine.LNX.4.64.1106101134530.5245@cobra.newdream.net> <4DF263AD.3070901@redhat.com>
+Date: Fri, 10 Jun 2011 14:54:59 -0400
+Message-Id: <1307731313-sup-4497@shiny>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4DF2688E.0023:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Jun 2011, Russell King - ARM Linux wrote:
+Excerpts from Josef Bacik's message of 2011-06-10 14:34:21 -0400:
+> On 06/10/2011 02:35 PM, Sage Weil wrote:
+> > On Fri, 10 Jun 2011, Josef Bacik wrote:
+> >> On 06/10/2011 02:14 PM, Sage Weil wrote:
+> >>> On Fri, 10 Jun 2011, Sage Weil wrote:
+> >>>> On Fri, 10 Jun 2011, Chris Mason wrote:
+> >>>>> Excerpts from Jim Schutt's message of 2011-06-10 13:06:22 -0400:
+> >>>>>
+> >>>>> [ two different btrfs crashes ]
+> >>>>>
+> >>>>> I think your two crashes in btrfs were from the uninit variables and
+> >>>>> those should be fixed in rc2.
+> >>>>>
+> >>>>>> When I did my bisection, my criteria for success/failure was
+> >>>>>> "did mkcephfs succeed?".  When I apply this criteria to a recent
+> >>>>>> linus kernel (e.g. 06e86849cf4019), which includes the fix you
+> >>>>>> mentioned (aa0467d8d2a00e), I get still a different failure mode,
+> >>>>>> which doesn't actually reference btrfs:
+> >>>>>>
+> >>>>>> [  276.364178] BUG: unable to handle kernel NULL pointer dereference at 000000000000000a
+> >>>>>> [  276.365127] IP: [<ffffffffa05434b1>] journal_start+0x3e/0x9c [jbd]
+> >>>>>
+> >>>>> Looking at the resulting code in the oops, we're here in journal_start:
+> >>>>>
+> >>>>>         if (handle) {
+> >>>>>                 J_ASSERT(handle->h_transaction->t_journal == journal);
+> >>>>>
+> >>>>> handle comes from current->journal_info, and we're doing a deref on
+> >>>>> handle->h_transaction, which is probably 0xa.
+> >>>>>
+> >>>>> So, we're leaving crud in current->journal_info and ext3 is finding it.
+> >>>>>
+> >>>>> Perhaps its from ceph starting a transaction but leaving it running?
+> >>>>> The bug came with Josef's transaction performance fixes, but it is
+> >>>>> probably a mixture of his code with the ioctls ceph is using.
+> >>>>
+> >>>> Ah, yeah, that's the problem.  We saw a similar problem a while back with 
+> >>>> the start/stop transaction ioctls.  In this case, create_snapshot is doing
+> >>>>
+> >>>>     trans = btrfs_start_transaction(root->fs_info->extent_root, 5);
+> >>>>     if (IS_ERR(trans)) {
+> >>>>         ret = PTR_ERR(trans);
+> >>>>         goto fail;
+> >>>>     }
+> >>>>
+> >>>> which sets current->journal_info.  Then
+> >>>>
+> >>>>     ret = btrfs_snap_reserve_metadata(trans, pending_snapshot);
+> >>>>     BUG_ON(ret);
+> >>>>
+> >>>>     list_add(&pending_snapshot->list,
+> >>>>          &trans->transaction->pending_snapshots);
+> >>>>     if (async_transid) {
+> >>>>         *async_transid = trans->transid;
+> >>>>         ret = btrfs_commit_transaction_async(trans,
+> >>>>                      root->fs_info->extent_root, 1);
+> >>>>     } else {
+> >>>>         ret = btrfs_commit_transaction(trans,
+> >>>>                        root->fs_info->extent_root);
+> >>>>     }
+> >>>>
+> >>>> but the async snap creation ioctl takes the async path, which runs 
+> >>>> btrfs_commit_transaction in a worker thread.
+> >>>>
+> >>>> I'm not sure what the right thing to do is here is... can whatever is in 
+> >>>> journal_info be attached to trans instead in 
+> >>>> btrfs_commit_transaction_async()?
+> >>>
+> >>> It looks like it's not used for anything in btrfs, actually; it's just set 
+> >>> and cleared.  What's the point of that?
+> >>>
+> >>
+> >> It is used now, check the beginning of start_transaction().  Thanks,
+> > 
+> > Oh I see, okay.
+> > 
+> > So clearing it in btrfs_commit_transaction_async should be fine then, 
+> > right?  When btrfs_commit_transaction runs in the other thread it won't 
+> > care that current->journal_info is NULL.
+> > 
+> 
+> Oh yeah your patch is good :),
 
-> > Should one submit a patch adding a warning to GFP_DMA allocations
-> > w/o ZONE_DMA, or the idea of the original patch is wrong?
-> 
-> Linus was far from impressed by the original commit, saying:
-> | Using GFP_DMA is reasonable in a driver - on platforms where that
-> | matters, it should allocate from the DMA zone, on platforms where it
-> | doesn't matter it should be a no-op.
-> 
-> So no, not even a warning.
-> 
+Thanks everyone (especially Jim).
 
-Any words of wisdom for users with CONFIG_ZONE_DMA=n that actually use 
-drivers where they need GFP_DMA?  The page allocator should just silently 
-return memory from anywhere?
+-chris
