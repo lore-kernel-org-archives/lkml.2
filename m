@@ -1,40 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586Ab1FJJAP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 05:00:15 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44448 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751149Ab1FJJAM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 05:00:12 -0400
-Date: Fri, 10 Jun 2011 10:01:43 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Valerie Aurora <val@vaaconsulting.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Miklos Szeredi <miklos@szeredi.hu>, NeilBrown <neilb@suse.de>,
-        viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        apw@canonical.com, nbd@openwrt.org, hramrach@centrum.cz,
-        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu
-Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
-Message-ID: <20110610100143.28037551@lxorguk.ukuu.org.uk>
-In-Reply-To: <BANLkTi=uWDSw96v0Y4W94NZvgD=j=3r3zg@mail.gmail.com>
-References: <20110609125114.8dff08da.akpm@linux-foundation.org>
-	<BANLkTi=uWDSw96v0Y4W94NZvgD=j=3r3zg@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753841Ab1FJJIG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 05:08:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40307 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752055Ab1FJJIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 05:08:05 -0400
+Date: Fri, 10 Jun 2011 11:08:02 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        Ying Han <yinghan@google.com>
+Subject: Re: [BUGFIX][PATCH v3] memcg: fix behavior of per cpu charge cache
+ draining.
+Message-ID: <20110610090802.GB4110@tiehlicka.suse.cz>
+References: <20110609093045.1f969d30.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110610081218.GC4832@tiehlicka.suse.cz>
+ <20110610173958.d9ab901c.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110610173958.d9ab901c.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 1. Al Viro and Christoph Hellwig bring up the same locking problems
-> *every single time* someone proposes a copy-up in-kernel file system,
-> and *every single time* they are dismissed or hand-waved.  
+On Fri 10-06-11 17:39:58, KAMEZAWA Hiroyuki wrote:
+> On Fri, 10 Jun 2011 10:12:19 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > On Thu 09-06-11 09:30:45, KAMEZAWA Hiroyuki wrote:
+[...]
+> > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > > index bd9052a..3baddcb 100644
+> > > --- a/mm/memcontrol.c
+> > > +++ b/mm/memcontrol.c
+> > [...]
+> > >  static struct mem_cgroup_per_zone *
+> > >  mem_cgroup_zoneinfo(struct mem_cgroup *mem, int nid, int zid)
+> > > @@ -1670,8 +1670,6 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
+> > >  		victim = mem_cgroup_select_victim(root_mem);
+> > >  		if (victim == root_mem) {
+> > >  			loop++;
+> > > -			if (loop >= 1)
+> > > -				drain_all_stock_async();
+> > >  			if (loop >= 2) {
+> > >  				/*
+> > >  				 * If we have not been able to reclaim
+> > > @@ -1723,6 +1721,7 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
+> > >  				return total;
+> > >  		} else if (mem_cgroup_margin(root_mem))
+> > >  			return total;
+> > > +		drain_all_stock_async(root_mem);
+> > >  	}
+> > >  	return total;
+> > >  }
+> > 
+> > I still think that we pointlessly reclaim even though we could have a
+> > lot of pages pre-charged in the cache (the more CPUs we have the more
+> > significant this might be).
+> 
+> The more CPUs, the more scan cost for each per-cpu memory, which makes
+> cache-miss.
+> 
+> I know placement of drain_all_stock_async() is not big problem on my host,
+> which has 2socket/8core cpus. But, assuming 1000+ cpu host, 
 
-Perhaps you can detail the locking problem in question ?
+Hmm, it really depends what you want to optimize for. Reclaim path is
+already slow path and cache misses, while not good, are not the most
+significant issue, I guess.
+What I would see as a much bigger problem is that there might be a lot
+of memory pre-charged at those per-cpu caches. Falling into a reclaim
+costs us much more IMO and we can evict something that could be useful
+for no good reason.
 
-Alan
+> "when you hit limit, you'll see 1000*128bytes cache miss and need to
+> call test_and_set for 1000+ cpus in bad case." doesn't seem much win.
+> 
+> If we implement "call-drain-only-nearby-cpus", I think we can call it before
+> calling try_to_free_mem_cgroup_pages(). I'll add it to my TO-DO-LIST.
 
+It would just consider cpus at the same node?
+
+> How do you think ?
+
+I am afraid we would need two versions then. One for complete draining
+(rmdir and company) while the other for reclaim purposes. Which sounds
+like a more code complexity.
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
