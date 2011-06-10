@@ -1,154 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab1FJKMA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 06:12:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39254 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755436Ab1FJKL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 06:11:58 -0400
-Date: Fri, 10 Jun 2011 11:11:43 +0100
-From: Joe Thornber <thornber@redhat.com>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: "Amir G." <amir73il@users.sourceforge.net>,
-        Mike Snitzer <snitzer@redhat.com>, linux-ext4@vger.kernel.org,
-        tytso@mit.edu, linux-kernel@vger.kernel.org, lvm-devel@redhat.com,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: LVM vs. Ext4 snapshots (was: [PATCH v1 00/30] Ext4 snapshots)
-Message-ID: <20110610101142.GA10144@ubuntu>
-References: <BANLkTimyBGfg4+ovGsiGqpCz345qVmU_7A@mail.gmail.com>
- <BANLkTik20iYN4c9faKD9dzerehazWTwTFw@mail.gmail.com>
- <BANLkTikKRuPu_NX49vr0w-XeN0ZnWo+9vg@mail.gmail.com>
- <alpine.LFD.2.00.1106101101020.4502@dhcp-27-109.brq.redhat.com>
+	id S1755368Ab1FJKLm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 06:11:42 -0400
+Received: from ccserver2.unican.es ([130.206.5.101]:38229 "EHLO
+	ccserver2.unican.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753332Ab1FJKLl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 06:11:41 -0400
+Message-ID: <4DF1EDF3.6030808@unican.es>
+Date: Fri, 10 Jun 2011 12:12:03 +0200
+From: Monica Puig-Pey <puigpeym@unican.es>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) 
+	Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1106101101020.4502@dhcp-27-109.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <markh@compro.net>
+CC: <dmarkh@cfl.rr.com>, <linux-rt-users@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: Changing Kernel thread priorities
+References: <4DEA1BA9.7020303@unican.es><4DEA1F22.6000603@unican.es><4DEA255
+								B.2050503@unican.es><4DECBE44.2070803@unican.es> 
+							<BANLkTi=xSJOgY735PE44YtkQmrdhgetGdQ@mail.gmail.com> 
+						<4DECC0DF.8070209@unican.es> <4DED051A.6020702@compro.net> 
+				<4DEDE411.6010807@unican.es> <4DEDEBFF.10907@cfl.rr.com> 
+			<4DEDF366.6000706@cfl.rr.com> <4DEE6F4E.1030107@unican.es> 
+	<4DEE7415.8000606@compro.net>
+In-Reply-To: <4DEE7415.8000606@compro.net>
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [193.144.198.131]
+X-imss-version: 2.054
+X-imss-result: Passed
+X-imss-scanInfo: M:P L:E SM:0
+X-imss-tmaseResult: TT:0 TS:0.0000 TC:00 TRN:0 TV:6.5.1024(18190.006)
+X-imss-scores: Clean:92.85834 C:2 M:3 S:5 R:5
+X-imss-settings: Baseline:1 C:1 M:2 S:2 R:2 (0.0000 0.0000)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 11:01:41AM +0200, Lukas Czerner wrote:
-> On Fri, 10 Jun 2011, Amir G. wrote:
-> 
-> > CC'ing lvm-devel and fsdevel
-> > 
-> > 
-> > On Wed, Jun 8, 2011 at 9:26 PM, Amir G. <amir73il@users.sourceforge.net> wrote:
-> > For the sake of letting everyone understand the differences and trade
-> > offs between
-> > LVM and ext4 snapshots, so ext4 snapshots can get a fair trial, I need
-> > to ask you
-> > some questions about the implementation, which I could not figure out by myself
-> > from reading the documents.
+El 07/06/11 20:55, Mark Hounschell escribió:
+> On 06/07/2011 02:34 PM, Monica Puig-Pey wrote:
+>> El 07/06/11 11:46, Mark Hounschell escribió:
+>>> On 06/07/2011 05:14 AM, Mark Hounschell wrote:
+>>>> On 06/07/2011 04:40 AM, Monica Puig-Pey wrote:
+>>>>> El 06/06/11 18:49, Mark Hounschell escribió:
+>>>>>> On 06/06/2011 07:58 AM, Monica Puig-Pey wrote:
+>>>>>>> El 06/06/11 13:54, Rolando Martins escribió:
+>>>>>>>> Hi,
+>>>>>>>> I use the following:
+>>>>>>>>
+>>>>>>>> PIDs=$(ps -eLo pid,cls,rtprio,pri,nice,cmd | grep -i "irq" | awk '{
+>>>>>>>> print $1; }' | xargs echo)
+>>>>>>>> for i in $PIDs
+>>>>>>>> do
+>>>>>>>> ret=$(chrt -f -p 99 $i)
+>>>>>>>> done
+>>>>>>>>
+>>>>>>>> This will change the kernel thread associated with an irq
+>>>>>>>> handler to
+>>>>>>>> RT FIFO prio 99.
+>>>>>>>> Just change the script to your specific interrupt.
+>>>>>>>>
+>>>>>>>> Hope it helps,
+>>>>>>>> Rolando
+>>>>>>>>
+>>>>>>>> On Mon, Jun 6, 2011 at 12:47 PM, Monica Puig-Pey
+>>>>>>>> wrote:
+>>>>>>>>> I am writing a driver which has one kernel thread associated with
+>>>>>>>>> it.
+>>>>>>>>> I want to change the priority of this thread, so that I can
+>>>>>>>>> specify the
+>>>>>>>>> order in which it is scheduled following an interrupt.
+>>>>>>>>> I'm using:
+>>>>>>>>>
+>>>>>>>>> sched_setscheduler(struct task_struct *, int, struct sched_param
+>>>>>>>>> *);
+>>>>>>>>>
+>>>>>>>>> but it doesn't work. I tried to change the priority from the
+>>>>>>>>> init_module,
+>>>>>>>>> and also from the Kernel Thread, but there is no way.
+>>>>>>>>>
+>>>>>>>>> Kernel version is 2.6.31-11-rt
+>>>>>>>>>
+>>>>>>>>> What do I call to change a kernel thread priority?
+>>>>>>>>>
+>>>>>>>>> Thanks you very much
+>>>>>>>>>
+>>>>>>>>> Mónica
+>>>>>>>>>
+>>>>>>>>> --
+>>>>>>>>> To unsubscribe from this list: send the line "unsubscribe
+>>>>>>>>> linux-rt-users" in
+>>>>>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>>>>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>>>>>>>>>
+>>>>>>>
+>>>>>>> I need to change the priority from inside the driver, when creating
+>>>>>>> the
+>>>>>>> kernel thread.
+>>>>>>> Your script is useful but it is done in user context,
+>>>>>>> Any other help please?
+>>>>>>
+>>>>>> What I do is record the PID of the thread in the driver, then
+>>>>>> create an
+>>>>>> IOCTL for your driver that user land can call that either returns the
+>>>>>> PID so you can do it in user land, or cause the IOCTL code to do
+>>>>>> it in
+>>>>>> the driver.
+>>>>>>
+>>>>>> The same can be done with the affinity of the IRQ if you record the
+>>>>>> IRQ
+>>>>>> number.
+>>>>>>
+>>>>>> Mark
+>>>>>> --
+>>>>>> To unsubscribe from this list: send the line "unsubscribe
+>>>>>> linux-rt-users" in
+>>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>>>>>
+>>>>> But I don't have de PID of my Kthread, I only have the task_struc *
+>>>>> that
+>>>>> gives me the function:
+>>>>>
+>>>>> struct task_struct *kthread_create(int (*threadfn)(void *data),
+>>>>> void *data,
+>>>>> const char namefmt[], ...)
+>>>>>
+>>>>> How could I get the PID, and which function should I use in the IOCTL
+>>>>> (kernel context) for changing its priority?
+>>>>>
+>>>>
+>>>> The PID can be obtained from within the interrupt handler its self via
+>>>> current->pid.
+>>>> Obviously an interrupt has to occur first but after one interrupt you
+>>>> have it.
+>>>>
+>>>> Actually I had forgot how I handled this. Where I change the RT
+>>>> priority
+>>>> and cpu affinity is in what used to be called the Bottom Half and the
+>>>> IOCTL
+>>>> referred to above simply tells the BH to do it and with what values.
+>>>>
+>>>
+>>> In interrupt handler code snippet:
+>>>
+>>> struct task_struct *TSK;
+>>> struct sched_param PARAM = {.sched_priority = MAX_RT_PRIO };
+>>>
+>>> TSK = current;
+>>>
+>>> Code snippet from BH:
+>>>
+>>> if (((rtom_rtprio != 0) &&
+>>> (rtom_rtprio != PARAM.sched_priority)) ||
+>>> (my_rtom_rtprio[BOARD] != rtom_rtprio)) {
+>>>
+>>> PARAM.sched_priority = rtom_rtprio;
+>>> my_rtom_rtprio[COUNT] = rtom_rtprio;
+>>> sched_setscheduler(TSK, SCHED_FIFO, &PARAM);
+>>>
+>>> set_cpus_allowed(TSK, rtom_devices[BOARD].irq_cpu_mask);
+>>> rtom_devices[BOARD].irq_task_pid = TSK->pid;
+>>> }
+>>>
+>>> rtom_rtprio and irq_cpu_mask are set by userland via an IOCTL. An
+>>> interrupt must occur for this to happen and my BOARD never shares IRQs.
+>>>
+>>> Mark
+>>>
+>>
+>> Thanks, your idea seems to be very useful to me. I was doing it very
+>> similar, but I didn't use the "current" variable to know the
+>> task_struct *.
+>>
+>> I have tried your suggestion on an easy example, but it didn't work.
+>> Insmod returns through the kernel
+>>
+>> [11334.895499] kthread: Unknown symbol sched_setscheduler
+>>
+>> Code shown below:
+>>
+>> #include <linux/module.h>
+>> #include <linux/kernel.h>
+>> #include <linux/ioport.h>
+>>
+>> #include <linux/wait.h>
+>> #include <linux/kthread.h>
+>> #include <asm/io.h>
+>> #include <linux/sched.h>
+>>
+>>
+>> struct task_struct *ts;
+>>
+>> int thread(void *data)
+>> {
+>> struct task_struct *TSK;
+>> struct sched_param PARAM = {.sched_priority = MAX_RT_PRIO };
+>> TSK = current;
+>>
+>> PARAM.sched_priority = 50;
+>> sched_setscheduler(TSK, SCHED_FIFO, &PARAM); // <-- unknown symbol??
+>>
+>> while(1){
+>> printk("Hi I am kernel thread!\n");
+>> msleep(100);
+>> if (kthread_should_stop())
+>> break;
+>> }
+>> return 0;
+>> }
+>>
+>>
+>> int init_module(void)
+>> {
+>> printk(KERN_INFO "init_module() called\n");
+>> ts=kthread_run(thread,NULL,"kthread");
+>> return 0;
+>> }
+>>
+>> void cleanup_module(void)
+>> {
+>> printk(KERN_INFO "cleanup_module() called\n");
+>> kthread_stop(ts);
+>> }
+>> .
+>>
+>
+> In kernel/sched.c
+>
+> EXPORT_SYMBOL_GPL(sched_setscheduler);
+>
+> If your driver is not GPL, you can't use it.
+>
+> Mark
 
-First up let me say that I'm not intending to support writeable
-_external_ origins with multisnap.  This will come as a suprise to
-many people, but I don't think we can resolve the dual requirements to
-efficiently update many, many snapshots when a write occurs _and_ make
-those snapshots quick to delete (when you're encouraging people to
-take lots of snapshots performance of delete becomes a real issue).
+I did it, it worked!!! thank you so much!!!!! :)
+-- 
+__________________________________________________________________________________
 
-One benefit of this decision is that there is no copying from an
-external origin into the multisnap data store.
+Mónica Puig-Pey González       E-mail: puigpeym@unican.es
 
-For internal snapshots (a snapshot of a thin provisioned volume, or
-recursive snapshot), copy-on-write does occur.  If you keep the
-snapshot block size small, however, you find that this copying can
-often be elided since the new data completely overwrites the old.
-
-This avoidance of copying, and the use of FUA/FLUSH to schedule
-commits means that performance is much better than the old snaps.  It
-wont be as fast as ext4 snapshots, it can't be, we don't know what the
-bios contain, unlike ext4.  But I think the performance will be good
-enough that many people will be happy with this more general solution
-rather than committing to a particular file system.  There will be use
-cases where snapshotting at the fs level is the only option.
-
-> > 1. Crash resistance
-> > How is multisnap handling system crashes?
-> > Ext4 snapshots are journaled along with data, so they are fully
-> > resistant to crashes.
-> > Do you need to keep origin target writes pending in batches and issue FUA/flush
-> > request for the metadata and data store devices?
-
-FUA/flush allows us to treat multisnap devices as if they are devices
-with a write cache.  When a FUA/FLUSH bio comes in we ensure we commit
-metadata before allowing the bio to continue.  A crash will lose data
-that is in the write cache, same as any real block device with a write
-cache.
-
-> > 2. Performance
-> > In the presentation from LinuxTag, there are 2 "meaningless benchmarks".
-> > I suppose they are meaningless because the metadata is linear mapping
-> > and therefor all disk writes and read are sequential.
-> > Do you have any "real world" benchmarks?
-
-Not that I'm happy with.  For me 'real world' means a realistic use of
-snapshots.  We've not had this ability to create lots of snapshots
-before in Linux, so I'm not sure how people are going to use it.  I'll
-get round to writing some benchmarks for certain scenarios eventually
-(eg. incremental backups), but atm there are more pressing issues.
-
-I mainly called those benchmarks meaningless because they didn't
-address how fragmented the volumes become over time.  This
-fragmentation is a function of io pattern, and the shape of the
-snapshot tree.  In the same way I think filesystem benchmarks that
-write lots of files to a freshly formatted volume are also pretty
-meaningless.  What most people are interested in is how the system
-will be performing after they've used it for six months, not the first
-five minutes.
-
-> > I am guessing that without the filesystem level knowledge in the thin
-> > provisioned target,
-> > files and filesystem metadata are not really laid out on the hard
-> > drive as the filesystem
-> > designer intended.
-> > Wouldn't that be causing a large seek overhead on spinning media?
-
-You're absolutely right.
-
-> > 3. ENOSPC
-> > Ext4 snapshots will get into readonly mode on unexpected ENOSPC situation.
-> > That is not perfect and the best practice is to avoid getting to
-> > ENOSPC situation.
-> > But most application do know how to deal with ENOSPC and EROFS gracefully.
-> > Do you have any "real life" experience of how applications deal with
-> > blocking the
-> > write request in ENOSPC situation?
-
-If you run out of space userland needs to extend the data volume.  the
-multisnap-pool target notifies userland (ie. dmeventd) before it
-actually runs out.  If userland hasn't resized the volume before it
-runs out of space then the ios will be paused.  This pausing is really
-no different from suspending a dm device, something LVM has been doing
-for 10 years.  So yes, we have experience of pausing io under
-applications, and the 'notify userland' mechanism is already proven.
-
-> > Or what is the outcome if someone presses the reset button because of an
-> > unexplained (to him) system halt?
-
-See my answer above on crash resistance.
-
-> > 4. Cache size
-> > At the time, I examined using ZFS on an embedded system with 512MB RAM.
-> > I wasn't able to find any official requirements, but there were
-> > several reports around
-> > the net saying that running ZFS with less that 1GB RAM is a performance killer.
-> > Do you have any information about recommended cache sizes to prevent
-> > the metadata store from being a performance bottleneck?
-
-The ideal cache size depends on your io patterns.  It also depends on
-the data block size you've chosen.  The cache is divided into 4k
-blocks, and each block holds ~256 mapping entries.
-
-Unlike ZFS our metadata is very simple.
-
-Those little micro benchmarks (dd and bonnie++) running on a little 4G
-data volume perform nicely with only a 64k cache.  So in the worst
-case I was envisaging a few meg for the cache, rather than a few
-hundred meg.
-
-- Joe
-
-
+Grupo de Computadores y Tiempo Real, Departamento de Electrónica y 
+Computadores.
+Facultad de Ciencias - Universidad de Cantabria
+Av. de los Castros s/n. 39005 - Santander, España
+__________________________________________________________________________________
