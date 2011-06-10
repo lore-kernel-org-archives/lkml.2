@@ -1,191 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756636Ab1FJMtt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 08:49:49 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:62263 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756034Ab1FJMtr convert rfc822-to-8bit (ORCPT
+	id S1757059Ab1FJMvb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 08:51:31 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:55341 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755273Ab1FJMv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 08:49:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=gbf3jofqNIeCvFNuFt3+WqdbK2eMtc5kOyFNOgMK+edgI40s72m769hw4KgyKZU82d
-         j19XViBgs+Q5+YpdiFpBjudo6tKSddpw8/n9+X1wifwr6Pe3vAItgcl37e5h5jMKEFqj
-         8P6MAcswPR/Ni8oJE7q89EfBARIAWNYSjn/wc=
-MIME-Version: 1.0
-In-Reply-To: <4DF20A97.8010405@suse.de>
-References: <Pine.LNX.4.64.1106092211500.19687@sarijopen.student.utwente.nl>
-	<20110609183045.01f6f9fc@tlielax.poochiereds.net>
-	<BANLkTimPqmkNJMaJE2_C5zD8ESFOEM3=hg@mail.gmail.com>
-	<Pine.LNX.4.64.1106100243370.2168@sarijopen.student.utwente.nl>
-	<20110610073702.061bc014@corrin.poochiereds.net>
-	<BANLkTinqT0AXx9STWEzrw-yASTid5rb1Fg@mail.gmail.com>
-	<4DF20A97.8010405@suse.de>
-Date: Fri, 10 Jun 2011 05:49:46 -0700
-Message-ID: <BANLkTimAauVsqX1JZucG1cg3-MAtqCrZFQ@mail.gmail.com>
-Subject: Re: [OOPS] 3.0-rc1 cifs
-From: Connor Hansen <cmdkhh@gmail.com>
-To: Suresh Jayaraman <sjayaraman@suse.de>
-Cc: Jeff Layton <jlayton@redhat.com>,
-        Martijn Uffing <mp3project@sarijopen.student.utwente.nl>,
-        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sean finney <seanius@seanius.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 10 Jun 2011 08:51:28 -0400
+Date: Fri, 10 Jun 2011 13:52:17 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Johan MOSSBERG'" <johan.xx.mossberg@stericsson.com>,
+        "'Mel Gorman'" <mel@csn.ul.ie>, "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>
+Subject: Re: [PATCH 02/10] lib: genalloc: Generic allocator improvements
+Message-ID: <20110610135217.701a2fd2@lxorguk.ukuu.org.uk>
+In-Reply-To: <000c01cc2769$02669b70$0733d250$%szyprowski@samsung.com>
+References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
+	<1307699698-29369-3-git-send-email-m.szyprowski@samsung.com>
+	<20110610122451.15af86d1@lxorguk.ukuu.org.uk>
+	<000c01cc2769$02669b70$0733d250$%szyprowski@samsung.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 5:14 AM, Suresh Jayaraman <sjayaraman@suse.de> wrote:
-> On 06/10/2011 05:33 PM, Connor Hansen wrote:
->> On Fri, Jun 10, 2011 at 4:37 AM, Jeff Layton <jlayton@redhat.com> wrote:
->>> On Fri, 10 Jun 2011 02:57:21 +0200 (CEST)
->>>  Uffing <mp3project@sarijopen.student.utwente.nl> wrote:
->>>
->>>>
->>>> <snip>
->>>>> call in get_dfs_path()
->>>>> rc = CIFSTCon(xid, pSesInfo, temp_unc, NULL, nls_codepage);
->>>>>
->>>>> function header for CIFSTCon
->>>>> int  CIFSTCon(unsigned int xid, struct cifs_ses *ses,
->>>>>          const char *tree, struct cifs_tcon *tcon,
->>>>>          const struct nls_table *nls_codepage)
->>>>>
->>>>> get_dfs_path() is passing struct cifs_tcon *tcon as NULL
->>>>>
->>>>> from config:  CONFIG_CIFS_WEAK_PW_HASH=y
->>>>>
->>>>> in CIFSTCon
->>>>>
->>>>> #ifdef CONFIG_CIFS_WEAK_PW_HASH
->>>>> 3222                 if ((global_secflags & CIFSSEC_MAY_LANMAN) &&
->>>>> 3223                     (ses->server->secType == LANMAN))
->>>>> 3224                         calc_lanman_hash(tcon->password,
->>>>> ses->server->cryptkey,
->>>>>
->>>>> in calc_lanman_hash tcon is dereferenced(tcon->password) without being
->>>>> checked if null
->>>>>
->>>>> 3225                                          ses->server->sec_mode &
->>>>> 3226                                             SECMODE_PW_ENCRYPT ?
->>>>> true : false,
->>>>> 3227                                          bcc_ptr);
->>>>> 3228                 else
->>>>> 3229 #endif /* CIFS_WEAK_PW_HASH */
->>>>>
->>>>> Connor
->>>>
->>>>
->>>> Ave all
->>>>
->>>> I recompiled  kernel 3.0-rc1 (hadn't enabled CONFIG_DEBUG_INFO=y) and put
->>>> the oops (with the new adresses) through gdb per instruction of Jeff. And
->>>> Connor was spot on!
->>>>
->>>> <qoute oops>
->>>> BUG: unable to handle kernel NULL pointer dereference at 00000000000000a0
->>>> IP: [<ffffffffa041e286>] CIFSTCon+0xf6/0x4d0 [cifs]
->>>> </qoute oops>
->>>>
->>>> <qoute gdb>
->>>> This GDB was configured as "x86_64-linux-gnu".
->>>> For bug reporting instructions, please see:
->>>> <http://www.gnu.org/software/gdb/bugs/>...
->>>> Reading symbols from
->>>> /lib/modules/3.0.0-rc1-debug/kernel/fs/cifs/cifs.ko...done.
->>>> (gdb) list *(CIFSTCon+0xf6)
->>>> 0xc2b6 is in CIFSTCon (fs/cifs/connect.c:3230).
->>>> 3225                                             ses->server->sec_mode &
->>>> 3226                                                SECMODE_PW_ENCRYPT ?
->>>> true : false,
->>>> 3227                                             bcc_ptr);
->>>> 3228                    else
->>>> 3229    #endif /* CIFS_WEAK_PW_HASH */
->>>> 3230                    rc = SMBNTencrypt(tcon->password,
->>>> ses->server->cryptkey,
->>>> 3231                                            bcc_ptr);
->>>> 3232
->>>> 3233                    bcc_ptr += CIFS_AUTH_RESP_SIZE;
->>>> 3234                    if (ses->capabilities & CAP_UNICODE) {
->>>> (gdb)
->>>> </qoute gdb>
->>>>
->>>
->>> (cc'ing Sean F. since I suspect this regression is due to his changes)
->>>
->>> Thanks for the analysis, Martijn and Connor...
->>>
->>> What sort of server are you mounting here? It looks like it's using
->>> share-level security, so it's either very old or is a samba server
->>> configured that way.
->>>
->>> I suspect that commit c1508ca236 is the culprit. With that, we call
->>> into expand_dfs_referral on every mount attempt. Previously we only
->>> called into there when we got back  an EREMOTE error and that would
->>> have been unlikely on a share-level security connection.
->>>
->>> I think there are several possible solutions, but since Sean was in
->>> here most recently I'd like to have his opinion.
->>
->> I don't know enough about cifs but this call in fs/cifs/connect.c
->>
->> 2268: rc = CIFSTCon(xid, pSesInfo, temp_unc, NULL, nls_codepage);
->>
->> will always result in a null pointer derefence as CIFSTCon uses the
->> cifs_tcon struct for passwords without verification
->
-> Yes, I too was hovering around this code path today and it doesn't look
-> correct. Specifically, the call from cifs_dfs_path to CIFSTCon with
-> cifs_tcon as NULL seems wrong. I tried to do dig history a bit with `git
-> blame`, but couldn't figure out the commit that introduced this.
->
->
-> --
-> Suresh Jayaraman
->
+> I plan to replace it with lib/bitmap.c bitmap_* based allocator (similar like
+> it it is used by dma_declare_coherent_memory() and friends in
+> drivers/base/dma-coherent.c). We need something really simple for CMA area
+> management. 
+> 
+> IMHO allocate_resource and friends a bit too heavy here, but good to know 
+> that such allocator also exists.
 
-git annotate fs/cifs/connect.c
-1da177e4        (Linus Torvalds 2005-04-16 15:20:36 -0700       2268)
-         rc = CIFSTCon(xid, pSesInfo, temp_unc, NULL, nls_codepage);
+Not sure I'd class allocate_resource as heavyweight but providing it's
+using something that already exists rather than inventing yet another
+allocator.
 
-this was valid at the time to simply get the rc, and the code was checked
- if ((rc == 0) && (tcon != NULL)) {   //  first use of tcon in
-CIFSTCon back then.....
+This wants dealing with before it goes upstream though so the chaneges in
+lib/*c etc never have to reach mainline and then get changed back.
 
-
-after a loooooong look, i found the patch which changed it
-
-00e485b0
-commit 00e485b0198ea4f509341373f1d9adb0a5977a2f
-Author: Jeff Layton <jlayton@redhat.com>
-Date:   Fri Dec 5 20:41:21 2008 -0500
-
-    cifs: store password in tcon
-
-    cifs: store password in tcon
-
-    Each tcon has its own password for share-level security. Store it in
-    the tcon and wipe it clean and free it when freeing the tcon. When
-    doing the tree connect with share-level security, use the tcon password
-    instead of the session password.
-
-    Signed-off-by: Jeff Layton <jlayton@redhat.com>
-    Signed-off-by: Steve French <sfrench@us.ibm.com>
-
-........................
--                       (ses->server->secType == LANMAN))
--                       calc_lanman_hash(ses->password, ses->server->cryptKey,
-+                   (ses->server->secType == LANMAN))
-+                       calc_lanman_hash(tcon->password, ses->server->cryptKey,
-.........................
--               SMBNTencrypt(ses->password,
--                            ses->server->cryptKey,
-+               SMBNTencrypt(tcon->password, ses->server->cryptKey,
-
-So can probably just grab the tcon from the session in get_dfs_path and pass
-it instead of the null
-
-Connor
+Alan
