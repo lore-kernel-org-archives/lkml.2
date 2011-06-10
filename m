@@ -1,215 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773Ab1FJOPl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 10:15:41 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57295 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755708Ab1FJOPj convert rfc822-to-8bit (ORCPT
+	id S1757011Ab1FJORa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 10:17:30 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:59336 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756008Ab1FJOR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 10:15:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=EyUfUyBBvaPZPs/xgEdbKgt27qLSKd/OowH6ylkbfu8CdesLTDwuTnmVhBIicjJnmw
-         dWPiEPVifzghIQRGLBJVg/cDB79Stgury+6gp1N9bwvGqfQ2+VsO7VTHOJW8Lv1NzA4s
-         ICqWjYLIaZ5J8kgP0ZnF6yDKGaUglGLj0+PXE=
+	Fri, 10 Jun 2011 10:17:27 -0400
+Message-ID: <4DF22770.4010103@tilera.com>
+Date: Fri, 10 Jun 2011 10:17:20 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110610101142.GA10144@ubuntu>
-References: <BANLkTimyBGfg4+ovGsiGqpCz345qVmU_7A@mail.gmail.com>
-	<BANLkTik20iYN4c9faKD9dzerehazWTwTFw@mail.gmail.com>
-	<BANLkTikKRuPu_NX49vr0w-XeN0ZnWo+9vg@mail.gmail.com>
-	<alpine.LFD.2.00.1106101101020.4502@dhcp-27-109.brq.redhat.com>
-	<20110610101142.GA10144@ubuntu>
-Date: Fri, 10 Jun 2011 17:15:37 +0300
-X-Google-Sender-Auth: P-Efw5EkeCDi0TSXbDsYWmoN8JU
-Message-ID: <BANLkTi=zjU3-FV3AVpYsknzKFgaS7byb_Q@mail.gmail.com>
-Subject: Re: LVM vs. Ext4 snapshots (was: [PATCH v1 00/30] Ext4 snapshots)
-From: "Amir G." <amir73il@users.sourceforge.net>
-To: Joe Thornber <thornber@redhat.com>
-Cc: Lukas Czerner <lczerner@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        linux-ext4@vger.kernel.org, tytso@mit.edu,
-        linux-kernel@vger.kernel.org, lvm-devel@redhat.com,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linuxppc-dev@lists.ozlabs.org>,
+        Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Timur Tabi <timur@freescale.com>, <konrad.wilk@oracle.com>,
+        <kumar.gala@freescale.com>, <linux-kernel@vger.kernel.org>,
+        <akpm@kernel.org>, <dsaxena@linaro.org>,
+        <linux-console@vger.kernel.org>, <greg@kroah.com>,
+        <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 7/7] [v4] drivers/virt: introduce Freescale hypervisor
+ management driver
+References: <1307573154-15838-1-git-send-email-timur@freescale.com> <20110608161009.7b05d305.randy.dunlap@oracle.com> <201106090938.23027.arnd@arndb.de>
+In-Reply-To: <201106090938.23027.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 1:11 PM, Joe Thornber <thornber@redhat.com> wrote:
-> On Fri, Jun 10, 2011 at 11:01:41AM +0200, Lukas Czerner wrote:
->> On Fri, 10 Jun 2011, Amir G. wrote:
+On 6/9/2011 3:38 AM, Arnd Bergmann wrote:
+> On Thursday 09 June 2011 01:10:09 Randy Dunlap wrote:
+>> On Wed, 8 Jun 2011 17:45:54 -0500 Timur Tabi wrote:
 >>
->> > CC'ing lvm-devel and fsdevel
->> >
->> >
->> > On Wed, Jun 8, 2011 at 9:26 PM, Amir G. <amir73il@users.sourceforge.net> wrote:
->> > For the sake of letting everyone understand the differences and trade
->> > offs between
->> > LVM and ext4 snapshots, so ext4 snapshots can get a fair trial, I need
->> > to ask you
->> > some questions about the implementation, which I could not figure out by myself
->> > from reading the documents.
+>>> Add the drivers/virt directory, which houses drivers that support
+>>> virtualization environments, and add the Freescale hypervisor management
+>>> driver.
+>> It can't go in linux/virt or linux/virt/fsl instead?  why drivers/ ?
+>>
+>> or maybe linux/virt should be drivers/virt ?
+> See discussion for v2 of this patch. I suggested that drivers/firmware and virt/
+> as options, the counterarguments were that drivers/firmware is for passive
+> firmware as opposed to firmware that acts as a hypervisor, and that virt/ is
+> for the host side of hypervisors like kvm, not for guests.
 >
-> First up let me say that I'm not intending to support writeable
-> _external_ origins with multisnap.  This will come as a suprise to
-> many people, but I don't think we can resolve the dual requirements to
-> efficiently update many, many snapshots when a write occurs _and_ make
-> those snapshots quick to delete (when you're encouraging people to
-> take lots of snapshots performance of delete becomes a real issue).
->
+> The driver in here most closely resembles the xen dom0 model, where a
+> priviledged guest controls other guests, but unlike xen there is a single
+> driver file, so there is no need to have drivers/fsl-hv directory just
+> for this one file. We do have a number of other hypervisors that fit in the
+> same category, so they can be added here later.
 
-OK. that is an interesting point for people to understand.
-There is a distinct trade off at hand.
+This still leaves open the question of what really should go in this new
+directory. Is it just for drivers that manage/control the hypervisor?  Or
+is it also for drivers that just use the hypervisor to do I/O of some kind,
+but aren't related to any other "family" of drivers, i.e., a driver that
+would have been dumped in drivers/char or drivers/misc in the old days?
 
-LVM multisnap gives you lots of feature and can be used with
-any filesystem.
-The cost you are paying for all the wonderful features it provides is
-a fragmented origin, which we both agree, is likely to have performance
-costs as the filesystem ages.
+My specific interest at the moment is the proposed tile-srom.c driver
+(https://patchwork.kernel.org/patch/843892/), which uses a simple
+hypervisor read/write API to access the portion of the SPI ROM used to hold
+the boot stream for a TILE processor.
 
-Ext4 snapshots, on the other hand, is very limited in features
-(i.e. only readonly snapshots of the origin), but the origin's layout on-disk
-remains un-fragmented and optimized for spinning media and RAID
-arrays underlying storage.
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-Ext4 snapshots also causes fragmentation of files in random write
-workloads, but this is a problem that can and is being fixed.
 
-> One benefit of this decision is that there is no copying from an
-> external origin into the multisnap data store.
->
-> For internal snapshots (a snapshot of a thin provisioned volume, or
-> recursive snapshot), copy-on-write does occur.  If you keep the
-> snapshot block size small, however, you find that this copying can
-> often be elided since the new data completely overwrites the old.
->
-> This avoidance of copying, and the use of FUA/FLUSH to schedule
-> commits means that performance is much better than the old snaps.  It
-> wont be as fast as ext4 snapshots, it can't be, we don't know what the
-> bios contain, unlike ext4.  But I think the performance will be good
-> enough that many people will be happy with this more general solution
-> rather than committing to a particular file system.  There will be use
-> cases where snapshotting at the fs level is the only option.
->
-
-I have to agree with you. I do not think that the performance factor
-is going to be a show stopper for most people.
-I do think that LVM performance will be good enough
-and that many people will be happy with the more general solution.
-Especially those who can afford an SSD in their system.
-
-The question is, are there enough people in the 'real world', with
-enough varying use cases, so that many will also find ext4 snapshots features
-good enough and will want to enjoy better and consistent read/write performance
-to the origin, which does not degrade as the filesystem ages.
-
-Clearly, we will need to come up with some 'real world' benchmarks, before
-we can provide an intelligent answer to that question.
-
->> > 1. Crash resistance
->> > How is multisnap handling system crashes?
->> > Ext4 snapshots are journaled along with data, so they are fully
->> > resistant to crashes.
->> > Do you need to keep origin target writes pending in batches and issue FUA/flush
->> > request for the metadata and data store devices?
->
-> FUA/flush allows us to treat multisnap devices as if they are devices
-> with a write cache.  When a FUA/FLUSH bio comes in we ensure we commit
-> metadata before allowing the bio to continue.  A crash will lose data
-> that is in the write cache, same as any real block device with a write
-> cache.
->
-
-Now, here I am confused.
-Reducing the problem to write cache enabled device sounds valid,
-but I am not yet convinced it is enough.
-In ext4 snapshots I had to deal with 'internal ordering' between I/O
-of origin data and snapshot metadata and data.
-That means that every single I/O to origin, which overwrites shared data,
-must hit the media *after* the original data has been copied to snapshot
-and the snapshot metadata and data are secure on media.
-In ext4 this is done with the help of JBD2, which anyway holds back metadata
-writes until commit.
-It could be that this problem is only relevant to _extenal_ origin, which
-are not supported for multisnap, but frankly, as I said, I am too confused
-to figure out if there is yet an ordering problem for _internal_ origin or not.
-
->> > 2. Performance
->> > In the presentation from LinuxTag, there are 2 "meaningless benchmarks".
->> > I suppose they are meaningless because the metadata is linear mapping
->> > and therefor all disk writes and read are sequential.
->> > Do you have any "real world" benchmarks?
->
-> Not that I'm happy with.  For me 'real world' means a realistic use of
-> snapshots.  We've not had this ability to create lots of snapshots
-> before in Linux, so I'm not sure how people are going to use it.  I'll
-> get round to writing some benchmarks for certain scenarios eventually
-> (eg. incremental backups), but atm there are more pressing issues.
->
-> I mainly called those benchmarks meaningless because they didn't
-> address how fragmented the volumes become over time.  This
-> fragmentation is a function of io pattern, and the shape of the
-> snapshot tree.  In the same way I think filesystem benchmarks that
-> write lots of files to a freshly formatted volume are also pretty
-> meaningless.  What most people are interested in is how the system
-> will be performing after they've used it for six months, not the first
-> five minutes.
->
->> > I am guessing that without the filesystem level knowledge in the thin
->> > provisioned target,
->> > files and filesystem metadata are not really laid out on the hard
->> > drive as the filesystem
->> > designer intended.
->> > Wouldn't that be causing a large seek overhead on spinning media?
->
-> You're absolutely right.
->
->> > 3. ENOSPC
->> > Ext4 snapshots will get into readonly mode on unexpected ENOSPC situation.
->> > That is not perfect and the best practice is to avoid getting to
->> > ENOSPC situation.
->> > But most application do know how to deal with ENOSPC and EROFS gracefully.
->> > Do you have any "real life" experience of how applications deal with
->> > blocking the
->> > write request in ENOSPC situation?
->
-> If you run out of space userland needs to extend the data volume.  the
-> multisnap-pool target notifies userland (ie. dmeventd) before it
-> actually runs out.  If userland hasn't resized the volume before it
-> runs out of space then the ios will be paused.  This pausing is really
-> no different from suspending a dm device, something LVM has been doing
-> for 10 years.  So yes, we have experience of pausing io under
-> applications, and the 'notify userland' mechanism is already proven.
->
->> > Or what is the outcome if someone presses the reset button because of an
->> > unexplained (to him) system halt?
->
-> See my answer above on crash resistance.
->
->> > 4. Cache size
->> > At the time, I examined using ZFS on an embedded system with 512MB RAM.
->> > I wasn't able to find any official requirements, but there were
->> > several reports around
->> > the net saying that running ZFS with less that 1GB RAM is a performance killer.
->> > Do you have any information about recommended cache sizes to prevent
->> > the metadata store from being a performance bottleneck?
->
-> The ideal cache size depends on your io patterns.  It also depends on
-> the data block size you've chosen.  The cache is divided into 4k
-> blocks, and each block holds ~256 mapping entries.
->
-> Unlike ZFS our metadata is very simple.
->
-> Those little micro benchmarks (dd and bonnie++) running on a little 4G
-> data volume perform nicely with only a 64k cache.  So in the worst
-> case I was envisaging a few meg for the cache, rather than a few
-> hundred meg.
->
-> - Joe
->
-
-Thanks for your elaborate answers!
-Amir.
