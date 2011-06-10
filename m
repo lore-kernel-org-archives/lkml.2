@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751546Ab1FJED0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 00:03:26 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56219 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751178Ab1FJEDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 00:03:23 -0400
-Message-ID: <4DF19803.9040407@cn.fujitsu.com>
-Date: Fri, 10 Jun 2011 12:05:23 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 0/15] KVM: optimize for MMIO handled
-References: <4DEE205E.8000601@cn.fujitsu.com> <4DF0789B.2050401@redhat.com>
-In-Reply-To: <4DF0789B.2050401@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-10 12:03:07,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-10 12:03:09,
-	Serialize complete at 2011-06-10 12:03:09
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1751258Ab1FJEOw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 00:14:52 -0400
+Received: from mail.perches.com ([173.55.12.10]:2772 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750788Ab1FJEOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 00:14:51 -0400
+Subject: Re: [PATCH trival/tree-wide] Change Ryan Mallon's email address
+ across the kernel
+From: Joe Perches <joe@perches.com>
+To: Ryan Mallon <rmallon@gmail.com>, Florian Mickler <florian@mickler.org>
+Cc: Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+        Andre Renaud <andre@bluewatersys.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Victor <avictor.za@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, Anton Vorontsov <cbou@mail.ru>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, trivial@kernel.org
+In-Reply-To: <4DF19565.9070601@gmail.com>
+References: <1307661170-9325-1-git-send-email-rmallon@gmail.com>
+	 <20110610025532.GE26006@linux-sh.org> <4DF189F2.3040009@gmail.com>
+	 <1307675512.20439.2.camel@Joe-Laptop> <4DF18BDC.8010306@gmail.com>
+	 <1307676240.20439.9.camel@Joe-Laptop> <4DF1902A.1040305@gmail.com>
+	 <20110610035115.GF26006@linux-sh.org>  <4DF19565.9070601@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 09 Jun 2011 21:14:48 -0700
+Message-ID: <1307679288.20439.15.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2011 03:39 PM, Avi Kivity wrote:
+On Fri, 2011-06-10 at 13:54 +1000, Ryan Mallon wrote:
+> Okay, so what is the preferred solution. Do I leave the old address in 
+> the files and add MAINTAINERS entries for everything with my correct 
+> address, or do I delete my email address (but leave my name) in all of 
+> the files?
 
-> First, I think we should consider dropping bypass_guest_pf completely, just so we have less things to think about.
-> 
+Another option is to add an entry in .mailmap for
+your correct new and incorrect old addresses.
 
-I agree.
+diff --git a/.mailmap b/.mailmap
+index 353ad56..218765d 100644
+--- a/.mailmap
++++ b/.mailmap
+@@ -95,6 +95,7 @@ Ralf Wildenhues <Ralf.Wildenhues@gmx.de>
+ Rémi Denis-Courmont <rdenis@simphalempin.com>
+ Rudolf Marek <R.Marek@sh.cvut.cz>
+ Rui Saraiva <rmps@joel.ist.utl.pt>
++Ryan Mallon <rmallon@gmail.com> <ryan@bluewatersys.com>
+ Sachin P Sant <ssant@in.ibm.com>
+ Sam Ravnborg <sam@mars.ravnborg.org>
+ Sascha Hauer <s.hauer@pengutronix.de>
 
-> I'm also not sure RCU is enough protection - we can unlink a page in the middle of a hierarchy,
 
-I think it is ok, it just likes the page structure cache of real CPU, we can use
-the old mapping or new mapping here, if we missed, page fault path is called, it can 
-fix the problem for us.
+This will only work after get_maintainers is patched
+to correctly parse the .mailmap entries that use this form.
 
-> and on i386 this causes an invalid pointer to appear when we fetch the two halves.  But I guess, if the cpu can do it, so can we.
-> 
+I'll chat with Florian to correct this.
 
-Ah, maybe the cpu can not do it, we need a light way to get spte for i386 host...
-
-> Maybe we can do something like
-> 
-> again:
->   fetch pointer to last level spte using RCU
->   if failed:
->        take lock
->        build spte hierarchy
->        drop lock
->        goto again
->   if sync:
->       if mmio:
->           do mmio
->           return
->       return
->   walk guest table
->   install spte
->   if mmio:
->      do mmio
-> 
-> (sync is always false for tdp)
-> 
-
-It seams it is more complex, the origin way is:
-
-fetch last level spte
-if failed or it is not a mmio spte:
-	call page fault
-do mmio
-
-and it has little heavy sine we need to walk guest page table,
-and build spte under mmu-lock.
-
-Maybe i missed your meaning, could you please tell me the advantage? :-(
+cheers, Joe
 
