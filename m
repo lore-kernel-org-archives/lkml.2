@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130Ab1FJNJo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 09:09:44 -0400
-Received: from grimli.r00tworld.net ([83.169.44.195]:43119 "EHLO
+	id S932154Ab1FJNJx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 09:09:53 -0400
+Received: from grimli.r00tworld.net ([83.169.44.195]:43140 "EHLO
 	mail.r00tworld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932096Ab1FJNJl (ORCPT
+	with ESMTP id S932127Ab1FJNJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 09:09:41 -0400
+	Fri, 10 Jun 2011 09:09:49 -0400
 From: Mathias Krause <minipli@googlemail.com>
-To: Tony Luck <tony.luck@intel.com>
+To: Hirokazu Takata <takata@linux-m32r.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: [PATCH] ia64, exec: remove redundant set_fs(USER_DS)
-Date: Fri, 10 Jun 2011 15:09:39 +0200
-Message-Id: <1307711379-7526-1-git-send-email-minipli@googlemail.com>
+        linux-m32r@ml.linux-m32r.org, linux-kernel@vger.kernel.org,
+        Mathias Krause <minipli@googlemail.com>
+Subject: [PATCH] m32r, exec: remove redundant set_fs(USER_DS)
+Date: Fri, 10 Jun 2011 15:09:48 +0200
+Message-Id: <1307711388-7739-1-git-send-email-minipli@googlemail.com>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
 References: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
@@ -29,23 +28,22 @@ The address limit is already set in flush_old_exec() so this
 set_fs(USER_DS) is redundant.
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/ia64/include/asm/processor.h |    1 -
+ arch/m32r/include/asm/processor.h |    1 -
  1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/arch/ia64/include/asm/processor.h b/arch/ia64/include/asm/processor.h
-index 03afe79..b2d6051 100644
---- a/arch/ia64/include/asm/processor.h
-+++ b/arch/ia64/include/asm/processor.h
-@@ -309,7 +309,6 @@ struct thread_struct {
- }
+diff --git a/arch/m32r/include/asm/processor.h b/arch/m32r/include/asm/processor.h
+index 8397c24..e1f46d7 100644
+--- a/arch/m32r/include/asm/processor.h
++++ b/arch/m32r/include/asm/processor.h
+@@ -106,7 +106,6 @@ struct thread_struct {
  
- #define start_thread(regs,new_ip,new_sp) do {							\
--	set_fs(USER_DS);									\
- 	regs->cr_ipsr = ((regs->cr_ipsr | (IA64_PSR_BITS_TO_SET | IA64_PSR_CPL))		\
- 			 & ~(IA64_PSR_BITS_TO_CLEAR | IA64_PSR_RI | IA64_PSR_IS));		\
- 	regs->cr_iip = new_ip;									\
+ #define start_thread(regs, new_pc, new_spu) 				\
+ 	do {								\
+-		set_fs(USER_DS); 					\
+ 		regs->psw = (regs->psw | USERPS_BPSW) & 0x0000FFFFUL;	\
+ 		regs->bpc = new_pc;					\
+ 		regs->spu = new_spu;					\
 -- 
 1.5.6.5
 
