@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758129Ab1FJVkj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 17:40:39 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:50558
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754736Ab1FJVki (ORCPT
+	id S1758134Ab1FJVtM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 17:49:12 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:27402 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754736Ab1FJVtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 17:40:38 -0400
-Date: Fri, 10 Jun 2011 17:40:36 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Clement LECIGNE <clement.lecigne@netasq.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [BUG] hfs_find_init() sb->ext_tree NULL pointer dereference
-Message-ID: <20110610214036.GA23163@infradead.org>
-References: <20110608110731.GA69446@clem1.netasq.com>
+	Fri, 10 Jun 2011 17:49:09 -0400
+Date: Fri, 10 Jun 2011 23:40:47 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+        Keith Packard <keithp@keithp.com>
+Subject: [PATCH] i915: Don't leak in i915_gem_shmem_pread_slow()..
+Message-ID: <alpine.LNX.2.00.1106102336560.21722@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110608110731.GA69446@clem1.netasq.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 01:07:55PM +0200, Clement LECIGNE wrote:
-> Hi,
-> 
-> hfs_find_init() is wrongly assuming that sb->ext_tree has already been opened
-> and is not NULL but this function can be called when sb->ext_tree is currently
-> being opened (NULL deref).
+It seems to me that we are leaking 'user_pages' in 
+drivers/gpu/drm/i915/i915_gem.c::i915_gem_shmem_pread_slow() if 
+read_cache_page_gfp() fails.
 
-Well, it can't happen in practice.  The extent file always fits into
-the first blocks for a valid extents file.  And yes, you could
-artifically construct a filesystem where this is not true, and if you
-want to be cool call it a security issue.  But in the end anyone who
-mounts untrusted disk images has much worse issues than this, so don't
-do it.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ i915_gem.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+ Untested patch - user be warned.
+
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 12d3257..4df3272 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -465,8 +465,10 @@ i915_gem_shmem_pread_slow(struct drm_device *dev,
+ 
+ 		page = read_cache_page_gfp(mapping, offset >> PAGE_SHIFT,
+ 					   GFP_HIGHUSER | __GFP_RECLAIMABLE);
+-		if (IS_ERR(page))
++		if (IS_ERR(page)) {
++			drm_free_large(user_pages);
+ 			return PTR_ERR(page);
++		}
+ 
+ 		if (do_bit17_swizzling) {
+ 			slow_shmem_bit17_copy(page,
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
