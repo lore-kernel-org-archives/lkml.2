@@ -1,98 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752427Ab1FJGGG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 02:06:06 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:45280 "EHLO smtps.tip.net.au"
+	id S1752924Ab1FJGoZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 02:44:25 -0400
+Received: from mga01.intel.com ([192.55.52.88]:20932 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751556Ab1FJGGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 02:06:04 -0400
-Date: Fri, 10 Jun 2011 16:05:48 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: brudley@broadcom.com, henryp@broadcom.com, rvossen@broadcom.com,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the final tree
- (staging related)
-Message-Id: <20110610160548.529797c7.sfr@canb.auug.org.au>
-In-Reply-To: <20110609192243.GA3980@kroah.com>
-References: <20110609172745.dfd3a298.sfr@canb.auug.org.au>
-	<20110609184127.GA2760@kroah.com>
-	<20110609192243.GA3980@kroah.com>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1751634Ab1FJGoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 02:44:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,345,1304319600"; 
+   d="scan'208";a="16643438"
+Subject: RE: [RFC] dmaengine: add new api for preparing simple slave
+ transfer
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: "Raju, Sundaram" <sundaram@ti.com>, Dan <dan.j.williams@intel.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <E0D41E29EB0DAC4E9F3FF173962E9E940301FE2EFB@dbde02.ent.ti.com>
+References: <E0D41E29EB0DAC4E9F3FF173962E9E940301FE2DED@dbde02.ent.ti.com>
+	 <20110609124723.GA24636@n2100.arm.linux.org.uk>
+	 <E0D41E29EB0DAC4E9F3FF173962E9E940301FE2EFB@dbde02.ent.ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Jun 2011 11:39:00 +0530
+Message-ID: <1307686140.10976.111.camel@vkoul-udesk3>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__10_Jun_2011_16_05_48_+1000_DYUVsR8WAGExXXZ."
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__10_Jun_2011_16_05_48_+1000_DYUVsR8WAGExXXZ.
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2011-06-09 at 21:31 +0530, Raju, Sundaram wrote:
+> Here it is, with proper line wrapping;
+Please cc the respective MAINTAINERS, added Dan...
 
-Hi Greg,
+> 
+> SDMA and EDMA are TI SoC specific DMA controllers. Their drivers have 
+> been maintained in the respective SoC folders till now.
+> arch/arm/plat-omap/dma.c
+> arch/arm/mach-davinci/dma.c
+> 
+> I have gone through the existing offload engine (DMA) drivers in 
+> drivers/dma which do slave transfers.
+> I would like to move SDMA and EDMA also to dmaengine framework.
+> 
+> I believe that even though the dmaengine framework addresses and 
+> supports most of the required use cases of a client driver to a DMA 
+> controller, some extensions are required in it to make it still more 
+> generic.
+> 
+> Current framework contains two APIs to prepare for slave transfers: 
+> 
+> struct dma_async_tx_descriptor *(*device_prep_slave_sg)(
+> 		struct dma_chan *chan, struct scatterlist *sgl,
+> 		unsigned int sg_len, enum dma_data_direction direction,
+> 		unsigned long flags);
+> 
+> struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
+> 		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+> 		size_t period_len, enum dma_data_direction direction);
+> 
+> and one control API. 
+> int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+> 		unsigned long arg);
+> 
+> A simple single buffer transfer (i.e. non sg transfer) can be done only
+> as a trivial case of the device_prep_slave_sg API. The client driver is
+> expected to prepare a sg list and provide to the dmaengine API for that
+> single buffer also.
+> 
+> In a slave transfer, the client has to define all the buffer related 
+> attributes and the peripheral related attributes. 
+> 
+> The above 2 APIs in the dmaengine framework expect all the 
+> peripheral/slave related attributes to be filled in the 
+> dma_slave_config data structure. 
+> struct dma_slave_config {
+>         enum dma_data_direction direction;
+>         dma_addr_t src_addr;
+>         dma_addr_t dst_addr;
+>         enum dma_slave_buswidth src_addr_width;
+>         enum dma_slave_buswidth dst_addr_width;
+>         u32 src_maxburst;
+>         u32 dst_maxburst;
+> };
+> 
+> This data structure is passed to the offload engine via the dma_chan 
+> data structure in its private pointer.
+No, this is passed thru control API you described above. Please read
+Documentation/dmaengine.txt
 
-On Thu, 9 Jun 2011 12:22:43 -0700 Greg KH <greg@kroah.com> wrote:
->
-> On Thu, Jun 09, 2011 at 11:41:27AM -0700, Greg KH wrote:
-> > > Also in several other files in drivers/staging/brcm80211/
-> > >=20
-> > > Also:
-> > >=20
-> > > drivers/staging/comedi/drivers.c: In function 'comedi_buf_alloc':
-> > > drivers/staging/comedi/drivers.c:505:37: error: 'PAGE_KERNEL_NOCACHE'=
- undeclared (first use in this function)
-> > > In file included from drivers/staging/comedi/drivers/addi_apci_035.c:=
-7:0:
-> > > drivers/staging/comedi/drivers/addi-data/addi_common.c: In function '=
-i_ADDI_Attach':
-> > > drivers/staging/comedi/drivers/addi-data/addi_common.c:2765:7: error:=
- implicit declaration of function 'virt_to_bus'
-> > >=20
-> > > (Also several other occurrences of that one)
-> >=20
-> > I'll fix this up, it looks just like a #include that needs to be added.
->=20
-> I've fixed all of these up, thanks for reporting them.
+> Now coming to the buffer related attributes, sg list is a nice way to 
+> represent a disjoint buffer; all the offload engines in drivers/dma 
+> create a descriptor for each of the contiguous chunk in the sg list 
+> buffer and pass it to the controller. 
+> 
+> But many a times a client may want to transfer from a single buffer to
+> the peripheral and most of the DMA controllers have the capability to 
+> transfer data in chunks/frames directly at a stretch. 
+> All the attributes of a buffer, which are required for the transfer 
+> can be programmed in single descriptor and submitted to the 
+> DMA controller. 
+> 
+> So I think the slave transfer API must also have a provision to pass 
+> the buffer configuration. The buffer attributes have to be passed 
+> directly as an argument in the prepare API, unlike dma_slave_config 
+> as they will be different for each buffer that is going to be 
+> transferred. 
+Can you articulate what attributes you are talking about. The
+dma_slave_config parameters don't represent buffer attributes. They
+represent the dma attributes on how you want to transfer. These things
+like bus widths, burst lengths are usually constant for the slave
+transfers, not sure why they should change per buffer?
 
-No, I still get these:
+> 
+> It is a stretch and impractical to use a highly segmented buffer (like
+> the one described below) in a sglist. This is because sg list itself 
+> is a representation of a disjoint buffer collection in terms of 
+> smaller buffers. Now then each of these smaller buffers can have 
+> different buffer configurations (like described below) and we are not 
+> going to go down that road now. 
+well thats the linux idea, you use sg-list to describe this
+segmentation...
 
-In file included from drivers/staging/comedi/drivers/addi_apci_035.c:7:0:
-drivers/staging/comedi/drivers/addi-data/addi_common.c: In function 'i_ADDI=
-_Attach':
-drivers/staging/comedi/drivers/addi-data/addi_common.c:2765:7: error: impli=
-cit declaration of function 'virt_to_bus'
+> 
+> Hence it makes sense to pass these buffer attributes for only a single
+> buffer transfer and not a sg list. 
+> This can be done by OPTION #1 
+> 1. Adding a pointer of the dma_buffer_config data structure in the 
+> device_prep_slave_sg API.
+> 2. Ensuring that it will be ignored if a sg list passed. 
+> Only when a single buffer is passed (in the sg list) then this buffer 
+> configuration will be used.
+> 3. Any client that wants to do a sg transfer can simply ignore this 
+> buffer configuration and pass NULL.
+> The main disadvantage of this option is that all the existing drivers 
+> need to be updated since the API signature is changed.
+> 
+> It might even be better to have a separate API for non sg transfers.
+> This is OPTION #2 
+> Advantages of this option are 
+> 1. No change required in the existing drivers that use 
+> device_prep_slave_sg API. 
+> 2. If any offload engine wants to prepare a simple buffer transfer 
+> differently and not as a trivial case of a sg list, 
+> this will be useful. 
+> I know this can be done using 2 different implementations inside the 
+> device_prep_slave_sg itself, but I think it's cleaner to have 
+> different APIs. I have provided the generic buffer configuration 
+> I can think of, here and also a new API definition, 
+> if it makes sense to have one. This buffer configuration might not 
+> be completely generic, and hence I ask all of you to please provide 
+> comments to improve it. 
+> 
+> Generic buffer description: 
+> A generic buffer can be split into number of frames which contain 
+> number of chunks inside them. The frames need not be contiguous, 
+> nor do the chunks inside a frame. 
+> 
+> -------------------------------------------------------------------
+>  | Chunk 0 |ICG| Chunk 1 |ICG| ... |ICG| Chunk n | Frame 0 
+> -------------------------------------------------------------------
+>  |		Inter Frame Gap			     | 
+> -------------------------------------------------------------------
+>  | Chunk 0 |ICG| Chunk 1 |ICG| ... |ICG| Chunk n | Frame 1 
+> -------------------------------------------------------------------
+>  |		Inter Frame Gap			     | 
+> -------------------------------------------------------------------
+>  |		........					     | 
+> -------------------------------------------------------------------
+>  |		Inter Frame Gap			     | 
+> -------------------------------------------------------------------
+>  | Chunk 0 |ICG| Chunk 1 |ICG| ... |ICG| Chunk n | Frame m 
+> -------------------------------------------------------------------
+> 
+> Note: ICG = Inter Chunk Gap.
+> 
+> struct dma_buffer_config {
+> 	u32 chunk_size; /* number of bytes in a chunk */
+> 	u32 frame_size; /* number of chunks in a frame */
+> 	/* u32 n_frames; number of frames in the buffer */
+> 	u32 inter_chunk_gap; /* number of bytes between end of a chunk 
+> 				and the start of the next chunk */ 
+> 	u32 inter_frame_gap; /* number of bytes between end of a frame 
+> 				and the start of the next frame */ 
+> 	bool sync_rate; /* 0 - a sync event is required from the 
+> 				peripheral to transfer a chunk 
+> 			1 - a sync event is required from the 
+> 				peripheral to transfer a frame */ 
+> };
+> 
+> The patch to add a new API for single buffer transfers alone: 
+> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> @@ -491,6 +492,10 @@ struct dma_device {
+> 		struct dma_chan *chan, struct scatterlist *sgl,
+> 		unsigned int sg_len, enum dma_data_direction direction,
+> 		unsigned long flags);
+> +	struct dma_async_tx_descriptor *(*device_prep_slave)(
+> +		struct dma_chan *chan, dma_addr_t buf_addr,
+> +		unsigned int buf_len, void *buf_prop,
+> +		enum dma_data_direction direction, unsigned long flags);
+> 	struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
+> 		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+> 		size_t period_len, enum dma_data_direction direction);
+> 
+> The number of frames (n_frames) can always be determined using all 
+> other values in the dma_buffer_config along with the 
+> buffer length (buf_len) passed in the API. 
+> n_frames = buf_len / (chunk_sixe * frame_size); 
+> 
+> Regards, 
+> Sundaram
+> 
+> -----Original Message-----
+> From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk] 
+> Sent: Thursday, June 09, 2011 6:17 PM
+> To: Raju, Sundaram
+> Cc: linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; davinci-linux-open-source@linux.davincidsp.com; linux-omap@vger.kernel.org
+> Subject: Re: [RFC] dmaengine: add new api for preparing simple slave transfer
+> 
+> Can you please re-post with sensible wrapping at or before column 72.
+> I'm not manually reformatting your entire message just so I can find
+> the relevant bits to reply to.
+> 
+> Thanks.
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-virt_to_bus is only defined for 32 bit powerpc (not 64 bit) (and maybe
-not at all on some architectures e.g. sparc).
 
-=46rom Documentation/DMA-API-HOWTO.txt:
-"All drivers should be using these interfaces with no exceptions.  It
-is planned to completely remove virt_to_bus() and bus_to_virt() as
-they are entirely deprecated.  Some ports already do not provide these
-as it is impossible to correctly support them."
+-- 
+~Vinod
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__10_Jun_2011_16_05_48_+1000_DYUVsR8WAGExXXZ.
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN8bQ8AAoJEDMEi1NhKgbsA1oH/2db3MrLp+uo+NKJji4Rzydk
-c4+0DUIiYbI7rHWVJK98/vfEdEnQbvT/Carl2ep6sJPXWgn0CH/PqlyVrzmH6Atd
-ixQsv6RhEwnYrzlZV4opUZ6CKNXgyYcKXSAFV9F2kXxKgJ2BI1sNUSHQpoH4nAM4
-Zr/OqtCzfVzCTcEctkuZ3Q3jU6nYY/jFaVnwM6nensnhY8ZzXGsmv30xNT8QfMY9
-iGeV7zf+NOzy5gRhPMvVbhxI3ghTVbfDy1OmKjAAM7Z71+pXjumDL9WnamL7ASDc
-VkKC0XiJ2GtwvuRyclDH/oET9mjGEALtDMO369T+sgMZ6/j9kJOzwRFRDW/s2zY=
-=5VPQ
------END PGP SIGNATURE-----
-
---Signature=_Fri__10_Jun_2011_16_05_48_+1000_DYUVsR8WAGExXXZ.--
