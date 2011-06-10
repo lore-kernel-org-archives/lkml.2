@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154Ab1FJAIj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 20:08:39 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47357 "EHLO
+	id S1757511Ab1FJALH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 20:11:07 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34790 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932065Ab1FJAIi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 20:08:38 -0400
-Date: Thu, 9 Jun 2011 17:08:04 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        efault@gmx.de, Arne Jansen <lists@die-jansens.de>
-Subject: Re: [PATCH 1/3] printk: Release console_sem after logbuf_lock
-Message-Id: <20110609170804.1b76e853.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LSU.2.00.1106091655560.2710@sister.anvils>
-References: <20110609130647.937204592@chello.nl>
-	<20110609131307.493181962@chello.nl>
-	<20110609130617.f8aca966.akpm@linux-foundation.org>
-	<20110609202707.GA28951@elte.hu>
-	<1307652883.2497.1028.camel@laptop>
-	<20110609140714.fc9ea187.akpm@linux-foundation.org>
-	<alpine.LSU.2.00.1106091655560.2710@sister.anvils>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	by vger.kernel.org with ESMTP id S1754972Ab1FJALF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 20:11:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110609214241.GA4849@sepie.suse.cz>
+References: <20110609214241.GA4849@sepie.suse.cz>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 9 Jun 2011 17:10:12 -0700
+Message-ID: <BANLkTim84t=yeqykZydEjHrVYGnO4xc5ew@mail.gmail.com>
+Subject: Re: [GIT] kbuild fixes for 3.0
+To: Michal Marek <mmarek@suse.cz>
+Cc: pefoley2@verizon.net, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jun 2011 16:57:29 -0700 (PDT)
-Hugh Dickins <hughd@google.com> wrote:
+On Thu, Jun 9, 2011 at 2:42 PM, Michal Marek <mmarek@suse.cz> wrote:
+>
+>      kbuild: Hack for depmod not handling X.Y versions
 
-> Does your mail below stir any useful memories?
+This doesn't seem to be enough, I still get (on F-14):
 
-Thanks.  I did have the email, but it didn't match any of my grep
-patterns.
+  sh /home/torvalds/v2.6/linux/arch/x86/boot/install.sh
+3.0-rc2-00251-g7f45e5cd1718-dirty arch/x86/boot/bzImage \
+  	System.map "/boot"
+  WARNING: Couldn't open directory
+/tmp/initramfs.Z9p0zm/lib/modules/3.0.0-rc2-00191-g4c1f683a4a34-dirty:
+No such file or directory
+  FATAL: Could not open
+/tmp/initramfs.Z9p0zm/lib/modules/3.0.0-rc2-00191-g4c1f683a4a34-dirty/modules.dep.temp
+for writing: No such file or directory
+  E: "depmod -a 3.0-rc2-00251-g7f45e5cd1718-dirty" failed.
 
-> Some notes:
+from "make install" when I try to remove the SUBLEVEL.
 
-Stupid thing doesn't explain the magical locking though :( I'm 99.9%
-sure that putting an up() inside a spinlock_irq()ed region was
-deliberate.
+As a result, the initrd is unusable, and has no modules in it.
 
-> - Being heartily sick of reverse-engineering interface information
->   from implementations, I have gratuitously added comments in several
->   random parts of the kernel.  Shoot me.
-
-hah.
+                Linus
