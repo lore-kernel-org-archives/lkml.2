@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758134Ab1FJVtM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 17:49:12 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:27402 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754736Ab1FJVtJ (ORCPT
+	id S1758127Ab1FJVnw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 17:43:52 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:38982 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754736Ab1FJVns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 17:49:09 -0400
-Date: Fri, 10 Jun 2011 23:40:47 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
-        Keith Packard <keithp@keithp.com>
-Subject: [PATCH] i915: Don't leak in i915_gem_shmem_pread_slow()..
-Message-ID: <alpine.LNX.2.00.1106102336560.21722@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 10 Jun 2011 17:43:48 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-4.tower-160.messagelabs.com!1307742213!25410744!22
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.99]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kernel/time/jiffies.c: local symbols should be static
+Date: Fri, 10 Jun 2011 14:43:31 -0700
+User-Agent: KMail/1.9.9
+CC: <torbenh@gmx.de>, <tglx@linutronix.de>, <lucas.demarchi@profusion.mobi>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201106101443.31588.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems to me that we are leaking 'user_pages' in 
-drivers/gpu/drm/i915/i915_gem.c::i915_gem_shmem_pread_slow() if 
-read_cache_page_gfp() fails.
+The symbol 'clocksource_jiffies' is not used outside this file and
+should be marked static.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Torben Hohn <torbenh@gmx.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+
 ---
- i915_gem.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
 
- Untested patch - user be warned.
-
-diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index 12d3257..4df3272 100644
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -465,8 +465,10 @@ i915_gem_shmem_pread_slow(struct drm_device *dev,
+diff --git a/kernel/time/jiffies.c b/kernel/time/jiffies.c
+index a470154..60e3ff7 100644
+--- a/kernel/time/jiffies.c
++++ b/kernel/time/jiffies.c
+@@ -58,7 +58,7 @@ static cycle_t jiffies_read(struct clocksource *cs)
+ 	return (cycle_t) jiffies;
+ }
  
- 		page = read_cache_page_gfp(mapping, offset >> PAGE_SHIFT,
- 					   GFP_HIGHUSER | __GFP_RECLAIMABLE);
--		if (IS_ERR(page))
-+		if (IS_ERR(page)) {
-+			drm_free_large(user_pages);
- 			return PTR_ERR(page);
-+		}
- 
- 		if (do_bit17_swizzling) {
- 			slow_shmem_bit17_copy(page,
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+-struct clocksource clocksource_jiffies = {
++static struct clocksource clocksource_jiffies = {
+ 	.name		= "jiffies",
+ 	.rating		= 1, /* lowest valid rating*/
+ 	.read		= jiffies_read,
