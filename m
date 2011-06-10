@@ -1,118 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006Ab1FJLfo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 07:35:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48143 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755715Ab1FJLfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 07:35:42 -0400
-Date: Fri, 10 Jun 2011 07:37:02 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Martijn Uffing <mp3project@sarijopen.student.utwente.nl>
-Cc: Connor Hansen <cmdkhh@gmail.com>, linux-cifs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sean finney <seanius@seanius.net>
-Subject: Re: [OOPS] 3.0-rc1 cifs
-Message-ID: <20110610073702.061bc014@corrin.poochiereds.net>
-In-Reply-To: <Pine.LNX.4.64.1106100243370.2168@sarijopen.student.utwente.nl>
-References: <Pine.LNX.4.64.1106092211500.19687@sarijopen.student.utwente.nl>
-	<20110609183045.01f6f9fc@tlielax.poochiereds.net>
-	<BANLkTimPqmkNJMaJE2_C5zD8ESFOEM3=hg@mail.gmail.com>
-	<Pine.LNX.4.64.1106100243370.2168@sarijopen.student.utwente.nl>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756477Ab1FJMYH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 08:24:07 -0400
+Received: from smtp.tele.fi ([192.89.123.25]:51735 "EHLO
+	vulpes-int.media.sonera.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755452Ab1FJMYE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 08:24:04 -0400
+X-Greylist: delayed 2137 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Jun 2011 08:24:04 EDT
+X-Originating-Ip: [194.89.68.22]
+Date: Fri, 10 Jun 2011 14:48:21 +0300
+From: Pasi =?iso-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>
+To: Tim Deegan <Tim.Deegan@citrix.com>
+Cc: Igor Mammedov <imammedo@redhat.com>, Stefano@phlegethon.org,
+        Paul Menage <menage@google.com>, xen-devel@lists.xensource.com,
+        Keir Fraser <keir@xen.org>,
+        Stabellini <stefano.stabellini@eu.citrix.com>,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Keir Fraser <keir.xen@gmail.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA@phlegethon.org, Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+Subject: Re: [Xen-devel] Possible shadow bug
+Message-ID: <20110610114821.GB32595@reaktio.net>
+References: <4DE8D50F.1090406@redhat.com> <BANLkTinMamg_qesEffGxKu3QkT=zyQ2MRQ@mail.gmail.com> <4DEE26E7.2060201@redhat.com> <20110608123527.479e6991.kamezawa.hiroyu@jp.fujitsu.com> <4DF0801F.9050908@redhat.com> <alpine.DEB.2.00.1106091311530.12963@kaball-desktop> <20110609150133.GF5098@whitby.uk.xensource.com> <4DF0F90D.4010900@redhat.com> <20110610100139.GG5098@whitby.uk.xensource.com> <20110610101011.GH5098@whitby.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110610101011.GH5098@whitby.uk.xensource.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Jun 2011 02:57:21 +0200 (CEST)
- Uffing <mp3project@sarijopen.student.utwente.nl> wrote:
-
+On Fri, Jun 10, 2011 at 11:10:11AM +0100, Tim Deegan wrote:
+> At 11:01 +0100 on 10 Jun (1307703699), Tim Deegan wrote:
+> > Actually, looking at the disassembly you posted, it looks more like it
+> > might be an emulator bug in Xen; if Xen finds itself emulating the IMUL
+> > instruction and either gets the logic wrong or does the memory access
+> > wrong, it could cause that failure.  And one reason that Xen emulates
+> > instructions is if the memory operand is on a pagetable that's shadowed
+> > (which might be a page that was recently a pagetable). 
+> > 
+> > ISTR that even though the RHEL xen reports a 3.0.x version it has quite
+> > a lot of backports in it.  Does it have this patch?
+> > http://hg.uk.xensource.com/xen-3.1-testing.hg/rev/e8fca4c42d05
 > 
-> <snip>
-> > call in get_dfs_path()
-> > rc = CIFSTCon(xid, pSesInfo, temp_unc, NULL, nls_codepage);
-> >
-> > function header for CIFSTCon
-> > int  CIFSTCon(unsigned int xid, struct cifs_ses *ses,
-> >          const char *tree, struct cifs_tcon *tcon,
-> >          const struct nls_table *nls_codepage)
-> >
-> > get_dfs_path() is passing struct cifs_tcon *tcon as NULL
-> >
-> > from config:  CONFIG_CIFS_WEAK_PW_HASH=y
-> >
-> > in CIFSTCon
-> >
-> > #ifdef CONFIG_CIFS_WEAK_PW_HASH
-> > 3222                 if ((global_secflags & CIFSSEC_MAY_LANMAN) &&
-> > 3223                     (ses->server->secType == LANMAN))
-> > 3224                         calc_lanman_hash(tcon->password,
-> > ses->server->cryptkey,
-> >
-> > in calc_lanman_hash tcon is dereferenced(tcon->password) without being
-> > checked if null
-> >
-> > 3225                                          ses->server->sec_mode &
-> > 3226                                             SECMODE_PW_ENCRYPT ?
-> > true : false,
-> > 3227                                          bcc_ptr);
-> > 3228                 else
-> > 3229 #endif /* CIFS_WEAK_PW_HASH */
-> >
-> > Connor
-> 
-> 
-> Ave all
-> 
-> I recompiled  kernel 3.0-rc1 (hadn't enabled CONFIG_DEBUG_INFO=y) and put 
-> the oops (with the new adresses) through gdb per instruction of Jeff. And 
-> Connor was spot on!
-> 
-> <qoute oops>
-> BUG: unable to handle kernel NULL pointer dereference at 00000000000000a0
-> IP: [<ffffffffa041e286>] CIFSTCon+0xf6/0x4d0 [cifs]
-> </qoute oops>
-> 
-> <qoute gdb>
-> This GDB was configured as "x86_64-linux-gnu".
-> For bug reporting instructions, please see:
-> <http://www.gnu.org/software/gdb/bugs/>...
-> Reading symbols from 
-> /lib/modules/3.0.0-rc1-debug/kernel/fs/cifs/cifs.ko...done.
-> (gdb) list *(CIFSTCon+0xf6)
-> 0xc2b6 is in CIFSTCon (fs/cifs/connect.c:3230).
-> 3225                                             ses->server->sec_mode &
-> 3226                                                SECMODE_PW_ENCRYPT ? 
-> true : false,
-> 3227                                             bcc_ptr);
-> 3228                    else
-> 3229    #endif /* CIFS_WEAK_PW_HASH */
-> 3230                    rc = SMBNTencrypt(tcon->password, 
-> ses->server->cryptkey,
-> 3231                                            bcc_ptr);
-> 3232
-> 3233                    bcc_ptr += CIFS_AUTH_RESP_SIZE;
-> 3234                    if (ses->capabilities & CAP_UNICODE) {
-> (gdb)
-> </qoute gdb>
+> Oops, that URL doesn't work; I meant this:
+> http://xenbits.xen.org/xen-3.1-testing.hg/rev/e8fca4c42d05
 > 
 
-(cc'ing Sean F. since I suspect this regression is due to his changes)
+RHEL5 Xen (hypervisor) reports version as 3.1.2-xyz..
 
-Thanks for the analysis, Martijn and Connor...
+-- Pasi
 
-What sort of server are you mounting here? It looks like it's using
-share-level security, so it's either very old or is a samba server
-configured that way.
-
-I suspect that commit c1508ca236 is the culprit. With that, we call
-into expand_dfs_referral on every mount attempt. Previously we only
-called into there when we got back  an EREMOTE error and that would
-have been unlikely on a share-level security connection.
-
-I think there are several possible solutions, but since Sean was in
-here most recently I'd like to have his opinion.
-
--- 
-Jeff Layton <jlayton@redhat.com>
