@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758091Ab1FJUtw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 16:49:52 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45824 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758004Ab1FJUts (ORCPT
+	id S1758121Ab1FJVFT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 17:05:19 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:39108 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758032Ab1FJVFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 16:49:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=U8TBrWc72Z5RfBLR5W/65l68bAw+yEa4xsTf5I+m2V1zRenTpGf2jPt/RvW9QdTGxY
-         4ZeIdUzObETI3VneqRQTSVzedXefEIq9kih0tw1cW4rYpopx44w4ddtg1L3Wqz4004F2
-         LAjESlJ4easmFciXB3yBfGGQMGb/gOhBrWnNY=
+	Fri, 10 Jun 2011 17:05:00 -0400
+X-Sasl-enc: R4SR3sFI8pVWK6HhtQuLcBfjFsr3qhpkFYlKvq1UY7MC 1307739899
+Date: Fri, 10 Jun 2011 13:50:35 -0700
+From: Greg KH <greg@kroah.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libusb-devel@lists.sourceforge.net,
+        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
+        hector@marcansoft.com, Jan Kiszka <jan.kiszka@siemens.com>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Hans de Goede <hdegoede@redhat.com>
+Subject: Re: USB mini-summit at LinuxCon Vancouver
+Message-ID: <20110610205035.GC13450@kroah.com>
+References: <20110610002103.GA7169@xanatos>
+ <20110610031805.GA15774@kroah.com>
+ <20110610194815.GA6646@xanatos>
 MIME-Version: 1.0
-In-Reply-To: <4DF1D136.4050903@jp.fujitsu.com>
-References: <4df13d2627304cd979@agluck-desktop.sc.intel.com>
-	<4DF1D136.4050903@jp.fujitsu.com>
-Date: Fri, 10 Jun 2011 13:49:47 -0700
-X-Google-Sender-Auth: c1eSlt8I6MjA_l1-YdxzOHPfXVo
-Message-ID: <BANLkTi=1nQy03T4LnfHYoB8LBVgFbgaVXA@mail.gmail.com>
-Subject: Re: [PATCH 09/10] MCE: run through processors with more severe
- problems first
-From: Tony Luck <tony.luck@intel.com>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
-        linux-kernel@vger.kernel.org, "Huang, Ying" <ying.huang@intel.com>,
-        Avi Kivity <avi@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110610194815.GA6646@xanatos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/6/10 Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>:
-> Well, I agree about the point that reordering is required to handle
-> shared banks.
+On Fri, Jun 10, 2011 at 12:48:15PM -0700, Sarah Sharp wrote:
+> On Thu, Jun 09, 2011 at 08:18:05PM -0700, Greg KH wrote:
+> > On Thu, Jun 09, 2011 at 05:21:03PM -0700, Sarah Sharp wrote:
+> > > Topic 1
+> > > -------
+> > > 
+> > > The KVM folks suggested that it would be good to get USB and
+> > > virtualization developers together to talk about how to virtualize the
+> > > xHCI host controller.  The xHCI spec architect worked closely with
+> > > VMWare to get some extra goodies in the spec to help virtualization, and
+> > > I'd like to see the other virtualization developers take advantage of
+> > > that.  I'd also like us to hash out any issues they have been finding in
+> > > the USB core or xHCI driver during the virtualization effort.
+> > 
+> > Do people really want to virtualize the whole xHCI controller, or just
+> > specific ports or devices to the guest operating system?
+> 
+> A host OS could chose to virtualize the whole xHCI controller if it
+> wanted to.  That's part of the reason why xHCI does all the bandwidth
+> checking in hardware, not in software.
 
-Thanks (and thanks for taking the time to look at all of this series
-to provide such good feedback)
+And here I thought it did that so it would be "correct" :)
 
-> I think it is better to put this change in early of the series.
+> 
+> > If just specific ports, would something like usbip be better for virtual
+> > machines, with the USB traffic going over the network connection between
+> > the guest/host?
+> 
+> It could be done that way too.  But that doesn't help if you're trying
+> to run Windows under Linux, right?  Only if all the guest OSes use the
+> same USB IP protocol then it would work.
 
-Several of the early parts are position independent w.r.t. each
-other - I'm not sure if there is some strong benefit to having
-them in any particular order.
+usbip works on Windows as well as Linux.
 
-> I don't like to have multiple cpumasks here, notably one is just an
-> inversion of another...
+But how could you run Windows with a xHCI controller in a guest, as
+Windows has no xHCI driver?  What would it expect to see?
 
-I wasn't completely thrilled with the way this turned out either.
+> > > Hope to see you there!
+> > 
+> > Thanks for putting this together.
+> > 
+> > Do we need to sign up somewhere to give the organizers a sense of how
+> > many people will be attending?
+> 
+> I private ack by email would be great.  Or you can ack by facebook:
+> https://www.facebook.com/event.php?eid=229532200405657  I could add the
+> event in upcoming.yahoo.com if anyone uses that.
 
-> How about using severity-leveling?
-> Pick cpus with PANIC level first, then AR, AO ...
+Nice try, but I'm still not going to join facebook...
 
-That sounds like I need even more masks (or lists).
-
-> Or how about checking rip in each mces_seen?
-
-This is equivalent to what I did - but I think the code
-will be cleaner. I'll give it a try.
-
--Tony
