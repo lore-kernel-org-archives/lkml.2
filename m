@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab1FJI6q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 04:58:46 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:57146 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab1FJI6p convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 04:58:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=c0oc5giCrotL4NKBEBDzcsDO6naGYPyxdgSp9C0YqqJw8QCE8z5cwXNd0GABWQbVWJ
-         McU6JRQADDa5t4GEBcuA==
+	id S1754877Ab1FJJfd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 05:35:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29799 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754498Ab1FJJf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 05:35:29 -0400
+Date: Fri, 10 Jun 2011 11:00:12 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: "Amir G." <amir73il@users.sourceforge.net>
+cc: Lukas Czerner <lczerner@redhat.com>,
+        Yongqiang Yang <xiaoqiangnk@gmail.com>, linux-ext4@vger.kernel.org,
+        tytso@mit.edu, linux-kernel@vger.kernel.org, sandeen@redhat.com
+Subject: Re: [PATCH v1 00/30] Ext4 snapshots
+In-Reply-To: <BANLkTinEJ6235sPNz_f92nfN0ac4qSnHtw@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1106101044350.4502@dhcp-27-109.brq.redhat.com>
+References: <1307459283-22130-1-git-send-email-amir73il@users.sourceforge.net> <alpine.LFD.2.00.1106071735100.11385@dhcp-27-109.brq.redhat.com> <BANLkTikAB-RDDS8PMMrFK-OuY6PuavBixA@mail.gmail.com> <alpine.LFD.2.00.1106081114240.5026@dhcp-27-109.brq.redhat.com>
+ <BANLkTi=T1OtyRSWNTA6xhkTy5uaHWqA_XA@mail.gmail.com> <alpine.LFD.2.00.1106081716200.6609@dhcp-27-109.brq.redhat.com> <BANLkTikUXdvMQROYEdxnyfcPuB0e9ozMOg@mail.gmail.com> <BANLkTinU9Hegr3iA5it2vNjE_RYbB+8+RQ@mail.gmail.com> <BANLkTik9Mnq5yqK795pxyr8SK-3EOzzNhA@mail.gmail.com>
+ <alpine.LFD.2.00.1106090834270.4138@dhcp-27-109.brq.redhat.com> <BANLkTi=fugrRE0P5m8nMPrH_kZqPZB7ajA@mail.gmail.com> <alpine.LFD.2.00.1106091012030.4138@dhcp-27-109.brq.redhat.com> <BANLkTin0RKZbDmB1movombH9o4HDpTnvFw@mail.gmail.com>
+ <alpine.LFD.2.00.1106091443370.4138@dhcp-27-109.brq.redhat.com> <BANLkTinEJ6235sPNz_f92nfN0ac4qSnHtw@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110607013630.GF17026@somewhere.redhat.com>
-References: <1307329858-14999-3-git-send-email-fweisbec@gmail.com>
-	<rcu-splat-split-printk@mdm.bga.com>
-	<20110606181021.GL3066@linux.vnet.ibm.com>
-	<20110607001905.GE17026@somewhere.redhat.com>
-	<20110607004250.GZ3066@linux.vnet.ibm.com>
-	<20110607013630.GF17026@somewhere.redhat.com>
-Date: Fri, 10 Jun 2011 01:58:42 -0700
-Message-ID: <BANLkTik8NFKjcCHZ0EoWqRve-+fCj53vP=_71a=q9A-7-Nmwow@mail.gmail.com>
-Subject: Re: [1/4] rcu: Detect uses of rcu read side in extended quiescent states
-From: Michel Lespinasse <walken@google.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Milton Miller <miltonm@bga.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 6, 2011 at 6:36 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> Ok but that only improves the rcu debugging. What about instead improving
-> might_sleep() to also work in !PREEMPT, so that it profits to any detection
-> of forbidden sleeping (sleep inside spinlock, preempt_disable, might_fault, etc...)
->
-> We could define a new config:
->
-> config PREEMPT_COUNT
->       default PREEMPT || DEBUG_SPINLOCK_SLEEP
->
-> and build preempt_disable()/preempt_enable() on top of that instead
-> of using CONFIG_PREEMPT directly.
->
-> Does that look sane?
+On Fri, 10 Jun 2011, Amir G. wrote:
 
-Yes, I think this would be helpful.
+--snip--
+> >
+> >>
+> >>
+> >> >
+> >> > Granted, I have to take a look at the multisnap code, to see what it can
+> >> > do and compare it with ext4 snapshots, because really, if it is good
+> >> > enough and you will be able to do snapshotting backups as you do with
+> >> > your approach, I do not see the reason why to complicate our life in
+> >> > ext4.
+> >> >
+> >>
+> >> I don't know how you intend to determine if dm-multisnap is 'good enough'.
+> >> I don't claim to have the capability myself to determine if ext4 snapshots
+> >> are 'good enough'.
+> >> I just try to present the technical differences between the 3 solutions
+> >> (LVM,ext4,btrfs) and claim that each have their advantages and disadvantages
+> >> over others.
+> >> I wish more sys admins and end users would provide feedback, though I don't
+> >> know how many of them are following LKML.
+> >
+> > I do. When it can do long lived snapshots without any obvious headaches
+> > it is good enough. Your only contra argument was that lvm snapshotting
+> > is slow, which is not that big argument now when we have multisnap
+> > almost ready. I am not even talking about features, because clearly
+> > mutlisnap has superset of the features that ext4 does - no I am not
+> > counting per-file or per-directory snapshotting because clearly those
+> > are just hacks and it was not designed that way.
+> >
+> 
+> Hi Lukas,
+> 
+> I am very glad to have you as my reviewer and critic :-)
+> I am saying that with all honesty, because I know that you are impartial
+> and have no anti-ext4 agenda.
+> 
+> LVM multisnap does look like a big leap forward, but you should not
+> be blinded by the promised feature, before you inspect the implementation,
+> the same as you are doing to ext4 snapshots now...
+> 
+> I could suggest that you put your root fs on a QCOW2 file exported as NBD.
+> That would give you both thin provisioning and snapshots, but you know
+> perfectly well, that this is not a 'good enough' solution.
+> I'm not saying that LVM is comparable to QCOW2 virtual volume.
+> I'm just saying we (included myself) should carefully examine the alternatives
+> before make a ruling against one of them.
+> 
+> Amir.
+> 
 
-I actually sent out a patch for that about a year ago - message title
-was "Stronger CONFIG_DEBUG_SPINLOCK_SLEEP without CONFIG_PREEMPT".
-However that code has rotted since, and my attempt at a trivial port
-ended up spewing complaints in dmesg at boot time...
+Hi Amir,
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+that is why I spoke with several dm people and all of them had the same
+opinion. When you are not using the advantage of being at fs level,
+there is no reason to have shapshoting at this level.
+
+And no, I am not blinded. I am trying to understand why is multisnap a
+huge win everyone is saying, so I already asked ejt to step in and
+give us an overview on how dm-multisnap works and why is it better
+than the old implementation. Also I am trying it myslef, and so far
+it works quite well. I might have some numbers later.
+
+Thanks!
+-Lukas
