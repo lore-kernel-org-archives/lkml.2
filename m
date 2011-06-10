@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab1FJDbQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 23:31:16 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35714 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008Ab1FJDbP (ORCPT
+	id S1753542Ab1FJDcF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 23:32:05 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48590 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466Ab1FJDcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 23:31:15 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DF18FF0.7010503@jp.fujitsu.com>
-Date: Fri, 10 Jun 2011 12:30:56 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	Thu, 9 Jun 2011 23:32:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=E3wRSR5+eIERDUqaMEVlpOaIkHKHRiK860ZfzPo6C2EVjjCeJ/VA9Gf4FUa2H16jo4
+         w55yMYAHTxWwBkBgcNzzRXcY0Hxrsh9lC86Sm6cZz75Cbx15XWlm+tpnRXKgNAJB8Xf1
+         qD14YTuTPe43C7FnzGCftnlgBTvVHAzogHOwI=
+Message-ID: <4DF1902A.1040305@gmail.com>
+Date: Fri, 10 Jun 2011 13:31:54 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: peterz@infradead.org
-CC: dvhart@linux.intel.com, david@rgmadvisors.com, kyle@moffetthome.net,
-        luto@mit.edu, eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
-        sbohrer@rgmadvisors.com, zvonler@rgmadvisors.com, hughd@google.com,
-        tglx@linutronix.de, mingo@elte.hu
-Subject: Re: Change in functionality of futex() system call.
-References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>	 <1307373819.3098.40.camel@edumazet-laptop>	 <1307376672.2322.167.camel@twins>	<1307376989.2322.171.camel@twins>	 <1307377349.3098.65.camel@edumazet-laptop>	 <1307377782.2322.183.camel@twins>	 <1307378564.3098.67.camel@edumazet-laptop>	 <4DED1421.5000300@linux.intel.com>	 <1307383898.3098.90.camel@edumazet-laptop>	<4DED976C.90009@linux.intel.com>	 <4DEE3944.5020005@mit.edu>	<1307462300.3091.39.camel@edumazet-laptop>	 <BANLkTinyuHUGXACJYUT241g8rzg6AzPBiA@mail.gmail.com>	 <BANLkTinHEyRnnJqB=GTwBOAb6aRaHnjQLQ@mail.gmail.com>	 <BANLkTi=uQmePFOJUx=bdTsnFuFa+ZaYqVw@mail.gmail.com>	 <BANLkTi=vwJBgkKSY_Cq_jQS-71gH6uOPaw@mail.gmail.com>	 <BANLkTinL60RXZNH1QW9NdrTv10TckgWFcg@mail.gmail.com>	 <4DEFA18A.2000808@linux.intel.com>  <4DF0B072.8060204@jp.fujitsu.com>	 <1307621110.3941.78.camel@twins> <1307642307.3941.92.camel@twins>
-In-Reply-To: <1307642307.3941.92.camel@twins>
-Content-Type: text/plain; charset=UTF-8
+To: Joe Perches <joe@perches.com>
+CC: Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+        Andre Renaud <andre@bluewatersys.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Victor <avictor.za@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, Anton Vorontsov <cbou@mail.ru>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, trivial@kernel.org
+Subject: Re: [PATCH trival/tree-wide] Change Ryan Mallon's email address across
+ the kernel
+References: <1307661170-9325-1-git-send-email-rmallon@gmail.com>	 <20110610025532.GE26006@linux-sh.org>  <4DF189F2.3040009@gmail.com>	 <1307675512.20439.2.camel@Joe-Laptop>  <4DF18BDC.8010306@gmail.com> <1307676240.20439.9.camel@Joe-Laptop>
+In-Reply-To: <1307676240.20439.9.camel@Joe-Laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/10 2:58), Peter Zijlstra wrote:
-> On Thu, 2011-06-09 at 14:05 +0200, Peter Zijlstra wrote:
->> On Thu, 2011-06-09 at 20:37 +0900, KOSAKI Motohiro wrote:
->>> 1) check the pte of the target address is RW attribute.
->>>  2-1) if yes, it has no COW chance. we can safely use gup result.
->>>  2-2) if no, we have to fallback slow vma walk. maybe, it's okey.
->>>       both RO mappings and COW are rare situation. 
->>
->> Not so, clean file pages are RO, even if the vma is writable. We use the
->> fault to track dirty state with.
-> 
-> Why can't something like
-> http://marc.info/?l=linux-kernel&m=130737669810421 work once you restore
-> the rw argument?
+On 10/06/11 13:24, Joe Perches wrote:
+> On Fri, 2011-06-10 at 13:13 +1000, Ryan Mallon wrote:
+>> On 10/06/11 13:11, Joe Perches wrote:
+>>> On Fri, 2011-06-10 at 13:05 +1000, Ryan Mallon wrote:
+>>>> On 10/06/11 12:55, Paul Mundt wrote:
+>>>>> On Fri, Jun 10, 2011 at 09:12:50AM +1000, Ryan Mallon wrote:
+>>>>>> I no longer work at Bluewater Systems. Update my email address accordingly.
+>>>>> Is this sort of churn really necessary?
+>>> get_maintainer uses the name and address in the first seen
+>>> commit matching on the full name where possible.
+>> Okay, what is the correct fix then so that people get the right email
+>> address for me?
+> I believe updating the MAINTAINERS file and
+> authoring and committing patches that take
+> your email address out of files works well.
 
-Yeah, I agree this is best way. Private RO mappings is not sane and no real
-world users.
+If I strip my email address, but leave my name and copyright in the 
+files the patch will have the same amount of churn right?
 
+> Some think that it's better to keep current
+> email addresses in the files.  I think it
+> has to do with European data retention laws.
+>
+> Not sure if that applies to you.
+
+I basically just want email to arrive at the correct address. I can 
+catch misdirected stuff which gets Cc'ed to a mailing list, but 
+sometimes people send me things off list which will just get lost.
+
+~Ryan
 
