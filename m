@@ -1,90 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab1FJOTQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 10:19:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59898 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756921Ab1FJOTN convert rfc822-to-8bit (ORCPT
+	id S1757115Ab1FJOTB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 10:19:01 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:59364 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756586Ab1FJOS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 10:19:13 -0400
-Subject: Re: [PATCH tip/core/rcu 01/28] rcu: Simplify curing of load woes
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org
-In-Reply-To: <1307561407-13809-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20110608192943.GA13211@linux.vnet.ibm.com>
-	 <1307561407-13809-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	Fri, 10 Jun 2011 10:18:59 -0400
+Message-ID: <4DF227CF.4080807@tilera.com>
+Date: Fri, 10 Jun 2011 10:18:55 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>, <monstr@monstr.eu>,
+        <lethal@linux-sh.org>, <davem@davemloft.net>, <tglx@linutronix.de>,
+        <mingo@redhat.com>, <hpa@zytor.com>, <damm@opensource.se>,
+        <arnd@arndb.de>, <hans.rosenfeld@amd.com>, <len.brown@intel.com>,
+        <borislav.petkov@amd.com>, <tj@kernel.org>
+Subject: Re: [PATCH v3] cpuinfo_op: consolidate extern declaration
+References: <201106081559.42931.hartleys@visionengravers.com>
+In-Reply-To: <201106081559.42931.hartleys@visionengravers.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 10 Jun 2011 16:18:32 +0200
-Message-ID: <1307715512.3941.168.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-08 at 12:29 -0700, Paul E. McKenney wrote:
-> Make the functions creating the kthreads wake them up.  Leverage the
-> fact that the per-node and boost kthreads can run anywhere, thus
-> dispensing with the need to wake them up once the incoming CPU has
-> gone fully online.
+On 6/8/2011 6:59 PM, H Hartley Sweeten wrote:
+> All the architectures supported by the kernel also support
+> /proc/cpuinfo. Only a couple actually declare the seq_operations
+> as extern. All the others will produce a sparse warning like:
+>
+> warning: symbol 'cpuinfo_op' was not declared. Should it be static?
+>
+> Fix all the warnings and consolidate the declaration by putting it
+> in <linux/seq_file.h>.
+>
+> [...]
+> --- a/arch/tile/include/asm/processor.h
+> +++ b/arch/tile/include/asm/processor.h
 
-Indeed, I failed to notice the node and boost threads weren't bound.
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> ---
->  kernel/rcutree.c        |   65 +++++++++++++++-------------------------------
->  kernel/rcutree_plugin.h |   11 +-------
->  2 files changed, 22 insertions(+), 54 deletions(-)
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 4cc6a94..36e79d2 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -1634,6 +1634,20 @@ static int rcu_cpu_kthread(void *arg)
->   * to manipulate rcu_cpu_kthread_task.  There might be another CPU
->   * attempting to access it during boot, but the locking in kthread_bind()
->   * will enforce sufficient ordering.
-> + *
-> + * Please note that we cannot simply refuse to wake up the per-CPU
-> + * kthread because kthreads are created in TASK_UNINTERRUPTIBLE state,
-> + * which can result in softlockup complaints if the task ends up being
-> + * idle for more than a couple of minutes.
-> + *
-> + * However, please note also that we cannot bind the per-CPU kthread to its
-> + * CPU until that CPU is fully online.  We also cannot wait until the
-> + * CPU is fully online before we create its per-CPU kthread, as this would
-> + * deadlock the system when CPU notifiers tried waiting for grace
-> + * periods.  So we bind the per-CPU kthread to its CPU only if the CPU
-> + * is online.  If its CPU is not yet fully online, then the code in
-> + * rcu_cpu_kthread() will wait until it is fully online, and then do
-> + * the binding.
->   */
->  static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
->  {
-> @@ -1646,12 +1660,14 @@ static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
->         t = kthread_create(rcu_cpu_kthread, (void *)(long)cpu, "rcuc%d", cpu);
->         if (IS_ERR(t))
->                 return PTR_ERR(t);
-> -       kthread_bind(t, cpu);
-> +       if (cpu_online(cpu))
-> +               kthread_bind(t, cpu);
->         per_cpu(rcu_cpu_kthread_cpu, cpu) = cpu;
->         WARN_ON_ONCE(per_cpu(rcu_cpu_kthread_task, cpu) != NULL);
-> -       per_cpu(rcu_cpu_kthread_task, cpu) = t;
->         sp.sched_priority = RCU_KTHREAD_PRIO;
->         sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
-> +       per_cpu(rcu_cpu_kthread_task, cpu) = t;
-> +       wake_up_process(t); /* Get to TASK_INTERRUPTIBLE quickly. */
->         return 0;
->  } 
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-I'm not quite seeing how this is working though, I cannot find any code
-in rcu_cpu_kthread() that sets the thread affinity (not a hunk in this
-patch that adds it).
+
