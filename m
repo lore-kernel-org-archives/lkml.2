@@ -1,62 +1,396 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab1FJGwI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 02:52:08 -0400
-Received: from ixqw-mail-out.ixiacom.com ([66.77.12.12]:1264 "EHLO
-	ixqw-mail-out.ixiacom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752332Ab1FJGwE (ORCPT
+	id S1752891Ab1FJGrD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 02:47:03 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:21267 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752332Ab1FJGrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 02:52:04 -0400
-X-Greylist: delayed 320 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Jun 2011 02:52:04 EDT
-Message-ID: <4DF1BDB4.20602@ixiacom.com>
-Date: Fri, 10 Jun 2011 09:46:12 +0300
-From: Daniel Baluta <dbaluta@ixiacom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	Fri, 10 Jun 2011 02:47:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=rFsHlI3PUJndb5n5igKHog7OMDzThbeqZuzrGF6u/vLTfAmaiPYnnqGTPabvTr46qA
+         +BuAgNXv3zZdR5YvBvnA==
+Date: Thu, 9 Jun 2011 23:46:50 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH v2 6/7] tmpfs: simplify filepage/swappage
+In-Reply-To: <alpine.LSU.2.00.1106091539140.2200@sister.anvils>
+Message-ID: <alpine.LSU.2.00.1106092345090.12180@sister.anvils>
+References: <alpine.LSU.2.00.1106091529060.2200@sister.anvils> <alpine.LSU.2.00.1106091539140.2200@sister.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: Maxin B John <maxin.john@gmail.com>
-CC: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Documentation: update kmemleak architecture support info
-References: <20110609185957.GA3250@maxin>
-In-Reply-To: <20110609185957.GA3250@maxin>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2011 09:59 PM, Maxin B John wrote:
-> Kmemleak now supports s390 and mips too.
->
-> Signed-off-by: Maxin B. John<maxin.john@gmail.com>
-> ---
-> diff --git a/Documentation/kmemleak.txt b/Documentation/kmemleak.txt
-> index 090e6ee..82833ff 100644
-> --- a/Documentation/kmemleak.txt
-> +++ b/Documentation/kmemleak.txt
-> @@ -11,7 +11,8 @@ with the difference that the orphan objects are not freed but only
->   reported via /sys/kernel/debug/kmemleak. A similar method is used by the
->   Valgrind tool (memcheck --leak-check) to detect the memory leaks in
->   user-space applications.
-> -Kmemleak is supported on x86, arm, powerpc, sparc, sh, microblaze and tile.
-> +Kmemleak is supported on x86, arm, powerpc, sparc, sh, microblaze, tile,
-> +s390 and mips.
->
->   Usage
->   -----
-Hello,
+We can now simplify shmem_getpage_gfp(): there is no longer a dilemma
+of filepage passed in via shmem_readpage(), then swappage found, which
+must then be copied over to it.
 
-I am fine with this. What do you say about having
-something generic like:
+Although at first it's tempting to replace the **pagep arg by returning
+struct page *, that makes a mess of IS_ERR_OR_NULL(page)s in all the
+callers, so leave as is.
 
-"Please check DEBUG_KMEMLEAK dependencies in lib/Kconfig.debug
-for supported platforms"
+Insert BUG_ON(!PageUptodate) when we find and lock page: some of the
+complication came from uninitialized pages inserted into filecache
+prior to readpage; but now we're in control, and only release pagelock
+on filecache once it's uptodate (if an error occurs in reading back
+from swap, the page remains in swapcache, never moved to filecache).
 
-In this way, there's no need to update kememleak.txt everytime
-when a new platform is supported.
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
+ mm/shmem.c |  237 +++++++++++++++++++++++----------------------------
+ 1 file changed, 108 insertions(+), 129 deletions(-)
 
-
-thanks,
-Daniel.
+--- linux.orig/mm/shmem.c	2011-06-09 23:17:08.000000000 -0700
++++ linux/mm/shmem.c	2011-06-09 23:31:44.056402814 -0700
+@@ -1246,41 +1246,47 @@ static int shmem_getpage_gfp(struct inod
+ 	struct address_space *mapping = inode->i_mapping;
+ 	struct shmem_inode_info *info = SHMEM_I(inode);
+ 	struct shmem_sb_info *sbinfo;
+-	struct page *filepage;
+-	struct page *swappage;
++	struct page *page;
+ 	struct page *prealloc_page = NULL;
+ 	swp_entry_t *entry;
+ 	swp_entry_t swap;
+ 	int error;
++	int ret;
+ 
+ 	if (idx >= SHMEM_MAX_INDEX)
+ 		return -EFBIG;
+ repeat:
+-	filepage = find_lock_page(mapping, idx);
+-	if (filepage && PageUptodate(filepage))
+-		goto done;
+-	if (!filepage) {
++	page = find_lock_page(mapping, idx);
++	if (page) {
+ 		/*
+-		 * Try to preload while we can wait, to not make a habit of
+-		 * draining atomic reserves; but don't latch on to this cpu.
++		 * Once we can get the page lock, it must be uptodate:
++		 * if there were an error in reading back from swap,
++		 * the page would not be inserted into the filecache.
+ 		 */
+-		error = radix_tree_preload(gfp & GFP_RECLAIM_MASK);
+-		if (error)
+-			goto failed;
+-		radix_tree_preload_end();
+-		if (sgp != SGP_READ && !prealloc_page) {
+-			prealloc_page = shmem_alloc_page(gfp, info, idx);
+-			if (prealloc_page) {
+-				SetPageSwapBacked(prealloc_page);
+-				if (mem_cgroup_cache_charge(prealloc_page,
+-						current->mm, GFP_KERNEL)) {
+-					page_cache_release(prealloc_page);
+-					prealloc_page = NULL;
+-				}
++		BUG_ON(!PageUptodate(page));
++		goto done;
++	}
++
++	/*
++	 * Try to preload while we can wait, to not make a habit of
++	 * draining atomic reserves; but don't latch on to this cpu.
++	 */
++	error = radix_tree_preload(gfp & GFP_RECLAIM_MASK);
++	if (error)
++		goto out;
++	radix_tree_preload_end();
++
++	if (sgp != SGP_READ && !prealloc_page) {
++		prealloc_page = shmem_alloc_page(gfp, info, idx);
++		if (prealloc_page) {
++			SetPageSwapBacked(prealloc_page);
++			if (mem_cgroup_cache_charge(prealloc_page,
++					current->mm, GFP_KERNEL)) {
++				page_cache_release(prealloc_page);
++				prealloc_page = NULL;
+ 			}
+ 		}
+ 	}
+-	error = 0;
+ 
+ 	spin_lock(&info->lock);
+ 	shmem_recalc_inode(inode);
+@@ -1288,21 +1294,21 @@ repeat:
+ 	if (IS_ERR(entry)) {
+ 		spin_unlock(&info->lock);
+ 		error = PTR_ERR(entry);
+-		goto failed;
++		goto out;
+ 	}
+ 	swap = *entry;
+ 
+ 	if (swap.val) {
+ 		/* Look it up and read it in.. */
+-		swappage = lookup_swap_cache(swap);
+-		if (!swappage) {
++		page = lookup_swap_cache(swap);
++		if (!page) {
+ 			shmem_swp_unmap(entry);
+ 			spin_unlock(&info->lock);
+ 			/* here we actually do the io */
+ 			if (fault_type)
+ 				*fault_type |= VM_FAULT_MAJOR;
+-			swappage = shmem_swapin(swap, gfp, info, idx);
+-			if (!swappage) {
++			page = shmem_swapin(swap, gfp, info, idx);
++			if (!page) {
+ 				spin_lock(&info->lock);
+ 				entry = shmem_swp_alloc(info, idx, sgp, gfp);
+ 				if (IS_ERR(entry))
+@@ -1314,62 +1320,42 @@ repeat:
+ 				}
+ 				spin_unlock(&info->lock);
+ 				if (error)
+-					goto failed;
++					goto out;
+ 				goto repeat;
+ 			}
+-			wait_on_page_locked(swappage);
+-			page_cache_release(swappage);
++			wait_on_page_locked(page);
++			page_cache_release(page);
+ 			goto repeat;
+ 		}
+ 
+ 		/* We have to do this with page locked to prevent races */
+-		if (!trylock_page(swappage)) {
++		if (!trylock_page(page)) {
+ 			shmem_swp_unmap(entry);
+ 			spin_unlock(&info->lock);
+-			wait_on_page_locked(swappage);
+-			page_cache_release(swappage);
++			wait_on_page_locked(page);
++			page_cache_release(page);
+ 			goto repeat;
+ 		}
+-		if (PageWriteback(swappage)) {
++		if (PageWriteback(page)) {
+ 			shmem_swp_unmap(entry);
+ 			spin_unlock(&info->lock);
+-			wait_on_page_writeback(swappage);
+-			unlock_page(swappage);
+-			page_cache_release(swappage);
++			wait_on_page_writeback(page);
++			unlock_page(page);
++			page_cache_release(page);
+ 			goto repeat;
+ 		}
+-		if (!PageUptodate(swappage)) {
++		if (!PageUptodate(page)) {
+ 			shmem_swp_unmap(entry);
+ 			spin_unlock(&info->lock);
+-			unlock_page(swappage);
+-			page_cache_release(swappage);
++			unlock_page(page);
++			page_cache_release(page);
+ 			error = -EIO;
+-			goto failed;
++			goto out;
+ 		}
+ 
+-		if (filepage) {
+-			shmem_swp_set(info, entry, 0);
+-			shmem_swp_unmap(entry);
+-			delete_from_swap_cache(swappage);
+-			spin_unlock(&info->lock);
+-			copy_highpage(filepage, swappage);
+-			unlock_page(swappage);
+-			page_cache_release(swappage);
+-			flush_dcache_page(filepage);
+-			SetPageUptodate(filepage);
+-			set_page_dirty(filepage);
+-			swap_free(swap);
+-		} else if (!(error = add_to_page_cache_locked(swappage, mapping,
+-					idx, GFP_NOWAIT))) {
+-			info->flags |= SHMEM_PAGEIN;
+-			shmem_swp_set(info, entry, 0);
+-			shmem_swp_unmap(entry);
+-			delete_from_swap_cache(swappage);
+-			spin_unlock(&info->lock);
+-			filepage = swappage;
+-			set_page_dirty(filepage);
+-			swap_free(swap);
+-		} else {
++		error = add_to_page_cache_locked(page, mapping,
++						 idx, GFP_NOWAIT);
++		if (error) {
+ 			shmem_swp_unmap(entry);
+ 			spin_unlock(&info->lock);
+ 			if (error == -ENOMEM) {
+@@ -1378,28 +1364,33 @@ repeat:
+ 				 * call memcg's OOM if needed.
+ 				 */
+ 				error = mem_cgroup_shmem_charge_fallback(
+-								swappage,
+-								current->mm,
+-								gfp);
++						page, current->mm, gfp);
+ 				if (error) {
+-					unlock_page(swappage);
+-					page_cache_release(swappage);
+-					goto failed;
++					unlock_page(page);
++					page_cache_release(page);
++					goto out;
+ 				}
+ 			}
+-			unlock_page(swappage);
+-			page_cache_release(swappage);
++			unlock_page(page);
++			page_cache_release(page);
+ 			goto repeat;
+ 		}
+-	} else if (sgp == SGP_READ && !filepage) {
++
++		info->flags |= SHMEM_PAGEIN;
++		shmem_swp_set(info, entry, 0);
++		shmem_swp_unmap(entry);
++		delete_from_swap_cache(page);
++		spin_unlock(&info->lock);
++		set_page_dirty(page);
++		swap_free(swap);
++
++	} else if (sgp == SGP_READ) {
+ 		shmem_swp_unmap(entry);
+-		filepage = find_get_page(mapping, idx);
+-		if (filepage &&
+-		    (!PageUptodate(filepage) || !trylock_page(filepage))) {
++		page = find_get_page(mapping, idx);
++		if (page && !trylock_page(page)) {
+ 			spin_unlock(&info->lock);
+-			wait_on_page_locked(filepage);
+-			page_cache_release(filepage);
+-			filepage = NULL;
++			wait_on_page_locked(page);
++			page_cache_release(page);
+ 			goto repeat;
+ 		}
+ 		spin_unlock(&info->lock);
+@@ -1417,56 +1408,52 @@ repeat:
+ 		} else if (shmem_acct_block(info->flags))
+ 			goto nospace;
+ 
+-		if (!filepage) {
+-			int ret;
+-
+-			filepage = prealloc_page;
+-			prealloc_page = NULL;
++		page = prealloc_page;
++		prealloc_page = NULL;
+ 
+-			entry = shmem_swp_alloc(info, idx, sgp, gfp);
+-			if (IS_ERR(entry))
+-				error = PTR_ERR(entry);
+-			else {
+-				swap = *entry;
+-				shmem_swp_unmap(entry);
+-			}
+-			ret = error || swap.val;
+-			if (ret)
+-				mem_cgroup_uncharge_cache_page(filepage);
+-			else
+-				ret = add_to_page_cache_lru(filepage, mapping,
++		entry = shmem_swp_alloc(info, idx, sgp, gfp);
++		if (IS_ERR(entry))
++			error = PTR_ERR(entry);
++		else {
++			swap = *entry;
++			shmem_swp_unmap(entry);
++		}
++		ret = error || swap.val;
++		if (ret)
++			mem_cgroup_uncharge_cache_page(page);
++		else
++			ret = add_to_page_cache_lru(page, mapping,
+ 						idx, GFP_NOWAIT);
+-			/*
+-			 * At add_to_page_cache_lru() failure, uncharge will
+-			 * be done automatically.
+-			 */
+-			if (ret) {
+-				shmem_unacct_blocks(info->flags, 1);
+-				shmem_free_blocks(inode, 1);
+-				spin_unlock(&info->lock);
+-				page_cache_release(filepage);
+-				filepage = NULL;
+-				if (error)
+-					goto failed;
+-				goto repeat;
+-			}
+-			info->flags |= SHMEM_PAGEIN;
++		/*
++		 * At add_to_page_cache_lru() failure,
++		 * uncharge will be done automatically.
++		 */
++		if (ret) {
++			shmem_unacct_blocks(info->flags, 1);
++			shmem_free_blocks(inode, 1);
++			spin_unlock(&info->lock);
++			page_cache_release(page);
++			if (error)
++				goto out;
++			goto repeat;
+ 		}
+ 
++		info->flags |= SHMEM_PAGEIN;
+ 		info->alloced++;
+ 		spin_unlock(&info->lock);
+-		clear_highpage(filepage);
+-		flush_dcache_page(filepage);
+-		SetPageUptodate(filepage);
++		clear_highpage(page);
++		flush_dcache_page(page);
++		SetPageUptodate(page);
+ 		if (sgp == SGP_DIRTY)
+-			set_page_dirty(filepage);
++			set_page_dirty(page);
++
+ 	} else {
+ 		spin_unlock(&info->lock);
+ 		error = -ENOMEM;
+ 		goto out;
+ 	}
+ done:
+-	*pagep = filepage;
++	*pagep = page;
+ 	error = 0;
+ out:
+ 	if (prealloc_page) {
+@@ -1482,21 +1469,13 @@ nospace:
+ 	 * but must also avoid reporting a spurious ENOSPC while working on a
+ 	 * full tmpfs.
+ 	 */
+-	if (!filepage) {
+-		struct page *page = find_get_page(mapping, idx);
+-		if (page) {
+-			spin_unlock(&info->lock);
+-			page_cache_release(page);
+-			goto repeat;
+-		}
+-	}
++	page = find_get_page(mapping, idx);
+ 	spin_unlock(&info->lock);
+-	error = -ENOSPC;
+-failed:
+-	if (filepage) {
+-		unlock_page(filepage);
+-		page_cache_release(filepage);
++	if (page) {
++		page_cache_release(page);
++		goto repeat;
+ 	}
++	error = -ENOSPC;
+ 	goto out;
+ }
+ 
