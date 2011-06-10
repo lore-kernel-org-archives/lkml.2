@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758116Ab1FJUOs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 16:14:48 -0400
+	id S1758105Ab1FJUOb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 16:14:31 -0400
 Received: from mga02.intel.com ([134.134.136.20]:21809 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758081Ab1FJUO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758061Ab1FJUO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 10 Jun 2011 16:14:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,348,1304319600"; 
-   d="scan'208";a="12148032"
+   d="scan'208";a="12148033"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: eric.dumazet@gmail.com, tglx@linutronix.de,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/3] posix-timers: move global timer id management to signal_struct
-Date: Fri, 10 Jun 2011 13:13:07 -0700
-Message-Id: <1307736788-25457-2-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 3/3] posix-timers: limit the number of posix timers per process
+Date: Fri, 10 Jun 2011 13:13:08 -0700
+Message-Id: <1307736788-25457-3-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1307736788-25457-1-git-send-email-andi@firstfloor.org>
 References: <1307736788-25457-1-git-send-email-andi@firstfloor.org>
@@ -25,150 +25,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Move the global posix timer ids IDR to signal_struct. This removes
-a minor global scalability bottleneck and also allows to finally limit
-the number of process timers in a sane way (see next patch)
+Now this is the main reason I wrote the whole patchkit: previously
+there was no limit on the maximum number of POSIX timers a process
+could allocate.  This limits the amount of unswappable kernel memory
+a process can pin down this way.
 
-I put it into signal_struct following the other posix timer per process
-structures.
+With the POSIX timer ids being per process we can do this limit
+per process now without allowing one process DoSing another.
+
+I implemented it as a sysctl, not a rlimit for now, because
+there was no clear use case for rlimit.
+
+The 1024 default is completely arbitrary, but seems reasonable
+for now.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/init_task.h |    2 ++
- include/linux/sched.h     |    3 +++
- kernel/fork.c             |    2 ++
- kernel/posix-timers.c     |   17 ++++++++++-------
- 4 files changed, 17 insertions(+), 7 deletions(-)
+ Documentation/sysctl/kernel.txt |    7 +++++++
+ kernel/posix-timers.c           |    8 ++++++++
+ kernel/sysctl.c                 |    9 +++++++++
+ 3 files changed, 24 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index 580f70c..5c34aab 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -10,6 +10,7 @@
- #include <linux/pid_namespace.h>
- #include <linux/user_namespace.h>
- #include <linux/securebits.h>
-+#include <linux/idr.h>
- #include <net/net_namespace.h>
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index 5e7cb39..311c4b3 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -68,6 +68,7 @@ show up in /proc/sys/kernel:
+ - threads-max
+ - unknown_nmi_panic
+ - version
++- max_posix_timers
  
- #ifdef CONFIG_SMP
-@@ -46,6 +47,7 @@ extern struct fs_struct init_fs;
- 	},								\
- 	.cred_guard_mutex =						\
- 		 __MUTEX_INITIALIZER(sig.cred_guard_mutex),		\
-+	.posix_timers_id = IDR_INIT(posix_timer_id),			\
- 	INIT_THREADGROUP_FORK_LOCK(sig)					\
- }
+ ==============================================================
  
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index a837b20..2f738ed 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -62,6 +62,7 @@ struct sched_param {
- #include <linux/errno.h>
- #include <linux/nodemask.h>
- #include <linux/mm_types.h>
-+#include <linux/idr.h>
+@@ -555,3 +556,9 @@ A small number of systems do generate NMI's for bizarre random reasons such as
+ power management so the default is off. That sysctl works like the existing
+ panic controls already in that directory.
  
- #include <asm/system.h>
- #include <asm/page.h>
-@@ -652,6 +653,8 @@ struct signal_struct {
- 	struct mutex cred_guard_mutex;	/* guard against foreign influences on
- 					 * credential calculations
- 					 * (notably. ptrace) */
++===============================================================
 +
-+	struct idr posix_timers_id;
- };
- 
- /* Context switch must be unlocked if interrupts are to be enabled */
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 0276c30..90ee129 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -942,6 +942,8 @@ static void posix_cpu_timers_init_group(struct signal_struct *sig)
- 	INIT_LIST_HEAD(&sig->cpu_timers[0]);
- 	INIT_LIST_HEAD(&sig->cpu_timers[1]);
- 	INIT_LIST_HEAD(&sig->cpu_timers[2]);
++max_posix_timers
 +
-+	idr_init(&sig->posix_timers_id);
- }
- 
- static int copy_signal(unsigned long clone_flags, struct task_struct *tsk)
++The maximum number of POSIX timer ids per process.
++
 diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index a6dcc10..7351e51 100644
+index 7351e51..2d5b1f0 100644
 --- a/kernel/posix-timers.c
 +++ b/kernel/posix-timers.c
-@@ -70,7 +70,6 @@
-  * Lets keep our timers in a slab cache :-)
+@@ -71,6 +71,8 @@
   */
  static struct kmem_cache *posix_timers_cache;
--static struct idr posix_timers_id;
  
++int sysctl_max_posix_timers __read_mostly = 1024;
++
  /*
   * we assume that the new SIGEV_THREAD_ID shares no bits with the other
-@@ -281,7 +280,6 @@ static __init int init_posix_timers(void)
- 	posix_timers_cache = kmem_cache_create("posix_timers_cache",
- 					sizeof (struct k_itimer), 0, SLAB_PANIC,
- 					NULL);
--	idr_init(&posix_timers_id);
- 	return 0;
- }
+  * SIGEV values.  Here we put out an error if this assumption fails.
+@@ -567,6 +569,12 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
  
-@@ -501,8 +499,10 @@ static void k_itimer_rcu_free(struct rcu_head *head)
- #define IT_ID_NOT_SET	0
- static void release_posix_timer(struct k_itimer *tmr, int it_id_set)
- {
--	if (it_id_set)
--		idr_remove(&posix_timers_id, tmr->it_id);
-+	if (it_id_set) {
-+		struct signal_struct *s = current->signal;
-+		idr_remove(&s->posix_timers_id, tmr->it_id);
+ 	it_id_set = IT_ID_SET;
+ 	new_timer->it_id = (timer_t) new_timer_id;
++
++	if (new_timer_id >= sysctl_max_posix_timers) {
++		error = -EMFILE;  /* better error? */
++		goto out;
 +	}
- 	put_pid(tmr->it_pid);
- 	sigqueue_free(tmr->sigq);
- 	call_rcu(&tmr->it.rcu, k_itimer_rcu_free);
-@@ -536,6 +536,7 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
- 	int error, new_timer_id;
- 	sigevent_t event;
- 	int it_id_set = IT_ID_NOT_SET;
-+	struct signal_struct *s = current->signal;
++
+ 	new_timer->it_clock = which_clock;
+ 	new_timer->it_overrun = -1;
  
- 	if (!kc)
- 		return -EINVAL;
-@@ -548,11 +549,11 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index f175d98..d24eec6 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -108,6 +108,7 @@ extern int sysctl_nr_trim_pages;
+ #ifdef CONFIG_BLOCK
+ extern int blk_iopoll_enabled;
+ #endif
++extern int sysctl_max_posix_timers;
  
- 	spin_lock_init(&new_timer->it_lock);
-  retry:
--	if (unlikely(!idr_pre_get(&posix_timers_id, GFP_KERNEL))) {
-+	if (unlikely(!idr_pre_get(&s->posix_timers_id, GFP_KERNEL))) {
- 		error = -EAGAIN;
- 		goto out;
- 	}
--	error = idr_get_new(&posix_timers_id, new_timer, &new_timer_id);
-+	error = idr_get_new(&s->posix_timers_id, new_timer, &new_timer_id);
- 	if (error) {
- 		if (error == -EAGAIN)
- 			goto retry;
-@@ -631,9 +632,10 @@ out:
- static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags)
- {
- 	struct k_itimer *timr;
-+	struct signal_struct *s = current->signal;
+ /* Constants used for minimum and  maximum */
+ #ifdef CONFIG_LOCKUP_DETECTOR
+@@ -984,6 +985,14 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ #endif
++	{
++		.procname	= "max_posix_timers",
++		.data		= &sysctl_max_posix_timers,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++
+ 	{ }
+ };
  
- 	rcu_read_lock();
--	timr = idr_find(&posix_timers_id, (int)timer_id);
-+	timr = idr_find(&s->posix_timers_id, (int)timer_id);
- 	if (timr) {
- 		spin_lock_irqsave(&timr->it_lock, *flags);
- 		if (timr->it_signal == current->signal) {
-@@ -938,6 +940,7 @@ void exit_itimers(struct signal_struct *sig)
- 		tmr = list_entry(sig->posix_timers.next, struct k_itimer, list);
- 		itimer_delete(tmr);
- 	}
-+	idr_destroy(&sig->posix_timers_id);
- }
- 
- SYSCALL_DEFINE2(clock_settime, const clockid_t, which_clock,
 -- 
 1.7.4.4
 
