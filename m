@@ -1,56 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab1FJNKd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 09:10:33 -0400
-Received: from grimli.r00tworld.net ([83.169.44.195]:43807 "EHLO
-	mail.r00tworld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757272Ab1FJNKa (ORCPT
+	id S932181Ab1FJNKi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 09:10:38 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37095 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932167Ab1FJNKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 09:10:30 -0400
-From: Mathias Krause <minipli@googlemail.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>
-Subject: [PATCH] s390, exec: remove redundant set_fs(USER_DS)
-Date: Fri, 10 Jun 2011 15:10:28 +0200
-Message-Id: <1307711428-15908-1-git-send-email-minipli@googlemail.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
-References: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
-References: <BANLkTiknCeAxe30MJdVTxDom+ko8+EDQ4A@mail.gmail.com> <1307642718-22257-1-git-send-email-minipli@googlemail.com> <20110609155630.0f734351.akpm@linux-foundation.org>
+	Fri, 10 Jun 2011 09:10:34 -0400
+Date: Fri, 10 Jun 2011 15:10:32 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Alan Piszcz <ap@solarrain.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: 2.6.39: crash w/threadirqs option enabled
+In-Reply-To: <alpine.DEB.2.02.1106100854250.23139@p34.internal.lan>
+Message-ID: <alpine.LFD.2.02.1106101510110.11814@ionos>
+References: <alpine.DEB.2.02.1105200405210.24033@p34.internal.lan> <alpine.LFD.2.02.1105201445300.3078@ionos> <alpine.DEB.2.02.1105200850080.19553@p34.internal.lan> <alpine.LFD.2.02.1105201528500.3078@ionos> <alpine.DEB.2.02.1105200945300.19553@p34.internal.lan>
+ <alpine.LFD.2.02.1105201712501.3078@ionos> <alpine.DEB.2.02.1105201210030.19553@p34.internal.lan> <alpine.LFD.2.02.1105201819310.3078@ionos> <alpine.DEB.2.02.1106100414550.32450@p34.internal.lan> <alpine.LFD.2.02.1106101450030.11814@ionos>
+ <alpine.DEB.2.02.1106100854250.23139@p34.internal.lan>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The address limit is already set in flush_old_exec() so those calls to
-set_fs(USER_DS) are redundant.
+On Fri, 10 Jun 2011, Justin Piszcz wrote:
+> On Fri, 10 Jun 2011, Thomas Gleixner wrote:
+> > If you remove the threadirqs option from the commandline it does not
+> > happen, right?
+> Yes, most often anyhow (still using that option)
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
----
- arch/s390/include/asm/processor.h |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/arch/s390/include/asm/processor.h b/arch/s390/include/asm/processor.h
-index 1300c30..4164533 100644
---- a/arch/s390/include/asm/processor.h
-+++ b/arch/s390/include/asm/processor.h
-@@ -118,14 +118,12 @@ struct stack_frame {
-  * Do necessary setup to start up a new thread.
-  */
- #define start_thread(regs, new_psw, new_stackp) do {		\
--	set_fs(USER_DS);					\
- 	regs->psw.mask	= psw_user_bits;			\
- 	regs->psw.addr	= new_psw | PSW_ADDR_AMODE;		\
- 	regs->gprs[15]	= new_stackp;				\
- } while (0)
- 
- #define start_thread31(regs, new_psw, new_stackp) do {		\
--	set_fs(USER_DS);					\
- 	regs->psw.mask	= psw_user32_bits;			\
- 	regs->psw.addr	= new_psw | PSW_ADDR_AMODE;		\
- 	regs->gprs[15]	= new_stackp;				\
--- 
-1.5.6.5
-
+-ENOPARSE
