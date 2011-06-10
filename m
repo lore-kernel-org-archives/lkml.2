@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757562Ab1FJRyo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 13:54:44 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:42817 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889Ab1FJRyn (ORCPT
+	id S1757567Ab1FJRz1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 13:55:27 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:49363 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757087Ab1FJRzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 13:54:43 -0400
-Date: Fri, 10 Jun 2011 18:54:30 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Jim Bos <jim876@xs4all.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-Message-ID: <20110610175429.GA28500@srcf.ucam.org>
-References: <4DE8EF13.9030609@xs4all.nl>
- <BANLkTinWj1LvQLverPTUm9rKEx=+HZUpDA@mail.gmail.com>
- <4DECFC1C.10801@xs4all.nl>
- <4DED0394.2090000@gmail.com>
- <BANLkTikVEj2Uz9N0B-kKA3GJTUWzmwz=zQ@mail.gmail.com>
- <20110607014127.GA8450@srcf.ucam.org>
- <4DED8752.5070005@kernel.org>
- <4DEDEA73.7010900@gmail.com>
- <20110610164706.GB25774@srcf.ucam.org>
- <4DF259B2.9070403@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DF259B2.9070403@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Fri, 10 Jun 2011 13:55:23 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Wa3K/blZ+2WIx4bDQt3e1fE0/zgPDr2j0ya2o0BPISZVdQv/W6a6m41zR0ylloDVV7gpSGrQXEU8VmmWn7Q/ZyeTrgqSmJ+cIFTFgdrSKL44y8RpeYM3VbAFU3zMxhFH;
+Date: Fri, 10 Jun 2011 10:55:21 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Daniel Baluta <dbaluta@ixiacom.com>, Maxin B John <maxin.john@gmail.com>,
+        <linux-doc@vger.kernel.org>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Documentation: update kmemleak architecture support
+ info
+Message-Id: <20110610105521.029ae1c3.rdunlap@xenotime.net>
+In-Reply-To: <20110610145518.GD18133@e102109-lin.cambridge.arm.com>
+References: <20110610070937.GA2802@maxin>
+	<4DF1C55A.2080803@ixiacom.com>
+	<20110610145518.GD18133@e102109-lin.cambridge.arm.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 07:51:46PM +0200, Maarten Lankhorst wrote:
-> Well,
+On Fri, 10 Jun 2011 15:55:18 +0100 Catalin Marinas wrote:
+
+> On Fri, Jun 10, 2011 at 08:18:50AM +0100, Daniel Baluta wrote:
+> > On 06/10/2011 10:09 AM, Maxin B John wrote:
+> > > -Kmemleak is supported on x86, arm, powerpc, sparc, sh, microblaze and tile.
+> > > +Kmemleak is supported on x86, arm, powerpc, sparc, sh, microblaze, tile,
+> > > +s390 and mips.Please check DEBUG_KMEMLEAK dependencies in lib/Kconfig.debug
+> > > +for supported platforms.
+> > The point of adding my generic comment was to remove direct
+> > references to supported platforms.
+> > 
+> > In this case your patch should remove the line specifying supported
+> > platforms (x86, arm, powerpc, etc) and only add the line pointing
+> > the reader to lib/Kconfig.debug.
+> > 
+> > When a new platform will be supported lib/Kconfig.debug will
+> > be surely modified, and the change will be consistent with
+> > information in kmemleak.txt.
 > 
-> Op 10-06-11 18:47, Matthew Garrett schreef:
-> > So this is obviously even more of a hack, but before you check whether 
-> > the memblock has already been reserved could you __check_region it as 
-> > well? That ought to avoid us touching the kernel. I've got a patch for 
-> > grub that'll avoid the situation where we load the kernel on top of an 
-> > existing resource and I'll port that to grub2, but that's still going to 
-> > be awkward for existing bootloaders.
-> >
-> Erm, __check_region calls __requestion_region which does a kzalloc,
-> if I call __check_region it doesn't boot, probably because of that.
+> I think Daniel's suggestion is better, we don't have to worry about
+> changing the documentation every time we add a new architecture.
+> 
+> In addition to that, I would say "supported architectures" rather than
+> platforms.
 
-Oh, bother.
+Maxin,
 
-> Do you want me to manually run through iomem_resource? Is it even available up at that point?
+Please send an updated patch without the currently-supported list
+of architectures.
 
-Should be - we've already called insert_resource to set up the kernel at 
-this point.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+thanks,
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
