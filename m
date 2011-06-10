@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab1FJPw1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 11:52:27 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:44758 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755305Ab1FJPw0 (ORCPT
+	id S1757425Ab1FJP5n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 11:57:43 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:29399 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753319Ab1FJP5m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 11:52:26 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=mIYvSS7usDp0fl8hbyGCi2zOTwVtApLDo+ui73Hk6ZukPwq7zefLr9zISf1GbCsZC4gnOLIF1jRWXrjWvs4645MVeiEq7xCJyjeiNa9bm0HfWE13ELnE/1iH9depTHdh;
-Date: Fri, 10 Jun 2011 08:52:23 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Mathias Krause <minipli@googlemail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Zankel <chris@zankel.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH] init: use KERNEL_DS when trying to start init process
-Message-Id: <20110610085223.6aa97dee.rdunlap@xenotime.net>
-In-Reply-To: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
-References: <BANLkTiknCeAxe30MJdVTxDom+ko8+EDQ4A@mail.gmail.com>
-	<1307642718-22257-1-git-send-email-minipli@googlemail.com>
-	<20110609155630.0f734351.akpm@linux-foundation.org>
-	<BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Fri, 10 Jun 2011 11:57:42 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-13.tower-160.messagelabs.com!1307721388!25358604!119
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.178]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linus Walleij <linus.walleij@stericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>
+Date: Fri, 10 Jun 2011 10:57:33 -0500
+Subject: RE: [PATCH 1/2] gpio: expose gpio_to_chip()
+Thread-Topic: [PATCH 1/2] gpio: expose gpio_to_chip()
+Thread-Index: AcwnS2VJ5Xo98OcRSASFzdRkx+mvDAAOjS0g
+Message-ID: <ADE657CA350FB648AAC2C43247A983F001F3820B879F@AUSP01VMBX24.collaborationhost.net>
+References: <1307695752-28051-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1307695752-28051-1-git-send-email-linus.walleij@stericsson.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Jun 2011 10:11:39 +0200 Mathias Krause wrote:
-
-> cat<<EOT >hello.c
-> #include <unistd.h>
-> #include <stdio.h>
+On Friday, June 10, 2011 1:49 AM, Linus Walleij wrote:
+>
+> This makes the gpio_to_chip() function available to drivers. The
+> usecase is when you want to add a few chip-specific operations
+> apart from the ones exposed in struct gpio_chip.
+>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  drivers/gpio/gpiolib.c     |    2 +-
+>  include/asm-generic/gpio.h |    1 +
+>  2 files changed, 2 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index a971e3d..dc315e9 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -114,7 +114,7 @@ static int gpio_ensure_requested(struct gpio_desc *desc, unsigned offset)
+>  }
 > 
-> int main(void) {
->     printf("Hello %s world!\n", sizeof(int) == sizeof(long) ? "32" : "64");
-
-             "Hello %s bit world!\n"
-
-:)
-
->     pause();
+>  /* caller holds gpio_lock *OR* gpio is marked as requested */
+> -static inline struct gpio_chip *gpio_to_chip(unsigned gpio)
+> +struct gpio_chip *gpio_to_chip(unsigned gpio)
+>  {
+>  	return gpio_desc[gpio].chip;
+>  }
+> diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+> index fcdcb5d..dd8c815 100644
+> --- a/include/asm-generic/gpio.h
+> +++ b/include/asm-generic/gpio.h
+> @@ -132,6 +132,7 @@ struct gpio_chip {
+>  #endif
+>  };
 > 
->     return 0;
-> }
-> EOT
+> +extern struct gpio_chip *gpio_to_chip(unsigned gpio);
+>  extern const char *gpiochip_is_requested(struct gpio_chip *chip,
+> 			unsigned offset);
+>  extern int __must_check gpiochip_reserve(int start, int ngpio);
+
+Linus,
+
+You'll need to fix a couple drivers for this to work.  The symbol gpio_to_chip
+is a static symbol in a couple places other than gpiolib.c.
 
 
-> * If you're running a 64 bit kernel /etc/init should start and print
-> out "Hello 64 bit world!", otherwise the kernel should fail to start
-> this binary and go ahead to /bin/init.
-> * Finally, if /etc/init failed, /bin/init should start and print out
-> "Hello 32 bit world!".
+arch/arm/plat-pxa/gpio.c:static inline struct pxa_gpio_chip *gpio_to_chip(unsigned gpio)
+drivers/gpio/gpio-74x164.c:static struct gen_74x164_chip *gpio_to_chip(struct gpio_chip *gc)
 
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Regards,
+Hartley
