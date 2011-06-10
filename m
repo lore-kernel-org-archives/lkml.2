@@ -1,126 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758105Ab1FJUOb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 16:14:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21809 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758061Ab1FJUO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 16:14:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,348,1304319600"; 
-   d="scan'208";a="12148033"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: eric.dumazet@gmail.com, tglx@linutronix.de,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/3] posix-timers: limit the number of posix timers per process
-Date: Fri, 10 Jun 2011 13:13:08 -0700
-Message-Id: <1307736788-25457-3-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1307736788-25457-1-git-send-email-andi@firstfloor.org>
-References: <1307736788-25457-1-git-send-email-andi@firstfloor.org>
+	id S1758114Ab1FJUSp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 16:18:45 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:47034 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757900Ab1FJUSn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 16:18:43 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=sNVaYIBOq8413dsunOWB/YQXtUaunVVunY9X4i5aiHTSJWBZ570mWW76hk3juhy91kz03Mu2uhaDcdAviQwWZ3OfG1TogEhuIdtD5APMuyrBW6JK2x9545o7MKWiXtUF;
+Date: Fri, 10 Jun 2011 13:18:38 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Maxin B John <maxin.john@gmail.com>
+Cc: catalin.marinas@arm.com, dbaluta@ixiacom.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: update kmemleak architecture support
+ info
+Message-Id: <20110610131838.43cc5247.rdunlap@xenotime.net>
+In-Reply-To: <20110610190956.GA2742@maxin>
+References: <20110610190956.GA2742@maxin>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Fri, 10 Jun 2011 22:09:56 +0300 Maxin B John wrote:
 
-Now this is the main reason I wrote the whole patchkit: previously
-there was no limit on the maximum number of POSIX timers a process
-could allocate.  This limits the amount of unswappable kernel memory
-a process can pin down this way.
+> >> I think Daniel's suggestion is better, we don't have to worry about
+> >> changing the documentation every time we add a new architecture.
+> I agree with that.
+> 
+> > Please send an updated patch without the currently-supported list
+> > of architectures.
+> Please find the updated patch below: 
+> 
+> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
 
-With the POSIX timer ids being per process we can do this limit
-per process now without allowing one process DoSing another.
+Applied, thanks.
 
-I implemented it as a sysctl, not a rlimit for now, because
-there was no clear use case for rlimit.
+> ---
+> diff --git a/Documentation/kmemleak.txt b/Documentation/kmemleak.txt
+> index 090e6ee..51063e6 100644
+> --- a/Documentation/kmemleak.txt
+> +++ b/Documentation/kmemleak.txt
+> @@ -11,7 +11,9 @@ with the difference that the orphan objects are not freed but only
+>  reported via /sys/kernel/debug/kmemleak. A similar method is used by the
+>  Valgrind tool (memcheck --leak-check) to detect the memory leaks in
+>  user-space applications.
+> -Kmemleak is supported on x86, arm, powerpc, sparc, sh, microblaze and tile.
+> +
+> +Please check DEBUG_KMEMLEAK dependencies in lib/Kconfig.debug for supported
+> +architectures.
+>  
+>  Usage
+>  -----
+> 
+> --
 
-The 1024 default is completely arbitrary, but seems reasonable
-for now.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- Documentation/sysctl/kernel.txt |    7 +++++++
- kernel/posix-timers.c           |    8 ++++++++
- kernel/sysctl.c                 |    9 +++++++++
- 3 files changed, 24 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 5e7cb39..311c4b3 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -68,6 +68,7 @@ show up in /proc/sys/kernel:
- - threads-max
- - unknown_nmi_panic
- - version
-+- max_posix_timers
- 
- ==============================================================
- 
-@@ -555,3 +556,9 @@ A small number of systems do generate NMI's for bizarre random reasons such as
- power management so the default is off. That sysctl works like the existing
- panic controls already in that directory.
- 
-+===============================================================
-+
-+max_posix_timers
-+
-+The maximum number of POSIX timer ids per process.
-+
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index 7351e51..2d5b1f0 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -71,6 +71,8 @@
-  */
- static struct kmem_cache *posix_timers_cache;
- 
-+int sysctl_max_posix_timers __read_mostly = 1024;
-+
- /*
-  * we assume that the new SIGEV_THREAD_ID shares no bits with the other
-  * SIGEV values.  Here we put out an error if this assumption fails.
-@@ -567,6 +569,12 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
- 
- 	it_id_set = IT_ID_SET;
- 	new_timer->it_id = (timer_t) new_timer_id;
-+
-+	if (new_timer_id >= sysctl_max_posix_timers) {
-+		error = -EMFILE;  /* better error? */
-+		goto out;
-+	}
-+
- 	new_timer->it_clock = which_clock;
- 	new_timer->it_overrun = -1;
- 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index f175d98..d24eec6 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -108,6 +108,7 @@ extern int sysctl_nr_trim_pages;
- #ifdef CONFIG_BLOCK
- extern int blk_iopoll_enabled;
- #endif
-+extern int sysctl_max_posix_timers;
- 
- /* Constants used for minimum and  maximum */
- #ifdef CONFIG_LOCKUP_DETECTOR
-@@ -984,6 +985,14 @@ static struct ctl_table kern_table[] = {
- 		.proc_handler	= proc_dointvec,
- 	},
- #endif
-+	{
-+		.procname	= "max_posix_timers",
-+		.data		= &sysctl_max_posix_timers,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+
- 	{ }
- };
- 
--- 
-1.7.4.4
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
