@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758185Ab1FJV5b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 17:57:31 -0400
+	id S1758201Ab1FJV5c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 17:57:32 -0400
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:56144 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758141Ab1FJV5X (ORCPT
+	with ESMTP id S1758146Ab1FJV5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 17:57:23 -0400
+	Fri, 10 Jun 2011 17:57:25 -0400
 From: Ohad Ben-Cohen <ohad@wizery.com>
 To: Joerg Roedel <Joerg.Roedel@amd.com>
 Cc: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
@@ -15,9 +15,9 @@ Cc: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         David Woodhouse <dwmw2@infradead.org>,
         <iommu@lists.linux-foundation.org>, <linux-pci@vger.kernel.org>,
         Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [PATCH v2 2/4] msm: iommu: move to drivers/iommu/
-Date: Sat, 11 Jun 2011 00:55:45 +0300
-Message-Id: <1307742947-32118-3-git-send-email-ohad@wizery.com>
+Subject: [PATCH v2 3/4] x86: amd_iommu: move to drivers/iommu/
+Date: Sat, 11 Jun 2011 00:55:46 +0300
+Message-Id: <1307742947-32118-4-git-send-email-ohad@wizery.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1307742947-32118-1-git-send-email-ohad@wizery.com>
 References: <1307742947-32118-1-git-send-email-ohad@wizery.com>
@@ -29,99 +29,119 @@ This should ease finding similarities with different platforms,
 with the intention of solving problems once in a generic framework
 which everyone can use.
 
-Compile-tested for MSM8X60.
+Compile-tested on x86_64.
 
 Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 ---
- arch/arm/mach-msm/Kconfig                          |   16 ----------------
- arch/arm/mach-msm/Makefile                         |    2 +-
- drivers/iommu/Kconfig                              |   16 ++++++++++++++++
- drivers/iommu/Makefile                             |    1 +
- .../mach-msm/iommu.c => drivers/iommu/msm_iommu.c  |    0
- .../iommu_dev.c => drivers/iommu/msm_iommu_dev.c   |    0
- 6 files changed, 18 insertions(+), 17 deletions(-)
- rename arch/arm/mach-msm/iommu.c => drivers/iommu/msm_iommu.c (100%)
- rename arch/arm/mach-msm/iommu_dev.c => drivers/iommu/msm_iommu_dev.c (100%)
+ arch/x86/Kconfig                               |   28 -----------------------
+ arch/x86/kernel/Makefile                       |    2 +-
+ drivers/iommu/Kconfig                          |   29 ++++++++++++++++++++++++
+ drivers/iommu/Makefile                         |    1 +
+ {arch/x86/kernel => drivers/iommu}/amd_iommu.c |    0
+ 5 files changed, 31 insertions(+), 29 deletions(-)
+ rename {arch/x86/kernel => drivers/iommu}/amd_iommu.c (100%)
 
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index efb7b7d..888e925 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -148,22 +148,6 @@ config MACH_MSM8960_RUMI3
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 460d573..1b6a2e2 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -680,34 +680,6 @@ config CALGARY_IOMMU_ENABLED_BY_DEFAULT
+ 	  Calgary anyway, pass 'iommu=calgary' on the kernel command line.
+ 	  If unsure, say Y.
  
- endmenu
- 
--config MSM_IOMMU
--	bool "MSM IOMMU Support"
--	depends on ARCH_MSM8X60 || ARCH_MSM8960
+-config AMD_IOMMU
+-	bool "AMD IOMMU support"
+-	select SWIOTLB
+-	select PCI_MSI
+-	select PCI_IOV
 -	select IOMMU_API
--	default n
--	help
--	  Support for the IOMMUs found on certain Qualcomm SOCs.
--	  These IOMMUs allow virtualization of the address space used by most
--	  cores within the multimedia subsystem.
+-	depends on X86_64 && PCI && ACPI
+-	---help---
+-	  With this option you can enable support for AMD IOMMU hardware in
+-	  your system. An IOMMU is a hardware component which provides
+-	  remapping of DMA memory accesses from devices. With an AMD IOMMU you
+-	  can isolate the the DMA memory of different devices and protect the
+-	  system from misbehaving device drivers or hardware.
 -
--	  If unsure, say N here.
+-	  You can find out if your system has an AMD IOMMU if you look into
+-	  your BIOS for an option to enable it or if you have an IVRS ACPI
+-	  table.
 -
--config IOMMU_PGTABLES_L2
--	def_bool y
--	depends on MSM_IOMMU && MMU && SMP && CPU_DCACHE_DISABLE=n
+-config AMD_IOMMU_STATS
+-	bool "Export AMD IOMMU statistics to debugfs"
+-	depends on AMD_IOMMU
+-	select DEBUG_FS
+-	---help---
+-	  This option enables code in the AMD IOMMU driver to collect various
+-	  statistics about whats happening in the driver and exports that
+-	  information to userspace via debugfs.
+-	  If unsure, say N.
 -
- config MSM_DEBUG_UART
- 	int
- 	default 1 if MSM_DEBUG_UART1
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 9519fd2..b70658c 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -3,7 +3,7 @@ obj-y += clock.o
- obj-$(CONFIG_DEBUG_FS) += clock-debug.o
+ # need this always selected by IOMMU for the VIA workaround
+ config SWIOTLB
+ 	def_bool y if X86_64
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 90b06d4..aef0298 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -123,7 +123,7 @@ ifeq ($(CONFIG_X86_64),y)
  
- obj-$(CONFIG_MSM_VIC) += irq-vic.o
--obj-$(CONFIG_MSM_IOMMU) += iommu.o iommu_dev.o devices-iommu.o
-+obj-$(CONFIG_MSM_IOMMU) += devices-iommu.o
+ 	obj-$(CONFIG_GART_IOMMU)	+= amd_gart_64.o aperture_64.o
+ 	obj-$(CONFIG_CALGARY_IOMMU)	+= pci-calgary_64.o tce_64.o
+-	obj-$(CONFIG_AMD_IOMMU)		+= amd_iommu_init.o amd_iommu.o
++	obj-$(CONFIG_AMD_IOMMU)		+= amd_iommu_init.o
  
- obj-$(CONFIG_ARCH_MSM7X00A) += dma.o irq.o acpuclock-arm11.o
- obj-$(CONFIG_ARCH_MSM7X30) += dma.o
+ 	obj-$(CONFIG_PCI_MMCONFIG)	+= mmconf-fam10h_64.o
+ 	obj-y				+= vsmp_64.o
 diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
-index 2c5dfb4..21a80bf 100644
+index 21a80bf..9246c5b 100644
 --- a/drivers/iommu/Kconfig
 +++ b/drivers/iommu/Kconfig
-@@ -1,3 +1,19 @@
- # IOMMU_API always gets selected by whoever wants it.
- config IOMMU_API
- 	bool
+@@ -17,3 +17,32 @@ config MSM_IOMMU
+ config IOMMU_PGTABLES_L2
+ 	def_bool y
+ 	depends on MSM_IOMMU && MMU && SMP && CPU_DCACHE_DISABLE=n
 +
-+# MSM IOMMU support
-+config MSM_IOMMU
-+	bool "MSM IOMMU Support"
-+	depends on ARCH_MSM8X60 || ARCH_MSM8960
++# AMD IOMMU support
++config AMD_IOMMU
++	bool "AMD IOMMU support"
++	select SWIOTLB
++	select PCI_MSI
++	select PCI_IOV
 +	select IOMMU_API
-+	help
-+	  Support for the IOMMUs found on certain Qualcomm SOCs.
-+	  These IOMMUs allow virtualization of the address space used by most
-+	  cores within the multimedia subsystem.
++	depends on X86_64 && PCI && ACPI
++	---help---
++	  With this option you can enable support for AMD IOMMU hardware in
++	  your system. An IOMMU is a hardware component which provides
++	  remapping of DMA memory accesses from devices. With an AMD IOMMU you
++	  can isolate the the DMA memory of different devices and protect the
++	  system from misbehaving device drivers or hardware.
 +
-+	  If unsure, say N here.
++	  You can find out if your system has an AMD IOMMU if you look into
++	  your BIOS for an option to enable it or if you have an IVRS ACPI
++	  table.
 +
-+config IOMMU_PGTABLES_L2
-+	def_bool y
-+	depends on MSM_IOMMU && MMU && SMP && CPU_DCACHE_DISABLE=n
++config AMD_IOMMU_STATS
++	bool "Export AMD IOMMU statistics to debugfs"
++	depends on AMD_IOMMU
++	select DEBUG_FS
++	---help---
++	  This option enables code in the AMD IOMMU driver to collect various
++	  statistics about whats happening in the driver and exports that
++	  information to userspace via debugfs.
++	  If unsure, say N.
 diff --git a/drivers/iommu/Makefile b/drivers/iommu/Makefile
-index 241ba4c..1a71c82 100644
+index 1a71c82..4237eaf 100644
 --- a/drivers/iommu/Makefile
 +++ b/drivers/iommu/Makefile
-@@ -1 +1,2 @@
+@@ -1,2 +1,3 @@
  obj-$(CONFIG_IOMMU_API) += iommu.o
-+obj-$(CONFIG_MSM_IOMMU) += msm_iommu.o msm_iommu_dev.o
-diff --git a/arch/arm/mach-msm/iommu.c b/drivers/iommu/msm_iommu.c
+ obj-$(CONFIG_MSM_IOMMU) += msm_iommu.o msm_iommu_dev.o
++obj-$(CONFIG_AMD_IOMMU) += amd_iommu.o
+diff --git a/arch/x86/kernel/amd_iommu.c b/drivers/iommu/amd_iommu.c
 similarity index 100%
-rename from arch/arm/mach-msm/iommu.c
-rename to drivers/iommu/msm_iommu.c
-diff --git a/arch/arm/mach-msm/iommu_dev.c b/drivers/iommu/msm_iommu_dev.c
-similarity index 100%
-rename from arch/arm/mach-msm/iommu_dev.c
-rename to drivers/iommu/msm_iommu_dev.c
+rename from arch/x86/kernel/amd_iommu.c
+rename to drivers/iommu/amd_iommu.c
 -- 
 1.7.1
 
