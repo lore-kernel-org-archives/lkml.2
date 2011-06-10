@@ -1,46 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab1FJHu4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 03:50:56 -0400
-Received: from mga03.intel.com ([143.182.124.21]:57983 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752870Ab1FJHuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 03:50:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,345,1304319600"; 
-   d="scan'208";a="10655858"
-Subject: [PATCH]rcu: avoid unnecessary thread wakeup
-From: Shaohua Li <shaohua.li@intel.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: paulmck@linux.vnet.ibm.com, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Jun 2011 15:50:51 +0800
-Message-ID: <1307692251.15392.91.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754180Ab1FJH7o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 03:59:44 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:19455 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751383Ab1FJH7m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 03:59:42 -0400
+Date: Fri, 10 Jun 2011 09:51:22 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: David Miller <davem@davemloft.net>
+cc: viro@ZenIV.linux.org.uk, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][RFC] Sparc: Remove trigraph in die_if_kernel()
+ message.
+In-Reply-To: <20110609.160611.1243367560228886911.davem@davemloft.net>
+Message-ID: <alpine.LNX.2.00.1106100947010.19998@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1106071627260.8844@swampdragon.chaosbits.net> <20110609.155943.162785602513776337.davem@davemloft.net> <20110609230322.GY11521@ZenIV.linux.org.uk> <20110609.160611.1243367560228886911.davem@davemloft.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1561661386-1307692113=:19998"
+Content-ID: <alpine.LNX.2.00.1106100948510.19998@swampdragon.chaosbits.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-invoke_rcu_cpu_kthread could be called in the thread itself. In this case,
-we don't need call wakeup, which is just wasting CPU.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+--8323328-1561661386-1307692113=:19998
+Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-7
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.LNX.2.00.1106100948511.19998@swampdragon.chaosbits.net>
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 89419ff..f9bd051 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1475,7 +1475,8 @@ static void invoke_rcu_cpu_kthread(void)
- 		local_irq_restore(flags);
- 		return;
- 	}
--	wake_up_process(__this_cpu_read(rcu_cpu_kthread_task));
-+	if (current != __this_cpu_read(rcu_cpu_kthread_task))
-+		wake_up_process(__this_cpu_read(rcu_cpu_kthread_task));
- 	local_irq_restore(flags);
- }
- 
+On Thu, 9 Jun 2011, David Miller wrote:
+
+> From: Al Viro <viro@ZenIV.linux.org.uk>
+> Date: Fri, 10 Jun 2011 00:03:22 +0100
+> 
+> > On Thu, Jun 09, 2011 at 03:59:43PM -0700, David Miller wrote:
+> >> > If I'm not mistaken, that "??!" will be taken as a trigraph for "|" by the 
+> >> > preprocessor, so the final string will end up either as
+> >> >   "Penguin instruction from Penguin mode|?!"
+> > 
+> > Not without -trigraphs, which is not on by default...
+> 
+> Oh, in that case I'll rever this.
+> 
+
+Well, my gcc warns about it. It seems that -Wtrigraphs is enabled by 
+default:
+
+[jj@dragon src]$ gcc --version
+gcc (GCC) 4.6.0 20110603 (prerelease)
+Copyright (C) 2011 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO                                                                                    
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+PURPOSE.
+
+[jj@dragon src]$ cat test.c
+#include <stdio.h>
+
+int main()
+{
+  printf("Penguin instruction from Penguin mode??!?!");
+  return 0;
+}
+[jj@dragon src]$ gcc test.c
+test.c: In function ¡main¢:
+test.c:5:48: warning: trigraph ??! ignored, use -trigraphs to enable [-Wtrigraphs]
 
 
+Which was why I wrote in my original submission mail :
+
+"... which I assume is not what we want, or as the correct string but with 
+a warning about an ignored trigraph which I assume we don't want either."
+
+So either we get the wrong string (if someone enables -trigraphs) or we 
+get a warning (at least with newer gcc's). Which is why I felt the patch 
+made sense as a way to avoid both unfortunate results.
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+--8323328-1561661386-1307692113=:19998--
