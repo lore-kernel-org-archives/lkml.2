@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756545Ab1FJRgQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 13:36:16 -0400
-Received: from sous-sol.org ([216.99.217.87]:37568 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753107Ab1FJRgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 13:36:13 -0400
-Date: Fri, 10 Jun 2011 10:36:04 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/9] x86/amd-iommu: Introduce global dev_data_list
-Message-ID: <20110610173604.GM23047@sequoia.sous-sol.org>
-References: <1307707729-29767-1-git-send-email-joerg.roedel@amd.com>
- <1307707729-29767-3-git-send-email-joerg.roedel@amd.com>
+	id S1756800Ab1FJRjv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 13:39:51 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:43584 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753849Ab1FJRjs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 13:39:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=tGRM6Oay7ADKiES3ldnmkwVFLLDhsqGOlbXnTp3ereDtPJD+QUyzDB7kxQ2cFGuiGh
+         5XkNDouaf8SR/CA/XSH+/DW7GM2d3RZjzUxxwue9EdOfRnzq53AlZkl4hk/wET2Jk/Ti
+         eIqC1IsQ97jzhgkHXbtNjU/pQ5ScjjIwBRZmo=
+Message-ID: <4DF256E1.4010703@pobox.com>
+Date: Fri, 10 Jun 2011 13:39:45 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307707729-29767-3-git-send-email-joerg.roedel@amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Mark Lord <kernel@teksavvy.com>
+CC: Tejun Heo <htejun@gmail.com>, Bruce Stenning <b.stenning@indigovision.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+References: <20110425162242.GB30828@mtj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554BDC@gretna.indigovision.com> <20110426135027.GI878@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554C70@gretna.indigovision.com> <20110426155229.GM878@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554C91@gretna.indigovision.com> <20110430140109.GJ29280@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C777089B2@gretna.indigovision.com> <20110525094127.GF10146@htj.dyndns.org> <4DF20E03.9030502@teksavvy.com> <20110610140155.GJ15235@htj.dyndns.org> <4DF25526.9010800@teksavvy.com>
+In-Reply-To: <4DF25526.9010800@teksavvy.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Joerg Roedel (joerg.roedel@amd.com) wrote:
-> +static struct iommu_dev_data *alloc_dev_data(void)
-> +{
-> +	struct iommu_dev_data *dev_data;
-> +	unsigned long flags;
-> +
-> +	dev_data = kzalloc(sizeof(*dev_data), GFP_KERNEL);
-> +	if (!dev_data)
-> +		return NULL;
-> +
-> +	atomic_set(&dev_data->bind, 0);
-> +
-> +	spin_lock_irqsave(&dev_data_list_lock, flags);
-> +	list_add_tail(&dev_data->dev_data_list, &dev_data_list);
-> +	spin_unlock_irqrestore(&dev_data_list_lock, flags);
+On 06/10/2011 01:32 PM, Mark Lord wrote:
+> On 11-06-10 10:01 AM, Tejun Heo wrote:
+>> Hello,
+>>
+>> (cc'ing Jeff)
+>>
+>> On Fri, Jun 10, 2011 at 08:28:51AM -0400, Mark Lord wrote:
+>>> Tejun, did this ever go upstream and to -stable ??
+>>> I'm asking because I see the same issue with other SATA controllers,
+>>> in particular with sata_sil boards.  Hot plug generally works _once_
+>>> per port, and then stops working.
+>>
+>> The patch is still pending,
+>>
+>>   http://article.gmane.org/gmane.linux.ide/49613
+>>
+>> I don't think it would be wise to include the patch for -stable tho.
+>> It's not a regression fix and has some possibility of introducing
+>> regressions, so....
+>
+> Not a regression fix?  Excuse me?
+> SATA hotplug always used to work fine,
+> and is more or less essential to reboot-free operations.
 
-Globally visible but only paritially initiailized.  I didn't see any, but
-would this ever cause an issue?
+I can move it from #upstream (linux-next) to #upstream-fixes, if we feel 
+it is sufficient urgent.  It seemed like it needed more testing, but 
+maybe the best way to do that is #upstream-fixes?
 
-> +static void free_dev_data(struct iommu_dev_data *dev_data)
-> +{
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&dev_data_list_lock, flags);
-> +	list_del(&dev_data->dev_data_list);
-> +	spin_unlock_irqrestore(&dev_data_list_lock, flags);
-> +
-> +	kfree(dev_data);
-<snip>
-> +	/* Free all of our dev_data structures */
-> +	list_for_each_entry_safe(dev_data, n, &dev_data_list, dev_data_list)
-> +		free_dev_data(dev_data);
+Was mainly a -rc question, to me.
 
-Given that it's not actually contended in early init, should be fine...but
-typically full list traversal would be protected by lock rather than
-repeatedly acquiring and releasing the lock.
+	Jeff
+
+
+
