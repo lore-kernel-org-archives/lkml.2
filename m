@@ -1,140 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab1FJGme (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 02:42:34 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:39919 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634Ab1FJGmc convert rfc822-to-8bit (ORCPT
+	id S1753033Ab1FJGor (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 02:44:47 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:19932 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634Ab1FJGoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 02:42:32 -0400
+	Fri, 10 Jun 2011 02:44:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=q87vCh2EAjFuXfd+AgjonX7WvK/is2/IWNuRWY5pBeme2FaC16AUSYe4Fwv9Z0vIgm
-         yPGd0c4q+2U7affLTpxuoYrCXVAXHEBVlMB7qA0sggzMVbgG6UKB2X3lMUkiu6tMl2oK
-         Y0XoKCnNjP0wewdNzQ7BtAxdZbrcYy0sFvTiU=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=UKeMjKJ7o+a2kmP2YQz/aKNF9DVub3v2twHpSq85cAj5hkqfGHytica7NdI81dMneP
+         Px7cKtpB6v76Hz6tfdbg==
+Date: Thu, 9 Jun 2011 23:44:39 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Shaohua Li <shaohua.li@intel.com>,
+        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: [PATCH v2 5/7] tmpfs: simplify prealloc_page
+In-Reply-To: <1307671323.15392.76.camel@sli10-conroe>
+Message-ID: <alpine.LSU.2.00.1106092341060.12180@sister.anvils>
+References: <alpine.LSU.2.00.1106091529060.2200@sister.anvils> <alpine.LSU.2.00.1106091535510.2200@sister.anvils> <1307671323.15392.76.camel@sli10-conroe>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110610052047.GB3643@gmail.com>
-References: <20110609030401.GA2615@gmail.com>
-	<20110609103747.59805668.randy.dunlap@oracle.com>
-	<20110610052047.GB3643@gmail.com>
-Date: Thu, 9 Jun 2011 23:42:30 -0700
-Message-ID: <BANLkTi=ATS_ULg2egLZrG9B9NAbq6887Yg@mail.gmail.com>
-Subject: Re: [PATCH RESEND]Remove a warning for drivers/edac/i82975x_edac.c
-From: Connor Hansen <cmdkhh@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
-        arvino55@gmail.com
-Cc: ravi@jetztechnologies.com, bluesmoke-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My system is 64bit, thus not showing a warning
+The prealloc_page handling in shmem_getpage_gfp() is unnecessarily
+complicated: first simplify that before going on to filepage/swappage.
 
-adding cc to maintainer, and dev list
+That's right, don't report ENOMEM when the preallocation fails: we may
+or may not need the page.  But simply report ENOMEM once we find we do
+need it, instead of dropping lock, repeating allocation, unwinding on
+failure etc.  And leave the out label on the fast path, don't goto.
 
-2011/6/9 Harry Wei <jiaweiwei.xiyou@gmail.com>:
-> On Thu, Jun 09, 2011 at 10:37:47AM -0700, Randy Dunlap wrote:
->> On Thu, 9 Jun 2011 11:04:13 +0800 Harry Wei wrote:
->>
->> > -   page = (unsigned long) info->eap;
->> > +   page = (unsigned long long) info->eap;
->>
->> But page is still unsigned long, not unsigned long long...
-> Yup, but if we can define a 'unsigned long long' type?
->>
->> >     if (info->xeap & 1)
->> > -           page |= 0x100000000ul;
->> > +           page |= 0x100000000ull;
->>
->> and just making this second change fixes the warning.
-> I will try my best. Can anyone give some other comments?
->>
->> I don't know what the right answer is, but this patch does not look
->> complete to me.
-> I will try to give a v2.
->>
->> Back in April there was a discussion about this warning message and the
->> conclusion was that this driver should be replaced.  See
->> https://lkml.org/lkml/2011/4/21/232 and its replies.
->> But we seem to be having problems reaching the EDAC subsystem maintainer
->> (again cc-ed).
-> You have not got a exact conclusion about this warning.
-> Maybe Arvind knows more about this warning.(cc'ed)
->
->
-> Thanks
-> Harry Wei
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Fix something that looks like a bug but turns out not to be: set
+PageSwapBacked on prealloc_page before its mem_cgroup_cache_charge(),
+as the removed case was doing.  That's important before adding to LRU
+(determines which LRU the page goes on), and does affect which path it
+takes through memcontrol.c, but in the end MEM_CGROUP_CHANGE_TYPE_
+SHMEM is handled no differently from CACHE.
 
-
-older convo for new cc's
-
-On Thu, 9 Jun 2011 11:04:13 +0800 Harry Wei wrote:
-
-> From: Harry Wei <harryxiyou@gmail.com>
->
-> When i compile 2.6.39.1, a warning shows like below.
-> This patch can fix the warning. And i works well with
-> my PC.
->
-> [...]
-> CC [M]  drivers/edac/e752x_edac.o
-> CC [M]  drivers/edac/i82875p_edac.o
-> CC [M]  drivers/edac/i82975x_edac.o
-> drivers/edac/i82975x_edac.c: In function ���i82975x_process_error_info���:
-> drivers/edac/i82975x_edac.c:298: warning: integer constant is too large for ���unsigned long��� type
-> CC [M]  drivers/edac/i3000_edac.o
-> CC [M]  drivers/edac/i3200_edac.o
-> CC [M]  drivers/edac/x38_edac.o
-> CC [M]  drivers/edac/i82860_edac.o
-> [...]
->
->
-> Signed-off-by: Harry Wei <harryxiyou@gmail.com>
-> Index: prj/drivers/edac/i82975x_edac.c
-> ===================================================================
-> --- prj.orig/drivers/edac/i82975x_edac.c      2011-06-04 10:09:55.351174516 +0800
-> +++ prj/drivers/edac/i82975x_edac.c   2011-06-04 10:10:30.875168437 +0800
-> @@ -293,9 +293,9 @@
->               info->errsts = info->errsts2;
->       }
->
-> -     page = (unsigned long) info->eap;
-> +     page = (unsigned long long) info->eap;
-
-But page is still unsigned long, not unsigned long long...
-
->       if (info->xeap & 1)
-> -             page |= 0x100000000ul;
-> +             page |= 0x100000000ull;
-
-and just making this second change fixes the warning.
-
-I don't know what the right answer is, but this patch does not look
-complete to me.
-
-Back in April there was a discussion about this warning message and the
-conclusion was that this driver should be replaced.  See
-https://lkml.org/lkml/2011/4/21/232 and its replies.
-But we seem to be having problems reaching the EDAC subsystem maintainer
-(again cc-ed).
-
-
->       chan = page & 1;
->       page >>= 1;
->       offst = page & ((1 << PAGE_SHIFT) - 1);
-> --
-
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Acked-by: Shaohua Li <shaohua.li@intel.com>
+Cc: "Zhang, Yanmin" <yanmin.zhang@intel.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
-- Show quoted text -
+ mm/shmem.c |   60 +++++++++++++--------------------------------------
+ 1 file changed, 16 insertions(+), 44 deletions(-)
+
+--- linux.orig/mm/shmem.c	2011-06-09 11:39:32.361240481 -0700
++++ linux/mm/shmem.c	2011-06-09 23:17:08.364060453 -0700
+@@ -1269,9 +1269,9 @@ repeat:
+ 			goto failed;
+ 		radix_tree_preload_end();
+ 		if (sgp != SGP_READ && !prealloc_page) {
+-			/* We don't care if this fails */
+ 			prealloc_page = shmem_alloc_page(gfp, info, idx);
+ 			if (prealloc_page) {
++				SetPageSwapBacked(prealloc_page);
+ 				if (mem_cgroup_cache_charge(prealloc_page,
+ 						current->mm, GFP_KERNEL)) {
+ 					page_cache_release(prealloc_page);
+@@ -1403,7 +1403,8 @@ repeat:
+ 			goto repeat;
+ 		}
+ 		spin_unlock(&info->lock);
+-	} else {
++
++	} else if (prealloc_page) {
+ 		shmem_swp_unmap(entry);
+ 		sbinfo = SHMEM_SB(inode->i_sb);
+ 		if (sbinfo->max_blocks) {
+@@ -1419,41 +1420,8 @@ repeat:
+ 		if (!filepage) {
+ 			int ret;
+ 
+-			if (!prealloc_page) {
+-				spin_unlock(&info->lock);
+-				filepage = shmem_alloc_page(gfp, info, idx);
+-				if (!filepage) {
+-					spin_lock(&info->lock);
+-					shmem_unacct_blocks(info->flags, 1);
+-					shmem_free_blocks(inode, 1);
+-					spin_unlock(&info->lock);
+-					error = -ENOMEM;
+-					goto failed;
+-				}
+-				SetPageSwapBacked(filepage);
+-
+-				/*
+-				 * Precharge page while we can wait, compensate
+-				 * after
+-				 */
+-				error = mem_cgroup_cache_charge(filepage,
+-					current->mm, GFP_KERNEL);
+-				if (error) {
+-					page_cache_release(filepage);
+-					spin_lock(&info->lock);
+-					shmem_unacct_blocks(info->flags, 1);
+-					shmem_free_blocks(inode, 1);
+-					spin_unlock(&info->lock);
+-					filepage = NULL;
+-					goto failed;
+-				}
+-
+-				spin_lock(&info->lock);
+-			} else {
+-				filepage = prealloc_page;
+-				prealloc_page = NULL;
+-				SetPageSwapBacked(filepage);
+-			}
++			filepage = prealloc_page;
++			prealloc_page = NULL;
+ 
+ 			entry = shmem_swp_alloc(info, idx, sgp, gfp);
+ 			if (IS_ERR(entry))
+@@ -1492,11 +1460,20 @@ repeat:
+ 		SetPageUptodate(filepage);
+ 		if (sgp == SGP_DIRTY)
+ 			set_page_dirty(filepage);
++	} else {
++		spin_unlock(&info->lock);
++		error = -ENOMEM;
++		goto out;
+ 	}
+ done:
+ 	*pagep = filepage;
+ 	error = 0;
+-	goto out;
++out:
++	if (prealloc_page) {
++		mem_cgroup_uncharge_cache_page(prealloc_page);
++		page_cache_release(prealloc_page);
++	}
++	return error;
+ 
+ nospace:
+ 	/*
+@@ -1520,12 +1497,7 @@ failed:
+ 		unlock_page(filepage);
+ 		page_cache_release(filepage);
+ 	}
+-out:
+-	if (prealloc_page) {
+-		mem_cgroup_uncharge_cache_page(prealloc_page);
+-		page_cache_release(prealloc_page);
+-	}
+-	return error;
++	goto out;
+ }
+ 
+ static int shmem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
