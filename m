@@ -1,98 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345Ab1FJNNW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 09:13:22 -0400
-Received: from www.linutronix.de ([62.245.132.108]:37073 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757228Ab1FJNI6 (ORCPT
+	id S1757309Ab1FJNJA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 09:09:00 -0400
+Received: from grimli.r00tworld.net ([83.169.44.195]:42914 "EHLO
+	mail.r00tworld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757223Ab1FJNI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 10 Jun 2011 09:08:58 -0400
-Date: Fri, 10 Jun 2011 15:08:55 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH] sched; Simplify mutex_spin_on_owner()
-Message-ID: <alpine.LFD.2.02.1106101458350.11814@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+From: Mathias Krause <minipli@googlemail.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Mathias Krause <minipli@googlemail.com>
+Subject: [PATCH] arm, exec: remove redundant set_fs(USER_DS)
+Date: Fri, 10 Jun 2011 15:08:57 +0200
+Message-Id: <1307711337-4042-1-git-send-email-minipli@googlemail.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
+References: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
+References: <BANLkTiknCeAxe30MJdVTxDom+ko8+EDQ4A@mail.gmail.com> <1307642718-22257-1-git-send-email-minipli@googlemail.com> <20110609155630.0f734351.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It does not make sense to rcu_read_lock/unlock() in every loop
-iteration while spinning on the mutex.
+The address limit is already set in flush_old_exec() so this
+set_fs(USER_DS) is redundant.
 
-Move the rcu protection once outside the loop. Also simplify the
-return path to always check for lock->owner == NULL which meets the
-requirements of both owner changed and need_resched() caused loop
-exits.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
 ---
- kernel/sched.c |   25 +++++++++----------------
- 1 file changed, 9 insertions(+), 16 deletions(-)
+ arch/arm/include/asm/processor.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Index: linux-2.6/kernel/sched.c
-===================================================================
---- linux-2.6.orig/kernel/sched.c
-+++ linux-2.6/kernel/sched.c
-@@ -4306,11 +4306,8 @@ EXPORT_SYMBOL(schedule);
- 
- static inline bool owner_running(struct mutex *lock, struct task_struct *owner)
- {
--	bool ret = false;
--
--	rcu_read_lock();
- 	if (lock->owner != owner)
--		goto fail;
-+		return false;
- 
- 	/*
- 	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
-@@ -4320,11 +4317,7 @@ static inline bool owner_running(struct 
- 	 */
- 	barrier();
- 
--	ret = owner->on_cpu;
--fail:
--	rcu_read_unlock();
--
--	return ret;
-+	return owner->on_cpu;
- }
- 
- /*
-@@ -4336,21 +4329,21 @@ int mutex_spin_on_owner(struct mutex *lo
- 	if (!sched_feat(OWNER_SPIN))
- 		return 0;
- 
-+	rcu_read_lock();
- 	while (owner_running(lock, owner)) {
- 		if (need_resched())
--			return 0;
-+			break;
- 
- 		arch_mutex_cpu_relax();
- 	}
-+	rcu_read_unlock();
- 
- 	/*
--	 * If the owner changed to another task there is likely
--	 * heavy contention, stop spinning.
-+	 * We break out the loop above on need_resched() and when the
-+	 * owner changed, which is a sign for heavy contention. Return
-+	 * success only when lock->owner is NULL.
- 	 */
--	if (lock->owner)
--		return 0;
--
--	return 1;
-+	return lock->owner == NULL;
- }
- #endif
- 
+diff --git a/arch/arm/include/asm/processor.h b/arch/arm/include/asm/processor.h
+index b2d9df5..3962caf 100644
+--- a/arch/arm/include/asm/processor.h
++++ b/arch/arm/include/asm/processor.h
+@@ -55,7 +55,6 @@ struct thread_struct {
+ #define start_thread(regs,pc,sp)					\
+ ({									\
+ 	unsigned long *stack = (unsigned long *)sp;			\
+-	set_fs(USER_DS);						\
+ 	memset(regs->uregs, 0, sizeof(regs->uregs));			\
+ 	if (current->personality & ADDR_LIMIT_32BIT)			\
+ 		regs->ARM_cpsr = USR_MODE;				\
+-- 
+1.5.6.5
+
