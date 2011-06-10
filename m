@@ -1,134 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756968Ab1FJNeI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 09:34:08 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47448 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756587Ab1FJNeE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 09:34:04 -0400
-Date: Fri, 10 Jun 2011 14:33:38 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "Raju, Sundaram" <sundaram@ti.com>
-Cc: "Koul, Vinod" <vinod.koul@intel.com>, Dan <dan.j.williams@intel.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC] dmaengine: add new api for preparing simple slave transfer
-Message-ID: <20110610133338.GD24636@n2100.arm.linux.org.uk>
-References: <E0D41E29EB0DAC4E9F3FF173962E9E940301FE2DED@dbde02.ent.ti.com> <20110609124723.GA24636@n2100.arm.linux.org.uk> <E0D41E29EB0DAC4E9F3FF173962E9E940301FE2EFB@dbde02.ent.ti.com> <20110609163206.GB24636@n2100.arm.linux.org.uk> <1307686397.10976.116.camel@vkoul-udesk3> <E0D41E29EB0DAC4E9F3FF173962E9E940301FE337F@dbde02.ent.ti.com> <20110610104318.GC24636@n2100.arm.linux.org.uk> <E0D41E29EB0DAC4E9F3FF173962E9E940301FE3452@dbde02.ent.ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E0D41E29EB0DAC4E9F3FF173962E9E940301FE3452@dbde02.ent.ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S932210Ab1FJNoN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 09:44:13 -0400
+Received: from smtp.nokia.com ([147.243.1.48]:39589 "EHLO mgw-sa02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932149Ab1FJNms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 09:42:48 -0400
+From: Carlos Chinea <carlos.chinea@nokia.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-omap@vger.kernel.org, sre@debian.org, linus.walleij@linaro.org,
+        govindraj.ti@gmail.com, pawel.szyszuk@stericsson.com,
+        sjur.brandeland@stericsson.com, peter_henn@gmx.de
+Subject: [RFC PATCHv5 0/7] HSI framework and drivers
+Date: Fri, 10 Jun 2011 16:38:37 +0300
+Message-Id: <1307713124-3946-1-git-send-email-carlos.chinea@nokia.com>
+X-Mailer: git-send-email 1.7.1
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 05:18:46PM +0530, Raju, Sundaram wrote:
-> Russell,
-> 
-> > How do you handle the situation where a driver uses your new proposed
-> > API, but it doesn't support that in hardware.
-> 
-> It should be handled the same way how a sg buffer is handled, 
-> if LLI chaining feature is not available in the hardware. 
+Hi !
 
-No, if the LLI chaining feature is available in hardware and your special
-'skip' feature is not, then you have to generate a set of LLIs for the
-hardware to walk through to 'emulate' the skip feature.
+Here you have the fifth round of the HSI framework patches.
 
-If you have no LLI support, then you need to program each transfer manually
-into the DMA controller.
+The patch series introduces the HSI framework, an SSI driver
+for OMAP and a generic character device for HSI/SSI devices.
 
-> > > Actually we can deduce the chunk_size from the
-> > > dma_slave_config itself. It is either the src_addr_width or
-> > > dst_addr_width based on the direction. Because at a stretch
-> > > DMAC cannot transfer more than the slave register width.
-> > 
-> > I think you're misinterpreting those fields.  (dst|src)_addr_width tells
-> > the DMA controller the width of each transaction - whether to issue a
-> > byte, half-word, word or double-word read or write to the peripheral.
-> > It doesn't say how many of those to issue, it just says what the
-> > peripheral access size is to be.
-> > 
-> > In other words, they describe the width of the FIFO register.
-> 
-> Yes correct, I was just giving an example for considering or
-> understanding a buffer in 3D and how each dimension should be.
-> 
-> chunk_size = (src|dst)_addr_width, for a special case,
-> i.e, if DMAC is programmed to transfer the entire 1D buffer
-> per sync event received from the peripheral.
+SSI, which is a legacy version of HSI, is used to connect the application
+engine with the cellular modem on the Nokia N900.
 
-Please, don't generate special cases.  Design proper APIs from the
-outset rather than abusing what's already there.  So no, don't abuse
-the address width stuff.
+In this round we have added/fixed:
 
-In any case, the address width stuff must still be used to describe the
-peripherals FIFO register.
+- hsi_char has undergone refactoring and poll support has been removed.
+- Fix RX hwbreak handling in omap_ssi
+- Add functions for clients to query the controllers and port id.
 
-> In slave transfer, the peripheral is going to give a sync event to 
-> DMAC when the FIFO register is full|empty.
+TODO:
 
-'sync event' - peripherals give 'request' signals to the DMAC asking
-them to transfer some more data only, and the DMAC gives an acknowledge
-signal back so that the peripheral knows that the DMAC is giving them
-data.  In the generic case, they typically have no further signalling.
+- Move OMAP SSI to use omap hwmod and new pm functions.
+- Add aio support to hsi_char.
+- Add automatic character device node registration for hsi_char.
+- Add priority support in the HSI framework.
 
-When the DMAC sees an active request, it will attempt to transfer up
-to the minimum of (burst size, number of transfers remaining) to the
-peripheral in one go.
+I would very glad to continue getting feedback about this proposal.
 
-> Now DMACs capable of 3D transfer, do transfer of the whole 1D
-> buffer per sync received or even whole 2D buffer per sync received
-> (based on the sync rate programmed in the DMAC).
+This patch series is based on 3.0-rc1.
 
-Ok, what I'm envisioning is that your term "chunk size" means "register
-width", and you view that as one dimension.  We already describe this.
+Version 4 of the patch set: https://lkml.org/lkml/2010/12/14/73
 
-A frame is a collection of chunks.  That's already described - the number
-of chunks in a buffer is the buffer size divided by the chunk size.
-Buffers must be a multiple of the chunk size.
+Notes: 
+ - checkpatch still reports a false positive on patch 1/7.
+ - sparse error in hsi_char.c:128:1: error: Syntax error in unary expression,
+	due to a bug in the BUILD_BUG_ON_ZERO macro for __CHECKER__ option.
+	See https://lkml.org/lkml/2011/5/28/180
 
-Then we have a collection of frames.  These can be non-contiguous.
-That's effectively described by our scatterlist.
+Andras Domokos (3):
+  HSI: hsi_char: Add HSI char device driver
+  HSI: hsi_char: Add HSI char device kernel configuration
+  HSI: hsi_char: Update ioctl-number.txt
 
-> So the DMAC has to be programmed for a 1D size (i.e. chunk size)
-> equal to that of the width of the FIFO register if the sync rate
-> programmed in DMAC is "per chunk".  
+Carlos Chinea (4):
+  HSI: hsi: Introducing HSI framework
+  HSI: omap_ssi: Introducing OMAP SSI driver
+  HSI: omap_ssi: Add OMAP SSI to the kernel configuration
+  HSI: Add HSI API documentation
 
-This appears to be a circular definition, and makes little sense to me.
+ Documentation/DocBook/device-drivers.tmpl |   17 +
+ Documentation/ioctl/ioctl-number.txt      |    1 +
+ arch/arm/mach-omap2/Makefile              |    2 +
+ arch/arm/mach-omap2/ssi.c                 |  134 +++
+ arch/arm/plat-omap/include/plat/ssi.h     |  204 ++++
+ drivers/Kconfig                           |    2 +
+ drivers/Makefile                          |    1 +
+ drivers/hsi/Kconfig                       |   20 +
+ drivers/hsi/Makefile                      |    6 +
+ drivers/hsi/clients/Kconfig               |   13 +
+ drivers/hsi/clients/Makefile              |    5 +
+ drivers/hsi/clients/hsi_char.c            |  804 +++++++++++++
+ drivers/hsi/controllers/Kconfig           |   23 +
+ drivers/hsi/controllers/Makefile          |    5 +
+ drivers/hsi/controllers/omap_ssi.c        | 1852 +++++++++++++++++++++++++++++
+ drivers/hsi/hsi.c                         |  496 ++++++++
+ drivers/hsi/hsi_boardinfo.c               |   64 +
+ drivers/hsi/hsi_core.h                    |   37 +
+ include/linux/Kbuild                      |    1 +
+ include/linux/hsi/Kbuild                  |    1 +
+ include/linux/hsi/hsi.h                   |  412 +++++++
+ include/linux/hsi/hsi_char.h              |   65 +
+ 22 files changed, 4165 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-omap2/ssi.c
+ create mode 100644 arch/arm/plat-omap/include/plat/ssi.h
+ create mode 100644 drivers/hsi/Kconfig
+ create mode 100644 drivers/hsi/Makefile
+ create mode 100644 drivers/hsi/clients/Kconfig
+ create mode 100644 drivers/hsi/clients/Makefile
+ create mode 100644 drivers/hsi/clients/hsi_char.c
+ create mode 100644 drivers/hsi/controllers/Kconfig
+ create mode 100644 drivers/hsi/controllers/Makefile
+ create mode 100644 drivers/hsi/controllers/omap_ssi.c
+ create mode 100644 drivers/hsi/hsi.c
+ create mode 100644 drivers/hsi/hsi_boardinfo.c
+ create mode 100644 drivers/hsi/hsi_core.h
+ create mode 100644 include/linux/hsi/Kbuild
+ create mode 100644 include/linux/hsi/hsi.h
+ create mode 100644 include/linux/hsi/hsi_char.h
 
-The overall conclusion which I'm coming to is that we already support
-what you're asking for, but the problem is that we're using different
-(and I'd argue standard) terminology to describe what we have.
-
-The only issue which I see that we don't cover is the case where you want
-to describe a single buffer which is organised as N bytes to be transferred,
-M following bytes to be skipped, N bytes to be transferred, M bytes to be
-skipped.  I doubt there are many controllers which can be programmed with
-both 'N' and 'M' parameters directly.
-
-Let me finish with a summary of how memory-to-peripheral transfers are
-expected to operate:
-1. The DMA controller reads data from system RAM using whatever parameters
-   are most suitable for it to use up to the current buffer size.
-
-2. When the DMA request goes active, it transfers data that it read
-   previously to the device in dest_addr_width chunks of data.  It
-   transfers the minimum of the remaining data or the burst size.
-
-3. The peripheral, receiving data and filling its FIFO, drops the DMA
-   request.
-
-4. The DMA controller then reads more data from system RAM in the same
-   way in (1).
-
-5. If at any point the DMA controller reaches the end of the buffer, and
-   as a link to the next buffer, it immediately moves to the next buffer
-   and starts fetching data from that new buffer.
