@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751759Ab1FJEVD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 00:21:03 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62151 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750788Ab1FJEVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 00:21:01 -0400
-Message-ID: <4DF19C24.9010007@cn.fujitsu.com>
-Date: Fri, 10 Jun 2011 12:23:00 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1751905Ab1FJEav (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 00:30:51 -0400
+Received: from mailx.hitachi.co.jp ([133.145.228.49]:63905 "EHLO
+	mailx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371Ab1FJEau (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 00:30:50 -0400
+X-AuditID: b753bd60-a0a78ba0000050a4-fb-4df19c85bc3d
+X-AuditID: b753bd60-a0a78ba0000050a4-fb-4df19c85bc3d
+Message-ID: <4DF19C7D.2080403@hitachi.com>
+Date: Fri, 10 Jun 2011 13:24:29 +0900
+From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 10/15] KVM: MMU: lockless walking shadow page table
-References: <4DEE205E.8000601@cn.fujitsu.com> <4DEE21E2.8000301@cn.fujitsu.com> <20110609200945.GK2285@linux.vnet.ibm.com>
-In-Reply-To: <20110609200945.GK2285@linux.vnet.ibm.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-10 12:20:44,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-10 12:20:46,
-	Serialize complete at 2011-06-10 12:20:46
+To: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        pp-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH -tip v4 0/7] perf: Introduce branch sub commands
+References: <20110526050246.30011.86048.stgit@localhost6.localdomain6> <20110526132833.GC21815@nowhere> <4DDE7EAD.7000603@gmail.com> <4DE39C31.1070600@hitachi.com> <4DE3B724.3020203@gmail.com>
+In-Reply-To: <4DE3B724.3020203@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2011 04:09 AM, Paul E. McKenney wrote:
-> On Tue, Jun 07, 2011 at 09:04:34PM +0800, Xiao Guangrong wrote:
->> Using rcu to protect shadow pages table to be freed, so we can safely walk it,
->> it should run fast and is needed by mmio page fault
-> 
-> A couple of question below.
+(2011/05/31 0:26), David Ahern wrote:
+> On 05/30/2011 07:31 AM, Akihiro Nagai wrote:
+>>> The sample address can be converted to symbols and the output can be
+>>> added to perf-script rather easily. Attached is an example. I was going
+>>> to submit it back in April and got distracted. I'll rebase, move the
+>>> addr->sym conversion to a function and submit later today.
+>> OK.
+>> I agreed with implementing it on perf script.
+>> I'd like to try it.
+>
+> Updated patch. It applies on top of:
+>    http://lkml.org/lkml/2011/5/27/385
+It looks good.
 
-Thanks for your review!
+>
+> Hopefully for BTS you only have to change the sample_addr_correlates_sym
+> function.
+Yes.
+I'd like to enhance perf-script like this:
 
->> +	if (atomic_read(&kvm->arch.reader_counter)) {
-> 
-> This is the slowpath to be executed if there are currently readers
-> in kvm->arch.reader_counter(), correct?
-> 
+# perf script -f ip,addr,comm,sym,dso
 
-Yes, we will free the pages in RCU context if it is in kvm->arch.reader_counter
+output format is:
+<comm> <ip> <sym_ip> <dso_ip> <addr> <sym_addr> <dso_addr>
 
->> +		free_mmu_pages_unlock_parts(invalid_list);
->> +		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
->> +		list_del_init(invalid_list);
->> +		call_rcu(&sp->rcu, free_invalid_pages_rcu);
->> +		return;
->> +	}
-> 
-> OK, so it also looks like kvm->arch.reader_counter could transition from
-> zero to non-zero at this point due to a concurrent call from a reader in
-> the kvm_mmu_walk_shadow_page_lockless() function.  Does the following code
-> avoid messing up the reader?  If so, why bother with the slowpath above?
-> 
+actual output sample is:
+ls 0xffffffff81460b92 common_interrupt /lib/modules/3.0/build/vmlinux 0x0000003e9b000b20 _start /lib64/ld-2.13.so
+ls 0x0000003e9b000b23 _start /lib64/ld-2.13.so 0x0000003e9b004540 _dl_start /lib64/ld-2.13.so
+...
 
-Actually, we have split the free operation to two steps, the first step is
-kvm_mmu_prepare_zap_page(), it isolates the page from shadow page table, so
-after call it, we can not get the page from the shadow page table, and the
-later steps is kvm_mmu_commit_zap_page(), it frees the page.
+By specifying 'ip' and 'addr' together, perf-script resolves
+symbol and dso's path about both of 'ip' and 'addr'.
 
-kvm_mmu_walk_shadow_page_lockless() get the page from shadow page table,
-so, even if kvm->arch.reader_counter transition from zero to non-zero in
-the fallowing code, we can sure the page is not used by
-kvm_mmu_walk_shadow_page_lockless(), so we can free the page directly.
+>
+> I still need to look into out why some of the addresses for page-faults
+> are not resolving to symbols.
+I'd like to improve it referring perf branch's source codes.
+
+Thank you.
+
+>
+> David
