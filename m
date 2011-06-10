@@ -1,133 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab1FJMON (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 08:14:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46539 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755652Ab1FJMOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 08:14:08 -0400
-Message-ID: <4DF20A97.8010405@suse.de>
-Date: Fri, 10 Jun 2011 17:44:15 +0530
-From: Suresh Jayaraman <sjayaraman@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Connor Hansen <cmdkhh@gmail.com>
-Cc: Jeff Layton <jlayton@redhat.com>,
-        Martijn Uffing <mp3project@sarijopen.student.utwente.nl>,
-        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sean finney <seanius@seanius.net>
-Subject: Re: [OOPS] 3.0-rc1 cifs
-References: <Pine.LNX.4.64.1106092211500.19687@sarijopen.student.utwente.nl>	<20110609183045.01f6f9fc@tlielax.poochiereds.net>	<BANLkTimPqmkNJMaJE2_C5zD8ESFOEM3=hg@mail.gmail.com>	<Pine.LNX.4.64.1106100243370.2168@sarijopen.student.utwente.nl>	<20110610073702.061bc014@corrin.poochiereds.net> <BANLkTinqT0AXx9STWEzrw-yASTid5rb1Fg@mail.gmail.com>
-In-Reply-To: <BANLkTinqT0AXx9STWEzrw-yASTid5rb1Fg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756256Ab1FJMWO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 08:22:14 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:19400 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755770Ab1FJMWK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 08:22:10 -0400
+Date: Fri, 10 Jun 2011 14:22:05 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCH 02/10] lib: genalloc: Generic allocator improvements
+In-reply-to: <20110610122451.15af86d1@lxorguk.ukuu.org.uk>
+To: "'Alan Cox'" <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Johan MOSSBERG'" <johan.xx.mossberg@stericsson.com>,
+        "'Mel Gorman'" <mel@csn.ul.ie>, "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>
+Message-id: <000c01cc2769$02669b70$0733d250$%szyprowski@samsung.com>
+Organization: SPRC
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: pl
+Content-transfer-encoding: 7BIT
+Thread-index: AcwnYP17pPSneA7YQdyCWHjWn5mKQgABykRQ
+References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
+ <1307699698-29369-3-git-send-email-m.szyprowski@samsung.com>
+ <20110610122451.15af86d1@lxorguk.ukuu.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2011 05:33 PM, Connor Hansen wrote:
-> On Fri, Jun 10, 2011 at 4:37 AM, Jeff Layton <jlayton@redhat.com> wrote:
->> On Fri, 10 Jun 2011 02:57:21 +0200 (CEST)
->>  Uffing <mp3project@sarijopen.student.utwente.nl> wrote:
->>
->>>
->>> <snip>
->>>> call in get_dfs_path()
->>>> rc = CIFSTCon(xid, pSesInfo, temp_unc, NULL, nls_codepage);
->>>>
->>>> function header for CIFSTCon
->>>> int  CIFSTCon(unsigned int xid, struct cifs_ses *ses,
->>>>          const char *tree, struct cifs_tcon *tcon,
->>>>          const struct nls_table *nls_codepage)
->>>>
->>>> get_dfs_path() is passing struct cifs_tcon *tcon as NULL
->>>>
->>>> from config:  CONFIG_CIFS_WEAK_PW_HASH=y
->>>>
->>>> in CIFSTCon
->>>>
->>>> #ifdef CONFIG_CIFS_WEAK_PW_HASH
->>>> 3222                 if ((global_secflags & CIFSSEC_MAY_LANMAN) &&
->>>> 3223                     (ses->server->secType == LANMAN))
->>>> 3224                         calc_lanman_hash(tcon->password,
->>>> ses->server->cryptkey,
->>>>
->>>> in calc_lanman_hash tcon is dereferenced(tcon->password) without being
->>>> checked if null
->>>>
->>>> 3225                                          ses->server->sec_mode &
->>>> 3226                                             SECMODE_PW_ENCRYPT ?
->>>> true : false,
->>>> 3227                                          bcc_ptr);
->>>> 3228                 else
->>>> 3229 #endif /* CIFS_WEAK_PW_HASH */
->>>>
->>>> Connor
->>>
->>>
->>> Ave all
->>>
->>> I recompiled  kernel 3.0-rc1 (hadn't enabled CONFIG_DEBUG_INFO=y) and put
->>> the oops (with the new adresses) through gdb per instruction of Jeff. And
->>> Connor was spot on!
->>>
->>> <qoute oops>
->>> BUG: unable to handle kernel NULL pointer dereference at 00000000000000a0
->>> IP: [<ffffffffa041e286>] CIFSTCon+0xf6/0x4d0 [cifs]
->>> </qoute oops>
->>>
->>> <qoute gdb>
->>> This GDB was configured as "x86_64-linux-gnu".
->>> For bug reporting instructions, please see:
->>> <http://www.gnu.org/software/gdb/bugs/>...
->>> Reading symbols from
->>> /lib/modules/3.0.0-rc1-debug/kernel/fs/cifs/cifs.ko...done.
->>> (gdb) list *(CIFSTCon+0xf6)
->>> 0xc2b6 is in CIFSTCon (fs/cifs/connect.c:3230).
->>> 3225                                             ses->server->sec_mode &
->>> 3226                                                SECMODE_PW_ENCRYPT ?
->>> true : false,
->>> 3227                                             bcc_ptr);
->>> 3228                    else
->>> 3229    #endif /* CIFS_WEAK_PW_HASH */
->>> 3230                    rc = SMBNTencrypt(tcon->password,
->>> ses->server->cryptkey,
->>> 3231                                            bcc_ptr);
->>> 3232
->>> 3233                    bcc_ptr += CIFS_AUTH_RESP_SIZE;
->>> 3234                    if (ses->capabilities & CAP_UNICODE) {
->>> (gdb)
->>> </qoute gdb>
->>>
->>
->> (cc'ing Sean F. since I suspect this regression is due to his changes)
->>
->> Thanks for the analysis, Martijn and Connor...
->>
->> What sort of server are you mounting here? It looks like it's using
->> share-level security, so it's either very old or is a samba server
->> configured that way.
->>
->> I suspect that commit c1508ca236 is the culprit. With that, we call
->> into expand_dfs_referral on every mount attempt. Previously we only
->> called into there when we got back  an EREMOTE error and that would
->> have been unlikely on a share-level security connection.
->>
->> I think there are several possible solutions, but since Sean was in
->> here most recently I'd like to have his opinion.
-> 
-> I don't know enough about cifs but this call in fs/cifs/connect.c
-> 
-> 2268: rc = CIFSTCon(xid, pSesInfo, temp_unc, NULL, nls_codepage);
-> 
-> will always result in a null pointer derefence as CIFSTCon uses the
-> cifs_tcon struct for passwords without verification
+Hello,
 
-Yes, I too was hovering around this code path today and it doesn't look
-correct. Specifically, the call from cifs_dfs_path to CIFSTCon with
-cifs_tcon as NULL seems wrong. I tried to do dig history a bit with `git
-blame`, but couldn't figure out the commit that introduced this.
+On Friday, June 10, 2011 1:25 PM Alan Cox wrote:
 
+> I am curious about one thing
+> 
+> Why do we need this allocator. Why not use allocate_resource and friends.
+> The kernel generic resource handler already handles object alignment and
+> subranges. It just seems to be a surplus allocator that could perhaps be
+> mostly removed by using the kernel resource allocator we already have ?
 
+genalloc was used mainly for historical reasons (in the earlier version we
+were looking for direct replacement for first fit allocator).
+
+I plan to replace it with lib/bitmap.c bitmap_* based allocator (similar like
+it it is used by dma_declare_coherent_memory() and friends in
+drivers/base/dma-coherent.c). We need something really simple for CMA area
+management. 
+
+IMHO allocate_resource and friends a bit too heavy here, but good to know 
+that such allocator also exists.
+
+Best regards
 -- 
-Suresh Jayaraman
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
