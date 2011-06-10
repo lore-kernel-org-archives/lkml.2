@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757372Ab1FJNJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 09:09:58 -0400
-Received: from grimli.r00tworld.net ([83.169.44.195]:43161 "EHLO
+	id S1757437Ab1FJNKQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 09:10:16 -0400
+Received: from grimli.r00tworld.net ([83.169.44.195]:43178 "EHLO
 	mail.r00tworld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932127Ab1FJNJz (ORCPT
+	with ESMTP id S1757223Ab1FJNKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 09:09:55 -0400
+	Fri, 10 Jun 2011 09:10:00 -0400
 From: Mathias Krause <minipli@googlemail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Michal Simek <monstr@monstr.eu>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Greg Ungerer <gerg@uclinux.org>
-Subject: [PATCH] m68k, exec: remove redundant set_fs(USER_DS)
-Date: Fri, 10 Jun 2011 15:09:54 +0200
-Message-Id: <1307711394-7827-1-git-send-email-minipli@googlemail.com>
+        microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org,
+        Mathias Krause <minipli@googlemail.com>
+Subject: [PATCH] microblaze, exec: remove redundant set_fs(USER_DS)
+Date: Fri, 10 Jun 2011 15:09:59 +0200
+Message-Id: <1307711399-7929-1-git-send-email-minipli@googlemail.com>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
 References: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
@@ -25,69 +24,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The address limit is already set in flush_old_exec() so those calls to
-set_fs(USER_DS) are redundant.
+The address limit is already set in flush_old_exec() so this
+set_fs(USER_DS) is redundant.
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Greg Ungerer <gerg@uclinux.org>
 ---
+ arch/microblaze/kernel/process.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Note: I'm not sure about the assignment to current->thread.fs in
-flush_thread() -- shouldn't this be done in set_fs() itself?
-
- arch/m68k/include/asm/processor.h |    4 ----
- arch/m68k/kernel/process_mm.c     |    2 +-
- arch/m68k/kernel/process_no.c     |    2 +-
- 3 files changed, 2 insertions(+), 6 deletions(-)
-
-diff --git a/arch/m68k/include/asm/processor.h b/arch/m68k/include/asm/processor.h
-index f111b02..d8ef53a 100644
---- a/arch/m68k/include/asm/processor.h
-+++ b/arch/m68k/include/asm/processor.h
-@@ -105,9 +105,6 @@ struct thread_struct {
- static inline void start_thread(struct pt_regs * regs, unsigned long pc,
- 				unsigned long usp)
+diff --git a/arch/microblaze/kernel/process.c b/arch/microblaze/kernel/process.c
+index 968648a..dbb8124 100644
+--- a/arch/microblaze/kernel/process.c
++++ b/arch/microblaze/kernel/process.c
+@@ -237,7 +237,6 @@ unsigned long get_wchan(struct task_struct *p)
+ /* Set up a thread for executing a new program */
+ void start_thread(struct pt_regs *regs, unsigned long pc, unsigned long usp)
  {
--	/* reads from user space */
 -	set_fs(USER_DS);
--
  	regs->pc = pc;
- 	regs->sr &= ~0x2000;
- 	wrusp(usp);
-@@ -129,7 +126,6 @@ extern int handle_kernel_fault(struct pt_regs *regs);
- 
- #define start_thread(_regs, _pc, _usp)                  \
- do {                                                    \
--	set_fs(USER_DS); /* reads from user space */    \
- 	(_regs)->pc = (_pc);                            \
- 	((struct switch_stack *)(_regs))[-1].a6 = 0;    \
- 	reformat(_regs);                                \
-diff --git a/arch/m68k/kernel/process_mm.c b/arch/m68k/kernel/process_mm.c
-index c2a1fc2..1bc223a 100644
---- a/arch/m68k/kernel/process_mm.c
-+++ b/arch/m68k/kernel/process_mm.c
-@@ -185,7 +185,7 @@ EXPORT_SYMBOL(kernel_thread);
- void flush_thread(void)
- {
- 	unsigned long zero = 0;
--	set_fs(USER_DS);
-+
- 	current->thread.fs = __USER_DS;
- 	if (!FPU_IS_EMU)
- 		asm volatile (".chip 68k/68881\n\t"
-diff --git a/arch/m68k/kernel/process_no.c b/arch/m68k/kernel/process_no.c
-index 9b86ad1..69c1803 100644
---- a/arch/m68k/kernel/process_no.c
-+++ b/arch/m68k/kernel/process_no.c
-@@ -158,7 +158,7 @@ void flush_thread(void)
- #ifdef CONFIG_FPU
- 	unsigned long zero = 0;
- #endif
--	set_fs(USER_DS);
-+
- 	current->thread.fs = __USER_DS;
- #ifdef CONFIG_FPU
- 	if (!FPU_IS_EMU)
+ 	regs->r1 = usp;
+ 	regs->pt_mode = 0;
 -- 
 1.5.6.5
 
