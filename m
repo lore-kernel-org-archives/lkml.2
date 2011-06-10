@@ -1,73 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284Ab1FJMOG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 08:14:06 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:60353 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755652Ab1FJMOE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 08:14:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=YqLNfVehYbp4k/V65qiBi1FTpUC1coHRjgEmwptn7amY4MUVB+La+kcgx/dmtqOLvl
-         kMVMSUnyK4ZA57UvexlQQWUYvRsV25ndA2heIzI8/lRzwUZl2jTZxl9DzSX+z0gD+3BV
-         z7OvkfH5tTzrEc8dpFkbiOEZr/Is/RrLj2IlI=
+	id S1756743Ab1FJMON (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 08:14:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46539 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755652Ab1FJMOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 08:14:08 -0400
+Message-ID: <4DF20A97.8010405@suse.de>
+Date: Fri, 10 Jun 2011 17:44:15 +0530
+From: Suresh Jayaraman <sjayaraman@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <87lix9dioo.fsf@rustcorp.com.au>
-References: <4DEE2B15.4090809@redhat.com>
-	<87lixbgax9.fsf@rustcorp.com.au>
-	<4DF06F4F.8050308@redhat.com>
-	<87lix9dioo.fsf@rustcorp.com.au>
-Date: Fri, 10 Jun 2011 13:14:02 +0100
-Message-ID: <BANLkTimqrZYnnVq5KTh3s68_o3Lfr9oWeA@mail.gmail.com>
-Subject: Re: virtio scsi host draft specification, v3
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-        Christoph Hellwig <chellwig@redhat.com>,
-        Hannes Reinecke <hare@suse.de>, "Michael S. Tsirkin" <mst@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
+To: Connor Hansen <cmdkhh@gmail.com>
+Cc: Jeff Layton <jlayton@redhat.com>,
+        Martijn Uffing <mp3project@sarijopen.student.utwente.nl>,
+        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sean finney <seanius@seanius.net>
+Subject: Re: [OOPS] 3.0-rc1 cifs
+References: <Pine.LNX.4.64.1106092211500.19687@sarijopen.student.utwente.nl>	<20110609183045.01f6f9fc@tlielax.poochiereds.net>	<BANLkTimPqmkNJMaJE2_C5zD8ESFOEM3=hg@mail.gmail.com>	<Pine.LNX.4.64.1106100243370.2168@sarijopen.student.utwente.nl>	<20110610073702.061bc014@corrin.poochiereds.net> <BANLkTinqT0AXx9STWEzrw-yASTid5rb1Fg@mail.gmail.com>
+In-Reply-To: <BANLkTinqT0AXx9STWEzrw-yASTid5rb1Fg@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 12:33 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> On Thu, 09 Jun 2011 08:59:27 +0200, Paolo Bonzini <pbonzini@redhat.com> wrote:
->> On 06/09/2011 01:28 AM, Rusty Russell wrote:
->> >> >  after some preliminary discussion on the QEMU mailing list, I present a
->> >> >  draft specification for a virtio-based SCSI host (controller, HBA, you
->> >> >  name it).
->> >
->> > OK, I'm impressed.  This is very well written and it doesn't make any of
->> > the obvious mistakes wrt. virtio.
+On 06/10/2011 05:33 PM, Connor Hansen wrote:
+> On Fri, Jun 10, 2011 at 4:37 AM, Jeff Layton <jlayton@redhat.com> wrote:
+>> On Fri, 10 Jun 2011 02:57:21 +0200 (CEST)
+>>  Uffing <mp3project@sarijopen.student.utwente.nl> wrote:
 >>
->> Thanks very much, and thanks to those who corrected my early mistakes.
+>>>
+>>> <snip>
+>>>> call in get_dfs_path()
+>>>> rc = CIFSTCon(xid, pSesInfo, temp_unc, NULL, nls_codepage);
+>>>>
+>>>> function header for CIFSTCon
+>>>> int  CIFSTCon(unsigned int xid, struct cifs_ses *ses,
+>>>>          const char *tree, struct cifs_tcon *tcon,
+>>>>          const struct nls_table *nls_codepage)
+>>>>
+>>>> get_dfs_path() is passing struct cifs_tcon *tcon as NULL
+>>>>
+>>>> from config:  CONFIG_CIFS_WEAK_PW_HASH=y
+>>>>
+>>>> in CIFSTCon
+>>>>
+>>>> #ifdef CONFIG_CIFS_WEAK_PW_HASH
+>>>> 3222                 if ((global_secflags & CIFSSEC_MAY_LANMAN) &&
+>>>> 3223                     (ses->server->secType == LANMAN))
+>>>> 3224                         calc_lanman_hash(tcon->password,
+>>>> ses->server->cryptkey,
+>>>>
+>>>> in calc_lanman_hash tcon is dereferenced(tcon->password) without being
+>>>> checked if null
+>>>>
+>>>> 3225                                          ses->server->sec_mode &
+>>>> 3226                                             SECMODE_PW_ENCRYPT ?
+>>>> true : false,
+>>>> 3227                                          bcc_ptr);
+>>>> 3228                 else
+>>>> 3229 #endif /* CIFS_WEAK_PW_HASH */
+>>>>
+>>>> Connor
+>>>
+>>>
+>>> Ave all
+>>>
+>>> I recompiled  kernel 3.0-rc1 (hadn't enabled CONFIG_DEBUG_INFO=y) and put
+>>> the oops (with the new adresses) through gdb per instruction of Jeff. And
+>>> Connor was spot on!
+>>>
+>>> <qoute oops>
+>>> BUG: unable to handle kernel NULL pointer dereference at 00000000000000a0
+>>> IP: [<ffffffffa041e286>] CIFSTCon+0xf6/0x4d0 [cifs]
+>>> </qoute oops>
+>>>
+>>> <qoute gdb>
+>>> This GDB was configured as "x86_64-linux-gnu".
+>>> For bug reporting instructions, please see:
+>>> <http://www.gnu.org/software/gdb/bugs/>...
+>>> Reading symbols from
+>>> /lib/modules/3.0.0-rc1-debug/kernel/fs/cifs/cifs.ko...done.
+>>> (gdb) list *(CIFSTCon+0xf6)
+>>> 0xc2b6 is in CIFSTCon (fs/cifs/connect.c:3230).
+>>> 3225                                             ses->server->sec_mode &
+>>> 3226                                                SECMODE_PW_ENCRYPT ?
+>>> true : false,
+>>> 3227                                             bcc_ptr);
+>>> 3228                    else
+>>> 3229    #endif /* CIFS_WEAK_PW_HASH */
+>>> 3230                    rc = SMBNTencrypt(tcon->password,
+>>> ses->server->cryptkey,
+>>> 3231                                            bcc_ptr);
+>>> 3232
+>>> 3233                    bcc_ptr += CIFS_AUTH_RESP_SIZE;
+>>> 3234                    if (ses->capabilities & CAP_UNICODE) {
+>>> (gdb)
+>>> </qoute gdb>
+>>>
 >>
->> > I assume you have an implementation, as well?
+>> (cc'ing Sean F. since I suspect this regression is due to his changes)
 >>
->> Unfortunately not; "we're working on it", which means I should start in
->> July when I come back from vacation.
+>> Thanks for the analysis, Martijn and Connor...
 >>
->> Do you prefer to wait for one before I make a patch to the LyX source?
->> In the meanwhile, can you reserve a subsystem ID for me?
+>> What sort of server are you mounting here? It looks like it's using
+>> share-level security, so it's either very old or is a samba server
+>> configured that way.
 >>
->> Paolo
->
-> Sure, you can have the next subsystem ID.
->
-> It's a pain to patch once it's in LyX, so let's get the implementation
-> base on what you posted here an see how much it changes first...
+>> I suspect that commit c1508ca236 is the culprit. With that, we call
+>> into expand_dfs_referral on every mount attempt. Previously we only
+>> called into there when we got back  an EREMOTE error and that would
+>> have been unlikely on a share-level security connection.
+>>
+>> I think there are several possible solutions, but since Sean was in
+>> here most recently I'd like to have his opinion.
+> 
+> I don't know enough about cifs but this call in fs/cifs/connect.c
+> 
+> 2268: rc = CIFSTCon(xid, pSesInfo, temp_unc, NULL, nls_codepage);
+> 
+> will always result in a null pointer derefence as CIFSTCon uses the
+> cifs_tcon struct for passwords without verification
 
-Paolo, I'll switch the Linux guest LLD and QEMU virtio-scsi skeleton
-that I have to comply with the spec.  Does this sound good or did you
-want to write these from scratch?
+Yes, I too was hovering around this code path today and it doesn't look
+correct. Specifically, the call from cifs_dfs_path to CIFSTCon with
+cifs_tcon as NULL seems wrong. I tried to do dig history a bit with `git
+blame`, but couldn't figure out the commit that introduced this.
 
-Stefan
+
+-- 
+Suresh Jayaraman
