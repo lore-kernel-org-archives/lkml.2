@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555Ab1FJQBB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 12:01:01 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:38412 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753319Ab1FJQAz (ORCPT
+	id S1757262Ab1FJQAy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 12:00:54 -0400
+Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:34509 "EHLO
+	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753319Ab1FJQAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 12:00:55 -0400
-Date: Fri, 10 Jun 2011 16:59:54 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Kyungmin Park <kmpark@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
-        thomas.abraham@linaro.org
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-Message-ID: <20110610155954.GA25774@srcf.ucam.org>
-References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
- <20110528005640.9076c0b1.akpm@linux-foundation.org>
- <20110609185259.GA29287@linux.vnet.ibm.com>
- <BANLkTinxeeSby_+tta8EhzCg3VbD6+=g+g@mail.gmail.com>
- <20110610151121.GA2230@linux.vnet.ibm.com>
+	Fri, 10 Jun 2011 12:00:53 -0400
+Message-ID: <4DF23F93.8070102@stericsson.com>
+Date: Fri, 10 Jun 2011 18:00:19 +0200
+From: Mattias Wallin <mattias.wallin@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-GB; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110610151121.GA2230@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: john stultz <johnstul@us.ibm.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv2 0/3] clocksource: add db8500 PRCMU timer
+References: <1307007271-1004-1-git-send-email-mattias.wallin@stericsson.com> <20110602094622.GS3660@n2100.arm.linux.org.uk> <4DE7637B.3060901@stericsson.com> <20110602110137.GU3660@n2100.arm.linux.org.uk> <4DE77D9A.6090301@stericsson.com> <4DE788B2.5060308@ti.com> <1307040455.11492.52.camel@work-vm> <4DEF7CA1.8080809@stericsson.com> <20110609215939.GI24424@n2100.arm.linux.org.uk> <4DF1DBB2.4040501@stericsson.com>
+In-Reply-To: <4DF1DBB2.4040501@stericsson.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 08:11:21AM -0700, Paul E. McKenney wrote:
+On 06/10/2011 10:54 AM, Mattias Wallin wrote:
+> On 06/09/2011 11:59 PM, Russell King - ARM Linux wrote:
+>> No - I'd like you to check whether the patch I sent fixes your
+>> sched_clock problem across suspend/resume so that we can get that sorted
+>> for everyone, instead of coming up with platform specific fixes.  Then
+>> we can work out how to hook that into cpuidle so that it works properly
+>> there.
+>
+> Ahh, I see your plan. I was focused on the cpuidle problem and your
+> patch only addressed suspend/resume.
+> Anyway, now that I understand more what you are after I'll have a look
+> at it and come back to you.
 
-> Of course, on a server, you could get similar results by having a very
-> large amount of memory (say 256GB) and a workload that needed all the
-> memory only occasionally for short periods, but could get by with much
-> less (say 8GB) the rest of the time.  I have no idea whether or not
-> anyone actually has such a system.
+Unfortunately you will not get an answer if your patch works or not now. 
+Our u8500 mainline code is missing suspend support and I have been 
+trying to get suspend for u8500 to work without success. Since I will be 
+away for two weeks I will try to get the suspend guys to work on it 
+meanwhile.
 
-For the server case, the low hanging fruit would seem to be 
-finer-grained self-refresh. At best we seem to be able to do that on a 
-per-CPU socket basis right now. The difference between active and 
-self-refresh would seem to be much larger than the difference between 
-self-refresh and powered down.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Kind Regards,
+Mattias Wallin
