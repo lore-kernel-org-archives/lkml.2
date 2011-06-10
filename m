@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758363Ab1FJXy4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 19:54:56 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:37669 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751894Ab1FJXyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 19:54:55 -0400
-Date: Sat, 11 Jun 2011 01:54:42 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ying Han <yinghan@google.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH] [BUGFIX] update mm->owner even if no next owner.
-Message-ID: <20110610235442.GA21413@cmpxchg.org>
-References: <20110609212956.GA2319@redhat.com>
- <BANLkTikCfWhoLNK__ringzy7KjKY5ZEtNb3QTuX1jJ53wNNysA@mail.gmail.com>
- <BANLkTikF7=qfXAmrNzyMSmWm7Neh6yMAB8EbBp7oLcfQmrbDjA@mail.gmail.com>
- <20110610091355.2ce38798.kamezawa.hiroyu@jp.fujitsu.com>
- <alpine.LSU.2.00.1106091812030.4904@sister.anvils>
- <20110610113311.409bb423.kamezawa.hiroyu@jp.fujitsu.com>
- <20110610121949.622e4629.kamezawa.hiroyu@jp.fujitsu.com>
- <20110610125551.385ea7ed.kamezawa.hiroyu@jp.fujitsu.com>
- <20110610133021.2eaaf0da.kamezawa.hiroyu@jp.fujitsu.com>
- <alpine.LSU.2.00.1106101425400.28334@sister.anvils>
+	id S1758366Ab1FJXzs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 19:55:48 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:61826 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758302Ab1FJXzr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 19:55:47 -0400
+Message-ID: <4DF2AEEF.6040208@kernel.org>
+Date: Fri, 10 Jun 2011 16:55:27 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1106101425400.28334@sister.anvils>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Jim Bos <jim876@xs4all.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+References: <4DED0394.2090000@gmail.com> <BANLkTikVEj2Uz9N0B-kKA3GJTUWzmwz=zQ@mail.gmail.com> <20110607014127.GA8450@srcf.ucam.org> <4DED8752.5070005@kernel.org> <4DEDEA73.7010900@gmail.com> <20110610164706.GB25774@srcf.ucam.org> <4DF259B2.9070403@gmail.com> <20110610175429.GA28500@srcf.ucam.org> <4DF29E7E.50908@gmail.com> <4DF2A17E.7000103@kernel.org> <20110610230359.GA2084@srcf.ucam.org> <4DF2A81C.7000902@kernel.org> <4DF2A984.6060705@linux.intel.com>
+In-Reply-To: <4DF2A984.6060705@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4DF2AEF9.0040,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 02:49:35PM -0700, Hugh Dickins wrote:
-> On Fri, 10 Jun 2011, KAMEZAWA Hiroyuki wrote:
-> > 
-> > I think this can be a fix. 
+On 06/10/2011 04:32 PM, H. Peter Anvin wrote:
+> On 06/10/2011 04:26 PM, Yinghai Lu wrote:
+>>>
+>>>> 2. ask vendor of system that Matthew try to fix to go back fix their firmware. otherwise user have stay with CSM with it.
+>>>
+>>> This isn't an option.
+>>>
+>>> The medium-term fix is to ensure that the bootloaders don't put the 
+>>> kernel on top of boot services code. 
+>>
+>> that is not enough, will need to make arch/x86/boot/compressed/head_64.S parse e820 table to find right decompress position.
+>>
 > 
-> Sorry, I think not: I've not digested your rationale,
-> but three things stand out:
-> 
-> 1. Why has this only just started happening?  I may not have run that
->    test on 3.0-rc1, but surely I ran it for hours with 2.6.39;
->    maybe not with khugepaged, but certainly with ksmd.
-> 
-> 2. Your hunk below:
-> > -	if (!mm_need_new_owner(mm, p))
-> > +	if (!mm_need_new_owner(mm, p)) {
-> > +		rcu_assign_pointer(mm->owner, NULL);
->    is now setting mm->owner to NULL at times when we were sure it did not
->    need updating before (task is not the owner): you're damaging mm->owner.
-> 
-> 3. There's a patch from Andrea in 3.0-rc1 which looks very likely to be
->    relevant, 692e0b35427a "mm: thp: optimize memcg charge in khugepaged".
->    I'll try reproducing without that tonight (I crashed in 20 minutes
->    this morning, so it's not too hard).
+> No, it should be, because the boot loader can control the decompress
+> position to avoid the problems.
 
-It looks likely.  This change moved the memcg charge out of the
-mmap_sem read section, which kept the last task of the mm from
-exiting:
+bootloader could find out decompressed kernel size?
 
-	do_exit
-	  exit_mm
-	    mmput
-	      khugepaged_exit
-	        down_write(&mm->mmap_sem);
-		up_write(&mm->mmap_sem);
-
+Yinghai
