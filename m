@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757850Ab1FJSIl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 14:08:41 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:53868 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757821Ab1FJSIj (ORCPT
+	id S1757779Ab1FJSIf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 14:08:35 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55580 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757746Ab1FJSIb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 14:08:39 -0400
-Date: Fri, 10 Jun 2011 19:08:07 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Kyungmin Park <kmpark@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
-        thomas.abraham@linaro.org
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-Message-ID: <20110610180807.GB28500@srcf.ucam.org>
-References: <20110528005640.9076c0b1.akpm@linux-foundation.org>
- <20110609185259.GA29287@linux.vnet.ibm.com>
- <BANLkTinxeeSby_+tta8EhzCg3VbD6+=g+g@mail.gmail.com>
- <20110610151121.GA2230@linux.vnet.ibm.com>
- <20110610155954.GA25774@srcf.ucam.org>
- <20110610165529.GC2230@linux.vnet.ibm.com>
- <20110610170535.GC25774@srcf.ucam.org>
- <20110610171939.GE2230@linux.vnet.ibm.com>
- <20110610172307.GA27630@srcf.ucam.org>
- <20110610175248.GF2230@linux.vnet.ibm.com>
+	Fri, 10 Jun 2011 14:08:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=FyqdC21l8h5nlGnyzZURSJho0YNr0zeL9xeGX3S0Y8vwaLNxKZqGTU+Ajg+FC4PM8C
+         /B6F04QhprzZeyfaGYmFkLKquPrm7lAkec0zuJaFrUhMjt6VZhl0Ax2s5wjl7mzhaWLe
+         4ceBF+q7sX2Uaj05jVmKlPIbJqIzl0PyW6VkY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110610175248.GF2230@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <4DF25AF5.6070909@metafoo.de>
+References: <1307726331-28618-1-git-send-email-lars@metafoo.de>
+ <BANLkTimLAfEj+tgNMWjTsanccgfEt9UW1g@mail.gmail.com> <4DF25AF5.6070909@metafoo.de>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Fri, 10 Jun 2011 14:08:10 -0400
+Message-ID: <BANLkTikSqdHDzQUZdh87YX3y+=GtKDe27g@mail.gmail.com>
+Subject: Re: [Device-drivers-devel] [PATCH 1/3] ASoC: Add ADAU1701 codec driver
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, uclinux-dist-devel@blackfin.uclinux.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        device-drivers-devel@blackfin.uclinux.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 10:52:48AM -0700, Paul E. McKenney wrote:
-> On Fri, Jun 10, 2011 at 06:23:07PM +0100, Matthew Garrett wrote:
-> > I haven't seen too many ARM servers with 256GB of RAM :) I'm mostly 
-> > looking at this from an x86 perspective.
-> 
-> But I have seen ARM embedded systems with CPU power consumption in
-> the milliwatt range, which greatly reduces the amount of RAM required
-> to get significant power savings from this approach.  Three orders
-> of magnitude less CPU power consumption translates (roughly) to three
-> orders of magnitude less memory required -- and embedded devices with
-> more than 256MB of memory are quite common.
+On Fri, Jun 10, 2011 at 13:57, Lars-Peter Clausen wrote:
+> On 06/10/2011 07:43 PM, Mike Frysinger wrote:
+>> On Fri, Jun 10, 2011 at 13:18, Lars-Peter Clausen wrote:
+>>> +MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
+>>
+>> did you actually rewrite this thing from scratch ?  seems like you
+>> should keep Cliff as the author in git/MODULE_AUTHOR, and then add
+>> your name to the s-o-b list and this macro.
+>
+> Not from scratch, but I guess except for the register definitions and the
+> copyright header not much of the original driver is left:
+> sound/soc/codecs/adau1701.c |  662 ++++++++++++++++++++++++-------------------
+>  1 files changed, 371 insertions(+), 291 deletions(-)
 
-I'm not saying that powering down memory isn't a win, just that in the 
-server market we're not even getting unused memory into self refresh at 
-the moment. If we can gain that hardware capability then sub-node zoning 
-means that we can look at allocating (and migrating?) RAM in such a way 
-as to get a lot of the win that we'd gain from actually cutting the 
-power, without the added overhead of actually shrinking our working set.
+based purely on LoC, Cliff wrote 467, so you took that and punted 291
+(62%) and then added 371.  that leaves the final file with 32% Cliff
+and 68% you.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+however, some of that was register renaming and shuffling between the
+adau1701.c and adau1701.h, and it's easier to start with a base and
+clean up than from scratch.
+
+so i'm definitely not comfortable dropping Cliff's completely from the
+file and the log (which means he needs to be readded and made sure to
+be retained in all the other ADAU drivers going forward), and i'm not
+entirely sold about changing of the Author field in the git commit.
+
+don't get me wrong ... i'm not a fanboi of Cliff or something, i just
+think credit is due to him for his work.
+-mike
