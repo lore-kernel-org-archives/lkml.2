@@ -1,216 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644Ab1FJARM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 20:17:12 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:37397 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171Ab1FJARJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 20:17:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Cfzzp1nd2DPtjzq9/avoVZMtX6VRDtg2OOpP9e22f3s9se61cn/FHrycjNnBHgKOpA
-         2ZS6zOOndg0R9laikgGw==
+	id S1757538Ab1FJAVJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 20:21:09 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13805 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757419Ab1FJAVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 20:21:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,344,1304319600"; 
+   d="scan'208";a="11672495"
+Date: Thu, 9 Jun 2011 17:21:03 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libusb-devel@lists.sourceforge.net
+Cc: Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
+        hector@marcansoft.com, Jan Kiszka <jan.kiszka@siemens.com>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oliver@neukum.org>, Greg KH <greg@kroah.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Hans de Goede <hdegoede@redhat.com>
+Subject: USB mini-summit at LinuxCon Vancouver
+Message-ID: <20110610002103.GA7169@xanatos>
 MIME-Version: 1.0
-In-Reply-To: <20110609233154.GA26745@cmpxchg.org>
-References: <20110602075028.GB20630@cmpxchg.org>
-	<BANLkTi=AZG4LKUdeODB0uP=_CVBRnGs_Nw@mail.gmail.com>
-	<20110602175142.GH28684@cmpxchg.org>
-	<BANLkTi=9083abfiKdZ5_oXyA+dZqaXJfZg@mail.gmail.com>
-	<20110608153211.GB27827@cmpxchg.org>
-	<BANLkTincHpoay1JtpjG0RY9CCvfepRohTXUH6KKULYJ9jbdo+A@mail.gmail.com>
-	<20110609083503.GC11603@cmpxchg.org>
-	<BANLkTiknpTjj3saw+zS5ABeD+4ESz68xvRot7TTvKs7A_RtrdA@mail.gmail.com>
-	<20110609183637.GC20333@cmpxchg.org>
-	<BANLkTin3ZZYXdZgSFfi=8QMnN5we8RcoMyZ_vM3kdbRXCaoWnw@mail.gmail.com>
-	<20110609233154.GA26745@cmpxchg.org>
-Date: Thu, 9 Jun 2011 17:17:05 -0700
-Message-ID: <BANLkTi=SD7-W17bT-+ZujA68BiAXyEmbC_tE+aLHEtQ6jzXBHQ@mail.gmail.com>
-Subject: Re: [patch 0/8] mm: memcg naturalization -rc2
-From: Ying Han <yinghan@google.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 9, 2011 at 4:31 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> On Thu, Jun 09, 2011 at 03:30:27PM -0700, Ying Han wrote:
->> On Thu, Jun 9, 2011 at 11:36 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
->> > On Thu, Jun 09, 2011 at 10:36:47AM -0700, Ying Han wrote:
->> >> On Thu, Jun 9, 2011 at 1:35 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
->> >> > On Wed, Jun 08, 2011 at 08:52:03PM -0700, Ying Han wrote:
->> >> >> On Wed, Jun 8, 2011 at 8:32 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
->> >> >> > I guess it would make much more sense to evaluate if reclaiming from
->> >> >> > memcgs while there are others exceeding their soft limit is even a
->> >> >> > problem.  Otherwise this discussion is pretty pointless.
->> >> >>
->> >> >> AFAIK it is a problem since it changes the spec of kernel API
->> >> >> memory.soft_limit_in_bytes. That value is set per-memcg which all the
->> >> >> pages allocated above that are best effort and targeted to reclaim
->> >> >> prior to others.
->> >> >
->> >> > That's not really true.  Quoting the documentation:
->> >> >
->> >> >    When the system detects memory contention or low memory, control groups
->> >> >    are pushed back to their soft limits. If the soft limit of each control
->> >> >    group is very high, they are pushed back as much as possible to make
->> >> >    sure that one control group does not starve the others of memory.
->> >> >
->> >> > I am language lawyering here, but I don't think it says it won't touch
->> >> > other memcgs at all while there are memcgs exceeding their soft limit.
->> >>
->> >> Well... :) I would say that the documentation of soft_limit needs lots
->> >> of work especially after lots of discussions we have after the LSF.
->> >>
->> >> The RFC i sent after our discussion has the following documentation,
->> >> and I only cut & paste the content relevant to our conversation here:
->> >>
->> >> What is "soft_limit"?
->> >> The "soft_limit was introduced in memcg to support over-committing the
->> >> memory resource on the host. Each cgroup can be configured with
->> >> "hard_limit", where it will be throttled or OOM killed by going over
->> >> the limit. However, the allocation can go above the "soft_limit" as
->> >> long as there is no memory contention. The "soft_limit" is the kernel
->> >> mechanism for re-distributing spare memory resource among cgroups.
->> >>
->> >> What we have now?
->> >> The current implementation of softlimit is based on per-zone RB tree,
->> >> where only the cgroup exceeds the soft_limit the most being selected
->> >> for reclaim.
->> >>
->> >> It makes less sense to only reclaim from one cgroup rather than
->> >> reclaiming all cgroups based on calculated propotion. This is required
->> >> for fairness.
->> >>
->> >> Proposed design:
->> >> round-robin across the cgroups where they have memory allocated on the
->> >> zone and also exceed the softlimit configured.
->> >>
->> >> there was a question on how to do zone balancing w/o global LRU. This
->> >> could be solved by building another cgroup list per-zone, where we
->> >> also link cgroups under their soft_limit. We won't scan the list
->> >> unless the first list being exhausted and
->> >> the free pages is still under the high_wmark.
->> >>
->> >> Since the per-zone memcg list design is being replaced by your
->> >> patchset, some of the details doesn't apply. But the concept still
->> >> remains where we would like to scan some memcgs first (above
->> >> soft_limit) .
->> >
->> > I think the most important thing we wanted was to round-robin scan all
->> > soft limit excessors instead of just the biggest one.  I understood
->> > this is the biggest fault with soft limits right now.
->> >
->> > We came up with maintaining a list of excessors, rather than a tree,
->> > and from this particular implementation followed naturally that this
->> > list is scanned BEFORE we look at other memcgs at all.
->> >
->> > This is a nice to have, but it was never the primary problem with the
->> > soft limit implementation, as far as I understood.
->> >
->> >> > It would be a lie about the current code in the first place, which
->> >> > does soft limit reclaim and then regular reclaim, no matter the
->> >> > outcome of the soft limit reclaim cycle.  It will go for the soft
->> >> > limit first, but after an allocation under pressure the VM is likely
->> >> > to have reclaimed from other memcgs as well.
->> >> >
->> >> > I saw your patch to fix that and break out of reclaim if soft limit
->> >> > reclaim did enough.  But this fix is not much newer than my changes.
->> >>
->> >> My soft_limit patch was developed in parallel with your patchset, and
->> >> most of that wouldn't apply here.
->> >> Is that what you are referring to?
->> >
->> > No, I meant that the current behaviour is old and we are only changing
->> > it only now, so we are not really breaking backward compatibility.
->> >
->> >> > The second part of this is:
->> >> >
->> >> >    Please note that soft limits is a best effort feature, it comes with
->> >> >    no guarantees, but it does its best to make sure that when memory is
->> >> >    heavily contended for, memory is allocated based on the soft limit
->> >> >    hints/setup. Currently soft limit based reclaim is setup such that
->> >> >    it gets invoked from balance_pgdat (kswapd).
->> >>
->> >> We had patch merged which add the soft_limit reclaim also in the global ttfp.
->> >>
->> >> memcg-add-the-soft_limit-reclaim-in-global-direct-reclaim.patch
->> >>
->> >> > It's not the pages-over-soft-limit that are best effort.  It says that
->> >> > it tries its best to take soft limits into account while reclaiming.
->> >> Hmm. Both cases are true. The best effort pages I referring to means
->> >> "the page above the soft_limit are targeted to reclaim first under
->> >> memory contention"
->> >
->> > I really don't know where you are taking this from.  That is neither
->> > documented anywhere, nor is it the current behaviour.
->>
->> I got the email from andrew on may 27 and you were on the cc-ed :)
->> Anyway, i just forwarded you that one.
->
-> I wasn't asking about this patch at all...  This is the conversation:
->
-> Me:
->
->> >> > It's not the pages-over-soft-limit that are best effort.  It says that
->> >> > it tries its best to take soft limits into account while reclaiming.
->
-> You:
->
->> >> Hmm. Both cases are true. The best effort pages I referring to means
->> >> "the page above the soft_limit are targeted to reclaim first under
->> >> memory contention"
->
-> Me:
->
->> > I really don't know where you are taking this from.  That is neither
->> > documented anywhere, nor is it the current behaviour.
->
-> And this is still my question.
->
-> Current: scan up to all pages of the biggest soft limit offender, then
-> reclaim from random memcgs (because of the global LRU).
-agree.
+I'm pleased to announce a USB mini-summit at LinuxCon Vancouver.
 
->
-> After my patch: scan all memcgs according to their size, with double
-> the pressure on those over their soft limit.
-agree.
->
-> Please tell me exactly how my patch regresses existing behaviour, a
-> user interface, a documented feature, etc.
->
+What:	USB mini-summit
+When:	Tuesday, August 16th, all day
+Where:	At the conference venue, room TBD pending confirmation from
+	Angela Brown.
 
-Ok, thank you for clarifying it. Now i understand what's the confusion here.
+Proposed topics include USB virtualization, and improved bandwidth APIs
+between the USB core and drivers (especially webcam drivers).  See the
+detailed topic list below.  Anyone is also welcome to propose or show up
+with a USB related topic.  MUSB?  USB 3.0 gadget drivers?  USB-IP?
 
-I agree that your patch doesn't regress from what we have now
-currently. What i referred earlier was the improvement from the
-current design. So we were comparing to two targets.
+The USB mini-summit does overlap with the virtualization mini-summit by
+a day, but I'm hoping we can schedule talks so some of the
+virtualization folks can make it to the USB mini-summit.  The other
+option was on Friday during the conference which was not ideal.
 
-Please go ahead with your patch, and I don't have problem with that
-now. I will propose the soft_limit reclaim improvement as separate
-thread.
+Proposed topics:
 
-Thanks
+Topic 1
+-------
 
---Ying
+The KVM folks suggested that it would be good to get USB and
+virtualization developers together to talk about how to virtualize the
+xHCI host controller.  The xHCI spec architect worked closely with
+VMWare to get some extra goodies in the spec to help virtualization, and
+I'd like to see the other virtualization developers take advantage of
+that.  I'd also like us to hash out any issues they have been finding in
+the USB core or xHCI driver during the virtualization effort.
 
-> If you have an even better idea, please propose it.
->
+
+Topic 2
+-------
+
+I'd also like to get the V4L and audio developers who work with USB
+devices together with the core USB folks to talk about bandwidth
+management under xHCI.
+
+One of the issues is that since the xHCI hardware does bandwidth
+management, not the xHCI driver, a schedule that will take too much
+bandwidth will get rejected much sooner than any USB driver currently
+expects (during a call to usb_set_interface).  This poses issues, since
+most USB video drivers negotiate the video size and frame rate after
+they call usb_set_interface, so they don't know whether they can fall
+back to a less bandwidth-intensive setting.  Currently, they just submit
+URBs with less and less bandwidth until one interval setting gets
+accepted that won't work under xHCI.
+
+A second issue is that that some drivers need less bandwidth than the
+device advertises, and the xHCI driver currently uses whatever periodic
+interval the device advertises in its descriptors.  This is not what the
+video/audio driver wants, especially in the case of buggy high speed
+devices that advertise the interval in frames, not microframes.  There
+needs to be some way for the drivers to communicate their bandwidth
+needs to the USB core.  We've known about this issue for a while, and I
+think it's time to get everyone in the same room and hash out an API.
+
+(I will send out an API proposal later this month.)
+
+Hope to see you there!
+
+Sarah Sharp
