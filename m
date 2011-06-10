@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196Ab1FJNKx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 09:10:53 -0400
-Received: from grimli.r00tworld.net ([83.169.44.195]:43853 "EHLO
+	id S932213Ab1FJNK5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 09:10:57 -0400
+Received: from grimli.r00tworld.net ([83.169.44.195]:43863 "EHLO
 	mail.r00tworld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932137Ab1FJNKt (ORCPT
+	with ESMTP id S932137Ab1FJNKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 09:10:49 -0400
+	Fri, 10 Jun 2011 09:10:54 -0400
 From: Mathias Krause <minipli@googlemail.com>
-To: Paul Mundt <lethal@linux-sh.org>
+To: "David S. Miller" <davem@davemloft.net>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
         Mathias Krause <minipli@googlemail.com>
-Subject: [PATCH] sh, exec: remove redundant set_fs(USER_DS)
-Date: Fri, 10 Jun 2011 15:10:48 +0200
-Message-Id: <1307711448-16289-1-git-send-email-minipli@googlemail.com>
+Subject: [PATCH] sparc, exec: remove redundant addr_limit assignment
+Date: Fri, 10 Jun 2011 15:10:53 +0200
+Message-Id: <1307711453-17412-1-git-send-email-minipli@googlemail.com>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
 References: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
@@ -24,40 +24,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The address limit is already set in flush_old_exec() so those calls to
-set_fs(USER_DS) are redundant.
+The address limit is already set in flush_old_exec() so this
+assignment of USER_DS is redundant.
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
 ---
- arch/sh/include/asm/processor_64.h |    1 -
- arch/sh/kernel/process_32.c        |    2 --
- 2 files changed, 0 insertions(+), 3 deletions(-)
+ arch/sparc/kernel/process_32.c |    3 +--
+ arch/sparc/kernel/process_64.c |    3 ---
+ 2 files changed, 1 insertions(+), 5 deletions(-)
 
-diff --git a/arch/sh/include/asm/processor_64.h b/arch/sh/include/asm/processor_64.h
-index 2a541dd..e25c4c7 100644
---- a/arch/sh/include/asm/processor_64.h
-+++ b/arch/sh/include/asm/processor_64.h
-@@ -150,7 +150,6 @@ struct thread_struct {
- #define SR_USER (SR_MMU | SR_FD)
+diff --git a/arch/sparc/kernel/process_32.c b/arch/sparc/kernel/process_32.c
+index c8cc461..f793742 100644
+--- a/arch/sparc/kernel/process_32.c
++++ b/arch/sparc/kernel/process_32.c
+@@ -380,8 +380,7 @@ void flush_thread(void)
+ #endif
+ 	}
  
- #define start_thread(_regs, new_pc, new_sp)			\
--	set_fs(USER_DS);					\
- 	_regs->sr = SR_USER;	/* User mode. */		\
- 	_regs->pc = new_pc - 4;	/* Compensate syscall exit */	\
- 	_regs->pc |= 1;		/* Set SHmedia ! */		\
-diff --git a/arch/sh/kernel/process_32.c b/arch/sh/kernel/process_32.c
-index b473f0c..aaf6d59 100644
---- a/arch/sh/kernel/process_32.c
-+++ b/arch/sh/kernel/process_32.c
-@@ -102,8 +102,6 @@ EXPORT_SYMBOL(kernel_thread);
- void start_thread(struct pt_regs *regs, unsigned long new_pc,
- 		  unsigned long new_sp)
- {
--	set_fs(USER_DS);
--
- 	regs->pr = 0;
- 	regs->sr = SR_FD;
- 	regs->pc = new_pc;
+-	/* Now, this task is no longer a kernel thread. */
+-	current->thread.current_ds = USER_DS;
++	/* This task is no longer a kernel thread. */
+ 	if (current->thread.flags & SPARC_FLAG_KTHREAD) {
+ 		current->thread.flags &= ~SPARC_FLAG_KTHREAD;
+ 
+diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
+index c158a95..d959cd0 100644
+--- a/arch/sparc/kernel/process_64.c
++++ b/arch/sparc/kernel/process_64.c
+@@ -368,9 +368,6 @@ void flush_thread(void)
+ 
+ 	/* Clear FPU register state. */
+ 	t->fpsaved[0] = 0;
+-	
+-	if (get_thread_current_ds() != ASI_AIUS)
+-		set_fs(USER_DS);
+ }
+ 
+ /* It's a bit more tricky when 64-bit tasks are involved... */
 -- 
 1.5.6.5
 
