@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709Ab1FJGPY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 02:15:24 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:34384 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941Ab1FJGPX (ORCPT
+	id S1752800Ab1FJGdP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 02:33:15 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:31962 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130Ab1FJGdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 02:15:23 -0400
-X-AuditID: b753bd60-a50caba000003bac-a7-4df1b67792c0
-X-AuditID: b753bd60-a50caba000003bac-a7-4df1b67792c0
-Message-ID: <4DF1B668.2020002@hitachi.com>
-Date: Fri, 10 Jun 2011 15:15:04 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Fri, 10 Jun 2011 02:33:14 -0400
+X-VirusChecked: Checked
+X-Env-Sender: info@hallhousegt.collaborationhost.net
+X-Msg-Ref: server-14.tower-132.messagelabs.com!1307687190!28463020!11
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.99]
+Reply-To: <leeshing1414@yahoo.com.hk>
+From: Lee Shing <info@hallhousegt.collaborationhost.net>
+Subject: Greetings
+Date: Fri, 10 Jun 2011 07:26:41 +0100
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 0/22]  0: Uprobes patchset with perf probe
- support
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6> <1307660596.2497.1760.camel@laptop>
-In-Reply-To: <1307660596.2497.1760.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="Windows-1251"
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-ID: <9f184eab-5c33-4954-9c1b-105ff8dbb1d8@AUSP01MHUB08.collaborationhost.net>
+To: Undisclosed recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/10 8:03), Peter Zijlstra wrote:
-> On Tue, 2011-06-07 at 18:28 +0530, Srikar Dronamraju wrote:
->> Please do provide your valuable comments.
-> 
-> Your patch split-up is complete crap. I'm about to simply fold all of
-> them just to be able to read anything.
-> 
-> The split-up appears to do its best to make it absolutely impossible to
-> get a sane overview of things, tons of things are out of order, either
-> it relies on future patches filling out things or modifies stuff in
-> previous patches.
-> 
-> Its a complete pain to read..
+Greetings,
 
+I am Mr. Lee Shing, Principal Assurance manager for the Nanyang Commercial Bank of China. An investment was placed under my management
+eight years ago by a customer who is now deceased. I need your assistance in investing these funds. If you're interested contact me
+via my private email   lshing1515@yahoo.com.hk
 
-Maybe for the part of uprobe itself, you are right.
-But I hope tracing/perf parts are separated from that.
+If you're not interested in my offer do not respond to this email.Awaiting your urgent reply.
 
-Thanks,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Thanks and my regards,
+Lee Shing
