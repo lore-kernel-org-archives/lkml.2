@@ -1,80 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303Ab1FJF6y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 01:58:54 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:41192 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622Ab1FJF6v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 01:58:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=fqHY3G8dYNScxHAv7yNhpp32Dtshx629m7rh8afmvDN6mmyVgc1cSdFhXs+plma9ud
-         AunH6JoXuDRtzytkjTZVh8x7vIVzdks1lErryL1BA70q4Zh3XSR45ly97QGwemY6DQ8s
-         TzaG826UYFE/E/DimCICzLaWbsRD2yKiviLfo=
-MIME-Version: 1.0
-In-Reply-To: <20110610055558.GA1832@dell>
-References: <yunboy7a2so.fsf@aiko.keithp.com>
-	<99B09243E1A5DA4898CDD8B700111448175AA2DB2A@EXMB04.eu.tieto.com>
-	<20110609083345.GA2894@dell.ccr.corp.intel.com>
-	<yuny61b3pnm.fsf@aiko.keithp.com>
-	<99B09243E1A5DA4898CDD8B700111448175AA2DE98@EXMB04.eu.tieto.com>
-	<20110610055558.GA1832@dell>
-Date: Fri, 10 Jun 2011 14:58:50 +0900
-Message-ID: <BANLkTim4F8ZvWPMHSXpcBj9Eb2uFThcz4w@mail.gmail.com>
-Subject: Re: Regression caused by "Bluetooth: Map sec_level to link key requirements"
-From: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
-To: Waldemar.Rymarkiewicz@tieto.com, keithp@keithp.com, padovan@profusion.mobi,
-        marcel@holtmann.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752427Ab1FJGGG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 02:06:06 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:45280 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751556Ab1FJGGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 02:06:04 -0400
+Date: Fri, 10 Jun 2011 16:05:48 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: brudley@broadcom.com, henryp@broadcom.com, rvossen@broadcom.com,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (staging related)
+Message-Id: <20110610160548.529797c7.sfr@canb.auug.org.au>
+In-Reply-To: <20110609192243.GA3980@kroah.com>
+References: <20110609172745.dfd3a298.sfr@canb.auug.org.au>
+	<20110609184127.GA2760@kroah.com>
+	<20110609192243.GA3980@kroah.com>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__10_Jun_2011_16_05_48_+1000_DYUVsR8WAGExXXZ."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Keith,
+--Signature=_Fri__10_Jun_2011_16_05_48_+1000_DYUVsR8WAGExXXZ.
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, Jun 10, 2011 at 2:55 PM, Johan Hedberg <johan.hedberg@gmail.com> wrote:
-> Hi,
+Hi Greg,
+
+On Thu, 9 Jun 2011 12:22:43 -0700 Greg KH <greg@kroah.com> wrote:
 >
-> On Thu, Jun 09, 2011, Waldemar.Rymarkiewicz@tieto.com wrote:
->> >I re-pair'ed using a manually entered a 16 digit pin, but now
->> >DUN setup doesn't succeed at all.
->>
->> Did you try to remove all stored link keys and start again?
->> If you already have a pincode which is insecure you have to remove it manually.
->>
->> Try 'hciconfig hciX noauth noencrypt ' before.
->>
->> Check syslog and switch debug on in the kernel first.
->
-> So I just realized that the BITE tests were only done for mgmtops.c and
-> not hciops.c. One critical difference is that conn->key_type will not be
-> set (or actually set to 0xff) for connections which happen after the
-> initial pairing has occurred. We're right now testing a one-line patch
-> which might fix the issue. Luiz will send it soon if it turns out to
-> work fine.
+> On Thu, Jun 09, 2011 at 11:41:27AM -0700, Greg KH wrote:
+> > > Also in several other files in drivers/staging/brcm80211/
+> > >=20
+> > > Also:
+> > >=20
+> > > drivers/staging/comedi/drivers.c: In function 'comedi_buf_alloc':
+> > > drivers/staging/comedi/drivers.c:505:37: error: 'PAGE_KERNEL_NOCACHE'=
+ undeclared (first use in this function)
+> > > In file included from drivers/staging/comedi/drivers/addi_apci_035.c:=
+7:0:
+> > > drivers/staging/comedi/drivers/addi-data/addi_common.c: In function '=
+i_ADDI_Attach':
+> > > drivers/staging/comedi/drivers/addi-data/addi_common.c:2765:7: error:=
+ implicit declaration of function 'virt_to_bus'
+> > >=20
+> > > (Also several other occurrences of that one)
+> >=20
+> > I'll fix this up, it looks just like a #include that needs to be added.
+>=20
+> I've fixed all of these up, thanks for reporting them.
 
-So the fix we were testing looks like this:
+No, I still get these:
 
-diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
-index 2f5ae53..b309f84 100644
---- a/net/bluetooth/hci_conn.c
-+++ b/net/bluetooth/hci_conn.c
-@@ -673,8 +673,8 @@ auth:
-        if (test_and_set_bit(HCI_CONN_ENCRYPT_PEND, &conn->pend))
-                return 0;
+In file included from drivers/staging/comedi/drivers/addi_apci_035.c:7:0:
+drivers/staging/comedi/drivers/addi-data/addi_common.c: In function 'i_ADDI=
+_Attach':
+drivers/staging/comedi/drivers/addi-data/addi_common.c:2765:7: error: impli=
+cit declaration of function 'virt_to_bus'
 
--       hci_conn_auth(conn, sec_level, auth_type);
--       return 0;
-+       if (!(hci_conn_auth(conn, sec_level, auth_type)))
-+               return 0;
+virt_to_bus is only defined for 32 bit powerpc (not 64 bit) (and maybe
+not at all on some architectures e.g. sparc).
 
- encrypt:
-        if (conn->link_mode & HCI_LM_ENCRYPT)
+=46rom Documentation/DMA-API-HOWTO.txt:
+"All drivers should be using these interfaces with no exceptions.  It
+is planned to completely remove virt_to_bus() and bus_to_virt() as
+they are entirely deprecated.  Some ports already do not provide these
+as it is impossible to correctly support them."
 
--- 
-Luiz Augusto von Dentz
-Computer Engineer
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__10_Jun_2011_16_05_48_+1000_DYUVsR8WAGExXXZ.
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN8bQ8AAoJEDMEi1NhKgbsA1oH/2db3MrLp+uo+NKJji4Rzydk
+c4+0DUIiYbI7rHWVJK98/vfEdEnQbvT/Carl2ep6sJPXWgn0CH/PqlyVrzmH6Atd
+ixQsv6RhEwnYrzlZV4opUZ6CKNXgyYcKXSAFV9F2kXxKgJ2BI1sNUSHQpoH4nAM4
+Zr/OqtCzfVzCTcEctkuZ3Q3jU6nYY/jFaVnwM6nensnhY8ZzXGsmv30xNT8QfMY9
+iGeV7zf+NOzy5gRhPMvVbhxI3ghTVbfDy1OmKjAAM7Z71+pXjumDL9WnamL7ASDc
+VkKC0XiJ2GtwvuRyclDH/oET9mjGEALtDMO369T+sgMZ6/j9kJOzwRFRDW/s2zY=
+=5VPQ
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__10_Jun_2011_16_05_48_+1000_DYUVsR8WAGExXXZ.--
