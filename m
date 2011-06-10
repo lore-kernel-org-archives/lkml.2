@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122Ab1FJF5O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 01:57:14 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:45174 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab1FJF5N (ORCPT
+	id S1752303Ab1FJF6y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 01:58:54 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:41192 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622Ab1FJF6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 01:57:13 -0400
-Date: Fri, 10 Jun 2011 11:26:48 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 0/22]  0: Uprobes patchset with perf
-	probe support
-Message-ID: <20110610055648.GA22707@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6> <1307644944.2497.1023.camel@laptop>
+	Fri, 10 Jun 2011 01:58:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=fqHY3G8dYNScxHAv7yNhpp32Dtshx629m7rh8afmvDN6mmyVgc1cSdFhXs+plma9ud
+         AunH6JoXuDRtzytkjTZVh8x7vIVzdks1lErryL1BA70q4Zh3XSR45ly97QGwemY6DQ8s
+         TzaG826UYFE/E/DimCICzLaWbsRD2yKiviLfo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307644944.2497.1023.camel@laptop>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20110610055558.GA1832@dell>
+References: <yunboy7a2so.fsf@aiko.keithp.com>
+	<99B09243E1A5DA4898CDD8B700111448175AA2DB2A@EXMB04.eu.tieto.com>
+	<20110609083345.GA2894@dell.ccr.corp.intel.com>
+	<yuny61b3pnm.fsf@aiko.keithp.com>
+	<99B09243E1A5DA4898CDD8B700111448175AA2DE98@EXMB04.eu.tieto.com>
+	<20110610055558.GA1832@dell>
+Date: Fri, 10 Jun 2011 14:58:50 +0900
+Message-ID: <BANLkTim4F8ZvWPMHSXpcBj9Eb2uFThcz4w@mail.gmail.com>
+Subject: Re: Regression caused by "Bluetooth: Map sec_level to link key requirements"
+From: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
+To: Waldemar.Rymarkiewicz@tieto.com, keithp@keithp.com, padovan@profusion.mobi,
+        marcel@holtmann.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 09, 2011 at 08:42:24PM +0200, Peter Zijlstra wrote:
-> On Tue, 2011-06-07 at 18:28 +0530, Srikar Dronamraju wrote:
-> > - Breakpoint handling should co-exist with singlestep/blockstep from
-> >   another tracer/debugger.
-> > - Queue and dequeue signals delivered from the singlestep till
-> >   completion of postprocessing. 
-> 
-> These two are important to sort before we can think of merging this
-> right?
+Hi Keith,
 
-Yup.
+On Fri, Jun 10, 2011 at 2:55 PM, Johan Hedberg <johan.hedberg@gmail.com> wrote:
+> Hi,
+>
+> On Thu, Jun 09, 2011, Waldemar.Rymarkiewicz@tieto.com wrote:
+>> >I re-pair'ed using a manually entered a 16 digit pin, but now
+>> >DUN setup doesn't succeed at all.
+>>
+>> Did you try to remove all stored link keys and start again?
+>> If you already have a pincode which is insecure you have to remove it manually.
+>>
+>> Try 'hciconfig hciX noauth noencrypt ' before.
+>>
+>> Check syslog and switch debug on in the kernel first.
+>
+> So I just realized that the BITE tests were only done for mgmtops.c and
+> not hciops.c. One critical difference is that conn->key_type will not be
+> set (or actually set to 0xff) for connections which happen after the
+> initial pairing has occurred. We're right now testing a one-line patch
+> which might fix the issue. Luiz will send it soon if it turns out to
+> work fine.
 
-Guess Srikar missed updating this part, but the first of the issues
-(sstep/blockstep) is now fixed. Signal queueing is a work-in-progress.
+So the fix we were testing looks like this:
 
-Ananth
+diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
+index 2f5ae53..b309f84 100644
+--- a/net/bluetooth/hci_conn.c
++++ b/net/bluetooth/hci_conn.c
+@@ -673,8 +673,8 @@ auth:
+        if (test_and_set_bit(HCI_CONN_ENCRYPT_PEND, &conn->pend))
+                return 0;
+
+-       hci_conn_auth(conn, sec_level, auth_type);
+-       return 0;
++       if (!(hci_conn_auth(conn, sec_level, auth_type)))
++               return 0;
+
+ encrypt:
+        if (conn->link_mode & HCI_LM_ENCRYPT)
+
+-- 
+Luiz Augusto von Dentz
+Computer Engineer
