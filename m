@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757675Ab1FJTJk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 15:09:40 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57847 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755777Ab1FJTJj (ORCPT
+	id S1757795Ab1FJTKC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 15:10:02 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:59629 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab1FJTKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 15:09:39 -0400
+	Fri, 10 Jun 2011 15:10:00 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=uWUtHmHyaDQBcO+gS0QhpkxIcCE4noaJy/Z7luTu3oOkCA1fpfT6hGr7r6lGJ26SRp
-         DkozWAu8CxWTLXE+wRiM+gqEcClf3mp/q0+VtAkTRhZQiUAVF1+pCHB7+8Zq6XJhS76L
-         wCvEkJMg5+rk/7H6jj2vPI1YlTZQ7DCXuXpsU=
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=PGXXbKNopyfqYkImUbZbBY52WFq/IMqo1PGOKLghBBseep1HzekC/lf7Ffa0r3fJuw
+         Q8v9uIsLzwHdOof1LVNjEJY9+qHSHV+nU53CY07i2zJhfG1PZ9EtkHtFkFbIjHiiuip5
+         TJmLt4lruLtPH+wLNqBa92Y3ev1mdP0nwSW98=
+Date: Fri, 10 Jun 2011 22:09:56 +0300
+From: Maxin B John <maxin.john@gmail.com>
+To: rdunlap@xenotime.net
+Cc: catalin.marinas@arm.com, dbaluta@ixiacom.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: update kmemleak architecture support
+ info
+Message-ID: <20110610190956.GA2742@maxin>
 MIME-Version: 1.0
-In-Reply-To: <20110610094242.GC1621@aftab>
-References: <4df13a522720782e51@agluck-desktop.sc.intel.com>
-	<4df13c362729376e2@agluck-desktop.sc.intel.com>
-	<20110610094242.GC1621@aftab>
-Date: Fri, 10 Jun 2011 12:09:38 -0700
-Message-ID: <BANLkTim4=h6TzbhTQVi0OAQLk+WGQnDFOw@mail.gmail.com>
-Subject: Re: [PATCH 05/10] MCE: Mask out address mask bits below address granuality
-From: Tony Luck <tony.luck@gmail.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Avi Kivity <avi@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 2:42 AM, Borislav Petkov <bp@amd64.org> wrote:
-> s/granuality/granularity/g;
->
-> I would very much like to know how you guys got 'granularity' wrong
-> _three_ times in one small patch?!!
+>> I think Daniel's suggestion is better, we don't have to worry about
+>> changing the documentation every time we add a new architecture.
+I agree with that.
 
-Speshial skiil, tallent, and reguler speelling praktice sesssions :-)
+> Please send an updated patch without the currently-supported list
+> of architectures.
+Please find the updated patch below: 
 
-[At least we spelled it wrong the same way each time]
+Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+---
+diff --git a/Documentation/kmemleak.txt b/Documentation/kmemleak.txt
+index 090e6ee..51063e6 100644
+--- a/Documentation/kmemleak.txt
++++ b/Documentation/kmemleak.txt
+@@ -11,7 +11,9 @@ with the difference that the orphan objects are not freed but only
+ reported via /sys/kernel/debug/kmemleak. A similar method is used by the
+ Valgrind tool (memcheck --leak-check) to detect the memory leaks in
+ user-space applications.
+-Kmemleak is supported on x86, arm, powerpc, sparc, sh, microblaze and tile.
++
++Please check DEBUG_KMEMLEAK dependencies in lib/Kconfig.debug for supported
++architectures.
+ 
+ Usage
+ -----
 
-Will fix.
-
--Tony
