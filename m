@@ -1,64 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755122Ab1FJKAp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 06:00:45 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:46704 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754330Ab1FJKAo (ORCPT
+	id S1754617Ab1FJKBo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 06:01:44 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:39897 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab1FJKBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 06:00:44 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
-	h=Received:Message-ID:Date:From:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=HaDixFH2+jq1x6GhzXfb6NlvBmcxRB+M4Tp3deaCWvSSDgxcdowfFSU9n1tTk6DBrWgSiGL1g5qvaGi9tml8i3bo1YT0jUZxJoLvZVl9mWIc8DtlNMmXf+v9ItjivXku;
-Message-ID: <4DF1EB45.1070706@tao.ma>
-Date: Fri, 10 Jun 2011 18:00:37 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
+	Fri, 10 Jun 2011 06:01:41 -0400
+X-IronPort-AV: E=Sophos;i="4.65,345,1304294400"; 
+   d="scan'208";a="6208492"
+Date: Fri, 10 Jun 2011 11:01:39 +0100
+From: Tim Deegan <Tim.Deegan@citrix.com>
+To: Igor Mammedov <imammedo@redhat.com>
+CC: <xen-devel@lists.xensource.com>, Keir Fraser <keir@xen.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Keir Fraser <keir.xen@gmail.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        Paul Menage <menage@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+Subject: Re: [Xen-devel] Possible shadow bug
+Message-ID: <20110610100139.GG5098@whitby.uk.xensource.com>
+References: <4DE66BEB.7040502@redhat.com>
+ <BANLkTimbqHPeUdue=_Z31KVdPwcXtbLpeg@mail.gmail.com>
+ <4DE8D50F.1090406@redhat.com>
+ <BANLkTinMamg_qesEffGxKu3QkT=zyQ2MRQ@mail.gmail.com>
+ <4DEE26E7.2060201@redhat.com>
+ <20110608123527.479e6991.kamezawa.hiroyu@jp.fujitsu.com>
+ <4DF0801F.9050908@redhat.com>
+ <alpine.DEB.2.00.1106091311530.12963@kaball-desktop>
+ <20110609150133.GF5098@whitby.uk.xensource.com>
+ <4DF0F90D.4010900@redhat.com>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: CFQ: async queue blocks the whole system
-References: <1307616577-6101-1-git-send-email-tm@tao.ma> <20110609141451.GD29913@redhat.com> <4DF0DD0F.8090407@tao.ma> <20110609153738.GF29913@redhat.com> <4DF0EA55.10209@tao.ma> <20110609182706.GG29913@redhat.com> <4DF1B035.7080009@tao.ma> <20110610091427.GB4183@redhat.com>
-In-Reply-To: <20110610091427.GB4183@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 114.251.86.0 authed with tm@tao.ma}
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <4DF0F90D.4010900@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2011 05:14 PM, Vivek Goyal wrote:
-> On Fri, Jun 10, 2011 at 01:48:37PM +0800, Tao Ma wrote:
-> 
-> [..]
->>>> btw, reverting the patch doesn't work. I can still get the livelock.
-> 
-> What test exactly you are running. I am primarily interested in whether
-> you still get the hung task timeout warning where a writer is waiting on
-> get_request_wait() for more than 120 secods or not.
-> 
-> Livelock might be a different problem and for which Christoph provided
-> a patch for XFS.
-> 
->>>
->>> Can you give following patch a try and see if it helps. On my system this
->>> does allow CFQ to dispatch some writes once in a while.
->> Sorry, this patch doesn't work in my test.
-> 
-> Can you give me backtrace of say 15 seconds each with and without patch.
-> I think now we must be dispatching some writes, that's a different thing
-> that writer still sleeps more than 120 seconds because there are  way
-> too many readers.
-> 
-> May be we need to look into show workload tree scheduling takes place and
-> tweak that logic a bit.
-OK, our test cases can be downloaded for free. ;)
-svn co http://code.taobao.org/svn/dirbench/trunk/meta_test/press/set_vs_get
-Modify run.sh to be fit for your need. Normally within 10 mins, you will
-get the livelock. We have a SAS disk with 15000 RPMs.
+Hi, 
 
-btw, you have to mount the volume on /test since the test program are
-not that clever. :)
+At 18:47 +0200 on 09 Jun (1307645229), Igor Mammedov wrote:
+> It's rhel5.6 xen. I've tried to test on SLES 11 that has 4.0.1 xen, however
+> wasn't able to reproduce problem. (I'm not sure if hap was turned
+> off in this case). More detailed info can be found at RHBZ#700565
 
-Regards,
-Tao
+The best way to be sure whether HAP is in use is to connect to the
+serial line, hit ^A^A^A to switch input to Xen, and hit 'q' to dump
+per-domain state.  The printout for the guest domain should either say 
+"paging assistance: shadow refcounts translate external"
+or 
+"paging assistance: hap refcounts translate external".
+
+(If you don't have serial you can get the same info by running 
+"xm debug-keys q" and then "xm dmesg" to read the output.)
+
+> >you're willing to try recompiling Xen with some small patches that
+> >disable the "cleverer" parts of the shadow pagetable code that might
+> >indicate something.  (Of course, it might just change the timing to
+> >obscure a real linux bug too.)
+> >
+> Haven't got to this part yet. But looks like it's the only option left.
+
+Actually, looking at the disassembly you posted, it looks more like it
+might be an emulator bug in Xen; if Xen finds itself emulating the IMUL
+instruction and either gets the logic wrong or does the memory access
+wrong, it could cause that failure.  And one reason that Xen emulates
+instructions is if the memory operand is on a pagetable that's shadowed
+(which might be a page that was recently a pagetable). 
+
+ISTR that even though the RHEL xen reports a 3.0.x version it has quite
+a lot of backports in it.  Does it have this patch?
+http://hg.uk.xensource.com/xen-3.1-testing.hg/rev/e8fca4c42d05
+
+Cheers,
+
+Tim.
+
+-- 
+Tim Deegan <Tim.Deegan@citrix.com>
+Principal Software Engineer, Xen Platform Team
+Citrix Systems UK Ltd.  (Company #02937203, SL9 0BG)
