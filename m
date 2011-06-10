@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757581Ab1FJRvv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 13:51:51 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56383 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757087Ab1FJRvt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 13:51:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=MyhWJCg+7eMzKMk04sP8DbViakChbtfSt41+sfoWsypeB+8phv4tOgpCtmgqmYScg1
-         TscZbZdS6n6vf0E38LQdDvIVs3SY02yvvo/r18q98bEe8ycSzX+ZH8RlJW/Sma6smWxy
-         F8A2HQ6o0JxcZFxEFyzdRYWroRtkyzuXlLtXU=
-Message-ID: <4DF259B2.9070403@gmail.com>
-Date: Fri, 10 Jun 2011 19:51:46 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
-MIME-Version: 1.0
+	id S1757442Ab1FJRwy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 13:52:54 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:57395 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750871Ab1FJRww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 13:52:52 -0400
+Date: Fri, 10 Jun 2011 10:52:48 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Yinghai Lu <yinghai@kernel.org>, Jim Bos <jim876@xs4all.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-References: <4DE8DC16.6030308@xs4all.nl> <20110603133351.GA25130@srcf.ucam.org> <4DE8EF13.9030609@xs4all.nl> <BANLkTinWj1LvQLverPTUm9rKEx=+HZUpDA@mail.gmail.com> <4DECFC1C.10801@xs4all.nl> <4DED0394.2090000@gmail.com> <BANLkTikVEj2Uz9N0B-kKA3GJTUWzmwz=zQ@mail.gmail.com> <20110607014127.GA8450@srcf.ucam.org> <4DED8752.5070005@kernel.org> <4DEDEA73.7010900@gmail.com> <20110610164706.GB25774@srcf.ucam.org>
-In-Reply-To: <20110610164706.GB25774@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Cc: Kyungmin Park <kmpark@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
+        thomas.abraham@linaro.org
+Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
+ Power Management
+Message-ID: <20110610175248.GF2230@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
+ <20110528005640.9076c0b1.akpm@linux-foundation.org>
+ <20110609185259.GA29287@linux.vnet.ibm.com>
+ <BANLkTinxeeSby_+tta8EhzCg3VbD6+=g+g@mail.gmail.com>
+ <20110610151121.GA2230@linux.vnet.ibm.com>
+ <20110610155954.GA25774@srcf.ucam.org>
+ <20110610165529.GC2230@linux.vnet.ibm.com>
+ <20110610170535.GC25774@srcf.ucam.org>
+ <20110610171939.GE2230@linux.vnet.ibm.com>
+ <20110610172307.GA27630@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110610172307.GA27630@srcf.ucam.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well,
+On Fri, Jun 10, 2011 at 06:23:07PM +0100, Matthew Garrett wrote:
+> On Fri, Jun 10, 2011 at 10:19:39AM -0700, Paul E. McKenney wrote:
+> > On Fri, Jun 10, 2011 at 06:05:35PM +0100, Matthew Garrett wrote:
+> > > I mean at the hardware level. As far as I know, the best we can do at 
+> > > the moment is to put an entire node into self refresh when the CPU hits 
+> > > package C6.
+> > 
+> > But this depends on the type of system and CPU family, right?  If you
+> > can say, which hardware are you thinking of?  (I am thinking of ARM.)
+> 
+> I haven't seen too many ARM servers with 256GB of RAM :) I'm mostly 
+> looking at this from an x86 perspective.
 
-Op 10-06-11 18:47, Matthew Garrett schreef:
-> So this is obviously even more of a hack, but before you check whether 
-> the memblock has already been reserved could you __check_region it as 
-> well? That ought to avoid us touching the kernel. I've got a patch for 
-> grub that'll avoid the situation where we load the kernel on top of an 
-> existing resource and I'll port that to grub2, but that's still going to 
-> be awkward for existing bootloaders.
->
-Erm, __check_region calls __requestion_region which does a kzalloc,
-if I call __check_region it doesn't boot, probably because of that.
+But I have seen ARM embedded systems with CPU power consumption in
+the milliwatt range, which greatly reduces the amount of RAM required
+to get significant power savings from this approach.  Three orders
+of magnitude less CPU power consumption translates (roughly) to three
+orders of magnitude less memory required -- and embedded devices with
+more than 256MB of memory are quite common.
 
-Do you want me to manually run through iomem_resource? Is it even available up at that point?
-
-~Maarten
+							Thanx, Paul
