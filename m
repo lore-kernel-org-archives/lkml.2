@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab1FJJeH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 05:34:07 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33637 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750774Ab1FJJeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 05:34:05 -0400
-Date: Fri, 10 Jun 2011 11:33:54 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        efault@gmx.de, Arne Jansen <lists@die-jansens.de>
-Subject: Re: [PATCH 1/3] printk: Release console_sem after logbuf_lock
-Message-ID: <20110610093354.GH27280@elte.hu>
-References: <20110609130647.937204592@chello.nl>
- <20110609131307.493181962@chello.nl>
- <20110609130617.f8aca966.akpm@linux-foundation.org>
- <20110609202707.GA28951@elte.hu>
- <1307652883.2497.1028.camel@laptop>
- <20110609140714.fc9ea187.akpm@linux-foundation.org>
- <alpine.LSU.2.00.1106091655560.2710@sister.anvils>
- <20110609170804.1b76e853.akpm@linux-foundation.org>
+	id S1754765Ab1FJJf1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 05:35:27 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:48318 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754498Ab1FJJfY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 05:35:24 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Richard Purdie <rpurdie@rpsys.net>, <linux-kernel@vger.kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] leds/lp5521: provide section tagging
+Date: Fri, 10 Jun 2011 11:35:13 +0200
+Message-ID: <1307698513-1622-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110609170804.1b76e853.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Linus Walleij <linus.walleij@linaro.org>
 
-* Andrew Morton <akpm@linux-foundation.org> wrote:
+Tag the probe() and remove() function as __devinit and __devexit
+respectively.
 
-> > Some notes:
-> 
-> Stupid thing doesn't explain the magical locking though :( I'm 
-> 99.9% sure that putting an up() inside a spinlock_irq()ed region 
-> was deliberate.
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/leds/leds-lp5521.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-My guess would be it's done so that pending irqs that have queued up 
-during our current printk-ing activities do not hit us with the 
-console still locked.
+diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
+index c0cff64..7c00294 100644
+--- a/drivers/leds/leds-lp5521.c
++++ b/drivers/leds/leds-lp5521.c
+@@ -637,8 +637,8 @@ static int __init lp5521_init_led(struct lp5521_led *led,
+ 	return 0;
+ }
+ 
+-static int lp5521_probe(struct i2c_client *client,
+-			const struct i2c_device_id *id)
++static int __devinit lp5521_probe(struct i2c_client *client,
++				  const struct i2c_device_id *id)
+ {
+ 	struct lp5521_chip		*chip;
+ 	struct lp5521_platform_data	*pdata;
+@@ -744,7 +744,7 @@ fail1:
+ 	return ret;
+ }
+ 
+-static int lp5521_remove(struct i2c_client *client)
++static int __devexit lp5521_remove(struct i2c_client *client)
+ {
+ 	struct lp5521_chip *chip = i2c_get_clientdata(client);
+ 	int i;
+@@ -775,7 +775,7 @@ static struct i2c_driver lp5521_driver = {
+ 		.name	= "lp5521",
+ 	},
+ 	.probe		= lp5521_probe,
+-	.remove		= lp5521_remove,
++	.remove		= __devexit_p(lp5521_remove),
+ 	.id_table	= lp5521_id,
+ };
+ 
+-- 
+1.7.3.2
 
-Thanks,
-
-	Ingo
