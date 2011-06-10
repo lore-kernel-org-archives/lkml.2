@@ -1,100 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757940Ab1FJS3k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 14:29:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7879 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757705Ab1FJS3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 14:29:38 -0400
-Message-ID: <4DF2627F.4030600@redhat.com>
-Date: Fri, 10 Jun 2011 14:29:19 -0400
-From: Josef Bacik <josef@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1757952Ab1FJSbT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 14:31:19 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:37917 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755904Ab1FJSbS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 14:31:18 -0400
+X-Sasl-enc: pXOW3t2ZwCL2OOWE4+xsTB62gFcmFMMMekOKRD7MJjrc 1307730677
+Date: Fri, 10 Jun 2011 11:31:08 -0700
+From: Greg KH <greg@kroah.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for May 26 (drivers/base/node.c)
+Message-ID: <20110610183108.GB10575@kroah.com>
+References: <20110526163941.7dfcad1a.sfr@canb.auug.org.au>
+ <20110526120121.db0506de.randy.dunlap@oracle.com>
+ <20110610084405.c34a166d.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-To: Sage Weil <sage@newdream.net>
-CC: Chris Mason <chris.mason@oracle.com>, Jim Schutt <jaschut@sandia.gov>,
-        dave <dave@jikos.cz>, miaox <miaox@cn.fujitsu.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>, ceph-devel@vger.kernel.org
-Subject: Re: 3.0-rcX BUG at fs/btrfs/ioctl.c:432 - bisected
-References: <4DF140AB.4030805@sandia.gov> <20110609234553.GN12709@twin.jikos.cz> <4DF24F0E.4040306@sandia.gov> <1307726732-sup-3404@shiny> <Pine.LNX.4.64.1106101100310.5245@cobra.newdream.net> <Pine.LNX.4.64.1106101112470.5245@cobra.newdream.net>
-In-Reply-To: <Pine.LNX.4.64.1106101112470.5245@cobra.newdream.net>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110610084405.c34a166d.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2011 02:14 PM, Sage Weil wrote:
-> On Fri, 10 Jun 2011, Sage Weil wrote:
->> On Fri, 10 Jun 2011, Chris Mason wrote:
->>> Excerpts from Jim Schutt's message of 2011-06-10 13:06:22 -0400:
->>>
->>> [ two different btrfs crashes ]
->>>
->>> I think your two crashes in btrfs were from the uninit variables and
->>> those should be fixed in rc2.
->>>
->>>> When I did my bisection, my criteria for success/failure was
->>>> "did mkcephfs succeed?".  When I apply this criteria to a recent
->>>> linus kernel (e.g. 06e86849cf4019), which includes the fix you
->>>> mentioned (aa0467d8d2a00e), I get still a different failure mode,
->>>> which doesn't actually reference btrfs:
->>>>
->>>> [  276.364178] BUG: unable to handle kernel NULL pointer dereference at 000000000000000a
->>>> [  276.365127] IP: [<ffffffffa05434b1>] journal_start+0x3e/0x9c [jbd]
->>>
->>> Looking at the resulting code in the oops, we're here in journal_start:
->>>
->>>         if (handle) {
->>>                 J_ASSERT(handle->h_transaction->t_journal == journal);
->>>
->>> handle comes from current->journal_info, and we're doing a deref on
->>> handle->h_transaction, which is probably 0xa.
->>>
->>> So, we're leaving crud in current->journal_info and ext3 is finding it.
->>>
->>> Perhaps its from ceph starting a transaction but leaving it running?
->>> The bug came with Josef's transaction performance fixes, but it is
->>> probably a mixture of his code with the ioctls ceph is using.
->>
->> Ah, yeah, that's the problem.  We saw a similar problem a while back with 
->> the start/stop transaction ioctls.  In this case, create_snapshot is doing
->>
->> 	trans = btrfs_start_transaction(root->fs_info->extent_root, 5);
->> 	if (IS_ERR(trans)) {
->> 		ret = PTR_ERR(trans);
->> 		goto fail;
->> 	}
->>
->> which sets current->journal_info.  Then
->>
->> 	ret = btrfs_snap_reserve_metadata(trans, pending_snapshot);
->> 	BUG_ON(ret);
->>
->> 	list_add(&pending_snapshot->list,
->> 		 &trans->transaction->pending_snapshots);
->> 	if (async_transid) {
->> 		*async_transid = trans->transid;
->> 		ret = btrfs_commit_transaction_async(trans,
->> 				     root->fs_info->extent_root, 1);
->> 	} else {
->> 		ret = btrfs_commit_transaction(trans,
->> 				       root->fs_info->extent_root);
->> 	}
->>
->> but the async snap creation ioctl takes the async path, which runs 
->> btrfs_commit_transaction in a worker thread.
->>
->> I'm not sure what the right thing to do is here is... can whatever is in 
->> journal_info be attached to trans instead in 
->> btrfs_commit_transaction_async()?
+On Fri, Jun 10, 2011 at 08:44:05AM -0700, Randy Dunlap wrote:
+> On Thu, 26 May 2011 12:01:21 -0700 Randy Dunlap wrote:
 > 
-> It looks like it's not used for anything in btrfs, actually; it's just set 
-> and cleared.  What's the point of that?
+> > On Thu, 26 May 2011 16:39:41 +1000 Stephen Rothwell wrote:
+> > 
+> > > Hi all,
+> > > 
+> > > [The kernel.org mirroring is being slow today]
+> > 
+> > 
+> > when CONFIG_PROC_FS is not enabled:
+> > 
+> > drivers/built-in.o: In function `node_read_vmstat':
+> > node.c:(.text+0x56ffa): undefined reference to `vmstat_text'
 > 
+> Hi Greg,
+> 
+> How do you want this build problem fixed?  (still around in
+> linux-next-20110610)
 
-It is used now, check the beginning of start_transaction().  Thanks,
+A patch would be great.
 
-Josef
+But honestly, I really find that CONFIG_PROC_FS disabled to not be a
+valid configuration anymore.  I don't know anyone who can successfully
+run a machine in that manner, do you?
+
+thanks,
+
+greg k-h
