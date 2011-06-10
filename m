@@ -1,87 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab1FJHOa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 03:14:30 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57531 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751803Ab1FJHO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 03:14:29 -0400
-Message-ID: <4DF1C455.2080706@cn.fujitsu.com>
-Date: Fri, 10 Jun 2011 15:14:29 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1753509Ab1FJHRV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 03:17:21 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:54913 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752376Ab1FJHRU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 03:17:20 -0400
+X-Greylist: delayed 10362 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Jun 2011 03:17:20 EDT
+X-AuditID: b753bd60-a3c7dba0000050a4-4f-4df1c4fedb33
+X-AuditID: b753bd60-a3c7dba0000050a4-4f-4df1c4fedb33
+Message-ID: <4DF1C4F4.8030007@hitachi.com>
+Date: Fri, 10 Jun 2011 16:17:08 +0900
+From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 03/28] rcu: Streamline code produced by __rcu_read_unlock()
-References: <20110608192943.GA13211@linux.vnet.ibm.com> <1307561407-13809-3-git-send-email-paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1307561407-13809-3-git-send-email-paulmck@linux.vnet.ibm.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-10 15:14:09,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-10 15:14:13,
-	Serialize complete at 2011-06-10 15:14:13
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        pp-manager@sdl.hitachi.co.jp, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH -tip v4 0/7] perf: Introduce branch sub commands
+References: <20110526050246.30011.86048.stgit@localhost6.localdomain6> <20110526132833.GC21815@nowhere>
+In-Reply-To: <20110526132833.GC21815@nowhere>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2011 03:29 AM, Paul E. McKenney wrote:
-> Given some common flag combinations, particularly -Os, gcc will inline
-> rcu_read_unlock_special() despite its being in an unlikely() clause.
-> Use noline to prohibit this misoptimization.
-> 
-> In addition, move the second barrier() in __rcu_read_unlock() so that
-> it is not on the common-case code path.  This will allow the compiler to
-> generate better code for the common-case path through __rcu_read_unlock().
-> 
-> Finally, fix up whitespace in kernel/lockdep.c to keep checkpatch happy.
-> 
-> Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> ---
->  kernel/rcutree_plugin.h |   12 ++++++------
->  1 files changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index ea2e2fb..40a6db7 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -284,7 +284,7 @@ static struct list_head *rcu_next_node_entry(struct task_struct *t,
->   * notify RCU core processing or task having blocked during the RCU
->   * read-side critical section.
->   */
-> -static void rcu_read_unlock_special(struct task_struct *t)
-> +static noinline void rcu_read_unlock_special(struct task_struct *t)
->  {
->  	int empty;
->  	int empty_exp;
-> @@ -387,11 +387,11 @@ void __rcu_read_unlock(void)
->  	struct task_struct *t = current;
->  
->  	barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
-> -	--t->rcu_read_lock_nesting;
-> -	barrier();  /* decrement before load of ->rcu_read_unlock_special */
-> -	if (t->rcu_read_lock_nesting == 0 &&
-> -	    unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
-> -		rcu_read_unlock_special(t);
-> +	if (--t->rcu_read_lock_nesting == 0) {
+(2011/05/26 22:28), Frederic Weisbecker wrote:
+> (Adding David Ahern in Cc)
+>
+> Ok that's all good except this needs to use the "perf script" centralized
+> dump.
+>
+> Currently running "perf script" without an actual script dumps
+> the events by default, whatever kind of event they are: hardware,
+> software, tracepoints, ...
+> So we want the branch output to be supported there, so we can reuse
+> some code and interface.
+>
+> For example, "perf script -f branch:comm,tid,sym" would print the
+> comm, tid and the sym for to and from addresses.
+>
+> That's better than creating a new set of options in a new command
+> that people need to relearn while everybody could simply get
+> familiarized with common perf script options.
+>
+> Of course we can still have a "perf branch" command, which could
+> be a tiny shortcut that maps to perf record and perf script.
+>
+> Like:
+>
+> 	perf branch record
+> 	perf branch [trace] -f tid,sym,comm
+>
+> Would map to:
+>
+> 	perf record branch:u
+> 	perf script -f branch:tid,sym,comm
+>
+> And may be if one day we can do something more tricky than a
+> linear output for branches (like source code coloring/browsing),
+> then it may be implemented inside perf branch and not rely on
+> another subcommand. Until then we are only dealing with raw linear
+> dump, and that's a core job for perf script where we want to
+> centralize that kind of facility.
+OK.
+I agreed that the core job is dumpimg BTS logs on perf script.
 
-> +		barrier();  /* decr before ->rcu_read_unlock_special load */
+Next, I'd like to implement the perf-branch's functions and
+additional interfaces to perf script.
+For example, resoving symbols and dso about branch_to address and,
+adding interfaces to get source file path, line number using debuginfo.
 
-Since ACCESS_ONCE() is used for loading ->rcu_read_unlock_special, is the previous
-barrier() still needed?
+I presented about perf-branch's future plan in LinuxCon Japan 2011,
+please refer the follwing slide.
+http://events.linuxfoundation.org/events/linuxcon-japan/nagai
+(The slide will be available soon)
 
-> +		if (unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
-> +			rcu_read_unlock_special(t);
-> +	}
->  #ifdef CONFIG_PROVE_LOCKING
->  	WARN_ON_ONCE(ACCESS_ONCE(t->rcu_read_lock_nesting) < 0);
->  #endif /* #ifdef CONFIG_PROVE_LOCKING */
+
+Thank you.
+
+>
+> Thanks.
+>
+
+
 
