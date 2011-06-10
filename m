@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757911Ab1FJSP5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 14:15:57 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54846 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab1FJSP4 convert rfc822-to-8bit (ORCPT
+	id S1757891Ab1FJSPn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 14:15:43 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47845 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757733Ab1FJSPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 14:15:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=IW2HYuZqGtlQpqzP69WGko4lggwpMukockIHV8HvKHF7+ZSv+8KJAXd0VurDa4CEK/
-         xW2gDkcRRfqh2HTRpIro5nVd1tEQVaz4qQNovDPHZeOs+vQyUV2koadY4ldtFA9fyq3b
-         F7+OZSIdwJoQX6YsZw54LXL8rCdLLkcIIz9Do=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTikSqdHDzQUZdh87YX3y+=GtKDe27g@mail.gmail.com>
+	Fri, 10 Jun 2011 14:15:41 -0400
+Date: Fri, 10 Jun 2011 19:15:38 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        device-drivers-devel@blackfin.uclinux.org,
+        uclinux-dist-devel@blackfin.uclinux.org, Liam Girdwood <lrg@ti.com>
+Subject: Re: [Device-drivers-devel] [alsa-devel] [PATCH 2/3] ASoC: Blackfin:
+ Add bf5xx-adau1701 machine driver
+Message-ID: <20110610181538.GS26436@opensource.wolfsonmicro.com>
 References: <1307726331-28618-1-git-send-email-lars@metafoo.de>
- <BANLkTimLAfEj+tgNMWjTsanccgfEt9UW1g@mail.gmail.com> <4DF25AF5.6070909@metafoo.de>
- <BANLkTikSqdHDzQUZdh87YX3y+=GtKDe27g@mail.gmail.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Fri, 10 Jun 2011 14:15:34 -0400
-Message-ID: <BANLkTingQSnzmhqS8HOqmeQjRMRVAE020w@mail.gmail.com>
-Subject: Re: [Device-drivers-devel] [PATCH 1/3] ASoC: Add ADAU1701 codec driver
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, uclinux-dist-devel@blackfin.uclinux.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        device-drivers-devel@blackfin.uclinux.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+ <1307726331-28618-2-git-send-email-lars@metafoo.de>
+ <20110610173004.GJ26441@sirena.org.uk>
+ <BANLkTimBJbkYJnU5vgmo+a5eerRroE1uBg@mail.gmail.com>
+ <20110610180137.GP26436@opensource.wolfsonmicro.com>
+ <BANLkTi=S2GayUj8-ctjbDOE_bcEb-6GtJQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=S2GayUj8-ctjbDOE_bcEb-6GtJQ@mail.gmail.com>
+X-Cookie: Be different: conform.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 14:08, Mike Frysinger wrote:
-> On Fri, Jun 10, 2011 at 13:57, Lars-Peter Clausen wrote:
->> On 06/10/2011 07:43 PM, Mike Frysinger wrote:
->>> On Fri, Jun 10, 2011 at 13:18, Lars-Peter Clausen wrote:
->>>> +MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
->>>
->>> did you actually rewrite this thing from scratch ?  seems like you
->>> should keep Cliff as the author in git/MODULE_AUTHOR, and then add
->>> your name to the s-o-b list and this macro.
->>
->> Not from scratch, but I guess except for the register definitions and the
->> copyright header not much of the original driver is left:
->> sound/soc/codecs/adau1701.c |  662 ++++++++++++++++++++++++-------------------
->>  1 files changed, 371 insertions(+), 291 deletions(-)
->
-> based purely on LoC, Cliff wrote 467, so you took that and punted 291
-> (62%) and then added 371.  that leaves the final file with 32% Cliff
-> and 68% you.
->
-> however, some of that was register renaming and shuffling between the
-> adau1701.c and adau1701.h, and it's easier to start with a base and
-> clean up than from scratch.
->
-> so i'm definitely not comfortable dropping Cliff's completely from the
-> file and the log (which means he needs to be readded and made sure to
-> be retained in all the other ADAU drivers going forward), and i'm not
-> entirely sold about changing of the Author field in the git commit.
->
-> don't get me wrong ... i'm not a fanboi of Cliff or something, i just
-> think credit is due to him for his work.
+On Fri, Jun 10, 2011 at 02:13:05PM -0400, Mike Frysinger wrote:
 
-to be clear, i'm like 50/50 on the git author field.  maybe someone
-else here has an opinion, or you feel strongly enough that your
-rewrite supersedes his seeding work.  but please send a v2 with
-updated source/changelog with his name in it.
--mike
+> often times, people do have just basic needs, but i see what you mean.
+>  i want the base driver to be flexible enough to handle all the base
+> changes (diff SPORT num and perhaps addresses), but anything beyond
+> that i'd expect someone to write a custom driver.  perhaps renaming
+> the Kconfig description to be like "Basic Blackfin connection to XXX
+> Codec" would be sufficient ?  and then add a few more details to the
+> help text ?
+
+Yes, that's exactly the sort of thing I'd like to see.  It shouldn't be
+that big a change to the code, it's more about making it clear that it's
+a 90% case driver rather than the only way to connect things up.
