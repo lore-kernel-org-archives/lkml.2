@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758197Ab1FJWar (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 18:30:47 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:11961 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754222Ab1FJWap (ORCPT
+	id S1758218Ab1FJWfw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 18:35:52 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:36628 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758126Ab1FJWfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 18:30:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=VQzDuH9clBeN55HW+H1FiMOUH9Xv3SlyU/9NY+HqBxERrHhYncL72vnlXF9qYGPaZt
-         0HIuK30jJ/LOx5vLV9JQ==
-Date: Fri, 10 Jun 2011 15:30:35 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, tglx@linutronix.de,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, mel@csn.ul.ie,
-        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, pavel@ucw.cz
-Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning
- instead of failing
-In-Reply-To: <20110610222020.GP24424@n2100.arm.linux.org.uk>
-Message-ID: <alpine.DEB.2.00.1106101526390.24646@chino.kir.corp.google.com>
-References: <alpine.LFD.2.02.1106012134120.3078@ionos> <4DF1C9DE.4070605@jp.fujitsu.com> <20110610004331.13672278.akpm@linux-foundation.org> <BANLkTimC8K2_H7ZEu2XYoWdA09-3XxpV7Q@mail.gmail.com> <20110610091233.GJ24424@n2100.arm.linux.org.uk>
- <alpine.DEB.2.00.1106101150280.17197@chino.kir.corp.google.com> <20110610185858.GN24424@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1106101456080.23076@chino.kir.corp.google.com> <20110610220748.GO24424@n2100.arm.linux.org.uk>
- <alpine.DEB.2.00.1106101510000.23076@chino.kir.corp.google.com> <20110610222020.GP24424@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 10 Jun 2011 18:35:50 -0400
+X-Sasl-enc: 7TmhSelS7OfcXF9klLWFLo1+yRIre73ScAhUNO4K8Oz8 1307745349
+Date: Fri, 10 Jun 2011 15:34:23 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: brudley@broadcom.com, henryp@broadcom.com, rvossen@broadcom.com,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: build failure after merge of the final tree (staging
+ related)
+Message-ID: <20110610223423.GB15868@kroah.com>
+References: <20110609172745.dfd3a298.sfr@canb.auug.org.au>
+ <20110609184127.GA2760@kroah.com>
+ <20110609192243.GA3980@kroah.com>
+ <20110610160548.529797c7.sfr@canb.auug.org.au>
+ <20110610160938.cd01c408.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110610160938.cd01c408.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Jun 2011, Russell King - ARM Linux wrote:
-
-> So those platforms which don't have a DMA zone, don't have any problems
-> with DMA, yet want to use the very same driver which does have a problem
-> on ISA hardware have to also put up with a useless notification that
-> their kernel might be broken?
+On Fri, Jun 10, 2011 at 04:09:38PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> Are you offering to participate on other architectures mailing lists to
-> answer all the resulting queries?
+> On Fri, 10 Jun 2011 16:05:48 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > No, I still get these:
+> > 
+> > In file included from drivers/staging/comedi/drivers/addi_apci_035.c:7:0:
+> > drivers/staging/comedi/drivers/addi-data/addi_common.c: In function 'i_ADDI_Attach':
+> > drivers/staging/comedi/drivers/addi-data/addi_common.c:2765:7: error: implicit declaration of function 'virt_to_bus'
+> > 
+> > virt_to_bus is only defined for 32 bit powerpc (not 64 bit) (and maybe
+> > not at all on some architectures e.g. sparc).
+> > 
+> > From Documentation/DMA-API-HOWTO.txt:
+> > "All drivers should be using these interfaces with no exceptions.  It
+> > is planned to completely remove virt_to_bus() and bus_to_virt() as
+> > they are entirely deprecated.  Some ports already do not provide these
+> > as it is impossible to correctly support them."
 > 
+> Drivers that use virt_to_bus should Kconfig depend on VIRT_TO_BUS.
 
-It all depends on the wording of the "warning", it should make it clear 
-that this is not always an error condition and only affects certain types 
-of hardware which the user may or may not have.  If you have any 
-suggestions on how to alter "task (pid): attempted to allocate DMA memory 
-without DMA support -- enable CONFIG_ZONE_DMA if needed" to make that more 
-clear, be my guest.  The alternative is that the ISA hardware cannot 
-handle the memory returned fails unexpectedly and randomly without any 
-clear indication of what the issue is.  I think what would be worse is 
-time lost for someone to realize CONFIG_ZONE_DMA isn't enabled, and that 
-could be significant (and probably generate many bug reports on its own) 
-since it isn't immediately obvious without doing some debugging.
+Ah, I missed that, sorry.  I'll go make that change as well.
+
+greg k-h
