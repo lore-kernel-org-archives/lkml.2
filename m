@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838Ab1FJIOV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 04:14:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38342 "EHLO mx2.suse.de"
+	id S1755077Ab1FJIRM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 04:17:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38413 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754382Ab1FJIOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 04:14:17 -0400
-Date: Fri, 10 Jun 2011 10:14:13 +0200
-Message-ID: <s5hk4cuw1be.wl%tiwai@suse.de>
+	id S1754728Ab1FJIRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 04:17:10 -0400
+Date: Fri, 10 Jun 2011 10:17:09 +0200
+Message-ID: <s5hhb7yw16i.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Michal Hocko <mhocko@suse.cz>
 Cc: LKML <linux-kernel@vger.kernel.org>, alsa-devel@alsa-project.org
@@ -35,52 +35,17 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 At Fri, 10 Jun 2011 09:56:40 +0200,
 Michal Hocko wrote:
+> > 
+> > Note that the one-minute thing happens only when you unplug AC cable,
+> > supposedly.  
 > 
-> On Fri 10-06-11 08:53:01, Takashi Iwai wrote:
-> > At Thu, 9 Jun 2011 13:14:01 +0200,
-> > Michal Hocko wrote:
-> > > 
-> > > On Thu 09-06-11 11:44:41, Takashi Iwai wrote:
-> > > > At Thu, 9 Jun 2011 11:28:26 +0200,
-> [...]
-> > > > BTW, does my patch fix the problem when you load without model=auto?
-> > > 
-> > > I have just booted to the rc2 with the patch (https://lkml.org/lkml/2011/6/9/25)
-> > > and it looks it didn't solve the problem. Playback works only from
-> > > speakers when headphones are not plugged in - no sound if plugged in.
-> > 
-> > So, the auto-mute now works but now the headphone doesn't work.
-> > Weird...  Maybe the same reason the speaker doesn't work with
-> > auto-mode.  I saw that the only one converter keeps the stream in your
-> > alsa-info.sh output although multiple converters (0x02, 0x03, 0x06)
-> > should be used simultaneously.
-> > 
-> > > See alsa-info.txt-fresh-boot. Same thing happens if I 
-> > > modprobe -r snd-hda-intel and then load it again (without any parameters).
-> > > 
-> > > > If yes, does the problem appear with it?  I.e. is the silence problem
-> > > > specific to model=auto or not?
-> > > 
-> > > If I try to modproble with model=auto I get headphones working but not
-> > > output from speakers. Have a look at alsa-info.txt-modprobe_auto.
-> > 
-> > For testing, just copy 2.6.39/sound/pci/*.[ch] into 3.0 tree and
-> > rebuild.  
-> 
-> OK, I git checkout v2.6.39 -- sound/pci/*.[ch] (see the patch bellow for
-> reference). I have kept the earlier patch.
+> Hmmm, I was plugged during testing all the time. OK, this looks like a
+> separate issue. I will repost it as a separate thread once we are done
+> with this. Any idea who to CC?
 
-Gah, sorry, a wrong path.  It must be sound/pci/hda/*.[ch].
-Also, please remove my previous patch.  It's irrelevant with 2.6.39
-although it should be harmless.
+First off, check /sys/modules/snd_hda_intel/parameters/powersave
+value.  If this is set to non-zero, someone must have played with it,
+e.g. pm-utils or such.
 
-Regarding the missing speaker-output on model=auto: I found the
-culprit.  The current auto-parser for ALC262 doesn't probe the
-secondary DAC.  So, it's a logical bug.
-I'm going to fix this for 3.1.  From now on, let's keep tracking only
-the issue without model option.
-
-
-thanks,
 
 Takashi
