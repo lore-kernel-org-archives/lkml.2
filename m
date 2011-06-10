@@ -1,102 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab1FJJIG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 05:08:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40307 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752055Ab1FJJIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 05:08:05 -0400
-Date: Fri, 10 Jun 2011 11:08:02 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Ying Han <yinghan@google.com>
-Subject: Re: [BUGFIX][PATCH v3] memcg: fix behavior of per cpu charge cache
- draining.
-Message-ID: <20110610090802.GB4110@tiehlicka.suse.cz>
-References: <20110609093045.1f969d30.kamezawa.hiroyu@jp.fujitsu.com>
- <20110610081218.GC4832@tiehlicka.suse.cz>
- <20110610173958.d9ab901c.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1754448Ab1FJJVA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 05:21:00 -0400
+Received: from smtp2.nycenet.edu ([165.155.104.102]:12770 "EHLO
+	op0iron01.schools.nyc.gov" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754330Ab1FJJU4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 05:20:56 -0400
+X-Greylist: delayed 580 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Jun 2011 05:20:56 EDT
+X-SBRS: None
+X-SenderGroup: RELAYLIST
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ahw4AAff8U0KAgQs/2dsb2JhbABTgnyUQlRfgiuMIEYBUIU9AQGCFQEBnyifQ4YjBIg0iHeEVxSEIoZm
+x-mimeole: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110610173958.d9ab901c.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Subject: From The UN Foundation
+Date: Fri, 10 Jun 2011 05:09:57 -0400
+Message-ID: <4036FD4F77FF784D8550E1299181EC11077F5391@EX3VS5.nyced.org>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: From The UN Foundation
+Thread-Index: AcwnTihwadIF0BjMRzyCH7vPTEc/Qw==
+From: "Kalogeropoulos Aspasia" <AKalogeropoulos@schools.nyc.gov>
+To: <info@notice.com>
+X-OriginalArrivalTime: 10 Jun 2011 09:11:11.0639 (UTC) FILETIME=[57886270:01CC274E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 10-06-11 17:39:58, KAMEZAWA Hiroyuki wrote:
-> On Fri, 10 Jun 2011 10:12:19 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > On Thu 09-06-11 09:30:45, KAMEZAWA Hiroyuki wrote:
-[...]
-> > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > > index bd9052a..3baddcb 100644
-> > > --- a/mm/memcontrol.c
-> > > +++ b/mm/memcontrol.c
-> > [...]
-> > >  static struct mem_cgroup_per_zone *
-> > >  mem_cgroup_zoneinfo(struct mem_cgroup *mem, int nid, int zid)
-> > > @@ -1670,8 +1670,6 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
-> > >  		victim = mem_cgroup_select_victim(root_mem);
-> > >  		if (victim == root_mem) {
-> > >  			loop++;
-> > > -			if (loop >= 1)
-> > > -				drain_all_stock_async();
-> > >  			if (loop >= 2) {
-> > >  				/*
-> > >  				 * If we have not been able to reclaim
-> > > @@ -1723,6 +1721,7 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
-> > >  				return total;
-> > >  		} else if (mem_cgroup_margin(root_mem))
-> > >  			return total;
-> > > +		drain_all_stock_async(root_mem);
-> > >  	}
-> > >  	return total;
-> > >  }
-> > 
-> > I still think that we pointlessly reclaim even though we could have a
-> > lot of pages pre-charged in the cache (the more CPUs we have the more
-> > significant this might be).
-> 
-> The more CPUs, the more scan cost for each per-cpu memory, which makes
-> cache-miss.
-> 
-> I know placement of drain_all_stock_async() is not big problem on my host,
-> which has 2socket/8core cpus. But, assuming 1000+ cpu host, 
-
-Hmm, it really depends what you want to optimize for. Reclaim path is
-already slow path and cache misses, while not good, are not the most
-significant issue, I guess.
-What I would see as a much bigger problem is that there might be a lot
-of memory pre-charged at those per-cpu caches. Falling into a reclaim
-costs us much more IMO and we can evict something that could be useful
-for no good reason.
-
-> "when you hit limit, you'll see 1000*128bytes cache miss and need to
-> call test_and_set for 1000+ cpus in bad case." doesn't seem much win.
-> 
-> If we implement "call-drain-only-nearby-cpus", I think we can call it before
-> calling try_to_free_mem_cgroup_pages(). I'll add it to my TO-DO-LIST.
-
-It would just consider cpus at the same node?
-
-> How do you think ?
-
-I am afraid we would need two versions then. One for complete draining
-(rmdir and company) while the other for reclaim purposes. Which sounds
-like a more code complexity.
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+ 
+ 
+UNDP SCHEME 2011.
+08/06/2011.
+This is to notify you that you have been appointed as one of the recipients of a Cash Grant/Donation for your personal and community development. You were selected among the beneficiaries to receive the sum of US$500,000.00 as developmental aid from the UN Foundation. Please contact.UNDP Mr. Gilbert Alvin on this email: undg.grant@yahoo.com.hk <mailto:undg.grant@yahoo.com.hk>  ,
+Regards Aspasia Kalogeropoulos,
+Chairman Grant Programme
