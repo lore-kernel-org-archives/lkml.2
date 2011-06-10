@@ -1,144 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756407Ab1FJMDa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 08:03:30 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:56083 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755954Ab1FJMD2 convert rfc822-to-8bit (ORCPT
+	id S1756283Ab1FJMEI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 08:04:08 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:35115 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755995Ab1FJMED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 08:03:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Ll4PUJDgZM1hsQlde1xZkxf3IvS72DmEdu+khiiLAquTGarvJUBhbULDYa3v5AacnU
-         fDRh/r9mgcRvsP7z7UpQMXJkUtiq3b+t+zWGHcy/q9Wdguv92CbFgeXl2GCZnpx8R2Q8
-         fcXoFb3b4qZP76nrOwEyz2NxW4dbG3zvxdvpI=
+	Fri, 10 Jun 2011 08:04:03 -0400
+X-AuditID: b753bd60-a46c9ba000003bac-39-4df2082fc3b6
+X-AuditID: b753bd60-a46c9ba000003bac-39-4df2082fc3b6
+Message-ID: <4DF2082C.6070009@hitachi.com>
+Date: Fri, 10 Jun 2011 21:03:56 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110610073702.061bc014@corrin.poochiereds.net>
-References: <Pine.LNX.4.64.1106092211500.19687@sarijopen.student.utwente.nl>
-	<20110609183045.01f6f9fc@tlielax.poochiereds.net>
-	<BANLkTimPqmkNJMaJE2_C5zD8ESFOEM3=hg@mail.gmail.com>
-	<Pine.LNX.4.64.1106100243370.2168@sarijopen.student.utwente.nl>
-	<20110610073702.061bc014@corrin.poochiereds.net>
-Date: Fri, 10 Jun 2011 05:03:27 -0700
-Message-ID: <BANLkTinqT0AXx9STWEzrw-yASTid5rb1Fg@mail.gmail.com>
-Subject: Re: [OOPS] 3.0-rc1 cifs
-From: Connor Hansen <cmdkhh@gmail.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Martijn Uffing <mp3project@sarijopen.student.utwente.nl>,
-        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sean finney <seanius@seanius.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH v4 3.0-rc2-tip 22/22] 22: perf: Documentation for perf
+ uprobes
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6> <20110607130241.28590.87063.sendpatchset@localhost6.localdomain6>
+In-Reply-To: <20110607130241.28590.87063.sendpatchset@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 4:37 AM, Jeff Layton <jlayton@redhat.com> wrote:
-> On Fri, 10 Jun 2011 02:57:21 +0200 (CEST)
->  Uffing <mp3project@sarijopen.student.utwente.nl> wrote:
->
->>
->> <snip>
->> > call in get_dfs_path()
->> > rc = CIFSTCon(xid, pSesInfo, temp_unc, NULL, nls_codepage);
->> >
->> > function header for CIFSTCon
->> > int  CIFSTCon(unsigned int xid, struct cifs_ses *ses,
->> >          const char *tree, struct cifs_tcon *tcon,
->> >          const struct nls_table *nls_codepage)
->> >
->> > get_dfs_path() is passing struct cifs_tcon *tcon as NULL
->> >
->> > from config:  CONFIG_CIFS_WEAK_PW_HASH=y
->> >
->> > in CIFSTCon
->> >
->> > #ifdef CONFIG_CIFS_WEAK_PW_HASH
->> > 3222                 if ((global_secflags & CIFSSEC_MAY_LANMAN) &&
->> > 3223                     (ses->server->secType == LANMAN))
->> > 3224                         calc_lanman_hash(tcon->password,
->> > ses->server->cryptkey,
->> >
->> > in calc_lanman_hash tcon is dereferenced(tcon->password) without being
->> > checked if null
->> >
->> > 3225                                          ses->server->sec_mode &
->> > 3226                                             SECMODE_PW_ENCRYPT ?
->> > true : false,
->> > 3227                                          bcc_ptr);
->> > 3228                 else
->> > 3229 #endif /* CIFS_WEAK_PW_HASH */
->> >
->> > Connor
->>
->>
->> Ave all
->>
->> I recompiled  kernel 3.0-rc1 (hadn't enabled CONFIG_DEBUG_INFO=y) and put
->> the oops (with the new adresses) through gdb per instruction of Jeff. And
->> Connor was spot on!
->>
->> <qoute oops>
->> BUG: unable to handle kernel NULL pointer dereference at 00000000000000a0
->> IP: [<ffffffffa041e286>] CIFSTCon+0xf6/0x4d0 [cifs]
->> </qoute oops>
->>
->> <qoute gdb>
->> This GDB was configured as "x86_64-linux-gnu".
->> For bug reporting instructions, please see:
->> <http://www.gnu.org/software/gdb/bugs/>...
->> Reading symbols from
->> /lib/modules/3.0.0-rc1-debug/kernel/fs/cifs/cifs.ko...done.
->> (gdb) list *(CIFSTCon+0xf6)
->> 0xc2b6 is in CIFSTCon (fs/cifs/connect.c:3230).
->> 3225                                             ses->server->sec_mode &
->> 3226                                                SECMODE_PW_ENCRYPT ?
->> true : false,
->> 3227                                             bcc_ptr);
->> 3228                    else
->> 3229    #endif /* CIFS_WEAK_PW_HASH */
->> 3230                    rc = SMBNTencrypt(tcon->password,
->> ses->server->cryptkey,
->> 3231                                            bcc_ptr);
->> 3232
->> 3233                    bcc_ptr += CIFS_AUTH_RESP_SIZE;
->> 3234                    if (ses->capabilities & CAP_UNICODE) {
->> (gdb)
->> </qoute gdb>
->>
->
-> (cc'ing Sean F. since I suspect this regression is due to his changes)
->
-> Thanks for the analysis, Martijn and Connor...
->
-> What sort of server are you mounting here? It looks like it's using
-> share-level security, so it's either very old or is a samba server
-> configured that way.
->
-> I suspect that commit c1508ca236 is the culprit. With that, we call
-> into expand_dfs_referral on every mount attempt. Previously we only
-> called into there when we got back  an EREMOTE error and that would
-> have been unlikely on a share-level security connection.
->
-> I think there are several possible solutions, but since Sean was in
-> here most recently I'd like to have his opinion.
+(2011/06/07 22:02), Srikar Dronamraju wrote:
+> Modify perf-probe.txt to include uprobe documentation
 
-I don't know enough about cifs but this call in fs/cifs/connect.c
+Sorry, Nak this. I hope to see better uniformed interface for
+both of uprobe and kprobe, even after we support debuginfo for
+uprobe.
 
-2268: rc = CIFSTCon(xid, pSesInfo, temp_unc, NULL, nls_codepage);
+I mean, if uprobe always requires a user-space binary, it should
+be specified with -u option instead of --exe and @EXE.
 
-will always result in a null pointer derefence as CIFSTCon uses the
-cifs_tcon struct for passwords without verification
+I think this simplifies perf probe usage, it implies;
 
-either we need to check for tcon for null in CIFSTCon before use, or
-change get_dfs_path to get the cifs_tcon info and pass it to the
-CIFSTCon function. But again I don't know enough about cifs to know
-the best approach
+# perf probe [-k KERN] [...]  // Control probes in kernel
+# perf probe -m MOD [...]     // Control probes in MOD module
+# perf probe -u EXE [...]     // Control probes on EXE file
 
-Connor
->
-> --
-> Jeff Layton <jlayton@redhat.com>
->
+Thank you,
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
