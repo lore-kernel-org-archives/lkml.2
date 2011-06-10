@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758161Ab1FJWJf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 18:09:35 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49663 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753467Ab1FJWJc (ORCPT
+	id S1758124Ab1FJWWZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 18:22:25 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:27684 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753467Ab1FJWWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 18:09:32 -0400
-Date: Fri, 10 Jun 2011 23:07:48 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: David Rientjes <rientjes@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, tglx@linutronix.de,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, mel@csn.ul.ie,
-        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, pavel@ucw.cz
-Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning
-	instead of failing
-Message-ID: <20110610220748.GO24424@n2100.arm.linux.org.uk>
-References: <alpine.LFD.2.02.1106012043080.3078@ionos> <alpine.DEB.2.00.1106011205410.17065@chino.kir.corp.google.com> <alpine.LFD.2.02.1106012134120.3078@ionos> <4DF1C9DE.4070605@jp.fujitsu.com> <20110610004331.13672278.akpm@linux-foundation.org> <BANLkTimC8K2_H7ZEu2XYoWdA09-3XxpV7Q@mail.gmail.com> <20110610091233.GJ24424@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1106101150280.17197@chino.kir.corp.google.com> <20110610185858.GN24424@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1106101456080.23076@chino.kir.corp.google.com>
+	Fri, 10 Jun 2011 18:22:23 -0400
+Date: Sat, 11 Jun 2011 00:14:02 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonas Gorski <jonas.gorski@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Why is CONFIG_FHANDLE an option??
+Message-ID: <alpine.LNX.2.00.1106110001180.21722@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1106101456080.23076@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 03:01:15PM -0700, David Rientjes wrote:
-> On Fri, 10 Jun 2011, Russell King - ARM Linux wrote:
-> > See Linus' reply.  I quote again "on platforms where it doesn't matter it
-> > should be a no-op".  If _you_ have a problem with that _you_ need to
-> > discuss it with _Linus_, not me.  I'm not going to be a middle-man sitting
-> > between two people with different opinions.
-> 
-> We're talking about two different things.  Linus is saying that if GFP_DMA 
-> should be a no-op if the hardware doesn't require DMA memory because the 
-> kernel was correctly compiled without CONFIG_ZONE_DMA.  I'm asking about a 
-> kernel that was incorrectly compiled without CONFIG_ZONE_DMA and now we're 
-> returning memory from anywhere even though we actually require GFP_DMA.
+Hello
 
-How do you distinguish between the two states?  Answer: you can't.
+I just configured a new kernel based on a recent git checkout and when I 
+had copied in my old configuration and did a "make oldconfig"I was greeted 
+with
 
-> If you don't want to form an opinion of your own, then I have no problem 
-> cc'ing Linus on it.
+    open by fhandle syscalls (FHANDLE) [N/y/?] (NEW)
 
-I think I've made my position in this fairly clear with our previous
-discussions on this.  The fact of the matter is that there are some
-drivers which use GFP_DMA because they need that on _some_ platforms
-but not all.
+Ok, so I read the help text description and learn that it's about two new 
+syscalls - open_by_handle_at(2) and name_to_handle_at(2).
 
-Not all platforms are _broken_ with respect to DMA, and those which
-aren't broken don't provide a DMA zone.
+My first thought at this point was "why are new syscalls even an option"?
 
-Therefore, it is _perfectly_ _legal_ to honor a GFP_DMA allocation on
-a kernel without CONFIG_ZONE_DMA set.
+Syscalls are in my oppinion ABI - having optional syscalls is just about 
+as bad as removing a syscall. It basically means that users cannot know if 
+the syscall is there and will need to test (it's bad enough having to 
+check the kernel version, having to check for specific syscalls as well 
+is just, well, annoying at best). 
 
-That position appears to be reflected by Linus' response, so
+Why are we making these optional?
+I'd say we should just add them unconditionally or not have them at all. 
+One should be able to say that "since Linux 3.0 these syscalls are 
+available", not "since Linux 3.0 these syscalls *may* be available"... 
+We'll just end up in a situation where some distributors enable the 
+syscalls, some don't and it'll all be a mess for users... either we have 
+them or we don't.
 
->  I don't think he'd object to a
-> 
-> 	#ifndef CONFIG_ZONE_DMA
-> 	WARN_ON_ONCE(1, "%s (%d): allocating DMA memory without DMA support -- "
-> 			"enable CONFIG_ZONE_DMA if needed.\n",
-> 			current->comm, current->pid);
-> 	#endif
+Ok, long rant, sorry about that... but really; why are they optional??
 
-I think he will definitely object to this on the grounds that its
-adding useless noise for conditions which are _perfectly_ _valid_.
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
