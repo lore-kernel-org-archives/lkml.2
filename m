@@ -1,90 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757973Ab1FJS3F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 14:29:05 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48071 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755904Ab1FJS3B convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 14:29:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=JP8WztLaCSZz3nRCQlshYkxeKthqsRj0O+CylzUSv2qLbGqfdr7eUal3WOM6RzZL8d
-         VOaizCqyVHUJ9eetd0EMg62m30JIutsalZqlGe1Oc5lFcrJ0iVnr2v8WW3LuMXeZz7Vb
-         EU6uoF1Rul/XttYQ5RNSCiUe1QZ25rES7YAnU=
+	id S1757940Ab1FJS3k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 14:29:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7879 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757705Ab1FJS3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 14:29:38 -0400
+Message-ID: <4DF2627F.4030600@redhat.com>
+Date: Fri, 10 Jun 2011 14:29:19 -0400
+From: Josef Bacik <josef@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <4DF260F4.1020603@metafoo.de>
-References: <1307726331-28618-1-git-send-email-lars@metafoo.de>
- <BANLkTimLAfEj+tgNMWjTsanccgfEt9UW1g@mail.gmail.com> <4DF25AF5.6070909@metafoo.de>
- <BANLkTikSqdHDzQUZdh87YX3y+=GtKDe27g@mail.gmail.com> <BANLkTingQSnzmhqS8HOqmeQjRMRVAE020w@mail.gmail.com>
- <4DF260F4.1020603@metafoo.de>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Fri, 10 Jun 2011 14:28:40 -0400
-Message-ID: <BANLkTi=DvbKAgUQSiJT2BL=uEnQK1V75SQ@mail.gmail.com>
-Subject: Re: [Device-drivers-devel] [PATCH 1/3] ASoC: Add ADAU1701 codec driver
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, uclinux-dist-devel@blackfin.uclinux.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        device-drivers-devel@blackfin.uclinux.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Sage Weil <sage@newdream.net>
+CC: Chris Mason <chris.mason@oracle.com>, Jim Schutt <jaschut@sandia.gov>,
+        dave <dave@jikos.cz>, miaox <miaox@cn.fujitsu.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>, ceph-devel@vger.kernel.org
+Subject: Re: 3.0-rcX BUG at fs/btrfs/ioctl.c:432 - bisected
+References: <4DF140AB.4030805@sandia.gov> <20110609234553.GN12709@twin.jikos.cz> <4DF24F0E.4040306@sandia.gov> <1307726732-sup-3404@shiny> <Pine.LNX.4.64.1106101100310.5245@cobra.newdream.net> <Pine.LNX.4.64.1106101112470.5245@cobra.newdream.net>
+In-Reply-To: <Pine.LNX.4.64.1106101112470.5245@cobra.newdream.net>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 14:22, Lars-Peter Clausen wrote:
-> On 06/10/2011 08:15 PM, Mike Frysinger wrote:
->> On Fri, Jun 10, 2011 at 14:08, Mike Frysinger wrote:
->>> On Fri, Jun 10, 2011 at 13:57, Lars-Peter Clausen wrote:
->>>> On 06/10/2011 07:43 PM, Mike Frysinger wrote:
->>>>> On Fri, Jun 10, 2011 at 13:18, Lars-Peter Clausen wrote:
->>>>>> +MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
->>>>>
->>>>> did you actually rewrite this thing from scratch ?  seems like you
->>>>> should keep Cliff as the author in git/MODULE_AUTHOR, and then add
->>>>> your name to the s-o-b list and this macro.
+On 06/10/2011 02:14 PM, Sage Weil wrote:
+> On Fri, 10 Jun 2011, Sage Weil wrote:
+>> On Fri, 10 Jun 2011, Chris Mason wrote:
+>>> Excerpts from Jim Schutt's message of 2011-06-10 13:06:22 -0400:
+>>>
+>>> [ two different btrfs crashes ]
+>>>
+>>> I think your two crashes in btrfs were from the uninit variables and
+>>> those should be fixed in rc2.
+>>>
+>>>> When I did my bisection, my criteria for success/failure was
+>>>> "did mkcephfs succeed?".  When I apply this criteria to a recent
+>>>> linus kernel (e.g. 06e86849cf4019), which includes the fix you
+>>>> mentioned (aa0467d8d2a00e), I get still a different failure mode,
+>>>> which doesn't actually reference btrfs:
 >>>>
->>>> Not from scratch, but I guess except for the register definitions and the
->>>> copyright header not much of the original driver is left:
->>>> sound/soc/codecs/adau1701.c |  662 ++++++++++++++++++++++++-------------------
->>>>  1 files changed, 371 insertions(+), 291 deletions(-)
+>>>> [  276.364178] BUG: unable to handle kernel NULL pointer dereference at 000000000000000a
+>>>> [  276.365127] IP: [<ffffffffa05434b1>] journal_start+0x3e/0x9c [jbd]
 >>>
->>> based purely on LoC, Cliff wrote 467, so you took that and punted 291
->>> (62%) and then added 371.  that leaves the final file with 32% Cliff
->>> and 68% you.
+>>> Looking at the resulting code in the oops, we're here in journal_start:
 >>>
->>> however, some of that was register renaming and shuffling between the
->>> adau1701.c and adau1701.h, and it's easier to start with a base and
->>> clean up than from scratch.
+>>>         if (handle) {
+>>>                 J_ASSERT(handle->h_transaction->t_journal == journal);
 >>>
->>> so i'm definitely not comfortable dropping Cliff's completely from the
->>> file and the log (which means he needs to be readded and made sure to
->>> be retained in all the other ADAU drivers going forward), and i'm not
->>> entirely sold about changing of the Author field in the git commit.
+>>> handle comes from current->journal_info, and we're doing a deref on
+>>> handle->h_transaction, which is probably 0xa.
 >>>
->>> don't get me wrong ... i'm not a fanboi of Cliff or something, i just
->>> think credit is due to him for his work.
->
-> You have both the orignal driver and the new driver, so you can do the diff for
-> yourself.
+>>> So, we're leaving crud in current->journal_info and ext3 is finding it.
+>>>
+>>> Perhaps its from ceph starting a transaction but leaving it running?
+>>> The bug came with Josef's transaction performance fixes, but it is
+>>> probably a mixture of his code with the ioctls ceph is using.
+>>
+>> Ah, yeah, that's the problem.  We saw a similar problem a while back with 
+>> the start/stop transaction ioctls.  In this case, create_snapshot is doing
+>>
+>> 	trans = btrfs_start_transaction(root->fs_info->extent_root, 5);
+>> 	if (IS_ERR(trans)) {
+>> 		ret = PTR_ERR(trans);
+>> 		goto fail;
+>> 	}
+>>
+>> which sets current->journal_info.  Then
+>>
+>> 	ret = btrfs_snap_reserve_metadata(trans, pending_snapshot);
+>> 	BUG_ON(ret);
+>>
+>> 	list_add(&pending_snapshot->list,
+>> 		 &trans->transaction->pending_snapshots);
+>> 	if (async_transid) {
+>> 		*async_transid = trans->transid;
+>> 		ret = btrfs_commit_transaction_async(trans,
+>> 				     root->fs_info->extent_root, 1);
+>> 	} else {
+>> 		ret = btrfs_commit_transaction(trans,
+>> 				       root->fs_info->extent_root);
+>> 	}
+>>
+>> but the async snap creation ioctl takes the async path, which runs 
+>> btrfs_commit_transaction in a worker thread.
+>>
+>> I'm not sure what the right thing to do is here is... can whatever is in 
+>> journal_info be attached to trans instead in 
+>> btrfs_commit_transaction_async()?
+> 
+> It looks like it's not used for anything in btrfs, actually; it's just set 
+> and cleared.  What's the point of that?
+> 
 
-i did do that already which is why i commented on the register renaming
+It is used now, check the beginning of start_transaction().  Thanks,
 
-> But of course if you want to see his name as the author, you get his name as
-> the author.
-
-if you feel strongly about it, then you may keep your name there
-
->> to be clear, i'm like 50/50 on the git author field.  maybe someone
->> else here has an opinion, or you feel strongly enough that your
->> rewrite supersedes his seeding work.  but please send a v2 with
->> updated source/changelog with his name in it.
->
-> His name is already in the copyright header.
-
-sorry, i missed that the first time.  but also list him in
-MODULE_AUTHOR (i'll leave order preference to you).
--mike
+Josef
