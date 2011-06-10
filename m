@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757982Ab1FJThV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 15:37:21 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:55951 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757750Ab1FJThS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 15:37:18 -0400
-Date: Fri, 10 Jun 2011 12:37:13 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Kyungmin Park <kmpark@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
-        thomas.abraham@linaro.org
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-Message-ID: <20110610193713.GJ2230@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110610151121.GA2230@linux.vnet.ibm.com>
- <20110610155954.GA25774@srcf.ucam.org>
- <20110610165529.GC2230@linux.vnet.ibm.com>
- <20110610170535.GC25774@srcf.ucam.org>
- <20110610171939.GE2230@linux.vnet.ibm.com>
- <20110610172307.GA27630@srcf.ucam.org>
- <20110610175248.GF2230@linux.vnet.ibm.com>
- <20110610180807.GB28500@srcf.ucam.org>
- <20110610184738.GG2230@linux.vnet.ibm.com>
- <20110610192329.GA30496@srcf.ucam.org>
+	id S1757908Ab1FJTko (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 15:40:44 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45789 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755686Ab1FJTkn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 15:40:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=M0e2lix1Tt82uAYDkbJ70aAaJLiy9p30xrBC4j2gnczYgBw1MKBfnBwE0qr4bDmzU+
+         05TG+ok4kNGZdQXY1YHY8Cu9L/8FdKfPE7IKMy3j00odnqEzodHgOp/MjwryMp6vtrdu
+         xoVm+rr+SK0ayOQowK8dcgvmR00zcX8Kyb6O4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110610192329.GA30496@srcf.ucam.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Sat, 11 Jun 2011 04:40:41 +0900
+Message-ID: <BANLkTikjsw6QK99CxxrGh7HeospLrqMfcA@mail.gmail.com>
+Subject: Reserving specific physical memory and mapping it to virtual memory
+From: Jongman Heo <jongman.heo@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 08:23:29PM +0100, Matthew Garrett wrote:
-> On Fri, Jun 10, 2011 at 11:47:38AM -0700, Paul E. McKenney wrote:
-> 
-> > And if I understand you correctly, then the patches that Ankita posted
-> > should help your self-refresh case, along with the originally intended
-> > the power-down case and special-purpose use of memory case.
-> 
-> Yeah, I'd hope so once we actually have capable hardware.
+Dear all,
 
-Cool!!!
+I have a physical memory area, which is reserved by bootloader. Its
+size is less than a page size (4kB).
+The area will be reserved in order not to be used from Linux side, by
+using memmap= boot arguments.
 
-So Ankita's patchset might be useful to you at some point, then.
+What I want to do is that reserving a virtual memory (one page) at
+boot time, as well. (may need kernel modification?)
+And copying the data of physical memory above to the reserved virtual memory.
 
-Does it look like a reasonable implementation?
+Then, certain user space program can access to the memory, using the
+address it already knows, which is physical.
 
-							Thanx, Paul
+I know that mmap() can do the memory translation thing, but we have a
+limitation to use such kind of method.
+
+Does anyboy know the solution?
+
+Thanks in advance.
+
+Regards,
+Jongman.
