@@ -1,35 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab1FJQY2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 12:24:28 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:50947 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885Ab1FJQY0 convert rfc822-to-8bit (ORCPT
+	id S1752766Ab1FJQ12 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 12:27:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39412 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618Ab1FJQ10 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 12:24:26 -0400
-MIME-Version: 1.0
-X-Originating-IP: [46.116.119.47]
-In-Reply-To: <8yamxhsklhd.fsf@huya.qualcomm.com>
-References: <1307522062-19273-1-git-send-email-ohad@wizery.com>
- <1307522062-19273-3-git-send-email-ohad@wizery.com> <8yamxhsklhd.fsf@huya.qualcomm.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Fri, 10 Jun 2011 19:24:05 +0300
-Message-ID: <BANLkTi=owGc5JU1eF5wZmgiC0GbTCury8w@mail.gmail.com>
-Subject: Re: [PATCH 2/4] msm: iommu: move to drivers/iommu/
-To: David Brown <davidb@codeaurora.org>
-Cc: stepanm@codeaurora.org, Joerg Roedel <Joerg.Roedel@amd.com>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        David Woodhouse <dwmw2@infradead.org>,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 10 Jun 2011 12:27:26 -0400
+Subject: Re: BUG on 3.0-rc on commit
+ d72bce0e67e8afc6eb959f656013cbb577426f1e
+From: Peter Zijlstra <peterz@infradead.org>
+To: habanero@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, rostedt <rostedt@goodmis.org>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1307720081.17297.6.camel@atheurer-w510>
+References: <1307711837.23688.33.camel@atheurer-ubuntu10>
+	 <1307715084.3941.166.camel@twins>  <1307717156.3941.169.camel@twins>
+	 <1307720081.17297.6.camel@atheurer-w510>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Fri, 10 Jun 2011 18:27:12 +0200
+Message-ID: <1307723232.3941.178.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 9, 2011 at 1:27 AM, David Brown <davidb@codeaurora.org> wrote:
-> Moving the driver is good.  I'm wondering what we should do with
-> iommu_dev.c, though.  Wouldn't it make sense to move this file as well?
+On Fri, 2011-06-10 at 10:34 -0500, Andrew Theurer wrote:
+> RIP: 0010:[<ffffffff8104e8c1>]  [<ffffffff8104e8c1>] find_lowest_rq+0xa1/0x150
 
-Yeah, it does make sense. I'll move that one too, thanks.
+If you've still got the vmlinux around, could you find out where in
+find_lowest_rq that RIP is? 
