@@ -1,54 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756984Ab1FJCw5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 22:52:57 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:44546 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754413Ab1FJCwz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 22:52:55 -0400
-Date: Fri, 10 Jun 2011 11:52:49 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Brad Campbell <brad@fnarfbargle.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Patrick McHardy <kaber@trash.net>,
-        Bart De Schuymer <bdschuym@pandora.be>, kvm@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org
-Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
-Message-ID: <20110610025249.GD643@verge.net.au>
-References: <4DED344D.7000005@pandora.be>
- <4DED9C23.2030408@fnarfbargle.com>
- <4DEE27DE.7060004@trash.net>
- <4DEE3859.6070808@fnarfbargle.com>
- <4DEE4538.1020404@trash.net>
- <1307471484.3091.43.camel@edumazet-laptop>
- <4DEEACC3.3030509@trash.net>
- <4DEEBFC2.4060102@fnarfbargle.com>
- <1307505541.3102.12.camel@edumazet-laptop>
- <4DEFAB15.2060905@fnarfbargle.com>
-MIME-Version: 1.0
+	id S1756755Ab1FJC6A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 22:58:00 -0400
+Received: from linux-sh.org ([111.68.239.195]:51182 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752214Ab1FJC57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 22:57:59 -0400
+Date: Fri, 10 Jun 2011 11:55:49 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andre Renaud <andre@bluewatersys.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Victor <avictor.za@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, Anton Vorontsov <cbou@mail.ru>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, trivial@kernel.org
+Subject: Re: [PATCH trival/tree-wide] Change Ryan Mallon's email address across the kernel
+Message-ID: <20110610025532.GE26006@linux-sh.org>
+References: <1307661170-9325-1-git-send-email-rmallon@gmail.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DEFAB15.2060905@fnarfbargle.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1307661170-9325-1-git-send-email-rmallon@gmail.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 09, 2011 at 01:02:13AM +0800, Brad Campbell wrote:
-> On 08/06/11 11:59, Eric Dumazet wrote:
+On Fri, Jun 10, 2011 at 09:12:50AM +1000, Ryan Mallon wrote:
+> I no longer work at Bluewater Systems. Update my email address accordingly.
 > 
-> >Well, a bisection definitely should help, but needs a lot of time in
-> >your case.
-> 
-> Yes. compile, test, crash, walk out to the other building to press
-> reset, lather, rinse, repeat.
-> 
-> I need a reset button on the end of a 50M wire, or a hardware watchdog!
-
-Not strictly on-topic, but in situations where I have machines
-that either don't have lights-out facilities or have broken ones
-I find that network controlled power switches to be very useful.
-
-At one point I would have need an 8000km long wire to the reset switch :-)
+Is this sort of churn really necessary? By all means, update your
+MAINTAINERS entry accordingly, but the rest of it is really pretty
+pointless. People are invariably going to consult MAINTAINERS one way or
+another and get the updated value accordingly. For the rest of these you
+are just as well off ripping out the email address completely.
