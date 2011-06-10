@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758037Ab1FJSsV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 14:48:21 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:46853 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757622Ab1FJSsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 14:48:20 -0400
-Date: Fri, 10 Jun 2011 11:47:38 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Kyungmin Park <kmpark@infradead.org>,
+	id S932240Ab1FJSy0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 14:54:26 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:24842 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753399Ab1FJSyZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 14:54:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=co70qOce68CEeUhL46wSyooDniNAYht0pQy/dyv+pEfxxnxpE3u7xJFefaVW5Fp32m
+         VvZsKiVSvN7xry9Q57tw==
+Date: Fri, 10 Jun 2011 11:54:16 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
-        thomas.abraham@linaro.org
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-Message-ID: <20110610184738.GG2230@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110609185259.GA29287@linux.vnet.ibm.com>
- <BANLkTinxeeSby_+tta8EhzCg3VbD6+=g+g@mail.gmail.com>
- <20110610151121.GA2230@linux.vnet.ibm.com>
- <20110610155954.GA25774@srcf.ucam.org>
- <20110610165529.GC2230@linux.vnet.ibm.com>
- <20110610170535.GC25774@srcf.ucam.org>
- <20110610171939.GE2230@linux.vnet.ibm.com>
- <20110610172307.GA27630@srcf.ucam.org>
- <20110610175248.GF2230@linux.vnet.ibm.com>
- <20110610180807.GB28500@srcf.ucam.org>
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, tglx@linutronix.de,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, mel@csn.ul.ie,
+        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, pavel@ucw.cz
+Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning
+ instead of failing
+In-Reply-To: <20110610091233.GJ24424@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.00.1106101150280.17197@chino.kir.corp.google.com>
+References: <BANLkTinBkdVd90g3-uiQP41z1S1sXUdRmQ@mail.gmail.com> <BANLkTikrRRzGLbMD47_xJz+xpgftCm1C2A@mail.gmail.com> <alpine.DEB.2.00.1106011017260.13089@chino.kir.corp.google.com> <20110601181918.GO3660@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1106012043080.3078@ionos>
+ <alpine.DEB.2.00.1106011205410.17065@chino.kir.corp.google.com> <alpine.LFD.2.02.1106012134120.3078@ionos> <4DF1C9DE.4070605@jp.fujitsu.com> <20110610004331.13672278.akpm@linux-foundation.org> <BANLkTimC8K2_H7ZEu2XYoWdA09-3XxpV7Q@mail.gmail.com>
+ <20110610091233.GJ24424@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110610180807.GB28500@srcf.ucam.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 07:08:07PM +0100, Matthew Garrett wrote:
-> On Fri, Jun 10, 2011 at 10:52:48AM -0700, Paul E. McKenney wrote:
-> > On Fri, Jun 10, 2011 at 06:23:07PM +0100, Matthew Garrett wrote:
-> > > I haven't seen too many ARM servers with 256GB of RAM :) I'm mostly 
-> > > looking at this from an x86 perspective.
-> > 
-> > But I have seen ARM embedded systems with CPU power consumption in
-> > the milliwatt range, which greatly reduces the amount of RAM required
-> > to get significant power savings from this approach.  Three orders
-> > of magnitude less CPU power consumption translates (roughly) to three
-> > orders of magnitude less memory required -- and embedded devices with
-> > more than 256MB of memory are quite common.
+On Fri, 10 Jun 2011, Russell King - ARM Linux wrote:
+
+> > Should one submit a patch adding a warning to GFP_DMA allocations
+> > w/o ZONE_DMA, or the idea of the original patch is wrong?
 > 
-> I'm not saying that powering down memory isn't a win, just that in the 
-> server market we're not even getting unused memory into self refresh at 
-> the moment. If we can gain that hardware capability then sub-node zoning 
-> means that we can look at allocating (and migrating?) RAM in such a way 
-> as to get a lot of the win that we'd gain from actually cutting the 
-> power, without the added overhead of actually shrinking our working set.
+> Linus was far from impressed by the original commit, saying:
+> | Using GFP_DMA is reasonable in a driver - on platforms where that
+> | matters, it should allocate from the DMA zone, on platforms where it
+> | doesn't matter it should be a no-op.
+> 
+> So no, not even a warning.
+> 
 
-Agreed.
-
-And if I understand you correctly, then the patches that Ankita posted
-should help your self-refresh case, along with the originally intended
-the power-down case and special-purpose use of memory case.
-
-							Thanx, Paul
+Any words of wisdom for users with CONFIG_ZONE_DMA=n that actually use 
+drivers where they need GFP_DMA?  The page allocator should just silently 
+return memory from anywhere?
