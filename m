@@ -1,68 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907Ab1FJDSg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 23:18:36 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:50586 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751862Ab1FJDSe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 23:18:34 -0400
-X-Sasl-enc: 2/3j7uSZ/+ZpX5hvA406h1voxW8JLNhqn4LDiUqsumPS 1307675912
-Date: Thu, 9 Jun 2011 20:18:05 -0700
-From: Greg KH <greg@kroah.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libusb-devel@lists.sourceforge.net,
-        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
-        hector@marcansoft.com, Jan Kiszka <jan.kiszka@siemens.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: Re: USB mini-summit at LinuxCon Vancouver
-Message-ID: <20110610031805.GA15774@kroah.com>
-References: <20110610002103.GA7169@xanatos>
+	id S1751678Ab1FJDLa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 23:11:30 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57139 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751060Ab1FJDL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 23:11:28 -0400
+Message-ID: <4DF18D20.3020409@cn.fujitsu.com>
+Date: Fri, 10 Jun 2011 11:18:56 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110610002103.GA7169@xanatos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jim Schutt <jaschut@sandia.gov>
+CC: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        "ceph-devel@vger.kernel.org" <ceph-devel@vger.kernel.org>
+Subject: Re: 3.0-rcX BUG at fs/btrfs/ioctl.c:432 - bisected
+References: <4DF140AB.4030805@sandia.gov>
+In-Reply-To: <4DF140AB.4030805@sandia.gov>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-10 11:11:11,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-10 11:11:12,
+	Serialize complete at 2011-06-10 11:11:12
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 09, 2011 at 05:21:03PM -0700, Sarah Sharp wrote:
-> Topic 1
-> -------
+Hi,
+
+On Thu, 9 Jun 2011 15:52:43 -0600, Jim Schutt wrote:
+> Jun  9 15:14:50 an1 [  299.446615] ------------[ cut here ]------------
+> Jun  9 15:14:50 an1 [  299.447357] kernel BUG at fs/btrfs/ioctl.c:432!
+> Jun  9 15:14:50 an1 [  299.447357] invalid opcode: 0000 [#1] SMP
+> Jun  9 15:14:50 an1 [  299.447357] last sysfs file: /sys/devices/system/cpu/cpu3/cache/index2/shared_cpu_map
+> Jun  9 15:14:50 an1 [  299.447357] CPU 2
+> Jun  9 15:14:50 an1 [  299.447357] Modules linked in: btrfs zlib_deflate lzo_compress ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp i2c_dev i2c_core ext3 jbd scsi_transport_iscsi rds ib_ipoib rdma_ucm rdma_cm ib_ucm ib_uverbs ib_umad ib_cm iw_cm ib_addr ipv6 ib_sa dm_mirror dm_region_hash dm_log dm_multipath scsi_dh dm_mod video sbs sbshc pci_slot battery acpi_pad ac kvm sg ses sd_mod enclosure ide_cd_mod cdrom megaraid_sas qla2xxx ib_mthca scsi_transport_fc scsi_tgt ib_mad ib_core button serio_raw ata_piix libata scsi_mod tpm_tis tpm dcdbas tpm_bios iTCO_wdt ioatdma iTCO_vendor_support ehci_hcd i5k_amb dca uhci_hcd hwmon i5000_edac edac_core pcspkr rtc nfs nfs_acl auth_rpcgss fscache lockd sunrpc tg3 bnx2 e1000 [last unloaded: freq_table]
+> Jun  9 15:14:50 an1 [  299.447357]
+> Jun  9 15:14:50 an1 [  299.447357] Pid: 6047, comm: cosd Not tainted 2.6.39-00001-g16cdcec #24 Dell Inc. PowerEdge 1950/0DT097
+> Jun  9 15:14:50 an1 [  299.447357] RIP: 0010:[<ffffffffa0709b96>]  [<ffffffffa0709b96>] create_subvol+0x36a/0x440 [btrfs]
+> Jun  9 15:14:50 an1 [  299.447357] RSP: 0018:ffff88021b163c48  EFLAGS: 00010206
+> Jun  9 15:14:50 an1 [  299.447357] RAX: 0000000019b201a0 RBX: ffff88022402d800 RCX: ffff88019206c028
+> Jun  9 15:14:50 an1 [  299.447357] RDX: ffff88021884f618 RSI: 00000000fffffff4 RDI: ffff88019206c048
+> Jun  9 15:14:50 an1 [  299.447357] RBP: ffff88021b163de8 R08: ffff88021b163bb8 R09: ffff88019206c048
+> Jun  9 15:14:50 an1 [  299.447357] R10: ffffffffa06c7ed7 R11: ffff88021b163bb8 R12: ffff88021b163d88
+> Jun  9 15:14:50 an1 [  299.447357] R13: 0000000000000000 R14: ffff880222fac000 R15: ffff8801e8b6e280
+> Jun  9 15:14:50 an1 [  299.447357] FS:  00007fa5aa04d710(0000) GS:ffff88022fc80000(0000) knlGS:0000000000000000
+> Jun  9 15:14:50 an1 [  299.447357] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> Jun  9 15:14:50 an1 [  299.447357] CR2: 0000000001d45000 CR3: 000000021bd42000 CR4: 00000000000006e0
+> Jun  9 15:14:50 an1 [  299.447357] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> Jun  9 15:14:50 an1 [  299.447357] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Jun  9 15:14:50 an1 [  299.447357] Process cosd (pid: 6047, threadinfo ffff88021b162000, task ffff8801dee243e0)
+> Jun  9 15:14:50 an1 [  299.447357] Stack:
+> Jun  9 15:14:50 an1 [  299.447357]  ffff880200000002 0000000000000003 0000000000000000 ffff8801e8b6d000
+> Jun  9 15:14:50 an1 [  299.447357]  0000000000000000 000000071b163c80 ffff8801d6af9008 ffff880192075000
+> Jun  9 15:14:50 an1 [  299.447357]  ffff8801e898eb40 ffff880219b201a0 0000000000000001 0000000000000000
+> Jun  9 15:14:50 an1 [  299.447357] Call Trace:
+> Jun  9 15:14:50 an1 [  299.447357]  [<ffffffff810362ec>] ? need_resched+0x23/0x2d
+> Jun  9 15:14:50 an1 [  299.447357]  [<ffffffffa0709d7a>] btrfs_mksubvol+0x10e/0x167 [btrfs]
+> Jun  9 15:14:50 an1 [  299.447357]  [<ffffffffa070a29f>] btrfs_ioctl_snap_create_transid+0x9c/0x121 [btrfs]
+> Jun  9 15:14:50 an1 [  299.447357]  [<ffffffffa070a45e>] btrfs_ioctl_snap_create+0x50/0x67 [btrfs]
+> Jun  9 15:14:50 an1 [  299.447357]  [<ffffffffa070bc5a>] btrfs_ioctl+0x1d0/0x2c6 [btrfs]
+> Jun  9 15:14:50 an1 [  299.447357]  [<ffffffff8111fe12>] vfs_ioctl+0x1d/0x34
+> Jun  9 15:14:50 an1 [  299.447357]  [<ffffffff8112048d>] do_vfs_ioctl+0x171/0x17a
+> Jun  9 15:14:50 an1 [  299.447357]  [<ffffffff811130a2>] ? fget_light+0x69/0x81
+> Jun  9 15:14:50 an1 [  299.447357]  [<ffffffff811204f2>] sys_ioctl+0x5c/0x7c
+> Jun  9 15:14:50 an1 [  299.447357]  [<ffffffff8111d48d>] ? putname+0x33/0x37
+> Jun  9 15:14:50 an1 [  299.447357]  [<ffffffff813b21eb>] system_call_fastpath+0x16/0x1b
+> Jun  9 f6 4c 89 ff 01 c0 48 98 48 03 82 c8 00 00 00 48 89 82 c8 00 00 00 48 89 42 c0 48 8b 95 a8 fe ff ff e8 5e d5 fd ff 85 c0 74 04 <0f> 0b eb fe 48 8b 85 a8 fe ff ff 49 8b 8e 17 01 00 00 4c 89 ff
+> Jun  9 15:14:50 an1 [  299.447357] RIP  [<ffffffffa0709b96>] create_subvol+0x36a/0x440 [btrfs]
+> Jun  9 15:14:50 an1 [  299.447357]  RSP <ffff88021b163c48>
+> Jun  9 15:14:50 an1 [  299.767860] ---[ end trace 10d1f43d69984a37 ]---
+> Jun  9 15:15:23 an1 [  333.037241] ------------[ cut here ]------------
 > 
-> The KVM folks suggested that it would be good to get USB and
-> virtualization developers together to talk about how to virtualize the
-> xHCI host controller.  The xHCI spec architect worked closely with
-> VMWare to get some extra goodies in the spec to help virtualization, and
-> I'd like to see the other virtualization developers take advantage of
-> that.  I'd also like us to hash out any issues they have been finding in
-> the USB core or xHCI driver during the virtualization effort.
+> 
+> It bisects to the following commit:
+> 
+> 16cdcec736cd214350cdb591bf1091f8beedefa0 is the first bad commit
+> commit 16cdcec736cd214350cdb591bf1091f8beedefa0
+> Author: Miao Xie <miaox@cn.fujitsu.com>
+> Date:   Fri Apr 22 18:12:22 2011 +0800
+> 
+>     btrfs: implement delayed inode items operation
+> 
+> Please let me know what other information I can provide, or
+> any testing I can do, that will help to resolve this issue.
 
-Do people really want to virtualize the whole xHCI controller, or just
-specific ports or devices to the guest operating system?
+Thanks for your report. Could you tell me the reproduce steps and the top commit
+id in detail? I can't reproduce this bug now.
 
-If just specific ports, would something like usbip be better for virtual
-machines, with the USB traffic going over the network connection between
-the guest/host?
+Thanks
+Miao
 
-> Hope to see you there!
+> 
+> Thanks -- Jim
+> 
+> 
+> 
 
-Thanks for putting this together.
-
-Do we need to sign up somewhere to give the organizers a sense of how
-many people will be attending?
-
-thanks,
-
-greg k-h
