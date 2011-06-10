@@ -1,125 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756736Ab1FJMgA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 08:36:00 -0400
-Received: from cantor.suse.de ([195.135.220.2]:52375 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756011Ab1FJMf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 08:35:59 -0400
-Date: Fri, 10 Jun 2011 14:35:57 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Deepak Saxena <dsaxena@plexity.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/Trivial] Update feature-removal-update.txt with 3.x
- versioning
-In-Reply-To: <20110609220303.GA2612@plexity.net>
-Message-ID: <alpine.LNX.2.00.1106101434210.22872@pobox.suse.cz>
-References: <20110609220303.GA2612@plexity.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756829Ab1FJMh3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 08:37:29 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:17176 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755273Ab1FJMh1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 08:37:27 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAFkP8k1Ld/sX/2dsb2JhbAAMRoRJ2E6QaIErg26BCgShHg
+X-IronPort-AV: E=Sophos;i="4.65,347,1304308800"; 
+   d="scan'208";a="115999779"
+Message-ID: <4DF21002.3040708@teksavvy.com>
+Date: Fri, 10 Jun 2011 08:37:22 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Simon Horman <horms@verge.net.au>
+CC: Brad Campbell <brad@fnarfbargle.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Patrick McHardy <kaber@trash.net>,
+        Bart De Schuymer <bdschuym@pandora.be>, kvm@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org
+Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
+References: <4DED344D.7000005@pandora.be> <4DED9C23.2030408@fnarfbargle.com> <4DEE27DE.7060004@trash.net> <4DEE3859.6070808@fnarfbargle.com> <4DEE4538.1020404@trash.net> <1307471484.3091.43.camel@edumazet-laptop> <4DEEACC3.3030509@trash.net> <4DEEBFC2.4060102@fnarfbargle.com> <1307505541.3102.12.camel@edumazet-laptop> <4DEFAB15.2060905@fnarfbargle.com> <20110610025249.GD643@verge.net.au>
+In-Reply-To: <20110610025249.GD643@verge.net.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jun 2011, Deepak Saxena wrote:
+On 11-06-09 10:52 PM, Simon Horman wrote:
+> On Thu, Jun 09, 2011 at 01:02:13AM +0800, Brad Campbell wrote:
+>> On 08/06/11 11:59, Eric Dumazet wrote:
+>>
+>>> Well, a bisection definitely should help, but needs a lot of time in
+>>> your case.
+>>
+>> Yes. compile, test, crash, walk out to the other building to press
+>> reset, lather, rinse, repeat.
+>>
+>> I need a reset button on the end of a 50M wire, or a hardware watchdog!
 
-> 
-> Update feature removal schedule with 3.x numbering
->  
-> Update all future kernel version entries in feature-removal-schedule.txt
-> with appropriate 3.x kernel numbering.
->     
-> Signed-off-by: Deepak Saxena <dsaxena@plexity.net>
-> 
-> ---
-> 
-> diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-> index 1a9446b..7725792 100644
-> --- a/Documentation/feature-removal-schedule.txt
-> +++ b/Documentation/feature-removal-schedule.txt
-> @@ -199,7 +199,7 @@ Files:	drivers/staging/cs5535_gpio/*
->  Check:	drivers/staging/cs5535_gpio/cs5535_gpio.c
->  Why:	A newer driver replaces this; it is drivers/gpio/cs5535-gpio.c, and
->  	integrates with the Linux GPIO subsystem.  The old driver has been
-> -	moved to staging, and will be removed altogether around 2.6.40.
-> +	moved to staging, and will be removed altogether around 3.0.
->  	Please test the new driver, and ensure that the functionality you
->  	need and any bugfixes from the old driver are available in the new
->  	one.
-> @@ -430,7 +430,7 @@ Who:	Avi Kivity <avi@redhat.com>
->  ----------------------------
->  
->  What:	iwlwifi 50XX module parameters
-> -When:	2.6.40
-> +When:	3.0
->  Why:	The "..50" modules parameters were used to configure 5000 series and
->  	up devices; different set of module parameters also available for 4965
->  	with same functionalities. Consolidate both set into single place
-> @@ -441,7 +441,7 @@ Who:	Wey-Yi Guy <wey-yi.w.guy@intel.com>
->  ----------------------------
->  
->  What:	iwl4965 alias support
-> -When:	2.6.40
-> +When:	3.0
->  Why:	Internal alias support has been present in module-init-tools for some
->  	time, the MODULE_ALIAS("iwl4965") boilerplate aliases can be removed
->  	with no impact.
-> @@ -499,7 +499,7 @@ Who:    Daniel Lezcano <daniel.lezcano@free.fr>
->  ----------------------------
->  
->  What:	iwlwifi disable_hw_scan module parameters
-> -When:	2.6.40
-> +When:	3.0
->  Why:	Hareware scan is the prefer method for iwlwifi devices for
->  	scanning operation. Remove software scan support for all the
->  	iwlwifi devices.
-> @@ -510,7 +510,7 @@ Who:	Wey-Yi Guy <wey-yi.w.guy@intel.com>
->  
->  What:   access to nfsd auth cache through sys_nfsservctl or '.' files
->          in the 'nfsd' filesystem.
-> -When:   2.6.40
-> +When:   3.0
->  Why:    This is a legacy interface which have been replaced by a more
->          dynamic cache.  Continuing to maintain this interface is an
->          unnecessary burden.
-> @@ -546,7 +546,7 @@ Files:	net/netfilter/xt_connlimit.c
->  ----------------------------
->  
->  What:	noswapaccount kernel command line parameter
-> -When:	2.6.40
-> +When:	3.0
->  Why:	The original implementation of memsw feature enabled by
->  	CONFIG_CGROUP_MEM_RES_CTLR_SWAP could be disabled by the noswapaccount
->  	kernel parameter (introduced in 2.6.29-rc1). Later on, this decision
-> @@ -579,7 +579,7 @@ Who:	Jean Delvare <khali@linux-fr.org>
->  ----------------------------
->  
->  What:	Support for UVCIOC_CTRL_ADD in the uvcvideo driver
-> -When:	2.6.42
-> +When:	3.2
->  Why:	The information passed to the driver by this ioctl is now queried
->  	dynamically from the device.
->  Who:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> @@ -587,7 +587,7 @@ Who:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
->  ----------------------------
->  
->  What:	Support for UVCIOC_CTRL_MAP_OLD in the uvcvideo driver
-> -When:	2.6.42
-> +When:	3.2
->  Why:	Used only by applications compiled against older driver versions.
->  	Superseded by UVCIOC_CTRL_MAP which supports V4L2 menu controls.
->  Who:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> @@ -595,7 +595,7 @@ Who:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
->  ----------------------------
->  
->  What:	Support for UVCIOC_CTRL_GET and UVCIOC_CTRL_SET in the uvcvideo driver
-> -When:	2.6.42
-> +When:	3.2
 
-If I understand it correctly, we might end up with 3.x.0 scheme at the end 
-of the day, because of depmod incompatibility.
+Something many of us don't realize is that nearly all Intel chipsets
+have a built-in hardware watchdog timer.  This includes chipset for
+consumer desktop boards as well as the big iron server stuff.
 
--- 
-Jiri Kosina
-SUSE Labs
+It's the "i8xx_tco" driver in the kernel enables use of them:
+
+    modprobe i8xx_tco
+
+Cheers
