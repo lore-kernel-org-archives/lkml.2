@@ -1,123 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab1FJPoT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 11:44:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19425 "EHLO mx1.redhat.com"
+	id S1756591Ab1FJPqe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 11:46:34 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:35378 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752507Ab1FJPoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 11:44:18 -0400
-Date: Fri, 10 Jun 2011 11:44:14 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tao Ma <tm@tao.ma>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: CFQ: async queue blocks the whole system
-Message-ID: <20110610154414.GA31853@redhat.com>
-References: <1307616577-6101-1-git-send-email-tm@tao.ma>
- <20110609141451.GD29913@redhat.com>
- <4DF0DD0F.8090407@tao.ma>
- <20110609153738.GF29913@redhat.com>
- <4DF0EA55.10209@tao.ma>
- <20110609182706.GG29913@redhat.com>
- <4DF1B035.7080009@tao.ma>
- <20110610091427.GB4183@redhat.com>
- <4DF1EB45.1070706@tao.ma>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DF1EB45.1070706@tao.ma>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754382Ab1FJPqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 11:46:33 -0400
+Subject: Re: BUG on 3.0-rc on commit
+ d72bce0e67e8afc6eb959f656013cbb577426f1e
+From: Andrew Theurer <habanero@linux.vnet.ibm.com>
+Reply-To: habanero@linux.vnet.ibm.com
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, rostedt <rostedt@goodmis.org>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1307720081.17297.6.camel@atheurer-w510>
+References: <1307711837.23688.33.camel@atheurer-ubuntu10>
+	 <1307715084.3941.166.camel@twins>  <1307717156.3941.169.camel@twins>
+	 <1307720081.17297.6.camel@atheurer-w510>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Jun 2011 10:45:43 -0500
+Message-ID: <1307720743.17297.8.camel@atheurer-w510>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 06:00:37PM +0800, Tao Ma wrote:
-> On 06/10/2011 05:14 PM, Vivek Goyal wrote:
-> > On Fri, Jun 10, 2011 at 01:48:37PM +0800, Tao Ma wrote:
-> > 
-> > [..]
-> >>>> btw, reverting the patch doesn't work. I can still get the livelock.
-> > 
-> > What test exactly you are running. I am primarily interested in whether
-> > you still get the hung task timeout warning where a writer is waiting on
-> > get_request_wait() for more than 120 secods or not.
-> > 
-> > Livelock might be a different problem and for which Christoph provided
-> > a patch for XFS.
-> > 
-> >>>
-> >>> Can you give following patch a try and see if it helps. On my system this
-> >>> does allow CFQ to dispatch some writes once in a while.
-> >> Sorry, this patch doesn't work in my test.
-> > 
-> > Can you give me backtrace of say 15 seconds each with and without patch.
-> > I think now we must be dispatching some writes, that's a different thing
-> > that writer still sleeps more than 120 seconds because there are  way
-> > too many readers.
-> > 
-> > May be we need to look into show workload tree scheduling takes place and
-> > tweak that logic a bit.
-> OK, our test cases can be downloaded for free. ;)
-> svn co http://code.taobao.org/svn/dirbench/trunk/meta_test/press/set_vs_get
-> Modify run.sh to be fit for your need. Normally within 10 mins, you will
-> get the livelock. We have a SAS disk with 15000 RPMs.
+On Fri, 2011-06-10 at 10:34 -0500, Andrew Theurer wrote:
+> On Fri, 2011-06-10 at 16:45 +0200, Peter Zijlstra wrote:
+> > On Fri, 2011-06-10 at 16:11 +0200, Peter Zijlstra wrote:
+> > > On Fri, 2011-06-10 at 08:17 -0500, Andrew Theurer wrote:
+> > > > Looks like commit d72bce0e67e8afc6eb959f656013cbb577426f1e breaks my
+> > > > boot:
+> > > > 
+> > > > BUG: unable to handle kernel NULL pointer dereference at
+> > > > 0000000000000004
+> > > > IP: [<ffffffff8104e8b1>] find_lowest_rq+0xa1/0x150
+> > > > PGD 0
+> > > > Oops: 0000 [#1] SMP
+> > > > CPU 0
+> > > > Modules linked in:
 > 
-> btw, you have to mount the volume on /test since the test program are
-> not that clever. :)
+> > > 
+> > > > 
+> > > > This is on a Westmere-EX (4 socket, 40 cores)
+> > > 
+> > > Hmm, how often does that happen? my wsm-ep (2*6*2) doesn't seem to
+> > > suffer said problem. I'll try and see if I can spot the boo-boo. Also,
+> > > happen to have a .config handy?
+> > 
+> > Does the below cure things?
+> 
+> I am afraid not:
 
-Thanks for the test program. System keeps on working, that's a different
-thing that writes might not make lot of progress. 
+Forgot to mention, if I boot with maxcpus=1, the online the rest of the
+CPUs later, I can avoid the problem.
 
-What do you mean by livelock in your case. How do you define that?
+> 
+> Linux version 3.0.0-rc2-00251-g7f45e5c-dirty (root@vg-host.linuxperf9025.net) (gcc version 4.4.5 20110214 (Red Hat 4.4.5-6) (GCC) ) #34 SMP Fri Jun 10 10:23:06 CDT 2011
+> Command line: initrd=vg-host/initramfs.img ro root=UUID=7e96e905-9ec4-45ab-abd4-77d1469d6e5a console=tty0 console=ttyS0,115200 rdshell BOOT_IMAGE=vg-host/vmlinuz
+> .
+> .
+> .
+> .
+> NMI watchdog enabled, takes one hw-pmu counter.
+>  #23
+> NMI watchdog enabled, takes one hw-pmu counter.
+>  #24
+> BUG: unable to handle kernel NULL pointer dereference at           (null)
+> IP: [<ffffffff8104e8c1>] find_lowest_rq+0xa1/0x150
+> PGD 0
+> Oops: 0000 [#1] SMP
+> CPU 0
+> Modules linked in:
+> 
+> Pid: 1, comm: swapper Not tainted 3.0.0-rc2-00251-g7f45e5c-dirty #34 IBM  -[7145AC1]-/Node 1, Processor Card
+> RIP: 0010:[<ffffffff8104e8c1>]  [<ffffffff8104e8c1>] find_lowest_rq+0xa1/0x150
+> RSP: 0018:ffff883732925ca0  EFLAGS: 00010002
+> RAX: 0000000000000010 RBX: 0000000000000010 RCX: 0000000000000050
+> RDX: 00000000ffffffff RSI: 0000000000000050 RDI: 0000000000000050
+> RBP: ffff883732925cd0 R08: ffff8837325b4238 R09: 0000000000000000
+> R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000000
+> R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000012ac0
+> FS:  0000000000000000(0000) GS:ffff88387f800000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 0000000000000000 CR3: 0000000001a03000 CR4: 00000000000006f0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process swapper (pid: 1, threadinfo ffff883732924000, task ffff8837329234c0)
+> Stack:
+>  ffff883732925cd0 0000000000000010 0000000000000010 ffff8837325b4800
+>  0000000000000000 0000000000000286 ffff883732925cf0 ffffffff8104e9ea
+>  ffff883732642040 ffff8837325b4040 ffff883732925d40 ffffffff8105ac79
+> Call Trace:
+>  [<ffffffff8104e9ea>] select_task_rq_rt+0x7a/0x90
+>  [<ffffffff8105ac79>] try_to_wake_up+0x119/0x2a0
+>  [<ffffffff8105ae55>] wake_up_process+0x15/0x20
+>  [<ffffffff814cc59f>] rcu_cpu_notify+0xd6/0x196
+>  [<ffffffff814d65e5>] notifier_call_chain+0x55/0x80
+>  [<ffffffff8108a7be>] __raw_notifier_call_chain+0xe/0x10
+>  [<ffffffff81064590>] __cpu_notify+0x20/0x40
+>  [<ffffffff814caf5e>] _cpu_up+0xc7/0x10e
+>  [<ffffffff814cb07c>] cpu_up+0xd7/0xea
+>  [<ffffffff81c41dfb>] smp_init+0x41/0x96
+>  [<ffffffff81c227d4>] kernel_init+0x1d6/0x262
+>  [<ffffffff814dbbc4>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff81c225fe>] ? do_basic_setup+0x5c/0x5c
+>  [<ffffffff814dbbc0>] ? gs_change+0x13/0x13
+> Code: 2a 01 00 48 89 fe 48 8b 04 c5 40 a3 bf 81 4c 89 e2 49 8b 84 07 88 08 00 00 48 83 c0 38 48 89 c7 e8 85 75 0a 00 85 c0 74 ae 89 d8
+>  0f a3 1c 24 19 d2 85 d2 75 a6 45 0f a3 2c 24 19 c0 41 be ff
+> RIP  [<ffffffff8104e8c1>] find_lowest_rq+0xa1/0x150
+>  RSP <ffff883732925ca0>
+> CR2: 0000000000000000
+> ---[ end trace 050353be83bb766f ]---
+> 
+-Andrew
 
-Couple of times I did see hung_task warning with your test. And I also
-saw that we have most of the time starved WRITES but one in a while we
-will dispatch some writes.
-
-Having said that I will still admit that current logic can completely
-starve async writes if there are sufficient number of readers. I can
-reproduce this simply by launching lots of readers and bunch of writers
-using fio.
-
-So I have written another patch, where I don't allow preemption of 
-async queue if it waiting for sync requests to drain and has not
-dispatched any request after having been scheduled.
-
-This atleast makes sure that writes are not starved. But that does not
-mean that whole bunch of async writes are dispatched. In presence of
-lots of read activity, expect 1 write to be dispatched every few seconds.
-
-Please give this patch a try and if it still does not work, please upload
-some bltraces while test is running.
-
-You can also run iostat on disk and should be able to see that with
-the patch you are dispatching writes more often than before.
-
-Thanks
-Vivek
-
----
- block/cfq-iosched.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
-
-Index: linux-2.6/block/cfq-iosched.c
-===================================================================
---- linux-2.6.orig/block/cfq-iosched.c	2011-06-10 09:13:01.000000000 -0400
-+++ linux-2.6/block/cfq-iosched.c	2011-06-10 10:02:31.850831735 -0400
-@@ -3315,8 +3315,15 @@ cfq_should_preempt(struct cfq_data *cfqd
- 	 * if the new request is sync, but the currently running queue is
- 	 * not, let the sync request have priority.
- 	 */
--	if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq))
-+	if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq)) {
-+		/*
-+		 * Allow atleast one dispatch otherwise this can repeat
-+		 * and writes can be starved completely
-+		 */
-+		if (!cfqq->slice_dispatch)
-+			return false;
- 		return true;
-+	}
- 
- 	if (new_cfqq->cfqg != cfqq->cfqg)
- 		return false;
 
