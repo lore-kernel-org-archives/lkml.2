@@ -1,33 +1,40 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754958Ab1FHRsy (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Wed, 8 Jun 2011 13:48:54 -0400
-Received: from bmc05.indiatimes.com ([223.165.31.109]:13921 "HELO
-	bmc05.indiatimes.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754318Ab1FHRss (ORCPT
+	id S1751675Ab1FJERO (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Fri, 10 Jun 2011 00:17:14 -0400
+Received: from mail.contactosatelital.com.pe ([190.41.107.130]:59727 "EHLO
+	mail.contactosatelital.com.pe" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750788Ab1FJERL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 13:48:48 -0400
-Comment: DomainKeys? See http://antispam.yahoo.com/domainkeys
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=private; d=itimes.com;
-  b=C0s0tjwfzFH1XvhgwH+Fkrb1wCQbhhY/IH4DXDAx/p69cC2+l3dYrXMEsfdKGE++6PaRe6OWmq3em2ygmgl1hUle+PtslmINpogHkhc/DL6MrNPlIfbNfcNnj1aG4yd63PA3aDIVYUTFEdfIHZVSIC0YYycnp8PNzBbq1pIGSRE=  ;
-X-Indiatimes-Scanner-Mail-From: marytendaji1@itimes.com via SMX-OUT1
-X-Indiatimes-Scanner: 1.25st (Clear:RC:1(192.169.30.87):SA:0(3.6/4.9):. Processed in 0.113058 secs Process 3684)
-Date: Wed, 8 Jun 2011 23:25:36 +0530 (IST)
-From: marytendaji1@itimes.com
-Reply-To: Mary Tendaji <marytendaji@live.com>
-Message-ID: <1523093868.5239201307555736287.JavaMail.root@ims1.itimes.com>
-Subject: HELLO
+	Fri, 10 Jun 2011 00:17:11 -0400
+X-Greylist: delayed 745 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Jun 2011 00:17:11 EDT
+Date: Thu, 9 Jun 2011 23:12:19 -0500 (PET)
+From: Jacob Josh <araymundo@contactosatelital.com.pe>
+Reply-To: Jacob Josh <jacob.josh02@gala.net>
+Message-ID: <1599818871.12148.1307679139217.JavaMail.root@mail>
+Subject: hi
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.214.34.174]
-X-Mailer: Zimbra 5.0.7_GA_2450.RHEL4_64 (zclient/5.0.7_GA_2450.RHEL4_64)
+X-Originating-IP: [190.10.231.140]
+X-Mailer: Zimbra 6.0.10_GA_2692 (ZimbraWebClient - FF3.0 (Win)/6.0.10_GA_2692)
 To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HELLO,
- 
-How are you? i hope you are fine, My name is Miss Mary, my heart is seeking for a true lover that will bring joy and happiness back in my life,I am looking for a long term relationship,who understands the need to love and be loved(Remember the distance or colour does not matter but love matters a lot in life)i am waiting for your response so that i will send you my picture and tell you more about me,Take care and have a nice time.
-Miss Mary
+
+
+Hello,
+
+My name is Jacob Josh, I am the branch manager of Banco pichincha Quito Ecuador.
+I have packaged a financial transaction that will benefit both of us, which
+involves three million seven hundred and fifty thousand dollar $3,750.000.00.
+Mean While you will have 35% of the total fund after the transaction.
+
+If you accept this offer to work with me i will give you details on how we can
+achieve it successfully. Please contact me with this email address:
+jacob.josh02@gala.net
+
+Best Regards
+Mr.Jacob Josh
+
