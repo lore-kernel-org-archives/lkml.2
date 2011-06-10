@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab1FJITw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 04:19:52 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39816 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755051Ab1FJITu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 04:19:50 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DF1D396.5000404@jp.fujitsu.com>
-Date: Fri, 10 Jun 2011 17:19:34 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1752777Ab1FJIYS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 04:24:18 -0400
+Received: from lucidpixels.com ([75.144.35.66]:58525 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751803Ab1FJIYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 04:24:15 -0400
+Date: Fri, 10 Jun 2011 04:24:14 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: LKML <linux-kernel@vger.kernel.org>, Alan Piszcz <ap@solarrain.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: 2.6.39: crash w/threadirqs option enabled
+In-Reply-To: <alpine.DEB.2.02.1106100414550.32450@p34.internal.lan>
+Message-ID: <alpine.DEB.2.02.1106100421560.32450@p34.internal.lan>
+References: <alpine.DEB.2.02.1105200405210.24033@p34.internal.lan> <alpine.LFD.2.02.1105201445300.3078@ionos> <alpine.DEB.2.02.1105200850080.19553@p34.internal.lan> <alpine.LFD.2.02.1105201528500.3078@ionos> <alpine.DEB.2.02.1105200945300.19553@p34.internal.lan>
+ <alpine.LFD.2.02.1105201712501.3078@ionos> <alpine.DEB.2.02.1105201210030.19553@p34.internal.lan> <alpine.LFD.2.02.1105201819310.3078@ionos> <alpine.DEB.2.02.1106100414550.32450@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: minchan.kim@gmail.com
-CC: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, aarcange@redhat.com,
-        riel@redhat.com, hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [PATCH v3 01/10] compaction: trivial clean up acct_isolated
-References: <cover.1307455422.git.minchan.kim@gmail.com> <71a79768ff8ef356db09493dbb5d6c390e176e0d.1307455422.git.minchan.kim@gmail.com>
-In-Reply-To: <71a79768ff8ef356db09493dbb5d6c390e176e0d.1307455422.git.minchan.kim@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/07 23:38), Minchan Kim wrote:
-> acct_isolated of compaction uses page_lru_base_type which returns only
-> base type of LRU list so it never returns LRU_ACTIVE_ANON or LRU_ACTIVE_FILE.
-> In addtion, cc->nr_[anon|file] is used in only acct_isolated so it doesn't have
-> fields in conpact_control.
-> This patch removes fields from compact_control and makes clear function of
-> acct_issolated which counts the number of anon|file pages isolated.
-> 
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
 
+On Fri, 10 Jun 2011, Justin Piszcz wrote:
+>
+> Hi,
+>
+> Crashed again and it rebooted too:
+>
+> reboot   system boot  2.6.39             Thu Jun  9 23:58 - 04:05  (04:06) 
+> user1      pts/0        X                Thu Jun  9 19:25 - 19:30  (00:04)
+> user1      pts/10       X                Thu Jun  9 18:23 - crash  (05:35)
+>
+> Any thoughts on what could be causing this?
+> Should I go back to 2.6.38?
+>
+
+I have a lot of USB devices attached, perhaps that is what's causing the
+crashes, I will disconnect some of them and see if there is another crash.
+
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 001 Device 002: ID 8087:0020 Intel Corp. Integrated Rate Matching Hub
+Bus 002 Device 002: ID 8087:0020 Intel Corp. Integrated Rate Matching Hub
+Bus 001 Device 003: ID 2001:f103 D-Link Corp. DUB-H7 7-port USB 2.0 hub
+Bus 001 Device 004: ID 2001:f103 D-Link Corp. DUB-H7 7-port USB 2.0 hub
+Bus 001 Device 005: ID 0764:0501 Cyber Power System, Inc. CP1500 AVR UPS
+Bus 001 Device 006: ID 413c:1002 Dell Computer Corp. Keyboard Hub
+Bus 002 Device 003: ID 0a12:0001 Cambridge Silicon Radio, Ltd Bluetooth Dongle (HCI mode)
+Bus 001 Device 007: ID 067b:2303 Prolific Technology, Inc. PL2303 Serial Port
+Bus 001 Device 008: ID 0424:2502 Standard Microsystems Corp. 
+Bus 001 Device 009: ID 054c:002c Sony Corp. USB Floppy Disk Drive
+Bus 001 Device 010: ID 413c:2002 Dell Computer Corp. SK-8125 Keyboard
+Bus 001 Device 011: ID 0461:4d15 Primax Electronics, Ltd Dell Optical Mouse
+Bus 001 Device 012: ID 0424:2602 Standard Microsystems Corp. USB 2.0 Hub
+Bus 001 Device 013: ID 093b:0027 Plextor Corp. 
+Bus 001 Device 014: ID 0424:2228 Standard Microsystems Corp. 9-in-2 Card Reader
+
+Justin.
 
