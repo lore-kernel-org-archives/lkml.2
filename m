@@ -1,164 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425Ab1FJAsk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 20:48:40 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:37412 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756050Ab1FJAsj convert rfc822-to-8bit (ORCPT
+	id S1756636Ab1FJAu3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 20:50:29 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51028 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753574Ab1FJAu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 20:48:39 -0400
+	Thu, 9 Jun 2011 20:50:28 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=tjeUbd9L1ik+B4QQoJP8f7X/ixZ1F/JT315iW0gzFIV289ADtDvw3XEb4hZ/I5KDgn
-         WsEqhlIWPeXhK4zHfgA9ClaNh99ktcxpfDy/anjbDZUYUg0ZKz6vrWmJEbCOoOmK3ZyS
-         MONkBV7acS+akue4REiEeiOkMNIvmZnaIYp7Y=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Mq+ehxT0apyESSvLLCDjKs2X0v9pIrzRNFYw6jeDzG5sFkU7zEFNnWA1Aj/UKUk4A7
+         e5hyGnSUIjcvtnfFoSfBMCkT0UWjK+5VbFJhC+5rvRjLynzLI4fGfgIIYm39+vtfdjev
+         0IIFqLKtuzg8eIj+Dw2zlAiCggROZ/jfDYAbQ=
+Message-ID: <4DF16A4B.5010905@gmail.com>
+Date: Fri, 10 Jun 2011 10:50:19 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110610003407.GA27964@cmpxchg.org>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
-	<1306909519-7286-3-git-send-email-hannes@cmpxchg.org>
-	<20110609154839.GF4878@barrios-laptop>
-	<20110609172347.GB20333@cmpxchg.org>
-	<BANLkTimD-pecv82qAZkyxA9nLQWbcDry-w@mail.gmail.com>
-	<BANLkTin7uRdUg_mer3ve5nz3WjX9qjP4SQ@mail.gmail.com>
-	<20110610003407.GA27964@cmpxchg.org>
-Date: Fri, 10 Jun 2011 09:48:38 +0900
-Message-ID: <BANLkTinwCFgocsPOvutV-s4Z33-+YFRJfw@mail.gmail.com>
-Subject: Re: [patch 2/8] mm: memcg-aware global reclaim
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andre Renaud <andre@bluewatersys.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Victor <avictor.za@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, Anton Vorontsov <cbou@mail.ru>,
+        Paul Mundt <lethal@linux-sh.org>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "trivial@kernel.org" <trivial@kernel.org>
+Subject: Re: [PATCH trival/tree-wide] Change Ryan Mallon's email address across
+ the kernel
+References: <1307661170-9325-1-git-send-email-rmallon@gmail.com> <ADE657CA350FB648AAC2C43247A983F001F3820B86BF@AUSP01VMBX24.collaborationhost.net>
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F001F3820B86BF@AUSP01VMBX24.collaborationhost.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 9:34 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> On Fri, Jun 10, 2011 at 08:47:55AM +0900, Minchan Kim wrote:
->> On Fri, Jun 10, 2011 at 8:41 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
->> > On Fri, Jun 10, 2011 at 2:23 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
->> >> On Fri, Jun 10, 2011 at 12:48:39AM +0900, Minchan Kim wrote:
->> >>> On Wed, Jun 01, 2011 at 08:25:13AM +0200, Johannes Weiner wrote:
->> >>> > When a memcg hits its hard limit, hierarchical target reclaim is
->> >>> > invoked, which goes through all contributing memcgs in the hierarchy
->> >>> > below the offending memcg and reclaims from the respective per-memcg
->> >>> > lru lists.  This distributes pressure fairly among all involved
->> >>> > memcgs, and pages are aged with respect to their list buddies.
->> >>> >
->> >>> > When global memory pressure arises, however, all this is dropped
->> >>> > overboard.  Pages are reclaimed based on global lru lists that have
->> >>> > nothing to do with container-internal age, and some memcgs may be
->> >>> > reclaimed from much more than others.
->> >>> >
->> >>> > This patch makes traditional global reclaim consider container
->> >>> > boundaries and no longer scan the global lru lists.  For each zone
->> >>> > scanned, the memcg hierarchy is walked and pages are reclaimed from
->> >>> > the per-memcg lru lists of the respective zone.  For now, the
->> >>> > hierarchy walk is bounded to one full round-trip through the
->> >>> > hierarchy, or if the number of reclaimed pages reach the overall
->> >>> > reclaim target, whichever comes first.
->> >>> >
->> >>> > Conceptually, global memory pressure is then treated as if the root
->> >>> > memcg had hit its limit.  Since all existing memcgs contribute to the
->> >>> > usage of the root memcg, global reclaim is nothing more than target
->> >>> > reclaim starting from the root memcg.  The code is mostly the same for
->> >>> > both cases, except for a few heuristics and statistics that do not
->> >>> > always apply.  They are distinguished by a newly introduced
->> >>> > global_reclaim() primitive.
->> >>> >
->> >>> > One implication of this change is that pages have to be linked to the
->> >>> > lru lists of the root memcg again, which could be optimized away with
->> >>> > the old scheme.  The costs are not measurable, though, even with
->> >>> > worst-case microbenchmarks.
->> >>> >
->> >>> > As global reclaim no longer relies on global lru lists, this change is
->> >>> > also in preparation to remove those completely.
->> >>
->> >> [cut diff]
->> >>
->> >>> I didn't look at all, still. You might change the logic later patches.
->> >>> If I understand this patch right, it does round-robin reclaim in all memcgs
->> >>> when global memory pressure happens.
->> >>>
->> >>> Let's consider this memcg size unbalance case.
->> >>>
->> >>> If A-memcg has lots of LRU pages, scanning count for reclaim would be bigger
->> >>> so the chance to reclaim the pages would be higher.
->> >>> If we reclaim A-memcg, we can reclaim the number of pages we want easily and break.
->> >>> Next reclaim will happen at some time and reclaim will start the B-memcg of A-memcg
->> >>> we reclaimed successfully before. But unfortunately B-memcg has small lru so
->> >>> scanning count would be small and small memcg's LRU aging is higher than bigger memcg.
->> >>> It means small memcg's working set can be evicted easily than big memcg.
->> >>> my point is that we should not set next memcg easily.
->> >>> We have to consider memcg LRU size.
->> >>
->> >> I may be missing something, but you said yourself that B had a smaller
->> >> scan count compared to A, so the aging speed should be proportional to
->> >> respective size.
->> >>
->> >> The number of pages scanned per iteration is essentially
->> >>
->> >>        number of lru pages in memcg-zone >> priority
->> >>
->> >> so we scan relatively more pages from B than from A each round.
->> >>
->> >> It's the exact same logic we have been applying traditionally to
->> >> distribute pressure fairly among zones to equalize their aging speed.
->> >>
->> >> Is that what you meant or are we talking past each other?
->> >
->> > True if we can reclaim pages easily(ie, default priority) in all memcgs.
->> > But let's think about it.
->> > Normally direct reclaim path reclaims only SWAP_CLUSTER_MAX size.
->> > If we have small memcg, scan window size would be smaller and it is
->> > likely to be hard reclaim in the priority compared to bigger memcg. It
->> > means it can raise priority easily in small memcg and even it might
->> > call lumpy or compaction in case of global memory pressure. It can
->> > churn all LRU order. :(
->> > Of course, we have bailout routine so we might make such unfair aging
->> > effect small but it's not same with old behavior(ie, single LRU list,
->> > fair aging POV global according to priority raise)
+On 10/06/11 10:28, H Hartley Sweeten wrote:
+> On Thursday, June 09, 2011 4:13 PM, Ryan Mallon wrote:
+>> I no longer work at Bluewater Systems. Update my email address accordingly.
 >>
->> To make fair, how about considering turn over different memcg before
->> raise up priority?
->> It can make aging speed fairly while it can make high contention of
->> lru_lock. :(
+>> Signed-off-by: Ryan Mallon<rmallon@gmail.com>
+>> Cc: Andre Renaud<andre@bluewatersys.com>
+>> Cc: H Hartley Sweeten<hsweeten@visionengravers.com>
+>> Cc: Russell King<linux@arm.linux.org.uk>
+>> Cc: Nicolas Ferre<nicolas.ferre@atmel.com>
+>> Cc: Andrew Victor<avictor.za@gmail.com>
+>> Cc: David Woodhouse<dwmw2@infradead.org>
+>> Cc: Anton Vorontsov<cbou@mail.ru>
+>> Cc: Paul Mundt<lethal@linux-sh.org>
+>> Cc: Liam Girdwood<lrg@ti.com>
+>> Cc: Mark Brown<broonie@opensource.wolfsonmicro.com>
+>> Cc: trivial@kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>> ---
+> Acked-by: H Hartley Sweeten<hsweeten@visionengravers.com>
 >
-> Actually, the way you describe it is how it used to work for limit
-> reclaim before my patches.  It would select one memcg, then reclaim
-> with increasing priority until SWAP_CLUSTER_MAX were reclaimed.
+> Ryan,
 >
->        memcg = select_victim()
->        for each prio:
->          for each zone:
->            shrink_zone(prio, zone, sc = { .mem_cgroup = memcg })
->
-> What it's supposed to do with my patches is scan all memcgs in the
-> hierarchy at the same priority.  If it hasn't made progress, it will
-> increase the priority and iterate again over the hierarchy.
->
->        for each prio:
->          for each zone:
->            for each memcg:
->              do_shrink_zone(prio, zone, sc = { .mem_cgroup = memcg })
->
->
+> There will probable be some merge conflicts with this.
 
-Right you are. I got confused with old behavior which wasn't good.
-Your way is very desirable to me and my concern disappear.
-Thanks, Hannes.
+They should be trivial to fix (or automatic). I would also like this to 
+get merged into 3.0 if still possible. Otherwise I'm going to get three 
+more months of people emailing me at the wrong address :-).
 
--- 
-Kind regards,
-Minchan Kim
+~Ryan
+
+>> MAINTAINERS                            |    2 +-
+>> arch/arm/mach-at91/board-snapper9260.c |    2 +-
+>> arch/arm/mach-ep93xx/dma-m2p.c         |    2 +-
+> This file is gone after Mika's DMA patches which are already in linux-next.
+>
+>> arch/arm/mach-ep93xx/gpio.c            |    2 +-
+> This file has been moved and renamed.  There are also a number of patches
+> already applied to it in linux-next.
+>
+>> arch/arm/mach-ep93xx/simone.c          |    4 ++--
+>> arch/arm/mach-ep93xx/snappercl15.c     |    4 ++--
+>> drivers/mtd/devices/sst25l.c           |    4 ++--
+> There are a couple patches to this file in linux-next.
+>
+>> drivers/power/ds2782_battery.c         |    4 ++--
+>> drivers/video/ep93xx-fb.c              |    2 +-
+>> sound/soc/ep93xx/ep93xx-i2s.c          |    4 ++--
+>> sound/soc/ep93xx/ep93xx-pcm.c          |    4 ++--
+>> sound/soc/ep93xx/snappercl15.c         |    4 ++--
+> The others should be ok.  Maybe you should rebase this patch against
+> linux-next?
+>
+> Regards,
+> Hartley
+
