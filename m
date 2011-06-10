@@ -1,70 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235Ab1FJKKS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 06:10:18 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:44130 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab1FJKKN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 06:10:13 -0400
-X-IronPort-AV: E=Sophos;i="4.65,345,1304294400"; 
-   d="scan'208";a="6208734"
-Date: Fri, 10 Jun 2011 11:10:11 +0100
-From: Tim Deegan <Tim.Deegan@citrix.com>
-To: Igor Mammedov <imammedo@redhat.com>
-CC: <xen-devel@lists.xensource.com>, Keir Fraser <keir@xen.org>,
-        Stabellini <stefano.stabellini@eu.citrix.com>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <Stefano@phlegethon.org>, Michal Hocko <mhocko@suse.cz>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Keir Fraser <keir.xen@gmail.com>, <KAMEZAWA@phlegethon.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Paul Menage <menage@google.com>,
-        Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: Re: [Xen-devel] Possible shadow bug
-Message-ID: <20110610101011.GH5098@whitby.uk.xensource.com>
-References: <BANLkTimbqHPeUdue=_Z31KVdPwcXtbLpeg@mail.gmail.com>
- <4DE8D50F.1090406@redhat.com>
- <BANLkTinMamg_qesEffGxKu3QkT=zyQ2MRQ@mail.gmail.com>
- <4DEE26E7.2060201@redhat.com>
- <20110608123527.479e6991.kamezawa.hiroyu@jp.fujitsu.com>
- <4DF0801F.9050908@redhat.com>
- <alpine.DEB.2.00.1106091311530.12963@kaball-desktop>
- <20110609150133.GF5098@whitby.uk.xensource.com>
- <4DF0F90D.4010900@redhat.com>
- <20110610100139.GG5098@whitby.uk.xensource.com>
+	id S1755512Ab1FJKMA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 06:12:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39254 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755436Ab1FJKL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 06:11:58 -0400
+Date: Fri, 10 Jun 2011 11:11:43 +0100
+From: Joe Thornber <thornber@redhat.com>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: "Amir G." <amir73il@users.sourceforge.net>,
+        Mike Snitzer <snitzer@redhat.com>, linux-ext4@vger.kernel.org,
+        tytso@mit.edu, linux-kernel@vger.kernel.org, lvm-devel@redhat.com,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: LVM vs. Ext4 snapshots (was: [PATCH v1 00/30] Ext4 snapshots)
+Message-ID: <20110610101142.GA10144@ubuntu>
+References: <BANLkTimyBGfg4+ovGsiGqpCz345qVmU_7A@mail.gmail.com>
+ <BANLkTik20iYN4c9faKD9dzerehazWTwTFw@mail.gmail.com>
+ <BANLkTikKRuPu_NX49vr0w-XeN0ZnWo+9vg@mail.gmail.com>
+ <alpine.LFD.2.00.1106101101020.4502@dhcp-27-109.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110610100139.GG5098@whitby.uk.xensource.com>
+In-Reply-To: <alpine.LFD.2.00.1106101101020.4502@dhcp-27-109.brq.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 11:01 +0100 on 10 Jun (1307703699), Tim Deegan wrote:
-> Actually, looking at the disassembly you posted, it looks more like it
-> might be an emulator bug in Xen; if Xen finds itself emulating the IMUL
-> instruction and either gets the logic wrong or does the memory access
-> wrong, it could cause that failure.  And one reason that Xen emulates
-> instructions is if the memory operand is on a pagetable that's shadowed
-> (which might be a page that was recently a pagetable). 
+On Fri, Jun 10, 2011 at 11:01:41AM +0200, Lukas Czerner wrote:
+> On Fri, 10 Jun 2011, Amir G. wrote:
 > 
-> ISTR that even though the RHEL xen reports a 3.0.x version it has quite
-> a lot of backports in it.  Does it have this patch?
-> http://hg.uk.xensource.com/xen-3.1-testing.hg/rev/e8fca4c42d05
+> > CC'ing lvm-devel and fsdevel
+> > 
+> > 
+> > On Wed, Jun 8, 2011 at 9:26 PM, Amir G. <amir73il@users.sourceforge.net> wrote:
+> > For the sake of letting everyone understand the differences and trade
+> > offs between
+> > LVM and ext4 snapshots, so ext4 snapshots can get a fair trial, I need
+> > to ask you
+> > some questions about the implementation, which I could not figure out by myself
+> > from reading the documents.
 
-Oops, that URL doesn't work; I meant this:
-http://xenbits.xen.org/xen-3.1-testing.hg/rev/e8fca4c42d05
+First up let me say that I'm not intending to support writeable
+_external_ origins with multisnap.  This will come as a suprise to
+many people, but I don't think we can resolve the dual requirements to
+efficiently update many, many snapshots when a write occurs _and_ make
+those snapshots quick to delete (when you're encouraging people to
+take lots of snapshots performance of delete becomes a real issue).
 
-Tim.
+One benefit of this decision is that there is no copying from an
+external origin into the multisnap data store.
 
--- 
-Tim Deegan <Tim.Deegan@citrix.com>
-Principal Software Engineer, Xen Platform Team
-Citrix Systems UK Ltd.  (Company #02937203, SL9 0BG)
+For internal snapshots (a snapshot of a thin provisioned volume, or
+recursive snapshot), copy-on-write does occur.  If you keep the
+snapshot block size small, however, you find that this copying can
+often be elided since the new data completely overwrites the old.
+
+This avoidance of copying, and the use of FUA/FLUSH to schedule
+commits means that performance is much better than the old snaps.  It
+wont be as fast as ext4 snapshots, it can't be, we don't know what the
+bios contain, unlike ext4.  But I think the performance will be good
+enough that many people will be happy with this more general solution
+rather than committing to a particular file system.  There will be use
+cases where snapshotting at the fs level is the only option.
+
+> > 1. Crash resistance
+> > How is multisnap handling system crashes?
+> > Ext4 snapshots are journaled along with data, so they are fully
+> > resistant to crashes.
+> > Do you need to keep origin target writes pending in batches and issue FUA/flush
+> > request for the metadata and data store devices?
+
+FUA/flush allows us to treat multisnap devices as if they are devices
+with a write cache.  When a FUA/FLUSH bio comes in we ensure we commit
+metadata before allowing the bio to continue.  A crash will lose data
+that is in the write cache, same as any real block device with a write
+cache.
+
+> > 2. Performance
+> > In the presentation from LinuxTag, there are 2 "meaningless benchmarks".
+> > I suppose they are meaningless because the metadata is linear mapping
+> > and therefor all disk writes and read are sequential.
+> > Do you have any "real world" benchmarks?
+
+Not that I'm happy with.  For me 'real world' means a realistic use of
+snapshots.  We've not had this ability to create lots of snapshots
+before in Linux, so I'm not sure how people are going to use it.  I'll
+get round to writing some benchmarks for certain scenarios eventually
+(eg. incremental backups), but atm there are more pressing issues.
+
+I mainly called those benchmarks meaningless because they didn't
+address how fragmented the volumes become over time.  This
+fragmentation is a function of io pattern, and the shape of the
+snapshot tree.  In the same way I think filesystem benchmarks that
+write lots of files to a freshly formatted volume are also pretty
+meaningless.  What most people are interested in is how the system
+will be performing after they've used it for six months, not the first
+five minutes.
+
+> > I am guessing that without the filesystem level knowledge in the thin
+> > provisioned target,
+> > files and filesystem metadata are not really laid out on the hard
+> > drive as the filesystem
+> > designer intended.
+> > Wouldn't that be causing a large seek overhead on spinning media?
+
+You're absolutely right.
+
+> > 3. ENOSPC
+> > Ext4 snapshots will get into readonly mode on unexpected ENOSPC situation.
+> > That is not perfect and the best practice is to avoid getting to
+> > ENOSPC situation.
+> > But most application do know how to deal with ENOSPC and EROFS gracefully.
+> > Do you have any "real life" experience of how applications deal with
+> > blocking the
+> > write request in ENOSPC situation?
+
+If you run out of space userland needs to extend the data volume.  the
+multisnap-pool target notifies userland (ie. dmeventd) before it
+actually runs out.  If userland hasn't resized the volume before it
+runs out of space then the ios will be paused.  This pausing is really
+no different from suspending a dm device, something LVM has been doing
+for 10 years.  So yes, we have experience of pausing io under
+applications, and the 'notify userland' mechanism is already proven.
+
+> > Or what is the outcome if someone presses the reset button because of an
+> > unexplained (to him) system halt?
+
+See my answer above on crash resistance.
+
+> > 4. Cache size
+> > At the time, I examined using ZFS on an embedded system with 512MB RAM.
+> > I wasn't able to find any official requirements, but there were
+> > several reports around
+> > the net saying that running ZFS with less that 1GB RAM is a performance killer.
+> > Do you have any information about recommended cache sizes to prevent
+> > the metadata store from being a performance bottleneck?
+
+The ideal cache size depends on your io patterns.  It also depends on
+the data block size you've chosen.  The cache is divided into 4k
+blocks, and each block holds ~256 mapping entries.
+
+Unlike ZFS our metadata is very simple.
+
+Those little micro benchmarks (dd and bonnie++) running on a little 4G
+data volume perform nicely with only a 64k cache.  So in the worst
+case I was envisaging a few meg for the cache, rather than a few
+hundred meg.
+
+- Joe
+
+
