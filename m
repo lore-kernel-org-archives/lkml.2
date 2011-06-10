@@ -1,56 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757059Ab1FJMvb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 08:51:31 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:55341 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755273Ab1FJMv2 (ORCPT
+	id S932068Ab1FJMw2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 08:52:28 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38150 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755273Ab1FJMw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 08:51:28 -0400
-Date: Fri, 10 Jun 2011 13:52:17 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Johan MOSSBERG'" <johan.xx.mossberg@stericsson.com>,
-        "'Mel Gorman'" <mel@csn.ul.ie>, "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>
-Subject: Re: [PATCH 02/10] lib: genalloc: Generic allocator improvements
-Message-ID: <20110610135217.701a2fd2@lxorguk.ukuu.org.uk>
-In-Reply-To: <000c01cc2769$02669b70$0733d250$%szyprowski@samsung.com>
-References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
-	<1307699698-29369-3-git-send-email-m.szyprowski@samsung.com>
-	<20110610122451.15af86d1@lxorguk.ukuu.org.uk>
-	<000c01cc2769$02669b70$0733d250$%szyprowski@samsung.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 10 Jun 2011 08:52:27 -0400
+Date: Fri, 10 Jun 2011 14:52:24 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Alan Piszcz <ap@solarrain.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: 2.6.39: crash w/threadirqs option enabled
+In-Reply-To: <alpine.DEB.2.02.1106100414550.32450@p34.internal.lan>
+Message-ID: <alpine.LFD.2.02.1106101450030.11814@ionos>
+References: <alpine.DEB.2.02.1105200405210.24033@p34.internal.lan> <alpine.LFD.2.02.1105201445300.3078@ionos> <alpine.DEB.2.02.1105200850080.19553@p34.internal.lan> <alpine.LFD.2.02.1105201528500.3078@ionos> <alpine.DEB.2.02.1105200945300.19553@p34.internal.lan>
+ <alpine.LFD.2.02.1105201712501.3078@ionos> <alpine.DEB.2.02.1105201210030.19553@p34.internal.lan> <alpine.LFD.2.02.1105201819310.3078@ionos> <alpine.DEB.2.02.1106100414550.32450@p34.internal.lan>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I plan to replace it with lib/bitmap.c bitmap_* based allocator (similar like
-> it it is used by dma_declare_coherent_memory() and friends in
-> drivers/base/dma-coherent.c). We need something really simple for CMA area
-> management. 
+On Fri, 10 Jun 2011, Justin Piszcz wrote:
+> On Fri, 20 May 2011, Thomas Gleixner wrote:
+> Crashed again and it rebooted too:
 > 
-> IMHO allocate_resource and friends a bit too heavy here, but good to know 
-> that such allocator also exists.
+> reboot   system boot  2.6.39             Thu Jun  9 23:58 - 04:05  (04:06)
+> user1      pts/0        X                Thu Jun  9 19:25 - 19:30  (00:04)
+> user1      pts/10       X                Thu Jun  9 18:23 - crash  (05:35)
+> 
+> Any thoughts on what could be causing this?
+> Should I go back to 2.6.38?
 
-Not sure I'd class allocate_resource as heavyweight but providing it's
-using something that already exists rather than inventing yet another
-allocator.
+If you remove the threadirqs option from the commandline it does not
+happen, right?
 
-This wants dealing with before it goes upstream though so the chaneges in
-lib/*c etc never have to reach mainline and then get changed back.
+Can you try the following patch ?
 
-Alan
+Thanks,
+
+	tglx
+---
+commit fd8a7de177b6f56a0fc59ad211c197a7df06b1ad
+Author: Thomas Gleixner <tglx@linutronix.de>
+Date:   Tue Jul 20 14:34:50 2010 +0200
+
+    x86: cpu-hotplug: Prevent softirq wakeup on wrong CPU
+    
+    After a newly plugged CPU sets the cpu_online bit it enables
+    interrupts and goes idle. The cpu which brought up the new cpu waits
+    for the cpu_online bit and when it observes it, it sets the cpu_active
+    bit for this cpu. The cpu_active bit is the relevant one for the
+    scheduler to consider the cpu as a viable target.
+    
+    With forced threaded interrupt handlers which imply forced threaded
+    softirqs we observed the following race:
+    
+    cpu 0                         cpu 1
+    
+    bringup(cpu1);
+                                  set_cpu_online(smp_processor_id(), true);
+    		              local_irq_enable();
+    while (!cpu_online(cpu1));
+                                  timer_interrupt()
+                                    -> wake_up(softirq_thread_cpu1);
+                                         -> enqueue_on(softirq_thread_cpu1, cpu0);
+    
+                                                                            ^^^^
+    
+    cpu_notify(CPU_ONLINE, cpu1);
+      -> sched_cpu_active(cpu1)
+         -> set_cpu_active((cpu1, true);
+    
+    When an interrupt happens before the cpu_active bit is set by the cpu
+    which brought up the newly onlined cpu, then the scheduler refuses to
+    enqueue the woken thread which is bound to that newly onlined cpu on
+    that newly onlined cpu due to the not yet set cpu_active bit and
+    selects a fallback runqueue. Not really an expected and desirable
+    behaviour.
+    
+    So far this has only been observed with forced hard/softirq threading,
+    but in theory this could happen without forced threaded hard/softirqs
+    as well. It's probably unobservable as it would take a massive
+    interrupt storm on the newly onlined cpu which causes the softirq loop
+    to wake up the softirq thread and an even longer delay of the cpu
+    which waits for the cpu_online bit.
+    
+    Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+    Reviewed-by: Peter Zijlstra <peterz@infradead.org>
+    Cc: stable@kernel.org # 2.6.39
+
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 33a0c11..9fd3137 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -285,6 +285,19 @@ notrace static void __cpuinit start_secondary(void *unused)
+ 	per_cpu(cpu_state, smp_processor_id()) = CPU_ONLINE;
+ 	x86_platform.nmi_init();
+ 
++	/*
++	 * Wait until the cpu which brought this one up marked it
++	 * online before enabling interrupts. If we don't do that then
++	 * we can end up waking up the softirq thread before this cpu
++	 * reached the active state, which makes the scheduler unhappy
++	 * and schedule the softirq thread on the wrong cpu. This is
++	 * only observable with forced threaded interrupts, but in
++	 * theory it could also happen w/o them. It's just way harder
++	 * to achieve.
++	 */
++	while (!cpumask_test_cpu(smp_processor_id(), cpu_active_mask))
++		cpu_relax();
++
+ 	/* enable local interrupts */
+ 	local_irq_enable();
+ 
