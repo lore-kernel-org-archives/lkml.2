@@ -1,79 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab1FJOq6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 10:46:58 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:64768 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381Ab1FJOq5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 10:46:57 -0400
-Date: Fri, 10 Jun 2011 08:46:55 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpio: basic_mmio: add missing include of spinlock_types.h
-Message-ID: <20110610144655.GA26900@ponder.secretlab.ca>
-References: <1307709889-31350-1-git-send-email-jamie@jamieiles.com>
- <20110610124805.GN3711@pulham.picochip.com>
+	id S1756206Ab1FJOsP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 10:48:15 -0400
+Received: from mga11.intel.com ([192.55.52.93]:44217 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753421Ab1FJOsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 10:48:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,347,1304319600"; 
+   d="scan'208";a="16802890"
+Date: Fri, 10 Jun 2011 22:48:05 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] writeback: trace global_dirty_state
+Message-ID: <20110610144805.GA9986@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110610124805.GN3711@pulham.picochip.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 01:48:05PM +0100, Jamie Iles wrote:
-> On Fri, Jun 10, 2011 at 01:44:49PM +0100, Jamie Iles wrote:
-> > include/linux/basic_mmio_gpio.h uses a spinlock_t without including any
-> > of the spinlock headers resulting in this compiler warning.
-> > 
-> > include/linux/basic_mmio_gpio.h:51:2: error: expected specifier-qualifier-list before 'spinlock_t'
-> > 
-> > Explicitly include linux/spinlock_types.h to fix it.
-> 
-> Sorry, wrong patch.  Here's the correct one.
-> 
-> Jamie
+[It seems beneficial to queue this simple trace event for
+ next/upstream after the review?]
 
-Applied, thanks.
+Add trace event balance_dirty_state for showing the global dirty page
+counts and thresholds at each global_dirty_limits() invocation.  This
+will cover the callers throttle_vm_writeout(), over_bground_thresh()
+and each balance_dirty_pages() loop.
 
-g.
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ include/trace/events/writeback.h |   36 +++++++++++++++++++++++++++++
+ mm/page-writeback.c              |    1 
+ 2 files changed, 37 insertions(+)
 
-> 
-> 8<---
-> 
-> From cd6afb281b31596c175ea3ee1d44f0efea25250f Mon Sep 17 00:00:00 2001
-> From: Jamie Iles <jamie@jamieiles.com>
-> Date: Fri, 10 Jun 2011 13:41:44 +0100
-> Subject: [PATCH] gpio: basic_mmio: add missing include of spinlock_types.h
-> 
-> include/linux/basic_mmio_gpio.h uses a spinlock_t without including any
-> of the spinlock headers resulting in this compiler warning.
-> 
-> include/linux/basic_mmio_gpio.h:51:2: error: expected specifier-qualifier-list before 'spinlock_t'
-> 
-> Explicitly include linux/spinlock_types.h to fix it.
-> 
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
-> ---
->  include/linux/basic_mmio_gpio.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/basic_mmio_gpio.h b/include/linux/basic_mmio_gpio.h
-> index 1ae1271..98999cf 100644
-> --- a/include/linux/basic_mmio_gpio.h
-> +++ b/include/linux/basic_mmio_gpio.h
-> @@ -16,6 +16,7 @@
->  #include <linux/gpio.h>
->  #include <linux/types.h>
->  #include <linux/compiler.h>
-> +#include <linux/spinlock_types.h>
->  
->  struct bgpio_pdata {
->  	int base;
-> -- 
-> 1.7.4.1
-> 
+--- linux-next.orig/mm/page-writeback.c	2011-06-10 21:52:34.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-06-10 22:08:26.000000000 +0800
+@@ -430,6 +430,7 @@ void global_dirty_limits(unsigned long *
+ 	}
+ 	*pbackground = background;
+ 	*pdirty = dirty;
++	trace_global_dirty_state(background, dirty);
+ }
+ 
+ /**
+--- linux-next.orig/include/trace/events/writeback.h	2011-06-10 21:52:34.000000000 +0800
++++ linux-next/include/trace/events/writeback.h	2011-06-10 22:25:33.000000000 +0800
+@@ -187,6 +187,42 @@ TRACE_EVENT(writeback_queue_io,
+ 		__entry->moved)
+ );
+ 
++TRACE_EVENT(global_dirty_state,
++
++	TP_PROTO(unsigned long background_thresh,
++		 unsigned long dirty_thresh
++	),
++
++	TP_ARGS(background_thresh,
++		dirty_thresh
++	),
++
++	TP_STRUCT__entry(
++		__field(unsigned long,	nr_dirty)
++		__field(unsigned long,	nr_writeback)
++		__field(unsigned long,	nr_unstable)
++		__field(unsigned long,	background_thresh)
++		__field(unsigned long,	dirty_thresh)
++	),
++
++	TP_fast_assign(
++		__entry->nr_dirty	= global_page_state(NR_FILE_DIRTY);
++		__entry->nr_writeback	= global_page_state(NR_WRITEBACK);
++		__entry->nr_unstable	= global_page_state(NR_UNSTABLE_NFS);
++		__entry->background_thresh = background_thresh;
++		__entry->dirty_thresh	= dirty_thresh;
++	),
++
++	TP_printk("dirty=%lu writeback=%lu unstable=%lu "
++		  "bg_thresh=%lu thresh=%lu",
++		  __entry->nr_dirty,
++		  __entry->nr_writeback,
++		  __entry->nr_unstable,
++		  __entry->background_thresh,
++		  __entry->dirty_thresh
++	)
++);
++
+ DECLARE_EVENT_CLASS(writeback_congest_waited_template,
+ 
+ 	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
