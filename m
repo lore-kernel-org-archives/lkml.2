@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab1FJAxE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 20:53:04 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:47447 "EHLO smtps.tip.net.au"
+	id S1757564Ab1FJA5h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 20:57:37 -0400
+Received: from smtp1.utsp.utwente.nl ([130.89.2.8]:57978 "EHLO smtp.utwente.nl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756060Ab1FJAxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 20:53:02 -0400
-Date: Fri, 10 Jun 2011 10:52:55 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the arm-lpae tree with the arm tree
-Message-Id: <20110610105255.3105eef2.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753992Ab1FJA5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 20:57:35 -0400
+Date: Fri, 10 Jun 2011 02:57:21 +0200 (CEST)
+From: Martijn Uffing <mp3project@sarijopen.student.utwente.nl>
+To: Connor Hansen <cmdkhh@gmail.com>
+cc: Jeff Layton <jlayton@redhat.com>, linux-cifs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [OOPS] 3.0-rc1 cifs
+In-Reply-To: <BANLkTimPqmkNJMaJE2_C5zD8ESFOEM3=hg@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1106100243370.2168@sarijopen.student.utwente.nl>
+References: <Pine.LNX.4.64.1106092211500.19687@sarijopen.student.utwente.nl>
+ <20110609183045.01f6f9fc@tlielax.poochiereds.net>
+ <BANLkTimPqmkNJMaJE2_C5zD8ESFOEM3=hg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+X-UTwente-MailScanner-Information: Scanned by MailScanner. Contact icts.servicedesk@utwente.nl for more information.
+X-UTwente-MailScanner: Found to be clean
+X-UTwente-MailScanner-From: mp3project@sarijopen.student.utwente.nl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Catalin,
 
-Today's linux-next merge of the arm-lpae tree got a conflict in
-arch/arm/mm/context.c between commit 07989b7ad63a ("Revert "ARM: 6943/1:
-mm: use TTBR1 instead of reserved context ID"") from the arm tree and
-commit 21fa7e3ea279 ("ARM: LPAE: Add context switching support") from the
-arm-lpae tree.
+<snip>
+> call in get_dfs_path()
+> rc = CIFSTCon(xid, pSesInfo, temp_unc, NULL, nls_codepage);
+>
+> function header for CIFSTCon
+> int  CIFSTCon(unsigned int xid, struct cifs_ses *ses,
+>          const char *tree, struct cifs_tcon *tcon,
+>          const struct nls_table *nls_codepage)
+>
+> get_dfs_path() is passing struct cifs_tcon *tcon as NULL
+>
+> from config:  CONFIG_CIFS_WEAK_PW_HASH=y
+>
+> in CIFSTCon
+>
+> #ifdef CONFIG_CIFS_WEAK_PW_HASH
+> 3222                 if ((global_secflags & CIFSSEC_MAY_LANMAN) &&
+> 3223                     (ses->server->secType == LANMAN))
+> 3224                         calc_lanman_hash(tcon->password,
+> ses->server->cryptkey,
+>
+> in calc_lanman_hash tcon is dereferenced(tcon->password) without being
+> checked if null
+>
+> 3225                                          ses->server->sec_mode &
+> 3226                                             SECMODE_PW_ENCRYPT ?
+> true : false,
+> 3227                                          bcc_ptr);
+> 3228                 else
+> 3229 #endif /* CIFS_WEAK_PW_HASH */
+>
+> Connor
 
-I fixed it up (I think - see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc arch/arm/mm/context.c
-index b0ee9ba,2dff1cf..0000000
---- a/arch/arm/mm/context.c
-+++ b/arch/arm/mm/context.c
-@@@ -22,11 -22,37 +22,34 @@@ unsigned int cpu_last_asid = ASID_FIRST
-  DEFINE_PER_CPU(struct mm_struct *, current_mm);
-  #endif
-  
-+ #ifdef CONFIG_ARM_LPAE
-+ static void cpu_set_reserved_ttbr0(void)
-+ {
-+ 	unsigned long ttbl = __pa(swapper_pg_dir);
-+ 	unsigned long ttbh = 0;
-+ 
-+ 	/*
-+ 	 * Set TTBR0 to swapper_pg_dir. Note that swapper_pg_dir only contains
-+ 	 * global entries so the ASID value is not relevant.
-+ 	 */
-+ 	asm(
-+ 	"	mcrr	p15, 0, %0, %1, c2		@ set TTBR0\n"
-+ 	:
-+ 	: "r" (ttbl), "r" (ttbh));
-+ }
-+ #else
-+ static void cpu_set_reserved_ttbr0(void)
-+ {
- -	u32 ttb;
- -
- -	/* Copy TTBR1 into TTBR0 */
- -	asm volatile(
- -	"	mrc	p15, 0, %0, c2, c0, 1		@ read TTBR1\n"
- -	"	mcr	p15, 0, %0, c2, c0, 0		@ set TTBR0\n"
- -	: "=r" (ttb));
-++	/* set the reserved ASID before flushing the TLB */
-++	asm("mcr	p15, 0, %0, c13, c0, 1\n" : : "r" (0));
-+ }
-+ #endif
-+ 
-  /*
-   * We fork()ed a process, and we need a new context for the child
- - * to run in.
- + * to run in.  We reserve version 0 for initial tasks so we will
- + * always allocate an ASID. The ASID 0 is reserved for the TTBR
- + * register changing sequence.
-   */
-  void __init_new_context(struct task_struct *tsk, struct mm_struct *mm)
-  {
+Ave all
+
+I recompiled  kernel 3.0-rc1 (hadn't enabled CONFIG_DEBUG_INFO=y) and put 
+the oops (with the new adresses) through gdb per instruction of Jeff. And 
+Connor was spot on!
+
+<qoute oops>
+BUG: unable to handle kernel NULL pointer dereference at 00000000000000a0
+IP: [<ffffffffa041e286>] CIFSTCon+0xf6/0x4d0 [cifs]
+</qoute oops>
+
+<qoute gdb>
+This GDB was configured as "x86_64-linux-gnu".
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>...
+Reading symbols from 
+/lib/modules/3.0.0-rc1-debug/kernel/fs/cifs/cifs.ko...done.
+(gdb) list *(CIFSTCon+0xf6)
+0xc2b6 is in CIFSTCon (fs/cifs/connect.c:3230).
+3225                                             ses->server->sec_mode &
+3226                                                SECMODE_PW_ENCRYPT ? 
+true : false,
+3227                                             bcc_ptr);
+3228                    else
+3229    #endif /* CIFS_WEAK_PW_HASH */
+3230                    rc = SMBNTencrypt(tcon->password, 
+ses->server->cryptkey,
+3231                                            bcc_ptr);
+3232
+3233                    bcc_ptr += CIFS_AUTH_RESP_SIZE;
+3234                    if (ses->capabilities & CAP_UNICODE) {
+(gdb)
+</qoute gdb>
+
+Martijn
+
+
