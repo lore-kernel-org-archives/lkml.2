@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758333Ab1FJXcZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 19:32:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:50900 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758226Ab1FJXcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 19:32:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,349,1304319600"; 
-   d="scan'208";a="12956626"
-Message-ID: <4DF2A984.6060705@linux.intel.com>
-Date: Fri, 10 Jun 2011 16:32:20 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-Organization: Intel Open Source Technology Center
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1758340Ab1FJXeM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 19:34:12 -0400
+Received: from sous-sol.org ([216.99.217.87]:39633 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758297Ab1FJXeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 19:34:11 -0400
+Date: Fri, 10 Jun 2011 16:33:55 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, chrisw@sous-sol.org
+Subject: [PATCH] mm: thp: minor lock simplification in __khugepaged_exit
+Message-ID: <20110610233355.GO23047@sequoia.sous-sol.org>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Jim Bos <jim876@xs4all.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-References: <4DED0394.2090000@gmail.com> <BANLkTikVEj2Uz9N0B-kKA3GJTUWzmwz=zQ@mail.gmail.com> <20110607014127.GA8450@srcf.ucam.org> <4DED8752.5070005@kernel.org> <4DEDEA73.7010900@gmail.com> <20110610164706.GB25774@srcf.ucam.org> <4DF259B2.9070403@gmail.com> <20110610175429.GA28500@srcf.ucam.org> <4DF29E7E.50908@gmail.com> <4DF2A17E.7000103@kernel.org> <20110610230359.GA2084@srcf.ucam.org> <4DF2A81C.7000902@kernel.org>
-In-Reply-To: <4DF2A81C.7000902@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2011 04:26 PM, Yinghai Lu wrote:
->>
->>> 2. ask vendor of system that Matthew try to fix to go back fix their firmware. otherwise user have stay with CSM with it.
->>
->> This isn't an option.
->>
->> The medium-term fix is to ensure that the bootloaders don't put the 
->> kernel on top of boot services code. 
-> 
-> that is not enough, will need to make arch/x86/boot/compressed/head_64.S parse e820 table to find right decompress position.
-> 
+The lock is released first thing in all three branches.  Simplify this
+by unconditionally releasing lock and remove else clause which was only
+there to be sure lock was released.
 
-No, it should be, because the boot loader can control the decompress
-position to avoid the problems.
+Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+---
+ mm/huge_memory.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-	-hpa
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 615d974..a032ddd 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1596,14 +1596,13 @@ void __khugepaged_exit(struct mm_struct *mm)
+ 		list_del(&mm_slot->mm_node);
+ 		free = 1;
+ 	}
++	spin_unlock(&khugepaged_mm_lock);
+ 
+ 	if (free) {
+-		spin_unlock(&khugepaged_mm_lock);
+ 		clear_bit(MMF_VM_HUGEPAGE, &mm->flags);
+ 		free_mm_slot(mm_slot);
+ 		mmdrop(mm);
+ 	} else if (mm_slot) {
+-		spin_unlock(&khugepaged_mm_lock);
+ 		/*
+ 		 * This is required to serialize against
+ 		 * khugepaged_test_exit() (which is guaranteed to run
+@@ -1614,8 +1613,7 @@ void __khugepaged_exit(struct mm_struct *mm)
+ 		 */
+ 		down_write(&mm->mmap_sem);
+ 		up_write(&mm->mmap_sem);
+-	} else
+-		spin_unlock(&khugepaged_mm_lock);
++	}
+ }
+ 
+ static void release_pte_page(struct page *page)
