@@ -1,101 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437Ab1FJF3H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 01:29:07 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36371 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab1FJF3D (ORCPT
+	id S1752557Ab1FJFsu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 01:48:50 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:49988 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751130Ab1FJFst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 01:29:03 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 10 Jun 2011 14:22:03 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Xiaotian Feng <xtfeng@gmail.com>
-Cc: Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH] [BUGFIX] update mm->owner even if no next owner.
-Message-Id: <20110610142203.f2d6c922.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <BANLkTi=_-md7tes5GPcYh5Bpd=g_FVaagw@mail.gmail.com>
-References: <20110609212956.GA2319@redhat.com>
-	<BANLkTikCfWhoLNK__ringzy7KjKY5ZEtNb3QTuX1jJ53wNNysA@mail.gmail.com>
-	<BANLkTikF7=qfXAmrNzyMSmWm7Neh6yMAB8EbBp7oLcfQmrbDjA@mail.gmail.com>
-	<20110610091355.2ce38798.kamezawa.hiroyu@jp.fujitsu.com>
-	<alpine.LSU.2.00.1106091812030.4904@sister.anvils>
-	<20110610113311.409bb423.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110610121949.622e4629.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110610125551.385ea7ed.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110610133021.2eaaf0da.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTi=_-md7tes5GPcYh5Bpd=g_FVaagw@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 10 Jun 2011 01:48:49 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
+	h=Received:Message-ID:Date:From:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=X2ORpAGoRGRVZxgF+D4aQfhphKwlGnov/O5Oa1S/SEpXAKYa6EciYHIzk1cIHLUkbMOuGV0W4d27EQJrojnp1hHYw1XbTRZ86nzDMsXYeSjyPQ9hI7v9ix2Ns02RYui9;
+Message-ID: <4DF1B035.7080009@tao.ma>
+Date: Fri, 10 Jun 2011 13:48:37 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: CFQ: async queue blocks the whole system
+References: <1307616577-6101-1-git-send-email-tm@tao.ma> <20110609141451.GD29913@redhat.com> <4DF0DD0F.8090407@tao.ma> <20110609153738.GF29913@redhat.com> <4DF0EA55.10209@tao.ma> <20110609182706.GG29913@redhat.com>
+In-Reply-To: <20110609182706.GG29913@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 114.251.86.0 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Jun 2011 13:21:46 +0800
-Xiaotian Feng <xtfeng@gmail.com> wrote:
-
-> On Fri, Jun 10, 2011 at 12:30 PM, KAMEZAWA Hiroyuki <
-> kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On 06/10/2011 02:27 AM, Vivek Goyal wrote:
+> On Thu, Jun 09, 2011 at 11:44:21PM +0800, Tao Ma wrote:
 > 
-> >
-> > I think this can be a fix.
-> > maybe good to CC Oleg.
+> [..]
+>>> CFQ in general tries not to drive too deep a queue depth in an effort
+>>> to improve latencies. CFQ is generally recommened for slow SATA drives
+>>> and dispatching too many requests from a single queue can only serve to
+>>> increase the latency.
+>> ok, so do you mean that for a fast drive, cfq isn't recommended and
+>> deadline is always prefered? ;) We have a SAS with queue_depth=128, so
+>> it should be a fast drive I guess. :)
 > 
-> ==
-> > From dff52fb35af0cf36486965d19ee79e04b59f1dc4 Mon Sep 17 00:00:00 2001
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > Date: Fri, 10 Jun 2011 13:15:14 +0900
-> > Subject: [PATCH] [BUGFIX] update mm->owner even if no next owner.
-> >
-> > A panic is reported.
-> >
-> > > Call Trace:
-> > >  [<ffffffff81139792>] mem_cgroup_from_task+0x15/0x17
-> > >  [<ffffffff8113a75a>] __mem_cgroup_try_charge+0x148/0x4b4
-> > >  [<ffffffff810493f3>] ? need_resched+0x23/0x2d
-> > >  [<ffffffff814cbf43>] ? preempt_schedule+0x46/0x4f
-> > >  [<ffffffff8113afe8>] mem_cgroup_charge_common+0x9a/0xce
-> > >  [<ffffffff8113b6d1>] mem_cgroup_newpage_charge+0x5d/0x5f
-> > >  [<ffffffff81134024>] khugepaged+0x5da/0xfaf
-> > >  [<ffffffff81078ea0>] ? __init_waitqueue_head+0x4b/0x4b
-> > >  [<ffffffff81133a4a>] ? add_mm_counter.constprop.5+0x13/0x13
-> > >  [<ffffffff81078625>] kthread+0xa8/0xb0
-> > >  [<ffffffff814d13e8>] ? sub_preempt_count+0xa1/0xb4
-> > >  [<ffffffff814d5664>] kernel_thread_helper+0x4/0x10
-> > >  [<ffffffff814ce858>] ? retint_restore_args+0x13/0x13
-> > >  [<ffffffff8107857d>] ? __init_kthread_worker+0x5a/0x5a
-> >
-> > The code is.
-> > >         return container_of(task_subsys_state(p, mem_cgroup_subsys_id),
-> > >                                 struct mem_cgroup, css);
-> >
-> >
-> > What happens here is accssing a freed task struct "p" from mm->owner.
-> > So, it's doubtful that mm->owner points to freed task struct.
-> >
-> >
-> But from the bug itself, it looks more likely kernel is hitting a freed
-> p->cgroups, right?
-> If p is already freed, the kernel will fault on
-> 781cc62d: 8b 82 fc 08 00 00       mov    0x8fc(%edx),%eax
+> I think in general that has been true in my experience. SSDs are still
+> ok with CFQ because that sets nonrotational flag and cuts down on 
+> idling. But if it is a rotational media which can handle multiple
+> parallel requests at a time you might have better throughput results
+> with deadline.
+Thank you for the advice.
 > 
-> Then you will not get a value of 6b6b6b87, right?
+> [..]
+>>> Its latency vs throughput tradeoff.
+>> ok, so it seems that all these are designed, not a bug. Thanks for the
+>> clarification.
+>>
+>> btw, reverting the patch doesn't work. I can still get the livelock.
+> 
+> Can you give following patch a try and see if it helps. On my system this
+> does allow CFQ to dispatch some writes once in a while.
+Sorry, this patch doesn't work in my test.
 
-
-%edx here is a pointer for task struct.
-Then, task->cgroup == 0x6b6b6b6b. It means "task" is freed.
-
-Thanks,
--Kame
-
-
-
+Regards,
+Tao
+> 
+> thanks
+> Vivek
+> 
+> ---
+>  block/cfq-iosched.c |   25 ++++++++++++++++++++++++-
+>  1 file changed, 24 insertions(+), 1 deletion(-)
+> 
+> Index: linux-2.6/block/cfq-iosched.c
+> ===================================================================
+> --- linux-2.6.orig/block/cfq-iosched.c	2011-06-09 11:44:40.000000000 -0400
+> +++ linux-2.6/block/cfq-iosched.c	2011-06-09 14:04:01.036983301 -0400
+> @@ -303,6 +303,8 @@ struct cfq_data {
+>  
+>  	/* Number of groups which are on blkcg->blkg_list */
+>  	unsigned int nr_blkcg_linked_grps;
+> +
+> +	unsigned long last_async_dispatched;
+>  };
+>  
+>  static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
+> @@ -2063,6 +2065,10 @@ static void cfq_dispatch_insert(struct r
+>  
+>  	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
+>  	cfqq->nr_sectors += blk_rq_sectors(rq);
+> +
+> +	if (!cfq_cfqq_sync(cfqq))
+> +		cfqd->last_async_dispatched = jiffies;
+> +
+>  	cfq_blkiocg_update_dispatch_stats(&cfqq->cfqg->blkg, blk_rq_bytes(rq),
+>  					rq_data_dir(rq), rq_is_sync(rq));
+>  }
+> @@ -3315,8 +3321,25 @@ cfq_should_preempt(struct cfq_data *cfqd
+>  	 * if the new request is sync, but the currently running queue is
+>  	 * not, let the sync request have priority.
+>  	 */
+> -	if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq))
+> +	if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq)) {
+> +		unsigned long async_delay = 0;
+> +
+> +		async_delay = jiffies - cfqd->last_async_dispatched;
+> +
+> +		/*
+> +		 * CFQ is heavily loaded in favor of sync queues and that
+> + 		 * can lead to starvation of async queues. If it has been
+> + 		 * too long since last async request was dispatched, don't
+> + 		 * preempt async queue
+> + 		 *
+> + 		 * Once we have per group async queues, this will need
+> + 		 * modification.
+> + 		 */
+> +		if (async_delay > 2 * HZ)
+> +			return false;
+> +
+>  		return true;
+> +	}
+>  
+>  	if (new_cfqq->cfqg != cfqq->cfqg)
+>  		return false;
 
