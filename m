@@ -1,70 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263Ab1FJSj2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 14:39:28 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:40957 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932144Ab1FJSj0 (ORCPT
+	id S1758002Ab1FJSlR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 14:41:17 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:39453 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757970Ab1FJSlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 14:39:26 -0400
-Date: Fri, 10 Jun 2011 21:39:20 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Tatyana Brokhman <tlinder@codeaurora.org>, greg@kroah.com,
-        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
-        ablay@codeaurora.org, open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] usb:dummy_hcd: Force FS device connection according
- to module parameter
-Message-ID: <20110610183918.GX31396@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1307703207-14087-1-git-send-email-tlinder@codeaurora.org>
- <Pine.LNX.4.44L0.1106101112410.1921-100000@iolanthe.rowland.org>
+	Fri, 10 Jun 2011 14:41:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
+	:subject:in-reply-to:message-id:references:mime-version:
+	content-type; q=dns; s=newdream.net; b=F5YHmodxQzwFHmHWGSl5Sh7T2
+	d8bcDV0kJ1x3kgw84HSTayme/931nLX8iwqhknAGWcM40Dzn5VGis/jQWd0wx9uB
+	/bA25NWbgnWcavA03QbpTdSFyo74+zTUEZM58Wjt90cK233rcGyvKySFIQyg100b
+	72/8r8WZOBuuqTo5aw=
+Date: Fri, 10 Jun 2011 11:43:13 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: Josef Bacik <josef@redhat.com>
+cc: Chris Mason <chris.mason@oracle.com>, Jim Schutt <jaschut@sandia.gov>,
+        dave <dave@jikos.cz>, miaox <miaox@cn.fujitsu.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>, ceph-devel@vger.kernel.org
+Subject: Re: 3.0-rcX BUG at fs/btrfs/ioctl.c:432 - bisected
+In-Reply-To: <4DF263AD.3070901@redhat.com>
+Message-ID: <Pine.LNX.4.64.1106101139150.5245@cobra.newdream.net>
+References: <4DF140AB.4030805@sandia.gov> <20110609234553.GN12709@twin.jikos.cz>
+ <4DF24F0E.4040306@sandia.gov> <1307726732-sup-3404@shiny>
+ <Pine.LNX.4.64.1106101100310.5245@cobra.newdream.net>
+ <Pine.LNX.4.64.1106101112470.5245@cobra.newdream.net> <4DF2627F.4030600@redhat.com>
+ <Pine.LNX.4.64.1106101134530.5245@cobra.newdream.net> <4DF263AD.3070901@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TOkWJigZa0YodlBE"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1106101112410.1921-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 10 Jun 2011, Josef Bacik wrote:
+> On 06/10/2011 02:35 PM, Sage Weil wrote:
+> > On Fri, 10 Jun 2011, Josef Bacik wrote:
+> >> On 06/10/2011 02:14 PM, Sage Weil wrote:
+> >>> On Fri, 10 Jun 2011, Sage Weil wrote:
+> >>>> On Fri, 10 Jun 2011, Chris Mason wrote:
+> >>>>> Excerpts from Jim Schutt's message of 2011-06-10 13:06:22 -0400:
+> >>>>>
+> >>>>> [ two different btrfs crashes ]
+> >>>>>
+> >>>>> I think your two crashes in btrfs were from the uninit variables and
+> >>>>> those should be fixed in rc2.
+> >>>>>
+> >>>>>> When I did my bisection, my criteria for success/failure was
+> >>>>>> "did mkcephfs succeed?".  When I apply this criteria to a recent
+> >>>>>> linus kernel (e.g. 06e86849cf4019), which includes the fix you
+> >>>>>> mentioned (aa0467d8d2a00e), I get still a different failure mode,
+> >>>>>> which doesn't actually reference btrfs:
+> >>>>>>
+> >>>>>> [  276.364178] BUG: unable to handle kernel NULL pointer dereference at 000000000000000a
+> >>>>>> [  276.365127] IP: [<ffffffffa05434b1>] journal_start+0x3e/0x9c [jbd]
+> >>>>>
+> >>>>> Looking at the resulting code in the oops, we're here in journal_start:
+> >>>>>
+> >>>>>         if (handle) {
+> >>>>>                 J_ASSERT(handle->h_transaction->t_journal == journal);
+> >>>>>
+> >>>>> handle comes from current->journal_info, and we're doing a deref on
+> >>>>> handle->h_transaction, which is probably 0xa.
+> >>>>>
+> >>>>> So, we're leaving crud in current->journal_info and ext3 is finding it.
+> >>>>>
+> >>>>> Perhaps its from ceph starting a transaction but leaving it running?
+> >>>>> The bug came with Josef's transaction performance fixes, but it is
+> >>>>> probably a mixture of his code with the ioctls ceph is using.
+> >>>>
+> >>>> Ah, yeah, that's the problem.  We saw a similar problem a while back with 
+> >>>> the start/stop transaction ioctls.  In this case, create_snapshot is doing
+> >>>>
+> >>>> 	trans = btrfs_start_transaction(root->fs_info->extent_root, 5);
+> >>>> 	if (IS_ERR(trans)) {
+> >>>> 		ret = PTR_ERR(trans);
+> >>>> 		goto fail;
+> >>>> 	}
+> >>>>
+> >>>> which sets current->journal_info.  Then
+> >>>>
+> >>>> 	ret = btrfs_snap_reserve_metadata(trans, pending_snapshot);
+> >>>> 	BUG_ON(ret);
+> >>>>
+> >>>> 	list_add(&pending_snapshot->list,
+> >>>> 		 &trans->transaction->pending_snapshots);
+> >>>> 	if (async_transid) {
+> >>>> 		*async_transid = trans->transid;
+> >>>> 		ret = btrfs_commit_transaction_async(trans,
+> >>>> 				     root->fs_info->extent_root, 1);
+> >>>> 	} else {
+> >>>> 		ret = btrfs_commit_transaction(trans,
+> >>>> 				       root->fs_info->extent_root);
+> >>>> 	}
+> >>>>
+> >>>> but the async snap creation ioctl takes the async path, which runs 
+> >>>> btrfs_commit_transaction in a worker thread.
+> >>>>
+> >>>> I'm not sure what the right thing to do is here is... can whatever is in 
+> >>>> journal_info be attached to trans instead in 
+> >>>> btrfs_commit_transaction_async()?
+> >>>
+> >>> It looks like it's not used for anything in btrfs, actually; it's just set 
+> >>> and cleared.  What's the point of that?
+> >>>
+> >>
+> >> It is used now, check the beginning of start_transaction().  Thanks,
+> > 
+> > Oh I see, okay.
+> > 
+> > So clearing it in btrfs_commit_transaction_async should be fine then, 
+> > right?  When btrfs_commit_transaction runs in the other thread it won't 
+> > care that current->journal_info is NULL.
+> > 
+> 
+> Oh yeah your patch is good :),
 
---TOkWJigZa0YodlBE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Okay cool.  Here's the fix with a proper changelog and a little 
+use-after-free paranoia.
 
-On Fri, Jun 10, 2011 at 11:12:57AM -0400, Alan Stern wrote:
-> On Fri, 10 Jun 2011, Tatyana Brokhman wrote:
->=20
-> > This patch adds a new module parameter to dummy_hcd: is_high_speed
-> > When set to false the connected device will be forced to operate in FS
-> > mode. The default of this parameter is true.
-> >=20
-> > Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
->=20
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Thanks!
+sage
 
-applied, thanks
 
---=20
-balbi
+>From 9881c0752293769d5133c01dff3ab04c0c24c61b Mon Sep 17 00:00:00 2001
+From: Sage Weil <sage@newdream.net>
+Date: Fri, 10 Jun 2011 11:41:25 -0700
+Subject: [PATCH] Btrfs: clear current->journal_info on async transaction commit
 
---TOkWJigZa0YodlBE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Normally current->jouranl_info is cleared by commit_transaction.  For an
+async snap or subvol creation, though, it runs in a work queue.  Clear
+it in btrfs_commit_transaction_async() to avoid leaking a non-NULL
+journal_info when we return to userspace.  When the actual commit runs in
+the other thread it won't care that it's current->journal_info is already
+NULL.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Signed-off-by: Sage Weil <sage@newdream.net>
+---
+ fs/btrfs/transaction.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-iQEcBAEBAgAGBQJN8mTWAAoJEAv8Txj19kN1LPwH/2tuh9gYzKVqcjeBu3kwu37v
-vcGs3kGAoKYyKRN6EMmYedzBe+ReNsXy7NEvNWuNuz6RHnAxzIvFXNUNth7koG95
-WkC+rDu3MZwWYXTceNbu/CfXELxvfSe6oTAXTJfPtMJLBsr8/Z6/kLS0dzSe2LT5
-dsSpvKs0DNuXUqMPXzPtEd9KnO5c+3kSu3+Ag/gQS6YLPRPmMvFTbaksjs+gM3hu
-f8SduTafx1mNzeqbtF+0WUZhQcQFDzM3lbGQa8xpDIcWiQxgXdOdhJffSFE1P3CA
-q9vNt0obgQFsarkR5nH8AnTQTL3W/9SPfJCsjFjHgiQvABHifyKEvskB4ytccNk=
-=bZtw
------END PGP SIGNATURE-----
+diff --git a/fs/btrfs/transaction.c b/fs/btrfs/transaction.c
+index dd71966..9d516ed 100644
+--- a/fs/btrfs/transaction.c
++++ b/fs/btrfs/transaction.c
+@@ -1118,8 +1118,11 @@ int btrfs_commit_transaction_async(struct btrfs_trans_handle *trans,
+ 		wait_current_trans_commit_start_and_unblock(root, cur_trans);
+ 	else
+ 		wait_current_trans_commit_start(root, cur_trans);
+-	put_transaction(cur_trans);
+ 
++	if (current->journal_info == trans)
++		current->journal_info = NULL;
++
++	put_transaction(cur_trans);
+ 	return 0;
+ }
+ 
+-- 
+1.7.0
 
---TOkWJigZa0YodlBE--
+
