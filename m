@@ -1,165 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757593Ab1FJBTR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 21:19:17 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:58037 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757465Ab1FJBTN convert rfc822-to-8bit (ORCPT
+	id S1757581Ab1FJBbI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 21:31:08 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:33931 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753992Ab1FJBbF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 21:19:13 -0400
+	Thu, 9 Jun 2011 21:31:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=NJPrUAoxNCBlsXQShiNcza/1IBxkINqDIDAFR5R7wTk5RTB/jc4k82oOEZeOyJ2K+E
-         rZlLtyzgUd9kWrjQR1ebAWIifFcNf+cyQAXkQmvVPt8NCIPUin5zJhEWeQuj4dMt0q0Q
-         2F5OV/3FLYtkDuIrT3a1WJfeXX/K6Yt7vibA0=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=FIsHGuwj9HkiKVZVqFn0XPf8cyeTc/7uwteEIQCmIXuCBFmCHCyKCQft0pyM12loIa
+         sQNpf2e2SV0ibLKrlhgg==
+Date: Thu, 9 Jun 2011 18:30:49 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+cc: Ying Han <yinghan@google.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: 3.0rc2 oops in mem_cgroup_from_task
+In-Reply-To: <20110610091355.2ce38798.kamezawa.hiroyu@jp.fujitsu.com>
+Message-ID: <alpine.LSU.2.00.1106091812030.4904@sister.anvils>
+References: <20110609212956.GA2319@redhat.com> <BANLkTikCfWhoLNK__ringzy7KjKY5ZEtNb3QTuX1jJ53wNNysA@mail.gmail.com> <BANLkTikF7=qfXAmrNzyMSmWm7Neh6yMAB8EbBp7oLcfQmrbDjA@mail.gmail.com> <20110610091355.2ce38798.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110609153738.GF29913@redhat.com>
-References: <1307616577-6101-1-git-send-email-tm@tao.ma>
-	<20110609141451.GD29913@redhat.com>
-	<4DF0DD0F.8090407@tao.ma>
-	<20110609153738.GF29913@redhat.com>
-Date: Fri, 10 Jun 2011 09:19:12 +0800
-X-Google-Sender-Auth: VtHzjELOc_75Cm0mdIT3FkZJRFI
-Message-ID: <BANLkTinMp5_TS-=Y0ZsxB45RLQv18WCZDg@mail.gmail.com>
-Subject: Re: CFQ: async queue blocks the whole system
-From: Shaohua Li <shaohua.li@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/6/9 Vivek Goyal <vgoyal@redhat.com>:
-> On Thu, Jun 09, 2011 at 10:47:43PM +0800, Tao Ma wrote:
->> Hi Vivek,
->>       Thanks for the quick response.
->> On 06/09/2011 10:14 PM, Vivek Goyal wrote:
->> > On Thu, Jun 09, 2011 at 06:49:37PM +0800, Tao Ma wrote:
->> >> Hi Jens and Vivek,
->> >>    We are current running some heavy ext4 metadata test,
->> >> and we found a very severe problem for CFQ. Please correct me if
->> >> my statement below is wrong.
->> >>
->> >> CFQ only has an async queue for every priority of every class and
->> >> these queues have a very low serving priority, so if the system
->> >> has a large number of sync reads, these queues will be delayed a
->> >> lot of time. As a result, the flushers will be blocked, then the
->> >> journal and finally our applications[1].
->> >>
->> >> I have tried to let jbd/2 to use WRITE_SYNC so that they can checkpoint
->> >> in time and the patches are sent. But today we found another similar
->> >> block in kswapd which make me think that maybe CFQ should be changed
->> >> somehow so that all these callers can benefit from it.
->> >>
->> >> So is there any way to let the async queue work timely or at least
->> >> is there any deadline for async queue to finish an request in time
->> >> even in case there are many reads?
->> >>
->> >> btw, We have tested deadline scheduler and it seems to work in our test.
->> >>
->> >> [1] the message we get from one system:
->> >> INFO: task flush-8:0:2950 blocked for more than 120 seconds.
->> >> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->> >> flush-8:0       D ffff88062bfde738     0  2950      2 0x00000000
->> >>  ffff88062b137820 0000000000000046 ffff88062b137750 ffffffff812b7bc3
->> >>  ffff88032cddc000 ffff88062bfde380 ffff88032d3d8840 0000000c2be37400
->> >>  000000002be37601 0000000000000006 ffff88062b137760 ffffffff811c242e
->> >> Call Trace:
->> >>  [<ffffffff812b7bc3>] ? scsi_request_fn+0x345/0x3df
->> >>  [<ffffffff811c242e>] ? __blk_run_queue+0x1a/0x1c
->> >>  [<ffffffff811c57cc>] ? queue_unplugged+0x77/0x8e
->> >>  [<ffffffff813dbe67>] io_schedule+0x47/0x61
->> >>  [<ffffffff811c512c>] get_request_wait+0xe0/0x152
->> >
->> > Ok, so flush slept on trying to get a "request" allocated on request
->> > queue. That means all the ASYNC request descriptors are already consumed
->> > and we are not making progress with ASYNc requests.
->> >
->> > A relatively recent patch allowed sync queues to always preempt async queues
->> > and schedule sync workload instead of async. This had the potential to
->> > starve async queues and looks like that's what we are running into.
->> >
->> > commit f8ae6e3eb8251be32c6e913393d9f8d9e0609489
->> > Author: Shaohua Li <shaohua.li@intel.com>
->> > Date:   Fri Jan 14 08:41:02 2011 +0100
->> >
->> >     block cfq: make queue preempt work for queues from different workload
->> >
->> > Do you have few seconds of blktrace. I just wanted to verify that this
->> > is what we are running into.
->> We are using the latest kernel, so the patch is already there. :(
->>
->> You are right that all the requests have been allocated and the flusher
->> is waiting for requests to be available. But the root cause is that in
->> heavy sync read, the async queue in cfq is delayed too much. I have
->> added some traces in the cfq codes path and after several investigation,
->> I found several interesting things and tried to improve it. But I am not
->> sure whether it is bug or it is designed intentionally.
->>
->> 1. In cfq_dispatch_requests we select a sync queue to serve, but if the
->> queue has too much requests in flight, the cfq_slice_used_soon may be
->> true and the cfqq isn't allowed to send and will waste some timeslice.
->> Then why choose this cfqq? Why not choose a qualified one?
->
-> CFQ in general tries not to drive too deep a queue depth in an effort
-> to improve latencies. CFQ is generally recommened for slow SATA drives
-> and dispatching too many requests from a single queue can only serve to
-> increase the latency.
->
->>
->> 2. async queue isn't allowed to be sent if there is some sync request in
->> fly, but as now most of the devices has a greater depth, should we
->> improve it somehow? I guess queue_depth should be a valid number maybe?
->
-> We seem to be running this batching thing in cfq_may_dispatch() where
-> we drain sync requests before async is dispatched and vice-a-versa.
-> I am not sure how does this batching thing helps. I think Jens should
-> be a better person to comment on that.
->
-> I ran a fio job with few readers and few writers. I do see that few times
-> we have schedule ASYNC workload/queue but did not dispatch a request
-> from that. And reason being that there are sync requests in flight. And
-> by the time sync requests finish, async queue gets preempted.
->
-> So async queue does it scheduled but never gets a chance to dispatch
-> a request because there was sync IO in flight.
->
-> If there is no major advantage of draining sync requests before async
-> is dispatched, I think this should be an easy fix.
-I thought this is to avoid sync latency if we switch from an async
-queue to sync queue later.
+On Fri, 10 Jun 2011, KAMEZAWA Hiroyuki wrote:
+> On Thu, 9 Jun 2011 16:42:09 -0700
+> Ying Han <yinghan@google.com> wrote:
+> 
+> > ++cc Hugh who might have seen similar crashes on his machine.
 
->> 3. Even there is no sync i/o, the async queue isn't allowed to send too
->> much requests because of the check in cfq_may_dispatch "Async queues
->> must wait a bit before being allowed dispatch", so in my test the async
->> queue has several chances to be selected, but it is only allowed
->> todispatch one request at a time. It is really amazing.
->
-> Again heavily loaded to improve sync latencies. Say you have queue
-> depth of 128 and you fill that all with async requests because right
-> now there is no sync request around. Then a sync request comes in.
-> We don't have a way to give it a priority and it might happen that
-> it gets executed after 128 async requests have finished (driver and
-> drive dependent though).
->
-> So in an attempt to improve sync latencies we don't drive too
-> high queue depths.
->
-> Its latency vs throughput tradeoff.
-The current cfq do be able to stave async queue, because we want to give small
-latency to sync queue.
-I agree we should do something to improve async starvation, but the
-problem is how
-long async queue slice should be. A sd card I tested has very high
-latency for write. A 4k write can take > 300ms. Just dispatching a
-singe write can dramatically impact
-read throughput. Even in modern SSD, read is several times faster than write.
+Yes, I was testing my tmpfs changes, and saw it on i386 yesterday
+morning.  Same trace as Dave's (including khugepaged, which may or
+may not be relevant), aside from the i386/x86_64 differences.
 
-Thanks,
-Shaohua
+BUG: unable to handle kernel paging request at 6b6b6b87
+
+I needed to move forward with other work on that laptop, so just
+jotted down the details to come back to later.  It came after one
+hour of building swapping load in memcg, I've not tried again since.
+
+> 
+> Thank you for forwarding. Hmm. It seems the panic happens at khugepaged's 
+> page collapse_huge_page().
+
+Yes, the inlining in my kernel was different,
+so collapse_huge_page() showed up in my backtrace.
+
+> 
+> ==
+>         count_vm_event(THP_COLLAPSE_ALLOC);
+>         if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
+> ==
+> It passes target mm to memcg and memcg gets a cgroup by
+> ==
+>  mem = mem_cgroup_from_task(rcu_dereference(mm->owner));
+> ==
+> Panic here means....mm->owner's task_subsys_state contains bad pointer ?
+
+781cc621 <mem_cgroup_from_task>:
+781cc621:	55                   	push   %ebp
+781cc622:	31 c0                	xor    %eax,%eax
+781cc624:	89 e5                	mov    %esp,%ebp
+781cc626:	8b 55 08             	mov    0x8(%ebp),%edx
+781cc629:	85 d2                	test   %edx,%edx
+781cc62b:	74 09                	je     781cc636 <mem_cgroup_from_task+0x15>
+781cc62d:	8b 82 fc 08 00 00    	mov    0x8fc(%edx),%eax
+781cc633:	8b 40 1c             	mov    0x1c(%eax),%eax   <==========
+781cc636:	c9                   	leave  
+781cc637:	c3                   	ret    
+
+Hugh
