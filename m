@@ -1,110 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755656Ab1FJKzg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 06:55:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24344 "EHLO mx1.redhat.com"
+	id S1755721Ab1FJK4r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 06:56:47 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:56040 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755444Ab1FJKzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 06:55:33 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: rusty@rustcorp.com.au, mst@redhat.com, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Cc: yvugenfi@redhat.com, kvm@vger.kernel.org, herbert@gondor.hengli.com.au,
-        Jason Wang <jasowang@redhat.com>
-Subject: [PATCH] virtio_net: introduce VIRTIO_NET_HDR_F_DATA_VALID
-Date: Fri, 10 Jun 2011 18:56:17 +0800
-Message-Id: <1307703377-3798-1-git-send-email-jasowang@redhat.com>
+	id S1755597Ab1FJK4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 06:56:46 -0400
+Date: Fri, 10 Jun 2011 12:56:18 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ryan Mallon <rmallon@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] get_maintainers.pl: Improve .mailmap parsing
+Message-ID: <20110610125618.311d8c27@schatten.dmk.lab>
+In-Reply-To: <1307702243.20439.31.camel@Joe-Laptop>
+References: <1307661170-9325-1-git-send-email-rmallon@gmail.com>
+	<20110610025532.GE26006@linux-sh.org>
+	<4DF189F2.3040009@gmail.com>
+	<1307675512.20439.2.camel@Joe-Laptop>
+	<4DF18BDC.8010306@gmail.com>
+	<1307676240.20439.9.camel@Joe-Laptop>
+	<4DF1902A.1040305@gmail.com>
+	<20110610035115.GF26006@linux-sh.org>
+	<4DF19565.9070601@gmail.com>
+	<1307679288.20439.15.camel@Joe-Laptop>
+	<1307702243.20439.31.camel@Joe-Laptop>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's no need for the guest to validate the checksum if it have been
-validated by host nics. So this patch introduces a new flag -
-VIRTIO_NET_HDR_F_DATA_VALID which is used to bypass the checksum
-examing in guest. The backend (tap/macvtap) may set this flag when
-met skbs with CHECKSUM_UNNECESSARY to save cpu utilization.
+On Fri, 10 Jun 2011 03:37:23 -0700
+Joe Perches <joe@perches.com> wrote:
 
-No feature negotiation is needed as old driver just ignore this flag.
+> Entries that used formats other than "Proper Name <commit@email.xx>"
+> were not parsed properly.
+> 
+> Try to improve the parsing so that the entries in the forms of:
+>     Proper Name <proper@email.xx> <commit@email.xx>
+> and
+>     Proper Name <proper@email.xx> Commit Name <commit@email.xx>
+> are transformed correctly.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com> 
 
-Iperf shows 12%-30% performance improvement for UDP traffic. For TCP,
-when gro is on no difference as it produces skb with partial
-checksum. But when gro is disabled, 20% or even higher improvement
-could be measured by netperf.
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/net/macvtap.c      |    2 ++
- drivers/net/tun.c          |    2 ++
- drivers/net/virtio_net.c   |    2 ++
- include/linux/virtio_net.h |    1 +
- net/packet/af_packet.c     |    2 ++
- 5 files changed, 9 insertions(+), 0 deletions(-)
+Yup. Looks good. 
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index 6696e56..ecee0fe 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -508,6 +508,8 @@ static int macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
- 		vnet_hdr->flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
- 		vnet_hdr->csum_start = skb_checksum_start_offset(skb);
- 		vnet_hdr->csum_offset = skb->csum_offset;
-+	} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
-+		vnet_hdr->flags = VIRTIO_NET_HDR_F_DATA_VALID;
- 	} /* else everything is zero */
- 
- 	return 0;
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 74e9405..f43fa45 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -788,6 +788,8 @@ static __inline__ ssize_t tun_put_user(struct tun_struct *tun,
- 			gso.flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
- 			gso.csum_start = skb_checksum_start_offset(skb);
- 			gso.csum_offset = skb->csum_offset;
-+		} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
-+			gso.flags = VIRTIO_NET_HDR_F_DATA_VALID;
- 		} /* else everything is zero */
- 
- 		if (unlikely(memcpy_toiovecend(iv, (void *)&gso, total,
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index f685324..be3686a 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -274,6 +274,8 @@ static void receive_buf(struct net_device *dev, void *buf, unsigned int len)
- 					  hdr->hdr.csum_start,
- 					  hdr->hdr.csum_offset))
- 			goto frame_err;
-+	} else if (hdr->hdr.flags & VIRTIO_NET_HDR_F_DATA_VALID) {
-+		skb->ip_summed = CHECKSUM_UNNECESSARY;
- 	}
- 
- 	skb->protocol = eth_type_trans(skb, dev);
-diff --git a/include/linux/virtio_net.h b/include/linux/virtio_net.h
-index 136040b..970d5a2 100644
---- a/include/linux/virtio_net.h
-+++ b/include/linux/virtio_net.h
-@@ -63,6 +63,7 @@ struct virtio_net_config {
-  * specify GSO or CSUM features, you can simply ignore the header. */
- struct virtio_net_hdr {
- #define VIRTIO_NET_HDR_F_NEEDS_CSUM	1	// Use csum_start, csum_offset
-+#define VIRTIO_NET_HDR_F_DATA_VALID	2	// Csum is valid
- 	__u8 flags;
- #define VIRTIO_NET_HDR_GSO_NONE		0	// Not a GSO frame
- #define VIRTIO_NET_HDR_GSO_TCPV4	1	// GSO frame, IPv4 TCP (TSO)
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index c0c3cda..99ca471 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -1681,6 +1681,8 @@ static int packet_recvmsg(struct kiocb *iocb, struct socket *sock,
- 			vnet_hdr.flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
- 			vnet_hdr.csum_start = skb_checksum_start_offset(skb);
- 			vnet_hdr.csum_offset = skb->csum_offset;
-+		} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
-+			vnet_hdr.flags = VIRTIO_NET_HDR_F_DATA_VALID;
- 		} /* else everything is zero */
- 
- 		err = memcpy_toiovec(msg->msg_iov, (void *)&vnet_hdr,
--- 
-1.7.1
+Reviewed-By: Florian Mickler <florian@mickler.org>
 
+> ---
+>  scripts/get_maintainer.pl |    9 +++++----
+>  1 files changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+> index d29a8d7..eb2f1e6 100755
+> --- a/scripts/get_maintainer.pl
+> +++ b/scripts/get_maintainer.pl
+> @@ -328,7 +328,8 @@ sub read_mailmap {
+>  	# name1 <mail1> <mail2>
+>  	# name1 <mail1> name2 <mail2>
+>  	# (see man git-shortlog)
+> -	if (/^(.+)<(.+)>$/) {
+> +
+> +	if (/^([^<]+)<([^>]+)>$/) {
+>  	    my $real_name = $1;
+>  	    my $address = $2;
+>  
+> @@ -336,13 +337,13 @@ sub read_mailmap {
+>  	    ($real_name, $address) = parse_email("$real_name <$address>");
+>  	    $mailmap->{names}->{$address} = $real_name;
+>  
+> -	} elsif (/^<([^\s]+)>\s*<([^\s]+)>$/) {
+> +	} elsif (/^<([^>]+)>\s*<([^>]+)>$/) {
+>  	    my $real_address = $1;
+>  	    my $wrong_address = $2;
+>  
+>  	    $mailmap->{addresses}->{$wrong_address} = $real_address;
+>  
+> -	} elsif (/^(.+)<([^\s]+)>\s*<([^\s]+)>$/) {
+> +	} elsif (/^(.+)<([^>]+)>\s*<([^>]+)>$/) {
+>  	    my $real_name = $1;
+>  	    my $real_address = $2;
+>  	    my $wrong_address = $3;
+> @@ -353,7 +354,7 @@ sub read_mailmap {
+>  	    $mailmap->{names}->{$wrong_address} = $real_name;
+>  	    $mailmap->{addresses}->{$wrong_address} = $real_address;
+>  
+> -	} elsif (/^(.+)<([^\s]+)>\s*([^\s].*)<([^\s]+)>$/) {
+> +	} elsif (/^(.+)<([^>]+)>\s*(.+)\s*<([^>]+)>$/) {
+>  	    my $real_name = $1;
+>  	    my $real_address = $2;
+>  	    my $wrong_name = $3;
