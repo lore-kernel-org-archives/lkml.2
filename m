@@ -1,143 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757934Ab1FJSWE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 14:22:04 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:58142 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756178Ab1FJSWB (ORCPT
+	id S1757946Ab1FJSXq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 14:23:46 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:34652 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757901Ab1FJSXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 14:22:01 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=u6vS5eWj76tTEDxtKypWdc34PiV710yA34olMLiQVimWmUrMCZyN1+yQ1vXkNnMC6ZHtTXLPkn0dCOZDXQ/SjkZun41NxPlnSYYTV53uNYHt87oUlszwv0JuIKEJQE/F;
-Date: Fri, 10 Jun 2011 11:21:58 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH] asm/types.h: All architectures use int-ll64.h in
- kernelspace
-Message-Id: <20110610112158.00bcf219.rdunlap@xenotime.net>
-In-Reply-To: <1307646404-13911-1-git-send-email-geert@linux-m68k.org>
-References: <1307646404-13911-1-git-send-email-geert@linux-m68k.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 10 Jun 2011 14:23:45 -0400
+Message-ID: <4DF260F4.1020603@metafoo.de>
+Date: Fri, 10 Jun 2011 20:22:44 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110505 Icedove/3.0.11
+MIME-Version: 1.0
+To: Mike Frysinger <vapier.adi@gmail.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, uclinux-dist-devel@blackfin.uclinux.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        device-drivers-devel@blackfin.uclinux.org
+Subject: Re: [Device-drivers-devel] [PATCH 1/3] ASoC: Add ADAU1701 codec driver
+References: <1307726331-28618-1-git-send-email-lars@metafoo.de> <BANLkTimLAfEj+tgNMWjTsanccgfEt9UW1g@mail.gmail.com> <4DF25AF5.6070909@metafoo.de> <BANLkTikSqdHDzQUZdh87YX3y+=GtKDe27g@mail.gmail.com> <BANLkTingQSnzmhqS8HOqmeQjRMRVAE020w@mail.gmail.com>
+In-Reply-To: <BANLkTingQSnzmhqS8HOqmeQjRMRVAE020w@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  9 Jun 2011 21:06:44 +0200 Geert Uytterhoeven wrote:
+On 06/10/2011 08:15 PM, Mike Frysinger wrote:
+> On Fri, Jun 10, 2011 at 14:08, Mike Frysinger wrote:
+>> On Fri, Jun 10, 2011 at 13:57, Lars-Peter Clausen wrote:
+>>> On 06/10/2011 07:43 PM, Mike Frysinger wrote:
+>>>> On Fri, Jun 10, 2011 at 13:18, Lars-Peter Clausen wrote:
+>>>>> +MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
+>>>>
+>>>> did you actually rewrite this thing from scratch ?  seems like you
+>>>> should keep Cliff as the author in git/MODULE_AUTHOR, and then add
+>>>> your name to the s-o-b list and this macro.
+>>>
+>>> Not from scratch, but I guess except for the register definitions and the
+>>> copyright header not much of the original driver is left:
+>>> sound/soc/codecs/adau1701.c |  662 ++++++++++++++++++++++++-------------------
+>>>  1 files changed, 371 insertions(+), 291 deletions(-)
+>>
+>> based purely on LoC, Cliff wrote 467, so you took that and punted 291
+>> (62%) and then added 371.  that leaves the final file with 32% Cliff
+>> and 68% you.
+>>
+>> however, some of that was register renaming and shuffling between the
+>> adau1701.c and adau1701.h, and it's easier to start with a base and
+>> clean up than from scratch.
+>>
+>> so i'm definitely not comfortable dropping Cliff's completely from the
+>> file and the log (which means he needs to be readded and made sure to
+>> be retained in all the other ADAU drivers going forward), and i'm not
+>> entirely sold about changing of the Author field in the git commit.
+>>
+>> don't get me wrong ... i'm not a fanboi of Cliff or something, i just
+>> think credit is due to him for his work.
+>
+You have both the orignal driver and the new driver, so you can do the diff for
+yourself. You see that the lines unchanged are basically boilerplate code and
+stuff that you'll find in any ASoC driver. The diff to any random ASoC driver
+called adau1701.
 
-> Now all 64-bit architectures have been converted to int-ll64.h, we can
-> deprecate int-l64.h in kernelspace:
->   - Add a check to prevent new architectures from using int-l64.h in
->     kernelspace,
->   - Update documentation, as the casts to (unsigned) long long are no longer
->     needed.
+But of course if you want to see his name as the author, you get his name as
+the author.
 
-For the documentation parts:
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+> to be clear, i'm like 50/50 on the git author field.  maybe someone
+> else here has an opinion, or you feel strongly enough that your
+> rewrite supersedes his seeding work.  but please send a v2 with
+> updated source/changelog with his name in it.
+His name is already in the copyright header.
 
-but I'm not sure who should merge it...
-
-> For backwards compatibility, alpha, ia64, mips, and powerpc still use
-> int-l64.h in userspace.
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->  Documentation/printk-formats.txt |    4 ++--
->  include/asm-generic/int-l64.h    |   38 +-------------------------------------
->  include/asm-generic/types.h      |    3 +--
->  3 files changed, 4 insertions(+), 41 deletions(-)
-> 
-> diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
-> index 1b5a5dd..b9b8926 100644
-> --- a/Documentation/printk-formats.txt
-> +++ b/Documentation/printk-formats.txt
-> @@ -13,11 +13,11 @@ Raw pointer value SHOULD be printed with %p.
->  
->  u64 SHOULD be printed with %llu/%llx, (unsigned long long):
->  
-> -	printk("%llu", (unsigned long long)u64_var);
-> +	printk("%llu", u64_var);
->  
->  s64 SHOULD be printed with %lld/%llx, (long long):
->  
-> -	printk("%lld", (long long)s64_var);
-> +	printk("%lld", s64_var);
->  
->  If <type> is dependent on a config option for its size (e.g., sector_t,
->  blkcnt_t, phys_addr_t, resource_size_t) or is architecture-dependent
-> diff --git a/include/asm-generic/int-l64.h b/include/asm-generic/int-l64.h
-> index 1ca3efc..f07a500 100644
-> --- a/include/asm-generic/int-l64.h
-> +++ b/include/asm-generic/int-l64.h
-> @@ -31,43 +31,7 @@ typedef unsigned long __u64;
->  #endif /* __ASSEMBLY__ */
->  
->  #ifdef __KERNEL__
-> -
-> -#ifndef __ASSEMBLY__
-> -
-> -typedef signed char s8;
-> -typedef unsigned char u8;
-> -
-> -typedef signed short s16;
-> -typedef unsigned short u16;
-> -
-> -typedef signed int s32;
-> -typedef unsigned int u32;
-> -
-> -typedef signed long s64;
-> -typedef unsigned long u64;
-> -
-> -#define S8_C(x)  x
-> -#define U8_C(x)  x ## U
-> -#define S16_C(x) x
-> -#define U16_C(x) x ## U
-> -#define S32_C(x) x
-> -#define U32_C(x) x ## U
-> -#define S64_C(x) x ## L
-> -#define U64_C(x) x ## UL
-> -
-> -#else /* __ASSEMBLY__ */
-> -
-> -#define S8_C(x)  x
-> -#define U8_C(x)  x
-> -#define S16_C(x) x
-> -#define U16_C(x) x
-> -#define S32_C(x) x
-> -#define U32_C(x) x
-> -#define S64_C(x) x
-> -#define U64_C(x) x
-> -
-> -#endif /* __ASSEMBLY__ */
-> -
-> +#error Please use <asm-generic/int-ll64.h> in kernelspace
->  #endif /* __KERNEL__ */
->  
->  #endif /* _ASM_GENERIC_INT_L64_H */
-> diff --git a/include/asm-generic/types.h b/include/asm-generic/types.h
-> index 7a0f69e..a9672ef 100644
-> --- a/include/asm-generic/types.h
-> +++ b/include/asm-generic/types.h
-> @@ -1,8 +1,7 @@
->  #ifndef _ASM_GENERIC_TYPES_H
->  #define _ASM_GENERIC_TYPES_H
->  /*
-> - * int-ll64 is used practically everywhere now,
-> - * so use it as a reasonable default.
-> + * int-ll64 is used everywhere now.
->   */
->  #include <asm-generic/int-ll64.h>
->  
-> -- 
+- Lars
 
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
