@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758124Ab1FJWWZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 18:22:25 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:27684 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753467Ab1FJWWX (ORCPT
+	id S1758159Ab1FJWPo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 18:15:44 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:56434 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754222Ab1FJWPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 18:22:23 -0400
-Date: Sat, 11 Jun 2011 00:14:02 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonas Gorski <jonas.gorski@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Why is CONFIG_FHANDLE an option??
-Message-ID: <alpine.LNX.2.00.1106110001180.21722@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 10 Jun 2011 18:15:43 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-8.tower-132.messagelabs.com!1307744140!10961482!7
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.69]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] dma/ep93xx_dma.c: local symbols should be static
+Date: Fri, 10 Jun 2011 15:15:05 -0700
+User-Agent: KMail/1.9.9
+CC: <mika.westerberg@iki.fi>, <dan.j.williams@intel.com>,
+        <vinod.koul@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201106101515.05990.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+The symbol 'ep93xx_dma_prep_dma_memcpy' is only used in this driver
+and should be marked static.
 
-I just configured a new kernel based on a recent git checkout and when I 
-had copied in my old configuration and did a "make oldconfig"I was greeted 
-with
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Mika Westerberg <mika.westerberg@iki.fi>
+Cc: Dan Williams <dan.j.williams@intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
 
-    open by fhandle syscalls (FHANDLE) [N/y/?] (NEW)
+---
 
-Ok, so I read the help text description and learn that it's about two new 
-syscalls - open_by_handle_at(2) and name_to_handle_at(2).
-
-My first thought at this point was "why are new syscalls even an option"?
-
-Syscalls are in my oppinion ABI - having optional syscalls is just about 
-as bad as removing a syscall. It basically means that users cannot know if 
-the syscall is there and will need to test (it's bad enough having to 
-check the kernel version, having to check for specific syscalls as well 
-is just, well, annoying at best). 
-
-Why are we making these optional?
-I'd say we should just add them unconditionally or not have them at all. 
-One should be able to say that "since Linux 3.0 these syscalls are 
-available", not "since Linux 3.0 these syscalls *may* be available"... 
-We'll just end up in a situation where some distributors enable the 
-syscalls, some don't and it'll all be a mess for users... either we have 
-them or we don't.
-
-Ok, long rant, sorry about that... but really; why are they optional??
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
+index 0766c1e..5d7a49b 100644
+--- a/drivers/dma/ep93xx_dma.c
++++ b/drivers/dma/ep93xx_dma.c
+@@ -902,7 +902,7 @@ static void ep93xx_dma_free_chan_resources(struct dma_chan *chan)
+  *
+  * Returns a valid DMA descriptor or %NULL in case of failure.
+  */
+-struct dma_async_tx_descriptor *
++static struct dma_async_tx_descriptor *
+ ep93xx_dma_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest,
+ 			   dma_addr_t src, size_t len, unsigned long flags)
+ {
