@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377Ab1FJJ33 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 05:29:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
+	id S1754438Ab1FJJa0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 05:30:26 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45838 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752866Ab1FJJ32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 05:29:28 -0400
-Date: Fri, 10 Jun 2011 05:29:22 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Shaohua Li <shaohua.li@intel.com>, Tao Ma <tm@tao.ma>,
-        linux-kernel@vger.kernel.org
-Subject: Re: CFQ: async queue blocks the whole system
-Message-ID: <20110610092922.GE4183@redhat.com>
-References: <1307616577-6101-1-git-send-email-tm@tao.ma>
- <20110609141451.GD29913@redhat.com>
- <4DF0DD0F.8090407@tao.ma>
- <20110609153738.GF29913@redhat.com>
- <BANLkTinMp5_TS-=Y0ZsxB45RLQv18WCZDg@mail.gmail.com>
- <20110610091747.GC4183@redhat.com>
- <4DF1E1EB.8010808@kernel.dk>
+	id S1752866Ab1FJJaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 05:30:25 -0400
+Date: Fri, 10 Jun 2011 11:30:19 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, alsa-devel@alsa-project.org
+Subject: Re: [alsa-devel] Headphone output doesn't work with 3.0.0-rc* anymore
+Message-ID: <20110610093019.GC4110@tiehlicka.suse.cz>
+References: <20110609090607.GB4207@tiehlicka.suse.cz>
+ <s5hei33xsxn.wl%tiwai@suse.de>
+ <20110609092826.GC4207@tiehlicka.suse.cz>
+ <s5haadrxrsm.wl%tiwai@suse.de>
+ <20110609111401.GA3994@tiehlicka.suse.cz>
+ <s5htybyw52q.wl%tiwai@suse.de>
+ <20110610075640.GA4832@tiehlicka.suse.cz>
+ <s5hk4cuw1be.wl%tiwai@suse.de>
+ <20110610085117.GA4110@tiehlicka.suse.cz>
+ <s5haadqvybo.wl%tiwai@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DF1E1EB.8010808@kernel.dk>
+In-Reply-To: <s5haadqvybo.wl%tiwai@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 11:20:43AM +0200, Jens Axboe wrote:
-> On 2011-06-10 11:17, Vivek Goyal wrote:
-> > On Fri, Jun 10, 2011 at 09:19:12AM +0800, Shaohua Li wrote:
+On Fri 10-06-11 11:18:51, Takashi Iwai wrote:
+> At Fri, 10 Jun 2011 10:51:17 +0200,
+> Michal Hocko wrote:
 > > 
-> > [..]
-> >>> If there is no major advantage of draining sync requests before async
-> >>> is dispatched, I think this should be an easy fix.
-> >> I thought this is to avoid sync latency if we switch from an async
-> >> queue to sync queue later.
+> > On Fri 10-06-11 10:14:13, Takashi Iwai wrote:
+> > > At Fri, 10 Jun 2011 09:56:40 +0200,
+> > > Michal Hocko wrote:
+> > > > 
+> > > > On Fri 10-06-11 08:53:01, Takashi Iwai wrote:
+> > > > > At Thu, 9 Jun 2011 13:14:01 +0200,
+[...]
+> > > > OK, I git checkout v2.6.39 -- sound/pci/*.[ch] (see the patch bellow for
+> > > > reference). I have kept the earlier patch.
+> > > 
+> > > Gah, sorry, a wrong path.  It must be sound/pci/hda/*.[ch].
+> > > Also, please remove my previous patch.  It's irrelevant with 2.6.39
+> > > although it should be harmless.
 > > 
-> > Is it about the sync request latency which has already been dispatched? I 
-> > really wish that driver and disk should do some prioritazation for reads
-> > here and CFQ does not have to jump through hoops like drain sync requests
-> > before async requests are dispatched.
+> > OK, I have reverted the whole hda directory to 2.6.39 which means AFAIU
+> > that the driver is at the same state as it was in that kernel. And the
+> > sound really works. Both outputs are active whem they should be.
 > 
-> That would never work. Are you suggesting putting that logic in all
-> drivers? Or relying on hardware to get the fairness right? Not going to
-> happen.
+> Thanks, it's really good to know that we have a good working-base.
+> 
+> Now, can you switch back to 3.0rc2 with my fix patch and retest?
 
-I was hoping that hardware does some prioritization. Well, in this case
-even if hardware maintains FIFO behavior it should be good enough.
+Sorry, I am confused now. How this would be different from the previous
+testing where I had that patch applied on top of rc2?
 
-But I would not claim anything in this regard as I have never experimented
-with it and have no idea that how sync latencies are impacted if we don't
-drain the queue before dispathing WRITEs.
-
-I was just wondering that with current generation hardware is it bad
-enough that we need to keep this logic around?
-
-Thanks
-Vivek
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
