@@ -1,111 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757548Ab1FJPLa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 11:11:30 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:38331 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757445Ab1FJPL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 11:11:29 -0400
-Date: Fri, 10 Jun 2011 08:11:21 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ankita Garg <ankita@in.ibm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        svaidy@linux.vnet.ibm.com, thomas.abraham@linaro.org
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-Message-ID: <20110610151121.GA2230@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
- <20110528005640.9076c0b1.akpm@linux-foundation.org>
- <20110609185259.GA29287@linux.vnet.ibm.com>
- <BANLkTinxeeSby_+tta8EhzCg3VbD6+=g+g@mail.gmail.com>
+	id S1757571Ab1FJPM7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 11:12:59 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57668 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757460Ab1FJPM6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 11:12:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=kglPyUylRZU/S9LiGjeTJaWh0kQcnpRdOI0Ley+gy3a/VGh6A6Fp7riQ9alU54CAFC
+         mLjyDcYMeZD8OQHK8zmAyiDwBBYdJRygCqIrSNoqEgYBoeYxnnZvc6QnpS2e/0+HyJxN
+         6R5+xG55FgrKjCVs4aNX5u+DmG879gdjSDeZQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTinxeeSby_+tta8EhzCg3VbD6+=g+g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1307717917.9218.45.camel@gandalf.stny.rr.com>
+References: <BANLkTimqWD=q6YnSDi-v9y=LMWecgEzEWg@mail.gmail.com>
+	<BANLkTikoO5F5H4sEUoDPKX3qiahuehp=Mg@mail.gmail.com>
+	<1307622863.9218.40.camel@gandalf.stny.rr.com>
+	<BANLkTing2boYvDQqcxaqveYhbG2H1Zyvrw@mail.gmail.com>
+	<1307717917.9218.45.camel@gandalf.stny.rr.com>
+Date: Fri, 10 Jun 2011 23:12:56 +0800
+Message-ID: <BANLkTi=nY-wzz1z-2jE1ORi19dJYw+PTsA@mail.gmail.com>
+Subject: Re: [PATCH] sched: remove resetting exec_start in put_prev_task_rt()
+From: Hillf Danton <dhillf@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 09:51:53AM +0900, Kyungmin Park wrote:
-> On Fri, Jun 10, 2011 at 3:52 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Sat, May 28, 2011 at 12:56:40AM -0700, Andrew Morton wrote:
-> >> On Fri, 27 May 2011 18:01:28 +0530 Ankita Garg <ankita@in.ibm.com> wrote:
-> >>
-> >> > This patchset proposes a generic memory regions infrastructure that can be
-> >> > used to tag boundaries of memory blocks which belongs to a specific memory
-> >> > power management domain and further enable exploitation of platform memory
-> >> > power management capabilities.
-> >>
-> >> A couple of quick thoughts...
-> >>
-> >> I'm seeing no estimate of how much energy we might save when this work
-> >> is completed.  But saving energy is the entire point of the entire
-> >> patchset!  So please spend some time thinking about that and update and
-> >> maintain the [patch 0/n] description so others can get some idea of the
-> >> benefit we might get from all of this.  That estimate should include an
-> >> estimate of what proportion of machines are likely to have hardware
-> >> which can use this feature and in what timeframe.
-> >>
-> >> IOW, if it saves one microwatt on 0.001% of machines, not interested ;)
-> >
-> > FWIW, I have seen estimates on the order of a 5% reduction in power
-> > consumption for some common types of embedded devices.
-> 
-> Wow interesting. I can't expect it can reduce 5% power reduction.
-> If it uses the 1GiBytes LPDDR2 memory. each memory port has 4Gib,
-> another has 4Gib. so one bank size is 64MiB (512MiB / 8).
-> So I don't expect it's difficult to contain the free or inactive
-> memory more than 64MiB during runtime.
-> 
-> Anyway can you describe the exact test environment? esp., memory type?
-> As you know there are too much embedded devices which use the various
-> environment.
+On Fri, Jun 10, 2011 at 10:58 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Fri, 2011-06-10 at 22:48 +0800, Hillf Danton wrote:
+>> On Thu, Jun 9, 2011 at 8:34 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>
+>> Resetting exec_start to zero has no negative functionality in RT scheduling,
+>> as shown by Yong.
+>>
+>> After put_prev_task() is called in schedule(),
+>>
+>> Â  Â  Â  put_prev_task(rq, prev);
+>> Â  Â  Â  next = pick_next_task(rq);
+>> Â  Â  Â  clear_tsk_need_resched(prev);
+>>
+>> next is picked. Lets assume that next is not prev, and prev is still on RQ,
+>> then prev's sched_class is changed to CFS while it is waiting on RQ.
+>> After sched_class switch, prev is under CFS charge, and the exec_start field
+>> could be taken into other games.
+>>
+>> In task_hot(), called when migrating task, zeroed exec_start is trapped as
+>> the following.
+>>
+>
+> How could any of that happen? This is all done under the rq->lock.
+> prev's sched class can not change at this time. Everything you stated is
+> protected by the rq->lock. I don't see any race conditions here.
+>
 
-Indeed, your mileage may vary.  It involved a very low-power CPU,
-and the change enabled not just powering off memory, but reducing
-the amount of physical memory provided.
+Hi Steve
 
-Of course, on a server, you could get similar results by having a very
-large amount of memory (say 256GB) and a workload that needed all the
-memory only occasionally for short periods, but could get by with much
-less (say 8GB) the rest of the time.  I have no idea whether or not
-anyone actually has such a system.
+Yeah you are right, the snippet in schedule() is under RQ lock, but next could
+be a RT task, and if it is FIFO and willing to hog CPU ie. 10 minutes, then
+prev has to wait on its RQ. While waiting, however, its sched_class could be
+changed at anytime. Here I show it is tiny possible that zeroed exec_start
+could rush out of our control.
 
-							Thanx, Paul
-
-> Thank you,
-> Kyungmin Park
-> >
-> >                                                        Thanx, Paul
-> >
-> >> Also, all this code appears to be enabled on all machines?  So machines
-> >> which don't have the requisite hardware still carry any additional
-> >> overhead which is added here.  I can see that ifdeffing a feature like
-> >> this would be ghastly but please also have a think about the
-> >> implications of this and add that discussion also.
-> >>
-> >> If possible, it would be good to think up some microbenchmarks which
-> >> probe the worst-case performance impact and describe those and present
-> >> the results.  So others can gain an understanding of the runtime costs.
-> >>
-> >>
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> Please read the FAQ at  http://www.tux.org/lkml/
-> >>
-> >
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> >
+thanks
+           Hillf
