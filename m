@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757838Ab1FJUtn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 16:49:43 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:49604 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754736Ab1FJUtl (ORCPT
+	id S1758091Ab1FJUtw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 16:49:52 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45824 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758004Ab1FJUts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 16:49:41 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAC2C8k1Ld/sX/2dsb2JhbAAMRoRJ1xaQYIErg26BCgSZC4gT
-X-IronPort-AV: E=Sophos;i="4.65,348,1304308800"; 
-   d="scan'208";a="116043981"
-Message-ID: <4DF28360.1090206@teksavvy.com>
-Date: Fri, 10 Jun 2011 16:49:36 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Fri, 10 Jun 2011 16:49:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=U8TBrWc72Z5RfBLR5W/65l68bAw+yEa4xsTf5I+m2V1zRenTpGf2jPt/RvW9QdTGxY
+         4ZeIdUzObETI3VneqRQTSVzedXefEIq9kih0tw1cW4rYpopx44w4ddtg1L3Wqz4004F2
+         LAjESlJ4easmFciXB3yBfGGQMGb/gOhBrWnNY=
 MIME-Version: 1.0
-To: Jeff Garzik <jgarzik@pobox.com>
-CC: Tejun Heo <htejun@gmail.com>, Bruce Stenning <b.stenning@indigovision.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-References: <20110425162242.GB30828@mtj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554BDC@gretna.indigovision.com> <20110426135027.GI878@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554C70@gretna.indigovision.com> <20110426155229.GM878@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554C91@gretna.indigovision.com> <20110430140109.GJ29280@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C777089B2@gretna.indigovision.com> <20110525094127.GF10146@htj.dyndns.org> <4DF20E03.9030502@teksavvy.com> <20110610140155.GJ15235@htj.dyndns.org> <4DF25526.9010800@teksavvy.com> <4DF256E1.4010703@pobox.com>
-In-Reply-To: <4DF256E1.4010703@pobox.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4DF1D136.4050903@jp.fujitsu.com>
+References: <4df13d2627304cd979@agluck-desktop.sc.intel.com>
+	<4DF1D136.4050903@jp.fujitsu.com>
+Date: Fri, 10 Jun 2011 13:49:47 -0700
+X-Google-Sender-Auth: c1eSlt8I6MjA_l1-YdxzOHPfXVo
+Message-ID: <BANLkTi=1nQy03T4LnfHYoB8LBVgFbgaVXA@mail.gmail.com>
+Subject: Re: [PATCH 09/10] MCE: run through processors with more severe
+ problems first
+From: Tony Luck <tony.luck@intel.com>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
+        linux-kernel@vger.kernel.org, "Huang, Ying" <ying.huang@intel.com>,
+        Avi Kivity <avi@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-06-10 01:39 PM, Jeff Garzik wrote:
-> On 06/10/2011 01:32 PM, Mark Lord wrote:
->> On 11-06-10 10:01 AM, Tejun Heo wrote:
->>> Hello,
->>>
->>> (cc'ing Jeff)
->>>
->>> On Fri, Jun 10, 2011 at 08:28:51AM -0400, Mark Lord wrote:
->>>> Tejun, did this ever go upstream and to -stable ??
->>>> I'm asking because I see the same issue with other SATA controllers,
->>>> in particular with sata_sil boards.  Hot plug generally works _once_
->>>> per port, and then stops working.
->>>
->>> The patch is still pending,
->>>
->>>   http://article.gmane.org/gmane.linux.ide/49613
->>>
->>> I don't think it would be wise to include the patch for -stable tho.
->>> It's not a regression fix and has some possibility of introducing
->>> regressions, so....
->>
->> Not a regression fix?  Excuse me?
->> SATA hotplug always used to work fine,
->> and is more or less essential to reboot-free operations.
-> 
-> I can move it from #upstream (linux-next) to #upstream-fixes, if we feel it is
-> sufficient urgent.  It seemed like it needed more testing, but maybe the best
-> way to do that is #upstream-fixes?
-> 
-> Was mainly a -rc question, to me.
+2011/6/10 Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>:
+> Well, I agree about the point that reordering is required to handle
+> shared banks.
 
-Well, it's not getting any testing sitting outside of the kernel right now.
+Thanks (and thanks for taking the time to look at all of this series
+to provide such good feedback)
 
-Cheers
+> I think it is better to put this change in early of the series.
+
+Several of the early parts are position independent w.r.t. each
+other - I'm not sure if there is some strong benefit to having
+them in any particular order.
+
+> I don't like to have multiple cpumasks here, notably one is just an
+> inversion of another...
+
+I wasn't completely thrilled with the way this turned out either.
+
+> How about using severity-leveling?
+> Pick cpus with PANIC level first, then AR, AO ...
+
+That sounds like I need even more masks (or lists).
+
+> Or how about checking rip in each mces_seen?
+
+This is equivalent to what I did - but I think the code
+will be cleaner. I'll give it a try.
+
+-Tony
