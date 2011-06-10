@@ -1,44 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab1FJOf7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 10:35:59 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51353 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752509Ab1FJOf6 (ORCPT
+	id S1755822Ab1FJOgE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 10:36:04 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:58971 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755547Ab1FJOgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 10:35:58 -0400
-Date: Fri, 10 Jun 2011 15:35:50 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Eric Paris <eparis@redhat.com>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: Race inotify_rm_watch vs umount
-Message-ID: <20110610143550.GZ11521@ZenIV.linux.org.uk>
-References: <87r572nd9k.fsf@devron.myhome.or.jp>
- <1307713566.2577.20.camel@localhost.localdomain>
+	Fri, 10 Jun 2011 10:36:00 -0400
+Date: Fri, 10 Jun 2011 10:35:50 -0400 (EDT)
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: Hannes Reinecke <hare@suse.de>
+Cc: Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
+        Christoph Hellwig <chellwig@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org
+Message-ID: <1504884387.187692.1307716550265.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <4DF21447.6090005@suse.de>
+Subject: Re: virtio scsi host draft specification, v3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307713566.2577.20.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.5.71]
+X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 09:46:05AM -0400, Eric Paris wrote:
-> On Fri, 2011-06-10 at 20:20 +0900, OGAWA Hirofumi wrote:
-> > Hi,
-> > 
-> > I'm looking the race inotify_rm_watch() vs umount(). This race become the
-> > cause of Oops. You can see the oops at
-> > 
-> > https://bugzilla.kernel.org/show_bug.cgi?id=22602
-> > 
-> > So, what race?
+> If requests are placed on arbitrary queues you'll inevitably run on
+> locking issues to ensure strict request ordering.
+> I would add here:
 > 
-> Ok, I see what you are saying, I'll see what I can do.  I'm a little
-> scared to call something like iput() under a lock though.  I might be
-> able to make the bigest lock a mutex and fix this....
+> If a device uses more than one queue it is the responsibility of the
+> device to ensure strict request ordering.
 
-Which lock would that be?  I don't see any good candidates in there...
+Applied with s/device/guest/g.
+
+> Please do not rely in bus/target/lun here. These are leftovers from
+> parallel SCSI and do not have any meaning on modern SCSI
+> implementation (eg FC or SAS). Rephrase that to
+> 
+> The lun field is the Logical Unit Number as defined in SAM.
+
+Ok.
+
+> >      The status byte is written by the device to be the SCSI status
+> >      code.
+>
+> ?? I doubt that exists. Make that:
+> 
+> The status byte is written by the device to be the status code as
+> defined in SAM.
+
+Ok.
+
+> >      The response byte is written by the device to be one of the
+> >      following:
+> >
+> >      - VIRTIO_SCSI_S_OK when the request was completed and the
+> >      status byte
+> >        is filled with a SCSI status code (not necessarily "GOOD").
+> >
+> >      - VIRTIO_SCSI_S_UNDERRUN if the content of the CDB requires
+> >      transferring
+> >        more data than is available in the data buffers.
+> >
+> >      - VIRTIO_SCSI_S_ABORTED if the request was cancelled due to a
+> >      reset
+> >        or another task management function.
+> >
+> >      - VIRTIO_SCSI_S_FAILURE for other host or guest error. In
+> >      particular,
+> >        if neither dataout nor datain is empty, and the
+> >        VIRTIO_SCSI_F_INOUT
+> >        feature has not been negotiated, the request will be
+> >        immediately
+> >        returned with a response equal to VIRTIO_SCSI_S_FAILURE.
+> >
+> And, of course:
+> 
+> VIRTIO_SCSI_S_DISCONNECT if the request could not be processed due
+> to a communication failure (eg device was removed or could not be
+> reached).
+
+Ok.
+
+> This specification implies a strict one-to-one mapping between host
+> and target. IE there is no way of specifying more than one target
+> per host.
+
+Actually no, the intention is to use hierarchical LUNs to support
+more than one target per host.
+
+Paolo
