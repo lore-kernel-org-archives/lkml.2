@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130Ab1FJJzO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 05:55:14 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:64751 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753332Ab1FJJzD (ORCPT
+	id S1755221Ab1FJJzR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 05:55:17 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:15443 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754176Ab1FJJzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 05:55:03 -0400
-Date: Fri, 10 Jun 2011 11:54:49 +0200
+	Fri, 10 Jun 2011 05:55:05 -0400
+Date: Fri, 10 Jun 2011 11:54:50 +0200
 From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 01/10] lib: bitmap: Added alignment offset for
- bitmap_find_next_zero_area()
+Subject: [PATCH 02/10] lib: genalloc: Generic allocator improvements
 In-reply-to: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-media@vger.kernel.org, linux-mm@kvack.org,
@@ -25,7 +24,7 @@ Cc: Michal Nazarewicz <mina86@mina86.com>,
         Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
         Mel Gorman <mel@csn.ul.ie>, Arnd Bergmann <arnd@arndb.de>,
         Jesse Barker <jesse.barker@linaro.org>
-Message-id: <1307699698-29369-2-git-send-email-m.szyprowski@samsung.com>
+Message-id: <1307699698-29369-3-git-send-email-m.szyprowski@samsung.com>
 MIME-version: 1.0
 X-Mailer: git-send-email 1.7.2.5
 Content-type: TEXT/PLAIN
@@ -37,118 +36,400 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
 
-This commit adds a bitmap_find_next_zero_area_off() function which
-works like bitmap_find_next_zero_area() function expect it allows an
-offset to be specified when alignment is checked.  This lets caller
-request a bit such that its number plus the offset is aligned
-according to the mask.
+This commit adds a gen_pool_alloc_aligned() function to the
+generic allocator API.  It allows specifying alignment for the
+allocated block.  This feature uses
+the bitmap_find_next_zero_area_off() function.
+
+It also fixes possible issue with bitmap's last element being
+not fully allocated (ie. space allocated for chunk->bits is
+not a multiple of sizeof(long)).
+
+It also makes some other smaller changes:
+- moves structure definitions out of the header file,
+- adds __must_check to functions returning value,
+- makes gen_pool_add() return -ENOMEM rater than -1 on error,
+- changes list_for_each to list_for_each_entry, and
+- makes use of bitmap_clear().
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+[m.szyprowski: rebased and updated to Linux v3.0-rc1]
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 CC: Michal Nazarewicz <mina86@mina86.com>
 ---
- include/linux/bitmap.h |   24 +++++++++++++++++++-----
- lib/bitmap.c           |   22 ++++++++++++----------
- 2 files changed, 31 insertions(+), 15 deletions(-)
+ include/linux/genalloc.h |   50 ++++++------
+ lib/genalloc.c           |  190 +++++++++++++++++++++++++++-------------------
+ 2 files changed, 138 insertions(+), 102 deletions(-)
 
-diff --git a/include/linux/bitmap.h b/include/linux/bitmap.h
-index dcafe0b..50e2c16 100644
---- a/include/linux/bitmap.h
-+++ b/include/linux/bitmap.h
-@@ -45,6 +45,7 @@
-  * bitmap_set(dst, pos, nbits)			Set specified bit area
-  * bitmap_clear(dst, pos, nbits)		Clear specified bit area
-  * bitmap_find_next_zero_area(buf, len, pos, n, mask)	Find bit free area
-+ * bitmap_find_next_zero_area_off(buf, len, pos, n, mask)	as above
-  * bitmap_shift_right(dst, src, n, nbits)	*dst = *src >> n
-  * bitmap_shift_left(dst, src, n, nbits)	*dst = *src << n
-  * bitmap_remap(dst, src, old, new, nbits)	*dst = map(old, new)(src)
-@@ -114,11 +115,24 @@ extern int __bitmap_weight(const unsigned long *bitmap, int bits);
+diff --git a/include/linux/genalloc.h b/include/linux/genalloc.h
+index 5bbebda..af44e88 100644
+--- a/include/linux/genalloc.h
++++ b/include/linux/genalloc.h
+@@ -11,28 +11,11 @@
  
- extern void bitmap_set(unsigned long *map, int i, int len);
- extern void bitmap_clear(unsigned long *map, int start, int nr);
--extern unsigned long bitmap_find_next_zero_area(unsigned long *map,
--					 unsigned long size,
--					 unsigned long start,
--					 unsigned int nr,
--					 unsigned long align_mask);
-+
-+extern unsigned long bitmap_find_next_zero_area_off(unsigned long *map,
-+						    unsigned long size,
-+						    unsigned long start,
-+						    unsigned int nr,
-+						    unsigned long align_mask,
-+						    unsigned long align_offset);
-+
-+static inline unsigned long
-+bitmap_find_next_zero_area(unsigned long *map,
-+			   unsigned long size,
-+			   unsigned long start,
-+			   unsigned int nr,
-+			   unsigned long align_mask)
-+{
-+	return bitmap_find_next_zero_area_off(map, size, start, nr,
-+					      align_mask, 0);
-+}
- 
- extern int bitmap_scnprintf(char *buf, unsigned int len,
- 			const unsigned long *src, int nbits);
-diff --git a/lib/bitmap.c b/lib/bitmap.c
-index 41baf02..bad4f20 100644
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -315,30 +315,32 @@ void bitmap_clear(unsigned long *map, int start, int nr)
- }
- EXPORT_SYMBOL(bitmap_clear);
+ #ifndef __GENALLOC_H__
+ #define __GENALLOC_H__
+-/*
+- *  General purpose special memory pool descriptor.
+- */
+-struct gen_pool {
+-	rwlock_t lock;
+-	struct list_head chunks;	/* list of chunks in this pool */
+-	int min_alloc_order;		/* minimum allocation order */
+-};
  
 -/*
-+/**
-  * bitmap_find_next_zero_area - find a contiguous aligned zero area
-  * @map: The address to base the search on
-  * @size: The bitmap size in bits
-  * @start: The bitnumber to start searching at
-  * @nr: The number of zeroed bits we're looking for
-  * @align_mask: Alignment mask for zero area
-+ * @align_offset: Alignment offset for zero area.
-  *
-  * The @align_mask should be one less than a power of 2; the effect is that
-- * the bit offset of all zero areas this function finds is multiples of that
-- * power of 2. A @align_mask of 0 means no alignment is required.
-+ * the bit offset of all zero areas this function finds plus @align_offset
-+ * is multiple of that power of 2.
-  */
--unsigned long bitmap_find_next_zero_area(unsigned long *map,
--					 unsigned long size,
--					 unsigned long start,
--					 unsigned int nr,
--					 unsigned long align_mask)
-+unsigned long bitmap_find_next_zero_area_off(unsigned long *map,
-+					     unsigned long size,
-+					     unsigned long start,
-+					     unsigned int nr,
-+					     unsigned long align_mask,
-+					     unsigned long align_offset)
+- *  General purpose special memory pool chunk descriptor.
+- */
+-struct gen_pool_chunk {
+-	spinlock_t lock;
+-	struct list_head next_chunk;	/* next chunk in pool */
+-	phys_addr_t phys_addr;		/* physical starting address of memory chunk */
+-	unsigned long start_addr;	/* starting address of memory chunk */
+-	unsigned long end_addr;		/* ending address of memory chunk */
+-	unsigned long bits[0];		/* bitmap for allocating memory chunk */
+-};
+-
+-extern struct gen_pool *gen_pool_create(int, int);
++struct gen_pool;
++
++struct gen_pool *__must_check gen_pool_create(unsigned order, int nid);
++
+ extern phys_addr_t gen_pool_virt_to_phys(struct gen_pool *pool, unsigned long);
+ extern int gen_pool_add_virt(struct gen_pool *, unsigned long, phys_addr_t,
+ 			     size_t, int);
+@@ -53,7 +36,26 @@ static inline int gen_pool_add(struct gen_pool *pool, unsigned long addr,
  {
- 	unsigned long index, end, i;
- again:
- 	index = find_next_zero_bit(map, size, start);
- 
- 	/* Align allocation */
--	index = __ALIGN_MASK(index, align_mask);
-+	index = __ALIGN_MASK(index + align_offset, align_mask) - align_offset;
- 
- 	end = index + nr;
- 	if (end > size)
-@@ -350,7 +352,7 @@ again:
- 	}
- 	return index;
+ 	return gen_pool_add_virt(pool, addr, -1, size, nid);
  }
--EXPORT_SYMBOL(bitmap_find_next_zero_area);
-+EXPORT_SYMBOL(bitmap_find_next_zero_area_off);
+-extern void gen_pool_destroy(struct gen_pool *);
+-extern unsigned long gen_pool_alloc(struct gen_pool *, size_t);
+-extern void gen_pool_free(struct gen_pool *, unsigned long, size_t);
++
++void gen_pool_destroy(struct gen_pool *pool);
++
++unsigned long __must_check
++gen_pool_alloc_aligned(struct gen_pool *pool, size_t size,
++		       unsigned alignment_order);
++
++/**
++ * gen_pool_alloc() - allocate special memory from the pool
++ * @pool:	Pool to allocate from.
++ * @size:	Number of bytes to allocate from the pool.
++ *
++ * Allocate the requested number of bytes from the specified pool.
++ * Uses a first-fit algorithm.
++ */
++static inline unsigned long __must_check
++gen_pool_alloc(struct gen_pool *pool, size_t size)
++{
++	return gen_pool_alloc_aligned(pool, size, 0);
++}
++
++void gen_pool_free(struct gen_pool *pool, unsigned long addr, size_t size);
+ #endif /* __GENALLOC_H__ */
+diff --git a/lib/genalloc.c b/lib/genalloc.c
+index 577ddf8..b41dd90 100644
+--- a/lib/genalloc.c
++++ b/lib/genalloc.c
+@@ -16,23 +16,46 @@
+ #include <linux/genalloc.h>
  
- /*
-  * Bitmap printing & parsing functions: first version by Bill Irwin,
+ 
++/* General purpose special memory pool descriptor. */
++struct gen_pool {
++	rwlock_t lock;			/* protects chunks list */
++	struct list_head chunks;	/* list of chunks in this pool */
++	unsigned order;			/* minimum allocation order */
++};
++
++/* General purpose special memory pool chunk descriptor. */
++struct gen_pool_chunk {
++	spinlock_t lock;		/* protects bits */
++	struct list_head next_chunk;	/* next chunk in pool */
++	phys_addr_t phys_addr;		/* physical starting address of memory chunk */
++	unsigned long start;		/* start of memory chunk */
++	unsigned long size;		/* number of bits */
++	unsigned long bits[0];		/* bitmap for allocating memory chunk */
++};
++
++
+ /**
+- * gen_pool_create - create a new special memory pool
+- * @min_alloc_order: log base 2 of number of bytes each bitmap bit represents
+- * @nid: node id of the node the pool structure should be allocated on, or -1
++ * gen_pool_create() - create a new special memory pool
++ * @order:	Log base 2 of number of bytes each bitmap bit
++ *		represents.
++ * @nid:	Node id of the node the pool structure should be allocated
++ *		on, or -1.  This will be also used for other allocations.
+  *
+  * Create a new special memory pool that can be used to manage special purpose
+  * memory not managed by the regular kmalloc/kfree interface.
+  */
+-struct gen_pool *gen_pool_create(int min_alloc_order, int nid)
++struct gen_pool *__must_check gen_pool_create(unsigned order, int nid)
+ {
+ 	struct gen_pool *pool;
+ 
+-	pool = kmalloc_node(sizeof(struct gen_pool), GFP_KERNEL, nid);
+-	if (pool != NULL) {
++	if (WARN_ON(order >= BITS_PER_LONG))
++		return NULL;
++
++	pool = kmalloc_node(sizeof *pool, GFP_KERNEL, nid);
++	if (pool) {
+ 		rwlock_init(&pool->lock);
+ 		INIT_LIST_HEAD(&pool->chunks);
+-		pool->min_alloc_order = min_alloc_order;
++		pool->order = order;
+ 	}
+ 	return pool;
+ }
+@@ -40,33 +63,41 @@ EXPORT_SYMBOL(gen_pool_create);
+ 
+ /**
+  * gen_pool_add_virt - add a new chunk of special memory to the pool
+- * @pool: pool to add new memory chunk to
+- * @virt: virtual starting address of memory chunk to add to pool
+- * @phys: physical starting address of memory chunk to add to pool
+- * @size: size in bytes of the memory chunk to add to pool
+- * @nid: node id of the node the chunk structure and bitmap should be
+- *       allocated on, or -1
++ * @pool:	Pool to add new memory chunk to
++ * @virt:	Virtual starting address of memory chunk to add to pool
++ * @phys:	Physical starting address of memory chunk to add to pool
++ * @size:	Size in bytes of the memory chunk to add to pool
++ * @nid:	Node id of the node the chunk structure and bitmap should be
++ *       	allocated on, or -1
+  *
+  * Add a new chunk of special memory to the specified pool.
+  *
+  * Returns 0 on success or a -ve errno on failure.
+  */
+-int gen_pool_add_virt(struct gen_pool *pool, unsigned long virt, phys_addr_t phys,
+-		 size_t size, int nid)
++int __must_check
++gen_pool_add_virt(struct gen_pool *pool, unsigned long virt, phys_addr_t phys,
++		  size_t size, int nid)
+ {
+ 	struct gen_pool_chunk *chunk;
+-	int nbits = size >> pool->min_alloc_order;
+-	int nbytes = sizeof(struct gen_pool_chunk) +
+-				(nbits + BITS_PER_BYTE - 1) / BITS_PER_BYTE;
++	size_t nbytes;
+ 
+-	chunk = kmalloc_node(nbytes, GFP_KERNEL | __GFP_ZERO, nid);
+-	if (unlikely(chunk == NULL))
++	if (WARN_ON(!virt || virt + size < virt ||
++		    (virt & ((1 << pool->order) - 1))))
++		return -EINVAL;
++
++	size = size >> pool->order;
++	if (WARN_ON(!size))
++		return -EINVAL;
++
++	nbytes = sizeof *chunk + BITS_TO_LONGS(size) * sizeof *chunk->bits;
++	chunk = kzalloc_node(nbytes, GFP_KERNEL, nid);
++	if (!chunk)
+ 		return -ENOMEM;
+ 
+ 	spin_lock_init(&chunk->lock);
++	chunk->start = virt >> pool->order;
++	chunk->size  = size;
+ 	chunk->phys_addr = phys;
+-	chunk->start_addr = virt;
+-	chunk->end_addr = virt + size;
+ 
+ 	write_lock(&pool->lock);
+ 	list_add(&chunk->next_chunk, &pool->chunks);
+@@ -90,10 +121,12 @@ phys_addr_t gen_pool_virt_to_phys(struct gen_pool *pool, unsigned long addr)
+ 
+ 	read_lock(&pool->lock);
+ 	list_for_each(_chunk, &pool->chunks) {
++		unsigned long start_addr;
+ 		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
+ 
+-		if (addr >= chunk->start_addr && addr < chunk->end_addr)
+-			return chunk->phys_addr + addr - chunk->start_addr;
++		start_addr = chunk->start << pool->order;
++		if (addr >= start_addr && addr < start_addr + chunk->size)
++			return chunk->phys_addr + addr - start_addr;
+ 	}
+ 	read_unlock(&pool->lock);
+ 
+@@ -102,115 +135,116 @@ phys_addr_t gen_pool_virt_to_phys(struct gen_pool *pool, unsigned long addr)
+ EXPORT_SYMBOL(gen_pool_virt_to_phys);
+ 
+ /**
+- * gen_pool_destroy - destroy a special memory pool
+- * @pool: pool to destroy
++ * gen_pool_destroy() - destroy a special memory pool
++ * @pool:	Pool to destroy.
+  *
+  * Destroy the specified special memory pool. Verifies that there are no
+  * outstanding allocations.
+  */
+ void gen_pool_destroy(struct gen_pool *pool)
+ {
+-	struct list_head *_chunk, *_next_chunk;
+ 	struct gen_pool_chunk *chunk;
+-	int order = pool->min_alloc_order;
+-	int bit, end_bit;
+-
++	int bit;
+ 
+-	list_for_each_safe(_chunk, _next_chunk, &pool->chunks) {
+-		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
++	while (!list_empty(&pool->chunks)) {
++		chunk = list_entry(pool->chunks.next, struct gen_pool_chunk,
++				   next_chunk);
+ 		list_del(&chunk->next_chunk);
+ 
+-		end_bit = (chunk->end_addr - chunk->start_addr) >> order;
+-		bit = find_next_bit(chunk->bits, end_bit, 0);
+-		BUG_ON(bit < end_bit);
++		bit = find_next_bit(chunk->bits, chunk->size, 0);
++		BUG_ON(bit < chunk->size);
+ 
+ 		kfree(chunk);
+ 	}
+ 	kfree(pool);
+-	return;
+ }
+ EXPORT_SYMBOL(gen_pool_destroy);
+ 
+ /**
+- * gen_pool_alloc - allocate special memory from the pool
+- * @pool: pool to allocate from
+- * @size: number of bytes to allocate from the pool
++ * gen_pool_alloc_aligned() - allocate special memory from the pool
++ * @pool:	Pool to allocate from.
++ * @size:	Number of bytes to allocate from the pool.
++ * @alignment_order:	Order the allocated space should be
++ *			aligned to (eg. 20 means allocated space
++ *			must be aligned to 1MiB).
+  *
+  * Allocate the requested number of bytes from the specified pool.
+  * Uses a first-fit algorithm.
+  */
+-unsigned long gen_pool_alloc(struct gen_pool *pool, size_t size)
++unsigned long __must_check
++gen_pool_alloc_aligned(struct gen_pool *pool, size_t size,
++		       unsigned alignment_order)
+ {
+-	struct list_head *_chunk;
++	unsigned long addr, align_mask = 0, flags, start;
+ 	struct gen_pool_chunk *chunk;
+-	unsigned long addr, flags;
+-	int order = pool->min_alloc_order;
+-	int nbits, start_bit, end_bit;
+ 
+ 	if (size == 0)
+ 		return 0;
+ 
+-	nbits = (size + (1UL << order) - 1) >> order;
++	if (alignment_order > pool->order)
++		align_mask = (1 << (alignment_order - pool->order)) - 1;
+ 
+-	read_lock(&pool->lock);
+-	list_for_each(_chunk, &pool->chunks) {
+-		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
++	size = (size + (1UL << pool->order) - 1) >> pool->order;
+ 
+-		end_bit = (chunk->end_addr - chunk->start_addr) >> order;
++	read_lock(&pool->lock);
++	list_for_each_entry(chunk, &pool->chunks, next_chunk) {
++		if (chunk->size < size)
++			continue;
+ 
+ 		spin_lock_irqsave(&chunk->lock, flags);
+-		start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit, 0,
+-						nbits, 0);
+-		if (start_bit >= end_bit) {
++		start = bitmap_find_next_zero_area_off(chunk->bits, chunk->size,
++						       0, size, align_mask,
++						       chunk->start);
++		if (start >= chunk->size) {
+ 			spin_unlock_irqrestore(&chunk->lock, flags);
+ 			continue;
+ 		}
+ 
+-		addr = chunk->start_addr + ((unsigned long)start_bit << order);
+-
+-		bitmap_set(chunk->bits, start_bit, nbits);
++		bitmap_set(chunk->bits, start, size);
+ 		spin_unlock_irqrestore(&chunk->lock, flags);
+-		read_unlock(&pool->lock);
+-		return addr;
++		addr = (chunk->start + start) << pool->order;
++		goto done;
+ 	}
++
++	addr = 0;
++done:
+ 	read_unlock(&pool->lock);
+-	return 0;
++	return addr;
+ }
+-EXPORT_SYMBOL(gen_pool_alloc);
++EXPORT_SYMBOL(gen_pool_alloc_aligned);
+ 
+ /**
+- * gen_pool_free - free allocated special memory back to the pool
+- * @pool: pool to free to
+- * @addr: starting address of memory to free back to pool
+- * @size: size in bytes of memory to free
++ * gen_pool_free() - free allocated special memory back to the pool
++ * @pool:	Pool to free to.
++ * @addr:	Starting address of memory to free back to pool.
++ * @size:	Size in bytes of memory to free.
+  *
+  * Free previously allocated special memory back to the specified pool.
+  */
+ void gen_pool_free(struct gen_pool *pool, unsigned long addr, size_t size)
+ {
+-	struct list_head *_chunk;
+ 	struct gen_pool_chunk *chunk;
+ 	unsigned long flags;
+-	int order = pool->min_alloc_order;
+-	int bit, nbits;
+ 
+-	nbits = (size + (1UL << order) - 1) >> order;
++	if (!size)
++		return;
+ 
+-	read_lock(&pool->lock);
+-	list_for_each(_chunk, &pool->chunks) {
+-		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
++	addr = addr >> pool->order;
++	size = (size + (1UL << pool->order) - 1) >> pool->order;
+ 
+-		if (addr >= chunk->start_addr && addr < chunk->end_addr) {
+-			BUG_ON(addr + size > chunk->end_addr);
++	BUG_ON(addr + size < addr);
++
++	read_lock(&pool->lock);
++	list_for_each_entry(chunk, &pool->chunks, next_chunk)
++		if (addr >= chunk->start &&
++		    addr + size <= chunk->start + chunk->size) {
+ 			spin_lock_irqsave(&chunk->lock, flags);
+-			bit = (addr - chunk->start_addr) >> order;
+-			while (nbits--)
+-				__clear_bit(bit++, chunk->bits);
++			bitmap_clear(chunk->bits, addr - chunk->start, size);
+ 			spin_unlock_irqrestore(&chunk->lock, flags);
+-			break;
++			goto done;
+ 		}
+-	}
+-	BUG_ON(nbits > 0);
++	BUG_ON(1);
++done:
+ 	read_unlock(&pool->lock);
+ }
+ EXPORT_SYMBOL(gen_pool_free);
 -- 
 1.7.1.569.g6f426
 
