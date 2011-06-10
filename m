@@ -1,53 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755742Ab1FJAUz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 20:20:55 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34042 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171Ab1FJAUy (ORCPT
+	id S1755644Ab1FJARM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 20:17:12 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:37397 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171Ab1FJARJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 20:20:54 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 10 Jun 2011 09:13:55 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Ying Han <yinghan@google.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+	Thu, 9 Jun 2011 20:17:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Cfzzp1nd2DPtjzq9/avoVZMtX6VRDtg2OOpP9e22f3s9se61cn/FHrycjNnBHgKOpA
+         2ZS6zOOndg0R9laikgGw==
+MIME-Version: 1.0
+In-Reply-To: <20110609233154.GA26745@cmpxchg.org>
+References: <20110602075028.GB20630@cmpxchg.org>
+	<BANLkTi=AZG4LKUdeODB0uP=_CVBRnGs_Nw@mail.gmail.com>
+	<20110602175142.GH28684@cmpxchg.org>
+	<BANLkTi=9083abfiKdZ5_oXyA+dZqaXJfZg@mail.gmail.com>
+	<20110608153211.GB27827@cmpxchg.org>
+	<BANLkTincHpoay1JtpjG0RY9CCvfepRohTXUH6KKULYJ9jbdo+A@mail.gmail.com>
+	<20110609083503.GC11603@cmpxchg.org>
+	<BANLkTiknpTjj3saw+zS5ABeD+4ESz68xvRot7TTvKs7A_RtrdA@mail.gmail.com>
+	<20110609183637.GC20333@cmpxchg.org>
+	<BANLkTin3ZZYXdZgSFfi=8QMnN5we8RcoMyZ_vM3kdbRXCaoWnw@mail.gmail.com>
+	<20110609233154.GA26745@cmpxchg.org>
+Date: Thu, 9 Jun 2011 17:17:05 -0700
+Message-ID: <BANLkTi=SD7-W17bT-+ZujA68BiAXyEmbC_tE+aLHEtQ6jzXBHQ@mail.gmail.com>
+Subject: Re: [patch 0/8] mm: memcg naturalization -rc2
+From: Ying Han <yinghan@google.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: 3.0rc2 oops in mem_cgroup_from_task
-Message-Id: <20110610091355.2ce38798.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <BANLkTikF7=qfXAmrNzyMSmWm7Neh6yMAB8EbBp7oLcfQmrbDjA@mail.gmail.com>
-References: <20110609212956.GA2319@redhat.com>
-	<BANLkTikCfWhoLNK__ringzy7KjKY5ZEtNb3QTuX1jJ53wNNysA@mail.gmail.com>
-	<BANLkTikF7=qfXAmrNzyMSmWm7Neh6yMAB8EbBp7oLcfQmrbDjA@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jun 2011 16:42:09 -0700
-Ying Han <yinghan@google.com> wrote:
+On Thu, Jun 9, 2011 at 4:31 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> On Thu, Jun 09, 2011 at 03:30:27PM -0700, Ying Han wrote:
+>> On Thu, Jun 9, 2011 at 11:36 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+>> > On Thu, Jun 09, 2011 at 10:36:47AM -0700, Ying Han wrote:
+>> >> On Thu, Jun 9, 2011 at 1:35 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+>> >> > On Wed, Jun 08, 2011 at 08:52:03PM -0700, Ying Han wrote:
+>> >> >> On Wed, Jun 8, 2011 at 8:32 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+>> >> >> > I guess it would make much more sense to evaluate if reclaiming from
+>> >> >> > memcgs while there are others exceeding their soft limit is even a
+>> >> >> > problem.  Otherwise this discussion is pretty pointless.
+>> >> >>
+>> >> >> AFAIK it is a problem since it changes the spec of kernel API
+>> >> >> memory.soft_limit_in_bytes. That value is set per-memcg which all the
+>> >> >> pages allocated above that are best effort and targeted to reclaim
+>> >> >> prior to others.
+>> >> >
+>> >> > That's not really true.  Quoting the documentation:
+>> >> >
+>> >> >    When the system detects memory contention or low memory, control groups
+>> >> >    are pushed back to their soft limits. If the soft limit of each control
+>> >> >    group is very high, they are pushed back as much as possible to make
+>> >> >    sure that one control group does not starve the others of memory.
+>> >> >
+>> >> > I am language lawyering here, but I don't think it says it won't touch
+>> >> > other memcgs at all while there are memcgs exceeding their soft limit.
+>> >>
+>> >> Well... :) I would say that the documentation of soft_limit needs lots
+>> >> of work especially after lots of discussions we have after the LSF.
+>> >>
+>> >> The RFC i sent after our discussion has the following documentation,
+>> >> and I only cut & paste the content relevant to our conversation here:
+>> >>
+>> >> What is "soft_limit"?
+>> >> The "soft_limit was introduced in memcg to support over-committing the
+>> >> memory resource on the host. Each cgroup can be configured with
+>> >> "hard_limit", where it will be throttled or OOM killed by going over
+>> >> the limit. However, the allocation can go above the "soft_limit" as
+>> >> long as there is no memory contention. The "soft_limit" is the kernel
+>> >> mechanism for re-distributing spare memory resource among cgroups.
+>> >>
+>> >> What we have now?
+>> >> The current implementation of softlimit is based on per-zone RB tree,
+>> >> where only the cgroup exceeds the soft_limit the most being selected
+>> >> for reclaim.
+>> >>
+>> >> It makes less sense to only reclaim from one cgroup rather than
+>> >> reclaiming all cgroups based on calculated propotion. This is required
+>> >> for fairness.
+>> >>
+>> >> Proposed design:
+>> >> round-robin across the cgroups where they have memory allocated on the
+>> >> zone and also exceed the softlimit configured.
+>> >>
+>> >> there was a question on how to do zone balancing w/o global LRU. This
+>> >> could be solved by building another cgroup list per-zone, where we
+>> >> also link cgroups under their soft_limit. We won't scan the list
+>> >> unless the first list being exhausted and
+>> >> the free pages is still under the high_wmark.
+>> >>
+>> >> Since the per-zone memcg list design is being replaced by your
+>> >> patchset, some of the details doesn't apply. But the concept still
+>> >> remains where we would like to scan some memcgs first (above
+>> >> soft_limit) .
+>> >
+>> > I think the most important thing we wanted was to round-robin scan all
+>> > soft limit excessors instead of just the biggest one.  I understood
+>> > this is the biggest fault with soft limits right now.
+>> >
+>> > We came up with maintaining a list of excessors, rather than a tree,
+>> > and from this particular implementation followed naturally that this
+>> > list is scanned BEFORE we look at other memcgs at all.
+>> >
+>> > This is a nice to have, but it was never the primary problem with the
+>> > soft limit implementation, as far as I understood.
+>> >
+>> >> > It would be a lie about the current code in the first place, which
+>> >> > does soft limit reclaim and then regular reclaim, no matter the
+>> >> > outcome of the soft limit reclaim cycle.  It will go for the soft
+>> >> > limit first, but after an allocation under pressure the VM is likely
+>> >> > to have reclaimed from other memcgs as well.
+>> >> >
+>> >> > I saw your patch to fix that and break out of reclaim if soft limit
+>> >> > reclaim did enough.  But this fix is not much newer than my changes.
+>> >>
+>> >> My soft_limit patch was developed in parallel with your patchset, and
+>> >> most of that wouldn't apply here.
+>> >> Is that what you are referring to?
+>> >
+>> > No, I meant that the current behaviour is old and we are only changing
+>> > it only now, so we are not really breaking backward compatibility.
+>> >
+>> >> > The second part of this is:
+>> >> >
+>> >> >    Please note that soft limits is a best effort feature, it comes with
+>> >> >    no guarantees, but it does its best to make sure that when memory is
+>> >> >    heavily contended for, memory is allocated based on the soft limit
+>> >> >    hints/setup. Currently soft limit based reclaim is setup such that
+>> >> >    it gets invoked from balance_pgdat (kswapd).
+>> >>
+>> >> We had patch merged which add the soft_limit reclaim also in the global ttfp.
+>> >>
+>> >> memcg-add-the-soft_limit-reclaim-in-global-direct-reclaim.patch
+>> >>
+>> >> > It's not the pages-over-soft-limit that are best effort.  It says that
+>> >> > it tries its best to take soft limits into account while reclaiming.
+>> >> Hmm. Both cases are true. The best effort pages I referring to means
+>> >> "the page above the soft_limit are targeted to reclaim first under
+>> >> memory contention"
+>> >
+>> > I really don't know where you are taking this from.  That is neither
+>> > documented anywhere, nor is it the current behaviour.
+>>
+>> I got the email from andrew on may 27 and you were on the cc-ed :)
+>> Anyway, i just forwarded you that one.
+>
+> I wasn't asking about this patch at all...  This is the conversation:
+>
+> Me:
+>
+>> >> > It's not the pages-over-soft-limit that are best effort.  It says that
+>> >> > it tries its best to take soft limits into account while reclaiming.
+>
+> You:
+>
+>> >> Hmm. Both cases are true. The best effort pages I referring to means
+>> >> "the page above the soft_limit are targeted to reclaim first under
+>> >> memory contention"
+>
+> Me:
+>
+>> > I really don't know where you are taking this from.  That is neither
+>> > documented anywhere, nor is it the current behaviour.
+>
+> And this is still my question.
+>
+> Current: scan up to all pages of the biggest soft limit offender, then
+> reclaim from random memcgs (because of the global LRU).
+agree.
 
-> ++cc Hugh who might have seen similar crashes on his machine.
-> 
+>
+> After my patch: scan all memcgs according to their size, with double
+> the pressure on those over their soft limit.
+agree.
+>
+> Please tell me exactly how my patch regresses existing behaviour, a
+> user interface, a documented feature, etc.
+>
 
-Thank you for forwarding. Hmm. It seems the panic happens at khugepaged's 
-page collapse_huge_page().
+Ok, thank you for clarifying it. Now i understand what's the confusion here.
 
-==
-        count_vm_event(THP_COLLAPSE_ALLOC);
-        if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
-==
-It passes target mm to memcg and memcg gets a cgroup by
-==
- mem = mem_cgroup_from_task(rcu_dereference(mm->owner));
-==
-Panic here means....mm->owner's task_subsys_state contains bad pointer ?
+I agree that your patch doesn't regress from what we have now
+currently. What i referred earlier was the improvement from the
+current design. So we were comparing to two targets.
 
-I'll dig. Thanks.
--Kame
+Please go ahead with your patch, and I don't have problem with that
+now. I will propose the soft_limit reclaim improvement as separate
+thread.
 
+Thanks
+
+--Ying
+
+> If you have an even better idea, please propose it.
+>
