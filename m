@@ -1,65 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757779Ab1FJSIf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 14:08:35 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55580 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757746Ab1FJSIb convert rfc822-to-8bit (ORCPT
+	id S1757767Ab1FJSGf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 14:06:35 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:37584 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757672Ab1FJSGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 14:08:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=FyqdC21l8h5nlGnyzZURSJho0YNr0zeL9xeGX3S0Y8vwaLNxKZqGTU+Ajg+FC4PM8C
-         /B6F04QhprzZeyfaGYmFkLKquPrm7lAkec0zuJaFrUhMjt6VZhl0Ax2s5wjl7mzhaWLe
-         4ceBF+q7sX2Uaj05jVmKlPIbJqIzl0PyW6VkY=
+	Fri, 10 Jun 2011 14:06:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
+	:subject:in-reply-to:message-id:references:mime-version:
+	content-type; q=dns; s=newdream.net; b=QiRZgPg1UkcEB86N/gN5n0wrl
+	0xvza+QCh8uebiVOfVW806iKj1e7HdaDpaWLmsgtYH/3NyceY2UGuwR6fGJL2l3Y
+	ikx95E3tKQ+jwAoC4YSQwt/LFWryM3N7AIrF+UsP6NEWBTwiyzq04TVXeEoD1d7p
+	mWk1+DArsoMZQqNv6I=
+Date: Fri, 10 Jun 2011 11:08:34 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: Chris Mason <chris.mason@oracle.com>
+cc: Jim Schutt <jaschut@sandia.gov>, dave <dave@jikos.cz>,
+        miaox <miaox@cn.fujitsu.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>, ceph-devel@vger.kernel.org
+Subject: Re: 3.0-rcX BUG at fs/btrfs/ioctl.c:432 - bisected
+In-Reply-To: <1307726732-sup-3404@shiny>
+Message-ID: <Pine.LNX.4.64.1106101100310.5245@cobra.newdream.net>
+References: <4DF140AB.4030805@sandia.gov> <20110609234553.GN12709@twin.jikos.cz>
+ <4DF24F0E.4040306@sandia.gov> <1307726732-sup-3404@shiny>
 MIME-Version: 1.0
-In-Reply-To: <4DF25AF5.6070909@metafoo.de>
-References: <1307726331-28618-1-git-send-email-lars@metafoo.de>
- <BANLkTimLAfEj+tgNMWjTsanccgfEt9UW1g@mail.gmail.com> <4DF25AF5.6070909@metafoo.de>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Fri, 10 Jun 2011 14:08:10 -0400
-Message-ID: <BANLkTikSqdHDzQUZdh87YX3y+=GtKDe27g@mail.gmail.com>
-Subject: Re: [Device-drivers-devel] [PATCH 1/3] ASoC: Add ADAU1701 codec driver
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, uclinux-dist-devel@blackfin.uclinux.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        device-drivers-devel@blackfin.uclinux.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 13:57, Lars-Peter Clausen wrote:
-> On 06/10/2011 07:43 PM, Mike Frysinger wrote:
->> On Fri, Jun 10, 2011 at 13:18, Lars-Peter Clausen wrote:
->>> +MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
->>
->> did you actually rewrite this thing from scratch ?  seems like you
->> should keep Cliff as the author in git/MODULE_AUTHOR, and then add
->> your name to the s-o-b list and this macro.
->
-> Not from scratch, but I guess except for the register definitions and the
-> copyright header not much of the original driver is left:
-> sound/soc/codecs/adau1701.c |  662 ++++++++++++++++++++++++-------------------
->  1 files changed, 371 insertions(+), 291 deletions(-)
+On Fri, 10 Jun 2011, Chris Mason wrote:
+> Excerpts from Jim Schutt's message of 2011-06-10 13:06:22 -0400:
+> 
+> [ two different btrfs crashes ]
+> 
+> I think your two crashes in btrfs were from the uninit variables and
+> those should be fixed in rc2.
+> 
+> > When I did my bisection, my criteria for success/failure was
+> > "did mkcephfs succeed?".  When I apply this criteria to a recent
+> > linus kernel (e.g. 06e86849cf4019), which includes the fix you
+> > mentioned (aa0467d8d2a00e), I get still a different failure mode,
+> > which doesn't actually reference btrfs:
+> > 
+> > [  276.364178] BUG: unable to handle kernel NULL pointer dereference at 000000000000000a
+> > [  276.365127] IP: [<ffffffffa05434b1>] journal_start+0x3e/0x9c [jbd]
+> 
+> Looking at the resulting code in the oops, we're here in journal_start:
+> 
+>         if (handle) {
+>                 J_ASSERT(handle->h_transaction->t_journal == journal);
+> 
+> handle comes from current->journal_info, and we're doing a deref on
+> handle->h_transaction, which is probably 0xa.
+> 
+> So, we're leaving crud in current->journal_info and ext3 is finding it.
+> 
+> Perhaps its from ceph starting a transaction but leaving it running?
+> The bug came with Josef's transaction performance fixes, but it is
+> probably a mixture of his code with the ioctls ceph is using.
 
-based purely on LoC, Cliff wrote 467, so you took that and punted 291
-(62%) and then added 371.  that leaves the final file with 32% Cliff
-and 68% you.
+Ah, yeah, that's the problem.  We saw a similar problem a while back with 
+the start/stop transaction ioctls.  In this case, create_snapshot is doing
 
-however, some of that was register renaming and shuffling between the
-adau1701.c and adau1701.h, and it's easier to start with a base and
-clean up than from scratch.
+	trans = btrfs_start_transaction(root->fs_info->extent_root, 5);
+	if (IS_ERR(trans)) {
+		ret = PTR_ERR(trans);
+		goto fail;
+	}
 
-so i'm definitely not comfortable dropping Cliff's completely from the
-file and the log (which means he needs to be readded and made sure to
-be retained in all the other ADAU drivers going forward), and i'm not
-entirely sold about changing of the Author field in the git commit.
+which sets current->journal_info.  Then
 
-don't get me wrong ... i'm not a fanboi of Cliff or something, i just
-think credit is due to him for his work.
--mike
+	ret = btrfs_snap_reserve_metadata(trans, pending_snapshot);
+	BUG_ON(ret);
+
+	list_add(&pending_snapshot->list,
+		 &trans->transaction->pending_snapshots);
+	if (async_transid) {
+		*async_transid = trans->transid;
+		ret = btrfs_commit_transaction_async(trans,
+				     root->fs_info->extent_root, 1);
+	} else {
+		ret = btrfs_commit_transaction(trans,
+				       root->fs_info->extent_root);
+	}
+
+but the async snap creation ioctl takes the async path, which runs 
+btrfs_commit_transaction in a worker thread.
+
+I'm not sure what the right thing to do is here is... can whatever is in 
+journal_info be attached to trans instead in 
+btrfs_commit_transaction_async()?
+
+sage
+
+
+
+
+
+
+> 
+> [ rest of the oops below for context ]
+> 
+> -chris
+> 
+> > [  276.365127] PGD 1e4469067 PUD 1e1658067 PMD 0
+> > [  276.365127] Oops: 0000 [#1] SMP
+> > [  276.365127] CPU 2
+> > [  276.365127] Modules linked in: btrfs zlib_deflate lzo_compress ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp i2c_dev i2c_core ext3 jbd scsi_transport_iscsi rds ib_ipoib rdma_ucm rdma_cm ib_ucm ib_uverbs ib_umad ib_cm iw_cm ib_addr ipv6 ib_sa dm_mirror dm_region_hash dm_log dm_multipath scsi_dh dm_mod video sbs sbshc pci_slot battery acpi_pad ac kvm sg ses sd_mod enclosure megaraid_sas ide_cd_mod cdrom ib_mthca ib_mad qla2xxx button ib_core serio_raw scsi_transport_fc scsi_tgt dcdbas ata_piix libata tpm_tis tpm i5k_amb ioatdma tpm_bios hwmon iTCO_wdt scsi_mod i5000_edac iTCO_vendor_support ehci_hcd dca edac_core uhci_hcd pcspkr rtc nfs nfs_acl auth_rpcgss fscache lockd sunrpc tg3 bnx2 e1000 [last unloaded: freq_table]
+> > [  276.365127]
+> > [  276.365127] Pid: 6076, comm: cosd Not tainted 3.0.0-rc2-00196-g06e8684 #26 Dell Inc. PowerEdge 1950/0DT097
+> > [  276.365127] RIP: 0010:[<ffffffffa05434b1>]  [<ffffffffa05434b1>] journal_start+0x3e/0x9c [jbd]
+> > [  276.365127] RSP: 0018:ffff8801e2897b28  EFLAGS: 00010286
+> > [  276.365127] RAX: 000000000000000a RBX: ffff8801de8e1090 RCX: 0000000000000002
+> > [  276.365127] RDX: 0000000019b2d000 RSI: 000000000000000e RDI: 000000000000000e
+> > [  276.365127] RBP: ffff8801e2897b48 R08: 0000000000000003 R09: ffff8801e2897c38
+> > [  276.365127] R10: ffff8801e2897ed8 R11: 0000000000000001 R12: ffff880223ff4400
+> > [  276.365127] R13: ffff880218522d60 R14: 0000000000000ec6 R15: ffff88021f54d878
+> > [  276.365127] FS:  00007f8ff0bbb710(0000) GS:ffff88022fc80000(0000) knlGS:0000000000000000
+> > [  276.365127] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> > [  276.365127] CR2: 000000000000000a CR3: 000000021744f000 CR4: 00000000000006e0
+> > [  276.365127] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> > [  276.365127] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> > [  276.365127] Process cosd (pid: 6076, threadinfo ffff8801e2896000, task ffff880218522d60)
+> > [  276.365127] Stack:
+> > [  276.365127]  ffff8801e2897b68 ffffea000756e788 ffff88021f54d728 ffff8801e2897c78
+> > [  276.365127]  ffff8801e2897b58 ffffffffa05670ce ffff8801e2897b68 ffffffffa055c72d
+> > [  276.365127]  ffff8801e2897be8 ffffffffa055f044 ffff8801e2897c38 0000007400000000
+> > [  276.365127] Call Trace:
+> > [  276.365127]  [<ffffffffa05670ce>] ext3_journal_start_sb+0x4f/0x51 [ext3]
+> > [  276.365127]  [<ffffffffa055c72d>] ext3_journal_start+0x12/0x14 [ext3]
+> > [  276.365127]  [<ffffffffa055f044>] ext3_write_begin+0x93/0x1a1 [ext3]
+> > [  276.365127]  [<ffffffff810c6f0e>] ? __kunmap_atomic+0xe/0x10
+> > [  276.365127]  [<ffffffff810c75e5>] generic_perform_write+0xb1/0x172
+> > [  276.365127]  [<ffffffff81036a33>] ? need_resched+0x23/0x2d
+> > [  276.365127]  [<ffffffff810c76ea>] generic_file_buffered_write+0x44/0x6f
+> > [  276.365127]  [<ffffffff810c91f5>] __generic_file_aio_write+0x253/0x2a8
+> > [  276.365127]  [<ffffffff810c92ad>] generic_file_aio_write+0x63/0xb8
+> > [  276.365127]  [<ffffffff81113b26>] do_sync_write+0xc7/0x10b
+> > [  276.365127]  [<ffffffff81036a4b>] ? should_resched+0xe/0x2f
+> > [  276.365127]  [<ffffffff813b0faf>] ? _cond_resched+0xe/0x22
+> > [  276.365127]  [<ffffffff811986c3>] ? security_file_permission+0x2c/0x31
+> > [  276.365127]  [<ffffffff81113d21>] ? rw_verify_area+0xac/0xdb
+> > [  276.365127]  [<ffffffff81114253>] vfs_write+0xac/0xe4
+> > [  276.365127]  [<ffffffff8111434f>] sys_write+0x4c/0x71
+> > [  276.365127]  [<ffffffff813b8beb>] system_call_fastpath+0x16/0x1b
+> > [  276.365127] Code: 89 fc 48 c7 c3 e2 ff ff ff 89 f7 65 4c 8b 2c 25 c0 b5 00 00 4d 85 e4 49 8b 85 48 06 00 00 74 5e 48 85 c0 74 14 48 89 c3 48 8b 00 <4c> 39 20 74 04 0f 0b eb fe ff 43 0c eb 45 e8 70 ff ff ff 48 85
+> > [  276.365127] RIP  [<ffffffffa05434b1>] journal_start+0x3e/0x9c [jbd]
+> > [  276.365127]  RSP <ffff8801e2897b28>
+> > [  276.365127] CR2: 000000000000000a
+> > [  276.725157] ---[ end trace 8a802dc03e3972ad ]---
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
