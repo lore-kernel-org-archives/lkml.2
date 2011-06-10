@@ -1,64 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab1FJJlY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 05:41:24 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:42464 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab1FJJlW (ORCPT
+	id S1754565Ab1FJJdb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 05:33:31 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:51999 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab1FJJda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 05:41:22 -0400
-Date: Fri, 10 Jun 2011 11:33:02 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Ryan Mallon <rmallon@gmail.com>
-cc: Joe Perches <joe@perches.com>, Paul Mundt <lethal@linux-sh.org>,
-        linux-kernel@vger.kernel.org, Andre Renaud <andre@bluewatersys.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Andrew Victor <avictor.za@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, Anton Vorontsov <cbou@mail.ru>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, trivial@kernel.org
-Subject: Re: [PATCH trival/tree-wide] Change Ryan Mallon's email address
- across the kernel
-In-Reply-To: <4DF1902A.1040305@gmail.com>
-Message-ID: <alpine.LNX.2.00.1106101131540.20200@swampdragon.chaosbits.net>
-References: <1307661170-9325-1-git-send-email-rmallon@gmail.com>  <20110610025532.GE26006@linux-sh.org>  <4DF189F2.3040009@gmail.com>  <1307675512.20439.2.camel@Joe-Laptop>  <4DF18BDC.8010306@gmail.com> <1307676240.20439.9.camel@Joe-Laptop>
- <4DF1902A.1040305@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 10 Jun 2011 05:33:30 -0400
+Date: Fri, 10 Jun 2011 11:33:12 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH 04/10] MCE: Move ADDR/MISC reading code into common
+ function
+Message-ID: <20110610093312.GA1621@aftab>
+References: <4df13a522720782e51@agluck-desktop.sc.intel.com>
+ <4df13bf927261abd27@agluck-desktop.sc.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4df13bf927261abd27@agluck-desktop.sc.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Jun 2011, Ryan Mallon wrote:
+On Thu, Jun 09, 2011 at 05:32:41PM -0400, Luck, Tony wrote:
+> From: Andi Kleen <andi@firstfloor.org>
+> 
+> Used for next patch.
 
-> On 10/06/11 13:24, Joe Perches wrote:
-> > On Fri, 2011-06-10 at 13:13 +1000, Ryan Mallon wrote:
-> > > On 10/06/11 13:11, Joe Perches wrote:
-> > > > On Fri, 2011-06-10 at 13:05 +1000, Ryan Mallon wrote:
-> > > > > On 10/06/11 12:55, Paul Mundt wrote:
-> > > > > > On Fri, Jun 10, 2011 at 09:12:50AM +1000, Ryan Mallon wrote:
-> > > > > > > I no longer work at Bluewater Systems. Update my email address
-> > > > > > > accordingly.
-> > > > > > Is this sort of churn really necessary?
-> > > > get_maintainer uses the name and address in the first seen
-> > > > commit matching on the full name where possible.
-> > > Okay, what is the correct fix then so that people get the right email
-> > > address for me?
-> > I believe updating the MAINTAINERS file and
-> > authoring and committing patches that take
-> > your email address out of files works well.
+Yeah, let's have a more general comment here like "save us some code
+duplication"
+
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> Signed-off-by: Tony Luck <tony.luck@intel.com>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce.c |   21 +++++++++++++--------
+>  1 files changed, 13 insertions(+), 8 deletions(-)
 > 
-> If I strip my email address, but leave my name and copyright in the files the
-> patch will have the same amount of churn right?
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index cbd4b0f..0349e87 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -532,6 +532,17 @@ static void mce_report_event(struct pt_regs *regs)
+>  #endif
+>  }
+>  
+> +/*
+> + * Read ADDR and MISC registers.
+> + */
+
+No need for that comment, IMO. Function is small enough and the macros
+speak for themselves :).
+
+> +static void mce_read_aux(struct mce *m, int i)
+
+inline?
+
+> +{
+> +	if (m->status & MCI_STATUS_MISCV)
+> +		m->misc = mce_rdmsrl(MSR_IA32_MCx_MISC(i));
+> +	if (m->status & MCI_STATUS_ADDRV)
+> +		m->addr = mce_rdmsrl(MSR_IA32_MCx_ADDR(i));
+> +}
+> +
+>  DEFINE_PER_CPU(unsigned, mce_poll_count);
+>  
+>  /*
+> @@ -582,10 +593,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+>  		    (m.status & (mce_ser ? MCI_STATUS_S : MCI_STATUS_UC)))
+>  			continue;
+>  
+> -		if (m.status & MCI_STATUS_MISCV)
+> -			m.misc = mce_rdmsrl(MSR_IA32_MCx_MISC(i));
+> -		if (m.status & MCI_STATUS_ADDRV)
+> -			m.addr = mce_rdmsrl(MSR_IA32_MCx_ADDR(i));
+> +		mce_read_aux(&m, i);
+>  
+>  		if (!(flags & MCP_TIMESTAMP))
+>  			m.tsc = 0;
+> @@ -1027,10 +1035,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+>  		if (severity == MCE_AR_SEVERITY)
+>  			kill_it = 1;
+>  
+> -		if (m.status & MCI_STATUS_MISCV)
+> -			m.misc = mce_rdmsrl(MSR_IA32_MCx_MISC(i));
+> -		if (m.status & MCI_STATUS_ADDRV)
+> -			m.addr = mce_rdmsrl(MSR_IA32_MCx_ADDR(i));
+> +		mce_read_aux(&m, i);
+>  
+>  		/*
+>  		 * Action optional error. Queue address for later processing.
+> -- 
+> 1.7.3.1
 > 
-This time around, yes. But the next time you change email you then don't 
-have to update those files again, just CREDITS/MAINTAINERS etc.
+> 
 
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
