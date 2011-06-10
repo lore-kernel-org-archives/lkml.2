@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886Ab1FJMkw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 08:40:52 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:23152 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756011Ab1FJMkv (ORCPT
+	id S1756793Ab1FJMmX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 08:42:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35619 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755273Ab1FJMmT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 08:40:51 -0400
-X-IronPort-AV: E=Sophos;i="4.65,347,1304294400"; 
-   d="scan'208";a="6212298"
-Date: Fri, 10 Jun 2011 13:40:34 +0100
-From: Tim Deegan <Tim.Deegan@citrix.com>
-To: Pasi K?rkk?inen <pasik@iki.fi>
-CC: <xen-devel@lists.xensource.com>, Keir Fraser <keir@xen.org>,
-        Stabellini <stefano.stabellini@eu.citrix.com>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Keir Fraser <keir.xen@gmail.com>, Igor Mammedov <imammedo@redhat.com>,
-        Paul Menage <menage@google.com>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: Re: [Xen-devel] Possible shadow bug
-Message-ID: <20110610124034.GI5098@whitby.uk.xensource.com>
-References: <BANLkTinMamg_qesEffGxKu3QkT=zyQ2MRQ@mail.gmail.com>
- <4DEE26E7.2060201@redhat.com>
- <20110608123527.479e6991.kamezawa.hiroyu@jp.fujitsu.com>
- <4DF0801F.9050908@redhat.com>
- <alpine.DEB.2.00.1106091311530.12963@kaball-desktop>
- <20110609150133.GF5098@whitby.uk.xensource.com>
- <4DF0F90D.4010900@redhat.com>
- <20110610100139.GG5098@whitby.uk.xensource.com>
- <20110610101011.GH5098@whitby.uk.xensource.com>
- <20110610114821.GB32595@reaktio.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <20110610114821.GB32595@reaktio.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 10 Jun 2011 08:42:19 -0400
+Subject: Re: [PATCH 1/3] printk: Release console_sem after logbuf_lock
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        efault@gmx.de, Arne Jansen <lists@die-jansens.de>,
+        PaulMundt <lethal@linux-sh.org>, linux-fbdev@vger.kernel.org
+In-Reply-To: <20110610123416.GA12451@elte.hu>
+References: <20110609130647.937204592@chello.nl>
+	 <20110609131307.493181962@chello.nl>
+	 <20110609130617.f8aca966.akpm@linux-foundation.org>
+	 <20110609202707.GA28951@elte.hu> <1307652883.2497.1028.camel@laptop>
+	 <20110609140714.fc9ea187.akpm@linux-foundation.org>
+	 <alpine.LSU.2.00.1106091655560.2710@sister.anvils>
+	 <1307705311.3941.118.camel@twins> <1307709030.3941.134.camel@twins>
+	 <20110610123416.GA12451@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 10 Jun 2011 14:41:54 +0200
+Message-ID: <1307709714.3941.140.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 14:48 +0300 on 10 Jun (1307717301), Pasi K?rkk?inen wrote:
-> On Fri, Jun 10, 2011 at 11:10:11AM +0100, Tim Deegan wrote:
-> > At 11:01 +0100 on 10 Jun (1307703699), Tim Deegan wrote:
-> > > ISTR that even though the RHEL xen reports a 3.0.x version it has quite
-> > > a lot of backports in it.  Does it have this patch?
-> > > http://hg.uk.xensource.com/xen-3.1-testing.hg/rev/e8fca4c42d05
-> > 
-> > Oops, that URL doesn't work; I meant this:
-> > http://xenbits.xen.org/xen-3.1-testing.hg/rev/e8fca4c42d05
-> > 
+On Fri, 2011-06-10 at 14:34 +0200, Ingo Molnar wrote:
+> * Peter Zijlstra <peterz@infradead.org> wrote:
 > 
-> RHEL5 Xen (hypervisor) reports version as 3.1.2-xyz..
+> > thinking that that would have my printk stmts appear on both the 
+> > fbcon as well as the serial line. But they fail to appear on the 
+> > latency tracer (current max was 165us waking an idle cpu).
+> 
+> Have you removed this bit:
+> 
+>                 spin_unlock(&logbuf_lock);
+>                 stop_critical_timings();        /* don't trace print latency */
+>                 call_console_drivers(_con_start, _log_end);
+>                 start_critical_timings();
+>                 local_irq_restore(flags);
+> 
+> which hides the latencies from the latency tracer?
 
-Based on a quick scrobble through the CentOS 5.6 SRPMs it looks like a
-3.1.0 hypervisor with a bunch of extra patches, but not this one.  This
-is very likely the cause of the crash in mem_cgroup_create(), and
-probably the corruptions too.  That would explain why they didn't happen
-on a 4.0.x SLES11 Xen, but not really why the original patch in this
-thread made it go away.
+it shouldn't those flags come from spin_lock_irqsave(), which already
+has IRQs disabled, so the restore shouldn't re-enable them.
 
-Cheers,
+Hmm,. that might actually already be true for mainline too, yeah, looks
+like we call vprintk()->console_unlock() with IRQs-disabled.
 
-Tim.
-
--- 
-Tim Deegan <Tim.Deegan@citrix.com>
-Principal Software Engineer, Xen Platform Team
-Citrix Systems UK Ltd.  (Company #02937203, SL9 0BG)
+Hohumm..
