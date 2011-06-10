@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab1FJJa4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 05:30:56 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33087 "EHLO mx3.mail.elte.hu"
+	id S1754484Ab1FJJb4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 05:31:56 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:36735 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752866Ab1FJJaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 05:30:55 -0400
-Date: Fri, 10 Jun 2011 11:30:49 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        efault@gmx.de, Arne Jansen <lists@die-jansens.de>
-Subject: Re: [PATCH 1/3] printk: Release console_sem after logbuf_lock
-Message-ID: <20110610093049.GG27280@elte.hu>
-References: <20110609130647.937204592@chello.nl>
- <20110609131307.493181962@chello.nl>
- <20110609130617.f8aca966.akpm@linux-foundation.org>
- <20110609202707.GA28951@elte.hu>
- <1307652883.2497.1028.camel@laptop>
+	id S1750774Ab1FJJby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 05:31:54 -0400
+Message-ID: <4DF1E482.7020000@kernel.dk>
+Date: Fri, 10 Jun 2011 11:31:46 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307652883.2497.1028.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Shaohua Li <shaohua.li@intel.com>, Tao Ma <tm@tao.ma>,
+        linux-kernel@vger.kernel.org
+Subject: Re: CFQ: async queue blocks the whole system
+References: <1307616577-6101-1-git-send-email-tm@tao.ma> <20110609141451.GD29913@redhat.com> <4DF0DD0F.8090407@tao.ma> <20110609153738.GF29913@redhat.com> <BANLkTinMp5_TS-=Y0ZsxB45RLQv18WCZDg@mail.gmail.com> <20110610091747.GC4183@redhat.com> <4DF1E1EB.8010808@kernel.dk> <20110610092922.GE4183@redhat.com>
+In-Reply-To: <20110610092922.GE4183@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-
-> >   => only a 'there be dragons' mental marker
+On 2011-06-10 11:29, Vivek Goyal wrote:
+> On Fri, Jun 10, 2011 at 11:20:43AM +0200, Jens Axboe wrote:
+>> On 2011-06-10 11:17, Vivek Goyal wrote:
+>>> On Fri, Jun 10, 2011 at 09:19:12AM +0800, Shaohua Li wrote:
+>>>
+>>> [..]
+>>>>> If there is no major advantage of draining sync requests before async
+>>>>> is dispatched, I think this should be an easy fix.
+>>>> I thought this is to avoid sync latency if we switch from an async
+>>>> queue to sync queue later.
+>>>
+>>> Is it about the sync request latency which has already been dispatched? I 
+>>> really wish that driver and disk should do some prioritazation for reads
+>>> here and CFQ does not have to jump through hoops like drain sync requests
+>>> before async requests are dispatched.
+>>
+>> That would never work. Are you suggesting putting that logic in all
+>> drivers? Or relying on hardware to get the fairness right? Not going to
+>> happen.
 > 
-> Right, my reply was that I couldn't convince myself unlock order 
-> could make a difference, but clearly I can easily have missed 
-> something subtle.
+> I was hoping that hardware does some prioritization. Well, in this case
+> even if hardware maintains FIFO behavior it should be good enough.
 > 
-> > and i have to say that when i found a boot lockup during testing 
-> > i was not surprised very much :)
+> But I would not claim anything in this regard as I have never experimented
+> with it and have no idea that how sync latencies are impacted if we don't
+> drain the queue before dispathing WRITEs.
 > 
-> But you found a lockup on the second patch, not this one.
+> I was just wondering that with current generation hardware is it bad
+> enough that we need to keep this logic around?
 
-Yeah, it's not like my mental markers are overly precise! ;-)
+The logic for draining around sync/async switch isn't that old, in fact
+it dates only back to the last round of interactiveness fury. So yes,
+it's definitely needed. It made a big difference on hardware that was
+just out-of-the-store back then. I think you are putting way too much
+faith into the sanity and goals of companies making this hardware.
 
-> Also, this patch is important for #3, where we want to take 
-> logbuf_lock under the semaphore internal lock, that too would 
-> preclude us doing that up() in the old location.
+-- 
+Jens Axboe
 
-Yeah. I'm not against it or anything (hey i suggested the whole 
-thing), but i'll be testing this through carefully.
-
-Thanks,
-
-	Ingo
