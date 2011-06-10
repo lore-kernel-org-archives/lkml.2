@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab1FJMJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 08:09:56 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:26239
-	"EHLO CH1EHSOBE016.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756012Ab1FJMIb (ORCPT
+	id S1756799Ab1FJMJE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 08:09:04 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:29291
+	"EHLO CH1EHSOBE012.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756180Ab1FJMIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 08:08:31 -0400
+	Fri, 10 Jun 2011 08:08:37 -0400
 X-SpamScore: 1
 X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h61h)
 X-Spam-TCS-SCL: 0:0
 X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LMKPQ2-01-6LU-02
+X-WSS-ID: 0LMKPQ2-01-6LV-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
 CC: Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 2/9] x86/amd-iommu: Introduce global dev_data_list
-Date: Fri, 10 Jun 2011 14:08:42 +0200
-Message-ID: <1307707729-29767-3-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 3/9] x86/amd-iommu: Store devid in dev_data
+Date: Fri, 10 Jun 2011 14:08:43 +0200
+Message-ID: <1307707729-29767-4-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1307707729-29767-1-git-send-email-joerg.roedel@amd.com>
 References: <1307707729-29767-1-git-send-email-joerg.roedel@amd.com>
@@ -29,145 +29,168 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This list keeps all allocated iommu_dev_data structs in a
-list together. This is needed for instances that have no
-associated device.
+This allows to use dev_data independent of struct device
+later.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
  arch/x86/include/asm/amd_iommu_types.h |    1 +
- arch/x86/kernel/amd_iommu.c            |   56 ++++++++++++++++++++++++++-----
- 2 files changed, 48 insertions(+), 9 deletions(-)
+ arch/x86/kernel/amd_iommu.c            |   39 ++++++++++++-------------------
+ 2 files changed, 16 insertions(+), 24 deletions(-)
 
 diff --git a/arch/x86/include/asm/amd_iommu_types.h b/arch/x86/include/asm/amd_iommu_types.h
-index 4c99829..35520e3 100644
+index 35520e3..2833862 100644
 --- a/arch/x86/include/asm/amd_iommu_types.h
 +++ b/arch/x86/include/asm/amd_iommu_types.h
-@@ -310,6 +310,7 @@ struct protection_domain {
-  */
- struct iommu_dev_data {
- 	struct list_head list;		  /* For domain->dev_list */
-+	struct list_head dev_data_list;	  /* For global dev_data_list */
- 	struct device *dev;		  /* Device this data belong to */
+@@ -315,6 +315,7 @@ struct iommu_dev_data {
  	struct device *alias;		  /* The Alias Device */
  	struct protection_domain *domain; /* Domain the device is bound to */
+ 	atomic_t bind;			  /* Domain attach reverent count */
++	u16 devid;			  /* PCI Device ID */
+ };
+ 
+ /*
 diff --git a/arch/x86/kernel/amd_iommu.c b/arch/x86/kernel/amd_iommu.c
-index cc6f6da6..8b84890 100644
+index 8b84890..4e8b176 100644
 --- a/arch/x86/kernel/amd_iommu.c
 +++ b/arch/x86/kernel/amd_iommu.c
-@@ -45,6 +45,10 @@ static DEFINE_RWLOCK(amd_iommu_devtable_lock);
- static LIST_HEAD(iommu_pd_list);
- static DEFINE_SPINLOCK(iommu_pd_list_lock);
- 
-+/* List of all available dev_data structures */
-+static LIST_HEAD(dev_data_list);
-+static DEFINE_SPINLOCK(dev_data_list_lock);
-+
- /*
-  * Domain for untranslated devices - only allocated
-  * if iommu=pt passed on kernel cmd line.
-@@ -68,6 +72,35 @@ static void update_domain(struct protection_domain *domain);
+@@ -72,7 +72,7 @@ static void update_domain(struct protection_domain *domain);
   *
   ****************************************************************************/
  
-+static struct iommu_dev_data *alloc_dev_data(void)
-+{
-+	struct iommu_dev_data *dev_data;
-+	unsigned long flags;
-+
-+	dev_data = kzalloc(sizeof(*dev_data), GFP_KERNEL);
-+	if (!dev_data)
-+		return NULL;
-+
-+	atomic_set(&dev_data->bind, 0);
-+
-+	spin_lock_irqsave(&dev_data_list_lock, flags);
-+	list_add_tail(&dev_data->dev_data_list, &dev_data_list);
-+	spin_unlock_irqrestore(&dev_data_list_lock, flags);
-+
-+	return dev_data;
-+}
-+
-+static void free_dev_data(struct iommu_dev_data *dev_data)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&dev_data_list_lock, flags);
-+	list_del(&dev_data->dev_data_list);
-+	spin_unlock_irqrestore(&dev_data_list_lock, flags);
-+
-+	kfree(dev_data);
-+}
-+
- static inline u16 get_device_id(struct device *dev)
- {
- 	struct pci_dev *pdev = to_pci_dev(dev);
-@@ -139,32 +172,28 @@ static int iommu_init_device(struct device *dev)
+-static struct iommu_dev_data *alloc_dev_data(void)
++static struct iommu_dev_data *alloc_dev_data(u16 devid)
  {
  	struct iommu_dev_data *dev_data;
- 	struct pci_dev *pdev;
--	u16 devid, alias;
-+	u16 alias;
+ 	unsigned long flags;
+@@ -81,6 +81,7 @@ static struct iommu_dev_data *alloc_dev_data(void)
+ 	if (!dev_data)
+ 		return NULL;
  
++	dev_data->devid = devid;
+ 	atomic_set(&dev_data->bind, 0);
+ 
+ 	spin_lock_irqsave(&dev_data_list_lock, flags);
+@@ -177,13 +178,13 @@ static int iommu_init_device(struct device *dev)
  	if (dev->archdata.iommu)
  		return 0;
  
--	dev_data = kzalloc(sizeof(*dev_data), GFP_KERNEL);
-+	dev_data = alloc_dev_data();
+-	dev_data = alloc_dev_data();
++	dev_data = alloc_dev_data(get_device_id(dev));
  	if (!dev_data)
  		return -ENOMEM;
  
  	dev_data->dev = dev;
  
--	devid = get_device_id(dev);
--	alias = amd_iommu_alias_table[devid];
-+	alias = amd_iommu_alias_table[get_device_id(dev)];
+-	alias = amd_iommu_alias_table[get_device_id(dev)];
++	alias = amd_iommu_alias_table[dev_data->devid];
  	pdev = pci_get_bus_and_slot(PCI_BUS(alias), alias & 0xff);
  	if (pdev)
  		dev_data->alias = &pdev->dev;
- 	else {
--		kfree(dev_data);
-+		free_dev_data(dev_data);
- 		return -ENOTSUPP;
- 	}
- 
--	atomic_set(&dev_data->bind, 0);
--
- 	dev->archdata.iommu = dev_data;
- 
--
- 	return 0;
- }
- 
-@@ -184,11 +213,16 @@ static void iommu_ignore_device(struct device *dev)
- 
- static void iommu_uninit_device(struct device *dev)
+@@ -714,16 +715,16 @@ static int device_flush_iotlb(struct device *dev, u64 address, size_t size)
+  */
+ static int device_flush_dte(struct device *dev)
  {
--	kfree(dev->archdata.iommu);
-+	/*
-+	 * Nothing to do here - we keep dev_data around for unplugged devices
-+	 * and reuse it when the device is re-plugged - not doing so would
-+	 * introduce a ton of races.
-+	 */
- }
++	struct iommu_dev_data *dev_data;
+ 	struct amd_iommu *iommu;
+ 	struct pci_dev *pdev;
+-	u16 devid;
+ 	int ret;
  
- void __init amd_iommu_uninit_devices(void)
+-	pdev  = to_pci_dev(dev);
+-	devid = get_device_id(dev);
+-	iommu = amd_iommu_rlookup_table[devid];
++	pdev     = to_pci_dev(dev);
++	dev_data = get_dev_data(dev);
++	iommu    = amd_iommu_rlookup_table[dev_data->devid];
+ 
+-	ret = iommu_flush_dte(iommu, devid);
++	ret = iommu_flush_dte(iommu, dev_data->devid);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -1570,11 +1571,9 @@ static void do_attach(struct device *dev, struct protection_domain *domain)
+ 	struct amd_iommu *iommu;
+ 	struct pci_dev *pdev;
+ 	bool ats = false;
+-	u16 devid;
+ 
+-	devid    = get_device_id(dev);
+-	iommu    = amd_iommu_rlookup_table[devid];
+ 	dev_data = get_dev_data(dev);
++	iommu    = amd_iommu_rlookup_table[dev_data->devid];
+ 	pdev     = to_pci_dev(dev);
+ 
+ 	if (amd_iommu_iotlb_sup)
+@@ -1583,7 +1582,7 @@ static void do_attach(struct device *dev, struct protection_domain *domain)
+ 	/* Update data structures */
+ 	dev_data->domain = domain;
+ 	list_add(&dev_data->list, &domain->dev_list);
+-	set_dte_entry(devid, domain, ats);
++	set_dte_entry(dev_data->devid, domain, ats);
+ 
+ 	/* Do reference counting */
+ 	domain->dev_iommu[iommu->index] += 1;
+@@ -1597,11 +1596,9 @@ static void do_detach(struct device *dev)
  {
-+	struct iommu_dev_data *dev_data, *n;
- 	struct pci_dev *pdev = NULL;
+ 	struct iommu_dev_data *dev_data;
+ 	struct amd_iommu *iommu;
+-	u16 devid;
  
- 	for_each_pci_dev(pdev) {
-@@ -198,6 +232,10 @@ void __init amd_iommu_uninit_devices(void)
+-	devid    = get_device_id(dev);
+-	iommu    = amd_iommu_rlookup_table[devid];
+ 	dev_data = get_dev_data(dev);
++	iommu    = amd_iommu_rlookup_table[dev_data->devid];
  
- 		iommu_uninit_device(&pdev->dev);
+ 	/* decrease reference counters */
+ 	dev_data->domain->dev_iommu[iommu->index] -= 1;
+@@ -1610,7 +1607,7 @@ static void do_detach(struct device *dev)
+ 	/* Update data structures */
+ 	dev_data->domain = NULL;
+ 	list_del(&dev_data->list);
+-	clear_dte_entry(devid);
++	clear_dte_entry(dev_data->devid);
+ 
+ 	/* Flush the DTE entry */
+ 	device_flush_dte(dev);
+@@ -1760,9 +1757,7 @@ static struct protection_domain *domain_for_device(struct device *dev)
+ 	struct protection_domain *dom;
+ 	struct iommu_dev_data *dev_data, *alias_data;
+ 	unsigned long flags;
+-	u16 devid;
+ 
+-	devid      = get_device_id(dev);
+ 	dev_data   = get_dev_data(dev);
+ 	alias_data = get_dev_data(dev_data->alias);
+ 	if (!alias_data)
+@@ -1897,8 +1892,7 @@ static void update_device_table(struct protection_domain *domain)
+ 
+ 	list_for_each_entry(dev_data, &domain->dev_list, list) {
+ 		struct pci_dev *pdev = to_pci_dev(dev_data->dev);
+-		u16 devid = get_device_id(dev_data->dev);
+-		set_dte_entry(devid, domain, pci_ats_enabled(pdev));
++		set_dte_entry(dev_data->devid, domain, pci_ats_enabled(pdev));
  	}
-+
-+	/* Free all of our dev_data structures */
-+	list_for_each_entry_safe(dev_data, n, &dev_data_list, dev_data_list)
-+		free_dev_data(dev_data);
  }
  
- int __init amd_iommu_init_devices(void)
+@@ -2652,16 +2646,13 @@ static int amd_iommu_attach_device(struct iommu_domain *dom,
+ 	struct iommu_dev_data *dev_data;
+ 	struct amd_iommu *iommu;
+ 	int ret;
+-	u16 devid;
+ 
+ 	if (!check_device(dev))
+ 		return -EINVAL;
+ 
+ 	dev_data = dev->archdata.iommu;
+ 
+-	devid = get_device_id(dev);
+-
+-	iommu = amd_iommu_rlookup_table[devid];
++	iommu = amd_iommu_rlookup_table[dev_data->devid];
+ 	if (!iommu)
+ 		return -EINVAL;
+ 
 -- 
 1.7.4.1
 
