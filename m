@@ -1,92 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618Ab1FJKxq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 06:53:46 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:15978 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755444Ab1FJKxn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 06:53:43 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6372"; a="96850361"
-From: Tatyana Brokhman <tlinder@codeaurora.org>
-To: greg@kroah.com
-Cc: linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
-        ablay@codeaurora.org, Tatyana Brokhman <tlinder@codeaurora.org>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v3] usb:dummy_hcd: Force FS device connection according to module parameter
-Date: Fri, 10 Jun 2011 13:53:22 +0300
-Message-Id: <1307703207-14087-1-git-send-email-tlinder@codeaurora.org>
-X-Mailer: git-send-email 1.7.3.3
+	id S1755656Ab1FJKzg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 06:55:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24344 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755444Ab1FJKzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 06:55:33 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: rusty@rustcorp.com.au, mst@redhat.com, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Cc: yvugenfi@redhat.com, kvm@vger.kernel.org, herbert@gondor.hengli.com.au,
+        Jason Wang <jasowang@redhat.com>
+Subject: [PATCH] virtio_net: introduce VIRTIO_NET_HDR_F_DATA_VALID
+Date: Fri, 10 Jun 2011 18:56:17 +0800
+Message-Id: <1307703377-3798-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new module parameter to dummy_hcd: is_high_speed
-When set to false the connected device will be forced to operate in FS
-mode. The default of this parameter is true.
+There's no need for the guest to validate the checksum if it have been
+validated by host nics. So this patch introduces a new flag -
+VIRTIO_NET_HDR_F_DATA_VALID which is used to bypass the checksum
+examing in guest. The backend (tap/macvtap) may set this flag when
+met skbs with CHECKSUM_UNNECESSARY to save cpu utilization.
 
-Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
+No feature negotiation is needed as old driver just ignore this flag.
 
+Iperf shows 12%-30% performance improvement for UDP traffic. For TCP,
+when gro is on no difference as it produces skb with partial
+checksum. But when gro is disabled, 20% or even higher improvement
+could be measured by netperf.
+
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- drivers/usb/gadget/dummy_hcd.c |   20 +++++++++++++++-----
- 1 files changed, 15 insertions(+), 5 deletions(-)
+ drivers/net/macvtap.c      |    2 ++
+ drivers/net/tun.c          |    2 ++
+ drivers/net/virtio_net.c   |    2 ++
+ include/linux/virtio_net.h |    1 +
+ net/packet/af_packet.c     |    2 ++
+ 5 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
-index f0cdd13..8077811 100644
---- a/drivers/usb/gadget/dummy_hcd.c
-+++ b/drivers/usb/gadget/dummy_hcd.c
-@@ -72,13 +72,17 @@ MODULE_LICENSE ("GPL");
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index 6696e56..ecee0fe 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -508,6 +508,8 @@ static int macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
+ 		vnet_hdr->flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
+ 		vnet_hdr->csum_start = skb_checksum_start_offset(skb);
+ 		vnet_hdr->csum_offset = skb->csum_offset;
++	} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
++		vnet_hdr->flags = VIRTIO_NET_HDR_F_DATA_VALID;
+ 	} /* else everything is zero */
  
- struct dummy_hcd_module_parameters {
- 	bool is_super_speed;
-+	bool is_high_speed;
- };
+ 	return 0;
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 74e9405..f43fa45 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -788,6 +788,8 @@ static __inline__ ssize_t tun_put_user(struct tun_struct *tun,
+ 			gso.flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
+ 			gso.csum_start = skb_checksum_start_offset(skb);
+ 			gso.csum_offset = skb->csum_offset;
++		} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
++			gso.flags = VIRTIO_NET_HDR_F_DATA_VALID;
+ 		} /* else everything is zero */
  
- static struct dummy_hcd_module_parameters mod_data = {
--	.is_super_speed = false
-+	.is_super_speed = false,
-+	.is_high_speed = true,
- };
- module_param_named(is_super_speed, mod_data.is_super_speed, bool, S_IRUGO);
- MODULE_PARM_DESC(is_super_speed, "true to simulate SuperSpeed connection");
-+module_param_named(is_high_speed, mod_data.is_high_speed, bool, S_IRUGO);
-+MODULE_PARM_DESC(is_high_speed, "true to simulate HighSpeed connection");
- /*-------------------------------------------------------------------------*/
+ 		if (unlikely(memcpy_toiovecend(iv, (void *)&gso, total,
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index f685324..be3686a 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -274,6 +274,8 @@ static void receive_buf(struct net_device *dev, void *buf, unsigned int len)
+ 					  hdr->hdr.csum_start,
+ 					  hdr->hdr.csum_offset))
+ 			goto frame_err;
++	} else if (hdr->hdr.flags & VIRTIO_NET_HDR_F_DATA_VALID) {
++		skb->ip_summed = CHECKSUM_UNNECESSARY;
+ 	}
  
- /* gadget side driver data structres */
-@@ -904,12 +908,15 @@ usb_gadget_probe_driver(struct usb_gadget_driver *driver,
- 	dum->gadget.ep0 = &dum->ep [0].ep;
- 	if (mod_data.is_super_speed)
- 		dum->gadget.speed = driver->speed;
-+	else if (mod_data.is_high_speed)
-+		dum->gadget.speed = min_t(u8, USB_SPEED_HIGH, driver->speed);
- 	else
--		dum->gadget.speed = min((u8)USB_SPEED_HIGH, (u8)driver->speed);
-+		dum->gadget.speed = USB_SPEED_FULL;
- 	if (dum->gadget.speed < driver->speed)
--		dev_dbg(udc_dev(dum), "This device can perform faster if"
--				      " you connect it to a "
--				      "SupeSpeed port...\n");
-+		dev_dbg(udc_dev(dum), "This device can perform faster"
-+				" if you connect it to a %s port...\n",
-+			(driver->speed == USB_SPEED_SUPER ?
-+			 "SuperSpeed" : "HighSpeed"));
+ 	skb->protocol = eth_type_trans(skb, dev);
+diff --git a/include/linux/virtio_net.h b/include/linux/virtio_net.h
+index 136040b..970d5a2 100644
+--- a/include/linux/virtio_net.h
++++ b/include/linux/virtio_net.h
+@@ -63,6 +63,7 @@ struct virtio_net_config {
+  * specify GSO or CSUM features, you can simply ignore the header. */
+ struct virtio_net_hdr {
+ #define VIRTIO_NET_HDR_F_NEEDS_CSUM	1	// Use csum_start, csum_offset
++#define VIRTIO_NET_HDR_F_DATA_VALID	2	// Csum is valid
+ 	__u8 flags;
+ #define VIRTIO_NET_HDR_GSO_NONE		0	// Not a GSO frame
+ #define VIRTIO_NET_HDR_GSO_TCPV4	1	// GSO frame, IPv4 TCP (TSO)
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index c0c3cda..99ca471 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -1681,6 +1681,8 @@ static int packet_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 			vnet_hdr.flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
+ 			vnet_hdr.csum_start = skb_checksum_start_offset(skb);
+ 			vnet_hdr.csum_offset = skb->csum_offset;
++		} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
++			vnet_hdr.flags = VIRTIO_NET_HDR_F_DATA_VALID;
+ 		} /* else everything is zero */
  
- 	if (dum->gadget.speed == USB_SPEED_SUPER) {
- 		for (i = 0; i < DUMMY_ENDPOINTS; i++)
-@@ -2417,6 +2424,9 @@ static int __init init (void)
- 	if (usb_disabled ())
- 		return -ENODEV;
- 
-+	if (!mod_data.is_high_speed && mod_data.is_super_speed)
-+		return -EINVAL;
-+
- 	the_hcd_pdev = platform_device_alloc(driver_name, -1);
- 	if (!the_hcd_pdev)
- 		return retval;
+ 		err = memcpy_toiovec(msg->msg_iov, (void *)&vnet_hdr,
 -- 
-1.7.3.3
+1.7.1
 
---
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
