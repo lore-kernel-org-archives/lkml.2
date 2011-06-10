@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757908Ab1FJTko (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 15:40:44 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:45789 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755686Ab1FJTkn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 15:40:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=M0e2lix1Tt82uAYDkbJ70aAaJLiy9p30xrBC4j2gnczYgBw1MKBfnBwE0qr4bDmzU+
-         05TG+ok4kNGZdQXY1YHY8Cu9L/8FdKfPE7IKMy3j00odnqEzodHgOp/MjwryMp6vtrdu
-         xoVm+rr+SK0ayOQowK8dcgvmR00zcX8Kyb6O4=
+	id S1757970Ab1FJTsd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 15:48:33 -0400
+Received: from mga14.intel.com ([143.182.124.37]:60901 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755686Ab1FJTsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 15:48:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,348,1304319600"; 
+   d="scan'208";a="10990120"
+Date: Fri, 10 Jun 2011 12:48:15 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libusb-devel@lists.sourceforge.net,
+        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
+        hector@marcansoft.com, Jan Kiszka <jan.kiszka@siemens.com>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Hans de Goede <hdegoede@redhat.com>
+Subject: Re: USB mini-summit at LinuxCon Vancouver
+Message-ID: <20110610194815.GA6646@xanatos>
+References: <20110610002103.GA7169@xanatos>
+ <20110610031805.GA15774@kroah.com>
 MIME-Version: 1.0
-Date: Sat, 11 Jun 2011 04:40:41 +0900
-Message-ID: <BANLkTikjsw6QK99CxxrGh7HeospLrqMfcA@mail.gmail.com>
-Subject: Reserving specific physical memory and mapping it to virtual memory
-From: Jongman Heo <jongman.heo@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110610031805.GA15774@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear all,
+On Thu, Jun 09, 2011 at 08:18:05PM -0700, Greg KH wrote:
+> On Thu, Jun 09, 2011 at 05:21:03PM -0700, Sarah Sharp wrote:
+> > Topic 1
+> > -------
+> > 
+> > The KVM folks suggested that it would be good to get USB and
+> > virtualization developers together to talk about how to virtualize the
+> > xHCI host controller.  The xHCI spec architect worked closely with
+> > VMWare to get some extra goodies in the spec to help virtualization, and
+> > I'd like to see the other virtualization developers take advantage of
+> > that.  I'd also like us to hash out any issues they have been finding in
+> > the USB core or xHCI driver during the virtualization effort.
+> 
+> Do people really want to virtualize the whole xHCI controller, or just
+> specific ports or devices to the guest operating system?
 
-I have a physical memory area, which is reserved by bootloader. Its
-size is less than a page size (4kB).
-The area will be reserved in order not to be used from Linux side, by
-using memmap= boot arguments.
+A host OS could chose to virtualize the whole xHCI controller if it
+wanted to.  That's part of the reason why xHCI does all the bandwidth
+checking in hardware, not in software.
 
-What I want to do is that reserving a virtual memory (one page) at
-boot time, as well. (may need kernel modification?)
-And copying the data of physical memory above to the reserved virtual memory.
+> If just specific ports, would something like usbip be better for virtual
+> machines, with the USB traffic going over the network connection between
+> the guest/host?
 
-Then, certain user space program can access to the memory, using the
-address it already knows, which is physical.
+It could be done that way too.  But that doesn't help if you're trying
+to run Windows under Linux, right?  Only if all the guest OSes use the
+same USB IP protocol then it would work.
 
-I know that mmap() can do the memory translation thing, but we have a
-limitation to use such kind of method.
+> > Hope to see you there!
+> 
+> Thanks for putting this together.
+> 
+> Do we need to sign up somewhere to give the organizers a sense of how
+> many people will be attending?
 
-Does anyboy know the solution?
+I private ack by email would be great.  Or you can ack by facebook:
+https://www.facebook.com/event.php?eid=229532200405657  I could add the
+event in upcoming.yahoo.com if anyone uses that.
 
-Thanks in advance.
-
-Regards,
-Jongman.
+Sarah Sharp
