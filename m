@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756968Ab1FJMr1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 08:47:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6568 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756011Ab1FJMr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 08:47:26 -0400
-Message-ID: <4DF21254.6090106@redhat.com>
-Date: Fri, 10 Jun 2011 09:47:16 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1756989Ab1FJMsW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 08:48:22 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:51768 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755825Ab1FJMsU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 08:48:20 -0400
+Date: Fri, 10 Jun 2011 13:48:05 +0100
+From: Jamie Iles <jamie@jamieiles.com>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] gpio: basic_mmio: add missing include of spinlock_types.h
+Message-ID: <20110610124805.GN3711@pulham.picochip.com>
+References: <1307709889-31350-1-git-send-email-jamie@jamieiles.com>
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-media@vger.kernel.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for June 8 (docbook/media)
-References: <20110608161046.4ad95776.sfr@canb.auug.org.au> <20110608125243.e63a07fc.randy.dunlap@oracle.com> <4DF11E15.5030907@infradead.org> <4DF12263.3070900@redhat.com> <4DF12DD1.7060606@oracle.com> <4DF1581E.8050308@redhat.com> <4DF1593A.6080306@oracle.com>
-In-Reply-To: <4DF1593A.6080306@oracle.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307709889-31350-1-git-send-email-jamie@jamieiles.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
-
-Em 09-06-2011 20:37, Randy Dunlap escreveu:
+On Fri, Jun 10, 2011 at 01:44:49PM +0100, Jamie Iles wrote:
+> include/linux/basic_mmio_gpio.h uses a spinlock_t without including any
+> of the spinlock headers resulting in this compiler warning.
 > 
-> Big hint:  I see these errors not during "make htmldocs" but during a kernel code build
-> when CONFIG_BUILD_DOCSRC=y.
+> include/linux/basic_mmio_gpio.h:51:2: error: expected specifier-qualifier-list before 'spinlock_t'
 > 
-> Sorry, I should have mentioned this earlier.
+> Explicitly include linux/spinlock_types.h to fix it.
 
-I couldn't reach any troubles there. Documentation build is stopping earlier.
-I'm using the -next tree for 20110610:
+Sorry, wrong patch.  Here's the correct one.
 
-$ make defconfig
-$ make CONFIG_BUILD_DOCSRC=y -j 16 Documentation/
+Jamie
 
-Documentation/networking/timestamping/timestamping.c:45:30: error: linux/net_tstamp.h: No such file or directory
-Documentation/networking/timestamping/timestamping.c: In function ‘main’:
-Documentation/networking/timestamping/timestamping.c:331: error: storage size of ‘hwconfig’ isn’t known
-Documentation/networking/timestamping/timestamping.c:331: error: storage size of ‘hwconfig_requested’ isn’t known
-Documentation/networking/timestamping/timestamping.c:355: error: ‘SOF_TIMESTAMPING_TX_HARDWARE’ undeclared (first use in this function)
-Documentation/networking/timestamping/timestamping.c:355: error: (Each undeclared identifier is reported only once
-Documentation/networking/timestamping/timestamping.c:355: error: for each function it appears in.)
-Documentation/networking/timestamping/timestamping.c:357: error: ‘SOF_TIMESTAMPING_TX_SOFTWARE’ undeclared (first use in this function)
-Documentation/networking/timestamping/timestamping.c:359: error: ‘SOF_TIMESTAMPING_RX_HARDWARE’ undeclared (first use in this function)
-Documentation/networking/timestamping/timestamping.c:361: error: ‘SOF_TIMESTAMPING_RX_SOFTWARE’ undeclared (first use in this function)
-Documentation/networking/timestamping/timestamping.c:363: error: ‘SOF_TIMESTAMPING_SOFTWARE’ undeclared (first use in this function)
-Documentation/accounting/getdelays.c: In function ‘main’:
-Documentation/networking/timestamping/timestamping.c:365: error: ‘SOF_TIMESTAMPING_SYS_HARDWARE’ undeclared (first use in this function)Documentation/accounting/getdelays.c:525: error: ‘TASKSTATS_TYPE_NULL’ undeclared (first use in this function)
+8<---
 
-Documentation/accounting/getdelays.c:525: error: (Each undeclared identifier is reported only once
-Documentation/accounting/getdelays.c:525: error: for each function it appears in.)
-Documentation/networking/timestamping/timestamping.c:367: error: ‘SOF_TIMESTAMPING_RAW_HARDWARE’ undeclared (first use in this function)
-Documentation/networking/timestamping/timestamping.c:387: error: ‘HWTSTAMP_TX_ON’ undeclared (first use in this function)
-Documentation/networking/timestamping/timestamping.c:387: error: ‘HWTSTAMP_TX_OFF’ undeclared (first use in this function)
-Documentation/networking/timestamping/timestamping.c:390: error: ‘HWTSTAMP_FILTER_PTP_V1_L4_SYNC’ undeclared (first use in this function)
-Documentation/networking/timestamping/timestamping.c:390: error: ‘HWTSTAMP_FILTER_NONE’ undeclared (first use in this function)
-Documentation/networking/timestamping/timestamping.c:331: warning: unused variable ‘hwconfig_requested’
-Documentation/networking/timestamping/timestamping.c:331: warning: unused variable ‘hwconfig’
-make[2]: *** [Documentation/accounting/getdelays] Error 1
-make[3]: *** [Documentation/networking/timestamping/timestamping] Error 1
-make[1]: *** [Documentation/accounting] Error 2
-make[1]: *** Waiting for unfinished jobs....
-make[2]: *** [Documentation/networking/timestamping] Error 2
-make[2]: *** Waiting for unfinished jobs....
-make[1]: *** [Documentation/networking] Error 2
-make: *** [Documentation/] Error 2
+>From cd6afb281b31596c175ea3ee1d44f0efea25250f Mon Sep 17 00:00:00 2001
+From: Jamie Iles <jamie@jamieiles.com>
+Date: Fri, 10 Jun 2011 13:41:44 +0100
+Subject: [PATCH] gpio: basic_mmio: add missing include of spinlock_types.h
 
-Could you please send me your .config?
+include/linux/basic_mmio_gpio.h uses a spinlock_t without including any
+of the spinlock headers resulting in this compiler warning.
 
-Thanks,
-Mauro
+include/linux/basic_mmio_gpio.h:51:2: error: expected specifier-qualifier-list before 'spinlock_t'
+
+Explicitly include linux/spinlock_types.h to fix it.
+
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+---
+ include/linux/basic_mmio_gpio.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/basic_mmio_gpio.h b/include/linux/basic_mmio_gpio.h
+index 1ae1271..98999cf 100644
+--- a/include/linux/basic_mmio_gpio.h
++++ b/include/linux/basic_mmio_gpio.h
+@@ -16,6 +16,7 @@
+ #include <linux/gpio.h>
+ #include <linux/types.h>
+ #include <linux/compiler.h>
++#include <linux/spinlock_types.h>
+ 
+ struct bgpio_pdata {
+ 	int base;
+-- 
+1.7.4.1
+
