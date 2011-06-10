@@ -1,115 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070Ab1FJLtM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 07:49:12 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:50814 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755918Ab1FJLtK convert rfc822-to-8bit (ORCPT
+	id S1756101Ab1FJLut (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 07:50:49 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:45217 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755918Ab1FJLus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 07:49:10 -0400
-From: "Raju, Sundaram" <sundaram@ti.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: "Koul, Vinod" <vinod.koul@intel.com>, Dan <dan.j.williams@intel.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 10 Jun 2011 17:18:46 +0530
-Subject: RE: [RFC] dmaengine: add new api for preparing simple slave	transfer
-Thread-Topic: [RFC] dmaengine: add new api for preparing simple slave
-	transfer
-Thread-Index: AcwnWzz+Iw3A+/2xQBmimj+KoZcN1gABSWcQ
-Message-ID: <E0D41E29EB0DAC4E9F3FF173962E9E940301FE3452@dbde02.ent.ti.com>
-References: <E0D41E29EB0DAC4E9F3FF173962E9E940301FE2DED@dbde02.ent.ti.com>
- <20110609124723.GA24636@n2100.arm.linux.org.uk>
- <E0D41E29EB0DAC4E9F3FF173962E9E940301FE2EFB@dbde02.ent.ti.com>
- <20110609163206.GB24636@n2100.arm.linux.org.uk>
- <1307686397.10976.116.camel@vkoul-udesk3>
- <E0D41E29EB0DAC4E9F3FF173962E9E940301FE337F@dbde02.ent.ti.com>
- <20110610104318.GC24636@n2100.arm.linux.org.uk>
-In-Reply-To: <20110610104318.GC24636@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 10 Jun 2011 07:50:48 -0400
+X-AuditID: b753bd60-a1ec5ba000003bac-bf-4df205147ef6
+X-AuditID: b753bd60-a1ec5ba000003bac-bf-4df205147ef6
+Message-ID: <4DF20511.8000206@hitachi.com>
+Date: Fri, 10 Jun 2011 20:50:41 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jonathan Corbet <corbet@lwn.net>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH v4 3.0-rc2-tip 20/22] 20: perf: perf interface for uprobes
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6> <20110607130216.28590.5724.sendpatchset@localhost6.localdomain6>
+In-Reply-To: <20110607130216.28590.5724.sendpatchset@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell,
-
-> -----Original Message-----
-> From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk]
-> Sent: Friday, June 10, 2011 4:13 PM
-> To: Raju, Sundaram
-> Cc: Koul, Vinod; Dan; davinci-linux-open-source@linux.davincidsp.com; linux-
-> omap@vger.kernel.org; linux-kernel@vger.kernel.org; linux-arm-
-> kernel@lists.infradead.org
-> Subject: Re: [RFC] dmaengine: add new api for preparing simple slave transfer
+(2011/06/07 22:02), Srikar Dronamraju wrote:
+> Enhances perf probe to user space executables and libraries.
+> Provides very basic support for uprobes.
 > 
-> On Fri, Jun 10, 2011 at 03:51:41PM +0530, Raju, Sundaram wrote:
-> > Consider a simple video use case of de-interlacing a video buffer.
-> > Odd lines have to be transferred first, and then the even lines are
-> > transferred separately. This can be done by programming the
-> > inter frame gap as the line size of the video buffer in the DMAC.
-> > This will require you to have only 2 descriptors, one for the
-> > odd lines and another for the even lines. This results in only
-> > 2 descriptors being written to DMAC registers.
-> 
-> How would this be handled with DMACs which can't 'skip' bytes in the
-> buffer?  You would have to generate a list of LLIs separately
-> describing each 'line' of video and chain them together.
+> [ Probing a function in the executable using function name  ]
+> -------------------------------------------------------------
+> [root@localhost ~]# perf probe -u zfree@/bin/zsh
 
-Correct.
+Hmm, here, I have concern about the interface inconsistency
+of the probe point syntax.
 
-> 
-> How do you handle the situation where a driver uses your new proposed
-> API, but it doesn't support that in hardware.
-> 
+Since perf probe already supports debuginfo analysis,
+it accepts following syntax;
 
-It should be handled the same way how a sg buffer is handled, 
-if LLI chaining feature is not available in the hardware. 
+[EVENT=]FUNC[@SRC][:RLN|+OFFS|%return|;PTN] [ARG ...]
 
-It has to be submitted as a queue of separate descriptors to
-the DMAC, where each descriptor will be processed after the 
-completion of the previous descriptor.
+Thus, The "@" should take a source file path, not binary path.
 
-> > Actually we can deduce the chunk_size from the
-> > dma_slave_config itself. It is either the src_addr_width or
-> > dst_addr_width based on the direction. Because at a stretch
-> > DMAC cannot transfer more than the slave register width.
-> 
-> I think you're misinterpreting those fields.  (dst|src)_addr_width tells
-> the DMA controller the width of each transaction - whether to issue a
-> byte, half-word, word or double-word read or write to the peripheral.
-> It doesn't say how many of those to issue, it just says what the
-> peripheral access size is to be.
-> 
-> In other words, they describe the width of the FIFO register.
+I think -u option should have a path of the target binary, as below
 
-Yes correct, I was just giving an example for considering or
-understanding a buffer in 3D and how each dimension should be.
+# perf probe -u /bin/zsh -a zfree
 
-chunk_size = (src|dst)_addr_width, for a special case,
-i.e, if DMAC is programmed to transfer the entire 1D buffer
-per sync event received from the peripheral.
+This will allow perf-probe to support user-space debuginfo
+analysis. With it, we can do as below;
 
-In slave transfer, the peripheral is going to give a sync event to 
-DMAC when the FIFO register is full|empty.
+# perf probe -u /bin/zsh -a zfree@foo/bar.c:10
 
-Now DMACs capable of 3D transfer, do transfer of the whole 1D
-buffer per sync received or even whole 2D buffer per sync received
-(based on the sync rate programmed in the DMAC).
+Please try to update tools/perf/Documentation/perf-probe.txt too,
+then you'll see how the new syntax is different from current one :)
 
-So the DMAC has to be programmed for a 1D size (i.e. chunk size)
-equal to that of the width of the FIFO register if the sync rate
-programmed in DMAC is "per chunk".  
+Thanks,
 
-Regards,
-Sundaram
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
