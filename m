@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab1FJQmO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 12:42:14 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:62737 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622Ab1FJQmK (ORCPT
+	id S1754569Ab1FJQns (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 12:43:48 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:41355 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752889Ab1FJQnp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 12:42:10 -0400
-Message-ID: <4DF2493F.8040507@vflare.org>
-Date: Fri, 10 Jun 2011 09:41:35 -0700
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	Fri, 10 Jun 2011 12:43:45 -0400
+X-Sasl-enc: 7fp6se4pkQItnsM86qNv/2Q7YTdNGoGMrm6H2x1mTdqP 1307724224
+Date: Fri, 10 Jun 2011 13:43:41 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Simon Horman <horms@verge.net.au>, Brad Campbell <brad@fnarfbargle.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Patrick McHardy <kaber@trash.net>,
+        Bart De Schuymer <bdschuym@pandora.be>, kvm@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org
+Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
+Message-ID: <20110610164341.GA784@khazad-dum.debian.net>
+References: <4DEE27DE.7060004@trash.net>
+ <4DEE3859.6070808@fnarfbargle.com>
+ <4DEE4538.1020404@trash.net>
+ <1307471484.3091.43.camel@edumazet-laptop>
+ <4DEEACC3.3030509@trash.net>
+ <4DEEBFC2.4060102@fnarfbargle.com>
+ <1307505541.3102.12.camel@edumazet-laptop>
+ <4DEFAB15.2060905@fnarfbargle.com>
+ <20110610025249.GD643@verge.net.au>
+ <4DF21002.3040708@teksavvy.com>
 MIME-Version: 1.0
-To: Jerome Marchand <jmarchan@redhat.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: [PATCH 3/4] Staging: zram: allow partial page operations
-References: <1307712529-9757-1-git-send-email-jmarchan@redhat.com> <1307712529-9757-2-git-send-email-jmarchan@redhat.com> <1307712529-9757-3-git-send-email-jmarchan@redhat.com>
-In-Reply-To: <1307712529-9757-3-git-send-email-jmarchan@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DF21002.3040708@teksavvy.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2011 06:28 AM, Jerome Marchand wrote:
-> Commit 7b19b8d45b216ff3186f066b31937bdbde066f08 (zram: Prevent overflow
-> in logical block size) introduced ZRAM_LOGICAL_BLOCK_SIZE constant to
-> prevent overflow of logical block size on 64k page kernel.
-> However, the current implementation of zram only allow operation on block
-> of the same size as a page. That makes theorically legit 4k requests fail
-> on 64k page kernel.
->
-> This patch makes zram allow operation on partial pages. Basically, it
-> means we still do operations on full pages internally, but only copy the
-> relevent segments from/to the user memory.
->
+On Fri, 10 Jun 2011, Mark Lord wrote:
+> Something many of us don't realize is that nearly all Intel chipsets
+> have a built-in hardware watchdog timer.  This includes chipset for
+> consumer desktop boards as well as the big iron server stuff.
+> 
+> It's the "i8xx_tco" driver in the kernel enables use of them:
 
-Couldn't we just change struct queue_limits.logical_block_size type to 
-unsigned int or something so it could hold value of 64K? Then we could
-avoid making all these changes to handle partial page requests.
+That's the old module name, but yes, it is very useful in desktops and
+laptops (when it works).   Server-class hardware will have a baseboard
+management unit that can really power-cycle the system instead of just
+rebooting.
 
-Thanks,
-Nitin
+And test it first before you depend on it triggering at a remote location,
+as the firmware might cause the Intel chipset watchdog to actually hang the
+box instead of causing a proper reboot (happens on the IBM thinkpad T43, for
+example).
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
