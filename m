@@ -1,76 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab1FJKGz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 06:06:55 -0400
-Received: from co202.xi-lite.net ([149.6.83.202]:36831 "EHLO co202.xi-lite.net"
+	id S1755072Ab1FJKII (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 06:08:08 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:35693 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750769Ab1FJKGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 06:06:52 -0400
-Message-ID: <4DF1EC83.5070106@parrot.com>
-Date: Fri, 10 Jun 2011 12:05:55 +0200
-From: Matthieu CASTET <matthieu.castet@parrot.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100228)
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
-Subject: Re: uart : lost characters when system is busy
-References: <4DF1DCA9.9060604@parrot.com> <20110610102026.01f7da05@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110610102026.01f7da05@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+	id S1753445Ab1FJKIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 06:08:05 -0400
+From: Maxim Patlasov <maxim.patlasov@gmail.com>
+To: tytso@mit.edu
+Cc: adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ext4: ext4_free_blocks() fix
+Date: Fri, 10 Jun 2011 14:07:54 +0400
+Message-Id: <1307700474-25743-1-git-send-email-maxim.patlasov@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Cox a écrit :
->> uart_throttle/uart_unthrottle is called from a workqueue.
->> If the system is busy, and the uart receive lot's of data, we fill the tty
->> buffer, but the workqueue doesn't run and we never have a chance to call
->> uart_throttle. So the uart is never slow down.
-> 
-> You should have around 64K of buffering (actually n_tty worst case
-> should be 63.5Kbyte) that's a lot of slack so what is holding off the
-> work queue for so long on your problem system ? I think that should be
-> answered first as it sounds like some other part of your kernel is
-> misbehaving.
-The uart is connected to a BT chip, and it is configured to 3 Mbps.
-64K buffer is 166 ms.
+Existent implementation of ext4_free_blocks() always calls vfs_dq_free_block
+This looks quite sensible in the most cases: blocks to be freed are associated
+with inode and were accounted in quota and i_blocks some time ago.
 
-Some task on the system have higher priority than the worker thread (rt priority
-or cgroup), and can preempt it more than 166 ms.
+However, there is a case when blocks to free were not accounted by the time
+calling ext4_free_blocks() yet:
 
-Also I believe some virtual usb uart (3G dongle, cdc-acm) that use higher rate
-(more than 10 Mbps)  will have the same problem. They will fill the buffer very
-quickly.
+1. delalloc is on, write_begin pre-allocated some space in quota
+2. write-back happens, ext4 allocates some blocks in ext4_ext_get_blocks()
+3. then ext4_ext_get_blocks() gets an error (e.g.  ENOSPC) from
+   ext4_ext_insert_extent() and calls ext4_free_blocks().
 
-> 
->> A workaround could be to check the buffer threshold in tty_flip_buffer_push and
->> call throttle callback if needed.
-> 
-> tty_flip_buffer_push can be called from an IRQ, the throttle callback
-> needs to be able to sleep.
-> 
-> What might work if it is needed though is to provide a tty_is_throttled()
-> method that a driver can use to check the instantaneous throttle state.
-> Trouble is that will require a lot of care on the drivers part to deal
-> with asynchronus throttle/unthrottle events while peering at the state in
-> its IRQ handler as well.
-I think tty_is_throttled() is better than checking tty_insert_flip_char status,
-because we know earlier that the fifo is becoming full and we don't have to save
-the remaining data somewhere.
+In this scenario, ext4_free_blocks() calls vfs_dq_free_block() who, in turn,
+decrements i_blocks for blocks which were not accounted yet (due to delalloc)
+After clean umount, e2fsck reports something like:
 
-For example the "USB: cdc-acm: Prevent loss of data when filling tty buffer"
-patch may be changed to something like :
+> Inode 21, i_blocks is 5080, should be 5128.  Fix<y>?
+because i_blocks was erroneously decremented as explained above.
 
-    /* throttle device if requested by tty */
-    spin_lock_irqsave(&acm->read_lock, flags);
-    acm->throttled = acm->throttle_req;
-    if (!acm->throttled && !acm->susp_count && !tty_is_throttled()) {
-        spin_unlock_irqrestore(&acm->read_lock, flags);
-        acm_submit_read_urb(acm, rb->index, GFP_ATOMIC);
-    } else {
-        spin_unlock_irqrestore(&acm->read_lock, flags);
-    }
+The patch fixes the problem by passing EXT4_FREE_BLOCKS_SKIP_QUPD flag to
+ext4_free_blocks(). This flag forces ext4_free_blocks() to skip
+vfs_dq_free_block() call.
 
-Matthieu
+Signed-off-by: Maxim Patlasov <maxim.patlasov@gmail.com>
+---
+ fs/ext4/ext4.h    |    1 +
+ fs/ext4/extents.c |    4 +++-
+ fs/ext4/mballoc.c |    2 +-
+ 3 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 1921392..2cff50c 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -526,6 +526,7 @@ struct ext4_new_group_data {
+ #define EXT4_FREE_BLOCKS_METADATA	0x0001
+ #define EXT4_FREE_BLOCKS_FORGET		0x0002
+ #define EXT4_FREE_BLOCKS_VALIDATED	0x0004
++#define EXT4_FREE_BLOCKS_SKIP_QUPD	0x0008
+ 
+ /*
+  * ioctl commands
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 5199bac..4d17497 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -3601,12 +3601,14 @@ int ext4_ext_map_blocks(handle_t *handle, struct inode *inode,
+ 
+ 	err = ext4_ext_insert_extent(handle, inode, path, &newex, flags);
+ 	if (err) {
++		int fb_flags = flags & EXT4_GET_BLOCKS_DELALLOC_RESERVE ?
++			EXT4_FREE_BLOCKS_SKIP_QUPD : 0;
+ 		/* free data blocks we just allocated */
+ 		/* not a good idea to call discard here directly,
+ 		 * but otherwise we'd need to call it every free() */
+ 		ext4_discard_preallocations(inode);
+ 		ext4_free_blocks(handle, inode, NULL, ext4_ext_pblock(&newex),
+-				 ext4_ext_get_actual_len(&newex), 0);
++				 ext4_ext_get_actual_len(&newex), fb_flags);
+ 		goto out2;
+ 	}
+ 
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 859f2ae..ba391c6 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -4637,7 +4637,7 @@ do_more:
+ 	}
+ 	ext4_mark_super_dirty(sb);
+ error_return:
+-	if (freed)
++	if (freed && !(flags & EXT4_FREE_BLOCKS_SKIP_QUPD))
+ 		dquot_free_block(inode, freed);
+ 	brelse(bitmap_bh);
+ 	ext4_std_error(sb, err);
+-- 
+1.7.4.4
+
