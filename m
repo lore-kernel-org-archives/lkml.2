@@ -1,42 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273Ab1FJORr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 10:17:47 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36304 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381Ab1FJORq (ORCPT
+	id S1757334Ab1FJOTQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 10:19:16 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59898 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756921Ab1FJOTN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 10:17:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=ZEaac8q2gj+y5Jdjo5f5NXUrWUlygbc8jTYlKueG/PG2JVup4U0BXS6YtWfC91issD
-         8M3GME4SBLPhdh1Ycl9v3pw1ZqkNAt+zzP0w2kIf3SxogH8McpgNDEh2Eg+Jx+WyfAux
-         pxmeyTM2k9bP1G8Zx4PChvzJzMzyAYtFqPblw=
-MIME-Version: 1.0
-In-Reply-To: <1307711353-5949-1-git-send-email-minipli@googlemail.com>
-References: <BANLkTiknCeAxe30MJdVTxDom+ko8+EDQ4A@mail.gmail.com>
- <1307642718-22257-1-git-send-email-minipli@googlemail.com>
- <20110609155630.0f734351.akpm@linux-foundation.org> <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
- <1307711353-5949-1-git-send-email-minipli@googlemail.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Fri, 10 Jun 2011 10:17:24 -0400
-X-Google-Sender-Auth: pZ_NVZVTDm-xzhcU05Mx_nZFCwo
-Message-ID: <BANLkTikrZcE_D2LP4W61T9skvmefLMHhgQ@mail.gmail.com>
-Subject: Re: [PATCH] blackfin, exec: remove redundant set_fs(USER_DS)
-To: Mathias Krause <minipli@googlemail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Fri, 10 Jun 2011 10:19:13 -0400
+Subject: Re: [PATCH tip/core/rcu 01/28] rcu: Simplify curing of load woes
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org
+In-Reply-To: <1307561407-13809-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20110608192943.GA13211@linux.vnet.ibm.com>
+	 <1307561407-13809-1-git-send-email-paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 10 Jun 2011 16:18:32 +0200
+Message-ID: <1307715512.3941.168.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 09:09, Mathias Krause wrote:
-> The address limit is already set in flush_old_exec() so this
-> set_fs(USER_DS) is redundant.
+On Wed, 2011-06-08 at 12:29 -0700, Paul E. McKenney wrote:
+> Make the functions creating the kthreads wake them up.  Leverage the
+> fact that the per-node and boost kthreads can run anywhere, thus
+> dispensing with the need to wake them up once the incoming CPU has
+> gone fully online.
 
-thanks, ive merged this into my Blackfin tree
--mike
+Indeed, I failed to notice the node and boost threads weren't bound.
+
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  kernel/rcutree.c        |   65 +++++++++++++++-------------------------------
+>  kernel/rcutree_plugin.h |   11 +-------
+>  2 files changed, 22 insertions(+), 54 deletions(-)
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 4cc6a94..36e79d2 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -1634,6 +1634,20 @@ static int rcu_cpu_kthread(void *arg)
+>   * to manipulate rcu_cpu_kthread_task.  There might be another CPU
+>   * attempting to access it during boot, but the locking in kthread_bind()
+>   * will enforce sufficient ordering.
+> + *
+> + * Please note that we cannot simply refuse to wake up the per-CPU
+> + * kthread because kthreads are created in TASK_UNINTERRUPTIBLE state,
+> + * which can result in softlockup complaints if the task ends up being
+> + * idle for more than a couple of minutes.
+> + *
+> + * However, please note also that we cannot bind the per-CPU kthread to its
+> + * CPU until that CPU is fully online.  We also cannot wait until the
+> + * CPU is fully online before we create its per-CPU kthread, as this would
+> + * deadlock the system when CPU notifiers tried waiting for grace
+> + * periods.  So we bind the per-CPU kthread to its CPU only if the CPU
+> + * is online.  If its CPU is not yet fully online, then the code in
+> + * rcu_cpu_kthread() will wait until it is fully online, and then do
+> + * the binding.
+>   */
+>  static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
+>  {
+> @@ -1646,12 +1660,14 @@ static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
+>         t = kthread_create(rcu_cpu_kthread, (void *)(long)cpu, "rcuc%d", cpu);
+>         if (IS_ERR(t))
+>                 return PTR_ERR(t);
+> -       kthread_bind(t, cpu);
+> +       if (cpu_online(cpu))
+> +               kthread_bind(t, cpu);
+>         per_cpu(rcu_cpu_kthread_cpu, cpu) = cpu;
+>         WARN_ON_ONCE(per_cpu(rcu_cpu_kthread_task, cpu) != NULL);
+> -       per_cpu(rcu_cpu_kthread_task, cpu) = t;
+>         sp.sched_priority = RCU_KTHREAD_PRIO;
+>         sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
+> +       per_cpu(rcu_cpu_kthread_task, cpu) = t;
+> +       wake_up_process(t); /* Get to TASK_INTERRUPTIBLE quickly. */
+>         return 0;
+>  } 
+
+I'm not quite seeing how this is working though, I cannot find any code
+in rcu_cpu_kthread() that sets the thread affinity (not a hunk in this
+patch that adds it).
