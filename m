@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839Ab1FJMkR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 08:40:17 -0400
-Received: from bld12.srv.portugalmail.net ([195.170.168.139]:49282 "EHLO
-	bld12.srv.portugalmail.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756011Ab1FJMkO convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 08:40:14 -0400
-X-Greylist: delayed 550 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Jun 2011 08:40:14 EDT
-Message-ID: <20110610133100.87kbvb88zoc8c8w8@webmail.iol.pt>
-X-Priority: 3 (Normal)
-Date: Fri, 10 Jun 2011 13:31:00 +0100
-From: abignn@iol.pt
-To: undisclosed-recipients:;
-Subject: Temporary Fund Keeping
+	id S1756689Ab1FJMeq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 08:34:46 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:60402 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755770Ab1FJMeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 08:34:44 -0400
+Date: Fri, 10 Jun 2011 14:34:16 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        efault@gmx.de, Arne Jansen <lists@die-jansens.de>,
+        PaulMundt <lethal@linux-sh.org>, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 1/3] printk: Release console_sem after logbuf_lock
+Message-ID: <20110610123416.GA12451@elte.hu>
+References: <20110609130647.937204592@chello.nl>
+ <20110609131307.493181962@chello.nl>
+ <20110609130617.f8aca966.akpm@linux-foundation.org>
+ <20110609202707.GA28951@elte.hu>
+ <1307652883.2497.1028.camel@laptop>
+ <20110609140714.fc9ea187.akpm@linux-foundation.org>
+ <alpine.LSU.2.00.1106091655560.2710@sister.anvils>
+ <1307705311.3941.118.camel@twins>
+ <1307709030.3941.134.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=UTF-8;
-	DelSp="Yes";
-	format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
+In-Reply-To: <1307709030.3941.134.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Temporary Fund Keeping
 
-I am representing the interest of a developing country nationale who
-wants to move funds he deposited in Spain to a private account  in
-another country so as to keep the money away and safe for two years
-only. After this period, the money will  be transfered to the country
-where an onward investment will be  carried out with it.
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-This assistance is legitimate and my client is willing to give out
-some reward. If you are willing to assist in this transaction, please,
-contact me so as to provide you with more details.
+> thinking that that would have my printk stmts appear on both the 
+> fbcon as well as the serial line. But they fail to appear on the 
+> latency tracer (current max was 165us waking an idle cpu).
 
-Regards
+Have you removed this bit:
 
-Dominique Ary
-(Finance And Investment Attorney)
-Madrid, Spain
-Procteted Official Email: ghern@ozu.es
-Direct line:   +34 632 136 842
+                spin_unlock(&logbuf_lock);
+                stop_critical_timings();        /* don't trace print latency */
+                call_console_drivers(_con_start, _log_end);
+                start_critical_timings();
+                local_irq_restore(flags);
 
+which hides the latencies from the latency tracer?
 
+Thanks,
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-________________________________________________________________________________
-COFIDIS Maxicredito. Ate' €10.000 sem burocracias. Resposta on-line!
-Clique aqui para saber mais http://www.iol.pt/correio/rodape.php?dst=0802273
+	Ingo
