@@ -1,81 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755203Ab1FJIRe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 04:17:34 -0400
-Received: from lucidpixels.com ([75.144.35.66]:56269 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753862Ab1FJIRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 04:17:32 -0400
-Date: Fri, 10 Jun 2011 04:17:31 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: LKML <linux-kernel@vger.kernel.org>, Alan Piszcz <ap@solarrain.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: 2.6.39: crash w/threadirqs option enabled
-In-Reply-To: <alpine.LFD.2.02.1105201819310.3078@ionos>
-Message-ID: <alpine.DEB.2.02.1106100414550.32450@p34.internal.lan>
-References: <alpine.DEB.2.02.1105200405210.24033@p34.internal.lan> <alpine.LFD.2.02.1105201445300.3078@ionos> <alpine.DEB.2.02.1105200850080.19553@p34.internal.lan> <alpine.LFD.2.02.1105201528500.3078@ionos> <alpine.DEB.2.02.1105200945300.19553@p34.internal.lan>
- <alpine.LFD.2.02.1105201712501.3078@ionos> <alpine.DEB.2.02.1105201210030.19553@p34.internal.lan> <alpine.LFD.2.02.1105201819310.3078@ionos>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755191Ab1FJITw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 04:19:52 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39816 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755051Ab1FJITu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 04:19:50 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DF1D396.5000404@jp.fujitsu.com>
+Date: Fri, 10 Jun 2011 17:19:34 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: minchan.kim@gmail.com
+CC: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, aarcange@redhat.com,
+        riel@redhat.com, hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: [PATCH v3 01/10] compaction: trivial clean up acct_isolated
+References: <cover.1307455422.git.minchan.kim@gmail.com> <71a79768ff8ef356db09493dbb5d6c390e176e0d.1307455422.git.minchan.kim@gmail.com>
+In-Reply-To: <71a79768ff8ef356db09493dbb5d6c390e176e0d.1307455422.git.minchan.kim@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2011/06/07 23:38), Minchan Kim wrote:
+> acct_isolated of compaction uses page_lru_base_type which returns only
+> base type of LRU list so it never returns LRU_ACTIVE_ANON or LRU_ACTIVE_FILE.
+> In addtion, cc->nr_[anon|file] is used in only acct_isolated so it doesn't have
+> fields in conpact_control.
+> This patch removes fields from compact_control and makes clear function of
+> acct_issolated which counts the number of anon|file pages isolated.
+> 
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
 
-On Fri, 20 May 2011, Thomas Gleixner wrote:
-
-> On Fri, 20 May 2011, Justin Piszcz wrote:
->> On Fri, 20 May 2011, Thomas Gleixner wrote:
->>
->>> On Fri, 20 May 2011, Justin Piszcz wrote:
->>>> On Fri, 20 May 2011, Thomas Gleixner wrote:
->>>>> Does it crash right away or just when doing something particular?
->>>> It crashed at 2100, this is when I run a few I/O intensive processes:
->>>> - backup (dump ext4 filesystem -> to a separate raid device)
->>>> - backup (dump ext4 on remote host -> to separate raid device)
->>>> - backup (dump xfs on remote host -> to separate raid device)
->>>>
->>>> This looks like it is what caused it to crash.
->>>
->>> That narrows it down somewhat, but does not give us a clue at all :(
->>>
->>>>> Is the box fully dead after the crash ?
->>>> The host was online and I went away for awhile, when I came back the
->>>> system
->>>> had rebooted on its own (as I lost all of my X windows/etc).
->>>
->>> Hmm. Did you have panic_timeout set ?
->>
->> Hi,
->>
->> No, I do not use panic_timeout or any type of watchdog that would reboot
->> the system upon a lockup/crash.
->
-> Yuck, that means it ran into a triple fault. Nasty. I have no idea how
-> to debug that at the moment and I was not able to reproduce on one of
-> my test systems. Maybe I need to try harder.
->
-> Thanks,
->
-> 	tglx
->
->
->
->
-
-Hi,
-
-Crashed again and it rebooted too:
-
-reboot   system boot  2.6.39             Thu Jun  9 23:58 - 04:05  (04:06) 
-user1      pts/0        X                Thu Jun  9 19:25 - 19:30  (00:04)
-user1      pts/10       X                Thu Jun  9 18:23 - crash  (05:35)
-
-Any thoughts on what could be causing this?
-Should I go back to 2.6.38?
-
-Justin.
 
