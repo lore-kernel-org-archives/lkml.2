@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757795Ab1FJTKC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 15:10:02 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:59629 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab1FJTKA (ORCPT
+	id S1757793Ab1FJTYG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 15:24:06 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:43065 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755686Ab1FJTYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 15:10:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=PGXXbKNopyfqYkImUbZbBY52WFq/IMqo1PGOKLghBBseep1HzekC/lf7Ffa0r3fJuw
-         Q8v9uIsLzwHdOof1LVNjEJY9+qHSHV+nU53CY07i2zJhfG1PZ9EtkHtFkFbIjHiiuip5
-         TJmLt4lruLtPH+wLNqBa92Y3ev1mdP0nwSW98=
-Date: Fri, 10 Jun 2011 22:09:56 +0300
-From: Maxin B John <maxin.john@gmail.com>
-To: rdunlap@xenotime.net
-Cc: catalin.marinas@arm.com, dbaluta@ixiacom.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Documentation: update kmemleak architecture support
- info
-Message-ID: <20110610190956.GA2742@maxin>
+	Fri, 10 Jun 2011 15:24:03 -0400
+Date: Fri, 10 Jun 2011 20:23:29 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Kyungmin Park <kmpark@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
+        thomas.abraham@linaro.org
+Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
+ Power Management
+Message-ID: <20110610192329.GA30496@srcf.ucam.org>
+References: <BANLkTinxeeSby_+tta8EhzCg3VbD6+=g+g@mail.gmail.com>
+ <20110610151121.GA2230@linux.vnet.ibm.com>
+ <20110610155954.GA25774@srcf.ucam.org>
+ <20110610165529.GC2230@linux.vnet.ibm.com>
+ <20110610170535.GC25774@srcf.ucam.org>
+ <20110610171939.GE2230@linux.vnet.ibm.com>
+ <20110610172307.GA27630@srcf.ucam.org>
+ <20110610175248.GF2230@linux.vnet.ibm.com>
+ <20110610180807.GB28500@srcf.ucam.org>
+ <20110610184738.GG2230@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20110610184738.GG2230@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> I think Daniel's suggestion is better, we don't have to worry about
->> changing the documentation every time we add a new architecture.
-I agree with that.
+On Fri, Jun 10, 2011 at 11:47:38AM -0700, Paul E. McKenney wrote:
 
-> Please send an updated patch without the currently-supported list
-> of architectures.
-Please find the updated patch below: 
+> And if I understand you correctly, then the patches that Ankita posted
+> should help your self-refresh case, along with the originally intended
+> the power-down case and special-purpose use of memory case.
 
-Signed-off-by: Maxin B. John <maxin.john@gmail.com>
----
-diff --git a/Documentation/kmemleak.txt b/Documentation/kmemleak.txt
-index 090e6ee..51063e6 100644
---- a/Documentation/kmemleak.txt
-+++ b/Documentation/kmemleak.txt
-@@ -11,7 +11,9 @@ with the difference that the orphan objects are not freed but only
- reported via /sys/kernel/debug/kmemleak. A similar method is used by the
- Valgrind tool (memcheck --leak-check) to detect the memory leaks in
- user-space applications.
--Kmemleak is supported on x86, arm, powerpc, sparc, sh, microblaze and tile.
-+
-+Please check DEBUG_KMEMLEAK dependencies in lib/Kconfig.debug for supported
-+architectures.
- 
- Usage
- -----
+Yeah, I'd hope so once we actually have capable hardware.
 
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
