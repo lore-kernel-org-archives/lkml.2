@@ -1,49 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab1FJKqT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 06:46:19 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57144 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab1FJKqR (ORCPT
+	id S1755618Ab1FJKxq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 06:53:46 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:15978 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755444Ab1FJKxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 06:46:17 -0400
-Date: Fri, 10 Jun 2011 11:45:51 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Timur Tabi <timur@freescale.com>, linuxppc-dev@lists.ozlabs.org,
-        alan@lxorguk.ukuu.org.uk, kumar.gala@freescale.com,
-        benh@kernel.crashing.org, greg@kroah.com, akpm@kernel.org,
-        cmetcalf@tilera.com, konrad.wilk@oracle.com,
-        linux-kernel@vger.kernel.org, linux-console@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 7/7] [v5] drivers/virt: introduce Freescale hypervisor
-	management driver
-Message-ID: <20110610104551.GB26441@sirena.org.uk>
-References: <1307646794-26374-1-git-send-email-timur@freescale.com> <201106092213.13755.arnd@arndb.de> <4DF12A94.6070605@freescale.com> <201106092233.08030.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201106092233.08030.arnd@arndb.de>
-X-Cookie: I had pancake makeup for brunch!
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Fri, 10 Jun 2011 06:53:43 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6372"; a="96850361"
+From: Tatyana Brokhman <tlinder@codeaurora.org>
+To: greg@kroah.com
+Cc: linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
+        ablay@codeaurora.org, Tatyana Brokhman <tlinder@codeaurora.org>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v3] usb:dummy_hcd: Force FS device connection according to module parameter
+Date: Fri, 10 Jun 2011 13:53:22 +0300
+Message-Id: <1307703207-14087-1-git-send-email-tlinder@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 09, 2011 at 10:33:07PM +0200, Arnd Bergmann wrote:
-> On Thursday 09 June 2011 22:18:28 Timur Tabi wrote:
+This patch adds a new module parameter to dummy_hcd: is_high_speed
+When set to false the connected device will be forced to operate in FS
+mode. The default of this parameter is true.
 
-> > Ok, I was really hoping to avoid doing this.  Like I said, binary compatibility
-> > is important, and changing the type will break my existing apps.  Are you
-> > insisting that I pick a new number?
+Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
 
-> I definitely insist that you have a proper interface in the driver at the
-> time that it gets merged, and that probably includes a collision-free
-> ioctl code.
+---
+ drivers/usb/gadget/dummy_hcd.c |   20 +++++++++++++++-----
+ 1 files changed, 15 insertions(+), 5 deletions(-)
 
-This sort of stuff is one of the issues that should be being factored in
-to any decision not to publish and submit the kernel code - ABIs that
-haven't been reviewed upstream may well have this sort of issue.
+diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
+index f0cdd13..8077811 100644
+--- a/drivers/usb/gadget/dummy_hcd.c
++++ b/drivers/usb/gadget/dummy_hcd.c
+@@ -72,13 +72,17 @@ MODULE_LICENSE ("GPL");
+ 
+ struct dummy_hcd_module_parameters {
+ 	bool is_super_speed;
++	bool is_high_speed;
+ };
+ 
+ static struct dummy_hcd_module_parameters mod_data = {
+-	.is_super_speed = false
++	.is_super_speed = false,
++	.is_high_speed = true,
+ };
+ module_param_named(is_super_speed, mod_data.is_super_speed, bool, S_IRUGO);
+ MODULE_PARM_DESC(is_super_speed, "true to simulate SuperSpeed connection");
++module_param_named(is_high_speed, mod_data.is_high_speed, bool, S_IRUGO);
++MODULE_PARM_DESC(is_high_speed, "true to simulate HighSpeed connection");
+ /*-------------------------------------------------------------------------*/
+ 
+ /* gadget side driver data structres */
+@@ -904,12 +908,15 @@ usb_gadget_probe_driver(struct usb_gadget_driver *driver,
+ 	dum->gadget.ep0 = &dum->ep [0].ep;
+ 	if (mod_data.is_super_speed)
+ 		dum->gadget.speed = driver->speed;
++	else if (mod_data.is_high_speed)
++		dum->gadget.speed = min_t(u8, USB_SPEED_HIGH, driver->speed);
+ 	else
+-		dum->gadget.speed = min((u8)USB_SPEED_HIGH, (u8)driver->speed);
++		dum->gadget.speed = USB_SPEED_FULL;
+ 	if (dum->gadget.speed < driver->speed)
+-		dev_dbg(udc_dev(dum), "This device can perform faster if"
+-				      " you connect it to a "
+-				      "SupeSpeed port...\n");
++		dev_dbg(udc_dev(dum), "This device can perform faster"
++				" if you connect it to a %s port...\n",
++			(driver->speed == USB_SPEED_SUPER ?
++			 "SuperSpeed" : "HighSpeed"));
+ 
+ 	if (dum->gadget.speed == USB_SPEED_SUPER) {
+ 		for (i = 0; i < DUMMY_ENDPOINTS; i++)
+@@ -2417,6 +2424,9 @@ static int __init init (void)
+ 	if (usb_disabled ())
+ 		return -ENODEV;
+ 
++	if (!mod_data.is_high_speed && mod_data.is_super_speed)
++		return -EINVAL;
++
+ 	the_hcd_pdev = platform_device_alloc(driver_name, -1);
+ 	if (!the_hcd_pdev)
+ 		return retval;
+-- 
+1.7.3.3
+
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
