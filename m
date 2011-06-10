@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab1FJJb4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 05:31:56 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:36735 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750774Ab1FJJby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 05:31:54 -0400
-Message-ID: <4DF1E482.7020000@kernel.dk>
-Date: Fri, 10 Jun 2011 11:31:46 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1754707Ab1FJJcH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 05:32:07 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:58173 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754540Ab1FJJcB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 05:32:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=MjOIGawwyyFWsamq09StiWyhmD4l3E21RM9fbJ7jYzB2/qHokYy+G4um3QIYUjO0l2
+         w2dT6naCq+sZtiFbqh3wJNXBVrf+gBImT62FARAmUnsp4KuMhoIO0h7xemBAEEi+yXhA
+         WZ6MDhfRwtrx96ZnBbFq9E/JxAw/Ggewogcmc=
+From: Francis Moreau <francis.moro@gmail.com>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        Andrew Morton <akpm@linux-foundation.org>, NeilBrown <neilb@suse.de>,
+        viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        apw@canonical.com, nbd@openwrt.org, hramrach@centrum.cz,
+        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu
+Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
+References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu>
+	<20110608153208.dc705cda.akpm@linux-foundation.org>
+	<20110609115934.3c53f78f@notabene.brown>
+	<20110608205233.ebfedc4d.akpm@linux-foundation.org>
+	<87wrgvb28a.fsf@tucsk.pomaz.szeredi.hu>
+	<20110609123843.77153b27.akpm@linux-foundation.org>
+	<877h8uzmsi.fsf@tucsk.pomaz.szeredi.hu> <21324.1307677721@jrobl>
+Date: Fri, 10 Jun 2011 11:31:55 +0200
+In-Reply-To: <21324.1307677721@jrobl> (J. R. Okajima's message of "Fri, 10 Jun
+	2011 12:48:41 +0900")
+Message-ID: <m2r572f2wk.fsf@gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Shaohua Li <shaohua.li@intel.com>, Tao Ma <tm@tao.ma>,
-        linux-kernel@vger.kernel.org
-Subject: Re: CFQ: async queue blocks the whole system
-References: <1307616577-6101-1-git-send-email-tm@tao.ma> <20110609141451.GD29913@redhat.com> <4DF0DD0F.8090407@tao.ma> <20110609153738.GF29913@redhat.com> <BANLkTinMp5_TS-=Y0ZsxB45RLQv18WCZDg@mail.gmail.com> <20110610091747.GC4183@redhat.com> <4DF1E1EB.8010808@kernel.dk> <20110610092922.GE4183@redhat.com>
-In-Reply-To: <20110610092922.GE4183@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-06-10 11:29, Vivek Goyal wrote:
-> On Fri, Jun 10, 2011 at 11:20:43AM +0200, Jens Axboe wrote:
->> On 2011-06-10 11:17, Vivek Goyal wrote:
->>> On Fri, Jun 10, 2011 at 09:19:12AM +0800, Shaohua Li wrote:
->>>
->>> [..]
->>>>> If there is no major advantage of draining sync requests before async
->>>>> is dispatched, I think this should be an easy fix.
->>>> I thought this is to avoid sync latency if we switch from an async
->>>> queue to sync queue later.
->>>
->>> Is it about the sync request latency which has already been dispatched? I 
->>> really wish that driver and disk should do some prioritazation for reads
->>> here and CFQ does not have to jump through hoops like drain sync requests
->>> before async requests are dispatched.
->>
->> That would never work. Are you suggesting putting that logic in all
->> drivers? Or relying on hardware to get the fairness right? Not going to
->> happen.
-> 
-> I was hoping that hardware does some prioritization. Well, in this case
-> even if hardware maintains FIFO behavior it should be good enough.
-> 
-> But I would not claim anything in this regard as I have never experimented
-> with it and have no idea that how sync latencies are impacted if we don't
-> drain the queue before dispathing WRITEs.
-> 
-> I was just wondering that with current generation hardware is it bad
-> enough that we need to keep this logic around?
+"J. R. Okajima" <hooanon05@yahoo.co.jp> writes:
 
-The logic for draining around sync/async switch isn't that old, in fact
-it dates only back to the last round of interactiveness fury. So yes,
-it's definitely needed. It made a big difference on hardware that was
-just out-of-the-store back then. I think you are putting way too much
-faith into the sanity and goals of companies making this hardware.
+[...]
 
+> Aufs was rejected merging because LKML people decided that linux
+> mainline will never include the union-type-filesystem but will include
+> the union-type-mount (eg. UnionMount).
+
+BTW, what is the current status of the union mount approach ?
+
+Thanks
 -- 
-Jens Axboe
-
+Francis
