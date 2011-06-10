@@ -1,151 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab1FJN3S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 09:29:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27341 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756477Ab1FJN3J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 09:29:09 -0400
-From: Jerome Marchand <jmarchan@redhat.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Jerome Marchand <jmarchan@redhat.com>
-Subject: [PATCH 4/4] Staging: zram: Replace mutex lock by a R/W semaphore
-Date: Fri, 10 Jun 2011 15:28:49 +0200
-Message-Id: <1307712529-9757-4-git-send-email-jmarchan@redhat.com>
-In-Reply-To: <1307712529-9757-3-git-send-email-jmarchan@redhat.com>
-References: <1307712529-9757-1-git-send-email-jmarchan@redhat.com>
- <1307712529-9757-2-git-send-email-jmarchan@redhat.com>
- <1307712529-9757-3-git-send-email-jmarchan@redhat.com>
+	id S1756778Ab1FJNa3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 09:30:29 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:50772 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756135Ab1FJNa2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 09:30:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=li/R/G6Tmc+yeVuHGUebl84tWJqr/XnT0aMjxun8oEl6miAb/9hgDaOusxALs6UI5I
+         Dn9zKfMqQJU9UOPSQeihEkwL5pbXzdj4Vh5ktjQOVmnTowrn2E2hHKtze7wDklis3xjq
+         T9FhpRiu1xqmD9bBb6UNHtoA+AXiXfN+ZGV5U=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Randy Dunlap <randy.dunlap@oracle.com>
+Subject: [GIT PULL] sched: Make sleep inside atomic detection work on !PREEMPT
+Date: Fri, 10 Jun 2011 15:30:18 +0200
+Message-Id: <1307712622-11104-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, nothing protects zram table from concurrent access.
-For instance, ZRAM_UNCOMPRESSED bit can be cleared by zram_free_page()
-called from a concurrent write between the time ZRAM_UNCOMPRESSED has
-been set and the time it is tested to unmap KM_USER0 in
-zram_bvec_write(). This ultimately leads to kernel panic.
+Ingo,
 
-Also, a read request can occurs when the page has been freed by a
-running write request and before it has been updated, leading to
-zero filled block being incorrectly read and "Read before write"
-error message.
+Please pull the sched/core branch that can be found at:
 
-This patch replace the current mutex by a rw_semaphore. It extends
-the protection to zram table (currently, only compression buffers are
-protected) and read requests (currently, only write requests are
-protected).
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	sched/core
 
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+Thanks,
+	Frederic
 ---
- drivers/staging/zram/zram_drv.c |   25 +++++++++++++------------
- drivers/staging/zram/zram_drv.h |    4 ++--
- 2 files changed, 15 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 54ad29d..c5fdc55 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -359,8 +359,6 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	    zram_test_flag(zram, index, ZRAM_ZERO))
- 		zram_free_page(zram, index);
- 
--	mutex_lock(&zram->lock);
--
- 	user_mem = kmap_atomic(page, KM_USER0);
- 
- 	if (is_partial_io(bvec))
-@@ -371,7 +369,6 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 
- 	if (page_zero_filled(uncmem)) {
- 		kunmap_atomic(user_mem, KM_USER0);
--		mutex_unlock(&zram->lock);
- 		if (is_partial_io(bvec))
- 			kfree(uncmem);
- 		zram_stat_inc(&zram->stats.pages_zero);
-@@ -388,7 +385,6 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			kfree(uncmem);
- 
- 	if (unlikely(ret != LZO_E_OK)) {
--		mutex_unlock(&zram->lock);
- 		pr_err("Compression failed! err=%d\n", ret);
- 		goto out;
- 	}
-@@ -402,7 +398,6 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 		clen = PAGE_SIZE;
- 		page_store = alloc_page(GFP_NOIO | __GFP_HIGHMEM);
- 		if (unlikely(!page_store)) {
--			mutex_unlock(&zram->lock);
- 			pr_info("Error allocating memory for "
- 				"incompressible page: %u\n", index);
- 			ret = -ENOMEM;
-@@ -420,7 +415,6 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	if (xv_malloc(zram->mem_pool, clen + sizeof(*zheader),
- 		      &zram->table[index].page, &store_offset,
- 		      GFP_NOIO | __GFP_HIGHMEM)) {
--		mutex_unlock(&zram->lock);
- 		pr_info("Error allocating memory for compressed "
- 			"page: %u, size=%zu\n", index, clen);
- 		ret = -ENOMEM;
-@@ -454,8 +448,6 @@ memstore:
- 	if (clen <= PAGE_SIZE / 2)
- 		zram_stat_inc(&zram->stats.good_compress);
- 
--	mutex_unlock(&zram->lock);
--
- 	return 0;
- 
- out:
-@@ -467,10 +459,19 @@ out:
- static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			int offset, struct bio *bio, int rw)
- {
--	if (rw == READ)
--		return zram_bvec_read(zram, bvec, index, offset, bio);
-+	int ret;
- 
--	return zram_bvec_write(zram, bvec, index, offset);
-+	if (rw == READ) {
-+		down_read(&zram->lock);
-+		ret = zram_bvec_read(zram, bvec, index, offset, bio);
-+		up_read(&zram->lock);
-+	} else {
-+		down_write(&zram->lock);
-+		ret = zram_bvec_write(zram, bvec, index, offset);
-+		up_write(&zram->lock);
-+	}
-+
-+	return ret;
- }
- 
- static void update_position(u32 *index, int *offset, struct bio_vec *bvec)
-@@ -701,7 +702,7 @@ static int create_device(struct zram *zram, int device_id)
- {
- 	int ret = 0;
- 
--	mutex_init(&zram->lock);
-+	init_rwsem(&zram->lock);
- 	mutex_init(&zram->init_lock);
- 	spin_lock_init(&zram->stat64_lock);
- 
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index 8acf9eb..abe5221 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -107,8 +107,8 @@ struct zram {
- 	void *compress_buffer;
- 	struct table *table;
- 	spinlock_t stat64_lock;	/* protect 64-bit stats */
--	struct mutex lock;	/* protect compression buffers against
--				 * concurrent writes */
-+	struct rw_semaphore lock; /* protect compression buffers and table
-+				   * against concurrent read and writes */
- 	struct request_queue *queue;
- 	struct gendisk *disk;
- 	int init_done;
--- 
-1.6.2.5
+Frederic Weisbecker (4):
+      sched: Remove pointless in_atomic() definition check
+      sched: Isolate preempt counting in its own config option
+      sched: Make sleeping inside spinlock detection working in !CONFIG_PREEMPT
+      sched: Generalize sleep inside spinlock detection
 
+
+ Documentation/DocBook/kernel-hacking.tmpl  |    2 +-
+ Documentation/SubmitChecklist              |    2 +-
+ Documentation/development-process/4.Coding |    2 +-
+ Documentation/ja_JP/SubmitChecklist        |    2 +-
+ Documentation/zh_CN/SubmitChecklist        |    2 +-
+ include/linux/bit_spinlock.h               |    2 +-
+ include/linux/hardirq.h                    |    4 ++--
+ include/linux/kernel.h                     |    2 +-
+ include/linux/pagemap.h                    |    4 ++--
+ include/linux/preempt.h                    |   26 +++++++++++++++++---------
+ include/linux/rcupdate.h                   |   12 ++++++------
+ include/linux/sched.h                      |    2 +-
+ kernel/Kconfig.preempt                     |    3 +++
+ kernel/sched.c                             |    6 ++----
+ lib/Kconfig.debug                          |    9 ++++++---
+ 15 files changed, 46 insertions(+), 34 deletions(-)
