@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750987Ab1FJEAR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 00:00:17 -0400
-Received: from ausxipps301.us.dell.com ([143.166.148.223]:17549 "EHLO
-	ausxipps301.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab1FJEAP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 00:00:15 -0400
-X-Loopcount0: from 143.166.82.43
-Date: Thu, 9 Jun 2011 23:00:12 -0500
-From: Matt Domsch <Matt_Domsch@dell.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>, Mike Waychison <mikew@google.com>
-Cc: Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] pstore: Add extra context for writes and erases
-Message-ID: <20110610040012.GA14233@auslistsprd01.us.dell.com>
-References: <1307389135-8150-1-git-send-email-mjg@redhat.com> <1307389135-8150-2-git-send-email-mjg@redhat.com> <BANLkTinHYQ14A7vzTxA1c2frxUVE6HWNQg@mail.gmail.com> <BANLkTimESgP1FMzP8cbKcECLSbEY9Mj3bQ@mail.gmail.com> <20110606214735.GA4026@srcf.ucam.org>
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="zhXaljGHf11kAtnf"
-Content-Disposition: inline
-In-Reply-To: <20110606214735.GA4026@srcf.ucam.org>
-User-Agent: Mutt/1.5.11
+	id S1751546Ab1FJED0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 00:03:26 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56219 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751178Ab1FJEDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 00:03:23 -0400
+Message-ID: <4DF19803.9040407@cn.fujitsu.com>
+Date: Fri, 10 Jun 2011 12:05:23 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 0/15] KVM: optimize for MMIO handled
+References: <4DEE205E.8000601@cn.fujitsu.com> <4DF0789B.2050401@redhat.com>
+In-Reply-To: <4DF0789B.2050401@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-10 12:03:07,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-10 12:03:09,
+	Serialize complete at 2011-06-10 12:03:09
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/09/2011 03:39 PM, Avi Kivity wrote:
 
---zhXaljGHf11kAtnf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> First, I think we should consider dropping bypass_guest_pf completely, just so we have less things to think about.
+> 
 
-On Mon, Jun 06, 2011 at 10:47:35PM +0100, Matthew Garrett wrote:
-> On Mon, Jun 06, 2011 at 02:43:46PM -0700, Tony Luck wrote:
->=20
-> > Does someone claim maintainership of  drivers/firmware/efivars.c for pa=
-rt3?
->=20
-> I think that'd be Matt.
+I agree.
 
-I'm out of the office this week and next, and haven't looked at it
-closely.  Mike Waychison has done most of the editing in there
-recently, I'd be happy if he wishes to be considered the maintainer
-thereof. =20
+> I'm also not sure RCU is enough protection - we can unlink a page in the middle of a hierarchy,
 
-Thanks,
-Matt
+I think it is ok, it just likes the page structure cache of real CPU, we can use
+the old mapping or new mapping here, if we missed, page fault path is called, it can 
+fix the problem for us.
 
---=20
-Matt Domsch
-Technology Strategist
-Dell | Office of the CTO
+> and on i386 this causes an invalid pointer to appear when we fetch the two halves.  But I guess, if the cpu can do it, so can we.
+> 
 
---zhXaljGHf11kAtnf
-Content-Type: application/pgp-signature
-Content-Disposition: inline
+Ah, maybe the cpu can not do it, we need a light way to get spte for i386 host...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.2 (GNU/Linux)
+> Maybe we can do something like
+> 
+> again:
+>   fetch pointer to last level spte using RCU
+>   if failed:
+>        take lock
+>        build spte hierarchy
+>        drop lock
+>        goto again
+>   if sync:
+>       if mmio:
+>           do mmio
+>           return
+>       return
+>   walk guest table
+>   install spte
+>   if mmio:
+>      do mmio
+> 
+> (sync is always false for tdp)
+> 
 
-iQEVAwUBTfGWzFq36sXWI9AEAQiszgf+OjydhEbLvoLQGN/y7VMhyb8Pn3eKqx2Z
-jShb1gH0vtkL9peKI7+he9GZIpWOHWbdrWLFtaOHOm86p9ahUJKtdnMN1XzQ3yMB
-4DOLvhxvr3R8YyLzZhGy4zu5FOlTlfcwoafwqOri4gbZDDqZwzgmjIQgWt/+qrwT
-ulG2MEOAn8ag1Uwv3pQaHjvkwaXdTKpE0kC2sC32FDcWkqD/6W7yVhAN+tk5GcCF
-sG4dWmJTFDA6Y821dqNCssC8mB+HKF3bGEhziJSvVkc4AQ4/Z+yr1lduMYOJi0Xp
-g+YgzJQ7A1qNunrTozz5IF7vnCxiAMkGLGCFB/Rwiv9SsOAFaxW+sA==
-=d0fg
------END PGP SIGNATURE-----
+It seams it is more complex, the origin way is:
 
---zhXaljGHf11kAtnf--
+fetch last level spte
+if failed or it is not a mmio spte:
+	call page fault
+do mmio
+
+and it has little heavy sine we need to walk guest page table,
+and build spte under mmu-lock.
+
+Maybe i missed your meaning, could you please tell me the advantage? :-(
+
