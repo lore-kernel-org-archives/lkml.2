@@ -1,213 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571Ab1FJJCQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 05:02:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44402 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752211Ab1FJJCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 05:02:11 -0400
-Date: Fri, 10 Jun 2011 11:01:41 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: "Amir G." <amir73il@users.sourceforge.net>
-cc: Mike Snitzer <snitzer@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
-        linux-ext4@vger.kernel.org, tytso@mit.edu,
-        linux-kernel@vger.kernel.org, lvm-devel@redhat.com,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>, thornber@redhat.com
-Subject: Re: LVM vs. Ext4 snapshots (was: [PATCH v1 00/30] Ext4 snapshots)
-In-Reply-To: <BANLkTikKRuPu_NX49vr0w-XeN0ZnWo+9vg@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1106101101020.4502@dhcp-27-109.brq.redhat.com>
-References: <BANLkTimyBGfg4+ovGsiGqpCz345qVmU_7A@mail.gmail.com> <BANLkTik20iYN4c9faKD9dzerehazWTwTFw@mail.gmail.com> <BANLkTikKRuPu_NX49vr0w-XeN0ZnWo+9vg@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1643337665-1307696506=:4502"
+	id S1753586Ab1FJJAP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 05:00:15 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44448 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751149Ab1FJJAM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 05:00:12 -0400
+Date: Fri, 10 Jun 2011 10:01:43 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Valerie Aurora <val@vaaconsulting.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Miklos Szeredi <miklos@szeredi.hu>, NeilBrown <neilb@suse.de>,
+        viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        apw@canonical.com, nbd@openwrt.org, hramrach@centrum.cz,
+        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu
+Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
+Message-ID: <20110610100143.28037551@lxorguk.ukuu.org.uk>
+In-Reply-To: <BANLkTi=uWDSw96v0Y4W94NZvgD=j=3r3zg@mail.gmail.com>
+References: <20110609125114.8dff08da.akpm@linux-foundation.org>
+	<BANLkTi=uWDSw96v0Y4W94NZvgD=j=3r3zg@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+> 1. Al Viro and Christoph Hellwig bring up the same locking problems
+> *every single time* someone proposes a copy-up in-kernel file system,
+> and *every single time* they are dismissed or hand-waved.  
 
---8323328-1643337665-1307696506=:4502
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Perhaps you can detail the locking problem in question ?
 
-On Fri, 10 Jun 2011, Amir G. wrote:
+Alan
 
-> CC'ing lvm-devel and fsdevel
-> 
-> 
-> On Wed, Jun 8, 2011 at 9:26 PM, Amir G. <amir73il@users.sourceforge.net> wrote:
-> > On Wed, Jun 8, 2011 at 7:19 PM, Mike Snitzer <snitzer@redhat.com> wrote:
-> >> On Wed, Jun 8, 2011 at 11:59 AM, Amir G. <amir73il@users.sourceforge.net> wrote:
-> >>> On Wed, Jun 8, 2011 at 6:38 PM, Lukas Czerner <lczerner@redhat.com> wrote:
-> >>>> Amir said:
-> >>
-> >>>>> The question of whether the world needs ext4 snapshots is
-> >>>>> perfectly valid, but going back to the food analogy, I think it's
-> >>>>> a case of "the proof of the pudding is in the eating".
-> >>>>> I have no doubt that if ext4 snapshots are merged, many people will use it.
-> >>>>
-> >>>> Well, I would like to have your confidence. Why do you think so ? They
-> >>>> will use it for what ? Doing backups ? We can do this easily with LVM
-> >>>> without any risk of compromising existing filesystem at all. On desktop
-> >>>
-> >>> LVM snapshots are not meant to be long lived snapshots.
-> >>> As temporary snapshots they are fine, but with ext4 snapshots
-> >>> you can easily retain monthly/weekly snapshots without the
-> >>> need to allocate the space for it in advance and without the
-> >>> 'vanish' quality of LVM snapshots.
-> >>
-> >> In that old sf.net wiki you say:
-> >> Why use Next3 snapshots and not LVM snapshots?
-> >> * Performance: only small overhead to write performance with snapshots
-> >>
-> >> Fair claim against current LVM snapshot (but not multisnap).
-> >>
-> >> In this thread you're being very terse on the performance hit you
-> >> assert multisnap has that ext4 snapshots does not.  Can you please be
-> >> more specific?
-> >>
-> >> In your most recent post it seems you're focusing on "LVM snapshots"
-> >> and attributing the deficiencies of old-style LVM snapshots
-> >> (non-shared exception store causing N-way copy-out) to dm-multisnap?
-> >>
-> >> Again, nobody will dispute that the existing dm-snapshot target has
-> >> poor performance that requires snapshots be short-lived.  But
-> >> multisnap does _not_ suffer from those performance problems.
-> >>
-> >> Mike
-> >>
-> >
-> > Hi Mike,
-> >
-> > I am glad that you joined the debate and I am going to start a fresh
-> > thread for that occasion, to give your question the proper attention.
-> >
-> > In my old next3.sf.net wiki, which I do update from time to time,
-> > I listed 4 advantages of Ext4 (then next3) snapshots over LVM:
-> > * Performance: only small overhead to write performance with snapshots
-> > * Scalability: no extra overhead per snapshot
-> > * Maintenance: no need to pre-allocate disk space for snapshots
-> > * Persistence: snapshots don't vanish when disk is full
-> >
-> > As far as I know, the only thing that has changed from dm-snap
-> > to dm-multisnap is the Scalability.
-> >
-> > Did you resolve the Maintenance and Persistence issues?
-> >
-> > With Regards to Performance, Ext4 snapshots are inherently different
-> > then LVM snapshots and have near zero overhead to write performance
-> > as the following benchmark, which I presented on LSF, demonstrates:
-> > http://global.phoronix-test-suite.com/index.php?k=profile&u=amir73il-4632-11284-26560
-> >
-> > There are several reasons for the near zero overhead:
-> >
-> > 1. Metadata buffers are always in cache when performing COW,
-> > so there is no extra read I/O and write I/O of the copied pages is handled
-> > by the journal (when flushing the snapshot file dirty pages).
-> >
-> > 2. Data blocks are never copied
-> > The move-on-write technique is used to re-allocate data blocks on rewrite
-> > instead of copying them.
-> > This is not something that can be done when the snapshot is stored on
-> > external storage, but it can done when the snapshot file lives in the fs.
-> >
-> > 3. New (= after last snapshot take) allocated blocks are never copied
-> > nor reallocated on rewrite.
-> > Ext4 snapshots uses the fs block bitmap, to know which blocks were allocated
-> > at the time the last snapshot was taken, so new blocks are just out of the game.
-> > For example, in the workload of a fresh kernel build and daily snapshots,
-> > the creation and deletion of temp files causes no extra I/O overhead whatsoever.
-> >
-> > So, yes, I know. I need to run a benchmark of Ext4 snapshots vs. LVM multisnap
-> > and post the results. When I'll get around to it I'll do it.
-> > But I really don't think that performance is how the 2 solutions
-> > should be compared.
-> >
-> > The way I see it, LVM snapshots are a complementary solution and they
-> > have several advantages over Ext4 snapshots, like:
-> > * Work with any FS
-> > * Writable snapshots and snapshots of snapshots
-> > * Merge a snapshot back to the main vol
-> >
-> > We actually have one Google summer of code project that is going to export
-> > an Ext4 snapshot to an LVM snapshot, in order to implement the "revert
-> > to snapshot"
-> > functionality, which Ext4 snapshots is lacking.
-> >
-> > I'll be happy to answer more question regarding Ext4 snapshots.
-> >
-> > Thanks,
-> > Amir.
-> >
-> 
-
-Adding ejt into discussion.
-
-> 
-> Hi Mike,
-> 
-> In the beginning of this thread I wrote that "competition is good
-> because it makes us modest",
-> so now I have to live up to this standard and apologize for not
-> learning the new LVM
-> implementation properly before passing judgment.
-> 
-> To my defense, I could not find any design papers and benchmarks on multisnap
-> until Christoph had pointed me to some (and was too lazy to read the code...)
-> 
-> Anyway, it was never my intention to bad mouth LVM. I think LVM is a very useful
-> tool and the new multisnap and thinp targets look very promising.
-> 
-> For the sake of letting everyone understand the differences and trade
-> offs between
-> LVM and ext4 snapshots, so ext4 snapshots can get a fair trial, I need
-> to ask you
-> some questions about the implementation, which I could not figure out by myself
-> from reading the documents.
-> 
-> 1. Crash resistance
-> How is multisnap handling system crashes?
-> Ext4 snapshots are journaled along with data, so they are fully
-> resistant to crashes.
-> Do you need to keep origin target writes pending in batches and issue FUA/flush
-> request for the metadata and data store devices?
-> 
-> 2. Performance
-> In the presentation from LinuxTag, there are 2 "meaningless benchmarks".
-> I suppose they are meaningless because the metadata is linear mapping
-> and therefor all disk writes and read are sequential.
-> Do you have any "real world" benchmarks?
-> I am guessing that without the filesystem level knowledge in the thin
-> provisioned target,
-> files and filesystem metadata are not really laid out on the hard
-> drive as the filesystem
-> designer intended.
-> Wouldn't that be causing a large seek overhead on spinning media?
-> 
-> 3. ENOSPC
-> Ext4 snapshots will get into readonly mode on unexpected ENOSPC situation.
-> That is not perfect and the best practice is to avoid getting to
-> ENOSPC situation.
-> But most application do know how to deal with ENOSPC and EROFS gracefully.
-> Do you have any "real life" experience of how applications deal with
-> blocking the
-> write request in ENOSPC situation?
-> Or what is the outcome if someone presses the reset button because of an
-> unexplained (to him) system halt?
-> 
-> 4. Cache size
-> At the time, I examined using ZFS on an embedded system with 512MB RAM.
-> I wasn't able to find any official requirements, but there were
-> several reports around
-> the net saying that running ZFS with less that 1GB RAM is a performance killer.
-> Do you have any information about recommended cache sizes to prevent
-> the metadata store from being a performance bottleneck?
-> 
-> Thank you!
-> Amir.
-> 
-
--- 
---8323328-1643337665-1307696506=:4502--
