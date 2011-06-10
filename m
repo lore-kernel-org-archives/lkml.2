@@ -1,75 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905Ab1FJEav (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 00:30:51 -0400
-Received: from mailx.hitachi.co.jp ([133.145.228.49]:63905 "EHLO
-	mailx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751371Ab1FJEau (ORCPT
+	id S1751518Ab1FJEhU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 00:37:20 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43118 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733Ab1FJEhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 00:30:50 -0400
-X-AuditID: b753bd60-a0a78ba0000050a4-fb-4df19c85bc3d
-X-AuditID: b753bd60-a0a78ba0000050a4-fb-4df19c85bc3d
-Message-ID: <4DF19C7D.2080403@hitachi.com>
-Date: Fri, 10 Jun 2011 13:24:29 +0900
-From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        pp-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH -tip v4 0/7] perf: Introduce branch sub commands
-References: <20110526050246.30011.86048.stgit@localhost6.localdomain6> <20110526132833.GC21815@nowhere> <4DDE7EAD.7000603@gmail.com> <4DE39C31.1070600@hitachi.com> <4DE3B724.3020203@gmail.com>
-In-Reply-To: <4DE3B724.3020203@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 10 Jun 2011 00:37:17 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 10 Jun 2011 13:30:21 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: [PATCH] [BUGFIX] update mm->owner even if no next owner.
+Message-Id: <20110610133021.2eaaf0da.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110610125551.385ea7ed.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110609212956.GA2319@redhat.com>
+	<BANLkTikCfWhoLNK__ringzy7KjKY5ZEtNb3QTuX1jJ53wNNysA@mail.gmail.com>
+	<BANLkTikF7=qfXAmrNzyMSmWm7Neh6yMAB8EbBp7oLcfQmrbDjA@mail.gmail.com>
+	<20110610091355.2ce38798.kamezawa.hiroyu@jp.fujitsu.com>
+	<alpine.LSU.2.00.1106091812030.4904@sister.anvils>
+	<20110610113311.409bb423.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110610121949.622e4629.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110610125551.385ea7ed.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/05/31 0:26), David Ahern wrote:
-> On 05/30/2011 07:31 AM, Akihiro Nagai wrote:
->>> The sample address can be converted to symbols and the output can be
->>> added to perf-script rather easily. Attached is an example. I was going
->>> to submit it back in April and got distracted. I'll rebase, move the
->>> addr->sym conversion to a function and submit later today.
->> OK.
->> I agreed with implementing it on perf script.
->> I'd like to try it.
->
-> Updated patch. It applies on top of:
->    http://lkml.org/lkml/2011/5/27/385
-It looks good.
 
->
-> Hopefully for BTS you only have to change the sample_addr_correlates_sym
-> function.
-Yes.
-I'd like to enhance perf-script like this:
+I think this can be a fix. 
+maybe good to CC Oleg.
+==
+>From dff52fb35af0cf36486965d19ee79e04b59f1dc4 Mon Sep 17 00:00:00 2001
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Date: Fri, 10 Jun 2011 13:15:14 +0900
+Subject: [PATCH] [BUGFIX] update mm->owner even if no next owner.
 
-# perf script -f ip,addr,comm,sym,dso
+A panic is reported.
 
-output format is:
-<comm> <ip> <sym_ip> <dso_ip> <addr> <sym_addr> <dso_addr>
+> Call Trace:
+>  [<ffffffff81139792>] mem_cgroup_from_task+0x15/0x17
+>  [<ffffffff8113a75a>] __mem_cgroup_try_charge+0x148/0x4b4
+>  [<ffffffff810493f3>] ? need_resched+0x23/0x2d
+>  [<ffffffff814cbf43>] ? preempt_schedule+0x46/0x4f
+>  [<ffffffff8113afe8>] mem_cgroup_charge_common+0x9a/0xce
+>  [<ffffffff8113b6d1>] mem_cgroup_newpage_charge+0x5d/0x5f
+>  [<ffffffff81134024>] khugepaged+0x5da/0xfaf
+>  [<ffffffff81078ea0>] ? __init_waitqueue_head+0x4b/0x4b
+>  [<ffffffff81133a4a>] ? add_mm_counter.constprop.5+0x13/0x13
+>  [<ffffffff81078625>] kthread+0xa8/0xb0
+>  [<ffffffff814d13e8>] ? sub_preempt_count+0xa1/0xb4
+>  [<ffffffff814d5664>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff814ce858>] ? retint_restore_args+0x13/0x13
+>  [<ffffffff8107857d>] ? __init_kthread_worker+0x5a/0x5a
 
-actual output sample is:
-ls 0xffffffff81460b92 common_interrupt /lib/modules/3.0/build/vmlinux 0x0000003e9b000b20 _start /lib64/ld-2.13.so
-ls 0x0000003e9b000b23 _start /lib64/ld-2.13.so 0x0000003e9b004540 _dl_start /lib64/ld-2.13.so
-...
+The code is.
+>         return container_of(task_subsys_state(p, mem_cgroup_subsys_id),
+>                                 struct mem_cgroup, css);
 
-By specifying 'ip' and 'addr' together, perf-script resolves
-symbol and dso's path about both of 'ip' and 'addr'.
 
->
-> I still need to look into out why some of the addresses for page-faults
-> are not resolving to symbols.
-I'd like to improve it referring perf branch's source codes.
+What happens here is accssing a freed task struct "p" from mm->owner.
+So, it's doubtful that mm->owner points to freed task struct.
 
-Thank you.
+At thread exit, we need to handle mm->owner. If exitting-thread == mm->owner,
+we modify mm->owner to points to other exisiting task. But, we do not update
+mm->owner when there are no more threads. But if a kernel thread, like khugepaged,
+picks up a mm_struct without updating mm->users, there is a trouble.
 
->
-> David
+When mm_users shows that the task is the last task belongs to mm.
+mm->owner is not updated and remained to point to the task. So, in this case,
+mm->owner points to a not exisiting task.  This was good because if there
+are no thread, no charge happens in old days. But now, we have ksm and
+khugepaged.
+
+rcu_read_lock() used in memcg is of no use because mm->owner can be
+freed before we take rcu_read_lock.
+Then, mm->owner should be cleared if there are no next owner.
+
+Reported-by: Hugh Dickins <hughd@google.com>
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ kernel/exit.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 20a4064..dbc3736 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -582,8 +582,10 @@ void mm_update_next_owner(struct mm_struct *mm)
+ 	struct task_struct *c, *g, *p = current;
+ 
+ retry:
+-	if (!mm_need_new_owner(mm, p))
++	if (!mm_need_new_owner(mm, p)) {
++		rcu_assign_pointer(mm->owner, NULL);
+ 		return;
++	}
+ 
+ 	read_lock(&tasklist_lock);
+ 	/*
+@@ -617,7 +619,7 @@ retry:
+ 	 * most likely racing with swapoff (try_to_unuse()) or /proc or
+ 	 * ptrace or page migration (get_task_mm()).  Mark owner as NULL.
+ 	 */
+-	mm->owner = NULL;
++	rcu_assign_pointer(mm->owner, NULL);
+ 	return;
+ 
+ assign_new_owner:
+-- 
+1.7.4.1
+
+
