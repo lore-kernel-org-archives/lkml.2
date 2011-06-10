@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897Ab1FJJnA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 05:43:00 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:54656 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753445Ab1FJJm7 (ORCPT
+	id S1755023Ab1FJJnI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 05:43:08 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35674 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754942Ab1FJJnF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 05:42:59 -0400
-Date: Fri, 10 Jun 2011 11:42:42 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH 05/10] MCE: Mask out address mask bits below address
- granuality
-Message-ID: <20110610094242.GC1621@aftab>
-References: <4df13a522720782e51@agluck-desktop.sc.intel.com>
- <4df13c362729376e2@agluck-desktop.sc.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4df13c362729376e2@agluck-desktop.sc.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 10 Jun 2011 05:43:05 -0400
+Subject: Re: [PATCH 1/3] printk: Release console_sem after logbuf_lock
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        efault@gmx.de, Arne Jansen <lists@die-jansens.de>
+In-Reply-To: <1307698844.3941.105.camel@twins>
+References: <20110609130647.937204592@chello.nl>
+	 <20110609131307.493181962@chello.nl>
+	 <20110609130617.f8aca966.akpm@linux-foundation.org>
+	 <20110609202707.GA28951@elte.hu> <1307652883.2497.1028.camel@laptop>
+	 <20110609140714.fc9ea187.akpm@linux-foundation.org>
+	 <alpine.LSU.2.00.1106091655560.2710@sister.anvils>
+	 <20110609170804.1b76e853.akpm@linux-foundation.org>
+	 <20110610093354.GH27280@elte.hu>  <1307698844.3941.105.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 10 Jun 2011 11:42:46 +0200
+Message-ID: <1307698966.3941.106.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 09, 2011 at 05:33:42PM -0400, Luck, Tony wrote:
-> From: Andi Kleen <andi@firstfloor.org>
+On Fri, 2011-06-10 at 11:40 +0200, Peter Zijlstra wrote:
+> On Fri, 2011-06-10 at 11:33 +0200, Ingo Molnar wrote:
+> > * Andrew Morton <akpm@linux-foundation.org> wrote:
+> > 
+> > > > Some notes:
+> > > 
+> > > Stupid thing doesn't explain the magical locking though :( I'm 
+> > > 99.9% sure that putting an up() inside a spinlock_irq()ed region 
+> > > was deliberate.
+> > 
+> > My guess would be it's done so that pending irqs that have queued up 
+> > during our current printk-ing activities do not hit us with the 
+> > console still locked.
 > 
-> SER enabled systems report the address granuality for each
-> reported address in a machine check. But the bits below
-> the granuality are undefined. Mask them out before
-> logging the machine check.
+> Ah, so we already flushed the buffer, but have console_sem locked, so
+> any interrupt that comes in and prints something will place it in the
+> buffer but find console_sem is taken, so not flush it.
 > 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> Signed-off-by: Tony Luck <tony.luck@intel.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce.c |   12 +++++++++++-
->  1 files changed, 11 insertions(+), 1 deletions(-)
+> Then when we're back to doing up() the buffer is filled and nobody will
+> flush it.
 > 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 0349e87..ffc8d11 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -539,8 +539,18 @@ static void mce_read_aux(struct mce *m, int i)
->  {
->  	if (m->status & MCI_STATUS_MISCV)
->  		m->misc = mce_rdmsrl(MSR_IA32_MCx_MISC(i));
-> -	if (m->status & MCI_STATUS_ADDRV)
-> +	if (m->status & MCI_STATUS_ADDRV) {
->  		m->addr = mce_rdmsrl(MSR_IA32_MCx_ADDR(i));
-> +
-> +		/*
-> +		 * Mask the reported address by the reported granuality.
-> +		 */
-> +		if (mce_ser && (m->status & MCI_STATUS_MISCV)) {
-> +			u8 shift = m->misc & 0x1f;
-> +			m->addr >>= shift;
-> +			m->addr <<= shift;
-> +		}
-> +	}
->  }
->  
->  DEFINE_PER_CPU(unsigned, mce_poll_count);
+> I guess, we can write it like:
+> 
+> 	spin_unlock(&logbuf_lock);
+> 	up(&console_sem);
+> 	local_irq_restore(flags);
+> 
+> which would keep interrupt disabled over up(), but have the logbuf_lock
+> dropped.
 
-s/granuality/granularity/g;
+Ah, not so, another cpu could start printing stuff.
 
-I would very much like to know how you guys got 'granularity' wrong
-_three_ times in one small patch?!!
-
-:-)
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+So what we need is another test of log_start - log_end after up().
