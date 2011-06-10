@@ -1,34 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab1FJQ12 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 12:27:28 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39412 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618Ab1FJQ10 convert rfc822-to-8bit (ORCPT
+	id S1754660Ab1FJQma (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 12:42:30 -0400
+Received: from smtp.sgsi.ucl.ac.be ([130.104.5.67]:56202 "EHLO
+	smtp6.sgsi.ucl.ac.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327Ab1FJQm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 12:27:26 -0400
-Subject: Re: BUG on 3.0-rc on commit
- d72bce0e67e8afc6eb959f656013cbb577426f1e
-From: Peter Zijlstra <peterz@infradead.org>
-To: habanero@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, rostedt <rostedt@goodmis.org>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1307720081.17297.6.camel@atheurer-w510>
-References: <1307711837.23688.33.camel@atheurer-ubuntu10>
-	 <1307715084.3941.166.camel@twins>  <1307717156.3941.169.camel@twins>
-	 <1307720081.17297.6.camel@atheurer-w510>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 10 Jun 2011 18:27:12 +0200
-Message-ID: <1307723232.3941.178.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 10 Jun 2011 12:42:27 -0400
+X-Greylist: delayed 863 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Jun 2011 12:42:27 EDT
+X-DKIM: Sendmail DKIM Filter v2.8.3 smtp6.sgsi.ucl.ac.be BA81F1C5448
+Message-ID: <caa420e99e3ddd97994dbbd41dfdb063.squirrel@mmp.sipr-dc.ucl.ac.be>
+Date: Fri, 10 Jun 2011 18:27:40 +0200
+Subject: Re.funds
+From: "Jean-Marie Degryse" <Jean-Marie.Degryse@uclouvain.be>
+User-Agent: SquirrelMail/1.4.20
+MIME-Version: 1.0
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-SGSI-MailScanner-ID: BA81F1C5448.A5BB6
+X-SGSI-MailScanner: Found to be clean
+X-SGSI-SpamCheck: n'est pas un polluriel, SpamAssassin (cached, score=-3.667,
+	requis 5, autolearn=not spam, ALL_TRUSTED -2.00, BAYES_00 -1.60,
+	DKIM_SIGNED 0.10, DKIM_VALID -0.10, DKIM_VALID_AU -0.10,
+	DKIM_VERIFIED -1.00, LOTS_OF_MONEY 0.00, MISSING_HEADERS 1.02,
+	T_FILL_THIS_FORM_SHORT 0.01)
+X-SGSI-From: jean-marie.degryse@uclouvain.be
+X-SGSI-Spam-Status: No
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-10 at 10:34 -0500, Andrew Theurer wrote:
-> RIP: 0010:[<ffffffff8104e8c1>]  [<ffffffff8104e8c1>] find_lowest_rq+0xa1/0x150
+My associate has helped me to send your first payment
+of $5000 USD to you as instructed by the Malaysian
+Government and Mr. David Cameron the United Kingdom
+prime minister after the last G20 meeting that was
+held in Malaysia, making you one of the beneficiaries.
+Here is the information below.
 
-If you've still got the vmlinux around, could you find out where in
-find_lowest_rq that RIP is? 
+Refrence Numbers: 86147516
+Sender Name Is = Patrick Lee Chun
+
+I told him to keep sending you $5000 USD twice a week
+until the FULL payment of ($820000.00 United State Dollars)
+is completed.
+
+A certificate will be made to change the Receivers Name
+to your name as stated by the Malaysian Government,reconfirm
+your {1}Full Names {2}address {3}Mobile Number
+
+via Email to:money_gramlimited@mspil.edu.cn Allan Davis
+to proceed.
+
+       Note:
+
+You cannot pickup the money until the certificate is
+obtained by you.
+
+Regards
+Mr. Allan Davis.
+Tel: +(60) 163544376.
+
+For more info: www.g20.org
+
+
+
