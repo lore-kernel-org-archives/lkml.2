@@ -1,278 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757100Ab1FJMzm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 08:55:42 -0400
-Received: from cantor.suse.de ([195.135.220.2]:52920 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755273Ab1FJMzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 08:55:39 -0400
-Message-ID: <4DF21447.6090005@suse.de>
-Date: Fri, 10 Jun 2011 14:55:35 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1757129Ab1FJM5F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 08:57:05 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60289 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756942Ab1FJM5C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jun 2011 08:57:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=EULJn4XorzidhaM0rjT79qm8Q+zq4MZM8yl4MXB/yaOkZ+eb7NFLixe+3ZvxuB9E+O
+         JqdzuSblhssnNmyG7K3IhrFJTBD9BUKqyK9lHwN86gv766pxMrhiRl4SdVObd1/JCYRZ
+         x4FSjriuhndxm6RgORndgPA48WcD7tTSNVSIs=
+Message-ID: <4DF2149B.3020606@gmail.com>
+Date: Fri, 10 Jun 2011 14:56:59 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-        Christoph Hellwig <chellwig@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: virtio scsi host draft specification, v3
-References: <4DEE2B15.4090809@redhat.com>
-In-Reply-To: <4DEE2B15.4090809@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Takashi Iwai <tiwai@suse.de>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        alsa-devel@alsa-project.org
+Subject: Re: Regression in 3.0: oops with module RO/NX in snd_printk when
+ loading snd-hda-intel (gold linker bug?)
+References: <4DF1EE76.6070001@gmail.com> <s5hzklp27vf.wl%tiwai@suse.de>
+In-Reply-To: <s5hzklp27vf.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2011 03:43 PM, Paolo Bonzini wrote:
-> Hi all,
+Op 10-06-11 14:23, Takashi Iwai schreef:
+> At Fri, 10 Jun 2011 12:14:14 +0200,
+> Maarten Lankhorst wrote:
+>>
+>> Since 3.0.0rc1 I get an oops in alc_auto_parse_customize_define, when it's calling snd_printk, I have module NX/RO enabled, and linked the kernel with gold. the only command I do is 'modprobe snd debug=8; modprobe snd-hda-intel' after init=/bin/bash
+>>
+>> ld --version: GNU gold (GNU Binutils for Ubuntu 2.21.0.20110327) 1.11
+>>
+>> [   43.327003] HDA Intel 0000:00:1b.0: enabling device (0000 -> 0002)
+>> [   43.327012] HDA Intel 0000:00:1b.0: PCI INT A -> GSI 22 (level, low) -> IRQ 22
+>> [   43.327063] HDA Intel 0000:00:1b.0: irq 46 for MSI/MSI-X
+>> [   43.327090] HDA Intel 0000:00:1b.0: setting latency timer to 64
+>> [   43.327097] BUG: unable to handle kernel paging request at ffffffffa003c80a
+>> [   43.327253] IP: [<ffffffffa002f791>] __snd_printk+0x71/0x110 [snd]
+>> [   43.327392] PGD 1a25067 PUD 1a29063 PMD 231bce067 PTE 0
+>> [   43.327523] Oops: 0000 [#1] PREEMPT SMP
+>> [   43.327620] CPU 1
+>> [   43.327660] Modules linked in: snd_hda_intel(+) snd_hda_codec snd_hwdep snd_pcm_oss snd_pcm snd_page_alloc snd_seq_midi snd_seq_midi_event snd_rawmidi snd_seq snd_seq_device
+>> snd_timer snd soundcore
+>> [   43.328104]
+>> [   43.328134] Pid: 149, comm: modprobe Not tainted 3.0.0-rc2-patser+ #34 To Be Filled By O.E.M. To Be Filled By O.E.M./P67 Pro3
+>> [   43.328393] RIP: 0010:[<ffffffffa002f791>]  [<ffffffffa002f791>] __snd_printk+0x71/0x110 [snd]
+>> [   43.328581] RSP: 0018:ffff8802310a9c38  EFLAGS: 00010216
+>> [   43.328696] RAX: ffff8802310a9c78 RBX: 0000000000000002 RCX: ffffffffa00bea30
+>> [   43.328851] RDX: 0000000000000a1a RSI: ffffffffa00be00a RDI: ffffffffa00be00a
+>> [   43.329006] RBP: ffff8802310a9cb8 R08: 0000000000004401 R09: 0000000000000040
+>> [   43.329161] R10: 00000000000000d8 R11: 0000000000000002 R12: ffffffffa00bea30
+>> [   43.329316] R13: ffff88023110e800 R14: ffff88023110e800 R15: 0000000000004401
+>> [   43.329472] FS:  00007fc62e05c720(0000) GS:ffff88023f480000(0000) knlGS:0000000000000000
+>> [   43.329647] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>> [   43.329772] CR2: ffffffffa003c80a CR3: 00000002310b6000 CR4: 00000000000406e0
+>> [   43.329927] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>> [   43.330082] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>> [   43.330237] Process modprobe (pid: 149, threadinfo ffff8802310a8000, task ffff8802311216f0)
+>> [   43.330418] Stack:
+>> [   43.330462]  ffff8802310a9c58 ffffffff81a05080 ffff880200000020 ffff8802310a9cc8
+>> [   43.330640]  ffff8802310a9c78 ffffffff810bab78 ffff8802310a9c98 0000000005411735
+>> [   43.330815]  ffff88023110e800 40ff880232ad3000 ffff880232ad3000 ffff880232ad3000
+>> [   43.330991] Call Trace:
+>> [   43.331044]  [<ffffffff810bab78>] ? synchronize_irq+0x58/0xf0
+>> [   43.336434]  [<ffffffffa00bd191>] azx_probe+0x48b/0x9fb [snd_hda_intel]
+>> [   43.341867]  [<ffffffff81317e8f>] local_pci_probe+0x5f/0xd0
+>> [   43.347300]  [<ffffffff813185f9>] pci_device_probe+0x119/0x120
+>> [   43.352744]  [<ffffffff813b27aa>] ? driver_sysfs_add+0x7a/0xb0
+>> [   43.358193]  [<ffffffff813b2b23>] driver_probe_device+0xa3/0x2a0
+>> [   43.363649]  [<ffffffff813b2dcb>] __driver_attach+0xab/0xb0
+>> [   43.369038]  [<ffffffff813b2d20>] ? driver_probe_device+0x2a0/0x2a0
+>> [   43.374387]  [<ffffffff813b193e>] bus_for_each_dev+0x5e/0x90
+>> [   43.379725]  [<ffffffff813b272e>] driver_attach+0x1e/0x20
+>> [   43.385029]  [<ffffffff813b22d0>] bus_add_driver+0x160/0x2b0
+>> [   43.390172]  [<ffffffffa0021000>] ? 0xffffffffa0020fff
+>> [   43.395151]  [<ffffffff813b3394>] driver_register+0x74/0x130
+>> [   43.400133]  [<ffffffffa0021000>] ? 0xffffffffa0020fff
+>> [   43.405010]  [<ffffffff81318876>] __pci_register_driver+0x56/0xd0
+>> [   43.409827]  [<ffffffff8102b653>] ? set_memory_nx+0x43/0x50
+>> [   43.414645]  [<ffffffffa002101e>] alsa_card_azx_init+0x1e/0x1000 [snd_hda_intel]
+>> [   43.419550]  [<ffffffff810002d5>] do_one_initcall+0x45/0x170
+>> [   43.424489]  [<ffffffff8109505a>] sys_init_module+0xfa/0x250
+>> [   43.429420]  [<ffffffff8157c52b>] system_call_fastpath+0x16/0x1b
+>> [   43.434403] Code: 00 00 00 75 6b 48 8b 5d f0 4c 8b 65 f8 c9 c3 48 8d 45 10 c7 45 90 20 00 00 00 48 89 45 98 48 8d 45 c0 48 89 45 a0 80 3e 2f 74 78 <8b> 05 73 d0 00 00 85 db 89 45 b0 48 c7 c6 b3 23 03 a0 48 c7 c0
+>> [   43.444891] RIP  [<ffffffffa002f791>] __snd_printk+0x71/0x110 [snd]
+>> [   43.450012]  RSP <ffff8802310a9c38>
+>> [   43.450013] CR2: ffffffffa003c80a
+>> [   43.450014] ---[ end trace 890ffb2c861edf22 ]---
+>>
+>> everything sound loaded modular, all hda codecs too.
+>>
+>> CONFIG_SND_VERBOSE_PRINTK=y
+>> CONFIG_SND_DEBUG=y
+>> CONFIG_SND_DEBUG_VERBOSE=y
+>>
+>> module RO/NX is set, which I assume is causing the problem.
+>>
+>> I don't understand the oops, but disassembly of the specific offset is below, from objdump -S:
+>>
+>> 7de1 is the location of the crash
+>>
+>> #ifdef CONFIG_SND_VERBOSE_PRINTK
+>> /* strip the leading path if the given path is absolute */
+>> static const char *sanity_file_name(const char *path)
+>> {
+>>         if (*path == '/')
+>>     7ddc:       80 3e 2f                cmpb   $0x2f,(%rsi)
+>>     7ddf:       74 78                   je     7e59 <__snd_printk+0xe9>
+>> /* print file and line with a certain printk prefix */
+>> static int print_snd_pfx(unsigned int level, const char *path, int line,
+>>                          const char *format)
+>> {
+>>         const char *file = sanity_file_name(path);
+>>         char tmp[] = "<0>";
+>>     7de1:       8b 05 00 00 00 00       mov    0x0(%rip),%eax        # 7de7 <__snd_printk+0x77>
+>>         const char *pfx = level ? KERN_DEBUG : KERN_DEFAULT;
+>>     7de7:       85 db                   test   %ebx,%ebx
+>> /* print file and line with a certain printk prefix */
+>> static int print_snd_pfx(unsigned int level, const char *path, int line,
+>>                          const char *format)
+>> {
+>>         const char *file = sanity_file_name(path);
+>>         char tmp[] = "<0>";
+>>     7de9:       89 45 b0                mov    %eax,-0x50(%rbp)
+>>         const char *pfx = level ? KERN_DEBUG : KERN_DEFAULT;
+>>     7dec:       48 c7 c6 00 00 00 00    mov    $0x0,%rsi
+>>     7df3:       48 c7 c0 00 00 00 00    mov    $0x0,%rax
+>>     7dfa:       48 0f 44 f0             cmove  %rax,%rsi
+>>
+>> ---
+>> Seems to me like it's segfaulting when loading <0>\0 (4 bytes, so fits in an integer) to %eax. building all modules with the normal binutils works fine, and makes this crash disappear.
+>>
+>> Is this bug interesting enough that I'll see if I can find the commit which caused this regression?
+> The snd_printk() stuff can be nowadays better presented with %pV.
+> Does the patch below work for you?
 >
-> after some preliminary discussion on the QEMU mailing list, I present a
-> draft specification for a virtio-based SCSI host (controller, HBA, you
-> name it).
 >
-> The virtio SCSI host is the basis of an alternative storage stack for
-> KVM. This stack would overcome several limitations of the current
-> solution, virtio-blk:
+> thanks,
 >
-> 1) scalability limitations: virtio-blk-over-PCI puts a strong upper
-> limit on the number of devices that can be added to a guest. Common
-> configurations have a limit of ~30 devices. While this can be worked
-> around by implementing a PCI-to-PCI bridge, or by using multifunction
-> virtio-blk devices, these solutions either have not been implemented
-> yet, or introduce management restrictions. On the other hand, the SCSI
-> architecture is well known for its scalability and virtio-scsi supports
-> advanced feature such as multiqueueing.
+> Takashi
 >
-> 2) limited flexibility: virtio-blk does not support all possible storage
-> scenarios. For example, it does not allow SCSI passthrough or persistent
-> reservations. In principle, virtio-scsi provides anything that the
-> underlying SCSI target (be it physical storage, iSCSI or the in-kernel
-> target) supports.
->
-> 3) limited extensibility: over the time, many features have been added
-> to virtio-blk. Each such change requires modifications to the virtio
-> specification, to the guest drivers, and to the device model in the
-> host. The virtio-scsi spec has been written to follow SAM conventions,
-> and exposing new features to the guest will only require changes to the
-> host's SCSI target implementation.
->
->
-> Comments are welcome.
->
-> Paolo
->
-> ------------------------------->8 -----------------------------------
->
->
-> Virtio SCSI Host Device Spec
-> ============================
->
-> The virtio SCSI host device groups together one or more simple virtual
-> devices (ie. disk), and allows communicating to these devices using the
-> SCSI protocol.  An instance of the device represents a SCSI host with
-> possibly many buses, targets and LUN attached.
->
-> The virtio SCSI device services two kinds of requests:
->
-> - command requests for a logical unit;
->
-> - task management functions related to a logical unit, target or
-> command.
->
-> The device is also able to send out notifications about added
-> and removed logical units.
->
-> v1:
->      First public version
->
-> v2:
->      Merged all virtqueues into one, removed separate TARGET fields
->
-> v3:
->      Added configuration information and reworked descriptor structure.
->      Added back multiqueue on Avi's request, while still leaving TARGET
->      fields out.  Added dummy event and clarified some aspects of the
->      event protocol.  First version sent to a wider audience (linux-kernel
->      and virtio lists).
->
-> Configuration
-> -------------
->
-> Subsystem Device ID
->      TBD
->
-> Virtqueues
->      0:controlq
->      1:eventq
->      2..n:request queues
->
-> Feature bits
->      VIRTIO_SCSI_F_INOUT (0) - Whether a single request can include both
->          read-only and write-only data buffers.
->
-> Device configuration layout
->      struct virtio_scsi_config {
->          u32 num_queues;
->          u32 event_info_size;
->          u32 sense_size;
->          u32 cdb_size;
->      }
->
->      num_queues is the total number of virtqueues exposed by the
->      device.  The driver is free to use only one request queue, or
->      it can use more to achieve better performance.
->
->      event_info_size is the maximum size that the device will fill
->      for buffers that the driver places in the eventq.  The
->      driver should always put buffers at least of this size.
->
->      sense_size is the maximum size of the sense data that the device
->      will write.  The default value is written by the device and
->      will always be 96, but the driver can modify it.
->
->      cdb_size is the maximum size of the CBD that the driver
->      will write.  The default value is written by the device and
->      will always be 32, but the driver can likewise modify it.
->
-> Device initialization
-> ---------------------
->
-> The initialization routine should first of all discover the device's
-> virtqueues.
->
-> The driver should then place at least a buffer in the eventq.
-> Buffers returned by the device on the eventq may be referred
-> to as "events" in the rest of the document.
->
-> The driver can immediately issue requests (for example, INQUIRY or
-> REPORT LUNS) or task management functions (for example, I_T RESET).
->
-> Device operation: request queues
-> --------------------------------
->
-> The driver queues requests to an arbitrary request queue, and they are
-> used by the device on that same queue.
->
-What about request ordering?
-If requests are placed on arbitrary queues you'll inevitably run on 
-locking issues to ensure strict request ordering.
-I would add here:
+> ---
+> diff --git a/sound/core/misc.c b/sound/core/misc.c
+> index 2c41825..095e423 100644
+> --- a/sound/core/misc.c
+> +++ b/sound/core/misc.c
+> @@ -59,25 +59,8 @@ static const char *sanity_file_name(const char *path)
+>  		return path;
+>  }
+>  
+> -/* print file and line with a certain printk prefix */
+> -static int print_snd_pfx(unsigned int level, const char *path, int line,
+> -			 const char *format)
+> -{
+> -	const char *file = sanity_file_name(path);
+> -	char tmp[] = "<0>";
+> -	const char *pfx = level ? KERN_DEBUG : KERN_DEFAULT;
+> -	int ret = 0;
+> -
+> -	if (format[0] == '<' && format[2] == '>') {
+> -		tmp[1] = format[1];
+> -		pfx = tmp;
+> -		ret = 1;
+> -	}
+> -	printk("%sALSA %s:%d: ", pfx, file, line);
+> -	return ret;
+> -}
+>  #else
+> -#define print_snd_pfx(level, path, line, format)	0
+> +#define verbose_printk(level, path, line, fmt, args)	printk(fmt, args)
+>  #endif
+#define verbose_printk makes no sense?
+>  
+>  #if defined(CONFIG_SND_DEBUG) || defined(CONFIG_SND_VERBOSE_PRINTK)
+> @@ -85,15 +68,29 @@ void __snd_printk(unsigned int level, const char *path, int line,
+>  		  const char *format, ...)
+>  {
+>  	va_list args;
+> -	
+> +#ifdef CONFIG_SND_VERBOSE_PRINTK
+> +	struct va_format vaf;
+> +	char verbose_fmt[] = KERN_DEFAULT "ALSA %s:%d %pV";
+> +#endif
+> +
+>  #ifdef CONFIG_SND_DEBUG	
+>  	if (debug < level)
+>  		return;
+>  #endif
+> +
+>  	va_start(args, format);
+> -	if (print_snd_pfx(level, path, line, format))
+> -		format += 3; /* skip the printk level-prefix */
+> +#ifdef CONFIG_SND_VERBOSE_PRINTK
+> +	vaf.fmt = format;
+> +	vaf.va = &args;
+> +	if (format[0] == '<' && format[2] == '>') {
+> +		memcpy(verbose_fmt, format, 3);
+> +		vaf.fmt = format + 3;
+> +	} else if (level)
+> +		memcpy(verbose_fmt, KERN_DEBUG, 3);
+> +	printk(verbose_fmt, sanity_file_name(path), line, &vaf);
+> +#else
+>  	vprintk(format, args);
+> +#endif
+>  	va_end(args);
+>  }
+>  EXPORT_SYMBOL_GPL(__snd_printk);
+It fixes the oops.
 
-If a device uses more than one queue it is the responsibility of the 
-device to ensure strict request ordering.
+Tested-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
 
-> Requests have the following format:
->
->      struct virtio_scsi_req_cmd {
->          u8 lun[8];
->          u64 id;
->          u8 task_attr;
->          u8 prio;
->          u8 crn;
->          char cdb[cdb_size];
->          char dataout[];
->
->          u8 sense[sense_size];
->          u32 sense_len;
->          u32 residual;
->          u16 status_qualifier;
->          u8 status;
->          u8 response;
->          char datain[];
->      };
->
->      /* command-specific response values */
->      #define VIRTIO_SCSI_S_OK              0
->      #define VIRTIO_SCSI_S_UNDERRUN        1
->      #define VIRTIO_SCSI_S_ABORTED         2
->      #define VIRTIO_SCSI_S_FAILURE         3
->
->      /* task_attr */
->      #define VIRTIO_SCSI_S_SIMPLE          0
->      #define VIRTIO_SCSI_S_ORDERED         1
->      #define VIRTIO_SCSI_S_HEAD            2
->      #define VIRTIO_SCSI_S_ACA             3
->
->      The lun field addresses a bus, target and logical unit in the SCSI
->      host.  The id field is the command identifier as defined in SAM.
->
-Please do not rely in bus/target/lun here. These are leftovers from 
-parallel SCSI and do not have any meaning on modern SCSI 
-implementation (eg FC or SAS). Rephrase that to
-
-The lun field is the Logical Unit Number as defined in SAM.
-
->      Task_attr, prio and CRN are defined in SAM.  The prio field should
->      always be zero, as command priority is explicitly not supported by
->      this version of the device.  task_attr defines the task attribute as
->      in the table above, Note that all task attributes may be mapped to
->      SIMPLE by the device.  CRN is generally expected to be 0, but clients
->      can provide it.  The maximum CRN value defined by the protocol is 255,
->      since CRN is stored in an 8-bit integer.
->
->      All of these fields are always read-only, as are the cdb and dataout
->      field.  sense and subsequent fields are always write-only.
->
->      The sense_len field indicates the number of bytes actually written
->      to the sense buffer.  The residual field indicates the residual
->      size, calculated as data_length - number_of_transferred_bytes, for
->      read or write operations.
->
->      The status byte is written by the device to be the SCSI status code.
->
-?? I doubt that exists. Make that:
-
-The status byte is written by the device to be the status code as 
-defined in SAM.
-
->      The response byte is written by the device to be one of the following:
->
->      - VIRTIO_SCSI_S_OK when the request was completed and the status byte
->        is filled with a SCSI status code (not necessarily "GOOD").
->
->      - VIRTIO_SCSI_S_UNDERRUN if the content of the CDB requires transferring
->        more data than is available in the data buffers.
->
->      - VIRTIO_SCSI_S_ABORTED if the request was cancelled due to a reset
->        or another task management function.
->
->      - VIRTIO_SCSI_S_FAILURE for other host or guest error.  In particular,
->        if neither dataout nor datain is empty, and the VIRTIO_SCSI_F_INOUT
->        feature has not been negotiated, the request will be immediately
->        returned with a response equal to VIRTIO_SCSI_S_FAILURE.
->
-And, of course:
-
-VIRTIO_SCSI_S_DISCONNECT if the request could not be processed due 
-to a communication failure (eg device was removed or could not be
-reached).
-
-The remaining bits seem to be okay.
-
-One general question:
-
-This specification implies a strict one-to-one mapping between host 
-and target. IE there is no way of specifying more than one target 
-per host.
-This will make things like ALUA (Asymmetric Logical Unit Access)
-a bit tricky to implement, as the port states there are bound to 
-target port groups. So with the virtio host spec we would need to 
-specify two hosts to represent that.
-
-If that's the intention here I'm fine, but maybe we should be 
-specifying this expressis verbis somewhere.
-
-Cheers,
-
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+~Maarten
