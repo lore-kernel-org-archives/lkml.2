@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102Ab1FKRCp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 13:02:45 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:20386 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751146Ab1FKRCo (ORCPT
+	id S1752483Ab1FKRLH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 13:11:07 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:11063 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab1FKRLF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 13:02:44 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: Fk9GoxEVM1ki0LuFN8z8IJqsdjsZH0nzMYqVyGh8ArDEpVJ
- .gQbh7ttK6BBKuZzUa_EkgTSuq0r8hYfS7wLVONZizILUu11D9XqHJlXs7Zq
- 7xJ.jEoGNdIpCa_fQldy8xhQ5OTZJyjLw27gGiOBOrfJf1fHCwnpaRGXdfZ5
- 1S2wKlu__rh2jhpJhQ9XJr1kjI.HXizQsChFeGWjR0sg3gC6rmsj0WVrb2Sn
- E5E.LKLhRutcZ0UeW4M0UZQXGXaW7L7rl6w2VIUV5RhO5nZJs51.RvsQNYvg
- 04RFD4V.b.bYZuw.paP2UH2MtCIDLc_G90mcU7hLWnxQJZ0LDIjIv
-X-Yahoo-Newman-Property: ymail-3
-Date: Sat, 11 Jun 2011 12:02:40 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-        David Rientjes <rientjes@google.com>, tj@kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu
-Subject: Re: [slubllv7 04/17] x86: Add support for cmpxchg_double
-In-Reply-To: <BANLkTikHOsvR-KXZ-VQvpAaMgrNOR0sB3g@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1106111202110.32170@router.home>
-References: <20110601172543.437240675@linux.com> <20110601172614.173427964@linux.com> <4DF09827.7070809@cs.helsinki.fi> <alpine.DEB.2.00.1106101016420.30968@router.home> <BANLkTikHOsvR-KXZ-VQvpAaMgrNOR0sB3g@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sat, 11 Jun 2011 13:11:05 -0400
+Date: Sat, 11 Jun 2011 19:02:42 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: platform-driver-x86@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        Cezary Jackiewicz <cezary.jackiewicz@gmail.com>,
+        Lennart Poettering <mzxreary@0pointer.de>
+Subject: [PATCH] platform, compal: Fix mem leak in compal_probe()
+Message-ID: <alpine.LNX.2.00.1106111858490.23835@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 11 Jun 2011, Pekka Enberg wrote:
+We'll leak the memory allocated to 'data' in 
+drivers/platform/x86/compal-laptop.c::compal_probe() if 
+sysfs_create_group() doesn't return 0.
+Fix the leak by freeing the memory in that case.
 
-> Oh, I don't know - but I definitely need more ACKs to even consider
-> pushing this through slab.git.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ compal-laptop.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Any additional ackers out there?;-)
+	Compile tested only.
+
+diff --git a/drivers/platform/x86/compal-laptop.c b/drivers/platform/x86/compal-laptop.c
+index 3f204fd..8877b83 100644
+--- a/drivers/platform/x86/compal-laptop.c
++++ b/drivers/platform/x86/compal-laptop.c
+@@ -1030,8 +1030,10 @@ static int __devinit compal_probe(struct platform_device *pdev)
+ 	initialize_fan_control_data(data);
+ 
+ 	err = sysfs_create_group(&pdev->dev.kobj, &compal_attribute_group);
+-	if (err)
++	if (err) {
++		kfree(data);
+ 		return err;
++	}
+ 
+ 	data->hwmon_dev = hwmon_device_register(&pdev->dev);
+ 	if (IS_ERR(data->hwmon_dev)) {
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
