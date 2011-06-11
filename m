@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134Ab1FKIWh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 04:22:37 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:59246 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438Ab1FKIWe (ORCPT
+	id S1753719Ab1FKJoU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 05:44:20 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:44222 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514Ab1FKJoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 04:22:34 -0400
-Subject: Re: 3.0.0-rc2-git4 -- INFO: possible circular locking dependency
- detected
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>
-In-Reply-To: <BANLkTinC43QH_iEY29_Umt87Sn3A5GGQ3A@mail.gmail.com> (sfid-20110610_223806_173548_9F7B1F62)
-References: <BANLkTinC43QH_iEY29_Umt87Sn3A5GGQ3A@mail.gmail.com>
-	 (sfid-20110610_223806_173548_9F7B1F62)
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 11 Jun 2011 10:22:30 +0200
-Message-ID: <1307780550.4219.0.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 11 Jun 2011 05:44:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=WdfoYCkFSWAerF23ejxrgm/QqeZ6im22Jcz3d8BA8Opzhi4OTAtLLoEGjoaOX8jWco
+         5PJPS/VDjw6bijzFjAAXPCgXo8XsZZfEvIJ1ftz4yIjMajr8DAkv3dG8BQ9brFZkkdxo
+         kGIO/u4ZZeotuo+Df3MELELFq5fSHX/aiKRsA=
+MIME-Version: 1.0
+In-Reply-To: <843433D5F73C864182AC91B8@nimrod.local>
+References: <BANLkTimyBGfg4+ovGsiGqpCz345qVmU_7A@mail.gmail.com>
+	<BANLkTik20iYN4c9faKD9dzerehazWTwTFw@mail.gmail.com>
+	<BANLkTikKRuPu_NX49vr0w-XeN0ZnWo+9vg@mail.gmail.com>
+	<alpine.LFD.2.00.1106101101020.4502@dhcp-27-109.brq.redhat.com>
+	<20110610101142.GA10144@ubuntu>
+	<BANLkTi=zjU3-FV3AVpYsknzKFgaS7byb_Q@mail.gmail.com>
+	<20110610150129.GA17585@ubuntu>
+	<BANLkTikUZadpVJRcfX_MLMZ-p_G0bT_8uQ@mail.gmail.com>
+	<20110611074908.GC2517@ubuntu>
+	<843433D5F73C864182AC91B8@nimrod.local>
+Date: Sat, 11 Jun 2011 12:44:16 +0300
+X-Google-Sender-Auth: p365x9uLYeOtO2FfL9Z7TXoCoag
+Message-ID: <BANLkTik8Oac+5Ci7Y9VvNUqv-DaYmPkWZA@mail.gmail.com>
+Subject: Re: LVM vs. Ext4 snapshots (was: [PATCH v1 00/30] Ext4 snapshots)
+From: "Amir G." <amir73il@users.sourceforge.net>
+To: Alex Bligh <alex@alex.org.uk>
+Cc: Joe Thornber <thornber@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, linux-ext4@vger.kernel.org,
+        tytso@mit.edu, linux-kernel@vger.kernel.org, lvm-devel@redhat.com,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> [  330.762815] [ INFO: possible circular locking dependency detected ]
-> [  330.762819] 3.0.0-rc2-git4 #9
-> [  330.762822] -------------------------------------------------------
-> [  330.762825] kworker/0:0/4 is trying to acquire lock:
-> [  330.762828]  (&rdev->mtx){+.+.+.}, at: [<ffffffffa006f7e0>]
-> cfg80211_netdev_notifier_call+0x275/0x4ff [cfg80211]
-> [  330.762845]
-> [  330.762846] but task is already holding lock:
-> [  330.762848]  (&rdev->devlist_mtx){+.+.+.}, at: [<ffffffffa006fd5c>]
-> cfg80211_rfkill_set_block+0x28/0x70 [cfg80211]
-> [  330.762860]
-> [  330.762861] which lock already depends on the new lock.
+On Sat, Jun 11, 2011 at 11:18 AM, Alex Bligh <alex@alex.org.uk> wrote:
+>
+>
+> --On 11 June 2011 08:49:08 +0100 Joe Thornber <thornber@redhat.com> wrote:
+>
+>> I am also convinced multisnap wont be suitable for every use case.
+>
+> I'm surprised by one thing ext 4 snapshots doesn't seem to do: I would have
+> thought the "killer feature" for doing snapshots in the fs rather than in
+> the block layer would be the ability to snapshot - and more importantly
+> roll back - only parts of the directory hierarchy.
+>
+> (I've only read the URLs Amir sent, so apologies if I've missed this)
+>
 
-Yeah, Luca is supposed to be working on this.
+No need for apologies.
+There is no per-directory snapshot nor rollback with ext4 snpshots.
+It is possible to configure a part of the directory hierarchy to be excluded
+from future snapshots, but not to delete it selectively from past snapshots.
 
-johannes
-
-
+Amir.
