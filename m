@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753719Ab1FKJoU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 05:44:20 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44222 "EHLO
+	id S1753860Ab1FKJpG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 05:45:06 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55935 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752514Ab1FKJoR (ORCPT
+	with ESMTP id S1753342Ab1FKJpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 05:44:17 -0400
+	Sat, 11 Jun 2011 05:45:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=WdfoYCkFSWAerF23ejxrgm/QqeZ6im22Jcz3d8BA8Opzhi4OTAtLLoEGjoaOX8jWco
-         5PJPS/VDjw6bijzFjAAXPCgXo8XsZZfEvIJ1ftz4yIjMajr8DAkv3dG8BQ9brFZkkdxo
-         kGIO/u4ZZeotuo+Df3MELELFq5fSHX/aiKRsA=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Q2UWug5/WBq7UCP6MXvEZ3NQx/cGvE9mlMTL1B3iieR4RcJPbhDmjXgGGzYlCFSLRH
+         UZsLFkL7TP1dRS+qo6SqjHOK7mg8lOyDt01tVONhVnPFA1yfTnXIdIDhLYb+00qLM1J4
+         0Ks56xLSBi8ZipoOS+bLoF8oIee0cDSIBVk8E=
+Date: Sat, 11 Jun 2011 10:45:00 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, tglx@linutronix.de,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, mel@csn.ul.ie,
+        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, pavel@ucw.cz
+Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning
+ instead of failing
+Message-ID: <20110611094500.GA2356@debian.cable.virginmedia.net>
+References: <20110610004331.13672278.akpm@linux-foundation.org>
+ <BANLkTimC8K2_H7ZEu2XYoWdA09-3XxpV7Q@mail.gmail.com>
+ <20110610091233.GJ24424@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.00.1106101150280.17197@chino.kir.corp.google.com>
+ <20110610185858.GN24424@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.00.1106101456080.23076@chino.kir.corp.google.com>
+ <20110610220748.GO24424@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.00.1106101510000.23076@chino.kir.corp.google.com>
+ <20110610222020.GP24424@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.00.1106101526390.24646@chino.kir.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <843433D5F73C864182AC91B8@nimrod.local>
-References: <BANLkTimyBGfg4+ovGsiGqpCz345qVmU_7A@mail.gmail.com>
-	<BANLkTik20iYN4c9faKD9dzerehazWTwTFw@mail.gmail.com>
-	<BANLkTikKRuPu_NX49vr0w-XeN0ZnWo+9vg@mail.gmail.com>
-	<alpine.LFD.2.00.1106101101020.4502@dhcp-27-109.brq.redhat.com>
-	<20110610101142.GA10144@ubuntu>
-	<BANLkTi=zjU3-FV3AVpYsknzKFgaS7byb_Q@mail.gmail.com>
-	<20110610150129.GA17585@ubuntu>
-	<BANLkTikUZadpVJRcfX_MLMZ-p_G0bT_8uQ@mail.gmail.com>
-	<20110611074908.GC2517@ubuntu>
-	<843433D5F73C864182AC91B8@nimrod.local>
-Date: Sat, 11 Jun 2011 12:44:16 +0300
-X-Google-Sender-Auth: p365x9uLYeOtO2FfL9Z7TXoCoag
-Message-ID: <BANLkTik8Oac+5Ci7Y9VvNUqv-DaYmPkWZA@mail.gmail.com>
-Subject: Re: LVM vs. Ext4 snapshots (was: [PATCH v1 00/30] Ext4 snapshots)
-From: "Amir G." <amir73il@users.sourceforge.net>
-To: Alex Bligh <alex@alex.org.uk>
-Cc: Joe Thornber <thornber@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, linux-ext4@vger.kernel.org,
-        tytso@mit.edu, linux-kernel@vger.kernel.org, lvm-devel@redhat.com,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1106101526390.24646@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 11, 2011 at 11:18 AM, Alex Bligh <alex@alex.org.uk> wrote:
->
->
-> --On 11 June 2011 08:49:08 +0100 Joe Thornber <thornber@redhat.com> wrote:
->
->> I am also convinced multisnap wont be suitable for every use case.
->
-> I'm surprised by one thing ext 4 snapshots doesn't seem to do: I would have
-> thought the "killer feature" for doing snapshots in the fs rather than in
-> the block layer would be the ability to snapshot - and more importantly
-> roll back - only parts of the directory hierarchy.
->
-> (I've only read the URLs Amir sent, so apologies if I've missed this)
->
+On Fri, Jun 10, 2011 at 03:30:35PM -0700, David Rientjes wrote:
+> On Fri, 10 Jun 2011, Russell King - ARM Linux wrote:
+> > So those platforms which don't have a DMA zone, don't have any problems
+> > with DMA, yet want to use the very same driver which does have a problem
+> > on ISA hardware have to also put up with a useless notification that
+> > their kernel might be broken?
+> > 
+> > Are you offering to participate on other architectures mailing lists to
+> > answer all the resulting queries?
+> 
+> It all depends on the wording of the "warning", it should make it clear 
+> that this is not always an error condition and only affects certain types 
+> of hardware which the user may or may not have.
 
-No need for apologies.
-There is no per-directory snapshot nor rollback with ext4 snpshots.
-It is possible to configure a part of the directory hierarchy to be excluded
-from future snapshots, but not to delete it selectively from past snapshots.
+I think people will still be worried when they get a warning. And there
+are lots of platforms that don't need ZONE_DMA just because devices can
+access the full RAM. As Russell said, same drivers may be used on
+platforms that can actually do DMA only to certain areas of memory and
+require ZONE_DMA (there are several examples on ARM).
 
-Amir.
+If you want, you can add something like CONFIG_ARCH_HAS_ZONE_DMA across
+all the platforms that support ZONE_DMA and only get the warning if
+ZONE_DMA is available but not enabled.
+
+-- 
+Catalin
