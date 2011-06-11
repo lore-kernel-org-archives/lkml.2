@@ -1,169 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758519Ab1FKB5f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 21:57:35 -0400
+	id S1758535Ab1FKB55 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 21:57:57 -0400
 Received: from mail-pv0-f174.google.com ([74.125.83.174]:58165 "EHLO
 	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758506Ab1FKB5e (ORCPT
+	with ESMTP id S1758515Ab1FKB5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 21:57:34 -0400
+	Fri, 10 Jun 2011 21:57:55 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=VjlXVxvidmsFLOFwqxFh1NjkSdLtp+p++mtONNlMbEvXa8ySjRo/032R8eLcgAOG/B
-         /TJdsU6Rpx7sf7IiqGVKryrjSVTL6RiCci5AgKRigjLk5HJWcfN0FOABrCT1Z+LHaBE8
-         JOT1RBclqkdYIlG7xDxAbc7nqditJb+mXzz+w=
+        b=JgiNK5bdXYWmVjuNSFdJDHEAd5SB7K3XChERD+//cNaYpvSVVv8HKcJg/zT23LsbeW
+         rcnxDulLiS87T7zehz82Uk6QdG4CBNN0KvhQwjS/p+ASp0IkwqgVM/pN9MooblO7CSE2
+         UIqdekhp1tM7ZQMwjpllEJTS5xXgSmyEOy/Tg=
 From: Dave Carroll <dtcarroll@gmail.com>
 To: Milton Miller <miltonm@bga.com>, BenH <benh@kernel.crashing.org>
 Cc: LPPC <linuxppc-dev@lists.ozlabs.org>, LKML <linux-kernel@vger.kernel.org>,
         Dave Carroll <dcarroll@astekcorp.com>
-Subject: [PATCH 1/2] powerpc: Move free_initmem to common code
-Date: Fri, 10 Jun 2011 19:38:10 -0600
-Message-Id: <1307756291-26513-1-git-send-email-dcarroll@astekcorp.com>
+Subject: [PATCH 2/2] powerpc: Add printk companion for ppc_md.progress
+Date: Fri, 10 Jun 2011 19:38:11 -0600
+Message-Id: <1307756291-26513-2-git-send-email-dcarroll@astekcorp.com>
 X-Mailer: git-send-email 1.7.4
-In-Reply-To: <initrd-align-v5-reply@mdm.bga.com>
+In-Reply-To: <1307756291-26513-1-git-send-email-dcarroll@astekcorp.com>
 References: <initrd-align-v5-reply@mdm.bga.com>
+ <1307756291-26513-1-git-send-email-dcarroll@astekcorp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Carroll <dcarroll@astekcorp.com>
 
-The free_initmem function is basically duplicated in mm/init_32,
-and init_64, and is moved to the common 32/64-bit mm/mem.c.
-
-All other sections except init were removed in v2.6.15 by
-6c45ab992e4299c869fb26427944a8f8ea177024 (powerpc: Remove section
-free() and linker script bits), and therefore the bulk of the executed
-code is identical.
-
-This patch also removes updating ppc_md.progress to NULL in the powermac
-late_initcall.
+This patch adds a printk companion to replace the udbg progress function
+when initmem is freed.
 
 Suggested-by: Milton Miller <miltonm@bga.com>
 Suggested-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Dave Carroll <dcarroll@astekcorp.com>
 ---
- arch/powerpc/mm/init_32.c               |   32 -------------------------------
- arch/powerpc/mm/init_64.c               |   16 ---------------
- arch/powerpc/mm/mem.c                   |   19 ++++++++++++++++++
- arch/powerpc/platforms/powermac/setup.c |    3 --
- 4 files changed, 19 insertions(+), 51 deletions(-)
+ arch/powerpc/include/asm/setup.h   |    2 ++
+ arch/powerpc/kernel/setup-common.c |    5 +++++
+ arch/powerpc/mm/mem.c              |    2 +-
+ 3 files changed, 8 insertions(+), 1 deletions(-)
 
-diff --git a/arch/powerpc/mm/init_32.c b/arch/powerpc/mm/init_32.c
-index 5de0f25..c77fef5 100644
---- a/arch/powerpc/mm/init_32.c
-+++ b/arch/powerpc/mm/init_32.c
-@@ -191,38 +191,6 @@ void __init *early_get_page(void)
- 		return __va(memblock_alloc(PAGE_SIZE, PAGE_SIZE));
- }
+diff --git a/arch/powerpc/include/asm/setup.h b/arch/powerpc/include/asm/setup.h
+index dae1934..c77cb7a 100644
+--- a/arch/powerpc/include/asm/setup.h
++++ b/arch/powerpc/include/asm/setup.h
+@@ -3,4 +3,6 @@
  
--/* Free up now-unused memory */
--static void free_sec(unsigned long start, unsigned long end, const char *name)
--{
--	unsigned long cnt = 0;
--
--	while (start < end) {
--		ClearPageReserved(virt_to_page(start));
--		init_page_count(virt_to_page(start));
--		free_page(start);
--		cnt++;
--		start += PAGE_SIZE;
-- 	}
--	if (cnt) {
--		printk(" %ldk %s", cnt << (PAGE_SHIFT - 10), name);
--		totalram_pages += cnt;
--	}
--}
--
--void free_initmem(void)
--{
--#define FREESEC(TYPE) \
--	free_sec((unsigned long)(&__ ## TYPE ## _begin), \
--		 (unsigned long)(&__ ## TYPE ## _end), \
--		 #TYPE);
--
--	printk ("Freeing unused kernel memory:");
--	FREESEC(init);
-- 	printk("\n");
--	ppc_md.progress = NULL;
--#undef FREESEC
--}
--
- #ifdef CONFIG_8xx /* No 8xx specific .c file to put that in ... */
- void setup_initial_memory_limit(phys_addr_t first_memblock_base,
- 				phys_addr_t first_memblock_size)
-diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
-index f6dbb4c..e94b57f 100644
---- a/arch/powerpc/mm/init_64.c
-+++ b/arch/powerpc/mm/init_64.c
-@@ -83,22 +83,6 @@ EXPORT_SYMBOL_GPL(memstart_addr);
- phys_addr_t kernstart_addr;
- EXPORT_SYMBOL_GPL(kernstart_addr);
+ #include <asm-generic/setup.h>
  
--void free_initmem(void)
--{
--	unsigned long addr;
--
--	addr = (unsigned long)__init_begin;
--	for (; addr < (unsigned long)__init_end; addr += PAGE_SIZE) {
--		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
--		ClearPageReserved(virt_to_page(addr));
--		init_page_count(virt_to_page(addr));
--		free_page(addr);
--		totalram_pages++;
--	}
--	printk ("Freeing unused kernel memory: %luk freed\n",
--		((unsigned long)__init_end - (unsigned long)__init_begin) >> 10);
--}
--
- static void pgd_ctor(void *addr)
- {
- 	memset(addr, 0, PGD_TABLE_SIZE);
-diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
-index 29d4dde..f4e6408 100644
---- a/arch/powerpc/mm/mem.c
-+++ b/arch/powerpc/mm/mem.c
-@@ -382,6 +382,25 @@ void __init mem_init(void)
- 	mem_init_done = 1;
- }
++extern void ppc_printk_progress(char *s, unsigned short hex);
++
+ #endif	/* _ASM_POWERPC_SETUP_H */
+diff --git a/arch/powerpc/kernel/setup-common.c b/arch/powerpc/kernel/setup-common.c
+index 79fca26..e053b16 100644
+--- a/arch/powerpc/kernel/setup-common.c
++++ b/arch/powerpc/kernel/setup-common.c
+@@ -704,6 +704,11 @@ static int powerpc_debugfs_init(void)
+ arch_initcall(powerpc_debugfs_init);
+ #endif
  
-+void free_initmem(void)
++void ppc_printk_progress(char *s, unsigned short hex)
 +{
-+	unsigned long addr;
-+
-+	ppc_md.progress = NULL;
-+
-+	addr = (unsigned long)__init_begin;
-+	for (; addr < (unsigned long)__init_end; addr += PAGE_SIZE) {
-+		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
-+		ClearPageReserved(virt_to_page(addr));
-+		init_page_count(virt_to_page(addr));
-+		free_page(addr);
-+		totalram_pages++;
-+	}
-+	pr_info("Freeing unused kernel memory: %luk freed\n",
-+		((unsigned long)__init_end -
-+		(unsigned long)__init_begin) >> 10);
++	pr_info("%s\n", s);
 +}
 +
- #ifdef CONFIG_BLK_DEV_INITRD
- void __init free_initrd_mem(unsigned long start, unsigned long end)
+ static int ppc_dflt_bus_notify(struct notifier_block *nb,
+ 				unsigned long action, void *data)
  {
-diff --git a/arch/powerpc/platforms/powermac/setup.c b/arch/powerpc/platforms/powermac/setup.c
-index aa45281..a028f08 100644
---- a/arch/powerpc/platforms/powermac/setup.c
-+++ b/arch/powerpc/platforms/powermac/setup.c
-@@ -355,9 +355,6 @@ static int initializing = 1;
- static int pmac_late_init(void)
+diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+index f4e6408..e0d2aa0 100644
+--- a/arch/powerpc/mm/mem.c
++++ b/arch/powerpc/mm/mem.c
+@@ -386,7 +386,7 @@ void free_initmem(void)
  {
- 	initializing = 0;
--	/* this is udbg (which is __init) and we can later use it during
--	 * cpu hotplug (in smp_core99_kick_cpu) */
+ 	unsigned long addr;
+ 
 -	ppc_md.progress = NULL;
- 	return 0;
- }
- machine_late_initcall(powermac, pmac_late_init);
++	ppc_md.progress = ppc_printk_progress;
+ 
+ 	addr = (unsigned long)__init_begin;
+ 	for (; addr < (unsigned long)__init_end; addr += PAGE_SIZE) {
 -- 
 1.7.4
 
