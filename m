@@ -1,71 +1,733 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984Ab1FKXZB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 19:25:01 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:42319 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211Ab1FKXY7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 19:24:59 -0400
-Date: Sat, 11 Jun 2011 16:24:16 -0700 (PDT)
-Message-Id: <20110611.162416.414198854514319441.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: netdev@vger.kernel.org, andi@firstfloor.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, mingo@elte.hu, tj@kernel.org,
-        cl@linux-foundation.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH net-next-2.6] snmp: reduce percpu needs by 50%
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1307771151.2872.72.camel@edumazet-laptop>
-References: <1307602166.3980.92.camel@edumazet-laptop>
-	<20110608.235113.2177191884416780789.davem@davemloft.net>
-	<1307771151.2872.72.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1753325Ab1FKX1Z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 19:27:25 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:48879 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752943Ab1FKX1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jun 2011 19:27:23 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: [Update][PATCH 7/8] PM / Domains: System-wide transitions support for generic domains (v2)
+Date: Sun, 12 Jun 2011 01:28:03 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, Magnus Damm <magnus.damm@gmail.com>,
+        Paul Walmsley <paul@pwsan.com>, Kevin Hilman <khilman@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org
+References: <201106112223.04972.rjw@sisk.pl> <201106112239.16285.rjw@sisk.pl>
+In-Reply-To: <201106112239.16285.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 11 Jun 2011 16:24:19 -0700 (PDT)
+Message-Id: <201106120128.04271.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Sat, 11 Jun 2011 07:45:51 +0200
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-> SNMP mibs use two percpu arrays, one used in BH context, another in USER
-> context. With increasing number of cpus in machines, and fact that ipv6
-> uses per network device ipstats_mib, this is consuming a lot of memory
-> if many network devices are registered.
-> 
-> commit be281e554e2a (ipv6: reduce per device ICMP mib sizes) shrinked
-> percpu needs for ipv6, but we can reduce memory use a bit more.
-> 
-> With recent percpu infrastructure (irqsafe_cpu_inc() ...), we no longer
-> need this BH/USER separation since we can update counters in a single
-> x86 instruction, regardless of the BH/USER context.
-> 
-> Other arches than x86 might need to disable irq in their
-> irqsafe_cpu_inc() implementation : If this happens to be a problem, we
-> can make SNMP_ARRAY_SZ arch dependent, but a previous poll
-> ( https://lkml.org/lkml/2011/3/17/174 ) to arch maintainers did not
-> raise strong opposition.
-> 
-> Only on 32bit arches, we need to disable BH for 64bit counters updates
-> done from USER context (currently used for IP MIB)
-> 
-> This also reduces vmlinux size :
-> 
-> 1) x86_64 build
-> $ size vmlinux.before vmlinux.after
->    text	   data	    bss	    dec	    hex	filename
-> 7853650	1293772	1896448	11043870	 a8841e	vmlinux.before
-> 7850578	1293772	1896448	11040798	 a8781e	vmlinux.after
-> 
-> 2) i386  build
-> $ size vmlinux.before vmlinux.afterpatch 
->    text	   data	    bss	    dec	    hex	filename
-> 6039335	 635076	3670016	10344427	 9dd7eb	vmlinux.before
-> 6037342	 635076	3670016	10342434	 9dd022	vmlinux.afterpatch
-> 
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Make generic PM domains support system-wide power transitions
+(system suspend and hibernation).  Add suspend, resume, freeze, thaw,
+poweroff and restore callbacks to be associated with struct
+generic_pm_domain objects and make pm_genpd_init() use them as
+appropriate.
 
-Looks good to me, applied, thanks Eric.
+The new callbacks do nothing for devices belonging to power domains
+that were powered down at run time (before the transition).  For the
+other devices the action carried out depends on the type of the
+transition.  During system suspend the power domain .suspend()
+callback executes pm_generic_suspend() for the device, while the
+PM domain .suspend_noirq() callback runs pm_generic_suspend_noirq()
+for it, stops it and eventually removes power from the PM domain it
+belongs to (after all devices in the domain have been stopped and its
+subdomains have been powered off).
+
+During system resume the PM domain .resume_noirq() callback
+restores power to the PM domain (when executed for it first time),
+starts the device and executes pm_generic_resume_noirq() for it,
+while the .resume() callback executes pm_generic_resume() for the
+device.  Finally, the .complete() callback executes pm_runtime_idle()
+for the device which should put it back into the suspended state if
+its runtime PM usage count is equal to zero at that time.
+
+The actions carried out during hibernation and resume from it are
+analogous to the ones described above.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+
+One fix here.  Namely, the pm_runtime_disable() in pm_genpd_prepare() has
+to go under the genpd lock to prevent runtime PM from happening after we've
+done __pm_genpd_runtime_resume(), because pm_genpd_suspend() assumes that
+the device will be active.  Of course, that causes pm_generic_prepare()
+to be called after pm_runtime_disable(), so it makes sense to call
+pm_generic_complete() before pm_runtime_enable() in pm_genpd_complete().
+
+Thanks,
+Rafael
+
+---
+ drivers/base/power/domain.c |  537 +++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/pm_domain.h   |    7 
+ 2 files changed, 532 insertions(+), 12 deletions(-)
+
+Index: linux-2.6/drivers/base/power/domain.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/domain.c
++++ linux-2.6/drivers/base/power/domain.c
+@@ -40,7 +40,8 @@ static int pm_genpd_poweron(struct gener
+ 		mutex_lock(&genpd->parent->lock);
+ 	mutex_lock(&genpd->lock);
+ 
+-	if (!genpd->power_is_off)
++	if (!genpd->power_is_off
++	    || (genpd->prepared_count > 0 && genpd->suspend_power_off))
+ 		goto out;
+ 
+ 	if (genpd->parent && genpd->parent->power_is_off) {
+@@ -123,7 +124,7 @@ static int pm_genpd_poweroff(struct gene
+ 	unsigned int not_suspended;
+ 	int ret;
+ 
+-	if (genpd->power_is_off)
++	if (genpd->power_is_off || genpd->prepared_count > 0)
+ 		return 0;
+ 
+ 	if (genpd->sd_count > 0)
+@@ -241,6 +242,27 @@ static int pm_genpd_runtime_suspend(stru
+ }
+ 
+ /**
++ * __pm_genpd_runtime_resume - Resume a device belonging to I/O PM domain.
++ * @dev: Device to resume.
++ * @genpd: PM domain the device belongs to.
++ */
++static void __pm_genpd_runtime_resume(struct device *dev,
++				      struct generic_pm_domain *genpd)
++{
++	struct dev_list_entry *dle;
++
++	list_for_each_entry(dle, &genpd->dev_list, node) {
++		if (dle->dev == dev) {
++			__pm_genpd_restore_device(dle, genpd);
++			break;
++		}
++	}
++
++	if (genpd->start_device)
++		genpd->start_device(dev);
++}
++
++/**
+  * pm_genpd_runtime_resume - Resume a device belonging to I/O PM domain.
+  * @dev: Device to resume.
+  *
+@@ -251,7 +273,6 @@ static int pm_genpd_runtime_suspend(stru
+ static int pm_genpd_runtime_resume(struct device *dev)
+ {
+ 	struct generic_pm_domain *genpd;
+-	struct dev_list_entry *dle;
+ 	int ret;
+ 
+ 	dev_dbg(dev, "%s()\n", __func__);
+@@ -265,28 +286,491 @@ static int pm_genpd_runtime_resume(struc
+ 		return ret;
+ 
+ 	mutex_lock(&genpd->lock);
++	__pm_genpd_runtime_resume(dev, genpd);
++	mutex_unlock(&genpd->lock);
+ 
+-	list_for_each_entry(dle, &genpd->dev_list, node) {
+-		if (dle->dev == dev) {
+-			__pm_genpd_restore_device(dle, genpd);
+-			break;
+-		}
++	return 0;
++}
++
++#else
++
++static inline void __pm_genpd_runtime_resume(struct device *dev,
++					     struct generic_pm_domain *genpd) {}
++
++#define pm_genpd_runtime_suspend	NULL
++#define pm_genpd_runtime_resume		NULL
++
++#endif /* CONFIG_PM_RUNTIME */
++
++#ifdef CONFIG_PM_SLEEP
++
++/**
++ * pm_genpd_sync_poweroff - Synchronously power off a PM domain and its parents.
++ * @genpd: PM domain to power off, if possible.
++ *
++ * Check if the given PM domain can be powered off (during system suspend or
++ * hibernation) and do that if so.  Also, in that case propagate to its parent.
++ *
++ * This function is only called in "noirq" stages of system power transitions,
++ * so it need not acquire locks (all of the "noirq" callbacks are executed
++ * sequentially, so it is guaranteed that it will never run twice in parallel).
++ */
++static void pm_genpd_sync_poweroff(struct generic_pm_domain *genpd)
++{
++	struct generic_pm_domain *parent = genpd->parent;
++
++	if (genpd->power_is_off)
++		return;
++
++	if (genpd->suspended_count != genpd->device_count || genpd->sd_count > 0)
++		return;
++
++	if (genpd->power_off)
++		genpd->power_off(&genpd->domain);
++
++	genpd->power_is_off = true;
++	if (parent) {
++		genpd_sd_counter_dec(parent);
++		pm_genpd_sync_poweroff(parent);
++	}
++}
++
++/**
++ * pm_genpd_prepare - Start power transition of a device in a PM domain.
++ * @dev: Device to start the transition of.
++ *
++ * Start a power transition of a device (during a system-wide power transition)
++ * under the assumption that its pm_domain field points to the domain member of
++ * an object of type struct generic_pm_domain representing a PM domain
++ * consisting of I/O devices.
++ */
++static int pm_genpd_prepare(struct device *dev)
++{
++	struct generic_pm_domain *genpd;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	genpd = dev_to_genpd(dev);
++	if (IS_ERR(genpd))
++		return -EINVAL;
++
++	mutex_lock(&genpd->lock);
++
++	if (genpd->prepared_count++ == 0)
++		genpd->suspend_power_off = genpd->power_is_off;
++
++	if (genpd->suspend_power_off) {
++		mutex_unlock(&genpd->lock);
++		return 0;
+ 	}
+ 
++	/*
++	 * If the device is in the (runtime) "suspended" state, call
++	 * .start_device() for it, if defined.
++	 */
++	if (pm_runtime_suspended(dev))
++		__pm_genpd_runtime_resume(dev, genpd);
++
++	pm_runtime_disable(dev);
++
++	mutex_unlock(&genpd->lock);
++
++	return pm_generic_prepare(dev);
++}
++
++/**
++ * pm_genpd_suspend - Suspend a device belonging to an I/O PM domain.
++ * @dev: Device to suspend.
++ *
++ * Suspend a device under the assumption that its pm_domain field points to the
++ * domain member of an object of type struct generic_pm_domain representing
++ * a PM domain consisting of I/O devices.
++ */
++static int pm_genpd_suspend(struct device *dev)
++{
++	struct generic_pm_domain *genpd;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	genpd = dev_to_genpd(dev);
++	if (IS_ERR(genpd))
++		return -EINVAL;
++
++	return genpd->suspend_power_off ? 0 : pm_generic_suspend(dev);
++}
++
++/**
++ * pm_genpd_suspend_noirq - Late suspend of a device from an I/O PM domain.
++ * @dev: Device to suspend.
++ *
++ * Carry out a late suspend of a device under the assumption that its
++ * pm_domain field points to the domain member of an object of type
++ * struct generic_pm_domain representing a PM domain consisting of I/O devices.
++ */
++static int pm_genpd_suspend_noirq(struct device *dev)
++{
++	struct generic_pm_domain *genpd;
++	int ret;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	genpd = dev_to_genpd(dev);
++	if (IS_ERR(genpd))
++		return -EINVAL;
++
++	if (genpd->suspend_power_off)
++		return 0;
++
++	ret = pm_generic_suspend_noirq(dev);
++	if (ret)
++		return ret;
++
++	if (genpd->stop_device)
++		genpd->stop_device(dev);
++
++	/*
++	 * Since all of the "noirq" callbacks are executed sequentially, it is
++	 * guaranteed that this function will never run twice in parallel for
++	 * the same PM domain, so it is not necessary to use locking here.
++	 */
++	genpd->suspended_count++;
++	pm_genpd_sync_poweroff(genpd);
++
++	return 0;
++}
++
++/**
++ * pm_genpd_resume_noirq - Early resume of a device from an I/O power domain.
++ * @dev: Device to resume.
++ *
++ * Carry out an early resume of a device under the assumption that its
++ * pm_domain field points to the domain member of an object of type
++ * struct generic_pm_domain representing a power domain consisting of I/O
++ * devices.
++ */
++static int pm_genpd_resume_noirq(struct device *dev)
++{
++	struct generic_pm_domain *genpd;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	genpd = dev_to_genpd(dev);
++	if (IS_ERR(genpd))
++		return -EINVAL;
++
++	if (genpd->suspend_power_off)
++		return 0;
++
++	/*
++	 * Since all of the "noirq" callbacks are executed sequentially, it is
++	 * guaranteed that this function will never run twice in parallel for
++	 * the same PM domain, so it is not necessary to use locking here.
++	 */
++	pm_genpd_poweron(genpd);
++	genpd->suspended_count--;
+ 	if (genpd->start_device)
+ 		genpd->start_device(dev);
+ 
+-	mutex_unlock(&genpd->lock);
++	return pm_generic_resume_noirq(dev);
++}
++
++/**
++ * pm_genpd_resume - Resume a device belonging to an I/O power domain.
++ * @dev: Device to resume.
++ *
++ * Resume a device under the assumption that its pm_domain field points to the
++ * domain member of an object of type struct generic_pm_domain representing
++ * a power domain consisting of I/O devices.
++ */
++static int pm_genpd_resume(struct device *dev)
++{
++	struct generic_pm_domain *genpd;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	genpd = dev_to_genpd(dev);
++	if (IS_ERR(genpd))
++		return -EINVAL;
++
++	return genpd->suspend_power_off ? 0 : pm_generic_resume(dev);
++}
++
++/**
++ * pm_genpd_freeze - Freeze a device belonging to an I/O power domain.
++ * @dev: Device to freeze.
++ *
++ * Freeze a device under the assumption that its pm_domain field points to the
++ * domain member of an object of type struct generic_pm_domain representing
++ * a power domain consisting of I/O devices.
++ */
++static int pm_genpd_freeze(struct device *dev)
++{
++	struct generic_pm_domain *genpd;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	genpd = dev_to_genpd(dev);
++	if (IS_ERR(genpd))
++		return -EINVAL;
++
++	return genpd->suspend_power_off ? 0 : pm_generic_freeze(dev);
++}
++
++/**
++ * pm_genpd_freeze_noirq - Late freeze of a device from an I/O power domain.
++ * @dev: Device to freeze.
++ *
++ * Carry out a late freeze of a device under the assumption that its
++ * pm_domain field points to the domain member of an object of type
++ * struct generic_pm_domain representing a power domain consisting of I/O
++ * devices.
++ */
++static int pm_genpd_freeze_noirq(struct device *dev)
++{
++	struct generic_pm_domain *genpd;
++	int ret;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	genpd = dev_to_genpd(dev);
++	if (IS_ERR(genpd))
++		return -EINVAL;
++
++	if (genpd->suspend_power_off)
++		return 0;
++
++	ret = pm_generic_freeze_noirq(dev);
++	if (ret)
++		return ret;
++
++	if (genpd->stop_device)
++		genpd->stop_device(dev);
+ 
+ 	return 0;
+ }
+ 
++/**
++ * pm_genpd_thaw_noirq - Early thaw of a device from an I/O power domain.
++ * @dev: Device to thaw.
++ *
++ * Carry out an early thaw of a device under the assumption that its
++ * pm_domain field points to the domain member of an object of type
++ * struct generic_pm_domain representing a power domain consisting of I/O
++ * devices.
++ */
++static int pm_genpd_thaw_noirq(struct device *dev)
++{
++	struct generic_pm_domain *genpd;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	genpd = dev_to_genpd(dev);
++	if (IS_ERR(genpd))
++		return -EINVAL;
++
++	if (genpd->suspend_power_off)
++		return 0;
++
++	if (genpd->start_device)
++		genpd->start_device(dev);
++
++	return pm_generic_thaw_noirq(dev);
++}
++
++/**
++ * pm_genpd_thaw - Thaw a device belonging to an I/O power domain.
++ * @dev: Device to thaw.
++ *
++ * Thaw a device under the assumption that its pm_domain field points to the
++ * domain member of an object of type struct generic_pm_domain representing
++ * a power domain consisting of I/O devices.
++ */
++static int pm_genpd_thaw(struct device *dev)
++{
++	struct generic_pm_domain *genpd;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	genpd = dev_to_genpd(dev);
++	if (IS_ERR(genpd))
++		return -EINVAL;
++
++	return genpd->suspend_power_off ? 0 : pm_generic_thaw(dev);
++}
++
++/**
++ * pm_genpd_dev_poweroff - Power off a device belonging to an I/O PM domain.
++ * @dev: Device to suspend.
++ *
++ * Power off a device under the assumption that its pm_domain field points to
++ * the domain member of an object of type struct generic_pm_domain representing
++ * a PM domain consisting of I/O devices.
++ */
++static int pm_genpd_dev_poweroff(struct device *dev)
++{
++	struct generic_pm_domain *genpd;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	genpd = dev_to_genpd(dev);
++	if (IS_ERR(genpd))
++		return -EINVAL;
++
++	return genpd->suspend_power_off ? 0 : pm_generic_poweroff(dev);
++}
++
++/**
++ * pm_genpd_dev_poweroff_noirq - Late power off of a device from a PM domain.
++ * @dev: Device to suspend.
++ *
++ * Carry out a late powering off of a device under the assumption that its
++ * pm_domain field points to the domain member of an object of type
++ * struct generic_pm_domain representing a PM domain consisting of I/O devices.
++ */
++static int pm_genpd_dev_poweroff_noirq(struct device *dev)
++{
++	struct generic_pm_domain *genpd;
++	int ret;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	genpd = dev_to_genpd(dev);
++	if (IS_ERR(genpd))
++		return -EINVAL;
++
++	if (genpd->suspend_power_off)
++		return 0;
++
++	ret = pm_generic_poweroff_noirq(dev);
++	if (ret)
++		return ret;
++
++	if (genpd->stop_device)
++		genpd->stop_device(dev);
++
++	/*
++	 * Since all of the "noirq" callbacks are executed sequentially, it is
++	 * guaranteed that this function will never run twice in parallel for
++	 * the same PM domain, so it is not necessary to use locking here.
++	 */
++	genpd->suspended_count++;
++	pm_genpd_sync_poweroff(genpd);
++
++	return 0;
++}
++
++/**
++ * pm_genpd_restore_noirq - Early restore of a device from an I/O power domain.
++ * @dev: Device to resume.
++ *
++ * Carry out an early restore of a device under the assumption that its
++ * pm_domain field points to the domain member of an object of type
++ * struct generic_pm_domain representing a power domain consisting of I/O
++ * devices.
++ */
++static int pm_genpd_restore_noirq(struct device *dev)
++{
++	struct generic_pm_domain *genpd;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	genpd = dev_to_genpd(dev);
++	if (IS_ERR(genpd))
++		return -EINVAL;
++
++	/*
++	 * Since all of the "noirq" callbacks are executed sequentially, it is
++	 * guaranteed that this function will never run twice in parallel for
++	 * the same PM domain, so it is not necessary to use locking here.
++	 */
++	genpd->power_is_off = true;
++	if (genpd->suspend_power_off) {
++		/*
++		 * The boot kernel might put the domain into the power on state,
++		 * so make sure it really is powered off.
++		 */
++		if (genpd->power_off)
++			genpd->power_off(&genpd->domain);
++		return 0;
++	}
++
++	pm_genpd_poweron(genpd);
++	genpd->suspended_count--;
++	if (genpd->start_device)
++		genpd->start_device(dev);
++
++	return pm_generic_restore_noirq(dev);
++}
++
++/**
++ * pm_genpd_restore - Restore a device belonging to an I/O power domain.
++ * @dev: Device to resume.
++ *
++ * Restore a device under the assumption that its pm_domain field points to the
++ * domain member of an object of type struct generic_pm_domain representing
++ * a power domain consisting of I/O devices.
++ */
++static int pm_genpd_restore(struct device *dev)
++{
++	struct generic_pm_domain *genpd;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	genpd = dev_to_genpd(dev);
++	if (IS_ERR(genpd))
++		return -EINVAL;
++
++	return genpd->suspend_power_off ? 0 : pm_generic_restore(dev);
++}
++
++/**
++ * pm_genpd_complete - Complete power transition of a device in a power domain.
++ * @dev: Device to complete the transition of.
++ *
++ * Complete a power transition of a device (during a system-wide power
++ * transition) under the assumption that its pm_domain field points to the
++ * domain member of an object of type struct generic_pm_domain representing
++ * a power domain consisting of I/O devices.
++ */
++static void pm_genpd_complete(struct device *dev)
++{
++	struct generic_pm_domain *genpd;
++	bool run_complete;
++
++	dev_dbg(dev, "%s()\n", __func__);
++
++	genpd = dev_to_genpd(dev);
++	if (IS_ERR(genpd))
++		return;
++
++	mutex_lock(&genpd->lock);
++
++	run_complete = !genpd->suspend_power_off;
++	if (--genpd->prepared_count == 0)
++		genpd->suspend_power_off = false;
++
++	mutex_unlock(&genpd->lock);
++
++	if (run_complete)
++		pm_generic_complete(dev);
++
++	pm_runtime_enable(dev);
++}
++
+ #else
+ 
+-#define pm_genpd_runtime_suspend	NULL
+-#define pm_genpd_runtime_resume		NULL
++#define pm_genpd_prepare	NULL
++#define pm_genpd_suspend	NULL
++#define pm_genpd_suspend_noirq	NULL
++#define pm_genpd_resume_noirq	NULL
++#define pm_genpd_resume		NULL
++#define pm_genpd_freeze		NULL
++#define pm_genpd_freeze_noirq	NULL
++#define pm_genpd_thaw_noirq	NULL
++#define pm_genpd_thaw		NULL
++#define pm_genpd_complete	NULL
+ 
+-#endif /* CONFIG_PM_RUNTIME */
++#endif /* CONFIG_PM_SLEEP */
+ 
+ /**
+  * pm_genpd_add_device - Add a device to an I/O PM domain.
+@@ -305,6 +789,11 @@ int pm_genpd_add_device(struct generic_p
+ 
+ 	mutex_lock(&genpd->lock);
+ 
++	if (genpd->prepared_count > 0) {
++		ret = -EAGAIN;
++		goto out;
++	}
++
+ 	list_for_each_entry(dle, &genpd->dev_list, node)
+ 		if (dle->dev == dev) {
+ 			ret = -EINVAL;
+@@ -319,6 +808,7 @@ int pm_genpd_add_device(struct generic_p
+ 
+ 	dle->dev = dev;
+ 	list_add_tail(&dle->node, &genpd->dev_list);
++	genpd->device_count++;
+ 
+ 	spin_lock_irq(&dev->power.lock);
+ 	dev->pm_domain = &genpd->domain;
+@@ -348,6 +838,11 @@ int pm_genpd_remove_device(struct generi
+ 
+ 	mutex_lock(&genpd->lock);
+ 
++	if (genpd->prepared_count > 0) {
++		ret = -EAGAIN;
++		goto out;
++	}
++
+ 	list_for_each_entry(dle, &genpd->dev_list, node) {
+ 		if (dle->dev != dev)
+ 			continue;
+@@ -356,6 +851,7 @@ int pm_genpd_remove_device(struct generi
+ 		dev->pm_domain = NULL;
+ 		spin_unlock_irq(&dev->power.lock);
+ 
++		genpd->device_count--;
+ 		list_del(&dle->node);
+ 		kfree(dle);
+ 
+@@ -363,6 +859,7 @@ int pm_genpd_remove_device(struct generi
+ 		break;
+ 	}
+ 
++ out:
+ 	mutex_unlock(&genpd->lock);
+ 
+ 	return ret;
+@@ -471,7 +968,23 @@ void pm_genpd_init(struct generic_pm_dom
+ 	genpd->in_progress = 0;
+ 	genpd->sd_count = 0;
+ 	genpd->power_is_off = is_off;
++	genpd->device_count = 0;
++	genpd->suspended_count = 0;
+ 	genpd->domain.ops.runtime_suspend = pm_genpd_runtime_suspend;
+ 	genpd->domain.ops.runtime_resume = pm_genpd_runtime_resume;
+ 	genpd->domain.ops.runtime_idle = pm_generic_runtime_idle;
++	genpd->domain.ops.prepare = pm_genpd_prepare;
++	genpd->domain.ops.suspend = pm_genpd_suspend;
++	genpd->domain.ops.suspend_noirq = pm_genpd_suspend_noirq;
++	genpd->domain.ops.resume_noirq = pm_genpd_resume_noirq;
++	genpd->domain.ops.resume = pm_genpd_resume;
++	genpd->domain.ops.freeze = pm_genpd_freeze;
++	genpd->domain.ops.freeze_noirq = pm_genpd_freeze_noirq;
++	genpd->domain.ops.thaw_noirq = pm_genpd_thaw_noirq;
++	genpd->domain.ops.thaw = pm_genpd_thaw;
++	genpd->domain.ops.poweroff = pm_genpd_dev_poweroff;
++	genpd->domain.ops.poweroff_noirq = pm_genpd_dev_poweroff_noirq;
++	genpd->domain.ops.restore_noirq = pm_genpd_restore_noirq;
++	genpd->domain.ops.restore = pm_genpd_restore;
++	genpd->domain.ops.complete = pm_genpd_complete;
+ }
+Index: linux-2.6/include/linux/pm_domain.h
+===================================================================
+--- linux-2.6.orig/include/linux/pm_domain.h
++++ linux-2.6/include/linux/pm_domain.h
+@@ -11,6 +11,9 @@
+ 
+ #include <linux/device.h>
+ 
++#define GPD_IN_SUSPEND	1
++#define GPD_POWER_OFF	2
++
+ struct dev_power_governor {
+ 	bool (*power_down_ok)(struct dev_pm_domain *domain);
+ };
+@@ -27,6 +30,10 @@ struct generic_pm_domain {
+ 	unsigned int in_progress;	/* Number of devices being suspended now */
+ 	unsigned int sd_count;	/* Number of subdomains with power "on" */
+ 	bool power_is_off;	/* Whether or not power has been removed */
++	unsigned int device_count;	/* Number of devices */
++	unsigned int suspended_count;	/* System suspend device counter */
++	unsigned int prepared_count;	/* Suspend counter of prepared devices */
++	bool suspend_power_off;	/* Power status before system suspend */
+ 	int (*power_off)(struct dev_pm_domain *domain);
+ 	int (*power_on)(struct dev_pm_domain *domain);
+ 	int (*start_device)(struct device *dev);
+
