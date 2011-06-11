@@ -1,71 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775Ab1FKHRS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 03:17:18 -0400
-Received: from trent.utfs.org ([194.246.123.103]:55951 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751546Ab1FKHRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 03:17:17 -0400
-Date: Sat, 11 Jun 2011 00:17:11 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: WARNING: at ../kernel/printk.c:322
-Message-ID: <alpine.DEB.2.01.1106110003030.9183@trent.utfs.org>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1752891Ab1FKHYS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 03:24:18 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:52889 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751546Ab1FKHYR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jun 2011 03:24:17 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
+	h=Received:Message-ID:Date:From:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=ljQuYqUJqocXuTiDbJwVOb3zuUvV1kpne4nnSB4D494poP3r5WZBHew3W0DjQ4y9U+t7YStbJbuqQ2Cb5hmfkhGHdmrUyY8sGhsbMAMgu185rigw/OCKjzEFHb9ECD0U;
+Message-ID: <4DF3181A.7060102@tao.ma>
+Date: Sat, 11 Jun 2011 15:24:10 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: CFQ: async queue blocks the whole system
+References: <1307616577-6101-1-git-send-email-tm@tao.ma> <20110609141451.GD29913@redhat.com> <4DF0DD0F.8090407@tao.ma> <20110609153738.GF29913@redhat.com> <4DF0EA55.10209@tao.ma> <20110609182706.GG29913@redhat.com> <4DF1B035.7080009@tao.ma> <20110610091427.GB4183@redhat.com> <4DF1EB45.1070706@tao.ma> <20110610154414.GA31853@redhat.com>
+In-Reply-To: <20110610154414.GA31853@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.40.119 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 06/10/2011 11:44 PM, Vivek Goyal wrote:
+> On Fri, Jun 10, 2011 at 06:00:37PM +0800, Tao Ma wrote:
+>> On 06/10/2011 05:14 PM, Vivek Goyal wrote:
+>>> On Fri, Jun 10, 2011 at 01:48:37PM +0800, Tao Ma wrote:
+>>>
+>>> [..]
+>>>>>> btw, reverting the patch doesn't work. I can still get the livelock.
+>>>
+>>> What test exactly you are running. I am primarily interested in whether
+>>> you still get the hung task timeout warning where a writer is waiting on
+>>> get_request_wait() for more than 120 secods or not.
+>>>
+>>> Livelock might be a different problem and for which Christoph provided
+>>> a patch for XFS.
+>>>
+>>>>>
+>>>>> Can you give following patch a try and see if it helps. On my system this
+>>>>> does allow CFQ to dispatch some writes once in a while.
+>>>> Sorry, this patch doesn't work in my test.
+>>>
+>>> Can you give me backtrace of say 15 seconds each with and without patch.
+>>> I think now we must be dispatching some writes, that's a different thing
+>>> that writer still sleeps more than 120 seconds because there are  way
+>>> too many readers.
+>>>
+>>> May be we need to look into show workload tree scheduling takes place and
+>>> tweak that logic a bit.
+>> OK, our test cases can be downloaded for free. ;)
+>> svn co http://code.taobao.org/svn/dirbench/trunk/meta_test/press/set_vs_get
+>> Modify run.sh to be fit for your need. Normally within 10 mins, you will
+>> get the livelock. We have a SAS disk with 15000 RPMs.
+>>
+>> btw, you have to mount the volume on /test since the test program are
+>> not that clever. :)
+> 
+> Thanks for the test program. System keeps on working, that's a different
+> thing that writes might not make lot of progress. 
+> 
+> What do you mean by livelock in your case. How do you define that?
+I mean there are many tasks hang like a deadlock, but actually they can
+get out finally.
+> 
+> Couple of times I did see hung_task warning with your test. And I also
+> saw that we have most of the time starved WRITES but one in a while we
+> will dispatch some writes.
+yeah, that is what we get.
+> 
+> Having said that I will still admit that current logic can completely
+> starve async writes if there are sufficient number of readers. I can
+> reproduce this simply by launching lots of readers and bunch of writers
+> using fio.
+yeah, as I have said before, we found some async writes are delayed for
+more than 500 seconds.
+> 
+> So I have written another patch, where I don't allow preemption of 
+> async queue if it waiting for sync requests to drain and has not
+> dispatched any request after having been scheduled.
+> 
+> This atleast makes sure that writes are not starved. But that does not
+> mean that whole bunch of async writes are dispatched. In presence of
+> lots of read activity, expect 1 write to be dispatched every few seconds.
+> 
+> Please give this patch a try and if it still does not work, please upload
+> some bltraces while test is running.
+OK, I will try it and return back with the test result. Great thanks for
+your test and patch.
 
-after installing syslog-ng (v3.1.3 from Debian/stable (powerpc32)) on 
-Linux 3.0-git, this is printed once in the logs when syslog-ng is started:
+Tao
+> 
+> You can also run iostat on disk and should be able to see that with
+> the patch you are dispatching writes more often than before.
+> 
+> Thanks
+> Vivek
+> 
+> ---
+>  block/cfq-iosched.c |    9 ++++++++-
+>  1 file changed, 8 insertions(+), 1 deletion(-)
+> 
+> Index: linux-2.6/block/cfq-iosched.c
+> ===================================================================
+> --- linux-2.6.orig/block/cfq-iosched.c	2011-06-10 09:13:01.000000000 -0400
+> +++ linux-2.6/block/cfq-iosched.c	2011-06-10 10:02:31.850831735 -0400
+> @@ -3315,8 +3315,15 @@ cfq_should_preempt(struct cfq_data *cfqd
+>  	 * if the new request is sync, but the currently running queue is
+>  	 * not, let the sync request have priority.
+>  	 */
+> -	if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq))
+> +	if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq)) {
+> +		/*
+> +		 * Allow atleast one dispatch otherwise this can repeat
+> +		 * and writes can be starved completely
+> +		 */
+> +		if (!cfqq->slice_dispatch)
+> +			return false;
+>  		return true;
+> +	}
+>  
+>  	if (new_cfqq->cfqg != cfqq->cfqg)
+>  		return false;
+> 
 
-
-Attempt to access syslog with CAP_SYS_ADMIN but no CAP_SYSLOG (deprecated).
-------------[ cut here ]------------
-WARNING: at /usr/local/src/linux-2.6-git/kernel/printk.c:322
-Modules linked in: therm_adt746x aes_generic sd_mod firewire_sbp2 scsi_mod 
-arc4 b43 mac80211 i2c_powermac cfg80211
-NIP: c0034190 LR: c0034190 CTR: 00000000
-REGS: eea07c80 TRAP: 0700   Not tainted  (3.0.0-rc2-00251-g7f45e5c-dirty)
-MSR: 00029032 <EE,ME,CE,IR,DR>  CR: 22082442  XER: 20000000
-TASK = ef2fd1d0[1444] 'syslog-ng' THREAD: eea06000
-GPR00: c0034190 eea07d30 ef2fd1d0 0000005e 00000001 c00331d4 00000000 00000002 
-GPR08: 00000000 ef2fd1d0 c005b278 00000001 48082428 100653a0 00000000 10016228 
-GPR16: ffffffff 10004e68 00000000 00000000 00000000 ffffffe9 00000000 00000000 
-GPR24: 107f2144 c0126524 eef543c0 c0126558 00000000 00000000 c057bd78 00000001 
-NIP [c0034190] do_syslog+0x11c/0x638
-LR [c0034190] do_syslog+0x11c/0x638
-Call Trace:
-[eea07d30] [c0034190] do_syslog+0x11c/0x638 (unreliable)
-[eea07d90] [c0126578] kmsg_open+0x20/0x30
-[eea07da0] [c01198c8] proc_reg_open+0xac/0x190
-[eea07dd0] [c00c310c] __dentry_open+0x158/0x2bc
-[eea07df0] [c00d4520] do_last+0x1d8/0x724
-[eea07e30] [c00d5b90] path_openat+0xe4/0x410
-[eea07e90] [c00d5fdc] do_filp_open+0x44/0xb0
-[eea07f10] [c00c2ea8] do_sys_open+0x104/0x1e8
-[eea07f40] [c0012214] ret_from_syscall+0x0/0x38
---- Exception: c01 at 0xfacd008
-    LR = 0xfaccfb8
-Instruction dump:
-3bc0ffff 4800af39 2f830000 41beff74 3fc0c058 3bdebd78 881e04b8 2f800001 
-419eff54 3c60c04b 38638a24 483cccd9 <0fe00000> 38000001 981e04b8 4bffff38 
----[ end trace 5166675c35e74c71 ]---
-
-
-The warning about the "deprecated CAP_SYS_ADMIN but no CAP_SYSLOG" 
-message is known to the syslog-ng folks[0], but the WARNING above is a bit 
-worrying. Anyone knows why it will generate this scary WARNING?
-
-Christian.
-
-[0] https://bugzilla.balabit.com/show_bug.cgi?id=108
--- 
-BOFH excuse #247:
-
-Due to Federal Budget problems we have been forced to cut back on the number of users able to access the system at one time. (namely none allowed....)
