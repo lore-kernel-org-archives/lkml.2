@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758609Ab1FKO5q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 10:57:46 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:47237 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758552Ab1FKO5p (ORCPT
+	id S1758646Ab1FKPKz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 11:10:55 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:10760 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758552Ab1FKPKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 10:57:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=knXjPd4w9BrDTNj0ssmF+Jhq+PRXnmOaDLnlHWpLkTCtQ98PyRUnEOpClV9UtB9/SS
-         gHzStGYGkj1kIJOhTjfuyX4XAUt2JtHBbwk5mzXKUsHe852/fPrSvohCtlUIRO8PVcl7
-         V6SEdpWlO+cQuKoTZpvsFbszxoZEChOqYLMjE=
-From: Wanlong Gao <wanlong.gao@gmail.com>
+	Sat, 11 Jun 2011 11:10:53 -0400
+Date: Sat, 11 Jun 2011 17:02:30 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
 To: linux-kernel@vger.kernel.org
-Cc: Jens Axboe <jaxboe@fusionio.com>, Tejun Heo <tj@kernel.org>,
-        Wanlong Gao <wanlong.gao@gmail.com>
-Subject: [PATCH] block:fix the comment error in blkdev.h
-Date: Sat, 11 Jun 2011 22:57:15 +0800
-Message-Id: <1307804235-5658-1-git-send-email-wanlong.gao@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+cc: platform-driver-x86@vger.kernel.org, Frank Seidel <frank@f-seidel.de>,
+        linux-input@vger.kernel.org
+Subject: Re: Reproducible general protection fault: 0000 - hdapsd exited with
+ preempt_count 1 - kernel 2.6.38.8
+In-Reply-To: <alpine.LNX.2.00.1106101001360.19998@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1106111701240.23835@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1106101001360.19998@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is not a function rq_init but blk_rq_init in block/blk-core.c.
+On Fri, 10 Jun 2011, Jesper Juhl wrote:
 
-Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
----
- include/linux/blkdev.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> Hi
+> 
+> I just noticed a GPF during bootup of my laptop :
+> 
+> [   18.944171] general protection fault: 0000 [#1] PREEMPT SMP 
+> [   18.944243] last sysfs file: /sys/devices/virtual/input/input13/event13/uevent
+> [   18.944295] CPU 0 
+> [   18.944307] Modules linked in: joydev hdaps uvcvideo btusb bluetooth usbhid hid videodev v4l2_compat_ioctl32 snd_hda_codec_hdmi snd_hda_codec_conexant vboxnetadp vboxnetflt vboxdrv snd_hda_intel snd_hda_codec cpufreq_ondemand snd_hwdep arc4 sg ecb iwlagn msr acpi_cpufreq freq_table mperf i915 tp_smapi thinkpad_ec ehci_hcd thinkpad_acpi drm_kms_helper i2c_i801 snd_pcm iwlcore snd_timer mac80211 e1000e snd_page_alloc drm cfg80211 firewire_ohci i2c_algo_bit snd i2c_core usbcore rfkill pcspkr firewire_core serio_raw sdhci_pci evdev iTCO_wdt sdhci tpm_tis soundcore tpm mmc_core wmi intel_ips intel_agp nvram crc_itu_t iTCO_vendor_support battery intel_gtt tpm_bios ac video psmouse thermal processor button ext4 mbcache jbd2 crc16 sr_mod cdrom sd_mod ahci libahci libata scsi_mod
+> [   18.944928] 
+> [   18.946142] Pid: 978, comm: hdapsd Not tainted 2.6.38-ARCH #1 LENOVO 4384GJG/4384GJG
+<...>
 
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 1a23722..36f2e2b 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -73,7 +73,7 @@ enum rq_cmd_type_bits {
- 
- /*
-  * try to put the fields that are referenced together in the same cacheline.
-- * if you modify this structure, be sure to check block/blk-core.c:rq_init()
-+ * if you modify this structure, be sure to check block/blk-core.c:blk_rq_init()
-  * as well!
-  */
- struct request {
+Just tested 2.6.39.1 and I cannot reproduce the GPF with that kernel, so 
+it seems this has been fixed already.
+
 -- 
-1.7.4.1
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
