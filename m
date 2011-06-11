@@ -1,74 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab1FKRSu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 13:18:50 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:34878 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab1FKRSt (ORCPT
+	id S1752702Ab1FKRWU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 13:22:20 -0400
+Received: from mta11.charter.net ([216.33.127.80]:45936 "EHLO
+	mta11.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994Ab1FKRWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 13:18:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=O0LlwHNjxJjO6+x7vpLeYzdk94TXEbUxvC79H3c2Z6qtJ/8Ue8xokld6saX06v+2m8
-         8ufZVPOmi2fcRawbAq2v5woft7J5a4uGTn4GtUrzQn4qIOsg6tzPZ4dYgzVuy/ZZXMQM
-         gNUTcQ5//SseKtzJ2EDndu7J4oYgf/76tlYkQ=
-Message-ID: <4DF3A376.1000601@gmail.com>
-Date: Sat, 11 Jun 2011 11:18:46 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	Sat, 11 Jun 2011 13:22:16 -0400
+X-Greylist: delayed 6543 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Jun 2011 13:22:16 EDT
+X-Authority-Analysis: v=1.1 cv=1b2X7W/SifksZeClH/haT1SUt4udqxFGF00pZw2/jJk=
+ c=1 sm=1 a=p9YancsnzTcA:10 a=bwGQv-0rnx0A:10 a=8nJEP1OIZ-IA:10
+ a=xzrYXqw+0zwiO4gHSXHcAg==:17 a=IifoD2hXYIodyOrEDE4A:9 a=wPNLvfGTeEIA:10
+ a=xzrYXqw+0zwiO4gHSXHcAg==:117
+Message-ID: <4DF3A447.3050505@cuw.edu>
+Date: Sat, 11 Jun 2011 12:22:15 -0500
+From: Greg Dietsche <gregory.dietsche@cuw.edu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110505 Icedove/3.0.11
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: David Rientjes <rientjes@google.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, tglx@linutronix.de,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, mel@csn.ul.ie,
-        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, pavel@ucw.cz
-Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning
- instead of failing
-References: <20110610004331.13672278.akpm@linux-foundation.org> <BANLkTimC8K2_H7ZEu2XYoWdA09-3XxpV7Q@mail.gmail.com> <20110610091233.GJ24424@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1106101150280.17197@chino.kir.corp.google.com> <20110610185858.GN24424@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1106101456080.23076@chino.kir.corp.google.com> <20110610220748.GO24424@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1106101510000.23076@chino.kir.corp.google.com> <20110610222020.GP24424@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1106101526390.24646@chino.kir.corp.google.com> <20110611094500.GA2356@debian.cable.virginmedia.net>
-In-Reply-To: <20110611094500.GA2356@debian.cable.virginmedia.net>
+To: Julia Lawall <julia@diku.dk>
+CC: Nicolas Palix <Nicolas.Palix@inria.fr>, rdunlap@xenotime.net,
+        Gilles.Muller@lip6.fr, cocci@diku.dk, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] coccicheck: add M= option to control which dir is
+ processed
+References: <1307503774-30370-1-git-send-email-Gregory.Dietsche@cuw.edu> <1307503774-30370-2-git-send-email-Gregory.Dietsche@cuw.edu> <4DEFC6DA.9050809@cuw.edu> <BANLkTi=gZzsZcSKUd3x50PbPwKC-Vnj24Q@mail.gmail.com> <4DF38AB8.4080004@cuw.edu> <Pine.LNX.4.64.1106111740130.13465@ask.diku.dk>
+In-Reply-To: <Pine.LNX.4.64.1106111740130.13465@ask.diku.dk>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2011 03:45 AM, Catalin Marinas wrote:
-> On Fri, Jun 10, 2011 at 03:30:35PM -0700, David Rientjes wrote:
->> On Fri, 10 Jun 2011, Russell King - ARM Linux wrote:
->>> So those platforms which don't have a DMA zone, don't have any problems
->>> with DMA, yet want to use the very same driver which does have a problem
->>> on ISA hardware have to also put up with a useless notification that
->>> their kernel might be broken?
->>>
->>> Are you offering to participate on other architectures mailing lists to
->>> answer all the resulting queries?
->>
->> It all depends on the wording of the "warning", it should make it clear
->> that this is not always an error condition and only affects certain types
->> of hardware which the user may or may not have.
->
-> I think people will still be worried when they get a warning. And there
-> are lots of platforms that don't need ZONE_DMA just because devices can
-> access the full RAM. As Russell said, same drivers may be used on
-> platforms that can actually do DMA only to certain areas of memory and
-> require ZONE_DMA (there are several examples on ARM).
->
-> If you want, you can add something like CONFIG_ARCH_HAS_ZONE_DMA across
-> all the platforms that support ZONE_DMA and only get the warning if
-> ZONE_DMA is available but not enabled.
 
-It sounds to me like these drivers using GFP_DMA should really be fixed 
-to use the proper DMA API. That's what it's there for. The problem is 
-that GFP_DMA doesn't really mean anything generically other than "memory 
-suitable for DMA according to some criteria". On x86 it means low 16MB, 
-on some other platforms it presumably means other things, on others it 
-means nothing at all. It's quite likely that a driver that requests 
-GFP_DMA isn't likely to get exactly what it wants on all platforms (for 
-example on x86 the allocation will be constrained to the low 16MB which 
-is unnecessarily restrictive for most devices).
+
+On 06/11/2011 10:40 AM, Julia Lawall wrote:
+> On Sat, 11 Jun 2011, Greg Dietsche wrote:
+>
+>    
+>> On 06/08/2011 02:10 PM, Nicolas Palix wrote:
+>>      
+>>> I am not familiar with out-of-tree development but I guess that in
+>>> that case we should
+>>> also add a "-I $KBUILD_EXTMOD/include" ?
+>>>
+>>>
+>>>        
+>> I decided to skip doing this in V2 of the patch. I did a very quick test and
+>> cocci didn't seem to like two -I flags on one command line.
+>>      
+> What was the problem and what version of coccinelle do you have?  To my
+> recollection, the ability to have multiple -I options was added sometime
+> not so long ago.
+>
+>    
+Hmm... my 'quick' test must have been bad. I just tested again with 
+0.2.3 (debian squeeze) and 1.0.0-rc3 and both seem to work just with 
+multiple -I options. As I recall, originally, the script just exited 
+with a code of 1 in my original test...
+
+so the updated line really should read:
+OPTIONS="-dir $KBUILD_EXTMOD -patch $srctree -I $srctree/include -I 
+$KBUILD_EXTMOD/include"
+
+I'll send an updated patch in a day or two. I've got some other stuff to 
+do today. Also, I noticed another bug that I'll need to fix too. The 
+lines in my patch that read:
+             echo 'M= is only supported for Coccinelle >= 0.2.3'
+             exit 1
+are flat out wrong... :(
+
+Greg
+
+> julia
+>
+>    
+>>> The use of -I by Coccinelle depends on the other options (like
+>>> -include_headers or -all_includes).
+>>> Such options are retrieved from the comments in the cocci files.
+>>> So the need for -I depends on the semantic patch you consider. I think
+>>> it is thus better
+>>> to be "exhaustive" in that case.
+>>>
+>>> Julia, is there any performance problem in doing so ?
+>>>
+>>>        
+>> Greg
+>>      
