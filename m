@@ -1,88 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab1FKRWU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 13:22:20 -0400
-Received: from mta11.charter.net ([216.33.127.80]:45936 "EHLO
-	mta11.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab1FKRWQ (ORCPT
+	id S1752769Ab1FKRXB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 13:23:01 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52358 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab1FKRW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 13:22:16 -0400
-X-Greylist: delayed 6543 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Jun 2011 13:22:16 EDT
-X-Authority-Analysis: v=1.1 cv=1b2X7W/SifksZeClH/haT1SUt4udqxFGF00pZw2/jJk=
- c=1 sm=1 a=p9YancsnzTcA:10 a=bwGQv-0rnx0A:10 a=8nJEP1OIZ-IA:10
- a=xzrYXqw+0zwiO4gHSXHcAg==:17 a=IifoD2hXYIodyOrEDE4A:9 a=wPNLvfGTeEIA:10
- a=xzrYXqw+0zwiO4gHSXHcAg==:117
-Message-ID: <4DF3A447.3050505@cuw.edu>
-Date: Sat, 11 Jun 2011 12:22:15 -0500
-From: Greg Dietsche <gregory.dietsche@cuw.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110505 Icedove/3.0.11
-MIME-Version: 1.0
-To: Julia Lawall <julia@diku.dk>
-CC: Nicolas Palix <Nicolas.Palix@inria.fr>, rdunlap@xenotime.net,
-        Gilles.Muller@lip6.fr, cocci@diku.dk, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] coccicheck: add M= option to control which dir is
- processed
-References: <1307503774-30370-1-git-send-email-Gregory.Dietsche@cuw.edu> <1307503774-30370-2-git-send-email-Gregory.Dietsche@cuw.edu> <4DEFC6DA.9050809@cuw.edu> <BANLkTi=gZzsZcSKUd3x50PbPwKC-Vnj24Q@mail.gmail.com> <4DF38AB8.4080004@cuw.edu> <Pine.LNX.4.64.1106111740130.13465@ask.diku.dk>
-In-Reply-To: <Pine.LNX.4.64.1106111740130.13465@ask.diku.dk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sat, 11 Jun 2011 13:22:59 -0400
+Date: Sat, 11 Jun 2011 10:26:54 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Kyungmin Park <kmpark@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
+        thomas.abraham@linaro.org
+Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
+ Power Management
+Message-ID: <20110611102654.01e5cea9@infradead.org>
+In-Reply-To: <20110611170610.GA2212@linux.vnet.ibm.com>
+References: <20110610165529.GC2230@linux.vnet.ibm.com>
+	<20110610170535.GC25774@srcf.ucam.org>
+	<20110610171939.GE2230@linux.vnet.ibm.com>
+	<20110610172307.GA27630@srcf.ucam.org>
+	<20110610175248.GF2230@linux.vnet.ibm.com>
+	<20110610180807.GB28500@srcf.ucam.org>
+	<20110610184738.GG2230@linux.vnet.ibm.com>
+	<20110610192329.GA30496@srcf.ucam.org>
+	<20110610193713.GJ2230@linux.vnet.ibm.com>
+	<20110610200233.5ddd5a31@infradead.org>
+	<20110611170610.GA2212@linux.vnet.ibm.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 11 Jun 2011 10:06:10 -0700
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+
+> On Fri, Jun 10, 2011 at 08:02:33PM -0700, Arjan van de Ven wrote:
+> > On Fri, 10 Jun 2011 12:37:13 -0700
+> > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> > 
+> > > On Fri, Jun 10, 2011 at 08:23:29PM +0100, Matthew Garrett wrote:
+> > > > On Fri, Jun 10, 2011 at 11:47:38AM -0700, Paul E. McKenney
+> > > > wrote:
+> > > > 
+> > > > > And if I understand you correctly, then the patches that
+> > > > > Ankita posted should help your self-refresh case, along with
+> > > > > the originally intended the power-down case and
+> > > > > special-purpose use of memory case.
+> > > > 
+> > > > Yeah, I'd hope so once we actually have capable hardware.
+> > > 
+> > > Cool!!!
+> > > 
+> > > So Ankita's patchset might be useful to you at some point, then.
+> > > 
+> > > Does it look like a reasonable implementation?
+> > 
+> > as someone who is working on hardware that is PASR capable right
+> > now, I have to admit that our plan was to just hook into the buddy
+> > allocator, and use PASR on the top level of buddy (eg PASR off
+> > blocks that are free there, and PASR them back on once an
+> > allocation required the block to be broken up)..... that looked the
+> > very most simple to me.
+> > 
+> > Maybe something much more elaborate is needed, but I didn't see why
+> > so far.
+> 
+> If I understand correctly, you face the same issue that affects
+> transparent huge pages, but on a much larger scale.  If you have even
+> one non-moveable allocation in a given top-level buddy block, you
+> won't be able to PASR that block.
+
+yep we'd use a non-kernel zone for that; not too big a deal.
+(the much larger scale you can debate, if your memory controller is
+configured correctly the PASR regions are not all that much bigger than
+hugepages)
+> 
+> In addition, one of the things that Ankita's patchset is looking to do
+> is to control allocations in a given region, so that the region can be
+> easily evacuated.  One use for this is to power off regions of memory,
+> another is to PASR off regions of memory, and a third is to ensure
+> that large regions of memory are available for when needed by media
+> codecs (e.g., cameras), but can be used for other purposes when the
+> media codecs don't need them (e.g., when viewing photos rather than
+> taking them).
+
+the codec issue seems to be solved in time; a previous generation
+silicon on our (Intel) side had ARM ecosystem blocks that did not do
+scatter gather, however the current generation ARM ecosystem blocks all
+seem to have added S/G to them....
+(in part this is coming from the strong desire to get camera/etc blocks
+to all use "GPU texture" class memory, so that the camera can directly
+deposit its information into a gpu texture, and similar for media
+encode/decode blocks... this avoids copies as well as duplicate memory).
 
 
-On 06/11/2011 10:40 AM, Julia Lawall wrote:
-> On Sat, 11 Jun 2011, Greg Dietsche wrote:
->
->    
->> On 06/08/2011 02:10 PM, Nicolas Palix wrote:
->>      
->>> I am not familiar with out-of-tree development but I guess that in
->>> that case we should
->>> also add a "-I $KBUILD_EXTMOD/include" ?
->>>
->>>
->>>        
->> I decided to skip doing this in V2 of the patch. I did a very quick test and
->> cocci didn't seem to like two -I flags on one command line.
->>      
-> What was the problem and what version of coccinelle do you have?  To my
-> recollection, the ability to have multiple -I options was added sometime
-> not so long ago.
->
->    
-Hmm... my 'quick' test must have been bad. I just tested again with 
-0.2.3 (debian squeeze) and 1.0.0-rc3 and both seem to work just with 
-multiple -I options. As I recall, originally, the script just exited 
-with a code of 1 in my original test...
 
-so the updated line really should read:
-OPTIONS="-dir $KBUILD_EXTMOD -patch $srctree -I $srctree/include -I 
-$KBUILD_EXTMOD/include"
-
-I'll send an updated patch in a day or two. I've got some other stuff to 
-do today. Also, I noticed another bug that I'll need to fix too. The 
-lines in my patch that read:
-             echo 'M= is only supported for Coccinelle >= 0.2.3'
-             exit 1
-are flat out wrong... :(
-
-Greg
-
-> julia
->
->    
->>> The use of -I by Coccinelle depends on the other options (like
->>> -include_headers or -all_includes).
->>> Such options are retrieved from the comments in the cocci files.
->>> So the need for -I depends on the semantic patch you consider. I think
->>> it is thus better
->>> to be "exhaustive" in that case.
->>>
->>> Julia, is there any performance problem in doing so ?
->>>
->>>        
->> Greg
->>      
+-- 
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
