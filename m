@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab1FKK3y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 06:29:54 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:27611
-	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751258Ab1FKK3x (ORCPT
+	id S1754455Ab1FKKck (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 06:32:40 -0400
+Received: from mars.netasq.com ([91.212.116.3]:50764 "EHLO work.netasq.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753958Ab1FKKcj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 06:29:53 -0400
-X-SpamScore: -18
-X-BigFish: VPS-18(zz1432N98dKzz1202hzz15d4Rz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LMMFSW-02-BNJ-02
-X-M-MSG: 
-Date: Sat, 11 Jun 2011 12:29:47 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Chris Wright <chrisw@sous-sol.org>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 8/9] x86/amd-iommu: Search for existind dev_data before
- allocting a new one
-Message-ID: <20110611102947.GC29908@amd.com>
-References: <1307707729-29767-1-git-send-email-joerg.roedel@amd.com>
- <1307707729-29767-9-git-send-email-joerg.roedel@amd.com>
- <20110610205226.GN23047@sequoia.sous-sol.org>
+	Sat, 11 Jun 2011 06:32:39 -0400
+Date: Sat, 11 Jun 2011 12:30:31 +0200 (CEST)
+From: Clement LECIGNE <clement.lecigne@netasq.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org
+Message-ID: <474215859.237587.1307788231269.JavaMail.root@work1>
+In-Reply-To: <20110610214036.GA23163@infradead.org>
+Subject: Re: [BUG] hfs_find_init() sb->ext_tree NULL pointer dereference
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110610205226.GN23047@sequoia.sous-sol.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [88.169.180.107]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 04:52:26PM -0400, Chris Wright wrote:
-> * Joerg Roedel (joerg.roedel@amd.com) wrote:
-> > +static struct iommu_dev_data *search_dev_data(u16 devid)
-> > +{
-> > +     struct iommu_dev_data *dev_data;
-> > +     unsigned long flags;
-> > +
-> > +	spin_lock_irqsave(&dev_data_list_lock, flags);
-> > +	list_for_each_entry(dev_data, &dev_data_list, dev_data_list) {
-> > +		if (dev_data->devid == devid)
+Hi Christoph,
 
-Right, multiple segments are not handled at all by the driver. The ACPI
-tables support them in theory, but there are no systems to test those
-things on.
+----- Christoph Hellwig <hch@infradead.org> wrote:
+> On Wed, Jun 08, 2011 at 01:07:55PM +0200, Clement LECIGNE wrote:
+> -snip-
+> Well, it can't happen in practice.  The extent file always fits into
+> the first blocks for a valid extents file.  And yes, you could
 
-	Joerg
+If this can't happen then it should be reasonable to ban this case.
+
+> artifically construct a filesystem where this is not true, and if you
+> want to be cool call it a security issue.  But in the end anyone who
+> mounts untrusted disk images has much worse issues than this, so don't
+> do it.
+
+Yes I agree but think about the case we are a simple user on the machine
+without root. For example few years ago at my university I was able to
+gain root priv thanks to a vulnerability in XFS quite similar to this one
+(exploit which does the evil mmap(), plug usb key, automounting, sbam).
+
+Best,
 
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Clément LECIGNE,
