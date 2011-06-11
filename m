@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758394Ab1FKAIG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 20:08:06 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:12332 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758281Ab1FKAIE (ORCPT
+	id S1758400Ab1FKAOK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 20:14:10 -0400
+Received: from mga09.intel.com ([134.134.136.24]:54406 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758302Ab1FKAOH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 20:08:04 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-15.tower-160.messagelabs.com!1307750883!25391422!1
-X-StarScan-Version: 6.2.17; banners=-,-,-
-X-Originating-IP: [216.166.12.72]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] drbd_nl.c: Use bitmap_parse instead of __bitmap_parse
-Date: Fri, 10 Jun 2011 17:07:02 -0700
-User-Agent: KMail/1.9.9
-CC: <drbd-dev@lists.linbit.com>
+	Fri, 10 Jun 2011 20:14:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,350,1304319600"; 
+   d="scan'208";a="12217581"
+From: Andi Kleen <andi@firstfloor.org>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
+        linux-kernel@vger.kernel.org, "Huang\, Ying" <ying.huang@intel.com>,
+        Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH 05/10] MCE: Mask out address mask bits below address granuality
+References: <4df13c362729376e2@agluck-desktop.sc.intel.com>
+	<4DF1D0B1.1020302@jp.fujitsu.com>
+	<BANLkTimFXpqLOpX7x-yQ2Sa+aEF4BakSnw@mail.gmail.com>
+Date: Fri, 10 Jun 2011 17:12:55 -0700
+In-Reply-To: <BANLkTimFXpqLOpX7x-yQ2Sa+aEF4BakSnw@mail.gmail.com> (Tony Luck's
+	message of "Fri, 10 Jun 2011 12:06:45 -0700")
+Message-ID: <m2ei31ql88.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201106101707.02928.hartleys@visionengravers.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The buffer 'sc.cpu_mask' is a kernel buffer. If bitmap_parse is used instead
-of __bitmap_parse the extra parameter that indicates a kernel buffer is
-not needed. 
+Tony Luck <tony.luck@gmail.com> writes:
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Lars Ellenberg <drbd-dev@lists.linbit.com>
+> 2011/6/10 Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>:
+>> Why do you have to mask it out in kernel, why not in user/logger?
+>>
+>> One possible story is:
+>>  "... the brand-new Xeon XXXX has new MCx_***_VALID bit in ****
+>>  register, if it is set the lower bits of MCx_ADDR indicates
+>>  ****, otherwise the bits are undefined ..."
+>>
+>> So I think that kernel should convey the raw value from hardware to
+>> userland.  Even if it contains some noise on it, user can determine
+>> whether it is useful or not.  And more, since this is an error record,
+>> there will be no second chance to retrieve the data afterward.
+>
+> This is a good point - we should log the original untouched bits someplace.
 
----
+These bits are undefined. It doesn't make sense to log undefined bits.
+They can contain random values. Showing random values just confuses
+people. 
 
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index 515bcd9..0feab26 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -1829,10 +1829,10 @@ static int drbd_nl_syncer_conf(struct drbd_conf *mdev, struct drbd_nl_cfg_req *n
- 
- 	/* silently ignore cpu mask on UP kernel */
- 	if (nr_cpu_ids > 1 && sc.cpu_mask[0] != 0) {
--		err = __bitmap_parse(sc.cpu_mask, 32, 0,
-+		err = bitmap_parse(sc.cpu_mask, 32,
- 				cpumask_bits(new_cpu_mask), nr_cpu_ids);
- 		if (err) {
--			dev_warn(DEV, "__bitmap_parse() failed with %d\n", err);
-+			dev_warn(DEV, "bitmap_parse() failed with %d\n", err);
- 			retcode = ERR_CPU_MASK_PARSE;
- 			goto fail;
- 		}
+How would the user even know it's undefined?  They normally don't read
+the specs. Really programs have to handle that for the user. And there
+the only sane way is to just mask them off.
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only
