@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab1FKXF3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 19:05:29 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:50383 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905Ab1FKXF0 (ORCPT
+	id S1752728Ab1FKXEY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 19:04:24 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48425 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730Ab1FKXEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 19:05:26 -0400
-Date: Sat, 11 Jun 2011 16:01:19 -0700 (PDT)
-Message-Id: <20110611.160119.176399204911265689.davem@davemloft.net>
-To: ralf@linux-mips.org
-Cc: jbarnes@virtuousgeek.org, linux-pci@vger.kernel.org, avorontsov@mvista.com,
-        cmetcalf@tilera.com, ccross@android.com, eric.y.miao@gmail.com,
-        konkers@android.com, gxt@mprc.pku.edu.cn, hpa@zytor.com,
-        kaloz@openwrt.org, mingo@redhat.com, ink@jurassic.park.msu.ru,
-        khc@pm.waw.pl, kernel@wantstofly.org, mattst88@gmail.com,
-        nico@fluxnic.net, olof@lixom.net, lethal@linux-sh.org, rth@twiddle.net,
-        linux@arm.linux.org.uk, tglx@linutronix.de, akpm@linux-foundation.org,
-        linux-alpha@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, linux-tegra@vger.kernel.org,
-        sparclinux@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] PCI: Make the struct pci_dev * argument of
- pci_fixup_irqs const.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110610143021.GA26043@linux-mips.org>
-References: <20110610143021.GA26043@linux-mips.org>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 11 Jun 2011 16:01:25 -0700 (PDT)
+	Sat, 11 Jun 2011 19:04:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=LAZabpksxnCy61LgSueBbFLvRPu6S9I7kcTONzPVvKsL33NJ/5mTLZT+kuV1vumewX
+         78F1pQF2W1nLDLBEJCAQ82+3Kq7c7A8pXZJU6jLppJ0J80+jzaI8G8mmgHEzWI7CmU96
+         0aZhGAU7uCkE56ytDFgXKZcR41LwqLoMFBk2k=
+MIME-Version: 1.0
+In-Reply-To: <20110611184416.GB3238@redhat.com>
+References: <BANLkTikF7=qfXAmrNzyMSmWm7Neh6yMAB8EbBp7oLcfQmrbDjA@mail.gmail.com>
+	<20110610091355.2ce38798.kamezawa.hiroyu@jp.fujitsu.com>
+	<alpine.LSU.2.00.1106091812030.4904@sister.anvils>
+	<20110610113311.409bb423.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110610121949.622e4629.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110610125551.385ea7ed.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110610133021.2eaaf0da.kamezawa.hiroyu@jp.fujitsu.com>
+	<alpine.LSU.2.00.1106101425400.28334@sister.anvils>
+	<20110610235442.GA21413@cmpxchg.org>
+	<20110611175136.GA31154@cmpxchg.org>
+	<20110611184416.GB3238@redhat.com>
+Date: Sun, 12 Jun 2011 08:04:21 +0900
+Message-ID: <BANLkTikJONQ2tL_L=QtMv9qsOmJj3dD+Rg@mail.gmail.com>
+Subject: Re: [PATCH] [BUGFIX] update mm->owner even if no next owner.
+From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ying Han <yinghan@google.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ralf Baechle <ralf@linux-mips.org>
-Date: Fri, 10 Jun 2011 15:30:21 +0100
+2011/6/12 Andrea Arcangeli <aarcange@redhat.com>:
+> On Sat, Jun 11, 2011 at 07:51:36PM +0200, Johannes Weiner wrote:
+>> This is a problem with the patch, but I think Kame's analysis and
+>> approach to fix it are still correct.
+>
+> I agree with Kame's analysis too. This explains why removing the
+> mmap_sem read mode introduced the problem, it was quite some
+> unexpected subtleness not apparent to the naked eye, as memcg didn't
+> explicitly relay on mmap_sem but it did implicitly during exit because
+> of the __khugepaged_exit waiting if we were collapsing an hugepage...
+>
+> So the fix is safe because the task struct is freed with
+> delayed_put_task_struct and that won't run until we rcu_read_unlock
+> after mem_cgroup_from_task.
+>
+> Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+>
 
-> Aside of the usual motivation for constification,  this function has a
-> history of being abused a hook for interrupt and other fixups so I turned
-> this function const ages ago in the MIPS code but it should be done
-> treewide.
-> 
-> Due to function pointer passing in varous places a few other functions
-> had to be constified as well.
-> 
-> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Thank you all.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+Regards,
+-Kame
