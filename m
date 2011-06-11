@@ -1,99 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758638Ab1FKQEY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 12:04:24 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:53080 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757888Ab1FKQEW (ORCPT
+	id S1751406Ab1FKQWi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 12:22:38 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50781 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750835Ab1FKQWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 12:04:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=N30yYE23ss/2fW+CojMncmhSEOvnEqlFImbv0wMGsgf85tBPcKXeX1S1i2azDzdK+b
-         Mt3ai9mZXa9qUmiIqZ/w==
-Date: Sat, 11 Jun 2011 09:04:14 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Andrea Arcangeli <aarcange@redhat.com>
-cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Ying Han <yinghan@google.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] [BUGFIX] update mm->owner even if no next owner.
-In-Reply-To: <BANLkTi=bBSeMFtUDyz+px1Kt34HDU=DEcw@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1106110847190.29336@sister.anvils>
-References: <20110609212956.GA2319@redhat.com> <BANLkTikCfWhoLNK__ringzy7KjKY5ZEtNb3QTuX1jJ53wNNysA@mail.gmail.com> <BANLkTikF7=qfXAmrNzyMSmWm7Neh6yMAB8EbBp7oLcfQmrbDjA@mail.gmail.com> <20110610091355.2ce38798.kamezawa.hiroyu@jp.fujitsu.com>
- <alpine.LSU.2.00.1106091812030.4904@sister.anvils> <20110610113311.409bb423.kamezawa.hiroyu@jp.fujitsu.com> <20110610121949.622e4629.kamezawa.hiroyu@jp.fujitsu.com> <20110610125551.385ea7ed.kamezawa.hiroyu@jp.fujitsu.com> <20110610133021.2eaaf0da.kamezawa.hiroyu@jp.fujitsu.com>
- <alpine.LSU.2.00.1106101425400.28334@sister.anvils> <BANLkTi=bBSeMFtUDyz+px1Kt34HDU=DEcw@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Sat, 11 Jun 2011 12:22:37 -0400
+Date: Sat, 11 Jun 2011 17:05:24 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Ashish Jangam <Ashish.Jangam@kpitcummins.com>,
+        "sameo@openedhand.com" <sameo@openedhand.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dajun Chen <Dajun.Chen@diasemi.com>,
+        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+Subject: Re: [PATCHv3 -next] MFD: MFD module of DA9052 PMIC driver
+Message-ID: <20110611160523.GA7079@opensource.wolfsonmicro.com>
+References: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BC62219@KCINPUNHJCMS01.kpit.com> <201106111249.05204.arnd@arndb.de> <20110611113705.GA2738@opensource.wolfsonmicro.com> <201106111635.42563.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-1115670598-1307808256=:29336"
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201106111635.42563.arnd@arndb.de>
+X-Cookie: You will never know hunger.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Sat, Jun 11, 2011 at 04:35:42PM +0200, Arnd Bergmann wrote:
+> On Saturday 11 June 2011 13:37:06 Mark Brown wrote:
+> > On Sat, Jun 11, 2011 at 12:49:04PM +0200, Arnd Bergmann wrote:
 
---8323584-1115670598-1307808256=:29336
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+> This is entirely pointless for this particular driver. While I can
+> see good reasons to share idioms across similar drivers, this one
+> just doesn't need it. The only two functions where the data is used
+> AFAICT are da9052_irq_sync_unlock and da9052_irq_unmask, and both
+> could replace the table lookup with a trivial computation.
 
-On Sat, 11 Jun 2011, Hiroyuki Kamezawa wrote:
-> 2011/6/11 Hugh Dickins <hughd@google.com>:
-> > On Fri, 10 Jun 2011, KAMEZAWA Hiroyuki wrote:
-> >>
-> >> I think this can be a fix.
-> >
-> > Sorry, I think not: I've not digested your rationale,
-> > but three things stand out:
-> >
-> > 1. Why has this only just started happening? =A0I may not have run that
-> > =A0 test on 3.0-rc1, but surely I ran it for hours with 2.6.39;
-> > =A0 maybe not with khugepaged, but certainly with ksmd.
-> >
-> Not sure. I pointed this just by review because I found "charge" in
-> khugepaged is out of mmap_sem now.
+Yes, indeed.
 
-Right, Andrea's patch cited below.
+> I only looked at the first function in the list (da9052_adc_manual_read)
+> and noticed that it doesn't have any users at all. It's certainly
+> ok to export a complete API set when some functions belong together,
+> but I had the impression that in this case it wasn't actually clear
+> what the API is or should be.
 
->=20
-> > 2. Your hunk below:
-> >> - =A0 =A0 if (!mm_need_new_owner(mm, p))
-> >> + =A0 =A0 if (!mm_need_new_owner(mm, p)) {
-> >> + =A0 =A0 =A0 =A0 =A0 =A0 rcu_assign_pointer(mm->owner, NULL);
-> > =A0 is now setting mm->owner to NULL at times when we were sure it did =
-not
-> > =A0 need updating before (task is not the owner): you're damaging mm->o=
-wner.
-> >
-> Ah, yes. It's my mistake.
->=20
-> > 3. There's a patch from Andrea in 3.0-rc1 which looks very likely to be
-> > =A0 relevant, 692e0b35427a "mm: thp: optimize memcg charge in khugepage=
-d".
-> > =A0 I'll try reproducing without that tonight (I crashed in 20 minutes
-> > =A0 this morning, so it's not too hard).
+> Maybe an explanation about what da9052_adc_manual_read does or why
+> it's exported would be useful, I'm objecting the other exports.
 
-I had another go at reproducing it, 2 hours that time, then a try with
-692e0b35427a reverted: it ran overnight for 9 hours when I stopped it.
-
-Andrea, please would you ask Linus to revert that commit before -rc3?
-Or is there something else you'd like us to try instead?  I admit that
-I've not actually taken the time to think through exactly how it goes
-wrong, but it does look dangerous.
-
-The way I reproduce it is with my tmpfs kbuilds swapping load,
-in this case restricting mem by memcg, and (perhaps the important
-detail, not certain) doing concurrent swapoff/swapon repeatedly -
-swapoff takes another mm_users reference to the mm it's working on,
-which can cause surprises.
-
-Hugh
---8323584-1115670598-1307808256=:29336--
+There's been a hwmon driver posted which will use it I expect.  Many
+PMICs have an ADC in them used for monitoring things like temperature
+and supply rails, and typically also provide some generic inputs for
+systems to use.  This is the sort of low rate ADC I'd like to see IIO be
+able to handle but right now a custom interface like that is the
+standard way to expose the ADC to the subsystems that can use it
+(including machine specific code).
