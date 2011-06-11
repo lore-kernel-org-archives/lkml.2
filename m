@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab1FKSo2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 14:44:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2537 "EHLO mx1.redhat.com"
+	id S1753303Ab1FKSvE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 14:51:04 -0400
+Received: from bues.ch ([80.190.117.144]:37549 "EHLO bues.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751318Ab1FKSo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 14:44:27 -0400
-Date: Sat, 11 Jun 2011 20:44:16 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH] [BUGFIX] update mm->owner even if no next owner.
-Message-ID: <20110611184416.GB3238@redhat.com>
-References: <BANLkTikF7=qfXAmrNzyMSmWm7Neh6yMAB8EbBp7oLcfQmrbDjA@mail.gmail.com>
- <20110610091355.2ce38798.kamezawa.hiroyu@jp.fujitsu.com>
- <alpine.LSU.2.00.1106091812030.4904@sister.anvils>
- <20110610113311.409bb423.kamezawa.hiroyu@jp.fujitsu.com>
- <20110610121949.622e4629.kamezawa.hiroyu@jp.fujitsu.com>
- <20110610125551.385ea7ed.kamezawa.hiroyu@jp.fujitsu.com>
- <20110610133021.2eaaf0da.kamezawa.hiroyu@jp.fujitsu.com>
- <alpine.LSU.2.00.1106101425400.28334@sister.anvils>
- <20110610235442.GA21413@cmpxchg.org>
- <20110611175136.GA31154@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110611175136.GA31154@cmpxchg.org>
+	id S1751119Ab1FKSvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jun 2011 14:51:03 -0400
+Date: Sat, 11 Jun 2011 20:50:57 +0200
+From: Michael =?UTF-8?B?QsO8c2No?= <m@bues.ch>
+To: Connor Hansen <cmdkhh@gmail.com>
+Cc: mb@bu3sch.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/ssb/driver_chipcommon_pmu.c: uninitilized
+ warning
+Message-ID: <20110611205057.4b9bf462@maggie>
+In-Reply-To: <1307816085-20062-1-git-send-email-cmdkhh@gmail.com>
+References: <1307816085-20062-1-git-send-email-cmdkhh@gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; powerpc-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 11, 2011 at 07:51:36PM +0200, Johannes Weiner wrote:
-> This is a problem with the patch, but I think Kame's analysis and
-> approach to fix it are still correct.
+On Sat, 11 Jun 2011 11:14:45 -0700
+Connor Hansen <cmdkhh@gmail.com> wrote:
 
-I agree with Kame's analysis too. This explains why removing the
-mmap_sem read mode introduced the problem, it was quite some
-unexpected subtleness not apparent to the naked eye, as memcg didn't
-explicitly relay on mmap_sem but it did implicitly during exit because
-of the __khugepaged_exit waiting if we were collapsing an hugepage...
+> warning message
+> drivers/ssb/driver_chipcommon_pmu.c: In function ssb_pmu_resources_init
+> drivers/ssb/driver_chipcommon_pmu.c:420:15: warning: updown_tab_size may
+> be used uninitilized in this function.
+> 
+> updown_tab_size and depend_tab_size may not be set in the bus->chip_id
+> switch statement, so set to 0 by default to avoid using uninitialized
+> stack space.
 
-So the fix is safe because the task struct is freed with
-delayed_put_task_struct and that won't run until we rcu_read_unlock
-after mem_cgroup_from_task.
+We wouldn't be using uninitialized stack space or uninitialized variables,
+without this patch. However, for the sake of shutting up the compiler, ACK.
 
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+> Signed-off-by: Connor Hansen <cmdkhh@gmail.com>
+> ---
+>  drivers/ssb/driver_chipcommon_pmu.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/ssb/driver_chipcommon_pmu.c b/drivers/ssb/driver_chipcommon_pmu.c
+> index 305ade7..a7aef47 100644
+> --- a/drivers/ssb/driver_chipcommon_pmu.c
+> +++ b/drivers/ssb/driver_chipcommon_pmu.c
+> @@ -417,9 +417,9 @@ static void ssb_pmu_resources_init(struct ssb_chipcommon *cc)
+>  	u32 min_msk = 0, max_msk = 0;
+>  	unsigned int i;
+>  	const struct pmu_res_updown_tab_entry *updown_tab = NULL;
+> -	unsigned int updown_tab_size;
+> +	unsigned int updown_tab_size = 0;
+>  	const struct pmu_res_depend_tab_entry *depend_tab = NULL;
+> -	unsigned int depend_tab_size;
+> +	unsigned int depend_tab_size = 0;
+>  
+>  	switch (bus->chip_id) {
+>  	case 0x4312:
 
-Thanks,
-Andrea
