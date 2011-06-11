@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921Ab1FKUkh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 16:40:37 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:48635 "EHLO ogre.sisk.pl"
+	id S1753082Ab1FKUku (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 16:40:50 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:48643 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751552Ab1FKUkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 16:40:35 -0400
+	id S1752252Ab1FKUkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jun 2011 16:40:40 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH 1/8] PM / Domains: Update documentation
-Date: Sat, 11 Jun 2011 22:25:18 +0200
+Subject: [PATCH 2/8] PM / Domains: Rename struct dev_power_domain to struct dev_pm_domain
+Date: Sat, 11 Jun 2011 22:26:07 +0200
 User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
 Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, Magnus Damm <magnus.damm@gmail.com>,
         Paul Walmsley <paul@pwsan.com>, Kevin Hilman <khilman@ti.com>,
@@ -21,72 +21,389 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106112225.18266.rjw@sisk.pl>
+Message-Id: <201106112226.07631.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Commit 4d27e9dcff00a6425d779b065ec8892e4f391661 (PM: Make power
-domain callbacks take precedence over subsystem ones) forgot to
-update the device power management documentation to take changes
-made by it into account.  Correct that mistake.
+The naming convention used by commit 7538e3db6e015e890825fbd9f86599b
+(PM: Add support for device power domains), which introduced the
+struct dev_power_domain type for representing device power domains,
+evidently confuses some developers who tend to think that objects
+of this type must correspond to "power domains" as defined by
+hardware, which is not the case.  Namely, at the kernel level, a
+struct dev_power_domain object can represent arbitrary set of devices
+that are mutually dependent power management-wise and need not belong
+to one hardware power domain.  To avoid that confusion, rename struct
+dev_power_domain to struct dev_pm_domain and rename the related
+pointers in struct device and struct pm_clk_notifier_block from
+pwr_domain to pm_domain.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- Documentation/power/devices.txt |   39 +++++++++++++--------------------------
- 1 file changed, 13 insertions(+), 26 deletions(-)
+ Documentation/power/devices.txt          |    8 ++++----
+ arch/arm/mach-omap1/pm_bus.c             |    4 ++--
+ arch/arm/mach-shmobile/pm_runtime.c      |    8 ++++----
+ arch/arm/plat-omap/omap_device.c         |    4 ++--
+ arch/sh/kernel/cpu/shmobile/pm_runtime.c |    6 +++---
+ drivers/base/power/clock_ops.c           |   14 +++++++-------
+ drivers/base/power/main.c                |   30 +++++++++++++++---------------
+ drivers/base/power/runtime.c             |   12 ++++++------
+ include/linux/device.h                   |    4 ++--
+ include/linux/pm.h                       |    2 +-
+ include/linux/pm_runtime.h               |    2 +-
+ 11 files changed, 47 insertions(+), 47 deletions(-)
 
+Index: linux-2.6/arch/arm/mach-omap1/pm_bus.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-omap1/pm_bus.c
++++ linux-2.6/arch/arm/mach-omap1/pm_bus.c
+@@ -49,7 +49,7 @@ static int omap1_pm_runtime_resume(struc
+ 	return pm_generic_runtime_resume(dev);
+ }
+ 
+-static struct dev_power_domain default_power_domain = {
++static struct dev_pm_domain default_pm_domain = {
+ 	.ops = {
+ 		.runtime_suspend = omap1_pm_runtime_suspend,
+ 		.runtime_resume = omap1_pm_runtime_resume,
+@@ -58,7 +58,7 @@ static struct dev_power_domain default_p
+ };
+ 
+ static struct pm_clk_notifier_block platform_bus_notifier = {
+-	.pwr_domain = &default_power_domain,
++	.pm_domain = &default_pm_domain,
+ 	.con_ids = { "ick", "fck", NULL, },
+ };
+ 
+Index: linux-2.6/arch/arm/mach-shmobile/pm_runtime.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-shmobile/pm_runtime.c
++++ linux-2.6/arch/arm/mach-shmobile/pm_runtime.c
+@@ -28,7 +28,7 @@ static int default_platform_runtime_idle
+ 	return pm_runtime_suspend(dev);
+ }
+ 
+-static struct dev_power_domain default_power_domain = {
++static struct dev_pm_domain default_pm_domain = {
+ 	.ops = {
+ 		.runtime_suspend = pm_runtime_clk_suspend,
+ 		.runtime_resume = pm_runtime_clk_resume,
+@@ -37,16 +37,16 @@ static struct dev_power_domain default_p
+ 	},
+ };
+ 
+-#define DEFAULT_PWR_DOMAIN_PTR	(&default_power_domain)
++#define DEFAULT_PM_DOMAIN_PTR	(&default_pm_domain)
+ 
+ #else
+ 
+-#define DEFAULT_PWR_DOMAIN_PTR	NULL
++#define DEFAULT_PM_DOMAIN_PTR	NULL
+ 
+ #endif /* CONFIG_PM_RUNTIME */
+ 
+ static struct pm_clk_notifier_block platform_bus_notifier = {
+-	.pwr_domain = DEFAULT_PWR_DOMAIN_PTR,
++	.pm_domain = DEFAULT_PM_DOMAIN_PTR,
+ 	.con_ids = { NULL, },
+ };
+ 
+Index: linux-2.6/arch/arm/plat-omap/omap_device.c
+===================================================================
+--- linux-2.6.orig/arch/arm/plat-omap/omap_device.c
++++ linux-2.6/arch/arm/plat-omap/omap_device.c
+@@ -550,7 +550,7 @@ static int _od_runtime_resume(struct dev
+ 	return omap_device_enable(pdev);
+ }
+ 
+-static struct dev_power_domain omap_device_power_domain = {
++static struct dev_pm_domain omap_device_pm_domain = {
+ 	.ops = {
+ 		.runtime_suspend = _od_runtime_suspend,
+ 		.runtime_resume = _od_runtime_resume,
+@@ -571,7 +571,7 @@ int omap_device_register(struct omap_dev
+ 	pr_debug("omap_device: %s: registering\n", od->pdev.name);
+ 
+ 	od->pdev.dev.parent = &omap_device_parent;
+-	od->pdev.dev.pwr_domain = &omap_device_power_domain;
++	od->pdev.dev.pwr_domain = &omap_device_pm_domain;
+ 	return platform_device_register(&od->pdev);
+ }
+ 
+Index: linux-2.6/arch/sh/kernel/cpu/shmobile/pm_runtime.c
+===================================================================
+--- linux-2.6.orig/arch/sh/kernel/cpu/shmobile/pm_runtime.c
++++ linux-2.6/arch/sh/kernel/cpu/shmobile/pm_runtime.c
+@@ -256,7 +256,7 @@ out:
+ 	return ret;
+ }
+ 
+-static struct dev_power_domain default_power_domain = {
++static struct dev_pm_domain default_power_domain = {
+ 	.ops = {
+ 		.runtime_suspend = default_platform_runtime_suspend,
+ 		.runtime_resume = default_platform_runtime_resume,
+@@ -285,7 +285,7 @@ static int platform_bus_notify(struct no
+ 		hwblk_disable(hwblk_info, hwblk);
+ 		/* make sure driver re-inits itself once */
+ 		__set_bit(PDEV_ARCHDATA_FLAG_INIT, &pdev->archdata.flags);
+-		dev->pwr_domain = &default_power_domain;
++		dev->pm_domain = &default_power_domain;
+ 		break;
+ 	/* TODO: add BUS_NOTIFY_BIND_DRIVER and increase idle count */
+ 	case BUS_NOTIFY_BOUND_DRIVER:
+@@ -299,7 +299,7 @@ static int platform_bus_notify(struct no
+ 		__set_bit(PDEV_ARCHDATA_FLAG_INIT, &pdev->archdata.flags);
+ 		break;
+ 	case BUS_NOTIFY_DEL_DEVICE:
+-		dev->pwr_domain = NULL;
++		dev->pm_domain = NULL;
+ 		break;
+ 	}
+ 	return 0;
 Index: linux-2.6/Documentation/power/devices.txt
 ===================================================================
 --- linux-2.6.orig/Documentation/power/devices.txt
 +++ linux-2.6/Documentation/power/devices.txt
-@@ -520,33 +520,20 @@ Support for power domains is provided th
- device.  This field is a pointer to an object of type struct dev_power_domain,
+@@ -506,8 +506,8 @@ routines.  Nevertheless, different callb
+ situation where it actually matters.
+ 
+ 
+-Device Power Domains
+---------------------
++Device Power Management Domains
++-------------------------------
+ Sometimes devices share reference clocks or other power resources.  In those
+ cases it generally is not possible to put devices into low-power states
+ individually.  Instead, a set of devices sharing a power resource can be put
+@@ -516,8 +516,8 @@ power resource.  Of course, they also ne
+ together, by turning the shared power resource on.  A set of devices with this
+ property is often referred to as a power domain.
+ 
+-Support for power domains is provided through the pwr_domain field of struct
+-device.  This field is a pointer to an object of type struct dev_power_domain,
++Support for power domains is provided through the pm_domain field of struct
++device.  This field is a pointer to an object of type struct dev_pm_domain,
  defined in include/linux/pm.h, providing a set of power management callbacks
  analogous to the subsystem-level and device driver callbacks that are executed
--for the given device during all power transitions, in addition to the respective
--subsystem-level callbacks.  Specifically, the power domain "suspend" callbacks
--(i.e. ->runtime_suspend(), ->suspend(), ->freeze(), ->poweroff(), etc.) are
--executed after the analogous subsystem-level callbacks, while the power domain
--"resume" callbacks (i.e. ->runtime_resume(), ->resume(), ->thaw(), ->restore,
--etc.) are executed before the analogous subsystem-level callbacks.  Error codes
--returned by the "suspend" and "resume" power domain callbacks are ignored.
-+for the given device during all power transitions, instead of the respective
-+subsystem-level callbacks.  Specifically, if a device's pm_domain pointer is
-+not NULL, the ->suspend() callback from the object pointed to by it will be
-+executed instead of its subsystem's (e.g. bus type's) ->suspend() callback and
-+anlogously for all of the remaining callbacks.  In other words, power management
-+domain callbacks, if defined for the given device, always take precedence over
-+the callbacks provided by the device's subsystem (e.g. bus type).
+ for the given device during all power transitions, instead of the respective
+Index: linux-2.6/include/linux/device.h
+===================================================================
+--- linux-2.6.orig/include/linux/device.h
++++ linux-2.6/include/linux/device.h
+@@ -516,7 +516,7 @@ struct device_dma_parameters {
+  * 		minimizes board-specific #ifdefs in drivers.
+  * @power:	For device power management.
+  * 		See Documentation/power/devices.txt for details.
+- * @pwr_domain:	Provide callbacks that are executed during system suspend,
++ * @pm_domain:	Provide callbacks that are executed during system suspend,
+  * 		hibernation, system resume and during runtime PM transitions
+  * 		along with subsystem-level and driver-level callbacks.
+  * @numa_node:	NUMA node this device is close to.
+@@ -568,7 +568,7 @@ struct device {
+ 	void		*platform_data;	/* Platform specific data, device
+ 					   core doesn't touch it */
+ 	struct dev_pm_info	power;
+-	struct dev_power_domain	*pwr_domain;
++	struct dev_pm_domain	*pm_domain;
  
--Power domain ->runtime_idle() callback is executed before the subsystem-level
--->runtime_idle() callback and the result returned by it is not ignored.  Namely,
--if it returns error code, the subsystem-level ->runtime_idle() callback will not
--be called and the helper function rpm_idle() executing it will return error
--code.  This mechanism is intended to help platforms where saving device state
--is a time consuming operation and should only be carried out if all devices
--in the power domain are idle, before turning off the shared power resource(s).
--Namely, the power domain ->runtime_idle() callback may return error code until
--the pm_runtime_idle() helper (or its asychronous version) has been called for
--all devices in the power domain (it is recommended that the returned error code
--be -EBUSY in those cases), preventing the subsystem-level ->runtime_idle()
--callback from being run prematurely.
--
--The support for device power domains is only relevant to platforms needing to
--use the same subsystem-level (e.g. platform bus type) and device driver power
--management callbacks in many different power domain configurations and wanting
--to avoid incorporating the support for power domains into the subsystem-level
--callbacks.  The other platforms need not implement it or take it into account
--in any way.
-+The support for device power management domains is only relevant to platforms
-+needing to use the same device driver power management callbacks in many
-+different power domain configurations and wanting to avoid incorporating the
-+support for power domains into subsystem-level callbacks, for example by
-+modifying the platform bus type.  Other platforms need not implement it or take
-+it into account in any way.
+ #ifdef CONFIG_NUMA
+ 	int		numa_node;	/* NUMA node this device is close to */
+Index: linux-2.6/include/linux/pm.h
+===================================================================
+--- linux-2.6.orig/include/linux/pm.h
++++ linux-2.6/include/linux/pm.h
+@@ -471,7 +471,7 @@ extern void update_pm_runtime_accounting
+  * hibernation, system resume and during runtime PM transitions along with
+  * subsystem-level and driver-level callbacks.
+  */
+-struct dev_power_domain {
++struct dev_pm_domain {
+ 	struct dev_pm_ops	ops;
+ };
  
+Index: linux-2.6/include/linux/pm_runtime.h
+===================================================================
+--- linux-2.6.orig/include/linux/pm_runtime.h
++++ linux-2.6/include/linux/pm_runtime.h
+@@ -247,7 +247,7 @@ static inline void pm_runtime_dont_use_a
  
- Device Low Power (suspend) States
+ struct pm_clk_notifier_block {
+ 	struct notifier_block nb;
+-	struct dev_power_domain *pwr_domain;
++	struct dev_pm_domain *pm_domain;
+ 	char *con_ids[];
+ };
+ 
+Index: linux-2.6/drivers/base/power/clock_ops.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/clock_ops.c
++++ linux-2.6/drivers/base/power/clock_ops.c
+@@ -278,11 +278,11 @@ int pm_runtime_clk_resume(struct device
+  *
+  * For this function to work, @nb must be a member of an object of type
+  * struct pm_clk_notifier_block containing all of the requisite data.
+- * Specifically, the pwr_domain member of that object is copied to the device's
+- * pwr_domain field and its con_ids member is used to populate the device's list
++ * Specifically, the pm_domain member of that object is copied to the device's
++ * pm_domain field and its con_ids member is used to populate the device's list
+  * of runtime PM clocks, depending on @action.
+  *
+- * If the device's pwr_domain field is already populated with a value different
++ * If the device's pm_domain field is already populated with a value different
+  * from the one stored in the struct pm_clk_notifier_block object, the function
+  * does nothing.
+  */
+@@ -300,14 +300,14 @@ static int pm_runtime_clk_notify(struct
+ 
+ 	switch (action) {
+ 	case BUS_NOTIFY_ADD_DEVICE:
+-		if (dev->pwr_domain)
++		if (dev->pm_domain)
+ 			break;
+ 
+ 		error = pm_runtime_clk_init(dev);
+ 		if (error)
+ 			break;
+ 
+-		dev->pwr_domain = clknb->pwr_domain;
++		dev->pm_domain = clknb->pm_domain;
+ 		if (clknb->con_ids[0]) {
+ 			for (con_id = clknb->con_ids; *con_id; con_id++)
+ 				pm_runtime_clk_add(dev, *con_id);
+@@ -317,10 +317,10 @@ static int pm_runtime_clk_notify(struct
+ 
+ 		break;
+ 	case BUS_NOTIFY_DEL_DEVICE:
+-		if (dev->pwr_domain != clknb->pwr_domain)
++		if (dev->pm_domain != clknb->pm_domain)
+ 			break;
+ 
+-		dev->pwr_domain = NULL;
++		dev->pm_domain = NULL;
+ 		pm_runtime_clk_destroy(dev);
+ 		break;
+ 	}
+Index: linux-2.6/drivers/base/power/main.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/main.c
++++ linux-2.6/drivers/base/power/main.c
+@@ -424,9 +424,9 @@ static int device_resume_noirq(struct de
+ 	TRACE_DEVICE(dev);
+ 	TRACE_RESUME(0);
+ 
+-	if (dev->pwr_domain) {
++	if (dev->pm_domain) {
+ 		pm_dev_dbg(dev, state, "EARLY power domain ");
+-		error = pm_noirq_op(dev, &dev->pwr_domain->ops, state);
++		error = pm_noirq_op(dev, &dev->pm_domain->ops, state);
+ 	} else if (dev->type && dev->type->pm) {
+ 		pm_dev_dbg(dev, state, "EARLY type ");
+ 		error = pm_noirq_op(dev, dev->type->pm, state);
+@@ -513,9 +513,9 @@ static int device_resume(struct device *
+ 
+ 	dev->power.in_suspend = false;
+ 
+-	if (dev->pwr_domain) {
++	if (dev->pm_domain) {
+ 		pm_dev_dbg(dev, state, "power domain ");
+-		error = pm_op(dev, &dev->pwr_domain->ops, state);
++		error = pm_op(dev, &dev->pm_domain->ops, state);
+ 		goto End;
+ 	}
+ 
+@@ -630,10 +630,10 @@ static void device_complete(struct devic
+ {
+ 	device_lock(dev);
+ 
+-	if (dev->pwr_domain) {
++	if (dev->pm_domain) {
+ 		pm_dev_dbg(dev, state, "completing power domain ");
+-		if (dev->pwr_domain->ops.complete)
+-			dev->pwr_domain->ops.complete(dev);
++		if (dev->pm_domain->ops.complete)
++			dev->pm_domain->ops.complete(dev);
+ 	} else if (dev->type && dev->type->pm) {
+ 		pm_dev_dbg(dev, state, "completing type ");
+ 		if (dev->type->pm->complete)
+@@ -733,9 +733,9 @@ static int device_suspend_noirq(struct d
+ {
+ 	int error;
+ 
+-	if (dev->pwr_domain) {
++	if (dev->pm_domain) {
+ 		pm_dev_dbg(dev, state, "LATE power domain ");
+-		error = pm_noirq_op(dev, &dev->pwr_domain->ops, state);
++		error = pm_noirq_op(dev, &dev->pm_domain->ops, state);
+ 		if (error)
+ 			return error;
+ 	} else if (dev->type && dev->type->pm) {
+@@ -842,9 +842,9 @@ static int __device_suspend(struct devic
+ 		goto End;
+ 	}
+ 
+-	if (dev->pwr_domain) {
++	if (dev->pm_domain) {
+ 		pm_dev_dbg(dev, state, "power domain ");
+-		error = pm_op(dev, &dev->pwr_domain->ops, state);
++		error = pm_op(dev, &dev->pm_domain->ops, state);
+ 		goto End;
+ 	}
+ 
+@@ -968,11 +968,11 @@ static int device_prepare(struct device
+ 
+ 	device_lock(dev);
+ 
+-	if (dev->pwr_domain) {
++	if (dev->pm_domain) {
+ 		pm_dev_dbg(dev, state, "preparing power domain ");
+-		if (dev->pwr_domain->ops.prepare)
+-			error = dev->pwr_domain->ops.prepare(dev);
+-		suspend_report_result(dev->pwr_domain->ops.prepare, error);
++		if (dev->pm_domain->ops.prepare)
++			error = dev->pm_domain->ops.prepare(dev);
++		suspend_report_result(dev->pm_domain->ops.prepare, error);
+ 		if (error)
+ 			goto End;
+ 	} else if (dev->type && dev->type->pm) {
+Index: linux-2.6/drivers/base/power/runtime.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/runtime.c
++++ linux-2.6/drivers/base/power/runtime.c
+@@ -213,8 +213,8 @@ static int rpm_idle(struct device *dev,
+ 
+ 	dev->power.idle_notification = true;
+ 
+-	if (dev->pwr_domain)
+-		callback = dev->pwr_domain->ops.runtime_idle;
++	if (dev->pm_domain)
++		callback = dev->pm_domain->ops.runtime_idle;
+ 	else if (dev->type && dev->type->pm)
+ 		callback = dev->type->pm->runtime_idle;
+ 	else if (dev->class && dev->class->pm)
+@@ -374,8 +374,8 @@ static int rpm_suspend(struct device *de
+ 
+ 	__update_runtime_status(dev, RPM_SUSPENDING);
+ 
+-	if (dev->pwr_domain)
+-		callback = dev->pwr_domain->ops.runtime_suspend;
++	if (dev->pm_domain)
++		callback = dev->pm_domain->ops.runtime_suspend;
+ 	else if (dev->type && dev->type->pm)
+ 		callback = dev->type->pm->runtime_suspend;
+ 	else if (dev->class && dev->class->pm)
+@@ -573,8 +573,8 @@ static int rpm_resume(struct device *dev
+ 
+ 	__update_runtime_status(dev, RPM_RESUMING);
+ 
+-	if (dev->pwr_domain)
+-		callback = dev->pwr_domain->ops.runtime_resume;
++	if (dev->pm_domain)
++		callback = dev->pm_domain->ops.runtime_resume;
+ 	else if (dev->type && dev->type->pm)
+ 		callback = dev->type->pm->runtime_resume;
+ 	else if (dev->class && dev->class->pm)
 
