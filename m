@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758428Ab1FKATv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 20:19:51 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:47572 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758413Ab1FKATt (ORCPT
+	id S1758448Ab1FKAbl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 20:31:41 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:34513 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758396Ab1FKAbk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 20:19:49 -0400
-Message-ID: <4DF2B492.8050408@kernel.org>
-Date: Fri, 10 Jun 2011 17:19:30 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	Fri, 10 Jun 2011 20:31:40 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-8.tower-160.messagelabs.com!1307752277!25404254!2
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.97]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] fb.h: ARM uses __raw_{read/write}
+Date: Fri, 10 Jun 2011 17:31:08 -0700
+User-Agent: KMail/1.9.9
+CC: ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        <linux-fbdev@vger.kernel.org>, <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-CC: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Jim Bos <jim876@xs4all.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-References: <4DED0394.2090000@gmail.com> <BANLkTikVEj2Uz9N0B-kKA3GJTUWzmwz=zQ@mail.gmail.com> <20110607014127.GA8450@srcf.ucam.org> <4DED8752.5070005@kernel.org> <4DEDEA73.7010900@gmail.com> <20110610164706.GB25774@srcf.ucam.org> <4DF259B2.9070403@gmail.com> <20110610175429.GA28500@srcf.ucam.org> <4DF29E7E.50908@gmail.com> <4DF2A17E.7000103@kernel.org> <20110610230359.GA2084@srcf.ucam.org> <4DF2A81C.7000902@kernel.org> <4DF2A984.6060705@linux.intel.com> <4DF2AEEF.6040208@kernel.org> <4DF2B02F.30802@linux.intel.com>
-In-Reply-To: <4DF2B02F.30802@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090202.4DF2B49E.002C,ss=1,fgs=0
+Content-Disposition: inline
+Message-ID: <201106101731.08578.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2011 05:00 PM, H. Peter Anvin wrote:
-> On 06/10/2011 04:55 PM, Yinghai Lu wrote:
->>>
->>> No, it should be, because the boot loader can control the decompress
->>> position to avoid the problems.
->>
->> bootloader could find out decompressed kernel size?
->>
-> 
-> Yes, it's the init_size field in the header.
+ARM provides __raw_{read/write}* functions for memory access. These
+should be used instead of the default '(*(volatile' stuff to make sure the
+memory accesses are typesafe (void __iomem *).
 
-good, with relocatable_kernel, kernel_alignment, and init_size in header, bootloader could find right position for kernel.
+This also fixes a number of sparse warning like:
 
-Yinghai
+  warning: cast removes address space of expression
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+
+---
+
+diff --git a/include/linux/fb.h b/include/linux/fb.h
+index 6a82748..a040e92e 100644
+--- a/include/linux/fb.h
++++ b/include/linux/fb.h
+@@ -937,7 +937,7 @@ static inline struct apertures_struct *alloc_apertures(unsigned int max_num) {
+ #define fb_memcpy_fromfb sbus_memcpy_fromio
+ #define fb_memcpy_tofb sbus_memcpy_toio
+ 
+-#elif defined(__i386__) || defined(__alpha__) || defined(__x86_64__) || defined(__hppa__) || defined(__sh__) || defined(__powerpc__) || defined(__avr32__) || defined(__bfin__)
++#elif defined(__i386__) || defined(__alpha__) || defined(__x86_64__) || defined(__hppa__) || defined(__sh__) || defined(__powerpc__) || defined(__avr32__) || defined(__bfin__) || defined(__arm__)
+ 
+ #define fb_readb __raw_readb
+ #define fb_readw __raw_readw
