@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182Ab1FKRxO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 13:53:14 -0400
-Received: from mta11.charter.net ([216.33.127.80]:58651 "EHLO
-	mta11.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751849Ab1FKRxK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 13:53:10 -0400
-X-Greylist: delayed 8602 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Jun 2011 13:53:10 EDT
-X-Authority-Analysis: v=1.1 cv=vT9vkN3vVXssH3Ov7r/wQUs/sfIFjNPEFFf4aeKIi4A=
- c=1 sm=1 a=roWskU_etowA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
- a=QC6DmiQ5i6ZtQVrIgJwA:9 a=xzrYXqw+0zwiO4gHSXHcAg==:117
-From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
-To: julia@diku.dk
-Cc: Nicolas.Palix@inria.fr, rdunlap@xenotime.net, Gilles.Muller@lip6.fr,
-        cocci@diku.dk, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Dietsche <Gregory.Dietsche@cuw.edu>
-Subject: [PATCH 1/2 v3] coccicheck: add M= option to control which dir is processed
-Date: Sat, 11 Jun 2011 12:53:02 -0500
-Message-Id: <1307814782-27415-1-git-send-email-Gregory.Dietsche@cuw.edu>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <4DF3A447.3050505@cuw.edu>
-References: <4DF3A447.3050505@cuw.edu>
+	id S1753356Ab1FKSE2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 14:04:28 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:60200 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752489Ab1FKSE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jun 2011 14:04:27 -0400
+Date: Sat, 11 Jun 2011 20:04:15 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Ying Han <yinghan@google.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] [BUGFIX] update mm->owner even if no next owner.
+Message-ID: <20110611180415.GB31154@cmpxchg.org>
+References: <20110610091355.2ce38798.kamezawa.hiroyu@jp.fujitsu.com>
+ <alpine.LSU.2.00.1106091812030.4904@sister.anvils>
+ <20110610113311.409bb423.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110610121949.622e4629.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110610125551.385ea7ed.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110610133021.2eaaf0da.kamezawa.hiroyu@jp.fujitsu.com>
+ <alpine.LSU.2.00.1106101425400.28334@sister.anvils>
+ <BANLkTi=bBSeMFtUDyz+px1Kt34HDU=DEcw@mail.gmail.com>
+ <alpine.LSU.2.00.1106110847190.29336@sister.anvils>
+ <20110611163943.GA3238@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110611163943.GA3238@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Examples:
-	make coccicheck M=drivers/net/wireless/
-	make coccicheck SUBDIRS=drivers/net/wireless/
+On Sat, Jun 11, 2011 at 06:39:43PM +0200, Andrea Arcangeli wrote:
+> On Sat, Jun 11, 2011 at 09:04:14AM -0700, Hugh Dickins wrote:
+> > I had another go at reproducing it, 2 hours that time, then a try with
+> > 692e0b35427a reverted: it ran overnight for 9 hours when I stopped it.
+> > 
+> > Andrea, please would you ask Linus to revert that commit before -rc3?
+> > Or is there something else you'd like us to try instead?  I admit that
+> > I've not actually taken the time to think through exactly how it goes
+> > wrong, but it does look dangerous.
+> 
+> Here I was asked if the mem_cgroup_newpage_charge need the mmap_sem at
+> all. And if not why not to release the mmap_sem early.
+> 
+> https://lkml.org/lkml/2011/3/14/276
+> 
+> So I didn't see why mmap_sem was needed, I also asked confirmation and
+> who answered agreed it was safe without mmap_sem even if it's the only
+> place doing that. Maybe that assumption was wrong and we need
+> mmap_sem after all if this commit is causing problems.
+> 
+> Or did you find something wrong in the actual patch?
+> 
+> Do I understand right that the bug just that we must run
+> alloc_hugepage_vma+mem_cgroup_newpage_charge within the same critical
+> section protected by the mmap_sem read mode? Do we know why?
 
-Version 2:
-	fix patch file names when using M=
-	tell coccinelle where the include files are
+The problem is that mm->owner points to a stale task structure if the
+last possible owner is exiting.  The mmap_sem just prevented the task
+from actually exiting through write-acquiring the mmap_sem in
+khugepaged_exit().
 
-Version 3:
-	Add second include option to support out of tree development
-	Fix error message
-
-Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
----
- scripts/coccicheck |   19 ++++++++++++++-----
- 1 files changed, 14 insertions(+), 5 deletions(-)
-
-diff --git a/scripts/coccicheck b/scripts/coccicheck
-index 1bb1a1b..3c27764 100755
---- a/scripts/coccicheck
-+++ b/scripts/coccicheck
-@@ -9,14 +9,23 @@ if [ "$C" = "1" -o "$C" = "2" ]; then
- #    FLAGS="-ignore_unknown_options -very_quiet"
- #    OPTIONS=$*
- 
--# Workaround for Coccinelle < 0.2.3
--    FLAGS="-I $srctree/include -very_quiet"
--    shift $(( $# - 1 ))
--    OPTIONS=$1
-+    if [ "$KBUILD_EXTMOD" = "" ] ; then
-+        # Workaround for Coccinelle < 0.2.3
-+        FLAGS="-I $srctree/include -very_quiet"
-+        shift $(( $# - 1 ))
-+        OPTIONS=$1
-+    else
-+	echo M= is not currently supported when C=1 or C=2
-+	exit 1
-+    fi
- else
-     ONLINE=0
-     FLAGS="-very_quiet"
--    OPTIONS="-dir $srctree"
-+    if [ "$KBUILD_EXTMOD" = "" ] ; then
-+        OPTIONS="-dir $srctree"
-+    else
-+        OPTIONS="-dir $KBUILD_EXTMOD -patch $srctree -I $srctree/include -I $KBUILD_EXTMOD/include"
-+    fi
- fi
- 
- if [ ! -x "$SPATCH" ]; then
--- 
-1.7.2.5
+I think enforcing lifetime of an object through locks is not the
+nicest thing to do, so I stand by what I wrote in the mail you linked
+to above :) and agree with Kame that mm->owner should just not point
+to a stale task struct.  The memcg code can handle it going NULL.
 
