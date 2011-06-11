@@ -1,116 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab1FKJ6b (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 05:58:31 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61544 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753495Ab1FKJ62 convert rfc822-to-8bit (ORCPT
+	id S1754173Ab1FKKZQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 06:25:16 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:38504 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753906Ab1FKKZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 05:58:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=O7uA2UE0cJCjRXc4V0oHR1SHKD0r3zyQH424aNbQcep5v2CBGGCaPUqjvbiFbr8811
-         s1J4Db/EYqJy7tA27SyZZhS5nyw/9Fqtgp9vx+YDoa20VJcqewUTMeqZTJFVSi3OaClM
-         P/rgLZSvhHnh4zU5bEwmKmusjZCFgZlGAl6dA=
+	Sat, 11 Jun 2011 06:25:12 -0400
+Date: Sat, 11 Jun 2011 12:24:51 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Tony Luck <tony.luck@intel.com>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Avi Kivity <avi@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 07/10] MCE: replace mce.c use of TIF_MCE_NOTIFY with
+ user_return_notifier
+Message-ID: <20110611102451.GD9573@aftab>
+References: <4df13cae2729896ba5@agluck-desktop.sc.intel.com>
+ <4DF1D0EF.7090109@jp.fujitsu.com>
+ <BANLkTikkYevvkUeQz4YYGauF52YcDRdokQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110611073517.GB2517@ubuntu>
-References: <BANLkTimyBGfg4+ovGsiGqpCz345qVmU_7A@mail.gmail.com>
-	<BANLkTik20iYN4c9faKD9dzerehazWTwTFw@mail.gmail.com>
-	<BANLkTikKRuPu_NX49vr0w-XeN0ZnWo+9vg@mail.gmail.com>
-	<alpine.LFD.2.00.1106101101020.4502@dhcp-27-109.brq.redhat.com>
-	<20110610101142.GA10144@ubuntu>
-	<BANLkTi=0N7QXRvFgjHUJXBi0x=668ahXXA@mail.gmail.com>
-	<20110611073517.GB2517@ubuntu>
-Date: Sat, 11 Jun 2011 12:58:26 +0300
-X-Google-Sender-Auth: ZCiwf4PYj6D3Ig35uEnGFc6Pk5k
-Message-ID: <BANLkTi=THJi8Z2RTdfGgox4NH8hEGiN37A@mail.gmail.com>
-Subject: Re: LVM vs. Ext4 snapshots (was: [PATCH v1 00/30] Ext4 snapshots)
-From: "Amir G." <amir73il@users.sourceforge.net>
-To: Joe Thornber <thornber@redhat.com>
-Cc: Lukas Czerner <lczerner@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        linux-ext4@vger.kernel.org, tytso@mit.edu,
-        linux-kernel@vger.kernel.org, lvm-devel@redhat.com,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTikkYevvkUeQz4YYGauF52YcDRdokQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 11, 2011 at 10:35 AM, Joe Thornber <thornber@redhat.com> wrote:
-> On Sat, Jun 11, 2011 at 08:41:38AM +0300, Amir G. wrote:
->> On Fri, Jun 10, 2011 at 1:11 PM, Joe Thornber <thornber@redhat.com> wrote:
->> > On Fri, Jun 10, 2011 at 11:01:41AM +0200, Lukas Czerner wrote:
->> >> On Fri, 10 Jun 2011, Amir G. wrote:
->> >>
->> >> > CC'ing lvm-devel and fsdevel
->> >> >
->> >> >
->> >> > On Wed, Jun 8, 2011 at 9:26 PM, Amir G. <amir73il@users.sourceforge.net> wrote:
->> >> > For the sake of letting everyone understand the differences and trade
->> >> > offs between
->> >> > LVM and ext4 snapshots, so ext4 snapshots can get a fair trial, I need
->> >> > to ask you
->> >> > some questions about the implementation, which I could not figure out by myself
->> >> > from reading the documents.
->> >
->> > First up let me say that I'm not intending to support writeable
->> > _external_ origins with multisnap.  This will come as a suprise to
->> > many people, but I don't think we can resolve the dual requirements to
->> > efficiently update many, many snapshots when a write occurs _and_ make
->> > those snapshots quick to delete (when you're encouraging people to
->> > take lots of snapshots performance of delete becomes a real issue).
->> >
->>
->> If I understand this article correctly:
->> http://people.redhat.com/mpatocka/papers/shared-snapshots.pdf
->> It says that _external_ origin write updates can be efficient to readonly
->> (or not written) snapshots.
->>
->> Could you not support readonly snapshots of an _external_ origin?
->
-> Yes, that is the intention, and very little work to add.  We just do
-> something different if the metadata lookup returns -ENODATA.  Above I
-> said I didn't intend to support _writeable_ external snaps.  Readable
-> ones are a must, for instance for supporting virtual machine base
-> images.
->
->> You could even support writable snapshots, that will degrade write
->> performance to origin temporarily.
->> It can be useful, if one wants to "try-out" mounting a temporary
->> writable snapshot, when the origin is not even mounted.
->> After the "try-out", the temporary snapshot can be deleted
->> and origin write performance would go back to normal.
->
-> Not sure what you're getting at here.  All snapshots are writeable.
->
+Just a couple of notes:
 
-I meant _readonly_ snapshots of a _writable_ _external_ origin,
-which is what ext4 snapshots provides.
-All snapshots are chained on a list that points to the origin and
-only the latest (active) snapshot metadata get updated on origin writes.
-When older snapshots lookup return -ENODATA, you go up the list
-to the newer snapshot and up to the origin.
+On Fri, Jun 10, 2011 at 04:42:33PM -0400, Tony Luck wrote:
+> 2011/6/10 Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>:
+> > Now I'm reconsidering the MCE event notification mechanism.
+> > One of something nervous is whether it is really required to process
+> > "_AO" memory poisoning (i.e. mce_process_ring()) here in a process
+> > context that unfortunately interrupted by MCE (or preempted after that).
+> > I'm uncertain how long walking though the task_list for unmap will takes,
+> > and not sure it is acceptable if the unlucky thread is a kind of latency
+> > sensitive...
+> >
+> > If we can move mce_process_ring() to worker thread completely, what
+> > we have to do will be:
+> >  1) from NMI context, request non-NMI context by irq_work()
+> >  2) from (irq) context, wake up loggers and schedule work if required
+> >  3) from worker thread, process "_AO" memory poisoning etc.
+> >
+> > So now question is why user_return_notifier is needed here.
+> > Is it just an alternative of irq_work() for !LOCAL_APIC ?
 
-Those _incremental_ snapshots cannot be _writable_, because older
-snapshots may implicitly share blocks with newer snapshots, but it should
-be possible to make _writable_ clones of these snapshots.
-Not sure what the implications are for deleting snapshots, because I am
-not familiar with all the implementation details of multisnap.
+I think that an x86 CPU with hw poisoning features support makes
+LOCAL_APIC's presence almost axiomatic ...
 
+> I switched this notification over from old TIF_MCE_NOTIFY to
+> using user_return_notifier to preserve existing semantics, and
+> free up that TIF bit for the task notifier for the action required case.
+> 
+> You are right that we should have some better method - the
+> shot-gun approach of hitting every task on every cpu in the hope
+> that one of them will run our code soon sounds like overkill.
+> Using some NMI-saf method to wake a single worker thread
+> sounds a good idea for a subsequent clean up.
 
-> Of course you can take a snapshot of an external origin and then use
-> this as your temporary origin for experiments.  If the origin is
-> itself a dm device then LVM can shuffle tables around to make this
-> transparent.
->
-> The user may want to commit to their experiment at a later time by
-> merging back to the external origin.  This involves copying, but no
-> more than a copy-on-write scheme.  Arguably it's better to do the copy
-> only once we know they want to commit to it.
->
-> - Joe
->
+and we should go ahead and do it correctly from the get-go, methinks:
+for the AR case, we definitely need to go to userspace _but_ the
+worker thread that does the recovery for us has to be the _next_ thing
+scheduled seamlessly following the process that was running when the MCE
+happened.
+
+If schedule_work() cannot guarantee us that then we need to do something
+else like yield_to() to the worker thread, thus not penalizing the
+unlucky thread. Maybe PeterZ, Ingo could comment on whether that is a ok
+thing to do. Botomline is, we absolutely want to execute the AR handling
+thread _before_ we return to normal process scheduling and thus going to
+the risk of executing the thread that caused the AR MCE.
+
+Btw, Tony, you could do away without atomic NMI lists if we change the
+user return notifier a bit:
+
+diff --git a/include/linux/user-return-notifier.h b/include/linux/user-return-notifier.h
+index 9c4a445..eb3c977 100644
+--- a/include/linux/user-return-notifier.h
++++ b/include/linux/user-return-notifier.h
+@@ -26,6 +26,11 @@ static inline void propagate_user_return_notify(struct task_struct *prev,
+ 
+ void fire_user_return_notifiers(void);
+ 
++static inline void void set_user_return_notifier(struct task_struct *p)
++{
++       set_tsk_thread_flag(p, TIF_USER_RETURN_NOTIFY);
++}
++
+ static inline void clear_user_return_notifier(struct task_struct *p)
+ {
+        clear_tsk_thread_flag(p, TIF_USER_RETURN_NOTIFY);
+diff --git a/kernel/user-return-notifier.c b/kernel/user-return-notifier.c
+index 92cb706..c54c5d2 100644
+--- a/kernel/user-return-notifier.c
++++ b/kernel/user-return-notifier.c
+@@ -1,4 +1,3 @@
+-
+ #include <linux/user-return-notifier.h>
+ #include <linux/percpu.h>
+ #include <linux/sched.h>
+@@ -13,12 +12,23 @@ static DEFINE_PER_CPU(struct hlist_head, return_notifier_list);
+  */
+ void user_return_notifier_register(struct user_return_notifier *urn)
+ {
+-       set_tsk_thread_flag(current, TIF_USER_RETURN_NOTIFY);
+        hlist_add_head(&urn->link, &__get_cpu_var(return_notifier_list));
+ }
+ EXPORT_SYMBOL_GPL(user_return_notifier_register);
+ 
+ /*
++ * Request a constant notification when the current cpu returns to userspace.
++ * Must be called in atomic context.  The notifier will also be called in atomic
++ * context.
++ */
++void user_return_notifier_register_and_enable(struct user_return_notifier *urn)
++{
++       set_tsk_thread_flag(current, TIF_USER_RETURN_NOTIFY);
++       hlist_add_head(&urn->link, &__get_cpu_var(return_notifier_list));
++}
++EXPORT_SYMBOL_GPL(user_return_notifier_register_and_enable);
++
++/*
+  * Removes a registered user return notifier.  Must be called from atomic
+  * context, and from the same cpu registration occurred in.
+  */
+--
+
+and then in the #MC handler you do user_return_notifier_set(),
+having registered it during MCE core init. memory_failure() does
+clear_user_return_notifier(current) after it finishes. The _enable
+version is what others like KVM would still use. Or something to that
+effect.
+
+Hmm...
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
