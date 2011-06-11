@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961Ab1FKRjd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 13:39:33 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43032 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506Ab1FKRjb (ORCPT
+	id S1752397Ab1FKRSu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 13:18:50 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34878 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab1FKRSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 13:39:31 -0400
+	Sat, 11 Jun 2011 13:18:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=gBuBfqcaU0tRtn6a9poHkRVXsqG3CQZoexFiDxLWsHEkrjpu4qxPZd7qzH2KhWYHXz
-         +OxDg0ib+9k2Atzy5haCG6mRXomneMt9EamEm611GCJ+pN09boKfOGmzHTzc1/V5lPqG
-         CFnXNZJFum+BIj9uGX+V5PZbSGrXWNQgurJxw=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=O0LlwHNjxJjO6+x7vpLeYzdk94TXEbUxvC79H3c2Z6qtJ/8Ue8xokld6saX06v+2m8
+         8ufZVPOmi2fcRawbAq2v5woft7J5a4uGTn4GtUrzQn4qIOsg6tzPZ4dYgzVuy/ZZXMQM
+         gNUTcQ5//SseKtzJ2EDndu7J4oYgf/76tlYkQ=
+Message-ID: <4DF3A376.1000601@gmail.com>
+Date: Sat, 11 Jun 2011 11:18:46 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1106101728040.11814@ionos>
-References: <17185480.5304.1307435255996.JavaMail.root@WARSBL214.highway.telekom.at>
-	<alpine.LFD.2.02.1106071033350.11814@ionos>
-	<4DEDF1F2.2080204@steinhoff.de>
-	<1307439469.2322.235.camel@twins>
-	<BANLkTi=KPyds_BWYpXHeUkAg000FGSuJOQ@mail.gmail.com>
-	<20110607233517.GA31794@opentech.at>
-	<BANLkTimYSEo4_3ecdEVaJxdME7n9=2Km8Q@mail.gmail.com>
-	<alpine.LFD.2.02.1106082044040.11814@ionos>
-	<BANLkTingXiRohBsaFbX9Jwr=Ba-ATqH4ag@mail.gmail.com>
-	<alpine.LFD.2.02.1106101728040.11814@ionos>
-Date: Sat, 11 Jun 2011 19:16:51 +0200
-X-Google-Sender-Auth: NyEF2_FMyHC72hCH60HWXqrTlYw
-Message-ID: <BANLkTimCwRYi0YTcu1jyZO=6=yqHnBF3iA@mail.gmail.com>
-Subject: Re: Changing Kernel thread priorities
-From: Remy Bohmer <linux@bohmer.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Nicholas Mc Guire <der.herr@hofr.at>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Armin Steinhoff <armin@steinhoff.de>,
-        Johannes Bauer <hannes_bauer@aon.at>,
-        Monica Puig-Pey <puigpeym@unican.es>,
-        Rolando Martins <rolando.martins@gmail.com>,
-        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: David Rientjes <rientjes@google.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, tglx@linutronix.de,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, mel@csn.ul.ie,
+        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, pavel@ucw.cz
+Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning
+ instead of failing
+References: <20110610004331.13672278.akpm@linux-foundation.org> <BANLkTimC8K2_H7ZEu2XYoWdA09-3XxpV7Q@mail.gmail.com> <20110610091233.GJ24424@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1106101150280.17197@chino.kir.corp.google.com> <20110610185858.GN24424@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1106101456080.23076@chino.kir.corp.google.com> <20110610220748.GO24424@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1106101510000.23076@chino.kir.corp.google.com> <20110610222020.GP24424@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1106101526390.24646@chino.kir.corp.google.com> <20110611094500.GA2356@debian.cable.virginmedia.net>
+In-Reply-To: <20110611094500.GA2356@debian.cable.virginmedia.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-> No, it's not. The root cause was a problem with the network softirq
-> and a network driver, the softirq ->49 was a temporary workaround
-> until we had enough information to find the real root cause. I wish
-> I'd never committed that change at all.
-
-Clear. Did not know it was already solved. I thought it was still an
-issue. This changes things :-)
-
->> Race conditions that occur when a softirq preempts a related hardirq
->> what the driver did not expect or was designed for.
+On 06/11/2011 03:45 AM, Catalin Marinas wrote:
+> On Fri, Jun 10, 2011 at 03:30:35PM -0700, David Rientjes wrote:
+>> On Fri, 10 Jun 2011, Russell King - ARM Linux wrote:
+>>> So those platforms which don't have a DMA zone, don't have any problems
+>>> with DMA, yet want to use the very same driver which does have a problem
+>>> on ISA hardware have to also put up with a useless notification that
+>>> their kernel might be broken?
+>>>
+>>> Are you offering to participate on other architectures mailing lists to
+>>> answer all the resulting queries?
+>>
+>> It all depends on the wording of the "warning", it should make it clear
+>> that this is not always an error condition and only affects certain types
+>> of hardware which the user may or may not have.
 >
-> And making it the other way round hides the problem, which is even
-> worse. We want stuff to explode right away.
+> I think people will still be worried when they get a warning. And there
+> are lots of platforms that don't need ZONE_DMA just because devices can
+> access the full RAM. As Russell said, same drivers may be used on
+> platforms that can actually do DMA only to certain areas of memory and
+> require ZONE_DMA (there are several examples on ARM).
+>
+> If you want, you can add something like CONFIG_ARCH_HAS_ZONE_DMA across
+> all the platforms that support ZONE_DMA and only get the warning if
+> ZONE_DMA is available but not enabled.
 
-100% Agreed
-
-> You can run into the same
-> problem when the softirq holds a lock and the high prio irq thread
-> boosts it.
-
-OK.
-
-Thanks for the explanation. I see no reason any more why setting the
-prios default to 1 would be a bad thing.
-The rest of the configuration in that case can then indeed done be
-done by udev and other userland friends.
-
-Kind regards,
-
-Remy
+It sounds to me like these drivers using GFP_DMA should really be fixed 
+to use the proper DMA API. That's what it's there for. The problem is 
+that GFP_DMA doesn't really mean anything generically other than "memory 
+suitable for DMA according to some criteria". On x86 it means low 16MB, 
+on some other platforms it presumably means other things, on others it 
+means nothing at all. It's quite likely that a driver that requests 
+GFP_DMA isn't likely to get exactly what it wants on all platforms (for 
+example on x86 the allocation will be constrained to the low 16MB which 
+is unnecessarily restrictive for most devices).
