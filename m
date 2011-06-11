@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab1FKLCS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 07:02:18 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:40280 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753911Ab1FKLCR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 07:02:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=BFVMZVJu626BiPqhnNAuH9qFIIyGqgCeVe3GmfHHsqdhLdUYK6CYBnqcUmDxk43m8x
-         LcUPe14+LP/roV4YE2KfQYBQKUPwpVsFMV8IuX5qLuBBYOyBsljuZ1/shLiIAQt9ChBG
-         EO0dIV+bGZyZEgv++cveO6CW6aWZiII/KOets=
+	id S1754760Ab1FKLaQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 07:30:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23414 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754423Ab1FKLaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jun 2011 07:30:12 -0400
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] linux/seqlock.h should #include asm/processor.h for
+ cpu_relax()
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Date: Sat, 11 Jun 2011 12:29:58 +0100
+Message-ID: <20110611112958.7856.64462.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <1307777464.25182.3.camel@localhost.localdomain>
-References: <1307777464.25182.3.camel@localhost.localdomain>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Sat, 11 Jun 2011 07:01:57 -0400
-X-Google-Sender-Auth: 9rsgamDOImHbxYLvA4BFJlsEpKM
-Message-ID: <BANLkTi=SQb6EL4+bdH2Q+iwaW9E3i+48Ew@mail.gmail.com>
-Subject: Re: [PATCH] x86, vsyscall: Fix build warning in vsyscall_64.c
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: mingo@elte.hu, hpa@zytor.com, tglx@linutronix.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 11, 2011 at 3:31 AM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
-> Due to commit 5cec93c216db77 (x86-64: Emulate legacy vsyscalls), we get the following warning:
->
->   arch/x86/kernel/vsyscall_64.c: In function ‘do_emulate_vsyscall’:
->   arch/x86/kernel/vsyscall_64.c:111:7: warning: ‘ret’ may be used uninitialized in this function
+linux/seqlock.h should #include asm/processor.h as it uses cpu_relax().
 
-What's the code path that uses ret without initializing it?
+Without this patch, I see:
 
-> -       if (ret == -EFAULT) {
-> +       if (ret == -EFAULT || ret == -EINVAL) {
->                /*
->                 * Bad news -- userspace fed a bad pointer to a vsyscall.
->                 *
+ CC      arch/mn10300/kernel/asm-offsets.s
+In file included from include/linux/time.h:8,
+                 from include/linux/timex.h:56,
+                 from include/linux/sched.h:57,
+                 from arch/mn10300/kernel/asm-offsets.c:7:
+include/linux/seqlock.h: In function 'read_seqbegin':
+include/linux/seqlock.h:91: error: implicit declaration of function 'cpu_relax'
 
-EINVAL doesn't seem like grounds to fault.  (I'm not sure how to get
-EINVAL from time, gettimeofday, or getcpu, but in case there is, we
-should return it back to userspace.)
+whilst building asb2364_defconfig on MN10300.
 
---Andy
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ include/linux/seqlock.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
+index e981189..c6db9fb 100644
+--- a/include/linux/seqlock.h
++++ b/include/linux/seqlock.h
+@@ -28,6 +28,7 @@
+ 
+ #include <linux/spinlock.h>
+ #include <linux/preempt.h>
++#include <asm/processor.h>
+ 
+ typedef struct {
+ 	unsigned sequence;
+
