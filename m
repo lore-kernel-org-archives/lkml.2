@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752297Ab1FKEm5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 00:42:57 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35046 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751057Ab1FKEm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 00:42:56 -0400
-Date: Sat, 11 Jun 2011 14:42:45 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-media@vger.kernel.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for June 8 (docbook/media)
-Message-Id: <20110611144245.8b893302.sfr@canb.auug.org.au>
-In-Reply-To: <4DF235F0.9080209@redhat.com>
-References: <20110608161046.4ad95776.sfr@canb.auug.org.au>
-	<20110608125243.e63a07fc.randy.dunlap@oracle.com>
-	<4DF11E15.5030907@infradead.org>
-	<4DF12263.3070900@redhat.com>
-	<4DF12DD1.7060606@oracle.com>
-	<4DF1581E.8050308@redhat.com>
-	<4DF1593A.6080306@oracle.com>
-	<4DF21254.6090106@redhat.com>
-	<4DF23271.7070407@oracle.com>
-	<4DF235F0.9080209@redhat.com>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sat__11_Jun_2011_14_42_45_+1000_fvr6BalpxVt.SzBn"
+	id S1751557Ab1FKF2R (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 01:28:17 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:51976 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820Ab1FKF2Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jun 2011 01:28:16 -0400
+Date: Fri, 10 Jun 2011 23:28:14 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ryan Mallon <ryan@bluewatersys.com>
+Subject: Re: [PATCH] gpio/ep93xx: Add missing EP93XX_GPIO_PHYS_BASE define
+Message-ID: <20110611052814.GA16924@ponder.secretlab.ca>
+References: <201106100908.18678.hartleys@visionengravers.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201106100908.18678.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__11_Jun_2011_14_42_45_+1000_fvr6BalpxVt.SzBn
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jun 10, 2011 at 09:08:17AM -0700, H Hartley Sweeten wrote:
+> The patch to convert of the ep93xx gpio driver to a platform_driver is
+> missing the define for the memory resource that is passed to the driver.
+> 
+> This is needed to prevent a build error.
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Ryan Mallon <ryan@bluewatersys.com>
 
-Hi Mauro,
+Applied, thanks.
 
-On Fri, 10 Jun 2011 12:19:12 -0300 Mauro Carvalho Chehab <mchehab@redhat.co=
-m> wrote:
->
-> PS.: A full build against next is broken:
-> $ make -j 27
->   CHK     include/linux/version.h
->   CHK     include/generated/utsrelease.h
->   CALL    scripts/checksyscalls.sh
->   CHK     include/generated/compile.h
->   CC      arch/x86/lib/memmove_64.o
-> gcc: arch/x86/lib/memmove_64.c: No such file or directory
-> gcc: no input files
+g.
 
-Was that a build starting from a clean (object) tree?
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Sat__11_Jun_2011_14_42_45_+1000_fvr6BalpxVt.SzBn
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN8vJFAAoJEDMEi1NhKgbsPyYH/jHFMMRsP68jJfGuNQA99zCN
-10B/tRGHKw6Rua+cOpIhhvPeNQXFTWgmlcnxE00NrAr5Iao8itj/jKxhxW3rhxvN
-0HvytGBn+tB+eRFxYqQlfSAVpfSiY1kO0GhmukneSHtpzwpY/3zriNN2ravJlpVo
-RD7O3GGDHMQ9UrN2DR6n0Da8wgt6kVPvvGLr0qeVO0zaAnyq10s7oLb9th9GSqYW
-SRS+67TlDu6O9Kh1te3N2MIQ2EYQEnFzVJ+BTUINVHrCfFp16hXo5VkduTYb3pLb
-zfSqR3JyWHXNh7fWYOS/pqFXakQkF9rcrUFZyFG1hl8SgKhjsVpnzhhsRXmkjDI=
-=9PtD
------END PGP SIGNATURE-----
-
---Signature=_Sat__11_Jun_2011_14_42_45_+1000_fvr6BalpxVt.SzBn--
+> 
+> ---
+> 
+> Grant, can you pick this up in your tree to prevent the build error?
+> 
+> diff --git a/arch/arm/mach-ep93xx/include/mach/ep93xx-regs.h b/arch/arm/mach-ep93xx/include/mach/ep93xx-regs.h
+> index 9ac4d10..c4a7b84 100644
+> --- a/arch/arm/mach-ep93xx/include/mach/ep93xx-regs.h
+> +++ b/arch/arm/mach-ep93xx/include/mach/ep93xx-regs.h
+> @@ -98,6 +98,7 @@
+>  
+>  #define EP93XX_SECURITY_BASE		EP93XX_APB_IOMEM(0x00030000)
+>  
+> +#define EP93XX_GPIO_PHYS_BASE		EP93XX_APB_PHYS(0x00040000)
+>  #define EP93XX_GPIO_BASE		EP93XX_APB_IOMEM(0x00040000)
+>  #define EP93XX_GPIO_REG(x)		(EP93XX_GPIO_BASE + (x))
+>  #define EP93XX_GPIO_F_INT_STATUS	EP93XX_GPIO_REG(0x5c)
