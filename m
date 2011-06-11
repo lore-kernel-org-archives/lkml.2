@@ -1,33 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758545Ab1FKCyT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jun 2011 22:54:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36484 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758510Ab1FKCyS (ORCPT
+	id S1758517Ab1FKDBN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jun 2011 23:01:13 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:56614 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756850Ab1FKDBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jun 2011 22:54:18 -0400
+	Fri, 10 Jun 2011 23:01:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
          :content-type:content-disposition:content-transfer-encoding
          :user-agent;
-        b=cHuTacwvaiCaA2A8WQdwGy/52rHrFnjMFSbtc4NphKVjtu2/JykmLIph+sMnRxh30o
-         /qcytINPCO4htva1qU3rIWdJeluhwyZutyAIB9OJQVPpuV4YgIgE9lDN5jlxiY0XgYNZ
-         2xvgE93epsjQd2wLQn5Eg28X5sK4EuP4QZoJ0=
-Date: Sat, 11 Jun 2011 10:53:59 +0800
+        b=wDoMrsiSLUMhudzi3/d9O+GbeCox3ZzsKRWn1CCPWgm9ujLjt5YvKkZN6AuBX0c0rN
+         VNZ7BGUsEwgvaCybboYviJMPqAeSvf1EzVLB9XztvRbaM/GMjw/YvqQ8pSV+lOIj8S65
+         fz9/AVA6nQ4wXPEE8lEj8TkiAiuQzUC1Qer/0=
+Date: Sat, 11 Jun 2011 11:00:43 +0800
 From: Harry Wei <jiaweiwei.xiyou@gmail.com>
 To: greg@kroah.com
 Cc: linux-kernel@vger.kernel.org, synmyth@gmail.com, zhangyangjing@gmail.com,
         wangxiaochen0@gmail.com, linux-kernel@zh-kernel.org, yaxinsn@163.com
-Subject: [PATCH v2 2/4]Documentation/zh_CN: Remove messy code file
- SubmitChecklist
-Message-ID: <20110611025355.GB2319@gmail.com>
+Subject: [PATCH v2 3/4]Documentation/zh_CN: add new file email-clients.txt
+Message-ID: <20110611030040.GC2319@gmail.com>
 Mail-Followup-To: greg@kroah.com, linux-kernel@vger.kernel.org,
 	synmyth@gmail.com, zhangyangjing@gmail.com, wangxiaochen0@gmail.com,
 	linux-kernel@zh-kernel.org, yaxinsn@163.com
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="CUfgB8w4ZwR/yMy5"
+Content-Type: multipart/mixed; boundary="6zdv2QT/q3FMhpsV"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.20 (2009-06-14)
@@ -36,142 +35,248 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---CUfgB8w4ZwR/yMy5
+--6zdv2QT/q3FMhpsV
 Content-Type: text/plain; charset=gb2312
 Content-Disposition: inline
 
 From: Harry Wei <harryxiyou@gmail.com>
 
-This patch can remove messy code file
-Documentation/zh_CN/SubmitChecklist
-So sorry for taking attachment, i am
-afraid it will be messy code again.
-My mutt client can not support Chinese
-characters.
-
+This patch can add new file email-clients for
+us. Sorry for taking patch with attachment.
+My mutt client can not support Chinese characters.
 
 Thanks
 Harry Wei
 
---CUfgB8w4ZwR/yMy5
+--6zdv2QT/q3FMhpsV
 Content-Type: text/x-diff; charset=unknown-8bit
-Content-Disposition: attachment; filename="rm-SubmitChecklist.patch"
+Content-Disposition: attachment; filename="add-email-clients.patch"
 Content-Transfer-Encoding: 8bit
 
 Signed-off-by: Harry Wei <harryxiyou@gmail.com>
-Index: prj/Documentation/zh_CN/SubmitChecklist
-===================================================================
---- prj.orig/Documentation/zh_CN/SubmitChecklist	2011-06-10 20:02:27.079304516 +0800
-+++ /dev/null	1970-01-01 00:00:00.000000000 +0000
-@@ -1,109 +0,0 @@
--Chinese translated version of Documentation/SubmitChecklist
--
--If you have any comment or update to the content, please contact the
--original document maintainer directly.  However, if you have a problem
--communicating in English you can also ask the Chinese maintainer for
--help.  Contact the Chinese maintainer if this translation is outdated
--or if there is a problem with the translation.
--
--Chinese maintainer: Harry Wei <harryxiyou@gmail.com>
-----------------------------------------------------------------------
--Documentation/SubmitChecklist µÄÖĞÎÄ·­Òë
--
--Èç¹ûÏëÆÀÂÛ»ò¸üĞÂ±¾ÎÄµÄÄÚÈİ£¬ÇëÖ±½ÓÁªÏµÔ­ÎÄµµµÄÎ¬»¤Õß¡£Èç¹ûÄãÊ¹ÓÃÓ¢ÎÄ
--½»Á÷ÓĞÀ§ÄÑµÄ»°£¬Ò²¿ÉÒÔÏòÖĞÎÄ°æÎ¬»¤ÕßÇóÖú¡£Èç¹û±¾·­Òë¸üĞÂ²»¼°Ê±»òÕß·­
--Òë´æÔÚÎÊÌâ£¬ÇëÁªÏµÖĞÎÄ°æÎ¬»¤Õß¡£
--
--ÖĞÎÄ°æÎ¬»¤Õß£º ¼ÖÍşÍş Harry Wei <harryxiyou@gmail.com>
--ÖĞÎÄ°æ·­ÒëÕß£º ¼ÖÍşÍş Harry Wei <harryxiyou@gmail.com>
--ÖĞÎÄ°æĞ£ÒëÕß£º ¼ÖÍşÍş Harry Wei <harryxiyou@gmail.com>
--
--
--ÒÔÏÂÎªÕıÎÄ
-----------------------------------------------------------------------
--LinuxÄÚºËÌá½»Çåµ¥
--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
--
--ÕâÀïÓĞÒ»Ğ©ÄÚºË¿ª·¢ÕßÓ¦¸Ã×öµÄ»ù±¾ÊÂÇé£¬Èç¹ûËûÃÇÏë¿´µ½×Ô¼ºµÄÄÚºË²¹¶¡Ìá½»
--±»½ÓÊÜµÄ¸ü¿ì¡£
--
--ÕâĞ©¶¼ÊÇ³¬³öDocumentation/SubmittingPatchesÎÄµµÀïËùÌá¹©µÄÒÔ¼°ÆäËû
--¹ØÓÚÌá½»LinuxÄÚºË²¹¶¡µÄËµÃ÷¡£
--
--1£ºÈç¹ûÄãÊ¹ÓÃÁËÒ»¸ö¹¦ÄÜÄÇÃ´¾Í#include¶¨Òå/ÉùÃ÷ÄÇ¸ö¹¦ÄÜµÄÄÇ¸öÎÄ¼ş¡£
--   ²»ÒªÒÀ¿¿ÆäËû¼ä½ÓÒıÈë¶¨Òå/ÉùÃ÷ÄÇ¸ö¹¦ÄÜµÄÍ·ÎÄ¼ş¡£
--
--2£º¹¹½¨¼ò½àÊÊÓÃ»òÕß¸ü¸ÄCONFIGÑ¡Ïî =y£¬=m£¬»òÕß=n¡£
--   ²»ÒªÓĞ±àÒë¾¯¸æ/´íÎó£¬ ²»ÒªÓĞÁ´½Ó¾¯¸æ/´íÎó¡£
--
--2b£ºÍ¨¹ı allnoconfig, allmodconfig
--
--2c£ºµ±Ê¹ÓÃ 0=builddir ³É¹¦µØ¹¹½¨
--
--3£ºÍ¨¹ıÊ¹ÓÃ±¾µØ½»²æ±àÒë¹¤¾ß»òÕßÆäËûÒ»Ğ©¹¹½¨²úËù£¬ÔÚ¶àCPU¿ò¼ÜÉÏ¹¹½¨¡£
--
--4£ºppc64 ÊÇÒ»¸öºÜºÃµÄ¼ì²é½»²æ±àÒëµÄ¿ò¼Ü£¬ÒòÎªËüÍùÍù°Ñ¡®unsigned long¡¯
--   µ±64Î»ÖµÀ´Ê¹ÓÃ¡£
--
--5£º°´ÕÕDocumentation/CodingStyleÎÄ¼şÀïµÄÏêÏ¸ÃèÊö£¬¼ì²éÄã²¹¶¡µÄÕûÌå·ç¸ñ¡£
--   Ê¹ÓÃ²¹¶¡·ç¸ñ¼ì²éËöËéµÄÎ¥¹æ(scripts/checkpatch.pl)£¬ÉóºËÔ±ÓÅÏÈÌá½»¡£
--   ÄãÓ¦¸Ãµ÷ÕûÒÅÁôÔÚÄã²¹¶¡ÖĞµÄËùÓĞÎ¥¹æ¡£
--
--6£ºÈÎºÎ¸üĞÂ»òÕß¸Ä¶¯CONFIGÑ¡Ïî¶¼²»ÄÜ´òÂÒÅäÖÃ²Ëµ¥¡£
--
--7£ºËùÓĞµÄKconfigÑ¡Ïî¸üĞÂ¶¼ÒªÓĞËµÃ÷ÎÄ×Ö¡£
--
--8£ºÒÑ¾­ÈÏÕæµØ×Ü½áÁËÏà¹ØµÄKconfig×éºÏ¡£ÕâÊÇºÜÄÑÍ¨¹ı²âÊÔ×öºÃµÄ--ÄÔÁ¦ÔÚÕâÀïÏÂ½µ¡£
--
--9£º¼ì²é¾ßÓĞ¼ò½àĞÔ¡£
--
--10£ºÊ¹ÓÃ'make checkstack'ºÍ'make namespacecheck'¼ì²é£¬È»ºóĞŞ¸ÄËùÕÒµ½µÄÎÊÌâ¡£
--    ×¢Òâ£º¶ÑÕ»¼ì²é²»»áÃ÷È·µØ³öÏÖÎÊÌâ£¬µ«ÊÇÈÎºÎµÄÒ»¸öº¯ÊıÔÚ¶ÑÕ»ÉÏÊ¹ÓÃ¶àÓÚ512×Ö½Ú
--    ¶¼Òª×¼±¸ĞŞ¸Ä¡£
--
--11£º°üº¬kernel-docµ½È«¾ÖÄÚºËAPIsÎÄ¼ş¡££¨²»ÒªÇó¾²Ì¬µÄº¯Êı£¬µ«ÊÇ°üº¬Ò²ÎŞËùÎ½¡££©
--    Ê¹ÓÃ'make htmldocs'»òÕß'make mandocs'À´¼ì²ékernel-doc£¬È»ºóĞŞ¸ÄÈÎºÎ
--    ·¢ÏÖµÄÎÊÌâ¡£
--
--12£ºÒÑ¾­Í¨¹ıCONFIG_PREEMPT, CONFIG_DEBUG_PREEMPT,
--    CONFIG_DEBUG_SLAB, CONFIG_DEBUG_PAGEALLOC, CONFIG_DEBUG_MUTEXES,
--    CONFIG_DEBUG_SPINLOCK, CONFIG_DEBUG_SPINLOCK_SLEEP²âÊÔ£¬²¢ÇÒÍ¬Ê±¶¼
--    Ê¹ÄÜ¡£
--
--13£ºÒÑ¾­¶¼¹¹½¨²¢ÇÒÊ¹ÓÃ»òÕß²»Ê¹ÓÃ CONFIG_SMP ºÍ CONFIG_PREEMPT²âÊÔÖ´ĞĞÊ±¼ä¡£
--
--14£ºÈç¹û²¹¶¡Ó°ÏìIO/Disk£¬µÈµÈ£ºÒÑ¾­Í¨¹ıÊ¹ÓÃ»òÕß²»Ê¹ÓÃ CONFIG_LBDAF ²âÊÔ¡£
--
--15£ºËùÓĞµÄcodepathsÒÑ¾­ĞĞÊ¹ËùÓĞlockdepÆôÓÃ¹¦ÄÜ¡£
--
--16£ºËùÓĞµÄ/proc¼ÇÂ¼¸üĞÂ¶¼Òª×÷³ÉÎÄ¼ş·ÅÔÚDocumentation/Ä¿Â¼ÏÂ¡£
--
--17£ºËùÓĞµÄÄÚºËÆô¶¯²ÎÊı¸üĞÂ¶¼±»¼ÇÂ¼µ½Documentation/kernel-parameters.txtÎÄ¼şÖĞ¡£
--
--18£ºËùÓĞµÄÄ£¿é²ÎÊı¸üĞÂ¶¼ÓÃMODULE_PARM_DESC()¼ÇÂ¼¡£
--
--19£ºËùÓĞµÄÓÃ»§¿Õ¼ä½Ó¿Ú¸üĞÂ¶¼±»¼ÇÂ¼µ½Documentation/ABI/¡£²é¿´Documentation/ABI/README
--    ¿ÉÒÔ»ñµÃ¸ü¶àµÄĞÅÏ¢¡£¸Ä±äÓÃ»§¿Õ¼ä½Ó¿ÚµÄ²¹¶¡Ó¦¸Ã±»ÓÊ¼ş³­ËÍ¸ølinux-api@vger.kernel.org¡£
--
--20£º¼ì²éËüÊÇ²»ÊÇ¶¼Í¨¹ı`make headers_check'¡£
--
--21£ºÒÑ¾­Í¨¹ıÖÁÉÙÒıÈëslabºÍpage-allocationÊ§°Ü¼ì²é¡£²é¿´Documentation/fault-injection/¡£
--
--22£ºĞÂ¼ÓÈëµÄÔ´ÂëÒÑ¾­Í¨¹ı`gcc -W'£¨Ê¹ÓÃ"make EXTRA_CFLAGS=-W"£©±àÒë¡£ÕâÑù½«²úÉúºÜ¶à·³ÄÕ£¬
--    µ«ÊÇ¶ÔÓÚÑ°ÕÒÂ©¶´ºÜÓĞÒæ´¦£¬ÀıÈç:"warning: comparison between signed and unsigned"¡£
--
--23£ºµ±Ëü±»ºÏ²¢µ½-mm²¹¶¡¼¯ºóÔÙ²âÊÔ£¬ÓÃÀ´È·¶¨ËüÊÇ·ñ»¹ºÍ²¹¶¡¶ÓÁĞÖĞµÄÆäËû²¹¶¡Ò»Æğ¹¤×÷ÒÔ¼°ÔÚVM£¬VFS
--    ºÍÆäËû×ÓÏµÍ³ÖĞ¸÷¸ö±ä»¯¡£
--
--24£ºËùÓĞµÄÄÚ´æÆÁÕÏ{e.g., barrier(), rmb(), wmb()}ĞèÒªÔÚÔ´´úÂëÖĞµÄÒ»¸ö×¢ÊÍÀ´½âÊÍËûÃÇ¶¼ÊÇ¸ÉÊ²Ã´µÄ
--    ÒÔ¼°Ô­Òò¡£
--
--25£ºÈç¹ûÓĞÈÎºÎÊäÈëÊä³ö¿ØÖÆµÄ²¹¶¡±»Ìí¼Ó£¬Ò²Òª¸üĞÂDocumentation/ioctl/ioctl-number.txt¡£
--
--26£ºÈç¹ûÄãµÄ¸ü¸Ä´úÂëÒÀ¿¿»òÕßÊ¹ÓÃÈÎºÎµÄÄÚºËAPIs»òÕßÓëÏÂÃæµÄkconfig·ûºÅÓĞ¹ØÏµµÄ¹¦ÄÜ£¬Äã¾ÍÒª
--    Ê¹ÓÃÏà¹ØµÄkconfig·ûºÅ¹Ø±Õ£¬ and/or =m£¨Èç¹ûÑ¡ÏîÌá¹©£©[ÔÚÍ¬Ò»Ê±¼ä²»ÊÇËùÓÃµÄ¶¼ÆôÓÃ£¬½ö½ö¸÷¸ö»òÕß×ÔÓÉ
--    ×éºÏËûÃÇ]£º
--
--    CONFIG_SMP, CONFIG_SYSFS, CONFIG_PROC_FS, CONFIG_INPUT, CONFIG_PCI,
--    CONFIG_BLOCK, CONFIG_PM, CONFIG_HOTPLUG, CONFIG_MAGIC_SYSRQ,
--    CONFIG_NET, CONFIG_INET=n (ºóÒ»¸öÊ¹ÓÃ CONFIG_NET=y)
+---
+ Documentation/zh_CN/email-clients.txt |  210 +++++++++++++++++++++++++++++++++
+ 1 files changed, 210 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/zh_CN/email-clients.txt
 
---CUfgB8w4ZwR/yMy5--
+diff --git a/Documentation/zh_CN/email-clients.txt b/Documentation/zh_CN/email-clients.txt
+new file mode 100644
+index 0000000..7915296
+--- /dev/null
++++ b/Documentation/zh_CN/email-clients.txt
+@@ -0,0 +1,210 @@
++ï»¿Chinese translated version of Documentation/email-clients.txt
++
++If you have any comment or update to the content, please contact the
++original document maintainer directly.  However, if you have a problem
++communicating in English you can also ask the Chinese maintainer for
++help.  Contact the Chinese maintainer if this translation is outdated
++or if there is a problem with the translation.
++
++Chinese maintainer: Harry Wei <harryxiyou@gmail.com>
++---------------------------------------------------------------------
++Documentation/email-clients.txt çš„ä¸­æ–‡ç¿»è¯‘
++
++å¦‚æœæƒ³è¯„è®ºæˆ–æ›´æ–°æœ¬æ–‡çš„å†…å®¹ï¼Œè¯·ç›´æ¥è”ç³»åŸæ–‡æ¡£çš„ç»´æŠ¤è€…ã€‚å¦‚æœä½ ä½¿ç”¨è‹±æ–‡
++äº¤æµæœ‰å›°éš¾çš„è¯ï¼Œä¹Ÿå¯ä»¥å‘ä¸­æ–‡ç‰ˆç»´æŠ¤è€…æ±‚åŠ©ã€‚å¦‚æœæœ¬ç¿»è¯‘æ›´æ–°ä¸åŠæ—¶æˆ–è€…ç¿»
++è¯‘å­˜åœ¨é—®é¢˜ï¼Œè¯·è”ç³»ä¸­æ–‡ç‰ˆç»´æŠ¤è€…ã€‚
++
++ä¸­æ–‡ç‰ˆç»´æŠ¤è€…ï¼š è´¾å¨å¨  Harry Wei <harryxiyou@gmail.com>
++ä¸­æ–‡ç‰ˆç¿»è¯‘è€…ï¼š è´¾å¨å¨  Harry Wei <harryxiyou@gmail.com>
++ä¸­æ–‡ç‰ˆæ ¡è¯‘è€…ï¼š Yinglin Luan <synmyth@gmail.com>
++		Xiaochen Wang <wangxiaochen0@gmail.com>
++		yaxinsn <yaxinsn@163.com>
++
++ä»¥ä¸‹ä¸ºæ­£æ–‡
++---------------------------------------------------------------------
++
++Linuxé‚®ä»¶å®¢æˆ·ç«¯é…ç½®ä¿¡æ¯
++======================================================================
++
++æ™®é€šé…ç½®
++----------------------------------------------------------------------
++Linuxå†…æ ¸è¡¥ä¸æ˜¯é€šè¿‡é‚®ä»¶è¢«æäº¤çš„ï¼Œæœ€å¥½æŠŠè¡¥ä¸ä½œä¸ºé‚®ä»¶ä½“çš„å†…åµŒæ–‡æœ¬ã€‚æœ‰äº›ç»´æŠ¤è€…
++æ¥æ”¶é™„ä»¶ï¼Œä½†æ˜¯é™„ä»¶çš„å†…å®¹æ ¼å¼åº”è¯¥æ˜¯"text/plain"ã€‚ç„¶è€Œï¼Œé™„ä»¶ä¸€èˆ¬æ˜¯ä¸èµæˆçš„ï¼Œ
++å› ä¸ºè¿™ä¼šä½¿è¡¥ä¸çš„å¼•ç”¨éƒ¨åˆ†åœ¨è¯„è®ºè¿‡ç¨‹ä¸­å˜çš„å¾ˆå›°éš¾ã€‚
++
++ç”¨æ¥å‘é€Linuxå†…æ ¸è¡¥ä¸çš„é‚®ä»¶å®¢æˆ·ç«¯åœ¨å‘é€è¡¥ä¸æ—¶åº”è¯¥å¤„äºæ–‡æœ¬çš„åŸå§‹çŠ¶æ€ã€‚ä¾‹å¦‚ï¼Œ
++ä»–ä»¬ä¸èƒ½æ”¹å˜æˆ–è€…åˆ é™¤åˆ¶è¡¨ç¬¦æˆ–è€…ç©ºæ ¼ï¼Œç”šè‡³æ˜¯åœ¨æ¯ä¸€è¡Œçš„å¼€å¤´æˆ–è€…ç»“å°¾ã€‚
++
++ä¸è¦é€šè¿‡"format=flowed"æ¨¡å¼å‘é€è¡¥ä¸ã€‚è¿™æ ·ä¼šå¼•èµ·ä¸å¯é¢„æœŸä»¥åŠæœ‰å®³çš„æ–­è¡Œã€‚
++
++ä¸è¦è®©ä½ çš„é‚®ä»¶å®¢æˆ·ç«¯è¿›è¡Œè‡ªåŠ¨æ¢è¡Œã€‚è¿™æ ·ä¹Ÿä¼šç ´åä½ çš„è¡¥ä¸ã€‚
++
++é‚®ä»¶å®¢æˆ·ç«¯ä¸èƒ½æ”¹å˜æ–‡æœ¬çš„å­—ç¬¦é›†ç¼–ç æ–¹å¼ã€‚è¦å‘é€çš„è¡¥ä¸åªèƒ½æ˜¯ASCIIæˆ–è€…UTF-8ç¼–ç æ–¹å¼ï¼Œ
++å¦‚æœä½ ä½¿ç”¨UTF-8ç¼–ç æ–¹å¼å‘é€é‚®ä»¶ï¼Œé‚£ä¹ˆä½ å°†ä¼šé¿å…ä¸€äº›å¯èƒ½å‘ç”Ÿçš„å­—ç¬¦é›†é—®é¢˜ã€‚
++
++é‚®ä»¶å®¢æˆ·ç«¯åº”è¯¥å½¢æˆå¹¶ä¸”ä¿æŒ References: æˆ–è€… In-Reply-To: æ ‡é¢˜ï¼Œé‚£ä¹ˆ
++é‚®ä»¶è¯é¢˜å°±ä¸ä¼šä¸­æ–­ã€‚
++
++å¤åˆ¶ç²˜å¸–(æˆ–è€…å‰ªè´´ç²˜å¸–)é€šå¸¸ä¸èƒ½ç”¨äºè¡¥ä¸ï¼Œå› ä¸ºåˆ¶è¡¨ç¬¦ä¼šè½¬æ¢ä¸ºç©ºæ ¼ã€‚ä½¿ç”¨xclipboard, xclip
++æˆ–è€…xcutselä¹Ÿè®¸å¯ä»¥ï¼Œä½†æ˜¯æœ€å¥½æµ‹è¯•ä¸€ä¸‹æˆ–è€…é¿å…ä½¿ç”¨å¤åˆ¶ç²˜å¸–ã€‚
++
++ä¸è¦åœ¨ä½¿ç”¨PGP/GPGç½²åçš„é‚®ä»¶ä¸­åŒ…å«è¡¥ä¸ã€‚è¿™æ ·ä¼šä½¿å¾—å¾ˆå¤šè„šæœ¬ä¸èƒ½è¯»å–å’Œé€‚ç”¨äºä½ çš„è¡¥ä¸ã€‚
++ï¼ˆè¿™ä¸ªé—®é¢˜åº”è¯¥æ˜¯å¯ä»¥ä¿®å¤çš„ï¼‰
++
++åœ¨ç»™å†…æ ¸é‚®ä»¶åˆ—è¡¨å‘é€è¡¥ä¸ä¹‹å‰ï¼Œç»™è‡ªå·±å‘é€ä¸€ä¸ªè¡¥ä¸æ˜¯ä¸ªä¸é”™çš„ä¸»æ„ï¼Œä¿å­˜æ¥æ”¶åˆ°çš„
++é‚®ä»¶ï¼Œå°†è¡¥ä¸ç”¨'patch'å‘½ä»¤æ‰“ä¸Šï¼Œå¦‚æœæˆåŠŸäº†ï¼Œå†ç»™å†…æ ¸é‚®ä»¶åˆ—è¡¨å‘é€ã€‚
++
++
++ä¸€äº›é‚®ä»¶å®¢æˆ·ç«¯æç¤º
++----------------------------------------------------------------------
++è¿™é‡Œç»™å‡ºä¸€äº›è¯¦ç»†çš„MUAé…ç½®æç¤ºï¼Œå¯ä»¥ç”¨äºç»™Linuxå†…æ ¸å‘é€è¡¥ä¸ã€‚è¿™äº›å¹¶ä¸æ„å‘³æ˜¯
++æ‰€æœ‰çš„è½¯ä»¶åŒ…é…ç½®æ€»ç»“ã€‚
++
++è¯´æ˜ï¼š
++TUI = ä»¥æ–‡æœ¬ä¸ºåŸºç¡€çš„ç”¨æˆ·æ¥å£
++GUI = å›¾å½¢ç•Œé¢ç”¨æˆ·æ¥å£
++
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++Alpine (TUI)
++
++é…ç½®é€‰é¡¹ï¼š
++åœ¨"Sending Preferences"éƒ¨åˆ†ï¼š
++
++- "Do Not Send Flowed Text"å¿…é¡»å¼€å¯
++- "Strip Whitespace Before Sending"å¿…é¡»å…³é—­
++
++å½“å†™é‚®ä»¶æ—¶ï¼Œå…‰æ ‡åº”è¯¥æ”¾åœ¨è¡¥ä¸ä¼šå‡ºç°çš„åœ°æ–¹ï¼Œç„¶åæŒ‰ä¸‹CTRL-Rç»„åˆé”®ï¼Œä½¿æŒ‡å®šçš„
++è¡¥ä¸æ–‡ä»¶åµŒå…¥åˆ°é‚®ä»¶ä¸­ã€‚
++
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++Evolution (GUI)
++
++ä¸€äº›å¼€å‘è€…æˆåŠŸçš„ä½¿ç”¨å®ƒå‘é€è¡¥ä¸
++
++å½“é€‰æ‹©é‚®ä»¶é€‰é¡¹ï¼šPreformat
++  ä»Format->Heading->Preformatted (Ctrl-7)æˆ–è€…å·¥å…·æ 
++
++ç„¶åä½¿ç”¨ï¼š
++  Insert->Text File... (Alt-n x)æ’å…¥è¡¥ä¸æ–‡ä»¶ã€‚
++
++ä½ è¿˜å¯ä»¥"diff -Nru old.c new.c | xclip"ï¼Œé€‰æ‹©Preformatï¼Œç„¶åä½¿ç”¨ä¸­é—´é”®è¿›è¡Œç²˜å¸–ã€‚
++
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++Kmail (GUI)
++
++ä¸€äº›å¼€å‘è€…æˆåŠŸçš„ä½¿ç”¨å®ƒå‘é€è¡¥ä¸ã€‚
++
++é»˜è®¤è®¾ç½®ä¸ä¸ºHTMLæ ¼å¼æ˜¯åˆé€‚çš„ï¼›ä¸è¦å¯ç”¨å®ƒã€‚
++
++å½“ä¹¦å†™ä¸€å°é‚®ä»¶çš„æ—¶å€™ï¼Œåœ¨é€‰é¡¹ä¸‹é¢ä¸è¦é€‰æ‹©è‡ªåŠ¨æ¢è¡Œã€‚å”¯ä¸€çš„ç¼ºç‚¹å°±æ˜¯ä½ åœ¨é‚®ä»¶ä¸­è¾“å…¥çš„ä»»ä½•æ–‡æœ¬
++éƒ½ä¸ä¼šè¢«è‡ªåŠ¨æ¢è¡Œï¼Œå› æ­¤ä½ å¿…é¡»åœ¨å‘é€è¡¥ä¸ä¹‹å‰æ‰‹åŠ¨æ¢è¡Œã€‚æœ€ç®€å•çš„æ–¹æ³•å°±æ˜¯å¯ç”¨è‡ªåŠ¨æ¢è¡Œæ¥ä¹¦å†™é‚®ä»¶ï¼Œ
++ç„¶åæŠŠå®ƒä¿å­˜ä¸ºè‰ç¨¿ã€‚ä¸€æ—¦ä½ åœ¨è‰ç¨¿ä¸­å†æ¬¡æ‰“å¼€å®ƒï¼Œå®ƒå·²ç»å…¨éƒ¨è‡ªåŠ¨æ¢è¡Œäº†ï¼Œé‚£ä¹ˆä½ çš„é‚®ä»¶è™½ç„¶æ²¡æœ‰
++é€‰æ‹©è‡ªåŠ¨æ¢è¡Œï¼Œä½†æ˜¯è¿˜ä¸ä¼šå¤±å»å·²æœ‰çš„è‡ªåŠ¨æ¢è¡Œã€‚
++
++åœ¨é‚®ä»¶çš„åº•éƒ¨ï¼Œæ’å…¥è¡¥ä¸ä¹‹å‰ï¼Œæ”¾ä¸Šå¸¸ç”¨çš„è¡¥ä¸å®šç•Œç¬¦ï¼šä¸‰ä¸ªè¿å­—å·(---)ã€‚
++
++ç„¶ååœ¨"Message"èœå•æ¡ç›®ï¼Œé€‰æ‹©æ’å…¥æ–‡ä»¶ï¼Œæ¥ç€é€‰å–ä½ çš„è¡¥ä¸æ–‡ä»¶ã€‚è¿˜æœ‰ä¸€ä¸ªé¢å¤–çš„é€‰é¡¹ï¼Œä½ å¯ä»¥
++é€šè¿‡å®ƒé…ç½®ä½ çš„é‚®ä»¶å»ºç«‹å·¥å…·æ èœå•ï¼Œè¿˜å¯ä»¥å¸¦ä¸Š"insert file"å›¾æ ‡ã€‚
++
++ä½ å¯ä»¥å®‰å…¨åœ°é€šè¿‡GPGæ ‡è®°é™„ä»¶ï¼Œä½†æ˜¯å†…åµŒè¡¥ä¸æœ€å¥½ä¸è¦ä½¿ç”¨GPGæ ‡è®°å®ƒä»¬ã€‚ä½œä¸ºå†…åµŒæ–‡æœ¬çš„ç­¾å‘è¡¥ä¸ï¼Œ
++å½“ä»GPGä¸­æå–7ä½ç¼–ç æ—¶ä¼šä½¿ä»–ä»¬å˜çš„æ›´åŠ å¤æ‚ã€‚
++
++å¦‚æœä½ éè¦ä»¥é™„ä»¶çš„å½¢å¼å‘é€è¡¥ä¸ï¼Œé‚£ä¹ˆå°±å³é”®ç‚¹å‡»é™„ä»¶ï¼Œç„¶åé€‰ä¸­å±æ€§ï¼Œçªå‡º"Suggest automatic
++display"ï¼Œè¿™æ ·å†…åµŒé™„ä»¶æ›´å®¹æ˜“è®©è¯»è€…çœ‹åˆ°ã€‚
++
++å½“ä½ è¦ä¿å­˜å°†è¦å‘é€çš„å†…åµŒæ–‡æœ¬è¡¥ä¸ï¼Œä½ å¯ä»¥ä»æ¶ˆæ¯åˆ—è¡¨çª—æ ¼é€‰æ‹©åŒ…å«è¡¥ä¸çš„é‚®ä»¶ï¼Œç„¶åå³å‡»é€‰æ‹©
++"save as"ã€‚ä½ å¯ä»¥ä½¿ç”¨ä¸€ä¸ªæ²¡æœ‰æ›´æ”¹çš„åŒ…å«è¡¥ä¸çš„é‚®ä»¶ï¼Œå¦‚æœå®ƒæ˜¯ä»¥æ­£ç¡®çš„å½¢å¼ç»„æˆã€‚å½“ä½ æ­£çœŸåœ¨å®ƒ
++è‡ªå·±çš„çª—å£ä¹‹ä¸‹å¯Ÿçœ‹ï¼Œé‚£æ—¶æ²¡æœ‰é€‰é¡¹å¯ä»¥ä¿å­˜é‚®ä»¶--å·²ç»æœ‰ä¸€ä¸ªè¿™æ ·çš„bugè¢«æ±‡æŠ¥åˆ°äº†kmailçš„bugzilla
++å¹¶ä¸”å¸Œæœ›è¿™å°†ä¼šè¢«å¤„ç†ã€‚é‚®ä»¶æ˜¯ä»¥åªé’ˆå¯¹æŸä¸ªç”¨æˆ·å¯è¯»å†™çš„æƒé™è¢«ä¿å­˜çš„ï¼Œæ‰€ä»¥å¦‚æœä½ æƒ³æŠŠé‚®ä»¶å¤åˆ¶åˆ°å…¶ä»–åœ°æ–¹ï¼Œ
++ä½ ä¸å¾—ä¸æŠŠä»–ä»¬çš„æƒé™æ”¹ä¸ºç»„æˆ–è€…æ•´ä½“å¯è¯»ã€‚
++
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++Lotus Notes (GUI)
++
++ä¸è¦ä½¿ç”¨å®ƒã€‚
++
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++Mutt (TUI)
++
++å¾ˆå¤šLinuxå¼€å‘äººå‘˜ä½¿ç”¨muttå®¢æˆ·ç«¯ï¼Œæ‰€ä»¥è¯æ˜å®ƒè‚¯å®šå·¥ä½œçš„éå¸¸æ¼‚äº®ã€‚
++
++Muttä¸è‡ªå¸¦ç¼–è¾‘å™¨ï¼Œæ‰€ä»¥ä¸ç®¡ä½ ä½¿ç”¨ä»€ä¹ˆç¼–è¾‘å™¨éƒ½ä¸åº”è¯¥å¸¦æœ‰è‡ªåŠ¨æ–­è¡Œã€‚å¤§å¤šæ•°ç¼–è¾‘å™¨éƒ½å¸¦æœ‰
++ä¸€ä¸ª"insert file"é€‰é¡¹ï¼Œå®ƒå¯ä»¥é€šè¿‡ä¸æ”¹å˜æ–‡ä»¶å†…å®¹çš„æ–¹å¼æ’å…¥æ–‡ä»¶ã€‚
++
++'vim'ä½œä¸ºmuttçš„ç¼–è¾‘å™¨ï¼š
++  set editor="vi"
++
++  å¦‚æœä½¿ç”¨xclipï¼Œæ•²å…¥ä»¥ä¸‹å‘½ä»¤
++  :set paste
++  æŒ‰ä¸­é”®ä¹‹å‰æˆ–è€…shift-insertæˆ–è€…ä½¿ç”¨
++  :r filename
++
++å¦‚æœæƒ³è¦æŠŠè¡¥ä¸ä½œä¸ºå†…åµŒæ–‡æœ¬ã€‚
++(a)ttachå·¥ä½œçš„å¾ˆå¥½ï¼Œä¸å¸¦æœ‰"set paste"ã€‚
++
++é…ç½®é€‰é¡¹ï¼š
++å®ƒåº”è¯¥ä»¥é»˜è®¤è®¾ç½®çš„å½¢å¼å·¥ä½œã€‚
++ç„¶è€Œï¼ŒæŠŠ"send_charset"è®¾ç½®ä¸º"us-ascii::utf-8"ä¹Ÿæ˜¯ä¸€ä¸ªä¸é”™çš„ä¸»æ„ã€‚
++
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++Pine (TUI)
++
++Pineè¿‡å»æœ‰ä¸€äº›ç©ºæ ¼åˆ å‡é—®é¢˜ï¼Œä½†æ˜¯è¿™äº›ç°åœ¨åº”è¯¥éƒ½è¢«ä¿®å¤äº†ã€‚
++
++å¦‚æœå¯ä»¥ï¼Œè¯·ä½¿ç”¨alpine(pineçš„ç»§æ‰¿è€…)
++
++é…ç½®é€‰é¡¹ï¼š
++- æœ€è¿‘çš„ç‰ˆæœ¬éœ€è¦æ¶ˆé™¤æµç¨‹æ–‡æœ¬
++- "no-strip-whitespace-before-send"é€‰é¡¹ä¹Ÿæ˜¯éœ€è¦çš„ã€‚
++
++
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++Sylpheed (GUI)
++
++- å†…åµŒæ–‡æœ¬å¯ä»¥å¾ˆå¥½çš„å·¥ä½œï¼ˆæˆ–è€…ä½¿ç”¨é™„ä»¶ï¼‰ã€‚
++- å…è®¸ä½¿ç”¨å¤–éƒ¨çš„ç¼–è¾‘å™¨ã€‚
++- å¯¹äºç›®å½•è¾ƒå¤šæ—¶éå¸¸æ…¢ã€‚
++- å¦‚æœé€šè¿‡non-SSLè¿æ¥ï¼Œæ— æ³•ä½¿ç”¨TLS SMTPæˆæƒã€‚
++- åœ¨ç»„æˆçª—å£ä¸­æœ‰ä¸€ä¸ªå¾ˆæœ‰ç”¨çš„ruler barã€‚
++- ç»™åœ°å€æœ¬ä¸­æ·»åŠ åœ°å€å°±ä¸ä¼šæ­£ç¡®çš„äº†è§£æ˜¾ç¤ºåã€‚
++
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++Thunderbird (GUI)
++
++é»˜è®¤æƒ…å†µä¸‹ï¼Œthunderbirdå¾ˆå®¹æ˜“æŸåæ–‡æœ¬ï¼Œä½†æ˜¯è¿˜æœ‰ä¸€äº›æ–¹æ³•å¯ä»¥å¼ºåˆ¶å®ƒå˜å¾—æ›´å¥½ã€‚
++
++- åœ¨ç”¨æˆ·å¸å·è®¾ç½®é‡Œï¼Œç»„æˆå’Œå¯»å€ï¼Œä¸è¦é€‰æ‹©"Compose messages in HTML format"ã€‚
++
++- ç¼–è¾‘ä½ çš„Thunderbirdé…ç½®è®¾ç½®æ¥ä½¿å®ƒä¸è¦æ‹†è¡Œä½¿ç”¨ï¼šuser_pref("mailnews.wraplength", 0);
++
++- ç¼–è¾‘ä½ çš„Thunderbirdé…ç½®è®¾ç½®ï¼Œä½¿å®ƒä¸è¦ä½¿ç”¨"format=flowed"æ ¼å¼ï¼šuser_pref("mailnews.
++  send_plaintext_flowed", false);
++
++- ä½ éœ€è¦ä½¿Thunderbirdå˜ä¸ºé¢„å…ˆæ ¼å¼æ–¹å¼ï¼š
++  å¦‚æœé»˜è®¤æƒ…å†µä¸‹ä½ ä¹¦å†™çš„æ˜¯HTMLæ ¼å¼ï¼Œé‚£ä¸æ˜¯å¾ˆéš¾ã€‚ä»…ä»…ä»æ ‡é¢˜æ çš„ä¸‹æ‹‰æ¡†ä¸­é€‰æ‹©"Preformat"æ ¼å¼ã€‚
++  å¦‚æœé»˜è®¤æƒ…å†µä¸‹ä½ ä¹¦å†™çš„æ˜¯æ–‡æœ¬æ ¼å¼ï¼Œä½ ä¸å¾—æŠŠå®ƒæ”¹ä¸ºHTMLæ ¼å¼ï¼ˆä»…ä»…ä½œä¸ºä¸€æ¬¡æ€§çš„ï¼‰æ¥ä¹¦å†™æ–°çš„æ¶ˆæ¯ï¼Œ
++  ç„¶åå¼ºåˆ¶ä½¿å®ƒå›åˆ°æ–‡æœ¬æ ¼å¼ï¼Œå¦åˆ™å®ƒå°±ä¼šæ‹†è¡Œã€‚è¦å®ç°å®ƒï¼Œåœ¨å†™ä¿¡çš„å›¾æ ‡ä¸Šä½¿ç”¨shifté”®æ¥ä½¿å®ƒå˜ä¸ºHTML
++  æ ¼å¼ï¼Œç„¶åæ ‡é¢˜æ çš„ä¸‹æ‹‰æ¡†ä¸­é€‰æ‹©"Preformat"æ ¼å¼ã€‚
++
++- å…è®¸ä½¿ç”¨å¤–éƒ¨çš„ç¼–è¾‘å™¨ï¼š
++  é’ˆå¯¹Thunderbirdæ‰“è¡¥ä¸æœ€ç®€å•çš„æ–¹æ³•å°±æ˜¯ä½¿ç”¨ä¸€ä¸ª"external editor"æ‰©å±•ï¼Œç„¶åä½¿ç”¨ä½ æœ€å–œæ¬¢çš„
++  $EDITORæ¥è¯»å–æˆ–è€…åˆå¹¶è¡¥ä¸åˆ°æ–‡æœ¬ä¸­ã€‚è¦å®ç°å®ƒï¼Œå¯ä»¥ä¸‹è½½å¹¶ä¸”å®‰è£…è¿™ä¸ªæ‰©å±•ï¼Œç„¶åæ·»åŠ ä¸€ä¸ªä½¿ç”¨å®ƒçš„
++  æŒ‰é”®View->Toolbars->Customize...æœ€åå½“ä½ ä¹¦å†™ä¿¡æ¯çš„æ—¶å€™ä»…ä»…ç‚¹å‡»å®ƒå°±å¯ä»¥äº†ã€‚
++
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++TkRat (GUI)
++
++å¯ä»¥ä½¿ç”¨å®ƒã€‚ä½¿ç”¨"Insert file..."æˆ–è€…å¤–éƒ¨çš„ç¼–è¾‘å™¨ã€‚
++
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++Gmail (Web GUI)
++
++ä¸è¦ä½¿ç”¨å®ƒå‘é€è¡¥ä¸ã€‚
++
++Gmailç½‘é¡µå®¢æˆ·ç«¯è‡ªåŠ¨åœ°æŠŠåˆ¶è¡¨ç¬¦è½¬æ¢ä¸ºç©ºæ ¼ã€‚
++
++è™½ç„¶åˆ¶è¡¨ç¬¦è½¬æ¢ä¸ºç©ºæ ¼é—®é¢˜å¯ä»¥è¢«å¤–éƒ¨ç¼–è¾‘å™¨è§£å†³ï¼ŒåŒæ—¶å®ƒè¿˜ä¼šä½¿ç”¨å›è½¦æ¢è¡ŒæŠŠæ¯è¡Œæ‹†åˆ†ä¸º78ä¸ªå­—ç¬¦ã€‚
++
++å¦ä¸€ä¸ªé—®é¢˜æ˜¯Gmailè¿˜ä¼šæŠŠä»»ä½•ä¸æ˜¯ASCIIçš„å­—ç¬¦çš„ä¿¡æ¯æ”¹ä¸ºbase64ç¼–ç ã€‚å®ƒæŠŠä¸œè¥¿å˜çš„åƒæ¬§æ´²äººçš„åå­—ã€‚
++
++                                ###
+-- 
+1.7.0.4
+
+
+--6zdv2QT/q3FMhpsV--
