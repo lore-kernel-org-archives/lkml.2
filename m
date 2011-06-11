@@ -1,37 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752360Ab1FKU5V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 16:57:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34060 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751269Ab1FKU5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 16:57:20 -0400
-Date: Sat, 11 Jun 2011 13:57:07 -0700
-From: Greg KH <gregkh@suse.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH 0/8] PM / Domains: Support for generic I/O PM domains (v5)
-Message-ID: <20110611205707.GB15267@suse.de>
-References: <201106112223.04972.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201106112223.04972.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752209Ab1FKVWy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 17:22:54 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:53685 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857Ab1FKVWv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jun 2011 17:22:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ivL89+jwf3lQWJ04rznKRgRYDq/0B/LOWw4EAb3cJJg2MNriqsDvSpbLmJDUqSlAyK
+         zAhdI8arAd60QfL0hF4ujtwgS/tisHKss9wyklHrvvC0hHZOGDKl/x9eLEn59w8+KALU
+         0ZUwBoeLaJQ1zV3/TQOQyiKjhDJShJOw+sZkQ=
+From: Connor Hansen <cmdkhh@gmail.com>
+To: marcel@holtmann.org
+Cc: padovan@profusion.mobi, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Connor Hansen <cmdkhh@gmail.com>
+Subject: [PATCH] drivers/bluetooth/bpa10x.c: missing kfrees
+Date: Sat, 11 Jun 2011 14:21:36 -0700
+Message-Id: <1307827296-21363-1-git-send-email-cmdkhh@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 11, 2011 at 10:23:04PM +0200, Rafael J. Wysocki wrote:
-> Hi,
-> 
-> This is the 4th update of the patchset adding support for generic I/O PM
-> domains.  The patches have been reworked quite a bit to take feedback into
-> account, but I left the Greg's ACK in [4/8] in the hope it still applies
-> (Greg, please let me know in case it doesn't :-)).
+both bpa10x_submit_initr_urb() and bpa10x_submit_bulk_urb()
+malloc a char buffer(buf) for usb_fill_init_usb() but fail to
+free it after freeing the urb.
 
-It still applies, thanks for leaving it in.
+Likewise, bpa10x_send_frame() allocates a usb_ctrlrequest(dr)
+for sending packets but does not free it after the
+usb_fill_control_urb() call.
+
+Signed-off-by: Connor Hansen <cmdkhh@gmail.com>
+---
+ drivers/bluetooth/bpa10x.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/bluetooth/bpa10x.c b/drivers/bluetooth/bpa10x.c
+index 751b338..7dfd9ca 100644
+--- a/drivers/bluetooth/bpa10x.c
++++ b/drivers/bluetooth/bpa10x.c
+@@ -254,6 +254,7 @@ static inline int bpa10x_submit_intr_urb(struct hci_dev *hdev)
+ 	}
+ 
+ 	usb_free_urb(urb);
++	kfree(buf);
+ 
+ 	return err;
+ }
+@@ -295,6 +296,7 @@ static inline int bpa10x_submit_bulk_urb(struct hci_dev *hdev)
+ 	}
+ 
+ 	usb_free_urb(urb);
++	kfree(buf);
+ 
+ 	return err;
+ }
+@@ -393,6 +395,7 @@ static int bpa10x_send_frame(struct sk_buff *skb)
+ 				skb->data, skb->len, bpa10x_tx_complete, skb);
+ 
+ 		hdev->stat.cmd_tx++;
++		kfree(df);
+ 		break;
+ 
+ 	case HCI_ACLDATA_PKT:
+-- 
+1.7.4.4
+
