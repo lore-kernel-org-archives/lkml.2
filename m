@@ -1,116 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab1FLXHX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 19:07:23 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:39388 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754437Ab1FLXHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 19:07:19 -0400
-Date: Sun, 12 Jun 2011 16:07:07 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Arjan van de Ven <arjan@infradead.org>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
-        thomas.abraham@linaro.org
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-Message-ID: <20110612230707.GE2212@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110610171939.GE2230@linux.vnet.ibm.com>
- <20110610172307.GA27630@srcf.ucam.org>
- <20110610175248.GF2230@linux.vnet.ibm.com>
- <20110610180807.GB28500@srcf.ucam.org>
- <20110610184738.GG2230@linux.vnet.ibm.com>
- <20110610192329.GA30496@srcf.ucam.org>
- <20110610193713.GJ2230@linux.vnet.ibm.com>
- <20110610200233.5ddd5a31@infradead.org>
- <20110611170610.GA2212@linux.vnet.ibm.com>
- <20110611102654.01e5cea9@infradead.org>
+	id S1754688Ab1FLXIr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 19:08:47 -0400
+Received: from straum.hexapodia.org ([207.7.131.186]:59251 "EHLO
+	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754630Ab1FLXIq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 19:08:46 -0400
+Date: Sun, 12 Jun 2011 16:09:01 -0700
+From: Andy Isaacson <adi@hexapodia.org>
+To: Jean Sacren <sakiwit@gmail.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] kernel/sched.c: Fix array initialization typo
+Message-ID: <20110612230901.GB11580@hexapodia.org>
+References: <20110612213107.GA12816@mail.gmail.com> <20110612213549.GA21620@p183.telecom.by> <20110612220116.GB12311@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110611102654.01e5cea9@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110612220116.GB12311@mail.gmail.com>
+X-Old-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
+X-GPG-Fingerprint: A5FC 6141 F76D B6B1 C81F  0FB7 AFA0 A45F ED3D 116D
+X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
+X-Domestic-Surveillance: money launder bomb tax evasion
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 11, 2011 at 10:26:54AM -0700, Arjan van de Ven wrote:
-> On Sat, 11 Jun 2011 10:06:10 -0700
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > On Fri, Jun 10, 2011 at 08:02:33PM -0700, Arjan van de Ven wrote:
-> > > On Fri, 10 Jun 2011 12:37:13 -0700
-> > > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > On Fri, Jun 10, 2011 at 08:23:29PM +0100, Matthew Garrett wrote:
-> > > > > On Fri, Jun 10, 2011 at 11:47:38AM -0700, Paul E. McKenney
-> > > > > wrote:
-> > > > > 
-> > > > > > And if I understand you correctly, then the patches that
-> > > > > > Ankita posted should help your self-refresh case, along with
-> > > > > > the originally intended the power-down case and
-> > > > > > special-purpose use of memory case.
-> > > > > 
-> > > > > Yeah, I'd hope so once we actually have capable hardware.
-> > > > 
-> > > > Cool!!!
-> > > > 
-> > > > So Ankita's patchset might be useful to you at some point, then.
-> > > > 
-> > > > Does it look like a reasonable implementation?
-> > > 
-> > > as someone who is working on hardware that is PASR capable right
-> > > now, I have to admit that our plan was to just hook into the buddy
-> > > allocator, and use PASR on the top level of buddy (eg PASR off
-> > > blocks that are free there, and PASR them back on once an
-> > > allocation required the block to be broken up)..... that looked the
-> > > very most simple to me.
-> > > 
-> > > Maybe something much more elaborate is needed, but I didn't see why
-> > > so far.
+On Sun, Jun 12, 2011 at 04:01:16PM -0600, Jean Sacren wrote:
+> From: Alexey Dobriyan <adobriyan@gmail.com>
+> Date: Mon, 13 Jun 2011 00:35:49 +0300
+> >
+> > On Sun, Jun 12, 2011 at 03:31:07PM -0600, Jean Sacren wrote:
+> > > The fix makes certain so that the size of the initialized arrays doesn't
+> > > go beyond the boundary set by the array size of 40.
 > > 
-> > If I understand correctly, you face the same issue that affects
-> > transparent huge pages, but on a much larger scale.  If you have even
-> > one non-moveable allocation in a given top-level buddy block, you
-> > won't be able to PASR that block.
+> > Why would it possibly do that?
 > 
-> yep we'd use a non-kernel zone for that; not too big a deal.
-> (the much larger scale you can debate, if your memory controller is
-> configured correctly the PASR regions are not all that much bigger than
-> hugepages)
+> With that ',' comma, doesn't it imply there might be the 41st element in
+> the array?
 
-Ah, OK, so you have a very large number of top-level buddy allocations,
-then.  Either that or very large hugepages.
+No, that's not how C works.
 
-> > In addition, one of the things that Ankita's patchset is looking to do
-> > is to control allocations in a given region, so that the region can be
-> > easily evacuated.  One use for this is to power off regions of memory,
-> > another is to PASR off regions of memory, and a third is to ensure
-> > that large regions of memory are available for when needed by media
-> > codecs (e.g., cameras), but can be used for other purposes when the
-> > media codecs don't need them (e.g., when viewing photos rather than
-> > taking them).
+> Despite the fact that that element is bogus.
+
+It's not bogus, it's utterly cromulent.  Trailing comma on array
+initializer was mentioned in the original K&R and is explicitly endorsed
+by ISO/IEC 9899:1999 6.7.8 paragraph 1.
+
+> Further, if the comma is there, what's the benefit? I know you're cool,
+> but is it cool in code that way as well?
+> > 
+> > And it's not a typo.
 > 
-> the codec issue seems to be solved in time; a previous generation
-> silicon on our (Intel) side had ARM ecosystem blocks that did not do
-> scatter gather, however the current generation ARM ecosystem blocks all
-> seem to have added S/G to them....
-> (in part this is coming from the strong desire to get camera/etc blocks
-> to all use "GPU texture" class memory, so that the camera can directly
-> deposit its information into a gpu texture, and similar for media
-> encode/decode blocks... this avoids copies as well as duplicate memory).
+> What is it then?
 
-That is indeed a clever approach!
+It is a standard C idiom for defining array contents.  If you write
+int x[] = {
+    1,
+    2,
+    3
+};
 
-Of course, if the GPU textures are in main memory, there will still
-be memory consumption gains to be had as the image size varies (e.g.,
-displaying image on one hand vs. menus and UI on the other).  In addition,
-I would expect that for quite some time there will continue to be a lot
-of systems with display hardware a bit too simple to qualify as "GPU".
+then when I add a fourth element to your array, I have to modify two
+lines, and the diff will say
+-    3
++    3,
++    4
+ };
 
-							Thanx, Paul
+whereas if you wrote "3," as the last line of the initializer, the diff
+would be one line long.
+
+Furthermore, spot the error in this diff:
+
+@@ -3,4 +3,5 @@ char *x[] = {
+     "quick",
+     "brown",
+     "fox"
++    "jumped"
+ };
+
+HTH, HAND,
+-andy
