@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751935Ab1FLGkH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 02:40:07 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:49470 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab1FLGkF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 02:40:05 -0400
-Date: Sun, 12 Jun 2011 08:40:02 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] UBI changes for 2.6.40
-Message-ID: <20110612064002.GA1712@x4.trippels.de>
-References: <20110524064147.4545.43792.sendpatchset@localhost.localdomain>
+	id S1751939Ab1FLHYr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 03:24:47 -0400
+Received: from in.cluded.net ([195.159.98.120]:32897 "EHLO in.cluded.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751730Ab1FLHYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 03:24:46 -0400
+Message-ID: <4DF46971.6080200@uw.no>
+Date: Sun, 12 Jun 2011 07:23:29 +0000
+From: "Daniel K." <dk@uw.no>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9a1) Gecko/20060307 SeaMonkey/1.5a
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110524064147.4545.43792.sendpatchset@localhost.localdomain>
+To: Jesper Juhl <jj@chaosbits.net>
+CC: David Miller <davem@davemloft.net>, viro@ZenIV.linux.org.uk,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][RFC] Sparc: Remove trigraph in die_if_kernel() message.
+References: <alpine.LNX.2.00.1106071627260.8844@swampdragon.chaosbits.net> <20110609.155943.162785602513776337.davem@davemloft.net> <20110609230322.GY11521@ZenIV.linux.org.uk> <20110609.160611.1243367560228886911.davem@davemloft.net> <alpine.LNX.2.00.1106100947010.19998@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1106100947010.19998@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset=ISO-8859-7; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.05.24 at 09:41 +0300, Artem Bityutskiy wrote:
+Jesper Juhl wrote:
+> On Thu, 9 Jun 2011, David Miller wrote:
 > 
->       UBI: use __packed instead of __attribute__((packed))
+>> From: Al Viro <viro@ZenIV.linux.org.uk>
+>> Date: Fri, 10 Jun 2011 00:03:22 +0100
+>>
+>>> On Thu, Jun 09, 2011 at 03:59:43PM -0700, David Miller wrote:
+>>>>> If I'm not mistaken, that "??!" will be taken as a trigraph for "|" by the 
+>>>>> preprocessor, so the final string will end up either as
+>>>>>   "Penguin instruction from Penguin mode|?!"
+>>> Not without -trigraphs, which is not on by default...
+>> Oh, in that case I'll rever this.
+>>
+> 
+> Well, my gcc warns about it. It seems that -Wtrigraphs is enabled by 
+> default:
 
-This patch causes a compile error when I build busybox:
+Perhaps the _real_ fix is just to remove all the interrobanging going on here,
+and be in line with all the other die_if_kernel() calls in the file.
 
-  CC      miscutils/ubi_attach_detach.o
-In file included from miscutils/ubi_attach_detach.c:27:0:
-/usr/include/mtd/ubi-user.h:330:3: error: conflicting types for ‘__packed’
-/usr/include/mtd/ubi-user.h:314:3: note: previous declaration of ‘__packed’ was here
-/usr/include/mtd/ubi-user.h:372:3: error: conflicting types for ‘__packed’
-/usr/include/mtd/ubi-user.h:314:3: note: previous declaration of ‘__packed’ was here
-/usr/include/mtd/ubi-user.h:387:3: error: conflicting types for ‘__packed’
-/usr/include/mtd/ubi-user.h:314:3: note: previous declaration of ‘__packed’ was here
-/usr/include/mtd/ubi-user.h:399:3: error: conflicting types for ‘__packed’
-/usr/include/mtd/ubi-user.h:314:3: note: previous declaration of ‘__packed’ was here
-/usr/include/mtd/ubi-user.h:413:4: error: conflicting types for ‘__packed’
-/usr/include/mtd/ubi-user.h:314:3: note: previous declaration of ‘__packed’ was here
-make[1]: *** [miscutils/ubi_attach_detach.o] Error 1
-make: *** [miscutils] Error 2
-make: *** Waiting for unfinished jobs....
+Something like this?
 
-Either reverting or using something like this fixes the problem:
+(Yeah, I shamelessly snarfed the patch from Jesper, and deleted all the excess
+?'s and !'s. I haven't cared enough figure out the proper *-by: attribution
+magic to credit Jesper, so someone just add whatever is necessary if they feel
+so inclined. I can't pretend to care much about my contribution in this.)
 
-diff --git a/include/mtd/ubi-user.h b/include/mtd/ubi-user.h
-index 3c41097..47a6c21 100644
---- a/include/mtd/ubi-user.h
-+++ b/include/mtd/ubi-user.h
-@@ -23,6 +23,10 @@
+Signed-off-by: Daniel K. <dk@uw.no>
+---
+diff --git a/arch/sparc/kernel/traps_32.c b/arch/sparc/kernel/traps_32.c
+index c0490c7..d99ca40 100644
+--- a/arch/sparc/kernel/traps_32.c
++++ b/arch/sparc/kernel/traps_32.c
+@@ -137,7 +137,7 @@ void do_priv_instruction(struct pt_regs *regs, unsigned long pc, unsigned long n
+ 	siginfo_t info;
  
- #include <linux/types.h>
- 
-+#ifndef __packed
-+#define __packed __attribute__((packed))
-+#endif
-+
- /*
-  * UBI device creation (the same as MTD device attachment)
-  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
--- 
-Markus
+ 	if(psr & PSR_PS)
+-		die_if_kernel("Penguin instruction from Penguin mode??!?!", regs);
++		die_if_kernel("Penguin instruction from Penguin mode", regs);
+ 	info.si_signo = SIGILL;
+ 	info.si_errno = 0;
+ 	info.si_code = ILL_PRVOPC;
