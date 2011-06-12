@@ -1,37 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab1FLMWT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 08:22:19 -0400
-Received: from wp186.webpack.hosteurope.de ([80.237.132.193]:59948 "EHLO
-	wp186.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753233Ab1FLMWS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 08:22:18 -0400
-Message-ID: <4DF4AF76.2070307@xaipete.org>
-Date: Sun, 12 Jun 2011 14:22:14 +0200
-From: Robert Uhl <ruhl@xaipete.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Mikael Pettersson <mikpe@it.uu.se>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Access to local APIC registers during an interrupt handler
-References: <4DF389D1.4090909@xaipete.org> <19956.40070.962218.422362@pilspetsen.it.uu.se>
-In-Reply-To: <19956.40070.962218.422362@pilspetsen.it.uu.se>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-bounce-key: webpack.hosteurope.de;ruhl@xaipete.org;1307881338;d0cc2ac8;
+	id S1753673Ab1FLMlu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 08:41:50 -0400
+Received: from chi.die-welt.net ([84.246.123.210]:59084 "EHLO chi.die-welt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753325Ab1FLMlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 08:41:49 -0400
+X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Jun 2011 08:41:48 EDT
+From: Evgeni Golov <sargentd@die-welt.net>
+To: wey-yi.w.guy@intel.com, ilw@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, Evgeni Golov <sargentd@die-welt.net>
+Subject: [PATCH] iwlagn: fix *_UCODE_API_MAX output in the firmware field
+Date: Sun, 12 Jun 2011 14:34:31 +0200
+Message-Id: <1307882071-767-1-git-send-email-sargentd@die-welt.net>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.06.2011 13:01, Mikael Pettersson wrote:
->   >  movq (lapic_idregister), %rcx
->   >  movq (%rcx), %rcx
->
-> You're doing a 64-bit load from a 32-bit lapic register.
->
-> If changing the above movq (%rcx), %rcx to use movl instead makes it
-> work in real HW, then you've found an accepts-invalid bug in qemu.
+Currently (3.0-rc2), modinfo iwlagn shows:
+    firmware:       iwlwifi-5150-IWL5150_UCODE_API_MAX.ucode
+    firmware:       iwlwifi-5000-IWL5000_UCODE_API_MAX.ucode
+    firmware:       iwlwifi-6000g2b-IWL6000G2_UCODE_API_MAX.ucode
+    firmware:       iwlwifi-6000g2a-IWL6000G2_UCODE_API_MAX.ucode
+    firmware:       iwlwifi-6050-IWL6050_UCODE_API_MAX.ucode
+    firmware:       iwlwifi-6000-IWL6000_UCODE_API_MAX.ucode
+    firmware:       iwlwifi-100-IWL100_UCODE_API_MAX.ucode
+    firmware:       iwlwifi-1000-IWL1000_UCODE_API_MAX.ucode
+    firmware:       iwlwifi-105-IWL105_UCODE_API_MAX.ucode
+    firmware:       iwlwifi-2030-IWL2030_UCODE_API_MAX.ucode
+    firmware:       iwlwifi-2000-IWL2000_UCODE_API_MAX.ucode
 
-It works with movl, thank you very much!
-I will send a bug report to the qemu team.
+which is obviously wrong, the user should not see the *_UCODE_API_MAX
+macros but the actual ucode API versions here.
+
+The problem are the
+    #define *_MODULE_FIRMWARE(api) *_FW_PRE #api ".ucode"
+which do not expand api correctly (because this is a macro itself).
+
+Fixed by using __stringify() from linux/stringify.h.
+
+Further information about macro stringification can be found here:
+    http://gcc.gnu.org/onlinedocs/cpp/Stringification.html
+
+Signed-off-by: Evgeni Golov <sargentd@die-welt.net>
+---
+ drivers/net/wireless/iwlwifi/iwl-1000.c |    5 +++--
+ drivers/net/wireless/iwlwifi/iwl-2000.c |    7 ++++---
+ drivers/net/wireless/iwlwifi/iwl-5000.c |    5 +++--
+ drivers/net/wireless/iwlwifi/iwl-6000.c |    9 +++++----
+ 4 files changed, 15 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/net/wireless/iwlwifi/iwl-1000.c b/drivers/net/wireless/iwlwifi/iwl-1000.c
+index 61d4a11..2a88e73 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-1000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-1000.c
+@@ -36,6 +36,7 @@
+ #include <net/mac80211.h>
+ #include <linux/etherdevice.h>
+ #include <asm/unaligned.h>
++#include <linux/stringify.h>
+ 
+ #include "iwl-eeprom.h"
+ #include "iwl-dev.h"
+@@ -55,10 +56,10 @@
+ #define IWL100_UCODE_API_MIN 5
+ 
+ #define IWL1000_FW_PRE "iwlwifi-1000-"
+-#define IWL1000_MODULE_FIRMWARE(api) IWL1000_FW_PRE #api ".ucode"
++#define IWL1000_MODULE_FIRMWARE(api) IWL1000_FW_PRE __stringify(api) ".ucode"
+ 
+ #define IWL100_FW_PRE "iwlwifi-100-"
+-#define IWL100_MODULE_FIRMWARE(api) IWL100_FW_PRE #api ".ucode"
++#define IWL100_MODULE_FIRMWARE(api) IWL100_FW_PRE __stringify(api) ".ucode"
+ 
+ 
+ /*
+diff --git a/drivers/net/wireless/iwlwifi/iwl-2000.c b/drivers/net/wireless/iwlwifi/iwl-2000.c
+index 86feec8..1044309 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-2000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-2000.c
+@@ -36,6 +36,7 @@
+ #include <net/mac80211.h>
+ #include <linux/etherdevice.h>
+ #include <asm/unaligned.h>
++#include <linux/stringify.h>
+ 
+ #include "iwl-eeprom.h"
+ #include "iwl-dev.h"
+@@ -58,13 +59,13 @@
+ #define IWL105_UCODE_API_MIN 5
+ 
+ #define IWL2030_FW_PRE "iwlwifi-2030-"
+-#define IWL2030_MODULE_FIRMWARE(api) IWL2030_FW_PRE #api ".ucode"
++#define IWL2030_MODULE_FIRMWARE(api) IWL2030_FW_PRE __stringify(api) ".ucode"
+ 
+ #define IWL2000_FW_PRE "iwlwifi-2000-"
+-#define IWL2000_MODULE_FIRMWARE(api) IWL2000_FW_PRE #api ".ucode"
++#define IWL2000_MODULE_FIRMWARE(api) IWL2000_FW_PRE __stringify(api) ".ucode"
+ 
+ #define IWL105_FW_PRE "iwlwifi-105-"
+-#define IWL105_MODULE_FIRMWARE(api) IWL105_FW_PRE #api ".ucode"
++#define IWL105_MODULE_FIRMWARE(api) IWL105_FW_PRE __stringify(api) ".ucode"
+ 
+ static void iwl2000_set_ct_threshold(struct iwl_priv *priv)
+ {
+diff --git a/drivers/net/wireless/iwlwifi/iwl-5000.c b/drivers/net/wireless/iwlwifi/iwl-5000.c
+index a70b8cf..168153d 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-5000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-5000.c
+@@ -37,6 +37,7 @@
+ #include <net/mac80211.h>
+ #include <linux/etherdevice.h>
+ #include <asm/unaligned.h>
++#include <linux/stringify.h>
+ 
+ #include "iwl-eeprom.h"
+ #include "iwl-dev.h"
+@@ -57,10 +58,10 @@
+ #define IWL5150_UCODE_API_MIN 1
+ 
+ #define IWL5000_FW_PRE "iwlwifi-5000-"
+-#define IWL5000_MODULE_FIRMWARE(api) IWL5000_FW_PRE #api ".ucode"
++#define IWL5000_MODULE_FIRMWARE(api) IWL5000_FW_PRE __stringify(api) ".ucode"
+ 
+ #define IWL5150_FW_PRE "iwlwifi-5150-"
+-#define IWL5150_MODULE_FIRMWARE(api) IWL5150_FW_PRE #api ".ucode"
++#define IWL5150_MODULE_FIRMWARE(api) IWL5150_FW_PRE __stringify(api) ".ucode"
+ 
+ /* NIC configuration for 5000 series */
+ static void iwl5000_nic_config(struct iwl_priv *priv)
+diff --git a/drivers/net/wireless/iwlwifi/iwl-6000.c b/drivers/net/wireless/iwlwifi/iwl-6000.c
+index fda6fe0..443a191 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-6000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-6000.c
+@@ -36,6 +36,7 @@
+ #include <net/mac80211.h>
+ #include <linux/etherdevice.h>
+ #include <asm/unaligned.h>
++#include <linux/stringify.h>
+ 
+ #include "iwl-eeprom.h"
+ #include "iwl-dev.h"
+@@ -58,16 +59,16 @@
+ #define IWL6000G2_UCODE_API_MIN 4
+ 
+ #define IWL6000_FW_PRE "iwlwifi-6000-"
+-#define IWL6000_MODULE_FIRMWARE(api) IWL6000_FW_PRE #api ".ucode"
++#define IWL6000_MODULE_FIRMWARE(api) IWL6000_FW_PRE __stringify(api) ".ucode"
+ 
+ #define IWL6050_FW_PRE "iwlwifi-6050-"
+-#define IWL6050_MODULE_FIRMWARE(api) IWL6050_FW_PRE #api ".ucode"
++#define IWL6050_MODULE_FIRMWARE(api) IWL6050_FW_PRE __stringify(api) ".ucode"
+ 
+ #define IWL6005_FW_PRE "iwlwifi-6000g2a-"
+-#define IWL6005_MODULE_FIRMWARE(api) IWL6005_FW_PRE #api ".ucode"
++#define IWL6005_MODULE_FIRMWARE(api) IWL6005_FW_PRE __stringify(api) ".ucode"
+ 
+ #define IWL6030_FW_PRE "iwlwifi-6000g2b-"
+-#define IWL6030_MODULE_FIRMWARE(api) IWL6030_FW_PRE #api ".ucode"
++#define IWL6030_MODULE_FIRMWARE(api) IWL6030_FW_PRE __stringify(api) ".ucode"
+ 
+ static void iwl6000_set_ct_threshold(struct iwl_priv *priv)
+ {
+-- 
+1.7.2.5
+
