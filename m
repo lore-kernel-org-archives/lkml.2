@@ -1,52 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937Ab1FLNyL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 09:54:11 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:38288 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753689Ab1FLNyI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 09:54:08 -0400
-Date: Sun, 12 Jun 2011 15:53:48 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Borislav Petkov <bp@amd64.org>, "Luck, Tony" <tony.luck@intel.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [PATCH 07/10] MCE: replace mce.c use of TIF_MCE_NOTIFY with
- user_return_notifier
-Message-ID: <20110612135348.GA20439@aftab>
-References: <4df13cae2729896ba5@agluck-desktop.sc.intel.com>
- <4DF478F5.6090507@redhat.com>
- <20110612102443.GA19060@aftab>
- <4DF4952F.5030808@redhat.com>
+	id S1753772Ab1FLOYM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 10:24:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54495 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751973Ab1FLOYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 10:24:09 -0400
+Date: Sun, 12 Jun 2011 16:24:05 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v3 01/10] compaction: trivial clean up acct_isolated
+Message-ID: <20110612142257.GA24323@tiehlicka.suse.cz>
+References: <cover.1307455422.git.minchan.kim@gmail.com>
+ <71a79768ff8ef356db09493dbb5d6c390e176e0d.1307455422.git.minchan.kim@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DF4952F.5030808@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <71a79768ff8ef356db09493dbb5d6c390e176e0d.1307455422.git.minchan.kim@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 12, 2011 at 06:30:07AM -0400, Avi Kivity wrote:
-> You're missing the flow.  The MCE handler calls irq_work_queue(), which 
-> schedules a user return notifier, which does any needed processing in 
-> task context.
+On Tue 07-06-11 23:38:14, Minchan Kim wrote:
+> acct_isolated of compaction uses page_lru_base_type which returns only
+> base type of LRU list so it never returns LRU_ACTIVE_ANON or LRU_ACTIVE_FILE.
+> In addtion, cc->nr_[anon|file] is used in only acct_isolated so it doesn't have
+> fields in conpact_control.
+> This patch removes fields from compact_control and makes clear function of
+> acct_issolated which counts the number of anon|file pages isolated.
+> 
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 
-Ah ok, this will obviate the need for atomic lists in the user return
-notifier. This could work, yep.
+Sorry for the late reply. I have looked at the previous posting but
+didn't have time to comment on it.
 
-Thanks for clarifying.
+Yes, stack usage reduction makes sense and the function also looks more
+compact.
+
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  mm/compaction.c |   18 +++++-------------
+>  1 files changed, 5 insertions(+), 13 deletions(-)
+> 
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 021a296..61eab88 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -35,10 +35,6 @@ struct compact_control {
+>  	unsigned long migrate_pfn;	/* isolate_migratepages search base */
+>  	bool sync;			/* Synchronous migration */
+>  
+> -	/* Account for isolated anon and file pages */
+> -	unsigned long nr_anon;
+> -	unsigned long nr_file;
+> -
+>  	unsigned int order;		/* order a direct compactor needs */
+>  	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
+>  	struct zone *zone;
+> @@ -212,17 +208,13 @@ static void isolate_freepages(struct zone *zone,
+>  static void acct_isolated(struct zone *zone, struct compact_control *cc)
+>  {
+>  	struct page *page;
+> -	unsigned int count[NR_LRU_LISTS] = { 0, };
+> +	unsigned int count[2] = { 0, };
+>  
+> -	list_for_each_entry(page, &cc->migratepages, lru) {
+> -		int lru = page_lru_base_type(page);
+> -		count[lru]++;
+> -	}
+> +	list_for_each_entry(page, &cc->migratepages, lru)
+> +		count[!!page_is_file_cache(page)]++;
+>  
+> -	cc->nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
+> -	cc->nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
+> -	__mod_zone_page_state(zone, NR_ISOLATED_ANON, cc->nr_anon);
+> -	__mod_zone_page_state(zone, NR_ISOLATED_FILE, cc->nr_file);
+> +	__mod_zone_page_state(zone, NR_ISOLATED_ANON, count[0]);
+> +	__mod_zone_page_state(zone, NR_ISOLATED_FILE, count[1]);
+>  }
+>  
+>  /* Similar to reclaim, but different enough that they don't share logic */
+> -- 
+> 1.7.0.4
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
