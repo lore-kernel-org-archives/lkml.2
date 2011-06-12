@@ -1,116 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155Ab1FLOp0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 10:45:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55179 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751159Ab1FLOpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 10:45:24 -0400
-Date: Sun, 12 Jun 2011 16:45:21 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v3 03/10] Add additional isolation mode
-Message-ID: <20110612144521.GB24323@tiehlicka.suse.cz>
-References: <cover.1307455422.git.minchan.kim@gmail.com>
- <b72a86ed33c693aeccac0dba3fba8c13145106ab.1307455422.git.minchan.kim@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <b72a86ed33c693aeccac0dba3fba8c13145106ab.1307455422.git.minchan.kim@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752702Ab1FLOrp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 10:47:45 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64114 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab1FLOrn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 10:47:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=sHQmAwHvWuFxCJG0pIlcdj2SrPoT8S+quc3k4HcbrJ44wWcg+dHJIqX+Pwiv4kXaKU
+         hCcgq+pPD9/eFOvad0P1zrbvZG8iJiBpjDGhnALNSQwhls9MnhScyYKjIzPlnGDccguW
+         CZBXJ7yueUtmE8ptQGVnPPa79rU5FLlfVyirw=
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [RFC v2 03/04] procfs: add hidenet modes as mount options
+Date: Sun, 12 Jun 2011 18:46:23 +0400
+Message-Id: <1307889983-6350-1-git-send-email-segoon@openwall.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 07-06-11 23:38:16, Minchan Kim wrote:
-> There are some places to isolate lru page and I believe
-> users of isolate_lru_page will be growing.
-> The purpose of them is each different so part of isolated pages
-> should put back to LRU, again.
-> 
-> The problem is when we put back the page into LRU,
-> we lose LRU ordering and the page is inserted at head of LRU list.
-> It makes unnecessary LRU churning so that vm can evict working set pages
-> rather than idle pages.
+This patch adds mount options to restrict access to /proc/PID/net/
+contents.  The default backward-compatible behaviour is left untouched.
 
-I guess that, although this is true, it doesn't fit in with this patch
-very much because this patch doesn't fix this problem. It is a
-preparation for for further work. I would expect this description with
-the core patch that actlually handles this issue.
+'hidenet' mount option means /proc/PID/net will be accessible to processes
+with CAP_NET_ADMIN capability or to members of a special group (gid=
+argument).
 
-> 
-> This patch adds new modes when we isolate page in LRU so we don't isolate pages
-> if we can't handle it. It could reduce LRU churning.
-> 
-> This patch doesn't change old behavior. It's just used by next patches.
+In current version hidenet works for CONFIG_NET_NS=y via creating a
+"fake" net namespace and slipping it to nonauthorized users, resulting
+in users observing blank net files (like nobody use the network, which
+is true for this fake namespace).  It is a small compatibility
+workaround for old programs assuming that files like /proc/net/tcp and
+similar always exist and are accessible.  If they look like in normal
+situation but contain no information, nothing is broken and network
+information access is still successfully restricted.  For
+CONFIG_NET_NS=n /proc/net/ simply has no entries.
 
-It doesn't because there is not user of those flags but maybe it would
-be better to have those to see why it actually can reduce LRU
-isolations.
 
-> 
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> ---
->  include/linux/swap.h |    2 ++
->  mm/vmscan.c          |    6 ++++++
->  2 files changed, 8 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/swap.h b/include/linux/swap.h
-> index 48d50e6..731f5dd 100644
-> --- a/include/linux/swap.h
-> +++ b/include/linux/swap.h
-> @@ -248,6 +248,8 @@ enum ISOLATE_MODE {
->  	ISOLATE_NONE,
->  	ISOLATE_INACTIVE = 1,	/* Isolate inactive pages */
->  	ISOLATE_ACTIVE = 2,	/* Isolate active pages */
-> +	ISOLATE_CLEAN = 8,      /* Isolate clean file */
-> +	ISOLATE_UNMAPPED = 16,  /* Isolate unmapped file */
->  };
->  
->  /* linux/mm/vmscan.c */
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 4cbe114..26aa627 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -990,6 +990,12 @@ int __isolate_lru_page(struct page *page, enum ISOLATE_MODE mode, int file)
->  
->  	ret = -EBUSY;
->  
-> +	if (mode & ISOLATE_CLEAN && (PageDirty(page) || PageWriteback(page)))
-> +		return ret;
-> +
-> +	if (mode & ISOLATE_UNMAPPED && page_mapped(page))
-> +		return ret;
-> +
->  	if (likely(get_page_unless_zero(page))) {
->  		/*
->  		 * Be careful not to clear PageLRU until after we're
-> -- 
-> 1.7.0.4
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Similar feature is implemented for old kernels in -ow patches (for
+Linux 2.2 and 2.4) and for Linux 2.6 in -grsecurity (but it is
+implemented as a configure options, not cofigurable in runtime, and
+without fake_net).
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+ fs/proc/proc_net.c |   26 ++++++++++++++++++++++++++
+ 1 files changed, 26 insertions(+), 0 deletions(-)
+
+diff --git a/fs/proc/proc_net.c b/fs/proc/proc_net.c
+index 9020ac1..a2a1f08 100644
+--- a/fs/proc/proc_net.c
++++ b/fs/proc/proc_net.c
+@@ -22,10 +22,13 @@
+ #include <linux/mount.h>
+ #include <linux/nsproxy.h>
+ #include <net/net_namespace.h>
++#include <linux/pid_namespace.h>
+ #include <linux/seq_file.h>
+ 
+ #include "internal.h"
+ 
++static struct net *fake_net;
++
+ 
+ static struct net *get_proc_net(const struct inode *inode)
+ {
+@@ -105,6 +108,15 @@ static struct net *get_proc_task_net(struct inode *dir)
+ 	struct task_struct *task;
+ 	struct nsproxy *ns;
+ 	struct net *net = NULL;
++	struct pid_namespace *pid = dir->i_sb->s_fs_info;
++
++	if (pid->hide_net &&
++	    !in_group_p(pid->pid_gid) &&
++	    !capable(CAP_NET_ADMIN)) {
++		if (fake_net)
++			get_net(fake_net);
++		return fake_net;
++	}
+ 
+ 	rcu_read_lock();
+ 	task = pid_task(proc_pid(dir), PIDTYPE_PID);
+@@ -239,3 +251,17 @@ int __init proc_net_init(void)
+ 
+ 	return register_pernet_subsys(&proc_net_ns_ops);
+ }
++
++#ifdef CONFIG_NET_NS
++int __init proc_net_initcall(void)
++{
++	fake_net = net_create();
++	if (fake_net == NULL)
++		return -ENOMEM;
++
++	get_net(fake_net);
++	return 0;
++}
++
++late_initcall(proc_net_initcall);
++#endif
