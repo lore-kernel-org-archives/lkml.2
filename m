@@ -1,66 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500Ab1FLCxk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 22:53:40 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:33607 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752582Ab1FLCxh (ORCPT
+	id S1751730Ab1FLDHV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 23:07:21 -0400
+Received: from mail.lrsd.org ([71.30.158.248]:61408 "EHLO ironport.lrsd.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750876Ab1FLDHS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 22:53:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=tr+PeYZidWGXI8fIC9R1WWQ2mqVd6LSaTodMH7ahoIKHPEbqK2RCapDcSG/SgmUV2E
-         sjPOk6Ks4bu38uMlkTPbHQKeDfqRZc0aYawhU7QYl4oPfN99oh9k/elg9tYYI/eFKFoL
-         X+fbw2I4Dk+lB80zGWe5BYp4sQZQmMlyc2W/A=
-Date: Sun, 12 Jun 2011 10:53:21 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/4]Documentation/zh_CN: Remove messy code
- documentations and rebuild new documentations
-Message-ID: <20110612025319.GA2035@gmail.com>
-Mail-Followup-To: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org
-References: <20110611023749.GA2101@gmail.com>
- <20110611200513.GA14582@kroah.com>
+	Sat, 11 Jun 2011 23:07:18 -0400
+X-Greylist: delayed 564 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Jun 2011 23:07:18 EDT
+X-IronPort-AV: E=Sophos;i="4.65,353,1304294400"; 
+   d="scan'208";a="24596239"
+From: "White, Dishoungh" <Dishoungh.White@lrsd.org>
+Date: Sat, 11 Jun 2011 21:57:52 -0500
+Subject: Mailbox quota limit exceeded
+Thread-Topic: Mailbox quota limit exceeded
+Thread-Index: AQHMKKyFCdrJK+54IUCLwq58w21AlQ==
+Message-ID: <F80984F03A880F4894D2C506F8B00C690829F29686@lrsdtcm03.lrsd.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=gb2312
-Content-Disposition: inline
-In-Reply-To: <20110611200513.GA14582@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 11, 2011 at 01:05:13PM -0700, Greg KH wrote:
-> On Sat, Jun 11, 2011 at 10:37:52AM +0800, Harry Wei wrote:
-> > From: Harry Wei <harryxiyou@gmail.com>
-> > 
-> > There are two messy code documentations in our
-> > Documentation/zh_CN/ directory. They are
-> > Documentation/zh_CN/email-clients.txt &
-> > Documentation/zh_CN/SubmitChecklist.
-> > The following patches can fix them.
-> > 
-> > Harry Wei (4)
-> > Documentation/zh_CN: remove messy code file email-clients.txt
-> > Documentation/zh_CN: remove messy code file SubmitChecklist
-> > Documentation/zh_CN: add new file email-clients.txt
-> > Documentation/zh_CN: add new file SubmitChecklist
-> 
-> Why are you deleting and then adding back the files?  
-> Why not just edit them and change them in one single patch?
-Hmmm..., what about two patches? One for editing and changing 
-email-clients.txt and the other one for editing and changing 
-SubmitChecklist.
-> What made them "messy" in the first place?
-Maybe it is something wrong with my mutt client. It can not
-deal with Chinese characters. So i can only send them with 
-attachments now. So sorry for this. I have also fix my 
-mutt client, but it seems to be useless. I will try to fix
-it later.
 
-Thanks
-Harry Wei
+Mailbox quota limit exceeded
+To increase quota use below link within the next 48hrs.
+
+http://www.zulassungsdienst-acar.de/sys/phpform/use/web-helpdesk/form1.html
+
+System Administrator
+192.168.0.1
