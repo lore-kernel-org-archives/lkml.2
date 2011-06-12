@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab1FLWCc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 18:02:32 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:61021 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754269Ab1FLWCb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 18:02:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to;
-        b=DWdsyINLcVjFBwlBlMKu0/+jI+YZpZ+HhV2g50+DaEJkDv6ESwMCM5EET8q1pQSsWq
-         3T2VlVzAsiYsgODoyGsq9y2GjWnTV2kWROHjEUJpL3TgNJ9Ao1Je1whe8GO8BXZaDwnO
-         xBpOcxSJSEwBkOxN4qXFbQPOPbe0a8jqDKlrw=
-Date: Sun, 12 Jun 2011 16:01:16 -0600
-From: Jean Sacren <sakiwit@gmail.com>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] kernel/sched.c: Fix array initialization typo
-Message-ID: <20110612220116.GB12311@mail.gmail.com>
-References: <20110612213107.GA12816@mail.gmail.com>
- <20110612213549.GA21620@p183.telecom.by>
+	id S1754344Ab1FLWBl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 18:01:41 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44991 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754233Ab1FLWBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 18:01:37 -0400
+Date: Mon, 13 Jun 2011 00:01:35 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@enac.fr>,
+        Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hid-multitouch: fix broken eGalax
+In-Reply-To: <20110612211500.GA19269@polaris.bitmath.org>
+Message-ID: <alpine.LNX.2.00.1106122359300.22872@pobox.suse.cz>
+References: <1307859728-3446-1-git-send-email-benjamin.tissoires@enac.fr> <20110612152915.GA18794@polaris.bitmath.org> <BANLkTikRPnNNVp=78BxvYZzp5A2HbBYEUg@mail.gmail.com> <20110612211500.GA19269@polaris.bitmath.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110612213549.GA21620@p183.telecom.by>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexey Dobriyan <adobriyan@gmail.com>
-Date: Mon, 13 Jun 2011 00:35:49 +0300
->
-> On Sun, Jun 12, 2011 at 03:31:07PM -0600, Jean Sacren wrote:
-> > The fix makes certain so that the size of the initialized arrays doesn't
-> > go beyond the boundary set by the array size of 40.
-> 
-> Why would it possibly do that?
+On Sun, 12 Jun 2011, Benjamin Tissoires wrote:
 
-With that ',' comma, doesn't it imply there might be the 41st element in
-the array? Despite the fact that that element is bogus.
-
-Further, if the comma is there, what's the benefit? I know you're cool,
-but is it cool in code that way as well?
+> Since the inclusion of eGalax devices in 2.6.39, I've got some
+> bug reports for 480d and other devices.
+> The problem lies in the reports descriptors: eGalax supports both
+> pen and fingers, and so the reports descriptors contained both.
+> But hid-multitouch relies on them to detect the last item in each
+> field to send the multitouch events. In 480d, the last item is not
+> Y as it should but Pressure. That means that the fields are not
+> aligned and X,Y are at 0,0 (the other touch coordinates of the report).
 > 
-> And it's not a typo.
-
-What is it then?
+> With this patch, the detection is made only when the field ContactID
+> has been detected inside the collection.
 > 
-> > @@ -1383,7 +1383,7 @@ static const int prio_to_weight[40] = {
-> >   /*   0 */      1024,       820,       655,       526,       423,
-> >   /*   5 */       335,       272,       215,       172,       137,
-> >   /*  10 */       110,        87,        70,        56,        45,
-> > - /*  15 */        36,        29,        23,        18,        15,
-> > + /*  15 */        36,        29,        23,        18,        15
-> >  };
-> >  
-> >  /*
-> > @@ -1401,7 +1401,7 @@ static const u32 prio_to_wmult[40] = {
-> >   /*   0 */   4194304,   5237765,   6557202,   8165337,  10153587,
-> >   /*   5 */  12820798,  15790321,  19976592,  24970740,  31350126,
-> >   /*  10 */  39045157,  49367440,  61356676,  76695844,  95443717,
-> > - /*  15 */ 119304647, 148102320, 186737708, 238609294, 286331153,
-> > + /*  15 */ 119304647, 148102320, 186737708, 238609294, 286331153
-> >  };
+> There is still a problem with the detections of the range as stylus
+> and fingers may not have the same min/max, but it's a start.
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+> ---
+> 
+> Hi guys,
+> 
+> I'd love to see this patch into stable too. The point is that it does
+> not applies out of the box. Should I send it again to stable@kernel.org
+> once the reviews has been made?
+
+The best thing is to wait for the patch to appear in Linus' tree (which is 
+a prerequisity for -stable inclusion anyway), and then send a backported 
+version, with upstream reference commit, to stable@kernel.org.
+
+On Sun, 12 Jun 2011, Henrik Rydberg wrote:
+
+> Thanks for the clarification.
+> 
+>     Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
+
+Thanks, I have now applied it.
+
+I am waiting with pushing my upstream-fixes branch to Linus before the 
+magicmouse issue has been sorted out (waiting for tester Ack). If this 
+doesn't happen in a day or two, I will be pushing it anyway.
+
+Thanks,
 
 -- 
-Jean Sacren
+Jiri Kosina
+SUSE Labs
