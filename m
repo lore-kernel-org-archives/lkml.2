@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752255Ab1FLSTi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 14:19:38 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:39817 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751443Ab1FLSTg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 14:19:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=xf9MEsgjoDi5+SkugosfuV0OvvW34OeziFZ46aQG7k6nQoDlZTrEwWJONcjdzsAE50
-         Ysdwk2NzKn5trztLV3mm5AuEEPceXAF5XJW2spgTEqCHndai6ggV2JdAUs0pzSwAJwDj
-         fU4MyRBMlGdsumO5pntxOKVxZst5oQxjQTK78=
+	id S1752089Ab1FLSez (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 14:34:55 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:49788 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751285Ab1FLSex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 14:34:53 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: Re: [PATCH]drivers:base:power:trace.c Add "UTC" Coordinated Universal Time to the printk.
+Date: Sun, 12 Jun 2011 20:35:26 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>
+References: <1307599301-2524-1-git-send-email-justinmattock@gmail.com> <201106121412.09903.rjw@sisk.pl> <4DF4E0CB.4090900@gmail.com>
+In-Reply-To: <4DF4E0CB.4090900@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4DD0DE2C.4060806@suse.cz>
-References: <4DCD8CE4.4090404@suse.cz>
-	<b07e7ecdce48bc90a2cf83e8867494dae7cd174f.1305329845.git.mfm@muteddisk.com>
-	<20110515154002.GB6274@ghostprotocols.net>
-	<4DD0DE2C.4060806@suse.cz>
-Date: Sun, 12 Jun 2011 11:19:34 -0700
-Message-ID: <BANLkTikvuRwWwb3aux25Ut6ycr0VefrHFQ@mail.gmail.com>
-Subject: Re: [PATCH v3] package: Makefile: fix perf target bug
-From: matt mooney <mfmooney@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106122035.26600.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 1:19 AM, Michal Marek <mmarek@suse.cz> wrote:
-> On 15.5.2011 17:40, Arnaldo Carvalho de Melo wrote:
->>
->> Em Fri, May 13, 2011 at 04:41:12PM -0700, mfmooney@gmail.com escreveu:
->>>
->>> From: matt mooney<mfm@muteddisk.com>
->>>
->>> Specify --git-dir when building perf targets to allow out-of-tree
->>> builds using O=<build-dir>.
->>>
->>> The shell command in `git archive' had to be modified to allow proper
->>> file name expansion of the files listed in MANIFEST.
->>>
->>> Signed-off-by: matt mooney<mfm@muteddisk.com>
->>
->> Michal,
->>
->>        Can I have your Reviewed-by or Acked-by for this one? Assuming
->> all is ok by now :)
->
-> Reviewed-by: Michal Marek <mmarek@suse.cz>
+On Sunday, June 12, 2011, Justin P. Mattock wrote:
+> On 06/12/2011 05:12 AM, Rafael J. Wysocki wrote:
+> > Hi,
+> >
+> > On Thursday, June 09, 2011, Justin P. Mattock wrote:
+> >> From: "Justin P. Mattock"<justinmattock@gmail.com>
+> >>
+> >> sounds stupid, but taking a glance at the time, and seeing the wrong time, or what seemed
+> >> wrong in dmesg, caused me to go into total check the time clock panic mode.. So the patch below adds:
+> >> "UTC" Coordinated Universal Time abreviation to the printk so people like me dont flip out over the time!
+> >>
+> >> before:
+> >> [    0.114915] Time:  1:47:03  Date: 06/09/11
+> >>
+> >> after:
+> >> [    0.114728] Time:  5:46:02 UTC Date: 06/09/11
+> >>
+> >> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+> >
+> > I suspect the goal is to mark messages printed by the PM trace code so that
+> > they can be easily distinguished from messages from other sources to avoid
+> > confusion.  Why do you think it's a good idea to use the "UTC" string for
+> > this purpose?  The time printed in those messages need not be UTC.
+> >
+> > It would be better to simply print "RTC time: ..., date: ..." IMO.
+> >
+> > Thanks,
+> > Rafael
+> >
+> 
+> well.. if thats better, then thats better.. over here(people that dont 
+> know what RTC time is) would not get so confused with a simple UTC or 
+> PDT or whatever the time zone is but if RTC is bettr, then its better.
 
-I do not believe this patch ever got picked up!
+My point is we don't know this time is always UTC, so we rather shouldn't
+label it as UTC unconditionally, should we?
 
-Thanks,
-matt
-
--- 
-GPG-Key: 9AFE00EA
+Rafael
