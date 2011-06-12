@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab1FLLGZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 07:06:25 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49272 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751033Ab1FLLGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 07:06:22 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning instead of failing
-Date: Sun, 12 Jun 2011 13:07:20 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, metan@ucw.cz,
-        "Dmitry Eremin-Solenikov" <dbaryshkov@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <1306922672-9012-1-git-send-email-dbaryshkov@gmail.com> <BANLkTinBkdVd90g3-uiQP41z1S1sXUdRmQ@mail.gmail.com> <20110602214655.GA2916@localhost.ucw.cz>
-In-Reply-To: <20110602214655.GA2916@localhost.ucw.cz>
+	id S1752122Ab1FLLMb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 07:12:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53763 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986Ab1FLLM3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 07:12:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=lQYqzmweOpZy/MWXPsgKve3KcY11DUM3b5/BSZTiM9V3D85gncKsKpQJniiODU7r3z
+         JpwaKuVuVlDbTfpDrAZrR0PgdOjxy4Um//cYBta0Yz8thRE93hAvvbk7gy6hX/TnU03W
+         1tW/UITfrop4sDeu/N1CFkNjnqhAc6Cc6yLLI=
+Date: Sun, 12 Jun 2011 14:12:23 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Nikanth Karthikesan <knikanth@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
+        Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
+        kernel-hardening@lists.openwall.com
+Subject: Re: [RFC] procfs: add hidepid and hidenet modes
+Message-ID: <20110612111222.GA23467@p183.telecom.by>
+References: <20110612075100.GA4459@albatros>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106121307.20631.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110612075100.GA4459@albatros>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
-
-On Thursday, June 02, 2011, Pavel Machek wrote:
-> On Wed 2011-06-01 21:38:59, KOSAKI Motohiro wrote:
-> > 2011/6/1 Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>:
-> > > Please be more polite to other people. After a197b59ae6 all allocations
-> > > with GFP_DMA set on nodes without ZONE_DMA fail nearly silently (only
-> > > one warning during bootup is emited, no matter how many things fail).
-> > > This is a very crude change on behaviour. To be more civil, instead of
-> > > failing emit noisy warnings each time smbd. tries to allocate a GFP_DMA
-> > > memory on non-ZONE_DMA node.
-> > >
-> > > This change should be reverted after one or two major releases, but
-> > > we should be more accurate rather than hoping for the best.
-> > 
-> > Instaed of, shouldn't we revert a197b59ae6? Some arch don't have
-> > DMA_ZONE at all.
-> > and a197b59ae6 only care x86 embedded case. If we accept your patch, I
-> > can imagine
-> > other people will claim warn foold is a bug. ;)
+On Sun, Jun 12, 2011 at 11:51:01AM +0400, Vasiliy Kulikov wrote:
+> hidenet means /proc/PID/net will be accessible to processes with
+> CAP_NET_ADMIN capability or to members of a special group.
 > 
-> I believe we should revert. It broke zaurus boot for metan...
+> gid=XXX defines a group that will be able to gather all processes' info
+> and network connections info.
+> 
+> Similar features are implemented for old kernels in -ow patches (for
+> Linux 2.2 and 2.4) and for Linux 2.6 in -grsecurity (but both of them
+> are implemented as configure options, not cofigurable in runtime).
+> 
+> 
+> In current version hidenet works for CONFIG_NET_NS=y via creating a
+> "fake" net namespace and slipping it to nonauthorized users, resulting
+> in users observing blank net files (like nobody use the network).  If
+> CONFIG_NET_NS=n I don't see anything better than just fully denying
+> access to /proc/<pid>/net.  More elegant ideas are welcome.
 
-Is it still a problem, or has it been fixed in the meantime?
+This fake netns concept is ugly.
+If you wan't deny something, why don't you return -E?
 
-Rafael
+Regardless, these should be separate patch from PID stuff.
