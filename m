@@ -1,130 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab1FLUoX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 16:44:23 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:59843 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751208Ab1FLUoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 16:44:20 -0400
-Date: Sun, 12 Jun 2011 13:44:07 -0700
-From: Ram Pai <linuxram@us.ibm.com>
-To: Oliver Hartkopp <socketcan@hartkopp.net>
-Cc: Yinghai Lu <yinghai@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Chris Ball <cjb@laptop.org>, "S, Venkatraman" <svenkatr@ti.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: sdhci-pci fails on 3.0.0-rc1 on Dell E6510
-Message-ID: <20110612204406.GC30738@ram-laptop>
-Reply-To: Ram Pai <linuxram@us.ibm.com>
-References: <4DEBCA3F.8050205@hartkopp.net>
- <BANLkTin_WHuy5MExNBHdeLiDmdmn7SZYkg@mail.gmail.com>
- <4DED05C4.7050903@hartkopp.net>
- <m3hb82wx6m.fsf@pullcord.laptop.org>
- <4DEE6FC6.9040308@hartkopp.net>
- <4DEE84AD.6050104@hartkopp.net>
- <4DEEA3CD.30507@kernel.org>
- <4DEF1606.5030803@hartkopp.net>
-MIME-Version: 1.0
+	id S1753602Ab1FLVPz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 17:15:55 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:59527 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208Ab1FLVPy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 17:15:54 -0400
+X-Greylist: delayed 1458 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Jun 2011 17:15:53 EDT
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
+Mime-Version: 1.0 (Apple Message framework v1084)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DEF1606.5030803@hartkopp.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Anton Altaparmakov <anton@tuxera.com>
+In-Reply-To: <20110611023947.GA9824@kroah.com>
+Date: Sun, 12 Jun 2011 21:51:29 +0100
+Cc: Miklos Szeredi <mszeredi@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>, NeilBrown <neilb@suse.de>,
+        Miklos Szeredi <miklos@szeredi.hu>, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nbd@openwrt.org, hramrach@centrum.cz, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu
+Content-Transfer-Encoding: 8BIT
+Message-Id: <748B1AA7-6E40-4610-8FDF-4F49AB4226BE@tuxera.com>
+References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu> <20110608153208.dc705cda.akpm@linux-foundation.org> <20110609115934.3c53f78f@notabene.brown> <20110608205233.ebfedc4d.akpm@linux-foundation.org> <20110609134947.GD13242@shadowen.org> <20110609123220.6afb9d0f.akpm@linux-foundation.org> <BANLkTimTyYp1P4qd8awvsq6PVZn1TQ5A-Q@mail.gmail.com> <1307650642.9874.10.camel@tucsk.pomaz.szeredi.hu> <EE48B29B-EC3F-44D7-9A39-07F6EA138AC4@cam.ac.uk> <20110611023947.GA9824@kroah.com>
+To: Greg KH <greg@kroah.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 08:26:14AM +0200, Oliver Hartkopp wrote:
-> On 08.06.2011 00:18, Yinghai Lu wrote:
-> > thanks.
-> > 
-> > second report.
-> > 
-> > can you send out whole boot log.
-> 
-> See attached dmesg output. The 'dirty' is due to the revert test of the sd/mmc
-> stuff (see below) - the rest is plain 3.0.0-rc2.
-> 
-> Good luck :-)
+Hi Greg,
 
-Looks like the kernel; by default, tries to allocate mem resource of size
-0x4000000 each to the BARs of the cardbus bridge. This cannot be satisfied
-meeting all the constraints. The BIOS had not allocated the resource to
-begin with.
-
-Anyone knows if the default value can be reduced to something smaller?
-Or Should the resource requirements of cardbus bridge be made nice-to-have?
-
+On 11 Jun 2011, at 03:39, Greg KH wrote:
+> On Thu, Jun 09, 2011 at 11:58:37PM +0100, Anton Altaparmakov wrote:
+>>> NTFS has been doing nicely in userspace for almost half a decade.  It's
+>>> not as fast as a kernel driver _could_ be, but it's faster than _the_
+>>> kernel driver.
+>> 
+>> Er, sorry to disappoint but the Tuxera NTFS kernel driver is faster
+>> than any user space NTFS driver could ever be.  It is faster than
+>> ext3/4, too.  (-:  To give you a random example on an embedded system
+>> (800MHz, 512MB RAM, 64kiB write buffer size) where NTFS in user space
+>> achieves a maximum cached write throughput of ~15MiB/s, ext3 achieves
+>> ~75MiB/s, ext4 ~100MiB/s and Tuxera NTFS kernel driver achieves
+>> ~190MiB/s blowing ext4 out of the water by almost a factor of 2 and
+>> the user space code by more than a factor of 10.  File systems in user
+>> space have their applications but high performance is definitely not
+>> one of them...  You might say that ext3/4 are journalling so not a
+>> fair comparison so let me add that FAT32 achieves about 100MiB/s in
+>> the same hardware/test, still about half of NTFS.
 > 
-> Oliver
-> 
-> > 
-> > On 06/07/2011 01:06 PM, Oliver Hartkopp wrote:
-> >> On 07.06.2011 20:36, Oliver Hartkopp wrote:
-> >> Hi all,
-> >>
-> >> the commit "PCI: update bridge resources to get more big ranges when allocating space (again)"
-> >>
-> >> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=da7822e5ad71ec9b745b412639f1e5e0ba795a20
-> >>
-> >> kills my SD-Card and the PCMCIA slot on a Dell E6510 with the latest 3.0.0-rc2 ...
-> >>
+> Talk to Tuxera,
 
-....
-RP
-> >> When i revert the commit both the MMC/SD stuff and the PCMCIA re-appears.
-> >>
-> >> Any idea?
-> >>
-> >> See my attached boot.diff / kernel config 
-> >>
-> >> Regards,
-> >> Oliver
-> >>
-> >>
-> >>
-> >>
-> >>> On 06.06.2011 21:56, Chris Ball wrote:
-> >>>> Hi Oliver,
-> >>>>
-> >>>> On Mon, Jun 06 2011, Oliver Hartkopp wrote:
-> >>>>>>> dmesg is a bit more detailed:
-> >>>>>>> [    6.242510] sdhci-pci 0000:03:00.1: SDHCI controller found [1180:e822] (rev 3)
-> >>>>>>> [    6.244168] sdhci-pci 0000:03:00.1: PCI INT B -> GSI 19 (level, low) -> IRQ 19
-> >>>>>>> [    6.245788] sdhci-pci 0000:03:00.1: BAR 0 is not iomem. Aborting.
-> >>>>>>> [    6.247609] sdhci-pci 0000:03:00.1: PCI INT B disabled
-> >>>>
-> >>>> If you get a chance to do some bisecting, that would be extremely
-> >>>> helpful -- even just building 3.0 from *before* the MMC tree was
-> >>>> merged would help a lot, since if the problem still happens before
-> >>>> the MMC merge we might be looking at some kind of generic PCI bug.
-> >>>>
-> >>>
-> >>>
-> >>> Hi Chris,
-> >>>
-> >>> i just reverted this pull of your merge window patches in my 3.0.0-rc2 tree:
-> >>>
-> >>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=8c1c77ff9be27137fa7cbbf51efedef1a2ae915b;hp=f3ae1c75203535f65448517e46c8dd70a56b6c71
-> >>>
-> >>> And you were right: The problem still exists. So it might be from the PCI subsystem :-(
-> >>>
-> >>> [    6.167106] sdhci: Secure Digital Host Controller Interface driver
-> >>> [    6.167108] sdhci: Copyright(c) Pierre Ossman
-> >>> [    6.194731] ehci_hcd 0000:00:1a.0: cache line size of 64 is not supported
-> >>> [    6.195140] ehci_hcd 0000:00:1a.0: irq 16, io mem 0xf6970000
-> >>> [    6.196423] sdhci-pci 0000:03:00.1: SDHCI controller found [1180:e822] (rev 3)
-> >>> [    6.196429] sdhci-pci 0000:03:00.1: found 1 slot(s)
-> >>> [    6.196447] sdhci-pci 0000:03:00.1: PCI INT B -> GSI 19 (level, low) -> IRQ 19
-> >>> [    6.196451] sdhci-pci 0000:03:00.1: BAR 0 is not iomem. Aborting.
-> >>> [    6.196459] sdhci-pci 0000:03:00.1: PCI INT B disabled
-> >>>
-> >>> Well then, i'll reset my tree and look for differences in the PCI boot messages.
-> >>>
-> >>> Thanks,
-> >>> Oliver
-> >>
-> > 
-> 
+Look at my email address.  (-;
 
-...snip...
-RP
+> they have a new version of their userspace FUSE version
+> that is _much_ faster than their public one, and it might be almost as
+> fast as their in-kernel version for some streaming loads (where caching
+> isn't necessary or needed.)
+
+That was some time ago (before Christmas) though I admit the numbers I quoted might well be from the opensource ntfs-3g (not sure, I didn't run the tests myself).  The in-kernel driver has since taken the lead since I implemented delayed metadata updates.  That is why the in-kernel Tuxera NTFS driver now outperforms all other file systems that have been tested (whether in kernel or in user space including ext*, XFS and FAT).  The only file system approaching Tuxera (kernel) NTFS is Tuxera (kernel) exFAT which I also wrote and where I first developed the delayed metadata write idea.  (-:
+
+I can't wait to have the time at some point to implement delayed allocation as well and then NTFS will perhaps become the fastest file system driver on the planet if it isn't already...  (-:
+
+But yes if you confine yourself to a single i/o stream with large i/os, with only one process doing it, and you use direct i/o obviously just about any optimized file system can achieve close to the actual device speed, no matter whether in kernel or in user space.  However the CPU utilization varies dramatically.  In kernel you easily get as little as 3-10% or even less whilst in user space you end up with much higher CPU utilization and on embedded hardware this sometimes goes to 100% CPU and the i/os are sometimes even CPU limited rather than device speed limited.  But I think it is more useful when talking about speed not to limit oneself to only a single use case and then user space file systems suffer in comparison to in-kernel ones.
+
+On embedded the kernel driver is sometimes further optimized with custom kernel/hardware based optimizations.  For example for some embedded chipsets vendor has modified the kernel so that, in combination with a modified file system (I had to adapt NTFS to the kernel changes) data is received from the network directly into the page cache pages of the file (using splice of the network socket to the target file but with a lot of vendor chipset voodoo so if I understand it correctly the network card is directly doing DMA into the mapped page cache pages).  I cannot even begin to imagine what hoops you would have to jump through in a user space file system to pull off such tricks if it is even possible at all...
+
+Best regards,
+
+	Anton
+
+> So it can be done, and done well, if you know what you are doing :)
+> 
+> thanks,
+> 
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+Best regards,
+
+	Anton
+-- 
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
+Linux NTFS maintainer, http://www.linux-ntfs.org/
+
