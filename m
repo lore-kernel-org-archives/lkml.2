@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877Ab1FLNtN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 09:49:13 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47997 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753325Ab1FLNtM (ORCPT
+	id S1753937Ab1FLNyL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 09:54:11 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:38288 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753689Ab1FLNyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 09:49:12 -0400
-Date: Sun, 12 Jun 2011 14:48:09 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, tglx@linutronix.de,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, mel@csn.ul.ie,
-        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, pavel@ucw.cz
-Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning
-	instead of failing
-Message-ID: <20110612134809.GG10283@n2100.arm.linux.org.uk>
-References: <20110610091233.GJ24424@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1106101150280.17197@chino.kir.corp.google.com> <20110610185858.GN24424@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1106101456080.23076@chino.kir.corp.google.com> <20110610220748.GO24424@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1106101510000.23076@chino.kir.corp.google.com> <20110610222020.GP24424@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1106101526390.24646@chino.kir.corp.google.com> <20110611094500.GA2356@debian.cable.virginmedia.net> <4DF3A376.1000601@gmail.com>
+	Sun, 12 Jun 2011 09:54:08 -0400
+Date: Sun, 12 Jun 2011 15:53:48 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Borislav Petkov <bp@amd64.org>, "Luck, Tony" <tony.luck@intel.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: Re: [PATCH 07/10] MCE: replace mce.c use of TIF_MCE_NOTIFY with
+ user_return_notifier
+Message-ID: <20110612135348.GA20439@aftab>
+References: <4df13cae2729896ba5@agluck-desktop.sc.intel.com>
+ <4DF478F5.6090507@redhat.com>
+ <20110612102443.GA19060@aftab>
+ <4DF4952F.5030808@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DF3A376.1000601@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <4DF4952F.5030808@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 11, 2011 at 11:18:46AM -0600, Robert Hancock wrote:
-> It sounds to me like these drivers using GFP_DMA should really be fixed  
-> to use the proper DMA API. That's what it's there for. The problem is  
-> that GFP_DMA doesn't really mean anything generically other than "memory  
-> suitable for DMA according to some criteria".
+On Sun, Jun 12, 2011 at 06:30:07AM -0400, Avi Kivity wrote:
+> You're missing the flow.  The MCE handler calls irq_work_queue(), which 
+> schedules a user return notifier, which does any needed processing in 
+> task context.
 
-It would be really nice to have an allocation interface which takes a
-DMA mask and returns memory which satisfies that DMA mask, but that's
-a pipedream I've had for the last 12 years or so.
+Ah ok, this will obviate the need for atomic lists in the user return
+notifier. This could work, yep.
 
-GFP_DMA is not about the DMA API - the DMA API does _not_ deal with
-memory allocation for streaming transfers at all.  It only deals with
-coherent DMA memory allocation which is something completely different.
+Thanks for clarifying.
 
-So it really isn't about "these drivers should be fixed to use the
-proper DMA API" because there isn't one.
+-- 
+Regards/Gruss,
+Boris.
 
-If the concensus is to remove GFP_DMA, there would need to be some ground
-work done first:
-
-(a) audit whether GFP_DMA is really needed (iow, is the allocated
-structure actually DMA'd from/to, or did the driver writer just slap
-GFP_DMA on it without thinking?)
-
-(b) audit whether we have a DMA mask available at the GFP_DMA allocator
-call site
-
-That should reveal whether it is even possible to move to a different
-solution.
-
-Depending on (b), provide a new allocation API which takes the DMA mask
-and internally calls the standard allocator with GFP_DMA if the DMA mask
-is anything less than "all memory".
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
