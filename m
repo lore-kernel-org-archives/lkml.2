@@ -1,140 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752366Ab1FLShp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 14:37:45 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60350 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751443Ab1FLSho (ORCPT
+	id S1752451Ab1FLSio (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 14:38:44 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:34346 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899Ab1FLSim convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 14:37:44 -0400
+	Sun, 12 Jun 2011 14:38:42 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to;
-        b=If9mMnlsrLEoXR8S2nq1ny4jfitxDs7OizogEaq+ht18tAcc+yD6vg+YSs2IvFYfxM
-         dkl/Ouz0bg+K/bJNXhwd1p+sXEME2M+FF+7Nbr95vvpZdZ/+kSHctm7BOkrl9GgmWjQv
-         EPKsxVYg5F+libsto0TCq8Ce0yAk4LnmiWTN4=
-Date: Sun, 12 Jun 2011 12:36:28 -0600
-From: Jean Sacren <sakiwit@gmail.com>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] boot: Enhance performance by eliminating
- unnecessary calls to printf()
-Message-ID: <20110612183627.GA12311@mail.gmail.com>
-References: <20110606004038.GA28970@mail.gmail.com>
- <4DED0990.8090309@linux.intel.com>
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=FV4XwtwMlEWuzimkutpA0PV+CNvsLsQI+Q7yTVMJ+L5zL55cN9NO1PETrZIDjlF+lD
+         0o359qmDaI5XQ/7bpzuIKnOnYZdWKSaWzaS+VoYmDpAfYmozrpyZGSuXt9NYl5EjhQJr
+         ZH73GVLbiGP49s1mMlnjeRfMDWe0HKUbhmoLU=
+From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Subject: Re: mei driver breaks suspend on 3.0git
+Date: Sun, 12 Jun 2011 20:38:36 +0200
+User-Agent: KMail/1.13.7 (Linux/3.0.0-rc2-00256-gb99ca60; KDE/4.6.4; x86_64; ; )
+Cc: "Weil, Oren jer" <oren.jer.weil@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <201106121314.26394.a.miskiewicz@gmail.com> <6F5C1D715B2DA5498A628E6B9C124F0401AD318AB4@hasmsx504.ger.corp.intel.com> <201106122016.33399.a.miskiewicz@gmail.com>
+In-Reply-To: <201106122016.33399.a.miskiewicz@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DED0990.8090309@linux.intel.com>
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201106122038.36623.a.miskiewicz@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-Date: Mon, 06 Jun 2011 10:08:32 -0700
->
-> On 06/05/2011 05:40 PM, Jean Sacren wrote:
-> > Hi,
-> > 
-> > Repeated calling to printf() for 13 times is a dire waste of CPU cycles.
-> > For performance, combine all those calls into one while source code
-> > formatting is preserved for readability.
-> > 
-> > Compile tested only.
-> > 
-> > Signed-off-by: Jean Sacren <sakiwit@gmail.com>
+On Sunday 12 of June 2011, Arkadiusz Miskiewicz wrote:
+> On Sunday 12 of June 2011, Winkler, Tomas wrote:
+> > > -----Original Message-----
+> > > From: Weil, Oren jer
+> > > Sent: Sunday, June 12, 2011 8:36 PM
+> > > To: Arkadiusz Miskiewicz
+> > > Cc: Winkler, Tomas; linux-kernel@vger.kernel.org
+> > > Subject: RE: mei driver breaks suspend on 3.0git
+> > > 
+> > > >It's thinkpad t400 with
+> > > >00:03.0 Communication controller [0780]: Intel Corporation Mobile 4
+> > > >Series Chipset MEI Controller [8086:2a44] (rev 07)
+> > > 
+> > > Can you send us more details? Does it happened in stress? How do I
+> > > reproduce
+> > > it?
 > 
-> You're got to be bloody kidding.
-
-You're quite strong in opinion, but rather weak in code. Sadly you even
-didn't get the contraction right...
+> No stress. This is my daily use notebook and I simply suspend to ram when
+> sitting under X in kde4.
 > 
-> First of all, this is a build time tool which is executed exactly once
-> during the entire kernel build.
+> > > Can you send us the debug prints?
 > 
-> Second, printf execution time is largely dependent on the size
-> formatting string; since the I/O is buffered it is only issued once
-> anyway... which basically means that there is no time saved at all.
+> Attached. suspend starts, tries to resume devices, MEI suspend fails
+> causing whole suspend to be aborted.
 
-The above two arguments have nothing to do with the fact you printed out
-13 lines individually, where they should have been printed out
-collectively. To make my point here, why you didn't print out each
-character individually?
+Shouldn't ret > 0 in mei_wd_stop to be "success"?
 
-I looked at the history of the file and the way you did it is a birth
-shortcoming. For the past two years, no code has ever been necessarily
-inserted between these 13 printf() calls. Looking into the future, that
-block of code shall be facilitated by the updated patch.
-> 
-> Third, the resulting code is substantially harder to read.
+Untested.
 
-With the updated patch, this argument doesn't stand at all.
-> 
-> Fourth, carrying this as a patch will cost kernel developers more time
-> in additional git execution time than it ever will save them in build time.
+diff --git a/drivers/staging/mei/wd.c b/drivers/staging/mei/wd.c
+index 2564b03..608245a 100644
+--- a/drivers/staging/mei/wd.c
++++ b/drivers/staging/mei/wd.c
+@@ -171,8 +171,10 @@ int mei_wd_stop(struct mei_device *dev, bool preserve)
+        mutex_lock(&dev->device_lock);
+        if (!dev->wd_stopped)
+                dev_dbg(&dev->pdev->dev, "stop wd failed to complete.\n");
+-       else
++       else {
++               ret = 0;
+                dev_dbg(&dev->pdev->dev, "stop wd complete.\n");
++       }
 
-With the updated patch, this argument doesn't make any sense at all.
-> 
-> Nacked-by: H. Peter Anvin <hpa@zytor.com>
-> 
-> 	-hpa
-
-From: Jean Sacren <sakiwit@gmail.com>
-Date: Sun, 12 Jun 2011 04:15:30 -0600
-Subject: [PATCH 1/1] boot: Enhance performance by eliminating unnecessary calls to printf()
-
-Repeated calling to printf() for 13 times is a dire waste of CPU cycles.
-For performance, combine all those calls into one while source code
-formatting is preserved for readability.
-
-Signed-off-by: Jean Sacren <sakiwit@gmail.com>
----
- arch/x86/boot/compressed/mkpiggy.c |   28 ++++++++++++++--------------
- 1 files changed, 14 insertions(+), 14 deletions(-)
-
-diff --git a/arch/x86/boot/compressed/mkpiggy.c b/arch/x86/boot/compressed/mkpiggy.c
-index 46a8238..1e21fca 100644
---- a/arch/x86/boot/compressed/mkpiggy.c
-+++ b/arch/x86/boot/compressed/mkpiggy.c
-@@ -82,21 +82,21 @@ int main(int argc, char *argv[])
- 	offs += 64*1024 + 128;	/* Add 64K + 128 bytes slack */
- 	offs = (offs+4095) & ~4095; /* Round to a 4K boundary */
- 
--	printf(".section \".rodata..compressed\",\"a\",@progbits\n");
--	printf(".globl z_input_len\n");
--	printf("z_input_len = %lu\n", ilen);
--	printf(".globl z_output_len\n");
--	printf("z_output_len = %lu\n", (unsigned long)olen);
--	printf(".globl z_extract_offset\n");
--	printf("z_extract_offset = 0x%lx\n", offs);
- 	/* z_extract_offset_negative allows simplification of head_32.S */
--	printf(".globl z_extract_offset_negative\n");
--	printf("z_extract_offset_negative = -0x%lx\n", offs);
--
--	printf(".globl input_data, input_data_end\n");
--	printf("input_data:\n");
--	printf(".incbin \"%s\"\n", argv[1]);
--	printf("input_data_end:\n");
-+	printf(".section \".rodata..compressed\",\"a\",@progbits\n"
-+	       ".globl z_input_len\n"
-+	       "z_input_len = %lu\n"
-+	       ".globl z_output_len\n"
-+	       "z_output_len = %lu\n"
-+	       ".globl z_extract_offset\n"
-+	       "z_extract_offset = 0x%lx\n"
-+	       ".globl z_extract_offset_negative\n"
-+	       "z_extract_offset_negative = -0x%lx\n"
-+	       ".globl input_data, input_data_end\n"
-+	       "input_data:\n"
-+	       ".incbin \"%s\"\n"
-+	       "input_data_end:\n",
-+	       ilen, (unsigned long)olen, offs, offs, argv[1]);
- 
- 	return 0;
- }
--- 
-1.7.2.2
+        if (preserve)
+                dev->wd_timeout = wd_timeout;
 
 -- 
-Jean Sacren
+Arkadiusz Miśkiewicz        PLD/Linux Team
+arekm / maven.pl            http://ftp.pld-linux.org/
