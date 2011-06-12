@@ -1,51 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014Ab1FLPer (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 11:34:47 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9047 "EHLO mga09.intel.com"
+	id S1754065Ab1FLPeu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 11:34:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:56607 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751608Ab1FLPem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751822Ab1FLPem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 12 Jun 2011 11:34:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,355,1304319600"; 
-   d="scan'208";a="12597404"
-Message-Id: <20110612151821.601514494@intel.com>
+   d="scan'208";a="13473650"
+Message-Id: <20110612152910.671563785@intel.com>
 User-Agent: quilt/0.48-1
-Date: Sun, 12 Jun 2011 23:18:21 +0800
+Date: Sun, 12 Jun 2011 23:18:22 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: <linux-fsdevel@vger.kernel.org>
-cc: Jan Kara <jack@suse.cz>
+cc: Jan Kara <jack@suse.cz>, Michael Rubin <mrubin@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>
 cc: Dave Chinner <david@fromorbit.com>
 cc: Christoph Hellwig <hch@infradead.org>
 cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/3] bdi write bandwidth estimation
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/3] writeback: account per-bdi accumulated written pages
+References: <20110612151821.601514494@intel.com>
+Content-Disposition: inline; filename=writeback-bdi-written.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jan Kara <jack@suse.cz>
 
-Do bdi write bandwidth estimation in the flusher thread at 200ms intervals,
-and in case the flusher is blocked syncing large files, the throttled dirtier
-tasks will back it up.
+Introduce the BDI_WRITTEN counter. It will be used for estimating the
+bdi's write bandwidth.
 
-To get an idea of the adaption speed and fluctuation range, here are
-some real examples (check the red dots and the yellow line):
+Peter Zijlstra <a.p.zijlstra@chello.nl>:
+Move BDI_WRITTEN accounting into __bdi_writeout_inc().
+This will cover and fix fuse, which only calls bdi_writeout_inc().
 
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v8/3G/xfs-1dd-4k-8p-2948M-20:10-3.0.0-rc2-next-20110610+-2011-06-12.21:51/balance_dirty_pages-bandwidth.png
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v8/3G/ext3-1dd-4k-8p-2948M-20:10-3.0.0-rc2-next-20110610+-2011-06-12.22:02/balance_dirty_pages-bandwidth.png
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v8/3G/ext4-1dd-4k-8p-2948M-20:10-3.0.0-rc2-next-20110610+-2011-06-12.21:57/balance_dirty_pages-bandwidth.png
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v8/3G/btrfs-1dd-4k-8p-2948M-20:10-3.0.0-rc2-next-20110610+-2011-06-12.22:07/balance_dirty_pages-bandwidth.png
+CC: Michael Rubin <mrubin@google.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ include/linux/backing-dev.h |    1 +
+ mm/backing-dev.c            |   10 ++++++++--
+ mm/page-writeback.c         |    1 +
+ 3 files changed, 10 insertions(+), 2 deletions(-)
 
-The old version outputs, for your reference:
+--- linux-next.orig/include/linux/backing-dev.h	2011-06-12 13:29:02.000000000 +0800
++++ linux-next/include/linux/backing-dev.h	2011-06-12 20:48:47.000000000 +0800
+@@ -40,6 +40,7 @@ typedef int (congested_fn)(void *, int);
+ enum bdi_stat_item {
+ 	BDI_RECLAIMABLE,
+ 	BDI_WRITEBACK,
++	BDI_WRITTEN,
+ 	NR_BDI_STAT_ITEMS
+ };
+ 
+--- linux-next.orig/mm/backing-dev.c	2011-06-12 13:29:02.000000000 +0800
++++ linux-next/mm/backing-dev.c	2011-06-12 20:49:51.000000000 +0800
+@@ -97,6 +97,7 @@ static int bdi_debug_stats_show(struct s
+ 		   "BdiDirtyThresh:   %8lu kB\n"
+ 		   "DirtyThresh:      %8lu kB\n"
+ 		   "BackgroundThresh: %8lu kB\n"
++		   "BdiWritten:       %8lu kB\n"
+ 		   "b_dirty:          %8lu\n"
+ 		   "b_io:             %8lu\n"
+ 		   "b_more_io:        %8lu\n"
+@@ -104,8 +105,13 @@ static int bdi_debug_stats_show(struct s
+ 		   "state:            %8lx\n",
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITEBACK)),
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_RECLAIMABLE)),
+-		   K(bdi_thresh), K(dirty_thresh),
+-		   K(background_thresh), nr_dirty, nr_io, nr_more_io,
++		   K(bdi_thresh),
++		   K(dirty_thresh),
++		   K(background_thresh),
++		   (unsigned long) K(bdi_stat(bdi, BDI_WRITTEN)),
++		   nr_dirty,
++		   nr_io,
++		   nr_more_io,
+ 		   !list_empty(&bdi->bdi_list), bdi->state);
+ #undef K
+ 
+--- linux-next.orig/mm/page-writeback.c	2011-06-12 13:29:06.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-06-12 20:48:47.000000000 +0800
+@@ -219,6 +219,7 @@ int dirty_bytes_handler(struct ctl_table
+  */
+ static inline void __bdi_writeout_inc(struct backing_dev_info *bdi)
+ {
++	__inc_bdi_stat(bdi, BDI_WRITTEN);
+ 	__prop_inc_percpu_max(&vm_completions, &bdi->completions,
+ 			      bdi->max_prop_frac);
+ }
 
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/4G-60%25/ext3-1dd-1M-8p-3911M-60%25-2.6.38-rc5-dt6+-2011-02-22-11-51/balance_dirty_pages-bandwidth.png
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/4G-60%25/xfs-1dd-1M-8p-3911M-60%25-2.6.38-rc5-dt6+-2011-02-22-11-10/balance_dirty_pages-bandwidth.png
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/NFS/nfs-1dd-1M-8p-2945M-20%25-2.6.38-rc6-dt6+-2011-02-22-21-09/balance_dirty_pages-bandwidth.png
-
-This is merely the estimation part. The in-kernel users of the estimated
-bandwidth will follow in the coming series.
-
-Thanks,
-Fengguang
 
