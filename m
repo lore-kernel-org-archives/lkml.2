@@ -1,113 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab1FLOYM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 10:24:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54495 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751973Ab1FLOYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 10:24:09 -0400
-Date: Sun, 12 Jun 2011 16:24:05 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v3 01/10] compaction: trivial clean up acct_isolated
-Message-ID: <20110612142257.GA24323@tiehlicka.suse.cz>
-References: <cover.1307455422.git.minchan.kim@gmail.com>
- <71a79768ff8ef356db09493dbb5d6c390e176e0d.1307455422.git.minchan.kim@gmail.com>
+	id S1753981Ab1FLOgn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 10:36:43 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:13639 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab1FLOgm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 10:36:42 -0400
+Date: Sun, 12 Jun 2011 16:28:16 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: netdev@vger.kernel.org, linux-zigbee-devel@lists.sourceforge.net,
+        "David S. Miller" <davem@davemloft.net>,
+        Sergey Lapin <slapin@ossfans.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Maxim Osipov <maxim.osipov@siemens.com>
+Subject: [PATCH] ieee802154: Don't leak memory in ieee802154_nl_fill_phy
+Message-ID: <alpine.LNX.2.00.1106121621360.25151@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <71a79768ff8ef356db09493dbb5d6c390e176e0d.1307455422.git.minchan.kim@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 07-06-11 23:38:14, Minchan Kim wrote:
-> acct_isolated of compaction uses page_lru_base_type which returns only
-> base type of LRU list so it never returns LRU_ACTIVE_ANON or LRU_ACTIVE_FILE.
-> In addtion, cc->nr_[anon|file] is used in only acct_isolated so it doesn't have
-> fields in conpact_control.
-> This patch removes fields from compact_control and makes clear function of
-> acct_issolated which counts the number of anon|file pages isolated.
-> 
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+In net/ieee802154/nl-phy.c::ieee802154_nl_fill_phy() I see two small 
+issues.
+1) If the allocation of 'buf' fails we may just as well return -EMSGSIZE
+   directly rather than jumping to 'out:' and do a pointless kfree(0).
+2) We do not free 'buf' unless we jump to one of the error labels and this
+   leaks memory.
+This patch should address both.
 
-Sorry for the late reply. I have looked at the previous posting but
-didn't have time to comment on it.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ nl-phy.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Yes, stack usage reduction makes sense and the function also looks more
-compact.
+  I have no way to properly test this patch, so it's compile tested only.
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+diff --git a/net/ieee802154/nl-phy.c b/net/ieee802154/nl-phy.c
+index ed0eab3..02548b2 100644
+--- a/net/ieee802154/nl-phy.c
++++ b/net/ieee802154/nl-phy.c
+@@ -44,7 +44,7 @@ static int ieee802154_nl_fill_phy(struct sk_buff *msg, u32 pid,
+ 	pr_debug("%s\n", __func__);
+ 
+ 	if (!buf)
+-		goto out;
++		return -EMSGSIZE;
+ 
+ 	hdr = genlmsg_put(msg, 0, seq, &nl802154_family, flags,
+ 		IEEE802154_LIST_PHY);
+@@ -65,6 +65,7 @@ static int ieee802154_nl_fill_phy(struct sk_buff *msg, u32 pid,
+ 				pages * sizeof(uint32_t), buf);
+ 
+ 	mutex_unlock(&phy->pib_lock);
++	kfree(buf);
+ 	return genlmsg_end(msg, hdr);
+ 
+ nla_put_failure:
 
-> ---
->  mm/compaction.c |   18 +++++-------------
->  1 files changed, 5 insertions(+), 13 deletions(-)
-> 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 021a296..61eab88 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -35,10 +35,6 @@ struct compact_control {
->  	unsigned long migrate_pfn;	/* isolate_migratepages search base */
->  	bool sync;			/* Synchronous migration */
->  
-> -	/* Account for isolated anon and file pages */
-> -	unsigned long nr_anon;
-> -	unsigned long nr_file;
-> -
->  	unsigned int order;		/* order a direct compactor needs */
->  	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
->  	struct zone *zone;
-> @@ -212,17 +208,13 @@ static void isolate_freepages(struct zone *zone,
->  static void acct_isolated(struct zone *zone, struct compact_control *cc)
->  {
->  	struct page *page;
-> -	unsigned int count[NR_LRU_LISTS] = { 0, };
-> +	unsigned int count[2] = { 0, };
->  
-> -	list_for_each_entry(page, &cc->migratepages, lru) {
-> -		int lru = page_lru_base_type(page);
-> -		count[lru]++;
-> -	}
-> +	list_for_each_entry(page, &cc->migratepages, lru)
-> +		count[!!page_is_file_cache(page)]++;
->  
-> -	cc->nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
-> -	cc->nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
-> -	__mod_zone_page_state(zone, NR_ISOLATED_ANON, cc->nr_anon);
-> -	__mod_zone_page_state(zone, NR_ISOLATED_FILE, cc->nr_file);
-> +	__mod_zone_page_state(zone, NR_ISOLATED_ANON, count[0]);
-> +	__mod_zone_page_state(zone, NR_ISOLATED_FILE, count[1]);
->  }
->  
->  /* Similar to reclaim, but different enough that they don't share logic */
-> -- 
-> 1.7.0.4
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
