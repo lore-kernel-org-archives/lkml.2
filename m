@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390Ab1FLMEr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 08:04:47 -0400
-Received: from lucidpixels.com ([75.144.35.66]:34027 "EHLO lucidpixels.com"
+	id S1753401Ab1FLMLj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 08:11:39 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:49366 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753233Ab1FLMEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 08:04:46 -0400
-Date: Sun, 12 Jun 2011 08:04:43 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: LKML <linux-kernel@vger.kernel.org>, Alan Piszcz <ap@solarrain.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: 2.6.39: crash w/threadirqs option enabled
-In-Reply-To: <alpine.DEB.2.02.1106100854250.23139@p34.internal.lan>
-Message-ID: <alpine.DEB.2.02.1106120759270.4186@p34.internal.lan>
-References: <alpine.DEB.2.02.1105200405210.24033@p34.internal.lan> <alpine.LFD.2.02.1105201445300.3078@ionos> <alpine.DEB.2.02.1105200850080.19553@p34.internal.lan> <alpine.LFD.2.02.1105201528500.3078@ionos> <alpine.DEB.2.02.1105200945300.19553@p34.internal.lan>
- <alpine.LFD.2.02.1105201712501.3078@ionos> <alpine.DEB.2.02.1105201210030.19553@p34.internal.lan> <alpine.LFD.2.02.1105201819310.3078@ionos> <alpine.DEB.2.02.1106100414550.32450@p34.internal.lan> <alpine.LFD.2.02.1106101450030.11814@ionos>
- <alpine.DEB.2.02.1106100854250.23139@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753137Ab1FLMLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 08:11:36 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: Re: [PATCH]drivers:base:power:trace.c Add "UTC" Coordinated Universal Time to the printk.
+Date: Sun, 12 Jun 2011 14:12:09 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>
+References: <1307599301-2524-1-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1307599301-2524-1-git-send-email-justinmattock@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106121412.09903.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Fri, 10 Jun 2011, Justin Piszcz wrote:
-
->
->
-
 Hi,
 
-It crashed again with the patch, so it must be something else when it
-happened, I was not able to get any output since i was in X.
+On Thursday, June 09, 2011, Justin P. Mattock wrote:
+> From: "Justin P. Mattock" <justinmattock@gmail.com>
+> 
+> sounds stupid, but taking a glance at the time, and seeing the wrong time, or what seemed 
+> wrong in dmesg, caused me to go into total check the time clock panic mode.. So the patch below adds:
+> "UTC" Coordinated Universal Time abreviation to the printk so people like me dont flip out over the time!
+> 
+> before:
+> [    0.114915] Time:  1:47:03  Date: 06/09/11
+> 
+> after:
+> [    0.114728] Time:  5:46:02 UTC Date: 06/09/11
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Will leave X off, console/monitor on and disconnect those USB devices
-I mentioned earlier and see if the problem persists.
+I suspect the goal is to mark messages printed by the PM trace code so that
+they can be easily distinguished from messages from other sources to avoid
+confusion.  Why do you think it's a good idea to use the "UTC" string for
+this purpose?  The time printed in those messages need not be UTC.
 
-The call trace in the picture the last time I was able to get a screen
-shot was @ blk_peek_request and scsi_request_fn.
-http://home.comcast.net/~jpiszcz/20110528/2639-ss1.jpg
+It would be better to simply print "RTC time: ..., date: ..." IMO.
 
-I will disconnect the USB devices I mentioned earlier and see if the issues
-persist.
+Thanks,
+Rafael
 
-Justin.
+
+> ---
+>  drivers/base/power/trace.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/base/power/trace.c b/drivers/base/power/trace.c
+> index c80e138..009f459 100644
+> --- a/drivers/base/power/trace.c
+> +++ b/drivers/base/power/trace.c
+> @@ -112,7 +112,7 @@ static unsigned int read_magic_time(void)
+>  	unsigned int val;
+>  
+>  	get_rtc_time(&time);
+> -	pr_info("Time: %2d:%02d:%02d  Date: %02d/%02d/%02d\n",
+> +	pr_info("Time: %2d:%02d:%02d UTC Date: %02d/%02d/%02d\n",
+>  		time.tm_hour, time.tm_min, time.tm_sec,
+>  		time.tm_mon + 1, time.tm_mday, time.tm_year % 100);
+>  	val = time.tm_year;				/* 100 years */
+> 
 
