@@ -1,84 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227Ab1FLKc0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 06:32:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47579 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752957Ab1FLKcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 06:32:25 -0400
-Date: Sun, 12 Jun 2011 12:32:15 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Chris Wright <chrisw@sous-sol.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: thp: minor lock simplification in __khugepaged_exit
-Message-ID: <20110612103214.GB19493@tiehlicka.suse.cz>
-References: <20110610233355.GO23047@sequoia.sous-sol.org>
+	id S1753286Ab1FLKsJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 06:48:09 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:49040 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab1FLKsF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 06:48:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110610233355.GO23047@sequoia.sous-sol.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [178.212.100.195]
+Date: Sun, 12 Jun 2011 13:48:02 +0300
+Message-ID: <BANLkTikzmp0BLefUPiiHZpK+48MYPeRE3A@mail.gmail.com>
+Subject: drm-radeon failures on R600: patches still don't work
+From: Jaroslaw Fedewicz <jafd@netstyle.com.ua>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 10-06-11 16:33:55, Chris Wright wrote:
-> The lock is released first thing in all three branches.  Simplify this
-> by unconditionally releasing lock and remove else clause which was only
-> there to be sure lock was released.
-> 
-> Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+Hello,
 
-Nice cleanup.
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+There was a recent thread as found on
+https://lkml.org/lkml/2011/6/8/17, started by Markus Trippelsdorf:
 
-> ---
->  mm/huge_memory.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 615d974..a032ddd 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -1596,14 +1596,13 @@ void __khugepaged_exit(struct mm_struct *mm)
->  		list_del(&mm_slot->mm_node);
->  		free = 1;
->  	}
-> +	spin_unlock(&khugepaged_mm_lock);
->  
->  	if (free) {
-> -		spin_unlock(&khugepaged_mm_lock);
->  		clear_bit(MMF_VM_HUGEPAGE, &mm->flags);
->  		free_mm_slot(mm_slot);
->  		mmdrop(mm);
->  	} else if (mm_slot) {
-> -		spin_unlock(&khugepaged_mm_lock);
->  		/*
->  		 * This is required to serialize against
->  		 * khugepaged_test_exit() (which is guaranteed to run
-> @@ -1614,8 +1613,7 @@ void __khugepaged_exit(struct mm_struct *mm)
->  		 */
->  		down_write(&mm->mmap_sem);
->  		up_write(&mm->mmap_sem);
-> -	} else
-> -		spin_unlock(&khugepaged_mm_lock);
-> +	}
->  }
->  
->  static void release_pte_page(struct page *page)
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> The merge of the 'drm-radeon' branch by Linus yesterday breaks my setup
+> (RS780). The mouse cursor is just a black block suddenly and I see an
+> endless stream of:
+> radeon 0000:01:05.0: r600_check_texture_resource:1338 texture invalid format 26
+> [drm:radeon_cs_ioctl] *ERROR* Invalid command stream !
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+This is also true of my laptop (Thinkpad Edge 13, AMD model) which has
+built-in Radeon HD3200 (RS780) inside, and the most recent kernel from
+git.
+
+Unfortunately, none of the patches proposed so far worked. The patch
+by Markus (https://lkml.org/lkml/2011/6/8/19) did work in the sense
+that X actually started up, but all graphics were very sluggish
+including mouse movements, to the point of unability to do anything
+remotely useful on that machine, and a patch proposed by Dave Airlie
+(https://lkml.org/lkml/2011/6/8/117) didn't apply - it comes out the
+line it added was already in the code.
+
+I'm not a kernel hacker by any means, so sorry if I understood
+anything wrong; if I need to supply any additional information, I'll
+be glad to.
+
+Also, sorry for not continuing that thread; I have just subscribed so
+I can't "reply" to it.
