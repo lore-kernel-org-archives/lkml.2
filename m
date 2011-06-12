@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab1FLVp1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 17:45:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39163 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751369Ab1FLVp0 (ORCPT
+	id S1754348Ab1FLWAC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 18:00:02 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61997 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754233Ab1FLWAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 17:45:26 -0400
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: netdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-In-Reply-To: <201106122140.51776.linux@rainbow-software.org>
-References: <201106122140.51776.linux@rainbow-software.org>
-Content-Type: multipart/signed; micalg="pgp-sha512"; protocol="application/pgp-signature"; boundary="=-Nnol0GArL/oi4DLNZSuE"
-Date: Sun, 12 Jun 2011 17:45:11 -0400
-Message-ID: <1307915111.22348.652.camel@localhost>
+	Sun, 12 Jun 2011 18:00:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=toUdPOX9PCcHWlFR52Fx2pu1r7nG89uM0ZyaWauIn10c3vuN+o92Tds5EGIKfB9UiW
+         U3nc/25fV7mpakUDE4NXe1KL1ZPhA+o8iEqipx7ldN6yjD/s+3N4VFaXcpcix1zYVGPS
+         ScuzsLS9G8NC19BFWTadu2kC4KFrjvNylirQU=
+Subject: Re: [Bug #33842] NULL pointer dereference in ip_fragment
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Tomas Carnecky <tom@dbservice.com>, David Miller <davem@davemloft.net>
+In-Reply-To: <kTLfM29CaqB.A.K5F.f1S9NB@chimera>
+References: <9NVbY1BZ_5D.A.2lE.jzS9NB@chimera>
+	 <kTLfM29CaqB.A.K5F.f1S9NB@chimera>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 12 Jun 2011 23:59:52 +0200
+Message-ID: <1307915992.2872.170.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-X-SA-Exim-Connect-IP: 69.46.168.130
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: 3c503: fix broken IRQ autoprobing
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le dimanche 12 juin 2011 à 23:12 +0200, Rafael J. Wysocki a écrit :
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.38 and 2.6.39.
+> 
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.38 and 2.6.39.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+> 
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=33842
+> Subject		: NULL pointer dereference in ip_fragment
+> Submitter	: Tomas Carnecky <tom@dbservice.com>
+> Date		: 2011-04-23 07:51 (51 days old)
+> 
+> 
 
---=-Nnol0GArL/oi4DLNZSuE
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This is probably fixed in current linux-2.6 tree, and 2.6.39.1 as well
 
-On Sun, 2011-06-12 at 21:40 +0200, Ondrej Zary wrote:
-> Fix broken IRQ autoprobing in 3c503 driver:
->  - improper IRQ freeing (does not free IRQs causes WARN)
->  - missing break when an working IRQ is found
->=20
-> The driver works with this patch.
 
-I made a previous attempt to fix autoprobing (commit
-b0cf4dfb7cd21556efd9a6a67edcba0840b4d98d), but didn't have any hardware
-to test on.  In the process I introduced these new bugs.  Sorry about
-that.
+If not, maybe commit 64f3b9e203b (ip_expire() must revalidate route)
+needs to be included in 2.6.39.X
 
-> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-[...]
-Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
+(I believe Greg took it for 2.6.38, but cant find it in 2.6.39 ?)
 
-Ben.
 
---=20
-Ben Hutchings
-Teamwork is essential - it allows you to blame someone else.
 
---=-Nnol0GArL/oi4DLNZSuE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATfUzZue/yOyVhhEJAQr+Lg//RdyXldL1SfWOCI9OntaqD48zxirnEksW
-9Rdl7gc2o6FbwVMYXVfyjEII2y6jxIcNEat/ZH6XPhxGn9p+JUBbqLIQjkLlxYow
-EkLdIWEVDmklR0LfokTlVjyQrLA04Gi2otKpTu5UoGJVJGqYxEbrWaZR/Y+e5AgP
-ytZK66ii5T8HT1LwOaB7BM8dQRlNNICLxdgZ/Br6OOFzVywDIw4Uj99Ojgb5Qt9d
-6Sa0R0S+v8I/l3t26WY9nkTJaK0vqoteejO0D5SYvhuT80fjo06Bx/PPpzyzEzcd
-p4P2Mh0PBbyfZkiRSeGViZBqDodXR8MSEETHZ7wKp1nCujLSwQ2OXoKe6bc83GP/
-NXnZbzIVOJ7FMjW37nJx3rF8dAy/BytwSOruRxAWGK3HY2eLg74zbVoef3eBbxVd
-jmAjmUcPOw5PPz22DWXvqjiVZAgcYeM2A9tyS8/GzxxJK+80uYPA6JfcEddsNw7p
-oCuNXFUKzNAFULrm4UzLcCzGvutUxppJZf0GMqj8Z06sUp+Vp9IRhN82NphWFbz7
-IbHrnJ/MGPeELdYmz1DqemeY1kgd57byu4xjKy823TEA10rF+wkPvtmCowgOVJJo
-2kyX4+UQNV4Bu8qYl45nG63oL8Lb3NvHg/RU0z6knLqtybRctHPLiangZ/7nizKc
-8+QpP/qWfQw=
-=wcJ+
------END PGP SIGNATURE-----
-
---=-Nnol0GArL/oi4DLNZSuE--
