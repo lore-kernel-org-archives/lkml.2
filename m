@@ -1,93 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179Ab1FLSk1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 14:40:27 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:43080 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193Ab1FLSk0 convert rfc822-to-8bit (ORCPT
+	id S1752603Ab1FLSxt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 14:53:49 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:57832 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415Ab1FLSxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 14:40:26 -0400
+	Sun, 12 Jun 2011 14:53:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=Kw4iWlaz/Y/18Pfh6WGKghILR/BrSUX++xaaE3uNAsx8TMAhFzxEkj3iMu7h/RtZ1J
-         ml7FGfOUQytj/xo+tryQ3hLSUdfbTxZgGRoniTSxIqWmumltpE3I6q9aeAdVNz/gBNyY
-         XoK4h8o4ZPDKRP06WYxxIG4IWBKGDIXPaZ+vI=
-From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-To: "Winkler, Tomas" <tomas.winkler@intel.com>
-Subject: Re: mei driver breaks suspend on 3.0git
-Date: Sun, 12 Jun 2011 20:40:21 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.0-rc2-00256-gb99ca60; KDE/4.6.4; x86_64; ; )
-Cc: "Weil, Oren jer" <oren.jer.weil@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <201106121314.26394.a.miskiewicz@gmail.com> <201106122016.33399.a.miskiewicz@gmail.com> <201106122038.36623.a.miskiewicz@gmail.com>
-In-Reply-To: <201106122038.36623.a.miskiewicz@gmail.com>
+        d=googlemail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=neS6oR/ykksZ6QsiKT5a/43kdKgj5KDPpW8LlzGWB/5t/VlLh30klXIWsDFFlBptfD
+         QDfv2HWF4aAQnnEWu0yqEuu294OiWVxVKtSiri3eJo0M9QkuUIbQCwV2EyLV9Rokz3Cr
+         7nEStJZ1N5ikgjlwmxWfhZGxWf41Ym91NRkp8=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201106122040.21950.a.miskiewicz@gmail.com>
+Date: Sun, 12 Jun 2011 20:53:46 +0200
+Message-ID: <BANLkTi=urdW0WBHcVbVzDwwLzupP_Vh2EA@mail.gmail.com>
+Subject: chained irq handler problems
+From: Manuel Lauss <manuel.lauss@googlemail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 12 of June 2011, Arkadiusz Miskiewicz wrote:
-> On Sunday 12 of June 2011, Arkadiusz Miskiewicz wrote:
-> > On Sunday 12 of June 2011, Winkler, Tomas wrote:
-> > > > -----Original Message-----
-> > > > From: Weil, Oren jer
-> > > > Sent: Sunday, June 12, 2011 8:36 PM
-> > > > To: Arkadiusz Miskiewicz
-> > > > Cc: Winkler, Tomas; linux-kernel@vger.kernel.org
-> > > > Subject: RE: mei driver breaks suspend on 3.0git
-> > > > 
-> > > > >It's thinkpad t400 with
-> > > > >00:03.0 Communication controller [0780]: Intel Corporation Mobile 4
-> > > > >Series Chipset MEI Controller [8086:2a44] (rev 07)
-> > > > 
-> > > > Can you send us more details? Does it happened in stress? How do I
-> > > > reproduce
-> > > > it?
-> > 
-> > No stress. This is my daily use notebook and I simply suspend to ram when
-> > sitting under X in kde4.
-> > 
-> > > > Can you send us the debug prints?
-> > 
-> > Attached. suspend starts, tries to resume devices, MEI suspend fails
-> > causing whole suspend to be aborted.
-> 
-> Shouldn't ret > 0 in mei_wd_stop to be "success"?
+Hello Thomas,
 
-I meant this one:
+I've been struggling to get an external IRQ multiplexer to work with the
+chained handler infrastructure, and I was wondering whether you could shed
+some light on it:
 
-        ret = wait_event_interruptible_timeout(dev->wait_stop_wd,
-                                        dev->wd_stopped, 10 * HZ);
+The code below is the one that works: in the ->irq_startup callback it
+installs a "traditional" irq handler for the multiplexer cascade, and
+the handler then reads the external status register and dispatches all
+pending external irqs at once.
+
+Now, when I register the cascade handler with irq_set_chained_handler() and
+remove the irq_startup callback the system is overrun with an irq storm from
+the external mux, which starts when userspace is booting (i.e. after
+"Freeing unused kernel memory: xx" appears), rendering it effectively dead.
+
+My question is: what are the differences in interrupt handling between the
+"traditional" handler and the cascade handler case?
+I also noticed that the cascade irq (the muxer irq line to the cpu) is not
+disabled when the interrupt is serviced. Is this by design?
+
+Thank you!
+        Manuel Lauss
 
 
-And that was possible untested solution that relies on wd being stopped and 
-not anything else.
+static irqreturn_t db1300_csc_handler(int irq, void *dev_id)
+{
+        unsigned short bisr = __raw_readw(__bcsr_virt + BCSR_REG_INTSTAT);
 
-> 
-> diff --git a/drivers/staging/mei/wd.c b/drivers/staging/mei/wd.c
-> index 2564b03..608245a 100644
-> --- a/drivers/staging/mei/wd.c
-> +++ b/drivers/staging/mei/wd.c
-> @@ -171,8 +171,10 @@ int mei_wd_stop(struct mei_device *dev, bool preserve)
->         mutex_lock(&dev->device_lock);
->         if (!dev->wd_stopped)
->                 dev_dbg(&dev->pdev->dev, "stop wd failed to complete.\n");
-> -       else
-> +       else {
-> +               ret = 0;
->                 dev_dbg(&dev->pdev->dev, "stop wd complete.\n");
-> +       }
-> 
->         if (preserve)
->                 dev->wd_timeout = wd_timeout;
+        for ( ; bisr; bisr &= bisr - 1)
+                generic_handle_irq(__cscfirst + __ffs(bisr));
 
+        return IRQ_HANDLED;
+}
 
--- 
-Arkadiusz Miśkiewicz        PLD/Linux Team
-arekm / maven.pl            http://ftp.pld-linux.org/
+// mask/unmask/maskack for external ints come here
+
+static unsigned int db1300_csc_startup(struct irq_data *d)
+{
+        int retval = 0;
+
+        mutex_lock(&__cscmtx);
+        if ((++__cscusecnt) == 1)
+                retval = request_irq(__cscirq, &db1300_csc_handler,
+                                     IRQF_TRIGGER_HIGH, "csc", 0);
+        mutex_unlock(&__cscmtx);
+
+        db1300_csc_unmask(d);
+
+        return retval;
+}
+
+static void db1300_csc_shutdown(struct irq_data *d)
+{
+        db1300_csc_mask(d);
+
+        mutex_lock(&__cscmtx);
+        if ((--__cscusecnt) == 0)
+                free_irq(__cscirq, &db1300_csc_handler);
+        mutex_unlock(&__cscmtx);
+}
+
+static struct irq_chip db1300_csc_irq_type = {
+        [...]
+        .irq_startup    = db1300_csc_startup,
+        .irq_shutdown   = db1300_csc_shutdown,
+};
+
+// external int initialization:
+[...]
+        for (irq = first; irq <= last; irq++)
+                irq_set_chip_and_handler_name(irq, &db1300_csc_irq_type,
+                                         handle_level_irq, "level");
+[...]
