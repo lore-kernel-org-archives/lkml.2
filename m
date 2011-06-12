@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753630Ab1FLVII (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 17:08:08 -0400
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:38314 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752053Ab1FLVIG (ORCPT
+	id S1754604Ab1FLVcZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 17:32:25 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:34734 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754513Ab1FLVcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 17:08:06 -0400
-X-SENDER-IP: [85.230.175.203]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aql0AIQq9U1V5q/LPGdsb2JhbABSiRGdPQsBAQEBNzKIcr4zDoYWBJYRiwI
-X-IronPort-AV: E=Sophos;i="4.65,355,1304287200"; 
-   d="scan'208";a="197521193"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Sun, 12 Jun 2011 23:15:00 +0200
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hid-multitouch: fix broken eGalax
-Message-ID: <20110612211500.GA19269@polaris.bitmath.org>
-References: <1307859728-3446-1-git-send-email-benjamin.tissoires@enac.fr>
- <20110612152915.GA18794@polaris.bitmath.org>
- <BANLkTikRPnNNVp=78BxvYZzp5A2HbBYEUg@mail.gmail.com>
+	Sun, 12 Jun 2011 17:32:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:mime-version:content-type
+         :content-disposition;
+        b=HlSiF3f/P+7wo+PRUA3+QBp7uQ/tfsH68T35C6tmq6B7SLMhf1iDkNHC/A8Cy3eAIH
+         gJ23dA/SGDV6TT7Stg49o/BgzDGoFt+6dDQkOIl1A0rj9HorTqiVVXoswKL+yvj0nFDp
+         OUVWKgTfOa+DtRIDbQ8hTnpJaRd/XzbZ9PB1g=
+Date: Sun, 12 Jun 2011 15:31:07 -0600
+From: Jean Sacren <sakiwit@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1] kernel/sched.c: Fix array initialization typo
+Message-ID: <20110612213107.GA12816@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTikRPnNNVp=78BxvYZzp5A2HbBYEUg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+The fix makes certain so that the size of the initialized arrays doesn't
+go beyond the boundary set by the array size of 40.
 
-> >> With this patch, the detection is made only when the field ContactID
-> >> has been detected inside the collection.
-> >
-> > The patch introduces an order dependence by relying on ContactID
-> > occuring early on, which seems unnecessary. How about checking for the
-> > presence of ContactID instead, and simply modify the logic which uses
-> > last_field_index and last_slot_field?
-> 
-> That's exactly what it does. A touch report has to contain the
-> contactID field. And each touch is at least in one collection (some
-> devices send one touch per collection, others only one collection for
-> the whole report).
-> The idea is when hardware makers introduce several input mode for
-> their device, they has to put them in different collections.
+Signed-off-by: Jean Sacren <sakiwit@gmail.com>
+---
+ kernel/sched.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Ah, right you are, the ensured presence of ContactID is enough to
-prove that the patch code is equivalent.
+diff --git a/kernel/sched.c b/kernel/sched.c
+index c164920..c29ddd0 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -1383,7 +1383,7 @@ static const int prio_to_weight[40] = {
+  /*   0 */      1024,       820,       655,       526,       423,
+  /*   5 */       335,       272,       215,       172,       137,
+  /*  10 */       110,        87,        70,        56,        45,
+- /*  15 */        36,        29,        23,        18,        15,
++ /*  15 */        36,        29,        23,        18,        15
+ };
+ 
+ /*
+@@ -1401,7 +1401,7 @@ static const u32 prio_to_wmult[40] = {
+  /*   0 */   4194304,   5237765,   6557202,   8165337,  10153587,
+  /*   5 */  12820798,  15790321,  19976592,  24970740,  31350126,
+  /*  10 */  39045157,  49367440,  61356676,  76695844,  95443717,
+- /*  15 */ 119304647, 148102320, 186737708, 238609294, 286331153,
++ /*  15 */ 119304647, 148102320, 186737708, 238609294, 286331153
+ };
+ 
+ /* Time spent by the tasks of the cpu accounting group executing in ... */
+-- 
+1.7.2.2
 
-> The logic behind the last_field_index and last_slot_field are only for
-> multitouch. So it does not matter if the contactID comes first or last
-> in the collection, it will set the right index/field.
-
-Thanks for the clarification.
-
-    Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
-
-Cheers,
-Henrik
+-- 
+Jean Sacren
