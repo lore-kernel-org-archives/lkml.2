@@ -1,39 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730Ab1FLDHV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 23:07:21 -0400
-Received: from mail.lrsd.org ([71.30.158.248]:61408 "EHLO ironport.lrsd.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750876Ab1FLDHS convert rfc822-to-8bit (ORCPT
+	id S1751688Ab1FLDKZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 23:10:25 -0400
+Received: from host1743200242118.direcway.com ([174.32.118.242]:47282 "EHLO
+	aexorsyst.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab1FLDKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 23:07:18 -0400
-X-Greylist: delayed 564 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Jun 2011 23:07:18 EDT
-X-IronPort-AV: E=Sophos;i="4.65,353,1304294400"; 
-   d="scan'208";a="24596239"
-From: "White, Dishoungh" <Dishoungh.White@lrsd.org>
-Date: Sat, 11 Jun 2011 21:57:52 -0500
-Subject: Mailbox quota limit exceeded
-Thread-Topic: Mailbox quota limit exceeded
-Thread-Index: AQHMKKyFCdrJK+54IUCLwq58w21AlQ==
-Message-ID: <F80984F03A880F4894D2C506F8B00C690829F29686@lrsdtcm03.lrsd.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Sat, 11 Jun 2011 23:10:24 -0400
+From: "John Z. Bohach" <jzb2@aexorsyst.com>
+To: linux-kernel@vger.kernel.org
+Subject: Kernel bug in root=nfsroot codepath
+Date: Sat, 11 Jun 2011 20:06:16 -0700
+User-Agent: KMail/1.9.6
 MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201106112006.16407.jzb2@aexorsyst.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There is a problem with S5 and nfsroot.
 
-Mailbox quota limit exceeded
-To increase quota use below link within the next 48hrs.
+The kernel will NOT enter S5 if and only if root=nfsroot.
 
-http://www.zulassungsdienst-acar.de/sys/phpform/use/web-helpdesk/form1.html
+With the same rootfs burned to disk, it works fine.  I've tracked this 
+done to the
 
-System Administrator
-192.168.0.1
+ __raw_notifier_call_chain()
+
+function.  The call trace is sequence is:
+
+kernel_power_off()
+  ...
+  disable_nonboot_cpus()
+    _cpu_down()
+      ...
+      cpu_die()
+      cpu_notify_nofail()
+        cpu_notify()
+          ...
+          __cpu_notify()
+            __raw_notifier_call_chain()
+              notifier_call_chain()
+            ?? strange second call from unknown location to:
+              __raw_notifier_call_chain()
+            then it just stops...
+
+Machine does not hang as I can see NFS timeout messages after a few 
+minutes (probably interrupt context), but no further printk's are 
+manifest, and system stays in this state until physically reset and is 
+unresponsive.
+
+This is the third time I'm posting this...any ideas?  If I simply skip 
+the disable_nonboot_cpus()  call, then it powers down fine.  This only 
+happens with root=nfsroot.  This happens with multiple kernels and goes 
+back to at least 2.6.16 and is there even with today's latest kernel.
+
+To try to duplicate this, boot an nfsroot-ed machine into run-level 1, 
+and run 'halt -n -d -f -p'.
+
+Thanks,
+John
