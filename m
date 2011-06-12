@@ -1,73 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401Ab1FLMLj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 08:11:39 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49366 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753137Ab1FLMLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 08:11:36 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: Re: [PATCH]drivers:base:power:trace.c Add "UTC" Coordinated Universal Time to the printk.
-Date: Sun, 12 Jun 2011 14:12:09 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Len Brown <lenb@kernel.org>
-References: <1307599301-2524-1-git-send-email-justinmattock@gmail.com>
-In-Reply-To: <1307599301-2524-1-git-send-email-justinmattock@gmail.com>
+	id S1753551Ab1FLMWT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 08:22:19 -0400
+Received: from wp186.webpack.hosteurope.de ([80.237.132.193]:59948 "EHLO
+	wp186.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753233Ab1FLMWS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 08:22:18 -0400
+Message-ID: <4DF4AF76.2070307@xaipete.org>
+Date: Sun, 12 Jun 2011 14:22:14 +0200
+From: Robert Uhl <ruhl@xaipete.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+To: Mikael Pettersson <mikpe@it.uu.se>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Access to local APIC registers during an interrupt handler
+References: <4DF389D1.4090909@xaipete.org> <19956.40070.962218.422362@pilspetsen.it.uu.se>
+In-Reply-To: <19956.40070.962218.422362@pilspetsen.it.uu.se>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106121412.09903.rjw@sisk.pl>
+X-bounce-key: webpack.hosteurope.de;ruhl@xaipete.org;1307881338;d0cc2ac8;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 12.06.2011 13:01, Mikael Pettersson wrote:
+>   >  movq (lapic_idregister), %rcx
+>   >  movq (%rcx), %rcx
+>
+> You're doing a 64-bit load from a 32-bit lapic register.
+>
+> If changing the above movq (%rcx), %rcx to use movl instead makes it
+> work in real HW, then you've found an accepts-invalid bug in qemu.
 
-On Thursday, June 09, 2011, Justin P. Mattock wrote:
-> From: "Justin P. Mattock" <justinmattock@gmail.com>
-> 
-> sounds stupid, but taking a glance at the time, and seeing the wrong time, or what seemed 
-> wrong in dmesg, caused me to go into total check the time clock panic mode.. So the patch below adds:
-> "UTC" Coordinated Universal Time abreviation to the printk so people like me dont flip out over the time!
-> 
-> before:
-> [    0.114915] Time:  1:47:03  Date: 06/09/11
-> 
-> after:
-> [    0.114728] Time:  5:46:02 UTC Date: 06/09/11
-> 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-
-I suspect the goal is to mark messages printed by the PM trace code so that
-they can be easily distinguished from messages from other sources to avoid
-confusion.  Why do you think it's a good idea to use the "UTC" string for
-this purpose?  The time printed in those messages need not be UTC.
-
-It would be better to simply print "RTC time: ..., date: ..." IMO.
-
-Thanks,
-Rafael
-
-
-> ---
->  drivers/base/power/trace.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/base/power/trace.c b/drivers/base/power/trace.c
-> index c80e138..009f459 100644
-> --- a/drivers/base/power/trace.c
-> +++ b/drivers/base/power/trace.c
-> @@ -112,7 +112,7 @@ static unsigned int read_magic_time(void)
->  	unsigned int val;
->  
->  	get_rtc_time(&time);
-> -	pr_info("Time: %2d:%02d:%02d  Date: %02d/%02d/%02d\n",
-> +	pr_info("Time: %2d:%02d:%02d UTC Date: %02d/%02d/%02d\n",
->  		time.tm_hour, time.tm_min, time.tm_sec,
->  		time.tm_mon + 1, time.tm_mday, time.tm_year % 100);
->  	val = time.tm_year;				/* 100 years */
-> 
-
+It works with movl, thank you very much!
+I will send a bug report to the qemu team.
