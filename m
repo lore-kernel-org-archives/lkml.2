@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584Ab1FLQGn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 12:06:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57423 "EHLO mx2.suse.de"
+	id S1751246Ab1FLQSz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 12:18:55 -0400
+Received: from cantor.suse.de ([195.135.220.2]:36338 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751228Ab1FLQGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 12:06:41 -0400
-Date: Sun, 12 Jun 2011 18:06:40 +0200
-Message-ID: <s5hhb7vf2zz.wl%tiwai@suse.de>
+	id S1750855Ab1FLQSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 12:18:54 -0400
+Date: Sun, 12 Jun 2011 18:18:52 +0200
+Message-ID: <s5hfwnff2fn.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Borislav Petkov <bp@alien8.de>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org
 Subject: Re: [GIT PULL] sound fixes for 3.0-rc3
-In-Reply-To: <20110612155021.GA30023@liondog.tnic>
+In-Reply-To: <s5hhb7vf2zz.wl%tiwai@suse.de>
 References: <s5hlix7fpv5.wl%tiwai@suse.de>
 	<20110612155021.GA30023@liondog.tnic>
+	<s5hhb7vf2zz.wl%tiwai@suse.de>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -26,36 +27,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Sun, 12 Jun 2011 17:50:21 +0200,
-Borislav Petkov wrote:
+At Sun, 12 Jun 2011 18:06:40 +0200,
+Takashi Iwai wrote:
 > 
-> On Sun, Jun 12, 2011 at 09:52:46AM +0200, Takashi Iwai wrote:
-> > Linus,
+> At Sun, 12 Jun 2011 17:50:21 +0200,
+> Borislav Petkov wrote:
 > > 
-> > please pull sound fixes for v3.0-rc3 from:
+> > On Sun, Jun 12, 2011 at 09:52:46AM +0200, Takashi Iwai wrote:
+> > > Linus,
+> > > 
+> > > please pull sound fixes for v3.0-rc3 from:
+> > > 
+> > >   git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6.git for-linus
+> > > 
+> > > A few regression fixes and small fixes are included.
 > > 
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6.git for-linus
+> > FWIW,
 > > 
-> > A few regression fixes and small fixes are included.
+> > I tested your branch ontop of latest git to check whether it fixes the
+> > missing sound on my acer aspire one but no joy. 2.6.39 works fine so it
+> > looks like the regression I'm seeing got introduced during the merge
+> > window.
+> > 
+> > I'm attaching ./alsa-info.sh --no-upload output and kernel config.
+> > 
+> > Let me know if you need anything else,
 > 
-> FWIW,
+> Please give alsa-info.sh output with the working kernel, i.e. 2.6.39
+> for comparison.
 > 
-> I tested your branch ontop of latest git to check whether it fixes the
-> missing sound on my acer aspire one but no joy. 2.6.39 works fine so it
-> looks like the regression I'm seeing got introduced during the merge
-> window.
-> 
-> I'm attaching ./alsa-info.sh --no-upload output and kernel config.
-> 
-> Let me know if you need anything else,
+> Also, try model=auto option for snd-hda-intel.  I guess this would
+> work better nowadays.
 
-Please give alsa-info.sh output with the working kernel, i.e. 2.6.39
-for comparison.
+Also, try the patch below.  This should fix your device (without
+model=auto).
 
-Also, try model=auto option for snd-hda-intel.  I guess this would
-work better nowadays.
-
-
-thanks,
 
 Takashi
+
+---
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 20f01f8..9b97af9 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -13317,9 +13317,8 @@ static void alc268_acer_lc_setup(struct hda_codec *codec)
+ 	struct alc_spec *spec = codec->spec;
+ 	spec->autocfg.hp_pins[0] = 0x15;
+ 	spec->autocfg.speaker_pins[0] = 0x14;
+-	spec->automute_mixer_nid[0] = 0x0f;
+ 	spec->automute = 1;
+-	spec->automute_mode = ALC_AUTOMUTE_MIXER;
++	spec->automute_mode = ALC_AUTOMUTE_AMP;
+ 	spec->ext_mic.pin = 0x18;
+ 	spec->ext_mic.mux_idx = 0;
+ 	spec->int_mic.pin = 0x12;
