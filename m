@@ -1,121 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234Ab1FLOzg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 10:55:36 -0400
-Received: from cantor.suse.de ([195.135.220.2]:34172 "EHLO mx1.suse.de"
+	id S1754014Ab1FLPer (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 11:34:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:9047 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751254Ab1FLOze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 10:55:34 -0400
-Date: Sun, 12 Jun 2011 16:55:31 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v3 05/10] vmscan: make isolate_lru_page with filter aware
-Message-ID: <20110612145531.GD24323@tiehlicka.suse.cz>
-References: <cover.1307455422.git.minchan.kim@gmail.com>
- <f101a50f11ffac79eff441c58eafbb5eceac0b47.1307455422.git.minchan.kim@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <f101a50f11ffac79eff441c58eafbb5eceac0b47.1307455422.git.minchan.kim@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751608Ab1FLPem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 11:34:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,355,1304319600"; 
+   d="scan'208";a="12597404"
+Message-Id: <20110612151821.601514494@intel.com>
+User-Agent: quilt/0.48-1
+Date: Sun, 12 Jun 2011 23:18:21 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: <linux-fsdevel@vger.kernel.org>
+cc: Jan Kara <jack@suse.cz>
+cc: Dave Chinner <david@fromorbit.com>
+cc: Christoph Hellwig <hch@infradead.org>
+cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/3] bdi write bandwidth estimation
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 07-06-11 23:38:18, Minchan Kim wrote:
-> In __zone_reclaim case, we don't want to shrink mapped page.
-> Nonetheless, we have isolated mapped page and re-add it into
-> LRU's head. It's unnecessary CPU overhead and makes LRU churning.
-> 
-> Of course, when we isolate the page, the page might be mapped but
-> when we try to migrate the page, the page would be not mapped.
-> So it could be migrated. But race is rare and although it happens,
-> it's no big deal.
 
-Same like with the previous patch. I think it would be better to
-introduce ISOLATE_UNMAPPED here.
+Do bdi write bandwidth estimation in the flusher thread at 200ms intervals,
+and in case the flusher is blocked syncing large files, the throttled dirtier
+tasks will back it up.
 
-Other than that looks good to me
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+To get an idea of the adaption speed and fluctuation range, here are
+some real examples (check the red dots and the yellow line):
 
-> 
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> ---
->  mm/vmscan.c |   17 +++++++++++++++--
->  1 files changed, 15 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 26aa627..c08911d 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1408,6 +1408,12 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
->  		reclaim_mode |= ISOLATE_ACTIVE;
->  
->  	lru_add_drain();
-> +
-> +	if (!sc->may_unmap)
-> +		reclaim_mode |= ISOLATE_UNMAPPED;
-> +	if (!sc->may_writepage)
-> +		reclaim_mode |= ISOLATE_CLEAN;
-> +
->  	spin_lock_irq(&zone->lru_lock);
->  
->  	if (scanning_global_lru(sc)) {
-> @@ -1525,19 +1531,26 @@ static void shrink_active_list(unsigned long nr_pages, struct zone *zone,
->  	struct page *page;
->  	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
->  	unsigned long nr_rotated = 0;
-> +	enum ISOLATE_MODE reclaim_mode = ISOLATE_ACTIVE;
->  
->  	lru_add_drain();
-> +
-> +	if (!sc->may_unmap)
-> +		reclaim_mode |= ISOLATE_UNMAPPED;
-> +	if (!sc->may_writepage)
-> +		reclaim_mode |= ISOLATE_CLEAN;
-> +
->  	spin_lock_irq(&zone->lru_lock);
->  	if (scanning_global_lru(sc)) {
->  		nr_taken = isolate_pages_global(nr_pages, &l_hold,
->  						&pgscanned, sc->order,
-> -						ISOLATE_ACTIVE, zone,
-> +						reclaim_mode, zone,
->  						1, file);
->  		zone->pages_scanned += pgscanned;
->  	} else {
->  		nr_taken = mem_cgroup_isolate_pages(nr_pages, &l_hold,
->  						&pgscanned, sc->order,
-> -						ISOLATE_ACTIVE, zone,
-> +						reclaim_mode, zone,
->  						sc->mem_cgroup, 1, file);
->  		/*
->  		 * mem_cgroup_isolate_pages() keeps track of
-> -- 
-> 1.7.0.4
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v8/3G/xfs-1dd-4k-8p-2948M-20:10-3.0.0-rc2-next-20110610+-2011-06-12.21:51/balance_dirty_pages-bandwidth.png
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v8/3G/ext3-1dd-4k-8p-2948M-20:10-3.0.0-rc2-next-20110610+-2011-06-12.22:02/balance_dirty_pages-bandwidth.png
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v8/3G/ext4-1dd-4k-8p-2948M-20:10-3.0.0-rc2-next-20110610+-2011-06-12.21:57/balance_dirty_pages-bandwidth.png
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v8/3G/btrfs-1dd-4k-8p-2948M-20:10-3.0.0-rc2-next-20110610+-2011-06-12.22:07/balance_dirty_pages-bandwidth.png
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+The old version outputs, for your reference:
+
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/4G-60%25/ext3-1dd-1M-8p-3911M-60%25-2.6.38-rc5-dt6+-2011-02-22-11-51/balance_dirty_pages-bandwidth.png
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/4G-60%25/xfs-1dd-1M-8p-3911M-60%25-2.6.38-rc5-dt6+-2011-02-22-11-10/balance_dirty_pages-bandwidth.png
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/NFS/nfs-1dd-1M-8p-2945M-20%25-2.6.38-rc6-dt6+-2011-02-22-21-09/balance_dirty_pages-bandwidth.png
+
+This is merely the estimation part. The in-kernel users of the estimated
+bandwidth will follow in the coming series.
+
+Thanks,
+Fengguang
+
