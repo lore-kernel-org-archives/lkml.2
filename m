@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752366Ab1FLI1a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 04:27:30 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:44854 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752091Ab1FLI11 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 04:27:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=UfgBW+hJRXGDuT1DbBK6VKR5DPsKvpAyORNku60d0fYo80vY6WSeIMFj3yH20d6N0i
-         fWx8gCxbk0n5J/80UaWdOwsqgry58UkCotcJw0rLMbqqQKzvzxo6UeHr1iiXGssCxYd2
-         9pH77LC4zcP3+D61JiC7VBVqsHzyPzr0q0XlM=
-Date: Sun, 12 Jun 2011 16:27:02 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, linux-kernel@zh-kernel.org,
-        synmyth@gmail.com, zhangyangjing@gmail.com, wangxiaochen0@gmail.com,
-        yaxinsn@163.com
-Subject: Re: [PATCH v2 0/4]Documentation/zh_CN: Remove messy code
- documentations and rebuild new documentations
-Message-ID: <20110612082700.GA5310@gmail.com>
-Mail-Followup-To: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-	linux-kernel@zh-kernel.org, synmyth@gmail.com,
-	zhangyangjing@gmail.com, wangxiaochen0@gmail.com, yaxinsn@163.com
-References: <20110611023749.GA2101@gmail.com>
- <20110611200513.GA14582@kroah.com>
- <20110612025319.GA2035@gmail.com>
- <20110612053215.GA18418@kroah.com>
+	id S1752409Ab1FLIaO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 04:30:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6480 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752055Ab1FLIaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 04:30:10 -0400
+Message-ID: <4DF478F5.6090507@redhat.com>
+Date: Sun, 12 Jun 2011 11:29:41 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=gb2312
-Content-Disposition: inline
-In-Reply-To: <20110612053215.GA18418@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Luck, Tony" <tony.luck@intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
+        linux-kernel@vger.kernel.org, "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: Re: [PATCH 07/10] MCE: replace mce.c use of TIF_MCE_NOTIFY with user_return_notifier
+References: <4df13cae2729896ba5@agluck-desktop.sc.intel.com>
+In-Reply-To: <4df13cae2729896ba5@agluck-desktop.sc.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 11, 2011 at 10:32:15PM -0700, Greg KH wrote:
-> > > Why are you deleting and then adding back the files?  
-> > > Why not just edit them and change them in one single patch?
-> > Hmmm..., what about two patches? One for editing and changing 
-> > email-clients.txt and the other one for editing and changing 
-> > SubmitChecklist.
-> 
-> That is fine, I'll queue them up in a few days.
+On 06/10/2011 12:35 AM, Luck, Tony wrote:
+> From: Tony Luck<tony.luck@intel.com>
+>
+> Ingo wrote:
+> >  We already have a generic facility to do such things at
+> >  return-to-userspace: _TIF_USER_RETURN_NOTIFY.
+>
+> This just a proof of concept patch ... before this can become
+> real the user-return-notifier code would have to be made NMI
+> safe (currently it uses hlist_add_head/hlist_del, which would
+> need to be changed to Ying's NMI-safe single threaded lists).
 
-Okay, that's great ;-)
+You could use irq_work_queue() to push this into an irq context, which 
+is user-return-notifier safe.
 
+-- 
+error compiling committee.c: too many arguments to function
 
-Thanks
-Harry Wei
