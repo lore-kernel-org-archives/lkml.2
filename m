@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754694Ab1FLXLa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 19:11:30 -0400
-Received: from straum.hexapodia.org ([207.7.131.186]:59252 "EHLO
-	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754437Ab1FLXL2 (ORCPT
+	id S1754270Ab1FLXhA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 19:37:00 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42478 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab1FLXg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 19:11:28 -0400
-Date: Sun, 12 Jun 2011 16:11:43 -0700
-From: Andy Isaacson <adi@hexapodia.org>
-To: "Paul E. McKenney" <paulmck@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: rcu_sched_state detected stall on CPU 0, 3.0-rc2
-Message-ID: <20110612231143.GC11580@hexapodia.org>
-References: <20110612195856.GA11580@hexapodia.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110612195856.GA11580@hexapodia.org>
-X-Old-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
-X-GPG-Fingerprint: A5FC 6141 F76D B6B1 C81F  0FB7 AFA0 A45F ED3D 116D
-X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
-X-Domestic-Surveillance: money launder bomb tax evasion
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sun, 12 Jun 2011 19:36:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=s9guYP9/AGM4h7F+QG4Bca9/F5F9xCi+SIzPw7w8fEibXLK4G4Wb3ernhqqwgIA/6E
+         xhAgQ/dGBx/hFHncA+bElBBM3ZniCouMRRjUOqwnYVimbcjo9juu10HNo7kLpQSdNU+K
+         qgA2dR8w/uBLt/ZUoCf7p7N1JAW4ogtwPi4tY=
+Subject: Re: [PATCH] efifb: Fix call to wrong unregister function
+From: Wanlong Gao <wanlong.gao@gmail.com>
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        Peter Jones <pjones@redhat.com>
+In-Reply-To: <BANLkTimXALxHwNMSODXujT4pT-C+m3rcaQ@mail.gmail.com>
+References: <1307875953.1859.6.camel@Tux>
+	 <BANLkTimXALxHwNMSODXujT4pT-C+m3rcaQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Jun 2011 07:36:47 +0800
+Message-ID: <1307921807.1934.0.camel@Tux>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 12, 2011 at 12:58:56PM -0700, Andy Isaacson wrote:
-> My Thinkpad x201s threw some errors (?) a few minutes after resuming
-> from suspend-to-ram this morning.
+On 日, 2011-06-12 at 19:48 +0200, Maarten Lankhorst wrote:
+> Hey,
 > 
-> [56415.672140] INFO: rcu_sched_state detected stall on CPU 0 (t=15000 jiffies)
+> 2011/6/12 wanlong.gao <wanlong.gao@gmail.com>:
+> > <snip>
+> >
+> > Hi Maarten:
+> > It registered efifb_device but try to unregistered efifb_driver,
+> > so I think you should fix it like this?
+> Ah yes, that seems to be the correct one, platform_driver_register was
+> removed. Not 100% sure if acked by or signed-off-by is appropriate
+> here.
+I think signed-off-by is OK.
 > 
-> Nothing jumps out of the backtraces at me.  Full dmesg and config
-> attached.  This was my first StR since upgrading from 2.6.39, let's see
-> if it fails again when I suspend after sending this email. :)
+> Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+> 
+> ~Maarten
 
-I haven't had a fully successful StR cycle yet (in 5 tries), although I
-can't pin them all on RCU.  On try 2 it hung completely about 10 seconds
-after I unlocked the screensaver, on try 3 it came back to a black
-console, and on try 4 it didn't suspend at all (blinking moon LED but
-battery LED and CPU fan still on).
 
--andy
