@@ -1,127 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860Ab1FLRtS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 13:49:18 -0400
-Received: from smtp-vbr11.xs4all.nl ([194.109.24.31]:4448 "EHLO
-	smtp-vbr11.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193Ab1FLRtQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 13:49:16 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Takashi Iwai <tiwai@suse.de>
-Subject: Re: [alsa-devel] [PATCH] tea575x: allow multiple opens
-Date: Sun, 12 Jun 2011 19:48:47 +0200
-User-Agent: KMail/1.13.5 (Linux/3.0.0-rc1-tschai; KDE/4.6.2; x86_64; ; )
-Cc: Ondrej Zary <linux@rainbow-software.org>, alsa-devel@alsa-project.org,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        linux-media@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-References: <201106111529.04319.linux@rainbow-software.org> <201106111536.39174.hverkuil@xs4all.nl> <s5h62obf0uv.wl%tiwai@suse.de>
-In-Reply-To: <s5h62obf0uv.wl%tiwai@suse.de>
+	id S1751982Ab1FLRtu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 13:49:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:17118 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751160Ab1FLRtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 13:49:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,355,1304319600"; 
+   d="scan'208";a="12619964"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: "Weil, Oren jer" <oren.jer.weil@intel.com>,
+        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sun, 12 Jun 2011 20:49:38 +0300
+Subject: RE: mei driver breaks suspend on 3.0git
+Thread-Topic: mei driver breaks suspend on 3.0git
+Thread-Index: Acwo8eqpJEt4YMkQR6eFRjTcGf1wVwANRioQAABx1hA=
+Message-ID: <6F5C1D715B2DA5498A628E6B9C124F0401AD318AB4@hasmsx504.ger.corp.intel.com>
+References: <201106121314.26394.a.miskiewicz@gmail.com>
+ <F28B59AD52D84B479DCA469824475335065FFB592A@hasmsx503.ger.corp.intel.com>
+In-Reply-To: <F28B59AD52D84B479DCA469824475335065FFB592A@hasmsx503.ger.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106121948.47598.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p5CHnupK006718
 
-On Sunday, June 12, 2011 18:52:56 Takashi Iwai wrote:
-> At Sat, 11 Jun 2011 15:36:39 +0200,
-> Hans Verkuil wrote:
-> > 
-> > On Saturday, June 11, 2011 15:28:59 Ondrej Zary wrote:
-> > > Change locking to allow tea575x-radio device to be opened multiple times.
-> > 
-> > Very nice!
-> > 
-> > Signed-off-by: Hans Verkuil <hverkuil@xs4all.nl>
-> 
-> Hans, would you apply this and another one via v4l tree or shall I
-> apply them via sound tree?
 
-This is all V4L related, so I think Mauro can apply this patch and the
-other patch for v3.1. No need to go through an intermediate tree of mine.
 
-Regards,
+> -----Original Message-----
+> From: Weil, Oren jer
+> Sent: Sunday, June 12, 2011 8:36 PM
+> To: Arkadiusz Miskiewicz
+> Cc: Winkler, Tomas; linux-kernel@vger.kernel.org
+> Subject: RE: mei driver breaks suspend on 3.0git
+> 
+> >It's thinkpad t400 with
+> >00:03.0 Communication controller [0780]: Intel Corporation Mobile 4 Series
+> >Chipset MEI Controller [8086:2a44] (rev 07)
+> 
+> Can you send us more details? Does it happened in stress? How do I
+> reproduce
+> it?
+> Can you send us the debug prints?
 
-	Hans
+You  need enable dynamic debug printouts in kernel .config
 
-> 
-> 
-> Takashi
-> 
-> > 
-> > Regards,
-> > 
-> > 	Hans
-> > 
-> > > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-> > > 
-> > > --- linux-2.6.39-rc2-/include/sound/tea575x-tuner.h	2011-06-11 15:21:50.000000000 +0200
-> > > +++ linux-2.6.39-rc2/include/sound/tea575x-tuner.h	2011-06-11 14:50:55.000000000 +0200
-> > > @@ -49,7 +49,7 @@ struct snd_tea575x {
-> > >  	bool tuned;			/* tuned to a station */
-> > >  	unsigned int val;		/* hw value */
-> > >  	unsigned long freq;		/* frequency */
-> > > -	unsigned long in_use;		/* set if the device is in use */
-> > > +	struct mutex mutex;
-> > >  	struct snd_tea575x_ops *ops;
-> > >  	void *private_data;
-> > >  	u8 card[32];
-> > > --- linux-2.6.39-rc2-/sound/i2c/other/tea575x-tuner.c	2011-06-11 15:21:50.000000000 +0200
-> > > +++ linux-2.6.39-rc2/sound/i2c/other/tea575x-tuner.c	2011-06-11 14:57:28.000000000 +0200
-> > > @@ -282,26 +282,9 @@ static int vidioc_s_input(struct file *f
-> > >  	return 0;
-> > >  }
-> > >  
-> > > -static int snd_tea575x_exclusive_open(struct file *file)
-> > > -{
-> > > -	struct snd_tea575x *tea = video_drvdata(file);
-> > > -
-> > > -	return test_and_set_bit(0, &tea->in_use) ? -EBUSY : 0;
-> > > -}
-> > > -
-> > > -static int snd_tea575x_exclusive_release(struct file *file)
-> > > -{
-> > > -	struct snd_tea575x *tea = video_drvdata(file);
-> > > -
-> > > -	clear_bit(0, &tea->in_use);
-> > > -	return 0;
-> > > -}
-> > > -
-> > >  static const struct v4l2_file_operations tea575x_fops = {
-> > >  	.owner		= THIS_MODULE,
-> > > -	.open           = snd_tea575x_exclusive_open,
-> > > -	.release        = snd_tea575x_exclusive_release,
-> > > -	.ioctl		= video_ioctl2,
-> > > +	.unlocked_ioctl	= video_ioctl2,
-> > >  };
-> > >  
-> > >  static const struct v4l2_ioctl_ops tea575x_ioctl_ops = {
-> > > @@ -340,13 +323,14 @@ int snd_tea575x_init(struct snd_tea575x
-> > >  	if (snd_tea575x_read(tea) != 0x55AA)
-> > >  		return -ENODEV;
-> > >  
-> > > -	tea->in_use = 0;
-> > >  	tea->val = TEA575X_BIT_BAND_FM | TEA575X_BIT_SEARCH_10_40;
-> > >  	tea->freq = 90500 * 16;		/* 90.5Mhz default */
-> > >  	snd_tea575x_set_freq(tea);
-> > >  
-> > >  	tea->vd = tea575x_radio;
-> > >  	video_set_drvdata(&tea->vd, tea);
-> > > +	mutex_init(&tea->mutex);
-> > > +	tea->vd.lock = &tea->mutex;
-> > >  
-> > >  	v4l2_ctrl_handler_init(&tea->ctrl_handler, 1);
-> > >  	tea->vd.ctrl_handler = &tea->ctrl_handler;
-> > > 
-> > > 
-> > > 
-> > _______________________________________________
-> > Alsa-devel mailing list
-> > Alsa-devel@alsa-project.org
-> > http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
-> > 
-> 
+CONFIG_DYNAMIC_DEBUG=y
+
+and
+echo "module mei +p" >/sys/kernel/debug/dynamic_debug/control
+
+Thanks
+Tomas
+
+---------------------------------------------------------------------
+Intel Israel (74) Limited
+
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
