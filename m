@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751688Ab1FLDKZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jun 2011 23:10:25 -0400
-Received: from host1743200242118.direcway.com ([174.32.118.242]:47282 "EHLO
-	aexorsyst.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083Ab1FLDKY (ORCPT
+	id S1751775Ab1FLDeS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jun 2011 23:34:18 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56451 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab1FLDeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jun 2011 23:10:24 -0400
-From: "John Z. Bohach" <jzb2@aexorsyst.com>
-To: linux-kernel@vger.kernel.org
-Subject: Kernel bug in root=nfsroot codepath
-Date: Sat, 11 Jun 2011 20:06:16 -0700
-User-Agent: KMail/1.9.6
+	Sat, 11 Jun 2011 23:34:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=HKv7sinqoDkwzBnKxPIVFggvXyNTmbUrWJhLwVAKY2/WgKiJRSCOiX0uzI7LRMAr0n
+         Y/3dclp91wKmgHTnOaG3PKjjbLkmek/7xUwKgYaiZahQdnYGkm5lXUQDDEXItXCeYruR
+         imBL4IJzZOqRLxToeEQcXNtcLlsYe+10flAEM=
+Date: Sun, 12 Jun 2011 11:33:48 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: greg@kroah.com
+Cc: linux-kernel@vger.kernel.org, linux-kernel@zh-kernel.org,
+        synmyth@gmail.com, zhangyangjing@gmail.com, wangxiaochen0@gmail.com,
+        yaxinsn@163.com
+Subject: [PATCH v3 0/2]Documentation/zh_CN: Fix messy code files
+Message-ID: <20110612033343.GA4321@gmail.com>
+Mail-Followup-To: greg@kroah.com, linux-kernel@vger.kernel.org,
+	linux-kernel@zh-kernel.org, synmyth@gmail.com,
+	zhangyangjing@gmail.com, wangxiaochen0@gmail.com, yaxinsn@163.com
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=gb2312
 Content-Disposition: inline
-Message-Id: <201106112006.16407.jzb2@aexorsyst.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a problem with S5 and nfsroot.
+From: Harry Wei <harryxiyou@gmail.com>
 
-The kernel will NOT enter S5 if and only if root=nfsroot.
+This is v3 patches for fixing the messy code files,
+Documentation/zh_CN/email-clients.txt and
+Documentation/zh_CN/SubmitChecklist.
 
-With the same rootfs burned to disk, it works fine.  I've tracked this 
-done to the
+v3's new figures.
+Combine the remove and add back operations to one single patch.
+So now we have only two patches for fixing this problem.
 
- __raw_notifier_call_chain()
+Harry Wei (2)
+Documentation/zh_CN: Fix messy code file email-clients.txt
+Documentation/zh_CN: Fix messy code file SubmitChecklist
 
-function.  The call trace is sequence is:
-
-kernel_power_off()
-  ...
-  disable_nonboot_cpus()
-    _cpu_down()
-      ...
-      cpu_die()
-      cpu_notify_nofail()
-        cpu_notify()
-          ...
-          __cpu_notify()
-            __raw_notifier_call_chain()
-              notifier_call_chain()
-            ?? strange second call from unknown location to:
-              __raw_notifier_call_chain()
-            then it just stops...
-
-Machine does not hang as I can see NFS timeout messages after a few 
-minutes (probably interrupt context), but no further printk's are 
-manifest, and system stays in this state until physically reset and is 
-unresponsive.
-
-This is the third time I'm posting this...any ideas?  If I simply skip 
-the disable_nonboot_cpus()  call, then it powers down fine.  This only 
-happens with root=nfsroot.  This happens with multiple kernels and goes 
-back to at least 2.6.16 and is there even with today's latest kernel.
-
-To try to duplicate this, boot an nfsroot-ed machine into run-level 1, 
-and run 'halt -n -d -f -p'.
-
-Thanks,
-John
+Thanks
+Harry Wei
