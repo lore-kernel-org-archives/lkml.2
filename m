@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601Ab1FLFcr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 01:32:47 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:42887 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750958Ab1FLFcp (ORCPT
+	id S1751891Ab1FLFdB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 01:33:01 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:35679 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958Ab1FLFc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 01:32:45 -0400
-X-Sasl-enc: 9OtT2ig29/MKNzx9z3PU01aiW08TzycjCThF1N813Jxe 1307856764
-Date: Sat, 11 Jun 2011 22:32:15 -0700
-From: Greg KH <greg@kroah.com>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/4]Documentation/zh_CN: Remove messy code
- documentations and rebuild new documentations
-Message-ID: <20110612053215.GA18418@kroah.com>
-References: <20110611023749.GA2101@gmail.com>
- <20110611200513.GA14582@kroah.com>
- <20110612025319.GA2035@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110612025319.GA2035@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 12 Jun 2011 01:32:58 -0400
+Date: Sat, 11 Jun 2011 22:32:29 -0700 (PDT)
+Message-Id: <20110611.223229.48163370514780394.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] IDE
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 11 Jun 2011 22:32:55 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 12, 2011 at 10:53:21AM +0800, Harry Wei wrote:
-> On Sat, Jun 11, 2011 at 01:05:13PM -0700, Greg KH wrote:
-> > On Sat, Jun 11, 2011 at 10:37:52AM +0800, Harry Wei wrote:
-> > > From: Harry Wei <harryxiyou@gmail.com>
-> > > 
-> > > There are two messy code documentations in our
-> > > Documentation/zh_CN/ directory. They are
-> > > Documentation/zh_CN/email-clients.txt &
-> > > Documentation/zh_CN/SubmitChecklist.
-> > > The following patches can fix them.
-> > > 
-> > > Harry Wei (4)
-> > > Documentation/zh_CN: remove messy code file email-clients.txt
-> > > Documentation/zh_CN: remove messy code file SubmitChecklist
-> > > Documentation/zh_CN: add new file email-clients.txt
-> > > Documentation/zh_CN: add new file SubmitChecklist
-> > 
-> > Why are you deleting and then adding back the files?  
-> > Why not just edit them and change them in one single patch?
-> Hmmm..., what about two patches? One for editing and changing 
-> email-clients.txt and the other one for editing and changing 
-> SubmitChecklist.
 
-That is fine, I'll queue them up in a few days.
+Please pull to get this signedness fix, thanks!
 
-greg k-h
+The following changes since commit b99ca60c83a631adaba9c2fff8f2dd14d3517a61:
+
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6 (2011-06-11 19:56:25 -0700)
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/ide-2.6.git master
+
+Connor Hansen (1):
+      ide-cd: signedness warning fix again
+
+ drivers/ide/ide-cd.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
