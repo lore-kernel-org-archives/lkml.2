@@ -1,62 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab1FLKAz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 06:00:55 -0400
-Received: from www.tvnetwork.hu ([109.61.0.42]:45190 "EHLO www.tvnetwork.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752709Ab1FLKAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 06:00:54 -0400
-Message-ID: <1913.82.128.17.124.1307872867.squirrel@www.tvnetwork.hu>
-Date: Sun, 12 Jun 2011 12:01:07 +0200 (CEST)
-Subject: YOUR NEW WEBMAIL ACCOUNT...
-From: "Web mail Maintenance Help Desk." <info@tvnetwork.hu>
-Reply-To: upgradeteamcostumercareoffice@gmail.com
-User-Agent: SquirrelMail/1.4.9a
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+	id S1752985Ab1FLKIf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 06:08:35 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:60962 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752709Ab1FLKIc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 06:08:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=naM2BX2Qr2l7mqZ+8wRcH7bDAKcInal0EnWcLC0D9KuC0bQVYzFoc5MzAI45HqFGWm
+         /iLNqZTa1zrR1SDBx1TwlOV8ejnthU+I45ouS5Y+NPwn1/TnjR7sVgwMTa/ONBAob1Cd
+         HfTjloTuRhpie2XGUqyxl4ouwAAxZW3tU8UAE=
+From: Eric Miao <eric.miao@linaro.org>
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Eric Miao <eric.miao@linaro.org>, Sammy He <r62914@freescale.com>
+Subject: [PATCH] input: add support for mma8450 accelerometer
+Date: Sun, 12 Jun 2011 18:08:23 +0800
+Message-Id: <1307873303-27371-1-git-send-email-eric.miao@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Account Owner,
+Signed-off-by: Sammy He <r62914@freescale.com>
+Signed-off-by: Eric Miao <eric.miao@linaro.org>
+---
+ drivers/input/misc/Kconfig   |   10 ++
+ drivers/input/misc/Makefile  |    1 +
+ drivers/input/misc/mma8450.c |  256 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 267 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/misc/mma8450.c
 
-This message is from web mail hosting center to all our account users. A
-DGTFX virus has been detected, In maintanace of this to prevent
-re-occurence we are   currently upgrading our data base and e-mail center.
-We are deleting all unused account to create more space for new once and
-to prevent spam mails. Just   before this message was sent, you are
-currently running on 20.9 GB, You have just exceeded the storage limit
-which is 20GB. To prevent your account from   closing, fill in the below
-information to help us re-set your Account SPACE on our database prior to
-maintain of your INBOX.
-
-Warning!!! E-mail owner that refuses to update his or her E-mail, within
-48hrs of receiving this warning will lose his or her E-mail permanently.
-
-CONFIRM YOUR E-MAIL IDENTITY BELOW:
-First Name :____________________________( Compulsory)
-Last Name :____________________________( Compulsory)
-Domain-Link: __________________________ (Compulsory)
-Web mail ID&#174;__________________________ (Compulsory)
-Password :_____________________________( Compulsory)
-Phone number :_________________________( compulsory)
-Date of birth: __________________________ (Compulsory)
-
-Click on reply and send us the above details.
-
-Warning!!!
-In failure to verify your account, your account will automatically be
-deactivated from web mail hosting center.
-Warning Code: QATO8B52AXV.
-
-Thanks for your co-operation.
-
-Kind Regards,
-Web mail Maintenance Help Desk.
-System Administrator.
-Copyright @2011 WEBMAIL OFFICE all rights reserved.
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 45dc6aa..faf7e0c 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -478,4 +478,14 @@ config INPUT_XEN_KBDDEV_FRONTEND
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called xen-kbdfront.
+ 
++config INPUT_MMA8450
++	tristate "MMA8450 - Freescale's 3-Axis, 8/12-bit Digital Accelerometer"
++	depends on I2C
++	help
++	  Say Y here if you want to support Freescale's MMA8450 Accelerometer
++	  through I2C interface.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called mma8450.
++
+ endif
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index 38efb2c..5239e29 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -45,4 +45,5 @@ obj-$(CONFIG_INPUT_WISTRON_BTNS)	+= wistron_btns.o
+ obj-$(CONFIG_INPUT_WM831X_ON)		+= wm831x-on.o
+ obj-$(CONFIG_INPUT_XEN_KBDDEV_FRONTEND)	+= xen-kbdfront.o
+ obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
++obj-$(CONFIG_INPUT_MMA8450)		+= mma8450.o
+ 
+diff --git a/drivers/input/misc/mma8450.c b/drivers/input/misc/mma8450.c
+new file mode 100644
+index 0000000..11ba3af
+--- /dev/null
++++ b/drivers/input/misc/mma8450.c
+@@ -0,0 +1,256 @@
++/*
++ *  mma8450.c - driver for Freescale's 3-Axis Accelerometer
++ *
++ *  Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/mutex.h>
++#include <linux/delay.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/err.h>
++#include <linux/input-polldev.h>
++
++#define MMA8450_DRV_NAME	"mma8450"
++
++#define MODE_CHANGE_DELAY_MS	100
++#define POLL_INTERVAL		100
++#define POLL_INTERVAL_MAX	500
++
++/* register definitions */
++#define MMA8450_STATUS		0x00
++#define MMA8450_STATUS_ZXYDR	0x08
++
++#define MMA8450_OUT_X8		0x01
++#define MMA8450_OUT_Y8		0x02
++#define MMA8450_OUT_Z8		0x03
++
++#define MMA8450_OUT_X_LSB	0x05
++#define MMA8450_OUT_X_MSB	0x06
++#define MMA8450_OUT_Y_LSB	0x07
++#define MMA8450_OUT_Y_MSB	0x08
++#define MMA8450_OUT_Z_LSB	0x09
++#define MMA8450_OUT_Z_MSB	0x0a
++
++#define MMA8450_CTRL_REG1	0x38
++#define MMA8450_CTRL_REG2	0x39
++
++/* mma8450 status */
++struct mma8450 {
++	struct i2c_client	*client;
++	struct input_polled_dev	*idev;
++};
++
++static int mma8450_read(struct mma8450 *m, unsigned off, uint8_t *v)
++{
++	struct i2c_client *c = m->client;
++	int ret;
++
++	ret = i2c_smbus_read_byte_data(c, off);
++	if (ret < 0) {
++		dev_err(&c->dev, "failed to read register 0x%02x\n", off);
++		return ret;
++	}
++
++	*v = (uint8_t)ret;
++	return 0;
++}
++
++static int mma8450_write(struct mma8450 *m, unsigned off, uint8_t v)
++{
++	struct i2c_client *c = m->client;
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(c, off, v);
++	if (ret < 0) {
++		dev_err(&c->dev, "failed to write to register 0x%02x\n", off);
++		return ret;
++	}
++
++	return 0;
++}
++
++static int mma8450_init_client(struct mma8450 *m)
++{
++	int err;
++
++	/* Sleep mode poll rate - 50Hz
++	 * System output data rate - 400Hz
++	 * Full scale selection - Active, +/- 2G
++	 */
++	err = mma8450_write(m, MMA8450_CTRL_REG1, 0x01);
++	if (err < 0)
++		return err;
++
++	msleep(MODE_CHANGE_DELAY_MS);
++	return 0;
++}
++
++static int mma8450_read_xyz(struct mma8450 *m, int *x, int *y, int *z)
++{
++	struct i2c_client *c = m->client;
++	uint8_t buff[6];
++	int ret;
++
++	ret = i2c_smbus_read_i2c_block_data(c, MMA8450_OUT_X_LSB, 6, buff);
++	if (ret < 0) {
++		dev_err(&c->dev, "failed to read block data at 0x%02x\n",
++				MMA8450_OUT_X_LSB);
++		return ret;
++	}
++
++	*x = ((buff[1] << 4) & 0xff0) | (buff[0] & 0xf);
++	*y = ((buff[3] << 4) & 0xff0) | (buff[2] & 0xf);
++	*z = ((buff[5] << 4) & 0xff0) | (buff[4] & 0xf);
++
++	return 0;
++}
++
++static void mma8450_poll(struct input_polled_dev *pdev)
++{
++	struct input_dev *dev = pdev->input;
++	struct mma8450 *m = input_get_drvdata(dev);
++	uint8_t status;
++	int x, y, z, err;
++
++	err = mma8450_read(m, MMA8450_STATUS, &status);
++	if (err)
++		return;
++
++	/* check new data */
++	if ((status & MMA8450_STATUS_ZXYDR) == 0)
++		return;
++
++	err = mma8450_read_xyz(m, &x, &y, &z);
++	if (err)
++		return;
++
++	input_report_abs(dev, ABS_X, x);
++	input_report_abs(dev, ABS_Y, y);
++	input_report_abs(dev, ABS_Z, z);
++	input_sync(dev);
++}
++
++/*
++ * I2C init/probing/exit functions
++ */
++static int __devinit mma8450_probe(struct i2c_client *c,
++				   const struct i2c_device_id *id)
++{
++	struct input_polled_dev *idev;
++	struct mma8450 *m;
++	int err;
++
++	err = i2c_check_functionality(c->adapter, I2C_FUNC_SMBUS_BYTE |
++						  I2C_FUNC_SMBUS_BYTE_DATA);
++	if (err)
++		return -ENODEV;
++
++	m = kzalloc(sizeof(struct mma8450), GFP_KERNEL);
++	if (m == NULL)
++		return -ENOMEM;
++
++	m->client = c;
++
++	/* Initialize the MMA8450 chip */
++	err = mma8450_init_client(m);
++	if (err)
++		goto exit_free;
++
++	/*input poll device register */
++	idev = input_allocate_polled_device();
++	if (idev == NULL) {
++		dev_err(&c->dev, "failed to allocate polled input device\n");
++		goto exit_free;
++	}
++
++	idev->input->name	= MMA8450_DRV_NAME;
++	idev->input->id.bustype	= BUS_I2C;
++	idev->poll		= mma8450_poll;
++	idev->poll_interval	= POLL_INTERVAL;
++	idev->poll_interval_max	= POLL_INTERVAL_MAX;
++	__set_bit(EV_ABS, idev->input->evbit);
++
++	input_set_abs_params(idev->input, ABS_X, -2048, 2047, 32, 32);
++	input_set_abs_params(idev->input, ABS_Y, -2048, 2047, 32, 32);
++	input_set_abs_params(idev->input, ABS_Z, -2048, 2047, 32, 32);
++
++	input_set_drvdata(idev->input, m);
++
++	err = input_register_polled_device(idev);
++	if (err) {
++		dev_err(&c->dev, "failed to register polled input device\n");
++		goto exit_free_input;
++	}
++
++	dev_info(&c->dev, "polled input device registered\n");
++	return 0;
++
++exit_free_input:
++	input_free_polled_device(idev);
++exit_free:
++	kfree(m);
++	return err;
++}
++
++static int __devexit mma8450_remove(struct i2c_client *c)
++{
++	struct mma8450 *m = i2c_get_clientdata(c);
++
++	mma8450_write(m, MMA8450_CTRL_REG1, 0x00);
++	mma8450_write(m, MMA8450_CTRL_REG2, 0x01);
++
++	kfree(m);
++	return 0;
++}
++
++static const struct i2c_device_id mma8450_id[] = {
++	{ MMA8450_DRV_NAME, 0 },
++	{},
++};
++MODULE_DEVICE_TABLE(i2c, mma8450_id);
++
++static struct i2c_driver mma8450_driver = {
++	.driver = {
++		.name	= MMA8450_DRV_NAME,
++		.owner	= THIS_MODULE,
++	},
++	.probe		= mma8450_probe,
++	.remove		= __devexit_p(mma8450_remove),
++	.id_table	= mma8450_id,
++};
++
++static int __init mma8450_init(void)
++{
++	return i2c_add_driver(&mma8450_driver);
++}
++module_init(mma8450_init);
++
++static void __exit mma8450_exit(void)
++{
++	i2c_del_driver(&mma8450_driver);
++}
++module_exit(mma8450_exit);
++
++MODULE_AUTHOR("Freescale Semiconductor, Inc.");
++MODULE_DESCRIPTION("MMA8450 3-Axis Accelerometer Driver");
++MODULE_LICENSE("GPL");
+-- 
+1.7.4.1
 
