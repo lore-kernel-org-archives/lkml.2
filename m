@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab1FLWMs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 18:12:48 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:42608 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972Ab1FLWMq (ORCPT
+	id S1754616Ab1FLW3u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 18:29:50 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42622 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754223Ab1FLW3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 18:12:46 -0400
+	Sun, 12 Jun 2011 18:29:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=B1gvGEWv7aqdcM7GoQ35HJwWJAlV6nMAz8O6GxoeGFPVYfrO3GH2RJ/3qSYFXWfegN
+         H/CgbvhNf+seGW8G+PDFtIMl2jz4QHcbkJ9XNLH7bSEsIAkpLDYpH8U0faCSDpcnSdKh
+         lSdWkRa1Sm2Fkf54Nh7XpehPqSddZh2NcgIcQ=
+Message-ID: <4DF53DCC.1060604@gmail.com>
+Date: Sun, 12 Jun 2011 15:29:32 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <1307859728-3446-1-git-send-email-benjamin.tissoires@enac.fr>
-References: <1307859728-3446-1-git-send-email-benjamin.tissoires@enac.fr>
-Date: Sun, 12 Jun 2011 17:12:45 -0500
-Message-ID: <BANLkTi=878_nkp=BKF0MFKL5RniQCsrGNw@mail.gmail.com>
-Subject: Re: [PATCH] hid-multitouch: fix broken eGalax
-From: Chris Bagwell <chris@cnpbagwell.com>
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH]drivers:base:power:trace.c Add "UTC" Coordinated Universal
+ Time to the printk.
+References: <1307599301-2524-1-git-send-email-justinmattock@gmail.com> <201106122035.26600.rjw@sisk.pl> <4DF514BC.9030808@gmail.com> <201106122227.32992.rjw@sisk.pl>
+In-Reply-To: <201106122227.32992.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 12, 2011 at 1:22 AM, Benjamin Tissoires
-<benjamin.tissoires@enac.fr> wrote:
-> Since the inclusion of eGalax devices in 2.6.39, I've got some
-> bug reports for 480d and other devices.
-> The problem lies in the reports descriptors: eGalax supports both
-> pen and fingers, and so the reports descriptors contained both.
-> But hid-multitouch relies on them to detect the last item in each
-> field to send the multitouch events. In 480d, the last item is not
-> Y as it should but Pressure. That means that the fields are not
-> aligned and X,Y are at 0,0 (the other touch coordinates of the report).
+On 06/12/2011 01:27 PM, Rafael J. Wysocki wrote:
+> On Sunday, June 12, 2011, Justin P. Mattock wrote:
+>> On 06/12/2011 11:35 AM, Rafael J. Wysocki wrote:
+>>> On Sunday, June 12, 2011, Justin P. Mattock wrote:
+>>>> On 06/12/2011 05:12 AM, Rafael J. Wysocki wrote:
+>>>>> Hi,
+>>>>>
+>>>>> On Thursday, June 09, 2011, Justin P. Mattock wrote:
+>>>>>> From: "Justin P. Mattock"<justinmattock@gmail.com>
+>>>>>>
+>>>>>> sounds stupid, but taking a glance at the time, and seeing the wrong time, or what seemed
+>>>>>> wrong in dmesg, caused me to go into total check the time clock panic mode.. So the patch below adds:
+>>>>>> "UTC" Coordinated Universal Time abreviation to the printk so people like me dont flip out over the time!
+>>>>>>
+>>>>>> before:
+>>>>>> [    0.114915] Time:  1:47:03  Date: 06/09/11
+>>>>>>
+>>>>>> after:
+>>>>>> [    0.114728] Time:  5:46:02 UTC Date: 06/09/11
+>>>>>>
+>>>>>> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>>>>
+>>>>> I suspect the goal is to mark messages printed by the PM trace code so that
+>>>>> they can be easily distinguished from messages from other sources to avoid
+>>>>> confusion.  Why do you think it's a good idea to use the "UTC" string for
+>>>>> this purpose?  The time printed in those messages need not be UTC.
+>>>>>
+>>>>> It would be better to simply print "RTC time: ..., date: ..." IMO.
+>>>>>
+>>>>> Thanks,
+>>>>> Rafael
+>>>>>
+>>>>
+>>>> well.. if thats better, then thats better.. over here(people that dont
+>>>> know what RTC time is) would not get so confused with a simple UTC or
+>>>> PDT or whatever the time zone is but if RTC is bettr, then its better.
+>>>
+>>> My point is we don't know this time is always UTC, so we rather shouldn't
+>>> label it as UTC unconditionally, should we?
+>>>
+>>> Rafael
+>>>
+>>
+>> sounds good to me!!
 >
-> With this patch, the detection is made only when the field ContactID
-> has been detected inside the collection.
+> I'm not sure what you mean?
 >
-> There is still a problem with the detections of the range as stylus
-> and fingers may not have the same min/max, but it's a start.
->
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
 
-This patch was good timing for me.  I was giving the latest
-hid-multitouch a try on my MosArt touchscreen (0486:0186).  hid-mosart
-was basically working but once merged into hid-multitouch,
-hid-multitouch was not.
-
-The symptom was once you touched screen, it acted like user never
-released touch.
-
-I tracked it down today to last_field_index being reset from 14 to 2
-because of an unused extra input in descriptor that looked like a
-mouse (X/Y and 2 buttons).  This to small index caused a delay of
-sending valid data by 1 packet and since no packets sent after touch
-release, you'd not get the release at appropriate time.
-
-In my case, only the input with ContactID's are useful (there are 2
-ContactID's spread between 2 collections) so this patch should prevent
-last_field_index from being reset by the unused X/Y's.
-
-Chris
+with what you are saying "RTC" if anything.. rather than "UTC"
