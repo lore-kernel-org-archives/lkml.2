@@ -1,88 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494Ab1FMJmJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 05:42:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52058 "EHLO mx2.suse.de"
+	id S1751546Ab1FMJnD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 05:43:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36147 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751244Ab1FMJmG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 05:42:06 -0400
-Date: Mon, 13 Jun 2011 11:42:03 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Ying Han <yinghan@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 7/8] vmscan: memcg-aware unevictable page rescue scanner
-Message-ID: <20110613094203.GC10563@tiehlicka.suse.cz>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
- <1306909519-7286-8-git-send-email-hannes@cmpxchg.org>
+	id S1750716Ab1FMJm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 05:42:58 -0400
+Message-ID: <4DF5DB79.3010004@redhat.com>
+Date: Mon, 13 Jun 2011 11:42:17 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306909519-7286-8-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nitin Gupta <ngupta@vflare.org>
+CC: Greg Kroah-Hartman <gregkh@suse.de>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jeff Moyer <jmoyer@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <jens.axboe@oracle.com>
+Subject: Re: [PATCH 3/4] Staging: zram: allow partial page operations
+References: <1307712529-9757-1-git-send-email-jmarchan@redhat.com> <1307712529-9757-2-git-send-email-jmarchan@redhat.com> <1307712529-9757-3-git-send-email-jmarchan@redhat.com> <4DF2493F.8040507@vflare.org>
+In-Reply-To: <4DF2493F.8040507@vflare.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 01-06-11 08:25:18, Johannes Weiner wrote:
-> Once the per-memcg lru lists are exclusive, the unevictable page
-> rescue scanner can no longer work on the global zone lru lists.
+On 06/10/2011 06:41 PM, Nitin Gupta wrote:
+> On 06/10/2011 06:28 AM, Jerome Marchand wrote:
+>> Commit 7b19b8d45b216ff3186f066b31937bdbde066f08 (zram: Prevent overflow
+>> in logical block size) introduced ZRAM_LOGICAL_BLOCK_SIZE constant to
+>> prevent overflow of logical block size on 64k page kernel.
+>> However, the current implementation of zram only allow operation on block
+>> of the same size as a page. That makes theorically legit 4k requests fail
+>> on 64k page kernel.
+>>
+>> This patch makes zram allow operation on partial pages. Basically, it
+>> means we still do operations on full pages internally, but only copy the
+>> relevent segments from/to the user memory.
+>>
 > 
-> This converts it to go through all memcgs and scan their respective
-> unevictable lists instead.
+> Couldn't we just change struct queue_limits.logical_block_size type to 
+> unsigned int or something so it could hold value of 64K? Then we could
+> avoid making all these changes to handle partial page requests.
 > 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Thanks,
+> Nitin
 
-Just a minor naming thing.
+I believe logical_block_size is meant to be small. I don't know if it is
+reasonable to set it to such a big value as 64k. I CCed Jens and Martin to
+have a more valuable opinion on the matter.
 
-Other than that looks good to me.
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-[...]
-> +struct page *mem_cgroup_lru_to_page(struct zone *zone, struct mem_cgroup *mem,
-> +				    enum lru_list lru)
-> +{
-> +	struct mem_cgroup_per_zone *mz;
-> +	struct page_cgroup *pc;
-> +
-> +	mz = mem_cgroup_zoneinfo(mem, zone_to_nid(zone), zone_idx(zone));
-> +	pc = list_entry(mz->lists[lru].prev, struct page_cgroup, lru);
-> +	return lookup_cgroup_page(pc);
-> +}
-> +
-[...]
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -3233,6 +3233,14 @@ void scan_mapping_unevictable_pages(struct address_space *mapping)
->  
->  }
->  
-> +static struct page *lru_tailpage(struct zone *zone, struct mem_cgroup *mem,
-> +				 enum lru_list lru)
-> +{
-> +	if (mem)
-> +		return mem_cgroup_lru_to_page(zone, mem, lru);
-> +	return lru_to_page(&zone->lru[lru].list);
-> +}
-
-Wouldn't it better to have those names consistent?
-mem_cgroup_lru_tailpage vs lru_tailpage?
-
-[...]
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Regards,
+Jerome
