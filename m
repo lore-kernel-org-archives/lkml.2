@@ -1,37 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985Ab1FMSTz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 14:19:55 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:39551 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751181Ab1FMSTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 14:19:55 -0400
-Message-ID: <4DF654C6.4070701@kernel.dk>
-Date: Mon, 13 Jun 2011 20:19:50 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] blk-throttle: Make total_nr_queued unsigned
-References: <f5e32f63cf03e8fb6f6b9c8e66a6ac0c4d5c3d45.1307980331.git.joe@perches.com>
-In-Reply-To: <f5e32f63cf03e8fb6f6b9c8e66a6ac0c4d5c3d45.1307980331.git.joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753635Ab1FMSUX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 14:20:23 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:48910 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831Ab1FMSUV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 14:20:21 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jiri Kosina <trivial@kernel.org>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] scsi/trivial: Spelling hsot -> host
+Date: Mon, 13 Jun 2011 20:20:17 +0200
+Message-Id: <1307989217-22004-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-06-13 17:54, Joe Perches wrote:
-> cc: Vivek Goyal <vgoyal@redhat.com>
-> 
-> The total of two unsigned values should also be unsigned.
-> 
-> Update throtl_log output to unsigned.
-> Update total_nr_queued test to non-zero to be the
-> same as the other total_nr_queued tests.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ drivers/scsi/aic7xxx_old/aic7xxx.seq |    2 +-
+ drivers/scsi/scsi_error.c            |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Thanks, I pulled this into for-3.1/core with the ack from Vivek.
-
+diff --git a/drivers/scsi/aic7xxx_old/aic7xxx.seq b/drivers/scsi/aic7xxx_old/aic7xxx.seq
+index 823ff28..dc3bb81 100644
+--- a/drivers/scsi/aic7xxx_old/aic7xxx.seq
++++ b/drivers/scsi/aic7xxx_old/aic7xxx.seq
+@@ -693,7 +693,7 @@ p_status:
+  * it's own message.
+  * 
+  * If MSG_OUT is == HOST_MSG, also interrupt the host and take a message.
+- * This is done to allow the hsot to send messages outside of an identify
++ * This is done to allow the host to send messages outside of an identify
+  * sequence while protecting the seqencer from testing the MK_MESSAGE bit
+  * on an SCB that might not be for the current nexus. (For example, a
+  * BDR message in response to a bad reselection would leave us pointed to
+diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+index a4b9cdb..87521b1 100644
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -510,7 +510,7 @@ static void scsi_eh_done(struct scsi_cmnd *scmd)
+ 
+ /**
+  * scsi_try_host_reset - ask host adapter to reset itself
+- * @scmd:	SCSI cmd to send hsot reset.
++ * @scmd:	SCSI cmd to send host reset.
+  */
+ static int scsi_try_host_reset(struct scsi_cmnd *scmd)
+ {
 -- 
-Jens Axboe
+1.7.0.4
 
