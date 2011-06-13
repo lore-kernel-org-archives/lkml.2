@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525Ab1FMQjL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 12:39:11 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44885 "EHLO arroyo.ext.ti.com"
+	id S1754414Ab1FMQkx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 12:40:53 -0400
+Received: from mail.perches.com ([173.55.12.10]:2837 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753981Ab1FMQjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 12:39:06 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: [PATCH v5 18/18] OMAP4: SDP4430: Add twl6040 codec platform support
-Date: Mon, 13 Jun 2011 19:37:50 +0300
-Message-ID: <1307983070-2257-19-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.5.3
-In-Reply-To: <1307983070-2257-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1307983070-2257-1-git-send-email-peter.ujfalusi@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754291Ab1FMQke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 12:40:34 -0400
+Subject: Re: [Xen-devel] [PATCH 1/2] xen: Add
+ __attribute__((format(printf... where appropriate
+From: Joe Perches <joe@perches.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+In-Reply-To: <20110613163158.GA26322@dumpdata.com>
+References: <17ffbd77627a21c05ab9e1a07b5207334291cf01.1307895293.git.joe@perches.com>
+	 <20110613163158.GA26322@dumpdata.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Jun 2011 09:40:31 -0700
+Message-ID: <1307983231.6189.6.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Misael Lopez Cruz <misael.lopez@ti.com>
+On Mon, 2011-06-13 at 12:31 -0400, Konrad Rzeszutek Wilk wrote:
+> On Sun, Jun 12, 2011 at 09:21:13AM -0700, Joe Perches wrote:
+> > Use the compiler to verify printf formats and arguments.
+> What compiler?
 
-Configure, and enable the twl6040 codec on SDP4430.
+Any supported version of gcc.
 
-Signed-off-by: Misael Lopez Cruz <misael.lopez@ti.com>
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- arch/arm/mach-omap2/board-4430sdp.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+>  If this is not included in 3.0 what is the fallout?
 
-diff --git a/arch/arm/mach-omap2/board-4430sdp.c b/arch/arm/mach-omap2/board-4430sdp.c
-index 266d146..369250b 100644
---- a/arch/arm/mach-omap2/board-4430sdp.c
-+++ b/arch/arm/mach-omap2/board-4430sdp.c
-@@ -432,6 +432,14 @@ static struct regulator_init_data sdp4430_vusim = {
- 	},
- };
- 
-+static struct twl4030_codec_data twl6040_codec = {
-+	/* single-step ramp for headset and handsfree */
-+	.hs_left_step	= 0x0f,
-+	.hs_right_step	= 0x0f,
-+	.hf_left_step	= 0x1d,
-+	.hf_right_step	= 0x1d,
-+};
-+
- static struct twl4030_vibra_data twl6040_vibra = {
- 	.vibldrv_res = 8,
- 	.vibrdrv_res = 3,
-@@ -442,7 +450,7 @@ static struct twl4030_vibra_data twl6040_vibra = {
- };
- 
- static struct twl4030_audio_data twl6040_audio = {
--	.codec		= NULL,
-+	.codec		= &twl6040_codec,
- 	.vibra		= &twl6040_vibra,
- 	.audpwron_gpio	= 127,
- 	.naudint_irq	= OMAP44XX_IRQ_SYS_2N,
--- 
-1.7.5.3
+Nothing of any import.
+nodename won't get printed on an unlikely error message.
+I don't think it should go into 3.0.
+
+> >  	err = xenbus_switch_state(dev, XenbusStateConnected);
+> >  	if (err)
+> > -		xenbus_dev_fatal(dev, err, "switching to Connected state",
+> > +		xenbus_dev_fatal(dev, err, "%s: switching to Connected state",
+> >  				 dev->nodename);
+
 
