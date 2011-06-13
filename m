@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327Ab1FMWAd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 18:00:33 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:24705 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214Ab1FMWAb (ORCPT
+	id S1754315Ab1FMV47 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 17:56:59 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:43685 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753009Ab1FMV45 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 18:00:31 -0400
-Date: Mon, 13 Jun 2011 23:52:02 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: alsa-devel@alsa-project.org, Daniel Mack <zonque@gmail.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Torsten Schenk <torsten.schenk@zoho.com>, Takashi Iwai <tiwai@suse.de>,
-        Jaroslav Kysela <perex@perex.cz>
-Subject: [PATCH] Sound, 6Fire USB: Fix double-free bug in
- usb6fire_fw_ezusb_upload()
-Message-ID: <alpine.LNX.2.00.1106132346370.30934@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 13 Jun 2011 17:56:57 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <BANLkTikye+vb1WJ08rup23=APxuOENK+Tw@mail.gmail.com>
+References: <BANLkTikye+vb1WJ08rup23=APxuOENK+Tw@mail.gmail.com>
+Date: Mon, 13 Jun 2011 16:56:54 -0500
+Message-ID: <BANLkTin+E1mbMFURSADKC3bm5BeeczHW7A@mail.gmail.com>
+Subject: Re: [PATCHv5 0/4]Initial support for TPS65912 PMIC
+From: Margarita Olaya <magi@slimlogic.co.uk>
+To: linux-kernel@vger.kernel.org
+Cc: sameo@linux.intel.com, Graeme Gregory <gg@slimlogic.co.uk>,
+        grant.likely@secretlab.ca, "Girdwood, Liam" <lrg@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have a double-free bug in 
-sound/usb/6fire/firmware.c::usb6fire_fw_ezusb_upload().
-We already call release_firmware(fw) on line 258, so when we then do it 
-again after usb6fire_fw_ezusb_write() returns <0, we have a double-free.
-Easily fixed by just removing the last call to release_firmware().
+Hi Samuel,
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- firmware.c |    1 -
- 1 file changed, 1 deletion(-)
+On Thu, Jun 9, 2011 at 2:49 PM, Margarita Olaya <magi@slimlogic.co.uk> wrote:
+> Hi,
+>
+> This is the initial version of the TPS65912 PMIC, a power management IC
+> for multimedia products.
+>
+> The tps65912 consists of 4 DCDCs and 10 LDOs, that are able to supply
+> voltage to main processor and other components. The chip includes a
+> GPIO module.
+>
 
-  Patch against Linus' tree (head at 40779859de0f73b40390c6401a024d06cf024290).
+All the patches have the ack, are you going to take them via MFD tree?
 
-diff --git a/sound/usb/6fire/firmware.c b/sound/usb/6fire/firmware.c
-index a91719d..1e3ae33 100644
---- a/sound/usb/6fire/firmware.c
-+++ b/sound/usb/6fire/firmware.c
-@@ -270,7 +270,6 @@ static int usb6fire_fw_ezusb_upload(
- 	data = 0x00; /* resume ezusb cpu */
- 	ret = usb6fire_fw_ezusb_write(device, 0xa0, 0xe600, &data, 1);
- 	if (ret < 0) {
--		release_firmware(fw);
- 		snd_printk(KERN_ERR PREFIX "unable to upload ezusb "
- 				"firmware %s: end message.\n", fwname);
- 		return ret;
+Thanks,
+Margarita
 
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+> Changes from v4:
+> - Rename tps65912-gpio.c as gpio-tps65912.c
+> - Update the gpio makefile using the new name
+> - Keep alphabetic order in Kconfig
+> - Add base and ngpio to template_chip struct
+>
+> Margarita Olaya Cabrera (4):
+>  mfd: tps65912: Add new mfd device
+>  tps65912: irq: add interrupt controller
+>  tps65912: gpio: add gpio driver
+>  tps65912: add regulator driver
+>
+>  drivers/gpio/Kconfig                   |    6 +
+>  drivers/gpio/Makefile                  |    1 +
+>  drivers/gpio/gpio-tps65912.c           |  156 +++++++
+>  drivers/mfd/Kconfig                    |   22 +
+>  drivers/mfd/Makefile                   |    4 +
+>  drivers/mfd/tps65912-core.c            |  177 +++++++
+>  drivers/mfd/tps65912-i2c.c             |  139 ++++++
+>  drivers/mfd/tps65912-irq.c             |  225 +++++++++
+>  drivers/mfd/tps65912-spi.c             |  142 ++++++
+>  drivers/regulator/Kconfig              |    6 +
+>  drivers/regulator/Makefile             |    1 +
+>  drivers/regulator/tps65912-regulator.c |  800 ++++++++++++++++++++++++++++++++
+>  include/linux/mfd/tps65912.h           |  327 +++++++++++++
+>  13 files changed, 2006 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/gpio/gpio-tps65912.c
+>  create mode 100644 drivers/mfd/tps65912-core.c
+>  create mode 100644 drivers/mfd/tps65912-i2c.c
+>  create mode 100644 drivers/mfd/tps65912-irq.c
+>  create mode 100644 drivers/mfd/tps65912-spi.c
+>  create mode 100644 drivers/regulator/tps65912-regulator.c
+>  create mode 100644 include/linux/mfd/tps65912.h
+>
