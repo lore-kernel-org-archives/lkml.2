@@ -1,109 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761Ab1FMOKa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 10:10:30 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42456 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab1FMOK2 (ORCPT
+	id S1753423Ab1FMONU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 10:13:20 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:42243 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752403Ab1FMONQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 10:10:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=dQVnEnRkJUVq/7RNO4H9A6ohOBg8arvFb9Zxm7kLQXV3KX0tAnPJsmqL8coE7zTDKU
-         NN9/cfTgon/mNeuZuw/l7ipFyhu+XbjJ98w3VhDpbdjJMQZTWfxZz8q4Vwv2hYY3d7H9
-         tEiCo+RJtmUc9TqG9o9xxPoqOPp7xHJBoyXeM=
-Date: Mon, 13 Jun 2011 16:10:23 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
-        pedro@codesourcery.com
-Subject: Re: [PATCH 17/17] ptrace: implement PTRACE_LISTEN
-Message-ID: <20110613141023.GA8141@htj.dyndns.org>
-References: <1306710760-16440-1-git-send-email-tj@kernel.org>
- <1306710760-16440-18-git-send-email-tj@kernel.org>
- <20110602173330.GA20384@redhat.com>
+	Mon, 13 Jun 2011 10:13:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110602173330.GA20384@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110610133338.GD24636@n2100.arm.linux.org.uk>
+References: <E0D41E29EB0DAC4E9F3FF173962E9E940301FE2DED@dbde02.ent.ti.com>
+	<20110609124723.GA24636@n2100.arm.linux.org.uk>
+	<E0D41E29EB0DAC4E9F3FF173962E9E940301FE2EFB@dbde02.ent.ti.com>
+	<20110609163206.GB24636@n2100.arm.linux.org.uk>
+	<1307686397.10976.116.camel@vkoul-udesk3>
+	<E0D41E29EB0DAC4E9F3FF173962E9E940301FE337F@dbde02.ent.ti.com>
+	<20110610104318.GC24636@n2100.arm.linux.org.uk>
+	<E0D41E29EB0DAC4E9F3FF173962E9E940301FE3452@dbde02.ent.ti.com>
+	<20110610133338.GD24636@n2100.arm.linux.org.uk>
+Date: Mon, 13 Jun 2011 16:13:15 +0200
+Message-ID: <BANLkTimZ=v4W1hFJ7hvZRmyHMSU_3MmZEA@mail.gmail.com>
+Subject: Re: [RFC] dmaengine: add new api for preparing simple slave transfer
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Raju, Sundaram" <sundaram@ti.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "Koul, Vinod" <vinod.koul@intel.com>, Dan <dan.j.williams@intel.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Oleg.
+On Fri, Jun 10, 2011 at 3:33 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Fri, Jun 10, 2011 at 05:18:46PM +0530, Raju, Sundaram wrote:
+>> Now DMACs capable of 3D transfer, do transfer of the whole 1D
+>> buffer per sync received or even whole 2D buffer per sync received
+>> (based on the sync rate programmed in the DMAC).
+>
+> The only issue which I see that we don't cover is the case where you want
+> to describe a single buffer which is organised as N bytes to be transferred,
+> M following bytes to be skipped, N bytes to be transferred, M bytes to be
+> skipped.  I doubt there are many controllers which can be programmed with
+> both 'N' and 'M' parameters directly.
 
-On Thu, Jun 02, 2011 at 07:33:30PM +0200, Oleg Nesterov wrote:
-> >  	p_code = task_stopped_code(p, ptrace);
-> > -	if (unlikely(!p_code))
-> > +	if (unlikely(!p_code) || p->jobctl & JOBCTL_LISTENING)
-> >  		goto unlock_sig;
-> 
-> Up to you, but perhaps this JOBCTL_LISTENING check should go into
-> task_stopped_code() ? Or do you think we can't check it without
-> siglock?
+Sundaram is this how your controller works?
+I mean the hardware can skip over sequences like this?
 
-So updated.  I don't think it's gonna introduce any new race
-condition.
+When we added the config interface to DMAengine I originally included
+a "custom config" call, but Dan wanted me to keep it out until we
+had some specific usecase for it. FSLDMA recently started
+to use it.
 
-> > +		/*
-> > +		 * If NOTIFY is set, it means event happened between start
-> > +		 * of this trap and now.  Trigger re-trap immediately.
-> > +		 */
-> > +		if (child->jobctl & JOBCTL_TRAP_NOTIFY)
-> > +			signal_wake_up(child, true);
-> 
-> Again, I won't insist if you prefer signal_wake_up(), but afaics
-> wake_up_state(__TASK_TRACED) should be enough.
+Notice how dmaengine_slave_config() is implemented:
 
-Re-trapping from attach/detach paths are already using
-signal_wake_up() and I think it would be better to keep it consistent.
+static inline int dmaengine_slave_config(struct dma_chan *chan,
+					  struct dma_slave_config *config)
+{
+	return dmaengine_device_control(chan, DMA_SLAVE_CONFIG,
+			(unsigned long)config);
+}
 
-> > @@ -838,7 +840,7 @@ static void ptrace_trap_notify(struct task_struct *t)
-> >  	assert_spin_locked(&t->sighand->siglock);
-> >
-> >  	task_set_jobctl_pending(t, JOBCTL_TRAP_NOTIFY);
-> > -	signal_wake_up(t, 0);
-> > +	signal_wake_up(t, t->jobctl & JOBCTL_LISTENING);
-> >  }
-> 
-> OK. The only thing I can't understand is why prepare_signal(SIGCONT)
-> calls ptrace_trap_notify() unconditionally. How about
-> 
-> 		if (likely(!(t->ptrace & PT_SEIZED)))
-> 			wake_up_state(t, __TASK_STOPPED);
-> 	-	else
-> 	+	else if (why)
-> 			ptrace_trap_notify(t);
-> 
-> ?
+So what is passed to the driver is just an unsigned long.
 
-I'm having a Deja Vu.  Did I reply to this already?  Anyways, here are
-my rationales.
+This is actually modeled to be ioctl()-like so you can pass in a
+custom config to the same callback on the device driver,
+just use some other enumerator than DMA_SLAVE_CONFIG,
+say like FSLDMA already does with FSLDMA_EXTERNAL_START.
 
-* Tracer should be able to handle seemingly spurious notifications.
-  e.g. rapid SIGSTOP/CONT sequence may generate seemingly spurious
-  notifications even when it actually isn't spurious.
+Just put some enumerator in enum dma_ctrl_cmd in
+dmaengine.h such as SDMA_TEXAS_STRIDE_CONFIG and call
+like this:
 
-  SIGCONT always generating notification is correct and I don't see
-  good reasons to optimize it.  Moreover, I think it doesn't hurt to
-  have a way to reliably trigger spurious notification.
+/* However that config struct needs to look, basically */
+static struct sdma_ti_stride_cgf = {
+     take = M,
+     skip = N,
+};
 
-* If we're gonna optimize out SIGCONT processing if the target process
-  doesn't need it, the proper way would be testing stopped state and
-  exit before walking through the group list.  However, I think it's
-  done the current way for a reason - always trying to wake up on
-  SIGCONT is more robust in case something went out of sync &&
-  optimizing spurious SIGCONT doesn't really help anyone.
+ret = chan->device->device_control(chan, SDMA_TEXAS_STRIDE_CONFIG,
+&sdma_ti_stride_cfg);
 
-So, I'd like to keep this one as it currently is.  It's more robust
-and useful this way.
+Or something like this.
 
-Thanks.
-
--- 
-tejun
+Thanks,
+Linus Walleij
