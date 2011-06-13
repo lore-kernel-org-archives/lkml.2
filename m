@@ -1,78 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805Ab1FMOzE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 10:55:04 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:50444 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587Ab1FMOy7 (ORCPT
+	id S1753548Ab1FMPCv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 11:02:51 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:54796 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751215Ab1FMPCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 10:54:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=FRWprrYheDXoYwIOPbaZtI1SczSsTto0w4DawarpojjOY9oxRnJpQt0G7sQMXEGWQr
-         1F3VP5Z0ZbWy+Gj7jRGNlM23csKB3Do4tje1bNdpE9Iei8EiWjKOOTbxrlZEm+rMM7l1
-         kix9NYC8rYLdwqmJFEgQk6tUe6WK7JKCapSmI=
-Date: Mon, 13 Jun 2011 23:54:43 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v3 03/10] Add additional isolation mode
-Message-ID: <20110613145443.GB1414@barrios-desktop>
-References: <cover.1307455422.git.minchan.kim@gmail.com>
- <b72a86ed33c693aeccac0dba3fba8c13145106ab.1307455422.git.minchan.kim@gmail.com>
- <20110612144521.GB24323@tiehlicka.suse.cz>
+	Mon, 13 Jun 2011 11:02:50 -0400
+Date: Mon, 13 Jun 2011 09:02:47 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Eric Miao <eric.miao@linaro.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH] gpio/plat-pxa: fix clash with gpiolib namespace
+Message-ID: <20110613150247.GA18161@ponder.secretlab.ca>
+References: <1307954539-5681-1-git-send-email-linus.walleij@stericsson.com>
+ <BANLkTikkT6ZvsSycu13Fnsek43f9+YUkVA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110612144521.GB24323@tiehlicka.suse.cz>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTikkT6ZvsSycu13Fnsek43f9+YUkVA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 12, 2011 at 04:45:21PM +0200, Michal Hocko wrote:
-> On Tue 07-06-11 23:38:16, Minchan Kim wrote:
-> > There are some places to isolate lru page and I believe
-> > users of isolate_lru_page will be growing.
-> > The purpose of them is each different so part of isolated pages
-> > should put back to LRU, again.
-> > 
-> > The problem is when we put back the page into LRU,
-> > we lose LRU ordering and the page is inserted at head of LRU list.
-> > It makes unnecessary LRU churning so that vm can evict working set pages
-> > rather than idle pages.
+On Mon, Jun 13, 2011 at 05:03:50PM +0800, Eric Miao wrote:
+> On Mon, Jun 13, 2011 at 4:42 PM, Linus Walleij
+> <linus.walleij@stericsson.com> wrote:
+> > From: Linus Walleij <linus.walleij@linaro.org>
+> >
+> > The PXA platform code has a static inline helper called
+> > gpio_to_chip which clashes with the gpiolib namespace if we
+> > try to expose the function with the same name from gpiolib,
+> > and it's still confusing even if we don't do that. So rename
+> > it to gpio_to_pxachip().
+> >
+> > Reported-by: H Hartley Sweeten <hartleys@visionengravers.com>
+> > Cc: Eric Miao <eric.miao@linaro.org>
+> > Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 > 
-> I guess that, although this is true, it doesn't fit in with this patch
-> very much because this patch doesn't fix this problem. It is a
-> preparation for for further work. I would expect this description with
-> the core patch that actlually handles this issue.
+> OK, applied to 'devel'.
 
-Okay.
+Is the pxa gpio driver going to be moved to drivers/gpio this cycle?
+If so, you'll probably want to keep the gpio changes in a separate
+branch that can be merged both into gpio/next and your devel branch,
+just in case there ends up being merge issues between our branches in
+linux-next.
+
+g.
 
 > 
-> > 
-> > This patch adds new modes when we isolate page in LRU so we don't isolate pages
-> > if we can't handle it. It could reduce LRU churning.
-> > 
-> > This patch doesn't change old behavior. It's just used by next patches.
-> 
-> It doesn't because there is not user of those flags but maybe it would
-> be better to have those to see why it actually can reduce LRU
-> isolations.
-
-Yes. Mel already pointed it out.
-I will merge patches in next version.
-And I have a idea to reduce lru_lock Mel mentiond
-So maybe I will include it in next version, too.
-But, now I have no time to revise it :(
-
--- 
-Kind regards,
-Minchan Kim
+> > ---
+> >  arch/arm/plat-pxa/gpio.c |   10 +++++-----
+> >  1 files changed, 5 insertions(+), 5 deletions(-)
+> >
+> > diff --git a/arch/arm/plat-pxa/gpio.c b/arch/arm/plat-pxa/gpio.c
+> > index 48ebb94..a11dc36 100644
+> > --- a/arch/arm/plat-pxa/gpio.c
+> > +++ b/arch/arm/plat-pxa/gpio.c
+> > @@ -50,7 +50,7 @@ static inline void __iomem *gpio_chip_base(struct gpio_chip *c)
+> >        return container_of(c, struct pxa_gpio_chip, chip)->regbase;
+> >  }
+> >
+> > -static inline struct pxa_gpio_chip *gpio_to_chip(unsigned gpio)
+> > +static inline struct pxa_gpio_chip *gpio_to_pxachip(unsigned gpio)
+> >  {
+> >        return &pxa_gpio_chips[gpio_to_bank(gpio)];
+> >  }
+> > @@ -161,7 +161,7 @@ static int pxa_gpio_irq_type(struct irq_data *d, unsigned int type)
+> >        int gpio = irq_to_gpio(d->irq);
+> >        unsigned long gpdr, mask = GPIO_bit(gpio);
+> >
+> > -       c = gpio_to_chip(gpio);
+> > +       c = gpio_to_pxachip(gpio);
+> >
+> >        if (type == IRQ_TYPE_PROBE) {
+> >                /* Don't mess with enabled GPIOs using preconfigured edges or
+> > @@ -230,7 +230,7 @@ static void pxa_gpio_demux_handler(unsigned int irq, struct irq_desc *desc)
+> >  static void pxa_ack_muxed_gpio(struct irq_data *d)
+> >  {
+> >        int gpio = irq_to_gpio(d->irq);
+> > -       struct pxa_gpio_chip *c = gpio_to_chip(gpio);
+> > +       struct pxa_gpio_chip *c = gpio_to_pxachip(gpio);
+> >
+> >        __raw_writel(GPIO_bit(gpio), c->regbase + GEDR_OFFSET);
+> >  }
+> > @@ -238,7 +238,7 @@ static void pxa_ack_muxed_gpio(struct irq_data *d)
+> >  static void pxa_mask_muxed_gpio(struct irq_data *d)
+> >  {
+> >        int gpio = irq_to_gpio(d->irq);
+> > -       struct pxa_gpio_chip *c = gpio_to_chip(gpio);
+> > +       struct pxa_gpio_chip *c = gpio_to_pxachip(gpio);
+> >        uint32_t grer, gfer;
+> >
+> >        c->irq_mask &= ~GPIO_bit(gpio);
+> > @@ -252,7 +252,7 @@ static void pxa_mask_muxed_gpio(struct irq_data *d)
+> >  static void pxa_unmask_muxed_gpio(struct irq_data *d)
+> >  {
+> >        int gpio = irq_to_gpio(d->irq);
+> > -       struct pxa_gpio_chip *c = gpio_to_chip(gpio);
+> > +       struct pxa_gpio_chip *c = gpio_to_pxachip(gpio);
+> >
+> >        c->irq_mask |= GPIO_bit(gpio);
+> >        update_edge_detect(c);
+> > --
+> > 1.7.3.2
+> >
+> >
+> > _______________________________________________
+> > linux-arm-kernel mailing list
+> > linux-arm-kernel@lists.infradead.org
+> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> >
