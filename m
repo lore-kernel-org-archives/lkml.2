@@ -1,108 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500Ab1FMRGr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 13:06:47 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:45628 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753966Ab1FMRGq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 13:06:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=dQFykMkGZaSzFfFLJ5IEzBhZGM6m1a3eFpvjv+OpMwpb5NdBhECAO5NOOX0H1Gj4uq
-         CNuJOXVOZzrXoV08sLpdPgXeZGYFteORoEqsqSZpezGO2yHJupNOZn4g2zR1lda3NYTY
-         5OnwHNkhsGq245Y5i1SNLIx1/fGhiiTwLqGzo=
+	id S1754559Ab1FMRJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 13:09:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61895 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754072Ab1FMRJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 13:09:24 -0400
+Date: Mon, 13 Jun 2011 13:09:20 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Joe Perches <joe@perches.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] blk-throttle: Make total_nr_queued unsigned
+Message-ID: <20110613170920.GC633@redhat.com>
+References: <f5e32f63cf03e8fb6f6b9c8e66a6ac0c4d5c3d45.1307980331.git.joe@perches.com>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=2kw+8ijdPDNva11Ct9vr0p_uhmA@mail.gmail.com>
-References: <1307777464.25182.3.camel@localhost.localdomain>
- <BANLkTi=SQb6EL4+bdH2Q+iwaW9E3i+48Ew@mail.gmail.com> <20110613092940.GB8282@elte.hu>
- <BANLkTi=eLODKcTfXb8Z1eAy4KnSE16icow@mail.gmail.com> <20110613141408.GA16126@elte.hu>
- <BANLkTimctV0Tp7PP0CaGvmxmxh=yw6dRvw@mail.gmail.com> <BANLkTi=2kw+8ijdPDNva11Ct9vr0p_uhmA@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Mon, 13 Jun 2011 13:06:26 -0400
-X-Google-Sender-Auth: zxZYSpuzigxOZRHjrKvEcngWajg
-Message-ID: <BANLkTinn449JN_jAeO9M_AuZ1B2+7hgj4A@mail.gmail.com>
-Subject: Re: [PATCH] x86, vsyscall: Fix build warning in vsyscall_64.c
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, hpa@zytor.com, tglx@linutronix.de,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <f5e32f63cf03e8fb6f6b9c8e66a6ac0c4d5c3d45.1307980331.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 1:05 PM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
-> On Mon, Jun 13, 2011 at 8:18 PM, Andrew Lutomirski <luto@mit.edu> wrote:
->> On Mon, Jun 13, 2011 at 10:14 AM, Ingo Molnar <mingo@elte.hu> wrote:
->>>
->>> * Andrew Lutomirski <luto@mit.edu> wrote:
->>>
->>>> On Mon, Jun 13, 2011 at 5:29 AM, Ingo Molnar <mingo@elte.hu> wrote:
->>>> >
->>>> > * Andrew Lutomirski <luto@mit.edu> wrote:
->>>> >
->>>> >> On Sat, Jun 11, 2011 at 3:31 AM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
->>>> >> > Due to commit 5cec93c216db77 (x86-64: Emulate legacy vsyscalls), we get the following warning:
->>>> >> >
->>>> >> >   arch/x86/kernel/vsyscall_64.c: In function ‘do_emulate_vsyscall’:
->>>> >> >   arch/x86/kernel/vsyscall_64.c:111:7: warning: ‘ret’ may be used uninitialized in this function
->>>> >>
->>>> >> What's the code path that uses ret without initializing it?
->>>> >
->>>> > If the code is correct but GCC got confused then please use the
->>>> > simplest possible patch to help GCC find its way around the code.
->>>>
->>>> The simplest patch is to mark ret as uninitialized_var.
->>>
->>> No - that primitive really sucks as it might hide *future* debug
->>> warnings and silently break code.
->>>
->>> The problem with uninitialized_var() is that such code:
->>>
->>>        int test(void)
->>>        {
->>>                int uninitialized_var(ret);
->>>
->>>                return ret;
->>>        }
->>>
->>> Builds without a single warning but it is very broken code.
->>>
->>> So if we use uninitialized_var() and the code is changed in the
->>> future to have the above broken sequence, we'll have a silent runtime
->>> failure ...
->>>
->>> So we try to avoid using uninitialized_var() in arch/x86/ and use
->>> explicit initialization instead.
->>>
->>> That way GCC that can see through the flow will optimize away the
->>> superfluous initialization - GCC versions that are older will
->>> generate one more instruction but that's OK.
->>
->> Fair enough.
->>
->> Unfortunately there doesn't seem to be an EKERNELBUG error code, and
->> initializing to EFAULT seems silly.  0 is probably harmless.
->>
->> I'll wait awhile longer for that GCC version, since there might be a
->> better fix.  In any case, it would be nice for the changelog entry to
->> say which version has a warning that's being worked around.
->>
-> Well, I think I already posted the GCC version in this thread. Anyway,
-> for you're convenience, here is my GCC version: gcc version 4.5.1
-> 20100924 (Red Hat 4.5.1-4). I'm using Fedora Core 14.
+On Mon, Jun 13, 2011 at 08:54:48AM -0700, Joe Perches wrote:
+> cc: Vivek Goyal <vgoyal@redhat.com>
+> 
+> The total of two unsigned values should also be unsigned.
+> 
+> Update throtl_log output to unsigned.
+> Update total_nr_queued test to non-zero to be the
+> same as the other total_nr_queued tests.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-Sorry -- I think I managed to read every email in the thread except
-that one.  Will test tonight.
+Thanks. Looks good to me.
 
---Andy
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
->
->
-> Thanks,
-> Rakib
->
+Vivek
+
+> ---
+>  block/blk-throttle.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+> index 3689f83..f6a7941 100644
+> --- a/block/blk-throttle.c
+> +++ b/block/blk-throttle.c
+> @@ -142,9 +142,9 @@ static inline struct throtl_grp *tg_of_blkg(struct blkio_group *blkg)
+>  	return NULL;
+>  }
+>  
+> -static inline int total_nr_queued(struct throtl_data *td)
+> +static inline unsigned int total_nr_queued(struct throtl_data *td)
+>  {
+> -	return (td->nr_queued[0] + td->nr_queued[1]);
+> +	return td->nr_queued[0] + td->nr_queued[1];
+>  }
+>  
+>  static inline struct throtl_grp *throtl_ref_get_tg(struct throtl_grp *tg)
+> @@ -927,7 +927,7 @@ static int throtl_dispatch(struct request_queue *q)
+>  
+>  	bio_list_init(&bio_list_on_stack);
+>  
+> -	throtl_log(td, "dispatch nr_queued=%d read=%u write=%u",
+> +	throtl_log(td, "dispatch nr_queued=%u read=%u write=%u",
+>  			total_nr_queued(td), td->nr_queued[READ],
+>  			td->nr_queued[WRITE]);
+>  
+> @@ -970,7 +970,7 @@ throtl_schedule_delayed_work(struct throtl_data *td, unsigned long delay)
+>  	struct delayed_work *dwork = &td->throtl_work;
+>  
+>  	/* schedule work if limits changed even if no bio is queued */
+> -	if (total_nr_queued(td) > 0 || td->limits_changed) {
+> +	if (total_nr_queued(td) || td->limits_changed) {
+>  		/*
+>  		 * We might have a work scheduled to be executed in future.
+>  		 * Cancel that and schedule a new one.
+> -- 
+> 1.7.6.rc1
