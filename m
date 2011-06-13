@@ -1,125 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab1FMNf2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 09:35:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15355 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752911Ab1FMNfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 09:35:22 -0400
-Date: Mon, 13 Jun 2011 16:35:13 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Krishna Kumar2 <krkumar2@in.ibm.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Carsten Otte <cotte@de.ibm.com>, habanero@linux.vnet.ibm.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, kvm@vger.kernel.org,
-        lguest@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux390@de.ibm.com,
-        netdev@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, steved@us.ibm.com,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>,
-        virtualization@lists.linux-foundation.org, Shirley Ma <xma@us.ibm.com>
-Subject: Re: [PATCHv2 RFC 0/4] virtio and vhost-net capacity handling
-Message-ID: <20110613133513.GA29884@redhat.com>
-References: <cover.1307029008.git.mst@redhat.com>
- <20110607160830.GB17581@redhat.com>
- <OFE36F9C2B.43D9DB04-ON652578AE.0048E1AB-652578AE.004A1462@in.ibm.com>
+	id S1753221Ab1FMNhe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 09:37:34 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:52411 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752911Ab1FMNhb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 09:37:31 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] fb.h: ARM uses __raw_{read/write}
+Date: Mon, 13 Jun 2011 15:37:10 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-fbdev@vger.kernel.org
+References: <201106101731.08578.hartleys@visionengravers.com> <20110613040003.GA29731@linux-sh.org> <20110613100819.GA26914@1n450.cable.virginmedia.net>
+In-Reply-To: <20110613100819.GA26914@1n450.cable.virginmedia.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <OFE36F9C2B.43D9DB04-ON652578AE.0048E1AB-652578AE.004A1462@in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106131537.10698.arnd@arndb.de>
+X-Provags-ID: V02:K0:eAFWM8OhZPiug7SLnYZ5Jb5mRdrN9aKe8ikHegHznwk
+ fEFK1S4JOmx8GN8IIsCZPo7MA0T0PymQSgmCNyU22McN31mVrx
+ /Z6wjcvUGeV1AwMBVcWv76xr+MvtQUXitbkwS14I8wtoHKNUKx
+ V9Bt15jxYsWOiP+NTXlJJuNDbjfVFZqAzrJRFiskeF+NruhtS8
+ mWu8A38cQaGy0o5eSbOpg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 07:02:27PM +0530, Krishna Kumar2 wrote:
-> "Michael S. Tsirkin" <mst@redhat.com> wrote on 06/07/2011 09:38:30 PM:
-> 
-> > > This is on top of the patches applied by Rusty.
-> > >
-> > > Warning: untested. Posting now to give people chance to
-> > > comment on the API.
-> >
-> > OK, this seems to have survived some testing so far,
-> > after I dropped patch 4 and fixed build for patch 3
-> > (build fixup patch sent in reply to the original).
-> >
-> > I'll be mostly offline until Sunday, would appreciate
-> > testing reports.
-> 
-> Hi Michael,
-> 
-> I ran the latest patches with 1K I/O (guest->local host) and
-> the results are (60 sec run for each test case):
+On Monday 13 June 2011 12:08:19 Catalin Marinas wrote:
+> The change proposed by Hartley wouldn't make much difference from the
+> current volatile accesses (__raw_* accessors are implemented as volatile
+> on ARM).
 
-Hi!
-Did you apply this one:
-[PATCHv2 RFC 4/4] Revert "virtio: make add_buf return capacity remaining"
-?
+I guess it would mainly make a difference if we get a platform where
+the PCI bus window is not in the same address space as the regular
+physical memory and the accessors actually need to do a computation
+on the address. AFAICT, ARM does not currently have any such platform
+and I would hope that it says that way.
 
-It turns out that that patch has a bug and should be reverted,
-only patches 1-3 should be applied.
+> I think the memcpy_(from|to)io could be optimised on ARM to only add a
+> barrier before or after he copying loop.
 
-Could you confirm please?
+Agreed, good idea.
 
-
-> ___________________/
-> #sessions   BW%       SD%
-> ______________________________
-> 1           -25.6     47.0
-> 2           -29.3     22.9
-> 4              .8     1.6
-> 8             1.6     0
-> 16          -1.6      4.1
-> 32          -5.3      2.1
-> 48           11.3    -7.8
-> 64          -2.8      .7
-> 96          -6.2      .6
-> 128         -10.6     12.7
-> ______________________________
-> BW: -4.8     SD: 5.4
-> 
-> I tested it again to see if the regression is fleeting (since
-> the numbers vary quite a bit for 1K I/O even between guest->
-> local host), but:
-> 
-> ______________________________
-> #sessions  BW%     SD%
-> ______________________________
-> 1          14.0    -17.3
-> 2          19.9    -11.1
-> 4          7.9     -15.3
-> 8          9.6     -13.1
-> 16         1.2     -7.3
-> 32        -.6      -13.5
-> 48        -28.7     10.0
-> 64        -5.7     -.7
-> 96        -9.4     -8.1
-> 128       -9.4      .7
-> ______________________________
-> BW: -3.7     SD: -2.0
-> 
-> 
-> With 16K, there was an improvement in SD, but
-> higher sessions seem to slightly degrade BW/SD:
-> 
-> ______________________________
-> #sessions  BW%      SD%
-> ______________________________
-> 1          30.9    -25.0
-> 2          16.5    -19.4
-> 4         -1.3      7.9
-> 8          1.4      6.2
-> 16         3.9     -5.4
-> 32         0        4.3
-> 48        -.5        .1
-> 64         32.1    -1.5
-> 96        -2.1      23.2
-> 128       -7.4      3.8
-> ______________________________
-> BW: 5.0          SD: 7.5
-> 
-> 
-> Thanks,
-> 
-> - KK
+	Arnd
