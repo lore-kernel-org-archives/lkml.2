@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696Ab1FMOuV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 10:50:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18388 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753561Ab1FMOuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 10:50:19 -0400
-Date: Mon, 13 Jun 2011 10:50:12 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] ACPI, APEI, Add APEI _OSC support
-Message-ID: <20110613145012.GA1924@redhat.com>
-References: <1306303538-30524-1-git-send-email-ying.huang@intel.com>
+	id S1753805Ab1FMOzE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 10:55:04 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:50444 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753587Ab1FMOy7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 10:54:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=FRWprrYheDXoYwIOPbaZtI1SczSsTto0w4DawarpojjOY9oxRnJpQt0G7sQMXEGWQr
+         1F3VP5Z0ZbWy+Gj7jRGNlM23csKB3Do4tje1bNdpE9Iei8EiWjKOOTbxrlZEm+rMM7l1
+         kix9NYC8rYLdwqmJFEgQk6tUe6WK7JKCapSmI=
+Date: Mon, 13 Jun 2011 23:54:43 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v3 03/10] Add additional isolation mode
+Message-ID: <20110613145443.GB1414@barrios-desktop>
+References: <cover.1307455422.git.minchan.kim@gmail.com>
+ <b72a86ed33c693aeccac0dba3fba8c13145106ab.1307455422.git.minchan.kim@gmail.com>
+ <20110612144521.GB24323@tiehlicka.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1306303538-30524-1-git-send-email-ying.huang@intel.com>
+In-Reply-To: <20110612144521.GB24323@tiehlicka.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 02:05:38PM +0800, Huang Ying wrote:
-> In APEI firmware first mode, hardware error is reported by hardware to
-> firmware firstly, then firmware reports the error to Linux in a GHES
-> error record via POLL/SCI/IRQ/NMI etc.
+On Sun, Jun 12, 2011 at 04:45:21PM +0200, Michal Hocko wrote:
+> On Tue 07-06-11 23:38:16, Minchan Kim wrote:
+> > There are some places to isolate lru page and I believe
+> > users of isolate_lru_page will be growing.
+> > The purpose of them is each different so part of isolated pages
+> > should put back to LRU, again.
+> > 
+> > The problem is when we put back the page into LRU,
+> > we lose LRU ordering and the page is inserted at head of LRU list.
+> > It makes unnecessary LRU churning so that vm can evict working set pages
+> > rather than idle pages.
 > 
-> This may result in some issues if OS has no full APEI support.  So
-> some firmware implementation will work in a back-compatible mode by
-> default.  Where firmware will only notify OS in old-fashion, without
-> GHES record.  For example, for a fatal hardware error, only NMI is
-> signaled, no GHES record.
+> I guess that, although this is true, it doesn't fit in with this patch
+> very much because this patch doesn't fix this problem. It is a
+> preparation for for further work. I would expect this description with
+> the core patch that actlually handles this issue.
+
+Okay.
+
 > 
-> To gain full APEI power on these machines, a special APEI _OSC needs
-> to be evaluated to tell firmware that Linux has full APEI support.
-> This patch add the APEI _OSC support.
+> > 
+> > This patch adds new modes when we isolate page in LRU so we don't isolate pages
+> > if we can't handle it. It could reduce LRU churning.
+> > 
+> > This patch doesn't change old behavior. It's just used by next patches.
+> 
+> It doesn't because there is not user of those flags but maybe it would
+> be better to have those to see why it actually can reduce LRU
+> isolations.
 
-Using an Intel box I have over at RedHat, I was able to use this patch to
-get error injection (EINJ) to provide me a GHES record.  Prior to this 
-patch I would just get unknown NMIs.
+Yes. Mel already pointed it out.
+I will merge patches in next version.
+And I have a idea to reduce lru_lock Mel mentiond
+So maybe I will include it in next version, too.
+But, now I have no time to revise it :(
 
-Talking with Matthew Garret, I guess it seems that uuids like this are
-typical for ACPI.
-
-I can't speak for all the ACPI parts, but the patch looks simple and
-corret from my perspective.
-
-Reviewed-and-Tested-by: Don Zickus <dzickus@redhat.com>
+-- 
+Kind regards,
+Minchan Kim
