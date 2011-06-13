@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301Ab1FMJ3U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 05:29:20 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59506 "EHLO mx1.suse.de"
+	id S1751407Ab1FMJ34 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 05:29:56 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:56728 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750716Ab1FMJ3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 05:29:17 -0400
-Date: Mon, 13 Jun 2011 11:29:15 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Ying Han <yinghan@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 6/8] vmscan: change zone_nr_lru_pages to take memcg
- instead of scan control
-Message-ID: <20110613092915.GB10563@tiehlicka.suse.cz>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
- <1306909519-7286-7-git-send-email-hannes@cmpxchg.org>
+	id S1750716Ab1FMJ3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 05:29:55 -0400
+Date: Mon, 13 Jun 2011 11:29:40 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Rakib Mullick <rakib.mullick@gmail.com>, hpa@zytor.com, tglx@linutronix.de,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, vsyscall: Fix build warning in vsyscall_64.c
+Message-ID: <20110613092940.GB8282@elte.hu>
+References: <1307777464.25182.3.camel@localhost.localdomain>
+ <BANLkTi=SQb6EL4+bdH2Q+iwaW9E3i+48Ew@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1306909519-7286-7-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=SQb6EL4+bdH2Q+iwaW9E3i+48Ew@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 01-06-11 08:25:17, Johannes Weiner wrote:
-> This function only uses sc->mem_cgroup from the scan control.  Change
-> it to take a memcg argument directly, so callsites without an actual
-> reclaim context can use it as well.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+* Andrew Lutomirski <luto@mit.edu> wrote:
+
+> On Sat, Jun 11, 2011 at 3:31 AM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
+> > Due to commit 5cec93c216db77 (x86-64: Emulate legacy vsyscalls), we get the following warning:
+> >
+> >   arch/x86/kernel/vsyscall_64.c: In function ‘do_emulate_vsyscall’:
+> >   arch/x86/kernel/vsyscall_64.c:111:7: warning: ‘ret’ may be used uninitialized in this function
+> 
+> What's the code path that uses ret without initializing it?
+
+If the code is correct but GCC got confused then please use the 
+simplest possible patch to help GCC find its way around the code.
+
+Thanks,
+
+	Ingo
