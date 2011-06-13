@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507Ab1FMLwp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 07:52:45 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:33492 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851Ab1FMLwn (ORCPT
+	id S1752528Ab1FMLyI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 07:54:08 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:56064 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225Ab1FMLyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 07:52:43 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6375"; a="97303652"
-From: "Tanya Brokhman" <tlinder@codeaurora.org>
-To: <balbi@ti.com>
-Cc: <greg@kroah.com>, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>,
-        "'open list:FREESCALE USB PER...'" <linuxppc-dev@lists.ozlabs.org>,
-        "'open list:OMAP USB SUPPORT'" <linux-omap@vger.kernel.org>
-References: <1307877290-26672-1-git-send-email-tlinder@codeaurora.org> <20110613092438.GK3633@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20110613092438.GK3633@legolas.emea.dhcp.ti.com>
-Subject: RE: [PATCH] usb:gadget: use min_t() macro instead of min()
-Date: Mon, 13 Jun 2011 14:52:34 +0300
-Message-ID: <03b901cc29c0$6538e970$2faabc50$@org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+	Mon, 13 Jun 2011 07:54:05 -0400
+X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=1ZhljathgHUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=D19gQVrFAAAA:8 a=4h7gygm8R-dtiupS-j4A:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 03/15] tracing: Add a free on close control mechanism
+ for buffer_size_kb
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20110613114904.GD10960@elte.hu>
+References: <20110609172744.333794089@goodmis.org>
+	 <20110609172910.950101158@goodmis.org> <20110613101248.GC30962@elte.hu>
+	 <1307965185.9218.53.camel@gandalf.stny.rr.com>
+	 <20110613114904.GD10960@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 13 Jun 2011 07:54:03 -0400
+Message-ID: <1307966043.9218.63.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-thread-index: Acwpq7zDcIN/UxAoS+2W8nU+iBOasgAE+UYQ
-Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2011-06-13 at 13:49 +0200, Ingo Molnar wrote:
+
+> > https://lkml.org/lkml/2011/3/17/366
+> > 
+> > I didn't really like adding another file to the debugfs system, and 
+> > recommended the ioctl. It seemed like a nice "unix" fit. But if you 
+> > want to go back to the Vaibhav's original method, which will stay 
+> > in the frame of "human-parseable and scripted". We could do that.
 > 
-> On Sun, Jun 12, 2011 at 02:14:46PM +0300, Tatyana Brokhman wrote:
-> > Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
-> 
-> I need a sensible commit log for this. Why do we need to change all
-> min() to min_t() ?
-> 
+> Yes, i think so - the *only* point of the /debug/tracing/ muck is 
+> that it's scriptable and human parseable. If Google wants to use it 
+> for more than that then they should help us enhance the perf syscall 
+> ABI for tracing ...
 
-Actually, Alan asked me to make this change in one place in dummy_hcd. I
-wasn't aware of the min_t macro before that. So when I searched the code for
-other places I found quite a few and just thought that it would be "nicer"
-to use min_t() instead of min() with casting. 
-So we don't "need" to make this change. Everything works as is. This patch
-only makes the code look nicer, nothing more.
-I can elaborate the above in the commit log if you want.
+Hi Vaibhav,
 
+Sorry for the spin around, but could you resubmit your original patch?
 
-Thanks,
-Tanya Brokhman
----
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Thanks!
 
-
+-- Steve
 
 
