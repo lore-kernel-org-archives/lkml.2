@@ -1,49 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab1FMWMO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 18:12:14 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:44338 "EHLO mail.vyatta.com"
+	id S1755073Ab1FMWMa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 18:12:30 -0400
+Received: from mail.perches.com ([173.55.12.10]:2868 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753841Ab1FMWMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 18:12:12 -0400
-Date: Mon, 13 Jun 2011 18:12:12 -0400
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Stephen Hemminger <shemminger@linux-foundation.org>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sky2: avoid using uninitialized variable
-Message-ID: <20110613181212.571f8e76@s6510.ftrdhcpuser.net>
-In-Reply-To: <xr93vcw9s9zc.fsf@gthelen.mtv.corp.google.com>
-References: <xr93vcw9s9zc.fsf@gthelen.mtv.corp.google.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1755053Ab1FMWM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 18:12:29 -0400
+Subject: Re: [PATCH 2/3] usbip: dump the port status difference
+From: Joe Perches <joe@perches.com>
+To: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Matt Mooney <mfm@muteddisk.com>,
+        Max Vozeler <max@hinterhof.net>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4DF68159.1090206@freemail.hu>
+References: <4DF68159.1090206@freemail.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Jun 2011 15:12:26 -0700
+Message-ID: <1308003146.26699.43.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Jun 2011 14:21:59 -0700
-Greg Thelen <gthelen@google.com> wrote:
+On Mon, 2011-06-13 at 23:30 +0200, Németh Márton wrote:
+> From: Márton Németh <nm127@freemail.hu>
+> 
+> Change the dump function to
+> really show the differences in the status bit changes
+> +static void dump_port_status_diff(u32 prev_status, u32 new_status)
+>  {
+>  	int i = 0;
 
-> I am not sure if 0 or ~0 would be a better choice in the gm_phy_read()
-> error case.  I used 0.  A more complete solution might be to plumb up
-> error handling to the callers of gm_phy_read().
-> 
-> ==
-> From 37486219a3d93881f3b2619a4b2bb21be62db7d4 Mon Sep 17 00:00:00 2001
-> From: Greg Thelen <gthelen@google.com>
-> Date: Mon, 13 Jun 2011 14:09:07 -0700
-> Subject: [PATCH] sky2: avoid using uninitialized variable
-> 
-> Prior to this change gm_phy_read() could return an uninitialized
-> variable if __gm_phy_read() failed.
-> 
-> This change returns zero in the failure case.
-> 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
+> -	pr_debug("status %08x:", status);
+> +	pr_debug("status %08x -> %08x:", prev_status, new_status);
+>  	for (i = 0; i < 32; i++) {
+> -		if (status & (1 << i))
+> -			pr_debug(" %s", bit_desc[i]);
+> +		if (!(prev_status & (1 << i)) &&
+> +		      new_status & (1 << i)) {
+> +			pr_debug(" +%s", bit_desc[i]);
+> +		} else if (prev_status & (1 << i) &&
+> +			   !(new_status & (1 << i))) {
+> +			pr_debug(" -%s", bit_desc[i]);
+> +		} else if (prev_status & (1 << i) &&
+> +			   new_status & (1 << i)) {
+> +			pr_debug("  %s", bit_desc[i]);
+> +		}
+>  	}
+>  	pr_debug("\n");
 
-Shouldn't the callers be changed to check rather than just returning
-0 and masking the problem.
+trivia:
+
+I think the output isn't quite what you might expect.
+It could be interleaved by pr_cont from a different
+thread. 
+
+I think this might be a bit more readable as below and
+this doesn't use implicit newlines by successive pr_<level>.
+
+static void dump_port_status_diff(u32 old_status, u32 new_status)
+{
+	int i = 0;
+	u32 bit = 1;
+
+	char change;
+	pr_debug("status old->new %08x -> %08x\n", old_status, new_status);
+	while (bit) {
+		u32 old = old_status & bit;
+		u32 new = new_status & bit;
+		char change;
+
+		if (!old && new)
+			change = '+';
+		else if (old && !new)
+			change = '-';
+		else
+			change = ' ';
+		if (old || new)
+			pr_debug(" %c%s\n", change, bit_desc[i]);
+		bit <<= 1;
+		i++;
+  	}
+}
+
+I don't know if this is in any sort of fast-path or if
+gcc will completely optimize this completely away if
+pr_debug isn't declared, but maybe surround the function
+implementation with
+
+static void dump_port_status_diff(u32 prev_status, u32 new_status)
+{
+#ifdef DEBUG
+	...
+#endif
+}
+
 
