@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab1FMAwj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 20:52:39 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44319 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754253Ab1FMAwh (ORCPT
+	id S1754774Ab1FMBEP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 21:04:15 -0400
+Received: from mga01.intel.com ([192.55.52.88]:59049 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754286Ab1FMBEO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 20:52:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to;
-        b=ZJyM++xOklJvzQlJEHsCSAPTS7rE3rbQfqTrUHjdBYRh8YwJcL4arHwr0Q1wOloegS
-         9lvXdeug43QxDA0zXhOyeNtHzRXJwrmfvLuhd7mC50QzZjBGLAS5/tC+vVtuqgfnLHcx
-         EqpoCj3uSwIn2k2nBa8sTcoysrSIYdozWTtN4=
-Date: Sun, 12 Jun 2011 18:51:22 -0600
-From: Jean Sacren <sakiwit@gmail.com>
-To: Andy Isaacson <adi@hexapodia.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] kernel/sched.c: Fix array initialization typo
-Message-ID: <20110613005122.GC12311@mail.gmail.com>
-References: <20110612213107.GA12816@mail.gmail.com>
- <20110612213549.GA21620@p183.telecom.by>
- <20110612220116.GB12311@mail.gmail.com>
- <20110612230901.GB11580@hexapodia.org>
+	Sun, 12 Jun 2011 21:04:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,356,1304319600"; 
+   d="scan'208";a="15435796"
+From: Andi Kleen <andi@firstfloor.org>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "linux-btrfs" <linux-btrfs@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Btrfs updates
+References: <1307879298-sup-3080@shiny>
+Date: Sun, 12 Jun 2011 18:02:54 -0700
+In-Reply-To: <1307879298-sup-3080@shiny> (Chris Mason's message of "Sun, 12
+	Jun 2011 07:57:34 -0400")
+Message-ID: <m262oar1a9.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110612230901.GB11580@hexapodia.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Isaacson <adi@hexapodia.org>
-Date: Sun, 12 Jun 2011 16:09:01 -0700
->
-> It is a standard C idiom for defining array contents.  If you write
-> int x[] = {
->     1,
->     2,
->     3
-> };
-> 
-> then when I add a fourth element to your array, I have to modify two
-> lines, and the diff will say
-> -    3
-> +    3,
-> +    4
->  };
-> 
-> whereas if you wrote "3," as the last line of the initializer, the diff
-> would be one line long.
+Chris Mason <chris.mason@oracle.com> writes:
 
-I don't know how to thank you for this. Apparently the patch is bogus.
-> 
-> Furthermore, spot the error in this diff:
-> 
-> @@ -3,4 +3,5 @@ char *x[] = {
->      "quick",
->      "brown",
->      "fox"
-> +    "jumped"
->  };
-> 
-> HTH, HAND,
-> -andy
+> Hi everyone,
+>
+> The for-linus branch of the btrfs unstable tree:
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git for-linus
+
+>
+> Has our current queue of fixes.  Josef's is the biggest pile, mostly in
+> the allocator.  Josef and I both managed to merge his patch to avoid
+> mapping the extent buffer if skip_locking was set, git merge is just a
+> little too easy sometimes (I double checked the resulting code).
+
+The new in 3.0 btrfs warnings on every build are still there:
+
+fs/btrfs/sysfs.c:76: warning: ‘btrfs_root_attrs’ defined but not used
+fs/btrfs/sysfs.c:97: warning: ‘btrfs_super_attrs’ defined but not used
+fs/btrfs/sysfs.c:153: warning: ‘btrfs_super_release’ defined but not used   
+fs/btrfs/sysfs.c:160: warning: ‘btrfs_root_release’ defined but not used
+
+These are not even used inside any ifdef. It's unclear to me: were
+these supposed to be used or removed?
+
+Probably better to remove since they seem to be untested, unless
+it was a merge error?
+
+-Andi
 
 -- 
-Jean Sacren
+ak@linux.intel.com -- Speaking for myself only
