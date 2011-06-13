@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab1FMVWH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 17:22:07 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:40880 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754057Ab1FMVWE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 17:22:04 -0400
+	id S1754482Ab1FMVU7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 17:20:59 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:53320 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752954Ab1FMVU4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 17:20:56 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [Bug #36972] 3.0-rc1: DMAR errors from iwlagn
+Date: Mon, 13 Jun 2011 23:21:53 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "linux-wireless" <linux-wireless@vger.kernel.org>
+References: <vv0uv79EvLN.A.jiC.pNS9NB@chimera> <JL7O0m0yLjL.A.4AD.8NS9NB@chimera> <4DF66E96.3010709@goop.org>
+In-Reply-To: <4DF66E96.3010709@goop.org>
 MIME-Version: 1.0
-X-Originating-IP: [195.42.130.215]
-From: =?UTF-8?B?0JTQtdC90LjRgSDQmtGD0LfRjNC80LXQvdC60L4=?= 
-	<dart@solonet.org.ua>
-Date: Tue, 14 Jun 2011 00:21:42 +0300
-Message-ID: <BANLkTikfLQH=_tSMkFGB7Jx_4vUKPmn-3w@mail.gmail.com>
-Subject: [PATCH] arm mach-s3c2440 mach-mini2440: New LCD-W35i support
-To: Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: =?UTF-8?B?0JTQtdC90LjRgSDQmtGD0LfRjNC80LXQvdC60L4=?= 
-	<dart@solonet.org.ua>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106132321.53228.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Denis Kuzmenko <dart@solonet.org.ua>
-LCD-W35i support for Mini2440 development board
+On Monday, June 13, 2011, Jeremy Fitzhardinge wrote:
+> On 06/12/2011 01:30 PM, Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> >
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.39.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> >
+> >
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=36972
+> > Subject		: 3.0-rc1: DMAR errors from iwlagn
+> > Submitter	: Jeremy Fitzhardinge <jeremy@goop.org>
+> > Date		: 2011-05-31 21:14 (13 days old)
+> > Message-ID	: <4DE55A26.6040702@goop.org>
+> > References	: http://marc.info/?l=linux-kernel&m=130687723213857&w=2
+> 
+> Still happening.  Haven't tested latest git yet, which has a number of
+> iwlagn updates.
 
---- linux-2.6.39.1/arch/arm/mach-s3c2440/mach-mini2440.c
-2011-06-03 03:34:20.000000000 +0300
-+++ linux-2.6.39.1-dart/arch/arm/mach-s3c2440/mach-mini2440.c
-2011-06-13 23:37:38.785984118 +0300
-@@ -167,6 +167,20 @@ static struct s3c2410fb_display mini2440
-                .lcdcon5        = (S3C2410_LCDCON5_FRM565 |
-                                   S3C2410_LCDCON5_HWSWP),
-        },
-+       /* LCD-W35i 3.5" display (LQ035Q1DG06)*/
-+       [3] = {
-+               _LCD_DECLARE(
-+                       7,              /* clock */
-+                       320, 68, 66, 4, /* xres, margin_right,
-margin_left, hsync */
-+                       240, 4, 4, 9,   /* yres, margin_top,
-margin_bottom, vsync */
-+                       60),            /* refresh rate */
-+               .lcdcon5        = (S3C2410_LCDCON5_FRM565 |
-+                                  S3C2410_LCDCON5_INVVDEN |
-+                                  S3C2410_LCDCON5_INVVFRAME |
-+                                  S3C2410_LCDCON5_INVVLINE |
-+                                  S3C2410_LCDCON5_INVVCLK |
-+                                  S3C2410_LCDCON5_HWSWP),
-+       },
- };
-
- /* todo - put into gpio header */
+Thanks for the update,
+Rafael
