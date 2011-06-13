@@ -1,81 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752918Ab1FMQDK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 12:03:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44601 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083Ab1FMQDH convert rfc822-to-8bit (ORCPT
+	id S1753273Ab1FMQF7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 12:05:59 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62158 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab1FMQF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 12:03:07 -0400
+	Mon, 13 Jun 2011 12:05:58 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=subject:x-duff:mime-version:content-type:from:in-reply-to:date:cc
-         :content-transfer-encoding:message-id:references:to:x-mailer;
-        b=fPv7wMpuI/vdl4hCYcIj3y9VOt3EiJdYGb/ic+ojIsfn6eiu7/PF6F+1m5BKbPWZav
-         1AjWw1iGEMDVEZDi1yrLASHwzItjjGOzIEqiZOBRv0Aqn2TR5PrT2N7je78X2jmo93pm
-         RRPbotIA2WwjPKHpE5Fl9xNXAYPJeA9cwSFEI=
-Subject: Re: [PATCH] unicore32, exec: remove redundant set_fs(USER_DS)
-X-Duff: Duff Lite, Duff Dry, Duff Dark, Lady Duff, Raspberry Duff, Duff Zero
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Mathias Krause <minipli@googlemail.com>
-In-Reply-To: <1307956780.1878.13.camel@epip-laptop>
-Date: Mon, 13 Jun 2011 18:02:59 +0200
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, arnd@arndb.de
-Content-Transfer-Encoding: 8BIT
-Message-Id: <62714CC0-0928-49FB-8E64-0A95A53917DF@googlemail.com>
-References: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com> <1307711463-17752-1-git-send-email-minipli@googlemail.com> <1307956780.1878.13.camel@epip-laptop>
-To: gxt@mprc.pku.edu.cn
-X-Mailer: Apple Mail (2.1084)
+        d=vrfy.org; s=google;
+        h=subject:from:to:cc:date:in-reply-to:references:content-type
+         :x-mailer:content-transfer-encoding:message-id:mime-version;
+        b=T2k/Nka5ai7PGd7GwKqwVQlFgCLKQ/E15tA3NL688BIwGcM5A0YkUarliDCzRkhrS5
+         H2lnY6HaY+evFqevr2xAcA8nqi3mKftSOob/7KCxm24uHNN2lgckbhxPKmWr0Hx+L9ok
+         MFn7Cj64189riOuSaUdEhnOcWKFSecxXeI6Hg=
+Subject: Re: [PATCH] sysctl: add support for poll()
+From: Kay Sievers <kay.sievers@vrfy.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>, James Morris <jmorris@namei.org>,
+        neilb@suse.de
+Date: Mon, 13 Jun 2011 18:05:51 +0200
+In-Reply-To: <BANLkTinXwE0K5nJ649rhNxN06KvwLNDeCA@mail.gmail.com>
+References: <1306930476-1899-1-git-send-email-lucas.demarchi@profusion.mobi>
+	 <BANLkTin6CP-A+UsGXyu9wb7U34wEN7DKsw@mail.gmail.com>
+	 <m18vtkq57c.fsf@fess.ebiederm.org>
+	 <BANLkTimcPweT-HONEtVDn3mD2a6dUGDEYA@mail.gmail.com>
+	 <20110602134338.0c56160e@lxorguk.ukuu.org.uk>
+	 <BANLkTik72cU_R5k9NLnqN_FNkm-y5Fk0nQ@mail.gmail.com>
+	 <m1hb88e3qs.fsf@fess.ebiederm.org>
+	 <BANLkTin5P8P_HR78qo0oyzeu9hpWazZqTw@mail.gmail.com>
+	 <20110608151732.2b321b9a.akpm@linux-foundation.org>
+	 <BANLkTinXwE0K5nJ649rhNxN06KvwLNDeCA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-2.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1307981153.1449.19.camel@mop>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.06.2011, 11:19 Guan Xuetao wrote:
-> On Fri, 2011-06-10 at 15:11 +0200, Mathias Krause wrote:
->> The address limit is already set in flush_old_exec() so this
->> set_fs(USER_DS) is redundant.
->> 
->> Signed-off-by: Mathias Krause <minipli@googlemail.com>
->> ---
->> arch/unicore32/include/asm/processor.h |    1 -
->> 1 files changed, 0 insertions(+), 1 deletions(-)
->> 
->> diff --git a/arch/unicore32/include/asm/processor.h b/arch/unicore32/include/asm/processor.h
->> index e11cb07..f0d780a 100644
->> --- a/arch/unicore32/include/asm/processor.h
->> +++ b/arch/unicore32/include/asm/processor.h
->> @@ -53,7 +53,6 @@ struct thread_struct {
->> #define start_thread(regs, pc, sp)					\
->> ({									\
->> 	unsigned long *stack = (unsigned long *)sp;			\
->> -	set_fs(USER_DS);						\
->> 	memset(regs->uregs, 0, sizeof(regs->uregs));			\
->> 	regs->UCreg_asr = USER_MODE;					\
->> 	regs->UCreg_pc = pc & ~1;	/* pc */                        \
+On Thu, 2011-06-09 at 15:16 +0200, Kay Sievers wrote:
+> On Thu, Jun 9, 2011 at 00:17, Andrew Morton <akpm@linux-foundation.org> wrote:
+
+> > We already have several pollable procfs files, such as
+> > fs/proc/base.c:mounts_poll() and I think drivers/md has one.  I do
+> > think that any work in this area should end up with those custom
+> > make-procfs-pollable hacks being identified and removed.
 > 
-> Hi Mathias,
-> I searched for the code in flush_old_exec(), but I can't find the code
-> you mentioned. Could you make it more clear?
+> For these files we can probably move the event counter into the
+> seq_file structure, and get rid of the dance to kmalloc it and assign
+> it to seq_file->private. That might simplify the logic a bit.
+> 
+> [Adding Neil, to get his opinion of moving 'event' so seq_file and get
+> rid of the malloc dance]
 
-Sorry, this statement is based on a commit post v3.0-rc2. Before dac853a (exec:
-delay address limit change until point of no return) it was done in
-search_binary_handler(), now it is done in flush_old_exec(). Either way
-set_fs(USER_DS) gets called before start_thread() so the call there is
-redundant.
-
-> And, if all fs codes (not only elf and aout) have the similar
-> implementations,
-
-I've checked that all binary format handler call flush_old_exec() before
-start_thread(). So: yes.
-
-> perhaps all arch-specific codes should be manipulated
-> in the meanwhile.
-
-That's what this LKML thread is for: https://lkml.org/lkml/2011/6/10/65
+I guess, we could do something like this, which looks quite a bit
+simpler by moving the poll event counter into the dynamically allocated
+seq_file structure itself, instead of having private structures
+allocated on top to just carry the counter (patch is just
+compile-tested).
 
 Thanks,
-Mathias
+Kay
+
+---
+ drivers/md/md.c               |   26 ++++++++------------------
+ fs/namespace.c                |    4 ++--
+ fs/proc/base.c                |    2 +-
+ include/linux/mnt_namespace.h |    1 -
+ include/linux/seq_file.h      |    1 +
+ mm/swapfile.c                 |   29 ++++++++---------------------
+ 6 files changed, 20 insertions(+), 43 deletions(-)
+
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index aa640a8..b073d36 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -6377,16 +6377,11 @@ static void md_seq_stop(struct seq_file *seq, void *v)
+ 		mddev_put(mddev);
+ }
+ 
+-struct mdstat_info {
+-	int event;
+-};
+-
+ static int md_seq_show(struct seq_file *seq, void *v)
+ {
+ 	mddev_t *mddev = v;
+ 	sector_t sectors;
+ 	mdk_rdev_t *rdev;
+-	struct mdstat_info *mi = seq->private;
+ 	struct bitmap *bitmap;
+ 
+ 	if (v == (void*)1) {
+@@ -6398,7 +6393,7 @@ static int md_seq_show(struct seq_file *seq, void *v)
+ 
+ 		spin_unlock(&pers_lock);
+ 		seq_printf(seq, "\n");
+-		mi->event = atomic_read(&md_event_count);
++		seq->poll_event = atomic_read(&md_event_count);
+ 		return 0;
+ 	}
+ 	if (v == (void*)2) {
+@@ -6510,26 +6505,21 @@ static const struct seq_operations md_seq_ops = {
+ 
+ static int md_seq_open(struct inode *inode, struct file *file)
+ {
++	struct seq_file *seq;
+ 	int error;
+-	struct mdstat_info *mi = kmalloc(sizeof(*mi), GFP_KERNEL);
+-	if (mi == NULL)
+-		return -ENOMEM;
+ 
+ 	error = seq_open(file, &md_seq_ops);
+ 	if (error)
+-		kfree(mi);
+-	else {
+-		struct seq_file *p = file->private_data;
+-		p->private = mi;
+-		mi->event = atomic_read(&md_event_count);
+-	}
++		return error;
++
++	seq = file->private_data;
++	seq->poll_event = atomic_read(&md_event_count);
+ 	return error;
+ }
+ 
+ static unsigned int mdstat_poll(struct file *filp, poll_table *wait)
+ {
+-	struct seq_file *m = filp->private_data;
+-	struct mdstat_info *mi = m->private;
++	struct seq_file *seq = filp->private_data;
+ 	int mask;
+ 
+ 	poll_wait(filp, &md_event_waiters, wait);
+@@ -6537,7 +6527,7 @@ static unsigned int mdstat_poll(struct file *filp, poll_table *wait)
+ 	/* always allow read */
+ 	mask = POLLIN | POLLRDNORM;
+ 
+-	if (mi->event != atomic_read(&md_event_count))
++	if (seq->poll_event != atomic_read(&md_event_count))
+ 		mask |= POLLERR | POLLPRI;
+ 	return mask;
+ }
+diff --git a/fs/namespace.c b/fs/namespace.c
+index fe59bd1..cda50fe 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -934,8 +934,8 @@ int mnt_had_events(struct proc_mounts *p)
+ 	int res = 0;
+ 
+ 	br_read_lock(vfsmount_lock);
+-	if (p->event != ns->event) {
+-		p->event = ns->event;
++	if (p->m.poll_event != ns->event) {
++		p->m.poll_event = ns->event;
+ 		res = 1;
+ 	}
+ 	br_read_unlock(vfsmount_lock);
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 14def99..16d33a3 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -673,7 +673,7 @@ static int mounts_open_common(struct inode *inode, struct file *file,
+ 	p->m.private = p;
+ 	p->ns = ns;
+ 	p->root = root;
+-	p->event = ns->event;
++	p->m.poll_event = ns->event;
+ 
+ 	return 0;
+ 
+diff --git a/include/linux/mnt_namespace.h b/include/linux/mnt_namespace.h
+index 0b89efc..2930485 100644
+--- a/include/linux/mnt_namespace.h
++++ b/include/linux/mnt_namespace.h
+@@ -18,7 +18,6 @@ struct proc_mounts {
+ 	struct seq_file m; /* must be the first element */
+ 	struct mnt_namespace *ns;
+ 	struct path root;
+-	int event;
+ };
+ 
+ struct fs_struct;
+diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
+index 03c0232..be720cd 100644
+--- a/include/linux/seq_file.h
++++ b/include/linux/seq_file.h
+@@ -23,6 +23,7 @@ struct seq_file {
+ 	u64 version;
+ 	struct mutex lock;
+ 	const struct seq_operations *op;
++	int poll_event;
+ 	void *private;
+ };
+ 
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index d537d29..5161d7d 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -1681,19 +1681,14 @@ out:
+ }
+ 
+ #ifdef CONFIG_PROC_FS
+-struct proc_swaps {
+-	struct seq_file seq;
+-	int event;
+-};
+-
+ static unsigned swaps_poll(struct file *file, poll_table *wait)
+ {
+-	struct proc_swaps *s = file->private_data;
++	struct seq_file *seq = file->private_data;
+ 
+ 	poll_wait(file, &proc_poll_wait, wait);
+ 
+-	if (s->event != atomic_read(&proc_poll_event)) {
+-		s->event = atomic_read(&proc_poll_event);
++	if (seq->poll_event != atomic_read(&proc_poll_event)) {
++		seq->poll_event = atomic_read(&proc_poll_event);
+ 		return POLLIN | POLLRDNORM | POLLERR | POLLPRI;
+ 	}
+ 
+@@ -1783,24 +1778,16 @@ static const struct seq_operations swaps_op = {
+ 
+ static int swaps_open(struct inode *inode, struct file *file)
+ {
+-	struct proc_swaps *s;
++	struct seq_file *seq;
+ 	int ret;
+ 
+-	s = kmalloc(sizeof(struct proc_swaps), GFP_KERNEL);
+-	if (!s)
+-		return -ENOMEM;
+-
+-	file->private_data = s;
+-
+ 	ret = seq_open(file, &swaps_op);
+-	if (ret) {
+-		kfree(s);
++	if (ret)
+ 		return ret;
+-	}
+ 
+-	s->seq.private = s;
+-	s->event = atomic_read(&proc_poll_event);
+-	return ret;
++	seq = file->private_data;
++	seq->poll_event = atomic_read(&proc_poll_event);
++	return 0;
+ }
+ 
+ static const struct file_operations proc_swaps_operations = {
+
+
+
