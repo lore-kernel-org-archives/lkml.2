@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab1FMN5q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 09:57:46 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34460 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802Ab1FMN5n (ORCPT
+	id S1753368Ab1FMOC1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 10:02:27 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:53359 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750845Ab1FMOC0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 09:57:43 -0400
-Date: Mon, 13 Jun 2011 14:57:00 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH] fb.h: ARM uses __raw_{read/write}
-Message-ID: <20110613135700.GB13643@n2100.arm.linux.org.uk>
-References: <201106101731.08578.hartleys@visionengravers.com> <20110613040003.GA29731@linux-sh.org> <20110613100819.GA26914@1n450.cable.virginmedia.net> <201106131537.10698.arnd@arndb.de>
+	Mon, 13 Jun 2011 10:02:26 -0400
+Date: Mon, 13 Jun 2011 10:02:23 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: "Cui, Dexuan" <dexuan.cui@intel.com>,
+        "ltt-dev@lists.casi.polymtl.ca" <ltt-dev@lists.casi.polymtl.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rp@svcs.cs.pdx.edu" <rp@svcs.cs.pdx.edu>
+Subject: Re: [ltt-dev] [RELEASE] Userspace RCU 0.6.0
+Message-ID: <20110613140223.GB29349@Krystal>
+References: <20110611011417.GA8722@Krystal> <1865303E0DED764181A9D882DEF65FB699650124A2@shsmsx502.ccr.corp.intel.com> <20110613042340.GH2212@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201106131537.10698.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20110613042340.GH2212@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 10:00:49 up 201 days, 19:03,  7 users,  load average: 0.20, 0.08,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 03:37:10PM +0200, Arnd Bergmann wrote:
-> On Monday 13 June 2011 12:08:19 Catalin Marinas wrote:
-> > The change proposed by Hartley wouldn't make much difference from the
-> > current volatile accesses (__raw_* accessors are implemented as volatile
-> > on ARM).
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> On Mon, Jun 13, 2011 at 10:06:09AM +0800, Cui, Dexuan wrote:
+[...]
+> > Hi Mathieu,
+> > The release can't build in my side:
+> > 
+> > $ tar -jxf userspace-rcu-0.6.0.tar.bz2 && cd userspace-rcu-0.6.0 && ./configure && make
+> > 
+> > make  all-recursive
+> > make[1]: Entering directory `/home/dcui/userspace-rcu-0.6.0'
+> > Making all in .
+> > make[2]: Entering directory `/home/dcui/userspace-rcu-0.6.0'
+> >   CC     wfqueue.lo
+> >   CC     wfstack.lo
+> >   CC     rculfqueue.lo
+> >   CC     rculfstack.lo
+> >   CCLD   liburcu-cds.la
+> >   CC     urcu.lo
+> > urcu.c:438:32: error: urcu-call-rcu-impl.h: No such file or directory
+> > urcu.c:439:29: error: urcu-defer-impl.h: No such file or directory
+> > make[2]: *** [urcu.lo] Error 1
+> > make[2]: Leaving directory `/home/dcui/userspace-rcu-0.6.0'
+> > make[1]: *** [all-recursive] Error 1
+> > make[1]: Leaving directory `/home/dcui/userspace-rcu-0.6.0'
+> > make: *** [all] Error 2
+> > 
+> > Can you please have a look?
 > 
-> I guess it would mainly make a difference if we get a platform where
-> the PCI bus window is not in the same address space as the regular
-> physical memory and the accessors actually need to do a computation
-> on the address. AFAICT, ARM does not currently have any such platform
-> and I would hope that it says that way.
+> I get the same thing from the tarball.  But the git tree works just fine,
+> so my guess is that the tarball creation left out a couple of files.
 
-Actually we do.
+Indeed, I missed those two headers in the Makefile.am EXTRA_DIST. I just
+released 0.6.1, which fixes this issue. I've made sure the tarball
+builds fine.
 
-Footbridge has this situation: PCI memory space is 0 to 4GB, and appears
-in physical space at 2GB-4GB physical, and can be switched between the
-low and high 2GB of PCI space.
+Thanks for reporting this so quickly!
 
-Non-PCI peripherals are located at 0 to 2GB physical.
+Mathieu
 
-We handle this by having pcibios_bus_to_resource() and
-pcibios_resource_to_bus(), which translates from the bus space to a
-cookie suitable for ioremap() and /proc/iomem.  This cookie happens to
-be the physical address.
-
-We avoid the obvious problem with the upper 2GB of PCI memory space by
-placing the system RAM at 0xe0000000 on the PCI bus, and not allocating
-any peripherals in the upper 2GB of PCI memory space.
-
-So, I rather wish that people would stop saying that "ioremap takes the
-PCI bus address".  It doesn't - it takes a platform specific cookie to
-allow a mapping to be setup, which in the case of pci will be a cookie
-provided from the PCI bus address by the pcibios_bus_to_resource()
-platform code.
-
-And the final thing to note on this is that fbmem/fbcon does work - see
-the Cyber2000/CyberPro VGA driver which has been - and still is - used
-on Netwinder (footbridge).
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
