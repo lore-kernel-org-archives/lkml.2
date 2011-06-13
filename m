@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778Ab1FMPJA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 11:09:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64014 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab1FMPI6 (ORCPT
+	id S1753268Ab1FMPLC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 11:11:02 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:39054 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751160Ab1FMPLA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 11:08:58 -0400
-Date: Mon, 13 Jun 2011 09:08:56 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org
-Subject: Re: [PATCH] spi-pl022: Add missing return value update
-Message-ID: <20110613150856.GD18161@ponder.secretlab.ca>
-References: <1307962426-19230-1-git-send-email-virupax.sadashivpetimath@stericsson.com>
+	Mon, 13 Jun 2011 11:11:00 -0400
+Date: Mon, 13 Jun 2011 11:10:57 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Greg KH <greg@kroah.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+cc: Hans de Goede <hdegoede@redhat.com>
+Subject: Unbinding drivers for resources that are in use
+Message-ID: <Pine.LNX.4.44L0.1106131048080.1983-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307962426-19230-1-git-send-email-virupax.sadashivpetimath@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 04:23:46PM +0530, Virupax Sadashivpetimath wrote:
-> Return error on out of range cpsdvsr value.
-> 
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
+The kernel prevents modules from being unloaded if they are being used.  
+But it doesn't have any analogous mechanism for preventing a driver 
+being unbound from a device that's in use.
 
-It looks like this is a bug fix for v3.0, and probably for -stable too, correct?
+For example, suppose a SATA disk contains a mounted filesystem.  If the
+user writes the corresponding device name to
+/sys/bus/scsi/drivers/sd/unbind without unmounting the filesystem, the
+drive will become inaccessible and data may be lost.  The same problem
+arises with USB devices and programs using usbfs to unbind a device
+from its kernel driver.
 
-g.
+It's true that the "unbind" attribute has mode 0200 and therefore can 
+be written only by the superuser.  Still, this puts the onus on 
+userspace to determine whether or not a device is being used.  The 
+kernel could easily keep track of this automatically and atomically 
+-- userspace can't do this without races.
 
-> ---
->  drivers/spi/spi-pl022.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
-> index 2541705..b3bd8d8 100644
-> --- a/drivers/spi/spi-pl022.c
-> +++ b/drivers/spi/spi-pl022.c
-> @@ -1859,6 +1859,7 @@ static int pl022_setup(struct spi_device *spi)
->  	}
->  	if ((clk_freq.cpsdvsr < CPSDVR_MIN)
->  	    || (clk_freq.cpsdvsr > CPSDVR_MAX)) {
-> +		status = -EINVAL;
->  		dev_err(&spi->dev,
->  			"cpsdvsr is configured incorrectly\n");
->  		goto err_config_params;
-> -- 
-> 1.7.4.3
-> 
+Therefore I'm asking if the driver core should add a refcount to every
+struct device for keeping track of the number of open file references
+(or other types of resource) using this device.  If this number is
+nonzero, the kernel should prevent the device from being unbound from
+its driver -- except of course in cases where the device has been
+hot-unplugged; there's nothing we can do to prevent errors when this
+happens.
+
+Changes to the refcount would have to propagate up the device tree: If 
+a device holds an important resource then we don't want any of the 
+device's ancestors to become inaccessible either.  This would be easy 
+to implement.
+
+Should we do it?
+
+Alan Stern
+
