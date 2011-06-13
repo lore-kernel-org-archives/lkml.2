@@ -1,120 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab1FMN4t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 09:56:49 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45828 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753258Ab1FMN4r (ORCPT
+	id S1753384Ab1FMN47 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 09:56:59 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47469 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753258Ab1FMN4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 09:56:47 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: arnd@arndb.de
-Cc: akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com, mingo@elte.hu,
-        randy.dunlap@oracle.com, josh@joshtriplett.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mgorman@suse.de, linux-mm@kvack.org, dave@linux.vnet.ibm.com,
-        Eric B Munson <emunson@mgebm.net>
-Subject: [PATCH V2] Add debugging boundary check to pfn_to_page
-Date: Mon, 13 Jun 2011 09:56:39 -0400
-Message-Id: <1307973399-7784-1-git-send-email-emunson@mgebm.net>
-X-Mailer: git-send-email 1.7.4.1
+	Mon, 13 Jun 2011 09:56:54 -0400
+Date: Mon, 13 Jun 2011 14:56:49 +0100
+From: Dave Martin <dave.martin@linaro.org>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Frank Hofmann <frank.hofmann@tomtom.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Colin Cross <ccross@android.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH v5] ARM hibernation / suspend-to-disk (fwd)
+Message-ID: <20110613135649.GB8498@arm.com>
+References: <alpine.DEB.2.00.1106131303290.25153@localhost6.localdomain6>
+ <20110613122601.GC12325@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.00.1106131400090.25153@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1106131400090.25153@localhost6.localdomain6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bugzilla 36192 showed a problem where pages were being accessed outside of
-a node boundary.  It would be helpful in diagnosing this kind of problem to
-have pfn_to_page complain when a page is accessed outside of the node boundary.
-This patch adds a new debug config option which adds a WARN_ON in pfn_to_page
-that will complain when pages are accessed outside of the node boundary.
+On Mon, Jun 13, 2011 at 02:20:12PM +0100, Frank Hofmann wrote:
+> 
+> 
+> On Mon, 13 Jun 2011, Russell King - ARM Linux wrote:
+> 
+> >On Mon, Jun 13, 2011 at 01:04:02PM +0100, Frank Hofmann wrote:
+> >>  To make it clear: IF AND ONLY IF your suspend(-to-ram) func looks like:
+> >>
+> >>	ENTRY(acmeSoC_cpu_suspend)
+> >>		stmfd	sp!, {r4-r12,lr}
+> >>		ldr	r3, resume_mmu_done
+> >>		bl	cpu_suspend
+> >>	resume_mmu_done:
+> >>		ldmfd	sp!, {r3-r12,pc}
+> >>	ENDPROC(acmeSoC_cpu_suspend)
+> >
+> >Nothing has that - because you can't execute that ldmfd after the call
+> >to cpu_suspend returns.  I don't think you've understood what I said on
+> >that subject in the previous thread.
+> >
+> 
+> Ok, to illustrate a bit more, what is ok and what not.
+> 
+> 
+> From the current code ...
+> 
+> a) a case where the hibernation patch as I posted it is ok for core state:
+> 
+> arch/arm/mach-exynos4/sleep.S has:
+> 
+> ENTRY(s3c_cpu_save)
+> 
+>         stmfd   sp!, { r3 - r12, lr }
+>         ldr     r3, =resume_with_mmu
+>         bl      cpu_suspend
+> 
+>         ldr     r0, =pm_cpu_sleep
+>         ldr     r0, [ r0 ]
+>         mov     pc, r0
+> 
+> resume_with_mmu:
+>         ldmfd   sp!, { r3 - r12, pc }
+> 
+> ENTRY(s3c_cpu_resume)
+>         b       cpu_resume
+> 
+> 
+> I.e. it does nothing before but set up the arguments for
+> cpu_suspend, and does nothing afterwards but redirect to a function
+> that enters low power (and switches the CPU off).
+> Likewise, all it does for resume is redirect to cpu_resume which
+> will ultimately end up jumping to resume_with_mmu: as requested.
+> 
+> 
+> b) a case where the hibernation patch is insufficient even though the
+>    code in the soc suspend func uses cpu_suspend:
+> 
+> arch/arm/mach-pxa/sleep.S has:
+> 
+> /*
+>  * pxa27x_cpu_suspend()
+>  *
+>  * Forces CPU into sleep state.
+>  *
+>  * r0 = value for PWRMODE M field for desired sleep state
+>  * r1 = v:p offset
+>  */
+> ENTRY(pxa27x_cpu_suspend)
+> 
+> #ifndef CONFIG_IWMMXT
+>         mra     r2, r3, acc0
+> #endif
+>         stmfd   sp!, {r2 - r12, lr}             @ save registers on stack
+>         mov     r4, r0                          @ save sleep mode
+>         ldr     r3, =pxa_cpu_resume             @ resume function
+>         bl      cpu_suspend
+> [ ... some stuff ... ]
+>         ldr     r6, =CCCR
+>         ldr     r8, [r6]                @ keep original value for resume
+> 
+>         ldr     r7, =CCCR_SLEEP         @ prepare CCCR sleep value
+>         mov     r0, #0x2                @ prepare value for CLKCFG
+> 
+>         @ align execution to a cache line
+>         b       pxa_cpu_do_suspend
+> #endif
+> [ ... ]
+> pxa_cpu_do_suspend:
+> 
+>         @ All needed values are now in registers.
+>         @ These last instructions should be in cache
+> 
+>         @ initiate the frequency change...
+>         str     r7, [r6]
+>         mcr     p14, 0, r0, c6, c0, 0
+> 
+>         @ restore the original cpu speed value for resume
+>         str     r8, [r6]
+> [ ... ]
+> /*
+>  * pxa_cpu_resume()
+>  *
+>  * entry point from bootloader into kernel during resume
+>  */
+>         .align 5
+> pxa_cpu_resume:
+>         ldmfd   sp!, {r2, r3}
+> #ifndef CONFIG_IWMMXT
+>         mar     acc0, r2, r3
+> #endif
+>         ldmfd   sp!, {r4 - r12, pc}             @ return to caller
+> 
+> 
+> 
+> In this case, there's _MORE_ state saved (the CCCR / CCCR_SLEEP
+> accesses) after the call to cpu_suspend things that aren't dealt
+> with by the way the hibernation support patch currently operates.
+> 
+> There also is _more_ restored at resume than what the generic part
+> does for you.
+> 
+> Whether these things (for example) are relevant wrt. to a
+> hibernation resume is something I simply do not know.
+> 
+> 
+> A third example of a soc suspend func, even more complex, with more
+> constraints, would be as already mentioned, OMAP. On that as well
+> the caveat applies, "what works empirically might not be correct in
+> all cases".
 
-Signed-of-by: Eric B Munson <emunson@mgebm.net>
----
-Changes from V1:
- minimize code duplication with a macro that will do the checking when
-configured
+Santosh, Frank: to what extent do you think the OMAP suspend code could
+be abstracted using something like Colin's CPU pm notifier framework?
 
- include/asm-generic/memory_model.h |   25 ++++++++++++++++++++-----
- lib/Kconfig.debug                  |    9 +++++++++
- 2 files changed, 29 insertions(+), 5 deletions(-)
+I'd hope that at least some stuff can be abstracted out, but I don't
+understand the OMAP code intimately enough to be certain of that...
 
-diff --git a/include/asm-generic/memory_model.h b/include/asm-generic/memory_model.h
-index fb2d63f..7aa83ce 100644
---- a/include/asm-generic/memory_model.h
-+++ b/include/asm-generic/memory_model.h
-@@ -22,6 +22,16 @@
- 
- #endif /* CONFIG_DISCONTIGMEM */
- 
-+#ifdef CONFIG_MEMORY_MODEL
-+/*
-+ * The flags for a page will only be zero if this page is being accessed
-+ * outside of node boundaries.
-+ */
-+#define check_page(__page) WARN_ON(__page->flags == 0)
-+#else
-+#define check_page(__page) do{}while(0)
-+#endif /* CONFIG_MEMORY_MODEL */
-+
- /*
-  * supports 3 memory models.
-  */
-@@ -35,7 +45,9 @@
- #define __pfn_to_page(pfn)			\
- ({	unsigned long __pfn = (pfn);		\
- 	unsigned long __nid = arch_pfn_to_nid(__pfn);  \
--	NODE_DATA(__nid)->node_mem_map + arch_local_page_offset(__pfn, __nid);\
-+	struct page * __pg = NODE_DATA(__nid)->node_mem_map + arch_local_page_offset(__pfn, __nid);\
-+	check_page(__pg);			\
-+	__pg;					\
- })
- 
- #define __page_to_pfn(pg)						\
-@@ -52,6 +64,7 @@
- #define __page_to_pfn(page)	(unsigned long)((page) - vmemmap)
- 
- #elif defined(CONFIG_SPARSEMEM)
-+
- /*
-  * Note: section's mem_map is encorded to reflect its start_pfn.
-  * section[i].section_mem_map == mem_map's address - start_pfn;
-@@ -62,10 +75,12 @@
- 	(unsigned long)(__pg - __section_mem_map_addr(__nr_to_section(__sec)));	\
- })
- 
--#define __pfn_to_page(pfn)				\
--({	unsigned long __pfn = (pfn);			\
--	struct mem_section *__sec = __pfn_to_section(__pfn);	\
--	__section_mem_map_addr(__sec) + __pfn;		\
-+#define __pfn_to_page(pfn)						\
-+({	unsigned long __pfn = (pfn);					\
-+	struct mem_section *__sec = __pfn_to_section(__pfn);		\
-+	struct page *__pg = __section_mem_map_addr(__sec) + __pfn;	\
-+	check_page(__pg);						\
-+	__pg;								\
- })
- #endif /* CONFIG_FLATMEM/DISCONTIGMEM/SPARSEMEM */
- 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index dd373c8..7870907 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -777,6 +777,15 @@ config DEBUG_MEMORY_INIT
- 
- 	  If unsure, say Y
- 
-+config DEBUG_MEMORY_MODEL
-+	bool "Debug memory model" if SPARSEMEM || DISCONTIGMEM
-+	help
-+	  Enable this to check that page accesses are done within node
-+	  boundaries.  The check will warn each time a page is requested
-+	  outside node boundaries.
-+
-+	  If unsure, say N
-+
- config DEBUG_LIST
- 	bool "Debug linked list manipulation"
- 	depends on DEBUG_KERNEL
--- 
-1.7.4.1
+We shouldn't expect to remove absolutely all the SoC specifics from
+suspend code, but the more we can hook into a generic framework, the
+better for everyone.
 
+Cheers
+---Dave
