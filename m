@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141Ab1FMSAG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 14:00:06 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:43110 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753601Ab1FMSAC (ORCPT
+	id S1754239Ab1FMSAW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 14:00:22 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:37444 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753586Ab1FMSAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 14:00:02 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: nO0Zo.4VM1kcHBkhCwYKPQxAYqCYcORLGuyJAC_b1G6v8kn
- B200xxj1g_AnF..lsmuNjS6zL4X_w8nGIvcNrPrXqKHyjqQhf5_7imEYZrsJ
- 5osjj.Gcr4zWDCIZFAbQv2jBUIqUS4uOth3UoKKs4WNDX6MkK50vBUVy55pd
- IIGEEWCPm_zg_OHnEmjq5AvbK7HFj3QYaDIqx0c0GD89QbXAJSjeDMF7qQNr
- IqhPwve73CZ5QnERofVInodTfoH.nrHPc45c1QxDZ1jYx2WkWe9QHuHL4XPR
- WAyrsltRs0u1vI4.tM5Lll9ym.g7hON35TEwWq96luqpye91bIcoEaO7xtP7
- M96AH.l.Z2vRFGuW8lCltE5Nt
-X-Yahoo-Newman-Property: ymail-3
-Date: Mon, 13 Jun 2011 12:59:57 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Hugh Dickins <hughd@google.com>
-cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] slub: fix kernel BUG at mm/slub.c:1950!
-In-Reply-To: <alpine.LSU.2.00.1106121842250.31463@sister.anvils>
-Message-ID: <alpine.DEB.2.00.1106131258300.3108@router.home>
-References: <alpine.LSU.2.00.1106121842250.31463@sister.anvils>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 13 Jun 2011 14:00:20 -0400
+Date: Mon, 13 Jun 2011 19:00:06 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Jim Bos <jim876@xs4all.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+Message-ID: <20110613180006.GA24902@srcf.ucam.org>
+References: <BANLkTikVEj2Uz9N0B-kKA3GJTUWzmwz=zQ@mail.gmail.com>
+ <20110607014127.GA8450@srcf.ucam.org>
+ <4DED8752.5070005@kernel.org>
+ <4DEDEA73.7010900@gmail.com>
+ <20110610164706.GB25774@srcf.ucam.org>
+ <4DF259B2.9070403@gmail.com>
+ <20110610175429.GA28500@srcf.ucam.org>
+ <4DF29E7E.50908@gmail.com>
+ <20110613164712.GA23343@srcf.ucam.org>
+ <4DF64E6A.70700@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DF64E6A.70700@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Jun 2011, Hugh Dickins wrote:
+On Mon, Jun 13, 2011 at 07:52:42PM +0200, Maarten Lankhorst wrote:
+> > +		 */
+> > +
+> > +		if ((start <= virt_to_phys(_etext)-1 && end >= virt_to_phys(_text)) ||
+> > +		    (start <= virt_to_phys(_edata)-1 && end >= virt_to_phys(_etext)) ||
+> _etext -> _sdata perhaps?
 
-> 3.0-rc won't boot with SLUB on my PowerPC G5: kernel BUG at mm/slub.c:1950!
-> Bisected to 1759415e630e "slub: Remove CONFIG_CMPXCHG_LOCAL ifdeffery".
->
-> After giving myself a medal for finding the BUG on line 1950 of mm/slub.c
-> (it's actually the
-> 	VM_BUG_ON((unsigned long)(&pcp1) % (2 * sizeof(pcp1)));
-> on line 268 of the morass that is include/linux/percpu.h)
-> I tried the following alignment patch and found it to work.
+_etext is used for the resource allocation earlier, which seems like 
+it's probably the relevant thing to be copying.
 
-Hmmm.. The allocpercpu in alloc_kmem_cache_cpus should take care of the
-alignment. Uhh.. I see that a patch that removes the #ifdef CMPXCHG_LOCAL
-was not applied? Pekka?
+> >  		memblock_x86_reserve_range(start, start + size, "EFI Boot");
+> >  	}
+> >  }
+> Will test though. It might also be appropriate to put a WARN when that condition happens.
 
+That'd end up triggering even in cases that are absolutely safe (ie, the 
+firmware doesn't have this bug). The amount of suck here is incredible.
 
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
