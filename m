@@ -1,231 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241Ab1FMXOQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 19:14:16 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:23639 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754661Ab1FMXON (ORCPT
+	id S1755275Ab1FMXXV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 19:23:21 -0400
+Received: from wsh1042.chi.us.securedata.net ([66.113.131.79]:2688 "EHLO
+	wsh1042.shr-us.ons-us.win2003.hostway" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751138Ab1FMXXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 19:14:13 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=w/2fwFyI92jM96dchM5kI6m2ufmS4KgXk12L2u/xji7OqS5ksSihaXIYkJ1dKBSii
-	AXvG3ufXQRkbEdHa/U4zQ==
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH] trace: Add a proc file to stop tracing and free buffer
-Date: Mon, 13 Jun 2011 16:13:51 -0700
-Message-Id: <1308006831-6219-1-git-send-email-vnagarnaik@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Mon, 13 Jun 2011 19:23:19 -0400
+X-Greylist: delayed 333 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Jun 2011 19:23:19 EDT
+Date: Mon, 13 Jun 2011 18:15:36 -0500
+Subject: Michael Jones wants you to know about Texas A+ In-Home Tutoring
+To: linux-kernel@vger.kernel.org
+From: access@gmail.com
+Message-ID: <WSH10429VMczi9yzu2300006892@wsh1042.shr-us.ons-us.win2003.hostway>
+X-OriginalArrivalTime: 13 Jun 2011 23:15:36.0078 (UTC) FILETIME=[CD2182E0:01CC2A1F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The proc file entry buffer_size_kb is used to set the size of tracing
-buffer. The memory to expand the buffer size is kernel memory. Consider
-a use case where tracing is handled by a user space utility, which acts
-as a gate keeper for tracing requests. In an OOM condition, tracing is
-considered a low priority task and if the utility gets killed the ring
-buffer memory cannot be released back to the kernel.
+Friend,
 
-This patch adds a proc file called "free_ring_buffer" whose whole
-purpose is to stop tracing and free up the ring buffer when it is
-closed.
+Michael Jones thought you might like to know about Texas A+ In-Home Tutoring.  Please take a look at this link: http://www.texasaplus.com
 
-The user space process can then set the desired size in buffer_size_kb
-file and open the fd to the "free_ring_buffer" file. Under OOM
-condition, if the process gets killed, the kernel closes the file
-descriptor. The release handler stops the tracing and releases the
-kernel memory automatically.
+Michael Jones's comments:
+            
+ 
+You Have 1 New Message 
 
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
----
- kernel/trace/trace.c |  108 +++++++++++++++++++++++++++++++++----------------
- 1 files changed, 73 insertions(+), 35 deletions(-)
+Hi Friend,
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index ee9c921..3df944c 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2767,7 +2767,7 @@ int tracer_init(struct tracer *t, struct trace_array *tr)
- 	return t->init(tr);
- }
+This unknown ClickBank affiliate who made $22,674.48 in only 
+9 days  this month has left you a private video message here:
+
+Promise me this:
+
+1) You'll download his software.
+
+2) You'll send me a testimonial when you make money with it.
+
+Watch your private message here (do not share):
  
--static int tracing_resize_ring_buffer(unsigned long size)
-+static int __tracing_resize_ring_buffer(unsigned long size)
- {
- 	int ret;
- 
-@@ -2819,6 +2819,41 @@ static int tracing_resize_ring_buffer(unsigned long size)
- 	return ret;
- }
- 
-+static ssize_t tracing_resize_ring_buffer(unsigned long size)
-+{
-+	int cpu, ret = size;
-+
-+	mutex_lock(&trace_types_lock);
-+
-+	tracing_stop();
-+
-+	/* disable all cpu buffers */
-+	for_each_tracing_cpu(cpu) {
-+		if (global_trace.data[cpu])
-+			atomic_inc(&global_trace.data[cpu]->disabled);
-+		if (max_tr.data[cpu])
-+			atomic_inc(&max_tr.data[cpu]->disabled);
-+	}
-+
-+	if (size != global_trace.entries)
-+		ret = __tracing_resize_ring_buffer(size);
-+
-+	if (ret < 0)
-+		ret = -ENOMEM;
-+
-+	for_each_tracing_cpu(cpu) {
-+		if (global_trace.data[cpu])
-+			atomic_dec(&global_trace.data[cpu]->disabled);
-+		if (max_tr.data[cpu])
-+			atomic_dec(&max_tr.data[cpu]->disabled);
-+	}
-+
-+	tracing_start();
-+	mutex_unlock(&trace_types_lock);
-+
-+	return ret;
-+}
-+
- 
- /**
-  * tracing_update_buffers - used by tracing facility to expand ring buffers
-@@ -2836,7 +2871,7 @@ int tracing_update_buffers(void)
- 
- 	mutex_lock(&trace_types_lock);
- 	if (!ring_buffer_expanded)
--		ret = tracing_resize_ring_buffer(trace_buf_size);
-+		ret = __tracing_resize_ring_buffer(trace_buf_size);
- 	mutex_unlock(&trace_types_lock);
- 
- 	return ret;
-@@ -2860,7 +2895,7 @@ static int tracing_set_tracer(const char *buf)
- 	mutex_lock(&trace_types_lock);
- 
- 	if (!ring_buffer_expanded) {
--		ret = tracing_resize_ring_buffer(trace_buf_size);
-+		ret = __tracing_resize_ring_buffer(trace_buf_size);
- 		if (ret < 0)
- 			goto out;
- 		ret = 0;
-@@ -3435,7 +3470,7 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
- {
- 	unsigned long val;
- 	char buf[64];
--	int ret, cpu;
-+	int ret;
- 
- 	if (cnt >= sizeof(buf))
- 		return -EINVAL;
-@@ -3453,48 +3488,43 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
- 	if (!val)
- 		return -EINVAL;
- 
--	mutex_lock(&trace_types_lock);
--
--	tracing_stop();
--
--	/* disable all cpu buffers */
--	for_each_tracing_cpu(cpu) {
--		if (global_trace.data[cpu])
--			atomic_inc(&global_trace.data[cpu]->disabled);
--		if (max_tr.data[cpu])
--			atomic_inc(&max_tr.data[cpu]->disabled);
--	}
--
- 	/* value is in KB */
- 	val <<= 10;
- 
--	if (val != global_trace.entries) {
--		ret = tracing_resize_ring_buffer(val);
--		if (ret < 0) {
--			cnt = ret;
--			goto out;
--		}
--	}
-+	ret = tracing_resize_ring_buffer(val);
-+	if (ret < 0)
-+		return ret;
- 
- 	*ppos += cnt;
- 
--	/* If check pages failed, return ENOMEM */
--	if (tracing_disabled)
--		cnt = -ENOMEM;
-- out:
--	for_each_tracing_cpu(cpu) {
--		if (global_trace.data[cpu])
--			atomic_dec(&global_trace.data[cpu]->disabled);
--		if (max_tr.data[cpu])
--			atomic_dec(&max_tr.data[cpu]->disabled);
--	}
-+	return cnt;
-+}
- 
--	tracing_start();
--	mutex_unlock(&trace_types_lock);
-+static ssize_t
-+tracing_free_ring_buffer_write(struct file *filp, const char __user *ubuf,
-+			  size_t cnt, loff_t *ppos)
-+{
-+	/*
-+	 * There is no need to read what the user has written, this function
-+	 * is just to make sure that there is no error when "echo" is used
-+	 */
-+
-+	*ppos += cnt;
- 
- 	return cnt;
- }
- 
-+static int
-+tracing_free_ring_buffer_release(struct inode *inode, struct file *filp)
-+{
-+	/* disable tracing */
-+	tracing_off();
-+	/* resize the ring buffer to 0 */
-+	tracing_resize_ring_buffer(0);
-+
-+	return 0;
-+}
-+
- static int mark_printk(const char *fmt, ...)
- {
- 	int ret;
-@@ -3640,6 +3670,11 @@ static const struct file_operations tracing_entries_fops = {
- 	.llseek		= generic_file_llseek,
- };
- 
-+static const struct file_operations tracing_free_ring_buffer_fops = {
-+	.write		= tracing_free_ring_buffer_write,
-+	.release	= tracing_free_ring_buffer_release,
-+};
-+
- static const struct file_operations tracing_mark_fops = {
- 	.open		= tracing_open_generic,
- 	.write		= tracing_mark_write,
-@@ -4365,6 +4400,9 @@ static __init int tracer_init_debugfs(void)
- 	trace_create_file("buffer_size_kb", 0644, d_tracer,
- 			&global_trace, &tracing_entries_fops);
- 
-+	trace_create_file("free_ring_buffer", 0644, d_tracer,
-+			&global_trace, &tracing_free_ring_buffer_fops);
-+
- 	trace_create_file("trace_marker", 0220, d_tracer,
- 			NULL, &tracing_mark_fops);
- 
--- 
-1.7.3.1
+"Discover Exactly How You can Start Making Money With Fast Cash  
+Strategies That Anyone Can Do Even If You Are A  Complete Beginner!"
+
+==>> Get Your $975.00 Commissions In 5 Seconds!
+
+Even during the boom years in any economy it's not possible to  
+find a form  of free income, BUT THIS IS EXACTLY THAT! and it will    
+make you free money for the rest of your life.
+
+It's Easy To Make Money Everyday From Home With This Software...
+Even If  You're Starting From Scratch With Zero Knowledge, 
+Experience Or Budget! I'll Show You Exactly How.
+
+We've Start putting New 30 Members in YOUR TEAM for the JUNE 7 to 14-2011
+commission cycle.and GROWING everyday Earn by $100 up to $300 or more.
+
+IMPORTANT:Join before JUNE 14,2011 is the Cut-Off day to lock in your
+position then faster you act the higher commission you  will earn!
+
+Go Here To Secure not less than $975.00 commission Now and it still       
+growing as many people joining under you. important secure your 
+position right away: Your commission will Send Arrive Through ,Paypal,   
+or Credit Card in your area on JULY 20/2011...And Hurry this limited!!
+
+This Program Is Hands Free Once your Membership are set up, you will  
+be able to earn $975.00 in less than  2 hours a day.  I will show   
+you how we do that and then I will help you  through the process so 
+that YOU SUCCEED! You will access your money in any ATM in your area.
+
+Click below!!
+
+Earn in 5 seconds Click Here:===>>> http://oril.biz/2g
+
+TYPE  DATE   &  TIME ------- NEW MEMBERS ------------- COUNTRY
+
+P --JUNE.12 @ 2:38  AM ---Jinky Stephenson------ United States
+P --JUNE.12 @ 2:53  AM ---Ailaine Wood --------- United States
+P --JUNE.12 @ 2:56  AM ---Mandene Jonhson------- United States
+M --JUNE.12 @ 4:19  AM ---Cristian Chowdhry----- Singapore
+P --JUNE.12 @ 4:28  AM ---Jhon Carmalon--------- Italy
+M --JUNE.12 @ 6:01  AM ---lalaine Baker--------- Australia
+P --JUNE.11 @ 7:11  AM ---Rebecca Underwood----- Hungary
+P --JUNE.11 @ 7:39  AM ---Jericho Jackson------- Canada
+P --JUNE.11 @ 9:42  AM ---Thomas Lewis --------- Sri Lanka
+M --JUNE.11 @ 9:58  PM ---Grace Taylor---------- United Kingdom
+P --JUNE.11 @ 10:21 PM ---Gina Henry------------ New Zealand
+P --JUNE.10 @ 11:24 PM ---Mohammed Ahmen ------- Mexico
+M --JUNE.10 @ 11:33 PM ---Tracey Furlong-------- Puerto Rico
+P --JUNE.10 @ 11:41 PM ---Jane Brown------------ Potugal
+P --JUNE.10 @ 11:47 PM ---Janice Regan---------- Taiwan
+P --JUNE.10 @ 11:53 PM ---Shirley Ong----------- China
+P --JUNE.09 @ 1:45  AM ---Ryann Lambert -------- Europe
+M --JUNE.09 @ 12:34 AM ---Nick Gauci ----------- Calefornia
+M --JUNE.09 @ 10:24 AM ---Don Riley ------------ Netherland
+P --JUNE.09 @ 10:30 AM ---Lorne Whittaker ------ Swetzerland
+P --JUNE.09 @ 02:14 AM ---Ashwani Vohra -------- Brazil
+M --JUNE.08 @ 2:34  AM ---Kevin Hunt ----------- Sweden
+P --JUNE.08 @ 1:54  AM ---Charles James Mills -- South Africa
+P --JUNE.08 @ 12:34 AM ---Michael Cheney ------- New York
+P --JUNE.08 @ 6:45  AM ---Mohamed Salamaikom---- Saudi Arabia
+M --JUNE.07 @ 5:34  AM ---Aleksandar Gjuroski -- Japan
+P --JUNE.07 @ 12:34 PM ---Andrew Karim --------- England
+P --JUNE.07 @ 8:23  AM ---Carla Pereira -------- South Korea
+P --JUNE.07 @ 2:34  PM ---Carl Krause ---------- United States
+M --JUNE.07 @ 9:14  AM ---David Cook ----------- Denmark
+
+Therefore,you have a GUARANTEED $975.00 Commissions every month from now  
+on!Earn $39 Per Process!Each $39x30=$975.00 Commission will be yours...
+
+Be Sure to Copy the link below & Paste into your browser and press 
+enter: To Secure your $975.00 commission!!!
+
+Click below!!
+
+Earn in 5 seconds Click Here:===>>> http://oril.biz/2g
+
+Just one simple payment of $39 and you could have earn $975.00 that     
+is yours,And  you recieve unlimited commissions every 20th Next month.  
+Today its $975.00 For the  start of the month of JUNE 2011 if goes 
+up daily until the end of the month. 
+
+You must UPGRADE right away or before others do....
+
+Caring for Your Success, Michael Jones
+
+The RCT Affiliates Team
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
