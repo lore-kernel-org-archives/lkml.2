@@ -1,177 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438Ab1FMO27 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 10:28:59 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:60469 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752918Ab1FMO24 convert rfc822-to-8bit (ORCPT
+	id S1752899Ab1FMOZA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 10:25:00 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57876 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404Ab1FMOY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 10:28:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=vrfy.org; s=google;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=dYplKSjoRpXThOPaAIydMur9awp8LrRoVPDCl2YK56TbL/G169DLKcZ0kmHpMgHhSs
-         vTiXf2x+VmCN0rusbgd8/JMoKlUIKfM5ZXoVgv0zMpQqG6glFhECEke2r6oWk4U6KQ8Z
-         FcBrU1FPoQGjLaFHoMp2m/zfltc78FBXtLu5g=
-MIME-Version: 1.0
-In-Reply-To: <m14o3vukqg.fsf@fess.ebiederm.org>
-References: <1306930476-1899-1-git-send-email-lucas.demarchi@profusion.mobi>
- <BANLkTin6CP-A+UsGXyu9wb7U34wEN7DKsw@mail.gmail.com> <m18vtkq57c.fsf@fess.ebiederm.org>
- <BANLkTimcPweT-HONEtVDn3mD2a6dUGDEYA@mail.gmail.com> <20110602134338.0c56160e@lxorguk.ukuu.org.uk>
- <BANLkTik72cU_R5k9NLnqN_FNkm-y5Fk0nQ@mail.gmail.com> <m1hb88e3qs.fsf@fess.ebiederm.org>
- <BANLkTin5P8P_HR78qo0oyzeu9hpWazZqTw@mail.gmail.com> <m14o3vukqg.fsf@fess.ebiederm.org>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Mon, 13 Jun 2011 16:28:41 +0200
-Message-ID: <BANLkTimFiR0x9LQg3wQOX7wUULSg8tsaUA@mail.gmail.com>
-Subject: Re: [PATCH] sysctl: add support for poll()
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
+	Mon, 13 Jun 2011 10:24:59 -0400
+Date: Mon, 13 Jun 2011 07:28:50 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Kyungmin Park <kmpark@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>, James Morris <jmorris@namei.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
+        thomas.abraham@linaro.org
+Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
+ Power Management
+Message-ID: <20110613072850.7234462b@infradead.org>
+In-Reply-To: <20110612230707.GE2212@linux.vnet.ibm.com>
+References: <20110610171939.GE2230@linux.vnet.ibm.com>
+	<20110610172307.GA27630@srcf.ucam.org>
+	<20110610175248.GF2230@linux.vnet.ibm.com>
+	<20110610180807.GB28500@srcf.ucam.org>
+	<20110610184738.GG2230@linux.vnet.ibm.com>
+	<20110610192329.GA30496@srcf.ucam.org>
+	<20110610193713.GJ2230@linux.vnet.ibm.com>
+	<20110610200233.5ddd5a31@infradead.org>
+	<20110611170610.GA2212@linux.vnet.ibm.com>
+	<20110611102654.01e5cea9@infradead.org>
+	<20110612230707.GE2212@linux.vnet.ibm.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 12, 2011 at 17:34, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> Kay Sievers <kay.sievers@vrfy.org> writes:
->> On Thu, Jun 2, 2011 at 15:56, Eric W. Biederman <ebiederm@xmission.com> wrote:
->>> Lucas De Marchi <lucas.demarchi@profusion.mobi> writes:
->>
->>>> With this patch in, if anyone wants to manage a file under /proc/sys
->>>> there's really a small amount of code to write. He only has to define
->>>> the new poll struct for that file.
->>>
->>> The support currently appears cumbersome to add, and it adds what appear
->>> to be unnecessary wake ups (say when the hostname in another uts
->>> namespace changes).
->>
->> Yeah, *possibly* waking up once a day compared to *unconditionally*
->> waking up every second in every namespace and check if something has
->> changed. If that *possibly* should be optimized, which I think isn't
->> necessary at all, I guess the logic could be moved down to the
->> namespaced data.
->
-> Unless you happen to be on a system, where someone has decided that it
-> has a daemon that likes creating a new set of namespaces per connection
-> to reduce the effect of code bugs.  At which point you could be talking
-> much more than a wake up per second.
+On Sun, 12 Jun 2011 16:07:07 -0700
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> > 
+> > the codec issue seems to be solved in time; a previous generation
+> > silicon on our (Intel) side had ARM ecosystem blocks that did not do
+> > scatter gather, however the current generation ARM ecosystem blocks
+> > all seem to have added S/G to them....
+> > (in part this is coming from the strong desire to get camera/etc
+> > blocks to all use "GPU texture" class memory, so that the camera
+> > can directly deposit its information into a gpu texture, and
+> > similar for media encode/decode blocks... this avoids copies as
+> > well as duplicate memory).
+> 
+> That is indeed a clever approach!
+> 
+> Of course, if the GPU textures are in main memory, there will still
+> be memory consumption gains to be had as the image size varies (e.g.,
+> displaying image on one hand vs. menus and UI on the other). 
 
-What do you mean? We talk about changing the hostname, right? How
-often do we expect that to happen?
+graphics drivers and the whole graphics stack is set up to deal with
+that... textures aren't per se "screen size", the texture for a button
+is only as large as the button (with some rounding up to multiples of
+some small power of two) 
 
-You mean every network connection mounts a proc filesystem and runs a
-service that polls hostname files there?
 
->>> There is no explanation at all of why you care about the nis domainname.
->>
->> Just the same reason as the hostname, we need to know when the
->> kernel's internal state changes. regardless who did it and why, system
->> services need to follow it.
->
-> So the problem is that you have a system where userspace can't get it's
-> act together?
 
-There will never be a layer between the kernel and userspace that is
-centrally managed. The kernel keeps the authoritative data, so we need
-to know when _this_ data changes, not when some imaginary middle man
-might manage it.
 
-It will just never happen in reality, we stopped long ago being so
-naive. And 'getting the act together' today is 'watching what people
-did' to the kernel data, not tell them how to do it, or not to do it.
-
-We can change some parts sometimes, and recommend some sanity, but
-surely nobody will patch all the 15 dhcp clients to work with some
-strange higher-level hostname interface here. People use the syscall
-to set it, and there is nothing wrong with it, we just need to know
-it.
-
->>> Since there does not appear to be a specific problem that this problem
->>> is being aimed at, since the code just looks like extra maintenance and
->>> since the code needed to support this appears to be unnecessarily
->>> cumbersome I am going to nack the patch for now.
->>>
->>> Nacked-by: "Eric W. Biederman" <ebiederm@xmission.com>
->>
->> Please provide solid technical reasons, why we can't to the same we do
->> everywhere else since years, or provide working alternatives. Until
->> then:
->>
->> Acked-By: Kay Sievers <kay.sievers@vrfy.org>
->
-> Looking a little closer the patch is broken.
->
-> It changes the return of poll for every file under /proc/sys reporting
-> no file under /proc/sys is writable unless it implements the new poll
-> method.
-
-Poll is undefined for regular files, or proc/sys files which don't
-implement it. What do you mean with writable? How does not providing
-poll() affect write()?
-
-> Also with having the wait_queue owned by the calling code either I am
-> mistake or this breaks hotplug type situations.  How do you get things
-> off of your wait queue when you remove a file from /proc/sys.
->
-> This
-> infrastructure as written looks like a setup for use after free
-> problems.
-
-The wait queue is in static non-allocated code. What do you mean?
-
->> I think poll() is the natural interface if you care about the data in
->> a file. It's the same an single fd you care, and not some iniotify
->> watch, fd, pathname to register, and filter for whatever comes out
->> there.
->
-> Sort of.  poll is really designed for socket and pipe data.
->
-> The problem with poll is there is no POLLUPDATED.
-
-Right, hence we use POLLERR|POLLPRI, to indicate something has
-changed. The case is kind of special because poll does not tell 'there
-is more to read' but 'something happend, re-read it again'.
-
->> We already use exactly the same semantics for quite some years for
->> /proc/mounts, /proc/swaps, /proc/mdstat, ... and all over /sys. The
->> patch just provides the missing pieces that /proc provides, but
->> /proc/sys is missing.
->
-> Good point.
->
-> There is still the problem that the infrastructure code for the proc
-> sysctl files are in much worse shape than the sysfs files.
->
->> I don't disagree, it might be nice to have generic inotify support on
->> /proc for this or other problems. But unless you want to work on it
->> now, and it would solve these problems, I don't see how we can get the
->> functionality we need, and that seems to solved with this patch.
->> Besides the fact that I think poll() is the simple and better
->> solution.
->
-> Which is a question that has never been answered.
-
-Sure, any other easy-to-use and easy-to-get-working interface you have
-in mind? We can certainly use something else if it can provide us with
-the updates we are looking for.
-
-> What functionality
-> do you need?  To me this all looks like a bad science experiment.
-
-We need a simple interface to detect changes to the hostname data in
-the kernel. It does not matter if the proc file is written or
-sethostname() or hostname(1) is used. Any source of such change needs
-to be propagated to running system services, to adapt to the new
-hostname.
-
-Kay
+-- 
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
