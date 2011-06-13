@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110Ab1FMCy6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 22:54:58 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55319 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705Ab1FMCy4 (ORCPT
+	id S1753199Ab1FMCzq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 22:55:46 -0400
+Received: from DMZ-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.36]:54196 "EHLO
+	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752530Ab1FMCzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 22:54:56 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DF57BF1.90509@jp.fujitsu.com>
-Date: Mon, 13 Jun 2011 11:54:41 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	Sun, 12 Jun 2011 22:55:44 -0400
+X-AuditID: 12074424-b7bc6ae000005a77-52-4df57c2fc43e
+Message-ID: <4DF57C29.4070601@mit.edu>
+Date: Sun, 12 Jun 2011 22:55:37 -0400
+From: Andy Lutomirski <luto@MIT.EDU>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: drepper@akkadia.org
-CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        rientjes@google.com, torvalds@linux-foundation.org,
-        viro@zeniv.linux.org.uk, wilsons@start.ca,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] Add cloexec information to fdinfo
-References: <201106100355.p5A3t8Aa024924@drepperk.user.openhosting.com>
-In-Reply-To: <201106100355.p5A3t8Aa024924@drepperk.user.openhosting.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+Newsgroups: gmane.linux.kernel
+To: "wanlong.gao" <wanlong.gao@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Peter Jones <pjones@redhat.com>
+Subject: Re: [PATCH] efifb: Fix call to wrong unregister function
+References: <1307875953.1859.6.camel@Tux>
+In-Reply-To: <1307875953.1859.6.camel@Tux>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOKsWRmVeSWpSXmKPExsUixCmqratf89XXYPUeeYsTfR9YLS7vmsNm
+	8WrCa3aLroU32C3OHHnG6sDqsXPWXXaP9/uusnl83iQXwBzFZZOSmpNZllqkb5fAlfFzDU/B
+	H7aKzvPf2RoYT7N2MXJwSAiYSFx9KNjFyAlkiklcuLeerYuRi0NIYB+jxLE7J1kgnA2MEq2z
+	9jFCOG+ZJJ5efsYK0sIroCZxc85DMJtFQFXiwOnLjCA2m4CKRMfSB0wgtqhApcSknzug6gUl
+	Ts58wgJi8wnISUzc+owZxBYR0JTYf/gKO8gCZoG5jBJTr60EaxAWcJQ4u3czO4gtBFT0e9U7
+	sGZOAS2JL8eWgTUzC5hJdG3tYoSw5SW2v53DPIFRaBaSfbOQlM1CUraAkXkVo2xKbpVubmJm
+	TnFqsm5xcmJeXmqRrrlebmaJXmpK6SZGUPizu6jsYGw+pHSIUYCDUYmHt/jKF18h1sSy4src
+	Q4ySHExKorzyVV99hfiS8lMqMxKLM+KLSnNSiw8xSnAwK4nw9r4CKudNSaysSi3Kh0lJc7Ao
+	ifPOk1T3FRJITyxJzU5NLUgtgsnKcHAoSfAGVQMNFSxKTU+tSMvMKUFIM3FwggznARruB1LD
+	W1yQmFucmQ6RP8WoKCXOuwEkIQCSyCjNg+uFpadXjOJArwjzTgKp4gGmNrjuV0CDmYAGC5R+
+	BhlckoiQkmpgXJWbIXJ+u6cJ7xE2xb6YZHHmLXUXBBzbXV9nqwdmRYiv79Y2nrEzf8/T+BXb
+	7fle3j4mvFJk3trpx4V/74n41vexvH4+T1Wjckif3Bb/09P9PpR8X6cSLnb/wEM/56l3tQ2N
+	sndtuqj855t0Y5Gw4pEYuX09H8VYruTz8/WfuVv0YfcL5954JZbijERDLeai4kQAJjM2KCoD
+	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/10 12:55), drepper@akkadia.org wrote:
-> There is one piece of information about a file descriptor which is
-> currently not visible from the outside: the close-on-exec flag.  The
-> /proc/PID/fdinfo/* files have the mode information but this is
-> missing.  Is the following patch acceptable?
-> 
-> What I don't know is whether the RCU locking is needed given that
-> real locks are taken.  Someone with more knowledge could just
-> remove those two lines.
-> 
-> 
-> Signed-off-by: Ulrich Drepper <drepper@gmail.com>
-> 
->  base.c |   17 ++++++++++++++---
->  1 file changed, 14 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/proc/base.c b/fs/proc/base.c
-> index 14def99..bda3651 100644
-> --- a/fs/proc/base.c
-> +++ b/fs/proc/base.c
-> @@ -1924,12 +1924,23 @@ static int proc_fd_info(struct inode *inode, struct path *path, char *info)
->  				*path = file->f_path;
->  				path_get(&file->f_path);
->  			}
-> -			if (info)
-> +			if (info) {
-> +				int cloexec;
-> +				struct fdtable *fdt;
-> +
-> +				rcu_read_lock();
-> +				fdt = files_fdtable(files);
-> +				cloexec = FD_ISSET(fd, fdt->close_on_exec);
-> +				rcu_read_unlock();
-> +
->  				snprintf(info, PROC_FDINFO_MAX,
->  					 "pos:\t%lli\n"
-> -					 "flags:\t0%o\n",
-> +					 "flags:\t0%o\n"
-> +					 "cloexec: %d\n",
->  					 (long long) file->f_pos,
-> -					 file->f_flags);
-> +					 file->f_flags,
-> +					 cloexec);
-> +			}
->  			spin_unlock(&files->file_lock);
->  			put_files_struct(files);
->  			return 0;
+On 06/12/2011 06:52 AM, wanlong.gao wrote:
+> <snip>
+>
+> Hi Maarten:
+> It registered efifb_device but try to unregistered efifb_driver,
+> so I think you should fix it like this?
+>
+> Signed-off-by: Wanlong Gao<wanlong.gao@gmail.com>
+> ---
+>   drivers/video/efifb.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
+> index 69c49df..784139a 100644
+> --- a/drivers/video/efifb.c
+> +++ b/drivers/video/efifb.c
+> @@ -541,7 +541,7 @@ static int __init efifb_init(void)
+>   	 */
+>   	ret = platform_driver_probe(&efifb_driver, efifb_probe);
+>   	if (ret) {
+> -		platform_device_unregister(&efifb_driver);
+> +		platform_device_unregister(&efifb_device);
+>   		return ret;
+>   	}
+>
 
-I think this is correct and useful. However I don't know fdtable life cycle detail.
-cc to linux-fsdevel.
+Acked-by: Andy Lutomirski <luto@mit.edu>
 
+That's my bug.  Sorry.  I'm not sure why it compiled, though.
+
+--Andy
