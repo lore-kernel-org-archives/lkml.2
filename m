@@ -1,75 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab1FMBes (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 21:34:48 -0400
-Received: from mga01.intel.com ([192.55.52.88]:30964 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754656Ab1FMBeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 21:34:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,356,1304319600"; 
-   d="scan'208";a="15442200"
-Message-ID: <4DF56934.9000705@intel.com>
-Date: Mon, 13 Jun 2011 09:34:44 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110510 Iceowl/1.0b2 Icedove/3.1.10
+	id S1754838Ab1FMBmV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 21:42:21 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:57355 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754338Ab1FMBmT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 21:42:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=RQ3XRiOsqMmlAwgpSmDsaYWu3EHF1+04jX5rseHXTWKD3kC8464mIcvVbZfyYQuhhX
+         wYHV9BYKqtji+t0N/aCA==
+Date: Sun, 12 Jun 2011 18:41:58 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ying Han <yinghan@google.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] [BUGFIX] update mm->owner even if no next owner.
+In-Reply-To: <20110611175136.GA31154@cmpxchg.org>
+Message-ID: <alpine.LSU.2.00.1106121828220.31463@sister.anvils>
+References: <BANLkTikCfWhoLNK__ringzy7KjKY5ZEtNb3QTuX1jJ53wNNysA@mail.gmail.com> <BANLkTikF7=qfXAmrNzyMSmWm7Neh6yMAB8EbBp7oLcfQmrbDjA@mail.gmail.com> <20110610091355.2ce38798.kamezawa.hiroyu@jp.fujitsu.com> <alpine.LSU.2.00.1106091812030.4904@sister.anvils>
+ <20110610113311.409bb423.kamezawa.hiroyu@jp.fujitsu.com> <20110610121949.622e4629.kamezawa.hiroyu@jp.fujitsu.com> <20110610125551.385ea7ed.kamezawa.hiroyu@jp.fujitsu.com> <20110610133021.2eaaf0da.kamezawa.hiroyu@jp.fujitsu.com> <alpine.LSU.2.00.1106101425400.28334@sister.anvils>
+ <20110610235442.GA21413@cmpxchg.org> <20110611175136.GA31154@cmpxchg.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: Andi Kleen <ak@linux.intel.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
-        huang ying <huang.ying.caritas@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
-References: <4DCF7413.4070704@gmail.com> <4DD07959.4030608@intel.com> <20110516190310.GH31888@redhat.com> <4DD20A2F.604@intel.com> <20110517142427.GL31888@redhat.com> <20110517163847.GF24805@tassilo.jf.intel.com> <20110517175707.GP31888@redhat.com> <20110517181859.GA25937@tassilo.jf.intel.com> <20110517190738.GH29881@redhat.com> <4DD622A5.9030902@intel.com> <20110609120928.GR8162@redhat.com>
-In-Reply-To: <20110609120928.GR8162@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-140283987-1307929327=:31463"
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2011 08:09 PM, Don Zickus wrote:
-> On Fri, May 20, 2011 at 04:13:25PM +0800, Huang Ying wrote:
->> Hi, Don,
->>
->> On 05/18/2011 03:07 AM, Don Zickus wrote:
->>> On Tue, May 17, 2011 at 11:18:59AM -0700, Andi Kleen wrote:
->>>>> Random thought, in the Firmware first mode of HEST (which is the only way
->>>>> GHES records get produced??), does an SCI happen first to jump into the
->>>>> firmware for processing, then an NMI?
->>>>
->>>> Either that or there is a separate service processor which handles it.
->>>> Presumably it depends a lot on the particular system.
->>>
->>> Ah interesting.  I was going to suggest somehow setting a bit when an SCI
->>> comes in and check that bit in the unknown NMI path as a possible hint
->>> that the NMI might be related to HEST (sorta how we flag unknown NMIs in
->>> the perf code).
->>>
->>> It was just an idea.  Obviously a service processor will make that more
->>> difficult. :-)
->>
->> Hmm, what's the conclusion?  Do you think unknown NMI should be seen as
->> hardware error?  At least on some white listed machines?
-> 
-> I still sorta have the opinion that a hardware error should be able be
-> recognizable either through a GHES record or a bit in the southbridge.
-> Whereas an unknown NMI is something lost and has no owner as the result of
-> either a buggy NMI handler or an unimplemented NMI handler.
-> 
-> Yeah, I can see hardware errors coming in through an unknown NMI but to me
-> (from what I am reading about with APEI/GHES) is those should be trapped
-> by the firmware and if they aren't then the firmware is broken.  In those
-> cases it should be up to the OEM to provide proper firmware (even certify
-> them) to allow the proper experience, which includes being properly
-> trapped by an NMI handler.
-> 
-> Perhaps I am a bit naive in my belief but I am a little nervous panicing
-> all the time on unknown NMIs when we are still chasing missed perf NMIs on
-> a loaded box.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-I think things SHOULD go this way too.  This just is not the reality.
+--8323584-140283987-1307929327=:31463
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-Best Regards,
-Huang Ying
+On Sat, 11 Jun 2011, Johannes Weiner wrote:
+> On Sat, Jun 11, 2011 at 01:54:42AM +0200, Johannes Weiner wrote:
+> > On Fri, Jun 10, 2011 at 02:49:35PM -0700, Hugh Dickins wrote:
+> > > On Fri, 10 Jun 2011, KAMEZAWA Hiroyuki wrote:
+> > > >=20
+> > > > I think this can be a fix.=20
+> > >=20
+> > > Sorry, I think not: I've not digested your rationale,
+> > > but three things stand out:
+> > >=20
+> > > 1. Why has this only just started happening?  I may not have run that
+> > >    test on 3.0-rc1, but surely I ran it for hours with 2.6.39;
+> > >    maybe not with khugepaged, but certainly with ksmd.
+> > >=20
+> > > 2. Your hunk below:
+> > > > -=09if (!mm_need_new_owner(mm, p))
+> > > > +=09if (!mm_need_new_owner(mm, p)) {
+> > > > +=09=09rcu_assign_pointer(mm->owner, NULL);
+> > >    is now setting mm->owner to NULL at times when we were sure it did=
+ not
+> > >    need updating before (task is not the owner): you're damaging mm->=
+owner.
+>=20
+> This is a problem with the patch, but I think Kame's analysis and
+> approach to fix it are still correct.
+
+Yes, I was looking at his patch, when I should have spent more time
+reading his comments: you're right, the analysis is fine, and I too
+dislike stale pointers.
+
+>=20
+> mm_update_next_owner() does not set mm->owner to NULL when the last
+> possible owner goes away, but leaves it pointing to a possibly stale
+> task struct.
+>=20
+> Noone cared before khugepaged, and up to Andrea's patch khugepaged
+> prevented the last possible owner from exiting until the call into the
+> memory controller had finished.
+>=20
+> Here is a revised version of Kame's fix.
+
+It seems to be strangely difficult to get right!
+I have no idea what your
+=09if (atomic_read(&mm->mm_users <=3D 1)) {
+actually ends up doing, I'm surprised it only gives compiler warnings
+rather than an error.
+
+The version I've signed off and am actually testing is below;
+but I've not had enough time to spare on the machine which reproduced
+it before, and another I thought I'd delegate it to last night,
+failed to reproduce without the patch.  Try again tonight.
+
+Thought I'd better respond despite inadequate testing, given the flaw
+in the posted patch.  Hope the one below is flawless.
+
+Hugh
+
+>=20
+> ---
+
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH] [BUGFIX] mm: clear mm->owner when last possible owner leav=
+es
+
+The following crash was reported:
+
+> Call Trace:
+> =A0[<ffffffff81139792>] mem_cgroup_from_task+0x15/0x17
+> =A0[<ffffffff8113a75a>] __mem_cgroup_try_charge+0x148/0x4b4
+> =A0[<ffffffff810493f3>] ? need_resched+0x23/0x2d
+> =A0[<ffffffff814cbf43>] ? preempt_schedule+0x46/0x4f
+> =A0[<ffffffff8113afe8>] mem_cgroup_charge_common+0x9a/0xce
+> =A0[<ffffffff8113b6d1>] mem_cgroup_newpage_charge+0x5d/0x5f
+> =A0[<ffffffff81134024>] khugepaged+0x5da/0xfaf
+> =A0[<ffffffff81078ea0>] ? __init_waitqueue_head+0x4b/0x4b
+> =A0[<ffffffff81133a4a>] ? add_mm_counter.constprop.5+0x13/0x13
+> =A0[<ffffffff81078625>] kthread+0xa8/0xb0
+> =A0[<ffffffff814d13e8>] ? sub_preempt_count+0xa1/0xb4
+> =A0[<ffffffff814d5664>] kernel_thread_helper+0x4/0x10
+> =A0[<ffffffff814ce858>] ? retint_restore_args+0x13/0x13
+> =A0[<ffffffff8107857d>] ? __init_kthread_worker+0x5a/0x5a
+
+What happens is that khugepaged tries to charge a huge page against an
+mm whose last possible owner has already exited, and the memory
+controller crashes when the stale mm->owner is used to look up the
+cgroup to charge.
+
+mm->owner has never been set to NULL with the last owner going away,
+but nobody cared until khugepaged came along.
+
+Even then it wasn't a problem because the final mmput() on an mm was
+forced to acquire and release mmap_sem in write-mode, preventing an
+exiting owner to go away while the mmap_sem was held, and until
+"692e0b3 mm: thp: optimize memcg charge in khugepaged", the memory
+cgroup charge was protected by mmap_sem in read-mode.
+
+Instead of going back to relying on the mmap_sem to enforce lifetime
+of a task, this patch ensures that mm->owner is properly set to NULL
+when the last possible owner is exiting, which the memory controller
+can handle just fine.
+
+Reported-by: Hugh Dickins <hughd@google.com>
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
+
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 20a4064..ef8ff79 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -563,27 +563,27 @@ void exit_files(struct task_struct *tsk)
+ /*
+  * Task p is exiting and it owned mm, lets find a new owner for it
+  */
+-static inline int
+-mm_need_new_owner(struct mm_struct *mm, struct task_struct *p)
+-{
+-=09/*
+-=09 * If there are other users of the mm and the owner (us) is exiting
+-=09 * we need to find a new owner to take on the responsibility.
+-=09 */
+-=09if (atomic_read(&mm->mm_users) <=3D 1)
+-=09=09return 0;
+-=09if (mm->owner !=3D p)
+-=09=09return 0;
+-=09return 1;
+-}
+-
+ void mm_update_next_owner(struct mm_struct *mm)
+ {
+ =09struct task_struct *c, *g, *p =3D current;
+=20
+ retry:
+-=09if (!mm_need_new_owner(mm, p))
++=09/*
++=09 * If the exiting or execing task is not the owner, it's
++=09 * someone else's problem.
++=09 */
++=09if (mm->owner !=3D p)
++=09=09return;
++
++=09/*
++=09 * The current owner is exiting/execing and there are no other
++=09 * candidates.  Do not leave the mm pointing to a possibly
++=09 * freed task structure.
++=09 */
++=09if (atomic_read(&mm->mm_users) <=3D 1) {
++=09=09mm->owner =3D NULL;
+ =09=09return;
++=09}
+=20
+ =09read_lock(&tasklist_lock);
+ =09/*
+--8323584-140283987-1307929327=:31463--
