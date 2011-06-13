@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab1FMVZq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 17:25:46 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47812 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754345Ab1FMVZn (ORCPT
+	id S1754818Ab1FMVaI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 17:30:08 -0400
+Received: from relay03.digicable.hu ([92.249.128.185]:41165 "EHLO
+	relay03.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754115Ab1FMVaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 17:25:43 -0400
-Date: Mon, 13 Jun 2011 14:25:01 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>
-Subject: Re: [BUGFIX][PATCH 5/5] memcg: fix percpu cached charge draining
- frequency
-Message-Id: <20110613142501.15e14b2f.akpm@linux-foundation.org>
-In-Reply-To: <20110613121648.3d28afcd.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110613120054.3336e997.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110613121648.3d28afcd.kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Jun 2011 17:30:04 -0400
+Message-ID: <4DF68151.4080109@freemail.hu>
+Date: Mon, 13 Jun 2011 23:29:53 +0200
+From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@suse.de>, Matt Mooney <mfm@muteddisk.com>,
+        Max Vozeler <max@hinterhof.net>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/3] usbip: only dump valid port status
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Original: 94.21.187.147
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Jun 2011 12:16:48 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+From: Márton Németh <nm127@freemail.hu>
 
-> >From 18b12e53f1cdf6d7feed1f9226c189c34866338c Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Mon, 13 Jun 2011 11:25:43 +0900
-> Subject: [PATCH 5/5] memcg: fix percpu cached charge draining frequency
-> 
->  For performance, memory cgroup caches some "charge" from res_counter
->  into per cpu cache. This works well but because it's cache,
->  it needs to be flushed in some cases. Typical cases are
->          1. when someone hit limit.
->          2. when rmdir() is called and need to charges to be 0.
-> 
-> But "1" has problem.
-> 
-> Recently, with large SMP machines, we see many kworker runs because
-> of flushing memcg's cache. Bad things in implementation are
-> that even if a cpu contains a cache for memcg not related to
-> a memcg which hits limit, drain code is called.
-> 
-> This patch does
-> 	A) check percpu cache contains a useful data or not.
-> 	B) check other asynchronous percpu draining doesn't run.
-> 	C) don't call local cpu callback.
-> 	D) don't call at softlimit reclaim.
-> 
->
-> ...
->
-> +DEFINE_MUTEX(percpu_charge_mutex);
+The wIndex parameter of vhci_hub_control() is always zero when the
+request type is GetHubDescriptor, see drivers/usb/core/hub.c::get_hub_descriptor()
+and Universal Serial Bus Specification revision 2.0 (April 27, 2000) Section
+11.24.2.5 "Get Hub Descriptor". This means the variable rhport will not contain
+any useful index. Only use valid rhport values.
 
-I made this static.  If we later wish to give it kernel-wide scope then
-"percpu_charge_mutex" will not be a good choice of name.
+Signed-off-by: Márton Németh <nm127@freemail.hu>
+---
+ drivers/staging/usbip/vhci_hcd.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
+index 359b464..512a97f 100644
+--- a/drivers/staging/usbip/vhci_hcd.c
++++ b/drivers/staging/usbip/vhci_hcd.c
+@@ -464,8 +464,11 @@ static int vhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
+
+ 	if (usbip_dbg_flag_vhci_rh) {
+ 		pr_debug("port %d\n", rhport);
+-		dump_port_status(prev_port_status[rhport]);
+-		dump_port_status(dum->port_status[rhport]);
++		/* Only dump valid port status */
++		if (0 <= rhport) {
++			dump_port_status(prev_port_status[rhport]);
++			dump_port_status(dum->port_status[rhport]);
++		}
+ 	}
+ 	usbip_dbg_vhci_rh(" bye\n");
+
+-- 
+1.7.2.5
 
