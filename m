@@ -1,56 +1,585 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532Ab1FMSOP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 14:14:15 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33480 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752985Ab1FMSOO (ORCPT
+	id S1752365Ab1FMSOq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 14:14:46 -0400
+Received: from brigitte.telenet-ops.be ([195.130.137.66]:45687 "EHLO
+	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158Ab1FMSOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 14:14:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=cZYd37vM0E8mKA5uzP4+88n8OdXwno33jmbg+gWUcfjJu/y1ZpZx34bCqpzFuM0VUO
-         DFaPFXXp2aJxPEJb8JjjJObBxYpQQUa/LAgHRDWuEsbuSBObBk/l9yCHv0rygLNIXu9e
-         3eYTP6BP4IpWgIopR9f24I4DpSFTMweTTMk/8=
-Message-ID: <4DF65372.7090307@gmail.com>
-Date: Mon, 13 Jun 2011 20:14:10 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Yinghai Lu <yinghai@kernel.org>, Jim Bos <jim876@xs4all.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-References: <BANLkTikVEj2Uz9N0B-kKA3GJTUWzmwz=zQ@mail.gmail.com> <20110607014127.GA8450@srcf.ucam.org> <4DED8752.5070005@kernel.org> <4DEDEA73.7010900@gmail.com> <20110610164706.GB25774@srcf.ucam.org> <4DF259B2.9070403@gmail.com> <20110610175429.GA28500@srcf.ucam.org> <4DF29E7E.50908@gmail.com> <20110613164712.GA23343@srcf.ucam.org> <4DF64E6A.70700@gmail.com> <20110613180006.GA24902@srcf.ucam.org>
-In-Reply-To: <20110613180006.GA24902@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Jun 2011 14:14:43 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jonathan Elchison <jelchison@gmail.com>, linux-m68k@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] m68k/math-emu: Remove commented out old code
+Date: Mon, 13 Jun 2011 20:14:35 +0200
+Message-Id: <1307988875-21690-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 13-06-11 20:00, Matthew Garrett schreef:
-> On Mon, Jun 13, 2011 at 07:52:42PM +0200, Maarten Lankhorst wrote:
->>> +		 */
->>> +
->>> +		if ((start <= virt_to_phys(_etext)-1 && end >= virt_to_phys(_text)) ||
->>> +		    (start <= virt_to_phys(_edata)-1 && end >= virt_to_phys(_etext)) ||
->> _etext -> _sdata perhaps?
-> _etext is used for the resource allocation earlier, which seems like 
-> it's probably the relevant thing to be copying.
-I meant the second comparison, start <= edata && end >= _etext
->>>  		memblock_x86_reserve_range(start, start + size, "EFI Boot");
->>>  	}
->>>  }
->> Will test though. It might also be appropriate to put a WARN when that condition happens.
-> That'd end up triggering even in cases that are absolutely safe (ie, the 
-> firmware doesn't have this bug). The amount of suck here is incredible.
-Still a crapload of swapper BUGs in free_init_pages, maybe you should just give up on this approach,
-and call SetVirtualAddressMap before anything of importance runs. :-/
+It's been unused for ages, and contains bugs (e.g. incorrect shifts in
+lsl64()).
 
-My kernel never needed the boot code hack btw, so I'm probably a terrible test subject for it.
+Reported-by: Jonathan Elchison <jelchison@gmail.com>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/m68k/math-emu/multi_arith.h |  530 --------------------------------------
+ 1 files changed, 0 insertions(+), 530 deletions(-)
 
-~Maarten
+diff --git a/arch/m68k/math-emu/multi_arith.h b/arch/m68k/math-emu/multi_arith.h
+index 4ad0ca9..4b5eb3d 100644
+--- a/arch/m68k/math-emu/multi_arith.h
++++ b/arch/m68k/math-emu/multi_arith.h
+@@ -19,246 +19,6 @@
+ #ifndef MULTI_ARITH_H
+ #define MULTI_ARITH_H
+ 
+-#if 0	/* old code... */
+-
+-/* Unsigned only, because we don't need signs to multiply and divide. */
+-typedef unsigned int int128[4];
+-
+-/* Word order */
+-enum {
+-	MSW128,
+-	NMSW128,
+-	NLSW128,
+-	LSW128
+-};
+-
+-/* big-endian */
+-#define LO_WORD(ll) (((unsigned int *) &ll)[1])
+-#define HI_WORD(ll) (((unsigned int *) &ll)[0])
+-
+-/* Convenience functions to stuff various integer values into int128s */
+-
+-static inline void zero128(int128 a)
+-{
+-	a[LSW128] = a[NLSW128] = a[NMSW128] = a[MSW128] = 0;
+-}
+-
+-/* Human-readable word order in the arguments */
+-static inline void set128(unsigned int i3, unsigned int i2, unsigned int i1,
+-			  unsigned int i0, int128 a)
+-{
+-	a[LSW128] = i0;
+-	a[NLSW128] = i1;
+-	a[NMSW128] = i2;
+-	a[MSW128] = i3;
+-}
+-
+-/* Convenience functions (for testing as well) */
+-static inline void int64_to_128(unsigned long long src, int128 dest)
+-{
+-	dest[LSW128] = (unsigned int) src;
+-	dest[NLSW128] = src >> 32;
+-	dest[NMSW128] = dest[MSW128] = 0;
+-}
+-
+-static inline void int128_to_64(const int128 src, unsigned long long *dest)
+-{
+-	*dest = src[LSW128] | (long long) src[NLSW128] << 32;
+-}
+-
+-static inline void put_i128(const int128 a)
+-{
+-	printk("%08x %08x %08x %08x\n", a[MSW128], a[NMSW128],
+-	       a[NLSW128], a[LSW128]);
+-}
+-
+-/* Internal shifters:
+-
+-   Note that these are only good for 0 < count < 32.
+- */
+-
+-static inline void _lsl128(unsigned int count, int128 a)
+-{
+-	a[MSW128] = (a[MSW128] << count) | (a[NMSW128] >> (32 - count));
+-	a[NMSW128] = (a[NMSW128] << count) | (a[NLSW128] >> (32 - count));
+-	a[NLSW128] = (a[NLSW128] << count) | (a[LSW128] >> (32 - count));
+-	a[LSW128] <<= count;
+-}
+-
+-static inline void _lsr128(unsigned int count, int128 a)
+-{
+-	a[LSW128] = (a[LSW128] >> count) | (a[NLSW128] << (32 - count));
+-	a[NLSW128] = (a[NLSW128] >> count) | (a[NMSW128] << (32 - count));
+-	a[NMSW128] = (a[NMSW128] >> count) | (a[MSW128] << (32 - count));
+-	a[MSW128] >>= count;
+-}
+-
+-/* Should be faster, one would hope */
+-
+-static inline void lslone128(int128 a)
+-{
+-	asm volatile ("lsl.l #1,%0\n"
+-		      "roxl.l #1,%1\n"
+-		      "roxl.l #1,%2\n"
+-		      "roxl.l #1,%3\n"
+-		      :
+-		      "=d" (a[LSW128]),
+-		      "=d"(a[NLSW128]),
+-		      "=d"(a[NMSW128]),
+-		      "=d"(a[MSW128])
+-		      :
+-		      "0"(a[LSW128]),
+-		      "1"(a[NLSW128]),
+-		      "2"(a[NMSW128]),
+-		      "3"(a[MSW128]));
+-}
+-
+-static inline void lsrone128(int128 a)
+-{
+-	asm volatile ("lsr.l #1,%0\n"
+-		      "roxr.l #1,%1\n"
+-		      "roxr.l #1,%2\n"
+-		      "roxr.l #1,%3\n"
+-		      :
+-		      "=d" (a[MSW128]),
+-		      "=d"(a[NMSW128]),
+-		      "=d"(a[NLSW128]),
+-		      "=d"(a[LSW128])
+-		      :
+-		      "0"(a[MSW128]),
+-		      "1"(a[NMSW128]),
+-		      "2"(a[NLSW128]),
+-		      "3"(a[LSW128]));
+-}
+-
+-/* Generalized 128-bit shifters:
+-
+-   These bit-shift to a multiple of 32, then move whole longwords.  */
+-
+-static inline void lsl128(unsigned int count, int128 a)
+-{
+-	int wordcount, i;
+-
+-	if (count % 32)
+-		_lsl128(count % 32, a);
+-
+-	if (0 == (wordcount = count / 32))
+-		return;
+-
+-	/* argh, gak, endian-sensitive */
+-	for (i = 0; i < 4 - wordcount; i++) {
+-		a[i] = a[i + wordcount];
+-	}
+-	for (i = 3; i >= 4 - wordcount; --i) {
+-		a[i] = 0;
+-	}
+-}
+-
+-static inline void lsr128(unsigned int count, int128 a)
+-{
+-	int wordcount, i;
+-
+-	if (count % 32)
+-		_lsr128(count % 32, a);
+-
+-	if (0 == (wordcount = count / 32))
+-		return;
+-
+-	for (i = 3; i >= wordcount; --i) {
+-		a[i] = a[i - wordcount];
+-	}
+-	for (i = 0; i < wordcount; i++) {
+-		a[i] = 0;
+-	}
+-}
+-
+-static inline int orl128(int a, int128 b)
+-{
+-	b[LSW128] |= a;
+-}
+-
+-static inline int btsthi128(const int128 a)
+-{
+-	return a[MSW128] & 0x80000000;
+-}
+-
+-/* test bits (numbered from 0 = LSB) up to and including "top" */
+-static inline int bftestlo128(int top, const int128 a)
+-{
+-	int r = 0;
+-
+-	if (top > 31)
+-		r |= a[LSW128];
+-	if (top > 63)
+-		r |= a[NLSW128];
+-	if (top > 95)
+-		r |= a[NMSW128];
+-
+-	r |= a[3 - (top / 32)] & ((1 << (top % 32 + 1)) - 1);
+-
+-	return (r != 0);
+-}
+-
+-/* Aargh.  We need these because GCC is broken */
+-/* FIXME: do them in assembly, for goodness' sake! */
+-static inline void mask64(int pos, unsigned long long *mask)
+-{
+-	*mask = 0;
+-
+-	if (pos < 32) {
+-		LO_WORD(*mask) = (1 << pos) - 1;
+-		return;
+-	}
+-	LO_WORD(*mask) = -1;
+-	HI_WORD(*mask) = (1 << (pos - 32)) - 1;
+-}
+-
+-static inline void bset64(int pos, unsigned long long *dest)
+-{
+-	/* This conditional will be optimized away.  Thanks, GCC! */
+-	if (pos < 32)
+-		asm volatile ("bset %1,%0":"=m"
+-			      (LO_WORD(*dest)):"id"(pos));
+-	else
+-		asm volatile ("bset %1,%0":"=m"
+-			      (HI_WORD(*dest)):"id"(pos - 32));
+-}
+-
+-static inline int btst64(int pos, unsigned long long dest)
+-{
+-	if (pos < 32)
+-		return (0 != (LO_WORD(dest) & (1 << pos)));
+-	else
+-		return (0 != (HI_WORD(dest) & (1 << (pos - 32))));
+-}
+-
+-static inline void lsl64(int count, unsigned long long *dest)
+-{
+-	if (count < 32) {
+-		HI_WORD(*dest) = (HI_WORD(*dest) << count)
+-		    | (LO_WORD(*dest) >> count);
+-		LO_WORD(*dest) <<= count;
+-		return;
+-	}
+-	count -= 32;
+-	HI_WORD(*dest) = LO_WORD(*dest) << count;
+-	LO_WORD(*dest) = 0;
+-}
+-
+-static inline void lsr64(int count, unsigned long long *dest)
+-{
+-	if (count < 32) {
+-		LO_WORD(*dest) = (LO_WORD(*dest) >> count)
+-		    | (HI_WORD(*dest) << (32 - count));
+-		HI_WORD(*dest) >>= count;
+-		return;
+-	}
+-	count -= 32;
+-	LO_WORD(*dest) = HI_WORD(*dest) >> count;
+-	HI_WORD(*dest) = 0;
+-}
+-#endif
+-
+ static inline void fp_denormalize(struct fp_ext *reg, unsigned int cnt)
+ {
+ 	reg->exp += cnt;
+@@ -481,117 +241,6 @@ static inline void fp_dividemant(union fp_mant128 *dest, struct fp_ext *src,
+ 	}
+ }
+ 
+-#if 0
+-static inline unsigned int fp_fls128(union fp_mant128 *src)
+-{
+-	unsigned long data;
+-	unsigned int res, off;
+-
+-	if ((data = src->m32[0]))
+-		off = 0;
+-	else if ((data = src->m32[1]))
+-		off = 32;
+-	else if ((data = src->m32[2]))
+-		off = 64;
+-	else if ((data = src->m32[3]))
+-		off = 96;
+-	else
+-		return 128;
+-
+-	asm ("bfffo %1{#0,#32},%0" : "=d" (res) : "dm" (data));
+-	return res + off;
+-}
+-
+-static inline void fp_shiftmant128(union fp_mant128 *src, int shift)
+-{
+-	unsigned long sticky;
+-
+-	switch (shift) {
+-	case 0:
+-		return;
+-	case 1:
+-		asm volatile ("lsl.l #1,%0"
+-			: "=d" (src->m32[3]) : "0" (src->m32[3]));
+-		asm volatile ("roxl.l #1,%0"
+-			: "=d" (src->m32[2]) : "0" (src->m32[2]));
+-		asm volatile ("roxl.l #1,%0"
+-			: "=d" (src->m32[1]) : "0" (src->m32[1]));
+-		asm volatile ("roxl.l #1,%0"
+-			: "=d" (src->m32[0]) : "0" (src->m32[0]));
+-		return;
+-	case 2 ... 31:
+-		src->m32[0] = (src->m32[0] << shift) | (src->m32[1] >> (32 - shift));
+-		src->m32[1] = (src->m32[1] << shift) | (src->m32[2] >> (32 - shift));
+-		src->m32[2] = (src->m32[2] << shift) | (src->m32[3] >> (32 - shift));
+-		src->m32[3] = (src->m32[3] << shift);
+-		return;
+-	case 32 ... 63:
+-		shift -= 32;
+-		src->m32[0] = (src->m32[1] << shift) | (src->m32[2] >> (32 - shift));
+-		src->m32[1] = (src->m32[2] << shift) | (src->m32[3] >> (32 - shift));
+-		src->m32[2] = (src->m32[3] << shift);
+-		src->m32[3] = 0;
+-		return;
+-	case 64 ... 95:
+-		shift -= 64;
+-		src->m32[0] = (src->m32[2] << shift) | (src->m32[3] >> (32 - shift));
+-		src->m32[1] = (src->m32[3] << shift);
+-		src->m32[2] = src->m32[3] = 0;
+-		return;
+-	case 96 ... 127:
+-		shift -= 96;
+-		src->m32[0] = (src->m32[3] << shift);
+-		src->m32[1] = src->m32[2] = src->m32[3] = 0;
+-		return;
+-	case -31 ... -1:
+-		shift = -shift;
+-		sticky = 0;
+-		if (src->m32[3] << (32 - shift))
+-			sticky = 1;
+-		src->m32[3] = (src->m32[3] >> shift) | (src->m32[2] << (32 - shift)) | sticky;
+-		src->m32[2] = (src->m32[2] >> shift) | (src->m32[1] << (32 - shift));
+-		src->m32[1] = (src->m32[1] >> shift) | (src->m32[0] << (32 - shift));
+-		src->m32[0] = (src->m32[0] >> shift);
+-		return;
+-	case -63 ... -32:
+-		shift = -shift - 32;
+-		sticky = 0;
+-		if ((src->m32[2] << (32 - shift)) || src->m32[3])
+-			sticky = 1;
+-		src->m32[3] = (src->m32[2] >> shift) | (src->m32[1] << (32 - shift)) | sticky;
+-		src->m32[2] = (src->m32[1] >> shift) | (src->m32[0] << (32 - shift));
+-		src->m32[1] = (src->m32[0] >> shift);
+-		src->m32[0] = 0;
+-		return;
+-	case -95 ... -64:
+-		shift = -shift - 64;
+-		sticky = 0;
+-		if ((src->m32[1] << (32 - shift)) || src->m32[2] || src->m32[3])
+-			sticky = 1;
+-		src->m32[3] = (src->m32[1] >> shift) | (src->m32[0] << (32 - shift)) | sticky;
+-		src->m32[2] = (src->m32[0] >> shift);
+-		src->m32[1] = src->m32[0] = 0;
+-		return;
+-	case -127 ... -96:
+-		shift = -shift - 96;
+-		sticky = 0;
+-		if ((src->m32[0] << (32 - shift)) || src->m32[1] || src->m32[2] || src->m32[3])
+-			sticky = 1;
+-		src->m32[3] = (src->m32[0] >> shift) | sticky;
+-		src->m32[2] = src->m32[1] = src->m32[0] = 0;
+-		return;
+-	}
+-
+-	if (shift < 0 && (src->m32[0] || src->m32[1] || src->m32[2] || src->m32[3]))
+-		src->m32[3] = 1;
+-	else
+-		src->m32[3] = 0;
+-	src->m32[2] = 0;
+-	src->m32[1] = 0;
+-	src->m32[0] = 0;
+-}
+-#endif
+-
+ static inline void fp_putmant128(struct fp_ext *dest, union fp_mant128 *src,
+ 				 int shift)
+ {
+@@ -637,183 +286,4 @@ static inline void fp_putmant128(struct fp_ext *dest, union fp_mant128 *src,
+ 	}
+ }
+ 
+-#if 0 /* old code... */
+-static inline int fls(unsigned int a)
+-{
+-	int r;
+-
+-	asm volatile ("bfffo %1{#0,#32},%0"
+-		      : "=d" (r) : "md" (a));
+-	return r;
+-}
+-
+-/* fls = "find last set" (cf. ffs(3)) */
+-static inline int fls128(const int128 a)
+-{
+-	if (a[MSW128])
+-		return fls(a[MSW128]);
+-	if (a[NMSW128])
+-		return fls(a[NMSW128]) + 32;
+-	/* XXX: it probably never gets beyond this point in actual
+-	   use, but that's indicative of a more general problem in the
+-	   algorithm (i.e. as per the actual 68881 implementation, we
+-	   really only need at most 67 bits of precision [plus
+-	   overflow]) so I'm not going to fix it. */
+-	if (a[NLSW128])
+-		return fls(a[NLSW128]) + 64;
+-	if (a[LSW128])
+-		return fls(a[LSW128]) + 96;
+-	else
+-		return -1;
+-}
+-
+-static inline int zerop128(const int128 a)
+-{
+-	return !(a[LSW128] | a[NLSW128] | a[NMSW128] | a[MSW128]);
+-}
+-
+-static inline int nonzerop128(const int128 a)
+-{
+-	return (a[LSW128] | a[NLSW128] | a[NMSW128] | a[MSW128]);
+-}
+-
+-/* Addition and subtraction */
+-/* Do these in "pure" assembly, because "extended" asm is unmanageable
+-   here */
+-static inline void add128(const int128 a, int128 b)
+-{
+-	/* rotating carry flags */
+-	unsigned int carry[2];
+-
+-	carry[0] = a[LSW128] > (0xffffffff - b[LSW128]);
+-	b[LSW128] += a[LSW128];
+-
+-	carry[1] = a[NLSW128] > (0xffffffff - b[NLSW128] - carry[0]);
+-	b[NLSW128] = a[NLSW128] + b[NLSW128] + carry[0];
+-
+-	carry[0] = a[NMSW128] > (0xffffffff - b[NMSW128] - carry[1]);
+-	b[NMSW128] = a[NMSW128] + b[NMSW128] + carry[1];
+-
+-	b[MSW128] = a[MSW128] + b[MSW128] + carry[0];
+-}
+-
+-/* Note: assembler semantics: "b -= a" */
+-static inline void sub128(const int128 a, int128 b)
+-{
+-	/* rotating borrow flags */
+-	unsigned int borrow[2];
+-
+-	borrow[0] = b[LSW128] < a[LSW128];
+-	b[LSW128] -= a[LSW128];
+-
+-	borrow[1] = b[NLSW128] < a[NLSW128] + borrow[0];
+-	b[NLSW128] = b[NLSW128] - a[NLSW128] - borrow[0];
+-
+-	borrow[0] = b[NMSW128] < a[NMSW128] + borrow[1];
+-	b[NMSW128] = b[NMSW128] - a[NMSW128] - borrow[1];
+-
+-	b[MSW128] = b[MSW128] - a[MSW128] - borrow[0];
+-}
+-
+-/* Poor man's 64-bit expanding multiply */
+-static inline void mul64(unsigned long long a, unsigned long long b, int128 c)
+-{
+-	unsigned long long acc;
+-	int128 acc128;
+-
+-	zero128(acc128);
+-	zero128(c);
+-
+-	/* first the low words */
+-	if (LO_WORD(a) && LO_WORD(b)) {
+-		acc = (long long) LO_WORD(a) * LO_WORD(b);
+-		c[NLSW128] = HI_WORD(acc);
+-		c[LSW128] = LO_WORD(acc);
+-	}
+-	/* Next the high words */
+-	if (HI_WORD(a) && HI_WORD(b)) {
+-		acc = (long long) HI_WORD(a) * HI_WORD(b);
+-		c[MSW128] = HI_WORD(acc);
+-		c[NMSW128] = LO_WORD(acc);
+-	}
+-	/* The middle words */
+-	if (LO_WORD(a) && HI_WORD(b)) {
+-		acc = (long long) LO_WORD(a) * HI_WORD(b);
+-		acc128[NMSW128] = HI_WORD(acc);
+-		acc128[NLSW128] = LO_WORD(acc);
+-		add128(acc128, c);
+-	}
+-	/* The first and last words */
+-	if (HI_WORD(a) && LO_WORD(b)) {
+-		acc = (long long) HI_WORD(a) * LO_WORD(b);
+-		acc128[NMSW128] = HI_WORD(acc);
+-		acc128[NLSW128] = LO_WORD(acc);
+-		add128(acc128, c);
+-	}
+-}
+-
+-/* Note: unsigned */
+-static inline int cmp128(int128 a, int128 b)
+-{
+-	if (a[MSW128] < b[MSW128])
+-		return -1;
+-	if (a[MSW128] > b[MSW128])
+-		return 1;
+-	if (a[NMSW128] < b[NMSW128])
+-		return -1;
+-	if (a[NMSW128] > b[NMSW128])
+-		return 1;
+-	if (a[NLSW128] < b[NLSW128])
+-		return -1;
+-	if (a[NLSW128] > b[NLSW128])
+-		return 1;
+-
+-	return (signed) a[LSW128] - b[LSW128];
+-}
+-
+-inline void div128(int128 a, int128 b, int128 c)
+-{
+-	int128 mask;
+-
+-	/* Algorithm:
+-
+-	   Shift the divisor until it's at least as big as the
+-	   dividend, keeping track of the position to which we've
+-	   shifted it, i.e. the power of 2 which we've multiplied it
+-	   by.
+-
+-	   Then, for this power of 2 (the mask), and every one smaller
+-	   than it, subtract the mask from the dividend and add it to
+-	   the quotient until the dividend is smaller than the raised
+-	   divisor.  At this point, divide the dividend and the mask
+-	   by 2 (i.e. shift one place to the right).  Lather, rinse,
+-	   and repeat, until there are no more powers of 2 left. */
+-
+-	/* FIXME: needless to say, there's room for improvement here too. */
+-
+-	/* Shift up */
+-	/* XXX: since it just has to be "at least as big", we can
+-	   probably eliminate this horribly wasteful loop.  I will
+-	   have to prove this first, though */
+-	set128(0, 0, 0, 1, mask);
+-	while (cmp128(b, a) < 0 && !btsthi128(b)) {
+-		lslone128(b);
+-		lslone128(mask);
+-	}
+-
+-	/* Shift down */
+-	zero128(c);
+-	do {
+-		if (cmp128(a, b) >= 0) {
+-			sub128(b, a);
+-			add128(mask, c);
+-		}
+-		lsrone128(mask);
+-		lsrone128(b);
+-	} while (nonzerop128(mask));
+-
+-	/* The remainder is in a... */
+-}
+-#endif
+-
+ #endif	/* MULTI_ARITH_H */
+-- 
+1.7.0.4
+
