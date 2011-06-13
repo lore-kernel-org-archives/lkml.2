@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676Ab1FMKBJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 06:01:09 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:43596 "EHLO mx3.mail.elte.hu"
+	id S1751647Ab1FMKHZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 06:07:25 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:35106 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751176Ab1FMKBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 06:01:07 -0400
-Date: Mon, 13 Jun 2011 12:00:54 +0200
+	id S1751434Ab1FMKHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 06:07:23 -0400
+Date: Mon, 13 Jun 2011 12:07:13 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH][GIT PULL][v3.0] tracing: Fix regression in
- printk_formats file
-Message-ID: <20110613100054.GB26172@elte.hu>
-References: <1307797840.9218.48.camel@gandalf.stny.rr.com>
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Ingo Molnar <mingo@redhat.com>, Michael Rubin <mrubin@google.com>,
+        David Sharp <dhsharp@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 01/15] tracing: Schedule a delayed work to call wakeup()
+Message-ID: <20110613100713.GA30962@elte.hu>
+References: <20110609172744.333794089@goodmis.org>
+ <20110609172910.425793191@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1307797840.9218.48.camel@gandalf.stny.rr.com>
+In-Reply-To: <20110609172910.425793191@goodmis.org>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -35,24 +38,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Steven Rostedt <rostedt@goodmis.org> wrote:
 
-> 
-> Ingo,
-> 
-> Please pull the latest tip/perf/urgent tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> tip/perf/urgent
-> 
-> Head SHA1: db5e7ecc4abc91b9f26f0c0d79ef88a51e987d90
-> 
-> 
-> Steven Rostedt (1):
->       tracing: Fix regression in printk_formats file
-> 
-> ----
->  kernel/trace/trace_printk.c |    5 +----
->  1 files changed, 1 insertions(+), 4 deletions(-)
+> +	const unsigned long delay = msecs_to_jiffies(2); //delay 2 ms
 
-Pulled, thanks Steve!
+We don't do C++ comments in the kernel ...
+
+Thanks,
 
 	Ingo
