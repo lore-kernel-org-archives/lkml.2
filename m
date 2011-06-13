@@ -1,51 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab1FMK2i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 06:28:38 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:32918 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244Ab1FMK2h convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 06:28:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=Cehe/gYPlBEwf5nyFaz20F1T6N0RDIFzRhB8/vCD0T2TNmH4BSz9/zjF81rKtNe9zH
-         JTGfnU0KSnwhtilyKmgRb/bG9djVrs5XczXOJQPOZ0ABjM8NuY19gA4nQQW/S+IBvqoK
-         5umng7hXlqE76PLxbhCgDTerpbXsCTooPlhmw=
+	id S1751973Ab1FMKbK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 06:31:10 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:53047 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751225Ab1FMKbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 06:31:07 -0400
+Date: Mon, 13 Jun 2011 12:30:32 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 7/8] vmscan: memcg-aware unevictable page rescue scanner
+Message-ID: <20110613103032.GA12143@cmpxchg.org>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+ <1306909519-7286-8-git-send-email-hannes@cmpxchg.org>
+ <20110613094203.GC10563@tiehlicka.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <4DAF6C0B.3070009@gmx.de>
-References: <4DAF6C0B.3070009@gmx.de>
-Date: Mon, 13 Jun 2011 12:28:37 +0200
-Message-ID: <BANLkTi=puXde+bq9PD9foGT35oNU+Vag1A@mail.gmail.com>
-Subject: Re: iotop: khugepaged at 99.99% (2.6.38.3)
-From: Antonio Messina <arcimboldo@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110613094203.GC10563@tiehlicka.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 1:28 AM, Thomas Sattler <tsattler@gmx.de> wrote:
-> Hi there ...
->
-> While running firefox (>50 open Tabs), khugepaged jumped to 99.99%
-> (according to 'iotop').  I killed firefox and nearly all running
-> programs but khugepaged was still at 99.99% IO while the system
-> was almost idle. I waited about 10 minutes, no improvement, so
-> I rebooted the machine.
+On Mon, Jun 13, 2011 at 11:42:03AM +0200, Michal Hocko wrote:
+> On Wed 01-06-11 08:25:18, Johannes Weiner wrote:
+> > Once the per-memcg lru lists are exclusive, the unevictable page
+> > rescue scanner can no longer work on the global zone lru lists.
+> > 
+> > This converts it to go through all memcgs and scan their respective
+> > unevictable lists instead.
+> > 
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> 
+> Just a minor naming thing.
+> 
+> Other than that looks good to me.
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> 
+> > --- a/include/linux/memcontrol.h
+> > +++ b/include/linux/memcontrol.h
+> [...]
+> > +struct page *mem_cgroup_lru_to_page(struct zone *zone, struct mem_cgroup *mem,
+> > +				    enum lru_list lru)
+> > +{
+> > +	struct mem_cgroup_per_zone *mz;
+> > +	struct page_cgroup *pc;
+> > +
+> > +	mz = mem_cgroup_zoneinfo(mem, zone_to_nid(zone), zone_idx(zone));
+> > +	pc = list_entry(mz->lists[lru].prev, struct page_cgroup, lru);
+> > +	return lookup_cgroup_page(pc);
+> > +}
+> > +
+> [...]
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -3233,6 +3233,14 @@ void scan_mapping_unevictable_pages(struct address_space *mapping)
+> >  
+> >  }
+> >  
+> > +static struct page *lru_tailpage(struct zone *zone, struct mem_cgroup *mem,
+> > +				 enum lru_list lru)
+> > +{
+> > +	if (mem)
+> > +		return mem_cgroup_lru_to_page(zone, mem, lru);
+> > +	return lru_to_page(&zone->lru[lru].list);
+> > +}
+> 
+> Wouldn't it better to have those names consistent?
+> mem_cgroup_lru_tailpage vs lru_tailpage?
 
-Dear all,
+It's bad naming alright, but what is the wrapper for both of them
+supposed to be called then?
 
-I have a similar issue, but I am running a 2.6.38-6 kernel on a HPC
-cluster, and I had this issue quite often lately, especially on jobs
-accessing the network (but since we are using NFS and MPI, many jobs
-are actually accessing the network).
+Note that this function is only temporary, though, that's why I did
+not spent much time on looking for a better name.
 
-I'm using an SMP, non-PREEMPT kernel (2cpu*8 cores each machine). I
-can provide you more information if you need, but please reply to me
-since I'm not subscribed to the mailing list.
+When the per-memcg lru lists finally become exclusive, this is removed
+and the function converted to work on lruvecs.
 
-.a.
+Would you be okay with just adding an /* XXX */ to the function in
+this patch that mentions that it's only temporary?
