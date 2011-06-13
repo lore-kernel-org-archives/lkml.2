@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751093Ab1FMJTs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 05:19:48 -0400
-Received: from mprc.pku.edu.cn ([162.105.203.9]:59490 "EHLO mprc.pku.edu.cn"
+	id S1751357Ab1FMJbR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 05:31:17 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:40028 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750826Ab1FMJTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 05:19:46 -0400
-Subject: Re: [PATCH] unicore32, exec: remove redundant set_fs(USER_DS)
-From: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Reply-To: gxt@mprc.pku.edu.cn
-To: Mathias Krause <minipli@googlemail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
+	id S1750716Ab1FMJbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 05:31:15 -0400
+Date: Mon, 13 Jun 2011 14:53:39 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, arnd@arndb.de
-In-Reply-To: <1307711463-17752-1-git-send-email-minipli@googlemail.com>
-References: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
-	 <1307711463-17752-1-git-send-email-minipli@googlemail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: MPRC, PKU
-Date: Mon, 13 Jun 2011 17:19:40 +0800
-Message-ID: <1307956780.1878.13.camel@epip-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+        Jonathan Corbet <corbet@lwn.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 3.0-rc2-tip 0/22]  0: Uprobes patchset with perf
+ probe support
+Message-ID: <20110613092339.GF27130@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+ <1307644944.2497.1023.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1307644944.2497.1023.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-10 at 15:11 +0200, Mathias Krause wrote:
-> The address limit is already set in flush_old_exec() so this
-> set_fs(USER_DS) is redundant.
+* Peter Zijlstra <peterz@infradead.org> [2011-06-09 20:42:24]:
+
+> On Tue, 2011-06-07 at 18:28 +0530, Srikar Dronamraju wrote:
+> > - Breakpoint handling should co-exist with singlestep/blockstep from
+> >   another tracer/debugger.
+
+We can remove this now.
+Previous to this patchset the post notifier would run in interrupt
+context hence we couldnt call user_disable_single_step
+
+However from this patchset, (due to changes to do away with per task
+slot), we run the post notifier in task context. Hence we can now call
+user_enable_single_step/user_disable_single_step which does the right
+thing. 
+
+Please correct me if I am missing.
+
+> > - Queue and dequeue signals delivered from the singlestep till
+> >   completion of postprocessing. 
 > 
-> Signed-off-by: Mathias Krause <minipli@googlemail.com>
-> ---
->  arch/unicore32/include/asm/processor.h |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
+
+I am working towards this.  
+> These two are important to sort before we can think of merging this
+> right?
 > 
-> diff --git a/arch/unicore32/include/asm/processor.h b/arch/unicore32/include/asm/processor.h
-> index e11cb07..f0d780a 100644
-> --- a/arch/unicore32/include/asm/processor.h
-> +++ b/arch/unicore32/include/asm/processor.h
-> @@ -53,7 +53,6 @@ struct thread_struct {
->  #define start_thread(regs, pc, sp)					\
->  ({									\
->  	unsigned long *stack = (unsigned long *)sp;			\
-> -	set_fs(USER_DS);						\
->  	memset(regs->uregs, 0, sizeof(regs->uregs));			\
->  	regs->UCreg_asr = USER_MODE;					\
->  	regs->UCreg_pc = pc & ~1;	/* pc */                        \
 
-Hi Mathias,
-I searched for the code in flush_old_exec(), but I can't find the code
-you mentioned. Could you make it more clear?
-And, if all fs codes (not only elf and aout) have the similar
-implementations, perhaps all arch-specific codes should be manipulated
-in the meanwhile.
-
-Also Cc: Arnd Bergmann <arnd@arndb.de>
-
-Thanks & Regards.
-
-Guan Xuetao
+-- 
+Thanks and Regards
+Srikar
 
