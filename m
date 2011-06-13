@@ -1,79 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171Ab1FMIKQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 04:10:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63562 "EHLO mx1.redhat.com"
+	id S1755028Ab1FMItJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 04:49:09 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:47221 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753643Ab1FMIKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 04:10:13 -0400
-Message-ID: <4DF5C5DF.7060608@redhat.com>
-Date: Mon, 13 Jun 2011 11:10:07 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1754992Ab1FMItI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 04:49:08 -0400
+Date: Mon, 13 Jun 2011 14:11:33 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 3.0-rc2-tip 20/22] 20: perf: perf interface for
+ uprobes
+Message-ID: <20110613084133.GA27130@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+ <20110607130216.28590.5724.sendpatchset@localhost6.localdomain6>
+ <4DF20511.8000206@hitachi.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 14/15] KVM: MMU: mmio page fault support
-References: <4DEE205E.8000601@cn.fujitsu.com> <4DEE2281.1000008@cn.fujitsu.com> <4DF07601.9060705@redhat.com> <4DF193BA.4060701@cn.fujitsu.com> <4DF47AE9.2020404@redhat.com> <4DF58625.6090900@cn.fujitsu.com>
-In-Reply-To: <4DF58625.6090900@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4DF20511.8000206@hitachi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2011 06:38 AM, Xiao Guangrong wrote:
-> On 06/12/2011 04:38 PM, Avi Kivity wrote:
-> >  On 06/10/2011 06:47 AM, Xiao Guangrong wrote:
-> >>  >   Also, shadow walking is not significantly faster than guest page table walking.  And if we miss, we have to walk the guest page tables in any case.
-> >>  >
-> >>
-> >>  Um. i think walking guest page table is slower, it needs to walk memslots for many times
-> >>  and it triggers page fault if the host page is swapped.
-> >
-> >  Well, if the page is swapped, we can't store anything in the spte.
-> >
->
-> If we walk guest page table, we need to access guest page, and guest page can
-> be swapped out anytime, but shadow page table is the kernel page, it is not swapped,
-> that is why i think walking shadow page table is faster than guest page table.
+Hey Masami,
+[ I have restricted the number of people in CC to those people who are
+closely following perf. Please feel free to add people].
 
-It's unlikely that the guest page table is swapped out since the 
-hardware just walked it.
+Thanks for the review.
 
-> >  And if we only store the mmio/ram condition in the spte (via the two types of page faults) we don't need to walk the spte.  We know immediately if we need to search the slots or not.
-> >
-> >>  And it is hardly missed, since for tdp, it infrequency zaps shadow pages, for soft mmu,
-> >>  the mmio spte is always unsync, and in guest, the mmio region is always mapped by kernel,
-> >>  so it is infrequency to be update and lazily flushed.
-> >
-> >  We still get frequent mmio misses.
-> >
->
-> I did the test, run three guests(4vcpu + 512M) on my box (4cores + 2G) and compile kernel
-> in guests, for 1 hour, no mmio is missed(hard mmu and soft mmu), it means that usually we
-> can catch almost all mmio by walking shadow page.
+> > Enhances perf probe to user space executables and libraries.
+> > Provides very basic support for uprobes.
+> > 
+> > [ Probing a function in the executable using function name  ]
+> > -------------------------------------------------------------
+> > [root@localhost ~]# perf probe -u zfree@/bin/zsh
+> 
+> Hmm, here, I have concern about the interface inconsistency
+> of the probe point syntax.
+> 
+> Since perf probe already supports debuginfo analysis,
+> it accepts following syntax;
+> 
+> [EVENT=]FUNC[@SRC][:RLN|+OFFS|%return|;PTN] [ARG ...]
+> 
+> Thus, The "@" should take a source file path, not binary path.
+> 
 
-Yes, but if you rely on EPT misconfig then you don't need that walk at 
-all (conversely, if we do walk unconditionally, we can use EPT 
-violations instead).
+All the discussions in this forum happened with respect to
+<function>@<executable> form (esp since we started with the inode based
+uprobes approach). Thats why I chose the
+perf probe -u func@execfile. This also gave us a flexibility to define 
+two probes in two different executables in the same session/command.
+Something like 
+perf probe -u func1@exec1 func2@exec2.
 
-> >>  If it is direct, we only need to compare the pga, and direct=0, we only need to
-> >>  compare gva, i'll fix the code to make it clear.
-> >
-> >  But for nested npt, we get the ngpa, not a gva.
-> >
->
-> We treat nested npt as the 'direct' mmio:
-> 	r = handle_mmio_page_fault(vcpu, addr, error_code, mmu_is_nested(vcpu));
->
-> also do not cache gva for nested npt:
-> 	if (handle_abnormal_pfn(vcpu, mmu_is_nested(vcpu) ? 0 : addr,
-> 				walker.gfn, pfn, walker.pte_access,&r))
+However I am okay to change to your suggested syntax which is 
+"perf probe -u /bin/zsh -a zfree"
 
-Okay.
+> I think -u option should have a path of the target binary, as below
+> 
+> # perf probe -u /bin/zsh -a zfree
+
+Will --uprobe work as the long name option for -u or do you suggest
+something else?
+
+> 
+> This will allow perf-probe to support user-space debuginfo
+> analysis. With it, we can do as below;
+> 
+
+While we discuss this I would also like to get your thoughts on couple
+of issues.
+
+1. Its okay to use a switch like "-u" that restricts the probe
+definition session to just the user space tracing. i.e We wont be able
+to define a probe in user space executable and also a kernel probe in
+one single session.
+
+2. Its okay to have just "target" and a flag to identify if the session
+is a userspace probing session, instead of having separate fields for
+userspace executable path and the module name.
+	i.e you are okay with patch "perf: rename target_module to target"
+
+3. Currently perf_probe_point has one field "file" that was only used to
+refer to source file. Uprobes overrides it to use it for executable file
+too. One approach would be to add another field something like
+"execfile" that we use to refer to executable files and use the current
+field "file" for source files. 
+	Also do you suggest that we rename the current
+file field to "srcfile?
+
+Based on the outcomes of this discussion, I will modify the code and
+Documentation.
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Thanks and Regards
+Srikar
