@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750Ab1FMPyv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 11:54:51 -0400
-Received: from mail.perches.com ([173.55.12.10]:2829 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751434Ab1FMPyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 11:54:50 -0400
-From: Joe Perches <joe@perches.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] blk-throttle: Make total_nr_queued unsigned
-Date: Mon, 13 Jun 2011 08:54:48 -0700
-Message-Id: <f5e32f63cf03e8fb6f6b9c8e66a6ac0c4d5c3d45.1307980331.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.6.rc1
+	id S1752918Ab1FMQDK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 12:03:10 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44601 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab1FMQDH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 12:03:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=subject:x-duff:mime-version:content-type:from:in-reply-to:date:cc
+         :content-transfer-encoding:message-id:references:to:x-mailer;
+        b=fPv7wMpuI/vdl4hCYcIj3y9VOt3EiJdYGb/ic+ojIsfn6eiu7/PF6F+1m5BKbPWZav
+         1AjWw1iGEMDVEZDi1yrLASHwzItjjGOzIEqiZOBRv0Aqn2TR5PrT2N7je78X2jmo93pm
+         RRPbotIA2WwjPKHpE5Fl9xNXAYPJeA9cwSFEI=
+Subject: Re: [PATCH] unicore32, exec: remove redundant set_fs(USER_DS)
+X-Duff: Duff Lite, Duff Dry, Duff Dark, Lady Duff, Raspberry Duff, Duff Zero
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Mathias Krause <minipli@googlemail.com>
+In-Reply-To: <1307956780.1878.13.camel@epip-laptop>
+Date: Mon, 13 Jun 2011 18:02:59 +0200
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, arnd@arndb.de
+Content-Transfer-Encoding: 8BIT
+Message-Id: <62714CC0-0928-49FB-8E64-0A95A53917DF@googlemail.com>
+References: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com> <1307711463-17752-1-git-send-email-minipli@googlemail.com> <1307956780.1878.13.camel@epip-laptop>
+To: gxt@mprc.pku.edu.cn
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cc: Vivek Goyal <vgoyal@redhat.com>
+On 13.06.2011, 11:19 Guan Xuetao wrote:
+> On Fri, 2011-06-10 at 15:11 +0200, Mathias Krause wrote:
+>> The address limit is already set in flush_old_exec() so this
+>> set_fs(USER_DS) is redundant.
+>> 
+>> Signed-off-by: Mathias Krause <minipli@googlemail.com>
+>> ---
+>> arch/unicore32/include/asm/processor.h |    1 -
+>> 1 files changed, 0 insertions(+), 1 deletions(-)
+>> 
+>> diff --git a/arch/unicore32/include/asm/processor.h b/arch/unicore32/include/asm/processor.h
+>> index e11cb07..f0d780a 100644
+>> --- a/arch/unicore32/include/asm/processor.h
+>> +++ b/arch/unicore32/include/asm/processor.h
+>> @@ -53,7 +53,6 @@ struct thread_struct {
+>> #define start_thread(regs, pc, sp)					\
+>> ({									\
+>> 	unsigned long *stack = (unsigned long *)sp;			\
+>> -	set_fs(USER_DS);						\
+>> 	memset(regs->uregs, 0, sizeof(regs->uregs));			\
+>> 	regs->UCreg_asr = USER_MODE;					\
+>> 	regs->UCreg_pc = pc & ~1;	/* pc */                        \
+> 
+> Hi Mathias,
+> I searched for the code in flush_old_exec(), but I can't find the code
+> you mentioned. Could you make it more clear?
 
-The total of two unsigned values should also be unsigned.
+Sorry, this statement is based on a commit post v3.0-rc2. Before dac853a (exec:
+delay address limit change until point of no return) it was done in
+search_binary_handler(), now it is done in flush_old_exec(). Either way
+set_fs(USER_DS) gets called before start_thread() so the call there is
+redundant.
 
-Update throtl_log output to unsigned.
-Update total_nr_queued test to non-zero to be the
-same as the other total_nr_queued tests.
+> And, if all fs codes (not only elf and aout) have the similar
+> implementations,
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- block/blk-throttle.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+I've checked that all binary format handler call flush_old_exec() before
+start_thread(). So: yes.
 
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 3689f83..f6a7941 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -142,9 +142,9 @@ static inline struct throtl_grp *tg_of_blkg(struct blkio_group *blkg)
- 	return NULL;
- }
- 
--static inline int total_nr_queued(struct throtl_data *td)
-+static inline unsigned int total_nr_queued(struct throtl_data *td)
- {
--	return (td->nr_queued[0] + td->nr_queued[1]);
-+	return td->nr_queued[0] + td->nr_queued[1];
- }
- 
- static inline struct throtl_grp *throtl_ref_get_tg(struct throtl_grp *tg)
-@@ -927,7 +927,7 @@ static int throtl_dispatch(struct request_queue *q)
- 
- 	bio_list_init(&bio_list_on_stack);
- 
--	throtl_log(td, "dispatch nr_queued=%d read=%u write=%u",
-+	throtl_log(td, "dispatch nr_queued=%u read=%u write=%u",
- 			total_nr_queued(td), td->nr_queued[READ],
- 			td->nr_queued[WRITE]);
- 
-@@ -970,7 +970,7 @@ throtl_schedule_delayed_work(struct throtl_data *td, unsigned long delay)
- 	struct delayed_work *dwork = &td->throtl_work;
- 
- 	/* schedule work if limits changed even if no bio is queued */
--	if (total_nr_queued(td) > 0 || td->limits_changed) {
-+	if (total_nr_queued(td) || td->limits_changed) {
- 		/*
- 		 * We might have a work scheduled to be executed in future.
- 		 * Cancel that and schedule a new one.
--- 
-1.7.6.rc1
+> perhaps all arch-specific codes should be manipulated
+> in the meanwhile.
 
+That's what this LKML thread is for: https://lkml.org/lkml/2011/6/10/65
+
+Thanks,
+Mathias
