@@ -1,172 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab1FMN47 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 09:56:59 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47469 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753258Ab1FMN4y (ORCPT
+	id S1753398Ab1FMN5q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 09:57:46 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34460 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802Ab1FMN5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 09:56:54 -0400
-Date: Mon, 13 Jun 2011 14:56:49 +0100
-From: Dave Martin <dave.martin@linaro.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Frank Hofmann <frank.hofmann@tomtom.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Colin Cross <ccross@android.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH v5] ARM hibernation / suspend-to-disk (fwd)
-Message-ID: <20110613135649.GB8498@arm.com>
-References: <alpine.DEB.2.00.1106131303290.25153@localhost6.localdomain6>
- <20110613122601.GC12325@n2100.arm.linux.org.uk>
- <alpine.DEB.2.00.1106131400090.25153@localhost6.localdomain6>
+	Mon, 13 Jun 2011 09:57:43 -0400
+Date: Mon, 13 Jun 2011 14:57:00 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH] fb.h: ARM uses __raw_{read/write}
+Message-ID: <20110613135700.GB13643@n2100.arm.linux.org.uk>
+References: <201106101731.08578.hartleys@visionengravers.com> <20110613040003.GA29731@linux-sh.org> <20110613100819.GA26914@1n450.cable.virginmedia.net> <201106131537.10698.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1106131400090.25153@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201106131537.10698.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 02:20:12PM +0100, Frank Hofmann wrote:
+On Mon, Jun 13, 2011 at 03:37:10PM +0200, Arnd Bergmann wrote:
+> On Monday 13 June 2011 12:08:19 Catalin Marinas wrote:
+> > The change proposed by Hartley wouldn't make much difference from the
+> > current volatile accesses (__raw_* accessors are implemented as volatile
+> > on ARM).
 > 
-> 
-> On Mon, 13 Jun 2011, Russell King - ARM Linux wrote:
-> 
-> >On Mon, Jun 13, 2011 at 01:04:02PM +0100, Frank Hofmann wrote:
-> >>  To make it clear: IF AND ONLY IF your suspend(-to-ram) func looks like:
-> >>
-> >>	ENTRY(acmeSoC_cpu_suspend)
-> >>		stmfd	sp!, {r4-r12,lr}
-> >>		ldr	r3, resume_mmu_done
-> >>		bl	cpu_suspend
-> >>	resume_mmu_done:
-> >>		ldmfd	sp!, {r3-r12,pc}
-> >>	ENDPROC(acmeSoC_cpu_suspend)
-> >
-> >Nothing has that - because you can't execute that ldmfd after the call
-> >to cpu_suspend returns.  I don't think you've understood what I said on
-> >that subject in the previous thread.
-> >
-> 
-> Ok, to illustrate a bit more, what is ok and what not.
-> 
-> 
-> From the current code ...
-> 
-> a) a case where the hibernation patch as I posted it is ok for core state:
-> 
-> arch/arm/mach-exynos4/sleep.S has:
-> 
-> ENTRY(s3c_cpu_save)
-> 
->         stmfd   sp!, { r3 - r12, lr }
->         ldr     r3, =resume_with_mmu
->         bl      cpu_suspend
-> 
->         ldr     r0, =pm_cpu_sleep
->         ldr     r0, [ r0 ]
->         mov     pc, r0
-> 
-> resume_with_mmu:
->         ldmfd   sp!, { r3 - r12, pc }
-> 
-> ENTRY(s3c_cpu_resume)
->         b       cpu_resume
-> 
-> 
-> I.e. it does nothing before but set up the arguments for
-> cpu_suspend, and does nothing afterwards but redirect to a function
-> that enters low power (and switches the CPU off).
-> Likewise, all it does for resume is redirect to cpu_resume which
-> will ultimately end up jumping to resume_with_mmu: as requested.
-> 
-> 
-> b) a case where the hibernation patch is insufficient even though the
->    code in the soc suspend func uses cpu_suspend:
-> 
-> arch/arm/mach-pxa/sleep.S has:
-> 
-> /*
->  * pxa27x_cpu_suspend()
->  *
->  * Forces CPU into sleep state.
->  *
->  * r0 = value for PWRMODE M field for desired sleep state
->  * r1 = v:p offset
->  */
-> ENTRY(pxa27x_cpu_suspend)
-> 
-> #ifndef CONFIG_IWMMXT
->         mra     r2, r3, acc0
-> #endif
->         stmfd   sp!, {r2 - r12, lr}             @ save registers on stack
->         mov     r4, r0                          @ save sleep mode
->         ldr     r3, =pxa_cpu_resume             @ resume function
->         bl      cpu_suspend
-> [ ... some stuff ... ]
->         ldr     r6, =CCCR
->         ldr     r8, [r6]                @ keep original value for resume
-> 
->         ldr     r7, =CCCR_SLEEP         @ prepare CCCR sleep value
->         mov     r0, #0x2                @ prepare value for CLKCFG
-> 
->         @ align execution to a cache line
->         b       pxa_cpu_do_suspend
-> #endif
-> [ ... ]
-> pxa_cpu_do_suspend:
-> 
->         @ All needed values are now in registers.
->         @ These last instructions should be in cache
-> 
->         @ initiate the frequency change...
->         str     r7, [r6]
->         mcr     p14, 0, r0, c6, c0, 0
-> 
->         @ restore the original cpu speed value for resume
->         str     r8, [r6]
-> [ ... ]
-> /*
->  * pxa_cpu_resume()
->  *
->  * entry point from bootloader into kernel during resume
->  */
->         .align 5
-> pxa_cpu_resume:
->         ldmfd   sp!, {r2, r3}
-> #ifndef CONFIG_IWMMXT
->         mar     acc0, r2, r3
-> #endif
->         ldmfd   sp!, {r4 - r12, pc}             @ return to caller
-> 
-> 
-> 
-> In this case, there's _MORE_ state saved (the CCCR / CCCR_SLEEP
-> accesses) after the call to cpu_suspend things that aren't dealt
-> with by the way the hibernation support patch currently operates.
-> 
-> There also is _more_ restored at resume than what the generic part
-> does for you.
-> 
-> Whether these things (for example) are relevant wrt. to a
-> hibernation resume is something I simply do not know.
-> 
-> 
-> A third example of a soc suspend func, even more complex, with more
-> constraints, would be as already mentioned, OMAP. On that as well
-> the caveat applies, "what works empirically might not be correct in
-> all cases".
+> I guess it would mainly make a difference if we get a platform where
+> the PCI bus window is not in the same address space as the regular
+> physical memory and the accessors actually need to do a computation
+> on the address. AFAICT, ARM does not currently have any such platform
+> and I would hope that it says that way.
 
-Santosh, Frank: to what extent do you think the OMAP suspend code could
-be abstracted using something like Colin's CPU pm notifier framework?
+Actually we do.
 
-I'd hope that at least some stuff can be abstracted out, but I don't
-understand the OMAP code intimately enough to be certain of that...
+Footbridge has this situation: PCI memory space is 0 to 4GB, and appears
+in physical space at 2GB-4GB physical, and can be switched between the
+low and high 2GB of PCI space.
 
-We shouldn't expect to remove absolutely all the SoC specifics from
-suspend code, but the more we can hook into a generic framework, the
-better for everyone.
+Non-PCI peripherals are located at 0 to 2GB physical.
 
-Cheers
----Dave
+We handle this by having pcibios_bus_to_resource() and
+pcibios_resource_to_bus(), which translates from the bus space to a
+cookie suitable for ioremap() and /proc/iomem.  This cookie happens to
+be the physical address.
+
+We avoid the obvious problem with the upper 2GB of PCI memory space by
+placing the system RAM at 0xe0000000 on the PCI bus, and not allocating
+any peripherals in the upper 2GB of PCI memory space.
+
+So, I rather wish that people would stop saying that "ioremap takes the
+PCI bus address".  It doesn't - it takes a platform specific cookie to
+allow a mapping to be setup, which in the case of pci will be a cookie
+provided from the PCI bus address by the pcibios_bus_to_resource()
+platform code.
+
+And the final thing to note on this is that fbmem/fbcon does work - see
+the Cyber2000/CyberPro VGA driver which has been - and still is - used
+on Netwinder (footbridge).
