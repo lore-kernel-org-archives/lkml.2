@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258Ab1FMScm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 14:32:42 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33005 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726Ab1FMSci convert rfc822-to-8bit (ORCPT
+	id S1753501Ab1FMSdQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 14:33:16 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:39955 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737Ab1FMSdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 14:32:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=JYe3/VBGCrUHjsOFefhzYoVBHQ+0pRw4XeHjF0jOQHzMfK1gHSoxknJAB7sURCZder
-         KBuTJrEjRxvwH/DuzBK2dIJwnL632jG0mvK5wOa7SFizQfJ8MZYvd0hc9wzfw7oYSYjP
-         XeZd32jeV5Ef6ylTPzHmsq+0ivghj40ScfH5k=
+	Mon, 13 Jun 2011 14:33:15 -0400
+Date: Mon, 13 Jun 2011 19:33:01 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Jim Bos <jim876@xs4all.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+Message-ID: <20110613183301.GA25644@srcf.ucam.org>
+References: <20110610164706.GB25774@srcf.ucam.org>
+ <4DF259B2.9070403@gmail.com>
+ <20110610175429.GA28500@srcf.ucam.org>
+ <4DF29E7E.50908@gmail.com>
+ <20110613164712.GA23343@srcf.ucam.org>
+ <4DF64E6A.70700@gmail.com>
+ <20110613180006.GA24902@srcf.ucam.org>
+ <4DF65372.7090307@gmail.com>
+ <20110613181750.GA25372@srcf.ucam.org>
+ <4DF655B5.8040903@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=iuSZtp=dJv-f8rvBeNMqQD8EcTQ@mail.gmail.com>
-References: <1307989217-22004-1-git-send-email-geert@linux-m68k.org>
-	<BANLkTi=iuSZtp=dJv-f8rvBeNMqQD8EcTQ@mail.gmail.com>
-Date: Mon, 13 Jun 2011 20:32:36 +0200
-X-Google-Sender-Auth: TXpD3X_z8CU4aAs6WnmT6tnDFU8
-Message-ID: <BANLkTi=AO5E0Vu-tEaHCimLXJ+mmaazfEw@mail.gmail.com>
-Subject: Re: [PATCH] scsi/trivial: Spelling hsot -> host
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jiri Kosina <trivial@kernel.org>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DF655B5.8040903@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bart,
+Ok, that's odd. These are 0x01800000-0x01900000, which should lie inside 
+the kernel data range (01580279-01aa4cff : Kernel data). We should be 
+skipping that region. How are we touching that reange at all? Can you 
+add a printk to reserve_boot_services to see what it actually ends up 
+reserving?
 
-On Mon, Jun 13, 2011 at 20:24, Bart Van Assche <bvanassche@acm.org> wrote:
-> On Mon, Jun 13, 2011 at 8:20 PM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
->>
->> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->
-> Where is the reference to http://marc.info/?l=linux-scsi&m=130788046617817&w=2 ?
-
-Sorry, I did check my lkml mailbox whether a similar patch was sent
-recently, but didn't find any.
-And I'm not subscribed to linux-scsi.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
