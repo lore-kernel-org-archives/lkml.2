@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab1FMAoh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 20:44:37 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:56798 "EHLO
+	id S1754766Ab1FMAo0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 20:44:26 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:26268 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754238Ab1FMAob (ORCPT
+	with ESMTP id S1754238Ab1FMAoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 20:44:31 -0400
+	Sun, 12 Jun 2011 20:44:22 -0400
 From: Colin Cross <ccross@android.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Colin Cross <ccross@android.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Leif Lindholm <leif.lindholm@arm.com>
-Subject: [PATCH 1/3] ARM: Add cpu power management notifiers
-Date: Sun, 12 Jun 2011 17:43:43 -0700
-Message-Id: <1307925825-28566-2-git-send-email-ccross@android.com>
+        Colin Cross <ccross@android.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+Subject: [PATCH 2/3] ARM: gic: Use cpu pm notifiers to save gic state
+Date: Sun, 12 Jun 2011 17:43:44 -0700
+Message-Id: <1307925825-28566-3-git-send-email-ccross@android.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1307925825-28566-1-git-send-email-ccross@android.com>
 References: <1307925825-28566-1-git-send-email-ccross@android.com>
@@ -28,299 +25,271 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During some CPU power modes entered during idle, hotplug and
-suspend, peripherals located in the CPU power domain, such as
-the GIC and VFP, may be powered down.  Add a notifier chain
-that allows drivers for those peripherals to be notified
-before and after they may be reset.
+When the cpu is powered down in a low power mode, the gic cpu
+interface may be reset, and when the cpu complex is powered
+down, the gic distributor may also be reset.
+
+This patch uses CPU_PM_ENTER and CPU_PM_EXIT notifiers to save
+and restore the gic cpu interface registers, and the
+CPU_COMPLEX_PM_ENTER and CPU_COMPLEX_PM_EXIT notifiers to save
+and restore the gic distributor registers.
 
 Signed-off-by: Colin Cross <ccross@android.com>
 ---
- arch/arm/Kconfig              |    7 ++
- arch/arm/include/asm/cpu_pm.h |   54 ++++++++++++
- arch/arm/kernel/Makefile      |    1 +
- arch/arm/kernel/cpu_pm.c      |  181 +++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 243 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/include/asm/cpu_pm.h
- create mode 100644 arch/arm/kernel/cpu_pm.c
+ arch/arm/common/gic.c |  212 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 212 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 9adc278..356f266 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -183,6 +183,13 @@ config FIQ
- config ARCH_MTD_XIP
- 	bool
+diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
+index 4ddd0a6..8d62e07 100644
+--- a/arch/arm/common/gic.c
++++ b/arch/arm/common/gic.c
+@@ -29,6 +29,7 @@
+ #include <linux/cpumask.h>
+ #include <linux/io.h>
  
-+config ARCH_USES_CPU_PM
-+       bool
++#include <asm/cpu_pm.h>
+ #include <asm/irq.h>
+ #include <asm/mach/irq.h>
+ #include <asm/hardware/gic.h>
+@@ -42,6 +43,17 @@ struct gic_chip_data {
+ 	unsigned int irq_offset;
+ 	void __iomem *dist_base;
+ 	void __iomem *cpu_base;
++#ifdef CONFIG_CPU_PM
++	u32 saved_spi_enable[DIV_ROUND_UP(1020, 32)];
++	u32 saved_spi_conf[DIV_ROUND_UP(1020, 16)];
++	u32 saved_spi_pri[DIV_ROUND_UP(1020, 4)];
++	u32 saved_spi_target[DIV_ROUND_UP(1020, 4)];
++	u32 __percpu *saved_ppi_enable;
++	u32 __percpu *saved_ppi_conf;
++	u32 __percpu *saved_ppi_pri;
++#endif
 +
-+config CPU_PM
-+       def_bool y
-+       depends on ARCH_USES_CPU_PM && (PM || CPU_IDLE)
++	unsigned int gic_irqs;
+ };
+ 
+ /*
+@@ -283,6 +295,8 @@ static void __init gic_dist_init(struct gic_chip_data *gic,
+ 	if (gic_irqs > 1020)
+ 		gic_irqs = 1020;
+ 
++	gic->gic_irqs = gic_irqs;
 +
- config VECTORS_BASE
- 	hex
- 	default 0xffff0000 if MMU || CPU_HIGH_VECTOR
-diff --git a/arch/arm/include/asm/cpu_pm.h b/arch/arm/include/asm/cpu_pm.h
-new file mode 100644
-index 0000000..b4bb715
---- /dev/null
-+++ b/arch/arm/include/asm/cpu_pm.h
-@@ -0,0 +1,54 @@
+ 	/*
+ 	 * Set all global interrupts to be level triggered, active low.
+ 	 */
+@@ -350,6 +364,203 @@ static void __cpuinit gic_cpu_init(struct gic_chip_data *gic)
+ 	writel_relaxed(1, base + GIC_CPU_CTRL);
+ }
+ 
++#ifdef CONFIG_CPU_PM
 +/*
-+ * Copyright (C) 2011 Google, Inc.
-+ *
-+ * Author:
-+ *	Colin Cross <ccross@android.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
++ * Saves the GIC distributor registers during suspend or idle.  Must be called
++ * with interrupts disabled but before powering down the GIC.  After calling
++ * this function, no interrupts will be delivered by the GIC, and another
++ * platform-specific wakeup source must be enabled.
 + */
++static void gic_dist_save(unsigned int gic_nr)
++{
++	unsigned int gic_irqs;
++	void __iomem *dist_base;
++	int i;
 +
-+#ifndef _ASMARM_CPU_PM_H
-+#define _ASMARM_CPU_PM_H
++	if (gic_nr >= MAX_GIC_NR)
++		BUG();
 +
-+#include <linux/kernel.h>
-+#include <linux/notifier.h>
++	gic_irqs = gic_data[gic_nr].gic_irqs;
++	dist_base = gic_data[gic_nr].dist_base;
 +
-+/* Event codes passed as unsigned long val to notifier calls */
-+enum cpu_pm_event {
-+	/* A single cpu is entering a low power state */
-+	CPU_PM_ENTER,
++	if (!dist_base)
++		return;
 +
-+	/* A single cpu failed to enter a low power state */
-+	CPU_PM_ENTER_FAILED,
++	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 16); i++)
++		gic_data[gic_nr].saved_spi_conf[i] =
++			readl_relaxed(dist_base + GIC_DIST_CONFIG + i * 4);
 +
-+	/* A single cpu is exiting a low power state */
-+	CPU_PM_EXIT,
++	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 4); i++)
++		gic_data[gic_nr].saved_spi_pri[i] =
++			readl_relaxed(dist_base + GIC_DIST_PRI + i * 4);
 +
-+	/* A cpu power domain is entering a low power state */
-+	CPU_COMPLEX_PM_ENTER,
++	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 4); i++)
++		gic_data[gic_nr].saved_spi_target[i] =
++			readl_relaxed(dist_base + GIC_DIST_TARGET + i * 4);
 +
-+	/* A cpu power domain failed to enter a low power state */
-+	CPU_COMPLEX_PM_ENTER_FAILED,
++	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 32); i++)
++		gic_data[gic_nr].saved_spi_enable[i] =
++			readl_relaxed(dist_base + GIC_DIST_ENABLE_SET + i * 4);
 +
-+	/* A cpu power domain is exiting a low power state */
-+	CPU_COMPLEX_PM_EXIT,
++	writel_relaxed(0, dist_base + GIC_DIST_CTRL);
++}
++
++/*
++ * Restores the GIC distributor registers during resume or when coming out of
++ * idle.  Must be called before enabling interrupts.  If a level interrupt
++ * that occured while the GIC was suspended is still present, it will be
++ * handled normally, but any edge interrupts that occured will not be seen by
++ * the GIC and need to be handled by the platform-specific wakeup source.
++ */
++static void gic_dist_restore(unsigned int gic_nr)
++{
++	unsigned int gic_irqs;
++	unsigned int i;
++	void __iomem *dist_base;
++
++	if (gic_nr >= MAX_GIC_NR)
++		BUG();
++
++	gic_irqs = gic_data[gic_nr].gic_irqs;
++	dist_base = gic_data[gic_nr].dist_base;
++
++	if (!dist_base)
++		return;
++
++	writel_relaxed(0, dist_base + GIC_DIST_CTRL);
++
++	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 16); i++)
++		writel_relaxed(gic_data[gic_nr].saved_spi_conf[i],
++			dist_base + GIC_DIST_CONFIG + i * 4);
++
++	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 4); i++)
++		writel_relaxed(gic_data[gic_nr].saved_spi_pri[i],
++			dist_base + GIC_DIST_PRI + i * 4);
++
++	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 4); i++)
++		writel_relaxed(gic_data[gic_nr].saved_spi_target[i],
++			dist_base + GIC_DIST_TARGET + i * 4);
++
++	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 32); i++)
++		writel_relaxed(gic_data[gic_nr].saved_spi_enable[i],
++			dist_base + GIC_DIST_ENABLE_SET + i * 4);
++
++	writel_relaxed(1, dist_base + GIC_DIST_CTRL);
++}
++
++static void gic_cpu_save(unsigned int gic_nr)
++{
++	int i;
++	u32 *ptr;
++	void __iomem *dist_base;
++	void __iomem *cpu_base;
++
++	if (gic_nr >= MAX_GIC_NR)
++		BUG();
++
++	dist_base = gic_data[gic_nr].dist_base;
++	cpu_base = gic_data[gic_nr].cpu_base;
++
++	if (!dist_base || !cpu_base)
++		return;
++
++	ptr = __this_cpu_ptr(gic_data[gic_nr].saved_ppi_enable);
++	for (i = 0; i < DIV_ROUND_UP(32, 32); i++)
++		ptr[i] = readl_relaxed(dist_base + GIC_DIST_ENABLE_SET + i * 4);
++
++	ptr = __this_cpu_ptr(gic_data[gic_nr].saved_ppi_conf);
++	for (i = 0; i < DIV_ROUND_UP(32, 16); i++)
++		ptr[i] = readl_relaxed(dist_base + GIC_DIST_CONFIG + i * 4);
++
++	ptr = __this_cpu_ptr(gic_data[gic_nr].saved_ppi_pri);
++	for (i = 0; i < DIV_ROUND_UP(32, 4); i++)
++		ptr[i] = readl_relaxed(dist_base + GIC_DIST_PRI + i * 4);
++}
++
++static void gic_cpu_restore(unsigned int gic_nr)
++{
++	int i;
++	u32 *ptr;
++	void __iomem *dist_base;
++	void __iomem *cpu_base;
++
++	if (gic_nr >= MAX_GIC_NR)
++		BUG();
++
++	dist_base = gic_data[gic_nr].dist_base;
++	cpu_base = gic_data[gic_nr].cpu_base;
++
++	if (!dist_base || !cpu_base)
++		return;
++
++	ptr = __this_cpu_ptr(gic_data[gic_nr].saved_ppi_enable);
++	for (i = 0; i < DIV_ROUND_UP(32, 32); i++)
++		writel_relaxed(ptr[i], dist_base + GIC_DIST_ENABLE_SET + i * 4);
++
++	ptr = __this_cpu_ptr(gic_data[gic_nr].saved_ppi_conf);
++	for (i = 0; i < DIV_ROUND_UP(32, 16); i++)
++		writel_relaxed(ptr[i], dist_base + GIC_DIST_CONFIG + i * 4);
++
++	ptr = __this_cpu_ptr(gic_data[gic_nr].saved_ppi_pri);
++	for (i = 0; i < DIV_ROUND_UP(32, 4); i++)
++		writel_relaxed(ptr[i], dist_base + GIC_DIST_PRI + i * 4);
++
++	writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
++	writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
++}
++
++static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
++{
++	int i;
++
++	for (i = 0; i < MAX_GIC_NR; i++) {
++		switch (cmd) {
++		case CPU_PM_ENTER:
++			gic_cpu_save(i);
++			break;
++		case CPU_PM_ENTER_FAILED:
++		case CPU_PM_EXIT:
++			gic_cpu_restore(i);
++			break;
++		case CPU_COMPLEX_PM_ENTER:
++			gic_dist_save(i);
++			break;
++		case CPU_COMPLEX_PM_ENTER_FAILED:
++		case CPU_COMPLEX_PM_EXIT:
++			gic_dist_restore(i);
++			break;
++		}
++	}
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block gic_notifier_block = {
++	.notifier_call = gic_notifier,
 +};
 +
-+int cpu_pm_register_notifier(struct notifier_block *nb);
-+int cpu_pm_unregister_notifier(struct notifier_block *nb);
++static void __init gic_cpu_pm_init(struct gic_chip_data *gic)
++{
++	gic->saved_ppi_enable = __alloc_percpu(DIV_ROUND_UP(32, 32) * 4,
++		sizeof(u32));
++	BUG_ON(!gic->saved_ppi_enable);
 +
-+int cpu_pm_enter(void);
-+int cpu_pm_exit(void);
++	gic->saved_ppi_conf = __alloc_percpu(DIV_ROUND_UP(32, 16) * 4,
++		sizeof(u32));
++	BUG_ON(!gic->saved_ppi_conf);
 +
-+int cpu_complex_pm_enter(void);
-+int cpu_complex_pm_exit(void);
++	gic->saved_ppi_pri = __alloc_percpu(DIV_ROUND_UP(32, 4) * 4,
++		sizeof(u32));
++	BUG_ON(!gic->saved_ppi_pri);
 +
++	cpu_pm_register_notifier(&gic_notifier_block);
++}
++#else
++static void __init gic_cpu_pm_init(struct gic_chip_data *gic)
++{
++}
 +#endif
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index a5b31af..8b42d58 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -60,6 +60,7 @@ obj-$(CONFIG_CPU_PJ4)		+= pj4-cp0.o
- obj-$(CONFIG_IWMMXT)		+= iwmmxt.o
- obj-$(CONFIG_CPU_HAS_PMU)	+= pmu.o
- obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
-+obj-$(CONFIG_CPU_PM)		+= cpu_pm.o
- AFLAGS_iwmmxt.o			:= -Wa,-mcpu=iwmmxt
++
+ void __init gic_init(unsigned int gic_nr, unsigned int irq_start,
+ 	void __iomem *dist_base, void __iomem *cpu_base)
+ {
+@@ -367,6 +578,7 @@ void __init gic_init(unsigned int gic_nr, unsigned int irq_start,
  
- ifneq ($(CONFIG_ARCH_EBSA110),y)
-diff --git a/arch/arm/kernel/cpu_pm.c b/arch/arm/kernel/cpu_pm.c
-new file mode 100644
-index 0000000..48a5b53
---- /dev/null
-+++ b/arch/arm/kernel/cpu_pm.c
-@@ -0,0 +1,181 @@
-+/*
-+ * Copyright (C) 2011 Google, Inc.
-+ *
-+ * Author:
-+ *	Colin Cross <ccross@android.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/notifier.h>
-+#include <linux/spinlock.h>
-+
-+#include <asm/cpu_pm.h>
-+
-+/*
-+ * When a CPU goes to a low power state that turns off power to the CPU's
-+ * power domain, the contents of some blocks (floating point coprocessors,
-+ * interrutp controllers, caches, timers) in the same power domain can
-+ * be lost.  The cpm_pm notifiers provide a method for platform idle, suspend,
-+ * and hotplug implementations to notify the drivers for these blocks that
-+ * they may be reset.
-+ *
-+ * All cpu_pm notifications must be called with interrupts disabled.
-+ *
-+ * The notifications are split into two classes, CPU notifications and CPU
-+ * complex notifications.
-+ *
-+ * CPU notifications apply to a single CPU, and must be called on the affected
-+ * CPU.  They are used to save per-cpu context for affected blocks.
-+ *
-+ * CPU complex notifications apply to all CPUs in a single power domain. They
-+ * are used to save any global context for affected blocks, and must be called
-+ * after all the CPUs in the power domain have been notified of the low power
-+ * state.
-+ *
-+ */
-+
-+static DEFINE_RWLOCK(cpu_pm_notifier_lock);
-+static RAW_NOTIFIER_HEAD(cpu_pm_notifier_chain);
-+
-+int cpu_pm_register_notifier(struct notifier_block *nb)
-+{
-+	unsigned long flags;
-+	int ret;
-+
-+	write_lock_irqsave(&cpu_pm_notifier_lock, flags);
-+	ret = raw_notifier_chain_register(&cpu_pm_notifier_chain, nb);
-+	write_unlock_irqrestore(&cpu_pm_notifier_lock, flags);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(cpu_pm_register_notifier);
-+
-+int cpu_pm_unregister_notifier(struct notifier_block *nb)
-+{
-+	unsigned long flags;
-+	int ret;
-+
-+	write_lock_irqsave(&cpu_pm_notifier_lock, flags);
-+	ret = raw_notifier_chain_unregister(&cpu_pm_notifier_chain, nb);
-+	write_unlock_irqrestore(&cpu_pm_notifier_lock, flags);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(cpu_pm_unregister_notifier);
-+
-+static int cpu_pm_notify(enum cpu_pm_event event, int nr_to_call, int *nr_calls)
-+{
-+	int ret;
-+
-+	ret = __raw_notifier_call_chain(&cpu_pm_notifier_chain, event, NULL,
-+		nr_to_call, nr_calls);
-+
-+	return notifier_to_errno(ret);
-+}
-+
-+/**
-+ * cpm_pm_enter
-+ *
-+ * Notifies listeners that a single cpu is entering a low power state that may
-+ * cause some blocks in the same power domain as the cpu to reset.
-+ *
-+ * Must be called on the affected cpu with interrupts disabled.  Platform is
-+ * responsible for ensuring that cpu_pm_enter is not called twice on the same
-+ * cpu before cpu_pm_exit is called.
-+ */
-+int cpu_pm_enter(void)
-+{
-+	int nr_calls;
-+	int ret = 0;
-+
-+	read_lock(&cpu_pm_notifier_lock);
-+	ret = cpu_pm_notify(CPU_PM_ENTER, -1, &nr_calls);
-+	if (ret)
-+		cpu_pm_notify(CPU_PM_ENTER_FAILED, nr_calls - 1, NULL);
-+	read_unlock(&cpu_pm_notifier_lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(cpu_pm_enter);
-+
-+/**
-+ * cpm_pm_exit
-+ *
-+ * Notifies listeners that a single cpu is exiting a low power state that may
-+ * have caused some blocks in the same power domain as the cpu to reset.
-+ *
-+ * Must be called on the affected cpu with interrupts disabled.
-+ */
-+int cpu_pm_exit(void)
-+{
-+	int ret;
-+
-+	read_lock(&cpu_pm_notifier_lock);
-+	ret = cpu_pm_notify(CPU_PM_EXIT, -1, NULL);
-+	read_unlock(&cpu_pm_notifier_lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(cpu_pm_exit);
-+
-+/**
-+ * cpm_complex_pm_enter
-+ *
-+ * Notifies listeners that all cpus in a power domain are entering a low power
-+ * state that may cause some blocks in the same power domain to reset.
-+ *
-+ * Must be called after cpu_pm_enter has been called on all cpus in the power
-+ * domain, and before cpu_pm_exit has been called on any cpu in the power
-+ * domain.
-+ *
-+ * Must be called with interrupts disabled.
-+ */
-+int cpu_complex_pm_enter(void)
-+{
-+	int nr_calls;
-+	int ret = 0;
-+
-+	read_lock(&cpu_pm_notifier_lock);
-+	ret = cpu_pm_notify(CPU_COMPLEX_PM_ENTER, -1, &nr_calls);
-+	if (ret)
-+		cpu_pm_notify(CPU_COMPLEX_PM_ENTER_FAILED, nr_calls - 1, NULL);
-+	read_unlock(&cpu_pm_notifier_lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(cpu_complex_pm_enter);
-+
-+/**
-+ * cpm_pm_enter
-+ *
-+ * Notifies listeners that a single cpu is entering a low power state that may
-+ * cause some blocks in the same power domain as the cpu to reset.
-+ *
-+ * Must be called after cpu_pm_enter has been called on all cpus in the power
-+ * domain, and before cpu_pm_exit has been called on any cpu in the power
-+ * domain.
-+ *
-+ * Must be called with interrupts disabled.
-+ */
-+int cpu_complex_pm_exit(void)
-+{
-+	int ret;
-+
-+	read_lock(&cpu_pm_notifier_lock);
-+	ret = cpu_pm_notify(CPU_COMPLEX_PM_EXIT, -1, NULL);
-+	read_unlock(&cpu_pm_notifier_lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(cpu_complex_pm_exit);
+ 	gic_dist_init(gic, irq_start);
+ 	gic_cpu_init(gic);
++	gic_cpu_pm_init(gic);
+ }
+ 
+ void __cpuinit gic_secondary_init(unsigned int gic_nr)
 -- 
 1.7.4.1
 
