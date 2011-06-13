@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809Ab1FMSjt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 14:39:49 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:58973 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754116Ab1FMSjj (ORCPT
+	id S1754896Ab1FMSkn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 14:40:43 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:39365 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754308Ab1FMSjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 14:39:39 -0400
+	Mon, 13 Jun 2011 14:39:40 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: "James E.J. Bottomley" <JBottomley@parallels.com>
 Cc: linux-scsi@vger.kernel.org, linux-m68k@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert@linux-m68k.org>,
-        Finn Thain <fthain@telegraphics.com.au>
-Subject: [PATCH 3/8] scsi/mac: Remove unused variable default_instance
-Date: Mon, 13 Jun 2011 20:39:17 +0200
-Message-Id: <1307990362-22768-4-git-send-email-geert@linux-m68k.org>
+        Sam Creasey <sammy@sammy.net>
+Subject: [PATCH 4/8] scsi/sun3: sun3scsi_detect() and NCR5380_init() should be __init
+Date: Mon, 13 Jun 2011 20:39:18 +0200
+Message-Id: <1307990362-22768-5-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1307990362-22768-1-git-send-email-geert@linux-m68k.org>
 References: <1307990362-22768-1-git-send-email-geert@linux-m68k.org>
@@ -23,47 +23,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes:
-
-drivers/scsi/mac_scsi.c:220:5: warning: "NDEBUG_ABORT" is not defined
-drivers/scsi/mac_scsi.c:271:5: warning: "NDEBUG_ABORT" is not defined
+WARNING: vmlinux.o(.text+0x18545c): Section mismatch in reference from the function sun3scsi_detect() to the function .init.text:NCR5380_print_options()
+WARNING: vmlinux.o(.text+0x18556c): Section mismatch in reference from the function sun3scsi_detect() to the function .init.text:NCR5380_print_options()
+WARNING: vmlinux.o(.text+0x187692): Section mismatch in reference from the function sun3scsi_detect() to the function .init.text:NCR5380_print_options()
+WARNING: vmlinux.o(.text+0x187770): Section mismatch in reference from the function sun3scsi_detect() to the function .init.text:NCR5380_print_options()
 
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Finn Thain <fthain@telegraphics.com.au>
+Cc: Sam Creasey <sammy@sammy.net>
 ---
- drivers/scsi/mac_scsi.c |   12 +-----------
- 1 files changed, 1 insertions(+), 11 deletions(-)
+ drivers/scsi/sun3_NCR5380.c  |    2 +-
+ drivers/scsi/sun3_scsi.c     |    2 +-
+ drivers/scsi/sun3_scsi_vme.c |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/scsi/mac_scsi.c b/drivers/scsi/mac_scsi.c
-index 67eb758..af3a6af 100644
---- a/drivers/scsi/mac_scsi.c
-+++ b/drivers/scsi/mac_scsi.c
-@@ -215,13 +215,6 @@ static int __init mac_scsi_setup(char *str) {
- __setup("mac5380=", mac_scsi_setup);
+diff --git a/drivers/scsi/sun3_NCR5380.c b/drivers/scsi/sun3_NCR5380.c
+index 29c8246..0d04c3a 100644
+--- a/drivers/scsi/sun3_NCR5380.c
++++ b/drivers/scsi/sun3_NCR5380.c
+@@ -842,7 +842,7 @@ static char *lprint_Scsi_Cmnd(struct scsi_cmnd *cmd, char *pos, char *buffer,
+  * 
+  */
  
- /*
-- * If you want to find the instance with (k)gdb ...
-- */
--#if NDEBUG
--static struct Scsi_Host *default_instance;
--#endif
--
--/*
-  * Function : int macscsi_detect(struct scsi_host_template * tpnt)
+-static int NCR5380_init (struct Scsi_Host *instance, int flags)
++static int __init NCR5380_init(struct Scsi_Host *instance, int flags)
+ {
+     int i;
+     SETUP_HOSTDATA(instance);
+diff --git a/drivers/scsi/sun3_scsi.c b/drivers/scsi/sun3_scsi.c
+index 613f588..2ad6b91 100644
+--- a/drivers/scsi/sun3_scsi.c
++++ b/drivers/scsi/sun3_scsi.c
+@@ -195,7 +195,7 @@ static struct Scsi_Host *default_instance;
   *
-  * Purpose : initializes mac NCR5380 driver based on the
-@@ -268,10 +261,7 @@ int __init macscsi_detect(struct scsi_host_template * tpnt)
-     /* Once we support multiple 5380s (e.g. DuoDock) we'll do
-        something different here */
-     instance = scsi_register (tpnt, sizeof(struct NCR5380_hostdata));
--#if NDEBUG
--    default_instance = instance;
--#endif
--    
-+
-     if (macintosh_config->ident == MAC_MODEL_IIFX) {
- 	mac_scsi_regp  = via1+0x8000;
- 	mac_scsi_drq   = via1+0xE000;
+  */
+  
+-int sun3scsi_detect(struct scsi_host_template * tpnt)
++int __init sun3scsi_detect(struct scsi_host_template * tpnt)
+ {
+ 	unsigned long ioaddr;
+ 	static int called = 0;
+diff --git a/drivers/scsi/sun3_scsi_vme.c b/drivers/scsi/sun3_scsi_vme.c
+index 7c526b8..cd6d779 100644
+--- a/drivers/scsi/sun3_scsi_vme.c
++++ b/drivers/scsi/sun3_scsi_vme.c
+@@ -137,7 +137,7 @@ static struct Scsi_Host *default_instance;
+  *
+  */
+  
+-static int sun3scsi_detect(struct scsi_host_template * tpnt)
++static int __init sun3scsi_detect(struct scsi_host_template * tpnt)
+ {
+ 	unsigned long ioaddr, irq = 0;
+ 	static int called = 0;
 -- 
 1.7.0.4
 
