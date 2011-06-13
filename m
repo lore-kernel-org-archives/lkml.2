@@ -1,152 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755040Ab1FMWSH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 18:18:07 -0400
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:57805 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752666Ab1FMWSD (ORCPT
+	id S1755110Ab1FMWUG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 18:20:06 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:39490 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754986Ab1FMWUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 18:18:03 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Colin Cross <ccross@android.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Leif Lindholm <leif.lindholm@arm.com>
-Subject: Re: [PATCH 1/3] ARM: Add cpu power management notifiers
-Organization: Texas Instruments, Inc.
-References: <1307925825-28566-1-git-send-email-ccross@android.com>
-	<1307925825-28566-2-git-send-email-ccross@android.com>
-Date: Mon, 13 Jun 2011 15:17:57 -0700
-In-Reply-To: <1307925825-28566-2-git-send-email-ccross@android.com> (Colin
-	Cross's message of "Sun, 12 Jun 2011 17:43:43 -0700")
-Message-ID: <87ips9fka2.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Mon, 13 Jun 2011 18:20:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=QwYU53TU9+VEJSVZI5TIZLv08jJ1xezSyXaJHHAbinU0jB/GHa3Wk8XiZL5AysJPTl
+         fhZF0ioKDXZqD4dGqK8+LbuFzYK7U605cRS05VA6SqKBo3cd3Y0uFZXmFWW8jUuAaMDl
+         pwnyh+dV4w8ieEz6YQBXfuDUQFqeGld8AQels=
+Message-ID: <4DF68D00.8000200@gmail.com>
+Date: Mon, 13 Jun 2011 15:19:44 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH]drivers:base:power:trace.c Add "UTC" Coordinated Universal
+ Time to the printk.
+References: <1307599301-2524-1-git-send-email-justinmattock@gmail.com> <201106122227.32992.rjw@sisk.pl> <4DF53DCC.1060604@gmail.com> <201106132347.08007.rjw@sisk.pl>
+In-Reply-To: <201106132347.08007.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Colin Cross <ccross@android.com> writes:
-
-> During some CPU power modes entered during idle, hotplug and
-> suspend, peripherals located in the CPU power domain, such as
-> the GIC and VFP, may be powered down.  Add a notifier chain
-> that allows drivers for those peripherals to be notified
-> before and after they may be reset.
+On 06/13/2011 02:47 PM, Rafael J. Wysocki wrote:
+> On Monday, June 13, 2011, Justin P. Mattock wrote:
+>> On 06/12/2011 01:27 PM, Rafael J. Wysocki wrote:
+>>> On Sunday, June 12, 2011, Justin P. Mattock wrote:
+>>>> On 06/12/2011 11:35 AM, Rafael J. Wysocki wrote:
+>>>>> On Sunday, June 12, 2011, Justin P. Mattock wrote:
+>>>>>> On 06/12/2011 05:12 AM, Rafael J. Wysocki wrote:
+>>>>>>> Hi,
+>>>>>>>
+>>>>>>> On Thursday, June 09, 2011, Justin P. Mattock wrote:
+>>>>>>>> From: "Justin P. Mattock"<justinmattock@gmail.com>
+>>>>>>>>
+>>>>>>>> sounds stupid, but taking a glance at the time, and seeing the wrong time, or what seemed
+>>>>>>>> wrong in dmesg, caused me to go into total check the time clock panic mode.. So the patch below adds:
+>>>>>>>> "UTC" Coordinated Universal Time abreviation to the printk so people like me dont flip out over the time!
+>>>>>>>>
+>>>>>>>> before:
+>>>>>>>> [    0.114915] Time:  1:47:03  Date: 06/09/11
+>>>>>>>>
+>>>>>>>> after:
+>>>>>>>> [    0.114728] Time:  5:46:02 UTC Date: 06/09/11
+>>>>>>>>
+>>>>>>>> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>>>>>>
+>>>>>>> I suspect the goal is to mark messages printed by the PM trace code so that
+>>>>>>> they can be easily distinguished from messages from other sources to avoid
+>>>>>>> confusion.  Why do you think it's a good idea to use the "UTC" string for
+>>>>>>> this purpose?  The time printed in those messages need not be UTC.
+>>>>>>>
+>>>>>>> It would be better to simply print "RTC time: ..., date: ..." IMO.
+>>>>>>>
+>>>>>>> Thanks,
+>>>>>>> Rafael
+>>>>>>>
+>>>>>>
+>>>>>> well.. if thats better, then thats better.. over here(people that dont
+>>>>>> know what RTC time is) would not get so confused with a simple UTC or
+>>>>>> PDT or whatever the time zone is but if RTC is bettr, then its better.
+>>>>>
+>>>>> My point is we don't know this time is always UTC, so we rather shouldn't
+>>>>> label it as UTC unconditionally, should we?
+>>>>>
+>>>>> Rafael
+>>>>>
+>>>>
+>>>> sounds good to me!!
+>>>
+>>> I'm not sure what you mean?
+>>>
+>>
+>> with what you are saying "RTC" if anything.. rather than "UTC"
 >
-> Signed-off-by: Colin Cross <ccross@android.com>
+> So, it looks like you'd like the appended patch to be appiled?
+>
+> Rafael
 
-This is great, thanks!
 
-I had hacked up something OMAP-specific a while back to do something
-similar, and have been meaning to make it more generic, so this is
-perfect.  Also, if it is moved outside ARM, note that x86_64 has a
-idle_notifier infrastructure that is somewhat similar, and if you're
-motivated, it should probably be converted to this as well.  See
-arch/x86/kernel/process_64.c.
+whatever works best with you guys... I just tripped out on that, and 
+created what I had sent out..
+>
+> ---
+> From: Rafael J. Wysocki<rjw@sisk.pl>
+> Subject: PM: Add "RTC" to PM trace time stamps to avoid confusion
+>
+> Some users are apparently confused by dmesg output from
+> read_magic_time(), which looks like "real" time and date.
+> Add the "RTC" string to time stamps printed by read_magic_time() to
+> avoid that confusion.
+>
+> Reported-by: Justin P. Mattock<justinmattock@gmail.com>
+> Signed-off-by: Rafael J. Wysocki<rjw@sisk.pl>
+> ---
+>   drivers/base/power/trace.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> Index: linux-2.6/drivers/base/power/trace.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/base/power/trace.c
+> +++ linux-2.6/drivers/base/power/trace.c
+> @@ -112,7 +112,7 @@ static unsigned int read_magic_time(void
+>   	unsigned int val;
+>
+>   	get_rtc_time(&time);
+> -	pr_info("Time: %2d:%02d:%02d  Date: %02d/%02d/%02d\n",
+> +	pr_info("RTC time: %2d:%02d:%02d, date: %02d/%02d/%02d\n",
+>   		time.tm_hour, time.tm_min, time.tm_sec,
+>   		time.tm_mon + 1, time.tm_mday, time.tm_year % 100);
+>   	val = time.tm_year;				/* 100 years */
+>
 
-Also, for the sake of the comments/changelog, the usefulness of these
-notifiers is not limited to low-power states where power is off and IP
-blocks may be reset.  It could be considered as simply a generic
-notification mechanism for any CPU PM transitions.
 
-On OMAP we have other peripherals (not in the CPU power domain) where we
-need to control their PM transitions in relation to the CPU PM
-transitions so the notifiers are useful for any low-power state
-transition of the CPU(s).  The drivers for these peripherals use runtime
-PM in their CPU PM notifiers to trigger the device PM transitions. (The
-drivers must use the synchronous versions of the runtime PM get/put
-calls with device in pm_runtime_irq_safe() mode.)
-
-In this series, I don't see any calls to cpu_[complex_]pm_[enter|exit]().  
-Based on that, I assume you prefer to leave it up to platform-specific
-idle/PM code to place these calls.  Or, do you plan to have this
-triggered by generic CPUidle, suspend/resume and/or hotplug code?  At
-least on OMAP, I prefer having the calls in platform-specific code.
-
-I have a minor enhancement request.  The notifier callbacks provide for
-passing a void * through the notifier chain.  Could you add a way for a
-void * to be registered at cpu_pm_register_notifier() time and that
-would be passed through the notifier call chain?  This would allow using
-the same struct notifier_block and callback for multiple instances of
-the same IP, and the instances could be differentiated in the callback
-using the void *.
-
-Also, FWIW I tested this on OMAP3 (Cortex-A8 UP) using
-cpu_pm_enter/exit() in the code path shared between idle and suspend.  I
-successfully triggered PM transitions in non-CPU power-domain
-peripherals, and it worked great. 
-
-Some other minor comments below...
-
-[...]
-
-> diff --git a/arch/arm/kernel/cpu_pm.c b/arch/arm/kernel/cpu_pm.c
-> new file mode 100644
-> index 0000000..48a5b53
-> --- /dev/null
-> +++ b/arch/arm/kernel/cpu_pm.c
-> @@ -0,0 +1,181 @@
-> +/*
-> + * Copyright (C) 2011 Google, Inc.
-> + *
-> + * Author:
-> + *	Colin Cross <ccross@android.com>
-> + *
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/notifier.h>
-> +#include <linux/spinlock.h>
-> +
-> +#include <asm/cpu_pm.h>
-> +
-> +/*
-> + * When a CPU goes to a low power state that turns off power to the CPU's
-> + * power domain, the contents of some blocks (floating point coprocessors,
-> + * interrutp controllers, caches, timers) in the same power domain can
-
-typo: interrutp
-
-> + * be lost.  The cpm_pm notifiers provide a method for platform idle, suspend,
-> + * and hotplug implementations to notify the drivers for these blocks that
-> + * they may be reset.
-> + *
-> + * All cpu_pm notifications must be called with interrupts disabled.
-> + *
-> + * The notifications are split into two classes, CPU notifications and CPU
-> + * complex notifications.
-> + *
-> + * CPU notifications apply to a single CPU, and must be called on the affected
-> + * CPU.  They are used to save per-cpu context for affected blocks.
-> + *
-> + * CPU complex notifications apply to all CPUs in a single power domain. They
-> + * are used to save any global context for affected blocks, and must be called
-> + * after all the CPUs in the power domain have been notified of the low power
-> + * state.
-> + *
-> + */
-
-Not directly related to this series, but I'm a bit confused on terminology.
-
-I've seen both 'CPU complex' and 'CPU cluster' used in ARM SMP land, but
-haven't seen precise definitions of either.  Does one imply all CPUs,
-and the other imply all CPUs in the same power domain?
-
-Kevin
+Justin P. Mattock
