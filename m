@@ -1,105 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab1FMOeD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 10:34:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60046 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751160Ab1FMOd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 10:33:59 -0400
-Date: Mon, 13 Jun 2011 16:33:56 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] writeback: trace global_dirty_state
-Message-ID: <20110613143356.GG4907@quack.suse.cz>
-References: <20110610144805.GA9986@localhost>
+	id S1753556Ab1FMOjA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 10:39:00 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:37169 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753517Ab1FMOi5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 10:38:57 -0400
+Date: Mon, 13 Jun 2011 10:38:56 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tanya Brokhman <tlinder@codeaurora.org>
+cc: balbi@ti.com, <greg@kroah.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>,
+        "'open list:FREESCALE USB PER...'" <linuxppc-dev@lists.ozlabs.org>,
+        "'open list:OMAP USB SUPPORT'" <linux-omap@vger.kernel.org>
+Subject: RE: [PATCH] usb:gadget: use min_t() macro instead of min()
+In-Reply-To: <03b901cc29c0$6538e970$2faabc50$@org>
+Message-ID: <Pine.LNX.4.44L0.1106131036430.1983-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110610144805.GA9986@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 10-06-11 22:48:05, Wu Fengguang wrote:
-> [It seems beneficial to queue this simple trace event for
->  next/upstream after the review?]
-> 
-> Add trace event balance_dirty_state for showing the global dirty page
-> counts and thresholds at each global_dirty_limits() invocation.  This
-> will cover the callers throttle_vm_writeout(), over_bground_thresh()
-> and each balance_dirty_pages() loop.
-  OK, this might be useful. But shouldn't we also add similar trace point
-for bdi limits? Otherwise the information is of limited use...
+On Mon, 13 Jun 2011, Tanya Brokhman wrote:
 
-								Honza
+> > 
+> > On Sun, Jun 12, 2011 at 02:14:46PM +0300, Tatyana Brokhman wrote:
+> > > Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
+> > 
+> > I need a sensible commit log for this. Why do we need to change all
+> > min() to min_t() ?
+> > 
 > 
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  include/trace/events/writeback.h |   36 +++++++++++++++++++++++++++++
->  mm/page-writeback.c              |    1 
->  2 files changed, 37 insertions(+)
-> 
-> --- linux-next.orig/mm/page-writeback.c	2011-06-10 21:52:34.000000000 +0800
-> +++ linux-next/mm/page-writeback.c	2011-06-10 22:08:26.000000000 +0800
-> @@ -430,6 +430,7 @@ void global_dirty_limits(unsigned long *
->  	}
->  	*pbackground = background;
->  	*pdirty = dirty;
-> +	trace_global_dirty_state(background, dirty);
->  }
->  
->  /**
-> --- linux-next.orig/include/trace/events/writeback.h	2011-06-10 21:52:34.000000000 +0800
-> +++ linux-next/include/trace/events/writeback.h	2011-06-10 22:25:33.000000000 +0800
-> @@ -187,6 +187,42 @@ TRACE_EVENT(writeback_queue_io,
->  		__entry->moved)
->  );
->  
-> +TRACE_EVENT(global_dirty_state,
-> +
-> +	TP_PROTO(unsigned long background_thresh,
-> +		 unsigned long dirty_thresh
-> +	),
-> +
-> +	TP_ARGS(background_thresh,
-> +		dirty_thresh
-> +	),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(unsigned long,	nr_dirty)
-> +		__field(unsigned long,	nr_writeback)
-> +		__field(unsigned long,	nr_unstable)
-> +		__field(unsigned long,	background_thresh)
-> +		__field(unsigned long,	dirty_thresh)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->nr_dirty	= global_page_state(NR_FILE_DIRTY);
-> +		__entry->nr_writeback	= global_page_state(NR_WRITEBACK);
-> +		__entry->nr_unstable	= global_page_state(NR_UNSTABLE_NFS);
-> +		__entry->background_thresh = background_thresh;
-> +		__entry->dirty_thresh	= dirty_thresh;
-> +	),
-> +
-> +	TP_printk("dirty=%lu writeback=%lu unstable=%lu "
-> +		  "bg_thresh=%lu thresh=%lu",
-> +		  __entry->nr_dirty,
-> +		  __entry->nr_writeback,
-> +		  __entry->nr_unstable,
-> +		  __entry->background_thresh,
-> +		  __entry->dirty_thresh
-> +	)
-> +);
-> +
->  DECLARE_EVENT_CLASS(writeback_congest_waited_template,
->  
->  	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> Actually, Alan asked me to make this change in one place in dummy_hcd. I
+> wasn't aware of the min_t macro before that. So when I searched the code for
+> other places I found quite a few and just thought that it would be "nicer"
+> to use min_t() instead of min() with casting. 
+> So we don't "need" to make this change. Everything works as is. This patch
+> only makes the code look nicer, nothing more.
+> I can elaborate the above in the commit log if you want.
+
+The change I suggested involved replacing two typecasts with a single 
+min_t.  All (or almost all) the places this patch touches currently 
+contain only one typecast, so the motivation for changing them is a lot 
+weaker.
+
+Alan Stern
+
