@@ -1,93 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423Ab1FMONU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 10:13:20 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:42243 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752403Ab1FMONQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 10:13:16 -0400
+	id S1753444Ab1FMOOR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 10:14:17 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:45613 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752988Ab1FMOOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 10:14:16 -0400
+Date: Mon, 13 Jun 2011 16:14:08 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Rakib Mullick <rakib.mullick@gmail.com>, hpa@zytor.com, tglx@linutronix.de,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, vsyscall: Fix build warning in vsyscall_64.c
+Message-ID: <20110613141408.GA16126@elte.hu>
+References: <1307777464.25182.3.camel@localhost.localdomain>
+ <BANLkTi=SQb6EL4+bdH2Q+iwaW9E3i+48Ew@mail.gmail.com>
+ <20110613092940.GB8282@elte.hu>
+ <BANLkTi=eLODKcTfXb8Z1eAy4KnSE16icow@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110610133338.GD24636@n2100.arm.linux.org.uk>
-References: <E0D41E29EB0DAC4E9F3FF173962E9E940301FE2DED@dbde02.ent.ti.com>
-	<20110609124723.GA24636@n2100.arm.linux.org.uk>
-	<E0D41E29EB0DAC4E9F3FF173962E9E940301FE2EFB@dbde02.ent.ti.com>
-	<20110609163206.GB24636@n2100.arm.linux.org.uk>
-	<1307686397.10976.116.camel@vkoul-udesk3>
-	<E0D41E29EB0DAC4E9F3FF173962E9E940301FE337F@dbde02.ent.ti.com>
-	<20110610104318.GC24636@n2100.arm.linux.org.uk>
-	<E0D41E29EB0DAC4E9F3FF173962E9E940301FE3452@dbde02.ent.ti.com>
-	<20110610133338.GD24636@n2100.arm.linux.org.uk>
-Date: Mon, 13 Jun 2011 16:13:15 +0200
-Message-ID: <BANLkTimZ=v4W1hFJ7hvZRmyHMSU_3MmZEA@mail.gmail.com>
-Subject: Re: [RFC] dmaengine: add new api for preparing simple slave transfer
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Raju, Sundaram" <sundaram@ti.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "Koul, Vinod" <vinod.koul@intel.com>, Dan <dan.j.williams@intel.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=eLODKcTfXb8Z1eAy4KnSE16icow@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 3:33 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Fri, Jun 10, 2011 at 05:18:46PM +0530, Raju, Sundaram wrote:
->> Now DMACs capable of 3D transfer, do transfer of the whole 1D
->> buffer per sync received or even whole 2D buffer per sync received
->> (based on the sync rate programmed in the DMAC).
->
-> The only issue which I see that we don't cover is the case where you want
-> to describe a single buffer which is organised as N bytes to be transferred,
-> M following bytes to be skipped, N bytes to be transferred, M bytes to be
-> skipped. �I doubt there are many controllers which can be programmed with
-> both 'N' and 'M' parameters directly.
 
-Sundaram is this how your controller works?
-I mean the hardware can skip over sequences like this?
+* Andrew Lutomirski <luto@mit.edu> wrote:
 
-When we added the config interface to DMAengine I originally included
-a "custom config" call, but Dan wanted me to keep it out until we
-had some specific usecase for it. FSLDMA recently started
-to use it.
+> On Mon, Jun 13, 2011 at 5:29 AM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * Andrew Lutomirski <luto@mit.edu> wrote:
+> >
+> >> On Sat, Jun 11, 2011 at 3:31 AM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
+> >> > Due to commit 5cec93c216db77 (x86-64: Emulate legacy vsyscalls), we get the following warning:
+> >> >
+> >> >   arch/x86/kernel/vsyscall_64.c: In function ‘do_emulate_vsyscall’:
+> >> >   arch/x86/kernel/vsyscall_64.c:111:7: warning: ‘ret’ may be used uninitialized in this function
+> >>
+> >> What's the code path that uses ret without initializing it?
+> >
+> > If the code is correct but GCC got confused then please use the
+> > simplest possible patch to help GCC find its way around the code.
+> 
+> The simplest patch is to mark ret as uninitialized_var.
 
-Notice how dmaengine_slave_config() is implemented:
+No - that primitive really sucks as it might hide *future* debug 
+warnings and silently break code.
 
-static inline int dmaengine_slave_config(struct dma_chan *chan,
-					  struct dma_slave_config *config)
-{
-	return dmaengine_device_control(chan, DMA_SLAVE_CONFIG,
-			(unsigned long)config);
-}
+The problem with uninitialized_var() is that such code:
 
-So what is passed to the driver is just an unsigned long.
+	int test(void)
+	{
+		int uninitialized_var(ret);
 
-This is actually modeled to be ioctl()-like so you can pass in a
-custom config to the same callback on the device driver,
-just use some other enumerator than DMA_SLAVE_CONFIG,
-say like FSLDMA already does with FSLDMA_EXTERNAL_START.
+		return ret;
+	}
 
-Just put some enumerator in enum dma_ctrl_cmd in
-dmaengine.h such as SDMA_TEXAS_STRIDE_CONFIG and call
-like this:
+Builds without a single warning but it is very broken code.
 
-/* However that config struct needs to look, basically */
-static struct sdma_ti_stride_cgf = {
-     take = M,
-     skip = N,
-};
+So if we use uninitialized_var() and the code is changed in the 
+future to have the above broken sequence, we'll have a silent runtime 
+failure ...
 
-ret = chan->device->device_control(chan, SDMA_TEXAS_STRIDE_CONFIG,
-&sdma_ti_stride_cfg);
+So we try to avoid using uninitialized_var() in arch/x86/ and use 
+explicit initialization instead.
 
-Or something like this.
+That way GCC that can see through the flow will optimize away the 
+superfluous initialization - GCC versions that are older will 
+generate one more instruction but that's OK.
 
 Thanks,
-Linus Walleij
+
+	Ingo
