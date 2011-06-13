@@ -1,111 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab1FMMUE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 08:20:04 -0400
-Received: from mail.mnsspb.ru ([84.204.75.2]:41852 "EHLO mail.mnsspb.ru"
+	id S1752545Ab1FMMZI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 08:25:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:25466 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752660Ab1FMMTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 08:19:52 -0400
-From: Kirill Smelkov <kirr@mns.spb.ru>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Tomas Winkler <tomas.winkler@intel.com>,
-        Mike Thomas <rmthomas@sciolus.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Kirill Smelkov <kirr@mns.spb.ru>
-Subject: [PATCH 5/5] staging/easycap: Fix bytesperline calculation
-Date: Mon, 13 Jun 2011 16:18:32 +0400
-Message-Id: <bcbeb6b7c5ab7624ea59b072f74347fa8e6a6350.1307967011.git.kirr@mns.spb.ru>
-X-Mailer: git-send-email 1.7.6.rc1
-In-Reply-To: <cover.1307967011.git.kirr@mns.spb.ru>
+	id S1750967Ab1FMMZF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 08:25:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,358,1304319600"; 
+   d="scan'208";a="13798855"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Kirill Smelkov <kirr@mns.spb.ru>, Greg Kroah-Hartman <gregkh@suse.de>
+CC: Mike Thomas <rmthomas@sciolus.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 13 Jun 2011 15:24:58 +0300
+Subject: RE: [PATCH 1/5] staging/easycap: Kill leftover build options in
+ readme
+Thread-Topic: [PATCH 1/5] staging/easycap: Kill leftover build options in
+ readme
+Thread-Index: AcwpxCup/h6c1SodRdq3TR+BXsNeQwAAKXaw
+Message-ID: <6F5C1D715B2DA5498A628E6B9C124F0401AD3191CB@hasmsx504.ger.corp.intel.com>
 References: <cover.1307967011.git.kirr@mns.spb.ru>
-In-Reply-To: <cover.1307967011.git.kirr@mns.spb.ru>
-References: <cover.1307967011.git.kirr@mns.spb.ru>
+ <0357ebaecb3c8c17cf7a8925daeed50409c11b63.1307967011.git.kirr@mns.spb.ru>
+In-Reply-To: <0357ebaecb3c8c17cf7a8925daeed50409c11b63.1307967011.git.kirr@mns.spb.ru>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As described above fillin_formats()
 
-"""
-    /*
-     *  THE 16-BIT easycap_format.mask HAS MEANING:
-     *    (least significant) BIT  0:     0 => PAL, 25 FPS;   1 => NTSC, 30 FPS
-     *                        BITS 2-4:   RESERVED FOR DIFFERENTIATING STANDARDS
-     *                        BITS 5-7:   NUMBER OF BYTES PER PIXEL
-     *                        BIT  8:     0 => NATIVE BYTE ORDER;  1 => SWAPPED
-     *                        BITS 9-10:  RESERVED FOR OTHER BYTE PERMUTATIONS
-     *                        BIT 11:     0 => UNDECIMATED;    1 => DECIMATED
-     *                        BIT 12:     0 => OFFER FRAMES;   1 => OFFER FIELDS
-     *                        BIT 13:     0 => FULL FRAMERATE; 1 => REDUCED
-     *     (most significant) BITS 14-15: RESERVED FOR OTHER FIELD/FRAME OPTIONS
-     *  IT FOLLOWS THAT:
-     *     bytesperpixel IS         ((0x00E0 & easycap_format.mask) >> 5)
-     *     byteswaporder IS true IF (0 != (0x0100 & easycap_format.mask))
-     *
-     *     decimatepixel IS true IF (0 != (0x0800 & easycap_format.mask))
-     *
-     *       offerfields IS true IF (0 != (0x1000 & easycap_format.mask))
-     */
-"""
 
-bytes-per-pixel is stored in bits 5-7 of calculated mask.
+> -----Original Message-----
+> From: Kirill Smelkov [mailto:kirr@mns.spb.ru]
+> Sent: Monday, June 13, 2011 3:18 PM
+> To: Greg Kroah-Hartman
+> Cc: Winkler, Tomas; Mike Thomas; devel@driverdev.osuosl.org; linux-
+> kernel@vger.kernel.org; Kirill Smelkov
+> Subject: [PATCH 1/5] staging/easycap: Kill leftover build options in readme
+> 
+> The following options were removed from in-tree driver, but were left in
+> README:
+> 
+> - EASYCAP_IS_VIDEODEV_CLIENT was removed in cb81fa07
+> (staging/easycap:
+>   kill EASYCAP_IS_VIDEODEV_CLIENT compilation conditional);
+> 
+> - EASYCAP_NEEDS_V4L2_DEVICE_H/EASYCAP_NEEDS_V4L2_FOPS were
+> removed in
+>   30516058 (staging/easycap: kill EASYCAP_NEEDS_V4L2_DEVICE_H and
+>   EASYCAP_NEEDS_V4L2_FOPS);
+> 
+> - EASYCAP_NEEDS_UNLOCKED_IOCTL was removed in f2b3c685
+> (staging/easycap:
+>   kill EASYCAP_NEEDS_UNLOCKED_IOCTL).
+> 
+> Remove them.
+> 
+> Cc: Tomas Winkler <tomas.winkler@intel.com>
+> Cc: Mike Thomas <rmthomas@sciolus.org>
+> Signed-off-by: Kirill Smelkov <kirr@mns.spb.ru>
+Acked-by: Tomas Winkler <tomas.winkler@intel.com>
 
-But when calculating bytes-per-line we were extracting wrong value
-instead of bytes-per-pixel, which was usually 2 times bigger -- e.g. for
-PAL YUV 422 I was getting ((mask3 & 0x00F0) >> 4) = 4 bytes instead of 2.
+> ---
+>  drivers/staging/easycap/README |   22 ----------------------
+>  1 files changed, 0 insertions(+), 22 deletions(-)
+> 
+> diff --git a/drivers/staging/easycap/README
+> b/drivers/staging/easycap/README index 6b5ac0d..16b8264 100644
+> --- a/drivers/staging/easycap/README
+> +++ b/drivers/staging/easycap/README
+> @@ -27,28 +27,6 @@ BUILD OPTIONS AND DEPENDENCIES  Unless
+> EASYCAP_DEBUG is defined during compilation it will not be possible  to
+> select a debug level at the time of module installation.
+> 
+> -If the parameter EASYCAP_IS_VIDEODEV_CLIENT is undefined during
+> compilation -the built module is entirely independent of the videodev
+> module, and when -the EasyCAP is physically plugged into a USB port the
+> special files
+> -/dev/easycap0 and /dev/easysnd1 are created as video and sound sources -
+> respectively.
+> -
+> -If the parameter EASYCAP_IS_VIDEODEV_CLIENT is defined during
+> compilation -the built easycap module is configured to register with the
+> videodev module, -in which case the special files created when the EasyCAP
+> is plugged in are
+> -/dev/video0 and /dev/easysnd0.
+> -
+> -During in-tree builds the following should should be defined whenever the -
+> parameter EASYCAP_IS_VIDEODEV_CLIENT is defined:
+> -
+> -EASYCAP_NEEDS_V4L2_DEVICE_H
+> -EASYCAP_NEEDS_V4L2_FOPS
+> -EASYCAP_NEEDS_UNLOCKED_IOCTL
+> -
+> -If the build is performed out-of-tree against older kernels the parameters -
+> to be defined depend on the kernel version in a way which will not be -
+> discussed here.
+> -
+> 
+>  KNOWN RUNTIME ISSUES
+>  --------------------
+> --
+> 1.7.6.rc1
 
-The error here is that even in comments there is a line saying
+---------------------------------------------------------------------
+Intel Israel (74) Limited
 
-     *     bytesperpixel IS         ((0x00E0 & easycap_format.mask) >> 5)
-
-but we were using
-                                    ((0x00F0 & easycap_format.mask) >> 4)
-
-With 2 times bigger bytesperpixel and automatically bytesperline, the
-video was shown halfheight'ed, which is understandable if we look at
-video-memory layout:
-
-    <------- bytesperline -------->
-    <- real bpl ->
-
-    x0----------y0  x1-----------y1
-    x2----------y2  x3-----------y3
-
-    xn----------yn  xn-----------yn
-    <garbage>
-
-for each line, we should display width pixels, then move to next line
-with bytesperline, and oops, if bytesperline = 2*real-bytesperlin, we'll
-skip one line and move to next-next line, and so only half lines will be
-shown.
-
-Initially I've debugged the problem with my video application[1], but
-I've checked that after this patch both rawv (mine app) and tvtime work
-correctly.
-
-[1] http://repo.or.cz/w/rawv.git
-
-P.S. why at all we use those mask/shifts? Why not use bitfields?
-
-Cc: Tomas Winkler <tomas.winkler@intel.com>
-Cc: Mike Thomas <rmthomas@sciolus.org>
-Signed-off-by: Kirill Smelkov <kirr@mns.spb.ru>
----
- drivers/staging/easycap/easycap_settings.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/staging/easycap/easycap_settings.c b/drivers/staging/easycap/easycap_settings.c
-index 898559d..70f59b1 100644
---- a/drivers/staging/easycap/easycap_settings.c
-+++ b/drivers/staging/easycap/easycap_settings.c
-@@ -567,7 +567,7 @@ int fillin_formats(void)
- 				default:
- 					return -3;
- 				}
--				bytesperline = width * ((mask3 & 0x00F0) >> 4);
-+				bytesperline = width * ((mask3 & 0x00E0) >> 5);
- 				sizeimage =  bytesperline * height;
- 
- 				for (m = 0; m < INTERLACE_MANY; m++) {
--- 
-1.7.6.rc1
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
 
