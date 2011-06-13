@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab1FMXR2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 19:17:28 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52102 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754661Ab1FMXR1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 19:17:27 -0400
+	id S1755282Ab1FMXSQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 19:18:16 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:2960 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754661Ab1FMXSP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 19:18:15 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+From: "Jian Peng" <jipeng@broadcom.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+cc: "Jian Peng" <jipeng@broadcom.com>
+Date: Mon, 13 Jun 2011 16:18:06 -0700
+Subject: two false alarms from checkpatch.pl
+Thread-Topic: two false alarms from checkpatch.pl
+Thread-Index: AcwqICbrpKXr4rE+RUqTZSPNGJ/dZQ==
+Message-ID: <E18F441196CA634DB8E1F1C56A50A874572DE7E95F@IRVEXCHCCR01.corp.ad.broadcom.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-In-Reply-To: <web-546810453@zbackend1.aha.ru>
-References: <web-546810453@zbackend1.aha.ru>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 13 Jun 2011 16:17:04 -0700
-Message-ID: <BANLkTimTjcXPfiPDvyMEgRCH0EA2E9mMpQ@mail.gmail.com>
-Subject: Re: problems with mtp , better to make a command-line option to can
- switch off mtp device search on booting
-To: werner <w.landgraf@ru.ru>, David Woodhouse <David.Woodhouse@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=KOI8-R
+X-WSS-ID: 61E8443A62O8361700-01-01
+Content-Type: text/plain;
+ charset=us-ascii
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So I still think you're crazy to compile in MTD support at all, but
-hey, I do agree that it is supposed to work.
+After running "./scripts/checkpatch.pl -F arch/mips/kernel/syscall.c", I got some errors reported on valid lines
 
-The "L440GX flash mapping failed" message isn't new, and I doubt that
-that particular driver is the problem. Can you try to narrow it down
-to _which_ MTD driver causes problems? Enable MTD again, and try to
-enable about half the devices to "bisect" the issue.
+ERROR: space prohibited before open square bracket '['
+#451: FILE: mips/kernel/syscall.c:451:
++		: [addr] "r" (addr),
 
-                       Linus
+This line is valid, and if I remove the space in between, it will report a different error
 
-On Mon, Jun 13, 2011 at 4:06 PM, werner <w.landgraf@ru.ru> wrote:
-> I get yesterday an acer laptop with big problems to install Linux
->
-> booting stopped with error messages like:
->
-> physmap_flash.0 failed claim ressource 0
->
-> L440GX flash mapping failed to find PIIX4 ISA bridge, cannot continue
->
-> Then the computer stopped, but not crashed, the cursor stopped to blink, but
-> reboot
-> with CTRL-ALT-DEL didn't work, one had to press the reboot button
->
-> I recompiled the kernel with all MTP things switched off, and that booted.
->
-> However, normally it should be compiled everything in the kernel, and the
-> kernel
-> during booting should manage it to see and to use what is existent in the
-> computer
-> of the user, without to stick or to crash.
->
-> Probably that is an error already sine time in the kernel, not a recent
-> regression.
->
-> Better to make a command-line option to can switch off mtp device search on
-> booting
->
-> wl
->
->
-> =================================================
-> I have problems to post something from my home computer site šguyane.yi.org
-> or SYS-Linux.yi.org :
->
-> Deferred: 451 4.7.1 Hello [93.121.138.180], for recipient address the policy
-> analysis reported: Greylisted, see
-> http://isg.ee.ethz.ch/tools/postgrey/help/vger.kernel.org.html
-> ---
-> Professional hosting for everyone - http://www.host.ru
->
+ERROR: spaces required around that ':' (ctx:ExV)
+#448: FILE: mips/kernel/syscall.c:448:
++		:[old] "=&r" (old),
+ 		^
+
+In another case, it reported
+
+ERROR: trailing statements should be on next line
+#515: FILE: mips/kernel/syscall.c:515:
++	while (1);
+
+This is also valid line.
+
+The above two cases are both false alarms, and need to be treated as exceptions in "checkpatch.pl -F".
+
+Thanks,
+Jian
+
+
+
