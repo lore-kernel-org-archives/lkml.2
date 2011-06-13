@@ -1,56 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911Ab1FMVaT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 17:30:19 -0400
-Received: from relay03.digicable.hu ([92.249.128.185]:41177 "EHLO
-	relay03.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754828Ab1FMVaQ (ORCPT
+	id S1754832Ab1FMVcU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 17:32:20 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57033 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753009Ab1FMVcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 17:30:16 -0400
-Message-ID: <4DF68161.5060304@freemail.hu>
-Date: Mon, 13 Jun 2011 23:30:09 +0200
-From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@suse.de>, Matt Mooney <mfm@muteddisk.com>,
-        Max Vozeler <max@hinterhof.net>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] usbip: simplify port status saving
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Original: 94.21.187.147
+	Mon, 13 Jun 2011 17:32:19 -0400
+Date: Mon, 13 Jun 2011 14:31:44 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: aquini@linux.com
+Cc: Russ Anderson <rja@sgi.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>, rja@americas.sgi.com
+Subject: Re: [PATCH] mm: fix negative commitlimit when gigantic hugepages
+ are allocated
+Message-Id: <20110613143144.c457ff42.akpm@linux-foundation.org>
+In-Reply-To: <20110613211153.GA23597@optiplex.tchesoft.com>
+References: <BANLkTinbHnrf2isuLzUFZN8ypaT476G1zw@mail.gmail.com>
+	<20110519045630.GA22533@sgi.com>
+	<BANLkTinyYP-je9Nf8X-xWEdpgvn8a631Mw@mail.gmail.com>
+	<20110519221101.GC19648@sgi.com>
+	<20110520130411.d1e0baef.akpm@linux-foundation.org>
+	<20110520223032.GA15192@x61.tchesoft.com>
+	<20110526210751.GA14819@optiplex.tchesoft.com>
+	<20110602040821.GA7934@sgi.com>
+	<20110603025555.GA10530@optiplex.tchesoft.com>
+	<20110609164408.8370746e.akpm@linux-foundation.org>
+	<20110613211153.GA23597@optiplex.tchesoft.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Márton Németh <nm127@freemail.hu>
+On Mon, 13 Jun 2011 18:11:55 -0300
+Rafael Aquini <aquini@linux.com> wrote:
 
-Use memcpy() function to save port status instead of
-a handwritten for loop.
+> Howdy Andrew,
+> 
+> Sorry, for this late reply.
+> 
+> On Thu, Jun 09, 2011 at 04:44:08PM -0700, Andrew Morton wrote:
+> > On Thu, 2 Jun 2011 23:55:57 -0300
+> > Rafael Aquini <aquini@linux.com> wrote:
+> > 
+> > > When 1GB hugepages are allocated on a system, free(1) reports
+> > > less available memory than what really is installed in the box.
+> > > Also, if the total size of hugepages allocated on a system is
+> > > over half of the total memory size, CommitLimit becomes
+> > > a negative number.
+> > > 
+> > > The problem is that gigantic hugepages (order > MAX_ORDER)
+> > > can only be allocated at boot with bootmem, thus its frames
+> > > are not accounted to 'totalram_pages'. However,  they are
+> > > accounted to hugetlb_total_pages()
+> > > 
+> > > What happens to turn CommitLimit into a negative number
+> > > is this calculation, in fs/proc/meminfo.c:
+> > > 
+> > >         allowed = ((totalram_pages - hugetlb_total_pages())
+> > >                 * sysctl_overcommit_ratio / 100) + total_swap_pages;
+> > > 
+> > > A similar calculation occurs in __vm_enough_memory() in mm/mmap.c.
+> > > 
+> > > Also, every vm statistic which depends on 'totalram_pages' will render
+> > > confusing values, as if system were 'missing' some part of its memory.
+> > 
+> > Is this bug serious enough to justify backporting the fix into -stable
+> > kernels?
+> 
+> Despite not having testing it, I can think the following scenario as
+> troublesome:
+> When gigantic hugepages are allocated and sysctl_overcommit_memory == OVERCOMMIT_NEVER.
+> In a such situation, __vm_enough_memory() goes through the mentioned 'allowed'
+> calculation and might end up mistakenly returning -ENOMEM, thus forcing
+> the system to start reclaiming pages earlier than it would be ususal, and this could
+> cause detrimental impact to overall system's performance, depending on the
+> workload.
+> 
+> Besides the aforementioned scenario, I can only think of this causing annoyances
+> with memory reports from /proc/meminfo and free(1).
+> 
 
-Signed-off-by: Márton Németh <nm127@freemail.hu>
----
- drivers/staging/usbip/vhci_hcd.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
-index d3ce569..ccb30e1 100644
---- a/drivers/staging/usbip/vhci_hcd.c
-+++ b/drivers/staging/usbip/vhci_hcd.c
-@@ -281,9 +281,8 @@ static int vhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
-
- 	/* store old status and compare now and old later */
- 	if (usbip_dbg_flag_vhci_rh) {
--		int i = 0;
--		for (i = 0; i < VHCI_NPORTS; i++)
--			prev_port_status[i] = dum->port_status[i];
-+		memcpy(prev_port_status, dum->port_status,
-+			sizeof(prev_port_status));
- 	}
-
- 	switch (typeReq) {
--- 
-1.7.2.5
+hm, OK, thanks.  That sounds a bit thin, but the patch is really simple
+so I stuck the cc:stable onto its changelog.
 
