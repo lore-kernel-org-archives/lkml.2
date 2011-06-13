@@ -1,85 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898Ab1FMKf2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 06:35:28 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:41997 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751092Ab1FMKf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 06:35:27 -0400
-Date: Mon, 13 Jun 2011 12:35:05 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Ying Han <yinghan@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/8] mm: memcg naturalization -rc2
-Message-ID: <20110613103505.GB12143@cmpxchg.org>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
- <20110613094704.GD10563@tiehlicka.suse.cz>
+	id S1751991Ab1FMKl6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 06:41:58 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:46055 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750826Ab1FMKlz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 06:41:55 -0400
+Date: Mon, 13 Jun 2011 11:41:45 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Colin Cross <ccross@android.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 2/3] ARM: gic: Use cpu pm notifiers to save gic state
+Message-ID: <20110613104145.GA8230@e102568-lin.cambridge.arm.com>
+References: <1307925825-28566-1-git-send-email-ccross@android.com>
+ <1307925825-28566-3-git-send-email-ccross@android.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1307925825-28566-3-git-send-email-ccross@android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 13 Jun 2011 10:42:26.0028 (UTC) FILETIME=[95C31AC0:01CC29B6]
+X-MC-Unique: 111061311415102801
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20110613094704.GD10563@tiehlicka.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 11:47:04AM +0200, Michal Hocko wrote:
-> On Wed 01-06-11 08:25:11, Johannes Weiner wrote:
-> > Hi,
-> > 
-> > this is the second version of the memcg naturalization series.  The
-> > notable changes since the first submission are:
-> > 
-> >     o the hierarchy walk is now intermittent and will abort and
-> >       remember the last scanned child after sc->nr_to_reclaim pages
-> >       have been reclaimed during the walk in one zone (Rik)
-> > 
-> >     o the global lru lists are never scanned when memcg is enabled
-> >       after #2 'memcg-aware global reclaim', which makes this patch
-> >       self-sufficient and complete without requiring the per-memcg lru
-> >       lists to be exclusive (Michal)
-> > 
-> >     o renamed sc->memcg and sc->current_memcg to sc->target_mem_cgroup
-> >       and sc->mem_cgroup and fixed their documentation, I hope this is
-> >       better understandable now (Rik)
-> > 
-> >     o the reclaim statistic counters have been renamed.  there is no
-> >       more distinction between 'pgfree' and 'pgsteal', it is now
-> >       'pgreclaim' in both cases; 'kswapd' has been replaced by
-> >       'background'
-> > 
-> >     o fixed a nasty crash in the hierarchical soft limit check that
-> >       happened during global reclaim in memcgs that are hierarchical
-> >       but have no hierarchical parents themselves
-> > 
-> >     o properly implemented the memcg-aware unevictable page rescue
-> >       scanner, there were several blatant bugs in there
-> > 
-> >     o documentation on new public interfaces
-> > 
-> > Thanks for your input on the first version.
+Hi Colin,
+
+On Mon, Jun 13, 2011 at 01:43:44AM +0100, Colin Cross wrote:
+> When the cpu is powered down in a low power mode, the gic cpu
+> interface may be reset, and when the cpu complex is powered
+> down, the gic distributor may also be reset.
 > 
-> I have finally got through the whole series, sorry that it took so long,
-> and I have to say that I like it. There is just one issue I can see that
-> was already discussed by you and Ying regarding further soft reclaim
-> enhancement. I think it will be much better if that one comes as a
-> separate patch though.
+> This patch uses CPU_PM_ENTER and CPU_PM_EXIT notifiers to save
+> and restore the gic cpu interface registers, and the
+> CPU_COMPLEX_PM_ENTER and CPU_COMPLEX_PM_EXIT notifiers to save
+> and restore the gic distributor registers.
+> 
+> Signed-off-by: Colin Cross <ccross@android.com>
+> ---
+>  arch/arm/common/gic.c |  212 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 212 insertions(+), 0 deletions(-)
+> 
 
-People have been arguing in both directions.  I share the sentiment
-that that the soft limit rework is a separate thing, though, and will
-make this series purely about the exclusive per-memcg lru lists.
+[...]
 
-Once this is done, the soft limit stuff should follow immediately.
+> +
+> +static void __init gic_cpu_pm_init(struct gic_chip_data *gic)
+> +{
+> +	gic->saved_ppi_enable = __alloc_percpu(DIV_ROUND_UP(32, 32) * 4,
+> +		sizeof(u32));
+> +	BUG_ON(!gic->saved_ppi_enable);
+> +
+> +	gic->saved_ppi_conf = __alloc_percpu(DIV_ROUND_UP(32, 16) * 4,
+> +		sizeof(u32));
+> +	BUG_ON(!gic->saved_ppi_conf);
+> +
+> +	gic->saved_ppi_pri = __alloc_percpu(DIV_ROUND_UP(32, 4) * 4,
+> +		sizeof(u32));
+> +	BUG_ON(!gic->saved_ppi_pri);
+> +
+> +	cpu_pm_register_notifier(&gic_notifier_block);
+> +}
+> +#else
+> +static void __init gic_cpu_pm_init(struct gic_chip_data *gic)
+> +{
+> +}
+> +#endif
+> +
+>  void __init gic_init(unsigned int gic_nr, unsigned int irq_start,
+>  	void __iomem *dist_base, void __iomem *cpu_base)
+>  {
+> @@ -367,6 +578,7 @@ void __init gic_init(unsigned int gic_nr, unsigned int irq_start,
+>  
+>  	gic_dist_init(gic, irq_start);
+>  	gic_cpu_init(gic);
+> +	gic_cpu_pm_init(gic);
+>  }
+>  
+> 
 
-> So thank you for this work and I am looking forward for a new version.
-> I will try to give it some testing as well.
+I have been using this patchset for a while and it works perfectly fine.
+I reckon one bit we could improve is allowing to register a subsystem depending
+on a flag set @init, for now it is a save "all default registered subsystems or nothing" solution on cpu_pm_enter(), maybe we could add this level of
+configurability as an improvement (GIC being a good example, see OMAP).
 
-Thanks for your input and testing!
+Lorenzo
+
