@@ -1,89 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab1FMKop (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 06:44:45 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:32901 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751703Ab1FMKoo (ORCPT
+	id S1752087Ab1FMKqC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 06:46:02 -0400
+Received: from cantor.suse.de ([195.135.220.2]:32800 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750826Ab1FMKqA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 06:44:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=qHSKWdXaWF5JCALYF84bJXOJqUrBKoE/uvtpW8hJ3EhhExX2SXEFEE1cT4i0+65Mxf
-         Gi5SR22aM6IVTrI0XAJLDsTpUOo+RiyhUWvEurEy4pw0fwp54o3AmVbzlp9+tnAj868h
-         5LH9JQ2xa2zO18y5zma7CiV7ooSf1XggF92g0=
-Date: Mon, 13 Jun 2011 12:44:40 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        avillaci@ceibo.fiec.espol.edu.ec
-Subject: [PATCH] block: use the passed in @bdev when claiming if partno is
- zero
-Message-ID: <20110613104440.GB16021@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 13 Jun 2011 06:46:00 -0400
+References: <20110610002103.GA7169@xanatos> <20110610031805.GA15774@kroah.com> <20110610194815.GA6646@xanatos> <20110610205035.GC13450@kroah.com>
+In-Reply-To: <20110610205035.GC13450@kroah.com>
+Mime-Version: 1.0 (iPhone Mail 8G4)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <5330D332-119F-40AD-B06F-CEDBD0D02D8D@suse.de>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "libusb-devel@lists.sourceforge.net" 
+	<libusb-devel@lists.sourceforge.net>,
+        Gerd Hoffmann <kraxel@redhat.com>,
+        "hector@marcansoft.com" <hector@marcansoft.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
+        "pbonzini@redhat.com" <pbonzini@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Hans de Goede <hdegoede@redhat.com>
+X-Mailer: iPhone Mail (8G4)
+From: Alexander Graf <agraf@suse.de>
+Subject: Re: USB mini-summit at LinuxCon Vancouver
+Date: Mon, 13 Jun 2011 12:44:57 +0200
+To: Greg KH <greg@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-6b4517a791 (block: implement bd_claiming and claiming block)
-introduced claiming block to support O_EXCL blkdev opens properly.
 
-bd_start_claiming() looks up the part 0 bdev and starts claiming
-block.  The function assumed that there is only one part 0 bdev and
-always used bdget_disk(disk, 0) to look it up; unfortunately, this
-isn't true for some drivers (floppy) which use multiple block devices
-to denote different operating parameters for the same physical device.
-There can be multiple part 0 bdev's for the same device number.
+Am 10.06.2011 um 22:50 schrieb Greg KH <greg@kroah.com>:
 
-This incorrect assumption caused the wrong bdev to be used during
-claiming leading to unbalanced bd_holders as reported in the following
-bug.
+> On Fri, Jun 10, 2011 at 12:48:15PM -0700, Sarah Sharp wrote:
+>> On Thu, Jun 09, 2011 at 08:18:05PM -0700, Greg KH wrote:
+>>> On Thu, Jun 09, 2011 at 05:21:03PM -0700, Sarah Sharp wrote:
+>>>> Topic 1
+>>>> -------
+>>>> 
+>>>> The KVM folks suggested that it would be good to get USB and
+>>>> virtualization developers together to talk about how to virtualize the
+>>>> xHCI host controller.  The xHCI spec architect worked closely with
+>>>> VMWare to get some extra goodies in the spec to help virtualization, and
+>>>> I'd like to see the other virtualization developers take advantage of
+>>>> that.  I'd also like us to hash out any issues they have been finding in
+>>>> the USB core or xHCI driver during the virtualization effort.
+>>> 
+>>> Do people really want to virtualize the whole xHCI controller, or just
+>>> specific ports or devices to the guest operating system?
+>> 
+>> A host OS could chose to virtualize the whole xHCI controller if it
+>> wanted to.  That's part of the reason why xHCI does all the bandwidth
+>> checking in hardware, not in software.
+> 
+> And here I thought it did that so it would be "correct" :)
+> 
+>> 
+>>> If just specific ports, would something like usbip be better for virtual
+>>> machines, with the USB traffic going over the network connection between
+>>> the guest/host?
+>> 
+>> It could be done that way too.  But that doesn't help if you're trying
+>> to run Windows under Linux, right?  Only if all the guest OSes use the
+>> same USB IP protocol then it would work.
+> 
+> usbip works on Windows as well as Linux.
 
-  https://bugzilla.kernel.org/show_bug.cgi?id=28522
+Do you have a reliable, working usbip solution at hand that work on Windows and Linux and doesn't require real network access, which can be a no-go for some scenarios?
 
-This patch updates bd_start_claiming() such that it uses the bdev
-specified as argument if its partno is zero.
+> 
+> But how could you run Windows with a xHCI controller in a guest, as
+> Windows has no xHCI driver?  What would it expect to see?
 
-Note that this means that different bdev's can be used for the same
-device and O_EXCL check can be effectively bypassed.  It has always
-been broken that way and floppy is fortunately on its way out.  Leave
-that breakage alone.
+There are drivers for xhci adapters on Windows. Also, this whole discussion is pretty much future oriented - which most likely means built-in xhci drivers anywhere.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Alex Villacis Lasso <avillaci@ceibo.fiec.espol.edu.ec>
-Tested-by: Alex Villacis Lasso <avillaci@ceibo.fiec.espol.edu.ec>
-Cc: stable@kernel.org	# >= v2.6.36
----
- fs/block_dev.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+No, in all seriousity, the main reason to go for FV vs PV is that so far, the best tested and working drivers are built for real hardware. I'm still unsatisfied with the PV driver situation for virtio on Windows. It's just incredibly hard to get Windows drivers right - and open source developers sure are not good at it :)
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 1a2421f..610e8e0 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -762,7 +762,19 @@ static struct block_device *bd_start_claiming(struct block_device *bdev,
- 	if (!disk)
- 		return ERR_PTR(-ENXIO);
- 
--	whole = bdget_disk(disk, 0);
-+	/*
-+	 * Normally, @bdev should equal what's returned from bdget_disk()
-+	 * if partno is 0; however, some drivers (floppy) use multiple
-+	 * bdev's for the same physical device and @bdev may be one of the
-+	 * aliases.  Keep @bdev if partno is 0.  This means claimer
-+	 * tracking is broken for those devices but it has always been that
-+	 * way.
-+	 */
-+	if (partno)
-+		whole = bdget_disk(disk, 0);
-+	else
-+		whole = bdgrab(bdev);
-+
- 	module_put(disk->fops->owner);
- 	put_disk(disk);
- 	if (!whole)
+But sure, let's talk about it during LinuxCon as well - there's a good chance you know more there than me :)
+
+> 
+
+Alex
+
