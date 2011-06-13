@@ -1,430 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046Ab1FMI5F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 04:57:05 -0400
-Received: from cantor.suse.de ([195.135.220.2]:58497 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754905Ab1FMI5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 04:57:02 -0400
-Date: Mon, 13 Jun 2011 10:56:54 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Wanlong Gao <wanlong.gao@gmail.com>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        linux-video@atrey.karlin.mff.cuni.cz,
-        xiyoulinuxkernelgroup@googlegroups.com, linux-kernel@zh-kernel.org,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, Nick Piggin <npiggin@kernel.dk>,
-        Karsten Keil <isdn@linux-pingi.de>, Michal Marek <mmarek@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Martin Mares <mj@ucw.cz>, Harry Wei <harryxiyou@gmail.com>,
-        Chuck Lever <chuck.lever@oracle.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Thomas Weber <weber@corscience.de>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: Re: [PATCH] Documentation:change all arch/i386 to arch/x86 in
- Documentation
-In-Reply-To: <1307942898-3728-1-git-send-email-wanlong.gao@gmail.com>
-Message-ID: <alpine.LNX.2.00.1106131055250.22872@pobox.suse.cz>
-References: <1307942898-3728-1-git-send-email-wanlong.gao@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754964Ab1FMIs7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 04:48:59 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:33570 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754570Ab1FMIs4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 04:48:56 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4DF5D0DC.5090205@cam.ac.uk>
+Date: Mon, 13 Jun 2011 09:57:00 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Bryan Freed <bfreed@chromium.org>
+CC: linux-kernel@vger.kernel.org, jbrenner@taosinc.com, gregkh@suse.de,
+        arnd@arndb.de, "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Subject: Re: [PATCH 1/2] light sensor: Add a calibration file to the isl29018
+ driver.
+References: <1307737580-14131-1-git-send-email-bfreed@chromium.org>
+In-Reply-To: <1307737580-14131-1-git-send-email-bfreed@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Jun 2011, Wanlong Gao wrote:
+cc'd linux-iio 
+On 06/10/11 21:26, Bryan Freed wrote:
+> This is the same tuning file used in tsl2583.c.
+> Add documentation for it to sysfs-bus-iio-light.
+> Normalize it at 1024 instead of 1000 so we can avoid 64bit division (div_u64).
+> Use u64 so we can do all multiplication before division to avoid loss of
+> granularity on amplified values.
+Hi  Brian.
 
-> From: Wanlong Gao <wanlong.gao@gmail.com>
+This attribute is a general IIO one rather than a light specific one so is
+already documented in sysfs-bus-iio.
+
+Now it is supposed to be an offset rather than a gain.  The current docs say:
+
+"Hardware applied calibration offset. (assumed to fix production
+ inaccuracies). If shared across all channels, <type>_calibbias
+ is used."
+
+I do note that the illuminance variant isn't actually listed and would be
+happy to have a patch adding it alongside the gyro and accel ones already there.
+
+My first issue here is that it supposed to be an offset not a gain.  Secondly that
+description could clearly do with amending to make it clear that this can be used
+for devices with complex non linear transformations to SI units which is what it
+is supposed to be doing here.  In cases where there is no '_raw' output we can assume
+something complex may be happening, so changing this value won't result in a additive
+change the output.
+
+If we are playing with a gain, then calibscale is the parameter name that should be used
+(also a core attribute definition, not a light specific one).
+
+"Hardware applied calibration scale factor. (assumed to fix
+ production inaccuracies).  If shared across all channels,
+ <type>_calibscale is used."
+
+Note all these attributes are defined to be pseudo floating point.  The chan_spec approach
+to registration handles this cleanly (particularly with Michael Hennerich's additional
+callbacks added last week).  It's a gain, so 1 is the no change value. Sorry, but anything
+that assumes 1024 is the no effect value is never going to generalize well
+so is a non starter.
+
+Sorry, I'll be happy to see a patch adding the support you want to the isl29018 driver
+but it must conform to the existing abi.  It looks like you may have found a discrepancy
+between a driver and the spec, but I'll leave Jon to comment on that. 
+
+Jonathan
 > 
-> Change all "arch/i386" to "arch/x86" in Documentaion/,
-> since the directory has changed.
-
-I can take it.
-
-But please, be really reasonable about the CC list when sending patches 
-next time. CCing gazillion of random people and mailinglists because such 
-a super-simple change is very likely to be considered unncessarily 
-annoying.
-
-Thanks.
-
-> 
-> Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
+> Signed-off-by: Bryan Freed <bfreed@chromium.org>
 > ---
->  Documentation/RCU/NMI-RCU.txt             |    4 +-
->  Documentation/blockdev/README.DAC960      |    2 +-
->  Documentation/blockdev/ramdisk.txt        |    8 +++---
->  Documentation/cpu-freq/cpu-drivers.txt    |    2 +-
->  Documentation/filesystems/nfs/nfsroot.txt |    2 +-
->  Documentation/isdn/README.HiSax           |    2 +-
->  Documentation/kbuild/makefiles.txt        |   38 ++++++++++++++--------------
->  Documentation/magic-number.txt            |    2 +-
->  Documentation/mca.txt                     |    6 ++--
->  Documentation/scheduler/sched-arch.txt    |    2 +-
->  Documentation/scsi/BusLogic.txt           |    2 +-
->  Documentation/serial/computone.txt        |    2 +-
->  Documentation/svga.txt                    |    2 +-
->  Documentation/zh_CN/magic-number.txt      |    2 +-
->  14 files changed, 38 insertions(+), 38 deletions(-)
+>  .../staging/iio/Documentation/sysfs-bus-iio-light  |   10 +++++
+>  drivers/staging/iio/light/isl29018.c               |   36 +++++++++++++++++++-
+>  2 files changed, 45 insertions(+), 1 deletions(-)
 > 
-> diff --git a/Documentation/RCU/NMI-RCU.txt b/Documentation/RCU/NMI-RCU.txt
-> index a8536cb..bf82851 100644
-> --- a/Documentation/RCU/NMI-RCU.txt
-> +++ b/Documentation/RCU/NMI-RCU.txt
-> @@ -5,8 +5,8 @@ Although RCU is usually used to protect read-mostly data structures,
->  it is possible to use RCU to provide dynamic non-maskable interrupt
->  handlers, as well as dynamic irq handlers.  This document describes
->  how to do this, drawing loosely from Zwane Mwaikambo's NMI-timer
-> -work in "arch/i386/oprofile/nmi_timer_int.c" and in
-> -"arch/i386/kernel/traps.c".
-> +work in "arch/x86/oprofile/nmi_timer_int.c" and in
-> +"arch/x86/kernel/traps.c".
+> diff --git a/drivers/staging/iio/Documentation/sysfs-bus-iio-light b/drivers/staging/iio/Documentation/sysfs-bus-iio-light
+> index 21d2774..704b6c9 100644
+> --- a/drivers/staging/iio/Documentation/sysfs-bus-iio-light
+> +++ b/drivers/staging/iio/Documentation/sysfs-bus-iio-light
+> @@ -75,3 +75,13 @@ KernelVersion:	2.6.37
+>  Contact:	linux-iio@vger.kernel.org
+>  Description:
+>  		This property gets/sets the sensors ADC analog integration time.
+> +
+> +What:		/sys/bus/iio/devices/device[n]/illuminance0_calibbias
+> +KernelVersion:	2.6.38
+> +Contact:	linux-iio@vger.kernel.org
+> +Description:
+> +		This property gets/sets the illuminance0_input amplification
+> +		value.  The calculated lux reading is multiplied by this value
+> +		and divided by 1024.  Default of 1024 gives no amplification.
+> +		This provides compensation for glass or bezel that can
+> +		attenuate the ambient light.
+> diff --git a/drivers/staging/iio/light/isl29018.c b/drivers/staging/iio/light/isl29018.c
+> index 4794ffd..a106f16 100644
+> --- a/drivers/staging/iio/light/isl29018.c
+> +++ b/drivers/staging/iio/light/isl29018.c
+> @@ -57,6 +57,7 @@ struct isl29018_chip {
+>  	struct iio_dev		*indio_dev;
+>  	struct i2c_client	*client;
+>  	struct mutex		lock;
+> +	unsigned int		calibbias;
+>  	unsigned int		range;
+>  	unsigned int		adc_bit;
+>  	int			prox_scheme;
+> @@ -157,6 +158,7 @@ static int isl29018_read_sensor_input(struct i2c_client *client, int mode)
 >  
->  The relevant pieces of code are listed below, each followed by a
->  brief explanation.
-> diff --git a/Documentation/blockdev/README.DAC960 b/Documentation/blockdev/README.DAC960
-> index 0e8f618..bd85fb9 100644
-> --- a/Documentation/blockdev/README.DAC960
-> +++ b/Documentation/blockdev/README.DAC960
-> @@ -214,7 +214,7 @@ replacing "/usr/src" with wherever you keep your Linux kernel source tree:
->    make config
->    make bzImage (or zImage)
+>  static int isl29018_read_lux(struct i2c_client *client, int *lux)
+>  {
+> +	u64 lux64;
+>  	int lux_data;
+>  	struct isl29018_chip *chip = i2c_get_clientdata(client);
 >  
-> -Then install "arch/i386/boot/bzImage" or "arch/i386/boot/zImage" as your
-> +Then install "arch/x86/boot/bzImage" or "arch/x86/boot/zImage" as your
->  standard kernel, run lilo if appropriate, and reboot.
+> @@ -166,7 +168,8 @@ static int isl29018_read_lux(struct i2c_client *client, int *lux)
+>  	if (lux_data < 0)
+>  		return lux_data;
 >  
->  To create the necessary devices in /dev, the "make_rd" script included in
-> diff --git a/Documentation/blockdev/ramdisk.txt b/Documentation/blockdev/ramdisk.txt
-> index 6c820ba..fa72e97 100644
-> --- a/Documentation/blockdev/ramdisk.txt
-> +++ b/Documentation/blockdev/ramdisk.txt
-> @@ -64,9 +64,9 @@ the RAM disk dynamically grows as data is being written into it, a size field
->  is not required. Bits 11 to 13 are not currently used and may as well be zero.
->  These numbers are no magical secrets, as seen below:
+> -	*lux = (lux_data * chip->range) >> chip->adc_bit;
+> +	lux64 = lux_data * chip->range;
+> +	*lux = (lux64 * chip->calibbias) >> (10 + chip->adc_bit);
 >  
-> -./arch/i386/kernel/setup.c:#define RAMDISK_IMAGE_START_MASK     0x07FF
-> -./arch/i386/kernel/setup.c:#define RAMDISK_PROMPT_FLAG          0x8000
-> -./arch/i386/kernel/setup.c:#define RAMDISK_LOAD_FLAG            0x4000
-> +./arch/x86/kernel/setup.c:#define RAMDISK_IMAGE_START_MASK     0x07FF
-> +./arch/x86/kernel/setup.c:#define RAMDISK_PROMPT_FLAG          0x8000
-> +./arch/x86/kernel/setup.c:#define RAMDISK_LOAD_FLAG            0x4000
+>  	return 0;
+>  }
+> @@ -264,6 +267,33 @@ static ssize_t get_sensor_data(struct device *dev, char *buf, int mode)
+>  }
 >  
->  Consider a typical two floppy disk setup, where you will have the
->  kernel on disk one, and have already put a RAM disk image onto disk #2.
-> @@ -85,7 +85,7 @@ The command line equivalent is: "prompt_ramdisk=1"
->  Putting that together gives 2^15 + 2^14 + 0 = 49152 for an rdev word.
->  So to create disk one of the set, you would do:
+>  /* Sysfs interface */
+> +/* calibbias */
+> +static ssize_t show_calibbias(struct device *dev,
+> +			struct device_attribute *attr, char *buf)
+> +{
+> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+> +	struct isl29018_chip *chip = indio_dev->dev_data;
+> +
+> +	return sprintf(buf, "%u\n", chip->calibbias);
+> +}
+> +
+> +static ssize_t store_calibbias(struct device *dev,
+> +		struct device_attribute *attr, const char *buf, size_t count)
+> +{
+> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+> +	struct isl29018_chip *chip = indio_dev->dev_data;
+> +	unsigned long lval;
+> +
+> +	if (strict_strtoul(buf, 10, &lval))
+> +		return -EINVAL;
+> +
+> +	mutex_lock(&chip->lock);
+> +	chip->calibbias = lval;
+> +	mutex_unlock(&chip->lock);
+> +
+> +	return count;
+> +}
+> +
+>  /* range */
+>  static ssize_t show_range(struct device *dev,
+>  			struct device_attribute *attr, char *buf)
+> @@ -412,6 +442,8 @@ static IIO_DEVICE_ATTR(proximity_on_chip_ambient_infrared_supression,
+>  					show_prox_infrared_supression,
+>  					store_prox_infrared_supression, 0);
+>  static IIO_DEVICE_ATTR(illuminance0_input, S_IRUGO, show_lux, NULL, 0);
+> +static IIO_DEVICE_ATTR(illuminance0_calibbias, S_IRUGO | S_IWUSR,
+> +					show_calibbias, store_calibbias, 0);
+>  static IIO_DEVICE_ATTR(intensity_infrared_raw, S_IRUGO, show_ir, NULL, 0);
+>  static IIO_DEVICE_ATTR(proximity_raw, S_IRUGO, show_proxim_ir, NULL, 0);
 >  
-> -	/usr/src/linux# cat arch/i386/boot/zImage > /dev/fd0
-> +	/usr/src/linux# cat arch/x86/boot/zImage > /dev/fd0
->  	/usr/src/linux# rdev /dev/fd0 /dev/fd0
->  	/usr/src/linux# rdev -r /dev/fd0 49152
+> @@ -424,6 +456,7 @@ static struct attribute *isl29018_attributes[] = {
+>  	ISL29018_CONST_ATTR(adc_resolution_available),
+>  	ISL29018_DEV_ATTR(proximity_on_chip_ambient_infrared_supression),
+>  	ISL29018_DEV_ATTR(illuminance0_input),
+> +	ISL29018_DEV_ATTR(illuminance0_calibbias),
+>  	ISL29018_DEV_ATTR(intensity_infrared_raw),
+>  	ISL29018_DEV_ATTR(proximity_raw),
+>  	NULL
+> @@ -478,6 +511,7 @@ static int __devinit isl29018_probe(struct i2c_client *client,
 >  
-> diff --git a/Documentation/cpu-freq/cpu-drivers.txt b/Documentation/cpu-freq/cpu-drivers.txt
-> index 6c30e93..ed07e4f 100644
-> --- a/Documentation/cpu-freq/cpu-drivers.txt
-> +++ b/Documentation/cpu-freq/cpu-drivers.txt
-> @@ -168,7 +168,7 @@ in-chipset dynamic frequency switching to policy->min, the upper limit
->  to policy->max, and -if supported- select a performance-oriented
->  setting when policy->policy is CPUFREQ_POLICY_PERFORMANCE, and a
->  powersaving-oriented setting when CPUFREQ_POLICY_POWERSAVE. Also check
-> -the reference implementation in arch/i386/kernel/cpu/cpufreq/longrun.c
-> +the reference implementation in arch/x86/kernel/cpu/cpufreq/longrun.c
+>  	mutex_init(&chip->lock);
 >  
+> +	chip->calibbias = 1024;
+>  	chip->range = 1000;
+>  	chip->adc_bit = 16;
 >  
->  
-> diff --git a/Documentation/filesystems/nfs/nfsroot.txt b/Documentation/filesystems/nfs/nfsroot.txt
-> index 90c71c6..ffdd9d8 100644
-> --- a/Documentation/filesystems/nfs/nfsroot.txt
-> +++ b/Documentation/filesystems/nfs/nfsroot.txt
-> @@ -226,7 +226,7 @@ They depend on various facilities being available:
->       	cdrecord.
->  
->  	e.g.
-> -	  cdrecord dev=ATAPI:1,0,0 arch/i386/boot/image.iso
-> +	  cdrecord dev=ATAPI:1,0,0 arch/x86/boot/image.iso
->  
->       	For more information on isolinux, including how to create bootdisks
->       	for prebuilt kernels, see http://syslinux.zytor.com/
-> diff --git a/Documentation/isdn/README.HiSax b/Documentation/isdn/README.HiSax
-> index 99e87a6..b1a573c 100644
-> --- a/Documentation/isdn/README.HiSax
-> +++ b/Documentation/isdn/README.HiSax
-> @@ -506,7 +506,7 @@ to e.g. the Internet:
->       <ISDN subsystem - ISDN support -- HiSax>
->       make clean; make zImage; make modules; make modules_install
->  2. Install the new kernel
-> -     cp /usr/src/linux/arch/i386/boot/zImage /etc/kernel/linux.isdn
-> +     cp /usr/src/linux/arch/x86/boot/zImage /etc/kernel/linux.isdn
->       vi /etc/lilo.conf
->       <add new kernel in the bootable image section>
->       lilo
-> diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
-> index 47435e5..f47cdef 100644
-> --- a/Documentation/kbuild/makefiles.txt
-> +++ b/Documentation/kbuild/makefiles.txt
-> @@ -441,7 +441,7 @@ more details, with real examples.
->  	specified if first option are not supported.
->  
->  	Example:
-> -		#arch/i386/kernel/Makefile
-> +		#arch/x86/kernel/Makefile
->  		vsyscall-flags += $(call cc-ldoption, -Wl$(comma)--hash-style=sysv)
->  
->  	In the above example, vsyscall-flags will be assigned the option
-> @@ -460,7 +460,7 @@ more details, with real examples.
->  	supported to use an optional second option.
->  
->  	Example:
-> -		#arch/i386/Makefile
-> +		#arch/x86/Makefile
->  		cflags-y += $(call cc-option,-march=pentium-mmx,-march=i586)
->  
->  	In the above example, cflags-y will be assigned the option
-> @@ -522,7 +522,7 @@ more details, with real examples.
->  	even though the option was accepted by gcc.
->  
->  	Example:
-> -		#arch/i386/Makefile
-> +		#arch/x86/Makefile
->  		cflags-y += $(shell \
->  		if [ $(call cc-version) -ge 0300 ] ; then \
->  			echo "-mregparm=3"; fi ;)
-> @@ -802,7 +802,7 @@ but in the architecture makefiles where the kbuild infrastructure
->  is not sufficient this sometimes needs to be explicit.
->  
->  	Example:
-> -		#arch/i386/boot/Makefile
-> +		#arch/x86/boot/Makefile
->  		subdir- := compressed/
->  
->  The above assignment instructs kbuild to descend down in the
-> @@ -812,12 +812,12 @@ To support the clean infrastructure in the Makefiles that builds the
->  final bootimage there is an optional target named archclean:
->  
->  	Example:
-> -		#arch/i386/Makefile
-> +		#arch/x86/Makefile
->  		archclean:
-> -			$(Q)$(MAKE) $(clean)=arch/i386/boot
-> +			$(Q)$(MAKE) $(clean)=arch/x86/boot
->  
-> -When "make clean" is executed, make will descend down in arch/i386/boot,
-> -and clean as usual. The Makefile located in arch/i386/boot/ may use
-> +When "make clean" is executed, make will descend down in arch/x86/boot,
-> +and clean as usual. The Makefile located in arch/x86/boot/ may use
->  the subdir- trick to descend further down.
->  
->  Note 1: arch/$(ARCH)/Makefile cannot use "subdir-", because that file is
-> @@ -882,7 +882,7 @@ When kbuild executes, the following steps are followed (roughly):
->  	LDFLAGS_vmlinux uses the LDFLAGS_$@ support.
->  
->  	Example:
-> -		#arch/i386/Makefile
-> +		#arch/x86/Makefile
->  		LDFLAGS_vmlinux := -e stext
->  
->      OBJCOPYFLAGS	objcopy flags
-> @@ -920,14 +920,14 @@ When kbuild executes, the following steps are followed (roughly):
->  	Often, the KBUILD_CFLAGS variable depends on the configuration.
->  
->  	Example:
-> -		#arch/i386/Makefile
-> +		#arch/x86/Makefile
->  		cflags-$(CONFIG_M386) += -march=i386
->  		KBUILD_CFLAGS += $(cflags-y)
->  
->  	Many arch Makefiles dynamically run the target C compiler to
->  	probe supported options:
->  
-> -		#arch/i386/Makefile
-> +		#arch/x86/Makefile
->  
->  		...
->  		cflags-$(CONFIG_MPENTIUMII)     += $(call cc-option,\
-> @@ -1038,8 +1038,8 @@ When kbuild executes, the following steps are followed (roughly):
->  	into the arch/$(ARCH)/boot/Makefile.
->  
->  	Example:
-> -		#arch/i386/Makefile
-> -		boot := arch/i386/boot
-> +		#arch/x86/Makefile
-> +		boot := arch/x86/boot
->  		bzImage: vmlinux
->  			$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
->  
-> @@ -1051,7 +1051,7 @@ When kbuild executes, the following steps are followed (roughly):
->  	To support this, $(archhelp) must be defined.
->  
->  	Example:
-> -		#arch/i386/Makefile
-> +		#arch/x86/Makefile
->  		define archhelp
->  		  echo  '* bzImage      - Image (arch/$(ARCH)/boot/bzImage)'
->  		endif
-> @@ -1065,7 +1065,7 @@ When kbuild executes, the following steps are followed (roughly):
->  	from vmlinux.
->  
->  	Example:
-> -		#arch/i386/Makefile
-> +		#arch/x86/Makefile
->  		all: bzImage
->  
->  	When "make" is executed without arguments, bzImage will be built.
-> @@ -1083,7 +1083,7 @@ When kbuild executes, the following steps are followed (roughly):
->  	2) kbuild knows what files to delete during "make clean"
->  
->  	Example:
-> -		#arch/i386/kernel/Makefile
-> +		#arch/x86/kernel/Makefile
->  		extra-y := head.o init_task.o
->  
->  	In this example, extra-y is used to list object files that
-> @@ -1133,7 +1133,7 @@ When kbuild executes, the following steps are followed (roughly):
->  	Compress target. Use maximum compression to compress target.
->  
->  	Example:
-> -		#arch/i386/boot/Makefile
-> +		#arch/x86/boot/Makefile
->  		LDFLAGS_bootsect := -Ttext 0x0 -s --oformat binary
->  		LDFLAGS_setup    := -Ttext 0x0 -s --oformat binary -e begtext
->  
-> @@ -1193,7 +1193,7 @@ When kbuild executes, the following steps are followed (roughly):
->  
->  	When updating the $(obj)/bzImage target, the line
->  
-> -	BUILD    arch/i386/boot/bzImage
-> +	BUILD    arch/x86/boot/bzImage
->  
->  	will be displayed with "make KBUILD_VERBOSE=0".
->  
-> @@ -1207,7 +1207,7 @@ When kbuild executes, the following steps are followed (roughly):
->  	kbuild knows .lds files and includes a rule *lds.S -> *lds.
->  
->  	Example:
-> -		#arch/i386/kernel/Makefile
-> +		#arch/x86/kernel/Makefile
->  		always := vmlinux.lds
->  
->  		#Makefile
-> diff --git a/Documentation/magic-number.txt b/Documentation/magic-number.txt
-> index 4b12abc..20ec3d9 100644
-> --- a/Documentation/magic-number.txt
-> +++ b/Documentation/magic-number.txt
-> @@ -66,7 +66,7 @@ MKISS_DRIVER_MAGIC    0x04bf      mkiss_channel     drivers/net/mkiss.h
->  RISCOM8_MAGIC         0x0907      riscom_port       drivers/char/riscom8.h
->  SPECIALIX_MAGIC       0x0907      specialix_port    drivers/char/specialix_io8.h
->  HDLC_MAGIC            0x239e      n_hdlc            drivers/char/n_hdlc.c
-> -APM_BIOS_MAGIC        0x4101      apm_user          arch/i386/kernel/apm.c
-> +APM_BIOS_MAGIC        0x4101      apm_user          arch/x86/kernel/apm.c
->  CYCLADES_MAGIC        0x4359      cyclades_port     include/linux/cyclades.h
->  DB_MAGIC              0x4442      fc_info           drivers/net/iph5526_novram.c
->  DL_MAGIC              0x444d      fc_info           drivers/net/iph5526_novram.c
-> diff --git a/Documentation/mca.txt b/Documentation/mca.txt
-> index 510375d..cf8fd39 100644
-> --- a/Documentation/mca.txt
-> +++ b/Documentation/mca.txt
-> @@ -3,7 +3,7 @@ i386 Micro Channel Architecture Support
->  
->  MCA support is enabled using the CONFIG_MCA define.  A machine with a MCA
->  bus will have the kernel variable MCA_bus set, assuming the BIOS feature
-> -bits are set properly (see arch/i386/boot/setup.S for information on
-> +bits are set properly (see arch/x86/boot/setup.S for information on
->  how this detection is done).
->  
->  Adapter Detection
-> @@ -11,7 +11,7 @@ Adapter Detection
->  
->  The ideal MCA adapter detection is done through the use of the
->  Programmable Option Select registers.  Generic functions for doing
-> -this have been added in include/linux/mca.h and arch/i386/kernel/mca.c.
-> +this have been added in include/linux/mca.h and arch/x86/kernel/mca.c.
->  Everything needed to detect adapters and read (and write) configuration
->  information is there.  A number of MCA-specific drivers already use
->  this.  The typical probe code looks like the following:
-> @@ -81,7 +81,7 @@ more people use shared IRQs on PCI machines.
->  In general, an interrupt must be acknowledged not only at the ICU (which
->  is done automagically by the kernel), but at the device level.  In
->  particular, IRQ 0 must be reset after a timer interrupt (now done in
-> -arch/i386/kernel/time.c) or the first timer interrupt hangs the system.
-> +arch/x86/kernel/time.c) or the first timer interrupt hangs the system.
->  There were also problems with the 1.3.x floppy drivers, but that seems
->  to have been fixed.
->  
-> diff --git a/Documentation/scheduler/sched-arch.txt b/Documentation/scheduler/sched-arch.txt
-> index d43dbcb..28aa107 100644
-> --- a/Documentation/scheduler/sched-arch.txt
-> +++ b/Documentation/scheduler/sched-arch.txt
-> @@ -66,7 +66,7 @@ Your cpu_idle routines need to obey the following rules:
->  	    barrier issued (followed by a test of need_resched with
->  	    interrupts disabled, as explained in 3).
->  
-> -arch/i386/kernel/process.c has examples of both polling and
-> +arch/x86/kernel/process.c has examples of both polling and
->  sleeping idle functions.
->  
->  
-> diff --git a/Documentation/scsi/BusLogic.txt b/Documentation/scsi/BusLogic.txt
-> index d7fbc94..48e982c 100644
-> --- a/Documentation/scsi/BusLogic.txt
-> +++ b/Documentation/scsi/BusLogic.txt
-> @@ -553,7 +553,7 @@ replacing "/usr/src" with wherever you keep your Linux kernel source tree:
->    make config
->    make zImage
->  
-> -Then install "arch/i386/boot/zImage" as your standard kernel, run lilo if
-> +Then install "arch/x86/boot/zImage" as your standard kernel, run lilo if
->  appropriate, and reboot.
->  
->  
-> diff --git a/Documentation/serial/computone.txt b/Documentation/serial/computone.txt
-> index c57ea47..60a6f65 100644
-> --- a/Documentation/serial/computone.txt
-> +++ b/Documentation/serial/computone.txt
-> @@ -87,7 +87,7 @@ c) Set address on ISA cards then:
->  	   edit /usr/src/linux/drivers/char/ip2.c  
->             (Optional - may be specified on kernel command line now)
->  d) Run "make zImage" or whatever target you prefer.
-> -e) mv /usr/src/linux/arch/i386/boot/zImage to /boot.
-> +e) mv /usr/src/linux/arch/x86/boot/zImage to /boot.
->  f) Add new config for this kernel into /etc/lilo.conf, run "lilo"
->  	or copy to a floppy disk and boot from that floppy disk.
->  g) Reboot using this kernel
-> diff --git a/Documentation/svga.txt b/Documentation/svga.txt
-> index cd66ec8..e5da082 100644
-> --- a/Documentation/svga.txt
-> +++ b/Documentation/svga.txt
-> @@ -150,7 +150,7 @@ end of the display.
->  
->  4. Options
->  ~~~~~~~~~~
-> -   Some options can be set in the source text (in arch/i386/boot/video.S).
-> +   Some options can be set in the source text (in arch/x86/boot/video.S).
->  All of them are simple #define's -- change them to #undef's when you want to
->  switch them off. Currently supported:
->  
-> diff --git a/Documentation/zh_CN/magic-number.txt b/Documentation/zh_CN/magic-number.txt
-> index 4c4ce85..a9e6fdd 100644
-> --- a/Documentation/zh_CN/magic-number.txt
-> +++ b/Documentation/zh_CN/magic-number.txt
-> @@ -66,7 +66,7 @@ MKISS_DRIVER_MAGIC    0x04bf      mkiss_channel     drivers/net/mkiss.h
->  RISCOM8_MAGIC         0x0907      riscom_port       drivers/char/riscom8.h
->  SPECIALIX_MAGIC       0x0907      specialix_port    drivers/char/specialix_io8.h
->  HDLC_MAGIC            0x239e      n_hdlc            drivers/char/n_hdlc.c
-> -APM_BIOS_MAGIC        0x4101      apm_user          arch/i386/kernel/apm.c
-> +APM_BIOS_MAGIC        0x4101      apm_user          arch/x86/kernel/apm.c
->  CYCLADES_MAGIC        0x4359      cyclades_port     include/linux/cyclades.h
->  DB_MAGIC              0x4442      fc_info           drivers/net/iph5526_novram.c
->  DL_MAGIC              0x444d      fc_info           drivers/net/iph5526_novram.c
-> -- 
-> 1.7.4.1
-> 
 
--- 
-Jiri Kosina
-SUSE Labs
