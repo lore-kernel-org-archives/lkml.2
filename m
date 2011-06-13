@@ -1,62 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab1FMUgp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 16:36:45 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:53419 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193Ab1FMUgn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 16:36:43 -0400
-X-Greylist: delayed 498 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Jun 2011 16:36:43 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=subject:x-duff:mime-version:content-type:from:in-reply-to:date:cc
-         :content-transfer-encoding:message-id:references:to:x-mailer;
-        b=I5fKO0FHGK+kqElrvPTxubFJAfcZfa+pTxdPe8XDkFMUP0aXKe2+0vVcwNaNnhuf5f
-         7/wqmOmiSI04NJaUZba41DNvfP3xiBtelKu5KemcUOa2YLOPMJL+TdKiJR9pL/AkyyDH
-         gjUAdMvBnOAmDOuBZtCahvVnm9a1q8QZUn5JE=
-Subject: Re: [PATCH] sparc, exec: remove redundant addr_limit assignment
-X-Duff: Duff Lite, Duff Dry, Duff Dark, Lady Duff, Raspberry Duff, Duff Zero
-Mime-Version: 1.0 (Apple Message framework v1084)
+	id S1752335Ab1FMUfs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 16:35:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21534 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751398Ab1FMUfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 16:35:45 -0400
+Date: Mon, 13 Jun 2011 22:33:41 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
+        pedro@codesourcery.com
+Subject: Re: [PATCH 17/17] ptrace: implement PTRACE_LISTEN
+Message-ID: <20110613203341.GA15695@redhat.com>
+References: <1306710760-16440-1-git-send-email-tj@kernel.org> <1306710760-16440-18-git-send-email-tj@kernel.org> <20110602173330.GA20384@redhat.com> <20110613141023.GA8141@htj.dyndns.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Mathias Krause <minipli@googlemail.com>
-In-Reply-To: <20110611.160842.2135350880385482648.davem@davemloft.net>
-Date: Mon, 13 Jun 2011 22:28:20 +0200
-Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 7bit
-Message-Id: <09961391-F83F-4499-A0A3-00AA5C2028CE@googlemail.com>
-References: <1307642718-22257-1-git-send-email-minipli@googlemail.com> <20110609155630.0f734351.akpm@linux-foundation.org> <1307711453-17412-1-git-send-email-minipli@googlemail.com> <20110611.160842.2135350880385482648.davem@davemloft.net>
-To: David Miller <davem@davemloft.net>
-X-Mailer: Apple Mail (2.1084)
+Content-Disposition: inline
+In-Reply-To: <20110613141023.GA8141@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.06.2011, at 01:08 David Miller wrote:
-> From: Mathias Krause <minipli@googlemail.com>
-> Date: Fri, 10 Jun 2011 15:10:53 +0200
-> 
->> The address limit is already set in flush_old_exec() so this
->> assignment of USER_DS is redundant.
->> 
->> Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Hello Tejun,
+
+On 06/13, Tejun Heo wrote:
+>
+> On Thu, Jun 02, 2011 at 07:33:30PM +0200, Oleg Nesterov wrote:
+> > > +		/*
+> > > +		 * If NOTIFY is set, it means event happened between start
+> > > +		 * of this trap and now.  Trigger re-trap immediately.
+> > > +		 */
+> > > +		if (child->jobctl & JOBCTL_TRAP_NOTIFY)
+> > > +			signal_wake_up(child, true);
+> >
+> > Again, I won't insist if you prefer signal_wake_up(), but afaics
+> > wake_up_state(__TASK_TRACED) should be enough.
+>
+> Re-trapping from attach/detach paths are already using
+> signal_wake_up()
+
+because attach sets TRAP_STOP which contributes to recalc_sigpending().
+
+If JOBCTL_TRAP_NOTIFY is set, TIF_SIGPENDING should be already set as
+well by the same reason. And in any case ptrace_stop() does
+recalc_sigpending_tsk() before return, TIF_SIGPENDING is never really
+needed when we are going to wake up the TASK_TRACED task.
+
+However,
+
+> and I think it would be better to keep it consistent.
+
+OK, I don't really mind, up to you.
+
+> > OK. The only thing I can't understand is why prepare_signal(SIGCONT)
+> > calls ptrace_trap_notify() unconditionally. How about
+> >
+> > 		if (likely(!(t->ptrace & PT_SEIZED)))
+> > 			wake_up_state(t, __TASK_STOPPED);
+> > 	-	else
+> > 	+	else if (why)
+> > 			ptrace_trap_notify(t);
+> >
+> > ?
+>
+> I'm having a Deja Vu.
+
+Me too...
+
+> Did I reply to this already?  Anyways, here are
+> my rationales.
+>
+> * Tracer should be able to handle seemingly spurious notifications.
 > ...
->> @@ -368,9 +368,6 @@ void flush_thread(void)
->> 
->> 	/* Clear FPU register state. */
->> 	t->fpsaved[0] = 0;
->> -	
->> -	if (get_thread_current_ds() != ASI_AIUS)
->> -		set_fs(USER_DS);
->> }
-> 
-> Yeah but now you're doing it unconditionally, the guard is here
-> because the %asi register write which set_fs() does is extremely
-> expensive on sparc64 and %99.99999 of the time we can avoid it.
+> SIGCONT always generating notification is correct
 
-As Linus already pointed out, that set_fs() was never called because
-we already had (and still have) an unconditional set_fs() in the arch
-independent code. So this patch just removes some dead code.
+Yes, I didn't say this is wrong.
 
-Mathias
+>   and I don't see
+>   good reasons to optimize it.  Moreover, I think it doesn't hurt to
+>   have a way to reliably trigger spurious notification.
+
+Well. I don't really understand why, but OK. Let's keep it this way.
+
+> * If we're gonna optimize out SIGCONT processing if the target process
+>   doesn't need it, the proper way would be testing stopped state and
+>   exit before walking through the group list.
+
+We can't, at least we need rm_from_queue(SIG_KERNEL_STOP_MASK) and
+task_clear_jobctl_pending().
+
+
+> However, I think it's
+>   done the current way for a reason - always trying to wake up on
+>   SIGCONT is more robust in case something went out of sync
+
+Hmm. I am wondering if we can ever see why == 0 && __TASK_STOPPED with
+the recent fixes...
+
+> So, I'd like to keep this one as it currently is.
+
+OK.
+
+Oleg.
+
