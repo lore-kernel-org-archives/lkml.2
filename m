@@ -1,250 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab1FMSBJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 14:01:09 -0400
-Received: from mga01.intel.com ([192.55.52.88]:1756 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753323Ab1FMSBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 14:01:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,359,1304319600"; 
-   d="scan'208";a="17703206"
-Message-Id: <20110613175915.583091190@sbsiddha-MOBL3.sc.intel.com>
-User-Agent: quilt/0.47-1
-Date: Mon, 13 Jun 2011 10:58:34 -0700
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-To: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, trenn@novell.com,
-        prarit@redhat.com, tj@kernel.org, rusty@rustcorp.com.au
-Cc: linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com,
-        youquan.song@intel.com, stable@kernel.org
-Subject: [patch v4 2/2] x86, mtrr: use __stop_machine() for doing MTRR rendezvous
-References: <20110613175832.331826123@sbsiddha-MOBL3.sc.intel.com>
-Content-Disposition: inline; filename=use_stop_machine_for_mtrr_rendezvous.patch
+	id S1754141Ab1FMSAG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 14:00:06 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:43110 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753601Ab1FMSAC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 14:00:02 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: nO0Zo.4VM1kcHBkhCwYKPQxAYqCYcORLGuyJAC_b1G6v8kn
+ B200xxj1g_AnF..lsmuNjS6zL4X_w8nGIvcNrPrXqKHyjqQhf5_7imEYZrsJ
+ 5osjj.Gcr4zWDCIZFAbQv2jBUIqUS4uOth3UoKKs4WNDX6MkK50vBUVy55pd
+ IIGEEWCPm_zg_OHnEmjq5AvbK7HFj3QYaDIqx0c0GD89QbXAJSjeDMF7qQNr
+ IqhPwve73CZ5QnERofVInodTfoH.nrHPc45c1QxDZ1jYx2WkWe9QHuHL4XPR
+ WAyrsltRs0u1vI4.tM5Lll9ym.g7hON35TEwWq96luqpye91bIcoEaO7xtP7
+ M96AH.l.Z2vRFGuW8lCltE5Nt
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 13 Jun 2011 12:59:57 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Hugh Dickins <hughd@google.com>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] slub: fix kernel BUG at mm/slub.c:1950!
+In-Reply-To: <alpine.LSU.2.00.1106121842250.31463@sister.anvils>
+Message-ID: <alpine.DEB.2.00.1106131258300.3108@router.home>
+References: <alpine.LSU.2.00.1106121842250.31463@sister.anvils>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MTRR rendezvous seqeuence using stop_one_cpu_nowait() can potentially
-happen in parallel with another system wide rendezvous using
-stop_machine(). This can lead to deadlock (The order in which
-works are queued can be different on different cpu's. Some cpu's
-will be running the first rendezvous handler and others will be running
-the second rendezvous handler. Each set waiting for the other set to join
-for the system wide rendezvous, leading to a deadlock).
+On Sun, 12 Jun 2011, Hugh Dickins wrote:
 
-MTRR rendezvous sequence is not implemened using stop_machine() before, as this
-gets called both from the process context aswell as the cpu online paths
-(where the cpu has not come online and the interrupts are disabled etc).
+> 3.0-rc won't boot with SLUB on my PowerPC G5: kernel BUG at mm/slub.c:1950!
+> Bisected to 1759415e630e "slub: Remove CONFIG_CMPXCHG_LOCAL ifdeffery".
+>
+> After giving myself a medal for finding the BUG on line 1950 of mm/slub.c
+> (it's actually the
+> 	VM_BUG_ON((unsigned long)(&pcp1) % (2 * sizeof(pcp1)));
+> on line 268 of the morass that is include/linux/percpu.h)
+> I tried the following alignment patch and found it to work.
 
-Now that __stop_machine() works even when the calling cpu is not online,
-use __stop_machine() to implement the MTRR rendezvous sequence. This
-will consolidate the code aswell as avoid the above mentioned deadlock.
-
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: stable@kernel.org    # v2.6.35+
----
- arch/x86/kernel/cpu/mtrr/main.c |  154 +++++++---------------------------------
- 1 file changed, 27 insertions(+), 127 deletions(-)
-
-Index: linux-2.6-tip/arch/x86/kernel/cpu/mtrr/main.c
-===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/cpu/mtrr/main.c
-+++ linux-2.6-tip/arch/x86/kernel/cpu/mtrr/main.c
-@@ -137,18 +137,15 @@ static void __init init_table(void)
- }
- 
- struct set_mtrr_data {
--	atomic_t	count;
--	atomic_t	gate;
- 	unsigned long	smp_base;
- 	unsigned long	smp_size;
- 	unsigned int	smp_reg;
- 	mtrr_type	smp_type;
- };
- 
--static DEFINE_PER_CPU(struct cpu_stop_work, mtrr_work);
--
- /**
-- * mtrr_work_handler - Synchronisation handler. Executed by "other" CPUs.
-+ * mtrr_work_handler - Work done in the synchronisation handler. Executed by
-+ * all the CPUs.
-  * @info: pointer to mtrr configuration data
-  *
-  * Returns nothing.
-@@ -157,35 +154,26 @@ static int mtrr_work_handler(void *info)
- {
- #ifdef CONFIG_SMP
- 	struct set_mtrr_data *data = info;
--	unsigned long flags;
--
--	atomic_dec(&data->count);
--	while (!atomic_read(&data->gate))
--		cpu_relax();
--
--	local_irq_save(flags);
- 
--	atomic_dec(&data->count);
--	while (atomic_read(&data->gate))
--		cpu_relax();
--
--	/*  The master has cleared me to execute  */
-+	/*
-+	 * We use this same function to initialize the mtrrs during boot,
-+	 * resume, runtime cpu online and on an explicit request to set a
-+	 * specific MTRR.
-+	 *
-+	 * During boot or suspend, the state of the boot cpu's mtrrs has been
-+	 * saved, and we want to replicate that across all the cpus that come
-+	 * online (either at the end of boot or resume or during a runtime cpu
-+	 * online). If we're doing that, @reg is set to something special and on
-+	 * all the cpu's we do mtrr_if->set_all() (On the logical cpu that
-+	 * started the boot/resume sequence, this might be a duplicate
-+	 * set_all()).
-+	 */
- 	if (data->smp_reg != ~0U) {
- 		mtrr_if->set(data->smp_reg, data->smp_base,
- 			     data->smp_size, data->smp_type);
--	} else if (mtrr_aps_delayed_init) {
--		/*
--		 * Initialize the MTRRs inaddition to the synchronisation.
--		 */
-+	} else if (mtrr_aps_delayed_init || !cpu_online(smp_processor_id())) {
- 		mtrr_if->set_all();
- 	}
--
--	atomic_dec(&data->count);
--	while (!atomic_read(&data->gate))
--		cpu_relax();
--
--	atomic_dec(&data->count);
--	local_irq_restore(flags);
- #endif
- 	return 0;
- }
-@@ -223,20 +211,11 @@ static inline int types_compatible(mtrr_
-  * 14. Wait for buddies to catch up
-  * 15. Enable interrupts.
-  *
-- * What does that mean for us? Well, first we set data.count to the number
-- * of CPUs. As each CPU announces that it started the rendezvous handler by
-- * decrementing the count, We reset data.count and set the data.gate flag
-- * allowing all the cpu's to proceed with the work. As each cpu disables
-- * interrupts, it'll decrement data.count once. We wait until it hits 0 and
-- * proceed. We clear the data.gate flag and reset data.count. Meanwhile, they
-- * are waiting for that flag to be cleared. Once it's cleared, each
-- * CPU goes through the transition of updating MTRRs.
-- * The CPU vendors may each do it differently,
-- * so we call mtrr_if->set() callback and let them take care of it.
-- * When they're done, they again decrement data->count and wait for data.gate
-- * to be set.
-- * When we finish, we wait for data.count to hit 0 and toggle the data.gate flag
-- * Everyone then enables interrupts and we all continue on.
-+ * What does that mean for us? Well, __stop_machine() will ensure that
-+ * the rendezvous handler is started on each CPU. And in lockstep they
-+ * do the state transition of disabling interrupts, updating MTRR's
-+ * (the CPU vendors may each do it differently, so we call mtrr_if->set()
-+ * callback and let them take care of it.) and enabling interrupts.
-  *
-  * Note that the mechanism is the same for UP systems, too; all the SMP stuff
-  * becomes nops.
-@@ -244,92 +223,13 @@ static inline int types_compatible(mtrr_
- static void
- set_mtrr(unsigned int reg, unsigned long base, unsigned long size, mtrr_type type)
- {
--	struct set_mtrr_data data;
--	unsigned long flags;
--	int cpu;
--
--	preempt_disable();
--
--	data.smp_reg = reg;
--	data.smp_base = base;
--	data.smp_size = size;
--	data.smp_type = type;
--	atomic_set(&data.count, num_booting_cpus() - 1);
--
--	/* Make sure data.count is visible before unleashing other CPUs */
--	smp_wmb();
--	atomic_set(&data.gate, 0);
--
--	/* Start the ball rolling on other CPUs */
--	for_each_online_cpu(cpu) {
--		struct cpu_stop_work *work = &per_cpu(mtrr_work, cpu);
--
--		if (cpu == smp_processor_id())
--			continue;
--
--		stop_one_cpu_nowait(cpu, mtrr_work_handler, &data, work);
--	}
--
--
--	while (atomic_read(&data.count))
--		cpu_relax();
--
--	/* Ok, reset count and toggle gate */
--	atomic_set(&data.count, num_booting_cpus() - 1);
--	smp_wmb();
--	atomic_set(&data.gate, 1);
--
--	local_irq_save(flags);
--
--	while (atomic_read(&data.count))
--		cpu_relax();
--
--	/* Ok, reset count and toggle gate */
--	atomic_set(&data.count, num_booting_cpus() - 1);
--	smp_wmb();
--	atomic_set(&data.gate, 0);
--
--	/* Do our MTRR business */
--
--	/*
--	 * HACK!
--	 *
--	 * We use this same function to initialize the mtrrs during boot,
--	 * resume, runtime cpu online and on an explicit request to set a
--	 * specific MTRR.
--	 *
--	 * During boot or suspend, the state of the boot cpu's mtrrs has been
--	 * saved, and we want to replicate that across all the cpus that come
--	 * online (either at the end of boot or resume or during a runtime cpu
--	 * online). If we're doing that, @reg is set to something special and on
--	 * this cpu we still do mtrr_if->set_all(). During boot/resume, this
--	 * is unnecessary if at this point we are still on the cpu that started
--	 * the boot/resume sequence. But there is no guarantee that we are still
--	 * on the same cpu. So we do mtrr_if->set_all() on this cpu aswell to be
--	 * sure that we are in sync with everyone else.
--	 */
--	if (reg != ~0U)
--		mtrr_if->set(reg, base, size, type);
--	else
--		mtrr_if->set_all();
--
--	/* Wait for the others */
--	while (atomic_read(&data.count))
--		cpu_relax();
--
--	atomic_set(&data.count, num_booting_cpus() - 1);
--	smp_wmb();
--	atomic_set(&data.gate, 1);
--
--	/*
--	 * Wait here for everyone to have seen the gate change
--	 * So we're the last ones to touch 'data'
--	 */
--	while (atomic_read(&data.count))
--		cpu_relax();
-+	struct set_mtrr_data data = { .smp_reg = reg,
-+				      .smp_base = base,
-+				      .smp_size = size,
-+				      .smp_type = type
-+				    };
- 
--	local_irq_restore(flags);
--	preempt_enable();
-+	__stop_machine(mtrr_work_handler, &data, cpu_callout_mask);
- }
- 
- /**
+Hmmm.. The allocpercpu in alloc_kmem_cache_cpus should take care of the
+alignment. Uhh.. I see that a patch that removes the #ifdef CMPXCHG_LOCAL
+was not applied? Pekka?
 
 
