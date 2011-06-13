@@ -1,116 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab1FMN32 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 09:29:28 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:47982 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752445Ab1FMN30 (ORCPT
+	id S1752926Ab1FMNdb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 09:33:31 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:65371 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752553Ab1FMNd3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 09:29:26 -0400
-In-Reply-To: <20110607160830.GB17581@redhat.com>
-References: <cover.1307029008.git.mst@redhat.com> <20110607160830.GB17581@redhat.com>
-Subject: Re: [PATCHv2 RFC 0/4] virtio and vhost-net capacity handling
-X-KeepSent: E36F9C2B:43D9DB04-652578AE:0048E1AB;
- type=4; name=$KeepSent
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Carsten Otte <cotte@de.ibm.com>, habanero@linux.vnet.ibm.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, kvm@vger.kernel.org,
-        lguest@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux390@de.ibm.com,
-        netdev@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, steved@us.ibm.com,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>,
-        virtualization@lists.linux-foundation.org, Shirley Ma <xma@us.ibm.com>
-X-Mailer: Lotus Notes Release 8.5.1 September 28, 2009
-Message-ID: <OFE36F9C2B.43D9DB04-ON652578AE.0048E1AB-652578AE.004A1462@in.ibm.com>
-From: Krishna Kumar2 <krkumar2@in.ibm.com>
-Date: Mon, 13 Jun 2011 19:02:27 +0530
-X-MIMETrack: Serialize by Router on d23ml172/23/M/IBM(Release 8.5.1FP5|September 29, 2010) at
- 13/06/2011 19:02:28
+	Mon, 13 Jun 2011 09:33:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=c4/OQgzZpefh1lf0NsCERJZmFmJbJBz6yi1BDZJGtyLpFs0zyxFq6XxcddVE1csh5P
+         4JmM9Euvi4s3mKd0XB9XdkyiztaaOsk/v6Yya0HZhejAbo0dxm4m1tmcDs9H1QB2W3Fz
+         5uQ8YCjXaSCSOThEIg3hAp3mCX4AJQ4Yh4k9c=
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+In-Reply-To: <20110613115116.7843.49566.stgit@localhost6>
+References: <20110613115116.7843.49566.stgit@localhost6>
+Date: Mon, 13 Jun 2011 14:33:28 +0100
+Message-ID: <BANLkTikWTHuRh0kqy+sr3n1UCtdVpdui=w@mail.gmail.com>
+Subject: Re: [PATCH] efifb: fix device unregister on error path
+From: Maxin B John <maxin.john@gmail.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Peter Jones <pjones@redhat.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael S. Tsirkin" <mst@redhat.com> wrote on 06/07/2011 09:38:30 PM:
+Hi,
 
-> > This is on top of the patches applied by Rusty.
-> >
-> > Warning: untested. Posting now to give people chance to
-> > comment on the API.
+On Mon, Jun 13, 2011 at 12:51 PM, Konstantin Khlebnikov
+<khlebnikov@openvz.org> wrote:
+> Argument of platform_device_unregister() should be efifb_device, not efifb_driver.
+> bug in v3.0-rc1-57-gbb8b266
 >
-> OK, this seems to have survived some testing so far,
-> after I dropped patch 4 and fixed build for patch 3
-> (build fixup patch sent in reply to the original).
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> ---
+>  drivers/video/efifb.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 >
-> I'll be mostly offline until Sunday, would appreciate
-> testing reports.
+> diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
+> index 69c49df..784139a 100644
+> --- a/drivers/video/efifb.c
+> +++ b/drivers/video/efifb.c
+> @@ -541,7 +541,7 @@ static int __init efifb_init(void)
+>         */
+>        ret = platform_driver_probe(&efifb_driver, efifb_probe);
+>        if (ret) {
+> -               platform_device_unregister(&efifb_driver);
+> +               platform_device_unregister(&efifb_device);
+>                return ret;
+>        }
 
-Hi Michael,
+The same issue is present in this thread:
 
-I ran the latest patches with 1K I/O (guest->local host) and
-the results are (60 sec run for each test case):
-
-______________________________
-#sessions   BW%       SD%
-______________________________
-1           -25.6     47.0
-2           -29.3     22.9
-4              .8     1.6
-8             1.6     0
-16          -1.6      4.1
-32          -5.3      2.1
-48           11.3    -7.8
-64          -2.8      .7
-96          -6.2      .6
-128         -10.6     12.7
-______________________________
-BW: -4.8     SD: 5.4
-
-I tested it again to see if the regression is fleeting (since
-the numbers vary quite a bit for 1K I/O even between guest->
-local host), but:
-
-______________________________
-#sessions  BW%     SD%
-______________________________
-1          14.0    -17.3
-2          19.9    -11.1
-4          7.9     -15.3
-8          9.6     -13.1
-16         1.2     -7.3
-32        -.6      -13.5
-48        -28.7     10.0
-64        -5.7     -.7
-96        -9.4     -8.1
-128       -9.4      .7
-______________________________
-BW: -3.7     SD: -2.0
-
-
-With 16K, there was an improvement in SD, but
-higher sessions seem to slightly degrade BW/SD:
-
-______________________________
-#sessions  BW%      SD%
-______________________________
-1          30.9    -25.0
-2          16.5    -19.4
-4         -1.3      7.9
-8          1.4      6.2
-16         3.9     -5.4
-32         0        4.3
-48        -.5        .1
-64         32.1    -1.5
-96        -2.1      23.2
-128       -7.4      3.8
-______________________________
-BW: 5.0          SD: 7.5
-
-
-Thanks,
-
-- KK
-
+https://lkml.org/lkml/2011/6/12/34
