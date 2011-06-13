@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013Ab1FMSHL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 14:07:11 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:65375 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab1FMSHJ convert rfc822-to-8bit (ORCPT
+	id S1754230Ab1FMSIF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 14:08:05 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:61759 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753676Ab1FMSIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 14:07:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=OmOIr6f9OOXdLYIAtA4X7L5HzIDqczvw8jB2JaJ9dMob+WiAnzmxjR8k78nJubl7Xe
-         6QdLBvr7prwsUrKAicq66psLBvYvX4su9mp21qzNbrJ5UCIERw610+bYs+ywR4aIXpLO
-         Zv27fwb/TJUGqDsgsskp5eLNBn9DIurCMeMlY=
+	Mon, 13 Jun 2011 14:08:02 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6376"; a="97392865"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: "'Alan Stern'" <stern@rowland.harvard.edu>
+Cc: <balbi@ti.com>, <greg@kroah.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>,
+        "'open list:FREESCALE USB PER...'" <linuxppc-dev@lists.ozlabs.org>,
+        "'open list:OMAP USB SUPPORT'" <linux-omap@vger.kernel.org>
+References: <03b901cc29c0$6538e970$2faabc50$@org> <Pine.LNX.4.44L0.1106131036430.1983-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1106131036430.1983-100000@iolanthe.rowland.org>
+Subject: RE: [PATCH] usb:gadget: use min_t() macro instead of min()
+Date: Mon, 13 Jun 2011 21:07:52 +0300
+Message-ID: <03db01cc29f4$d472bcb0$7d583610$@org>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=nsCK2bFf2v+PkKj=Opsxseqe9pQ@mail.gmail.com>
-References: <1307777464.25182.3.camel@localhost.localdomain>
- <BANLkTi=SQb6EL4+bdH2Q+iwaW9E3i+48Ew@mail.gmail.com> <BANLkTi=yEo9fcXW8SqUCtSOag7Mn_+Ni9Q@mail.gmail.com>
- <BANLkTimv6F8NsH0Lg7q6gi1-oiBv8nUrSA@mail.gmail.com> <BANLkTikbnsu05+Nae8isATuZ8Fucj14+LQ@mail.gmail.com>
- <BANLkTi=nsCK2bFf2v+PkKj=Opsxseqe9pQ@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Mon, 13 Jun 2011 14:06:49 -0400
-X-Google-Sender-Auth: 8NvoxNnMIOHhrGmPl5l-_CCu4ac
-Message-ID: <BANLkTi=ZETGToRcOHXg5gxAQO3EKN+YyLg@mail.gmail.com>
-Subject: Re: [PATCH] x86, vsyscall: Fix build warning in vsyscall_64.c
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: mingo@elte.hu, hpa@zytor.com, tglx@linutronix.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+thread-index: Acwp16DWufwIl5G7RaimRzoAT5Gk/wAA+1FQ
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 4:45 AM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
-> On Mon, Jun 13, 2011 at 10:54 AM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
->> On Mon, Jun 13, 2011 at 8:52 AM, Andrew Lutomirski <luto@mit.edu> wrote:
->>> On Sun, Jun 12, 2011 at 1:12 AM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
->>>> On Sat, Jun 11, 2011 at 5:01 PM, Andrew Lutomirski <luto@mit.edu> wrote:
->>>>> On Sat, Jun 11, 2011 at 3:31 AM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
->>>
->>> I think there are three separate issues here:
->>>
->>> 1. Can ret be used uninitialized?  I say no, even as seen by the
->>> compiler.  If vsyscall_nr is 0, 1, or 2, then ret is initialized.  If
->>> vsyscall_nr is 3, then the BUG gets hit.  BUG is defined as some
->>> assembly magic followed by unreachable(), and the compiler is supposed
->>> to know that code after unreachable() is qunreachable.  So how can ret
->>> be used uninitialized?
->>>
->> I don't have much knowledge of advance assembly, so I really don't
->> understand that part - how BUG handles this. If it really makes sure
->> that, it will handle it properly then I think you can drop this patch.
->>
->>> What version of gcc do you have?  gcc (GCC) 4.6.0 20110530 (Red Hat
->>> 4.6.0-9) does not produce this warning.
->>>
->> Currently, I'm replying from outside my home. I'll let you know when
->> I'm back home.
->>
-> Here is my GCC version - gcc version 4.5.1 20100924 (Red Hat 4.5.1-4)
-> (GCC). I'm using Fedora 14.
+> 
+> The change I suggested involved replacing two typecasts with a single
+> min_t.  All (or almost all) the places this patch touches currently
+> contain only one typecast, so the motivation for changing them is a lot
+> weaker.
+> 
+You're right. So what's the final call on this one? Do you think it can be
+merged or you prefer not change anything? I personally think the code looks
+nicer using min_t instead of min with casting but that's just my opinion and
+of course there are arguments against this patch.
 
-I also have gcc (GCC) 4.5.1 20100924 (Red Hat 4.5.1-4) on another box,
-and I still can't reproduce this.
-
-Can you tell me which git revision you're building and send me your
-.config and the output of:
-
-$ touch arch/x86/kernel/vsyscall_64.o
-$ make V=1 arch/x86/kernel/vsyscall_64.o
 
 Thanks,
-Andy
+Tanya Brokhman
+---
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
+
+
+
+
