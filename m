@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501Ab1FMSdQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 14:33:16 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:39955 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab1FMSdP (ORCPT
+	id S1753119Ab1FMSeN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 14:34:13 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:55731 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181Ab1FMSeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 14:33:15 -0400
-Date: Mon, 13 Jun 2011 19:33:01 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Jim Bos <jim876@xs4all.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-Message-ID: <20110613183301.GA25644@srcf.ucam.org>
-References: <20110610164706.GB25774@srcf.ucam.org>
- <4DF259B2.9070403@gmail.com>
- <20110610175429.GA28500@srcf.ucam.org>
- <4DF29E7E.50908@gmail.com>
- <20110613164712.GA23343@srcf.ucam.org>
- <4DF64E6A.70700@gmail.com>
- <20110613180006.GA24902@srcf.ucam.org>
- <4DF65372.7090307@gmail.com>
- <20110613181750.GA25372@srcf.ucam.org>
- <4DF655B5.8040903@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DF655B5.8040903@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Mon, 13 Jun 2011 14:34:10 -0400
+Subject: Re: [PATCH] slub: fix kernel BUG at mm/slub.c:1950!
+From: Pekka Enberg <penberg@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org
+In-Reply-To: <alpine.DEB.2.00.1106131258300.3108@router.home>
+References: <alpine.LSU.2.00.1106121842250.31463@sister.anvils>
+	 <alpine.DEB.2.00.1106131258300.3108@router.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Mon, 13 Jun 2011 21:34:08 +0300
+Message-ID: <1307990048.11288.3.camel@jaguar>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, that's odd. These are 0x01800000-0x01900000, which should lie inside 
-the kernel data range (01580279-01aa4cff : Kernel data). We should be 
-skipping that region. How are we touching that reange at all? Can you 
-add a printk to reserve_boot_services to see what it actually ends up 
-reserving?
+On Mon, 2011-06-13 at 12:59 -0500, Christoph Lameter wrote:
+> On Sun, 12 Jun 2011, Hugh Dickins wrote:
+> 
+> > 3.0-rc won't boot with SLUB on my PowerPC G5: kernel BUG at mm/slub.c:1950!
+> > Bisected to 1759415e630e "slub: Remove CONFIG_CMPXCHG_LOCAL ifdeffery".
+> >
+> > After giving myself a medal for finding the BUG on line 1950 of mm/slub.c
+> > (it's actually the
+> > 	VM_BUG_ON((unsigned long)(&pcp1) % (2 * sizeof(pcp1)));
+> > on line 268 of the morass that is include/linux/percpu.h)
+> > I tried the following alignment patch and found it to work.
+> 
+> Hmmm.. The allocpercpu in alloc_kmem_cache_cpus should take care of the
+> alignment. Uhh.. I see that a patch that removes the #ifdef CMPXCHG_LOCAL
+> was not applied? Pekka?
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+This patch?
+
+http://git.kernel.org/?p=linux/kernel/git/penberg/slab-2.6.git;a=commitdiff;h=d4d84fef6d0366b585b7de13527a0faeca84d9ce
+
+It's queued and will be sent to Linus soon.
+
+			Pekka
+
+
