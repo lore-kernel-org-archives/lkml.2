@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518Ab1FMLvU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 07:51:20 -0400
-Received: from relay.parallels.com ([195.214.232.42]:40151 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080Ab1FMLvS (ORCPT
+	id S1752507Ab1FMLwp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 07:52:45 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:33492 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851Ab1FMLwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 07:51:18 -0400
-Subject: [PATCH] efifb: fix device unregister on error path
-To: Peter Jones <pjones@redhat.com>, <linux-kernel@vger.kernel.org>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Date: Mon, 13 Jun 2011 15:51:16 +0400
-Message-ID: <20110613115116.7843.49566.stgit@localhost6>
-User-Agent: StGit/0.15
+	Mon, 13 Jun 2011 07:52:43 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6375"; a="97303652"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: <balbi@ti.com>
+Cc: <greg@kroah.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>,
+        "'open list:FREESCALE USB PER...'" <linuxppc-dev@lists.ozlabs.org>,
+        "'open list:OMAP USB SUPPORT'" <linux-omap@vger.kernel.org>
+References: <1307877290-26672-1-git-send-email-tlinder@codeaurora.org> <20110613092438.GK3633@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20110613092438.GK3633@legolas.emea.dhcp.ti.com>
+Subject: RE: [PATCH] usb:gadget: use min_t() macro instead of min()
+Date: Mon, 13 Jun 2011 14:52:34 +0300
+Message-ID: <03b901cc29c0$6538e970$2faabc50$@org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+thread-index: Acwpq7zDcIN/UxAoS+2W8nU+iBOasgAE+UYQ
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Argument of platform_device_unregister() should be efifb_device, not efifb_driver.
-bug in v3.0-rc1-57-gbb8b266
+> 
+> On Sun, Jun 12, 2011 at 02:14:46PM +0300, Tatyana Brokhman wrote:
+> > Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
+> 
+> I need a sensible commit log for this. Why do we need to change all
+> min() to min_t() ?
+> 
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Actually, Alan asked me to make this change in one place in dummy_hcd. I
+wasn't aware of the min_t macro before that. So when I searched the code for
+other places I found quite a few and just thought that it would be "nicer"
+to use min_t() instead of min() with casting. 
+So we don't "need" to make this change. Everything works as is. This patch
+only makes the code look nicer, nothing more.
+I can elaborate the above in the commit log if you want.
+
+
+Thanks,
+Tanya Brokhman
 ---
- drivers/video/efifb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
-index 69c49df..784139a 100644
---- a/drivers/video/efifb.c
-+++ b/drivers/video/efifb.c
-@@ -541,7 +541,7 @@ static int __init efifb_init(void)
- 	 */
- 	ret = platform_driver_probe(&efifb_driver, efifb_probe);
- 	if (ret) {
--		platform_device_unregister(&efifb_driver);
-+		platform_device_unregister(&efifb_device);
- 		return ret;
- 	}
- 
+
+
 
