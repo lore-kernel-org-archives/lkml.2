@@ -1,262 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab1FMEyX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 00:54:23 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37033 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802Ab1FMEyV (ORCPT
+	id S1751948Ab1FMEyI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 00:54:08 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45644 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802Ab1FMEyG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 00:54:21 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 13 Jun 2011 13:47:01 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Ankita Garg <ankita@in.ibm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        svaidy@linux.vnet.ibm.com, thomas.abraham@linaro.org
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-Message-Id: <20110613134701.2b23b8d8.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
-References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Jun 2011 00:54:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=WsShENFPK3hEMUwRAH9IrIHxWh3gOlaL8h2rFKzkoOxdfdI/SGor80wzTe3U65ZG8v
+         ytuQHGUvG6wqqx3rU9Ngrrx2KFBSB4zoA4LM0UKxz1R57IMYKu6jwDc8pKtp5L22vlkt
+         Yzgi7llc3ziOHL3CsriSbQnwDZqt5CIH7MKgQ=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTimv6F8NsH0Lg7q6gi1-oiBv8nUrSA@mail.gmail.com>
+References: <1307777464.25182.3.camel@localhost.localdomain>
+	<BANLkTi=SQb6EL4+bdH2Q+iwaW9E3i+48Ew@mail.gmail.com>
+	<BANLkTi=yEo9fcXW8SqUCtSOag7Mn_+Ni9Q@mail.gmail.com>
+	<BANLkTimv6F8NsH0Lg7q6gi1-oiBv8nUrSA@mail.gmail.com>
+Date: Mon, 13 Jun 2011 10:54:04 +0600
+Message-ID: <BANLkTikbnsu05+Nae8isATuZ8Fucj14+LQ@mail.gmail.com>
+Subject: Re: [PATCH] x86, vsyscall: Fix build warning in vsyscall_64.c
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: mingo@elte.hu, hpa@zytor.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 May 2011 18:01:28 +0530
-Ankita Garg <ankita@in.ibm.com> wrote:
+On Mon, Jun 13, 2011 at 8:52 AM, Andrew Lutomirski <luto@mit.edu> wrote:
+> On Sun, Jun 12, 2011 at 1:12 AM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
+>> On Sat, Jun 11, 2011 at 5:01 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+>>> On Sat, Jun 11, 2011 at 3:31 AM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
+>>>> Due to commit 5cec93c216db77 (x86-64: Emulate legacy vsyscalls), we get the following warning:
+>>>>
+>>>>   arch/x86/kernel/vsyscall_64.c: In function ‘do_emulate_vsyscall’:
+>>>>   arch/x86/kernel/vsyscall_64.c:111:7: warning: ‘ret’ may be used uninitialized in this function
+>>>
+>>> What's the code path that uses ret without initializing it?
+>>>
+>> In case of, vsyscall_nr is default it might gets uninitialized. And
+>> current code already treats it as a bug.
+>>
+>>>> -       if (ret == -EFAULT) {
+>>>> +       if (ret == -EFAULT || ret == -EINVAL) {
+>>>>                /*
+>>>>                 * Bad news -- userspace fed a bad pointer to a vsyscall.
+>>>>                 *
+>>>
+>>> EINVAL doesn't seem like grounds to fault.  (I'm not sure how to get
+>>> EINVAL from time, gettimeofday, or getcpu, but in case there is, we
+>>> should return it back to userspace.)
+>>>
+>> If ret = EINVAL, then it means vsyscall_nr doesn't any of
+>> gettimeofday, time or getcpu. So, I grounds it into fault. In case of
+>> gettimeofday, EINVAL may gets return. But, maybe not in case of time
+>> or getcpu. So, maybe we need to check EINVAL in case of gettimeofday
+>> and maybe should separate EINVAL and EFAULT.
+>
+> I think there are three separate issues here:
+>
+> 1. Can ret be used uninitialized?  I say no, even as seen by the
+> compiler.  If vsyscall_nr is 0, 1, or 2, then ret is initialized.  If
+> vsyscall_nr is 3, then the BUG gets hit.  BUG is defined as some
+> assembly magic followed by unreachable(), and the compiler is supposed
+> to know that code after unreachable() is qunreachable.  So how can ret
+> be used uninitialized?
+>
+I don't have much knowledge of advance assembly, so I really don't
+understand that part - how BUG handles this. If it really makes sure
+that, it will handle it properly then I think you can drop this patch.
 
-> Hi,
-> 
+> What version of gcc do you have?  gcc (GCC) 4.6.0 20110530 (Red Hat
+> 4.6.0-9) does not produce this warning.
+>
+Currently, I'm replying from outside my home. I'll let you know when
+I'm back home.
 
-I'm sorry if you've answered already.
+> 2. Is the BUG correct?  I say yes.  vsyscall_nr can only be 0, 1, 2,
+> or 3 (see the function that generates it), and the only way that 3
+> could happen is if regs->ip == 0xffffffffff600c02.  That can't happen
+> because the instruction at ...601 is int3.
+>
+Ok, thanks for explaining. What will  regs->ax will have if it hits BUG?
 
-Is memory hotplug is too bad and cannot be enhanced for this purpose ?
+> 3. Should the test for EFAULT be changed to EINVAL?  I can't see why.
+> We need to preserve userspace ABI, and userspace expects vsyscalls
+> that fail for reasons other than a fault to return an error, not
+> segfault the caller.
+>
+Right. I think, we need to check for both EFAULT and EINVAL rather
+than changing test for EFAULT to EINVAL. Since both of them can
+happen, maybe it will help preserve userspace ABI properly.
 
-I wonder
-  - make section-size smaller (IIUC, IBM's system has 16MB section size)
-
-  - add per section statistics
-
-  - add a kind of balloon driver which does software memory offline
-    (which means making a contiguous chunk of free pages of section_size
-     by page migration) in background with regard to memory usage statistics.
-    If system says "need more memory!", balloon driver can online pages.
-
-can work for your purpose. It can allow you page isolatation and
-controls in 16MB unit.  If you need whole rework of memory hotplug, I think
-it's better to rewrite memory hotplug, too.
+> Note that regs->as *is* the return value, so we're not ignoring errors.
+>
+Yes, right. This was the worrying factor, what will regs->ax have. We
+shouldn't allow anything else other than return value or EINVAL.
 
 Thanks,
--Kame
+Rakib
 
-
-
-
-
-> Modern systems offer higher CPU performance and large amount of memory in
-> each generation in order to support application demands.  Memory subsystem has
-> began to offer wide range of capabilities for managing power consumption,
-> which is driving the need to relook at the way memory is managed by the
-> operating system. Linux VM subsystem has sophisticated algorithms to
-> optimally  manage the scarce resources for best overall system performance.
-> Apart from the capacity and location of memory areas, the VM subsystem tracks
-> special addressability restrictions in zones and relative distance from CPU as
-> NUMA nodes if necessary. Power management capabilities in the memory subsystem
-> and inclusion of different class of main memory like PCM, or non-volatile RAM,
-> brings in new boundaries and attributes that needs to be tagged within the
-> Linux VM subsystem for exploitation by the kernel and applications.
-> 
-> This patchset proposes a generic memory regions infrastructure that can be
-> used to tag boundaries of memory blocks which belongs to a specific memory
-> power management domain and further enable exploitation of platform memory
-> power management capabilities.
-> 
-> How can Linux VM help memory power savings?
-> 
-> o Consolidate memory allocations and/or references such that they are
-> not spread across the entire memory address space.  Basically area of memory
-> that is not being referenced, can reside in low power state.
-> 
-> o Support targeted memory reclaim, where certain areas of memory that can be
-> easily freed can be offlined, allowing those areas of memory to be put into
-> lower power states.
-> 
-> What is a Memory Region ?
-> -------------------------
-> 
-> Memory regions is a generic memory management framework that enables the
-> virtual memory manager to consider memory characteristics when making memory
-> allocation and deallocation decisions. It is a layer of abstraction under the
-> real NUMA nodes, that encapsulate knowledge of the underlying memory hardware.
-> This layer is created at boot time, with information from firmware regarding
-> the granularity at which memory power can be managed on the platform. For
-> example, on platforms with support for Partial Array Self-Refresh (PASR) [1],
-> regions could be aligned to memory unit that can be independently put into
-> self-refresh or turned off (content destructive power off). On the other hand,
-> platforms with support for multiple memory controllers that control the power
-> states of memory, one memory region could be created for all the memory under
-> a single memory controller.
-> 
-> The aim of the alignment is to ensure that memory allocations, deallocations
-> and reclaim are performed within a defined hardware boundary. By creating
-> zones under regions, the buddy allocator would operate at the level of
-> regions. The proposed data structure is as shown in the Figure below:
-> 
-> 
->              -----------------------------
->              |N0 |N1 |N2 |N3 |.. |.. |Nn |   
->              -----------------------------   
->              / \ \
->             /   \  \
->            /     \   \
->  ------------    |  ------------
->  | Mem Rgn0 |    |  | Mem Rgn3 |             
->  ------------    |  ------------             
->     |            |         |
->     |      ------------    | ---------
->     |      | Mem Rgn1 |    ->| zones |
->     |      ------------      ---------
->     |          |     ---------
->     |          ----->| zones |
->     | ---------      ---------
->     ->| zones |
->       ---------
-> 
-> Memory regions enable the following :
-> 
-> o Sequential allocation of memory in the order of memory regions, thus
->   ensuring that greater number of memory regions are devoid of allocations to
->   begin with
-> o With time however, the memory allocations will tend to be spread across
->   different regions. But the notion of a region boundary and region level
->   memory statistics will enable specific regions to be evacuated using
->   targetted allocation and reclaim. 
-> 
-> Lumpy reclaim and other memory compaction work by Mel Gorman, would further
-> aid in consolidation of memory [4].
-> 
-> Memory regions is just a base infrastructure that would enable the Linux VM to
-> be aware of the physical memory hardware characterisitics, a pre-requisite to
-> implementing other sophisticated algorithms and techniques to actually
-> conserve power.
-> 
-> Advantages
-> -----------
-> 
-> Memory regions framework works with existing memory management data
-> structures and only adds one more layer of abstraction that is required to
-> capture special boundaries and properties.  Most VM code paths work similar
-> to current implementation with additional traversal of zone data structures
-> in pre-defined order.
-> 
-> Alternative Approach:
-> 
-> There are other ways in which memory belonging to the same power domain could
-> be grouped together. Fake NUMA nodes under a real NUMA node could encapsulate
-> information about the memory hardware units that can be independently power
-> managed. With minimal code changes, the same functionality as memory regions
-> can be achieved. However, the fake NUMA nodes is a non-intuitive solution, 
-> that breaks the NUMA semantics and is not generic in nature. It would present
-> an incorrect view of the system to the administrator, by showing that it has a
-> greater number of NUMA nodes than actually present.
-> 
-> Challenges
-> ----------
-> 
-> o Memory interleaving is typically used on all platforms to increase the
->   memory bandwidth and hence memory performance. However, in the presence of
->   interleaving, the amount of idle memory within the hardware domain reduces,
->   impacting power savings. For a given platform, it is important to select an
->   interleaving scheme that gives good performance with optimum power savings.
-> 
-> This is a RFC patchset with minimal functionality to demonstrate the
-> requirement and proposed implementation options. It has been tested on TI
-> OMAP4 Panda board with 1Gb RAM and the Samsung Exynos 4210 board. The patch
-> applies on kernel version 2.6.39-rc5, compiled with the default config files
-> for the two platforms. I have turned off cgroup, memory hotplug and kexec to
-> begin. Support to these framework can be easily extended. The u-boot
-> bootloader does not yet export information regarding the physical memory bank
-> boundaries and hence the regions are not correctly aligned to hardware and
-> hence hard coded for test/demo purposes. Also, the code assumes that atleast
-> one region is present in the node. Compile time exclusion of memory regions is
-> a todo.
-> 
-> Results
-> -------
-> Ran pagetest, a simple C program that allocates and touches a required number
-> of pages, on a Samsung Exynos 4210 board with ~2GB RAM, booted with 4 memory
-> regions, each with ~512MB. The allocation size used was 512MB. Below is the
-> free page statistics while running the benchmark:
-> 
-> 		---------------------------------------
-> 	 	|	   | start  | ~480MB |  512MB |	
-> 		---------------------------------------
-> 		| Region 0 | 124013 | 1129   | 484    |
-> 		| Region 1 | 131072 | 131072 | 130824 |
-> 		| Region 2 | 131072 | 131072 | 131072 |
-> 		| Region 3 | 57332  | 57332  | 57332  |
-> 		---------------------------------------
-> 
-> (The total number of pages in Region 3 is 57332, as it contains all the
-> remaining pages and hence the region size is not 512MB).
-> 
-> Column 1 indicates the number of free pages in each region at the start of the
-> benchmark, column 2 at about 480MB allocation and column 3 at 512MB
-> allocation. The memory in regions 1,2 & 3 is free and only region0 is
-> utilized. So if the regions are aligned to the hardware memory units, free
-> regions could potentially be put either into low power state or turned off. It
-> may be possible to allocate from lower address without regions, but once the
-> page reclaim comes into play, the page allocations will tend to get spread
-> around.
-> 
-> References
-> ----------
-> 
-> [1] Partial Array Self Refresh
-> http://focus.ti.com/general/docs/wtbu/wtbudocumentcenter.tsp?templateId=6123&navigationId=12037
-> [2] TI OMAP$ Panda board
-> http://pandaboard.org/node/224/#manual
-> [3] Memory Regions discussion at Ubuntu Development Summit, May 2011
-> https://wiki.linaro.org/Specs/KernelGeneralPerformanceO?action=AttachFile&do=view&target=k81-memregions.odp
-> [4] Memory compaction
-> http://lwn.net/Articles/368869/
-> 
-> Ankita Garg (10):
->   mm: Introduce the memory regions data structure
->   mm: Helper routines
->   mm: Init zones inside memory regions
->   mm: Refer to zones from memory regions
->   mm: Create zonelists
->   mm: Verify zonelists
->   mm: Modify vmstat
->   mm: Modify vmscan
->   mm: Reflect memory region changes in zoneinfo
->   mm: Create memory regions at boot-up
-> 
->  include/linux/mm.h     |   25 +++-
->  include/linux/mmzone.h |   58 +++++++--
->  include/linux/vmstat.h |   22 ++-
->  mm/mm_init.c           |   51 ++++---
->  mm/mmzone.c            |   36 ++++-
->  mm/page_alloc.c        |  368 +++++++++++++++++++++++++++++++-----------------
->  mm/vmscan.c            |  284 ++++++++++++++++++++-----------------
->  mm/vmstat.c            |   77 ++++++----
->  8 files changed, 581 insertions(+), 340 deletions(-)
-> 
-> -- 
-> 1.7.4
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-
+> --Andy
+>
