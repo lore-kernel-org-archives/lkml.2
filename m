@@ -1,33 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab1FMVhl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 17:37:41 -0400
-Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:33916 "EHLO
-	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751906Ab1FMVhj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 17:37:39 -0400
-X-Greylist: delayed 337 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Jun 2011 17:37:39 EDT
-Date: Mon, 13 Jun 2011 21:31:59 +0000 (UTC)
-From: johnlinn@comcast.net
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Message-ID: <315025466.1505794.1308000719987.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
-In-Reply-To: <1347566644.1505253.1308000163643.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
-Subject: DMA setup for ARM platform with hole low in memory
+	id S1754635Ab1FMVmB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 17:42:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26659 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751305Ab1FMVl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 17:41:59 -0400
+Date: Mon, 13 Jun 2011 17:41:54 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tao Ma <tm@tao.ma>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: CFQ: async queue blocks the whole system
+Message-ID: <20110613214154.GL633@redhat.com>
+References: <20110609141451.GD29913@redhat.com>
+ <4DF0DD0F.8090407@tao.ma>
+ <20110609153738.GF29913@redhat.com>
+ <4DF0EA55.10209@tao.ma>
+ <20110609182706.GG29913@redhat.com>
+ <4DF1B035.7080009@tao.ma>
+ <20110610091427.GB4183@redhat.com>
+ <4DF1EB45.1070706@tao.ma>
+ <20110610154414.GA31853@redhat.com>
+ <4DF5E1A8.7080100@tao.ma>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [149.199.62.254]
-X-Mailer: Zimbra 6.0.5_GA_2431.RHEL5_64 (ZimbraWebClient - IE8 (Win)/6.0.5_GA_2427.RHEL4)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DF5E1A8.7080100@tao.ma>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm trying to decide the best way to setup this ARM platform DMA to deal with the fact that the lowest 512K of memory can not be DMAed into.  The rest of memory space is fine.
+On Mon, Jun 13, 2011 at 06:08:40PM +0800, Tao Ma wrote:
 
->From my digging and prototyping it seems like a DMA zone will do the job, but maybe there's an easier way. The DMA mask doesn't seem to really help with this hole in memory and would still need to be 0xFFFFFFFF it appears.
+[..]
+> > You can also run iostat on disk and should be able to see that with
+> > the patch you are dispatching writes more often than before.
+> Sorry, the patch doesn't work.
+> 
+> I used trace event to capture all the blktraces since it doesn't
+> interfere with the tests, hope it helps.
 
-Am I missing the easier way?
+Actually I was looking for CFQ traces. This seems to be generic block
+layer trace points. May be you can use "blktrace -d /dev/<device>"
+and then blkparse. It also gives the aggregate view which is helpful.
 
-Thanks,
-John
+> 
+> Please downloaded it from http://blog.coly.li/tmp/blktrace.tar.bz2
+
+What concerns me is following.
+
+5255.521353: block_rq_issue: 8,0 W 0 () 571137153 + 8 [attr_set]
+5578.863871: block_rq_issue: 8,0 W 0 () 512950473 + 48 [kworker/0:1]
+
+IIUC, we dispatched second write more than 300 seconds after dispatching
+1 write. What happened in between. We should have dispatched more writes.
+
+CFQ traces might give better idea in terms of whether wl_type for async
+queues was scheduled or not at all.
+
+Thanks
+Vivek
