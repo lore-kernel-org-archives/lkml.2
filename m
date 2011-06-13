@@ -1,54 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671Ab1FMQcS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 12:32:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59078 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751926Ab1FMQcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 12:32:17 -0400
-Message-ID: <4DF63B7A.1030805@redhat.com>
-Date: Mon, 13 Jun 2011 19:31:54 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1753750Ab1FMQdb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 12:33:31 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64942 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753355Ab1FMQda (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 12:33:30 -0400
+Date: Mon, 13 Jun 2011 12:31:58 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Joe Perches <joe@perches.com>
+Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [Xen-devel] [PATCH 1/2] xen: Add __attribute__((format(printf...
+ where appropriate
+Message-ID: <20110613163158.GA26322@dumpdata.com>
+References: <17ffbd77627a21c05ab9e1a07b5207334291cf01.1307895293.git.joe@perches.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [PATCH 08/10] NOTIFIER: Take over TIF_MCE_NOTIFY and implement
- task return notifier
-References: <4df13a522720782e51@agluck-desktop.sc.intel.com> <4df13cea27302b7ccf@agluck-desktop.sc.intel.com> <20110612223840.GA23218@aftab> <BANLkTi=-A5PYj8zpjGB4Xb-_VNq0qr+CGQ@mail.gmail.com> <4DF5C36A.1040707@redhat.com> <20110613095521.GA26316@aftab> <4DF5F729.4060609@redhat.com> <20110613124003.GA27918@aftab> <4DF606C9.90308@redhat.com> <20110613151208.GA29045@aftab>
-In-Reply-To: <20110613151208.GA29045@aftab>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <17ffbd77627a21c05ab9e1a07b5207334291cf01.1307895293.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090202.4DF63BD1.003C:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2011 06:12 PM, Borislav Petkov wrote:
-> >  The best you can do is IPI everyone as soon as you've caught the #MC,
-> >  but you have to be prepared for multiple #MC for the same page. Once
-> >  you have that, global synchronization is not so important anymore.
->
-> Yeah, in the multiple #MC case the memory_failure() thing should
-> probably be made reentrant-safe (if it is not yet). And in that case,
-> we'll be starting a worker thread on each CPU that caused an MCE from
-> accessing that page. The thread that manages to clear all the mappings
-> of our page simply does so while the others should be able to 'see' that
-> there's no work to be done anymore (PFN is not mapped in the pagetables
-> anymore) and exit without doing anything. Yeah, sounds doable with the
-> irq_work_queue ->  user_return_notifier flow.
+On Sun, Jun 12, 2011 at 09:21:13AM -0700, Joe Perches wrote:
+> Use the compiler to verify printf formats and arguments.
+> 
 
-I don't think a user_return_notifier is needed here.  You don't just 
-want to do things before a userspace return, you also want to do them 
-soon.  A user return notifier might take a very long time to run, if a 
-context switch occurs to a thread that spends a lot of time in the 
-kernel (perhaps a realtime thread).
+What compiler? If this is not included in 3.0 what is the fallout?
 
-So I think the best choice here is MCE -> irq_work -> realtime kernel 
-thread (or work queue)
-
--- 
-error compiling committee.c: too many arguments to function
-
+> Fix fallout.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/block/xen-blkback/xenbus.c |    2 +-
+>  include/xen/hvc-console.h          |    4 +++-
+>  include/xen/xenbus.h               |    2 ++
+>  3 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+> index 6cc0db1..3f129b4 100644
+> --- a/drivers/block/xen-blkback/xenbus.c
+> +++ b/drivers/block/xen-blkback/xenbus.c
+> @@ -684,7 +684,7 @@ again:
+>  
+>  	err = xenbus_switch_state(dev, XenbusStateConnected);
+>  	if (err)
+> -		xenbus_dev_fatal(dev, err, "switching to Connected state",
+> +		xenbus_dev_fatal(dev, err, "%s: switching to Connected state",
+>  				 dev->nodename);
+>  
+>  	return;
+> diff --git a/include/xen/hvc-console.h b/include/xen/hvc-console.h
+> index c3adde3..901724d 100644
+> --- a/include/xen/hvc-console.h
+> +++ b/include/xen/hvc-console.h
+> @@ -6,11 +6,13 @@ extern struct console xenboot_console;
+>  #ifdef CONFIG_HVC_XEN
+>  void xen_console_resume(void);
+>  void xen_raw_console_write(const char *str);
+> +__attribute__((format(printf, 1, 2)))
+>  void xen_raw_printk(const char *fmt, ...);
+>  #else
+>  static inline void xen_console_resume(void) { }
+>  static inline void xen_raw_console_write(const char *str) { }
+> -static inline void xen_raw_printk(const char *fmt, ...) { }
+> +static inline __attribute__((format(printf, 1, 2)))
+> +void xen_raw_printk(const char *fmt, ...) { }
+>  #endif
+>  
+>  #endif	/* XEN_HVC_CONSOLE_H */
+> diff --git a/include/xen/xenbus.h b/include/xen/xenbus.h
+> index 5467369..aceeca7 100644
+> --- a/include/xen/xenbus.h
+> +++ b/include/xen/xenbus.h
+> @@ -223,7 +223,9 @@ int xenbus_free_evtchn(struct xenbus_device *dev, int port);
+>  
+>  enum xenbus_state xenbus_read_driver_state(const char *path);
+>  
+> +__attribute__((format(printf, 3, 4)))
+>  void xenbus_dev_error(struct xenbus_device *dev, int err, const char *fmt, ...);
+> +__attribute__((format(printf, 3, 4)))
+>  void xenbus_dev_fatal(struct xenbus_device *dev, int err, const char *fmt, ...);
+>  
+>  const char *xenbus_strstate(enum xenbus_state state);
+> -- 
+> 1.7.6.rc1
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xensource.com
+> http://lists.xensource.com/xen-devel
