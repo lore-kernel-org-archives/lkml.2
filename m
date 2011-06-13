@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221Ab1FMNhe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 09:37:34 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:52411 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752911Ab1FMNhb (ORCPT
+	id S1753179Ab1FMNfq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 09:35:46 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:41337 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753119Ab1FMNfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 09:37:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] fb.h: ARM uses __raw_{read/write}
-Date: Mon, 13 Jun 2011 15:37:10 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-fbdev@vger.kernel.org
-References: <201106101731.08578.hartleys@visionengravers.com> <20110613040003.GA29731@linux-sh.org> <20110613100819.GA26914@1n450.cable.virginmedia.net>
-In-Reply-To: <20110613100819.GA26914@1n450.cable.virginmedia.net>
+	Mon, 13 Jun 2011 09:35:42 -0400
+In-Reply-To: <OFE36F9C2B.43D9DB04-ON652578AE.0048E1AB-652578AE.004A1462@in.ibm.com>
+References: <cover.1307029008.git.mst@redhat.com> <20110607160830.GB17581@redhat.com> <OFE36F9C2B.43D9DB04-ON652578AE.0048E1AB-652578AE.004A1462@in.ibm.com>
+Subject: Re: [PATCHv2 RFC 0/4] virtio and vhost-net capacity handling
+X-KeepSent: A835D731:5CFF0BC8-652578AE:004A7516;
+ type=4; name=$KeepSent
+To: Krishna Kumar2 <krkumar2@in.ibm.com>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Carsten Otte <cotte@de.ibm.com>, habanero@linux.vnet.ibm.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, kvm@vger.kernel.org,
+        lguest@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux390@de.ibm.com,
+        "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
+        netdev-owner@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, steved@us.ibm.com,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>,
+        virtualization@lists.linux-foundation.org, Shirley Ma <xma@us.ibm.com>
+X-Mailer: Lotus Notes Release 8.5.1 September 28, 2009
+Message-ID: <OFA835D731.5CFF0BC8-ON652578AE.004A7516-652578AE.004AAAA8@in.ibm.com>
+From: Krishna Kumar2 <krkumar2@in.ibm.com>
+Date: Mon, 13 Jun 2011 19:08:51 +0530
+X-MIMETrack: Serialize by Router on d23ml172/23/M/IBM(Release 8.5.1FP5|September 29, 2010) at
+ 13/06/2011 19:08:52
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106131537.10698.arnd@arndb.de>
-X-Provags-ID: V02:K0:eAFWM8OhZPiug7SLnYZ5Jb5mRdrN9aKe8ikHegHznwk
- fEFK1S4JOmx8GN8IIsCZPo7MA0T0PymQSgmCNyU22McN31mVrx
- /Z6wjcvUGeV1AwMBVcWv76xr+MvtQUXitbkwS14I8wtoHKNUKx
- V9Bt15jxYsWOiP+NTXlJJuNDbjfVFZqAzrJRFiskeF+NruhtS8
- mWu8A38cQaGy0o5eSbOpg==
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 13 June 2011 12:08:19 Catalin Marinas wrote:
-> The change proposed by Hartley wouldn't make much difference from the
-> current volatile accesses (__raw_* accessors are implemented as volatile
-> on ARM).
+> Krishna Kumar2/India/IBM@IBMIN wrote on 06/13/2011 07:02:27 PM:
 
-I guess it would mainly make a difference if we get a platform where
-the PCI bus window is not in the same address space as the regular
-physical memory and the accessors actually need to do a computation
-on the address. AFAICT, ARM does not currently have any such platform
-and I would hope that it says that way.
+...
 
-> I think the memcpy_(from|to)io could be optimised on ARM to only add a
-> barrier before or after he copying loop.
+> With 16K, there was an improvement in SD, but
+> higher sessions seem to slightly degrade BW/SD:
 
-Agreed, good idea.
+I meant to say "With 16K, there was an improvement in BW"
+above. Again the numbers are not very reproducible,
+I will test with remote host also to see if I get more
+consistent numbers.
 
-	Arnd
+Thanks,
+
+- KK
+
+>
+> ______________________________
+> #sessions  BW%      SD%
+> ______________________________
+> 1          30.9    -25.0
+> 2          16.5    -19.4
+> 4         -1.3      7.9
+> 8          1.4      6.2
+> 16         3.9     -5.4
+> 32         0        4.3
+> 48        -.5        .1
+> 64         32.1    -1.5
+> 96        -2.1      23.2
+> 128       -7.4      3.8
+> ______________________________
+> BW: 5.0          SD: 7.5
+
