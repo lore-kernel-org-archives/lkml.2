@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab1FMOjA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 10:39:00 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37169 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753517Ab1FMOi5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 10:38:57 -0400
-Date: Mon, 13 Jun 2011 10:38:56 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tanya Brokhman <tlinder@codeaurora.org>
-cc: balbi@ti.com, <greg@kroah.com>, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>,
-        "'open list:FREESCALE USB PER...'" <linuxppc-dev@lists.ozlabs.org>,
-        "'open list:OMAP USB SUPPORT'" <linux-omap@vger.kernel.org>
-Subject: RE: [PATCH] usb:gadget: use min_t() macro instead of min()
-In-Reply-To: <03b901cc29c0$6538e970$2faabc50$@org>
-Message-ID: <Pine.LNX.4.44L0.1106131036430.1983-100000@iolanthe.rowland.org>
+	id S1753506Ab1FMOiz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 10:38:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33153 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751160Ab1FMOiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 10:38:50 -0400
+Date: Mon, 13 Jun 2011 16:39:23 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Greg Dietsche <gregory.dietsche@cuw.edu>
+Cc: linville@tuxdriver.com, kernel-janitors@vger.kernel.org,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] iwlegacy: remove unreachable code
+Message-ID: <20110613143922.GA8111@redhat.com>
+References: <1307066770-27309-1-git-send-email-Gregory.Dietsche@cuw.edu>
+ <4DF61E7E.908@cuw.edu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DF61E7E.908@cuw.edu>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Jun 2011, Tanya Brokhman wrote:
-
-> > 
-> > On Sun, Jun 12, 2011 at 02:14:46PM +0300, Tatyana Brokhman wrote:
-> > > Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
-> > 
-> > I need a sensible commit log for this. Why do we need to change all
-> > min() to min_t() ?
-> > 
+On Mon, Jun 13, 2011 at 09:28:14AM -0500, Greg Dietsche wrote:
+> On 06/02/2011 09:06 PM, Greg Dietsche wrote:
+> >return; at the end of the function is unecessary.
+> >
+> >Signed-off-by: Greg Dietsche<Gregory.Dietsche@cuw.edu>
+> >---
+> >  drivers/net/wireless/iwlegacy/iwl-eeprom.c |    1 -
+> >  1 files changed, 0 insertions(+), 1 deletions(-)
+> >
+> >diff --git a/drivers/net/wireless/iwlegacy/iwl-eeprom.c b/drivers/net/wireless/iwlegacy/iwl-eeprom.c
+> >index cb346d1..5bf3f49 100644
+> >--- a/drivers/net/wireless/iwlegacy/iwl-eeprom.c
+> >+++ b/drivers/net/wireless/iwlegacy/iwl-eeprom.c
+> >@@ -316,7 +316,6 @@ static void iwl_legacy_init_band_reference(const struct iwl_priv *priv,
+> >  		break;
+> >  	default:
+> >  		BUG();
+> >-		return;
+> >  	}
+> >  }
+> >
 > 
-> Actually, Alan asked me to make this change in one place in dummy_hcd. I
-> wasn't aware of the min_t macro before that. So when I searched the code for
-> other places I found quite a few and just thought that it would be "nicer"
-> to use min_t() instead of min() with casting. 
-> So we don't "need" to make this change. Everything works as is. This patch
-> only makes the code look nicer, nothing more.
-> I can elaborate the above in the commit log if you want.
+> any comments/reviews/acks on this patch series?
 
-The change I suggested involved replacing two typecasts with a single 
-min_t.  All (or almost all) the places this patch touches currently 
-contain only one typecast, so the motivation for changing them is a lot 
-weaker.
+All 5 patches are applied in wireless-testing tree.
 
-Alan Stern
-
+Thanks
+Stanislaw
