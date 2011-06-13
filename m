@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab1FMOZA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 10:25:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57876 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404Ab1FMOY7 (ORCPT
+	id S1753437Ab1FMOaM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 10:30:12 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:61544 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753056Ab1FMOaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 10:24:59 -0400
-Date: Mon, 13 Jun 2011 07:28:50 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
-        thomas.abraham@linaro.org
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-Message-ID: <20110613072850.7234462b@infradead.org>
-In-Reply-To: <20110612230707.GE2212@linux.vnet.ibm.com>
-References: <20110610171939.GE2230@linux.vnet.ibm.com>
-	<20110610172307.GA27630@srcf.ucam.org>
-	<20110610175248.GF2230@linux.vnet.ibm.com>
-	<20110610180807.GB28500@srcf.ucam.org>
-	<20110610184738.GG2230@linux.vnet.ibm.com>
-	<20110610192329.GA30496@srcf.ucam.org>
-	<20110610193713.GJ2230@linux.vnet.ibm.com>
-	<20110610200233.5ddd5a31@infradead.org>
-	<20110611170610.GA2212@linux.vnet.ibm.com>
-	<20110611102654.01e5cea9@infradead.org>
-	<20110612230707.GE2212@linux.vnet.ibm.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 13 Jun 2011 10:30:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=OumcI9qdqNTqAIUSK/piWoZnjYYf+Tqb4bRTWcJS7KdriaAT8iib1nJ+vVF87ilT5w
+         cLlMBs247LtsvxeaInnqhEahcn43Pj4wSfvpj+rkCBSD/+pCM3BLuezU4uRlvGddKbZ1
+         PYVOV0zhKffV9zuODQupl/1tvbOC+tstEAZXc=
+From: Weiping Pan <panweiping3@gmail.com>
+To: error27@gmail.com
+Cc: Weiping Pan <panweiping3@gmail.com>,
+        Jay Vosburgh <fubar@us.ibm.com> (supporter:BONDING DRIVER),
+        Andy Gospodarek <andy@greyhouse.net> (supporter:BONDING DRIVER),
+        netdev@vger.kernel.org (open list:BONDING DRIVER),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] bonding:delete a dereference before check
+Date: Mon, 13 Jun 2011 22:30:10 +0800
+Message-Id: <1307975410-13523-1-git-send-email-panweiping3@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <20110611081214.GA21427@shale.localdomain>
+References: <20110611081214.GA21427@shale.localdomain>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Jun 2011 16:07:07 -0700
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> > 
-> > the codec issue seems to be solved in time; a previous generation
-> > silicon on our (Intel) side had ARM ecosystem blocks that did not do
-> > scatter gather, however the current generation ARM ecosystem blocks
-> > all seem to have added S/G to them....
-> > (in part this is coming from the strong desire to get camera/etc
-> > blocks to all use "GPU texture" class memory, so that the camera
-> > can directly deposit its information into a gpu texture, and
-> > similar for media encode/decode blocks... this avoids copies as
-> > well as duplicate memory).
-> 
-> That is indeed a clever approach!
-> 
-> Of course, if the GPU textures are in main memory, there will still
-> be memory consumption gains to be had as the image size varies (e.g.,
-> displaying image on one hand vs. menus and UI on the other). 
+Dan Carpenter found that there was a dereference before a check,
+added in 56d00c677de0(bonding:delete lacp_fast from ad_bond_info).
 
-graphics drivers and the whole graphics stack is set up to deal with
-that... textures aren't per se "screen size", the texture for a button
-is only as large as the button (with some rounding up to multiples of
-some small power of two) 
+Signed-off-by: Weiping Pan <panweiping3@gmail.com>
+---
+ drivers/net/bonding/bond_3ad.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-
-
-
+diff --git a/drivers/net/bonding/bond_3ad.c b/drivers/net/bonding/bond_3ad.c
+index 6122725..77da2e8 100644
+--- a/drivers/net/bonding/bond_3ad.c
++++ b/drivers/net/bonding/bond_3ad.c
+@@ -1900,7 +1900,6 @@ void bond_3ad_initialize(struct bonding *bond, u16 tick_resolution)
+ int bond_3ad_bind_slave(struct slave *slave)
+ {
+ 	struct bonding *bond = bond_get_bond_by_slave(slave);
+-	int lacp_fast = bond->params.lacp_fast;
+ 	struct port *port;
+ 	struct aggregator *aggregator;
+ 
+@@ -1916,7 +1915,7 @@ int bond_3ad_bind_slave(struct slave *slave)
+ 		// port initialization
+ 		port = &(SLAVE_AD_INFO(slave).port);
+ 
+-		ad_initialize_port(port, lacp_fast);
++		ad_initialize_port(port, bond->params.lacp_fast);
+ 
+ 		port->slave = slave;
+ 		port->actor_port_number = SLAVE_AD_INFO(slave).id;
 -- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
+1.7.4.4
+
