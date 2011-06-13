@@ -1,192 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581Ab1FMVFg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 17:05:36 -0400
-Received: from mga14.intel.com ([143.182.124.37]:8085 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751341Ab1FMVFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 17:05:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,360,1304319600"; 
-   d="scan'208";a="12108516"
-Subject: Re: [patch v4 1/2] stop_machine: enable __stop_machine() to be
- called from the cpu online path
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "tglx@linutronix.de" <tglx@linutronix.de>, "hpa@zytor.com" <hpa@zytor.com>,
-        "trenn@novell.com" <trenn@novell.com>,
-        "prarit@redhat.com" <prarit@redhat.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Song, Youquan" <youquan.song@intel.com>,
-        "stable@kernel.org" <stable@kernel.org>
-In-Reply-To: <1307998158.2682.33.camel@sbsiddha-MOBL3.sc.intel.com>
-References: <20110613175832.331826123@sbsiddha-MOBL3.sc.intel.com>
-	 <20110613175915.504721985@sbsiddha-MOBL3.sc.intel.com>
-	 <20110613195613.GA11196@elte.hu>
-	 <1307998158.2682.33.camel@sbsiddha-MOBL3.sc.intel.com>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Mon, 13 Jun 2011 14:05:42 -0700
-Message-Id: <1307999142.2682.42.camel@sbsiddha-MOBL3.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1754052Ab1FMVNK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 17:13:10 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:52301 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753797Ab1FMVND (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 17:13:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:reply-to:references
+         :mime-version:content-type:content-disposition:in-reply-to:x-pgp-key
+         :user-agent;
+        b=YUJG4+SqmE3D+DbTUaO0SOsCsimhctvln5FdJrYv/nLZUq92y8w7qsxvAEouJeOM2U
+         dHRDrL+5wQhtnfJT+u/fwpdYBYek6Gxpw6GC/Wv77vlFa6OYE4MKwZLkzYGhLNZIHA6n
+         6s5O0yP5RnA8fahb4b+O68aeYUeLht4VB2qAc=
+Date: Mon, 13 Jun 2011 18:11:55 -0300
+From: Rafael Aquini <aquini@linux.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Russ Anderson <rja@sgi.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>, rja@americas.sgi.com
+Subject: Re: [PATCH] mm: fix negative commitlimit when gigantic hugepages are
+ allocated
+Message-ID: <20110613211153.GA23597@optiplex.tchesoft.com>
+Reply-To: aquini@linux.com
+References: <BANLkTinbHnrf2isuLzUFZN8ypaT476G1zw@mail.gmail.com>
+ <20110519045630.GA22533@sgi.com>
+ <BANLkTinyYP-je9Nf8X-xWEdpgvn8a631Mw@mail.gmail.com>
+ <20110519221101.GC19648@sgi.com>
+ <20110520130411.d1e0baef.akpm@linux-foundation.org>
+ <20110520223032.GA15192@x61.tchesoft.com>
+ <20110526210751.GA14819@optiplex.tchesoft.com>
+ <20110602040821.GA7934@sgi.com>
+ <20110603025555.GA10530@optiplex.tchesoft.com>
+ <20110609164408.8370746e.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110609164408.8370746e.akpm@linux-foundation.org>
+X-PGP-Key: http://aquini.fedorapeople.org/AQUINI-GPG-KEY
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-13 at 13:49 -0700, Suresh Siddha wrote:
-> On Mon, 2011-06-13 at 12:56 -0700, Ingo Molnar wrote:
-> > * Suresh Siddha <suresh.b.siddha@intel.com> wrote:
-> > 
-> > >  include/linux/stop_machine.h |   11 +++--
-> > >  kernel/stop_machine.c        |   91 ++++++++++++++++++++++++++++++++++++++++---
-> > >  2 files changed, 93 insertions(+), 9 deletions(-)
-> > 
-> > Btw., this is *way* too risky for a -stable backport.
-> > 
+Howdy Andrew,
+
+Sorry, for this late reply.
+
+On Thu, Jun 09, 2011 at 04:44:08PM -0700, Andrew Morton wrote:
+> On Thu, 2 Jun 2011 23:55:57 -0300
+> Rafael Aquini <aquini@linux.com> wrote:
 > 
-> Ingo, we can have a smaller patch (appended) for the -stable. How do you
-> want to go ahead? Take this small patch for both mainline and -stable
-> and the two code cleanup/consolidation patches for -tip (to go into
-> 3.1?). Thanks.
+> > When 1GB hugepages are allocated on a system, free(1) reports
+> > less available memory than what really is installed in the box.
+> > Also, if the total size of hugepages allocated on a system is
+> > over half of the total memory size, CommitLimit becomes
+> > a negative number.
+> > 
+> > The problem is that gigantic hugepages (order > MAX_ORDER)
+> > can only be allocated at boot with bootmem, thus its frames
+> > are not accounted to 'totalram_pages'. However,  they are
+> > accounted to hugetlb_total_pages()
+> > 
+> > What happens to turn CommitLimit into a negative number
+> > is this calculation, in fs/proc/meminfo.c:
+> > 
+> >         allowed = ((totalram_pages - hugetlb_total_pages())
+> >                 * sysctl_overcommit_ratio / 100) + total_swap_pages;
+> > 
+> > A similar calculation occurs in __vm_enough_memory() in mm/mmap.c.
+> > 
+> > Also, every vm statistic which depends on 'totalram_pages' will render
+> > confusing values, as if system were 'missing' some part of its memory.
+> 
+> Is this bug serious enough to justify backporting the fix into -stable
+> kernels?
 
-oops. sent it too soon. fixed a !CONFIG_SMP compilation issue. Updated
-simple patch appended.
----
+Despite not having testing it, I can think the following scenario as
+troublesome:
+When gigantic hugepages are allocated and sysctl_overcommit_memory == OVERCOMMIT_NEVER.
+In a such situation, __vm_enough_memory() goes through the mentioned 'allowed'
+calculation and might end up mistakenly returning -ENOMEM, thus forcing
+the system to start reclaiming pages earlier than it would be ususal, and this could
+cause detrimental impact to overall system's performance, depending on the
+workload.
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: x86, mtrr: lock stop machine during MTRR rendezvous sequence
+Besides the aforementioned scenario, I can only think of this causing annoyances
+with memory reports from /proc/meminfo and free(1).
 
-MTRR rendezvous sequence using stop_one_cpu_nowait() can potentially
-happen in parallel with another system wide rendezvous using
-stop_machine(). This can lead to deadlock (The order in which
-works are queued can be different on different cpu's. Some cpu's
-will be running the first rendezvous handler and others will be running
-the second rendezvous handler. Each set waiting for the other set to join
-for the system wide rendezvous, leading to a deadlock).
+Thanks for your attention!
 
-MTRR rendezvous sequence is not implemented using stop_machine() as this
-gets called both from the process context aswell as the cpu online paths
-(where the cpu has not come online and the interrupts are disabled etc).
-stop_machine() works with only online cpus.
-
-For now, take the stop_cpus mutex in the MTRR rendezvous sequence that
-prevents the above mentioned deadlock. If this gets called in the cpu
-online path, then we loop using try_lock. Otherwise we wait till the
-mutex is available.
-
-    TBD: Extend the stop_machine() infrastructure to handle the case where
-         the calling cpu is still not online and use this for MTRR rendezvous
-         sequence (rather than implementing own stop machine using
-         stop_one_cpu_nowait()). This will consolidate the code.
-
-fixes: https://bugzilla.novell.com/show_bug.cgi?id=672008
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: stable@kernel.org    # v2.6.35+
----
- arch/x86/kernel/cpu/mtrr/main.c |   14 +++++++++++++-
- include/linux/stop_machine.h    |   17 +++++++++++++++++
- kernel/stop_machine.c           |   15 +++++++++++++++
- 3 files changed, 45 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
-index 929739a..3d15798 100644
---- a/arch/x86/kernel/cpu/mtrr/main.c
-+++ b/arch/x86/kernel/cpu/mtrr/main.c
-@@ -244,9 +244,20 @@ static inline int types_compatible(mtrr_type type1, mtrr_type type2)
- static void
- set_mtrr(unsigned int reg, unsigned long base, unsigned long size, mtrr_type type)
- {
-+	int cpu = raw_smp_processor_id();
- 	struct set_mtrr_data data;
- 	unsigned long flags;
--	int cpu;
-+
-+	/*
-+	 * If we are not yet online, then loop using the try lock, as we
-+	 * can't sleep.
-+	 */
-+	if (cpu_online(cpu)) {
-+		lock_stop_cpus();
-+	} else {
-+		while (!try_lock_stop_cpus())
-+			cpu_relax();
-+	}
- 
- 	preempt_disable();
- 
-@@ -330,6 +341,7 @@ set_mtrr(unsigned int reg, unsigned long base, unsigned long size, mtrr_type typ
- 
- 	local_irq_restore(flags);
- 	preempt_enable();
-+	unlock_stop_cpus();
- }
- 
- /**
-diff --git a/include/linux/stop_machine.h b/include/linux/stop_machine.h
-index 092dc9b..7731e57 100644
---- a/include/linux/stop_machine.h
-+++ b/include/linux/stop_machine.h
-@@ -33,6 +33,10 @@ void stop_one_cpu_nowait(unsigned int cpu, cpu_stop_fn_t fn, void *arg,
- int stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg);
- int try_stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg);
- 
-+void lock_stop_cpus(void);
-+int try_lock_stop_cpus(void);
-+void unlock_stop_cpus(void);
-+
- #else	/* CONFIG_SMP */
- 
- #include <linux/workqueue.h>
-@@ -88,6 +92,19 @@ static inline int try_stop_cpus(const struct cpumask *cpumask,
- 	return stop_cpus(cpumask, fn, arg);
- }
- 
-+static inline void lock_stop_cpus(void)
-+{
-+}
-+
-+static inline int try_lock_stop_cpus(void)
-+{
-+	return 1;
-+}
-+
-+static inline void unlock_stop_cpus(void)
-+{
-+}
-+
- #endif	/* CONFIG_SMP */
- 
- /*
-diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-index e3516b2..d239a48 100644
---- a/kernel/stop_machine.c
-+++ b/kernel/stop_machine.c
-@@ -136,6 +136,21 @@ void stop_one_cpu_nowait(unsigned int cpu, cpu_stop_fn_t fn, void *arg,
- static DEFINE_MUTEX(stop_cpus_mutex);
- static DEFINE_PER_CPU(struct cpu_stop_work, stop_cpus_work);
- 
-+void lock_stop_cpus(void)
-+{
-+	mutex_lock(&stop_cpus_mutex);
-+}
-+
-+int try_lock_stop_cpus(void)
-+{
-+	return mutex_trylock(&stop_cpus_mutex);
-+}
-+
-+void unlock_stop_cpus(void)
-+{
-+	mutex_unlock(&stop_cpus_mutex);
-+}
-+
- int __stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg)
- {
- 	struct cpu_stop_work *work;
-
-
+Cheers!
+-- 
+Rafael Aquini <aquini@linux.com>
