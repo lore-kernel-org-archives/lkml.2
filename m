@@ -1,108 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028Ab1FMItJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 04:49:09 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:47221 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754992Ab1FMItI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 04:49:08 -0400
-Date: Mon, 13 Jun 2011 14:11:33 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 20/22] 20: perf: perf interface for
- uprobes
-Message-ID: <20110613084133.GA27130@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
- <20110607130216.28590.5724.sendpatchset@localhost6.localdomain6>
- <4DF20511.8000206@hitachi.com>
+	id S1754391Ab1FMImm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 04:42:42 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:39812 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753459Ab1FMIml (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 04:42:41 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Eric Miao <eric.miao@linaro.org>
+Subject: [PATCH] gpio/plat-pxa: fix clash with gpiolib namespace
+Date: Mon, 13 Jun 2011 10:42:19 +0200
+Message-ID: <1307954539-5681-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <4DF20511.8000206@hitachi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Masami,
-[ I have restricted the number of people in CC to those people who are
-closely following perf. Please feel free to add people].
+From: Linus Walleij <linus.walleij@linaro.org>
 
-Thanks for the review.
+The PXA platform code has a static inline helper called
+gpio_to_chip which clashes with the gpiolib namespace if we
+try to expose the function with the same name from gpiolib,
+and it's still confusing even if we don't do that. So rename
+it to gpio_to_pxachip().
 
-> > Enhances perf probe to user space executables and libraries.
-> > Provides very basic support for uprobes.
-> > 
-> > [ Probing a function in the executable using function name  ]
-> > -------------------------------------------------------------
-> > [root@localhost ~]# perf probe -u zfree@/bin/zsh
-> 
-> Hmm, here, I have concern about the interface inconsistency
-> of the probe point syntax.
-> 
-> Since perf probe already supports debuginfo analysis,
-> it accepts following syntax;
-> 
-> [EVENT=]FUNC[@SRC][:RLN|+OFFS|%return|;PTN] [ARG ...]
-> 
-> Thus, The "@" should take a source file path, not binary path.
-> 
+Reported-by: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Eric Miao <eric.miao@linaro.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ arch/arm/plat-pxa/gpio.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-All the discussions in this forum happened with respect to
-<function>@<executable> form (esp since we started with the inode based
-uprobes approach). Thats why I chose the
-perf probe -u func@execfile. This also gave us a flexibility to define 
-two probes in two different executables in the same session/command.
-Something like 
-perf probe -u func1@exec1 func2@exec2.
-
-However I am okay to change to your suggested syntax which is 
-"perf probe -u /bin/zsh -a zfree"
-
-> I think -u option should have a path of the target binary, as below
-> 
-> # perf probe -u /bin/zsh -a zfree
-
-Will --uprobe work as the long name option for -u or do you suggest
-something else?
-
-> 
-> This will allow perf-probe to support user-space debuginfo
-> analysis. With it, we can do as below;
-> 
-
-While we discuss this I would also like to get your thoughts on couple
-of issues.
-
-1. Its okay to use a switch like "-u" that restricts the probe
-definition session to just the user space tracing. i.e We wont be able
-to define a probe in user space executable and also a kernel probe in
-one single session.
-
-2. Its okay to have just "target" and a flag to identify if the session
-is a userspace probing session, instead of having separate fields for
-userspace executable path and the module name.
-	i.e you are okay with patch "perf: rename target_module to target"
-
-3. Currently perf_probe_point has one field "file" that was only used to
-refer to source file. Uprobes overrides it to use it for executable file
-too. One approach would be to add another field something like
-"execfile" that we use to refer to executable files and use the current
-field "file" for source files. 
-	Also do you suggest that we rename the current
-file field to "srcfile?
-
-Based on the outcomes of this discussion, I will modify the code and
-Documentation.
-
+diff --git a/arch/arm/plat-pxa/gpio.c b/arch/arm/plat-pxa/gpio.c
+index 48ebb94..a11dc36 100644
+--- a/arch/arm/plat-pxa/gpio.c
++++ b/arch/arm/plat-pxa/gpio.c
+@@ -50,7 +50,7 @@ static inline void __iomem *gpio_chip_base(struct gpio_chip *c)
+ 	return container_of(c, struct pxa_gpio_chip, chip)->regbase;
+ }
+ 
+-static inline struct pxa_gpio_chip *gpio_to_chip(unsigned gpio)
++static inline struct pxa_gpio_chip *gpio_to_pxachip(unsigned gpio)
+ {
+ 	return &pxa_gpio_chips[gpio_to_bank(gpio)];
+ }
+@@ -161,7 +161,7 @@ static int pxa_gpio_irq_type(struct irq_data *d, unsigned int type)
+ 	int gpio = irq_to_gpio(d->irq);
+ 	unsigned long gpdr, mask = GPIO_bit(gpio);
+ 
+-	c = gpio_to_chip(gpio);
++	c = gpio_to_pxachip(gpio);
+ 
+ 	if (type == IRQ_TYPE_PROBE) {
+ 		/* Don't mess with enabled GPIOs using preconfigured edges or
+@@ -230,7 +230,7 @@ static void pxa_gpio_demux_handler(unsigned int irq, struct irq_desc *desc)
+ static void pxa_ack_muxed_gpio(struct irq_data *d)
+ {
+ 	int gpio = irq_to_gpio(d->irq);
+-	struct pxa_gpio_chip *c = gpio_to_chip(gpio);
++	struct pxa_gpio_chip *c = gpio_to_pxachip(gpio);
+ 
+ 	__raw_writel(GPIO_bit(gpio), c->regbase + GEDR_OFFSET);
+ }
+@@ -238,7 +238,7 @@ static void pxa_ack_muxed_gpio(struct irq_data *d)
+ static void pxa_mask_muxed_gpio(struct irq_data *d)
+ {
+ 	int gpio = irq_to_gpio(d->irq);
+-	struct pxa_gpio_chip *c = gpio_to_chip(gpio);
++	struct pxa_gpio_chip *c = gpio_to_pxachip(gpio);
+ 	uint32_t grer, gfer;
+ 
+ 	c->irq_mask &= ~GPIO_bit(gpio);
+@@ -252,7 +252,7 @@ static void pxa_mask_muxed_gpio(struct irq_data *d)
+ static void pxa_unmask_muxed_gpio(struct irq_data *d)
+ {
+ 	int gpio = irq_to_gpio(d->irq);
+-	struct pxa_gpio_chip *c = gpio_to_chip(gpio);
++	struct pxa_gpio_chip *c = gpio_to_pxachip(gpio);
+ 
+ 	c->irq_mask |= GPIO_bit(gpio);
+ 	update_edge_detect(c);
 -- 
-Thanks and Regards
-Srikar
+1.7.3.2
+
