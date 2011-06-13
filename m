@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab1FMPM3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 11:12:29 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:36347 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751160Ab1FMPM2 (ORCPT
+	id S1753568Ab1FMPOa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 11:14:30 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:53702 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846Ab1FMPO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 11:12:28 -0400
-Date: Mon, 13 Jun 2011 17:12:08 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Borislav Petkov <bp@amd64.org>, Tony Luck <tony.luck@intel.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [PATCH 08/10] NOTIFIER: Take over TIF_MCE_NOTIFY and implement
- task return notifier
-Message-ID: <20110613151208.GA29045@aftab>
-References: <4df13a522720782e51@agluck-desktop.sc.intel.com>
- <4df13cea27302b7ccf@agluck-desktop.sc.intel.com>
- <20110612223840.GA23218@aftab>
- <BANLkTi=-A5PYj8zpjGB4Xb-_VNq0qr+CGQ@mail.gmail.com>
- <4DF5C36A.1040707@redhat.com>
- <20110613095521.GA26316@aftab>
- <4DF5F729.4060609@redhat.com>
- <20110613124003.GA27918@aftab>
- <4DF606C9.90308@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DF606C9.90308@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 13 Jun 2011 11:14:28 -0400
+X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=nbpwko1cA38A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=QzsWEoM40CBg3qrFoh8A:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: BUG on 3.0-rc on commit
+ d72bce0e67e8afc6eb959f656013cbb577426f1e
+From: Steven Rostedt <rostedt@goodmis.org>
+To: habanero@linux.vnet.ibm.com
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1307977614.17297.12.camel@atheurer-w510>
+References: <1307711837.23688.33.camel@atheurer-ubuntu10>
+	 <1307715084.3941.166.camel@twins>  <1307717156.3941.169.camel@twins>
+	 <1307720081.17297.6.camel@atheurer-w510>  <1307723232.3941.178.camel@twins>
+	 <1307977614.17297.12.camel@atheurer-w510>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 13 Jun 2011 11:14:26 -0400
+Message-ID: <1307978066.9218.71.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 08:47:05AM -0400, Avi Kivity wrote:
-> > HOWEVER, AFAICT, if the page is mapped multiple times,
-> > killing/recovering the current task doesn't help from another core
-> > touching it and causing a follow-up MCE. So holding off all the cores
-> > from scheduling userspace in some manner might be the superior solution.
-> > Especially if you don't execute the #MC handler on all CPUs as is the
-> > case on AMD.
-> >
+On Mon, 2011-06-13 at 10:06 -0500, Andrew Theurer wrote:
+> On Fri, 2011-06-10 at 18:27 +0200, Peter Zijlstra wrote:
+> > On Fri, 2011-06-10 at 10:34 -0500, Andrew Theurer wrote:
+> > > RIP: 0010:[<ffffffff8104e8c1>]  [<ffffffff8104e8c1>] find_lowest_rq+0xa1/0x150
+> > 
+> > If you've still got the vmlinux around, could you find out where in
+> > find_lowest_rq that RIP is? 
 > 
-> That's basically impossible, since the other cores may be in fact 
-> executing userspace, with the next instruction accessing the bad page.  
-> In fact the access may have been started simultaneously with the one 
-> that triggered the #MC.
+> Does this help?
 
-True.
+A little, but could you also do the following: (if you had DEBUG_INFO
+compiled in)
 
-> The best you can do is IPI everyone as soon as you've caught the #MC,
-> but you have to be prepared for multiple #MC for the same page. Once
-> you have that, global synchronization is not so important anymore.
+$ gdb vmlinux
+gdb> li *0xffffffff8104e8c1
 
-Yeah, in the multiple #MC case the memory_failure() thing should
-probably be made reentrant-safe (if it is not yet). And in that case,
-we'll be starting a worker thread on each CPU that caused an MCE from
-accessing that page. The thread that manages to clear all the mappings
-of our page simply does so while the others should be able to 'see' that
-there's no work to be done anymore (PFN is not mapped in the pagetables
-anymore) and exit without doing anything. Yeah, sounds doable with the
-irq_work_queue -> user_return_notifier flow.
+And give the output of that?
 
-Thanks.
+Thanks,
 
--- 
-Regards/Gruss,
-Boris.
+-- Steve
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+
