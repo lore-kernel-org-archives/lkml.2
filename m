@@ -1,54 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab1FMVmS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 17:42:18 -0400
-Received: from mail.perches.com ([173.55.12.10]:2860 "EHLO mail.perches.com"
+	id S1754802Ab1FMVq1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 17:46:27 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:53382 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752907Ab1FMVmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 17:42:16 -0400
-Subject: Re: [PATCH 1/3] usbip: only dump valid port status
-From: Joe Perches <joe@perches.com>
-To: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Matt Mooney <mfm@muteddisk.com>,
-        Max Vozeler <max@hinterhof.net>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4DF68151.4080109@freemail.hu>
-References: <4DF68151.4080109@freemail.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 13 Jun 2011 14:42:14 -0700
-Message-ID: <1308001334.26699.18.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1752666Ab1FMVq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 17:46:26 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: Re: [PATCH]drivers:base:power:trace.c Add "UTC" Coordinated Universal Time to the printk.
+Date: Mon, 13 Jun 2011 23:47:07 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>
+References: <1307599301-2524-1-git-send-email-justinmattock@gmail.com> <201106122227.32992.rjw@sisk.pl> <4DF53DCC.1060604@gmail.com>
+In-Reply-To: <4DF53DCC.1060604@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106132347.08007.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-13 at 23:29 +0200, Németh Márton wrote:
-> From: Márton Németh <nm127@freemail.hu>
+On Monday, June 13, 2011, Justin P. Mattock wrote:
+> On 06/12/2011 01:27 PM, Rafael J. Wysocki wrote:
+> > On Sunday, June 12, 2011, Justin P. Mattock wrote:
+> >> On 06/12/2011 11:35 AM, Rafael J. Wysocki wrote:
+> >>> On Sunday, June 12, 2011, Justin P. Mattock wrote:
+> >>>> On 06/12/2011 05:12 AM, Rafael J. Wysocki wrote:
+> >>>>> Hi,
+> >>>>>
+> >>>>> On Thursday, June 09, 2011, Justin P. Mattock wrote:
+> >>>>>> From: "Justin P. Mattock"<justinmattock@gmail.com>
+> >>>>>>
+> >>>>>> sounds stupid, but taking a glance at the time, and seeing the wrong time, or what seemed
+> >>>>>> wrong in dmesg, caused me to go into total check the time clock panic mode.. So the patch below adds:
+> >>>>>> "UTC" Coordinated Universal Time abreviation to the printk so people like me dont flip out over the time!
+> >>>>>>
+> >>>>>> before:
+> >>>>>> [    0.114915] Time:  1:47:03  Date: 06/09/11
+> >>>>>>
+> >>>>>> after:
+> >>>>>> [    0.114728] Time:  5:46:02 UTC Date: 06/09/11
+> >>>>>>
+> >>>>>> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+> >>>>>
+> >>>>> I suspect the goal is to mark messages printed by the PM trace code so that
+> >>>>> they can be easily distinguished from messages from other sources to avoid
+> >>>>> confusion.  Why do you think it's a good idea to use the "UTC" string for
+> >>>>> this purpose?  The time printed in those messages need not be UTC.
+> >>>>>
+> >>>>> It would be better to simply print "RTC time: ..., date: ..." IMO.
+> >>>>>
+> >>>>> Thanks,
+> >>>>> Rafael
+> >>>>>
+> >>>>
+> >>>> well.. if thats better, then thats better.. over here(people that dont
+> >>>> know what RTC time is) would not get so confused with a simple UTC or
+> >>>> PDT or whatever the time zone is but if RTC is bettr, then its better.
+> >>>
+> >>> My point is we don't know this time is always UTC, so we rather shouldn't
+> >>> label it as UTC unconditionally, should we?
+> >>>
+> >>> Rafael
+> >>>
+> >>
+> >> sounds good to me!!
+> >
+> > I'm not sure what you mean?
+> >
 > 
-> The wIndex parameter of vhci_hub_control() is always zero when the
-> request type is GetHubDescriptor,
-> ---
-> diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
-> @@ -464,8 +464,11 @@ static int vhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
-> 
->  	if (usbip_dbg_flag_vhci_rh) {
->  		pr_debug("port %d\n", rhport);
-> -		dump_port_status(prev_port_status[rhport]);
-> -		dump_port_status(dum->port_status[rhport]);
-> +		/* Only dump valid port status */
-> +		if (0 <= rhport) {
-> +			dump_port_status(prev_port_status[rhport]);
-> +			dump_port_status(dum->port_status[rhport]);
-> +		}
->  	}
->  	usbip_dbg_vhci_rh(" bye\n");
-> 
+> with what you are saying "RTC" if anything.. rather than "UTC"
 
-Linux relatively rarely uses constant before variable in a comparison.
-ie: please use "if (rhport > 0)" instead
+So, it looks like you'd like the appended patch to be appiled?
 
+Rafael
 
+---
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: PM: Add "RTC" to PM trace time stamps to avoid confusion
+
+Some users are apparently confused by dmesg output from
+read_magic_time(), which looks like "real" time and date.
+Add the "RTC" string to time stamps printed by read_magic_time() to
+avoid that confusion.
+
+Reported-by: Justin P. Mattock <justinmattock@gmail.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/base/power/trace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6/drivers/base/power/trace.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/trace.c
++++ linux-2.6/drivers/base/power/trace.c
+@@ -112,7 +112,7 @@ static unsigned int read_magic_time(void
+ 	unsigned int val;
+ 
+ 	get_rtc_time(&time);
+-	pr_info("Time: %2d:%02d:%02d  Date: %02d/%02d/%02d\n",
++	pr_info("RTC time: %2d:%02d:%02d, date: %02d/%02d/%02d\n",
+ 		time.tm_hour, time.tm_min, time.tm_sec,
+ 		time.tm_mon + 1, time.tm_mday, time.tm_year % 100);
+ 	val = time.tm_year;				/* 100 years */
