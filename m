@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590Ab1FMSZJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 14:25:09 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:36787 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab1FMSZG (ORCPT
+	id S1753422Ab1FMS0V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 14:26:21 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:45940 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181Ab1FMS0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 14:25:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=Xqy6zeVLRo6nS2o0sxR6jcg8aOENE/lVETm1AxvZMv3ZaOMMpdsStHsq06nkjY58/k
-         A2oiYNCwv3GeXPWLVs1ygHGhDmWhSDaChRs7SChmnGF0vLcKEe72MsWhzS5xPQ6Yo46R
-         XwA0olK6Ztm3SeE9j90Ib/yoyTALPvAY+hdTo=
+	Mon, 13 Jun 2011 14:26:19 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6376"; a="97226877"
+From: David Brown <davidb@codeaurora.org>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Joerg Roedel <Joerg.Roedel@amd.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, David Woodhouse <dwmw2@infradead.org>,
+        <iommu@lists.linux-foundation.org>, <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH v2 2/4] msm: iommu: move to drivers/iommu/
+References: <1307742947-32118-1-git-send-email-ohad@wizery.com>
+	<1307742947-32118-3-git-send-email-ohad@wizery.com>
+Date: Mon, 13 Jun 2011 11:26:14 -0700
+In-Reply-To: <1307742947-32118-3-git-send-email-ohad@wizery.com> (Ohad
+	Ben-Cohen's message of "Sat, 11 Jun 2011 00:55:45 +0300")
+Message-ID: <8yaips9fv09.fsf@huya.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1307989217-22004-1-git-send-email-geert@linux-m68k.org>
-References: <1307989217-22004-1-git-send-email-geert@linux-m68k.org>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Mon, 13 Jun 2011 20:24:45 +0200
-X-Google-Sender-Auth: 6W5WZGmlX6p5ZhjRGRhp7a8RHWo
-Message-ID: <BANLkTi=iuSZtp=dJv-f8rvBeNMqQD8EcTQ@mail.gmail.com>
-Subject: Re: [PATCH] scsi/trivial: Spelling hsot -> host
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jiri Kosina <trivial@kernel.org>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 8:20 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
+On Fri, Jun 10 2011, Ohad Ben-Cohen wrote:
+
+> This should ease finding similarities with different platforms,
+> with the intention of solving problems once in a generic framework
+> which everyone can use.
 >
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Compile-tested for MSM8X60.
 
-Where is the reference to http://marc.info/?l=linux-scsi&m=130788046617817&w=2 ?
+Acked-by: David Brown <davidb@codeaurora.org>
 
-Bart.
+I believe that Stepan Moskovochenko has some extra tests for this code,
+but given that none of the code itself changes, I wouldn't expect any
+problems.
+
+David
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
