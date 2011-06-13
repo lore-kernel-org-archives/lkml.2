@@ -1,99 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737Ab1FMPDN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 11:03:13 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:62422 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604Ab1FMPDK (ORCPT
+	id S1753520Ab1FMPEU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 11:04:20 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:42503 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100Ab1FMPET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 11:03:10 -0400
-Date: Mon, 13 Jun 2011 09:03:08 -0600
+	Mon, 13 Jun 2011 11:04:19 -0400
+Date: Mon, 13 Jun 2011 09:04:16 -0600
 From: Grant Likely <grant.likely@secretlab.ca>
 To: Linus Walleij <linus.walleij@stericsson.com>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Eric Miao <eric.miao@linaro.org>
-Subject: Re: [PATCH] gpio/plat-pxa: fix clash with gpiolib namespace
-Message-ID: <20110613150308.GB18161@ponder.secretlab.ca>
-References: <1307954539-5681-1-git-send-email-linus.walleij@stericsson.com>
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH] gpio/74x164: fix clash with gpiolib namespace
+Message-ID: <20110613150416.GC18161@ponder.secretlab.ca>
+References: <1307954835-20812-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1307954539-5681-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1307954835-20812-1-git-send-email-linus.walleij@stericsson.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 10:42:19AM +0200, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> The PXA platform code has a static inline helper called
+On Mon, Jun 13, 2011 at 10:47:15AM +0200, Linus Walleij wrote:
+> The 74x164 GPIO driver has a static inline helper called
 > gpio_to_chip which clashes with the gpiolib namespace if we
 > try to expose the function with the same name from gpiolib,
 > and it's still confusing even if we don't do that. So rename
-> it to gpio_to_pxachip().
+> it to gpio_to_74x164_chip().
 > 
 > Reported-by: H Hartley Sweeten <hartleys@visionengravers.com>
-> Cc: Eric Miao <eric.miao@linaro.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+Merged, thanks.
+
+g.
 
 > ---
->  arch/arm/plat-pxa/gpio.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
+>  drivers/gpio/gpio-74x164.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
 > 
-> diff --git a/arch/arm/plat-pxa/gpio.c b/arch/arm/plat-pxa/gpio.c
-> index 48ebb94..a11dc36 100644
-> --- a/arch/arm/plat-pxa/gpio.c
-> +++ b/arch/arm/plat-pxa/gpio.c
-> @@ -50,7 +50,7 @@ static inline void __iomem *gpio_chip_base(struct gpio_chip *c)
->  	return container_of(c, struct pxa_gpio_chip, chip)->regbase;
+> diff --git a/drivers/gpio/gpio-74x164.c b/drivers/gpio/gpio-74x164.c
+> index 7fb60b6..ff525c0 100644
+> --- a/drivers/gpio/gpio-74x164.c
+> +++ b/drivers/gpio/gpio-74x164.c
+> @@ -23,7 +23,7 @@ struct gen_74x164_chip {
+>  	u8			port_config;
+>  };
+>  
+> -static struct gen_74x164_chip *gpio_to_chip(struct gpio_chip *gc)
+> +static struct gen_74x164_chip *gpio_to_74x164_chip(struct gpio_chip *gc)
+>  {
+>  	return container_of(gc, struct gen_74x164_chip, gpio_chip);
 >  }
+> @@ -36,7 +36,7 @@ static int __gen_74x164_write_config(struct gen_74x164_chip *chip)
 >  
-> -static inline struct pxa_gpio_chip *gpio_to_chip(unsigned gpio)
-> +static inline struct pxa_gpio_chip *gpio_to_pxachip(unsigned gpio)
+>  static int gen_74x164_get_value(struct gpio_chip *gc, unsigned offset)
 >  {
->  	return &pxa_gpio_chips[gpio_to_bank(gpio)];
->  }
-> @@ -161,7 +161,7 @@ static int pxa_gpio_irq_type(struct irq_data *d, unsigned int type)
->  	int gpio = irq_to_gpio(d->irq);
->  	unsigned long gpdr, mask = GPIO_bit(gpio);
+> -	struct gen_74x164_chip *chip = gpio_to_chip(gc);
+> +	struct gen_74x164_chip *chip = gpio_to_74x164_chip(gc);
+>  	int ret;
 >  
-> -	c = gpio_to_chip(gpio);
-> +	c = gpio_to_pxachip(gpio);
->  
->  	if (type == IRQ_TYPE_PROBE) {
->  		/* Don't mess with enabled GPIOs using preconfigured edges or
-> @@ -230,7 +230,7 @@ static void pxa_gpio_demux_handler(unsigned int irq, struct irq_desc *desc)
->  static void pxa_ack_muxed_gpio(struct irq_data *d)
+>  	mutex_lock(&chip->lock);
+> @@ -49,7 +49,7 @@ static int gen_74x164_get_value(struct gpio_chip *gc, unsigned offset)
+>  static void gen_74x164_set_value(struct gpio_chip *gc,
+>  		unsigned offset, int val)
 >  {
->  	int gpio = irq_to_gpio(d->irq);
-> -	struct pxa_gpio_chip *c = gpio_to_chip(gpio);
-> +	struct pxa_gpio_chip *c = gpio_to_pxachip(gpio);
+> -	struct gen_74x164_chip *chip = gpio_to_chip(gc);
+> +	struct gen_74x164_chip *chip = gpio_to_74x164_chip(gc);
 >  
->  	__raw_writel(GPIO_bit(gpio), c->regbase + GEDR_OFFSET);
->  }
-> @@ -238,7 +238,7 @@ static void pxa_ack_muxed_gpio(struct irq_data *d)
->  static void pxa_mask_muxed_gpio(struct irq_data *d)
->  {
->  	int gpio = irq_to_gpio(d->irq);
-> -	struct pxa_gpio_chip *c = gpio_to_chip(gpio);
-> +	struct pxa_gpio_chip *c = gpio_to_pxachip(gpio);
->  	uint32_t grer, gfer;
->  
->  	c->irq_mask &= ~GPIO_bit(gpio);
-> @@ -252,7 +252,7 @@ static void pxa_mask_muxed_gpio(struct irq_data *d)
->  static void pxa_unmask_muxed_gpio(struct irq_data *d)
->  {
->  	int gpio = irq_to_gpio(d->irq);
-> -	struct pxa_gpio_chip *c = gpio_to_chip(gpio);
-> +	struct pxa_gpio_chip *c = gpio_to_pxachip(gpio);
->  
->  	c->irq_mask |= GPIO_bit(gpio);
->  	update_edge_detect(c);
+>  	mutex_lock(&chip->lock);
+>  	if (val)
 > -- 
 > 1.7.3.2
 > 
