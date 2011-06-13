@@ -1,58 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab1FMVAi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 17:00:38 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:57346 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341Ab1FMVAh (ORCPT
+	id S1753469Ab1FMVCo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 17:02:44 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36278 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752665Ab1FMVCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 17:00:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=W5Od/wd6OpqJLvztadhnf157xra5Gt99pPcgaxMJofbbbPoEt88oqS+7sKvZPeR3N/
-         3augsa7Xs0B69sOmBKtA==
-MIME-Version: 1.0
-In-Reply-To: <BANLkTi=RYq0Dd210VC+NeTXWWuFbz7cxeg@mail.gmail.com>
-References: <alpine.LSU.2.00.1106121842250.31463@sister.anvils>
-	<alpine.DEB.2.00.1106131258300.3108@router.home>
-	<1307990048.11288.3.camel@jaguar>
-	<alpine.DEB.2.00.1106131428560.5601@router.home>
-	<BANLkTi=RYq0Dd210VC+NeTXWWuFbz7cxeg@mail.gmail.com>
-Date: Mon, 13 Jun 2011 14:00:31 -0700
-Message-ID: <BANLkTik-KGtuoVFKvy_rk7voBRAxSsR9FRg0fhb0k3NCSg-fWQ@mail.gmail.com>
-Subject: Re: [PATCH] slub: fix kernel BUG at mm/slub.c:1950!
-From: Hugh Dickins <hughd@google.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	Mon, 13 Jun 2011 17:02:43 -0400
+Date: Mon, 13 Jun 2011 14:02:10 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Eric B Munson <emunson@mgebm.net>
+Cc: arnd@arndb.de, paulmck@linux.vnet.ibm.com, mingo@elte.hu,
+        randy.dunlap@oracle.com, josh@joshtriplett.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mgorman@suse.de, linux-mm@kvack.org, dave@linux.vnet.ibm.com
+Subject: Re: [PATCH V2] Add debugging boundary check to pfn_to_page
+Message-Id: <20110613140210.e5863730.akpm@linux-foundation.org>
+In-Reply-To: <1307973399-7784-1-git-send-email-emunson@mgebm.net>
+References: <1307973399-7784-1-git-send-email-emunson@mgebm.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 1:34 PM, Pekka Enberg <penberg@kernel.org> wrote:
-> On Mon, Jun 13, 2011 at 10:29 PM, Christoph Lameter <cl@linux.com> wrote:
->> On Mon, 13 Jun 2011, Pekka Enberg wrote:
->>
->>> > Hmmm.. The allocpercpu in alloc_kmem_cache_cpus should take care of the
->>> > alignment. Uhh.. I see that a patch that removes the #ifdef CMPXCHG_LOCAL
->>> > was not applied? Pekka?
->>>
->>> This patch?
->>>
->>> http://git.kernel.org/?p=linux/kernel/git/penberg/slab-2.6.git;a=commitdiff;h=d4d84fef6d0366b585b7de13527a0faeca84d9ce
->>>
->>> It's queued and will be sent to Linus soon.
->>
->> Ok it will also fix Hugh's problem then.
->
-> It's in Linus' tree now. Hugh, can you please confirm it fixes your machine too?
+On Mon, 13 Jun 2011 09:56:39 -0400
+Eric B Munson <emunson@mgebm.net> wrote:
 
-I expect it to, thanks: I'll confirm tonight.
+> Bugzilla 36192 showed a problem where pages were being accessed outside of
+> a node boundary.  It would be helpful in diagnosing this kind of problem to
+> have pfn_to_page complain when a page is accessed outside of the node boundary.
+> This patch adds a new debug config option which adds a WARN_ON in pfn_to_page
+> that will complain when pages are accessed outside of the node boundary.
+> 
+> Signed-of-by: Eric B Munson <emunson@mgebm.net>
+> ---
+> Changes from V1:
+>  minimize code duplication with a macro that will do the checking when
+> configured
+> 
+>  include/asm-generic/memory_model.h |   25 ++++++++++++++++++++-----
+>  lib/Kconfig.debug                  |    9 +++++++++
+>  2 files changed, 29 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/asm-generic/memory_model.h b/include/asm-generic/memory_model.h
+> index fb2d63f..7aa83ce 100644
+> --- a/include/asm-generic/memory_model.h
+> +++ b/include/asm-generic/memory_model.h
+> @@ -22,6 +22,16 @@
+>  
+>  #endif /* CONFIG_DISCONTIGMEM */
+>  
+> +#ifdef CONFIG_MEMORY_MODEL
 
-Hugh
+This should have been CONFIG_DEBUG_MEMORY_MODEL.  Better testing, please!
+
+> +/*
+> + * The flags for a page will only be zero if this page is being accessed
+> + * outside of node boundaries.
+
+mm..  Can this comment be improved?  If some poor sucker gets this
+warning then he will end up looking at this comment wondering what he
+needs to do to fix the bug.  Does this comment provide him with as much
+help as we possibly can?
+
+> + */
+> +#define check_page(__page) WARN_ON(__page->flags == 0)
+
+__page should be parenthesized.  Or, better, check_page() should be
+implemented in C if possible.
+
+"check_page" is a rather vague-sounding name.  Something more specific
+would be better.  Check *what*?
+
+> +#else
+> +#define check_page(__page) do{}while(0)
+
+Please use checkpatch.  Always.
+
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -777,6 +777,15 @@ config DEBUG_MEMORY_INIT
+>  
+>  	  If unsure, say Y
+>  
+> +config DEBUG_MEMORY_MODEL
+> +	bool "Debug memory model" if SPARSEMEM || DISCONTIGMEM
+> +	help
+> +	  Enable this to check that page accesses are done within node
+> +	  boundaries.  The check will warn each time a page is requested
+> +	  outside node boundaries.
+> +
+> +	  If unsure, say N
+> +
+
+Spose, so, if you think it's useful.  Mabybe this should depend on
+CONFIG_DEBUG_VM, dunno.
+
+Please consider updating Documentation/SubmitChecklist, section 12.
