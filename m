@@ -1,98 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991Ab1FMKl6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 06:41:58 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:46055 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750826Ab1FMKlz convert rfc822-to-8bit (ORCPT
+	id S1752041Ab1FMKop (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 06:44:45 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:32901 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703Ab1FMKoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 06:41:55 -0400
-Date: Mon, 13 Jun 2011 11:41:45 +0100
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Colin Cross <ccross@android.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/3] ARM: gic: Use cpu pm notifiers to save gic state
-Message-ID: <20110613104145.GA8230@e102568-lin.cambridge.arm.com>
-References: <1307925825-28566-1-git-send-email-ccross@android.com>
- <1307925825-28566-3-git-send-email-ccross@android.com>
+	Mon, 13 Jun 2011 06:44:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=qHSKWdXaWF5JCALYF84bJXOJqUrBKoE/uvtpW8hJ3EhhExX2SXEFEE1cT4i0+65Mxf
+         Gi5SR22aM6IVTrI0XAJLDsTpUOo+RiyhUWvEurEy4pw0fwp54o3AmVbzlp9+tnAj868h
+         5LH9JQ2xa2zO18y5zma7CiV7ooSf1XggF92g0=
+Date: Mon, 13 Jun 2011 12:44:40 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
+        avillaci@ceibo.fiec.espol.edu.ec
+Subject: [PATCH] block: use the passed in @bdev when claiming if partno is
+ zero
+Message-ID: <20110613104440.GB16021@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <1307925825-28566-3-git-send-email-ccross@android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 13 Jun 2011 10:42:26.0028 (UTC) FILETIME=[95C31AC0:01CC29B6]
-X-MC-Unique: 111061311415102801
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Colin,
+6b4517a791 (block: implement bd_claiming and claiming block)
+introduced claiming block to support O_EXCL blkdev opens properly.
 
-On Mon, Jun 13, 2011 at 01:43:44AM +0100, Colin Cross wrote:
-> When the cpu is powered down in a low power mode, the gic cpu
-> interface may be reset, and when the cpu complex is powered
-> down, the gic distributor may also be reset.
-> 
-> This patch uses CPU_PM_ENTER and CPU_PM_EXIT notifiers to save
-> and restore the gic cpu interface registers, and the
-> CPU_COMPLEX_PM_ENTER and CPU_COMPLEX_PM_EXIT notifiers to save
-> and restore the gic distributor registers.
-> 
-> Signed-off-by: Colin Cross <ccross@android.com>
-> ---
->  arch/arm/common/gic.c |  212 +++++++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 212 insertions(+), 0 deletions(-)
-> 
+bd_start_claiming() looks up the part 0 bdev and starts claiming
+block.  The function assumed that there is only one part 0 bdev and
+always used bdget_disk(disk, 0) to look it up; unfortunately, this
+isn't true for some drivers (floppy) which use multiple block devices
+to denote different operating parameters for the same physical device.
+There can be multiple part 0 bdev's for the same device number.
 
-[...]
+This incorrect assumption caused the wrong bdev to be used during
+claiming leading to unbalanced bd_holders as reported in the following
+bug.
 
-> +
-> +static void __init gic_cpu_pm_init(struct gic_chip_data *gic)
-> +{
-> +	gic->saved_ppi_enable = __alloc_percpu(DIV_ROUND_UP(32, 32) * 4,
-> +		sizeof(u32));
-> +	BUG_ON(!gic->saved_ppi_enable);
-> +
-> +	gic->saved_ppi_conf = __alloc_percpu(DIV_ROUND_UP(32, 16) * 4,
-> +		sizeof(u32));
-> +	BUG_ON(!gic->saved_ppi_conf);
-> +
-> +	gic->saved_ppi_pri = __alloc_percpu(DIV_ROUND_UP(32, 4) * 4,
-> +		sizeof(u32));
-> +	BUG_ON(!gic->saved_ppi_pri);
-> +
-> +	cpu_pm_register_notifier(&gic_notifier_block);
-> +}
-> +#else
-> +static void __init gic_cpu_pm_init(struct gic_chip_data *gic)
-> +{
-> +}
-> +#endif
-> +
->  void __init gic_init(unsigned int gic_nr, unsigned int irq_start,
->  	void __iomem *dist_base, void __iomem *cpu_base)
->  {
-> @@ -367,6 +578,7 @@ void __init gic_init(unsigned int gic_nr, unsigned int irq_start,
->  
->  	gic_dist_init(gic, irq_start);
->  	gic_cpu_init(gic);
-> +	gic_cpu_pm_init(gic);
->  }
->  
-> 
+  https://bugzilla.kernel.org/show_bug.cgi?id=28522
 
-I have been using this patchset for a while and it works perfectly fine.
-I reckon one bit we could improve is allowing to register a subsystem depending
-on a flag set @init, for now it is a save "all default registered subsystems or nothing" solution on cpu_pm_enter(), maybe we could add this level of
-configurability as an improvement (GIC being a good example, see OMAP).
+This patch updates bd_start_claiming() such that it uses the bdev
+specified as argument if its partno is zero.
 
-Lorenzo
+Note that this means that different bdev's can be used for the same
+device and O_EXCL check can be effectively bypassed.  It has always
+been broken that way and floppy is fortunately on its way out.  Leave
+that breakage alone.
 
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Alex Villacis Lasso <avillaci@ceibo.fiec.espol.edu.ec>
+Tested-by: Alex Villacis Lasso <avillaci@ceibo.fiec.espol.edu.ec>
+Cc: stable@kernel.org	# >= v2.6.36
+---
+ fs/block_dev.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 1a2421f..610e8e0 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -762,7 +762,19 @@ static struct block_device *bd_start_claiming(struct block_device *bdev,
+ 	if (!disk)
+ 		return ERR_PTR(-ENXIO);
+ 
+-	whole = bdget_disk(disk, 0);
++	/*
++	 * Normally, @bdev should equal what's returned from bdget_disk()
++	 * if partno is 0; however, some drivers (floppy) use multiple
++	 * bdev's for the same physical device and @bdev may be one of the
++	 * aliases.  Keep @bdev if partno is 0.  This means claimer
++	 * tracking is broken for those devices but it has always been that
++	 * way.
++	 */
++	if (partno)
++		whole = bdget_disk(disk, 0);
++	else
++		whole = bdgrab(bdev);
++
+ 	module_put(disk->fops->owner);
+ 	put_disk(disk);
+ 	if (!whole)
