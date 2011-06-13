@@ -1,59 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab1FMNdb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 09:33:31 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:65371 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752553Ab1FMNd3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 09:33:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=c4/OQgzZpefh1lf0NsCERJZmFmJbJBz6yi1BDZJGtyLpFs0zyxFq6XxcddVE1csh5P
-         4JmM9Euvi4s3mKd0XB9XdkyiztaaOsk/v6Yya0HZhejAbo0dxm4m1tmcDs9H1QB2W3Fz
-         5uQ8YCjXaSCSOThEIg3hAp3mCX4AJQ4Yh4k9c=
+	id S1752875Ab1FMNf2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 09:35:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15355 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752911Ab1FMNfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 09:35:22 -0400
+Date: Mon, 13 Jun 2011 16:35:13 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Krishna Kumar2 <krkumar2@in.ibm.com>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Carsten Otte <cotte@de.ibm.com>, habanero@linux.vnet.ibm.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, kvm@vger.kernel.org,
+        lguest@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux390@de.ibm.com,
+        netdev@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, steved@us.ibm.com,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>,
+        virtualization@lists.linux-foundation.org, Shirley Ma <xma@us.ibm.com>
+Subject: Re: [PATCHv2 RFC 0/4] virtio and vhost-net capacity handling
+Message-ID: <20110613133513.GA29884@redhat.com>
+References: <cover.1307029008.git.mst@redhat.com>
+ <20110607160830.GB17581@redhat.com>
+ <OFE36F9C2B.43D9DB04-ON652578AE.0048E1AB-652578AE.004A1462@in.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20110613115116.7843.49566.stgit@localhost6>
-References: <20110613115116.7843.49566.stgit@localhost6>
-Date: Mon, 13 Jun 2011 14:33:28 +0100
-Message-ID: <BANLkTikWTHuRh0kqy+sr3n1UCtdVpdui=w@mail.gmail.com>
-Subject: Re: [PATCH] efifb: fix device unregister on error path
-From: Maxin B John <maxin.john@gmail.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Peter Jones <pjones@redhat.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <OFE36F9C2B.43D9DB04-ON652578AE.0048E1AB-652578AE.004A1462@in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Jun 13, 2011 at 07:02:27PM +0530, Krishna Kumar2 wrote:
+> "Michael S. Tsirkin" <mst@redhat.com> wrote on 06/07/2011 09:38:30 PM:
+> 
+> > > This is on top of the patches applied by Rusty.
+> > >
+> > > Warning: untested. Posting now to give people chance to
+> > > comment on the API.
+> >
+> > OK, this seems to have survived some testing so far,
+> > after I dropped patch 4 and fixed build for patch 3
+> > (build fixup patch sent in reply to the original).
+> >
+> > I'll be mostly offline until Sunday, would appreciate
+> > testing reports.
+> 
+> Hi Michael,
+> 
+> I ran the latest patches with 1K I/O (guest->local host) and
+> the results are (60 sec run for each test case):
 
-On Mon, Jun 13, 2011 at 12:51 PM, Konstantin Khlebnikov
-<khlebnikov@openvz.org> wrote:
-> Argument of platform_device_unregister() should be efifb_device, not efifb_driver.
-> bug in v3.0-rc1-57-gbb8b266
->
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> ---
->  drivers/video/efifb.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
-> index 69c49df..784139a 100644
-> --- a/drivers/video/efifb.c
-> +++ b/drivers/video/efifb.c
-> @@ -541,7 +541,7 @@ static int __init efifb_init(void)
->         */
->        ret = platform_driver_probe(&efifb_driver, efifb_probe);
->        if (ret) {
-> -               platform_device_unregister(&efifb_driver);
-> +               platform_device_unregister(&efifb_device);
->                return ret;
->        }
+Hi!
+Did you apply this one:
+[PATCHv2 RFC 4/4] Revert "virtio: make add_buf return capacity remaining"
+?
 
-The same issue is present in this thread:
+It turns out that that patch has a bug and should be reverted,
+only patches 1-3 should be applied.
 
-https://lkml.org/lkml/2011/6/12/34
+Could you confirm please?
+
+
+> ___________________/
+> #sessions   BW%       SD%
+> ______________________________
+> 1           -25.6     47.0
+> 2           -29.3     22.9
+> 4              .8     1.6
+> 8             1.6     0
+> 16          -1.6      4.1
+> 32          -5.3      2.1
+> 48           11.3    -7.8
+> 64          -2.8      .7
+> 96          -6.2      .6
+> 128         -10.6     12.7
+> ______________________________
+> BW: -4.8     SD: 5.4
+> 
+> I tested it again to see if the regression is fleeting (since
+> the numbers vary quite a bit for 1K I/O even between guest->
+> local host), but:
+> 
+> ______________________________
+> #sessions  BW%     SD%
+> ______________________________
+> 1          14.0    -17.3
+> 2          19.9    -11.1
+> 4          7.9     -15.3
+> 8          9.6     -13.1
+> 16         1.2     -7.3
+> 32        -.6      -13.5
+> 48        -28.7     10.0
+> 64        -5.7     -.7
+> 96        -9.4     -8.1
+> 128       -9.4      .7
+> ______________________________
+> BW: -3.7     SD: -2.0
+> 
+> 
+> With 16K, there was an improvement in SD, but
+> higher sessions seem to slightly degrade BW/SD:
+> 
+> ______________________________
+> #sessions  BW%      SD%
+> ______________________________
+> 1          30.9    -25.0
+> 2          16.5    -19.4
+> 4         -1.3      7.9
+> 8          1.4      6.2
+> 16         3.9     -5.4
+> 32         0        4.3
+> 48        -.5        .1
+> 64         32.1    -1.5
+> 96        -2.1      23.2
+> 128       -7.4      3.8
+> ______________________________
+> BW: 5.0          SD: 7.5
+> 
+> 
+> Thanks,
+> 
+> - KK
