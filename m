@@ -1,204 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838Ab1FMBmV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 21:42:21 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:57355 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338Ab1FMBmT (ORCPT
+	id S1754857Ab1FMBxL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 21:53:11 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:62239 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754656Ab1FMBxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 21:42:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=RQ3XRiOsqMmlAwgpSmDsaYWu3EHF1+04jX5rseHXTWKD3kC8464mIcvVbZfyYQuhhX
-         wYHV9BYKqtji+t0N/aCA==
-Date: Sun, 12 Jun 2011 18:41:58 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ying Han <yinghan@google.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] [BUGFIX] update mm->owner even if no next owner.
-In-Reply-To: <20110611175136.GA31154@cmpxchg.org>
-Message-ID: <alpine.LSU.2.00.1106121828220.31463@sister.anvils>
-References: <BANLkTikCfWhoLNK__ringzy7KjKY5ZEtNb3QTuX1jJ53wNNysA@mail.gmail.com> <BANLkTikF7=qfXAmrNzyMSmWm7Neh6yMAB8EbBp7oLcfQmrbDjA@mail.gmail.com> <20110610091355.2ce38798.kamezawa.hiroyu@jp.fujitsu.com> <alpine.LSU.2.00.1106091812030.4904@sister.anvils>
- <20110610113311.409bb423.kamezawa.hiroyu@jp.fujitsu.com> <20110610121949.622e4629.kamezawa.hiroyu@jp.fujitsu.com> <20110610125551.385ea7ed.kamezawa.hiroyu@jp.fujitsu.com> <20110610133021.2eaaf0da.kamezawa.hiroyu@jp.fujitsu.com> <alpine.LSU.2.00.1106101425400.28334@sister.anvils>
- <20110610235442.GA21413@cmpxchg.org> <20110611175136.GA31154@cmpxchg.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-140283987-1307929327=:31463"
-X-System-Of-Record: true
+	Sun, 12 Jun 2011 21:53:07 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Btrfs updates
+In-reply-to: <m262oar1a9.fsf@firstfloor.org>
+References: <1307879298-sup-3080@shiny> <m262oar1a9.fsf@firstfloor.org>
+Date: Sun, 12 Jun 2011 21:52:21 -0400
+Message-Id: <1307929838-sup-4118@shiny>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090205.4DF56D60.0043:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Excerpts from Andi Kleen's message of 2011-06-12 21:02:54 -0400:
+> Chris Mason <chris.mason@oracle.com> writes:
+> 
+> > Hi everyone,
+> >
+> > The for-linus branch of the btrfs unstable tree:
+> >
+> > git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git for-linus
+> 
+> >
+> > Has our current queue of fixes.  Josef's is the biggest pile, mostly in
+> > the allocator.  Josef and I both managed to merge his patch to avoid
+> > mapping the extent buffer if skip_locking was set, git merge is just a
+> > little too easy sometimes (I double checked the resulting code).
+> 
+> The new in 3.0 btrfs warnings on every build are still there:
+> 
+> fs/btrfs/sysfs.c:76: warning: ‘btrfs_root_attrs’ defined but not used
+> fs/btrfs/sysfs.c:97: warning: ‘btrfs_super_attrs’ defined but not used
+> fs/btrfs/sysfs.c:153: warning: ‘btrfs_super_release’ defined but not used   
+> fs/btrfs/sysfs.c:160: warning: ‘btrfs_root_release’ defined but not used
+> 
+> These are not even used inside any ifdef. It's unclear to me: were
+> these supposed to be used or removed?
+> 
+> Probably better to remove since they seem to be untested, unless
+> it was a merge error?
 
---8323584-140283987-1307929327=:31463
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Right, I've been trying to decide how much of the sysfs interface to rip
+out.  We're not using it the way I had planned to, and Kay's proposed
+udev changes are better than my original plans for sysfs.
 
-On Sat, 11 Jun 2011, Johannes Weiner wrote:
-> On Sat, Jun 11, 2011 at 01:54:42AM +0200, Johannes Weiner wrote:
-> > On Fri, Jun 10, 2011 at 02:49:35PM -0700, Hugh Dickins wrote:
-> > > On Fri, 10 Jun 2011, KAMEZAWA Hiroyuki wrote:
-> > > >=20
-> > > > I think this can be a fix.=20
-> > >=20
-> > > Sorry, I think not: I've not digested your rationale,
-> > > but three things stand out:
-> > >=20
-> > > 1. Why has this only just started happening?  I may not have run that
-> > >    test on 3.0-rc1, but surely I ran it for hours with 2.6.39;
-> > >    maybe not with khugepaged, but certainly with ksmd.
-> > >=20
-> > > 2. Your hunk below:
-> > > > -=09if (!mm_need_new_owner(mm, p))
-> > > > +=09if (!mm_need_new_owner(mm, p)) {
-> > > > +=09=09rcu_assign_pointer(mm->owner, NULL);
-> > >    is now setting mm->owner to NULL at times when we were sure it did=
- not
-> > >    need updating before (task is not the owner): you're damaging mm->=
-owner.
->=20
-> This is a problem with the patch, but I think Kame's analysis and
-> approach to fix it are still correct.
+One way or another I'll kill these off in the next rc.
 
-Yes, I was looking at his patch, when I should have spent more time
-reading his comments: you're right, the analysis is fine, and I too
-dislike stale pointers.
-
->=20
-> mm_update_next_owner() does not set mm->owner to NULL when the last
-> possible owner goes away, but leaves it pointing to a possibly stale
-> task struct.
->=20
-> Noone cared before khugepaged, and up to Andrea's patch khugepaged
-> prevented the last possible owner from exiting until the call into the
-> memory controller had finished.
->=20
-> Here is a revised version of Kame's fix.
-
-It seems to be strangely difficult to get right!
-I have no idea what your
-=09if (atomic_read(&mm->mm_users <=3D 1)) {
-actually ends up doing, I'm surprised it only gives compiler warnings
-rather than an error.
-
-The version I've signed off and am actually testing is below;
-but I've not had enough time to spare on the machine which reproduced
-it before, and another I thought I'd delegate it to last night,
-failed to reproduce without the patch.  Try again tonight.
-
-Thought I'd better respond despite inadequate testing, given the flaw
-in the posted patch.  Hope the one below is flawless.
-
-Hugh
-
->=20
-> ---
-
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH] [BUGFIX] mm: clear mm->owner when last possible owner leav=
-es
-
-The following crash was reported:
-
-> Call Trace:
-> =A0[<ffffffff81139792>] mem_cgroup_from_task+0x15/0x17
-> =A0[<ffffffff8113a75a>] __mem_cgroup_try_charge+0x148/0x4b4
-> =A0[<ffffffff810493f3>] ? need_resched+0x23/0x2d
-> =A0[<ffffffff814cbf43>] ? preempt_schedule+0x46/0x4f
-> =A0[<ffffffff8113afe8>] mem_cgroup_charge_common+0x9a/0xce
-> =A0[<ffffffff8113b6d1>] mem_cgroup_newpage_charge+0x5d/0x5f
-> =A0[<ffffffff81134024>] khugepaged+0x5da/0xfaf
-> =A0[<ffffffff81078ea0>] ? __init_waitqueue_head+0x4b/0x4b
-> =A0[<ffffffff81133a4a>] ? add_mm_counter.constprop.5+0x13/0x13
-> =A0[<ffffffff81078625>] kthread+0xa8/0xb0
-> =A0[<ffffffff814d13e8>] ? sub_preempt_count+0xa1/0xb4
-> =A0[<ffffffff814d5664>] kernel_thread_helper+0x4/0x10
-> =A0[<ffffffff814ce858>] ? retint_restore_args+0x13/0x13
-> =A0[<ffffffff8107857d>] ? __init_kthread_worker+0x5a/0x5a
-
-What happens is that khugepaged tries to charge a huge page against an
-mm whose last possible owner has already exited, and the memory
-controller crashes when the stale mm->owner is used to look up the
-cgroup to charge.
-
-mm->owner has never been set to NULL with the last owner going away,
-but nobody cared until khugepaged came along.
-
-Even then it wasn't a problem because the final mmput() on an mm was
-forced to acquire and release mmap_sem in write-mode, preventing an
-exiting owner to go away while the mmap_sem was held, and until
-"692e0b3 mm: thp: optimize memcg charge in khugepaged", the memory
-cgroup charge was protected by mmap_sem in read-mode.
-
-Instead of going back to relying on the mmap_sem to enforce lifetime
-of a task, this patch ensures that mm->owner is properly set to NULL
-when the last possible owner is exiting, which the memory controller
-can handle just fine.
-
-Reported-by: Hugh Dickins <hughd@google.com>
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
-
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 20a4064..ef8ff79 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -563,27 +563,27 @@ void exit_files(struct task_struct *tsk)
- /*
-  * Task p is exiting and it owned mm, lets find a new owner for it
-  */
--static inline int
--mm_need_new_owner(struct mm_struct *mm, struct task_struct *p)
--{
--=09/*
--=09 * If there are other users of the mm and the owner (us) is exiting
--=09 * we need to find a new owner to take on the responsibility.
--=09 */
--=09if (atomic_read(&mm->mm_users) <=3D 1)
--=09=09return 0;
--=09if (mm->owner !=3D p)
--=09=09return 0;
--=09return 1;
--}
--
- void mm_update_next_owner(struct mm_struct *mm)
- {
- =09struct task_struct *c, *g, *p =3D current;
-=20
- retry:
--=09if (!mm_need_new_owner(mm, p))
-+=09/*
-+=09 * If the exiting or execing task is not the owner, it's
-+=09 * someone else's problem.
-+=09 */
-+=09if (mm->owner !=3D p)
-+=09=09return;
-+
-+=09/*
-+=09 * The current owner is exiting/execing and there are no other
-+=09 * candidates.  Do not leave the mm pointing to a possibly
-+=09 * freed task structure.
-+=09 */
-+=09if (atomic_read(&mm->mm_users) <=3D 1) {
-+=09=09mm->owner =3D NULL;
- =09=09return;
-+=09}
-=20
- =09read_lock(&tasklist_lock);
- =09/*
---8323584-140283987-1307929327=:31463--
+-chris
