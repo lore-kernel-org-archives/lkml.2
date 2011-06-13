@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab1FMHve (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 03:51:34 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48849 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753459Ab1FMHvb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 03:51:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ibH7KiOhHq9dw9sHNGallX5sC2pceZRyTB+3UvZwp2xWTSoMiYIGLnFUoXSJPpaKdt
-         KElzZe/rpwc+9EPVmV4j8yCYRb5rBbkKtZzf2mD045e3gbyltRUYjFNDIiE6RqWRI1y0
-         g0lSScKbYeVf8wFA+pTN7a2TTTFJVaty8UfBo=
+	id S1754018Ab1FMIAM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 04:00:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7448 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753085Ab1FMIAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 04:00:10 -0400
+Message-ID: <4DF5C36A.1040707@redhat.com>
+Date: Mon, 13 Jun 2011 10:59:38 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <4DF57C29.4070601@mit.edu>
-References: <1307875953.1859.6.camel@Tux>
-	<4DF57C29.4070601@mit.edu>
-Date: Mon, 13 Jun 2011 09:51:30 +0200
-Message-ID: <BANLkTinkxK4th8+KLt5YBYf42009Ced9tA@mail.gmail.com>
-Subject: Re: [PATCH] efifb: Fix call to wrong unregister function
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-To: Andy Lutomirski <luto@mit.edu>
-Cc: "wanlong.gao" <wanlong.gao@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, Peter Jones <pjones@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Tony Luck <tony.luck@intel.com>
+CC: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: Re: [PATCH 08/10] NOTIFIER: Take over TIF_MCE_NOTIFY and implement
+ task return notifier
+References: <4df13a522720782e51@agluck-desktop.sc.intel.com>	<4df13cea27302b7ccf@agluck-desktop.sc.intel.com>	<20110612223840.GA23218@aftab> <BANLkTi=-A5PYj8zpjGB4Xb-_VNq0qr+CGQ@mail.gmail.com>
+In-Reply-To: <BANLkTi=-A5PYj8zpjGB4Xb-_VNq0qr+CGQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
-
-2011/6/13 Andy Lutomirski <luto@mit.edu>:
-> On 06/12/2011 06:52 AM, wanlong.gao wrote:
->>
->> <snip>
->>
->> Hi Maarten:
->> It registered efifb_device but try to unregistered efifb_driver,
->> so I think you should fix it like this?
->>
->> Signed-off-by: Wanlong Gao<wanlong.gao@gmail.com>
->> ---
->>  drivers/video/efifb.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
->> index 69c49df..784139a 100644
->> --- a/drivers/video/efifb.c
->> +++ b/drivers/video/efifb.c
->> @@ -541,7 +541,7 @@ static int __init efifb_init(void)
->>         */
->>        ret = platform_driver_probe(&efifb_driver, efifb_probe);
->>        if (ret) {
->> -               platform_device_unregister(&efifb_driver);
->> +               platform_device_unregister(&efifb_device);
->>                return ret;
->>        }
->>
+On 06/13/2011 08:31 AM, Tony Luck wrote:
+> On Sun, Jun 12, 2011 at 3:38 PM, Borislav Petkov<bp@amd64.org>  wrote:
+> >  On Thu, Jun 09, 2011 at 05:36:42PM -0400, Luck, Tony wrote:
+> >>  From: Tony Luck<tony.luck@intel.com>
+> >>
+> >>  Existing user return notifier mechanism is designed to catch a specific
+> >>  cpu just as it returns to run any task in user mode.  We also need a
+> >>  mechanism to catch a specific task.
+> >
+> >  Why do we need that? I mean, in the remaining patches we end up either
+> >  running memory_failure() or sending signals to a task. Can't we do it
+> >  all in the user return notifier and not have a different notifier for
+> >  each policy?
 >
-> Acked-by: Andy Lutomirski <luto@mit.edu>
->
-> That's my bug.  Sorry.  I'm not sure why it compiled, though.
-It compiled, but threw a warning. :)
+> Unless I'm mis-reading the user-return-notifier code, it is possible that
+> we'll context switch before we get to the notifier. At that point the
+> user-return-notifier TIF bit is passed on from our task to the newly
+> run-able task. But our task is still viable, so another cpu could grab
+> it and start running it ... then we have a race ... will the new task
+> that inherited the notifier unmap the page fast enough, or will there
+> be a loud BANG as the original task runs right into the machine
+> check again.
 
-~Maarten
+Right.  user-return-notifiers are really a per-cpu notifier, unrelated 
+to any specific task.  The use of per-task flags was an optimization.
+
+If running into the MCE again is really bad, then you need something 
+more, since other threads (or other processes) could run into the same 
+page as well.  If not, do we care?  Let it hit the MCE again, as long as 
+we'll catch it eventually.
+
+-- 
+error compiling committee.c: too many arguments to function
+
