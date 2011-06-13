@@ -1,105 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab1FMX45 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 19:56:57 -0400
-Received: from cantor.suse.de ([195.135.220.2]:53098 "EHLO mx1.suse.de"
+	id S1755374Ab1FMXwZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 19:52:25 -0400
+Received: from yumi.tdiedrich.de ([85.10.210.183]:52552 "EHLO mx.tdiedrich.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755169Ab1FMX44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 19:56:56 -0400
-Date: Mon, 13 Jun 2011 16:50:00 -0700
-From: Greg KH <gregkh@suse.de>
-To: David Herrmann <dh.herrmann@googlemail.com>
-Cc: linux-kernel@vger.kernel.org, mjg@redhat.com
-Subject: Re: samsung-laptop backlight control not working
-Message-ID: <20110613235000.GA14194@suse.de>
-References: <BANLkTikwjL-3m110CcRs+-KLdZpH0rOTsQ@mail.gmail.com>
- <20110519182753.GA23865@suse.de>
- <BANLkTi=5HHCVUANbqJWQe7wZKVPBqM6RrQ@mail.gmail.com>
- <BANLkTi=bWpbRkt1tie44+MoXWfPdG_zZ+w@mail.gmail.com>
+	id S1753135Ab1FMXwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 19:52:24 -0400
+Date: Tue, 14 Jun 2011 01:52:21 +0200
+From: Tobias Diedrich <ranma+xen@tdiedrich.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: xen-users@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: 3.0.0-rc2: Xen: powernow-k8: Kernel panic - not syncing:
+ Attempted to kill init!
+Message-ID: <20110613235221.GA7417@yumi.tdiedrich.de>
+Mail-Followup-To: Tobias Diedrich <ranma+xen@tdiedrich.de>,
+	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	xen-users@lists.xensource.com, linux-kernel@vger.kernel.org
+References: <20110613202622.GC20616@yumi.tdiedrich.de>
+ <20110613215123.GA19117@dumpdata.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=bWpbRkt1tie44+MoXWfPdG_zZ+w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110613215123.GA19117@dumpdata.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 01, 2011 at 04:50:17PM +0200, David Herrmann wrote:
-> Hi Greg
+Konrad Rzeszutek Wilk wrote:
+> > [    5.523199] rtc_cmos 00:05: setting system clock to 2011-06-13 20:20:00 UTC (1307996400)
+> > [    5.523400] powernow-k8: Found 1 AMD Athlon(tm) 64 Processor 3700+ (1 cpu cores) (version 2.20.00)
+> > [    5.530956] powernow-k8: fid 0x2 (1000 MHz), vid 0x12
+> > [    5.531072] powernow-k8: fid 0xa (1800 MHz), vid 0xa
+> > [    5.531187] powernow-k8: fid 0xc (2000 MHz), vid 0x8
+> > [    5.531301] powernow-k8: fid 0xe (2200 MHz), vid 0x8
+> > [    5.531460] Marking TSC unstable due to cpufreq changes
+> > [    5.531680] powernow-k8: fid trans failed, fid 0x2, curr 0x0
+> > [    5.531802] BUG: unable to handle kernel paging request at ffff880807e07b78
+> > [    5.531982] IP: [<ffffffff81479163>] cpufreq_stats_update+0x46/0x5b
 > 
-> On Thu, May 19, 2011 at 8:53 PM, David Herrmann
-> <dh.herrmann@googlemail.com> wrote:
-> > On Thu, May 19, 2011 at 8:27 PM, Greg KH <gregkh@suse.de> wrote:
-> >> On Thu, May 19, 2011 at 08:18:16PM +0200, David Herrmann wrote:
-> >>> Hi
-> >>>
-> >>> I tried the new samsung-laptop driver with samsung backlight support.
-> >>
-> >> What kernel are you trying?  We have some recent patches to the driver
-> >> to try to resolve some of these issues on your laptop.
-> >
-> > I use linus' tree. 2.6.39
-> >
-> >>> It is detected as:
-> >>> [109282.931433] samsung_laptop: found laptop model 'N150P/N210P/N220P'
-> >>>
-> >>> However, backlight support is kind of weird:
-> >>> "echo 1 >/sys/class/backlight/samsung/brightness"
-> >>> does not set brightness to 1 but instead reduces brightness for 1.
-> >>> That is, if my current brightness setting is 8, I need to call "echo 1
-> >>> >..." 7 times to get brightness value 1.
-> >>>
-> >>> "cat /sys/class/backlight...."
-> >>> returns 1 after the first try, though.
-> >>>
-> >>> "echo 3 >..."
-> >>> reduces brightness also for 1 but stops at brightness level 3 if I
-> >>> repeat the command.
-> >>>
-> >>> dmesg shows the following for every "echo" I call:
-> >>> [110690.073783] ACPI: Failed to switch the brightness
-> >>>
-> >>> Furthermore "echo 0 >..." doesn't disable backlight but instead
-> >>> behaves like a brightness setting below 1.
-> >>
-> >> Yeah, don't echo 0 there, that doesn't work to well.  I have some
-> >> patches here that you can try if you want, just let me know.
-> >
-> > That would be great! I have really no idea about acpi so I can't fix
-> > it myself. If you could give me some git tree where I can find them, I
-> > could test them.
-> >
-> >>> However, I know the following works on my machine:
-> >>> setpci -s 00:02.0 F4.B=255
-> >>> It accepts a setting between 0-255 and 255 is full brightness and 0 is
-> >>> backlight off.
-> >>
-> >> Don't do that, the video driver will not like you as you are changing
-> >> things without telling the bios that something is really happening.
-> >>
-> >> Of course you can continue to do this, it's just strongly not
-> >> recommended.
-> >
-> > Ouh, I didn't know that. It was recommended in some distro wiki so I
-> > tried it and it worked. Anyway, I thought it might give you some
-> > information about the N210 model.
-> >
-> >> thanks,
-> >>
-> >> greg k-h
-> >
-> > Thanks
-> > David
-> 
-> Maybe you missed that mail, any update on this? Where could I get
-> those patches? ;)
+> For this one, you will have to fire out gdb and disassemble the code to
+> figure out where it failed. Look for 'gdb vmlinux' and 'disassembly' on this
+> mailing list - that should provide some hints.
 
-Ick, sorry, they can be found at:
-	http://git.kernel.org/?p=linux/kernel/git/gregkh/patches.git;a=tree
+Probably because of the 'fid trans failed' stat->last_index is -1
+(or 0xffffffff because it's really an unsigned int):
+[    5.721794] powernow-k8: fid trans failed, fid 0xa, curr 0x0
+[    5.721909] cpufreq_stats_update: cpu=0 
+[    5.721945]  max_state=4 last_index=-1
+[    5.722191] ------------[ cut here ]------------
+[    5.722305] kernel BUG at drivers/cpufreq/cpufreq_stats.c:71!
 
-I need to push them to Michael soon, I've been swamped with other stuff
-at the moment, sorry about this.
+I added the BUG() there:
+if (stat->last_index > stat->max_state * stat->max_state) BUG();
 
-greg k-h
+Index: linux-3.0-rc2-xen/drivers/cpufreq/cpufreq_stats.c
+===================================================================
+--- linux-3.0-rc2-xen.orig/drivers/cpufreq/cpufreq_stats.c	2011-06-14 01:24:10.639010391 +0200
++++ linux-3.0-rc2-xen/drivers/cpufreq/cpufreq_stats.c	2011-06-14 01:32:32.743101791 +0200
+@@ -56,9 +56,20 @@
+ 	struct cpufreq_stats *stat;
+ 	unsigned long long cur_time;
+ 
++	printk(KERN_WARNING "cpufreq_stats_update: cpu=%d ", cpu);
++
++	if (cpu != 0) // only got one cpu in this particular system
++		BUG();
++
+ 	cur_time = get_jiffies_64();
+ 	spin_lock(&cpufreq_stats_lock);
+ 	stat = per_cpu(cpufreq_stats_table, cpu);
++
++	printk(KERN_WARNING " max_state=%d last_index=%d\n", stat->max_state, stat->last_index);
++
++	if (stat->last_index > stat->max_state * stat->max_state)
++		BUG();
++
+ 	if (stat->time_in_state)
+ 		stat->time_in_state[stat->last_index] =
+ 			cputime64_add(stat->time_in_state[stat->last_index],
+
+-- 
+Tobias						PGP: http://8ef7ddba.uguu.de
