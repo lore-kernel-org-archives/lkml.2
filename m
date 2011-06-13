@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab1FMVmB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 17:42:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26659 "EHLO mx1.redhat.com"
+	id S1754887Ab1FMVmS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 17:42:18 -0400
+Received: from mail.perches.com ([173.55.12.10]:2860 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751305Ab1FMVl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 17:41:59 -0400
-Date: Mon, 13 Jun 2011 17:41:54 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tao Ma <tm@tao.ma>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: CFQ: async queue blocks the whole system
-Message-ID: <20110613214154.GL633@redhat.com>
-References: <20110609141451.GD29913@redhat.com>
- <4DF0DD0F.8090407@tao.ma>
- <20110609153738.GF29913@redhat.com>
- <4DF0EA55.10209@tao.ma>
- <20110609182706.GG29913@redhat.com>
- <4DF1B035.7080009@tao.ma>
- <20110610091427.GB4183@redhat.com>
- <4DF1EB45.1070706@tao.ma>
- <20110610154414.GA31853@redhat.com>
- <4DF5E1A8.7080100@tao.ma>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DF5E1A8.7080100@tao.ma>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752907Ab1FMVmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 17:42:16 -0400
+Subject: Re: [PATCH 1/3] usbip: only dump valid port status
+From: Joe Perches <joe@perches.com>
+To: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Matt Mooney <mfm@muteddisk.com>,
+        Max Vozeler <max@hinterhof.net>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4DF68151.4080109@freemail.hu>
+References: <4DF68151.4080109@freemail.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Jun 2011 14:42:14 -0700
+Message-ID: <1308001334.26699.18.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 06:08:40PM +0800, Tao Ma wrote:
-
-[..]
-> > You can also run iostat on disk and should be able to see that with
-> > the patch you are dispatching writes more often than before.
-> Sorry, the patch doesn't work.
+On Mon, 2011-06-13 at 23:29 +0200, Németh Márton wrote:
+> From: Márton Németh <nm127@freemail.hu>
 > 
-> I used trace event to capture all the blktraces since it doesn't
-> interfere with the tests, hope it helps.
-
-Actually I was looking for CFQ traces. This seems to be generic block
-layer trace points. May be you can use "blktrace -d /dev/<device>"
-and then blkparse. It also gives the aggregate view which is helpful.
-
+> The wIndex parameter of vhci_hub_control() is always zero when the
+> request type is GetHubDescriptor,
+> ---
+> diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
+> @@ -464,8 +464,11 @@ static int vhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
 > 
-> Please downloaded it from http://blog.coly.li/tmp/blktrace.tar.bz2
+>  	if (usbip_dbg_flag_vhci_rh) {
+>  		pr_debug("port %d\n", rhport);
+> -		dump_port_status(prev_port_status[rhport]);
+> -		dump_port_status(dum->port_status[rhport]);
+> +		/* Only dump valid port status */
+> +		if (0 <= rhport) {
+> +			dump_port_status(prev_port_status[rhport]);
+> +			dump_port_status(dum->port_status[rhport]);
+> +		}
+>  	}
+>  	usbip_dbg_vhci_rh(" bye\n");
+> 
 
-What concerns me is following.
+Linux relatively rarely uses constant before variable in a comparison.
+ie: please use "if (rhport > 0)" instead
 
-5255.521353: block_rq_issue: 8,0 W 0 () 571137153 + 8 [attr_set]
-5578.863871: block_rq_issue: 8,0 W 0 () 512950473 + 48 [kworker/0:1]
 
-IIUC, we dispatched second write more than 300 seconds after dispatching
-1 write. What happened in between. We should have dispatched more writes.
-
-CFQ traces might give better idea in terms of whether wl_type for async
-queues was scheduled or not at all.
-
-Thanks
-Vivek
