@@ -1,114 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167Ab1FMJEN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 05:04:13 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:61123 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754570Ab1FMJEK convert rfc822-to-8bit (ORCPT
+	id S1755188Ab1FMJGU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 05:06:20 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:27397 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755039Ab1FMJGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 05:04:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=nsSmgSZ/kvGue2JBFGUqic6hMh3MRAL0fM5ndQOUjyC46witC3wLGyecC9ZVwFupQn
-         GGZeBAqkYjT2e/BYRzS5FPKiJewcjX5qna5hTmt8EFmvKyNUHTpxRkitRDfFFyughl6p
-         4Bygx9XYkAb4yo4K3v60wXaaPST+Ks13QyCQg=
-MIME-Version: 1.0
-In-Reply-To: <1307954539-5681-1-git-send-email-linus.walleij@stericsson.com>
-References: <1307954539-5681-1-git-send-email-linus.walleij@stericsson.com>
-From: Eric Miao <eric.miao@linaro.org>
-Date: Mon, 13 Jun 2011 17:03:50 +0800
-X-Google-Sender-Auth: _k81L7oeqHIg41Fl0F8dji2GSEg
-Message-ID: <BANLkTikkT6ZvsSycu13Fnsek43f9+YUkVA@mail.gmail.com>
-Subject: Re: [PATCH] gpio/plat-pxa: fix clash with gpiolib namespace
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 13 Jun 2011 05:06:18 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=us-ascii
+Date: Mon, 13 Jun 2011 11:05:44 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCH 08/10] mm: cma: Contiguous Memory Allocator added
+In-reply-to: <201106101821.50437.arnd@arndb.de>
+To: "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>
+Message-id: <006a01cc29a9$1394c330$3abe4990$%szyprowski@samsung.com>
+Organization: SPRC
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: pl
+Thread-index: Acwniobzf0w3jIXPSYi4fJRKmxaCngCDt4Rg
+References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
+ <1307699698-29369-9-git-send-email-m.szyprowski@samsung.com>
+ <201106101821.50437.arnd@arndb.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 4:42 PM, Linus Walleij
-<linus.walleij@stericsson.com> wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
->
-> The PXA platform code has a static inline helper called
-> gpio_to_chip which clashes with the gpiolib namespace if we
-> try to expose the function with the same name from gpiolib,
-> and it's still confusing even if we don't do that. So rename
-> it to gpio_to_pxachip().
->
-> Reported-by: H Hartley Sweeten <hartleys@visionengravers.com>
-> Cc: Eric Miao <eric.miao@linaro.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Hello,
 
-OK, applied to 'devel'.
+On Friday, June 10, 2011 6:22 PM Arnd Bergmann wrote:
 
-> ---
->  arch/arm/plat-pxa/gpio.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
->
-> diff --git a/arch/arm/plat-pxa/gpio.c b/arch/arm/plat-pxa/gpio.c
-> index 48ebb94..a11dc36 100644
-> --- a/arch/arm/plat-pxa/gpio.c
-> +++ b/arch/arm/plat-pxa/gpio.c
-> @@ -50,7 +50,7 @@ static inline void __iomem *gpio_chip_base(struct gpio_chip *c)
->        return container_of(c, struct pxa_gpio_chip, chip)->regbase;
->  }
->
-> -static inline struct pxa_gpio_chip *gpio_to_chip(unsigned gpio)
-> +static inline struct pxa_gpio_chip *gpio_to_pxachip(unsigned gpio)
->  {
->        return &pxa_gpio_chips[gpio_to_bank(gpio)];
->  }
-> @@ -161,7 +161,7 @@ static int pxa_gpio_irq_type(struct irq_data *d, unsigned int type)
->        int gpio = irq_to_gpio(d->irq);
->        unsigned long gpdr, mask = GPIO_bit(gpio);
->
-> -       c = gpio_to_chip(gpio);
-> +       c = gpio_to_pxachip(gpio);
->
->        if (type == IRQ_TYPE_PROBE) {
->                /* Don't mess with enabled GPIOs using preconfigured edges or
-> @@ -230,7 +230,7 @@ static void pxa_gpio_demux_handler(unsigned int irq, struct irq_desc *desc)
->  static void pxa_ack_muxed_gpio(struct irq_data *d)
->  {
->        int gpio = irq_to_gpio(d->irq);
-> -       struct pxa_gpio_chip *c = gpio_to_chip(gpio);
-> +       struct pxa_gpio_chip *c = gpio_to_pxachip(gpio);
->
->        __raw_writel(GPIO_bit(gpio), c->regbase + GEDR_OFFSET);
->  }
-> @@ -238,7 +238,7 @@ static void pxa_ack_muxed_gpio(struct irq_data *d)
->  static void pxa_mask_muxed_gpio(struct irq_data *d)
->  {
->        int gpio = irq_to_gpio(d->irq);
-> -       struct pxa_gpio_chip *c = gpio_to_chip(gpio);
-> +       struct pxa_gpio_chip *c = gpio_to_pxachip(gpio);
->        uint32_t grer, gfer;
->
->        c->irq_mask &= ~GPIO_bit(gpio);
-> @@ -252,7 +252,7 @@ static void pxa_mask_muxed_gpio(struct irq_data *d)
->  static void pxa_unmask_muxed_gpio(struct irq_data *d)
->  {
->        int gpio = irq_to_gpio(d->irq);
-> -       struct pxa_gpio_chip *c = gpio_to_chip(gpio);
-> +       struct pxa_gpio_chip *c = gpio_to_pxachip(gpio);
->
->        c->irq_mask |= GPIO_bit(gpio);
->        update_edge_detect(c);
-> --
-> 1.7.3.2
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->
+> On Friday 10 June 2011, Marek Szyprowski wrote:
+> >The Contiguous Memory Allocator is a set of functions that lets
+> >one initialise a region of memory which then can be used to perform
+> >allocations of contiguous memory chunks from.
+> >
+> >CMA allows for creation of separate contexts. Kernel is allowed to
+> >allocate movable pages within CMA's managed memory so that it can be
+> >used for page cache when CMA devices do not use it. On cm_alloc()
+> >request such pages are migrated out of CMA area to free required
+> >contiguous block.
+> 
+> Hi Marek,
+> 
+> I'm generally happy with the patches 1 through 7, i.e the heavy lifting
+> to make contiguous allocations work. Thank you very much for keeping
+> up the work and submitting these in a good shape.
+> 
+> I do think that we need to discuss the driver-visible API a bit more.
+> My feeling is that this is rather un-Linux-like and it needs to be
+> simplified some more. Of course, I don't mind being overruled by the
+> memory management experts here, or if you can argue that it's really
+> the right way to do it.
+
+Thanks for your comments!
+ 
+> > + * Driver usage
+> > + *
+> > + *   CMA should not be used directly by the device drivers. It should
+> > + *   be considered as helper framework for dma-mapping subsystm and
+> > + *   respective (platform)bus drivers.
+> > + *
+> > + *   The CMA client needs to have a pointer to a CMA context
+> > + *   represented by a struct cma (which is an opaque data type).
+> > + *
+> > + *   Once such pointer is obtained, a caller may allocate contiguous
+> > + *   memory chunk using the following function:
+> > + *
+> > + *     cm_alloc()
+> > + *
+> > + *   This function returns a pointer to the first struct page which
+> > + *   represent a contiguous memory chunk.  This pointer
+> > + *   may be used with the following function:
+> > + *
+> > + *     cm_free()    -- frees allocated contiguous memory
+> 
+> Please explain why you want a new top-level API here. I think it
+> would be much nicer if a device driver could simply call
+> alloc_pages(..., GFP_CMA) or similar, where all the complexity
+> in here gets hidden behind a conditional deep inside of the
+> page allocator.
+> 
+> Evidently, the two functions you describe here have an extra argument
+> for the context. Can you elaborate why that is really needed? What
+> is the specific requirement to have multiple such contexts in one
+> system and what is the worst-case effect that you would get when
+> the interface is simplified to have only one for all devices?
+> 
+> Alternatively, would it be possible to provide the cm_alloc/cm_free
+> functions only as backing to the dma mapping API and not export them
+> as a generic device driver interface?
+
+cm_alloc/free are definitely not meant to be called from device drivers.
+They should be only considered as a backend for dma-mapping.
+
+'Raw' contiguous memory block doesn't really make sense for the device
+drivers. What the drivers require is a contiguous memory block that is
+somehow mapped into respective bus address space, so dma-mapping 
+framework is the right interface.
+
+alloc_pages(..., GFP_CMA) looks nice but in fact it is really impractical.
+The driver will need to map such buffer to dma context anyway, so imho
+dma_alloc_attributed() will give the drivers much more flexibility. In
+terms of dma-mapping the context argument isn't anything odd. 
+
+If possible I would like to make cma something similar to 
+declare_dma_coherent()&friends, so the board/platform/bus startup code
+will just call declare_dma_contiguous() to enable support for cma for
+particular devices.
+
+> > + * Platform/machine integration
+> > + *
+> > + *   CMA context must be created on platform or machine initialisation
+> > + *   and passed to respective subsystem that will be a client for CMA.
+> > + *   The latter may be done by a global variable or some filed in
+> > + *   struct device.  For the former CMA provides the following
+> functions:
+> > + *
+> > + *     cma_init_migratetype()
+> > + *     cma_reserve()
+> > + *     cma_create()
+> > + *
+> > + *   The first one initialises a portion of reserved memory so that it
+> > + *   can be used with CMA.  The second first tries to reserve memory
+> > + *   (using memblock) and then initialise it.
+> > + *
+> > + *   The cma_reserve() function must be called when memblock is still
+> > + *   operational and reserving memory with it is still possible.  On
+> > + *   ARM platform the "reserve" machine callback is a perfect place to
+> > + *   call it.
+> > + *
+> > + *   The last function creates a CMA context on a range of previously
+> > + *   initialised memory addresses.  Because it uses kmalloc() it needs
+> > + *   to be called after SLAB is initialised.
+> > + */
+> 
+> This interface looks flawed to me for multiple reasons:
+> 
+> * It requires you to call three distinct functions in order to do one
+>   thing, and they all take the same arguments (more or less). Why not
+>   have one function call at the latest possible point where you can
+>   still change the memory attributes, and have everything else
+>   happen automatically?
+
+Initialization part will be definitely simplified, I must confess that I
+was in hurry to post the patches before the weekend and just forgot to
+cleanup this part...
+ 
+> * It requires you to pass the exact location of the area. I can see why
+>   you want that on certain machines that require DMA areas to be spread
+>   across multiple memory buses, but IMHO it's not appropriate for a
+>   generic API.
+
+IMHO we can also use some NULL context to indicate some global, system 
+wide CMA area and again -> in terms of dma-mapping api having a context 
+isn't anything uncommon.
+ 
+> * It requires you to hardcode the size in a machine specific source file.
+>   This probably seems to be a natural thing to do when you have worked a
+>   lot on the ARM architecture, but it's really not. We really want to
+>   get rid of board files and replace them with generic probing based on
+>   the device tree, and the size of the area is more policy than a property
+>   of the hardware that can be accurately described in the device tree or
+>   a board file.
+
+The problem is the fact that right now, we still have board files and we
+have to live with them for a while (with all advantages and disadvantages).
+I hope that you won't require me to rewrite the whole support for all ARM 
+platforms to get rid of board files to get CMA merged ;)
+
+I see no problem defining CMA areas in device tree, as this is something
+really specific to particular board configuration. 
+
+> I'm sure that we can find a solution for all of these problems, it just
+> takes a few good ideas. Especially for the last point, I don't have a
+> better suggestion yet, but hopefully someone else can come up with one.
+
+I hope we will manage to get agreement :)
+
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
+
