@@ -1,32 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471Ab1FMLtW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 07:49:22 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:51135 "EHLO mx2.mail.elte.hu"
+	id S1752477Ab1FMLvJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 07:51:09 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:54882 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751225Ab1FMLtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 07:49:20 -0400
-Date: Mon, 13 Jun 2011 13:49:04 +0200
+	id S1751225Ab1FMLvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 07:51:06 -0400
+Date: Mon, 13 Jun 2011 13:50:51 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Ingo Molnar <mingo@redhat.com>, Michael Rubin <mrubin@google.com>,
-        David Sharp <dhsharp@google.com>,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 03/15] tracing: Add a free on close control mechanism for
- buffer_size_kb
-Message-ID: <20110613114904.GD10960@elte.hu>
+        Namhyung Kim <namhyung@gmail.com>
+Subject: Re: [PATCH 15/15] tracing/kprobes: Fix kprobe-tracer to support
+ stack trace
+Message-ID: <20110613115051.GE10960@elte.hu>
 References: <20110609172744.333794089@goodmis.org>
- <20110609172910.950101158@goodmis.org>
- <20110613101248.GC30962@elte.hu>
- <1307965185.9218.53.camel@gandalf.stny.rr.com>
+ <20110609172914.290174627@goodmis.org>
+ <20110613102118.GF30962@elte.hu>
+ <1307965484.9218.59.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1307965185.9218.53.camel@gandalf.stny.rr.com>
+In-Reply-To: <1307965484.9218.59.camel@gandalf.stny.rr.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -42,53 +42,19 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Steven Rostedt <rostedt@goodmis.org> wrote:
 
-> On Mon, 2011-06-13 at 12:12 +0200, Ingo Molnar wrote:
-> > * Steven Rostedt <rostedt@goodmis.org> wrote:
+> > > +	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count(),
+> > > +			     NULL);
 > > 
-> > > +	switch (cmd) {
-> > > +	case TRACE_RINGBUF_FREE_ON_CLOSE: {
-> > > +		info->free_buffer_on_close = !!arg;
-> > > +		ret = 0;
-> > > +		break;
-> > > +	}
-> > >  	}
-> > 
-> > that doesn't look very tidy.
-> > 
-> > > @@ -3635,9 +3700,12 @@ static const struct file_operations tracing_pipe_fops = {
-> > >  };
-> > >  
-> > >  static const struct file_operations tracing_entries_fops = {
-> > > -	.open		= tracing_open_generic,
-> > > +	.open		= tracing_entries_open,
-> > >  	.read		= tracing_entries_read,
-> > >  	.write		= tracing_entries_write,
-> > > +	.unlocked_ioctl	= tracing_entries_ioctl,
-> > > +	.compat_ioctl	= tracing_entries_ioctl,
-> > 
-> > i don't like it at all that you are adding to the ftrace ABI here. 
-> > The *only* premise of the whole /debug/tracing/ muck was to allow it 
-> > to be human-parseable and scripted - an ioctl is clearly outside that 
-> > scope. Instead of increasing the mess in /debug/tracing/ we want 
-> > clean tracing done via the perf ABI ...
+> > pointless linebreak.
 > 
-> Vaibhav originally suggested adding a "buffer_free" file that you 
-> could write into and cause it to free the buffer. It would do this 
-> on the release so you could also have an app (like Google needs) to 
-> open this file and if the app dies, it will automatically free the 
-> buffer closing it.
-> 
-> https://lkml.org/lkml/2011/3/17/366
-> 
-> I didn't really like adding another file to the debugfs system, and 
-> recommended the ioctl. It seemed like a nice "unix" fit. But if you 
-> want to go back to the Vaibhav's original method, which will stay 
-> in the frame of "human-parseable and scripted". We could do that.
+> Again, probably to do with the 80 char limit.
 
-Yes, i think so - the *only* point of the /debug/tracing/ muck is 
-that it's scriptable and human parseable. If Google wants to use it 
-for more than that then they should help us enhance the perf syscall 
-ABI for tracing ...
+Well, the point of the 80 char limit warning these days is to force a 
+cleanup of the code. Breaking the line mindlessly *uglifies* the code 
+so it's pointless to do it.
+
+In terms of terminal readability line length up to 90-100 cols is 
+acceptable for code that is otherwise not ugly.
 
 Thanks,
 
