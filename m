@@ -1,251 +1,386 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633Ab1FMJxj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 05:53:39 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:40495 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751176Ab1FMJxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 05:53:38 -0400
-Date: Mon, 13 Jun 2011 11:53:28 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf fixes
-Message-ID: <20110613095328.GA22630@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1751656Ab1FMJyo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 05:54:44 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37071 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab1FMJyl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 05:54:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=d+zyuckbu3wBRKleCBqfrCSmZkQ2Tx7LwBrDSGWbdzwr9/F2hpDxO4fP2vtNRGPf4V
+         wxNI/BmTUU46J2mVPGqINnTKhYfb/wfn7pdiFNLeFAkzR79EeYjoI4u8Q4rbGfFUBMvy
+         mlbs5fn1qxxMTIdMT9O+amhkT+4WGzh/50GME=
+From: Wanlong Gao <wanlong.gao@gmail.com>
+To: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Jiri Kosina <jkosina@suse.cz>, Randy Dunlap <rdunlap@xenotime.net>,
+        Harry Wei <jiaweiwei.xiyou@gmail.com>,
+        Wanlong Gao <wanlong.gao@gmail.com>
+Subject: [PATCH resend] Documentation:fix the wrong file dereference in Documentation
+Date: Mon, 13 Jun 2011 17:53:53 +0800
+Message-Id: <1307958833-6213-1-git-send-email-wanlong.gao@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Hi Jiri:
+I had fix the wrong dereference all in these files,
+and resend this patch, it'll be OK?
 
-Please pull the latest perf-urgent-for-linus git tree from:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-urgent-for-linus
-
- Thanks,
-
-	Ingo
-
------------------->
-GuoWen Li (1):
-      ftrace: Fix possible undefined return code
-
-Robert Richter (4):
-      oprofile, x86: Add comments to IBS LVT offset initialization
-      oprofile: Free potentially owned tasks in case of errors
-      oprofile: Fix locking dependency in sync_start()
-      oprofile, dcookies: Fix possible circular locking dependency
-
-Steven Rostedt (2):
-      kprobes/trace: Fix kprobe selftest for gcc 4.6
-      ftrace: Revert 8ab2b7efd ftrace: Remove unnecessary disabling of irqs
+Thanks
 
 
- arch/x86/kernel/apic/apic.c      |    3 ++-
- arch/x86/oprofile/op_model_amd.c |   13 +++++++++----
- drivers/oprofile/buffer_sync.c   |   21 +++++++++++----------
- fs/dcookies.c                    |    3 +++
- kernel/trace/ftrace.c            |    9 ++++++++-
- kernel/trace/trace_kprobe.c      |    8 ++++++--
- 6 files changed, 39 insertions(+), 18 deletions(-)
+Change all "arch/i386" to "arch/x86" in Documentaion/,
+since the directory has changed.
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index b961af8..b9338b8 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -390,7 +390,8 @@ static unsigned int reserve_eilvt_offset(int offset, unsigned int new)
+Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
+---
+ Documentation/RCU/NMI-RCU.txt             |    4 +-
+ Documentation/blockdev/README.DAC960      |    2 +-
+ Documentation/blockdev/ramdisk.txt        |    8 +++---
+ Documentation/cpu-freq/cpu-drivers.txt    |    2 +-
+ Documentation/filesystems/nfs/nfsroot.txt |    2 +-
+ Documentation/isdn/README.HiSax           |    2 +-
+ Documentation/kbuild/makefiles.txt        |   38 ++++++++++++++--------------
+ Documentation/magic-number.txt            |    2 +-
+ Documentation/mca.txt                     |    4 +-
+ Documentation/scheduler/sched-arch.txt    |    2 +-
+ Documentation/scsi/BusLogic.txt           |    2 +-
+ Documentation/serial/computone.txt        |    2 +-
+ Documentation/zh_CN/magic-number.txt      |    2 +-
+ 13 files changed, 36 insertions(+), 36 deletions(-)
+
+diff --git a/Documentation/RCU/NMI-RCU.txt b/Documentation/RCU/NMI-RCU.txt
+index a8536cb..bf82851 100644
+--- a/Documentation/RCU/NMI-RCU.txt
++++ b/Documentation/RCU/NMI-RCU.txt
+@@ -5,8 +5,8 @@ Although RCU is usually used to protect read-mostly data structures,
+ it is possible to use RCU to provide dynamic non-maskable interrupt
+ handlers, as well as dynamic irq handlers.  This document describes
+ how to do this, drawing loosely from Zwane Mwaikambo's NMI-timer
+-work in "arch/i386/oprofile/nmi_timer_int.c" and in
+-"arch/i386/kernel/traps.c".
++work in "arch/x86/oprofile/nmi_timer_int.c" and in
++"arch/x86/kernel/traps.c".
  
- /*
-  * If mask=1, the LVT entry does not generate interrupts while mask=0
-- * enables the vector. See also the BKDGs.
-+ * enables the vector. See also the BKDGs. Must be called with
-+ * preemption disabled.
-  */
+ The relevant pieces of code are listed below, each followed by a
+ brief explanation.
+diff --git a/Documentation/blockdev/README.DAC960 b/Documentation/blockdev/README.DAC960
+index 0e8f618..bd85fb9 100644
+--- a/Documentation/blockdev/README.DAC960
++++ b/Documentation/blockdev/README.DAC960
+@@ -214,7 +214,7 @@ replacing "/usr/src" with wherever you keep your Linux kernel source tree:
+   make config
+   make bzImage (or zImage)
  
- int setup_APIC_eilvt(u8 offset, u8 vector, u8 msg_type, u8 mask)
-diff --git a/arch/x86/oprofile/op_model_amd.c b/arch/x86/oprofile/op_model_amd.c
-index 9fd8a56..9cbb710 100644
---- a/arch/x86/oprofile/op_model_amd.c
-+++ b/arch/x86/oprofile/op_model_amd.c
-@@ -609,16 +609,21 @@ static int setup_ibs_ctl(int ibs_eilvt_off)
- 	return 0;
- }
+-Then install "arch/i386/boot/bzImage" or "arch/i386/boot/zImage" as your
++Then install "arch/x86/boot/bzImage" or "arch/x86/boot/zImage" as your
+ standard kernel, run lilo if appropriate, and reboot.
  
-+/*
-+ * This runs only on the current cpu. We try to find an LVT offset and
-+ * setup the local APIC. For this we must disable preemption. On
-+ * success we initialize all nodes with this offset. This updates then
-+ * the offset in the IBS_CTL per-node msr. The per-core APIC setup of
-+ * the IBS interrupt vector is called from op_amd_setup_ctrs()/op_-
-+ * amd_cpu_shutdown() using the new offset.
-+ */
- static int force_ibs_eilvt_setup(void)
- {
- 	int offset;
- 	int ret;
+ To create the necessary devices in /dev, the "make_rd" script included in
+diff --git a/Documentation/blockdev/ramdisk.txt b/Documentation/blockdev/ramdisk.txt
+index 6c820ba..fa72e97 100644
+--- a/Documentation/blockdev/ramdisk.txt
++++ b/Documentation/blockdev/ramdisk.txt
+@@ -64,9 +64,9 @@ the RAM disk dynamically grows as data is being written into it, a size field
+ is not required. Bits 11 to 13 are not currently used and may as well be zero.
+ These numbers are no magical secrets, as seen below:
  
--	/*
--	 * find the next free available EILVT entry, skip offset 0,
--	 * pin search to this cpu
--	 */
- 	preempt_disable();
-+	/* find the next free available EILVT entry, skip offset 0 */
- 	for (offset = 1; offset < APIC_EILVT_NR_MAX; offset++) {
- 		if (get_eilvt(offset))
- 			break;
-diff --git a/drivers/oprofile/buffer_sync.c b/drivers/oprofile/buffer_sync.c
-index a3984f4..f34b5b2 100644
---- a/drivers/oprofile/buffer_sync.c
-+++ b/drivers/oprofile/buffer_sync.c
-@@ -141,6 +141,13 @@ static struct notifier_block module_load_nb = {
- 	.notifier_call = module_load_notify,
- };
+-./arch/i386/kernel/setup.c:#define RAMDISK_IMAGE_START_MASK     0x07FF
+-./arch/i386/kernel/setup.c:#define RAMDISK_PROMPT_FLAG          0x8000
+-./arch/i386/kernel/setup.c:#define RAMDISK_LOAD_FLAG            0x4000
++./arch/x86/kernel/setup.c:#define RAMDISK_IMAGE_START_MASK     0x07FF
++./arch/x86/kernel/setup.c:#define RAMDISK_PROMPT_FLAG          0x8000
++./arch/x86/kernel/setup.c:#define RAMDISK_LOAD_FLAG            0x4000
  
-+static void free_all_tasks(void)
-+{
-+	/* make sure we don't leak task structs */
-+	process_task_mortuary();
-+	process_task_mortuary();
-+}
-+
- int sync_start(void)
- {
- 	int err;
-@@ -148,8 +155,6 @@ int sync_start(void)
- 	if (!zalloc_cpumask_var(&marked_cpus, GFP_KERNEL))
- 		return -ENOMEM;
+ Consider a typical two floppy disk setup, where you will have the
+ kernel on disk one, and have already put a RAM disk image onto disk #2.
+@@ -85,7 +85,7 @@ The command line equivalent is: "prompt_ramdisk=1"
+ Putting that together gives 2^15 + 2^14 + 0 = 49152 for an rdev word.
+ So to create disk one of the set, you would do:
  
--	mutex_lock(&buffer_mutex);
--
- 	err = task_handoff_register(&task_free_nb);
- 	if (err)
- 		goto out1;
-@@ -166,7 +171,6 @@ int sync_start(void)
- 	start_cpu_work();
+-	/usr/src/linux# cat arch/i386/boot/zImage > /dev/fd0
++	/usr/src/linux# cat arch/x86/boot/zImage > /dev/fd0
+ 	/usr/src/linux# rdev /dev/fd0 /dev/fd0
+ 	/usr/src/linux# rdev -r /dev/fd0 49152
  
- out:
--	mutex_unlock(&buffer_mutex);
- 	return err;
- out4:
- 	profile_event_unregister(PROFILE_MUNMAP, &munmap_nb);
-@@ -174,6 +178,7 @@ out3:
- 	profile_event_unregister(PROFILE_TASK_EXIT, &task_exit_nb);
- out2:
- 	task_handoff_unregister(&task_free_nb);
-+	free_all_tasks();
- out1:
- 	free_cpumask_var(marked_cpus);
- 	goto out;
-@@ -182,20 +187,16 @@ out1:
+diff --git a/Documentation/cpu-freq/cpu-drivers.txt b/Documentation/cpu-freq/cpu-drivers.txt
+index 6c30e93..c436096 100644
+--- a/Documentation/cpu-freq/cpu-drivers.txt
++++ b/Documentation/cpu-freq/cpu-drivers.txt
+@@ -168,7 +168,7 @@ in-chipset dynamic frequency switching to policy->min, the upper limit
+ to policy->max, and -if supported- select a performance-oriented
+ setting when policy->policy is CPUFREQ_POLICY_PERFORMANCE, and a
+ powersaving-oriented setting when CPUFREQ_POLICY_POWERSAVE. Also check
+-the reference implementation in arch/i386/kernel/cpu/cpufreq/longrun.c
++the reference implementation in drivers/cpufreq/longrun.c
  
- void sync_stop(void)
- {
--	/* flush buffers */
--	mutex_lock(&buffer_mutex);
- 	end_cpu_work();
- 	unregister_module_notifier(&module_load_nb);
- 	profile_event_unregister(PROFILE_MUNMAP, &munmap_nb);
- 	profile_event_unregister(PROFILE_TASK_EXIT, &task_exit_nb);
- 	task_handoff_unregister(&task_free_nb);
--	mutex_unlock(&buffer_mutex);
--	flush_cpu_work();
-+	barrier();			/* do all of the above first */
  
--	/* make sure we don't leak task structs */
--	process_task_mortuary();
--	process_task_mortuary();
-+	flush_cpu_work();
  
-+	free_all_tasks();
- 	free_cpumask_var(marked_cpus);
- }
+diff --git a/Documentation/filesystems/nfs/nfsroot.txt b/Documentation/filesystems/nfs/nfsroot.txt
+index 90c71c6..ffdd9d8 100644
+--- a/Documentation/filesystems/nfs/nfsroot.txt
++++ b/Documentation/filesystems/nfs/nfsroot.txt
+@@ -226,7 +226,7 @@ They depend on various facilities being available:
+      	cdrecord.
  
-diff --git a/fs/dcookies.c b/fs/dcookies.c
-index a21cabd..dda0dc7 100644
---- a/fs/dcookies.c
-+++ b/fs/dcookies.c
-@@ -178,6 +178,8 @@ SYSCALL_DEFINE(lookup_dcookie)(u64 cookie64, char __user * buf, size_t len)
- 	/* FIXME: (deleted) ? */
- 	path = d_path(&dcs->path, kbuf, PAGE_SIZE);
+ 	e.g.
+-	  cdrecord dev=ATAPI:1,0,0 arch/i386/boot/image.iso
++	  cdrecord dev=ATAPI:1,0,0 arch/x86/boot/image.iso
  
-+	mutex_unlock(&dcookie_mutex);
-+
- 	if (IS_ERR(path)) {
- 		err = PTR_ERR(path);
- 		goto out_free;
-@@ -194,6 +196,7 @@ SYSCALL_DEFINE(lookup_dcookie)(u64 cookie64, char __user * buf, size_t len)
+      	For more information on isolinux, including how to create bootdisks
+      	for prebuilt kernels, see http://syslinux.zytor.com/
+diff --git a/Documentation/isdn/README.HiSax b/Documentation/isdn/README.HiSax
+index 99e87a6..b1a573c 100644
+--- a/Documentation/isdn/README.HiSax
++++ b/Documentation/isdn/README.HiSax
+@@ -506,7 +506,7 @@ to e.g. the Internet:
+      <ISDN subsystem - ISDN support -- HiSax>
+      make clean; make zImage; make modules; make modules_install
+ 2. Install the new kernel
+-     cp /usr/src/linux/arch/i386/boot/zImage /etc/kernel/linux.isdn
++     cp /usr/src/linux/arch/x86/boot/zImage /etc/kernel/linux.isdn
+      vi /etc/lilo.conf
+      <add new kernel in the bootable image section>
+      lilo
+diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
+index 47435e5..f47cdef 100644
+--- a/Documentation/kbuild/makefiles.txt
++++ b/Documentation/kbuild/makefiles.txt
+@@ -441,7 +441,7 @@ more details, with real examples.
+ 	specified if first option are not supported.
  
- out_free:
- 	kfree(kbuf);
-+	return err;
- out:
- 	mutex_unlock(&dcookie_mutex);
- 	return err;
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 1ee417f..908038f 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2740,7 +2740,7 @@ static int ftrace_process_regex(struct ftrace_hash *hash,
- {
- 	char *func, *command, *next = buff;
- 	struct ftrace_func_command *p;
--	int ret;
-+	int ret = -EINVAL;
+ 	Example:
+-		#arch/i386/kernel/Makefile
++		#arch/x86/kernel/Makefile
+ 		vsyscall-flags += $(call cc-ldoption, -Wl$(comma)--hash-style=sysv)
  
- 	func = strsep(&next, ":");
+ 	In the above example, vsyscall-flags will be assigned the option
+@@ -460,7 +460,7 @@ more details, with real examples.
+ 	supported to use an optional second option.
  
-@@ -3330,6 +3330,7 @@ static int ftrace_process_locs(struct module *mod,
- {
- 	unsigned long *p;
- 	unsigned long addr;
-+	unsigned long flags;
+ 	Example:
+-		#arch/i386/Makefile
++		#arch/x86/Makefile
+ 		cflags-y += $(call cc-option,-march=pentium-mmx,-march=i586)
  
- 	mutex_lock(&ftrace_lock);
- 	p = start;
-@@ -3346,7 +3347,13 @@ static int ftrace_process_locs(struct module *mod,
- 		ftrace_record_ip(addr);
- 	}
+ 	In the above example, cflags-y will be assigned the option
+@@ -522,7 +522,7 @@ more details, with real examples.
+ 	even though the option was accepted by gcc.
  
-+	/*
-+	 * Disable interrupts to prevent interrupts from executing
-+	 * code that is being modified.
-+	 */
-+	local_irq_save(flags);
- 	ftrace_update_code(mod);
-+	local_irq_restore(flags);
- 	mutex_unlock(&ftrace_lock);
+ 	Example:
+-		#arch/i386/Makefile
++		#arch/x86/Makefile
+ 		cflags-y += $(shell \
+ 		if [ $(call cc-version) -ge 0300 ] ; then \
+ 			echo "-mregparm=3"; fi ;)
+@@ -802,7 +802,7 @@ but in the architecture makefiles where the kbuild infrastructure
+ is not sufficient this sometimes needs to be explicit.
  
- 	return 0;
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index f925c45..27d13b3 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -1870,8 +1870,12 @@ fs_initcall(init_kprobe_trace);
+ 	Example:
+-		#arch/i386/boot/Makefile
++		#arch/x86/boot/Makefile
+ 		subdir- := compressed/
  
- #ifdef CONFIG_FTRACE_STARTUP_TEST
+ The above assignment instructs kbuild to descend down in the
+@@ -812,12 +812,12 @@ To support the clean infrastructure in the Makefiles that builds the
+ final bootimage there is an optional target named archclean:
  
--static int kprobe_trace_selftest_target(int a1, int a2, int a3,
--					int a4, int a5, int a6)
-+/*
-+ * The "__used" keeps gcc from removing the function symbol
-+ * from the kallsyms table.
-+ */
-+static __used int kprobe_trace_selftest_target(int a1, int a2, int a3,
-+					       int a4, int a5, int a6)
- {
- 	return a1 + a2 + a3 + a4 + a5 + a6;
- }
+ 	Example:
+-		#arch/i386/Makefile
++		#arch/x86/Makefile
+ 		archclean:
+-			$(Q)$(MAKE) $(clean)=arch/i386/boot
++			$(Q)$(MAKE) $(clean)=arch/x86/boot
+ 
+-When "make clean" is executed, make will descend down in arch/i386/boot,
+-and clean as usual. The Makefile located in arch/i386/boot/ may use
++When "make clean" is executed, make will descend down in arch/x86/boot,
++and clean as usual. The Makefile located in arch/x86/boot/ may use
+ the subdir- trick to descend further down.
+ 
+ Note 1: arch/$(ARCH)/Makefile cannot use "subdir-", because that file is
+@@ -882,7 +882,7 @@ When kbuild executes, the following steps are followed (roughly):
+ 	LDFLAGS_vmlinux uses the LDFLAGS_$@ support.
+ 
+ 	Example:
+-		#arch/i386/Makefile
++		#arch/x86/Makefile
+ 		LDFLAGS_vmlinux := -e stext
+ 
+     OBJCOPYFLAGS	objcopy flags
+@@ -920,14 +920,14 @@ When kbuild executes, the following steps are followed (roughly):
+ 	Often, the KBUILD_CFLAGS variable depends on the configuration.
+ 
+ 	Example:
+-		#arch/i386/Makefile
++		#arch/x86/Makefile
+ 		cflags-$(CONFIG_M386) += -march=i386
+ 		KBUILD_CFLAGS += $(cflags-y)
+ 
+ 	Many arch Makefiles dynamically run the target C compiler to
+ 	probe supported options:
+ 
+-		#arch/i386/Makefile
++		#arch/x86/Makefile
+ 
+ 		...
+ 		cflags-$(CONFIG_MPENTIUMII)     += $(call cc-option,\
+@@ -1038,8 +1038,8 @@ When kbuild executes, the following steps are followed (roughly):
+ 	into the arch/$(ARCH)/boot/Makefile.
+ 
+ 	Example:
+-		#arch/i386/Makefile
+-		boot := arch/i386/boot
++		#arch/x86/Makefile
++		boot := arch/x86/boot
+ 		bzImage: vmlinux
+ 			$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
+ 
+@@ -1051,7 +1051,7 @@ When kbuild executes, the following steps are followed (roughly):
+ 	To support this, $(archhelp) must be defined.
+ 
+ 	Example:
+-		#arch/i386/Makefile
++		#arch/x86/Makefile
+ 		define archhelp
+ 		  echo  '* bzImage      - Image (arch/$(ARCH)/boot/bzImage)'
+ 		endif
+@@ -1065,7 +1065,7 @@ When kbuild executes, the following steps are followed (roughly):
+ 	from vmlinux.
+ 
+ 	Example:
+-		#arch/i386/Makefile
++		#arch/x86/Makefile
+ 		all: bzImage
+ 
+ 	When "make" is executed without arguments, bzImage will be built.
+@@ -1083,7 +1083,7 @@ When kbuild executes, the following steps are followed (roughly):
+ 	2) kbuild knows what files to delete during "make clean"
+ 
+ 	Example:
+-		#arch/i386/kernel/Makefile
++		#arch/x86/kernel/Makefile
+ 		extra-y := head.o init_task.o
+ 
+ 	In this example, extra-y is used to list object files that
+@@ -1133,7 +1133,7 @@ When kbuild executes, the following steps are followed (roughly):
+ 	Compress target. Use maximum compression to compress target.
+ 
+ 	Example:
+-		#arch/i386/boot/Makefile
++		#arch/x86/boot/Makefile
+ 		LDFLAGS_bootsect := -Ttext 0x0 -s --oformat binary
+ 		LDFLAGS_setup    := -Ttext 0x0 -s --oformat binary -e begtext
+ 
+@@ -1193,7 +1193,7 @@ When kbuild executes, the following steps are followed (roughly):
+ 
+ 	When updating the $(obj)/bzImage target, the line
+ 
+-	BUILD    arch/i386/boot/bzImage
++	BUILD    arch/x86/boot/bzImage
+ 
+ 	will be displayed with "make KBUILD_VERBOSE=0".
+ 
+@@ -1207,7 +1207,7 @@ When kbuild executes, the following steps are followed (roughly):
+ 	kbuild knows .lds files and includes a rule *lds.S -> *lds.
+ 
+ 	Example:
+-		#arch/i386/kernel/Makefile
++		#arch/x86/kernel/Makefile
+ 		always := vmlinux.lds
+ 
+ 		#Makefile
+diff --git a/Documentation/magic-number.txt b/Documentation/magic-number.txt
+index 4b12abc..abf481f 100644
+--- a/Documentation/magic-number.txt
++++ b/Documentation/magic-number.txt
+@@ -66,7 +66,7 @@ MKISS_DRIVER_MAGIC    0x04bf      mkiss_channel     drivers/net/mkiss.h
+ RISCOM8_MAGIC         0x0907      riscom_port       drivers/char/riscom8.h
+ SPECIALIX_MAGIC       0x0907      specialix_port    drivers/char/specialix_io8.h
+ HDLC_MAGIC            0x239e      n_hdlc            drivers/char/n_hdlc.c
+-APM_BIOS_MAGIC        0x4101      apm_user          arch/i386/kernel/apm.c
++APM_BIOS_MAGIC        0x4101      apm_user          arch/x86/kernel/apm_32.c
+ CYCLADES_MAGIC        0x4359      cyclades_port     include/linux/cyclades.h
+ DB_MAGIC              0x4442      fc_info           drivers/net/iph5526_novram.c
+ DL_MAGIC              0x444d      fc_info           drivers/net/iph5526_novram.c
+diff --git a/Documentation/mca.txt b/Documentation/mca.txt
+index 510375d..dfd130c 100644
+--- a/Documentation/mca.txt
++++ b/Documentation/mca.txt
+@@ -11,7 +11,7 @@ Adapter Detection
+ 
+ The ideal MCA adapter detection is done through the use of the
+ Programmable Option Select registers.  Generic functions for doing
+-this have been added in include/linux/mca.h and arch/i386/kernel/mca.c.
++this have been added in include/linux/mca.h and arch/x86/kernel/mca_32.c.
+ Everything needed to detect adapters and read (and write) configuration
+ information is there.  A number of MCA-specific drivers already use
+ this.  The typical probe code looks like the following:
+@@ -81,7 +81,7 @@ more people use shared IRQs on PCI machines.
+ In general, an interrupt must be acknowledged not only at the ICU (which
+ is done automagically by the kernel), but at the device level.  In
+ particular, IRQ 0 must be reset after a timer interrupt (now done in
+-arch/i386/kernel/time.c) or the first timer interrupt hangs the system.
++arch/x86/kernel/time.c) or the first timer interrupt hangs the system.
+ There were also problems with the 1.3.x floppy drivers, but that seems
+ to have been fixed.
+ 
+diff --git a/Documentation/scheduler/sched-arch.txt b/Documentation/scheduler/sched-arch.txt
+index d43dbcb..28aa107 100644
+--- a/Documentation/scheduler/sched-arch.txt
++++ b/Documentation/scheduler/sched-arch.txt
+@@ -66,7 +66,7 @@ Your cpu_idle routines need to obey the following rules:
+ 	    barrier issued (followed by a test of need_resched with
+ 	    interrupts disabled, as explained in 3).
+ 
+-arch/i386/kernel/process.c has examples of both polling and
++arch/x86/kernel/process.c has examples of both polling and
+ sleeping idle functions.
+ 
+ 
+diff --git a/Documentation/scsi/BusLogic.txt b/Documentation/scsi/BusLogic.txt
+index d7fbc94..48e982c 100644
+--- a/Documentation/scsi/BusLogic.txt
++++ b/Documentation/scsi/BusLogic.txt
+@@ -553,7 +553,7 @@ replacing "/usr/src" with wherever you keep your Linux kernel source tree:
+   make config
+   make zImage
+ 
+-Then install "arch/i386/boot/zImage" as your standard kernel, run lilo if
++Then install "arch/x86/boot/zImage" as your standard kernel, run lilo if
+ appropriate, and reboot.
+ 
+ 
+diff --git a/Documentation/serial/computone.txt b/Documentation/serial/computone.txt
+index c57ea47..60a6f65 100644
+--- a/Documentation/serial/computone.txt
++++ b/Documentation/serial/computone.txt
+@@ -87,7 +87,7 @@ c) Set address on ISA cards then:
+ 	   edit /usr/src/linux/drivers/char/ip2.c  
+            (Optional - may be specified on kernel command line now)
+ d) Run "make zImage" or whatever target you prefer.
+-e) mv /usr/src/linux/arch/i386/boot/zImage to /boot.
++e) mv /usr/src/linux/arch/x86/boot/zImage to /boot.
+ f) Add new config for this kernel into /etc/lilo.conf, run "lilo"
+ 	or copy to a floppy disk and boot from that floppy disk.
+ g) Reboot using this kernel
+diff --git a/Documentation/zh_CN/magic-number.txt b/Documentation/zh_CN/magic-number.txt
+index 4c4ce85..c278f41 100644
+--- a/Documentation/zh_CN/magic-number.txt
++++ b/Documentation/zh_CN/magic-number.txt
+@@ -66,7 +66,7 @@ MKISS_DRIVER_MAGIC    0x04bf      mkiss_channel     drivers/net/mkiss.h
+ RISCOM8_MAGIC         0x0907      riscom_port       drivers/char/riscom8.h
+ SPECIALIX_MAGIC       0x0907      specialix_port    drivers/char/specialix_io8.h
+ HDLC_MAGIC            0x239e      n_hdlc            drivers/char/n_hdlc.c
+-APM_BIOS_MAGIC        0x4101      apm_user          arch/i386/kernel/apm.c
++APM_BIOS_MAGIC        0x4101      apm_user          arch/x86/kernel/apm_32.c
+ CYCLADES_MAGIC        0x4359      cyclades_port     include/linux/cyclades.h
+ DB_MAGIC              0x4442      fc_info           drivers/net/iph5526_novram.c
+ DL_MAGIC              0x444d      fc_info           drivers/net/iph5526_novram.c
+-- 
+1.7.4.1
+
