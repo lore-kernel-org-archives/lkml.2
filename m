@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754875Ab1FMB5k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 21:57:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:24267 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754656Ab1FMB5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 21:57:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,356,1304319600"; 
-   d="scan'208";a="13596577"
-Subject: Re: [Bug #37222] 3.0.0-rc1-git3 -- kernel/sched.c:619 invoked
- rcu_dereference_check() without protection!
-From: Lin Ming <ming.m.lin@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Miles Lane <miles.lane@gmail.com>
-In-Reply-To: <BANLkTikjZ7O6SFmD2e-YnMztGHoGZL69qg@mail.gmail.com>
-References: <vv0uv79EvLN.A.jiC.pNS9NB@chimera>
-	 <JL7O0m0yLjL.A.u0C.0NS9NB@chimera>
-	 <BANLkTikjZ7O6SFmD2e-YnMztGHoGZL69qg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 13 Jun 2011 10:00:06 +0800
-Message-ID: <1307930406.4011.3.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752203Ab1FMCDP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 22:03:15 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:36430 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158Ab1FMCDO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 22:03:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
+         :mime-version:content-type;
+        b=Pob1xvCiycEXs4CDK5I7yZthCwGyE0EZmEMIA+ToOzZhhhXVlN56Bx/oIlvK1Y0PUi
+         6cPDux2oXOzwmvlx5Vmw==
+Date: Sun, 12 Jun 2011 19:03:02 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Christoph Lameter <cl@linux-foundation.org>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH] slub: fix kernel BUG at mm/slub.c:1950!
+Message-ID: <alpine.LSU.2.00.1106121842250.31463@sister.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.0-rc won't boot with SLUB on my PowerPC G5: kernel BUG at mm/slub.c:1950!
+Bisected to 1759415e630e "slub: Remove CONFIG_CMPXCHG_LOCAL ifdeffery".
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Date: Mon, Jun 13, 2011 at 4:30 AM
-> Subject: [Bug #37222] 3.0.0-rc1-git3 -- kernel/sched.c:619 invoked
-> rcu_dereference_check() without protection!
-> To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-> Cc: Kernel Testers List <kernel-testers@vger.kernel.org>, Maciej
-> Rutecki <maciej.rutecki@gmail.com>, Florian Mickler
-> <florian@mickler.org>, Miles Lane <miles.lane@gmail.com>
-> 
-> 
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
-> 
-> The following bug entry is on the current list of known regressions
-> from 2.6.39.  Please verify if it still should be listed and let the
-> tracking team
-> know (either way).
-> 
-> 
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=37222
-> Subject         : 3.0.0-rc1-git3 -- kernel/sched.c:619 invoked
-> rcu_dereference_check() without protection!
-> Submitter       : Miles Lane <miles.lane@gmail.com>
-> Date            : 2011-06-04 3:22 (9 days old)
-> Message-ID      : <BANLkTikHS7TuFhm3cfJ+Y=erWDaAwuE_TA@mail.gmail.com>
-> References      : http://marc.info/?l=linux-kernel&m=130715775803343&w=2
-> 
+After giving myself a medal for finding the BUG on line 1950 of mm/slub.c
+(it's actually the
+	VM_BUG_ON((unsigned long)(&pcp1) % (2 * sizeof(pcp1)));
+on line 268 of the morass that is include/linux/percpu.h)
+I tried the following alignment patch and found it to work.
 
-This was fixed already.
-http://git.kernel.org/?p=linux/kernel/git/x86/linux-2.6-tip.git;a=commit;h=6c6c54e180
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
+ include/linux/slub_def.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-commit 6c6c54e1807faf116724451ef2bd14993780470a
-Author: Peter Zijlstra <peterz@infradead.org>
-Date:   Fri Jun 3 17:37:07 2011 +0200
-
-    sched: Fix/clarify set_task_cpu() locking rules
-
-
-Thanks,
-Lin Ming
-
+--- 3.0-rc2/include/linux/slub_def.h	2011-05-29 18:42:37.077880848 -0700
++++ linux/include/linux/slub_def.h	2011-06-12 17:17:51.000000000 -0700
+@@ -43,7 +43,7 @@ struct kmem_cache_cpu {
+ #ifdef CONFIG_SLUB_STATS
+ 	unsigned stat[NR_SLUB_STAT_ITEMS];
+ #endif
+-};
++} __attribute__((aligned(2 * sizeof(long))));
+ 
+ struct kmem_cache_node {
+ 	spinlock_t list_lock;	/* Protect partial list and nr_partial */
