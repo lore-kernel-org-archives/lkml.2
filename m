@@ -1,191 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964Ab1FMIs7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 04:48:59 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:33570 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754570Ab1FMIs4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 04:48:56 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4DF5D0DC.5090205@cam.ac.uk>
-Date: Mon, 13 Jun 2011 09:57:00 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Bryan Freed <bfreed@chromium.org>
-CC: linux-kernel@vger.kernel.org, jbrenner@taosinc.com, gregkh@suse.de,
-        arnd@arndb.de, "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: [PATCH 1/2] light sensor: Add a calibration file to the isl29018
- driver.
-References: <1307737580-14131-1-git-send-email-bfreed@chromium.org>
-In-Reply-To: <1307737580-14131-1-git-send-email-bfreed@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755115Ab1FMI50 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 04:57:26 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:42033 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755092Ab1FMI5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 04:57:20 -0400
+Subject: Re: [PATCH] unicore32: fix build error for find bitops
+From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Reply-To: gxt@mprc.pku.edu.cn
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        greg@kroah.com
+In-Reply-To: <BANLkTi=aVFisCuS-W-4iNSmDVCtKOWD5_w@mail.gmail.com>
+References: <1307617752-23426-1-git-send-email-gxt@mprc.pku.edu.cn>
+	 <BANLkTikNC8uh-X_0iJZH3tYd_kf46W1Rwg@mail.gmail.com>
+	 <BANLkTimWYjzxhQBH2A76D590KBfjKbguTA@mail.gmail.com>
+	 <1307675815.1537.9.camel@epip-laptop>
+	 <BANLkTi=aVFisCuS-W-4iNSmDVCtKOWD5_w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: MPRC, PKU
+Date: Mon, 13 Jun 2011 16:57:02 +0800
+Message-ID: <1307955422.1878.3.camel@epip-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cc'd linux-iio 
-On 06/10/11 21:26, Bryan Freed wrote:
-> This is the same tuning file used in tsl2583.c.
-> Add documentation for it to sysfs-bus-iio-light.
-> Normalize it at 1024 instead of 1000 so we can avoid 64bit division (div_u64).
-> Use u64 so we can do all multiplication before division to avoid loss of
-> granularity on amplified values.
-Hi  Brian.
-
-This attribute is a general IIO one rather than a light specific one so is
-already documented in sysfs-bus-iio.
-
-Now it is supposed to be an offset rather than a gain.  The current docs say:
-
-"Hardware applied calibration offset. (assumed to fix production
- inaccuracies). If shared across all channels, <type>_calibbias
- is used."
-
-I do note that the illuminance variant isn't actually listed and would be
-happy to have a patch adding it alongside the gyro and accel ones already there.
-
-My first issue here is that it supposed to be an offset not a gain.  Secondly that
-description could clearly do with amending to make it clear that this can be used
-for devices with complex non linear transformations to SI units which is what it
-is supposed to be doing here.  In cases where there is no '_raw' output we can assume
-something complex may be happening, so changing this value won't result in a additive
-change the output.
-
-If we are playing with a gain, then calibscale is the parameter name that should be used
-(also a core attribute definition, not a light specific one).
-
-"Hardware applied calibration scale factor. (assumed to fix
- production inaccuracies).  If shared across all channels,
- <type>_calibscale is used."
-
-Note all these attributes are defined to be pseudo floating point.  The chan_spec approach
-to registration handles this cleanly (particularly with Michael Hennerich's additional
-callbacks added last week).  It's a gain, so 1 is the no change value. Sorry, but anything
-that assumes 1024 is the no effect value is never going to generalize well
-so is a non starter.
-
-Sorry, I'll be happy to see a patch adding the support you want to the isl29018 driver
-but it must conform to the existing abi.  It looks like you may have found a discrepancy
-between a driver and the spec, but I'll leave Jon to comment on that. 
-
-Jonathan
+On Fri, 2011-06-10 at 13:22 +0900, Akinobu Mita wrote:
+> 2011/6/10 Guan Xuetao <gxt@mprc.pku.edu.cn>:
+> > On Thu, 2011-06-09 at 23:05 +0900, Akinobu Mita wrote:
+> >> 2011/6/9 Akinobu Mita <akinobu.mita@gmail.com>:
+> >> > 2011/6/9 GuanXuetao <gxt@mprc.pku.edu.cn>:
+> >> >> From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> >> >>
+> >> >> Remove the __uc32_ prefix in find bitops functions.
+> >> >> see commit <19de85ef574c3a2182e3ccad9581805052f14946>
+> >> >>  bitops: add #ifndef for each of find bitops
+> >> >>
+> >> >> Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> >> >> Cc: Akinobu Mita <akinobu.mita@gmail.com>
+> >> >> ---
+> >> >>  arch/unicore32/include/asm/bitops.h |    6 ------
+> >> >>  arch/unicore32/kernel/ksyms.c       |    4 ++--
+> >> >>  arch/unicore32/lib/findbit.S        |   14 ++++++++------
+> >> >>  3 files changed, 10 insertions(+), 14 deletions(-)
+> >> >>
+> >> >> diff --git a/arch/unicore32/include/asm/bitops.h b/arch/unicore32/include/asm/bitops.h
+> >> >> index 1628a63..a9653f0 100644
+> >> >> --- a/arch/unicore32/include/asm/bitops.h
+> >> >> +++ b/arch/unicore32/include/asm/bitops.h
+> >> >> @@ -13,12 +13,6 @@
+> >> >>  #ifndef __UNICORE_BITOPS_H__
+> >> >>  #define __UNICORE_BITOPS_H__
+> >> >>
+> >> >> -#define find_next_bit          __uc32_find_next_bit
+> >> >> -#define find_next_zero_bit     __uc32_find_next_zero_bit
+> >> >> -
+> >> >> -#define find_first_bit         __uc32_find_first_bit
+> >> >> -#define find_first_zero_bit    __uc32_find_first_zero_bit
+> >> >> -
+> >> >
+> >> > Is this patch really fix the build error?
+> >> >
+> >> > If these find_*_bit macros are removed, vmlinux will have multiple
+> >> > definisions of find_*_bit. Because lib/find_next_bit.c is built
+> >> > unconditionally after the commit 63e424c84429903c92a0f1e9654c31ccaf6694d0
+> >> > ("arch: remove CONFIG_GENERIC_FIND_{NEXT_BIT,BIT_LE,LAST_BIT}".
+> >>
+> >> The attached patch hopefully fix the build error but it is untested
+> >> because I can't find crosstool for unicore32. So could you apply
+> >> this patch on top of your patch and check whether it fixes?
+> >
+> > Thanks Akinobu.
+> > I want to avoid the duplication of the 'extern' function definitions in
+> > asm-generic header and arch-specific header.
 > 
-> Signed-off-by: Bryan Freed <bfreed@chromium.org>
-> ---
->  .../staging/iio/Documentation/sysfs-bus-iio-light  |   10 +++++
->  drivers/staging/iio/light/isl29018.c               |   36 +++++++++++++++++++-
->  2 files changed, 45 insertions(+), 1 deletions(-)
+> OK then adding the following four lines after asm-generic/bitops.h
+> inclusion should fix the problem.
 > 
-> diff --git a/drivers/staging/iio/Documentation/sysfs-bus-iio-light b/drivers/staging/iio/Documentation/sysfs-bus-iio-light
-> index 21d2774..704b6c9 100644
-> --- a/drivers/staging/iio/Documentation/sysfs-bus-iio-light
-> +++ b/drivers/staging/iio/Documentation/sysfs-bus-iio-light
-> @@ -75,3 +75,13 @@ KernelVersion:	2.6.37
->  Contact:	linux-iio@vger.kernel.org
->  Description:
->  		This property gets/sets the sensors ADC analog integration time.
-> +
-> +What:		/sys/bus/iio/devices/device[n]/illuminance0_calibbias
-> +KernelVersion:	2.6.38
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		This property gets/sets the illuminance0_input amplification
-> +		value.  The calculated lux reading is multiplied by this value
-> +		and divided by 1024.  Default of 1024 gives no amplification.
-> +		This provides compensation for glass or bezel that can
-> +		attenuate the ambient light.
-> diff --git a/drivers/staging/iio/light/isl29018.c b/drivers/staging/iio/light/isl29018.c
-> index 4794ffd..a106f16 100644
-> --- a/drivers/staging/iio/light/isl29018.c
-> +++ b/drivers/staging/iio/light/isl29018.c
-> @@ -57,6 +57,7 @@ struct isl29018_chip {
->  	struct iio_dev		*indio_dev;
->  	struct i2c_client	*client;
->  	struct mutex		lock;
-> +	unsigned int		calibbias;
->  	unsigned int		range;
->  	unsigned int		adc_bit;
->  	int			prox_scheme;
-> @@ -157,6 +158,7 @@ static int isl29018_read_sensor_input(struct i2c_client *client, int mode)
->  
->  static int isl29018_read_lux(struct i2c_client *client, int *lux)
->  {
-> +	u64 lux64;
->  	int lux_data;
->  	struct isl29018_chip *chip = i2c_get_clientdata(client);
->  
-> @@ -166,7 +168,8 @@ static int isl29018_read_lux(struct i2c_client *client, int *lux)
->  	if (lux_data < 0)
->  		return lux_data;
->  
-> -	*lux = (lux_data * chip->range) >> chip->adc_bit;
-> +	lux64 = lux_data * chip->range;
-> +	*lux = (lux64 * chip->calibbias) >> (10 + chip->adc_bit);
->  
->  	return 0;
->  }
-> @@ -264,6 +267,33 @@ static ssize_t get_sensor_data(struct device *dev, char *buf, int mode)
->  }
->  
->  /* Sysfs interface */
-> +/* calibbias */
-> +static ssize_t show_calibbias(struct device *dev,
-> +			struct device_attribute *attr, char *buf)
-> +{
-> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-> +	struct isl29018_chip *chip = indio_dev->dev_data;
-> +
-> +	return sprintf(buf, "%u\n", chip->calibbias);
-> +}
-> +
-> +static ssize_t store_calibbias(struct device *dev,
-> +		struct device_attribute *attr, const char *buf, size_t count)
-> +{
-> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-> +	struct isl29018_chip *chip = indio_dev->dev_data;
-> +	unsigned long lval;
-> +
-> +	if (strict_strtoul(buf, 10, &lval))
-> +		return -EINVAL;
-> +
-> +	mutex_lock(&chip->lock);
-> +	chip->calibbias = lval;
-> +	mutex_unlock(&chip->lock);
-> +
-> +	return count;
-> +}
-> +
->  /* range */
->  static ssize_t show_range(struct device *dev,
->  			struct device_attribute *attr, char *buf)
-> @@ -412,6 +442,8 @@ static IIO_DEVICE_ATTR(proximity_on_chip_ambient_infrared_supression,
->  					show_prox_infrared_supression,
->  					store_prox_infrared_supression, 0);
->  static IIO_DEVICE_ATTR(illuminance0_input, S_IRUGO, show_lux, NULL, 0);
-> +static IIO_DEVICE_ATTR(illuminance0_calibbias, S_IRUGO | S_IWUSR,
-> +					show_calibbias, store_calibbias, 0);
->  static IIO_DEVICE_ATTR(intensity_infrared_raw, S_IRUGO, show_ir, NULL, 0);
->  static IIO_DEVICE_ATTR(proximity_raw, S_IRUGO, show_proxim_ir, NULL, 0);
->  
-> @@ -424,6 +456,7 @@ static struct attribute *isl29018_attributes[] = {
->  	ISL29018_CONST_ATTR(adc_resolution_available),
->  	ISL29018_DEV_ATTR(proximity_on_chip_ambient_infrared_supression),
->  	ISL29018_DEV_ATTR(illuminance0_input),
-> +	ISL29018_DEV_ATTR(illuminance0_calibbias),
->  	ISL29018_DEV_ATTR(intensity_infrared_raw),
->  	ISL29018_DEV_ATTR(proximity_raw),
->  	NULL
-> @@ -478,6 +511,7 @@ static int __devinit isl29018_probe(struct i2c_client *client,
->  
->  	mutex_init(&chip->lock);
->  
-> +	chip->calibbias = 1024;
->  	chip->range = 1000;
->  	chip->adc_bit = 16;
->  
+> #define find_next_bit find_next_bit
+> #define find_next_zero_bit find_next_zero_bit
+> #define find_first_bit find_first_bit
+> #define find_first_zero_bit find_first_zero_bit
+
+Thanks, please review following patch:
+>From 660882536a3c7c77e0f8d817dabcbbecab20367d Mon Sep 17 00:00:00 2001
+From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Date: Mon, 13 Jun 2011 11:44:49 +0800
+Subject: [PATCH] unicore32: fix build error for find bitops
+
+Remove the __uc32_ prefix in find bitops functions.
+Move find_* macros behind asm-generic/bitops.h inclusion.
+see commit <19de85ef574c3a2182e3ccad9581805052f14946>
+  bitops: add #ifndef for each of find bitops
+also see commit <63e424c84429903c92a0f1e9654c31ccaf6694d0>
+  arch: remove CONFIG_GENERIC_FIND_{NEXT_BIT,BIT_LE,LAST_BIT}
+
+Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>
+---
+ arch/unicore32/include/asm/bitops.h |   12 ++++++------
+ arch/unicore32/kernel/ksyms.c       |    4 ++--
+ arch/unicore32/lib/findbit.S        |   14 ++++++++------
+ 3 files changed, 16 insertions(+), 14 deletions(-)
+
+diff --git a/arch/unicore32/include/asm/bitops.h
+b/arch/unicore32/include/asm/bitops.h
+index 1628a63..401f597 100644
+--- a/arch/unicore32/include/asm/bitops.h
++++ b/arch/unicore32/include/asm/bitops.h
+@@ -13,12 +13,6 @@
+ #ifndef __UNICORE_BITOPS_H__
+ #define __UNICORE_BITOPS_H__
+ 
+-#define find_next_bit		__uc32_find_next_bit
+-#define find_next_zero_bit	__uc32_find_next_zero_bit
+-
+-#define find_first_bit		__uc32_find_first_bit
+-#define find_first_zero_bit	__uc32_find_first_zero_bit
+-
+ #define _ASM_GENERIC_BITOPS_FLS_H_
+ #define _ASM_GENERIC_BITOPS___FLS_H_
+ #define _ASM_GENERIC_BITOPS_FFS_H_
+@@ -44,4 +38,10 @@ static inline int fls(int x)
+ 
+ #include <asm-generic/bitops.h>
+ 
++/* following definitions: to avoid using codes in lib/find_*.c */
++#define find_next_bit		find_next_bit
++#define find_next_zero_bit	find_next_zero_bit
++#define find_first_bit		find_first_bit
++#define find_first_zero_bit	find_first_zero_bit
++
+ #endif /* __UNICORE_BITOPS_H__ */
+diff --git a/arch/unicore32/kernel/ksyms.c
+b/arch/unicore32/kernel/ksyms.c
+index a897080..d98bd81 100644
+--- a/arch/unicore32/kernel/ksyms.c
++++ b/arch/unicore32/kernel/ksyms.c
+@@ -24,8 +24,8 @@
+ 
+ #include "ksyms.h"
+ 
+-EXPORT_SYMBOL(__uc32_find_next_zero_bit);
+-EXPORT_SYMBOL(__uc32_find_next_bit);
++EXPORT_SYMBOL(find_next_zero_bit);
++EXPORT_SYMBOL(find_next_bit);
+ 
+ EXPORT_SYMBOL(__backtrace);
+ 
+diff --git a/arch/unicore32/lib/findbit.S b/arch/unicore32/lib/findbit.S
+index c360ce9..c777462 100644
+--- a/arch/unicore32/lib/findbit.S
++++ b/arch/unicore32/lib/findbit.S
+@@ -17,7 +17,7 @@
+  * Purpose  : Find a 'zero' bit
+  * Prototype: int find_first_zero_bit(void *addr, unsigned int maxbit);
+  */
+-__uc32_find_first_zero_bit:
++ENTRY(find_first_zero_bit)
+ 		cxor.a	r1, #0
+ 		beq	3f
+ 		mov	r2, #0
+@@ -29,13 +29,14 @@ __uc32_find_first_zero_bit:
+ 		bub	1b
+ 3:		mov	r0, r1			@ no free bits
+ 		mov	pc, lr
++ENDPROC(find_first_zero_bit)
+ 
+ /*
+  * Purpose  : Find next 'zero' bit
+  * Prototype: int find_next_zero_bit
+  *		(void *addr, unsigned int maxbit, int offset)
+  */
+-ENTRY(__uc32_find_next_zero_bit)
++ENTRY(find_next_zero_bit)
+ 		cxor.a	r1, #0
+ 		beq	3b
+ 		and.a	ip, r2, #7
+@@ -47,14 +48,14 @@ ENTRY(__uc32_find_next_zero_bit)
+ 		or	r2, r2, #7		@ if zero, then no bits here
+ 		add	r2, r2, #1		@ align bit pointer
+ 		b	2b			@ loop for next bit
+-ENDPROC(__uc32_find_next_zero_bit)
++ENDPROC(find_next_zero_bit)
+ 
+ /*
+  * Purpose  : Find a 'one' bit
+  * Prototype: int find_first_bit
+  *		(const unsigned long *addr, unsigned int maxbit);
+  */
+-__uc32_find_first_bit:
++ENTRY(find_first_bit)
+ 		cxor.a	r1, #0
+ 		beq	3f
+ 		mov	r2, #0
+@@ -66,13 +67,14 @@ __uc32_find_first_bit:
+ 		bub	1b
+ 3:		mov	r0, r1			@ no free bits
+ 		mov	pc, lr
++ENDPROC(find_first_bit)
+ 
+ /*
+  * Purpose  : Find next 'one' bit
+  * Prototype: int find_next_zero_bit
+  *		(void *addr, unsigned int maxbit, int offset)
+  */
+-ENTRY(__uc32_find_next_bit)
++ENTRY(find_next_bit)
+ 		cxor.a	r1, #0
+ 		beq	3b
+ 		and.a	ip, r2, #7
+@@ -83,7 +85,7 @@ ENTRY(__uc32_find_next_bit)
+ 		or	r2, r2, #7		@ if zero, then no bits here
+ 		add	r2, r2, #1		@ align bit pointer
+ 		b	2b			@ loop for next bit
+-ENDPROC(__uc32_find_next_bit)
++ENDPROC(find_next_bit)
+ 
+ /*
+  * One or more bits in the LSB of r3 are assumed to be set.
+-- 
+1.6.2.2
+
+
 
