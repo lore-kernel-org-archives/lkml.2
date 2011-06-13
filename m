@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754501Ab1FMUCl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 16:02:41 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:46392 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab1FMUCj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 16:02:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=qkJXFsnCLbyZPnAVTIGnikvlhsrztwhBgq43U+SB6jbx3mLeYKNJO/J4w3ujgLAokN
-         +Vmadmah8uoudFH2ucAxC8HeQNlB+4AQXRQTJ4/GYxeeGS9KUgq2UaEYcbb6eNGuP1CQ
-         N1mpS5nfLt4bLnOxi6D1AyM5c9d9zUzd21Ndg=
+	id S1754204Ab1FMUKH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 16:10:07 -0400
+Received: from claw.goop.org ([74.207.240.146]:57592 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752610Ab1FMUKE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 16:10:04 -0400
+Message-ID: <4DF66E96.3010709@goop.org>
+Date: Mon, 13 Jun 2011 13:09:58 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1106121621360.25151@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1106121621360.25151@swampdragon.chaosbits.net>
-Date: Tue, 14 Jun 2011 00:02:38 +0400
-Message-ID: <BANLkTikBnQADmUpP7J5gmJLXA9-O+4kSvw@mail.gmail.com>
-Subject: Re: [PATCH] ieee802154: Don't leak memory in ieee802154_nl_fill_phy
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-zigbee-devel@lists.sourceforge.net,
-        "David S. Miller" <davem@davemloft.net>,
-        Sergey Lapin <slapin@ossfans.org>,
-        Maxim Osipov <maxim.osipov@siemens.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+Subject: Re: [Bug #36972] 3.0-rc1: DMAR errors from iwlagn
+References: <vv0uv79EvLN.A.jiC.pNS9NB@chimera> <JL7O0m0yLjL.A.4AD.8NS9NB@chimera>
+In-Reply-To: <JL7O0m0yLjL.A.4AD.8NS9NB@chimera>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/12/11, Jesper Juhl <jj@chaosbits.net> wrote:
-> In net/ieee802154/nl-phy.c::ieee802154_nl_fill_phy() I see two small
-> issues.
-> 1) If the allocation of 'buf' fails we may just as well return -EMSGSIZE
->    directly rather than jumping to 'out:' and do a pointless kfree(0).
-> 2) We do not free 'buf' unless we jump to one of the error labels and this
->    leaks memory.
-> This patch should address both.
+On 06/12/2011 01:30 PM, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
 >
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> The following bug entry is on the current list of known regressions
+> from 2.6.39.  Please verify if it still should be listed and let the tracking team
+> know (either way).
+>
+>
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=36972
+> Subject		: 3.0-rc1: DMAR errors from iwlagn
+> Submitter	: Jeremy Fitzhardinge <jeremy@goop.org>
+> Date		: 2011-05-31 21:14 (13 days old)
+> Message-ID	: <4DE55A26.6040702@goop.org>
+> References	: http://marc.info/?l=linux-kernel&m=130687723213857&w=2
 
-Acked-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Still happening.  Haven't tested latest git yet, which has a number of
+iwlagn updates.
 
-David, please commit this.
+    J
 
--- 
-With best wishes
-Dmitry
