@@ -1,50 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab1FMXjg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 19:39:36 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:38329 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755469Ab1FMXje (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 19:39:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=aiMu0XoSLv8RRUexhBtovWHtnAVB1624LtZm9wCUARksiqnCSxsRlNYXwi/ws1zsdO
-         KeyrvLyesDWadoYHMV3F5VrN5E2M7EE2IIXryJeMErJ45KGNHaUp+CEJ4+hAPLjTj3IO
-         l8eDqUATPkdzRlYqW2T1/BTF60rWgM/dxxdXw=
+	id S1755423Ab1FMX45 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 19:56:57 -0400
+Received: from cantor.suse.de ([195.135.220.2]:53098 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755169Ab1FMX44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 19:56:56 -0400
+Date: Mon, 13 Jun 2011 16:50:00 -0700
+From: Greg KH <gregkh@suse.de>
+To: David Herrmann <dh.herrmann@googlemail.com>
+Cc: linux-kernel@vger.kernel.org, mjg@redhat.com
+Subject: Re: samsung-laptop backlight control not working
+Message-ID: <20110613235000.GA14194@suse.de>
+References: <BANLkTikwjL-3m110CcRs+-KLdZpH0rOTsQ@mail.gmail.com>
+ <20110519182753.GA23865@suse.de>
+ <BANLkTi=5HHCVUANbqJWQe7wZKVPBqM6RrQ@mail.gmail.com>
+ <BANLkTi=bWpbRkt1tie44+MoXWfPdG_zZ+w@mail.gmail.com>
 MIME-Version: 1.0
-Reply-To: wanlong.gao@gmail.com
-In-Reply-To: <20110613152711.GA8151@auslistsprd01.us.dell.com>
-References: <20110613152711.GA8151@auslistsprd01.us.dell.com>
-Date: Tue, 14 Jun 2011 07:39:32 +0800
-X-Google-Sender-Auth: Z70wIvwdT7PeU_29ImxzkkgHb7A
-Message-ID: <BANLkTimF4JH2tUtqtPR-Mpzf6WmMRCBezg@mail.gmail.com>
-Subject: Re: Discontinuing LKML and linux-scsi digest services
-From: Wanlong Gao <wanlong.gao@gmail.com>
-To: Matt Domsch <Matt_Domsch@dell.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=bWpbRkt1tie44+MoXWfPdG_zZ+w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/13/11, Matt Domsch <Matt_Domsch@dell.com> wrote:
-> (bcc to everyone subscribed to linux-kernel-daily-digest,
-> linux-kernel-digest, or linux-scsi-digest).
->
-> For several years, Dell has been pleased to offer digest forms of the
-> linux-kernel and linux-scsi mailing lists at http://lists.us.dell.com.
-> Due to impending hardware and software changes to the mailing list
-> server, we will be discontinuing this service within the next couple
-> weeks.
->
-> Please use services such as gmane.com, marc.info, and lkml.org, among
-> others, to satisfy your LKML and linux-scsi reading needs.
->
-> Thanks,
-> Matt
-So, It'll be continuing sooner or later?
-Thanks
->
+On Wed, Jun 01, 2011 at 04:50:17PM +0200, David Herrmann wrote:
+> Hi Greg
+> 
+> On Thu, May 19, 2011 at 8:53 PM, David Herrmann
+> <dh.herrmann@googlemail.com> wrote:
+> > On Thu, May 19, 2011 at 8:27 PM, Greg KH <gregkh@suse.de> wrote:
+> >> On Thu, May 19, 2011 at 08:18:16PM +0200, David Herrmann wrote:
+> >>> Hi
+> >>>
+> >>> I tried the new samsung-laptop driver with samsung backlight support.
+> >>
+> >> What kernel are you trying?  We have some recent patches to the driver
+> >> to try to resolve some of these issues on your laptop.
+> >
+> > I use linus' tree. 2.6.39
+> >
+> >>> It is detected as:
+> >>> [109282.931433] samsung_laptop: found laptop model 'N150P/N210P/N220P'
+> >>>
+> >>> However, backlight support is kind of weird:
+> >>> "echo 1 >/sys/class/backlight/samsung/brightness"
+> >>> does not set brightness to 1 but instead reduces brightness for 1.
+> >>> That is, if my current brightness setting is 8, I need to call "echo 1
+> >>> >..." 7 times to get brightness value 1.
+> >>>
+> >>> "cat /sys/class/backlight...."
+> >>> returns 1 after the first try, though.
+> >>>
+> >>> "echo 3 >..."
+> >>> reduces brightness also for 1 but stops at brightness level 3 if I
+> >>> repeat the command.
+> >>>
+> >>> dmesg shows the following for every "echo" I call:
+> >>> [110690.073783] ACPI: Failed to switch the brightness
+> >>>
+> >>> Furthermore "echo 0 >..." doesn't disable backlight but instead
+> >>> behaves like a brightness setting below 1.
+> >>
+> >> Yeah, don't echo 0 there, that doesn't work to well.  I have some
+> >> patches here that you can try if you want, just let me know.
+> >
+> > That would be great! I have really no idea about acpi so I can't fix
+> > it myself. If you could give me some git tree where I can find them, I
+> > could test them.
+> >
+> >>> However, I know the following works on my machine:
+> >>> setpci -s 00:02.0 F4.B=255
+> >>> It accepts a setting between 0-255 and 255 is full brightness and 0 is
+> >>> backlight off.
+> >>
+> >> Don't do that, the video driver will not like you as you are changing
+> >> things without telling the bios that something is really happening.
+> >>
+> >> Of course you can continue to do this, it's just strongly not
+> >> recommended.
+> >
+> > Ouh, I didn't know that. It was recommended in some distro wiki so I
+> > tried it and it worked. Anyway, I thought it might give you some
+> > information about the N210 model.
+> >
+> >> thanks,
+> >>
+> >> greg k-h
+> >
+> > Thanks
+> > David
+> 
+> Maybe you missed that mail, any update on this? Where could I get
+> those patches? ;)
+
+Ick, sorry, they can be found at:
+	http://git.kernel.org/?p=linux/kernel/git/gregkh/patches.git;a=tree
+
+I need to push them to Michael soon, I've been swamped with other stuff
+at the moment, sorry about this.
+
+greg k-h
