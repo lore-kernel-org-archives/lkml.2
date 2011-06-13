@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab1FMBDf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jun 2011 21:03:35 -0400
-Received: from mga01.intel.com ([192.55.52.88]:56598 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754301Ab1FMBDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jun 2011 21:03:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,356,1304319600"; 
-   d="scan'208";a="15435715"
-Subject: Re: CFQ: async queue blocks the whole system
-From: Shaohua Li <shaohua.li@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Tao Ma <tm@tao.ma>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-In-Reply-To: <20110610092031.GD4183@redhat.com>
-References: <1307616577-6101-1-git-send-email-tm@tao.ma>
-	 <20110609141451.GD29913@redhat.com> <4DF0DD0F.8090407@tao.ma>
-	 <20110609153738.GF29913@redhat.com>
-	 <BANLkTinMp5_TS-=Y0ZsxB45RLQv18WCZDg@mail.gmail.com>
-	 <BANLkTikNrxqxcouafDA-HuuDm8G_Ho7Mwg@mail.gmail.com>
-	 <4DF17C38.2010306@tao.ma>
-	 <BANLkTincgq4hRU=kag9sspU5ZB8QOx7gUQ@mail.gmail.com>
-	 <4DF18933.4070904@tao.ma>  <20110610092031.GD4183@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 13 Jun 2011 09:03:29 +0800
-Message-ID: <1307927009.15392.102.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754813Ab1FMBEe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jun 2011 21:04:34 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48891 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754542Ab1FMBEc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jun 2011 21:04:32 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DF5620B.1080706@jp.fujitsu.com>
+Date: Mon, 13 Jun 2011 10:04:11 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: minchan.kim@gmail.com
+CC: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, aarcange@redhat.com,
+        riel@redhat.com, hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: [PATCH v3 05/10] vmscan: make isolate_lru_page with filter aware
+References: <cover.1307455422.git.minchan.kim@gmail.com> <f101a50f11ffac79eff441c58eafbb5eceac0b47.1307455422.git.minchan.kim@gmail.com>
+In-Reply-To: <f101a50f11ffac79eff441c58eafbb5eceac0b47.1307455422.git.minchan.kim@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-10 at 17:20 +0800, Vivek Goyal wrote:
-> On Fri, Jun 10, 2011 at 11:02:11AM +0800, Tao Ma wrote:
+(2011/06/07 23:38), Minchan Kim wrote:
+> In __zone_reclaim case, we don't want to shrink mapped page.
+> Nonetheless, we have isolated mapped page and re-add it into
+> LRU's head. It's unnecessary CPU overhead and makes LRU churning.
 > 
-> [..]
-> > > I don't think we can give a deadline for async request, because we
-> > > still want to give sync high priority. We can give async some slices,
-> > > so for a workload of small number of async requests and large number
-> > > sync requests, we don't starve async too much. But for a workload with
-> > > large number of sync/async requests, async will be starved for sure
-> > > and we can't solve this in cfq.
-> > OK, so if you guys thinks a 500 seconds wait is good for an async write
-> > to complete, fine, then we have to switch to deadline.
+> Of course, when we isolate the page, the page might be mapped but
+> when we try to migrate the page, the page would be not mapped.
+> So it could be migrated. But race is rare and although it happens,
+> it's no big deal.
 > 
-> I don't think that starving WRITES completely is a good idea. Especially
-> given the fact that you were not able to dispatch WRITES for 500 seconds.
-> This needs fixing.
-> 
-> Its not about giving hard deadline to WRITES, but making sure we don't
-> starve them completely and they also make some progress.
-Sure, I have no objection to avoid write starvation for a light write
-workload. We definitely should do something for such workload. Your
-patch is a good start.
-But for a heavy write workload (for example, Ma's test), CFQ never can
-completely avoid write starvation. In such workload, write queue has
-only slow progress to handle requests.
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 
-Thanks,
-Shaohua
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+
 
