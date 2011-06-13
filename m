@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143Ab1FMI5y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 04:57:54 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:44122 "EHLO e5.ny.us.ibm.com"
+	id S1754987Ab1FMIvb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 04:51:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9731 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754908Ab1FMI5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 04:57:52 -0400
-Date: Mon, 13 Jun 2011 14:20:17 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Corbet <corbet@lwn.net>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 2/22]  2: uprobes: Breakground page
- replacement.
-Message-ID: <20110613085017.GC27130@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
- <20110607125835.28590.25476.sendpatchset@localhost6.localdomain6>
- <1307660607.2497.1771.camel@laptop>
+	id S1754255Ab1FMIv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 04:51:27 -0400
+Date: Mon, 13 Jun 2011 09:50:55 +0100
+From: Joe Thornber <thornber@redhat.com>
+To: "Amir G." <amir73il@users.sourceforge.net>
+Cc: Lukas Czerner <lczerner@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+        linux-ext4@vger.kernel.org, tytso@mit.edu,
+        linux-kernel@vger.kernel.org, lvm-devel@redhat.com,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: LVM vs. Ext4 snapshots (was: [PATCH v1 00/30] Ext4 snapshots)
+Message-ID: <20110613085054.GA4580@ubuntu>
+References: <BANLkTimyBGfg4+ovGsiGqpCz345qVmU_7A@mail.gmail.com>
+ <BANLkTik20iYN4c9faKD9dzerehazWTwTFw@mail.gmail.com>
+ <BANLkTikKRuPu_NX49vr0w-XeN0ZnWo+9vg@mail.gmail.com>
+ <alpine.LFD.2.00.1106101101020.4502@dhcp-27-109.brq.redhat.com>
+ <20110610101142.GA10144@ubuntu>
+ <BANLkTi=0N7QXRvFgjHUJXBi0x=668ahXXA@mail.gmail.com>
+ <20110611073517.GB2517@ubuntu>
+ <BANLkTi=THJi8Z2RTdfGgox4NH8hEGiN37A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1307660607.2497.1771.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <BANLkTi=THJi8Z2RTdfGgox4NH8hEGiN37A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2011-06-10 01:03:27]:
-
-> On Tue, 2011-06-07 at 18:28 +0530, Srikar Dronamraju wrote:
-> > +       ret = anon_vma_prepare(vma);
-> > +       if (ret)
-> > +               goto unlock_out;
+On Sat, Jun 11, 2011 at 12:58:26PM +0300, Amir G. wrote:
+> I meant _readonly_ snapshots of a _writable_ _external_ origin,
+> which is what ext4 snapshots provides.
+> All snapshots are chained on a list that points to the origin and
+> only the latest (active) snapshot metadata get updated on origin writes.
+> When older snapshots lookup return -ENODATA, you go up the list
+> to the newer snapshot and up to the origin.
 > 
-> You just leaked new_page.
+> Those _incremental_ snapshots cannot be _writable_, because older
+> snapshots may implicitly share blocks with newer snapshots, but it should
+> be possible to make _writable_ clones of these snapshots.
+> Not sure what the implications are for deleting snapshots, because I am
+> not familiar with all the implementation details of multisnap.
 
-Right, Will fix this.
+I deliberately ruled out chaining schemes like this because I want to
+support large numbers of snapshots.  I believe Daniel Phillips
+described a chaining scheme a while ago, and someone else implemented
+it last year.  From a cursory glance through the code they posted on
+dm-devel, it appeared to need a large in memory hash table to cache
+all those chained lookups.
 
--- 
-Thanks and Regards
-Srikar
+- Joe
