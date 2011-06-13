@@ -1,75 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751487Ab1FMEoS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 00:44:18 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58823 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750802Ab1FMEoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 00:44:17 -0400
-Message-ID: <4DF5961A.6050006@cn.fujitsu.com>
-Date: Mon, 13 Jun 2011 12:46:18 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 0/15] KVM: optimize for MMIO handled
-References: <4DEE205E.8000601@cn.fujitsu.com> <4DF0789B.2050401@redhat.com> <4DF19803.9040407@cn.fujitsu.com> <4DF47D0A.9060604@redhat.com>
-In-Reply-To: <4DF47D0A.9060604@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-13 12:43:57,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-13 12:44:00,
-	Serialize complete at 2011-06-13 12:44:00
+	id S1752271Ab1FMEyX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 00:54:23 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37033 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802Ab1FMEyV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 00:54:21 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 13 Jun 2011 13:47:01 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Ankita Garg <ankita@in.ibm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        svaidy@linux.vnet.ibm.com, thomas.abraham@linaro.org
+Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
+ Power Management
+Message-Id: <20110613134701.2b23b8d8.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
+References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2011 04:47 PM, Avi Kivity wrote:
-> On 06/10/2011 07:05 AM, Xiao Guangrong wrote:
->> On 06/09/2011 03:39 PM, Avi Kivity wrote:
->>
->> >  First, I think we should consider dropping bypass_guest_pf completely, just so we have less things to think about.
->> >
->>
->> I agree.
-> 
-> Great, please post a patch.
+On Fri, 27 May 2011 18:01:28 +0530
+Ankita Garg <ankita@in.ibm.com> wrote:
 
-OK.
-
->> Ah, maybe the cpu can not do it, we need a light way to get spte for i386 host...
-> 
-> Look at the comments in arch/x86/mm/gup.c - it does the same thing.
+> Hi,
 > 
 
-Yeah, it is a good study case for me.
+I'm sorry if you've answered already.
 
->> the origin way is:
->>
->> fetch last level spte
->> if failed or it is not a mmio spte:
->>     call page fault
->> do mmio
->>
->> and it has little heavy sine we need to walk guest page table,
->> and build spte under mmu-lock.
-> 
-> For shadow, yes, this is a good optimization.  But with nested paging it slow things down.  We already have the gpa, so all we need to do is follow the mmio path.  There's no need to walk the spte hierarchy.
-> 
+Is memory hotplug is too bad and cannot be enhanced for this purpose ?
 
-Yes, it is, i just want to detect BUG for KVM, it helps us to know if "ept misconfig" is the
-real MMIO or the BUG. I noticed some "ept misconfig" BUGs is reported before, so i think doing
-this is necessary, and i think it is not too bad, since walking spte hierarchy is lockless,
-it really fast.
+I wonder
+  - make section-size smaller (IIUC, IBM's system has 16MB section size)
 
->> Maybe i missed your meaning, could you please tell me the advantage? :-(
-> 
-> I wanted to also service RAM faults without the lock, if the only thing missing was the spte (and the rest of the hierarchy was fine).  But it can't be made to work without an overhaul of all of the locking.
-> 
+  - add per section statistics
 
-Great, i have the same thought, anyway, it is a good start :-)
+  - add a kind of balloon driver which does software memory offline
+    (which means making a contiguous chunk of free pages of section_size
+     by page migration) in background with regard to memory usage statistics.
+    If system says "need more memory!", balloon driver can online pages.
+
+can work for your purpose. It can allow you page isolatation and
+controls in 16MB unit.  If you need whole rework of memory hotplug, I think
+it's better to rewrite memory hotplug, too.
+
+Thanks,
+-Kame
+
+
+
+
+
+> Modern systems offer higher CPU performance and large amount of memory in
+> each generation in order to support application demands.  Memory subsystem has
+> began to offer wide range of capabilities for managing power consumption,
+> which is driving the need to relook at the way memory is managed by the
+> operating system. Linux VM subsystem has sophisticated algorithms to
+> optimally  manage the scarce resources for best overall system performance.
+> Apart from the capacity and location of memory areas, the VM subsystem tracks
+> special addressability restrictions in zones and relative distance from CPU as
+> NUMA nodes if necessary. Power management capabilities in the memory subsystem
+> and inclusion of different class of main memory like PCM, or non-volatile RAM,
+> brings in new boundaries and attributes that needs to be tagged within the
+> Linux VM subsystem for exploitation by the kernel and applications.
+> 
+> This patchset proposes a generic memory regions infrastructure that can be
+> used to tag boundaries of memory blocks which belongs to a specific memory
+> power management domain and further enable exploitation of platform memory
+> power management capabilities.
+> 
+> How can Linux VM help memory power savings?
+> 
+> o Consolidate memory allocations and/or references such that they are
+> not spread across the entire memory address space.  Basically area of memory
+> that is not being referenced, can reside in low power state.
+> 
+> o Support targeted memory reclaim, where certain areas of memory that can be
+> easily freed can be offlined, allowing those areas of memory to be put into
+> lower power states.
+> 
+> What is a Memory Region ?
+> -------------------------
+> 
+> Memory regions is a generic memory management framework that enables the
+> virtual memory manager to consider memory characteristics when making memory
+> allocation and deallocation decisions. It is a layer of abstraction under the
+> real NUMA nodes, that encapsulate knowledge of the underlying memory hardware.
+> This layer is created at boot time, with information from firmware regarding
+> the granularity at which memory power can be managed on the platform. For
+> example, on platforms with support for Partial Array Self-Refresh (PASR) [1],
+> regions could be aligned to memory unit that can be independently put into
+> self-refresh or turned off (content destructive power off). On the other hand,
+> platforms with support for multiple memory controllers that control the power
+> states of memory, one memory region could be created for all the memory under
+> a single memory controller.
+> 
+> The aim of the alignment is to ensure that memory allocations, deallocations
+> and reclaim are performed within a defined hardware boundary. By creating
+> zones under regions, the buddy allocator would operate at the level of
+> regions. The proposed data structure is as shown in the Figure below:
+> 
+> 
+>              -----------------------------
+>              |N0 |N1 |N2 |N3 |.. |.. |Nn |   
+>              -----------------------------   
+>              / \ \
+>             /   \  \
+>            /     \   \
+>  ------------    |  ------------
+>  | Mem Rgn0 |    |  | Mem Rgn3 |             
+>  ------------    |  ------------             
+>     |            |         |
+>     |      ------------    | ---------
+>     |      | Mem Rgn1 |    ->| zones |
+>     |      ------------      ---------
+>     |          |     ---------
+>     |          ----->| zones |
+>     | ---------      ---------
+>     ->| zones |
+>       ---------
+> 
+> Memory regions enable the following :
+> 
+> o Sequential allocation of memory in the order of memory regions, thus
+>   ensuring that greater number of memory regions are devoid of allocations to
+>   begin with
+> o With time however, the memory allocations will tend to be spread across
+>   different regions. But the notion of a region boundary and region level
+>   memory statistics will enable specific regions to be evacuated using
+>   targetted allocation and reclaim. 
+> 
+> Lumpy reclaim and other memory compaction work by Mel Gorman, would further
+> aid in consolidation of memory [4].
+> 
+> Memory regions is just a base infrastructure that would enable the Linux VM to
+> be aware of the physical memory hardware characterisitics, a pre-requisite to
+> implementing other sophisticated algorithms and techniques to actually
+> conserve power.
+> 
+> Advantages
+> -----------
+> 
+> Memory regions framework works with existing memory management data
+> structures and only adds one more layer of abstraction that is required to
+> capture special boundaries and properties.  Most VM code paths work similar
+> to current implementation with additional traversal of zone data structures
+> in pre-defined order.
+> 
+> Alternative Approach:
+> 
+> There are other ways in which memory belonging to the same power domain could
+> be grouped together. Fake NUMA nodes under a real NUMA node could encapsulate
+> information about the memory hardware units that can be independently power
+> managed. With minimal code changes, the same functionality as memory regions
+> can be achieved. However, the fake NUMA nodes is a non-intuitive solution, 
+> that breaks the NUMA semantics and is not generic in nature. It would present
+> an incorrect view of the system to the administrator, by showing that it has a
+> greater number of NUMA nodes than actually present.
+> 
+> Challenges
+> ----------
+> 
+> o Memory interleaving is typically used on all platforms to increase the
+>   memory bandwidth and hence memory performance. However, in the presence of
+>   interleaving, the amount of idle memory within the hardware domain reduces,
+>   impacting power savings. For a given platform, it is important to select an
+>   interleaving scheme that gives good performance with optimum power savings.
+> 
+> This is a RFC patchset with minimal functionality to demonstrate the
+> requirement and proposed implementation options. It has been tested on TI
+> OMAP4 Panda board with 1Gb RAM and the Samsung Exynos 4210 board. The patch
+> applies on kernel version 2.6.39-rc5, compiled with the default config files
+> for the two platforms. I have turned off cgroup, memory hotplug and kexec to
+> begin. Support to these framework can be easily extended. The u-boot
+> bootloader does not yet export information regarding the physical memory bank
+> boundaries and hence the regions are not correctly aligned to hardware and
+> hence hard coded for test/demo purposes. Also, the code assumes that atleast
+> one region is present in the node. Compile time exclusion of memory regions is
+> a todo.
+> 
+> Results
+> -------
+> Ran pagetest, a simple C program that allocates and touches a required number
+> of pages, on a Samsung Exynos 4210 board with ~2GB RAM, booted with 4 memory
+> regions, each with ~512MB. The allocation size used was 512MB. Below is the
+> free page statistics while running the benchmark:
+> 
+> 		---------------------------------------
+> 	 	|	   | start  | ~480MB |  512MB |	
+> 		---------------------------------------
+> 		| Region 0 | 124013 | 1129   | 484    |
+> 		| Region 1 | 131072 | 131072 | 130824 |
+> 		| Region 2 | 131072 | 131072 | 131072 |
+> 		| Region 3 | 57332  | 57332  | 57332  |
+> 		---------------------------------------
+> 
+> (The total number of pages in Region 3 is 57332, as it contains all the
+> remaining pages and hence the region size is not 512MB).
+> 
+> Column 1 indicates the number of free pages in each region at the start of the
+> benchmark, column 2 at about 480MB allocation and column 3 at 512MB
+> allocation. The memory in regions 1,2 & 3 is free and only region0 is
+> utilized. So if the regions are aligned to the hardware memory units, free
+> regions could potentially be put either into low power state or turned off. It
+> may be possible to allocate from lower address without regions, but once the
+> page reclaim comes into play, the page allocations will tend to get spread
+> around.
+> 
+> References
+> ----------
+> 
+> [1] Partial Array Self Refresh
+> http://focus.ti.com/general/docs/wtbu/wtbudocumentcenter.tsp?templateId=6123&navigationId=12037
+> [2] TI OMAP$ Panda board
+> http://pandaboard.org/node/224/#manual
+> [3] Memory Regions discussion at Ubuntu Development Summit, May 2011
+> https://wiki.linaro.org/Specs/KernelGeneralPerformanceO?action=AttachFile&do=view&target=k81-memregions.odp
+> [4] Memory compaction
+> http://lwn.net/Articles/368869/
+> 
+> Ankita Garg (10):
+>   mm: Introduce the memory regions data structure
+>   mm: Helper routines
+>   mm: Init zones inside memory regions
+>   mm: Refer to zones from memory regions
+>   mm: Create zonelists
+>   mm: Verify zonelists
+>   mm: Modify vmstat
+>   mm: Modify vmscan
+>   mm: Reflect memory region changes in zoneinfo
+>   mm: Create memory regions at boot-up
+> 
+>  include/linux/mm.h     |   25 +++-
+>  include/linux/mmzone.h |   58 +++++++--
+>  include/linux/vmstat.h |   22 ++-
+>  mm/mm_init.c           |   51 ++++---
+>  mm/mmzone.c            |   36 ++++-
+>  mm/page_alloc.c        |  368 +++++++++++++++++++++++++++++++-----------------
+>  mm/vmscan.c            |  284 ++++++++++++++++++++-----------------
+>  mm/vmstat.c            |   77 ++++++----
+>  8 files changed, 581 insertions(+), 340 deletions(-)
+> 
+> -- 
+> 1.7.4
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 
