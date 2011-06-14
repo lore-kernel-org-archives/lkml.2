@@ -1,51 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab1FNAhR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 20:37:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:35791 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755313Ab1FNAhQ (ORCPT
+	id S1755565Ab1FNAnL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 20:43:11 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:54905 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755529Ab1FNAnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 20:37:16 -0400
-X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=1ZhljathgHUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=J5f1eJ2kQfa3O2YAk3gA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 03/15] tracing: Add a free on close control mechanism
- for buffer_size_kb
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <BANLkTikssQhJu3t=ikpbq11oGeV2D3L-Zc1TuVW0+TKBqmkXyw@mail.gmail.com>
-References: <20110609172744.333794089@goodmis.org>
-	 <20110609172910.950101158@goodmis.org> <20110613101248.GC30962@elte.hu>
-	 <1307965185.9218.53.camel@gandalf.stny.rr.com>
-	 <20110613114904.GD10960@elte.hu>
-	 <1307966043.9218.63.camel@gandalf.stny.rr.com>
-	 <BANLkTikssQhJu3t=ikpbq11oGeV2D3L-Zc1TuVW0+TKBqmkXyw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 13 Jun 2011 20:37:15 -0400
-Message-ID: <1308011835.9218.104.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Mon, 13 Jun 2011 20:43:07 -0400
+X-Nat-Received: from [202.181.97.72]:60275 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1308012103.5362
+Message-Id: <201106140041.p5E0fhAh029531@www262.sakura.ne.jp>
+Subject: [3.0-rc3] scripts/depmod.sh: Permission denied
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: mmarek@suse.cz
+Cc: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
+Date: Tue, 14 Jun 2011 09:41:42 +0900
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 13062011 #5524395, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-13 at 13:01 -0700, Vaibhav Nagarnaik wrote:
+linux-3.0-rc3.tar.bz2 generates
+-rwxrwxr-x  1 root root 1231 Jun 14 07:29 linux-3.0-rc3/scripts/depmod.sh
+but linux-2.6.39.tar.bz2 + patch-3.0-rc3.bz2 generates
+-rw-r--r--  1 root root 1231 Jun 14 09:34 scripts/depmod.sh
+which results in
 
-> I have created the patch.
-> 
-> I was wondering what would you consider a good name for the new proc
-> file? David suggested "free_ring_buffer".
+make: execvp: /usr/src/linux-3.0-rc3/scripts/depmod.sh: Permission denied
+make: *** [_modinst_post] Error 127
 
-Since we already have a "buffer_size" "free_buffer" should be a good
-name.
-
--- Steve
-
-
+Would you add "chmod +x scripts/depmod.sh" before invoking depmod.sh ?
