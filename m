@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147Ab1FNDwn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 23:52:43 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:62734 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502Ab1FNDwm (ORCPT
+	id S1750980Ab1FNEC0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 00:02:26 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:35499 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab1FNECZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 23:52:42 -0400
-Date: Tue, 14 Jun 2011 00:53:13 -0300
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>, James Morris <jmorris@namei.org>,
-        neilb@suse.de
-Subject: Re: [PATCH] sysctl: add support for poll()
-Message-ID: <20110614035313.GA1229@vigoh>
-References: <BANLkTin6CP-A+UsGXyu9wb7U34wEN7DKsw@mail.gmail.com>
- <m18vtkq57c.fsf@fess.ebiederm.org>
- <BANLkTimcPweT-HONEtVDn3mD2a6dUGDEYA@mail.gmail.com>
- <20110602134338.0c56160e@lxorguk.ukuu.org.uk>
- <BANLkTik72cU_R5k9NLnqN_FNkm-y5Fk0nQ@mail.gmail.com>
- <m1hb88e3qs.fsf@fess.ebiederm.org>
- <BANLkTin5P8P_HR78qo0oyzeu9hpWazZqTw@mail.gmail.com>
- <20110608151732.2b321b9a.akpm@linux-foundation.org>
- <BANLkTinXwE0K5nJ649rhNxN06KvwLNDeCA@mail.gmail.com>
- <1307981153.1449.19.camel@mop>
+	Tue, 14 Jun 2011 00:02:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=so5EfB94y3ibOD4qeRAaXs0h/jErGjZjYj+bbmAu/bqkomdl1Z/q8xrGRHhbCZVr1M
+         Hb0n16/qlj4QUktTlhu1cC/lSr1IS3f2v70D/NqNsVB+i94ndRAqVyjG7cUQTipALUEF
+         ENNRaYq2gsvvPtG60BwTbxcpAyMgGf+iexU68=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307981153.1449.19.camel@mop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 14 Jun 2011 12:02:24 +0800
+Message-ID: <BANLkTin2osfkSiu8maGmJAnzv4O5ODK0dw@mail.gmail.com>
+Subject: [3.0-rc3] tree RCU boost vs hang notifier...
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Kay Sievers <kay.sievers@vrfy.org> [2011-06-13 18:05:51 +0200]:
+With 3.0-rc3 configured with CONFIG_TREE_PREEMPT_RCU, CONFIG_RCU_BOOST
+and CONFIG_DETECT_HUNG_TASK, we see frequent task hung reports [1],
+possibly as the tree RCU boost kthreads sleep uninterruptably.
 
-> On Thu, 2011-06-09 at 15:16 +0200, Kay Sievers wrote:
-> > On Thu, Jun 9, 2011 at 00:17, Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
-> > > We already have several pollable procfs files, such as
-> > > fs/proc/base.c:mounts_poll() and I think drivers/md has one.  I do
-> > > think that any work in this area should end up with those custom
-> > > make-procfs-pollable hacks being identified and removed.
-> > 
-> > For these files we can probably move the event counter into the
-> > seq_file structure, and get rid of the dance to kmalloc it and assign
-> > it to seq_file->private. That might simplify the logic a bit.
-> > 
-> > [Adding Neil, to get his opinion of moving 'event' so seq_file and get
-> > rid of the malloc dance]
-> 
-> I guess, we could do something like this, which looks quite a bit
-> simpler by moving the poll event counter into the dynamically allocated
-> seq_file structure itself, instead of having private structures
-> allocated on top to just carry the counter (patch is just
-> compile-tested).
-> 
-> Thanks,
-> Kay
-> 
-> ---
->  drivers/md/md.c               |   26 ++++++++------------------
->  fs/namespace.c                |    4 ++--
->  fs/proc/base.c                |    2 +-
->  include/linux/mnt_namespace.h |    1 -
->  include/linux/seq_file.h      |    1 +
->  mm/swapfile.c                 |   29 ++++++++---------------------
->  6 files changed, 20 insertions(+), 43 deletions(-)
+It looks like tinyRCU sleeps interruptably, so won't trigger the hangcheck.
 
-I've successfully tested this on top of 3.0-rc3 for /proc/mounts and
-/proc/swaps. I've booted with systemd (that depends on mounts and swaps
-being pollable) and created a small test using epoll.
+Thanks,
+  Daniel
 
+--- [1]
 
-Lucas De Marchi
+INFO: task rcub0:9 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+rcub0           D ffffffff81c29c80  6768     9      2 0x00000000
+ ffff880221713ea0 0000000000000046 ffff880221713db0 ffffffff8171b825
+ ffff880221712000 0000000000004000 ffff8802214d0000 ffff88022170c060
+ ffff88022ec00000 0000000000010ac0 0000000000000001 ffff88022ec10ac0
+Call Trace:
+ [<ffffffff8171b825>] ? _raw_spin_unlock_irqrestore+0x75/0x80
+ [<ffffffff8171822a>] ? preempt_schedule+0x3a/0x50
+ [<ffffffff8171b825>] ? _raw_spin_unlock_irqrestore+0x75/0x80
+ [<ffffffff810cec90>] ? rcu_boost+0x120/0x120
+ [<ffffffff8107e1a3>] kthread+0x93/0xc0
+ [<ffffffff81098bad>] ? trace_hardirqs_on_caller+0x13d/0x180
+ [<ffffffff8171d4d4>] kernel_thread_helper+0x4/0x10
+ [<ffffffff81048ad7>] ? finish_task_switch+0x77/0x100
+ [<ffffffff8171bc04>] ? retint_restore_args+0xe/0xe
+ [<ffffffff8107e110>] ? __init_kthread_worker+0x70/0x70
+ [<ffffffff8171d4d0>] ? gs_change+0xb/0xb
+no locks held by rcub0/9.
+
+-- 
+Daniel J Blueman
