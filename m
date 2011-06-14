@@ -1,56 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096Ab1FNNyP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 09:54:15 -0400
-Received: from symlink.to.noone.org ([85.10.207.172]:53728 "EHLO sym.noone.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750864Ab1FNNyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 09:54:13 -0400
-X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Jun 2011 09:54:13 EDT
-Date: Tue, 14 Jun 2011 15:48:59 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-watchdog@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Walter Goossens <waltergoossens@home.nl>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        nios2-dev@sopc.et.ntust.edu.tw
-Subject: Re: [PATCH v3 RESEND] watchdog: Add driver for Altera Watchdog
-	Timer
-Message-ID: <20110614134859.GP20966@distanz.ch>
-References: <1300461573-12268-1-git-send-email-tklauser@distanz.ch> <20110527082309.GB16394@infomag.iguana.be>
+	id S1752562Ab1FNNuG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 09:50:06 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:55001 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569Ab1FNNuD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 09:50:03 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 08/10] mm: cma: Contiguous Memory Allocator added
+Date: Tue, 14 Jun 2011 15:49:29 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>
+References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com> <201106101821.50437.arnd@arndb.de> <006a01cc29a9$1394c330$3abe4990$%szyprowski@samsung.com>
+In-Reply-To: <006a01cc29a9$1394c330$3abe4990$%szyprowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110527082309.GB16394@infomag.iguana.be>
-X-Editor: Vi IMproved 7.1
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106141549.29315.arnd@arndb.de>
+X-Provags-ID: V02:K0:wVo8D5IE6BFgqm3dLVC24K5tGFctGWfrFVPuHwH6wrV
+ VynwhGua3KZoQ22CjQ7VgkaSblAhVqmTyXxynynpaV10g1xuqS
+ ambsAoUPUM+OGNV0KD09SNXvG2ZwbzS0ATWtlEFwe/XvCoBFbd
+ pdXxJ1uC2uNY264CqL7Q9qe5UpXf8HWYtj3/IMDDQyYHvswPUO
+ WlQ+Soqi4GC4wp8N8PE5Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wim
+On Monday 13 June 2011, Marek Szyprowski wrote:
+> cm_alloc/free are definitely not meant to be called from device drivers.
+> They should be only considered as a backend for dma-mapping.
+>
+> 'Raw' contiguous memory block doesn't really make sense for the device
+> drivers. What the drivers require is a contiguous memory block that is
+> somehow mapped into respective bus address space, so dma-mapping 
+> framework is the right interface.
+> 
+> alloc_pages(..., GFP_CMA) looks nice but in fact it is really impractical.
+> The driver will need to map such buffer to dma context anyway, so imho
+> dma_alloc_attributed() will give the drivers much more flexibility. In
+> terms of dma-mapping the context argument isn't anything odd. 
 
-On 2011-05-27 at 10:23:09 +0200, Wim Van Sebroeck <wim@iguana.be> wrote:
-> > This driver adds support for the Altera Timer in the Watchdog Timer
-> > configuration. This component is usually found on SOPC (System on
-> > Programmable Chip) for Altera FPGAs.
+Ok.
+
+> If possible I would like to make cma something similar to 
+> declare_dma_coherent()&friends, so the board/platform/bus startup code
+> will just call declare_dma_contiguous() to enable support for cma for
+> particular devices.
+
+Sounds good, I like that.
+
+> > This interface looks flawed to me for multiple reasons:
 > > 
-> > Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
-> > Reviewed-by: Jamie Iles <jamie@jamieiles.com>
-> > Acked-by: Grant Likely <grant.likely@secretlab.ca> (for the devicetree binding)
+> > * It requires you to call three distinct functions in order to do one
+> >   thing, and they all take the same arguments (more or less). Why not
+> >   have one function call at the latest possible point where you can
+> >   still change the memory attributes, and have everything else
+> >   happen automatically?
 > 
-> Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+> Initialization part will be definitely simplified, I must confess that I
+> was in hurry to post the patches before the weekend and just forgot to
+> cleanup this part...
+
+Fair enough. In cases like this, it's often good to add a TODO section
+to the patch description, or a FIXME comment in the patch itself.
+
+> > * It requires you to pass the exact location of the area. I can see why
+> >   you want that on certain machines that require DMA areas to be spread
+> >   across multiple memory buses, but IMHO it's not appropriate for a
+> >   generic API.
 > 
-> I presume this will go in together with the other nios2 architecture patches?
+> IMHO we can also use some NULL context to indicate some global, system 
+> wide CMA area and again -> in terms of dma-mapping api having a context 
+> isn't anything uncommon.
 
-It will probably take some time until we get to the point where we're
-ready to submit nios2 arch patches. We started out with individual
-drivers to get used to the submission and review process. Most of them
-got taken by the respective subsystem maintainers.
+Please explain the exact requirements that lead you to defining multiple
+contexts. My feeling is that in most cases we don't need them and can
+simply live with a single area. Depending on how obscure the cases are
+where we do need something beyond that, we can then come up with
+special-case solutions for them.
 
-So if you want to take the driver through your tree, please go ahead.
-Otherwise I will resubmit it once we're ready to submit the nios2 arch.
+> > * It requires you to hardcode the size in a machine specific source file.
+> >   This probably seems to be a natural thing to do when you have worked a
+> >   lot on the ARM architecture, but it's really not. We really want to
+> >   get rid of board files and replace them with generic probing based on
+> >   the device tree, and the size of the area is more policy than a property
+> >   of the hardware that can be accurately described in the device tree or
+> >   a board file.
+> 
+> The problem is the fact that right now, we still have board files and we
+> have to live with them for a while (with all advantages and disadvantages).
+> I hope that you won't require me to rewrite the whole support for all ARM 
+> platforms to get rid of board files to get CMA merged ;)
 
-Cheers
-Tobias
+Of course not. But we need to know what we want a platform with device
+tree support to look like when it's using CMA, so we don't make it
+harder to change the platforms over than it already is.
+
+> I see no problem defining CMA areas in device tree, as this is something
+> really specific to particular board configuration. 
+
+The problem with defining CMA areas in the device tree is that it's not
+a property of the hardware, but really policy. The device tree file
+should not contain anything related to a specific operating system
+because you might want to boot something on the board that doesn't
+know about CMA, and even when you only care about using Linux, the
+implementation might change to the point where hardcoded CMA areas
+no longer make sense.
+
+IMHO we should first aim for a solution that works almost everywhere
+without the kernel knowing what board it's running on, and then we
+can add quirks for devices that have special requirements. I think
+the situation is similar to the vmalloc virtual address space, which
+normally has a hardcoded size that works almost everywhere, but there
+are certain drivers etc that require much more, or there are situations
+where you want to make it smaller in order to avoid highmem. 
+
+	Arnd
