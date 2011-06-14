@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab1FNMV7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 08:21:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38747 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751831Ab1FNMV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 08:21:57 -0400
-Message-ID: <4DF75229.701@redhat.com>
-Date: Tue, 14 Jun 2011 08:20:57 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH 3/7] KVM-HV: KVM Steal time implementation
-References: <1308007897-17013-1-git-send-email-glommer@redhat.com> <1308007897-17013-4-git-send-email-glommer@redhat.com>
-In-Reply-To: <1308007897-17013-4-git-send-email-glommer@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1755018Ab1FNMZv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 08:25:51 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33415 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831Ab1FNMZu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 08:25:50 -0400
+X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=nbpwko1cA38A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=JQ0DxSGID0Y6eqs91tUA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: BUG on 3.0-rc on commit
+ d72bce0e67e8afc6eb959f656013cbb577426f1e
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: habanero@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1308049321.19856.15.camel@twins>
+References: <1307711837.23688.33.camel@atheurer-ubuntu10>
+	 <1307715084.3941.166.camel@twins>  <1307717156.3941.169.camel@twins>
+	 <1307720081.17297.6.camel@atheurer-w510>  <1307723232.3941.178.camel@twins>
+	 <1307977614.17297.12.camel@atheurer-w510>
+	 <1307979239.9218.76.camel@gandalf.stny.rr.com>
+	 <1308009910.23688.34.camel@atheurer-ubuntu10>
+	 <1308014683.9218.107.camel@gandalf.stny.rr.com>
+	 <1308049321.19856.15.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 14 Jun 2011 08:25:47 -0400
+Message-ID: <1308054347.9218.112.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2011 07:31 PM, Glauber Costa wrote:
-> To implement steal time, we need the hypervisor to pass the guest information
-> about how much time was spent running other processes outside the VM.
-> This is per-vcpu, and using the kvmclock structure for that is an abuse
-> we decided not to make.
->
-> In this patchset, I am introducing a new msr, KVM_MSR_STEAL_TIME, that
-> holds the memory area address containing information about steal time
->
-> This patch contains the hypervisor part for it. I am keeping it separate from
-> the headers to facilitate backports to people who wants to backport the kernel
-> part but not the hypervisor, or the other way around.
->
-> Signed-off-by: Glauber Costa<glommer@redhat.com>
-> CC: Rik van Riel<riel@redhat.com>
-> CC: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
-> CC: Peter Zijlstra<peterz@infradead.org>
-> CC: Avi Kivity<avi@redhat.com>
-> CC: Anthony Liguori<aliguori@us.ibm.com>
-> CC: Eric B Munson<emunson@mgebm.net>
+On Tue, 2011-06-14 at 13:02 +0200, Peter Zijlstra wrote:
+> On Mon, 2011-06-13 at 21:24 -0400, Steven Rostedt wrote:
+> > On Mon, 2011-06-13 at 19:05 -0500, Andrew Theurer wrote:
+> > 
+> > > > Could you try this patch?
+> > > 
+> > > Yes, and it works!  Thanks very much!
+> > 
+> > Could you try this patch instead? I don't like holding off migration for
+> > the entire boot processes.
+> 
+> Great, thanks Steve!, will you be sending this Ingo-wards?
+> 
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Yeah, I'll send it off. I have another small scheduling patch to send
+for 3.0.
 
--- 
-All rights reversed
+-- Steve
+
+
