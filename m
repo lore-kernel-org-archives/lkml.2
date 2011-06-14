@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab1FNHT0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 03:19:26 -0400
-Received: from mail.perches.com ([173.55.12.10]:2969 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753163Ab1FNHTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 03:19:24 -0400
-Subject: Re: [PATCH net-next 1/2] wireless: Remove casts of void *
-From: Joe Perches <joe@perches.com>
-To: Julian Calaby <julian.calaby@gmail.com>
-Cc: netdev@vger.kernel.org, "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        Jouni Malinen <jmalinen@atheros.com>,
-        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
-        Senthil Balasubramanian <senthilkumar@atheros.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <BANLkTik4fWbCc8pRZfKCzvKD2f6sK9QCEw@mail.gmail.com>
-References: <cover.1308024069.git.joe@perches.com>
-	 <337c22b774ff7f007b90b266b25c9a33ff555c48.1308024069.git.joe@perches.com>
-	 <BANLkTi=i30Rn7gpCDbn9KKJucq8CB=hssA@mail.gmail.com>
-	 <1308029532.26699.68.camel@Joe-Laptop>
-	 <BANLkTik4fWbCc8pRZfKCzvKD2f6sK9QCEw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Jun 2011 00:19:21 -0700
-Message-ID: <1308035961.32499.3.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1754770Ab1FNHa1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 03:30:27 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54084 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754376Ab1FNHa0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 03:30:26 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DF70DED.2030803@jp.fujitsu.com>
+Date: Tue, 14 Jun 2011 16:29:49 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Hu Tao <hutao@cn.fujitsu.com>
+CC: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.co>
+Subject: Re: [patch 00/15] CFS Bandwidth Control V6
+References: <20110503092846.022272244@google.com> <20110614065807.GA19111@localhost.localdomain>
+In-Reply-To: <20110614065807.GA19111@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-14 at 15:39 +1000, Julian Calaby wrote:
-> My issue here is that you mention in the commit log that this relates
-> to the removal of netdev_priv and dev_priv, but the casts removed
-> (mostly) don't.
+(2011/06/14 15:58), Hu Tao wrote:
+> Hi,
+> 
+> I've run several tests including hackbench, unixbench, massive-intr
+> and kernel building. CPU is Intel(R) Xeon(R) CPU X3430  @ 2.40GHz,
+> 4 cores, and 4G memory.
+> 
+> Most of the time the results differ few, but there are problems:
+> 
+> 1. unixbench: execl throughout has about 5% drop.
+> 2. unixbench: process creation has about 5% drop.
+> 3. massive-intr: when running 200 processes for 5mins, the number
+>    of loops each process runs differ more than before cfs-bandwidth-v6.
+> 
+> The results are attached.
 
-Sorry if that was unclear to you.
+I know the score of unixbench is not so stable that the problem might
+be noises ... but the result of massive-intr is interesting.
+Could you give a try to find which piece (xx/15) in the series cause
+the problems?
 
-None of these patches remove casts of netdev_priv.
-
-What I meant to say was that net and drivers/net have
-had many patches that remove casts of void * like the
-patches that removed casts of netdev_priv.
-
-These patches remove the last casts of void * types
-in net and drivers/net.
-
-cheers, Joe
+Thanks,
+H.Seto
 
