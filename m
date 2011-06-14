@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab1FNJI0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 05:08:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60280 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754651Ab1FNJIX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 05:08:23 -0400
-Subject: Re: [PATCH] ideapad: let Fn+F5 also trigger KEY_BLUETOOTH
-From: David Woodhouse <dwmw2@infradead.org>
-To: Ike Panhc <ike.pan@canonical.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        Dmitry Torohov <dmitry.torokhov@gmail.com>
-Date: Tue, 14 Jun 2011 10:08:20 +0100
-In-Reply-To: <4DF71C01.6080504@canonical.com>
-References: <1308040109-12038-1-git-send-email-ike.pan@canonical.com>
-	 <4DF71C01.6080504@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1308042502.3450.3.camel@i7.infradead.org>
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1755611Ab1FNJPq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 05:15:46 -0400
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:39206 "EHLO smtp2.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755298Ab1FNJPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 05:15:43 -0400
+Date: Tue, 14 Jun 2011 12:15:42 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: 3.0-rc3: WARNING: at fs/fs-writeback.c:356
+ writeback_single_inode+0x3e/0x18f()
+Message-ID: <alpine.SOC.1.00.1106141213570.11764@math.ut.ee>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-14 at 16:29 +0800, Ike Panhc wrote:
-> I think it is better to solve this in driver not in user space application 
-> because on some other platforms, the KEY_WLAN and KEY_BLUETOOTH are separate.
+Tested 3.0-rc3 on my PC (2 PATA disks, single duron CPU). Got several of 
+these in dmesg:
 
-I think it's better to do it in userspace. It's not as if it's hard to
-define another KEY_ and just tell the truth about what happened. Let
-userspace work out what to do with it.
+[  842.680141] ------------[ cut here ]------------
+[  842.680172] WARNING: at fs/fs-writeback.c:356 writeback_single_inode+0x3e/0x18f()
+[  842.680178] Hardware name:         
+[  842.680182] Modules linked in: mga ppdev lp ipv6 fuse loop snd_ens1371 gameport snd_ac97_codec snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq sg sr_mod snd_timer snd_seq_device pcspkr evdev cdrom snd uhci_hcd ehci_hcd parport_pc rtc_cmos parport soundcore usbcore via686a snd_page_alloc ac97_bus hwmon i2c_viapro processor button
+[  842.680248] Pid: 1341, comm: flush-8:0 Not tainted 3.0.0-rc3 #67
+[  842.680254] Call Trace:
+[  842.680269]  [<c1254ada>] ? printk+0x18/0x1a
+[  842.680281]  [<c101fb6b>] warn_slowpath_common+0x77/0x8c
+[  842.680288]  [<c1092f8e>] ? writeback_single_inode+0x3e/0x18f
+[  842.680294]  [<c1092f8e>] ? writeback_single_inode+0x3e/0x18f
+[  842.680300]  [<c101fb9d>] warn_slowpath_null+0x1d/0x1f
+[  842.680306]  [<c1092f8e>] writeback_single_inode+0x3e/0x18f
+[  842.680313]  [<c1093519>] writeback_sb_inodes+0xcb/0x153
+[  842.680320]  [<c1093aba>] writeback_inodes_wb+0xb0/0xf1
+[  842.680326]  [<c1093c1d>] wb_writeback+0x122/0x1b0
+[  842.680334]  [<c1093d15>] wb_check_old_data_flush+0x6a/0x76
+[  842.680340]  [<c1093dc1>] wb_do_writeback+0xa0/0xf3
+[  842.680347]  [<c1093e53>] bdi_writeback_thread+0x3f/0xd7
+[  842.680354]  [<c1093e14>] ? wb_do_writeback+0xf3/0xf3
+[  842.680366]  [<c10328cc>] kthread+0x61/0x66
+[  842.680373]  [<c103286b>] ? kthread_worker_fn+0xf7/0xf7
+[  842.680383]  [<c125ce7e>] kernel_thread_helper+0x6/0xd
+[  842.680388] ---[ end trace c75e8a0e74c129b7 ]---
+
 
 -- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
-
+Meelis Roos (mroos@linux.ee)
