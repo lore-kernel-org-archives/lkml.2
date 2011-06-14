@@ -1,57 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab1FNVBb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 17:01:31 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:49630 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753517Ab1FNVBa (ORCPT
+	id S1754049Ab1FNVEP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 17:04:15 -0400
+Received: from mga11.intel.com ([192.55.52.93]:3670 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753958Ab1FNVEM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 17:01:30 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6377"; a="97510782"
-Message-ID: <4DF7CC22.6050602@codeaurora.org>
-Date: Tue, 14 Jun 2011 15:01:22 -0600
-From: Jordan Crouse <jcrouse@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	Tue, 14 Jun 2011 17:04:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,366,1304319600"; 
+   d="scan'208";a="18200790"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Kirill Smelkov <kirr@mns.spb.ru>, Dan Carpenter <error27@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Mike Thomas <rmthomas@sciolus.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 15 Jun 2011 00:01:57 +0300
+Subject: RE: [PATCH 5/5] staging/easycap: Fix bytesperline calculation
+Thread-Topic: [PATCH 5/5] staging/easycap: Fix bytesperline calculation
+Thread-Index: AcwqsXR3bFo15K9QQT+mb93sHyd0rQAC1K/Q
+Message-ID: <6F5C1D715B2DA5498A628E6B9C124F0401AD3648B4@hasmsx504.ger.corp.intel.com>
+References: <cover.1307967011.git.kirr@mns.spb.ru>
+ <bcbeb6b7c5ab7624ea59b072f74347fa8e6a6350.1307967011.git.kirr@mns.spb.ru>
+ <6F5C1D715B2DA5498A628E6B9C124F0401AD319280@hasmsx504.ger.corp.intel.com>
+ <cover.1307967011.git.kirr@mns.spb.ru>
+ <bcbeb6b7c5ab7624ea59b072f74347fa8e6a6350.1307967011.git.kirr@mns.spb.ru>
+ <20110613123659.GG3583@shale.localdomain>
+ <20110614163707.GA29015@tugrik.mns.mnsspb.ru>
+In-Reply-To: <20110614163707.GA29015@tugrik.mns.mnsspb.ru>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Zach Pfeffer <zach.pfeffer@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Daniel Stone <daniels@collabora.com>, linux-mm@kvack.org,
-        Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-        Michal Nazarewicz <mina86@mina86.com>, linaro-mm-sig@lists.linaro.org,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-media@vger.kernel.org
-Subject: Re: [Linaro-mm-sig] [PATCH 08/10] mm: cma: Contiguous Memory	Allocator
- added
-References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>	<20110614170158.GU2419@fooishbar.org>	<BANLkTi=cJisuP8=_YSg4h-nsjGj3zsM7sg@mail.gmail.com> <201106142242.25157.arnd@arndb.de>
-In-Reply-To: <201106142242.25157.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2011 02:42 PM, Arnd Bergmann wrote:
-> On Tuesday 14 June 2011 20:58:25 Zach Pfeffer wrote:
->> I've seen this split bank allocation in Qualcomm and TI SoCs, with
->> Samsung, that makes 3 major SoC vendors (I would be surprised if
->> Nvidia didn't also need to do this) - so I think some configurable
->> method to control allocations is necessarily. The chips can't do
->> decode without it (and by can't do I mean 1080P and higher decode is
->> not functionally useful). Far from special, this would appear to be
->> the default.
->
-> Thanks for the insight, that's a much better argument than 'something
-> may need it'. Are those all chips without an IOMMU or do we also
-> need to solve the IOMMU case with split bank allocation?
 
-Yes. The IOMMU case with split bank allocation is key, especially for shared
-buffers. Consider the case where video is using a certain bank for performance
-purposes and that frame is shared with the GPU.
 
-Jordan
+> -----Original Message-----
+> From: Kirill Smelkov [mailto:kirr@mns.spb.ru]
+> Sent: Tuesday, June 14, 2011 7:37 PM
+> To: Dan Carpenter; Winkler, Tomas
+> Cc: Greg Kroah-Hartman; devel@driverdev.osuosl.org; Mike Thomas; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH 5/5] staging/easycap: Fix bytesperline calculation
+> 
+> On Mon, Jun 13, 2011 at 04:23:45PM +0300, Winkler, Tomas wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Kirill Smelkov [mailto:kirr@mns.spb.ru]
+> > > Sent: Monday, June 13, 2011 3:19 PM
+> > > To: Greg Kroah-Hartman
+> > > Cc: Winkler, Tomas; Mike Thomas; devel@driverdev.osuosl.org; linux-
+> > > kernel@vger.kernel.org; Kirill Smelkov
+> > > Subject: [PATCH 5/5] staging/easycap: Fix bytesperline calculation
+> > >
+> > > As described above fillin_formats()
+> > >
+> > > """
+> > >     /*
+> > >      *  THE 16-BIT easycap_format.mask HAS MEANING:
+> > >      *    (least significant) BIT  0:     0 => PAL, 25 FPS;   1 => NTSC, 30 FPS
+> > >      *                        BITS 2-4:   RESERVED FOR DIFFERENTIATING STANDARDS
+> > >      *                        BITS 5-7:   NUMBER OF BYTES PER PIXEL
+> > >      *                        BIT  8:     0 => NATIVE BYTE ORDER;  1 => SWAPPED
+> > >      *                        BITS 9-10:  RESERVED FOR OTHER BYTE PERMUTATIONS
+> > >      *                        BIT 11:     0 => UNDECIMATED;    1 => DECIMATED
+> > >      *                        BIT 12:     0 => OFFER FRAMES;   1 => OFFER FIELDS
+> > >      *                        BIT 13:     0 => FULL FRAMERATE; 1 => REDUCED
+> > >      *     (most significant) BITS 14-15: RESERVED FOR OTHER FIELD/FRAME
+> > > OPTIONS
+> > >      *  IT FOLLOWS THAT:
+> > >      *     bytesperpixel IS         ((0x00E0 & easycap_format.mask) >> 5)
+> > >      *     byteswaporder IS true IF (0 != (0x0100 & easycap_format.mask))
+> > >      *
+> > >      *     decimatepixel IS true IF (0 != (0x0800 & easycap_format.mask))
+> > >      *
+> > >      *       offerfields IS true IF (0 != (0x1000 & easycap_format.mask))
+> > >      */
+> > > """
+> > >
+> > > bytes-per-pixel is stored in bits 5-7 of calculated mask.
+> > >
+> > > But when calculating bytes-per-line we were extracting wrong value
+> > > instead of bytes-per-pixel, which was usually 2 times bigger -- e.g.
+> > > for PAL YUV 422 I was getting ((mask3 & 0x00F0) >> 4) = 4 bytes instead of
+> 2.
+> > >
+> > > The error here is that even in comments there is a line saying
+> > >
+> > >      *     bytesperpixel IS         ((0x00E0 & easycap_format.mask) >> 5)
+> > >
+> > > but we were using
+> > >                                     ((0x00F0 & easycap_format.mask)
+> > > >> 4)
+> > >
+> > > With 2 times bigger bytesperpixel and automatically bytesperline,
+> > > the video was shown halfheight'ed, which is understandable if we
+> > > look at video- memory layout:
+> > >
+> > >     <------- bytesperline -------->
+> > >     <- real bpl ->
+> > >
+> > >     x0----------y0  x1-----------y1
+> > >     x2----------y2  x3-----------y3
+> > >
+> > >     xn----------yn  xn-----------yn
+> > >     <garbage>
+> > >
+> > > for each line, we should display width pixels, then move to next
+> > > line with bytesperline, and oops, if bytesperline =
+> > > 2*real-bytesperlin, we'll skip one line and move to next-next line, and so
+> only half lines will be shown.
+> > >
+> > > Initially I've debugged the problem with my video application[1],
+> > > but I've checked that after this patch both rawv (mine app) and
+> > > tvtime work correctly.
+> > >
+> > > [1] http://repo.or.cz/w/rawv.git
+> > >
+> > > P.S. why at all we use those mask/shifts? Why not use bitfields?
+> >
+> > First of all  I have feeling this code history beyond this driver.
+> > Second there possible issues with bit fields related to endianity and
+> > efficiency. I'm not sure it applies also in this driver
+> 
+> I'd agree about endianity, but if I see it correctly, in this driver
+> easycap_format.mask is used only as internal driver flags not writtent to
+> hardware registers. So endianity should be out of scope here.
+> 
+> As to efficiency, in essence the compiler generates almost the same shifts
+> and masks for accessing bitfields as a human would do, so there should be no
+> difference, especially when we are not talking about hot-path code.
+> 
+> And also, if endianity matters, there is always possibility to do something like
+> this (from drivers/atm/fore200e.h):
+> 
+>     /* bitfields endian games */
+> 
+>     #if defined(__LITTLE_ENDIAN_BITFIELD)
+>     #define BITFIELD2(b1, b2)                    b1; b2;
+>     #define BITFIELD3(b1, b2, b3)                b1; b2; b3;
+>     #define BITFIELD4(b1, b2, b3, b4)            b1; b2; b3; b4;
+>     #define BITFIELD5(b1, b2, b3, b4, b5)        b1; b2; b3; b4; b5;
+>     #define BITFIELD6(b1, b2, b3, b4, b5, b6)    b1; b2; b3; b4; b5; b6;
+>     #elif defined(__BIG_ENDIAN_BITFIELD)
+>     #define BITFIELD2(b1, b2)                                    b2; b1;
+>     #define BITFIELD3(b1, b2, b3)                            b3; b2; b1;
+>     #define BITFIELD4(b1, b2, b3, b4)                    b4; b3; b2; b1;
+>     #define BITFIELD5(b1, b2, b3, b4, b5)            b5; b4; b3; b2; b1;
+>     #define BITFIELD6(b1, b2, b3, b4, b5, b6)    b6; b5; b4; b3; b2; b1;
+>     #else
+>     #error unknown bitfield endianess
+>     #endif
+> 
+> 
+>     /* ATM cell header (minus HEC byte) */
+> 
+>     typedef struct atm_header {
+>         BITFIELD5(
+>             u32 clp :  1,    /* cell loss priority         */
+>             u32 plt :  3,    /* payload type               */
+>             u32 vci : 16,    /* virtual channel identifier */
+>             u32 vpi :  8,    /* virtual path identifier    */
+>             u32 gfc :  4     /* generic flow control       */
+>        )
+>     } atm_header_t;
+> 
+> 
+> to me, it's the sanest approach to C bitfields and endianity. Only we'd better
+> have those BITFIELDX in include/linux/bitfield.h
+> 
+
+Still I don't like these macro templates either but that's probably personal taste only I wouldn't  NACK it.
+
+> 
+> > context and I agree it looks ugly here , yet I personally usually avoid using
+> bit fields.
+> >
+> > >
+> > > Cc: Tomas Winkler <tomas.winkler@intel.com>
+> > > Cc: Mike Thomas <rmthomas@sciolus.org>
+> > > Signed-off-by: Kirill Smelkov <kirr@mns.spb.ru>
+> >
+> >
+> > Acked-by:  Tomas Winkler <tomas.winkler@intel.com>
+> 
+> Did you try running it? How come this bug was undiscovered for so long?
+
+There is a lot of cleanups to be done in this area.  So far I've cleaned up mostly 
+the basic code styling and next it would be to rewrite the USB handling and then
+to fit this somehow to new linux-media framework including video quality fixing
+
+Currently I'm more busy with my real life so it is going slower :)
+
+I'm really glad that you are also interested in fixing this driver. It quite affordable  HW and does its work.
+
+Thanks
+Tomas
+---------------------------------------------------------------------
+Intel Israel (74) Limited
+
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+
