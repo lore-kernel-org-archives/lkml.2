@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab1FNQDK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 12:03:10 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:59785 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab1FNQDI (ORCPT
+	id S1751923Ab1FNQJU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 12:09:20 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:57647 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab1FNQJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 12:03:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Michal Nazarewicz" <mina86@mina86.com>
-Subject: Re: [PATCH 08/10] mm: cma: Contiguous Memory Allocator added
-Date: Tue, 14 Jun 2011 18:03:00 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Mel Gorman'" <mel@csn.ul.ie>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>
-References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com> <201106141549.29315.arnd@arndb.de> <op.vw2jmhir3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <op.vw2jmhir3l0zgt@mnazarewicz-glaptop>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106141803.00876.arnd@arndb.de>
-X-Provags-ID: V02:K0:DoXejs+Xs1l8544LKmLCA5ZKlcprlmwA4/1368dgzUP
- UnNbg49pKFUpZDaF+KkT13O1c/0d99fgLfddgsTE7+2S3iZlDG
- 08gGLFSoPG0K7VZOXVSlGPCuTXD3LCgX/3tD0tNxf+8z8n6MUR
- Okfa3q16NJ3aIz5kQA+7iAPdq9m7p5H9jpeHha8zQqw9IOOXWM
- Qx4Sl/zjASWOZP3lPQ4Eg==
+	Tue, 14 Jun 2011 12:09:19 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@amd64.org>,
+        Tony Luck <tony.luck@intel.com>
+Subject: [PATCH] MAINTAINERS: Add x86 RAS people
+Date: Tue, 14 Jun 2011 18:08:54 +0200
+Message-Id: <1308067734-6156-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.4.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 14 June 2011, Michal Nazarewicz wrote:
-> On Tue, 14 Jun 2011 15:49:29 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
-> > Please explain the exact requirements that lead you to defining multiple
-> > contexts.
-> 
-> Some devices may have access only to some banks of memory.  Some devices
-> may use different banks of memory for different purposes.
+Announce the new RAS infrastructure maintainers. The file patterns below
+will change after we start the restructuring.
 
-For all I know, that is something that is only true for a few very special
-Samsung devices, and is completely unrelated of the need for contiguous
-allocations, so this approach becomes pointless as soon as the next
-generation of that chip grows an IOMMU, where we don't handle the special
-bank attributes. Also, the way I understood the situation for the Samsung
-SoC during the Budapest discussion, it's only a performance hack, not a
-functional requirement, unless you count '1080p playback' as a functional
-requirement.
+Signed-off-by: Borislav Petkov <bp@amd64.org>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+---
+ MAINTAINERS |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-Supporting contiguous allocation is a very useful goal and many people want
-this, but supporting a crazy one-off hardware design with lots of generic
-infrastructure is going a bit too far. If you can't be more specific than
-'some devices may need this', I would suggest going forward without having
-multiple regions:
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 29801f7..901ed1c 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6997,6 +6997,13 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86.
+ S:	Maintained
+ F:	drivers/platform/x86
+ 
++X86 RAS INFRASTRUCTURE
++M:	Tony Luck <tony.luck@intel.com>
++M:	Borislav Petkov <bp@amd64.org>
++L:	linux-edac@vger.kernel.org
++S:	Maintained
++F:	arch/x86/kernel/cpu/mcheck/*
++
+ XEN HYPERVISOR INTERFACE
+ M:	Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+ M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+-- 
+1.7.4.rc2
 
-* Remove the registration of specific addresses from the initial patch
-  set (but keep the patch).
-* Add a heuristic plus command-line override to automatically come up
-  with a reasonable location+size for *one* CMA area in the system.
-* Ship the patch to add support for multiple CMA areas with the BSP
-  for the boards that need it (if any).
-* Wait for someone on a non-Samsung SoC to run into the same problem,
-  then have /them/ get the final patch in.
-
-Even if you think you can convince enough people that having support
-for distinct predefined regions is a good idea, I would recommend
-splitting that out of the initial merge so we can have that discussion
-separately from the other issues.
-
-	Arnd
