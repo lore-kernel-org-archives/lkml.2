@@ -1,59 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751699Ab1FNPCH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 11:02:07 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:57110 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751574Ab1FNPCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 11:02:04 -0400
-Date: Tue, 14 Jun 2011 08:01:55 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Alex,Shi" <alex.shi@intel.com>, "Li, Shaohua" <shaohua.li@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>, rostedt@goodmis.org
-Subject: Re: rcu: performance regression
-Message-ID: <20110614150155.GC2288@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1308029185.15392.147.camel@sli10-conroe>
- <1308040388.21027.1847.camel@debian>
- <20110614130203.GF2264@linux.vnet.ibm.com>
- <1308057298.19856.40.camel@twins>
- <1308057522.19856.41.camel@twins>
+	id S1752756Ab1FNPDk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 11:03:40 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54087 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574Ab1FNPDi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 11:03:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=kllH8edFEgjhJnxmI9769mq6h5pI+lj2lJOxdQYHLsJ4qSqEbny9klzbbHFCr2+aAs
+         6SKsO6Q0xCiPhz6ByIKQ3rfPDbJbzMuC1W6cO1KPKNfoAlZgmRDQKmapN4gN3YR/O7tG
+         q7zvqL5pksWYRU0r8A6z55dlv6n0ZOQZZgWFA=
+Message-ID: <4DF77832.9020407@gmail.com>
+Date: Tue, 14 Jun 2011 17:03:14 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308057522.19856.41.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Yinghai Lu <yinghai@kernel.org>, Jim Bos <jim876@xs4all.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86, efi: Do not reserve boot services regions within reserved
+ areas
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 14, 2011 at 03:18:42PM +0200, Peter Zijlstra wrote:
-> On Tue, 2011-06-14 at 15:14 +0200, Peter Zijlstra wrote:
-> > On Tue, 2011-06-14 at 06:02 -0700, Paul E. McKenney wrote:
-> > > > This commit also cause hackbench process mode performance dropping, and
-> > > > Shaohua's patch do recovered this. But in hackbench testing, the vmstat
-> > > > show context switch have some reduce. And perf tool show
-> > > > root_domain->cpupri->prio_to_cpu[]->lock has contention with the commit.
-> > > 
-> > > Steven, Peter, would any of the recent fixes address this lock contention? 
-> > 
-> > No. People occasionally run into that thing, but given the constraints
-> > on SCHED_FIFO SMP (run the n highest priority tasks on m cpus; n<=m)
-> > there isn't really much we can do.
-> > 
-> > IIRC Chris Mason once proposed a lockless version, but that opened up
-> > race windows, Steve might know the details better.
-> 
-> Note that even a lockless version will die of cacheline contention.
+Commit 916f676f8dc started reserving boot service code since some systems
+require you to keep that code around until SetVirtualAddressMap is called.
 
-Hmmm...  This is going to be fun for the -rt guys given the mapping of
-softirq and irq to kthreads, but then again, perhaps people will
-confine use of -rt to smaller systems.
+However, in some cases those areas will overlap with reserved regions.
+The proper medium-term fix is to fix the bootloader to prevent the
+conflicts from occuring by moving the kernel to a better position,
+but the kernel should check for this possibility, and only reserve regions
+which can be reserved.
 
-Thankfully, Shaohua's patch is looking good so far, give or take a
-couple of future RCU items, but then again, those are in the future
-rather than here and now.
+Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+---
 
-							Thanx, Paul
+diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
+index 19ae14b..0cd3800 100644
+--- a/arch/x86/include/asm/memblock.h
++++ b/arch/x86/include/asm/memblock.h
+@@ -4,7 +4,6 @@
+ #define ARCH_DISCARD_MEMBLOCK
+ 
+ u64 memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align);
+-void memblock_x86_to_bootmem(u64 start, u64 end);
+ 
+ void memblock_x86_reserve_range(u64 start, u64 end, char *name);
+ void memblock_x86_free_range(u64 start, u64 end);
+@@ -19,5 +18,6 @@ u64 memblock_x86_hole_size(u64 start, u64 end);
+ u64 memblock_x86_find_in_range_node(int nid, u64 start, u64 end, u64 size, u64 align);
+ u64 memblock_x86_free_memory_in_range(u64 addr, u64 limit);
+ u64 memblock_x86_memory_in_range(u64 addr, u64 limit);
++bool memblock_x86_check_reserved_size(u64 *addrp, u64 *sizep, u64 align);
+ 
+ #endif
+diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
+index aa11693..992da5e 100644
+--- a/arch/x86/mm/memblock.c
++++ b/arch/x86/mm/memblock.c
+@@ -8,7 +8,7 @@
+ #include <linux/range.h>
+ 
+ /* Check for already reserved areas */
+-static bool __init check_with_memblock_reserved_size(u64 *addrp, u64 *sizep, u64 align)
++bool __init memblock_x86_check_reserved_size(u64 *addrp, u64 *sizep, u64 align)
+ {
+ 	struct memblock_region *r;
+ 	u64 addr = *addrp, last;
+@@ -59,7 +59,7 @@ u64 __init memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align)
+ 		if (addr >= ei_last)
+ 			continue;
+ 		*sizep = ei_last - addr;
+-		while (check_with_memblock_reserved_size(&addr, sizep, align))
++		while (memblock_x86_check_reserved_size(&addr, sizep, align))
+ 			;
+ 
+ 		if (*sizep)
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 0d3a4fa..fae8448 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -310,14 +310,32 @@ void __init efi_reserve_boot_services(void)
+ 
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		efi_memory_desc_t *md = p;
+-		unsigned long long start = md->phys_addr;
+-		unsigned long long size = md->num_pages << EFI_PAGE_SHIFT;
++		u64 start = md->phys_addr;
++		u64 size = md->num_pages << EFI_PAGE_SHIFT;
+ 
+ 		if (md->type != EFI_BOOT_SERVICES_CODE &&
+ 		    md->type != EFI_BOOT_SERVICES_DATA)
+ 			continue;
+-
+-		memblock_x86_reserve_range(start, start + size, "EFI Boot");
++		/* Only reserve where possible:
++		 * - Not within any already allocated areas
++		 * - Not over any memory area (really needed, if above?)
++		 * - Not within any part of the kernel
++		 * - Not the bios reserved area (0x0-0x10000, depending on config
++		*/
++		if ((start+size >= virt_to_phys(_text)
++				&& start <= virt_to_phys(_end)) ||
++			!e820_all_mapped(start, start+size, E820_RAM) ||
++			memblock_x86_check_reserved_size(&start, &size,
++							1<<EFI_PAGE_SHIFT)) {
++			/* Could not reserve, skip it */
++			md->num_pages = 0;
++			printk(KERN_INFO PFX "Could not reserve boot area "
++				"[0x%llx-0x%llx)\n", start, start+size);
++		} else {
++			memblock_x86_reserve_range(start, start+size, "EFI Boot");
++			printk(KERN_INFO PFX "Reserved boot area "
++				"[0x%llx-0x%llx)\n", start, start+size);
++		}
+ 	}
+ }
+ 
+@@ -334,6 +352,12 @@ static void __init efi_free_boot_services(void)
+ 		    md->type != EFI_BOOT_SERVICES_DATA)
+ 			continue;
+ 
++		/* Could not reserve boot area */
++		if (!size)
++			continue;
++
++		printk(KERN_INFO PFX "Freeing boot area "
++			"[0x%llx-0x%llx)\n", start, start+size);
+ 		free_bootmem_late(start, size);
+ 	}
+ }
+@@ -473,7 +497,9 @@ void __init efi_init(void)
+ 
+ 	if (memmap.desc_size != sizeof(efi_memory_desc_t))
+ 		printk(KERN_WARNING
+-		  "Kernel-defined memdesc doesn't match the one from EFI!\n");
++		  "Kernel-defined memdesc (%lu) "
++			"doesn't match the one from EFI(%lu)!\n",
++			sizeof(efi_memory_desc_t), memmap.desc_size);
+ 
+ 	if (add_efi_memmap)
+ 		do_add_efi_memmap();
+
+
