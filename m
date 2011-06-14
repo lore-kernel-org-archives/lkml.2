@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874Ab1FNGph (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 02:45:37 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38212 "EHLO
+	id S1754057Ab1FNGwU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 02:52:20 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53609 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753489Ab1FNGpe (ORCPT
+	with ESMTP id S1753234Ab1FNGwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 02:45:34 -0400
+	Tue, 14 Jun 2011 02:52:18 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=mpAFUL1cV40ipV5yH/rkg7vZ6ifEV7FWc23IwJtX9oItymih2yYb2Bi6NupQ/De2Wn
-         wF8sQIr2RodPAUsAajlQ64Z9Jguxu/BpMvLUKMVqvFik5Y+ofSuWahf7M91OcUkVEVOZ
-         2kVInZqe5obLHB16SsW/oJNcWNuJLXNy4/cAo=
-Date: Tue, 14 Jun 2011 08:45:29 +0200
+        b=RdwDWjjVop7IFnfnPFTE1jhxYVRB4kuFSQzjBg2AAKiZyAecp+MwQ3taH24VCZoWI+
+         GnLcEIMLrv0QPRh7bC4nc+IdHrOzaW4HSqqmDS0MxUyjcVpzR+HdDQV6bIPOH/Z6XV2i
+         00DVoNFOTe450b8xCrCG1aAvZIldmWCyKkSjU=
+Date: Tue, 14 Jun 2011 08:52:13 +0200
 From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
-        pedro@codesourcery.com
-Subject: Re: [PATCH 17/17] ptrace: implement PTRACE_LISTEN
-Message-ID: <20110614064529.GC8141@htj.dyndns.org>
-References: <1306710760-16440-1-git-send-email-tj@kernel.org>
- <1306710760-16440-18-git-send-email-tj@kernel.org>
- <20110602173330.GA20384@redhat.com>
- <20110613141023.GA8141@htj.dyndns.org>
- <20110613203341.GA15695@redhat.com>
+To: Yuan-Hsin Chen <yuanlmm@gmail.com>
+Cc: jgarzik@pobox.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yuan-Hsin Chen <yhchen@faraday-tech.com>
+Subject: Re: [PATCH] ahci: enable pmp but connected to HDD issue fixed
+Message-ID: <20110614065213.GD8141@htj.dyndns.org>
+References: <1308030504-3026-1-git-send-email-yuanlmm@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110613203341.GA15695@redhat.com>
+In-Reply-To: <1308030504-3026-1-git-send-email-yuanlmm@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Oleg.
-
-On Mon, Jun 13, 2011 at 10:33:41PM +0200, Oleg Nesterov wrote:
-> >   and I don't see
-> >   good reasons to optimize it.  Moreover, I think it doesn't hurt to
-> >   have a way to reliably trigger spurious notification.
+On Tue, Jun 14, 2011 at 01:48:24PM +0800, Yuan-Hsin Chen wrote:
+> From: Yuan-Hsin Chen <yhchen@faraday-tech.com>
 > 
-> Well. I don't really understand why, but OK. Let's keep it this way.
-
-So that we can just send SIGCONT to test how applications hold up
-against spurious notifications.  ie. making corner case a bit more
-common and easier to reproduce so that it's more discoverable /
-debuggable.
-
-> > However, I think it's
-> >   done the current way for a reason - always trying to wake up on
-> >   SIGCONT is more robust in case something went out of sync
+> When enabling both port multiplier and platform ahci sata, ahci
+> times out while connecting to HDD directly. This is because soft
+> reset fails with IPMS set. Do soft reset again to port 0.
 > 
-> Hmm. I am wondering if we can ever see why == 0 && __TASK_STOPPED with
-> the recent fixes...
+> The soft reset sequence is copied from ahci.c.
 
-Probably not but I still think it's a better style to make SIGCONT
-_always_ wake up.  <obligatory inaccurate car analogy> It's like a car
-brake.  If transmission is in parking, gear interlocking should keep
-the wheels from spinning and brake pedal input may be bypassed safely
-for most cases, but, still, it's better to guarantee that stepping on
-the brake pedal always makes the brake pads squeezed. </a>
+This is the same one as ahci_sb600_softreset(), right?  Please don't
+copy & paste like that.  Rename and ahci_sb600_softreset() to
+libahci.c, create a separate ata_port_operations for it and use the
+ops for the affected controllers.
 
 Thanks.
 
