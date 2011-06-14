@@ -1,44 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab1FNPcW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 11:32:22 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:36442 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753278Ab1FNPcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 11:32:17 -0400
-Date: Tue, 14 Jun 2011 08:32:13 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Alex,Shi" <alex.shi@intel.com>, "Li, Shaohua" <shaohua.li@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>, rostedt@goodmis.org
-Subject: Re: rcu: performance regression
-Message-ID: <20110614153213.GE2288@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1308029185.15392.147.camel@sli10-conroe>
- <1308040388.21027.1847.camel@debian>
- <20110614130203.GF2264@linux.vnet.ibm.com>
- <1308057298.19856.40.camel@twins>
- <1308057522.19856.41.camel@twins>
- <20110614150155.GC2288@linux.vnet.ibm.com>
- <1308064225.19856.76.camel@twins>
+	id S1753425Ab1FNPoN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 11:44:13 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:36757 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751671Ab1FNPoK convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 11:44:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308064225.19856.76.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1308056600-17601-1-git-send-email-santosh.shilimkar@ti.com>
+References: <1308056600-17601-1-git-send-email-santosh.shilimkar@ti.com>
+From: "Menon, Nishanth" <nm@ti.com>
+Date: Tue, 14 Jun 2011 10:38:37 -0500
+Message-ID: <BANLkTimKHsGCrbZ5FhYOyJC8+pASUD-nDg@mail.gmail.com>
+Subject: Re: [PATCH] power: opp: Fix rcu_dereference_check() without protection!
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Kevin Hilman <khilman@deeprootsystems.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 14, 2011 at 05:10:25PM +0200, Peter Zijlstra wrote:
-> On Tue, 2011-06-14 at 08:01 -0700, Paul E. McKenney wrote:
-> > Hmmm...  This is going to be fun for the -rt guys given the mapping of
-> > softirq and irq to kthreads, but then again, perhaps people will
-> > confine use of -rt to smaller systems. 
-> 
-> Its those -rt guys that wrote this stuff :-)
+On Tue, Jun 14, 2011 at 08:03, Santosh Shilimkar
+<santosh.shilimkar@ti.com> wrote:
+> With RCU debug options enabled, below warning is observed.
+>
+> ===================================================
+> [ INFO: suspicious rcu_dereference_check() usage. ]
+> ---------------------------------------------------
+> drivers/base/power/opp.c:151 invoked rcu_dereference_check() without protection!
+>
+> other info that might help us debug this:
+>
+> rcu_scheduler_active = 1, debug_locks = 1
+> no locks held by swapper/1.
+> ...
+>
+> ---------------------------------------------------
+>
+> Fix the same by protecting it with rcu_read lock.
+>
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: Nishanth Menon <nm@ti.com>
+> Cc: Kevin Hilman <khilman@deeprootsystems.com>
+> ---
+>  drivers/base/power/opp.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
+> index 56a6899..cbed5e1 100644
+> --- a/drivers/base/power/opp.c
+> +++ b/drivers/base/power/opp.c
+> @@ -148,7 +148,9 @@ unsigned long opp_get_voltage(struct opp *opp)
+>        struct opp *tmp_opp;
+>        unsigned long v = 0;
+>
+> +       rcu_read_lock();
+>        tmp_opp = rcu_dereference(opp);
+> +       rcu_read_unlock();
+>        if (unlikely(IS_ERR_OR_NULL(tmp_opp)) || !tmp_opp->available)
+>                pr_err("%s: Invalid parameters\n", __func__);
+>        else
+NAK. please read the Documentation/power/opp.txt
+the usage is as follows:
+rcu_read_lock();
+opp = opp_find_freq_ceil();
+voltage = opp_get_voltage(opp);
+rcu_read_unlock();
 
-Fair point!  ;-)
+the reason for this is that the opp pointer is not safe if we lock
+just the dereferencing.
 
-							Thanx, Paul
+Regards,
+Nishanth Menon
