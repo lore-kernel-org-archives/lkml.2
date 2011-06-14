@@ -1,45 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755795Ab1FNJYh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 05:24:37 -0400
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:58514 "EHLO smtp2.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755068Ab1FNJYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 05:24:36 -0400
-X-Greylist: delayed 1066 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Jun 2011 05:24:36 EDT
-Date: Tue, 14 Jun 2011 12:06:49 +0300 (EEST)
-From: Meelis Roos <mroos@ut.ee>
-To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
-cc: Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: 3.0-rc3: No RTC device found
-In-Reply-To: <alpine.SOC.1.00.1106081454240.8911@math.ut.ee>
-Message-ID: <alpine.SOC.1.00.1106141203350.11764@math.ut.ee>
-References: <alpine.SOC.1.00.1106081454240.8911@math.ut.ee>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755561Ab1FNJI0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 05:08:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60280 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754651Ab1FNJIX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 05:08:23 -0400
+Subject: Re: [PATCH] ideapad: let Fn+F5 also trigger KEY_BLUETOOTH
+From: David Woodhouse <dwmw2@infradead.org>
+To: Ike Panhc <ike.pan@canonical.com>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        Dmitry Torohov <dmitry.torokhov@gmail.com>
+Date: Tue, 14 Jun 2011 10:08:20 +0100
+In-Reply-To: <4DF71C01.6080504@canonical.com>
+References: <1308040109-12038-1-git-send-email-ike.pan@canonical.com>
+	 <4DF71C01.6080504@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1308042502.3450.3.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was my earlier report that I tought was sparc64 specific:
+On Tue, 2011-06-14 at 16:29 +0800, Ike Panhc wrote:
+> I think it is better to solve this in driver not in user space application 
+> because on some other platforms, the KEY_WLAN and KEY_BLUETOOTH are separate.
 
-> Dmesg finds both OF RTC and PC RTC but later complains
-> "No RTC device found, ALARM timers will not wake from suspend"
-
-But today I noticed this while testing 3.0-rc3 on a PC:
-
-[    0.313944] No RTC device found, ALARM timers will not wake from suspend
-[    0.314275] drivers/rtc/hctosys.c: unable to open rtc device (rtc0)
-
-Later it detects PC RTC:
-
-[    3.610210] rtc_cmos 00:03: RTC can wake from S4
-[    3.611554] rtc_cmos 00:03: rtc core: registered rtc_cmos as rtc0
-[    3.611669] rtc0: alarms up to one year, y3k, 114 bytes nvram
-
-Bisecting it on sparc64 got me nowhere. Have not tried bisecting it on 
-PC yet.
+I think it's better to do it in userspace. It's not as if it's hard to
+define another KEY_ and just tell the truth about what happened. Let
+userspace work out what to do with it.
 
 -- 
-Meelis Roos (mroos@linux.ee)
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
+
