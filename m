@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956Ab1FNQwM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 12:52:12 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:62588 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab1FNQwK (ORCPT
+	id S1751899Ab1FNQ6n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 12:58:43 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34998 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947Ab1FNQ6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 12:52:10 -0400
+	Tue, 14 Jun 2011 12:58:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Kds+YzBpv0fWx1iENogoUFzrJOhLuC1oeqYtTmXGTCZ0k9Wzx1NECzWvmszRu6BatD
-         KuoMtuzfg9zQGUKQSOQSVJkZbIpotyGiQk9TMQR2SF/lfW+CkmD7E6kta4Re5+mgB6Id
-         2OeF9hmY6SFZuCmsbubuT73ZoiVNvE5EeYecQ=
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Eric Anholt <eric@anholt.net>
-Cc: Keith Packard <keithp@keithp.com>, Dave Airlie <airlied@redhat.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel J Blueman <daniel.blueman@gmail.com>
-Subject: [PATCH 3.0-rc3] i915: Fix gen6 (SNB) GPU stalling
-Date: Wed, 15 Jun 2011 00:51:47 +0800
-Message-Id: <1308070307-2630-1-git-send-email-daniel.blueman@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+        h=sender:content-type:to:cc:subject:references:date:mime-version
+         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
+        b=Bd4F8fMJtlFiVlVaI3vQOyNXvTmm7KRL6rIa3iYVLgXUcMGo47xONXQ2ms8vEdJ5cB
+         uqRPl6Eh6usjF4jAaXpxtRSciuLEKEOg1vlt0xAT5iIWLBSwT9xb4hmv5hKNz8uy23Ie
+         7dwTI+E664emuNLwxhJvwLHemJlg/s88bILow=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Arnd Bergmann" <arnd@arndb.de>
+Cc: "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>
+Subject: Re: [PATCH 08/10] mm: cma: Contiguous Memory Allocator added
+References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
+ <201106141549.29315.arnd@arndb.de> <op.vw2jmhir3l0zgt@mnazarewicz-glaptop>
+ <201106141803.00876.arnd@arndb.de>
+Date: Tue, 14 Jun 2011 18:58:35 +0200
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.vw2r3xrj3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <201106141803.00876.arnd@arndb.de>
+User-Agent: Opera Mail/11.10 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 June 2011 13:23, Eric Anholt <eric@anholt.net> wrote:
-> On Tue, 14 Jun 2011 12:18:36 +0800, Daniel J Blueman <daniel.blueman@gmail.com> wrote:
->> Hi Eric,
->>
->> The frequent ~1.5s pauses I hit with SNB hardware in the gnome3 UI (eg
->> whenever you hit the top-left of the screen to show all windows) are
->> nicely addressed by your recent wake patch [1] (ported to -rc3). Thus
->> I see no 'missed IRQ' kernel messages.
->>
->> As this addresses a significant usability regression, are you happy to
->> add it to the 3.0-rc queue? I think it has very good value in -stable
->> also (assuming correctness). What do you think?
->
-> This one had significant performance impacts, and later hacks in this
-> series worked around the problem to approximately the same level of
-> success with less impact, and we don't actually have a justification of
-> why any of them work.  We were still hoping to come up with some clue,
-> and haven't yet.
+>> On Tue, 14 Jun 2011 15:49:29 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
+>>> Please explain the exact requirements that lead you to defining  
+>>> multiple contexts.
 
-True; that is quite heavy handed delay looping.
+> On Tuesday 14 June 2011, Michal Nazarewicz wrote:
+>> Some devices may have access only to some banks of memory.  Some devices
+>> may use different banks of memory for different purposes.
 
-It's a pity the usual Intel font didn't make it to the programmer's
-reference manuals. Anyway, unmasking the blitter user interrupt in the hardware
-status mask register addresses the root cause. Out of reset it's FFFFFFFFh,
-so we don't need to read it here.
+On Tue, 14 Jun 2011 18:03:00 +0200, Arnd Bergmann wrote:
+> For all I know, that is something that is only true for a few very  
+> special Samsung devices,
 
-It would be good to get this into -rc4. -stable probably needs some additional
-tweaks.
+Maybe.  I'm just answering your question. :)
 
-Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
----
- drivers/gpu/drm/i915/i915_irq.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+Ah yes, I forgot that separate regions for different purposes could
+decrease fragmentation.
 
-diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
-index b9fafe3..9a98c1b 100644
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -1827,6 +1827,12 @@ int ironlake_irq_postinstall(struct drm_device *dev)
- 		ironlake_enable_display_irq(dev_priv, DE_PCU_EVENT);
- 	}
- 
-+	if (IS_GEN6(dev))
-+		/* allow blitter user interrupt to generate a MSI write from
-+		   the ISR */
-+		I915_WRITE(GEN6_BLITTER_HWSTAM,
-+			0xffffffff & ~GEN6_BLITTER_USER_INTERRUPT);
-+
- 	return 0;
- }
- 
+> I would suggest going forward without having multiple regions:
+
+Is having support for multiple regions a bad thing?  Frankly,
+removing this support will change code from reading context passed
+as argument to code reading context from global variable.  Nothing
+is gained; functionality is lost.
+
+> * Remove the registration of specific addresses from the initial patch
+>   set (but keep the patch).
+> * Add a heuristic plus command-line override to automatically come up
+>   with a reasonable location+size for *one* CMA area in the system.
+
+I'm not arguing those.
+
 -- 
-1.7.4.1
-
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
