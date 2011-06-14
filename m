@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443Ab1FNIgR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 04:36:17 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:43674 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755377Ab1FNIgL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 04:36:11 -0400
-X-AuditID: b753bd60-a0ac3ba000003bac-64-4df71d78229a
-X-AuditID: b753bd60-a0ac3ba000003bac-64-4df71d78229a
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -tip v3 2/3] Add weak save_stack_trace_regs()
-To: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Namhyung Kim <namhyung@gmail.com>, yrl.pp-manager.tt@hitachi.com,
-        linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Namhyung Kim <namhyung@gmail.com>
-Date: Tue, 14 Jun 2011 16:03:05 +0900
-Message-ID: <20110614070305.3628.24629.stgit@fedora15>
-In-Reply-To: <20110614070250.3628.94917.stgit@fedora15>
-References: <20110614070250.3628.94917.stgit@fedora15>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1754159Ab1FNHDX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 03:03:23 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:55894 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753234Ab1FNHDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 03:03:21 -0400
+Subject: Re: [PATCH] unicore32, exec: remove redundant set_fs(USER_DS)
+From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Reply-To: gxt@mprc.pku.edu.cn
+To: Mathias Krause <minipli@googlemail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, arnd@arndb.de
+In-Reply-To: <62714CC0-0928-49FB-8E64-0A95A53917DF@googlemail.com>
+References: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com>
+	 <1307711463-17752-1-git-send-email-minipli@googlemail.com>
+	 <1307956780.1878.13.camel@epip-laptop>
+	 <62714CC0-0928-49FB-8E64-0A95A53917DF@googlemail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: MPRC, PKU
+Date: Tue, 14 Jun 2011 15:03:07 +0800
+Message-ID: <1308034987.4727.1.camel@epip-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add weak symbol of save_stack_trace_regs() as same as
-save_stack_trace_tsk() since that is not implemented
-except x86 yet. This also removes useless KERN_INFO
-for WARN_ONCE from save_stack_trace_tsk().
+On Mon, 2011-06-13 at 18:02 +0200, Mathias Krause wrote:
+> On 13.06.2011, 11:19 Guan Xuetao wrote:
+> > On Fri, 2011-06-10 at 15:11 +0200, Mathias Krause wrote:
+> >> The address limit is already set in flush_old_exec() so this
+> >> set_fs(USER_DS) is redundant.
+> >> 
+> >> Signed-off-by: Mathias Krause <minipli@googlemail.com>
+> >> ---
+> >> arch/unicore32/include/asm/processor.h |    1 -
+> >> 1 files changed, 0 insertions(+), 1 deletions(-)
+> >> 
+> >> diff --git a/arch/unicore32/include/asm/processor.h b/arch/unicore32/include/asm/processor.h
+> >> index e11cb07..f0d780a 100644
+> >> --- a/arch/unicore32/include/asm/processor.h
+> >> +++ b/arch/unicore32/include/asm/processor.h
+> >> @@ -53,7 +53,6 @@ struct thread_struct {
+> >> #define start_thread(regs, pc, sp)					\
+> >> ({									\
+> >> 	unsigned long *stack = (unsigned long *)sp;			\
+> >> -	set_fs(USER_DS);						\
+> >> 	memset(regs->uregs, 0, sizeof(regs->uregs));			\
+> >> 	regs->UCreg_asr = USER_MODE;					\
+> >> 	regs->UCreg_pc = pc & ~1;	/* pc */                        \
+> > 
+> > Hi Mathias,
+> > I searched for the code in flush_old_exec(), but I can't find the code
+> > you mentioned. Could you make it more clear?
+> 
+> Sorry, this statement is based on a commit post v3.0-rc2. Before dac853a (exec:
+> delay address limit change until point of no return) it was done in
+> search_binary_handler(), now it is done in flush_old_exec(). Either way
+> set_fs(USER_DS) gets called before start_thread() so the call there is
+> redundant.
+> 
+> > And, if all fs codes (not only elf and aout) have the similar
+> > implementations,
+> 
+> I've checked that all binary format handler call flush_old_exec() before
+> start_thread(). So: yes.
+> 
+> > perhaps all arch-specific codes should be manipulated
+> > in the meanwhile.
+> 
+> That's what this LKML thread is for: https://lkml.org/lkml/2011/6/10/65
+> 
+> Thanks,
+> Mathias
+Thanks for your explanations.
+The patch looks good to me.
 
-Changes in V3:
-- Remvoe KERN_INFO from WARN_ONCE
+Guan Xuetao
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Namhyung Kim <namhyung@gmail.com>
----
-
- kernel/stacktrace.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/stacktrace.c b/kernel/stacktrace.c
-index eb212f8..88af597 100644
---- a/kernel/stacktrace.c
-+++ b/kernel/stacktrace.c
-@@ -26,12 +26,18 @@ void print_stack_trace(struct stack_trace *trace, int spaces)
- EXPORT_SYMBOL_GPL(print_stack_trace);
- 
- /*
-- * Architectures that do not implement save_stack_trace_tsk get this
-- * weak alias and a once-per-bootup warning (whenever this facility
-- * is utilized - for example by procfs):
-+ * Architectures that do not implement save_stack_trace_tsk or
-+ * save_stack_trace_regs get this weak alias and a once-per-bootup warning
-+ * (whenever this facility is utilized - for example by procfs):
-  */
- __weak void
- save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- {
--	WARN_ONCE(1, KERN_INFO "save_stack_trace_tsk() not implemented yet.\n");
-+	WARN_ONCE(1, "save_stack_trace_tsk() not implemented yet.\n");
-+}
-+
-+__weak void
-+save_stack_trace_regs(struct pt_regs *regs, struct stack_trace *trace)
-+{
-+	WARN_ONCE(1, "save_stack_trace_regs() not implemented yet.\n");
- }
 
