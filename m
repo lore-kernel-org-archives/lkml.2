@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab1FNO5D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 10:57:03 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:56943 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101Ab1FNO5A convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 10:57:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=XT5wsuGbVJNe/SZ1t85yw/QQLss0RNmD7mbS/A0tYlwxjggC7/OFgnfVoSa33KcwYf
-         dWUfiZCW6beTiRzlUodvcAQyJU/8k8W5RrTYt+T9O2r433jwT3sDTavwCCHE2wQWTAvN
-         uvtuXIi1TubsDB+8WHKrKLPvWVH+eH7zawYXY=
-Subject: [PATCH v2] Add support for 88SE91A0, 88SE91A4
-From: =?UTF-8?Q?Pawe=C5=82?= Drewniak <czajernia@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, czajernia@gmail.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Jun 2011 15:56:07 +0100
-Message-ID: <1308063367.21407.3.camel@woody-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8BIT
+	id S1752028Ab1FNPFD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 11:05:03 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:58236 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750780Ab1FNPFB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 11:05:01 -0400
+Date: Tue, 14 Jun 2011 20:27:06 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jonathan Corbet <corbet@lwn.net>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 3.0-rc2-tip 2/22]  2: uprobes: Breakground page
+ replacement.
+Message-ID: <20110614145706.GD4952@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+ <20110607125835.28590.25476.sendpatchset@localhost6.localdomain6>
+ <1307660609.2497.1773.camel@laptop>
+ <20110613085955.GD27130@linux.vnet.ibm.com>
+ <1308056249.19856.34.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1308056249.19856.34.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+> > 
+> > /*
+> >  * NOTE:
+> >  * Expect the breakpoint instruction to be the smallest size instruction for
+> >  * the architecture. If an arch has variable length instruction and the
+> >  * breakpoint instruction is not of the smallest length instruction
+> >  * supported by that architecture then we need to modify read_opcode /
+> >  * write_opcode accordingly. This would never be a problem for archs that
+> >  * have fixed length instructions.
+> >  */
+> 
+> Whoever reads comments anyway? :-)
+> 
+> > Do we have archs which have a breakpoint instruction which isnt of the
+> > smallest instruction size for that arch. If we do have can we change the
+> > write_opcode/read_opcode while we support that architecture?
+> 
+> Why not put a simple WARN_ON_ONCE() in there that checks the assumption?
 
-this patch enables support for Marvell IDE PATA controllers found on
-Asus P8P67LE motherboard.
-The formatting has been corrected and I also received a report from two
-users of this motherboard that the patch works.
+Okay, will do.
 
-Thanks,
-Paweł Drewniak
-
-diff --git a/drivers/ata/pata_marvell.c b/drivers/ata/pata_marvell.c
-index 75a6a0c..3a4c885 100644
---- a/drivers/ata/pata_marvell.c
-+++ b/drivers/ata/pata_marvell.c
-@@ -161,6 +161,8 @@ static const struct pci_device_id marvell_pci_tbl[]
-= {
- 	{ PCI_DEVICE(0x11AB, 0x6121), },
- 	{ PCI_DEVICE(0x11AB, 0x6123), },
- 	{ PCI_DEVICE(0x11AB, 0x6145), },
-+	{ PCI_DEVICE(0x1B4B, 0x91A0), },
-+	{ PCI_DEVICE(0x1B4B, 0x91A4), },
- 	{ }	/* terminate list */
- };
-
-
+-- 
+Thanks and Regards
+Srikar
