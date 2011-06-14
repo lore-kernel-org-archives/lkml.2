@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499Ab1FNO6n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 10:58:43 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61640 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391Ab1FNO6l convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 10:58:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=rhEIMvMuMOxFDX6ufS8TebD26+uKxxNYLpKkv9HnWntLsbDApv1Hep7PKIvwOYr4X2
-         0kjJXN3Ri3pJtSP/Rq8a2YSnVaFK+0grcGxlH9NU6N+2O2HJFyGyH5xnMPsrSE0qeFSB
-         owjchs54eRcZER1kcQHn4/NB+EZ9lh2e4qeU8=
+	id S1751699Ab1FNPCH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 11:02:07 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:57110 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751574Ab1FNPCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 11:02:04 -0400
+Date: Tue, 14 Jun 2011 08:01:55 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Alex,Shi" <alex.shi@intel.com>, "Li, Shaohua" <shaohua.li@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>, rostedt@goodmis.org
+Subject: Re: rcu: performance regression
+Message-ID: <20110614150155.GC2288@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1308029185.15392.147.camel@sli10-conroe>
+ <1308040388.21027.1847.camel@debian>
+ <20110614130203.GF2264@linux.vnet.ibm.com>
+ <1308057298.19856.40.camel@twins>
+ <1308057522.19856.41.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimL=+vaa7NB5FW192rZd08Gv-Z-OA@mail.gmail.com>
-References: <BANLkTimU+E8Y0_9+H2nsF6CMg66_TDH0LQ@mail.gmail.com>
-	<BANLkTimL=+vaa7NB5FW192rZd08Gv-Z-OA@mail.gmail.com>
-Date: Tue, 14 Jun 2011 16:58:40 +0200
-Message-ID: <BANLkTik+TD1+k1hd-hEteE5OTeDrDAuMZQ@mail.gmail.com>
-Subject: [PATCH] s3c2410_udc: udc command always disables pull-up instead of
- passing the command
-From: Skacore Systems <skacore.systems@gmail.com>
-To: linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308057522.19856.41.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello *,
+On Tue, Jun 14, 2011 at 03:18:42PM +0200, Peter Zijlstra wrote:
+> On Tue, 2011-06-14 at 15:14 +0200, Peter Zijlstra wrote:
+> > On Tue, 2011-06-14 at 06:02 -0700, Paul E. McKenney wrote:
+> > > > This commit also cause hackbench process mode performance dropping, and
+> > > > Shaohua's patch do recovered this. But in hackbench testing, the vmstat
+> > > > show context switch have some reduce. And perf tool show
+> > > > root_domain->cpupri->prio_to_cpu[]->lock has contention with the commit.
+> > > 
+> > > Steven, Peter, would any of the recent fixes address this lock contention? 
+> > 
+> > No. People occasionally run into that thing, but given the constraints
+> > on SCHED_FIFO SMP (run the n highest priority tasks on m cpus; n<=m)
+> > there isn't really much we can do.
+> > 
+> > IIRC Chris Mason once proposed a lockless version, but that opened up
+> > race windows, Steve might know the details better.
+> 
+> Note that even a lockless version will die of cacheline contention.
 
-Sorry for the HTML,
-There is a bug in s3c2410_udc driver, which triggers when using custom
-UDC command for USB pull-up.
-As a result driver is always calling user defined UDC command with
-wrong parameter (S3C2410_UDC_P_DISABLE) instead of
-just passing the parameter to the user defined function.
+Hmmm...  This is going to be fun for the -rt guys given the mapping of
+softirq and irq to kthreads, but then again, perhaps people will
+confine use of -rt to smaller systems.
 
-BR.
+Thankfully, Shaohua's patch is looking good so far, give or take a
+couple of future RCU items, but then again, those are in the future
+rather than here and now.
 
-Vilo
-
---- Linux-2.6.39-wp/2.6.39/drivers/usb/gadget/s3c2410_udc.c
-2011-05-19 06:06:34.000000000 +0200
-+++ Linux-2.6.39/linux-paytec/drivers/usb/gadget/s3c2410_udc.c
-2011-06-14 11:59:55.000000000 +0200
-@@ -1566,7 +1566,7 @@
-                return;
-        if (udc_info->udc_command) {
--               udc_info->udc_command(S3C2410_UDC_P_DISABLE);
-+               udc_info->udc_command(cmd);
-        } else if (gpio_is_valid(udc_info->pullup_pin)) {
-                int value;
+							Thanx, Paul
