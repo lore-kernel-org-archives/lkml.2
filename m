@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181Ab1FNWhA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 18:37:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:44828 "EHLO
+	id S1754306Ab1FNWhZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 18:37:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:41997 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875Ab1FNWg7 (ORCPT
+	with ESMTP id S1753926Ab1FNWhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 18:36:59 -0400
-X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=vhdKIqpQuCYA:10 a=KhJpOiBgMmsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=wK5BP5vcLrgx6EhhWtEA:9 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Tue, 14 Jun 2011 18:37:00 -0400
+X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=vhdKIqpQuCYA:10 a=i4oitjsSMAcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=JfrnYn6hAAAA:8 a=VnNF1IyMAAAA:8 a=VwQbUJbxAAAA:8 a=ayC55rCoAAAA:8 a=DGGDpp8ivC0nh92LMBIA:9 a=jeBq3FmKZ4MA:10 a=3Rfx1nUSh_UA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110614223657.450239027@goodmis.org>
+Message-Id: <20110614223657.824872966@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 14 Jun 2011 18:36:24 -0400
+Date: Tue, 14 Jun 2011 18:36:25 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Hillf Danton <dhillf@gmail.com>, Yong Zhang <yong.zhang0@gmail.com>
-Subject: [PATCH 1/2] sched: Fix need_resched() when checking peempt
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Andrew Theurer <habanero@linux.vnet.ibm.com>
+Subject: [PATCH 2/2] sched: Check if lowest_mask is initialized in find_lowest_rq
 References: <20110614223623.876681637@goodmis.org>
-Content-Disposition: inline; filename=0001-sched-Fix-need_resched-when-checking-peempt.patch
+Content-Disposition: inline; filename=0002-sched-Check-if-lowest_mask-is-initialized-in-find_lo.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hillf Danton <dhillf@gmail.com>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-The RT preempt check tests the wrong task if NEED_RESCHED is set. It currently
-checks the local CPU task. It is suppose to check the task that is running on
-the run queue we are about to wake another task on.
+On system boot up, the lowest_mask is initialized with early_initcall.
+But RT tasks may wake up on other early_initcall callers before the
+lowest_mask is initialized, causing a system crash.
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
-Link: http://lkml.kernel.org/r/BANLkTi=e=69xvJZ1+56xzuFyhmdN0hZHRQ@mail.gmail.com
-Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
+The commit d72bce0e67 rcu: Cure load woes
+was the first commit to wake up RT tasks in early init. Before this
+commit this bug should not happen.
+
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Reported-by: Andrew Theurer <habanero@linux.vnet.ibm.com>
+Tested-by: Andrew Theurer <habanero@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1308014683.9218.107.camel@gandalf.stny.rr.com
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/sched_rt.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/sched_rt.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
 diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-index 88725c9..9b8d5dc 100644
+index 9b8d5dc..10d0182 100644
 --- a/kernel/sched_rt.c
 +++ b/kernel/sched_rt.c
-@@ -1096,7 +1096,7 @@ static void check_preempt_curr_rt(struct rq *rq, struct task_struct *p, int flag
- 	 * to move current somewhere else, making room for our non-migratable
- 	 * task.
- 	 */
--	if (p->prio == rq->curr->prio && !need_resched())
-+	if (p->prio == rq->curr->prio && !test_tsk_need_resched(rq->curr))
- 		check_preempt_equal_prio(rq, p);
- #endif
- }
+@@ -1239,6 +1239,10 @@ static int find_lowest_rq(struct task_struct *task)
+ 	int this_cpu = smp_processor_id();
+ 	int cpu      = task_cpu(task);
+ 
++	/* Make sure the mask is initialized first */
++	if (unlikely(!lowest_mask))
++		return -1;
++
+ 	if (task->rt.nr_cpus_allowed == 1)
+ 		return -1; /* No other targets possible */
+ 
 -- 
 1.7.4.4
 
