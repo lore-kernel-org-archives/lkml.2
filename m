@@ -1,79 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab1FNPoN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 11:44:13 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:36757 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751671Ab1FNPoK convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 11:44:10 -0400
+	id S1753369Ab1FNPnd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 11:43:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65400 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750947Ab1FNPnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 11:43:31 -0400
+Date: Tue, 14 Jun 2011 17:40:52 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 3.0-rc2-tip 2/22]  2: uprobes: Breakground page
+	replacement.
+Message-ID: <20110614154052.GA22082@redhat.com>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6> <20110607125835.28590.25476.sendpatchset@localhost6.localdomain6> <20110613170020.GA27137@redhat.com> <1308056477.19856.35.camel@twins> <20110614142710.GB5139@redhat.com> <1308064053.19856.75.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <1308056600-17601-1-git-send-email-santosh.shilimkar@ti.com>
-References: <1308056600-17601-1-git-send-email-santosh.shilimkar@ti.com>
-From: "Menon, Nishanth" <nm@ti.com>
-Date: Tue, 14 Jun 2011 10:38:37 -0500
-Message-ID: <BANLkTimKHsGCrbZ5FhYOyJC8+pASUD-nDg@mail.gmail.com>
-Subject: Re: [PATCH] power: opp: Fix rcu_dereference_check() without protection!
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Kevin Hilman <khilman@deeprootsystems.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308064053.19856.75.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 14, 2011 at 08:03, Santosh Shilimkar
-<santosh.shilimkar@ti.com> wrote:
-> With RCU debug options enabled, below warning is observed.
+On 06/14, Peter Zijlstra wrote:
 >
-> ===================================================
-> [ INFO: suspicious rcu_dereference_check() usage. ]
-> ---------------------------------------------------
-> drivers/base/power/opp.c:151 invoked rcu_dereference_check() without protection!
+> On Tue, 2011-06-14 at 16:27 +0200, Oleg Nesterov wrote:
+> > On 06/14, Peter Zijlstra wrote:
+> > >
+> > > On Mon, 2011-06-13 at 19:00 +0200, Oleg Nesterov wrote:
+> > > >
+> > > > Also. This is called under down_read(mmap_sem), can't we race with
+> > > > access_process_vm() modifying the same memory?
+> > >
+> > > Shouldn't matter COW and similar things are serialized using the pte
+> > > lock.
+> >
+> > Yes, but afaics this doesn't matter. Suppose that write_opcode() is
+> > called when access_process_vm() does copy_to_user_page(). We can cow
+> > the page before memcpy() completes.
 >
-> other info that might help us debug this:
+> access_process_vm() will end up doing a FOLL_WRITE itself when
+> copy_to_user_page() is called since write=1 in that case.
 >
-> rcu_scheduler_active = 1, debug_locks = 1
-> no locks held by swapper/1.
-> ...
+> At that point we have a COW-race, someone wins, but the other will then
+> return the same page.
 >
-> ---------------------------------------------------
->
-> Fix the same by protecting it with rcu_read lock.
->
-> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: Nishanth Menon <nm@ti.com>
-> Cc: Kevin Hilman <khilman@deeprootsystems.com>
-> ---
->  drivers/base/power/opp.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-> index 56a6899..cbed5e1 100644
-> --- a/drivers/base/power/opp.c
-> +++ b/drivers/base/power/opp.c
-> @@ -148,7 +148,9 @@ unsigned long opp_get_voltage(struct opp *opp)
->        struct opp *tmp_opp;
->        unsigned long v = 0;
->
-> +       rcu_read_lock();
->        tmp_opp = rcu_dereference(opp);
-> +       rcu_read_unlock();
->        if (unlikely(IS_ERR_OR_NULL(tmp_opp)) || !tmp_opp->available)
->                pr_err("%s: Invalid parameters\n", __func__);
->        else
-NAK. please read the Documentation/power/opp.txt
-the usage is as follows:
-rcu_read_lock();
-opp = opp_find_freq_ceil();
-voltage = opp_get_voltage(opp);
-rcu_read_unlock();
+> At this point further PTRACE pokes can indeed race with the memcpy in
+> write_opcode().
 
-the reason for this is that the opp pointer is not safe if we lock
-just the dereferencing.
+Currently it can't, write_opcode() does another cow. But that cow can,
+and this is the same, yes.
 
-Regards,
-Nishanth Menon
+> A possible fix would be to lock_page() around
+> copy_to_user_page() (its already done in set_page_dirty_lock(), so
+> pulling it out shouldn't matter much).
+
+Yes, or write_opcode() could take mmap_sem for writing as Srikar suggests.
+
+But do we really care? Whatever we do we can race with the other updates
+to this memory. Say, someone can write to vma->vm_file.
+
+Oleg.
+
