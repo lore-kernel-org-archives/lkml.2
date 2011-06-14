@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab1FNCnM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 22:43:12 -0400
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:35763 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520Ab1FNCnK (ORCPT
+	id S1754017Ab1FNCtf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 22:49:35 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:56617 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520Ab1FNCtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 22:43:10 -0400
-Date: Tue, 14 Jun 2011 11:43:07 +0900
-From: Norbert Preining <preining@logic.at>
-To: Eric Sandeen <sandeen@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: another ext3 kernel BUG
-Message-ID: <20110614024307.GA3039@gamma.logic.tuwien.ac.at>
-References: <20110611021732.GA18768@gamma.logic.tuwien.ac.at> <20110614011904.GA32521@gamma.logic.tuwien.ac.at> <4DF6C541.5050805@redhat.com>
+	Mon, 13 Jun 2011 22:49:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=gtHLJArjcUSTqYtfsDgCSjvyCzCnGPTRIsSxucvW3RNQMlfQAeSXwxNnYk0X0MMaFm
+         reenB6fyShJRUqlWHp2saAzj01Nge+u3ZAqpIQU9mrHwqg0ynmIsvWTh5m8ljr2baZKD
+         kGwm9X1EesOyoU0BZo+Yl87ltTRE9S92490u4=
+Message-ID: <4DF6CBDE.2070208@gmail.com>
+Date: Tue, 14 Jun 2011 10:47:58 +0800
+From: Asias He <asias.hejun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DF6C541.5050805@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Glauber Costa <glommer@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 6/7] KVM-GST: adjust scheduler cpu power
+References: <1308007897-17013-1-git-send-email-glommer@redhat.com> <1308007897-17013-7-git-send-email-glommer@redhat.com>
+In-Reply-To: <1308007897-17013-7-git-send-email-glommer@redhat.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+On 06/14/2011 07:31 AM, Glauber Costa wrote:
+> This is a first proposal for using steal time information
+> to influence the scheduler. There are a lot of optimizations
+> and fine grained adjustments to be done, but it is working reasonably
+> so far for me (mostly)
+> 
+> With this patch (and some host pinnings to demonstrate the situation),
+> two vcpus with very different steal time (Say 80 % vs 1 %) will not get
+> an even distribution of processes. This is a situation that can naturally
+> arise, specially in overcommited scenarios. Previosly, the guest scheduler
+> would wrongly think that all cpus have the same ability to run processes,
+> lowering the overall throughput.
 
-thanks for the answer.
+One typo in the commit log:
 
-On Mo, 13 Jun 2011, Eric Sandeen wrote:
-> Disassembly of your code might show which register has i_state ... I wonder if this could possibly be corruption of some sort?  It'd be nice to know what was found in i_state.   Modifying iput() to print it out prior to the bug_on might also help.  Just a thought.
+s/Previosly/Previously
 
-Ok, I will try to patch something in and see what happens if I hit it
-again.
-
-> You seem uniquely able to hit it, and you do have a truckload of interesting modules loaded.  :)
-
-Interesting modules?
-alsa stuff, bluetooth, fuse/fat/vfat for ntfs/external drives, wlan
-the only thing that stand out is the vbox* I guess, all the others are
-pretty standard, aren't they?
-
-Best wishes
-
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-CONDOVER (n.)
-One who is employed to stand about all day browsing through the
-magazine racks in the newsagent.
-			--- Douglas Adams, The Meaning of Liff
+-- 
+Best Regards,
+Asias He
