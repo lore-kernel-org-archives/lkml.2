@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab1FNG72 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 02:59:28 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:39680 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753601Ab1FNG71 (ORCPT
+	id S1755372Ab1FNIgA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 04:36:00 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:35542 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755301Ab1FNIf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 02:59:27 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Eric Van Hensbergen <ericvh@gmail.com>
-Cc: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+	Tue, 14 Jun 2011 04:35:57 -0400
+X-AuditID: b753bd60-a0aaaba0000019f4-13-4df71d6bd09e
+X-AuditID: b753bd60-a0aaaba0000019f4-13-4df71d6bd09e
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [PATCH -tip v3 0/3] Support stacktrace with dynamic event
+To: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Namhyung Kim <namhyung@gmail.com>, yrl.pp-manager.tt@hitachi.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [V9fs-developer] [PATCH 3/3] 9p: add 9P2000.L unlinkat operation
-In-Reply-To: <BANLkTinevUGj7QYY2aodOWUtObaoUaHydA@mail.gmail.com>
-References: <1307383308-5773-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1307383308-5773-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <BANLkTinevUGj7QYY2aodOWUtObaoUaHydA@mail.gmail.com>
-User-Agent: Notmuch/0.5-215-g5143e5e (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Tue, 14 Jun 2011 12:29:12 +0530
-Message-ID: <87oc20ew5b.fsf@linux.vnet.ibm.com>
+Date: Tue, 14 Jun 2011 16:02:50 +0900
+Message-ID: <20110614070250.3628.94917.stgit@fedora15>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Jun 2011 16:12:52 -0500, Eric Van Hensbergen <ericvh@gmail.com> wrote:
-> Could be wrong, but a quick regression check of your patches fails
-> against a legacy server.  Are you making sure the new operations are
-> properly protected by a .L flag?
+Hi,
 
-How about below diff
+Here is the 3rd version of stacktrace support with
+dynamic event tracer.
 
-[3.0-pending@v9fs]$ git diff
-diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
-index f40fdc3..436699e 100644
---- a/fs/9p/vfs_inode.c
-+++ b/fs/9p/vfs_inode.c
-@@ -499,13 +499,15 @@ v9fs_inode_from_fid(struct v9fs_session_info *v9ses, struct p9_fid *fid,
+I've just fix patch styles according to Ingo's
+comments.
 
- static int v9fs_remove(struct inode *dir, struct dentry *dentry, int flags)
- {
--       int retval;
-        struct inode *inode;
-+       int retval = -EOPNOTSUPP;
-        struct p9_fid *v9fid, *dfid;
-+       struct v9fs_session_info *v9ses;
+Thank you,
 
-        P9_DPRINTK(P9_DEBUG_VFS, "inode: %p dentry: %p rmdir: %x\n",
-                   dir, dentry, flags);
+---
 
-+       v9ses = v9fs_inode2v9ses(dir);
-        inode = dentry->d_inode;
-        dfid = v9fs_fid_lookup(dentry->d_parent);
-        if (IS_ERR(dfid)) {
-@@ -513,7 +515,8 @@ static int v9fs_remove(struct inode *dir, struct dentry *dentry, int flags)
-                P9_DPRINTK(P9_DEBUG_VFS, "fid lookup failed %d\n", retval);
-                return retval;
-        }
--       retval = p9_client_unlinkat(dfid, dentry->d_name.name, flags);
-+       if (v9fs_proto_dotl(v9ses))
-+               retval = p9_client_unlinkat(dfid, dentry->d_name.name, flags);
-        if (retval == -EOPNOTSUPP) {
-                /* Try the one based on path */
-                v9fid = v9fs_fid_clone(dentry);
+Masami Hiramatsu (3):
+      [BUGFIX]tracing/kprobes: Fix kprobe-tracer to support stack trace
+      Add weak save_stack_trace_regs()
+      [CLEANUP]x86: Swap save_stack_trace_regs parameters
 
 
-related to renameat i have updated to check for -EOPNOTSUPP instead of
--ENOSYS. I am not sure any other dotl server out there is returning
--ENOSYS. We haven't documented what the server should return in case it
-doesn't support any specific operation. 
+ arch/x86/kernel/stacktrace.c  |    2 +-
+ arch/x86/mm/kmemcheck/error.c |    2 +-
+ include/linux/ftrace_event.h  |    4 ++++
+ include/linux/stacktrace.h    |    4 ++--
+ kernel/stacktrace.c           |   14 ++++++++++----
+ kernel/trace/trace.c          |   34 +++++++++++++++++++++++++++++-----
+ kernel/trace/trace.h          |    9 +++++++++
+ kernel/trace/trace_kprobe.c   |    6 ++++--
+ 8 files changed, 60 insertions(+), 15 deletions(-)
 
--aneesh
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
