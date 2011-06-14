@@ -1,542 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab1FNAAp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 20:00:45 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:59077 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755361Ab1FNAAl convert rfc822-to-8bit (ORCPT
+	id S1755456Ab1FNAFT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 20:05:19 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:54105 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755414Ab1FNAFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 20:00:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=QHOKZ0okrz12UvAKUHF8vJIh8uEGXP8wGYSYMVjG/QoqOrOM0JPNkP7Y6eLSoMr8Na
-         kVN+Pgj72NnhFJQ0p1kA==
-MIME-Version: 1.0
-In-Reply-To: <20110610181719.GA30330@linux.vnet.ibm.com>
-References: <20110503092846.022272244@google.com> <20110607154542.GA2991@linux.vnet.ibm.com>
- <1307529966.4928.8.camel@dhcp-10-30-22-158.sw.ru> <20110608163234.GA23031@linux.vnet.ibm.com>
- <BANLkTim7a9uhH_K6sw4YdqWB6frT+HUqqQ@mail.gmail.com> <20110610181719.GA30330@linux.vnet.ibm.com>
-From: Paul Turner <pjt@google.com>
-Date: Mon, 13 Jun 2011 17:00:08 -0700
-Message-ID: <BANLkTimE1b8HP-q4jgsv5jPD5S-dRoUi_g@mail.gmail.com>
-Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs unpinned
-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-Cc: Vladimir Davydov <vdavydov@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Pavel Emelianov <xemul@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Mon, 13 Jun 2011 20:05:18 -0400
+Subject: Re: BUG on 3.0-rc on commit
+ d72bce0e67e8afc6eb959f656013cbb577426f1e
+From: Andrew Theurer <habanero@linux.vnet.ibm.com>
+Reply-To: habanero@linux.vnet.ibm.com
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1307979239.9218.76.camel@gandalf.stny.rr.com>
+References: <1307711837.23688.33.camel@atheurer-ubuntu10>
+	 <1307715084.3941.166.camel@twins>  <1307717156.3941.169.camel@twins>
+	 <1307720081.17297.6.camel@atheurer-w510>  <1307723232.3941.178.camel@twins>
+	 <1307977614.17297.12.camel@atheurer-w510>
+	 <1307979239.9218.76.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Jun 2011 19:05:10 -0500
+Message-ID: <1308009910.23688.34.camel@atheurer-ubuntu10>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kamalesh.
-
-I tried on both friday and again today to reproduce your results
-without success.  Results are attached below.  The margin of error is
-the same as the previous (2-level deep case), ~4%.  One minor nit, in
-your script's input parsing you're calling shift; you don't need to do
-this with getopts and it will actually lead to arguments being
-dropped.
-
-Are you testing on top of a clean -tip?  Do you have any custom
-load-balancer or scheduler settings?
-
-Thanks,
-
-- Paul
-
-
-Hyper-threaded topology:
-unpinned:
-Average CPU Idle percentage 38.6333%
-Bandwidth shared with remaining non-Idle 61.3667%
-
-pinned:
-Average CPU Idle percentage 35.2766%
-Bandwidth shared with remaining non-Idle 64.7234%
-(The mask in the "unpinned" case is 0-3,6-9,12-15,18-21 which should
-mirror your 2 socket 8x2 configuration.)
-
-4-way NUMA topology:
-unpinned:
-Average CPU Idle percentage 5.26667%
-Bandwidth shared with remaining non-Idle 94.73333%
-
-pinned:
-Average CPU Idle percentage 0.242424%
-Bandwidth shared with remaining non-Idle 99.757576%
-
-
-
-
-On Fri, Jun 10, 2011 at 11:17 AM, Kamalesh Babulal
-<kamalesh@linux.vnet.ibm.com> wrote:
-> * Paul Turner <pjt@google.com> [2011-06-08 20:25:00]:
->
->> Hi Kamalesh,
->>
->> I'm unable to reproduce the results you describe.  One possibility is
->> load-balancer interaction -- can you describe the topology of the
->> platform you are running this on?
->>
->> On both a straight NUMA topology and a hyper-threaded platform I
->> observe a ~4% delta between the pinned and un-pinned cases.
->>
->> Thanks -- results below,
->>
->> - Paul
->>
->>
-> (snip)
->
-> Hi Paul,
->
-> That box is down. I tried running the test on the 2-socket quad-core with
-> HT and I was not able to reproduce the issue. CPU idle time reported with
-> both pinned and un-pinned case was ~0. But if we create a cgroup hirerachy
-> of 3 levels above the 5 cgroups, instead of the current hirerachy where all
-> the 5 cgroups created under /cgroup. The Idle time is seen on 2-socket
-> quad-core (HT) box.
->
->                                -----------
->                                | cgroups |
->                                -----------
->                                     |
->                                -----------
->                                | level 1 |
->                                -----------
->                                     |
->                                -----------
->                                | level 2 |
->                                -----------
->                                     |
->                                -----------
->                                | level 3 |
->                                -----------
->                              /   /   |   \     \
->                             /   /    |    \     \
->                        cgrp1  cgrp2 cgrp3 cgrp4 cgrp5
->
->
-> Un-pinned run
-> --------------
->
-> Average CPU Idle percentage 24.8333%
-> Bandwidth shared with remaining non-Idle 75.1667%
-> Bandwidth of Group 1 = 8.3700 i.e = 6.2900% of non-Idle CPU time 75.1667%
-> |...... subgroup 1/1    = 49.9900       i.e = 3.1400% of 6.2900% Groups non-Idle CPU time
-> |...... subgroup 1/2    = 50.0000       i.e = 3.1400% of 6.2900% Groups non-Idle CPU time
->
->
-> Bandwidth of Group 2 = 8.3700 i.e = 6.2900% of non-Idle CPU time 75.1667%
-> |...... subgroup 2/1    = 49.9900       i.e = 3.1400% of 6.2900% Groups non-Idle CPU time
-> |...... subgroup 2/2    = 50.0000       i.e = 3.1400% of 6.2900% Groups non-Idle CPU time
->
->
-> Bandwidth of Group 3 = 16.6500 i.e = 12.5100% of non-Idle CPU time 75.1667%
-> |...... subgroup 3/1    = 25.0000       i.e = 3.1200% of 12.5100% Groups non-Idle CPU time
-> |...... subgroup 3/2    = 24.9100       i.e = 3.1100% of 12.5100% Groups non-Idle CPU time
-> |...... subgroup 3/3    = 25.0800       i.e = 3.1300% of 12.5100% Groups non-Idle CPU time
-> |...... subgroup 3/4    = 24.9900       i.e = 3.1200% of 12.5100% Groups non-Idle CPU time
->
->
-> Bandwidth of Group 4 = 29.3600 i.e = 22.0600% of non-Idle CPU time 75.1667%
-> |...... subgroup 4/1    = 12.0200       i.e = 2.6500% of 22.0600% Groups non-Idle CPU time
-> |...... subgroup 4/2    = 12.3800       i.e = 2.7300% of 22.0600% Groups non-Idle CPU time
-> |...... subgroup 4/3    = 13.6300       i.e = 3.0000% of 22.0600% Groups non-Idle CPU time
-> |...... subgroup 4/4    = 12.7000       i.e = 2.8000% of 22.0600% Groups non-Idle CPU time
-> |...... subgroup 4/5    = 12.8000       i.e = 2.8200% of 22.0600% Groups non-Idle CPU time
-> |...... subgroup 4/6    = 11.9600       i.e = 2.6300% of 22.0600% Groups non-Idle CPU time
-> |...... subgroup 4/7    = 12.7400       i.e = 2.8100% of 22.0600% Groups non-Idle CPU time
-> |...... subgroup 4/8    = 11.7300       i.e = 2.5800% of 22.0600% Groupsnon-Idle CPU time
->
->
-> Bandwidth of Group 5 = 37.2300 i.e = 27.9800% of non-Idle CPU time 75.1667%
-> |...... subgroup 5/1    = 47.7200       i.e = 13.3500%  of 27.9800% Groups non-Idle CPU time
-> |...... subgroup 5/2    = 5.2000        i.e = 1.4500%   of 27.9800% Groups non-Idle CPU time
-> |...... subgroup 5/3    = 6.3600        i.e = 1.7700%   of 27.9800% Groups non-Idle CPU time
-> |...... subgroup 5/4    = 6.3600        i.e = 1.7700%   of 27.9800% Groups non-Idle CPU time
-> |...... subgroup 5/5    = 7.9800        i.e = 2.2300%   of 27.9800% Groups non-Idle CPU time
-> |...... subgroup 5/6    = 5.1800        i.e = 1.4400%   of 27.9800% Groups non-Idle CPU time
-> |...... subgroup 5/7    = 7.4900        i.e = 2.0900%   of 27.9800% Groups non-Idle CPU time
-> |...... subgroup 5/8    = 5.9200        i.e = 1.6500%   of 27.9800% Groups non-Idle CPU time
-> |...... subgroup 5/9    = 7.7500        i.e = 2.1600%   of 27.9800% Groups non-Idle CPU time
-> |...... subgroup 5/10   = 4.8100        i.e = 1.3400%   of 27.9800% Groups non-Idle CPU time
-> |...... subgroup 5/11   = 4.9300        i.e = 1.3700%   of 27.9800% Groups non-Idle CPU time
-> |...... subgroup 5/12   = 6.8900        i.e = 1.9200%   of 27.9800% Groups non-Idle CPU time
-> |...... subgroup 5/13   = 6.0700        i.e = 1.6900%   of 27.9800% Groups non-Idle CPU time
-> |...... subgroup 5/14   = 6.5200        i.e = 1.8200%   of 27.9800% Groups non-Idle CPU time
-> |...... subgroup 5/15   = 5.9200        i.e = 1.6500%   of 27.9800% Groups non-Idle CPU time
-> |...... subgroup 5/16   = 6.6400        i.e = 1.8500%   of 27.9800% Groups non-Idle CPU time
->
-> Pinned Run
-> ----------
->
-> Average CPU Idle percentage 0%
-> Bandwidth shared with remaining non-Idle 100%
-> Bandwidth of Group 1 = 6.2700 i.e = 6.2700% of non-Idle CPU time 100%
-> |...... subgroup 1/1    = 50.0100       i.e = 3.1300% of 6.2700% Groups non-Idle CPU time
-> |...... subgroup 1/2    = 49.9800       i.e = 3.1300% of 6.2700% Groups non-Idle CPU time
->
->
-> Bandwidth of Group 2 = 6.2700 i.e = 6.2700% of non-Idle CPU time 100%
-> |...... subgroup 2/1    = 50.0000       i.e = 3.1300% of 6.2700% Groups non-Idle CPU time
-> |...... subgroup 2/2    = 49.9900       i.e = 3.1300% of 6.2700% Groups non-Idle CPU time
->
->
-> Bandwidth of Group 3 = 12.5300 i.e = 12.5300% of non-Idle CPU time 100%
-> |...... subgroup 3/1    = 25.0100       i.e = 3.1300% of 12.5300% Groups non-Idle CPU time
-> |...... subgroup 3/2    = 25.0000       i.e = 3.1300% of 12.5300% Groups non-Idle CPU time
-> |...... subgroup 3/3    = 24.9900       i.e = 3.1300% of 12.5300% Groups non-Idle CPU time
-> |...... subgroup 3/4    = 24.9900       i.e = 3.1300% of 12.5300% Groups non-Idle CPU time
->
->
-> Bandwidth of Group 4 = 25.0200 i.e = 25.0200% of non-Idle CPU time 100%
-> |...... subgroup 4/1    = 12.5100       i.e = 3.1300% of 25.0200% Groups non-Idle CPU time
-> |...... subgroup 4/2    = 12.5000       i.e = 3.1200% of 25.0200% Groups non-Idle CPU time
-> |...... subgroup 4/3    = 12.5000       i.e = 3.1200% of 25.0200% Groups non-Idle CPU time
-> |...... subgroup 4/4    = 12.5000       i.e = 3.1200% of 25.0200% Groups non-Idle CPU time
-> |...... subgroup 4/5    = 12.4900       i.e = 3.1200% of 25.0200% Groups non-Idle CPU time
-> |...... subgroup 4/6    = 12.4900       i.e = 3.1200% of 25.0200% Groups non-Idle CPU time
-> |...... subgroup 4/7    = 12.4900       i.e = 3.1200% of 25.0200% Groups non-Idle CPU time
-> |...... subgroup 4/8    = 12.4800       i.e = 3.1200% of 25.0200% Groups non-Idle CPU time
->
->
-> Bandwidth of Group 5 = 49.8800 i.e = 49.8800% of non-Idle CPU time 100%
-> |...... subgroup 5/1    = 49.9600       i.e = 24.9200% of 49.8800% Groups non-Idle CPU time
-> |...... subgroup 5/2    = 6.2500        i.e = 3.1100% of 49.8800% Groups non-Idle CPU time
-> |...... subgroup 5/3    = 6.2500        i.e = 3.1100% of 49.8800% Groups non-Idle CPU time
-> |...... subgroup 5/4    = 6.2500        i.e = 3.1100% of 49.8800% Groups non-Idle CPU time
-> |...... subgroup 5/5    = 6.2500        i.e = 3.1100% of 49.8800% Groups non-Idle CPU time
-> |...... subgroup 5/6    = 6.2500        i.e = 3.1100% of 49.8800% Groups non-Idle CPU time
-> |...... subgroup 5/7    = 6.2500        i.e = 3.1100% of 49.8800% Groups non-Idle CPU time
-> |...... subgroup 5/8    = 6.2500        i.e = 3.1100% of 49.8800% Groups non-Idle CPU time
-> |...... subgroup 5/9    = 6.2400        i.e = 3.1100% of 49.8800% Groups non-Idle CPU time
-> |...... subgroup 5/10   = 6.2500        i.e = 3.1100% of 49.8800% Groups non-Idle CPU time
-> |...... subgroup 5/11   = 6.2400        i.e = 3.1100% of 49.8800% Groups non-Idle CPU time
-> |...... subgroup 5/12   = 6.2400        i.e = 3.1100% of 49.8800% Groups non-Idle CPU time
-> |...... subgroup 5/13   = 6.2400        i.e = 3.1100% of 49.8800% Groups non-Idle CPU time
-> |...... subgroup 5/14   = 6.2400        i.e = 3.1100% of 49.8800% Groups non-Idle CPU time
-> |...... subgroup 5/15   = 6.2300        i.e = 3.1000% of 49.8800% Groups non-Idle CPU time
-> |...... subgroup 5/16   = 6.2400        i.e = 3.1100% of 49.8800% Groups non-Idle CPU time
->
-> Modified script
-> ---------------
->
-> #!/bin/bash
->
-> NR_TASKS1=2
-> NR_TASKS2=2
-> NR_TASKS3=4
-> NR_TASKS4=8
-> NR_TASKS5=16
->
-> BANDWIDTH=1
-> SUBGROUP=1
-> PRO_SHARES=0
-> MOUNT_POINT=/cgroups/
-> MOUNT=/cgroups/
-> LOAD=./while1
-> LEVELS=3
->
-> usage()
+On Mon, 2011-06-13 at 11:33 -0400, Steven Rostedt wrote:
+> On Mon, 2011-06-13 at 10:06 -0500, Andrew Theurer wrote:
+> > On Fri, 2011-06-10 at 18:27 +0200, Peter Zijlstra wrote:
+> > > On Fri, 2011-06-10 at 10:34 -0500, Andrew Theurer wrote:
+> > > > RIP: 0010:[<ffffffff8104e8c1>]  [<ffffffff8104e8c1>] find_lowest_rq+0xa1/0x150
+> > > 
+> > > If you've still got the vmlinux around, could you find out where in
+> > > find_lowest_rq that RIP is? 
+> > 
+> > Does this help?
+> 
+> I take it back, it looks like this does help.
+> 
+> > 
+> > 
+> > from objdump -d -S
+> > 
+> > ffffffff8104e820 <find_lowest_rq>:
+> > ffffffff8104e820:       55                      push   %rbp
+> > ffffffff8104e821:       48 89 e5                mov    %rsp,%rbp
+> > ffffffff8104e824:       48 83 ec 30             sub    $0x30,%rsp
+> > ffffffff8104e828:       48 89 5d d8             mov    %rbx,-0x28(%rbp)
+> > ffffffff8104e82c:       4c 89 65 e0             mov    %r12,-0x20(%rbp)
+> > ffffffff8104e830:       4c 89 6d e8             mov    %r13,-0x18(%rbp)
+> > ffffffff8104e834:       4c 89 75 f0             mov    %r14,-0x10(%rbp)
+> > ffffffff8104e838:       4c 89 7d f8             mov    %r15,-0x8(%rbp)
+> > ffffffff8104e83c:       e8 3f bf 48 00          callq  ffffffff814da780 <mcount>
+> > ffffffff8104e841:       48 c7 c0 88 e8 00 00    mov    $0xe888,%rax
+> > ffffffff8104e848:       65 48 03 04 25 50 dc    add    %gs:0xdc50,%rax
+> > ffffffff8104e84f:       00 00
+> > ffffffff8104e851:       65 44 8b 2c 25 58 dc    mov    %gs:0xdc58,%r13d
+> > ffffffff8104e858:       00 00
+> > ffffffff8104e85a:       83 bf bc 01 00 00 01    cmpl   $0x1,0x1bc(%rdi)
+> > ffffffff8104e861:       4c 8b 20                mov    (%rax),%r12
+> > ffffffff8104e864:       48 8b 47 08             mov    0x8(%rdi),%rax
+> > ffffffff8104e868:       8b 58 18                mov    0x18(%rax),%ebx
+> > ffffffff8104e86b:       75 23                   jne    ffffffff8104e890 <find_lowest_rq+0x70>
+> > ffffffff8104e86d:       b8 ff ff ff ff          mov    $0xffffffff,%eax
+> > ffffffff8104e872:       48 8b 5d d8             mov    -0x28(%rbp),%rbx
+> > ffffffff8104e876:       4c 8b 65 e0             mov    -0x20(%rbp),%r12
+> > ffffffff8104e87a:       4c 8b 6d e8             mov    -0x18(%rbp),%r13
+> > ffffffff8104e87e:       4c 8b 75 f0             mov    -0x10(%rbp),%r14
+> > ffffffff8104e882:       4c 8b 7d f8             mov    -0x8(%rbp),%r15
+> > ffffffff8104e886:       c9                      leaveq
+> > ffffffff8104e887:       c3                      retq
+> > ffffffff8104e888:       0f 1f 84 00 00 00 00    nopl   0x0(%rax,%rax,1)
+> > ffffffff8104e88f:       00
+> > ffffffff8104e890:       89 d8                   mov    %ebx,%eax
+> > ffffffff8104e892:       49 c7 c7 c0 2a 01 00    mov    $0x12ac0,%r15
+> > ffffffff8104e899:       48 89 fe                mov    %rdi,%rsi
+> > ffffffff8104e89c:       48 8b 04 c5 40 a3 bf    mov    -0x7e405cc0(,%rax,8),%rax
+> > ffffffff8104e8a3:       81
+> > ffffffff8104e8a4:       4c 89 e2                mov    %r12,%rdx
+> > ffffffff8104e8a7:       49 8b 84 07 88 08 00    mov    0x888(%r15,%rax,1),%rax
+> > ffffffff8104e8ae:       00
+> > ffffffff8104e8af:       48 83 c0 38             add    $0x38,%rax
+> > ffffffff8104e8b3:       48 89 c7                mov    %rax,%rdi
+> > ffffffff8104e8b6:       e8 85 75 0a 00          callq  ffffffff810f5e40 <cpupri_find>
+> > ffffffff8104e8bb:       85 c0                   test   %eax,%eax
+> > ffffffff8104e8bd:       74 ae                   je     ffffffff8104e86d <find_lowest_rq+0x4d>
+> > ffffffff8104e8bf:       89 d8                   mov    %ebx,%eax
+> > ffffffff8104e8c1:       41 0f a3 1c 24          bt     %ebx,(%r12)
+> 
+> Following the asm here, I figured we are here:
+> 
+> static int find_lowest_rq(struct task_struct *task)
 > {
->        echo "Usage $0: [-b 0|1] [-s 0|1] [-p 0|1]"
->        echo "-b 1|0 set/unset  Cgroups bandwidth control (default set)"
->        echo "-s Create sub-groups for every task (default creates sub-group)"
->        echo "-p create propotional shares based on cpus"
->        exit
-> }
-> while getopts ":b:s:p:" arg
-> do
->        case $arg in
->        b)
->                BANDWIDTH=$OPTARG
->                shift
->                if [ $BANDWIDTH -gt 1 ] && [ $BANDWIDTH -lt  0 ]
->                then
->                        usage
->                fi
->                ;;
->        s)
->                SUBGROUP=$OPTARG
->                shift
->                if [ $SUBGROUP -gt 1 ] && [ $SUBGROUP -lt 0 ]
->                then
->                        usage
->                fi
->                ;;
->        p)
->                PRO_SHARES=$OPTARG
->                shift
->                if [ $PRO_SHARES -gt 1 ] && [ $PRO_SHARES -lt 0 ]
->                then
->                        usage
->                fi
->                ;;
->
->        *)
->
->        esac
-> done
-> if [ ! -d $MOUNT ]
-> then
->        mkdir -p $MOUNT
-> fi
-> test()
-> {
->        echo -n "[ "
->        if [ $1 -eq 0 ]
->        then
->                echo -ne '\E[42;40mOk'
->        else
->                echo -ne '\E[31;40mFailed'
->                tput sgr0
->                echo " ]"
->                exit
->        fi
->        tput sgr0
->        echo " ]"
-> }
-> mount_cgrp()
-> {
->        echo -n "Mounting root cgroup "
->        mount -t cgroup -ocpu,cpuset,cpuacct none $MOUNT_POINT &> /dev/null
->        test $?
-> }
->
-> umount_cgrp()
-> {
->        echo -n "Unmounting root cgroup "
->        cd /root/
->        umount $MOUNT_POINT
->        test $?
-> }
->
-> create_hierarchy()
-> {
->        mount_cgrp
->        cpuset_mem=`cat $MOUNT/cpuset.mems`
->        cpuset_cpu=`cat $MOUNT/cpuset.cpus`
->        echo -n "creating hierarchy of levels $LEVELS "
->        for (( i=1; i<=$LEVELS; i++ ))
->        do
->                MOUNT="${MOUNT}/level${i}"
->                mkdir $MOUNT
->                echo $cpuset_mem > $MOUNT/cpuset.mems
->                echo $cpuset_cpu > $MOUNT/cpuset.cpus
->                echo "-1" > $MOUNT/cpu.cfs_quota_us
->                echo "500000" > $MOUNT/cpu.cfs_period_us
->                echo -n " .."
->        done
->        echo " "
->        echo $MOUNT
->        echo -n "creating groups/sub-groups ..."
->        for (( i=1; i<=5; i++ ))
->        do
->                mkdir $MOUNT/$i
->                echo $cpuset_mem > $MOUNT/$i/cpuset.mems
->                echo $cpuset_cpu > $MOUNT/$i/cpuset.cpus
->                echo -n ".."
->                if [ $SUBGROUP -eq 1 ]
->                then
->                        jj=$(eval echo "\$NR_TASKS$i")
->                        for (( j=1; j<=$jj; j++ ))
->                        do
->                                mkdir -p $MOUNT/$i/$j
->                                echo $cpuset_mem > $MOUNT/$i/$j/cpuset.mems
->                                echo $cpuset_cpu > $MOUNT/$i/$j/cpuset.cpus
->                                echo -n ".."
->                        done
->                fi
->        done
->        echo "."
-> }
->
-> cleanup()
-> {
->        pkill -9 while1 &> /dev/null
->        sleep 10
->        echo -n "Umount groups/sub-groups .."
->        for (( i=1; i<=5; i++ ))
->        do
->                if [ $SUBGROUP -eq 1 ]
->                then
->                        jj=$(eval echo "\$NR_TASKS$i")
->                        for (( j=1; j<=$jj; j++ ))
->                        do
->                                rmdir $MOUNT/$i/$j
->                                echo -n ".."
->                        done
->                fi
->                rmdir $MOUNT/$i
->                echo -n ".."
->        done
->        cd $MOUNT
->        cd ../
->        for (( i=$LEVELS; i>=1; i-- ))
->        do
->                rmdir level$i
->                cd ../
->        done
->        echo " "
->        umount_cgrp
-> }
->
-> load_tasks()
-> {
->        for (( i=1; i<=5; i++ ))
->        do
->                jj=$(eval echo "\$NR_TASKS$i")
->                shares="1024"
->                if [ $PRO_SHARES -eq 1 ]
->                then
->                        eval shares=$(echo "$jj * 1024" | bc)
->                fi
->                echo $shares > $MOUNT/$i/cpu.shares
->                for (( j=1; j<=$jj; j++ ))
->                do
->                        echo "-1" > $MOUNT/$i/cpu.cfs_quota_us
->                        echo "500000" > $MOUNT/$i/cpu.cfs_period_us
->                        if [ $SUBGROUP -eq 1 ]
->                        then
->
->                                $LOAD &
->                                echo $! > $MOUNT/$i/$j/tasks
->                                echo "1024" > $MOUNT/$i/$j/cpu.shares
->
->                                if [ $BANDWIDTH -eq 1 ]
->                                then
->                                        echo "500000" > $MOUNT/$i/$j/cpu.cfs_period_us
->                                        echo "250000" > $MOUNT/$i/$j/cpu.cfs_quota_us
->                                fi
->                        else
->                                $LOAD &
->                                echo $! > $MOUNT/$i/tasks
->                                echo $shares > $MOUNT/$i/cpu.shares
->
->                                if [ $BANDWIDTH -eq 1 ]
->                                then
->                                        echo "500000" > $MOUNT/$i/cpu.cfs_period_us
->                                        echo "250000" > $MOUNT/$i/cpu.cfs_quota_us
->                                fi
->                        fi
->                done
->        done
->        echo "Capturing idle cpu time with vmstat...."
->        vmstat 2 100 &> vmstat_log &
-> }
->
-> pin_tasks()
-> {
->        cpu=0
->        count=1
->        for (( i=1; i<=5; i++ ))
->        do
->                if [ $SUBGROUP -eq 1 ]
->                then
->                        jj=$(eval echo "\$NR_TASKS$i")
->                        for (( j=1; j<=$jj; j++ ))
->                        do
->                                if [ $count -gt 2 ]
->                                then
->                                        cpu=$((cpu+1))
->                                        count=1
->                                fi
->                                echo $cpu > $MOUNT/$i/$j/cpuset.cpus
->                                count=$((count+1))
->                        done
->                else
->                        case $i in
->                        1)
->                                echo 0 > $MOUNT/$i/cpuset.cpus;;
->                        2)
->                                echo 1 > $MOUNT/$i/cpuset.cpus;;
->                        3)
->                                echo "2-3" > $MOUNT/$i/cpuset.cpus;;
->                        4)
->                                echo "4-6" > $MOUNT/$i/cpuset.cpus;;
->                        5)
->                                echo "7-15" > $MOUNT/$i/cpuset.cpus;;
->                        esac
->                fi
->        done
->
-> }
->
-> print_results()
-> {
->        eval gtot=$(cat sched_log|grep -i while|sed 's/R//g'|awk '{gtot+=$7};END{printf "%f", gtot}')
->        for (( i=1; i<=5; i++ ))
->        do
->                eval temp=$(cat sched_log_$i|sed 's/R//g'| awk '{gtot+=$7};END{printf "%f",gtot}')
->                eval tavg=$(echo "scale=4;(($temp / $gtot) * $1)/100 " | bc)
->                eval avg=$(echo  "scale=4;($temp / $gtot) * 100" | bc)
->                eval pretty_tavg=$( echo "scale=4; $tavg * 100"| bc) # F0r pretty format
->                echo "Bandwidth of Group $i = $avg i.e = $pretty_tavg% of non-Idle CPU time $1%"
->                if [ $SUBGROUP -eq 1 ]
->                then
->                        jj=$(eval echo "\$NR_TASKS$i")
->                        for (( j=1; j<=$jj; j++ ))
->                        do
->                                eval tmp=$(cat sched_log_$i-$j|sed 's/R//g'| awk '{gtot+=$7};END{printf "%f",gtot}')
->                                eval stavg=$(echo "scale=4;($tmp / $temp) * 100" | bc)
->                                eval pretty_stavg=$(echo "scale=4;(($tmp / $temp) * $tavg) * 100" | bc)
->                                echo -n "|"
->                                echo -e "...... subgroup $i/$j\t= $stavg\ti.e = $pretty_stavg% of $pretty_tavg% Groups non-Idle CPU time"
->                        done
->                fi
->                echo " "
->                echo " "
->        done
-> }
->
-> capture_results()
-> {
->        cat /proc/sched_debug > sched_log
->        lev=""
->        for (( i=1; i<=$LEVELS; i++ ))
->        do
->                lev="$lev\/level${i}"
->        done
->        pkill -9 vmstat
->        avg=$(cat vmstat_log |grep -iv "system"|grep -iv "swpd"|awk ' { if ( NR != 1) {id+=$15 }}END{print (id/(NR-1))}')
->
->        rem=$(echo "scale=2; 100 - $avg" |bc)
->        echo "Average CPU Idle percentage $avg%"
->        echo "Bandwidth shared with remaining non-Idle $rem%"
->        for (( i=1; i<=5; i++ ))
->        do
->                cat sched_log |grep -i while1|grep -i "$lev\/$i" > sched_log_$i
->                if [ $SUBGROUP -eq 1 ]
->                then
->                        jj=$(eval echo "\$NR_TASKS$i")
->                        for (( j=1; j<=$jj; j++ ))
->                        do
->                                cat sched_log |grep -i while1|grep -i "$lev\/$i\/$j" > sched_log_$i-$j
->                        done
->                fi
->        done
->        print_results $rem
-> }
->
-> create_hierarchy
-> pin_tasks
->
-> load_tasks
-> sleep 60
-> capture_results
-> cleanup
-> exit
->
->
+> 	struct sched_domain *sd;
+> 	struct cpumask *lowest_mask = __get_cpu_var(local_cpu_mask);
+> 	int this_cpu = smp_processor_id();
+> 	int cpu      = task_cpu(task);
+> 
+> 	if (task->rt.nr_cpus_allowed == 1)
+> 		return -1; /* No other targets possible */
+> 
+> 	if (!cpupri_find(&task_rq(task)->rd->cpupri, task, lowest_mask))
+> 		return -1; /* No targets found */
+> 
+> 	/*
+> 	 * At this point we have built a mask of cpus representing the
+> 	 * lowest priority tasks in the system.  Now we want to elect
+> 	 * the best one based on our affinity and topology.
+> 	 *
+> 	 * We prioritize the last cpu that the task executed on since
+> 	 * it is most likely cache-hot in that location.
+> 	 */
+> 	if (cpumask_test_cpu(cpu, lowest_mask))  <<<----------- HERE
+> 		return cpu;
+> 
+> 
+> Looks to me that lowest_mask is NULL???
+> 
+> Does this happen on boot up? Hmm, could be, by looking at Peter's patch,
+> he could be waking them up and we are getting into this code before
+> lowest_mask is defined.
+> 
+> Could you try this patch?
+
+Yes, and it works!  Thanks very much!
+> 
+> -- Steve
+
+-Andrew
+> 
+> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+> index 88725c9..46e3e09 100644
+> --- a/kernel/sched_rt.c
+> +++ b/kernel/sched_rt.c
+> @@ -1239,6 +1239,10 @@ static int find_lowest_rq(struct task_struct *task)
+>  	int this_cpu = smp_processor_id();
+>  	int cpu      = task_cpu(task);
+> 
+> +	/* Make sure everything is initialized first */
+> +	if (system_state != SYSTEM_RUNNING)
+> +		return -1;
+> +
+>  	if (task->rt.nr_cpus_allowed == 1)
+>  		return -1; /* No other targets possible */
+> 
+> 
+> 
+
+
