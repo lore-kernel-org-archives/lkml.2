@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698Ab1FNA7r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 20:59:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8812 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755240Ab1FNA7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 20:59:44 -0400
-Message-ID: <4DF6B273.6070602@redhat.com>
-Date: Mon, 13 Jun 2011 20:59:31 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1755610Ab1FNBGa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 21:06:30 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45098 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752605Ab1FNBG3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 21:06:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=wd5naJn6tBpK6Q7YGgp9Q6+Fw5V6qG0BXY9S+TBoSpC98gfeY7+Wz4qO/kPtd2Fw2d
+         BNyDTerm1j0lZhcrAJQe2LabUJOlsOHT01j4xKz0p3ZwFQ7IDH8b4shKc6U6oUroqXyM
+         t38SHr6SqS31JerMM+CcmCy71xp946aXgpEiw=
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH 1/7] KVM-HDR Add constant to represent KVM MSRs enabled
- bit
-References: <1308007897-17013-1-git-send-email-glommer@redhat.com> <1308007897-17013-2-git-send-email-glommer@redhat.com>
-In-Reply-To: <1308007897-17013-2-git-send-email-glommer@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <BANLkTi=snWs0srAKON71yysvFcN_HHO05Q@mail.gmail.com>
+References: <BANLkTi=i-NDzgsT2mCqL0p+r5ok_-=znGdWDYV-oi9z-8e9LvQ@mail.gmail.com>
+	<BANLkTi=snWs0srAKON71yysvFcN_HHO05Q@mail.gmail.com>
+Date: Tue, 14 Jun 2011 03:06:27 +0200
+Message-ID: <BANLkTimqmcY1ciKkbZZ50Kg7nCm+_S7zK-9EHaxaQeC_HpKaaQ@mail.gmail.com>
+Subject: Re: [3.0.0-rc2+][nouveau] BUG: unable to handle kernel NULL pointer
+ dereference nv50_vm_map_sg+0x37/0xb0
+From: Jan Seiffert <kaffeemonster@googlemail.com>
+To: =?UTF-8?Q?Rui_Tiago_Ca=C3=A7=C3=A3o_Matos?= <tiagomatos@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ben Skeggs <bskeggs@redhat.com>, dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2011 07:31 PM, Glauber Costa wrote:
-> This patch is simple, put in a different commit so it can be more easily
-> shared between guest and hypervisor. It just defines a named constant
-> to indicate the enable bit for KVM-specific MSRs.
+2011/6/13 Rui Tiago Cação Matos <tiagomatos@gmail.com>:
+> Looks suspiciously like
+> https://bugzilla.redhat.com/show_bug.cgi?id=699551 which has been
+> happening since at least 2.6.38.
 >
-> Signed-off-by: Glauber Costa<glommer@redhat.com>
-> CC: Rik van Riel<riel@redhat.com>
-> CC: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
-> CC: Peter Zijlstra<peterz@infradead.org>
-> CC: Avi Kivity<avi@redhat.com>
-> CC: Anthony Liguori<aliguori@us.ibm.com>
-> CC: Eric B Munson<emunson@mgebm.net>
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Yes, the backtrace looks very similar, but i can not reproduce with
+the reproducer image attached to the bugreport.
+(Tried with Gwenview and eog).
+I don't know how to reproduce at all, all i did was to scroll through
+a PDF, but did so for hours before the crash...
 
--- 
-All rights reversed
+> Rui
+>
+
+Greetings
+Jan
