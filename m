@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab1FNOHO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 10:07:14 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:51763 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843Ab1FNOHN (ORCPT
+	id S1753195Ab1FNOJg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 10:09:36 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51055 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752535Ab1FNOJf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 10:07:13 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] fix bogus use of rc = alloc_chrdev_region()
-Date: Tue, 14 Jun 2011 16:07:02 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Jim Cromie <jim.cromie@gmail.com>, linux-kernel@vger.kernel.org,
-        rpjday@crashcourse.ca, Grant Likely <grant.likely@secretlab.ca>
-References: <1307079502-6326-1-git-send-email-jim.cromie@gmail.com> <BANLkTi=8bv54-Z=xCyqUhFAnxM5G40k2WQ@mail.gmail.com> <20110610204403.GA13450@kroah.com>
-In-Reply-To: <20110610204403.GA13450@kroah.com>
+	Tue, 14 Jun 2011 10:09:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Oq2Snss4hkjaPm9biqZXZtvqzIxscAWS2qs7tqkb6/OJUslAXXaiouAk6UNh7DfEEE
+         506TSrqc9RYNDh0GAPZIw8WlC5Ht/t3DEkEBlGHIRMvm7XLBrNaeCfh1P00RABMpI4LW
+         55lUiXLCYYzZz++fzlCbQIVxZzitHZMGAbGSE=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106141607.02171.arnd@arndb.de>
-X-Provags-ID: V02:K0:o0pF3gZb+3k9gvZJDG5uUj4m4FN1kwJrzrqe+WKlV6W
- jJChV+Q3OLnoC10jppFQp6KYJUudN9oHL6aORhdwYiGb9COEtx
- rXJes8msgWm94TpC80NkIhFqH2Z/PvglhnDL0+pZ/sl0KQ0FxE
- is+mn/LHF7m99hauMOADI+pmeHST0uG6iJkDVomSVmD9JHxTpW
- YC3gd6mHwBwmwQ3Udvcdw==
+In-Reply-To: <20110614071540.GE8141@htj.dyndns.org>
+References: <20110614070732.GA3355@maxin>
+	<20110614071540.GE8141@htj.dyndns.org>
+Date: Tue, 14 Jun 2011 15:09:34 +0100
+Message-ID: <BANLkTimHjVX6ymALT-ZBeSs1S+PRDRwQaQ@mail.gmail.com>
+Subject: Re: [PATCH] [RESEND] devres: Fix possible use after free
+From: Maxin B John <maxin.john@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linux-foundation.org, segooon@gmail.com, jkosina@suse.cz,
+        tglx@linutronix.de, eike-kernel@sf-tec.de,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 10 June 2011, Greg KH wrote:
-> On Fri, Jun 10, 2011 at 02:29:42PM -0600, Jim Cromie wrote:
-> > can someone pick this up,
-> > for this release or next ?
-> 
-> It was rumored that Arnd wanted to take over drivers/char/.
+Hi,
 
-That's true. It probably means I should set up a tree now, before we get
-too close to the next merge window.
+On Tue, Jun 14, 2011 at 8:15 AM, Tejun Heo <tj@kernel.org> wrote:
+> On Tue, Jun 14, 2011 at 10:07:32AM +0300, Maxin B John wrote:
+>> A freed pointer is passed as an argument to the function "devres_destroy()" in
+>> "kernel/irq/devres.c" and "lib/devres.c". This patch fixes the possible use
+>> after free.
+>>
+>> It's notabug at this time, but the code is dangerous.
+>
+> The code is not dangerous.  The pointer value is used strictly as key
+> and the code path is always properly serialized.  The change is to
+> appease access-after-free detection logic, similar to the way we
+> change the code to better accomodate sparse or other code analysys
+> tools.  Can you please update the patch description to reflect that?
 
-On the topic of drivers/char/{nsc_gpio,pc8736x_gpio,scx200_gpio}, I wonder
-if we should move them to drivers/gpio/nsc_gpio despite the fact that they
-use a different (older) interface than all the other gpio drivers.
+You are right. I shouldn't have mentioned it as dangerous. I was trying to
+make this patch description similar to the description present in the
+previous patch:
+http://www.spinics.net/lists/mm-commits/msg84313.html
 
-They have seen only a single non-janitor patch in the last five years,
-so I don't think they will be a burden, but it might be nice to have them
-in a place where people would actually look for them, with a comment that
-they should be converted to the new API in order to be more useful.
+This patch silences the Coverity Prevent's complains about this as
+use-after-free bug. Please let me know if the updated patch description is OK.
 
-	Arnd
+"
+A freed pointer is passed as an argument to the function "devres_destroy()" in
+"kernel/irq/devres.c" and "lib/devres.c". This patch fixes the possible use
+after free.
+The change silences the static analysis tool (Coverity Prevent) complains
+about this as use-after-free bug.
+"
+
+Best Regards,
+Maxin
