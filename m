@@ -1,44 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369Ab1FNFMk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 01:12:40 -0400
-Received: from cantor.suse.de ([195.135.220.2]:58619 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750844Ab1FNFMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 01:12:38 -0400
-Message-ID: <4DF6EE1C.9090803@suse.cz>
-Date: Tue, 14 Jun 2011 07:14:04 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [3.0-rc3] scripts/depmod.sh: Permission denied
-References: <201106140041.p5E0fhAh029531@www262.sakura.ne.jp>
-In-Reply-To: <201106140041.p5E0fhAh029531@www262.sakura.ne.jp>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	id S1752313Ab1FNFUW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 01:20:22 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:32350 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751081Ab1FNFUV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 01:20:21 -0400
+X-AuditID: cbfee61b-b7c62ae0000056ed-66-4df6ef9379ca
+Date: Tue, 14 Jun 2011 14:20:14 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [PATCH] dma-mapping: Undefine dma_map_single(),
+ etc if CONFIG_HAVE_DMA_ATTRS is defined
+In-reply-to: <1308025989-877-1-git-send-email-pullip.cho@samsung.com>
+To: pullip.cho@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Cc: arnd@arndb.de, fujita.tomonori@lab.ntt.co.jp, rmk@arm.linux.org.uk,
+        joerg.roedel@amd.com
+Message-id: <005501cc2a52$c05df650$4119e2f0$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcwqT98PPspThvKbTqiM3Z7L93nCCwAAOAHw
+References: <1308025989-877-1-git-send-email-pullip.cho@samsung.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 14.6.2011 02:41, Tetsuo Handa napsal(a):
-> linux-3.0-rc3.tar.bz2 generates
-> -rwxrwxr-x  1 root root 1231 Jun 14 07:29 linux-3.0-rc3/scripts/depmod.sh
-> but linux-2.6.39.tar.bz2 + patch-3.0-rc3.bz2 generates
-> -rw-r--r--  1 root root 1231 Jun 14 09:34 scripts/depmod.sh
-> which results in
-
-Ah, I forgot about patch(1) users.
-
-
-> make: execvp: /usr/src/linux-3.0-rc3/scripts/depmod.sh: Permission denied
-> make: *** [_modinst_post] Error 127
+pullip.cho@samsung.com wrote:
 > 
-> Would you add "chmod +x scripts/depmod.sh" before invoking depmod.sh ?
+> From: KyongHo Cho <pullip.cho@samsung.com>
+> 
+> If <asm/dma-mapping.h> includes <asm-generic/dma-mapping-common.h>,
+> dma_map_single() become defined recursively when CONFIG_HAVE_DMA_ATTRS
+> is not defined.
+> Since dma_map_*_attrs() are defined in <linux/dma-mapping.h>, those
+> in <asm-generic/dma-mapping-common.h> must be not defined
+> if CONFIG_HAVE_DMA_ATTRS is not defined.
+> 
+> Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
+> CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> CC: Joerg Roedel <joerg.roedel@amd.com>
+> CC Arnd Bergmann <arnd@arndb.de>
+> 
+> Change-Id: Ib99ee2b355dbe679263ce2e4e27d6219148c8338
 
-I'll change the call to $(CONFIG_SHELL) $(scrtree)/scripts/depmod.sh
-instead.
+Please don't use this here.
 
-Michal
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
