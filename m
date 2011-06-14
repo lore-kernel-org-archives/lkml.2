@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970Ab1FNHg4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 03:36:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53965 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754815Ab1FNHgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 03:36:55 -0400
-Date: Tue, 14 Jun 2011 09:36:51 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Ying Han <yinghan@google.com>
-Subject: Re: [BUGFIX][PATCH 5/5] memcg: fix percpu cached charge draining
- frequency
-Message-ID: <20110614073651.GA21197@tiehlicka.suse.cz>
-References: <20110613120054.3336e997.kamezawa.hiroyu@jp.fujitsu.com>
- <20110613121648.3d28afcd.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1754883Ab1FNHoq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 03:44:46 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:58618 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751189Ab1FNHop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 03:44:45 -0400
+Date: Tue, 14 Jun 2011 15:44:18 +0800
+From: Hu Tao <hutao@cn.fujitsu.com>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.co>
+Subject: Re: [patch 00/15] CFS Bandwidth Control V6
+Message-ID: <20110614074418.GA3089@localhost.localdomain>
+References: <20110503092846.022272244@google.com>
+ <20110614065807.GA19111@localhost.localdomain>
+ <4DF70DED.2030803@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110613121648.3d28afcd.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4DF70DED.2030803@jp.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-14 15:44:24,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-14 15:44:27,
+	Serialize complete at 2011-06-14 15:44:27
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 13-06-11 12:16:48, KAMEZAWA Hiroyuki wrote:
-> From 18b12e53f1cdf6d7feed1f9226c189c34866338c Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Mon, 13 Jun 2011 11:25:43 +0900
-> Subject: [PATCH 5/5] memcg: fix percpu cached charge draining frequency
+On Tue, Jun 14, 2011 at 04:29:49PM +0900, Hidetoshi Seto wrote:
+> (2011/06/14 15:58), Hu Tao wrote:
+> > Hi,
+> > 
+> > I've run several tests including hackbench, unixbench, massive-intr
+> > and kernel building. CPU is Intel(R) Xeon(R) CPU X3430  @ 2.40GHz,
+> > 4 cores, and 4G memory.
+> > 
+> > Most of the time the results differ few, but there are problems:
+> > 
+> > 1. unixbench: execl throughout has about 5% drop.
+> > 2. unixbench: process creation has about 5% drop.
+> > 3. massive-intr: when running 200 processes for 5mins, the number
+> >    of loops each process runs differ more than before cfs-bandwidth-v6.
+> > 
+> > The results are attached.
 > 
->  For performance, memory cgroup caches some "charge" from res_counter
->  into per cpu cache. This works well but because it's cache,
->  it needs to be flushed in some cases. Typical cases are
->          1. when someone hit limit.
->          2. when rmdir() is called and need to charges to be 0.
-> 
-> But "1" has problem.
-> 
-> Recently, with large SMP machines, we see many kworker runs because
-> of flushing memcg's cache. Bad things in implementation are
-> that even if a cpu contains a cache for memcg not related to
-> a memcg which hits limit, drain code is called.
-> 
-> This patch does
-> 	D) don't call at softlimit reclaim.
+> I know the score of unixbench is not so stable that the problem might
+> be noises ... but the result of massive-intr is interesting.
+> Could you give a try to find which piece (xx/15) in the series cause
+> the problems?
 
-I think this needs some justification. The decision is not that
-obvious IMO. I would say that this is a good decision because cached
-charges will not help to free any memory (at least not directly) during
-background reclaim. What about something like:
-"
-We are not draining per cpu cached charges during soft limit reclaim 
-because background reclaim doesn't care about charges. It tries to free
-some memory and charges will not give any.
-Cached charges might influence only selection of the biggest soft limit
-offender but as the call is done only after the selection has been
-already done it makes no change.
-"
+OK. I'll do it.
 
-Anyway, wouldn't it be better to have this change separate from the
-async draining logic change?
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+> 
+> Thanks,
+> H.Seto
