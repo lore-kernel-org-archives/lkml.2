@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab1FNMTO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 08:19:14 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:33613 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753123Ab1FNMTN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 08:19:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=bJpjn/ZqcQW/cJkwxyOSLoG/TbxeWEDqCBp6TaENhoJygoj4nUagf7RrvC72lOf2hH
-         oPgl7QZBkQomyB/+YgVg==
-Date: Tue, 14 Jun 2011 05:18:46 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Pekka Enberg <penberg@kernel.org>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-mm <linux-mm@kvack.org>, Christoph Lameter <cl@linux.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] slub: fix kernel BUG at mm/slub.c:1950!
-In-Reply-To: <1308027078.2874.1005.camel@pasglop>
-Message-ID: <alpine.LSU.2.00.1106140515470.30002@sister.anvils>
-References: <alpine.LSU.2.00.1106121842250.31463@sister.anvils> <alpine.DEB.2.00.1106131258300.3108@router.home> <1307990048.11288.3.camel@jaguar> <alpine.DEB.2.00.1106131428560.5601@router.home> <BANLkTi=RYq0Dd210VC+NeTXWWuFbz7cxeg@mail.gmail.com>
- <BANLkTik-KGtuoVFKvy_rk7voBRAxSsR9FRg0fhb0k3NCSg-fWQ@mail.gmail.com> <1308027078.2874.1005.camel@pasglop>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1753881Ab1FNMV7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 08:21:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38747 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751831Ab1FNMV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 08:21:57 -0400
+Message-ID: <4DF75229.701@redhat.com>
+Date: Tue, 14 Jun 2011 08:20:57 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Glauber Costa <glommer@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 3/7] KVM-HV: KVM Steal time implementation
+References: <1308007897-17013-1-git-send-email-glommer@redhat.com> <1308007897-17013-4-git-send-email-glommer@redhat.com>
+In-Reply-To: <1308007897-17013-4-git-send-email-glommer@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Jun 2011, Benjamin Herrenschmidt wrote:
-> On Mon, 2011-06-13 at 14:00 -0700, Hugh Dickins wrote:
-> > On Mon, Jun 13, 2011 at 1:34 PM, Pekka Enberg <penberg@kernel.org> wrote:
-> > > On Mon, Jun 13, 2011 at 10:29 PM, Christoph Lameter <cl@linux.com> wrote:
-> > >> On Mon, 13 Jun 2011, Pekka Enberg wrote:
-> > >>
-> > >>> > Hmmm.. The allocpercpu in alloc_kmem_cache_cpus should take care of the
-> > >>> > alignment. Uhh.. I see that a patch that removes the #ifdef CMPXCHG_LOCAL
-> > >>> > was not applied? Pekka?
-> > >>>
-> > >>> This patch?
-> > >>>
-> > >>> http://git.kernel.org/?p=linux/kernel/git/penberg/slab-2.6.git;a=commitdiff;h=d4d84fef6d0366b585b7de13527a0faeca84d9ce
-> > >>>
-> > >>> It's queued and will be sent to Linus soon.
-> > >>
-> > >> Ok it will also fix Hugh's problem then.
-> > >
-> > > It's in Linus' tree now. Hugh, can you please confirm it fixes your machine too?
-> > 
-> > I expect it to, thanks: I'll confirm tonight.
-> 
-> From report to resolution before I got to read the thread, that's how I
-> like them ! Thanks guys :-)
+On 06/13/2011 07:31 PM, Glauber Costa wrote:
+> To implement steal time, we need the hypervisor to pass the guest information
+> about how much time was spent running other processes outside the VM.
+> This is per-vcpu, and using the kvmclock structure for that is an abuse
+> we decided not to make.
+>
+> In this patchset, I am introducing a new msr, KVM_MSR_STEAL_TIME, that
+> holds the memory area address containing information about steal time
+>
+> This patch contains the hypervisor part for it. I am keeping it separate from
+> the headers to facilitate backports to people who wants to backport the kernel
+> part but not the hypervisor, or the other way around.
+>
+> Signed-off-by: Glauber Costa<glommer@redhat.com>
+> CC: Rik van Riel<riel@redhat.com>
+> CC: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
+> CC: Peter Zijlstra<peterz@infradead.org>
+> CC: Avi Kivity<avi@redhat.com>
+> CC: Anthony Liguori<aliguori@us.ibm.com>
+> CC: Eric B Munson<emunson@mgebm.net>
 
-Confirmed: fixed in 3.0-rc3 - thank you!
+Acked-by: Rik van Riel <riel@redhat.com>
 
-Hugh
+-- 
+All rights reversed
