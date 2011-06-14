@@ -1,83 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab1FNS62 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 14:58:28 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62552 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159Ab1FNS61 convert rfc822-to-8bit (ORCPT
+	id S1753392Ab1FNS7K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 14:59:10 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57704 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753472Ab1FNS7G convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 14:58:27 -0400
+	Tue, 14 Jun 2011 14:59:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=ZpDI+5r7OuW7kJ0XqBxZOMwRFYi1RN96ThiucJP1qU0/E0MzcNSvJ+CcjWChkhruu6
+         HtvgVTgufw2ZmU7JSN/WQ3JyxuDz6RiBnipjd4fxDcfUxb7VxtCQeYD+Qx7PGQsy2mmy
+         rY3mMPgLE6MVybjDw2u4eohTPYQ8mu/70Kxzg=
 MIME-Version: 1.0
-In-Reply-To: <20110614170158.GU2419@fooishbar.org>
-References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
-	<201106141549.29315.arnd@arndb.de>
-	<op.vw2jmhir3l0zgt@mnazarewicz-glaptop>
-	<201106141803.00876.arnd@arndb.de>
-	<20110614170158.GU2419@fooishbar.org>
-Date: Tue, 14 Jun 2011 13:58:25 -0500
-Message-ID: <BANLkTi=cJisuP8=_YSg4h-nsjGj3zsM7sg@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [PATCH 08/10] mm: cma: Contiguous Memory
- Allocator added
-From: Zach Pfeffer <zach.pfeffer@linaro.org>
-To: Daniel Stone <daniels@collabora.com>, Arnd Bergmann <arnd@arndb.de>,
-        Michal Nazarewicz <mina86@mina86.com>, Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Jesse Barker <jesse.barker@linaro.org>, Mel Gorman <mel@csn.ul.ie>,
-        linux-kernel@vger.kernel.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+In-Reply-To: <20110612183627.GA12311@mail.gmail.com>
+References: <20110606004038.GA28970@mail.gmail.com> <4DED0990.8090309@linux.intel.com>
+ <20110612183627.GA12311@mail.gmail.com>
+From: Bryan Donlan <bdonlan@gmail.com>
+Date: Tue, 14 Jun 2011 14:58:25 -0400
+Message-ID: <BANLkTim+R74CXCpPDdz2W1+UrydTiW-4+w@mail.gmail.com>
+Subject: Re: [PATCH 1/1] boot: Enhance performance by eliminating unnecessary
+ calls to printf()
+To: Jean Sacren <sakiwit@gmail.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Valdis.Kletnieks@vt.edu
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 June 2011 12:01, Daniel Stone <daniels@collabora.com> wrote:
-> Hi,
->
-> On Tue, Jun 14, 2011 at 06:03:00PM +0200, Arnd Bergmann wrote:
->> On Tuesday 14 June 2011, Michal Nazarewicz wrote:
->> > On Tue, 14 Jun 2011 15:49:29 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
->> > > Please explain the exact requirements that lead you to defining multiple
->> > > contexts.
->> >
->> > Some devices may have access only to some banks of memory.  Some devices
->> > may use different banks of memory for different purposes.
+On Sun, Jun 12, 2011 at 14:36, Jean Sacren <sakiwit@gmail.com> wrote:
+> From: "H. Peter Anvin" <hpa@linux.intel.com>
+> Date: Mon, 06 Jun 2011 10:08:32 -0700
 >>
->> For all I know, that is something that is only true for a few very special
->> Samsung devices, and is completely unrelated of the need for contiguous
->> allocations, so this approach becomes pointless as soon as the next
->> generation of that chip grows an IOMMU, where we don't handle the special
->> bank attributes. Also, the way I understood the situation for the Samsung
->> SoC during the Budapest discussion, it's only a performance hack, not a
->> functional requirement, unless you count '1080p playback' as a functional
->> requirement.
+>> On 06/05/2011 05:40 PM, Jean Sacren wrote:
 
-Coming in mid topic...
+>> First of all, this is a build time tool which is executed exactly once
+>> during the entire kernel build.
+>>
+>> Second, printf execution time is largely dependent on the size
+>> formatting string; since the I/O is buffered it is only issued once
+>> anyway... which basically means that there is no time saved at all.
+>
+> The above two arguments have nothing to do with the fact you printed out
+> 13 lines individually, where they should have been printed out
+> collectively. To make my point here, why you didn't print out each
+> character individually?
 
-I've seen this split bank allocation in Qualcomm and TI SoCs, with
-Samsung, that makes 3 major SoC vendors (I would be surprised if
-Nvidia didn't also need to do this) - so I think some configurable
-method to control allocations is necessarily. The chips can't do
-decode without it (and by can't do I mean 1080P and higher decode is
-not functionally useful). Far from special, this would appear to be
-the default.
+Because that would be substantially harder to read. And harder to
+write, at that.
 
-> Hm, I think that was something similar but not quite the same: talking
-> about having allocations split to lie between two banks of RAM to
-> maximise the read/write speed for performance reasons.  That's something
-> that can be handled in the allocator, rather than an API constraint, as
-> this is.
 >
-> Not that I know of any hardware which is limited as such, but eh.
+> I looked at the history of the file and the way you did it is a birth
+> shortcoming. For the past two years, no code has ever been necessarily
+> inserted between these 13 printf() calls. Looking into the future, that
+> block of code shall be facilitated by the updated patch.
+>>
+>> Third, the resulting code is substantially harder to read.
 >
-> Cheers,
-> Daniel
+> With the updated patch, this argument doesn't stand at all.
+
+Sure it does. With the original code, the arguments to printf are
+right next to the format specifiers; with your patch you have to count
+format specifiers to figure out which argument goes to what. And for
+what? A millisecond or two of time saved, at compile time, probably
+less?
+
+>> Fourth, carrying this as a patch will cost kernel developers more time
+>> in additional git execution time than it ever will save them in build time.
 >
-> _______________________________________________
-> Linaro-mm-sig mailing list
-> Linaro-mm-sig@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-mm-sig
->
+> With the updated patch, this argument doesn't make any sense at all.
+
+You've already cost kernel developers more time in responding to your
+patch than they'll save in build time. Asking them to apply it to git
+wastes even more time.
+
+> +       printf(".section \".rodata..compressed\",\"a\",@progbits\n"
+> +              ".globl z_input_len\n"
+> +              "z_input_len = %lu\n"
+> +              ".globl z_output_len\n"
+> +              "z_output_len = %lu\n"
+> +              ".globl z_extract_offset\n"
+> +              "z_extract_offset = 0x%lx\n"
+> +              ".globl z_extract_offset_negative\n"
+> +              "z_extract_offset_negative = -0x%lx\n"
+> +              ".globl input_data, input_data_end\n"
+> +              "input_data:\n"
+> +              ".incbin \"%s\"\n"
+> +              "input_data_end:\n",
+> +              ilen, (unsigned long)olen, offs, offs, argv[1]);
+
+Quick! Which printf argument does z_extract_offset correspond to?
+If you had to count (or it took you more than half a second
+otherwise), this code is less readable than it was before.
