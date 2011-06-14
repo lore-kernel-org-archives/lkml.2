@@ -1,84 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751613Ab1FNM4Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 08:56:24 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:57963 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751292Ab1FNM4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 08:56:21 -0400
-Date: Tue, 14 Jun 2011 05:56:12 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>, "Shi, Alex" <alex.shi@intel.com>,
+	id S1751669Ab1FNM6q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 08:58:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45601 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292Ab1FNM6m convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 08:58:42 -0400
+Subject: Re: [PATCH v4 3.0-rc2-tip 2/22]  2: uprobes: Breakground page
+ replacement.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: rcu: performance regression
-Message-ID: <20110614125612.GE2264@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1308029185.15392.147.camel@sli10-conroe>
- <20110614081315.GE29900@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110614081315.GE29900@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jonathan Corbet <corbet@lwn.net>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110613085955.GD27130@linux.vnet.ibm.com>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+	 <20110607125835.28590.25476.sendpatchset@localhost6.localdomain6>
+	 <1307660609.2497.1773.camel@laptop>
+	 <20110613085955.GD27130@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 14 Jun 2011 14:57:29 +0200
+Message-ID: <1308056249.19856.34.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 14, 2011 at 10:13:15AM +0200, Ingo Molnar wrote:
+On Mon, 2011-06-13 at 14:29 +0530, Srikar Dronamraju wrote:
+> * Peter Zijlstra <peterz@infradead.org> [2011-06-10 01:03:29]:
 > 
-> * Shaohua Li <shaohua.li@intel.com> wrote:
-> 
-> > Commit a26ac2455ffcf3(rcu: move TREE_RCU from softirq to kthread)
-> > introduced performance regression. In our AIM7 test, this commit caused
-> > about 40% regression.
-> 
-> Sigh, this commit is somewhat of a train-wreck.
-> 
-> > The commit runs rcu callbacks in a kthread instead of softirq. We 
-> > observed high rate of context switch which is caused by this. Out 
-> > test system has 64 CPUs and HZ is 1000, so we saw more than 64k 
-> > context switch per second which is caused by the rcu thread.
-> >
-> > I also did trace and found when rcy thread is woken up, most time 
-> > the thread doesn't handle any callbacks actually, it just 
-> > initializes new gp or end one gp or similar.
-> >
-> > From my understanding, the purpose to make rcu runs in kthread is 
-> > to speed up rcu callbacks run (with help of rtmutex PI), not for 
-> > end gp and so on, which runs pretty fast actually and doesn't need 
-> > boost. To verify my findings, I had below debug patch applied. It 
-> > still handles rcu callbacks in kthread if there is any pending 
-> > callbacks, but other things are still running in softirq. this 
-> > completely solved our regression. I thought this can still boost 
-> > callbacks run. but I'm not expert in the area, so please help.
+> > On Tue, 2011-06-07 at 18:28 +0530, Srikar Dronamraju wrote:
+> > > +       vaddr_old = kmap_atomic(old_page, KM_USER0);
+> > > +       vaddr_new = kmap_atomic(new_page, KM_USER1);
+> > > +
+> > > +       memcpy(vaddr_new, vaddr_old, PAGE_SIZE);
+> > > +       /* poke the new insn in, ASSUMES we don't cross page boundary */
+> > > +       addr = vaddr;
+> > > +       vaddr &= ~PAGE_MASK;
+> > > +       memcpy(vaddr_new + vaddr, &opcode, uprobe_opcode_sz);
+> > > +
+> > > +       kunmap_atomic(vaddr_new);
+> > > +       kunmap_atomic(vaddr_old); 
 > > 
-> > Thanks,
-> > Shaohua
-> > ---
-> >  Documentation/filesystems/proc.txt  |    1 +
-> >  include/linux/interrupt.h           |    1 +
-> >  include/trace/events/irq.h          |    3 ++-
-> >  kernel/rcutree.c                    |   23 +++++++++++++++++++----
-> >  kernel/rcutree.h                    |    1 +
-> >  kernel/rcutree_plugin.h             |    9 +++++++++
-> >  kernel/softirq.c                    |    2 +-
-> >  tools/perf/util/trace-event-parse.c |    1 +
-> >  8 files changed, 35 insertions(+), 6 deletions(-)
+> > 
+> > > +       vaddr_new = kmap_atomic(page, KM_USER0);
+> > > +       vaddr &= ~PAGE_MASK;
+> > > +       memcpy(opcode, vaddr_new + vaddr, uprobe_opcode_sz);
+> > > +       kunmap_atomic(vaddr_new);
+> > > 
 > 
-> Paul? Unless this patch is the obviously correct solution everyone 
-> wants to have, the other obviously correct solution is to do the 
-> revert ...
+> 
+> > 
+> > Both sequences in resp {write,read}_opcode() assume the opcode doesn't
+> > cross page boundaries but don't in fact have any assertions validating
+> > this assumption.
+> > 
+> 
+> read_opcode and write_opcode reads/writes just one breakpoint instruction
+> I had the below note just above the write_opcode definition.
+> 
+> /*
+>  * NOTE:
+>  * Expect the breakpoint instruction to be the smallest size instruction for
+>  * the architecture. If an arch has variable length instruction and the
+>  * breakpoint instruction is not of the smallest length instruction
+>  * supported by that architecture then we need to modify read_opcode /
+>  * write_opcode accordingly. This would never be a problem for archs that
+>  * have fixed length instructions.
+>  */
 
-I will look Shaohua's patch over.  Of course, given that mid-90s
-could do well in excess of 100,000 context switches per second
-per CPU, I am having a hard time seeing how 1,000 context switches
-per second per CPU is by itself resulting in a 40% regression.
+Whoever reads comments anyway? :-)
 
-Nevertheless, fewer context switches per second should speed things
-up, and so again, I will look at Shaohua's patch.
+> Do we have archs which have a breakpoint instruction which isnt of the
+> smallest instruction size for that arch. If we do have can we change the
+> write_opcode/read_opcode while we support that architecture?
 
-							Thanx, Paul
+Why not put a simple WARN_ON_ONCE() in there that checks the assumption?
