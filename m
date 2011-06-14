@@ -1,44 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756295Ab1FNLsw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 07:48:52 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:60414 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755894Ab1FNLsv (ORCPT
+	id S1756340Ab1FNLs7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 07:48:59 -0400
+Received: from science.horizon.com ([71.41.210.146]:55351 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756302Ab1FNLs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 07:48:51 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/Thc4ewW5XWJ7oRZu096db
-Date: Tue, 14 Jun 2011 04:48:48 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.0-rc2] OMAP: ams-delta: fix broken uevent sysfs
- entries
-Message-ID: <20110614114848.GS3352@atomide.com>
-References: <201106070316.41099.jkrzyszt@tis.icnet.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201106070316.41099.jkrzyszt@tis.icnet.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 14 Jun 2011 07:48:57 -0400
+Date: 14 Jun 2011 07:48:54 -0400
+Message-ID: <20110614114854.31801.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux-kernel@vger.kernel.org
+Subject: 3.0-rc1 stuck process in munmap()
+Cc: linux@horizon.com, linux-mm@kvack.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [110606 18:15]:
-> 
-> Removing __initdata tags, introduced by commit 
-> bdc58fb950a3a1b0bc3cbd8e23d21ecdde2ac9a2, "arm: omap1: fix a bunch of 
-> section mismatches", from corresponding platform_device structures 
-> declared in arch/arm/mach-omap1/board-ams-delta.c, corrects the problem 
-> for me, which may indicate that their members (.name ?) are still 
-> referred to during runtime so they shouldn't be freed after boot.
+3.0-rc1 kernel, with 7f58aabc reverted.  32-bit x86 kernel. Core 2 duo
+laptop w/ 2 GB RAM.  X86_32_SMP=y, NO_HZ=y, PREEMPT_VOLUNTARY=y, HZ=300.
+Came out of a few days' suspend, browsed the net a bit, ran vlc, and
+discovered that switching back to the Firefox screen, it didn't refersh.
+I wasn't using it actively at the time of the lockup.
 
-Sounds like this needs a bit more research where this initdata
-gets used?
+It's been stuck since last night in the D state, and a "ps axf" also
+got stuck.  I'm going to try rebooting with -rc3 and see if the
+problem recurs.
 
-Tony
+Not a great bug report, but I have backtraces and I thought I'd throw it
+out here anyway.
+
+INFO: task firefox-bin:26283 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+firefox-bin     D f5959500     0 26283   2914 0x00000000
+ f34246e0 00000086 00000000 f5959500 00000000 00000000 e012df04 00000000
+ c14f22c0 f3424854 c14f22c0 f69dcf20 f69dcf40 f69dce60 f69dce80 f69dcea0
+ f69dcec0 f69dcee0 000007fb f2321b00 4b800000 4b800000 00000000 c107346b
+Call Trace:
+ [<c107346b>] ? sys_madvise+0x42b/0x46c
+ [<c130491d>] ? rwsem_down_failed_common+0xa1/0xc9
+ [<c13049a2>] ? call_rwsem_down_write_failed+0x6/0x8
+ [<c1304419>] ? down_write+0x1c/0x1e
+ [<c10781f2>] ? sys_munmap+0x18/0x35
+ [<c1305310>] ? sysenter_do_call+0x12/0x26
+ [<c1300000>] ? wait_for_panic+0x25/0x36
+INFO: task firefox-bin:26283 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+firefox-bin     D f5959500     0 26283   2914 0x00000000
+ f34246e0 00000086 00000000 f5959500 00000000 00000000 e012df04 00000000
+ c14f22c0 f3424854 c14f22c0 f69dcf20 f69dcf40 f69dce60 f69dce80 f69dcea0
+ f69dcec0 f69dcee0 000007fb f2321b00 4b800000 4b800000 00000000 c107346b
+Call Trace:
+ [<c107346b>] ? sys_madvise+0x42b/0x46c
+ [<c130491d>] ? rwsem_down_failed_common+0xa1/0xc9
+ [<c13049a2>] ? call_rwsem_down_write_failed+0x6/0x8
+ [<c1304419>] ? down_write+0x1c/0x1e
+ [<c10781f2>] ? sys_munmap+0x18/0x35
+ [<c1305310>] ? sysenter_do_call+0x12/0x26
+ [<c1300000>] ? wait_for_panic+0x25/0x36
+INFO: task firefox-bin:27872 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+firefox-bin     D d732bf58     0 27872   2914 0x00000000
+ f3424370 00000086 00000002 d732bf58 00000000 00000000 00000000 00000001
+ c14f22c0 f34244e4 c14f22c0 00000000 00000000 b147d7c0 00000000 00000002
+ 00000001 f35bfc88 000007fb e0252b00 34cff000 34cff000 00000000 c107346b
+Call Trace:
+ [<c107346b>] ? sys_madvise+0x42b/0x46c
+ [<c130491d>] ? rwsem_down_failed_common+0xa1/0xc9
+ [<c13049a2>] ? call_rwsem_down_write_failed+0x6/0x8
+ [<c1304419>] ? down_write+0x1c/0x1e
+ [<c10781f2>] ? sys_munmap+0x18/0x35
+ [<c1305310>] ? sysenter_do_call+0x12/0x26
+ [<c1300000>] ? wait_for_panic+0x25/0x36
+INFO: task ps:30517 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+ps              D d7325e80     0 30517  30515 0x00000000
+ f612a940 00000086 00000002 d7325e80 c13129c0 c56c4080 00000000 00000000
+ c14f22c0 f612aab4 c14f22c0 00000001 c1065a63 00000001 00000041 00007815
+ 00000001 00000246 00000246 00000001 00000041 c56c4080 00000000 00000001
+Call Trace:
+ [<c1065a63>] ? zone_watermark_ok+0x2a/0x30
+ [<c130491d>] ? rwsem_down_failed_common+0xa1/0xc9
+ [<c1304997>] ? call_rwsem_down_read_failed+0x7/0xc
+ [<c130442f>] ? down_read+0x14/0x16
+ [<c1075f48>] ? __access_remote_vm+0x1f/0x14d
+ [<c107625b>] ? access_process_vm+0x3e/0x51
+ [<c10b6a90>] ? proc_pid_cmdline+0x58/0xc8
+ [<c10b75d0>] ? proc_info_read+0x44/0x8c
+ [<c10b758c>] ? proc_single_show+0x59/0x59
+ [<c1088e58>] ? vfs_read+0x75/0x9b
+ [<c1088ebf>] ? sys_read+0x41/0x64
+ [<c1304bdd>] ? syscall_call+0x7/0xb
+INFO: task firefox-bin:27872 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+firefox-bin     D d732bf58     0 27872   2914 0x00000000
+ f3424370 00000086 00000002 d732bf58 00000000 00000000 00000000 00000001
+ c14f22c0 f34244e4 c14f22c0 00000000 00000000 b147d7c0 00000000 00000002
+ 00000001 f35bfc88 000007fb e0252b00 34cff000 34cff000 00000000 c107346b
+Call Trace:
+ [<c107346b>] ? sys_madvise+0x42b/0x46c
+ [<c130491d>] ? rwsem_down_failed_common+0xa1/0xc9
+ [<c13049a2>] ? call_rwsem_down_write_failed+0x6/0x8
+ [<c1304419>] ? down_write+0x1c/0x1e
+ [<c10781f2>] ? sys_munmap+0x18/0x35
+ [<c1305310>] ? sysenter_do_call+0x12/0x26
+ [<c1300000>] ? wait_for_panic+0x25/0x36
+INFO: task ps:30517 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+ps              D d7325e80     0 30517  30515 0x00000000
+ f612a940 00000086 00000002 d7325e80 c13129c0 c56c4080 00000000 00000000
+ c14f22c0 f612aab4 c14f22c0 00000001 c1065a63 00000001 00000041 00007815
+ 00000001 00000246 00000246 00000001 00000041 c56c4080 00000000 00000001
+Call Trace:
+ [<c1065a63>] ? zone_watermark_ok+0x2a/0x30
+ [<c130491d>] ? rwsem_down_failed_common+0xa1/0xc9
+ [<c1304997>] ? call_rwsem_down_read_failed+0x7/0xc
+ [<c130442f>] ? down_read+0x14/0x16
+ [<c1075f48>] ? __access_remote_vm+0x1f/0x14d
+ [<c107625b>] ? access_process_vm+0x3e/0x51
+ [<c10b6a90>] ? proc_pid_cmdline+0x58/0xc8
+ [<c10b75d0>] ? proc_info_read+0x44/0x8c
+ [<c10b758c>] ? proc_single_show+0x59/0x59
+ [<c1088e58>] ? vfs_read+0x75/0x9b
+ [<c1088ebf>] ? sys_read+0x41/0x64
+ [<c1304bdd>] ? syscall_call+0x7/0xb
+INFO: task firefox-bin:27872 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+firefox-bin     D d732bf58     0 27872   2914 0x00000000
+ f3424370 00000086 00000002 d732bf58 00000000 00000000 00000000 00000001
+ c14f22c0 f34244e4 c14f22c0 00000000 00000000 b147d7c0 00000000 00000002
+ 00000001 f35bfc88 000007fb e0252b00 34cff000 34cff000 00000000 c107346b
+Call Trace:
+ [<c107346b>] ? sys_madvise+0x42b/0x46c
+ [<c130491d>] ? rwsem_down_failed_common+0xa1/0xc9
+ [<c13049a2>] ? call_rwsem_down_write_failed+0x6/0x8
+ [<c1304419>] ? down_write+0x1c/0x1e
+ [<c10781f2>] ? sys_munmap+0x18/0x35
+ [<c1305310>] ? sysenter_do_call+0x12/0x26
+ [<c1300000>] ? wait_for_panic+0x25/0x36
+INFO: task ps:30517 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+ps              D d7325e80     0 30517  30515 0x00000000
+ f612a940 00000086 00000002 d7325e80 c13129c0 c56c4080 00000000 00000000
+ c14f22c0 f612aab4 c14f22c0 00000001 c1065a63 00000001 00000041 00007815
+ 00000001 00000246 00000246 00000001 00000041 c56c4080 00000000 00000001
+Call Trace:
+ [<c1065a63>] ? zone_watermark_ok+0x2a/0x30
+ [<c130491d>] ? rwsem_down_failed_common+0xa1/0xc9
+ [<c1304997>] ? call_rwsem_down_read_failed+0x7/0xc
+ [<c130442f>] ? down_read+0x14/0x16
+ [<c1075f48>] ? __access_remote_vm+0x1f/0x14d
+ [<c107625b>] ? access_process_vm+0x3e/0x51
+ [<c10b6a90>] ? proc_pid_cmdline+0x58/0xc8
+ [<c10b75d0>] ? proc_info_read+0x44/0x8c
+ [<c10b758c>] ? proc_single_show+0x59/0x59
+ [<c1088e58>] ? vfs_read+0x75/0x9b
+ [<c1088ebf>] ? sys_read+0x41/0x64
+ [<c1304bdd>] ? syscall_call+0x7/0xb
+INFO: task firefox-bin:27872 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+firefox-bin     D d732bf58     0 27872   2914 0x00000000
+ f3424370 00000086 00000002 d732bf58 00000000 00000000 00000000 00000001
+ c14f22c0 f34244e4 c14f22c0 00000000 00000000 b147d7c0 00000000 00000002
+ 00000001 f35bfc88 000007fb e0252b00 34cff000 34cff000 00000000 c107346b
+Call Trace:
+ [<c107346b>] ? sys_madvise+0x42b/0x46c
+ [<c130491d>] ? rwsem_down_failed_common+0xa1/0xc9
+ [<c13049a2>] ? call_rwsem_down_write_failed+0x6/0x8
+ [<c1304419>] ? down_write+0x1c/0x1e
+ [<c10781f2>] ? sys_munmap+0x18/0x35
+ [<c1305310>] ? sysenter_do_call+0x12/0x26
+ [<c1300000>] ? wait_for_panic+0x25/0x36
+INFO: task ps:30517 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+ps              D d7325e80     0 30517  30515 0x00000000
+ f612a940 00000086 00000002 d7325e80 c13129c0 c56c4080 00000000 00000000
+ c14f22c0 f612aab4 c14f22c0 00000001 c1065a63 00000001 00000041 00007815
+ 00000001 00000246 00000246 00000001 00000041 c56c4080 00000000 00000001
+Call Trace:
+ [<c1065a63>] ? zone_watermark_ok+0x2a/0x30
+ [<c130491d>] ? rwsem_down_failed_common+0xa1/0xc9
+ [<c1304997>] ? call_rwsem_down_read_failed+0x7/0xc
+ [<c130442f>] ? down_read+0x14/0x16
+ [<c1075f48>] ? __access_remote_vm+0x1f/0x14d
+ [<c107625b>] ? access_process_vm+0x3e/0x51
+ [<c10b6a90>] ? proc_pid_cmdline+0x58/0xc8
+ [<c10b75d0>] ? proc_info_read+0x44/0x8c
+ [<c10b758c>] ? proc_single_show+0x59/0x59
+ [<c1088e58>] ? vfs_read+0x75/0x9b
+ [<c1088ebf>] ? sys_read+0x41/0x64
+ [<c1304bdd>] ? syscall_call+0x7/0xb
+udevd[5382]: starting version 171
