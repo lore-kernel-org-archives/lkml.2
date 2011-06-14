@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab1FNXGV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 19:06:21 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:41775 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751484Ab1FNXGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 19:06:18 -0400
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 6 of 6] x86, UV: correct UV2 BAU destination timeout
-Cc: mingo@elte.hu
-Message-Id: <E1QWchi-0004Ng-1i@eag09.americas.sgi.com>
-From: Cliff Wickman <cpw@sgi.com>
-Date: Tue, 14 Jun 2011 18:07:26 -0500
+	id S1753601Ab1FNXuF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 19:50:05 -0400
+Received: from prod-mail-xrelay01.akamai.com ([72.246.2.12]:47146 "EHLO
+	prod-mail-xrelay01.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751303Ab1FNXuC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 19:50:02 -0400
+X-Greylist: delayed 574 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Jun 2011 19:50:02 EDT
+From: Josh Hunt <johunt@akamai.com>
+To: Ankita Garg <ankita@in.ibm.com>, Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Tapan Dhimant <tdhimant@akamai.com>
+Subject: [PATCH] lkdtm: Fix race when crashpoint is hit multiple times before checking count
+Date: Tue, 14 Jun 2011 16:40:27 -0700
+Message-Id: <1308094827-29684-1-git-send-email-johunt@akamai.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cliff Wickman <cpw@sgi.com>
+We observed the crash point count going negative in cases where the crash point
+is hit multiple times before the check of "count == 0" is done. Because of this
+we never call lkdtm_do_action(). This patch just adds a spinlock to protect
+count.
 
-Correct the UV2 broacast assist unit's destination timeout period.
-  The period is set in 4 bits of memory-mapped register MISC_CONTROL.
-  The left bit toggles base period between 10us and 80us.
-  The other 3 bits are the multiplier.
-Decimal 15, hex f, gives the maximum: 7 * 80us
-
-And the activation status register in UV2 should be tested for a destination
-timeout with a 4, not a 2.  The values for Active versus Timeout were reversed.
-
-Diffed against 3.0.0-rc3
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-
+Reported-by: Tapan Dhimant <tdhimant@akamai.com>
+Signed-off-by: Josh Hunt <johunt@akamai.com>
 ---
- arch/x86/include/asm/uv/uv_bau.h |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ drivers/misc/lkdtm.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-Index: linux/arch/x86/include/asm/uv/uv_bau.h
-===================================================================
---- linux.orig/arch/x86/include/asm/uv/uv_bau.h
-+++ linux/arch/x86/include/asm/uv/uv_bau.h
-@@ -67,7 +67,7 @@
-  *  we're using 655us, similar to UV1: 65 units of 10us
-  */
- #define UV1_INTD_SOFT_ACK_TIMEOUT_PERIOD (9UL)
--#define UV2_INTD_SOFT_ACK_TIMEOUT_PERIOD (65*10UL)
-+#define UV2_INTD_SOFT_ACK_TIMEOUT_PERIOD (15UL)
+diff --git a/drivers/misc/lkdtm.c b/drivers/misc/lkdtm.c
+index 81d7fa4..150cd70 100644
+--- a/drivers/misc/lkdtm.c
++++ b/drivers/misc/lkdtm.c
+@@ -120,6 +120,7 @@ static int recur_count = REC_NUM_DEFAULT;
+ static enum cname cpoint = CN_INVALID;
+ static enum ctype cptype = CT_NONE;
+ static int count = DEFAULT_COUNT;
++static DEFINE_SPINLOCK(count_lock);
  
- #define UV_INTD_SOFT_ACK_TIMEOUT_PERIOD	(is_uv1_hub() ?			\
- 		UV1_INTD_SOFT_ACK_TIMEOUT_PERIOD :			\
-@@ -106,12 +106,20 @@
- #define DS_SOURCE_TIMEOUT		3
- /*
-  * bits put together from HRP_LB_BAU_SB_ACTIVATION_STATUS_0/1/2
-- * values 1 and 5 will not occur
-+ * values 1 and 3 will not occur
-+ *        Decoded meaning              ERROR  BUSY    AUX ERR
-+ * -------------------------------     ----   -----   -------
-+ * IDLE                                 0       0        0
-+ * BUSY (active)                        0       1        0
-+ * SW Ack Timeout (destination)         1       0        0
-+ * SW Ack INTD rejected (strong NACK)   1       0        1
-+ * Source Side Time Out Detected        1       1        0
-+ * Destination Side PUT Failed          1       1        1
-  */
- #define UV2H_DESC_IDLE			0
--#define UV2H_DESC_DEST_TIMEOUT		2
--#define UV2H_DESC_DEST_STRONG_NACK	3
--#define UV2H_DESC_BUSY			4
-+#define UV2H_DESC_BUSY			2
-+#define UV2H_DESC_DEST_TIMEOUT		4
-+#define UV2H_DESC_DEST_STRONG_NACK	5
- #define UV2H_DESC_SOURCE_TIMEOUT	6
- #define UV2H_DESC_DEST_PUT_ERR		7
+ module_param(recur_count, int, 0644);
+ MODULE_PARM_DESC(recur_count, " Recursion level for the stack overflow test, "\
+@@ -230,11 +231,14 @@ static const char *cp_name_to_str(enum cname name)
+ static int lkdtm_parse_commandline(void)
+ {
+ 	int i;
++	unsigned long flags;
  
+ 	if (cpoint_count < 1 || recur_count < 1)
+ 		return -EINVAL;
+ 
++	spin_lock_irqsave(&count_lock, flags);
+ 	count = cpoint_count;
++	spin_unlock_irqrestore(&count_lock, flags);
+ 
+ 	/* No special parameters */
+ 	if (!cpoint_type && !cpoint_name)
+@@ -349,6 +353,9 @@ static void lkdtm_do_action(enum ctype which)
+ 
+ static void lkdtm_handler(void)
+ {
++	unsigned long flags;
++
++	spin_lock_irqsave(&count_lock, flags);
+ 	count--;
+ 	printk(KERN_INFO "lkdtm: Crash point %s of type %s hit, trigger in %d rounds\n",
+ 			cp_name_to_str(cpoint), cp_type_to_str(cptype), count);
+@@ -357,6 +364,7 @@ static void lkdtm_handler(void)
+ 		lkdtm_do_action(cptype);
+ 		count = cpoint_count;
+ 	}
++	spin_unlock_irqrestore(&count_lock, flags);
+ }
+ 
+ static int lkdtm_register_cpoint(enum cname which)
+-- 
+1.7.0.4
+
