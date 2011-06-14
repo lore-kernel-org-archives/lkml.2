@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587Ab1FNAnT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 20:43:19 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:51840 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755529Ab1FNAnP (ORCPT
+	id S1755580Ab1FNAoW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 20:44:22 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:45720 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755529Ab1FNAoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 20:43:15 -0400
-X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=ZFNFh-pPGIMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Rprz5T8hdKOvOCPhRl8A:9 a=wvJwm4OuDsYDrXEtBDcA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Lockdep splat in autofs with 2.6.39-rc2
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: linux-kernel@vger.kernel.org, autofs@linux.kernel.org,
-        Ian Kent <raven@themaw.net>, Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <20110511191301.GA18504@elliptictech.com>
-References: <20110407194403.GA29404@elliptictech.com>
-	 <20110421212537.GC24898@home.goodmis.org>
-	 <20110427132219.GA2843@elliptictech.com>
-	 <20110511191301.GA18504@elliptictech.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 13 Jun 2011 20:43:13 -0400
-Message-ID: <1308012193.9218.105.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Jun 2011 20:44:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=WcZmOgj1O+mlZtzdkNoE9lvLHdOH0Sln3ZxJYW99xh16pQxtVrNE9+W5ycAz3hE0fa
+         zmicrfrwS8FvA46InOvA==
+MIME-Version: 1.0
+In-Reply-To: <1308011835.9218.104.camel@gandalf.stny.rr.com>
+References: <20110609172744.333794089@goodmis.org> <20110609172910.950101158@goodmis.org>
+ <20110613101248.GC30962@elte.hu> <1307965185.9218.53.camel@gandalf.stny.rr.com>
+ <20110613114904.GD10960@elte.hu> <1307966043.9218.63.camel@gandalf.stny.rr.com>
+ <BANLkTikssQhJu3t=ikpbq11oGeV2D3L-Zc1TuVW0+TKBqmkXyw@mail.gmail.com> <1308011835.9218.104.camel@gandalf.stny.rr.com>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Mon, 13 Jun 2011 17:43:45 -0700
+Message-ID: <BANLkTi=Lh2LkYRtT8UmwcxO4g1hF5VdoC+4zVC1=wqrpsZ5ECw@mail.gmail.com>
+Subject: Re: [PATCH 03/15] tracing: Add a free on close control mechanism for buffer_size_kb
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-11 at 15:13 -0400, Nick Bowler wrote:
-> On 2011-04-27 09:22 -0400, Nick Bowler wrote:
-> > On 2011-04-21 17:25 -0400, Steven Rostedt wrote:
-> > > On Thu, Apr 07, 2011 at 03:44:03PM -0400, Nick Bowler wrote:
-> > > > Just saw this on 2.6.39-rc2 after half a day or so of uptime.  I've
-> > > > never seen it before today so it may be a regression from 2.6.38.
-> > > > Nothing seems have failed as a result.  Please let me know if you
-> > > > need any more info.
-> > > 
-> > > Could you try this patch. I know it may be hard to reproduce, but the
-> > > issue is that we are recursing down the locks in a tree/list and we changed a
-> > > lock from being nested to being a parent. This patch tells lockdep about
-> > > what we did.
-> > 
-> > OK, I've built 2.6.39-rc5 with this patch applied.  However, it took ~5
-> > days before I saw any splat with -rc4, thus it's unlikely that I'll be
-> > able to say for sure that it works.
-> 
-> FWIW, haven't had any problems with this kernel (+ patch) during the
-> last two weeks.
+On Mon, Jun 13, 2011 at 5:37 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Mon, 2011-06-13 at 13:01 -0700, Vaibhav Nagarnaik wrote:
+>
+>> I have created the patch.
+>>
+>> I was wondering what would you consider a good name for the new proc
+>> file? David suggested "free_ring_buffer".
+>
+> Since we already have a "buffer_size" "free_buffer" should be a good
+> name.
+>
 
-I'm going to wrap this up and send it out as a proper patch. Can I add
-your "Reported-by" and "Tested-by" tags?
-
-Thanks,
-
--- Steve
+Sure. Sending updated patch.
 
 
+
+Vaibhav Nagarnaik
