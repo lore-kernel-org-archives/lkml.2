@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab1FNJVF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 05:21:05 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38719 "EHLO
+	id S1755823Ab1FNJUg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 05:20:36 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50442 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755751Ab1FNJU3 (ORCPT
+	with ESMTP id S1755785Ab1FNJUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 05:20:29 -0400
+	Tue, 14 Jun 2011 05:20:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=efsuKKD7zTKTarbCcT2wbXWtWv7wYez5UZH4c5diUNCLKGnd0tAC9KCBsuXGQcHGWh
-         vL90LZQ8KE6XVs/eBlYxyaYrGEo9XE9Hu2TLIuY2sVZrQiOHckRmqigCGuTYmjBtH8Km
-         Xy6bam7tBFiMGjGWnaYrLl4Hd6G38B5LHopag=
+        b=meN3GHEDDxF0Jij6XJrH1lTHhKYqphtgyTChuMnWZPu2Nlvp8qqA5UeBomg27JsxsY
+         Mmr4Y5fAEGR5isLlpzfYDfbc5Rk8igYX7E+M3+jkMpTz5hGwbpueaV9mDoMzhJU+GSik
+         o+ND0EsCaCbwSYkTx10OAOS4FFdkzLAEPXQFg=
 From: Tejun Heo <tj@kernel.org>
 To: oleg@redhat.com
 Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
         linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
         pedro@codesourcery.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/5] ptrace: implement PTRACE_INTERRUPT
-Date: Tue, 14 Jun 2011 11:20:16 +0200
-Message-Id: <1308043218-23619-4-git-send-email-tj@kernel.org>
+Subject: [PATCH 4/5] ptrace: implement TRAP_NOTIFY and use it for group stop events
+Date: Tue, 14 Jun 2011 11:20:17 +0200
+Message-Id: <1308043218-23619-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.5.2
 In-Reply-To: <1308043218-23619-1-git-send-email-tj@kernel.org>
 References: <1308043218-23619-1-git-send-email-tj@kernel.org>
@@ -30,183 +30,210 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, there's no way to trap a running ptracee short of sending a
-signal which has various side effects.  This patch implements
-PTRACE_INTERRUPT which traps ptracee without any signal or job control
-related side effect.
+Currently there's no way for ptracer to find out whether group stop
+finished other than polling with INTERRUPT - GETSIGINFO - CONT
+sequence.  This patch implements group stop notification for ptracer
+using STOP traps.
 
-The implementation is almost trivial.  It uses the group stop trap -
-SIGTRAP | PTRACE_EVENT_STOP << 8.  A new trap flag
-JOBCTL_TRAP_INTERRUPT is added, which is set on PTRACE_INTERRUPT and
-cleared when any trap happens.  As INTERRUPT should be useable
-regardless of the current state of tracee, task_is_traced() test in
-ptrace_check_attach() is skipped for INTERRUPT.
+When group stop state of a seized tracee changes, JOBCTL_TRAP_NOTIFY
+is set, which schedules a STOP trap which is sticky - it isn't cleared
+by other traps and at least one STOP trap will happen eventually.
+STOP trap is synchronization point for event notification and the
+tracer can determine the current group stop state by looking at the
+signal number portion of exit code (si_status from waitid(2) or
+si_code from PTRACE_GETSIGINFO).
 
-PTRACE_INTERRUPT is available iff tracee is attached with
-PTRACE_SEIZE.
+Notifications are generated both on start and end of group stops but,
+because group stop participation always happens before STOP trap, this
+doesn't cause an extra trap while tracee is participating in group
+stop.  The symmetry will be useful later.
 
-Test program follows.
+Note that this notification works iff tracee is not trapped.
+Currently there is no way to be notified of group stop state changes
+while tracee is trapped.  This will be addressed by a later patch.
+
+An example program follows.
 
   #define PTRACE_SEIZE		0x4206
   #define PTRACE_INTERRUPT	0x4207
 
   #define PTRACE_SEIZE_DEVEL	0x80000000
 
-  static const struct timespec ts100ms = { .tv_nsec = 100000000 };
   static const struct timespec ts1s = { .tv_sec = 1 };
-  static const struct timespec ts3s = { .tv_sec = 3 };
 
   int main(int argc, char **argv)
   {
-	  pid_t tracee;
+	  pid_t tracee, tracer;
+	  int i;
 
 	  tracee = fork();
-	  if (tracee == 0) {
-		  nanosleep(&ts100ms, NULL);
-		  while (1) {
-			  printf("tracee: alive pid=%d\n", getpid());
-			  nanosleep(&ts1s, NULL);
-		  }
-	  }
+	  if (!tracee)
+		  while (1)
+			  pause();
 
-	  if (argc > 1)
-		  kill(tracee, SIGSTOP);
+	  tracer = fork();
+	  if (!tracer) {
+		  siginfo_t si;
 
-	  nanosleep(&ts100ms, NULL);
-
-	  ptrace(PTRACE_SEIZE, tracee, NULL,
-		 (void *)(unsigned long)PTRACE_SEIZE_DEVEL);
-	  if (argc > 1) {
+		  ptrace(PTRACE_SEIZE, tracee, NULL,
+			 (void *)(unsigned long)PTRACE_SEIZE_DEVEL);
+		  ptrace(PTRACE_INTERRUPT, tracee, NULL, NULL);
+	  repeat:
 		  waitid(P_PID, tracee, NULL, WSTOPPED);
+
+		  ptrace(PTRACE_GETSIGINFO, tracee, NULL, &si);
+		  if (!si.si_code) {
+			  printf("tracer: SIG %d\n", si.si_signo);
+			  ptrace(PTRACE_CONT, tracee, NULL,
+				 (void *)(unsigned long)si.si_signo);
+			  goto repeat;
+		  }
+		  printf("tracer: stopped=%d signo=%d\n",
+			 si.si_signo != SIGTRAP, si.si_signo);
 		  ptrace(PTRACE_CONT, tracee, NULL, NULL);
+		  goto repeat;
 	  }
-	  nanosleep(&ts3s, NULL);
 
-	  printf("tracer: INTERRUPT and DETACH\n");
-	  ptrace(PTRACE_INTERRUPT, tracee, NULL, NULL);
-	  waitid(P_PID, tracee, NULL, WSTOPPED);
-	  ptrace(PTRACE_DETACH, tracee, NULL, NULL);
-	  nanosleep(&ts3s, NULL);
+	  for (i = 0; i < 3; i++) {
+		  nanosleep(&ts1s, NULL);
+		  printf("mother: SIGSTOP\n");
+		  kill(tracee, SIGSTOP);
+		  nanosleep(&ts1s, NULL);
+		  printf("mother: SIGCONT\n");
+		  kill(tracee, SIGCONT);
+	  }
+	  nanosleep(&ts1s, NULL);
 
-	  printf("tracer: exiting\n");
+	  kill(tracer, SIGKILL);
 	  kill(tracee, SIGKILL);
 	  return 0;
   }
 
-When called without argument, tracee is seized from running state,
-interrupted and then detached back to running state.
+In the above program, tracer keeps tracee running and gets
+notification of each group stop state changes.
 
-  # ./test-interrupt
-  tracee: alive pid=4546
-  tracee: alive pid=4546
-  tracee: alive pid=4546
-  tracer: INTERRUPT and DETACH
-  tracee: alive pid=4546
-  tracee: alive pid=4546
-  tracee: alive pid=4546
-  tracer: exiting
-
-When called with argument, tracee is seized from stopped state,
-continued, interrupted and then detached back to stopped state.
-
-  # ./test-interrupt  1
-  tracee: alive pid=4548
-  tracee: alive pid=4548
-  tracee: alive pid=4548
-  tracer: INTERRUPT and DETACH
-  tracer: exiting
-
-Before PTRACE_INTERRUPT, once the tracee was running, there was no way
-to trap tracee and do PTRACE_DETACH without causing side effect.
-
--v2: Updated to use task_set_jobctl_pending() so that it doesn't end
-     up scheduling TRAP_STOP if child is dying which may make the
-     child unkillable.  Spotted by Oleg.
+  # ./test-notify
+  tracer: stopped=0 signo=5
+  mother: SIGSTOP
+  tracer: SIG 19
+  tracer: stopped=1 signo=19
+  mother: SIGCONT
+  tracer: stopped=0 signo=5
+  tracer: SIG 18
+  mother: SIGSTOP
+  tracer: SIG 19
+  tracer: stopped=1 signo=19
+  mother: SIGCONT
+  tracer: stopped=0 signo=5
+  tracer: SIG 18
+  mother: SIGSTOP
+  tracer: SIG 19
+  tracer: stopped=1 signo=19
+  mother: SIGCONT
+  tracer: stopped=0 signo=5
+  tracer: SIG 18
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Oleg Nesterov <oleg@redhat.com>
 ---
- include/linux/ptrace.h |    1 +
- kernel/ptrace.c        |   29 +++++++++++++++++++++++++++--
- 2 files changed, 28 insertions(+), 2 deletions(-)
+ include/linux/sched.h |    4 +++-
+ kernel/signal.c       |   38 +++++++++++++++++++++++++++++++++++---
+ 2 files changed, 38 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 67ad3f1..ad754d1 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -48,6 +48,7 @@
- #define PTRACE_SETREGSET	0x4205
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 8bd84b8..1854def 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1811,15 +1811,17 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+ #define JOBCTL_STOP_PENDING_BIT	17	/* task should stop for group stop */
+ #define JOBCTL_STOP_CONSUME_BIT	18	/* consume group stop count */
+ #define JOBCTL_TRAP_STOP_BIT	19	/* trap for STOP */
++#define JOBCTL_TRAP_NOTIFY_BIT	20	/* trap for NOTIFY */
+ #define JOBCTL_TRAPPING_BIT	21	/* switching to TRACED */
  
- #define PTRACE_SEIZE		0x4206
-+#define PTRACE_INTERRUPT	0x4207
+ #define JOBCTL_STOP_DEQUEUED	(1 << JOBCTL_STOP_DEQUEUED_BIT)
+ #define JOBCTL_STOP_PENDING	(1 << JOBCTL_STOP_PENDING_BIT)
+ #define JOBCTL_STOP_CONSUME	(1 << JOBCTL_STOP_CONSUME_BIT)
+ #define JOBCTL_TRAP_STOP	(1 << JOBCTL_TRAP_STOP_BIT)
++#define JOBCTL_TRAP_NOTIFY	(1 << JOBCTL_TRAP_NOTIFY_BIT)
+ #define JOBCTL_TRAPPING		(1 << JOBCTL_TRAPPING_BIT)
  
- /* flags in @data for PTRACE_SEIZE */
- #define PTRACE_SEIZE_DEVEL	0x80000000 /* temp flag for development */
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index dcf9f97..6852c0f 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -658,10 +658,12 @@ static int ptrace_regset(struct task_struct *task, int req, unsigned int type,
- int ptrace_request(struct task_struct *child, long request,
- 		   unsigned long addr, unsigned long data)
- {
-+	bool seized = child->ptrace & PT_SEIZED;
- 	int ret = -EIO;
- 	siginfo_t siginfo;
- 	void __user *datavp = (void __user *) data;
- 	unsigned long __user *datalp = datavp;
-+	unsigned long flags;
+-#define JOBCTL_TRAP_MASK	JOBCTL_TRAP_STOP
++#define JOBCTL_TRAP_MASK	(JOBCTL_TRAP_STOP | JOBCTL_TRAP_NOTIFY)
+ #define JOBCTL_PENDING_MASK	(JOBCTL_STOP_PENDING | JOBCTL_TRAP_MASK)
  
- 	switch (request) {
- 	case PTRACE_PEEKTEXT:
-@@ -694,6 +696,27 @@ int ptrace_request(struct task_struct *child, long request,
- 			ret = ptrace_setsiginfo(child, &siginfo);
- 		break;
+ extern bool task_set_jobctl_pending(struct task_struct *task,
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 589292f..06177e2 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -817,6 +817,30 @@ static int check_kill_permission(int sig, struct siginfo *info,
+ 	return security_task_kill(t, info, sig, 0);
+ }
  
-+	case PTRACE_INTERRUPT:
-+		/*
-+		 * Stop tracee without any side-effect on signal or job
-+		 * control.  At least one trap is guaranteed to happen
-+		 * after this request.  If @child is already trapped, the
-+		 * current trap is not disturbed and another trap will
-+		 * happen after the current trap is ended with PTRACE_CONT.
-+		 *
-+		 * The actual trap might not be PTRACE_EVENT_STOP trap but
-+		 * the pending condition is cleared regardless.
-+		 */
-+		if (unlikely(!seized || !lock_task_sighand(child, &flags)))
-+			break;
++/**
++ * ptrace_trap_notify - schedule trap to notify ptracer
++ * @t: tracee wanting to notify tracer
++ *
++ * This function schedules sticky ptrace trap which is cleared on the next
++ * TRAP_STOP to notify ptracer of an event.  @t must have been seized by
++ * ptracer.
++ *
++ * If @t is running, STOP trap will be taken.  If already trapped, STOP
++ * trap will be eventually taken without returning to userland after the
++ * existing traps are finished by PTRACE_CONT.
++ *
++ * CONTEXT:
++ * Must be called with @task->sighand->siglock held.
++ */
++static void ptrace_trap_notify(struct task_struct *t)
++{
++	WARN_ON_ONCE(!(t->ptrace & PT_SEIZED));
++	assert_spin_locked(&t->sighand->siglock);
 +
-+		if (likely(task_set_jobctl_pending(child, JOBCTL_TRAP_STOP)))
-+			signal_wake_up(child, 0);
++	task_set_jobctl_pending(t, JOBCTL_TRAP_NOTIFY);
++	signal_wake_up(t, 0);
++}
 +
-+		unlock_task_sighand(child, &flags);
-+		ret = 0;
-+		break;
-+
- 	case PTRACE_DETACH:	 /* detach a process that was attached. */
- 		ret = ptrace_detach(child, data);
- 		break;
-@@ -819,7 +842,8 @@ SYSCALL_DEFINE4(ptrace, long, request, long, pid, unsigned long, addr,
- 		goto out_put_task_struct;
+ /*
+  * Handle magic process-wide effects of stop/continue signals. Unlike
+  * the signal actions, these happen immediately at signal-generation
+@@ -855,7 +879,10 @@ static int prepare_signal(int sig, struct task_struct *p, int from_ancestor_ns)
+ 		do {
+ 			task_clear_jobctl_pending(t, JOBCTL_STOP_PENDING);
+ 			rm_from_queue(SIG_KERNEL_STOP_MASK, &t->pending);
+-			wake_up_state(t, __TASK_STOPPED);
++			if (likely(!(t->ptrace & PT_SEIZED)))
++				wake_up_state(t, __TASK_STOPPED);
++			else
++				ptrace_trap_notify(t);
+ 		} while_each_thread(p, t);
+ 
+ 		/*
+@@ -1797,8 +1824,10 @@ static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
+ 	if (why == CLD_STOPPED && (current->jobctl & JOBCTL_STOP_PENDING))
+ 		gstop_done = task_participate_group_stop(current);
+ 
+-	/* any trap clears pending STOP trap */
++	/* any trap clears pending STOP trap, STOP trap clears NOTIFY */
+ 	task_clear_jobctl_pending(current, JOBCTL_TRAP_STOP);
++	if (info && info->si_code >> 8 == PTRACE_EVENT_STOP)
++		task_clear_jobctl_pending(current, JOBCTL_TRAP_NOTIFY);
+ 
+ 	/* entering a trap, clear TRAPPING */
+ 	task_clear_jobctl_trapping(current);
+@@ -1972,7 +2001,10 @@ static bool do_signal_stop(int signr)
+ 			if (!task_is_stopped(t) &&
+ 			    task_set_jobctl_pending(t, signr | gstop)) {
+ 				sig->group_stop_count++;
+-				signal_wake_up(t, 0);
++				if (likely(!(t->ptrace & PT_SEIZED)))
++					signal_wake_up(t, 0);
++				else
++					ptrace_trap_notify(t);
+ 			}
+ 		}
  	}
- 
--	ret = ptrace_check_attach(child, request == PTRACE_KILL);
-+	ret = ptrace_check_attach(child, request == PTRACE_KILL ||
-+				  request == PTRACE_INTERRUPT);
- 	if (ret < 0)
- 		goto out_put_task_struct;
- 
-@@ -961,7 +985,8 @@ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
- 		goto out_put_task_struct;
- 	}
- 
--	ret = ptrace_check_attach(child, request == PTRACE_KILL);
-+	ret = ptrace_check_attach(child, request == PTRACE_KILL ||
-+				  request == PTRACE_INTERRUPT);
- 	if (!ret)
- 		ret = compat_arch_ptrace(child, request, addr, data);
- 
 -- 
 1.7.5.2
 
