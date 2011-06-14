@@ -1,215 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049Ab1FNVEP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 17:04:15 -0400
-Received: from mga11.intel.com ([192.55.52.93]:3670 "EHLO mga11.intel.com"
+	id S1753852Ab1FNVLc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 17:11:32 -0400
+Received: from mx3.utsp.utwente.nl ([130.89.2.14]:53807 "EHLO mx.utwente.nl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753958Ab1FNVEM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 17:04:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,366,1304319600"; 
-   d="scan'208";a="18200790"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Kirill Smelkov <kirr@mns.spb.ru>, Dan Carpenter <error27@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Mike Thomas <rmthomas@sciolus.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 15 Jun 2011 00:01:57 +0300
-Subject: RE: [PATCH 5/5] staging/easycap: Fix bytesperline calculation
-Thread-Topic: [PATCH 5/5] staging/easycap: Fix bytesperline calculation
-Thread-Index: AcwqsXR3bFo15K9QQT+mb93sHyd0rQAC1K/Q
-Message-ID: <6F5C1D715B2DA5498A628E6B9C124F0401AD3648B4@hasmsx504.ger.corp.intel.com>
-References: <cover.1307967011.git.kirr@mns.spb.ru>
- <bcbeb6b7c5ab7624ea59b072f74347fa8e6a6350.1307967011.git.kirr@mns.spb.ru>
- <6F5C1D715B2DA5498A628E6B9C124F0401AD319280@hasmsx504.ger.corp.intel.com>
- <cover.1307967011.git.kirr@mns.spb.ru>
- <bcbeb6b7c5ab7624ea59b072f74347fa8e6a6350.1307967011.git.kirr@mns.spb.ru>
- <20110613123659.GG3583@shale.localdomain>
- <20110614163707.GA29015@tugrik.mns.mnsspb.ru>
-In-Reply-To: <20110614163707.GA29015@tugrik.mns.mnsspb.ru>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	id S1752297Ab1FNVLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 17:11:30 -0400
+Date: Tue, 14 Jun 2011 23:11:09 +0200 (CEST)
+From: Martijn Uffing <mp3project@sarijopen.student.utwente.nl>
+To: Jeff Layton <jlayton@redhat.com>
+cc: Connor Hansen <cmdkhh@gmail.com>, Suresh Jayaraman <sjayaraman@suse.de>,
+        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sean finney <seanius@seanius.net>,
+        Pavel Shilovsky <piastryyy@gmail.com>
+Subject: Re: [OOPS] 3.0-rc1 cifs
+In-Reply-To: <20110613114831.37c90109@tlielax.poochiereds.net>
+Message-ID: <Pine.LNX.4.64.1106142233270.23723@sarijopen.student.utwente.nl>
+References: <Pine.LNX.4.64.1106092211500.19687@sarijopen.student.utwente.nl>
+ <20110609183045.01f6f9fc@tlielax.poochiereds.net>
+ <BANLkTimPqmkNJMaJE2_C5zD8ESFOEM3=hg@mail.gmail.com>
+ <Pine.LNX.4.64.1106100243370.2168@sarijopen.student.utwente.nl>
+ <20110610073702.061bc014@corrin.poochiereds.net>
+ <BANLkTinqT0AXx9STWEzrw-yASTid5rb1Fg@mail.gmail.com> <4DF20A97.8010405@suse.de>
+ <BANLkTimAauVsqX1JZucG1cg3-MAtqCrZFQ@mail.gmail.com>
+ <20110611074113.5a05f919@tlielax.poochiereds.net>
+ <Pine.LNX.4.64.1106112356500.12565@sarijopen.student.utwente.nl>
+ <20110613114831.37c90109@tlielax.poochiereds.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+X-UTwente-MailScanner-Information: Scanned by MailScanner. Contact icts.servicedesk@utwente.nl for more information.
+X-UTwente-MailScanner: Found to be clean
+X-UTwente-MailScanner-From: mp3project@sarijopen.student.utwente.nl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> (cc'ing Pavel)
+>
+> Ok, I've been able to reproduce on -rc2 as well, simply by mounting
+> with -o sec=none. Pavel, I'm pretty sure this got broken by commit
+> 724d9f1cfb. That patch doesn't handle the "null user" case correctly.
+> There are probably several different ways to fix it:
+>
+
+Ave all
+
+Just to confirm the OOPS/BUG is still present in 3.0-rc3
+
+3.0-rc3                  -> same OOPS as in rc1
+3.0-rc3+ Jeff's patch    -> same BUG as in rc1
+
+Can I be helpful with further testing by cranking up some more debugging 
+options in the kernel hacking section of "make menuconfig", or is the 
+cause of the OOPS/BUG clear enough?
+
+Martijn
 
 
-> -----Original Message-----
-> From: Kirill Smelkov [mailto:kirr@mns.spb.ru]
-> Sent: Tuesday, June 14, 2011 7:37 PM
-> To: Dan Carpenter; Winkler, Tomas
-> Cc: Greg Kroah-Hartman; devel@driverdev.osuosl.org; Mike Thomas; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH 5/5] staging/easycap: Fix bytesperline calculation
-> 
-> On Mon, Jun 13, 2011 at 04:23:45PM +0300, Winkler, Tomas wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Kirill Smelkov [mailto:kirr@mns.spb.ru]
-> > > Sent: Monday, June 13, 2011 3:19 PM
-> > > To: Greg Kroah-Hartman
-> > > Cc: Winkler, Tomas; Mike Thomas; devel@driverdev.osuosl.org; linux-
-> > > kernel@vger.kernel.org; Kirill Smelkov
-> > > Subject: [PATCH 5/5] staging/easycap: Fix bytesperline calculation
-> > >
-> > > As described above fillin_formats()
-> > >
-> > > """
-> > >     /*
-> > >      *  THE 16-BIT easycap_format.mask HAS MEANING:
-> > >      *    (least significant) BIT  0:     0 => PAL, 25 FPS;   1 => NTSC, 30 FPS
-> > >      *                        BITS 2-4:   RESERVED FOR DIFFERENTIATING STANDARDS
-> > >      *                        BITS 5-7:   NUMBER OF BYTES PER PIXEL
-> > >      *                        BIT  8:     0 => NATIVE BYTE ORDER;  1 => SWAPPED
-> > >      *                        BITS 9-10:  RESERVED FOR OTHER BYTE PERMUTATIONS
-> > >      *                        BIT 11:     0 => UNDECIMATED;    1 => DECIMATED
-> > >      *                        BIT 12:     0 => OFFER FRAMES;   1 => OFFER FIELDS
-> > >      *                        BIT 13:     0 => FULL FRAMERATE; 1 => REDUCED
-> > >      *     (most significant) BITS 14-15: RESERVED FOR OTHER FIELD/FRAME
-> > > OPTIONS
-> > >      *  IT FOLLOWS THAT:
-> > >      *     bytesperpixel IS         ((0x00E0 & easycap_format.mask) >> 5)
-> > >      *     byteswaporder IS true IF (0 != (0x0100 & easycap_format.mask))
-> > >      *
-> > >      *     decimatepixel IS true IF (0 != (0x0800 & easycap_format.mask))
-> > >      *
-> > >      *       offerfields IS true IF (0 != (0x1000 & easycap_format.mask))
-> > >      */
-> > > """
-> > >
-> > > bytes-per-pixel is stored in bits 5-7 of calculated mask.
-> > >
-> > > But when calculating bytes-per-line we were extracting wrong value
-> > > instead of bytes-per-pixel, which was usually 2 times bigger -- e.g.
-> > > for PAL YUV 422 I was getting ((mask3 & 0x00F0) >> 4) = 4 bytes instead of
-> 2.
-> > >
-> > > The error here is that even in comments there is a line saying
-> > >
-> > >      *     bytesperpixel IS         ((0x00E0 & easycap_format.mask) >> 5)
-> > >
-> > > but we were using
-> > >                                     ((0x00F0 & easycap_format.mask)
-> > > >> 4)
-> > >
-> > > With 2 times bigger bytesperpixel and automatically bytesperline,
-> > > the video was shown halfheight'ed, which is understandable if we
-> > > look at video- memory layout:
-> > >
-> > >     <------- bytesperline -------->
-> > >     <- real bpl ->
-> > >
-> > >     x0----------y0  x1-----------y1
-> > >     x2----------y2  x3-----------y3
-> > >
-> > >     xn----------yn  xn-----------yn
-> > >     <garbage>
-> > >
-> > > for each line, we should display width pixels, then move to next
-> > > line with bytesperline, and oops, if bytesperline =
-> > > 2*real-bytesperlin, we'll skip one line and move to next-next line, and so
-> only half lines will be shown.
-> > >
-> > > Initially I've debugged the problem with my video application[1],
-> > > but I've checked that after this patch both rawv (mine app) and
-> > > tvtime work correctly.
-> > >
-> > > [1] http://repo.or.cz/w/rawv.git
-> > >
-> > > P.S. why at all we use those mask/shifts? Why not use bitfields?
-> >
-> > First of all  I have feeling this code history beyond this driver.
-> > Second there possible issues with bit fields related to endianity and
-> > efficiency. I'm not sure it applies also in this driver
-> 
-> I'd agree about endianity, but if I see it correctly, in this driver
-> easycap_format.mask is used only as internal driver flags not writtent to
-> hardware registers. So endianity should be out of scope here.
-> 
-> As to efficiency, in essence the compiler generates almost the same shifts
-> and masks for accessing bitfields as a human would do, so there should be no
-> difference, especially when we are not talking about hot-path code.
-> 
-> And also, if endianity matters, there is always possibility to do something like
-> this (from drivers/atm/fore200e.h):
-> 
->     /* bitfields endian games */
-> 
->     #if defined(__LITTLE_ENDIAN_BITFIELD)
->     #define BITFIELD2(b1, b2)                    b1; b2;
->     #define BITFIELD3(b1, b2, b3)                b1; b2; b3;
->     #define BITFIELD4(b1, b2, b3, b4)            b1; b2; b3; b4;
->     #define BITFIELD5(b1, b2, b3, b4, b5)        b1; b2; b3; b4; b5;
->     #define BITFIELD6(b1, b2, b3, b4, b5, b6)    b1; b2; b3; b4; b5; b6;
->     #elif defined(__BIG_ENDIAN_BITFIELD)
->     #define BITFIELD2(b1, b2)                                    b2; b1;
->     #define BITFIELD3(b1, b2, b3)                            b3; b2; b1;
->     #define BITFIELD4(b1, b2, b3, b4)                    b4; b3; b2; b1;
->     #define BITFIELD5(b1, b2, b3, b4, b5)            b5; b4; b3; b2; b1;
->     #define BITFIELD6(b1, b2, b3, b4, b5, b6)    b6; b5; b4; b3; b2; b1;
->     #else
->     #error unknown bitfield endianess
->     #endif
-> 
-> 
->     /* ATM cell header (minus HEC byte) */
-> 
->     typedef struct atm_header {
->         BITFIELD5(
->             u32 clp :  1,    /* cell loss priority         */
->             u32 plt :  3,    /* payload type               */
->             u32 vci : 16,    /* virtual channel identifier */
->             u32 vpi :  8,    /* virtual path identifier    */
->             u32 gfc :  4     /* generic flow control       */
->        )
->     } atm_header_t;
-> 
-> 
-> to me, it's the sanest approach to C bitfields and endianity. Only we'd better
-> have those BITFIELDX in include/linux/bitfield.h
-> 
 
-Still I don't like these macro templates either but that's probably personal taste only I wouldn't  NACK it.
 
-> 
-> > context and I agree it looks ugly here , yet I personally usually avoid using
-> bit fields.
-> >
-> > >
-> > > Cc: Tomas Winkler <tomas.winkler@intel.com>
-> > > Cc: Mike Thomas <rmthomas@sciolus.org>
-> > > Signed-off-by: Kirill Smelkov <kirr@mns.spb.ru>
-> >
-> >
-> > Acked-by:  Tomas Winkler <tomas.winkler@intel.com>
-> 
-> Did you try running it? How come this bug was undiscovered for so long?
-
-There is a lot of cleanups to be done in this area.  So far I've cleaned up mostly 
-the basic code styling and next it would be to rewrite the USB handling and then
-to fit this somehow to new linux-media framework including video quality fixing
-
-Currently I'm more busy with my real life so it is going slower :)
-
-I'm really glad that you are also interested in fixing this driver. It quite affordable  HW and does its work.
-
-Thanks
-Tomas
----------------------------------------------------------------------
-Intel Israel (74) Limited
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
 
