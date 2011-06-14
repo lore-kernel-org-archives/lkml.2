@@ -1,128 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab1FNMLO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 08:11:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28989 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752420Ab1FNMLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 08:11:10 -0400
-Date: Tue, 14 Jun 2011 08:11:02 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Chen Gong <gong.chen@linux.intel.com>
-Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Tony Luck <tony.luck@intel.com>, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] ACPI, APEI, Add APEI _OSC support
-Message-ID: <20110614121102.GT3765@redhat.com>
-References: <1306303538-30524-1-git-send-email-ying.huang@intel.com>
- <20110613145012.GA1924@redhat.com>
- <4DF700AF.3090702@linux.intel.com>
+	id S1755112Ab1FNMMP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 08:12:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52607 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754398Ab1FNMMM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 08:12:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:subject:date:message-id:user-agent:mime-version
+         :content-type;
+        b=KE60Vt7gxDu5kGI3irGucQ+RlZ7dTuqeL+9MmhHwFKZ1DZpxEC2+kxwcvb1hTbqSmf
+         M6N1a1DbmmJWL4dycc68oaQbdJsz9sUEcUVV7QJi2IyOo7JMEPP9R3lPnBuCyRgVZvh7
+         b1VqZW/m3CDNcPYKJF2QBr7gnPcPlFoHifoWM=
+From: Kan-Ru Chen <kanru@kanru.info>
+To: linux-kernel@vger.kernel.org
+Subject: 3.0-rc3 WARNING: at drivers/gpu/drm/i915/i915_drv.c:340 gen6_gt_force_wake_put+0x29/0x52 [i915]()
+Date: Tue, 14 Jun 2011 20:12:01 +0800
+Message-ID: <874o3sd33i.fsf@isil.kanru.info>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DF700AF.3090702@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 14, 2011 at 02:33:19PM +0800, Chen Gong wrote:
-> >Using an Intel box I have over at RedHat, I was able to use this patch to
-> >get error injection (EINJ) to provide me a GHES record.  Prior to this
-> >patch I would just get unknown NMIs.
-> >
-> >Talking with Matthew Garret, I guess it seems that uuids like this are
-> >typical for ACPI.
-> >
-> >I can't speak for all the ACPI parts, but the patch looks simple and
-> >corret from my perspective.
-> >
-> Interesting, but I can't reproduce it on our machines by now. Would you
-> please share your test information such as machine type, BIOS
-> version, and test method (such as what type error you inject) ?
+3.0-rc3 on X220 (Intel HD Graphics 3000) after resume from
+hibernation. Got several of warnings in dmesg:
 
-Sure,
+[  955.809593] ------------[ cut here ]------------
+[  955.809595] WARNING: at drivers/gpu/drm/i915/i915_drv.c:340 gen6_gt_force_wake_put+0x29/0x52 [i915]()
+[  955.809596] Hardware name: 4286CTO
+[  955.809597] Modules linked in: i915 drm_kms_helper drm i2c_algo_bit acpi_cpufreq mperf tun nfsd exportfs nfs lockd fscache auth_rpcgss nfs_acl sunrpc ext2 tp_char
+intel cryptd aes_x86_64 aes_generic cbc dm_crypt dm_mod joydev snd_hda_codec_hdmi snd_hda_codec_conexant arc4 snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_seq s
+e psmouse mac80211 tpm_tis tpm thinkpad_acpi btusb i2c_i801 pcspkr serio_raw evdev i2c_core bluetooth cfg80211 nvram snd tpm_bios battery rfkill ac button wmi video 
+l_agp intel_gtt agpgart processor ext4 mbcache jbd2 crc16 sd_mod crc_t10dif ahci libahci libata sdhci_pci sdhci mmc_core scsi_mod xhci_hcd thermal thermal_sys ehci_h
+ded: scsi_wait_scan]
+[  955.809618] Pid: 4200, comm: kworker/u:8 Tainted: G        W   3.0.0-rc3 #10
+[  955.809619] Call Trace:
+[  955.809620]  [<ffffffff810487f7>] warn_slowpath_common+0x83/0x9b
+[  955.809622]  [<ffffffff81048829>] warn_slowpath_null+0x1a/0x1c
+[  955.809624]  [<ffffffffa04d356a>] gen6_gt_force_wake_put+0x29/0x52 [i915]
+[  955.809628]  [<ffffffffa04dd815>] i915_read8+0x45/0x6d [i915]
+[  955.809632]  [<ffffffffa04df96a>] i915_restore_display+0x1097/0x10bc [i915]
+[  955.809635]  [<ffffffffa04dfbd0>] i915_restore_state+0x58/0x1f8 [i915]
+[  955.809638]  [<ffffffffa04d30fe>] i915_drm_thaw+0x51/0xd8 [i915]
+[  955.809641]  [<ffffffffa04d3365>] i915_resume+0x45/0x5c [i915]
+[  955.809644]  [<ffffffffa04d3392>] i915_pm_resume+0x16/0x18 [i915]
+[  955.809646]  [<ffffffff811a79da>] pci_pm_resume+0x8c/0xa1
+[  955.809647]  [<ffffffff81069464>] ? async_run_entry_fn+0x11b/0x153
+[  955.809649]  [<ffffffff81234975>] pm_op+0xa9/0x149
+[  955.809651]  [<ffffffff81069349>] ? async_schedule+0x17/0x17
+[  955.809652]  [<ffffffff81234ca5>] device_resume+0x93/0xcb
+[  955.809654]  [<ffffffff8132aaf5>] ? _raw_spin_unlock_irqrestore+0x16/0x18
+[  955.809656]  [<ffffffff81234cfc>] async_resume+0x1f/0x47
+[  955.809658]  [<ffffffff81069464>] ? async_run_entry_fn+0x11b/0x153
+[  955.809659]  [<ffffffff810693eb>] async_run_entry_fn+0xa2/0x153
+[  955.809661]  [<ffffffff8105eabb>] process_one_work+0x15c/0x28f
+[  955.809663]  [<ffffffff8105fb0d>] worker_thread+0xd3/0x157
+[  955.809665]  [<ffffffff8105fa3a>] ? manage_workers.isra.24+0x16f/0x16f
+[  955.809667]  [<ffffffff81062fa8>] kthread+0x84/0x8c
+[  955.809668]  [<ffffffff8132c4e4>] kernel_thread_helper+0x4/0x10
+[  955.809670]  [<ffffffff81062f24>] ? kthread_worker_fn+0x146/0x146
+[  955.809671]  [<ffffffff8132c4e0>] ? gs_change+0x13/0x13
+[  955.809672] ---[ end trace 3949a50701070187 ]---
 
-#cat /proc/cpuinfo
-
-processor       : 23
-vendor_id       : GenuineIntel
-cpu family      : 6
-model           : 44
-model name      : Intel(R) Xeon(R) CPU           X5670  @ 2.93GHz
-stepping        : 2
-cpu MHz         : 1596.000
-
-#dmidecode
-
-Handle 0x0002, DMI type 1, 27 bytes
-System Information
-        Manufacturer: Intel Corporation
-        Product Name: S5520UR
-        Version: ....................
-        Serial Number: ............
-        UUID: 57890342-6DA6-11DF-BD83-001517EE9AE8
-        Wake-up Type: AC Power Restored
-        SKU Number: Not Specified
-        Family: Not Specified
-
-Handle 0x0003, DMI type 2, 16 bytes
-Base Board Information
-        Manufacturer: Intel Corporation
-        Product Name: S5520UR
-        Version: E81084-751
-        Serial Number: BZUB02211743
-        Asset Tag: ....................
-        Features:
-                Board is a hosting board
-                Board is replaceable
-        Location In Chassis: Not Specified
-        Chassis Handle: 0x0004
-        Type: Motherboard
-        Contained Object Handles: 0
-
-Handle 0x0005, DMI type 0, 24 bytes
-BIOS Information
-        Vendor: Intel Corp.
-        Version: S5500.86B.01.00.0055.112620101923
-        Release Date: 11/26/2010
-        Address: 0xF0000
-        Runtime Size: 64 kB
-        ROM Size: 8192 kB
-        Characteristics:
-                PCI is supported
-                PNP is supported
-                BIOS is upgradeable
-                BIOS shadowing is allowed
-                Boot from CD is supported
-                Selectable boot is supported
-                EDD is supported
-                3.5"/2.88 MB floppy services are supported (int 13h)
-                Print screen service is supported (int 5h)
-                8042 keyboard services are supported (int 9h)
-:
-                CGA/mono video services are supported (int 10h)
-                ACPI is supported
-                USB legacy is supported
-                LS-120 boot is supported
-                ATAPI Zip drive boot is supported
-                Function key-initiated network boot is supported
-                Targeted content distribution is supported
-        BIOS Revision: 17.18
-        Firmware Revision: 0.0
-
-#instructions
-mount -t debugfs debugfs /sys/kernel/debug
-cd /sys/kernel/debug/apei/einj
-echo 0x20 > error_type
-echo 1 > error_inject
-#should fail within one second
-
-Let me know if you need more info.
-By the way this is the only machine where this works.  Other Intel
-machines stopped producing NMIs when their BIOS was updated (before I got
-the chance to validate this patch on them).
-
-Cheers,
-Don
-
+-- 
+Kanru
