@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751980Ab1FNEbS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 00:31:18 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:41439 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750972Ab1FNEbQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 00:31:16 -0400
-Date: Tue, 14 Jun 2011 14:31:08 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Timur Tabi <timur@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Joe Perches <joe@perches.com>
-Subject: linux-next: manual merge of the trivial tree with the  tree
-Message-Id: <20110614143108.f7c19c54.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__14_Jun_2011_14_31_08_+1000_ITIh=.ebl.fzehRv"
+	id S1752167Ab1FNE7l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 00:59:41 -0400
+Received: from ganesha.gnumonks.org ([213.95.27.120]:34731 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972Ab1FNE7j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 00:59:39 -0400
+From: pullip.cho@samsung.com
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Cc: kgene.kim@samsung.com, arnd@arndb.de, fujita.tomonori@lab.ntt.co.jp,
+        rmk@arm.linux.org.uk, joerg.roedel@amd.com,
+        KyongHo Cho <pullip.cho@samsung.com>
+Subject: [PATCH] dma-mapping: Undefine dma_map_single(), etc if CONFIG_HAVE_DMA_ATTRS is defined
+Date: Tue, 14 Jun 2011 13:33:09 +0900
+Message-Id: <1308025989-877-1-git-send-email-pullip.cho@samsung.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__14_Jun_2011_14_31_08_+1000_ITIh=.ebl.fzehRv
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: KyongHo Cho <pullip.cho@samsung.com>
 
-Hi Jiri,
+If <asm/dma-mapping.h> includes <asm-generic/dma-mapping-common.h>,
+dma_map_single() become defined recursively when CONFIG_HAVE_DMA_ATTRS
+is not defined.
+Since dma_map_*_attrs() are defined in <linux/dma-mapping.h>, those
+in <asm-generic/dma-mapping-common.h> must be not defined
+if CONFIG_HAVE_DMA_ATTRS is not defined.
 
-Today's linux-next merge of the trivial tree got a conflict in
-sound/soc/fsl/fsl_ssi.c between commit 147dfe90f730 ("ASoC: p1022ds: fix
-incorrect referencing of device tree properties") from the sound tree and
-commit 28f65c11f2ff ("treewide: Convert uses of struct resource to
-resource_size(ptr)") from the trivial tree.
+Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
+CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+CC: Joerg Roedel <joerg.roedel@amd.com>
+CC Arnd Bergmann <arnd@arndb.de>
 
-The former supercedes the latter.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Change-Id: Ib99ee2b355dbe679263ce2e4e27d6219148c8338
+---
+ include/asm-generic/dma-mapping-common.h |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
 
---Signature=_Tue__14_Jun_2011_14_31_08_+1000_ITIh=.ebl.fzehRv
-Content-Type: application/pgp-signature
+diff --git a/include/asm-generic/dma-mapping-common.h b/include/asm-generic/dma-mapping-common.h
+index 0c80bb3..b9a2040 100644
+--- a/include/asm-generic/dma-mapping-common.h
++++ b/include/asm-generic/dma-mapping-common.h
+@@ -6,6 +6,7 @@
+ #include <linux/dma-debug.h>
+ #include <linux/dma-attrs.h>
+ 
++#ifdef CONFIG_HAVE_DMA_ATTRS
+ static inline dma_addr_t dma_map_single_attrs(struct device *dev, void *ptr,
+ 					      size_t size,
+ 					      enum dma_data_direction dir,
+@@ -67,6 +68,13 @@ static inline void dma_unmap_sg_attrs(struct device *dev, struct scatterlist *sg
+ 		ops->unmap_sg(dev, sg, nents, dir, attrs);
+ }
+ 
++#define dma_map_single(d, a, s, r) dma_map_single_attrs(d, a, s, r, NULL)
++#define dma_unmap_single(d, a, s, r) dma_unmap_single_attrs(d, a, s, r, NULL)
++#define dma_map_sg(d, s, n, r) dma_map_sg_attrs(d, s, n, r, NULL)
++#define dma_unmap_sg(d, s, n, r) dma_unmap_sg_attrs(d, s, n, r, NULL)
++
++#endif /* CONFIG_HAVE_DMA_ATTRS */
++
+ static inline dma_addr_t dma_map_page(struct device *dev, struct page *page,
+ 				      size_t offset, size_t size,
+ 				      enum dma_data_direction dir)
+@@ -160,9 +168,4 @@ dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
+ 
+ }
+ 
+-#define dma_map_single(d, a, s, r) dma_map_single_attrs(d, a, s, r, NULL)
+-#define dma_unmap_single(d, a, s, r) dma_unmap_single_attrs(d, a, s, r, NULL)
+-#define dma_map_sg(d, s, n, r) dma_map_sg_attrs(d, s, n, r, NULL)
+-#define dma_unmap_sg(d, s, n, r) dma_unmap_sg_attrs(d, s, n, r, NULL)
+-
+ #endif
+-- 
+1.7.1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN9uQMAAoJEDMEi1NhKgbsR2QIAJYoQCoCq7BU9S82vc6NPthq
-977QURBP1W7+C+maG7+arDGOlMrltLQ8xohtPWiZ0DmduITSAyAy2IX4m/1tMSlT
-MFi1zzUBNBGoGlSjfwf5ac5VY3kvs5AxZ5SpRcmIrpH2mRpJgNVNPNjw9GtxNgd0
-Umx+GdWBGjZYxYLYXIchSM5Rvpqq30msNc8VCfd5kyLziGEo8Wj5g3DBBjXnQVO8
-JmTJ5g+Aew0vuNVEW2yVJ+UHmWExWRWgQAm2m7BXxDZ1zKL9pPpk5oDBS6d5Q9fb
-NzST5nxfCHr/UH3TcoTXxpGQ2aOj1M4iNxN7oGKft6qYeV8GFNUraOk+RPDg5m0=
-=otKN
------END PGP SIGNATURE-----
-
---Signature=_Tue__14_Jun_2011_14_31_08_+1000_ITIh=.ebl.fzehRv--
