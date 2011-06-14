@@ -1,112 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049Ab1FNOIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 10:08:51 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:35822 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751839Ab1FNOIs convert rfc822-to-8bit (ORCPT
+	id S1752908Ab1FNOEH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 10:04:07 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:32579 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750864Ab1FNOEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 10:08:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=fiy/zWfORkkmBk+NcM/dZpIcPUuCirAyL/y5I9WpvqeZEOuLazWO4nCzg+I1HryXQg
-         iOozXRPA+jahqmWES8Fx3i7PXkPRvqmjYACYXyQZS/z9zFhO5Rb25lQ4VSEMYY7M6j4G
-         BtQf6bvbLniI6hBqUUMIgKHSvQb7HtGbDmOIY=
+	Tue, 14 Jun 2011 10:04:05 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: WnJZFbwVM1lHy5cE0Ix_5Hvb5lV8beo0Y9S1AMX_6SvAAMA
+ RksWcxRf3Z7VSSWHV5zw6TVJhNoP93yFJ9yiXtKtA60Qep6UOR4sGJ6OdsYg
+ .38wY59li5i2YoIjUUr3IncmNeyvIdQG.R4uiVHItdB7lkIJs.wQXIPc9l9w
+ VUKRd_yLt4G5MyoDY.3SWs8L6fFwkQ6jnnapvNrPCYvQL_w0DKI2pxoLZW4l
+ HTP.tmcwbfw1r.Xug3olAUA1tWfjhMdkBnAx5E9PdnGEE6axMC2hl7yhym4u
+ Db40e4Sk1QSizCPAvxoZc8UwHIeqqOKfKA6owq_0VHfm6EB6U96GPejSOvlL
+ ahSB5vzdwjcddyVgK4F4qVGMa
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 14 Jun 2011 09:04:01 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Ingo Molnar <mingo@elte.hu>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>, "H. Peter Anvin" <hpa@zytor.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, tj@kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [slubllv7 04/17] x86: Add support for cmpxchg_double
+In-Reply-To: <20110614080436.GB29900@elte.hu>
+Message-ID: <alpine.DEB.2.00.1106140903480.32130@router.home>
+References: <20110601172543.437240675@linux.com> <20110601172614.173427964@linux.com> <4DF09827.7070809@cs.helsinki.fi> <alpine.DEB.2.00.1106101016420.30968@router.home> <BANLkTikHOsvR-KXZ-VQvpAaMgrNOR0sB3g@mail.gmail.com> <alpine.DEB.2.00.1106111202110.32170@router.home>
+ <4DF6F659.3000109@cs.helsinki.fi> <20110614080436.GB29900@elte.hu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1308060028.18987.6.camel@Joe-Laptop>
-References: <cover.1308024069.git.joe@perches.com>
-	<486a21b708a9dce0c1c0059a21a2f9b66dac9e3c.1308024069.git.joe@perches.com>
-	<BANLkTim-yLJqfxrCprwiTgdRJNy+OGDUuw@mail.gmail.com>
-	<1308060028.18987.6.camel@Joe-Laptop>
-Date: Tue, 14 Jun 2011 16:02:30 +0200
-X-Google-Sender-Auth: MBrBx9QVdu4kDCg7nV6MjdNwX4s
-Message-ID: <BANLkTi=VfxOqg6N_=B7wYaa4Qm8erVuBHg@mail.gmail.com>
-Subject: Re: [PATCH net-next 2/2] drivers/net: Remove casts of void *
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org, Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jay Cliburn <jcliburn@gmail.com>, Chris Snook <chris.snook@gmail.com>,
-        Jie Yang <jie.yang@atheros.com>,
-        Sathya Perla <sathya.perla@emulex.com>,
-        Subbu Seetharaman <subbu.seetharaman@emulex.com>,
-        Ajit Khaparde <ajit.khaparde@emulex.com>,
-        Rasesh Mody <rmody@brocade.com>, Debashis Dutt <ddutt@brocade.com>,
-        Sjur Braendeland <sjur.brandeland@stericsson.com>,
-        Divy Le Ray <divy@chelsio.com>,
-        Breno Leitao <leitao@linux.vnet.ibm.com>,
-        Amit Kumar Salecha <amit.salecha@qlogic.com>,
-        Ron Mercer <ron.mercer@qlogic.com>, linux-driver@qlogic.com,
-        Anirban Chakraborty <anirban.chakraborty@qlogic.com>,
-        Jon Mason <jdmason@kudzu.us>,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        Steve Hodgson <shodgson@solarflare.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Daniele Venzano <venza@brownhat.org>,
-        David Dillow <dave@thedillows.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+On Tue, 14 Jun 2011, Ingo Molnar wrote:
 
-On Tue, Jun 14, 2011 at 16:00, Joe Perches <joe@perches.com> wrote:
-> On Tue, 2011-06-14 at 11:21 +0200, Geert Uytterhoeven wrote:
->> On Tue, Jun 14, 2011 at 06:02, Joe Perches <joe@perches.com> wrote:
->> > Unnecessary casts of void * clutter the code.
->> > --- a/drivers/net/a2065.c
->> > +++ b/drivers/net/a2065.c
->> > @@ -426,7 +426,7 @@ static irqreturn_t lance_interrupt (int irq, void *dev_id)
->> >        volatile struct lance_regs *ll;
->> >        int csr0;
->> >
->> > -       dev = (struct net_device *) dev_id;
->> > +       dev = dev_id;
->>
->> I think it would look better if you merge this line with the line that
->> defines "dev".
 >
-> I think so too, but I also think it should look like below
-> and that's something better done in a separate pass, don't
-> you think?
+> * Pekka Enberg <penberg@cs.helsinki.fi> wrote:
 >
-> diff --git a/drivers/net/a2065.c b/drivers/net/a2065.c
-> index deaa8bc..25ea98a 100644
-> --- a/drivers/net/a2065.c
-> +++ b/drivers/net/a2065.c
-> @@ -421,16 +421,11 @@ static int lance_tx (struct net_device *dev)
+> > On 6/11/11 8:02 PM, Christoph Lameter wrote:
+> > >On Sat, 11 Jun 2011, Pekka Enberg wrote:
+> > >
+> > >>Oh, I don't know - but I definitely need more ACKs to even consider
+> > >>pushing this through slab.git.
+> > >
+> > >Any additional ackers out there?;-)
+> >
+> > Ingo, ping? Could we have this in -tip so I can pull from there?
+> > This is blocking me from queuing SLUB performance improvements to
+> > linux-next.
 >
->  static irqreturn_t lance_interrupt (int irq, void *dev_id)
->  {
-> -       struct net_device *dev;
-> -       struct lance_private *lp;
-> -       volatile struct lance_regs *ll;
-> +       struct net_device *dev = dev_id;
-> +       struct lance_private *lp = netdev_priv(dev);
-> +       volatile struct lance_regs *ll = lp->ll;
->        int csr0;
->
-> -       dev = (struct net_device *) dev_id;
-> -
-> -       lp = netdev_priv(dev);
-> -       ll = lp->ll;
-> -
->        ll->rap = LE_CSR0;              /* LANCE Controller Status */
->        csr0 = ll->rdp;
+> hpa, what's your take on this patch?
 
-Definitely better!
+He acked it.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
