@@ -1,132 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101Ab1FNNaK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 09:30:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14137 "EHLO mx1.redhat.com"
+	id S1752618Ab1FNNaz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 09:30:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48151 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751083Ab1FNNaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 09:30:07 -0400
-Date: Tue, 14 Jun 2011 16:30:07 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V7 0/4 net-next] macvtap/vhost TX zero-copy support
-Message-ID: <20110614133006.GA13258@redhat.com>
-References: <1306610077.5180.78.camel@localhost.localdomain>
+	id S1751369Ab1FNNax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 09:30:53 -0400
+Date: Tue, 14 Jun 2011 09:30:47 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tao Ma <tm@tao.ma>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: CFQ: async queue blocks the whole system
+Message-ID: <20110614133047.GA2525@redhat.com>
+References: <20110609153738.GF29913@redhat.com>
+ <4DF0EA55.10209@tao.ma>
+ <20110609182706.GG29913@redhat.com>
+ <4DF1B035.7080009@tao.ma>
+ <20110610091427.GB4183@redhat.com>
+ <4DF1EB45.1070706@tao.ma>
+ <20110610154414.GA31853@redhat.com>
+ <4DF5E1A8.7080100@tao.ma>
+ <20110613214154.GL633@redhat.com>
+ <4DF707BC.20007@tao.ma>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1306610077.5180.78.camel@localhost.localdomain>
+In-Reply-To: <4DF707BC.20007@tao.ma>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 28, 2011 at 12:14:37PM -0700, Shirley Ma wrote:
-> This patchset add supports for TX zero-copy between guest and host
-> kernel through vhost. It significantly reduces CPU utilization on the
-> local host on which the guest is located (It reduced about 50% CPU usage
-> for single stream test on the host, while 4K message size BW has
-> increased about 50%). The patchset is based on previous submission and
-> comments from the community regarding when/how to handle guest kernel
-> buffers to be released. This is the simplest approach I can think of
-> after comparing with several other solutions.
-> 
-> This patchset has integrated V3 review comments from community: 
-> 
-> 1. Add more comments on how to use device ZEROCOPY flag;
-> 2. Change device ZEROCOPY to available bit 31
-> 3. Fix skb header linear allocation when virtio_net GSO is not enabled
-> 
-> It has integrated V4 review comments from MST and Sridhar:
-> 1. In vhost, using socket poll wake up for outstanding DMAs
-> 2. Add detailed comments for vhost_zerocopy_signal_used call
-> 3. Add sleep in vhost shutting down instead of busy-wait for outstanding
->    DMAs.
-> 4. Copy small packets, don't do zero-copy callback in mavtap, mark it's
->    DMA done in vhost
-> 5. change zerocopy to bool in macvtap.
-> 
-> It has integrated V5 review comments from MST and 
-> Michał Mirosław <mirqus@gmail.com>
-> 1. Prevent userspace apps from holding skb userspace buffers by copying
-> userspace buffers to kernel in skb_clone, skb_copy, pskb_copy,
-> pskb_expand_head.
-> 2. It is also used HIGHDMA, SG feature bits to enable ZEROCOPY to remove
-> the dependency of a new feature bit, we can add it later when new
-> feature bit is available.
-> 
-> It has integrated V6 review comments from Eric Dumazet.
-> 1. Moving ubuf_info object from skb to caller, just use one pointer in
-> skb_share_info to point ubuf_info object.
-> 
-> 2. Change the zero-copy size from 256 bytes to PAGE_SIZE (4K) because of
-> the small message size performance issue.
-> 
-> 3. During vhost shutting down, release outstanding userspace buffers w/o
-> waiting for lower device DMAs done if any. Do we really care about the
-> possible wrong data being sent on the wire during shutting down?
+On Tue, Jun 14, 2011 at 03:03:24PM +0800, Tao Ma wrote:
+> Hi Vivek,
+> On 06/14/2011 05:41 AM, Vivek Goyal wrote:
+> > On Mon, Jun 13, 2011 at 06:08:40PM +0800, Tao Ma wrote:
+> > 
+> > [..]
+> >>> You can also run iostat on disk and should be able to see that with
+> >>> the patch you are dispatching writes more often than before.
+> >> Sorry, the patch doesn't work.
+> >>
+> >> I used trace event to capture all the blktraces since it doesn't
+> >> interfere with the tests, hope it helps.
+> > 
+> > Actually I was looking for CFQ traces. This seems to be generic block
+> > layer trace points. May be you can use "blktrace -d /dev/<device>"
+> > and then blkparse. It also gives the aggregate view which is helpful.
+> > 
+> >>
+> >> Please downloaded it from http://blog.coly.li/tmp/blktrace.tar.bz2
+> > 
+> > What concerns me is following.
+> > 
+> > 5255.521353: block_rq_issue: 8,0 W 0 () 571137153 + 8 [attr_set]
+> > 5578.863871: block_rq_issue: 8,0 W 0 () 512950473 + 48 [kworker/0:1]
+> > 
+> > IIUC, we dispatched second write more than 300 seconds after dispatching
+> > 1 write. What happened in between. We should have dispatched more writes.
+> > 
+> > CFQ traces might give better idea in terms of whether wl_type for async
+> > queues was scheduled or not at all.
+> I tried several times today, but it looks like that if I enable
+> blktrace, the hung_task will not show up in the message. So do you think
+> the blktrace at that time is still useful? If yes, I can capture 1
+> minute for you. Thanks.
 
-Yes, we do. IMHO the right approach is to wait
-for DMAs to be done - just use a sleep/wake up construct,
-not a timed sleep.
+Capturing 1 min output will also be good. 
 
-> This patchset includes:
-> 1/4: Add a new sock zero-copy flag, SOCK_ZEROCOPY;
-> 
-> 2/4: Add a new struct skb_ubuf_info in skb_share_info for userspace
-> buffers release callback when lower device DMA has done for that skb,
-> which is the last reference count gone; Or whenever skb_clone, skb_copy,
-> pskb_copy, pskb_expand_head get call from tcpdump, filtering, these
-> userspace buffers will be copied into kernel ... we don't want userspace
-> apps to hold userspace buffers too long.
-> 
-> 3/4: Add vhost zero-copy callback in vhost when skb last refcnt is gone;
-> add vhost_zerocopy_signal_used to notify guest to release TX skb
-> buffers.
-> 
-> 4/4: Add macvtap zero-copy in lower device when sending packet is
-> greater than PAGE_SIZE.
-> 
-> The patchset is built against linux-2.6.39. It has passed
-> netperf/netserver multiple streams stress test, tcpdump
-> suspended test, dynamically SG change test.
-> 
-> Single TCP_STREAM 120 secs test results 2.6.39-rc3 over ixgbe 10Gb NIC
-> results:
-> 
-> Message BW(Gb/s)qemu-kvm (NumCPU)vhost-net(NumCPU) PerfTop irq/s
-> 4K      7408.57         92.1%           22.6%           1229
-> 4K(Orig)4913.17         118.1%          84.1%           2086    
-> 8K      9129.90         89.3%           23.3%           1141
-> 8K(Orig)7094.55         115.9%          84.7%           2157
-> 16K     9178.81         89.1%           23.3%           1139
-> 16K(Orig)8927.1         118.7%          83.4%           2262
-> 64K     9171.43         88.4%           24.9%           1253
-> 64K(Orig)9085.85        115.9%          82.4%           2229
-> 
-> For message size less or equal than 2K, there is a known KVM guest TX
-> overrun issue. With this zero-copy patch, the issue becomes more severe,
-> guest io_exits has tripled than before, so the performance is not good.
-> Once the TX overrun problem has been addressed, I will retest the small
-> message size performance.
-> 
->  drivers/net/macvtap.c  |  131
-> ++++++++++++++++++++++++++++++++++++++++++++----
->  drivers/vhost/net.c    |   45 ++++++++++++++++-
->  drivers/vhost/vhost.c  |   51 +++++++++++++++++++
->  drivers/vhost/vhost.h  |   15 ++++++
->  include/linux/skbuff.h |   25 +++++++++
->  include/net/sock.h     |    1 +
->  net/core/skbuff.c      |   83 ++++++++++++++++++++++++++++++-
->  7 files changed, 338 insertions(+), 13 deletions(-)
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+You can do one more thing. Mount block IO controller. It has the stats for
+sync and async dispatch (blkio.io_serviced or blkio.io_service_bytes). You
+can write a simple script to read and print these files every few seconds.
+That will also tell whether CFQ is dispatching async requests for the 
+said device regularly or not.
+
+So both blktrace and blkio controller stat will help.
+
+Thanks
+Vivek
