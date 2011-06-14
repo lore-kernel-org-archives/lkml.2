@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab1FNIaC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 04:30:02 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:59785 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754676Ab1FNIaA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 04:30:00 -0400
-Message-ID: <4DF71C01.6080504@canonical.com>
-Date: Tue, 14 Jun 2011 16:29:53 +0800
-From: Ike Panhc <ike.pan@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-CC: Matthew Garrett <mjg@redhat.com>,
-        Dmitry Torohov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH] ideapad: let Fn+F5 also trigger KEY_BLUETOOTH
-References: <1308040109-12038-1-git-send-email-ike.pan@canonical.com>
-In-Reply-To: <1308040109-12038-1-git-send-email-ike.pan@canonical.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755355Ab1FNIdd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 04:33:33 -0400
+Received: from mga11.intel.com ([192.55.52.93]:30786 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754676Ab1FNId2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 04:33:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,363,1304319600"; 
+   d="scan'208";a="17952891"
+Subject: Re: rcu: performance regression
+From: "Alex,Shi" <alex.shi@intel.com>
+To: "Li, Shaohua" <shaohua.li@intel.com>
+Cc: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>
+In-Reply-To: <1308029185.15392.147.camel@sli10-conroe>
+References: <1308029185.15392.147.camel@sli10-conroe>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Jun 2011 16:33:08 +0800
+Message-ID: <1308040388.21027.1847.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2011 04:28 PM, Ike Panhc wrote:
-> The design for ideapad Fn-F5 key is not only for wifi but for all
-> radio device including wifi, bluetooth and wwan. Idealy it shall
-> acts like this:
-> 
->     wifi on          wifi off         wifi on         wifi off
->      bt on   ----->   bt on   ----->   bt off  ----->  bt off
-> 
-> This patch will switch wifi mode every key-push and switch
-> bluetooth mode every two key-push.
+On Tue, 2011-06-14 at 13:26 +0800, Li, Shaohua wrote:
+> Commit a26ac2455ffcf3(rcu: move TREE_RCU from softirq to kthread)
+> introduced performance regression. In our AIM7 test, this commit caused
+> about 40% regression.
+> The commit runs rcu callbacks in a kthread instead of softirq. We
+> observed high rate of context switch which is caused by this. Out test
+> system has 64 CPUs and HZ is 1000, so we saw more than 64k context
+> switch per second which is caused by the rcu thread.
+> I also did trace and found when rcy thread is woken up, most time the
+> thread doesn't handle any callbacks actually, it just initializes new gp
+> or end one gp or similar.
+> From my understanding, the purpose to make rcu runs in kthread is to
+> speed up rcu callbacks run (with help of rtmutex PI), not for end gp and
+> so on, which runs pretty fast actually and doesn't need boost.
+> To verify my findings, I had below debug patch applied. It still handles
+> rcu callbacks in kthread if there is any pending callbacks, but other
+> things are still running in softirq. this completely solved our
+> regression. I thought this can still boost callbacks run. but I'm not
+> expert in the area, so please help.
 
-This maybe is disputed. 
+This commit also cause hackbench process mode performance dropping, and
+Shaohua's patch do recovered this. But in hackbench testing, the vmstat
+show context switch have some reduce. And perf tool show
+root_domain->cpupri->prio_to_cpu[]->lock has contention with the commit.
 
-The problem is that now Fn+F5 only turns on/off wifi and leave bluetooth alone.
-According to the design this hotkey shall change the status of all radio
-devices, including wifi, bluetooth and wwan.
 
-On machine with wifi and bluetooth, it will turn on/off wifi and bluetooth in
-order. On machine with wifi, it will switch wifi mode on every event.
+   11.53%        hackbench  [kernel]                   [k] 
+                  |
+                  --- _raw_spin_lock_irqsave
+                      cpupri_set
+                      __enqueue_rt_entity
+                      enqueue_rt_entity
+                      enqueue_task_rt
+                      enqueue_task
+                      activate_task
+                      ttwu_activate
+                      ttwu_do_activate.clone.3
+                      try_to_wake_up
+                      wake_up_process
+                      invoke_rcu_cpu_kthread
+                      rcu_check_callbacks
+                      update_process_times
+                      tick_sched_timer
+                      __run_hrtimer
 
-I think it is better to solve this in driver not in user space application 
-because on some other platforms, the KEY_WLAN and KEY_BLUETOOTH are separate.
-
-I do not have a clear idea how to deal with wwan interface such as it shall be
-exclusive or inclusive with wifi.
-
-Please reply for any opinion.
