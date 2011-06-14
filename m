@@ -1,93 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004Ab1FNKRi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 06:17:38 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55449 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754241Ab1FNKRh (ORCPT
+	id S1755924Ab1FNKXx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 06:23:53 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49115 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752605Ab1FNKXv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 06:17:37 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DF73514.4080901@jp.fujitsu.com>
-Date: Tue, 14 Jun 2011 19:16:52 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Tue, 14 Jun 2011 06:23:51 -0400
+From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
+To: Tejun Heo <tj@kernel.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, "Girdwood, Liam" <lrg@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "Lopez Cruz, Misael" <misael.lopez@ti.com>
+Subject: Re: Re: Re: Re: Re: [PATCH v4 11/18] input: Add initial support for TWL6040 vibrator
+Date: Tue, 14 Jun 2011 13:22:45 +0300
+Message-ID: <100646074.zaKeYdXKr4@barack>
+User-Agent: KMail/4.6.0 (Linux/2.6.39-gentoo; KDE/4.6.4; x86_64; ; )
+In-Reply-To: <20110614081836.GG8141@htj.dyndns.org>
+References: <1307706876-4768-1-git-send-email-peter.ujfalusi@ti.com> <4476185.bf2jyafmHt@barack> <20110614081836.GG8141@htj.dyndns.org>
 MIME-Version: 1.0
-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-CC: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Pavel Emelyanov <xemul@openvz.org>
-Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned
- vs unpinned
-References: <20110503092846.022272244@google.com> <20110607154542.GA2991@linux.vnet.ibm.com>
-In-Reply-To: <20110607154542.GA2991@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/08 0:45), Kamalesh Babulal wrote:
-> Hi All,
+On Tuesday 14 June 2011 10:18:36 Tejun Heo wrote:
+> I see, so IIUC,
 > 
->     In our test environment, while testing the CFS Bandwidth V6 patch set 
-> on top of 55922c9d1b84. We observed that the CPU's idle time is seen
-> between 30% to 40% while running CPU bound test, with the cgroups tasks 
-> not pinned to the CPU's. Whereas in the inverse case, where the cgroups 
-> tasks are pinned to the CPU's, the idle time seen is nearly zero.
+> * If it's using mutex and not holding CPU for the whole duration, you
+>   shouldn't need to do anything special for latency for other work
+>   items.  Workqueue code will start executing other work items as soon
+>   as the I2C work item goes to sleep.
 
-I've some test with your test script but I'm not sure whether it is really
-a considerable problem. Am I missing the point?
+I see.
+ 
+> * If I2C work item is burning CPU cycles for the whole duration which
+>   may stretch to tens / few hundreds millsecs, 1. it's doing something
+>   quite wrong, 2. should be marked WQ_CPU_INTENSIVE.
+> 
+> So, if something needs to be modified, it's the I2C stuff, not the
+> vibrator driver.  If I2C stuff isn't doing something wonky, there
+> shouldn't be a latency problem to begin with.
 
-I add -c option to your script to toggle pinning (1:pinned, 0:not pinned).
-In short the results in my environment (16 cpu, 4 quad core) are:
+In case of OMAP the former is the case regarding to I2C.
 
-				# group's usage
- -b 0 -p 0 -c 0 : Idle = 0%	(12,12,25,25,25)
- -b 0 -p 0 -c 1 : Idle = 0%	(6,6,12,25,50)
- -b 0 -p 1 -c * : Idle = 0%	(6,6,12,25,50)
- -b 1 -p 0 -c 0 : Idle = ~25%	(6,6,12,25,25)
- -b 1 -p 0 -c 1 : Idle = 0%	(6,6,12,25,50)
- -b 1 -p 1 -c * : Idle = 0%	(6,6,12,25,50)	
+However I did run a short experiments regarding to latencies:
+With create_singlethread_workqueue :
+Jun 14 12:54:30 omap-gentoo kernel: [  211.269531] vibra scheduling time: 30 usec
+Jun 14 12:54:30 omap-gentoo kernel: [  211.300811] vibra scheduling time: 30 usec
+Jun 14 12:54:33 omap-gentoo kernel: [  214.419006] vibra scheduling time: 31 usec
+Jun 14 12:54:34 omap-gentoo kernel: [  214.980987] vibra scheduling time: 30 usec
+Jun 14 12:54:35 omap-gentoo kernel: [  215.762115] vibra scheduling time: 30 usec
+Jun 14 12:54:35 omap-gentoo kernel: [  215.816650] vibra scheduling time: 30 usec
+Jun 14 12:54:35 omap-gentoo kernel: [  215.871337] vibra scheduling time: 61 usec
+Jun 14 12:54:35 omap-gentoo kernel: [  215.926025] vibra scheduling time: 61 usec
+Jun 14 12:54:35 omap-gentoo kernel: [  215.980743] vibra scheduling time: 61 usec
+Jun 14 12:54:35 omap-gentoo kernel: [  216.035430] vibra scheduling time: 61 usec
+Jun 14 12:54:38 omap-gentoo kernel: [  219.425659] vibra scheduling time: 31 usec
+Jun 14 12:54:40 omap-gentoo kernel: [  220.981658] vibra scheduling time: 31 usec
+Jun 14 12:54:44 omap-gentoo kernel: [  224.692504] vibra scheduling time: 30 usec
+Jun 14 12:54:44 omap-gentoo kernel: [  225.067138] vibra scheduling time: 30 usec
 
-In my understanding is correct, when -p0, there are 5 groups (with share=1024)
-and each group has 2,2,4,8,16 subgroups, so a subgroup in /1 is weighted 8 times
-higher than one in /5.  And when -p1, share of 5 parent groups are promoted and
-all subgroups are evenly weighted.
-With -p0 the cpu usage of 5 groups is going to be 20,20,20,20,20 but group /1
-and /2 have only 2 subgroups for each, so even if /1 and /2 fully use 2 cpus
-for each the usage will be 12,12,25,25,25.
+With create_workqueue :
+Jun 14 12:05:00 omap-gentoo kernel: [  304.965393] vibra scheduling time: 183 usec
+Jun 14 12:05:01 omap-gentoo kernel: [  305.964996] vibra scheduling time: 61 usec
+Jun 14 12:05:03 omap-gentoo kernel: [  307.684082] vibra scheduling time: 152 usec
+Jun 14 12:05:06 omap-gentoo kernel: [  310.972778] vibra scheduling time: 30 usec
+Jun 14 12:05:08 omap-gentoo kernel: [  312.683715] vibra scheduling time: 61 usec
+Jun 14 12:05:10 omap-gentoo kernel: [  314.785675] vibra scheduling time: 183 usec
+Jun 14 12:05:15 omap-gentoo kernel: [  319.800903] vibra scheduling time: 61 usec
+Jun 14 12:05:16 omap-gentoo kernel: [  320.738403] vibra scheduling time: 30 usec
+Jun 14 12:05:16 omap-gentoo kernel: [  320.793090] vibra scheduling time: 61 usec
+Jun 14 12:05:16 omap-gentoo kernel: [  320.847778] vibra scheduling time: 61 usec
+Jun 14 12:05:16 omap-gentoo kernel: [  320.902465] vibra scheduling time: 61 usec
+Jun 14 12:05:16 omap-gentoo kernel: [  320.957153] vibra scheduling time: 61 usec
+Jun 14 12:05:16 omap-gentoo kernel: [  320.996185] vibra scheduling time: 31 usec
 
-OTOH the bandwidth of a subgroup is 250000/500000 (=0.5 cpu), so in case of
-Idle=0% the cpu usage of groups are likely be 6,6,12,25,50%. 
+This is in a system, where I do not have any other drivers on I2C bus, and I have
+generated some load with this command:
+grep -r generate_load /*
 
-The question is what happen if both are mixed.
+So, I have some CPU, and IO load as well.
 
-For example in case of your unpinned Idle=34.8%: 
+At the end the differences are not that big, but with create_singlethread_workqueue
+I can see less spikes.
 
-> Average CPU Idle percentage 34.8% (as explained above in the Idle time measured)
-> Bandwidth shared with remaining non-Idle 65.2%
+This is with 3.0-rc2 kernel
 
-> Bandwidth of Group 1 = 9.2500 i.e = 6.0300% of non-Idle CPU time 65.2%
-> Bandwidth of Group 2 = 9.0400 i.e = 5.8900% of non-Idle CPU time 65.2%
-> Bandwidth of Group 3 = 16.9300 i.e = 11.0300% of non-Idle CPU time 65.2%
-> Bandwidth of Group 4 = 27.9300 i.e = 18.2100% of non-Idle CPU time 65.2%
-> Bandwidth of Group 5 = 36.8300 i.e = 24.0100% of non-Idle CPU time 65.2%
+I still think, that there is a place for the create_singlethread_workqueue, and the
+tactile feedback needs such a thing.
 
-The usage is 6,6,11,18,24.
-It looks like that group /1 to /3 are limited by bandwidth, while group /5 is
-limited by share. (I have no idea about the noise on /4 here)
+As I recall correctly this was the reason to use create_singlethread_workqueue
+in the twl4030-vibra driver as well (there were latency issues without it).
 
-BTW since pinning in your script always pin a couple of subgroup in a same
-group to a cpu, subgroups are weighted evenly everywhere so as the result
-share doesn't work for these cases.
-
-
-Thanks,
-H.Seto
-
+-- 
+Péter
