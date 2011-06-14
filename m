@@ -1,49 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab1FNWu1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 18:50:27 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:37699 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103Ab1FNWu0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 18:50:26 -0400
-Date: Tue, 14 Jun 2011 15:50:11 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] signal.c: fix kernel-doc notation
-Message-Id: <20110614155011.fa9b4cf0.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1754266Ab1FNW4h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 18:56:37 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:47156 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753898Ab1FNW4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 18:56:35 -0400
+Date: Wed, 15 Jun 2011 08:56:17 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg KH <greg@kroah.com>, Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: linux-next: build failure after merge of the net tree
+Message-Id: <20110615085617.949d418f.sfr@canb.auug.org.au>
+In-Reply-To: <20110609145657.96fae0d0.sfr@canb.auug.org.au>
+References: <20110609145657.96fae0d0.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090208.4DF7E5AF.0061:SCFSTAT5015188,ss=1,fgs=0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__15_Jun_2011_08_56_17_+1000_/1ovAeAwvHKn8Vb9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+--Signature=_Wed__15_Jun_2011_08_56_17_+1000_/1ovAeAwvHKn8Vb9
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Fix kernel-doc warnings in signal.c:
+Hi Dave,
 
-Warning(kernel/signal.c:2374): No description found for parameter 'nset'
-Warning(kernel/signal.c:2374): Excess function parameter 'set' description in 'sys_rt_sigprocmask'
+On Thu, 9 Jun 2011 14:56:57 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
+>
+> After merging the net tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+>=20
+> [See summary in patch below.]
+>=20
+> [Hmmm, suddenly allmodconfig is building stuff in staging?  Ah ha!
+> Commit fe35a59e16fb ("Staging: remove STAGING_EXCLUDE_BUILD
+> option")  Greg, a bit of warning might have been nice :-( ]
+>=20
+> I assume that this is fallout from commit a6b7a407865a ("net: remove
+> interrupt.h inclusion from netdevice.h").
+>=20
+> I added the following patch for today:
+>=20
+> From 520e46c255afa851b33e5c4a2bcf2112ecccbb6f Mon Sep 17 00:00:00 2001
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Thu, 9 Jun 2011 14:19:09 +1000
+> Subject: [PATCH] net/staging: add needed interrupt.h and hardirq.h includ=
+es
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- kernel/signal.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I am still getting these build errors and applying the patch.  I would
+assume that if you merge Linus' tree (-rc3 will do it) into net-next, you
+will get these failures as well (for an x86_64 allmodconfig build at
+least).
 
---- lnx-30-rc3.orig/kernel/signal.c
-+++ lnx-30-rc3/kernel/signal.c
-@@ -2365,7 +2365,7 @@ int sigprocmask(int how, sigset_t *set, 
- /**
-  *  sys_rt_sigprocmask - change the list of currently blocked signals
-  *  @how: whether to add, remove, or set signals
-- *  @set: stores pending signals
-+ *  @nset: stores pending signals
-  *  @oset: previous value of signal mask if non-null
-  *  @sigsetsize: size of sigset_t type
-  */
+I think that this patch would probably apply to just the net-next tree
+anyway.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__15_Jun_2011_08_56_17_+1000_/1ovAeAwvHKn8Vb9
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN9+cRAAoJEDMEi1NhKgbsQ3EH/0rhax959/IdekarHqQ+tpPz
+P/56fGNnq+LrpHUR1JbQ57yPs0Hr2cbjcrKUYQSC50Y5bNwAtJ/DdYbdCAME400q
+X1cVKm24c4AY1HlbD5vYxDXbNRinQbjWn+Chqe4RiVG54paQSaQz4zQ/Md5qjjOg
+PbuK8hQCwvSh2+Z8EO9kVHNxQUznFjbxHsAluOEx0xaxMMPE0sKC/hFMINqOiewl
+RsfN4IRqYZXJh+dZUPqlfF8LP2n7yqrUg+z43TwKRi1YvZUf/T0Uy1+J7PDyLa3p
+FshQC+bGCfpjaTd9+eqhIYS6kxJgOF7xO/8J/q5CfXdqVO6zJFQiA/KGmNgYmeI=
+=TSJf
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__15_Jun_2011_08_56_17_+1000_/1ovAeAwvHKn8Vb9--
