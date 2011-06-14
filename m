@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167Ab1FNSbE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 14:31:04 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:62592 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108Ab1FNSbC (ORCPT
+	id S1753354Ab1FNScl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 14:32:41 -0400
+Received: from exht2.emulex.com ([138.239.113.184]:35967 "EHLO
+	exht2.ad.emulex.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751553Ab1FNScj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 14:31:02 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Michal Nazarewicz" <mina86@mina86.com>
-Subject: Re: [PATCH 08/10] mm: cma: Contiguous Memory Allocator added
-Date: Tue, 14 Jun 2011 20:30:07 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Mel Gorman'" <mel@csn.ul.ie>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>
-References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com> <201106141803.00876.arnd@arndb.de> <op.vw2r3xrj3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <op.vw2r3xrj3l0zgt@mnazarewicz-glaptop>
+	Tue, 14 Jun 2011 14:32:39 -0400
+From: <Ajit.Khaparde@Emulex.Com>
+To: <joe@perches.com>, <netdev@vger.kernel.org>
+CC: <acme@ghostprotocols.net>, <jcliburn@gmail.com>, <chris.snook@gmail.com>,
+        <jie.yang@atheros.com>, <Sathya.Perla@Emulex.Com>,
+        <subbu.seetharaman@Emulex.Com>, <rmody@brocade.com>,
+        <ddutt@brocade.com>, <sjur.brandeland@stericsson.com>,
+        <divy@chelsio.com>, <leitao@linux.vnet.ibm.com>,
+        <amit.salecha@qlogic.com>, <ron.mercer@qlogic.com>,
+        <linux-driver@qlogic.com>, <anirban.chakraborty@qlogic.com>,
+        <jdmason@kudzu.us>, <linux-net-drivers@solarflare.com>,
+        <shodgson@solarflare.com>, <bhutchings@solarflare.com>,
+        <venza@brownhat.org>, <dave@thedillows.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Tue, 14 Jun 2011 11:31:45 -0700
+Subject: RE: [PATCH net-next 2/2] drivers/net: Remove casts of void *
+Thread-Topic: [PATCH net-next 2/2] drivers/net: Remove casts of void *
+Thread-Index: AcwqR92/zAT4SWFRReyN51OcNbWAxgAdinFAAAAHoaw=
+Message-ID: <f841e39b-8c30-4c3b-9d17-fa45b6615c23@exht2.ad.emulex.com>
+References: <cover.1308024069.git.joe@perches.com>
+ <486a21b708a9dce0c1c0059a21a2f9b66dac9e3c.1308024069.git.joe@perches.com>,<C4E199C967B4824F9C9DF4C42CE4A3B8591B7F0D78@EXMAIL.ad.emulex.com>
+In-Reply-To: <C4E199C967B4824F9C9DF4C42CE4A3B8591B7F0D78@EXMAIL.ad.emulex.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106142030.07549.arnd@arndb.de>
-X-Provags-ID: V02:K0:gAq7pKBxl+LLLpNrzx/c5ey6ShlHHmeHilpK5lYSpfm
- DWG323q2nPZgt61yNZPbl2r7C116fuFVOK55jsNDGn5qHPbc9D
- H7nPLNzCBdXRLANXIxk+GoAcxo3K3pvawt5n9I65THfHoubch/
- Oc902jN0p60h2BjYOfGs/c/fxpjrcrUoRAvqMLcWKBnd6KTbmk
- 2Zq7J9hn2wYUpqEn+meaQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 14 June 2011 18:58:35 Michal Nazarewicz wrote:
-> On Tue, 14 Jun 2011 18:03:00 +0200, Arnd Bergmann wrote:
-> > For all I know, that is something that is only true for a few very  
-> > special Samsung devices,
-> 
-> Maybe.  I'm just answering your question. :)
-> 
-> Ah yes, I forgot that separate regions for different purposes could
-> decrease fragmentation.
+> -----Original Message-----
+> From: Joe Perches [mailto:joe@perches.com]
+> Subject: [PATCH net-next 2/2] drivers/net: Remove casts of void *
+>
+> Unnecessary casts of void * clutter the code.
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+> diff --git a/drivers/net/benet/be_cmds.c b/drivers/net/benet/be_cmds.c
+> index 0c12c2d..30719f5 100644
+> --- a/drivers/net/benet/be_cmds.c
+> +++ b/drivers/net/benet/be_cmds.c
+> @@ -2334,8 +2334,7 @@ int be_cmd_get_cntl_attributes(struct be_adapter
+> *adapter)
+>
+>       status = be_mbox_notify_wait(adapter);
+>       if (!status) {
+> -             attribs = (struct mgmt_controller_attrib *)( attribs_cmd.va
+> +
+> -                                     sizeof(struct be_cmd_resp_hdr));
+> +             attribs = attribs_cmd.va + sizeof(struct be_cmd_resp_hdr);
+>               adapter->hba_port_num = attribs->hba_attribs.phy_port;
+>       }
+>
+> diff --git a/drivers/net/benet/be_ethtool.c
+> b/drivers/net/benet/be_ethtool.c
+> index facfe3c..5572c78 100644
+> --- a/drivers/net/benet/be_ethtool.c
+> +++ b/drivers/net/benet/be_ethtool.c
+> @@ -386,7 +386,7 @@ static int be_get_settings(struct net_device
+> *netdev, struct ethtool_cmd *ecmd)
+>               }
+>               status = be_cmd_get_phy_info(adapter, &phy_cmd);
+>               if (!status) {
+> -                     resp = (struct be_cmd_resp_get_phy_info *)
+> phy_cmd.va;
+> +                     resp = phy_cmd.va;
+>                       intf_type = le16_to_cpu(resp->interface_type);
+>
+>                       switch (intf_type) {
+> @@ -690,7 +690,7 @@ be_read_eeprom(struct net_device *netdev, struct
+> ethtool_eeprom *eeprom,
+>       status = be_cmd_get_seeprom_data(adapter, &eeprom_cmd);
+>
+>       if (!status) {
+> -             resp = (struct be_cmd_resp_seeprom_read *) eeprom_cmd.va;
+> +             resp = eeprom_cmd.va;
+>               memcpy(data, resp->seeprom_data + eeprom->offset, eeprom-
+> >len);
+>       }
+>       dma_free_coherent(&adapter->pdev->dev, eeprom_cmd.size,
+> eeprom_cmd.va,
 
-That is indeed a good point, but having a good allocator algorithm
-could also solve this. I don't know too much about these allocation
-algorithms, but there are probably multiple working approaches to this.
+The be2net part of the patch looks good.
 
-> > I would suggest going forward without having multiple regions:
-> 
-> Is having support for multiple regions a bad thing?  Frankly,
-> removing this support will change code from reading context passed
-> as argument to code reading context from global variable.  Nothing
-> is gained; functionality is lost.
-
-What is bad IMHO is making them the default, which forces the board
-code to care about memory management details. I would much prefer
-to have contiguous allocation parameters tuned automatically to just
-work on most boards before we add ways to do board-specific hacks.
-
-	Arnd
+Acked-by: Ajit Khaparde ajit.khaparde@emulex.com
