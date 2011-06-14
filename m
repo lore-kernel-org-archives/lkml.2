@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab1FNNrG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 09:47:06 -0400
-Received: from mga14.intel.com ([143.182.124.37]:3951 "EHLO mga14.intel.com"
+	id S1752096Ab1FNNyP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 09:54:15 -0400
+Received: from symlink.to.noone.org ([85.10.207.172]:53728 "EHLO sym.noone.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751424Ab1FNNrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 09:47:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,364,1304319600"; 
-   d="scan'208";a="12487540"
-Date: Tue, 14 Jun 2011 21:46:55 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] writeback: trace global_dirty_state
-Message-ID: <20110614134655.GB13768@localhost>
-References: <20110610144805.GA9986@localhost>
- <20110613143356.GG4907@quack.suse.cz>
+	id S1750864Ab1FNNyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 09:54:13 -0400
+X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Jun 2011 09:54:13 EDT
+Date: Tue, 14 Jun 2011 15:48:59 +0200
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-watchdog@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Walter Goossens <waltergoossens@home.nl>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        nios2-dev@sopc.et.ntust.edu.tw
+Subject: Re: [PATCH v3 RESEND] watchdog: Add driver for Altera Watchdog
+	Timer
+Message-ID: <20110614134859.GP20966@distanz.ch>
+References: <1300461573-12268-1-git-send-email-tklauser@distanz.ch> <20110527082309.GB16394@infomag.iguana.be>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110613143356.GG4907@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110527082309.GB16394@infomag.iguana.be>
+X-Editor: Vi IMproved 7.1
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 10:33:56PM +0800, Jan Kara wrote:
-> On Fri 10-06-11 22:48:05, Wu Fengguang wrote:
-> > [It seems beneficial to queue this simple trace event for
-> >  next/upstream after the review?]
+Hi Wim
+
+On 2011-05-27 at 10:23:09 +0200, Wim Van Sebroeck <wim@iguana.be> wrote:
+> > This driver adds support for the Altera Timer in the Watchdog Timer
+> > configuration. This component is usually found on SOPC (System on
+> > Programmable Chip) for Altera FPGAs.
 > > 
-> > Add trace event balance_dirty_state for showing the global dirty page
-> > counts and thresholds at each global_dirty_limits() invocation.  This
-> > will cover the callers throttle_vm_writeout(), over_bground_thresh()
-> > and each balance_dirty_pages() loop.
->   OK, this might be useful. But shouldn't we also add similar trace point
-> for bdi limits? Otherwise the information is of limited use...
+> > Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
+> > Reviewed-by: Jamie Iles <jamie@jamieiles.com>
+> > Acked-by: Grant Likely <grant.likely@secretlab.ca> (for the devicetree binding)
+> 
+> Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+> 
+> I presume this will go in together with the other nios2 architecture patches?
 
-Good point. The bdi limits will be exported in another
-balance_dirty_pages trace point.
+It will probably take some time until we get to the point where we're
+ready to submit nios2 arch patches. We started out with individual
+drivers to get used to the submission and review process. Most of them
+got taken by the respective subsystem maintainers.
 
-Thanks,
-Fengguang
+So if you want to take the driver through your tree, please go ahead.
+Otherwise I will resubmit it once we're ready to submit the nios2 arch.
+
+Cheers
+Tobias
