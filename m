@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192Ab1FNLOt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 07:14:49 -0400
-Received: from rackplans.net ([209.44.101.17]:50241 "EHLO mtl.rackplans.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752952Ab1FNLOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 07:14:47 -0400
-X-Greylist: delayed 415 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Jun 2011 07:14:47 EDT
-Date: Tue, 14 Jun 2011 07:07:51 -0400 (EDT)
-From: gmack@innerfire.net
-X-X-Sender: gmack@mtl.rackplans.net
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.0-rc3
-In-Reply-To: <BANLkTinCfV4owNBhJ+F-yfF3V+wg1o=PLA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1106140625180.31269@mtl.rackplans.net>
-References: <BANLkTinCfV4owNBhJ+F-yfF3V+wg1o=PLA@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756195Ab1FNLNH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 07:13:07 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:42086 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754362Ab1FNLNF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 07:13:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=Wbbhs25Lv5g15xhcXYW/uFmhKTXS82gGkWTeZi+EZJwk7fXtJCOblcgxkqqv656Yod
+         El08/jqND/JyKUpEe75jbKNHo7iLpMKtYJsykJMH+9cGD9sNt6R9gH9gHv2zOxiRlaDt
+         AOUVvJxMDjlz5u3hpJd5vmBWOv66iGP7IB0RQ=
+Subject: [PATCH] gpio: gpio-ml-ioh: fix off-by-one for displaying variable
+ i in dev_err
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Jun 2011 19:12:57 +0800
+Message-ID: <1308049977.2671.3.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Jun 2011, Linus Torvalds wrote:
+with the "for (; i != 0; i--)" sytax, i-- will be executed after the iteration.
+thus dev_err shows wrong i value.
+Switch to "while(--i >= 0)" which is better in readability.
 
-> I'm including the shortlog, which is fairly self-explanatory: small
-> random changes, nothing hugely interesting. It will matter to people
-> only if it happens to fix that one small nagging issue you had.
-> 
-> But as usual, I'll ask people to give it a good testing,
-> 
->                        Linus
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/gpio/gpio-ml-ioh.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-
-Breaks modules_install, as far as I can see it is creating the right 
-folders but not putting the actual files into them.  
-
-  INSTALL arch/x86/crypto/aes-i586.ko
-cp: cannot stat `arch/x86/crypto/aes-i586.ko': No such file or directory
-  INSTALL arch/x86/crypto/crc32c-intel.ko
-cp: cannot stat `arch/x86/crypto/crc32c-intel.ko': No such file or 
-directory
-  INSTALL arch/x86/crypto/salsa20-i586.ko
-
-etc ...
-
-ls -l /lib/modules/3.0.0-rc3/kernel/arch/x86/
-total 0
-drwxr-xr-x 1 root root 0 Jun 14 13:05 crypto
-drwxr-xr-x 1 root root 0 Jun 14 13:05 kernel
-
-	Gerhard
+diff --git a/drivers/gpio/gpio-ml-ioh.c b/drivers/gpio/gpio-ml-ioh.c
+index 1bc621a..a9016f5 100644
+--- a/drivers/gpio/gpio-ml-ioh.c
++++ b/drivers/gpio/gpio-ml-ioh.c
+@@ -233,7 +233,7 @@ static int __devinit ioh_gpio_probe(struct pci_dev *pdev,
+ 	return 0;
+ 
+ err_gpiochip_add:
+-	for (; i != 0; i--) {
++	while (--i >= 0) {
+ 		chip--;
+ 		ret = gpiochip_remove(&chip->gpio);
+ 		if (ret)
+-- 
+1.7.4.1
 
 
---
-Gerhard Mack
 
-gmack@innerfire.net
-
-<>< As a computer, I find your faith in technology amusing.
