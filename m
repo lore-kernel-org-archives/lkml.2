@@ -1,93 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab1FNGeI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 02:34:08 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51882 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab1FNGeF (ORCPT
+	id S1754922Ab1FNHeF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 03:34:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53835 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754233Ab1FNHeB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 02:34:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=o1aByRjnkYNHkXtZTwnkKlG0+Fz2TXDlQp3cXxcql8//66F+W8VhYtUpPYNx6oTmrb
-         RKAPTglMbzY9mJayYxnlq51yev9ZbF/DVltdFSnTTMaeOF0770sfbMjIOfQu/O97jfaG
-         rMMxLF1SKcx/U53kB+HKILYkbw8EYOTs1NOZk=
-Date: Tue, 14 Jun 2011 08:34:00 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: =?iso-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>,
-        "Girdwood, Liam" <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "Lopez Cruz, Misael" <misael.lopez@ti.com>,
-        Jorge Eduardo Candelaria <jorge.candelaria@ti.com>
-Subject: Re: Re: [PATCH v4 11/18] input: Add initial support for TWL6040
- vibrator
-Message-ID: <20110614063400.GB8141@htj.dyndns.org>
-References: <1307706876-4768-1-git-send-email-peter.ujfalusi@ti.com>
- <1307706876-4768-12-git-send-email-peter.ujfalusi@ti.com>
- <20110611231854.GA3979@core.coreip.homeip.net>
- <1530216.k8lJ4nKZ1s@barack>
- <20110613212028.GA13138@core.coreip.homeip.net>
+	Tue, 14 Jun 2011 03:34:01 -0400
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: Unbinding drivers for resources that are in use
+Date: Tue, 14 Jun 2011 08:41:11 +0200
+User-Agent: KMail/1.13.5 (Linux/3.0.0-rc2-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Greg KH <greg@kroah.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Hans de Goede <hdegoede@redhat.com>
+References: <Pine.LNX.4.44L0.1106131048080.1983-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1106131048080.1983-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110613212028.GA13138@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201106140841.11631.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Mon, Jun 13, 2011 at 02:20:28PM -0700, Dmitry Torokhov wrote:
-> On Mon, Jun 13, 2011 at 12:51:16PM +0300, Péter Ujfalusi wrote:
-> > On Sunday 12 June 2011 01:18:54 Dmitry Torokhov wrote:
-> > 
-> > > > +static int twl6040_vibra_open(struct input_dev *input)
-> > > > +{
-> > > > +     struct vibra_info *info = input_get_drvdata(input);
-> > > > +
-> > > > +     info->workqueue = create_singlethread_workqueue("vibra");
-> > > > +     if (info->workqueue == NULL) {
-> > > > +             dev_err(&input->dev, "couldn't create workqueue\n");
-> > > > +             return -ENOMEM;
-> > > > +     }
-> > > 
-> > > Why do we need to create a separate workqueue? With arrival of CWQ
-> > > it looks like we should be able to use one of the system-wide
-> > > workqueues for this.
-> > 
-> > The reason for this is to ensure that we have the lowest latency as possible 
-> > in most case. In the embedded devices we use the vibra for tactile type of 
-> > feedbacks as well, where few tens of ms delay can be felt.
+Am Montag, 13. Juni 2011, 17:10:57 schrieb Alan Stern:
+> Therefore I'm asking if the driver core should add a refcount to every
+> struct device for keeping track of the number of open file references
+> (or other types of resource) using this device.  If this number is
+> nonzero, the kernel should prevent the device from being unbound from
+> its driver -- except of course in cases where the device has been
+> hot-unplugged; there's nothing we can do to prevent errors when this
+> happens.
 > 
-> Even if you create a dedicated workqueue with CWQ it will still be using
-> shared pool of threads so I do not think that latency will be affected
-> by using system-wide workqueue. I might be mistaken though, Tejun will
-> correct me if I am wrong...
 
-Yeap, using a separate workqueue doesn't do anything for latency
-unless WQ_HIGHPRI and/or WQ_CPU_INTENSIVE is used; however, _please_
-stay away from it unless absolutely sure it's necessary (ie. unless
-you can pin point to where latency is coming from - even in that case,
-the thing which induces the latency probably is the one which should
-be fixed).
+Firstly, the user may want to unbind a driver for a device that is in use.
+ 
+Secondly, the driver doesn't know in the general case. You've given the best example
+yourself. A driver certainly must not know about mounted filesystems. Things
+get really hairy if you consider i-scsi and related stuff.
 
-CMWQ is pretty good at keeping latency low unless something is
-consuming large amount of CPU cycles and those work items are marked
-WQ_CPU_INTENSIVE, not the other way around and WQ_HIGHPRI is for
-things like MCE error reporting.
+So I'd say it would be major work for an additional feature that doesn't
+help in the case that hurts most.
 
-Thanks.
+Now, if you are looking for a quick and dirty solution, you could export the
+pm counters and provide an ioctl for unbind if zero.
 
+	Regards
+		Oliver
 -- 
-tejun
+- - - 
+SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer, HRB 16746 (AG Nürnberg) 
+Maxfeldstraße 5                         
+90409 Nürnberg 
+Germany 
+- - - 
