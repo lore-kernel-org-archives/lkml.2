@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab1FNMQA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 08:16:00 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55492 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754681Ab1FNMP7 (ORCPT
+	id S1755375Ab1FNMTO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 08:19:14 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:33613 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123Ab1FNMTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 08:15:59 -0400
+	Tue, 14 Jun 2011 08:19:13 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=W2CYmurfI9ZWKGECxEJTv9LJq0BDg3JdlByrMku4ZIY78OYLWA+R7lOutt4W1BPtiy
-         uceOvSgKdZlaccWny9mJ6e38YkiHH2U2Mi7YOxe/7Hpe22aFkMHqTBSHDwkBVhMz1OQw
-         VmP1A48p0zuMAEUN6c00H5Eldqgxvv9I3DMaA=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=bJpjn/ZqcQW/cJkwxyOSLoG/TbxeWEDqCBp6TaENhoJygoj4nUagf7RrvC72lOf2hH
+         oPgl7QZBkQomyB/+YgVg==
+Date: Tue, 14 Jun 2011 05:18:46 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Pekka Enberg <penberg@kernel.org>
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-mm <linux-mm@kvack.org>, Christoph Lameter <cl@linux.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] slub: fix kernel BUG at mm/slub.c:1950!
+In-Reply-To: <1308027078.2874.1005.camel@pasglop>
+Message-ID: <alpine.LSU.2.00.1106140515470.30002@sister.anvils>
+References: <alpine.LSU.2.00.1106121842250.31463@sister.anvils> <alpine.DEB.2.00.1106131258300.3108@router.home> <1307990048.11288.3.camel@jaguar> <alpine.DEB.2.00.1106131428560.5601@router.home> <BANLkTi=RYq0Dd210VC+NeTXWWuFbz7cxeg@mail.gmail.com>
+ <BANLkTik-KGtuoVFKvy_rk7voBRAxSsR9FRg0fhb0k3NCSg-fWQ@mail.gmail.com> <1308027078.2874.1005.camel@pasglop>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <BANLkTinCfV4owNBhJ+F-yfF3V+wg1o=PLA@mail.gmail.com>
-References: <BANLkTinCfV4owNBhJ+F-yfF3V+wg1o=PLA@mail.gmail.com>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Tue, 14 Jun 2011 14:15:37 +0200
-Message-ID: <BANLkTim_bHKdZnykedzW4re6GMCg+1Ed2g@mail.gmail.com>
-Subject: Re: Linux 3.0-rc3
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 14, 2011 at 1:01 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> .. and this time even with a timely tar-ball, since I'm not traveling any more.
->
-> What do we have in it? More than in -rc2. I'm clearly not the only one
-> who was in Japan for LinuxCon, or something else just made people wake
-> up.
+On Tue, 14 Jun 2011, Benjamin Herrenschmidt wrote:
+> On Mon, 2011-06-13 at 14:00 -0700, Hugh Dickins wrote:
+> > On Mon, Jun 13, 2011 at 1:34 PM, Pekka Enberg <penberg@kernel.org> wrote:
+> > > On Mon, Jun 13, 2011 at 10:29 PM, Christoph Lameter <cl@linux.com> wrote:
+> > >> On Mon, 13 Jun 2011, Pekka Enberg wrote:
+> > >>
+> > >>> > Hmmm.. The allocpercpu in alloc_kmem_cache_cpus should take care of the
+> > >>> > alignment. Uhh.. I see that a patch that removes the #ifdef CMPXCHG_LOCAL
+> > >>> > was not applied? Pekka?
+> > >>>
+> > >>> This patch?
+> > >>>
+> > >>> http://git.kernel.org/?p=linux/kernel/git/penberg/slab-2.6.git;a=commitdiff;h=d4d84fef6d0366b585b7de13527a0faeca84d9ce
+> > >>>
+> > >>> It's queued and will be sent to Linus soon.
+> > >>
+> > >> Ok it will also fix Hugh's problem then.
+> > >
+> > > It's in Linus' tree now. Hugh, can you please confirm it fixes your machine too?
+> > 
+> > I expect it to, thanks: I'll confirm tonight.
+> 
+> From report to resolution before I got to read the thread, that's how I
+> like them ! Thanks guys :-)
 
-Linus, I know I run a risk of being not the first person to ask this,
-but anyway.
+Confirmed: fixed in 3.0-rc3 - thank you!
 
-I've got a patch for my project to fix parsing of kernel version which
-has only two numbers. Basically,
-
-- scanf(ver, "%u.%u.%u", &a, &b, &c)
-+ sscanf(ver, "%u.%u", &a, &b)
-
-I can take it, but it made me thinking: how many other projects
-will be similarly affected? Must be hundreds, even thousands.
-
-I propose to still use three digits. I mean, if you want to use
-3.0, 3.1, 3.2 numbering for your releases and leave third digit
-for stable series, just number them 3.0.0, 3.1.0, 3.2.0 instead.
-
-This way, many userspace projects will need less patching
-in order to work with 3.x. In many cases, they can
-avoid patching altogether.
-
--- 
-vda
+Hugh
