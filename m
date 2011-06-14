@@ -1,25 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424Ab1FNOxA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 10:53:00 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:59697 "EHLO
+	id S1752285Ab1FNOzt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 10:55:49 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:42235 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752040Ab1FNOw7 (ORCPT
+	with ESMTP id S1752028Ab1FNOzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 10:52:59 -0400
-Date: Tue, 14 Jun 2011 15:52:46 +0100
+	Tue, 14 Jun 2011 10:55:47 -0400
+Date: Tue, 14 Jun 2011 15:55:32 +0100
 From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] ACPI, APEI, Add APEI _OSC support
-Message-ID: <20110614145246.GA17469@srcf.ucam.org>
-References: <1306303538-30524-1-git-send-email-ying.huang@intel.com>
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Jim Bos <jim876@xs4all.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+Message-ID: <20110614145532.GB17469@srcf.ucam.org>
+References: <20110610175429.GA28500@srcf.ucam.org>
+ <4DF29E7E.50908@gmail.com>
+ <20110613164712.GA23343@srcf.ucam.org>
+ <4DF64E6A.70700@gmail.com>
+ <20110613180006.GA24902@srcf.ucam.org>
+ <4DF65372.7090307@gmail.com>
+ <20110613181750.GA25372@srcf.ucam.org>
+ <4DF655B5.8040903@gmail.com>
+ <20110613183301.GA25644@srcf.ucam.org>
+ <4DF77539.9020000@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1306303538-30524-1-git-send-email-ying.huang@intel.com>
+In-Reply-To: <4DF77539.9020000@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-SA-Exim-Connect-IP: <locally generated>
 X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
@@ -28,64 +37,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 02:05:38PM +0800, Huang Ying wrote:
+On Tue, Jun 14, 2011 at 04:50:33PM +0200, Maarten Lankhorst wrote:
+> Didn't notice it before, but my efi memmap has:
+> [    0.000000] EFI: mem00: type=3, attr=0xf, range=[0x0000000000000000-0x0000000000008000) (0MB)
+> 
+> Later on this range gets reserved for bios:
+> 
+> [    0.000000] e820 update range: 0000000000000000 - 0000000000010000 (usable) ==> (reserved)
+> [    0.000000] e820 remove range: 00000000000a0000 - 0000000000100000 (usable)
+> 
+> So I've added a check for e820.
 
-> To gain full APEI power on these machines, a special APEI _OSC needs
-> to be evaluated to tell firmware that Linux has full APEI support.
-> This patch add the APEI _OSC support.
+I've got a patch that ignores any EFI mapping at page 0, since it's 
+pretty much guaranteed to provide bogosity. Checking e820 might well be 
+a cleaner approach, though.
 
-(snip)
+> Also with some digging into the swapper warning, it appears to be because
+> some memory was allocated in the _init part of the kernel, which you didn't check for.
+> this probably caused the warnings I had. Now I made sure to cover
+> the entire kernel from _text to _end, which should cover the entire kernel.
 
-> +	static DEFINE_MUTEX(mutex);
-> +	static int status = APEI_OSC_SETUP_UNKNOWN;
-> +	static u8 apei_uuid_str[] = "ed855e0c-6c90-47bf-a62a-26de0fc5ad5c";
-
-This is the WHEA UUID, right? 
-
-> +	u32 capbuf[3];
-> +	struct acpi_osc_context context = {
-> +		.uuid_str	= apei_uuid_str,
-> +		.rev		= 1,
-> +		.cap.length	= sizeof(capbuf),
-> +		.cap.pointer	= capbuf,
-> +	};
-> +
-> +	mutex_lock(&mutex);
-> +	if (status == APEI_OSC_SETUP_UNKNOWN) {
-> +		capbuf[OSC_QUERY_TYPE] = OSC_QUERY_ENABLE;
-> +		capbuf[OSC_SUPPORT_TYPE] = 0;
-> +		capbuf[OSC_CONTROL_TYPE] = 0;
-> +
-> +		if (ACPI_FAILURE(acpi_get_handle(NULL, "\\_SB", &handle))
-> +		    || ACPI_FAILURE(acpi_run_osc(handle, &context))) {
-> +			pr_err(APEI_PFX "APEI _OSC failed!\n");
-> +			status = APEI_OSC_SETUP_FAILED;
-> +		} else {
-> +			kfree(context.ret.pointer);
-> +			status = APEI_OSC_SETUP_SUCCEEDED;
-> +		}
-> +	}
-> +	mutex_unlock(&mutex);
-> +
-> +	return status == APEI_OSC_SETUP_SUCCEEDED ? 0 : -EIO;
-
-So we fail if the platform doesn't implement WHEA...
-
-> +	rc = apei_osc_setup();
-> +	if (rc) {
-> +		ghes_remove(ghes_dev);
-> +		return rc;
-> +	}
-> +
-
-And then tear down GHES. This seems wrong. A platform could predicate 
-APEI functionality on the ACPI spec APEI indication (which we currently 
-don't pass) without implementing WHEA, but with this patch we'd refuse 
-to enable GHES support? We should probably try both the standard method 
-and the WHEA method and only disable GHES if both fail.
-
-(Also, are there any other sideeffects of indicating that we support 
-WHEA?)
+Ah, ok, that makes sense. If you post that I'll take a look.
 
 -- 
 Matthew Garrett | mjg59@srcf.ucam.org
