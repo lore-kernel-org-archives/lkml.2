@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab1FNIqF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 04:46:05 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:49194 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755310Ab1FNIqB convert rfc822-to-8bit
+	id S1755564Ab1FNIxh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 04:53:37 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:37872 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755310Ab1FNIxf convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 04:46:01 -0400
+	Tue, 14 Jun 2011 04:53:35 -0400
 From: Bing Zhao <bzhao@marvell.com>
-To: Julian Calaby <julian.calaby@gmail.com>, Joe Perches <joe@perches.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+To: Joe Perches <joe@perches.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "Luis R. Rodriguez" <lrodriguez@atheros.com>,
         Jouni Malinen <jmalinen@atheros.com>,
         Vasanthakumar Thiagarajan <vasanth@atheros.com>,
         Senthil Balasubramanian <senthilkumar@atheros.com>,
@@ -22,16 +22,13 @@ CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
         "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
         "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 14 Jun 2011 01:45:07 -0700
+Date: Tue, 14 Jun 2011 01:46:04 -0700
 Subject: RE: [PATCH net-next 1/2] wireless: Remove casts of void *
 Thread-Topic: [PATCH net-next 1/2] wireless: Remove casts of void *
-Thread-Index: AcwqVZT9Bem6jWnuQ6GEItM/CchD6gAGE47b
-Message-ID: <477F20668A386D41ADCC57781B1F704307FF7C464F@SC-VEXCH1.marvell.com>
-References: <cover.1308024069.git.joe@perches.com>
- <337c22b774ff7f007b90b266b25c9a33ff555c48.1308024069.git.joe@perches.com>
- <BANLkTi=i30Rn7gpCDbn9KKJucq8CB=hssA@mail.gmail.com>
- <1308029532.26699.68.camel@Joe-Laptop>,<BANLkTik4fWbCc8pRZfKCzvKD2f6sK9QCEw@mail.gmail.com>
-In-Reply-To: <BANLkTik4fWbCc8pRZfKCzvKD2f6sK9QCEw@mail.gmail.com>
+Thread-Index: AcwqSB0hynOHU1ogTk+s/ST3G7dy2QAJ2Gkb
+Message-ID: <477F20668A386D41ADCC57781B1F704307FF7C4650@SC-VEXCH1.marvell.com>
+References: <cover.1308024069.git.joe@perches.com>,<337c22b774ff7f007b90b266b25c9a33ff555c48.1308024069.git.joe@perches.com>
+In-Reply-To: <337c22b774ff7f007b90b266b25c9a33ff555c48.1308024069.git.joe@perches.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -44,23 +41,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> diff --git a/drivers/net/wireless/mwifiex/11n.c b/drivers/net/wireless/mwifiex/11n.c
->> @@ -191,7 +191,7 @@ int mwifiex_ret_11n_cfg(struct host_cmd_ds_command *resp, void *data_buf)
->>        struct host_cmd_ds_11n_cfg *htcfg = &resp->params.htcfg;
->>
->>        if (data_buf) {
->> -               tx_cfg = (struct mwifiex_ds_11n_tx_cfg *) data_buf;
->> +               tx_cfg = data_buf;
->>
->> I think pretty useless.  tx_cfg is a struct mwifiex_ds_11n_tx_cfg *.
+> - pt = (T *)pv;
+> + pt = pv;
 > 
-> True, but IMHO, this documents, particularly in a random snippet like
-> this, what's going on. Arguably though, a better fix would be to move
-> the cast to the place where this function is called.
+> Signed-off-by: Joe Perches joe@perches.com
+...
+> drivers/net/wireless/mwifiex/11n.c             |    5 ++---
+> drivers/net/wireless/mwifiex/cmdevt.c          |    3 +--
+> drivers/net/wireless/mwifiex/join.c            |    2 +-
+> drivers/net/wireless/mwifiex/scan.c            |    2 +-
+> drivers/net/wireless/mwifiex/sta_cmd.c         |    4 ++--
+> drivers/net/wireless/mwifiex/sta_cmdresp.c     |   12 ++++++------
+> drivers/net/wireless/mwifiex/txrx.c            |    2 +-
+> drivers/net/wireless/p54/eeprom.c              |    4 ++--
+> 22 files changed, 41 insertions(+), 47 deletions(-)
 
-Hi Julian,
+For mwifiex part, Acked-by: Bing Zhao bzhao@marvell.com
 
-Thanks for your comment. We will work on this.
-
-Regards,
+Thanks,
 Bing
