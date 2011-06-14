@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899Ab1FNQ6n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 12:58:43 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34998 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947Ab1FNQ6j (ORCPT
+	id S1752000Ab1FNQ7v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 12:59:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:41554 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751410Ab1FNQ7s convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 12:58:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:content-type:to:cc:subject:references:date:mime-version
-         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
-        b=Bd4F8fMJtlFiVlVaI3vQOyNXvTmm7KRL6rIa3iYVLgXUcMGo47xONXQ2ms8vEdJ5cB
-         uqRPl6Eh6usjF4jAaXpxtRSciuLEKEOg1vlt0xAT5iIWLBSwT9xb4hmv5hKNz8uy23Ie
-         7dwTI+E664emuNLwxhJvwLHemJlg/s88bILow=
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Arnd Bergmann" <arnd@arndb.de>
-Cc: "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Mel Gorman'" <mel@csn.ul.ie>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>
-Subject: Re: [PATCH 08/10] mm: cma: Contiguous Memory Allocator added
-References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
- <201106141549.29315.arnd@arndb.de> <op.vw2jmhir3l0zgt@mnazarewicz-glaptop>
- <201106141803.00876.arnd@arndb.de>
-Date: Tue, 14 Jun 2011 18:58:35 +0200
+	Tue, 14 Jun 2011 12:59:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,365,1304319600"; 
+   d="scan'208";a="16130225"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Avi Kivity <avi@redhat.com>
+CC: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Date: Tue, 14 Jun 2011 09:59:46 -0700
+Subject: RE: [PATCH 08/10] NOTIFIER: Take over TIF_MCE_NOTIFY and implement
+ task return notifier
+Thread-Topic: [PATCH 08/10] NOTIFIER: Take over TIF_MCE_NOTIFY and implement
+ task return notifier
+Thread-Index: Acwqh/i6aoZ3I0gKSYmUtFKXAd3DdAAKyExA
+Message-ID: <987664A83D2D224EAE907B061CE93D5301E7280DBF@orsmsx505.amr.corp.intel.com>
+References: <4df13a522720782e51@agluck-desktop.sc.intel.com>
+	<4df13cea27302b7ccf@agluck-desktop.sc.intel.com>
+	<20110612223840.GA23218@aftab>
+	<BANLkTi=-A5PYj8zpjGB4Xb-_VNq0qr+CGQ@mail.gmail.com>
+	<4DF5C36A.1040707@redhat.com>	<20110613095521.GA26316@aftab>
+	<4DF5F729.4060609@redhat.com>	<20110613124003.GA27918@aftab>
+	<4DF606C9.90308@redhat.com>	<20110613151208.GA29045@aftab>
+	<4DF63B7A.1030805@redhat.com>
+ <BANLkTinUEqRni2u0DaMfSc45b3DmMMyYvA@mail.gmail.com>
+ <4DF748C2.10009@redhat.com>
+In-Reply-To: <4DF748C2.10009@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.vw2r3xrj3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <201106141803.00876.arnd@arndb.de>
-User-Agent: Opera Mail/11.10 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> On Tue, 14 Jun 2011 15:49:29 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
->>> Please explain the exact requirements that lead you to defining  
->>> multiple contexts.
+> Aren't these events extraordinarily rare?  I think we can afford a 
+> little inefficiency there.
 
-> On Tuesday 14 June 2011, Michal Nazarewicz wrote:
->> Some devices may have access only to some banks of memory.  Some devices
->> may use different banks of memory for different purposes.
+Yes. Very rare. But also very disruptive (On Intel all cpus are signaled
+and will be stuck processing the machine check for hundreds of microseconds).
+So we'd like to try hard not to take the same fault more than once.
 
-On Tue, 14 Jun 2011 18:03:00 +0200, Arnd Bergmann wrote:
-> For all I know, that is something that is only true for a few very  
-> special Samsung devices,
+There's also the issue of post-error analysis. Some people like to dig
+around in the MCA logs to figure out if the memory is really going bad,
+or is just being hit occasionally by stray alpha-particles or neutrons.
+Getting two errors close together might cause someone to replace a DIMM
+that isn't really bad.  In Linux user space tools we could take account
+of this repetition - but the OEM tools are imbedded in their BIOS or
+maintenance processors.
 
-Maybe.  I'm just answering your question. :)
+>I don't think that doing anything to the task is correct, though, as the 
+>problem is with the page, not the task itself.  In fact if the task is 
+>executing a vgather instruction, or if another thread munmap()s the 
+>page, it may not hit the same page again when re-executed.
 
-Ah yes, I forgot that separate regions for different purposes could
-decrease fragmentation.
+True the memory is the source of the problem - but the task is
+intimately affected.  Time for a car analogy :-) ...
 
-> I would suggest going forward without having multiple regions:
+You are driving along the road when you notice a giant hole. You
+hit the brakes and stop on the very edge.  The problem is with the
+road, not with your car. But I don't think you want to start driving
+again (at least not in the forward direction!)
 
-Is having support for multiple regions a bad thing?  Frankly,
-removing this support will change code from reading context passed
-as argument to code reading context from global variable.  Nothing
-is gained; functionality is lost.
-
-> * Remove the registration of specific addresses from the initial patch
->   set (but keep the patch).
-> * Add a heuristic plus command-line override to automatically come up
->   with a reasonable location+size for *one* CMA area in the system.
-
-I'm not arguing those.
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+-Tony
