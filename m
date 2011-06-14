@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247Ab1FNRFV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 13:05:21 -0400
-Received: from mail.perches.com ([173.55.12.10]:3004 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751214Ab1FNRFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 13:05:19 -0400
-Subject: Re: [PATCH v2] x86, efi: Do not reserve boot services regions
- within reserved areas
-From: Joe Perches <joe@perches.com>
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jim Bos <jim876@xs4all.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <4DF78A22.8060405@gmail.com>
-References: <4DF78A22.8060405@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Jun 2011 10:05:18 -0700
-Message-ID: <1308071118.21026.16.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1752457Ab1FNRHH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 13:07:07 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43719 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410Ab1FNRHF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 13:07:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:subject:date:message-id:x-mailer;
+        b=bafzCSj3Iha66iaGx6AIO1nzFe0YWPhAwPIkXWvjtKcRv3FQQQ+Lt/W70SGvdWNvh2
+         iFEGzAB9dMF0nxL/nrSzmzeXIJzRbJNJpkZ5mvgXh+f9C1Ser9TG4YW561AeTyUY0XcX
+         etylqxEEPZBhbI+LVNbJrAU+pcE7WdHyroaH4=
+From: Tejun Heo <tj@kernel.org>
+To: x86@kernel.org, mingo@elte.hu, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, suresh.b.siddha@intel.com,
+        a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org
+Subject: [PATCHSET] stop_machine: implement stop_machine_from_offline_cpu()
+Date: Tue, 14 Jun 2011 19:06:55 +0200
+Message-Id: <1308071218-5912-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-14 at 18:19 +0200, Maarten Lankhorst wrote:
-> Commit 916f676f8dc started reserving boot service code since some systems
-> require you to keep that code around until SetVirtualAddressMap is called.
-[]
-> Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Hello,
 
-Hello Maarten, just trivia.
+This three patch series implements stop_machine_from_offline_cpu(),
+which is stop_machine() which can be used from a CPU which isn't yet
+online.
 
-> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-[]
-> +			memblock_dbg(PFX "Could not reserve boot area "
-> +				"[0x%llx-0x%llx)\n", start, start+size);
+This is for mtrr which needs stop_machine while bringing up a CPU.  It
+currently implements its own stop_machine directly using
+stop_one_cpu().  Duplicating such core functionality is wasteful and
+fragile.  e.g. mtrr's implementation currently can deadlock against
+generic stop_machine().
 
-I believe this should be:
+This patchset is born from Suresh's attempt at implementing similar
+feature into [__]stop_machine()[1], which IMHO is a bit too subtle.
+Given the peculiarity of the feature, I think it's better to have
+dedicated function with an ugly name.  Also, this way, the
+implementation is very well isolated from the rest of stop_cpus
+machinery and much simpler.
 
-			memblock_dbg(PFX "Could not reserve boot area 0x%llx-0x%llx)\n",
-				     start, start + size - 1);
+This patchset contains the following three patches.
 
+  0001-stop_machine-kill-__stop_machine.patch
+  0002-stop_machine-reorganize-stop_cpus-implementation.patch
+  0003-stop_machine-implement-stop_machine_from_offline_cpu.patch
 
+0001 is a cleanup patch which can go in regardless of the rest (with
+ack from x86 people of course).  0002 is pure code reorganization.
+0003 implements the feature.
+
+Suresh, how does this look to you?  Can you please put the mtrr
+changes on top of this and see how it works?
+
+ arch/x86/kernel/alternative.c |    5 -
+ include/linux/stop_machine.h  |   42 +++------------
+ kernel/cpu.c                  |    2 
+ kernel/stop_machine.c         |  117 +++++++++++++++++++++++++++++++++++-------
+ 4 files changed, 114 insertions(+), 52 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[1] http://thread.gmane.org/gmane.linux.kernel/1154383/focus=1154384
