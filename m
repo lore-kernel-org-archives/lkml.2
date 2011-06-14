@@ -1,38 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857Ab1FNJd7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 05:33:59 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37041 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755726Ab1FNJd5 (ORCPT
+	id S1755905Ab1FNJnY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 05:43:24 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:33016 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755879Ab1FNJnV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 05:33:57 -0400
-Date: Tue, 14 Jun 2011 10:35:48 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Carlos Chinea <carlos.chinea@nokia.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org, sre@debian.org,
-        linus.walleij@linaro.org, govindraj.ti@gmail.com,
-        pawel.szyszuk@stericsson.com, sjur.brandeland@stericsson.com,
-        peter_henn@gmx.de
-Subject: Re: [RFC PATCHv5 0/7] HSI framework and drivers
-Message-ID: <20110614103548.3b336dac@lxorguk.ukuu.org.uk>
-In-Reply-To: <1307713124-3946-1-git-send-email-carlos.chinea@nokia.com>
-References: <1307713124-3946-1-git-send-email-carlos.chinea@nokia.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 14 Jun 2011 05:43:21 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.11 with qID p5E9anVI007516
+From: hayeswang <hayeswang@realtek.com>
+To: "'Francois Romieu'" <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <1307956594-1248-1-git-send-email-hayeswang@realtek.com> <20110613143241.GA1579@electric-eye.fr.zoreil.com>
+Subject: RE: [PATCH] net/r8169: Update the new parser for the new firmware
+Date: Tue, 14 Jun 2011 17:36:03 +0800
+X-BOX-Message-Id: p5E9anVI007516
+Message-ID: <AAB6D1CA92564062BD4DA23B485C6B55@realtek.com.tw>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: Acwp2IMIJjza55TeSy2vDW7Np0nErgAbX1og
+In-Reply-To: <20110613143241.GA1579@electric-eye.fr.zoreil.com>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Jun 2011 16:38:37 +0300
-Carlos Chinea <carlos.chinea@nokia.com> wrote:
+ 
 
-> Hi !
+> -----Original Message-----
+> From: Francois Romieu [mailto:romieu@fr.zoreil.com] 
+> Sent: Monday, June 13, 2011 10:33 PM
+> To: Hayeswang
+> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] net/r8169: Update the new parser for the 
+> new firmware
 > 
-> Here you have the fifth round of the HSI framework patches.
+> Hayes Wang <hayeswang@realtek.com> :
+> > Update the parser for the new firmware which is embedded 
+> some information.
+> > The paser cannot be used for the old firmware. It is only 
+> for the new type one.
+> 
+> > 
+> > Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+> > ---
+> >  drivers/net/r8169.c |   59 
+> ++++++++++++++++++++++++++++----------------------
+> >  1 files changed, 33 insertions(+), 26 deletions(-)
+> > 
+> > diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c index 
+> > ef1ce2e..87b684f 100644
+> > --- a/drivers/net/r8169.c
+> > +++ b/drivers/net/r8169.c
+> > @@ -36,11 +36,11 @@
+> >  #define MODULENAME "r8169"
+> >  #define PFX MODULENAME ": "
+> >  
+> > -#define FIRMWARE_8168D_1	"rtl_nic/rtl8168d-1.fw"
+> > -#define FIRMWARE_8168D_2	"rtl_nic/rtl8168d-2.fw"
+> > -#define FIRMWARE_8168E_1	"rtl_nic/rtl8168e-1.fw"
+> > -#define FIRMWARE_8168E_2	"rtl_nic/rtl8168e-2.fw"
+> > -#define FIRMWARE_8105E_1	"rtl_nic/rtl8105e-1.fw"
+> > +#define FIRMWARE_8168D_1	"rtl_nic/rtl8168d-3.fw"
+> > +#define FIRMWARE_8168D_2	"rtl_nic/rtl8168d-4.fw"
+> > +#define FIRMWARE_8168E_1	"rtl_nic/rtl8168e-3.fw"
+> > +#define FIRMWARE_8168E_2	"rtl_nic/rtl8168e-4.fw"
+> > +#define FIRMWARE_8105E_1	"rtl_nic/rtl8105e-2.fw"
+> 
+> Why ?
 
-Looks good to me - only other oddity I found is to build hsi_char on x86
-you need slab.h before kmemleak.h or the build errors
+I want to keep the old firmware used by the old paser. The old paser cannot use
+the new firmware and the new paser cannot use the old firmware, so I separate
+them.
+
+> 
+> I see it more as a calling convention to communicate with 
+> userspace than as a place to funnel a partial version information.
+> 
+> >  #ifdef RTL8169_DEBUG
+> >  #define assert(expr) \
+> > @@ -594,6 +594,13 @@ struct ring_info {
+> >  	u8		__pad[sizeof(void *) - sizeof(u32)];
+> >  };
+> >  
+> > +struct fw_info {
+> > +	char	version[32];
+> > +	u32	fw_start;
+> > +	u32	fw_len;
+> > +	u8	chksum;
+> 
+> The chksum field is never used.
+
+This field in the binary file makes sure the checksum is zero. Driver don't need
+to access this address. But it needs in the binary file for checking.
+
+> 
+> [...]
+> > @@ -1743,16 +1750,30 @@ static void rtl_writephy_batch(struct 
+> > rtl8169_private *tp,  static void  rtl_phy_write_fw(struct 
+> > rtl8169_private *tp, const struct firmware *fw)  {
+> > -	__le32 *phytable = (__le32 *)fw->data;
+> > +	__le32 *phytable;
+> >  	struct net_device *dev = tp->dev;
+> > -	size_t index, fw_size = fw->size / sizeof(*phytable);
+> > +	struct fw_info *f_info;
+> > +	size_t index, fw_size;
+> 
+> s/index/i/
+
+Yes, I would replace it.
+
+> 
+> >  	u32 predata, count;
+> > +	u8 checksum;
+> > +
+> > +	f_info = (struct fw_info *)fw->data;
+> 
+> It will not work very well on big-endian computers. start and 
+> len should both use le32_to_cpu.
+> 
+
+I would fix these. Thanks.
+
+> >  
+> > -	if (fw->size % sizeof(*phytable)) {
+> > -		netif_err(tp, probe, dev, "odd sized firmware 
+> %zd\n", fw->size);
+> > +	if (checksum != 0) {
+> > +		netif_err(tp, probe, dev, "none zero 
+> checksum(%u)\n", checksum);
+> >  		return;
+> >  	}
+> 
+> Nit: "checksum" is not used beyond this point. It should be 
+> possible to put a few things in distinct functions to save 
+> some local variables.
+> 
+
+I would separate this into another function.
+
+> > +	netif_info(tp, probe, dev, "firmware: %s\n", f_info->version);
+> > +
+> > +	phytable = (__le32 *)(fw->data + f_info->fw_start);
+> > +	fw_size = f_info->fw_len;
+> > +
+> >  	for (index = 0; index < fw_size; index++) {
+> 
+> It's a bit paranoid but I would feel safer if f_info->fw_len 
+> was compared to fw->size beforehand.
+> 
+
+You are right. I would do it.
+
+> [...]
+> > @@ -1892,14 +1913,6 @@ static void 
+> rtl_apply_firmware(struct rtl8169_private *tp)
+> >  		rtl_phy_write_fw(tp, fw);
+> >  }
+> >  
+> > -static void rtl_apply_firmware_cond(struct rtl8169_private *tp, u8 
+> > reg, u16 val) -{
+> > -	if (rtl_readphy(tp, reg) != val)
+> > -		netif_warn(tp, hw, tp->dev, "chipset not ready 
+> for firmware\n");
+> > -	else
+> > -		rtl_apply_firmware(tp);
+> > -}
+> > -
+> >  static void rtl8169s_hw_phy_config(struct rtl8169_private *tp)  {
+> >  	static const struct phy_reg phy_reg_init[] = { @@ 
+> -2334,10 +2347,7 
+> > @@ static void rtl8168d_1_hw_phy_config(struct rtl8169_private *tp)
+> >  	rtl_w1w0_phy(tp, 0x02, 0x0100, 0x0600);
+> >  	rtl_w1w0_phy(tp, 0x03, 0x0000, 0xe000);
+> >  
+> > -	rtl_writephy(tp, 0x1f, 0x0005);
+> > -	rtl_writephy(tp, 0x05, 0x001b);
+> > -
+> > -	rtl_apply_firmware_cond(tp, MII_EXPANSION, 0xbf00);
+> > +	rtl_apply_firmware(tp);
+> >  
+> >  	rtl_writephy(tp, 0x1f, 0x0000);
+> >  }
+> > @@ -2437,10 +2447,7 @@ static void 
+> rtl8168d_2_hw_phy_config(struct rtl8169_private *tp)
+> >  	rtl_writephy(tp, 0x1f, 0x0002);
+> >  	rtl_patchphy(tp, 0x0f, 0x0017);
+> >  
+> > -	rtl_writephy(tp, 0x1f, 0x0005);
+> > -	rtl_writephy(tp, 0x05, 0x001b);
+> > -
+> > -	rtl_apply_firmware_cond(tp, MII_EXPANSION, 0xb300);
+> > +	rtl_apply_firmware(tp);
+> 
+> Actually both the format and the content of the firmware are 
+> changed by the patch.
+> 
+> Imho the new firmware format could include some specific 
+> string so that the driver can identify the new firmware 
+> format and fallback to the old format otherwise. Any fixed 
+> magic prefix would be enough as the new format mandates the 
+> version information.
+> 
+> This way Linus's test machine won't risk of breaking 
+> (again...) if he builds a new kernel without updating the 
+> firmware at the same time.
+> 
+
+I plan to let the old paser loads the old firmware and the new paser loads the
+new firmware. If you build the new kernel without updating the firmware, you
+just load no firmware because the new firmware doesn't exist. However, it is
+more dangerous for the old paser to load the new firmware. That is why I create
+the new ones, not replace the existing files.
+
+ 
+Best Regards,
+Hayes
+
