@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751586Ab1FNOeP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 10:34:15 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:54803 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156Ab1FNOeO (ORCPT
+	id S1751959Ab1FNOgJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 10:36:09 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:42489 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751156Ab1FNOgG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 10:34:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=KP22PhnYMt9khMMD4SmNlM2HEOB6J3PK5OZ32p+6J27mmhlVTpweBP6Gh5giJY++1E
-         uZx6MwW3EEXCnMQMYqz4rqU5yIrkbIxWc06rYInioMjmvyZx2hK/hqvzKwbqxWT48L60
-         cqpJz2CbfuDF86ZeFfQp7zZrCmRN8QyvyE1a0=
-Message-ID: <4DF77162.2020403@gmail.com>
-Date: Tue, 14 Jun 2011 16:34:10 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Yinghai Lu <yinghai@kernel.org>, Jim Bos <jim876@xs4all.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-References: <20110610164706.GB25774@srcf.ucam.org> <4DF259B2.9070403@gmail.com> <20110610175429.GA28500@srcf.ucam.org> <4DF29E7E.50908@gmail.com> <20110613164712.GA23343@srcf.ucam.org> <4DF64E6A.70700@gmail.com> <20110613180006.GA24902@srcf.ucam.org> <4DF65372.7090307@gmail.com> <20110613181750.GA25372@srcf.ucam.org> <4DF655B5.8040903@gmail.com> <20110613183301.GA25644@srcf.ucam.org>
-In-Reply-To: <20110613183301.GA25644@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 14 Jun 2011 10:36:06 -0400
+Date: Tue, 14 Jun 2011 15:36:30 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: markgross@thegnar.org
+Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Raffaele Recalcati <lamiaposta71@gmail.com>,
+        linux-pm@lists.linux-foundation.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [linux-pm] pm loss development
+Message-ID: <20110614153630.023eeeef@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110614140642.GA14509@gvim.org>
+References: <1305220265-9020-1-git-send-email-lamiaposta71@gmail.com>
+	<201105180107.58078.rjw@sisk.pl>
+	<20110518031203.GA3640@gvim.org>
+	<201105182143.13237.rjw@sisk.pl>
+	<20110602222111.GA15414@ucw.cz>
+	<20110614140642.GA14509@gvim.org>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 13-06-11 20:33, Matthew Garrett schreef:
-> Ok, that's odd. These are 0x01800000-0x01900000, which should lie inside 
-> the kernel data range (01580279-01aa4cff : Kernel data). We should be 
-> skipping that region. How are we touching that reange at all? Can you 
-> add a printk to reserve_boot_services to see what it actually ends up 
-> reserving?
->
-Oh, it's the init code... I have a patch that fixes this, and skips the entire kernel region.
+> I know nothing about journalling file systems or how well they limit the
+> critical sections of time where the file system is exposed to corruption
+> from sudden power failure.  Its an interesting question though.
 
-Will submit a cleaned up version soon, after testing it some more
+A properly written journalling file system has no critical sections. The
+only things it relies upon are
 
-~Maarten
+- store ordering in the drive working properly
+- a single disk block write being atomic
+
+the former is well specified even for ATA devices, the latter is a pretty
+safe property of rotating media, although in theory you have a finite
+chance of getting a bad sector.
+
+For flash it's a lot lot more complicated but for a flash device claiming
+to be ATA compliant you ought to get ATA behaviour.
+
+All that said there is still (as ever) a tiny chance your system may
+malfunction. It's all down to probabilities and if your laptop explodes
+you need a backup (trust me, I've tested this case).
+
+Alan
+
