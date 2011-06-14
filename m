@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317Ab1FNQnz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 12:43:55 -0400
-Received: from mail.perches.com ([173.55.12.10]:2997 "EHLO mail.perches.com"
+	id S1752261Ab1FNQrk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 12:47:40 -0400
+Received: from mail.mnsspb.ru ([84.204.75.2]:45204 "EHLO mail.mnsspb.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751370Ab1FNQnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 12:43:53 -0400
-Subject: Re: [ath9k-devel] [PATCH net-next 1/2] wireless: Remove casts of
- void *
-From: Joe Perches <joe@perches.com>
-To: Pavel Roskin <proski@gnu.org>
-Cc: netdev@vger.kernel.org, Intel Linux Wireless <ilw@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Jouni Malinen <jmalinen@atheros.com>,
-        Senthil Balasubramanian <senthilkumar@atheros.com>,
-        ath9k-devel@venema.h4ckr.net, Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>
-In-Reply-To: <4DF78CEC.70409@gnu.org>
-References: <cover.1308024069.git.joe@perches.com>
-	 <337c22b774ff7f007b90b266b25c9a33ff555c48.1308024069.git.joe@perches.com>
-	 <4DF78CEC.70409@gnu.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Jun 2011 09:43:51 -0700
-Message-ID: <1308069831.21026.9.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1750899Ab1FNQrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 12:47:39 -0400
+Date: Tue, 14 Jun 2011 20:46:49 +0400
+From: Kirill Smelkov <kirr@mns.spb.ru>
+To: Dan Carpenter <error27@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Mike Thomas <rmthomas@sciolus.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] staging/easycap: Fix thinko in "bars" module
+	option description
+Message-ID: <20110614164649.GB29015@tugrik.mns.mnsspb.ru>
+References: <cover.1307967011.git.kirr@mns.spb.ru> <14c0e4d0bb7ef1a05b9dcc14b2b51c706f844655.1307967011.git.kirr@mns.spb.ru> <20110613122717.GF3583@shale.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110613122717.GF3583@shale.localdomain>
+Organization: Marine Bridge & Navigation Systems
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-14 at 12:31 -0400, Pavel Roskin wrote:
-> On 06/14/2011 12:02 AM, Joe Perches wrote:
-> >   		/* Get the message ID */
-> > -		msg_id = (__be16 *) ((void *) htc_hdr +
-> > -				     sizeof(struct htc_frame_hdr));
-> > +		msg_id = (void *)htc_hdr + sizeof(struct htc_frame_hdr);
-> I would never do stuff like this without verifying by sparse that no 
-> warnings are introduced.
+On Mon, Jun 13, 2011 at 03:27:17PM +0300, Dan Carpenter wrote:
+> On Mon, Jun 13, 2011 at 04:18:29PM +0400, Kirill Smelkov wrote:
+> > Both bars=0 and bars=1 were described as meaning to display bars on
+> > signal lost. Actually bars=1 means "display bars", but bars=0 means
+> > display raw source as is (usually black screen).
+> 
+> Your description up here is much better than the one in the README.
+> Maybe just include yours and delete the original.
 
-I did that.  I believe there are no new warnings.
+Thanks for head ups. Something like this:
 
-> Sparse warnings should be avoided to keep sparse checks useful. 
-> Otherwise, important warnings would drown in the noise.
+---- 8< ----
+From: Kirill Smelkov <kirr@mns.spb.ru>
+Date: Mon, 13 Jun 2011 15:09:31 +0400
+Subject: [PATCH v2] staging/easycap: Fix thinko in "bars" module option
+ description
 
-$ make allyesconfig
-$ git log -1 --pretty=oneline drivers/net/wireless/ath/ath9k/htc_hst.c
-337c22b774ff7f007b90b266b25c9a33ff555c48 wireless: Remove casts of void *
-$ make C=2 drivers/net/wireless/ath/ath9k/htc_hst.o
-make[1]: Nothing to be done for `all'.
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CALL    scripts/checksyscalls.sh
-  CHECK   scripts/mod/empty.c
-  CHECK   drivers/net/wireless/ath/ath9k/htc_hst.c
-  CC      drivers/net/wireless/ath/ath9k/htc_hst.o
-$
+Both bars=0 and bars=1 were described as meaning to display bars on
+signal lost. Actually bars=1 means "display bars", but bars=0 means
+display raw source as is (usually black screen).
+
+Instead of changing bars=0 to "_no_ testcard bars ..." as suggested by
+Dan Carpenter reword the whole bars description for clarity.
+
+Cc: Tomas Winkler <tomas.winkler@intel.com>
+Cc: Mike Thomas <rmthomas@sciolus.org>
+Cc: Dan Carpenter <error27@gmail.com>
+Signed-off-by: Kirill Smelkov <kirr@mns.spb.ru>
+---
+ drivers/staging/easycap/README |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/easycap/README b/drivers/staging/easycap/README
+index 16b8264..dadceb9 100644
+--- a/drivers/staging/easycap/README
++++ b/drivers/staging/easycap/README
+@@ -60,8 +60,8 @@ Three module parameters are defined:
+ 
+ debug      the easycap module is configured at diagnostic level n (0 to 9)
+ gain       audio gain level n (0 to 31, default is 16)
+-bars       0 =>  testcard bars when incoming video signal is lost
+-           1 =>  testcard bars when incoming video signal is lost (default)
++bars       whether to display testcard bars when incoming video signal is lost
++           0 => no, 1 => yes (default)
+ 
+ 
+ SUPPORTED TV STANDARDS AND RESOLUTIONS
+-- 
+1.7.6.rc1
 
