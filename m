@@ -1,93 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab1FNFqI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 01:46:08 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:40027 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab1FNFqG convert rfc822-to-8bit (ORCPT
+	id S1752885Ab1FNFtI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 01:49:08 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:33012 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708Ab1FNFtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 01:46:06 -0400
+	Tue, 14 Jun 2011 01:49:04 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=btwqfRAwd9e+cMkdYiawXUQogxiMxc831XyCfCO6FM+bRSn3LKUNeAykC70DwdtRDN
-         dNrv6DJnMafyHBZB+UVG7y5jHjlEBlx85ppNLg9NPY0PjxwjTJy7EVXxdurTKnBjnrXr
-         elmRvUDdYiYLg3oZT9CXVICFbwaFv6uO5ptB8=
-MIME-Version: 1.0
-In-Reply-To: <20110614045150.GA2264@linux.vnet.ibm.com>
-References: <BANLkTin2osfkSiu8maGmJAnzv4O5ODK0dw@mail.gmail.com>
-	<20110614045150.GA2264@linux.vnet.ibm.com>
-Date: Tue, 14 Jun 2011 13:46:04 +0800
-Message-ID: <BANLkTinvygi9aSkFcnOs2CHCmExD2ixJuQ@mail.gmail.com>
-Subject: Re: [3.0-rc3] tree RCU boost vs hang notifier...
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=a5P+SMImKcrBVXRs9e2RDq0mOh/HYA3l/HHRKXNVg1j+nRX21f9C4JNnFzBaaE+3aG
+         gKYVWtH1ymdU30uNlc+UfhsRJWS+jfG+q2S1DMA6k+qN7gwhe2oBqJ/cpZXZq822gIEs
+         NNNX5tCRci/eUntPs3AY77o5wgBXMuoeTR9/k=
+From: Yuan-Hsin Chen <yuanlmm@gmail.com>
+To: jgarzik@pobox.com
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yuan-Hsin Chen <yhchen@faraday-tech.com>
+Subject: [PATCH] ahci: enable pmp but connected to HDD issue fixed
+Date: Tue, 14 Jun 2011 13:48:24 +0800
+Message-Id: <1308030504-3026-1-git-send-email-yuanlmm@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 June 2011 12:51, Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> On Tue, Jun 14, 2011 at 12:02:24PM +0800, Daniel J Blueman wrote:
->> With 3.0-rc3 configured with CONFIG_TREE_PREEMPT_RCU, CONFIG_RCU_BOOST
->> and CONFIG_DETECT_HUNG_TASK, we see frequent task hung reports [1],
->> possibly as the tree RCU boost kthreads sleep uninterruptably.
->>
->> It looks like tinyRCU sleeps interruptably, so won't trigger the hangcheck.
->>
->> Thanks,
->>   Daniel
->>
->> --- [1]
->>
->> INFO: task rcub0:9 blocked for more than 120 seconds.
->> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->> rcub0           D ffffffff81c29c80  6768     9      2 0x00000000
->>  ffff880221713ea0 0000000000000046 ffff880221713db0 ffffffff8171b825
->>  ffff880221712000 0000000000004000 ffff8802214d0000 ffff88022170c060
->>  ffff88022ec00000 0000000000010ac0 0000000000000001 ffff88022ec10ac0
->> Call Trace:
->>  [<ffffffff8171b825>] ? _raw_spin_unlock_irqrestore+0x75/0x80
->>  [<ffffffff8171822a>] ? preempt_schedule+0x3a/0x50
->>  [<ffffffff8171b825>] ? _raw_spin_unlock_irqrestore+0x75/0x80
->>  [<ffffffff810cec90>] ? rcu_boost+0x120/0x120
->>  [<ffffffff8107e1a3>] kthread+0x93/0xc0
->>  [<ffffffff81098bad>] ? trace_hardirqs_on_caller+0x13d/0x180
->>  [<ffffffff8171d4d4>] kernel_thread_helper+0x4/0x10
->>  [<ffffffff81048ad7>] ? finish_task_switch+0x77/0x100
->>  [<ffffffff8171bc04>] ? retint_restore_args+0xe/0xe
->>  [<ffffffff8107e110>] ? __init_kthread_worker+0x70/0x70
->>  [<ffffffff8171d4d0>] ? gs_change+0xb/0xb
->> no locks held by rcub0/9.
->
-> Hello, Daniel,
->
-> Does the following patch help?
->
->                                                        Thanx, Paul
->
-> ------------------------------------------------------------------------
->
-> rcu: Simplify curing of load woes
->
-> Make the functions creating the kthreads wake them up.  Leverage the
-> fact that the per-node and boost kthreads can run anywhere, thus
-> dispensing with the need to wake them up once the incoming CPU has
-> gone fully online.
->
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->
-[]
+From: Yuan-Hsin Chen <yhchen@faraday-tech.com>
 
-Superb - this addresses the hangcheck warnings.
+When enabling both port multiplier and platform ahci sata, ahci
+times out while connecting to HDD directly. This is because soft
+reset fails with IPMS set. Do soft reset again to port 0.
 
-Tested-by: Daniel J Blueman <daniel.blueman@gmail.com>
+The soft reset sequence is copied from ahci.c.
 
-Thanks,
-  Daniel
+Signed-off-by: Yuan-Hsin Chen <yhchen@faraday-tech.com>
+---
+ drivers/ata/ahci_platform.c |   62 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 61 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index 6fef1fa..6eab716 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -27,6 +27,66 @@ static struct scsi_host_template ahci_platform_sht = {
+ 	AHCI_SHT("ahci_platform"),
+ };
+ 
++static int ahci_pmp_softreset(struct ata_link *link, unsigned int *class,
++			  unsigned long deadline);
++
++static struct ata_port_operations ahci_pmp_ops = {
++	.inherits		= &ahci_ops,
++	.softreset		= ahci_pmp_softreset,
++	.pmp_softreset		= ahci_pmp_softreset,
++};
++
++static int ahci_pmp_check_ready(struct ata_link *link)
++{
++	void __iomem *port_mmio = ahci_port_base(link->ap);
++	u8 status = readl(port_mmio + PORT_TFDATA) & 0xFF;
++	u32 irq_status = readl(port_mmio + PORT_IRQ_STAT);
++
++	/*
++	 * There is no need to check TFDATA if BAD PMP is found due to HW bug,
++	 * which can save timeout delay.
++	 */
++	if (irq_status & PORT_IRQ_BAD_PMP)
++		return -EIO;
++
++	printk("%s:TFT 0x%x\n", __func__, status);
++	return ata_check_ready(status);
++}
++
++static int ahci_pmp_softreset(struct ata_link *link, unsigned int *class,
++				unsigned long deadline)
++{
++	struct ata_port *ap = link->ap;
++	void __iomem *port_mmio = ahci_port_base(ap);
++	int pmp = sata_srst_pmp(link);
++	int rc;
++	u32 irq_sts;
++
++	DPRINTK("ENTER\n");
++
++	rc = ahci_do_softreset(link, class, pmp, deadline,
++			       ahci_pmp_check_ready);
++
++	/*
++	 * Soft reset fails with IPMS set when PMP is enabled but
++	 * SATA HDD/ODD is connected to SATA port, do soft reset
++	 * again to port 0.
++	 */
++	if (rc == -EIO) {
++		irq_sts = readl(port_mmio + PORT_IRQ_STAT);
++		if (irq_sts & PORT_IRQ_BAD_PMP) {
++			ata_link_printk(link, KERN_WARNING,
++					"applying PMP SRST workaround "
++					"and retrying\n");
++			rc = ahci_do_softreset(link, class, 0, deadline,
++					       ahci_check_ready);
++		}
++	}
++
++	return rc;
++}
++
++
+ static int __init ahci_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+@@ -35,7 +95,7 @@ static int __init ahci_probe(struct platform_device *pdev)
+ 		.flags		= AHCI_FLAG_COMMON,
+ 		.pio_mask	= ATA_PIO4,
+ 		.udma_mask	= ATA_UDMA6,
+-		.port_ops	= &ahci_ops,
++		.port_ops	= &ahci_pmp_ops,
+ 	};
+ 	const struct ata_port_info *ppi[] = { &pi, NULL };
+ 	struct ahci_host_priv *hpriv;
 -- 
-Daniel J Blueman
+1.7.3.1
+
