@@ -1,151 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab1FNVRS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 17:17:18 -0400
-Received: from hawking.das.ufsc.br ([150.162.12.21]:45727 "EHLO
-	hawking.das.ufsc.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752150Ab1FNVRQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 17:17:16 -0400
-X-Greylist: delayed 329 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Jun 2011 17:17:14 EDT
+	id S1752610Ab1FNVOQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 17:14:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25870 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750947Ab1FNVOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 17:14:15 -0400
+Date: Tue, 14 Jun 2011 17:14:11 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tao Ma <tm@tao.ma>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: CFQ: async queue blocks the whole system
+Message-ID: <20110614211411.GI2525@redhat.com>
+References: <20110609182706.GG29913@redhat.com>
+ <4DF1B035.7080009@tao.ma>
+ <20110610091427.GB4183@redhat.com>
+ <4DF1EB45.1070706@tao.ma>
+ <20110610154414.GA31853@redhat.com>
+ <4DF5E1A8.7080100@tao.ma>
+ <20110613214154.GL633@redhat.com>
+ <4DF707BC.20007@tao.ma>
+ <20110614133047.GA2525@redhat.com>
+ <4DF78157.6020907@tao.ma>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Tue, 14 Jun 2011 18:11:32 -0300
-From: xtarke <xtarke@das.ufsc.br>
-To: <linux-kernel@vger.kernel.org>
-Subject: =?UTF-8?Q?stop=5Fmachine=20question?=
-Message-ID: <88c177c8eb360c9d54583b5af504613a@das.ufsc.br>
-User-Agent: Roundcube Webmail/0.5.1
-X-das-MailScanner-ID: AF05D5FA32.5DCC7
-X-das-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
-X-das-MailScanner-SpamCheck: not spam (whitelisted),
-	SpamAssassin (not cached, score=-2.9, required 7, autolearn=not spam,
-	ALL_TRUSTED -1.00, BAYES_00 -1.90)
-X-das-MailScanner-From: xtarke@das.ufsc.br
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DF78157.6020907@tao.ma>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Hi guys,
+On Tue, Jun 14, 2011 at 11:42:15PM +0800, Tao Ma wrote:
+> On 06/14/2011 09:30 PM, Vivek Goyal wrote:
+> > On Tue, Jun 14, 2011 at 03:03:24PM +0800, Tao Ma wrote:
+> >> Hi Vivek,
+> >> On 06/14/2011 05:41 AM, Vivek Goyal wrote:
+> >>> On Mon, Jun 13, 2011 at 06:08:40PM +0800, Tao Ma wrote:
+> >>>
+> >>> [..]
+> >>>>> You can also run iostat on disk and should be able to see that with
+> >>>>> the patch you are dispatching writes more often than before.
+> >>>> Sorry, the patch doesn't work.
+> >>>>
+> >>>> I used trace event to capture all the blktraces since it doesn't
+> >>>> interfere with the tests, hope it helps.
+> >>>
+> >>> Actually I was looking for CFQ traces. This seems to be generic block
+> >>> layer trace points. May be you can use "blktrace -d /dev/<device>"
+> >>> and then blkparse. It also gives the aggregate view which is helpful.
+> >>>
+> >>>>
+> >>>> Please downloaded it from http://blog.coly.li/tmp/blktrace.tar.bz2
+> >>>
+> >>> What concerns me is following.
+> >>>
+> >>> 5255.521353: block_rq_issue: 8,0 W 0 () 571137153 + 8 [attr_set]
+> >>> 5578.863871: block_rq_issue: 8,0 W 0 () 512950473 + 48 [kworker/0:1]
+> >>>
+> >>> IIUC, we dispatched second write more than 300 seconds after dispatching
+> >>> 1 write. What happened in between. We should have dispatched more writes.
+> >>>
+> >>> CFQ traces might give better idea in terms of whether wl_type for async
+> >>> queues was scheduled or not at all.
+> >> I tried several times today, but it looks like that if I enable
+> >> blktrace, the hung_task will not show up in the message. So do you think
+> >> the blktrace at that time is still useful? If yes, I can capture 1
+> >> minute for you. Thanks.
+> > 
+> > Capturing 1 min output will also be good. 
+> OK, I captured 2 mins blkparse log before the hung. You can downloaded
+> it from http://blog.coly.li/tmp/blkparse.tar.bz2
 
- I've been made some study in System Management Interrupts (SMI) using 
- Linux.  Looking into lwn.net, I found a module called "Hardware Latency 
- Detector (formerly SMI detector)"  written by Jon Masters a few years 
- ago, as Jon says (http://lwn.net/Articles/337018/):
+Thanks. I looked at this log and looks like now we are not starving
+WRITES.
 
- "This is a loadable module that grabs the CPU for
- configurable periods of time (all under stop_machine()) and samples the 
- TSC
- looking for discontinuity. If observed latencies exceed a threshold 
- (for
- example caused by an System Management Interrupt or similar) then the
- event is recorded in a global ring_buffer, readable via debugfs."
+I did grep on the logs.
 
- I modified the module to grab the TSC directly as you can see in the 
- "get_sample" code below:
+grep -e "wl_type:0" -e "cfq3068A / sl_used" blkparse.log | async-dispatch
 
- static int get_sample(void *unused)
- {
+And I see that now async WRITES are being dispatched at regular interval
+and we are not seeing long delays (atleast in this log).
 
- (...)
+A sample output is as follows. What I am expecting from the patch is that
+it will avoid the starvation of async queues in presence of lots of
+writers. That's a different thing that one might not be able to push
+enough WRITES in 120 seconds window and one can still get hung task
+timeout message. 
 
-   do {
-         t2 = ktime_get();
+ 5.135877740     0  m   N cfq3068A / set_active wl_prio:0 wl_type:0
+ 5.231137776     0  m   N cfq3068A / sl_used=95 disp=1 charge=95 iops=0 sect=16
+13.311745653     0  m   N cfq3068A / set_active wl_prio:0 wl_type:0
+13.373046196     0  m   N cfq3068A / sl_used=1 disp=16 charge=1 iops=0 sect=136
+18.097413421     0  m   N cfq3068A / set_active wl_prio:0 wl_type:0
+18.097466598     0  m   N cfq3068A / sl_used=1 disp=3 charge=1 iops=0 sect=32
+18.119371182     0  m   N cfq3068A / set_active wl_prio:0 wl_type:0
+18.159420999     0  m   N cfq3068A / sl_used=40 disp=1592 charge=40 iops=0 sect=14360
+18.159424767     0  m   N cfq3068A / set_active wl_prio:0 wl_type:0
+18.199409182     0  m   N cfq3068A / sl_used=40 disp=1646 charge=40 iops=0 sect=13584
+18.199414996     0  m   N cfq3068A / set_active wl_prio:0 wl_type:0
+18.239374395     0  m   N cfq3068A / sl_used=40 disp=1678 charge=40 iops=0 sect=13872
+18.239378182     0  m   N cfq3068A / set_active wl_prio:0 wl_type:0
+18.254531670     0  m   N cfq3068A / sl_used=15 disp=603 charge=15 iops=0 sect=4920
+27.580961230     0  m   N cfq3068A / set_active wl_prio:0 wl_type:0
+27.653340897     0  m   N cfq3068A / sl_used=72 disp=16 charge=72 iops=0 sect=128
 
-         rdtscll(tsc[1]);
- 
-         total = ktime_to_us(ktime_sub(t2, start)); /* sample width */
-         //diff = ktime_to_us(ktime_sub(t2, t1));     /* current diff */
-
-         diff = (s64)(tsc[1] - tsc[0]); /* tsc diff*/
-
-         /* This shouldn't happen */
-         if (diff < 0) {
-             printk(KERN_ERR BANNER "time running backwards\n");
-             goto out;
-         }
- 
- 
-         if (diff > data.threshold){
-             overthrc++;
-             sample = diff;    /* only want highest value */
-             s.timestamp = tsc[1];
-         }
-
-         tsc[0] = tsc[1];
-
-         count++;
- 
-    } while (total <= data.sample_width);
-
-    (...)
- }
-
- The function get_sample is invoked by a kernel thread coded below:
-
- static int kthread_fn(void *unused)
- {
-     (...)
-
- while (!kthread_should_stop()) {
-
-         mutex_lock(&data.lock);
-
-         err = stop_machine(get_sample, unused, &cpus);
-         if (err) {
-             /* Houston, we have a problem */
-             mutex_unlock(&data.lock);
-             goto err_out;
-         }
-
-         interval = data.sample_window - data.sample_width;
-         do_div(interval, USEC_PER_MSEC); /* modifies interval value */
-
-         mutex_unlock(&data.lock);
-
-         if (data.count > data.max_count){
-                     enabled = 0;
-                     stop_kthread();
-                     wake_up(&data.wq);
-                     data.count = 0;
-                 }
-
-         if (msleep_interruptible(interval))
-             goto out;
- (...)
-
- }
-
- Running this code in kernel 2.6.37.6 (Slackware 13.37) there is a huge 
- discontinuity,  (diff = (s64)(tsc[1] - tsc[0])), about 25000 cycles, 
- just when I run this code with a msleep_interruptible() in the kernel 
- thread. When I remove it, the problem disappears. Moreover, the 
- discontinuity appears always in the same time in the get_sample's while 
- and never in the first execution of the kthread_fn's while. The kernel 
- trace doesn't shows get_sample to be interrupted.
-
- My question, is possible to some kernel code run inside stop_machine? 
- In other words, why get_sample seems to be interrupted when I use a 
- sleep?
-
- Any help will be apreeciated.
-
- Thanks a lot,
-
- Renan Augusto Starke
-
- processor       : 0
- vendor_id       : GenuineIntel
- cpu family      : 6
- model           : 15
- model name      : Intel(R) Core(TM)2 CPU          6400  @ 2.13GHz
- stepping        : 2
- cpu MHz         : 2133.336
- cache size      : 2048 KB
-
- The system is a Dell Optiplex 745.
-
- Xtarke under Slackware 13.1
- Linux user ID #354257
+Thanks
+Vivek
