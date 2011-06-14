@@ -1,35 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab1FNAnL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 20:43:11 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:54905 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755529Ab1FNAnH (ORCPT
+	id S1755621Ab1FNAnc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 20:43:32 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:44911 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755596Ab1FNAn1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 20:43:07 -0400
-X-Nat-Received: from [202.181.97.72]:60275 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1308012103.5362
-Message-Id: <201106140041.p5E0fhAh029531@www262.sakura.ne.jp>
-Subject: [3.0-rc3] scripts/depmod.sh: Permission denied
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: mmarek@suse.cz
-Cc: linux-kernel@vger.kernel.org
+	Mon, 13 Jun 2011 20:43:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=IAksSUKfZbBb+N4bETo1ovy3pQlmffFUA50QeXktQwOT+0sIpkJlPq+1/mpeOaD6RI
+         Q1x/+D3hu6caou4U2H5g==
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Date: Tue, 14 Jun 2011 09:41:42 +0900
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 13062011 #5524395, status: clean
+In-Reply-To: <1303775584-13347-1-git-send-email-vnagarnaik@google.com>
+References: <1303513209-26436-1-git-send-email-vnagarnaik@google.com> <1303775584-13347-1-git-send-email-vnagarnaik@google.com>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Mon, 13 Jun 2011 17:42:51 -0700
+Message-ID: <BANLkTimH4+gqwq+Fu7qKCbuDoexTeJrbR8i7PLUuoC18M6etKw@mail.gmail.com>
+Subject: Re: [PATCH] trace: Add tracepoints to fs subsystem
+To: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, Jiaying Zhang <jiayingz@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-linux-3.0-rc3.tar.bz2 generates
--rwxrwxr-x  1 root root 1231 Jun 14 07:29 linux-3.0-rc3/scripts/depmod.sh
-but linux-2.6.39.tar.bz2 + patch-3.0-rc3.bz2 generates
--rw-r--r--  1 root root 1231 Jun 14 09:34 scripts/depmod.sh
-which results in
+On Mon, Apr 25, 2011 at 4:53 PM, Vaibhav Nagarnaik
+<vnagarnaik@google.com> wrote:
+> From: Jiaying Zhang <jiayingz@google.com>
+>
+> These few fs tracepoints are useful while debugging latency issues in
+> filesystems and were used specifically for debugging various writeback
+> subsystem issues. This patch adds entry and exit tracepoints for the
+> following functions, viz.:
+> wait_on_buffer
+> block_write_full_page
+> mpage_readpages
+> file_read
+>
+> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+> ---
+>  fs/buffer.c               |   10 +++
+>  fs/mpage.c                |    3 +
+>  include/trace/events/fs.h |  162 +++++++++++++++++++++++++++++++++++++++++++++
+>  mm/filemap.c              |    4 +-
+>  4 files changed, 178 insertions(+), 1 deletions(-)
+>  create mode 100644 include/trace/events/fs.h
+>
+> diff --git a/fs/buffer.c b/fs/buffer.c
+> index a08bb8e..1c118f4 100644
+> --- a/fs/buffer.c
+> +++ b/fs/buffer.c
+> @@ -42,6 +42,9 @@
+>  #include <linux/mpage.h>
+>  #include <linux/bit_spinlock.h>
+>
+> +#define CREATE_TRACE_POINTS
+> +#include <trace/events/fs.h>
+> +
+>  static int fsync_buffers_list(spinlock_t *lock, struct list_head *list);
+>
+>  #define BH_ENTRY(list) list_entry((list), struct buffer_head, b_assoc_buffers)
+> @@ -82,7 +85,9 @@ EXPORT_SYMBOL(unlock_buffer);
+>  */
+>  void __wait_on_buffer(struct buffer_head * bh)
+>  {
+> +       trace_fs_buffer_wait_enter(bh);
+>        wait_on_bit(&bh->b_state, BH_Lock, sleep_on_buffer, TASK_UNINTERRUPTIBLE);
+> +       trace_fs_buffer_wait_exit(bh);
+>  }
+>  EXPORT_SYMBOL(__wait_on_buffer);
+>
+> @@ -1647,6 +1652,8 @@ static int __block_write_full_page(struct inode *inode, struct page *page,
+>        head = page_buffers(page);
+>        bh = head;
+>
+> +       trace_block_write_full_page_enter(inode, block, last_block);
+> +
+>        /*
+>         * Get all the dirty buffers mapped to disk addresses and
+>         * handle any aliases from the underlying blockdev's mapping.
+> @@ -1736,6 +1743,9 @@ done:
+>                 * here on.
+>                 */
+>        }
+> +
+> +       trace_block_write_full_page_exit(inode, nr_underway, err);
+> +
+>        return err;
+>
+>  recover:
+> diff --git a/fs/mpage.c b/fs/mpage.c
+> index 0afc809..1c3b8e1 100644
+> --- a/fs/mpage.c
+> +++ b/fs/mpage.c
+> @@ -28,6 +28,7 @@
+>  #include <linux/backing-dev.h>
+>  #include <linux/pagevec.h>
+>
+> +#include <trace/events/fs.h>
+>  /*
+>  * I/O completion handler for multipage BIOs.
+>  *
+> @@ -373,6 +374,8 @@ mpage_readpages(struct address_space *mapping, struct list_head *pages,
+>        for (page_idx = 0; page_idx < nr_pages; page_idx++) {
+>                struct page *page = list_entry(pages->prev, struct page, lru);
+>
+> +               if (page_idx == 0)
+> +                       trace_mpage_readpages(page, mapping, nr_pages);
+>                prefetchw(&page->flags);
+>                list_del(&page->lru);
+>                if (!add_to_page_cache_lru(page, mapping,
+> diff --git a/include/trace/events/fs.h b/include/trace/events/fs.h
+> new file mode 100644
+> index 0000000..95f7bc8
+> --- /dev/null
+> +++ b/include/trace/events/fs.h
+> @@ -0,0 +1,162 @@
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM fs
+> +
+> +#if !defined(_TRACE_FS_H) || defined(TRACE_HEADER_MULTI_READ)
+> +#define _TRACE_FS_H
+> +
+> +#include <linux/tracepoint.h>
+> +
+> +DECLARE_EVENT_CLASS(fs_buffer_wait,
+> +
+> +       TP_PROTO(struct buffer_head *bh),
+> +
+> +       TP_ARGS(bh),
+> +
+> +       TP_STRUCT__entry(
+> +               __field(        void *, bh      )
+> +       ),
+> +
+> +       TP_fast_assign(
+> +               __entry->bh = bh;
+> +       ),
+> +
+> +       TP_printk("bh %p", __entry->bh)
+> +);
+> +
+> +DEFINE_EVENT(fs_buffer_wait, fs_buffer_wait_enter,
+> +
+> +       TP_PROTO(struct buffer_head *bh),
+> +
+> +       TP_ARGS(bh)
+> +);
+> +
+> +DEFINE_EVENT(fs_buffer_wait, fs_buffer_wait_exit,
+> +
+> +       TP_PROTO(struct buffer_head *bh),
+> +
+> +       TP_ARGS(bh)
+> +);
+> +
+> +TRACE_EVENT(block_write_full_page_enter,
+> +
+> +       TP_PROTO(struct inode *inode, sector_t block, sector_t last_block),
+> +
+> +       TP_ARGS(inode, block, last_block),
+> +
+> +       TP_STRUCT__entry(
+> +               __field(        dev_t,          dev             )
+> +               __field(        unsigned long,  ino             )
+> +               __field(        sector_t,       block           )
+> +               __field(        sector_t,       last_block      )
+> +       ),
+> +
+> +       TP_fast_assign(
+> +               __entry->dev            = inode->i_sb->s_dev;
+> +               __entry->ino            = inode->i_ino;
+> +               __entry->block          = block;
+> +               __entry->last_block     = last_block;
+> +       ),
+> +
+> +       TP_printk("dev %d,%d ino %lu block %lu last block %lu",
+> +                 MAJOR(__entry->dev), MINOR(__entry->dev),
+> +                 __entry->ino,
+> +                 (unsigned long)__entry->block,
+> +                 (unsigned long)__entry->last_block)
+> +);
+> +
+> +TRACE_EVENT(block_write_full_page_exit,
+> +
+> +       TP_PROTO(struct inode *inode, int nr_underway, int err),
+> +
+> +       TP_ARGS(inode, nr_underway, err),
+> +
+> +       TP_STRUCT__entry(
+> +               __field(        dev_t,          dev             )
+> +               __field(        unsigned long,  ino             )
+> +               __field(        int,            nr_underway     )
+> +               __field(        int,            err             )
+> +       ),
+> +
+> +       TP_fast_assign(
+> +               __entry->dev            = inode->i_sb->s_dev;
+> +               __entry->ino            = inode->i_ino;
+> +               __entry->nr_underway    = nr_underway;
+> +               __entry->err            = err;
+> +       ),
+> +
+> +       TP_printk("dev %d,%d ino %lu nr_underway %d err %d",
+> +                 MAJOR(__entry->dev), MINOR(__entry->dev),
+> +                 __entry->ino, __entry->nr_underway, __entry->err)
+> +);
+> +
+> +DECLARE_EVENT_CLASS(file_read,
+> +       TP_PROTO(struct inode *inode, loff_t pos, size_t len),
+> +
+> +       TP_ARGS(inode, pos, len),
+> +
+> +       TP_STRUCT__entry(
+> +               __field(        ino_t,  ino                     )
+> +               __field(        dev_t,  dev                     )
+> +               __field(        loff_t, pos                     )
+> +               __field(        size_t, len                     )
+> +       ),
+> +
+> +       TP_fast_assign(
+> +               __entry->ino    = inode->i_ino;
+> +               __entry->dev    = inode->i_sb->s_dev;
+> +               __entry->pos    = pos;
+> +               __entry->len    = len;
+> +       ),
+> +
+> +       TP_printk("dev %d,%d ino %lu pos %llu len %lu",
+> +                 MAJOR(__entry->dev), MINOR(__entry->dev),
+> +                 (unsigned long) __entry->ino,
+> +                  __entry->pos,  __entry->len)
+> +);
+> +
+> +DEFINE_EVENT(file_read, file_read_enter,
+> +
+> +       TP_PROTO(struct inode *inode, loff_t pos, size_t len),
+> +
+> +       TP_ARGS(inode, pos, len)
+> +);
+> +
+> +DEFINE_EVENT(file_read, file_read_exit,
+> +
+> +       TP_PROTO(struct inode *inode, loff_t pos, size_t len),
+> +
+> +       TP_ARGS(inode, pos, len)
+> +);
+> +
+> +TRACE_EVENT(mpage_readpages,
+> +       TP_PROTO(struct page *page, struct address_space *mapping,
+> +                unsigned nr_pages),
+> +
+> +       TP_ARGS(page, mapping, nr_pages),
+> +
+> +       TP_STRUCT__entry(
+> +               __field(        pgoff_t, index                  )
+> +               __field(        ino_t,  ino                     )
+> +               __field(        dev_t,  dev                     )
+> +               __field(        unsigned,       nr_pages        )
+> +
+> +       ),
+> +
+> +       TP_fast_assign(
+> +               __entry->index  = page->index;
+> +               __entry->ino    = mapping->host->i_ino;
+> +               __entry->dev    = mapping->host->i_sb->s_dev;
+> +               __entry->nr_pages       = nr_pages;
+> +       ),
+> +
+> +       TP_printk("dev %d,%d ino %lu page_index %lu nr_pages %u",
+> +                 MAJOR(__entry->dev), MINOR(__entry->dev),
+> +                 (unsigned long) __entry->ino,
+> +                 __entry->index, __entry->nr_pages)
+> +);
+> +
+> +#endif /* _TRACE_FS_H */
+> +
+> +/* This part must be outside protection */
+> +#include <trace/define_trace.h>
+> +
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index c641edf..94e549c 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -42,7 +42,7 @@
+>  #include <linux/buffer_head.h> /* for try_to_free_buffers */
+>
+>  #include <asm/mman.h>
+> -
+> +#include <trace/events/fs.h>
+>  /*
+>  * Shared mappings implemented 30.11.1994. It's not fully working yet,
+>  * though.
+> @@ -1054,6 +1054,7 @@ static void do_generic_file_read(struct file *filp, loff_t *ppos,
+>        unsigned int prev_offset;
+>        int error;
+>
+> +       trace_file_read_enter(inode, *ppos, desc->count);
+>        index = *ppos >> PAGE_CACHE_SHIFT;
+>        prev_index = ra->prev_pos >> PAGE_CACHE_SHIFT;
+>        prev_offset = ra->prev_pos & (PAGE_CACHE_SIZE-1);
+> @@ -1254,6 +1255,7 @@ out:
+>        ra->prev_pos <<= PAGE_CACHE_SHIFT;
+>        ra->prev_pos |= prev_offset;
+>
+> +       trace_file_read_exit(inode, *ppos, desc->written);
+>        *ppos = ((loff_t)index << PAGE_CACHE_SHIFT) + offset;
+>        file_accessed(filp);
+>  }
+> --
+> 1.7.3.1
+>
+>
 
-make: execvp: /usr/src/linux-3.0-rc3/scripts/depmod.sh: Permission denied
-make: *** [_modinst_post] Error 127
+Hi Alexander
 
-Would you add "chmod +x scripts/depmod.sh" before invoking depmod.sh ?
+Can you provide your thoughts on this patch?
+
+
+Thanks
+Vaibhav Nagarnaik
