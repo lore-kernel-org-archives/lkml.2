@@ -1,61 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754149Ab1FNVYz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 17:24:55 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58192 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753303Ab1FNVYy (ORCPT
+	id S1754108Ab1FNVYn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 17:24:43 -0400
+Received: from mta11.charter.net ([216.33.127.80]:63016 "EHLO
+	mta11.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753303Ab1FNVYj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 17:24:54 -0400
+	Tue, 14 Jun 2011 17:24:39 -0400
+X-Authority-Analysis: v=1.1 cv=vT9vkN3vVXssH3Ov7r/wQUs/sfIFjNPEFFf4aeKIi4A=
+ c=1 sm=1 a=p9YancsnzTcA:10 a=lE-93N_JSvIA:10 a=8nJEP1OIZ-IA:10
+ a=xzrYXqw+0zwiO4gHSXHcAg==:17 a=1TOdV14S6Zg42AI6UZ0A:9
+ a=5k-5Q243HpCcdUEdT9QA:7 a=wPNLvfGTeEIA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:117
+Message-ID: <4DF7D197.5070205@cuw.edu>
+Date: Tue, 14 Jun 2011 16:24:39 -0500
+From: Greg Dietsche <gregory.dietsche@cuw.edu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110505 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <20110614211613.GB12249@elte.hu>
-References: <1307777464.25182.3.camel@localhost.localdomain>
- <BANLkTi=SQb6EL4+bdH2Q+iwaW9E3i+48Ew@mail.gmail.com> <BANLkTi=yEo9fcXW8SqUCtSOag7Mn_+Ni9Q@mail.gmail.com>
- <BANLkTimv6F8NsH0Lg7q6gi1-oiBv8nUrSA@mail.gmail.com> <BANLkTikbnsu05+Nae8isATuZ8Fucj14+LQ@mail.gmail.com>
- <BANLkTi=nsCK2bFf2v+PkKj=Opsxseqe9pQ@mail.gmail.com> <BANLkTi=ZETGToRcOHXg5gxAQO3EKN+YyLg@mail.gmail.com>
- <BANLkTi=-xJizWP5H9vNvaJhRN-Vm-ubraA@mail.gmail.com> <4DF7A264.3030901@mit.edu>
- <20110614211613.GB12249@elte.hu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 14 Jun 2011 14:24:02 -0700
-Message-ID: <BANLkTi=W1xFdoSFxnNBGX9gt_pYOH4oF=A@mail.gmail.com>
-Subject: Re: [PATCH] x86, vsyscall: Fix build warning in vsyscall_64.c
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andy Lutomirski <luto@mit.edu>, Rakib Mullick <rakib.mullick@gmail.com>,
-        hpa@zytor.com, tglx@linutronix.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Julia Lawall <julia@diku.dk>
+CC: Gilles.Muller@lip6.fr, npalix.work@gmail.com, cocci@diku.dk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] coccinelle: if (ret) return ret; return ret; semantic
+ patch
+References: <Pine.LNX.4.64.1106060656050.7113@ask.diku.dk> <1307989386-17666-1-git-send-email-Gregory.Dietsche@cuw.edu> <Pine.LNX.4.64.1106132033460.24125@ask.diku.dk> <4DF67933.9080707@cuw.edu> <Pine.LNX.4.64.1106140746590.14970@ask.diku.dk>
+In-Reply-To: <Pine.LNX.4.64.1106140746590.14970@ask.diku.dk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 14, 2011 at 2:16 PM, Ingo Molnar <mingo@elte.hu> wrote:
+On 06/14/2011 12:50 AM, Julia Lawall wrote:
+> On Mon, 13 Jun 2011, Greg Dietsche wrote:
+>    
+>> just curious... i see you usually just write "return ret;" here when posting.
+>> I've assumed that's because it will 1) work and 2) is close enough.
+>>
+>> You'll notice I've been doing:
+>> -return ret;
+>> +return ret;
+>> because it seems to help coccinelle realize that it can get rid of extra line
+>> feeds - does this make sense - or should i just be doing a "return ret"?
+>>      
+> I wondered why you were doing that :)
 >
-> I think correctness trumps code size and turning BUG() and BUG_ON()
-> into a NOP is just crazy ...
+> Is the problem that the removed if is being replaced by a blank line?  If
+> so, that is not intentional.  I will look into it.  If it doesn't happen
+> always, an example where it does happen could be helpful.
+>
+>    
 
-Umm. It's even CRAZIER to turn it into a "compiler generates random code".
+Some times it gets it right, so it's not always wrong. For example:
 
-Which is what "unreachable()" ends up doing (different compilers will
-generate different things - ranging from an infinite loop, to a "nop
-with random behavior after it because gcc decided that it doesn't need
-to pop arguments off the stack and just runs into random code
-instead").
+diff -u -p a/arch/m68k/math-emu/fp_log.c b/arch/m68k/math-emu/fp_log.c
+--- a/arch/m68k/math-emu/fp_log.c 2011-06-13 14:06:37.943954469 -0500
++++ b/arch/m68k/math-emu/fp_log.c 2011-06-14 16:07:22.394954040 -0500
+@@ -105,9 +105,6 @@ fp_fetoxm1(struct fp_ext *dest, struct f
 
-So a NOP is a *hell* of a lot better than turning BUG_ON() into
-something random.
+         fp_monadic_check(dest, src);
 
-The only (and I mean *only*) valid use-case for unreachable() is after
-an inline asm that really causes the next instruction to be
-unreachable(), but the compiler just doesn't understand it. It is
-*not* valid for that kind of crazy "if (condition) do-random-thing"
-crap.
+-       if (IS_ZERO(dest))
+-               return dest;
+-
+         return dest;
+  }
 
-Seriously. If you want a "do random thing" thing, don't call it
-BUG_ON(). Call it "I_M_A_FUCKING_MORON()".
 
-There is no way I will ever accept a moronic patch like that.
 
-Really.
+Here's an example where it got it "wrong" - notice how the blank line is 
+missing the - :
 
-                     Linus
+diff -u -p a/arch/frv/mm/pgalloc.c b/arch/frv/mm/pgalloc.c
+--- a/arch/frv/mm/pgalloc.c 2011-06-13 14:06:37.855954391 -0500
++++ b/arch/frv/mm/pgalloc.c 2011-06-14 16:07:16.714954008 -0500
+@@ -136,8 +136,6 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
+         pgd_t *pgd;
+
+         pgd = quicklist_alloc(0, GFP_KERNEL, pgd_ctor);
+-       if (!pgd)
+-               return pgd;
+
+         return pgd;
+  }
+
+
+but when I do
+-return ret;
++return ret;
+
+then both of the above examples are "correct"
+
+
+Greg
+
+
+> The disadvantage of removing something and then adding it back is that
+> then Coccinelle takes over the pretty printing of that thing.  Since ret
+> is usually a variable, it doesn't matter, and since Coccinelle tries to
+> follow Linux spacing conventions it might not matter either.  But eg
+> f(a,b,c,d) would become f(a, b, c, d).
+>
+> julia
+>    
+
+
