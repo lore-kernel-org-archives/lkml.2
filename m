@@ -1,230 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055Ab1FNHpQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 03:45:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17059 "EHLO mx1.redhat.com"
+	id S1755124Ab1FNHws (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 03:52:48 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40180 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753260Ab1FNHpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 03:45:13 -0400
-Date: Tue, 14 Jun 2011 10:45:00 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Glauber Costa <glommer@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH 3/7] KVM-HV: KVM Steal time implementation
-Message-ID: <20110614074500.GM491@redhat.com>
-References: <1308007897-17013-1-git-send-email-glommer@redhat.com>
- <1308007897-17013-4-git-send-email-glommer@redhat.com>
+	id S1754968Ab1FNHwq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 03:52:46 -0400
+From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
+To: Tejun Heo <tj@kernel.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, "Girdwood, Liam" <lrg@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "Lopez Cruz, Misael" <misael.lopez@ti.com>
+Subject: Re: Re: Re: Re: [PATCH v4 11/18] input: Add initial support for TWL6040 vibrator
+Date: Tue, 14 Jun 2011 10:51:35 +0300
+Message-ID: <4476185.bf2jyafmHt@barack>
+User-Agent: KMail/4.6.0 (Linux/2.6.39-gentoo; KDE/4.6.4; x86_64; ; )
+In-Reply-To: <20110614073130.GF8141@htj.dyndns.org>
+References: <1307706876-4768-1-git-send-email-peter.ujfalusi@ti.com> <8556714.NHVg2d8yTv@barack> <20110614073130.GF8141@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308007897-17013-4-git-send-email-glommer@redhat.com>
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 07:31:33PM -0400, Glauber Costa wrote:
-> To implement steal time, we need the hypervisor to pass the guest information
-> about how much time was spent running other processes outside the VM.
-> This is per-vcpu, and using the kvmclock structure for that is an abuse
-> we decided not to make.
+On Tuesday 14 June 2011 09:31:30 Tejun Heo wrote:
+> Thanks for the explanation.  I have a couple more questions.
 > 
-> In this patchset, I am introducing a new msr, KVM_MSR_STEAL_TIME, that
-> holds the memory area address containing information about steal time
-> 
-> This patch contains the hypervisor part for it. I am keeping it separate from
-> the headers to facilitate backports to people who wants to backport the kernel
-> part but not the hypervisor, or the other way around.
-> 
-> Signed-off-by: Glauber Costa <glommer@redhat.com>
-> CC: Rik van Riel <riel@redhat.com>
-> CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> CC: Peter Zijlstra <peterz@infradead.org>
-> CC: Avi Kivity <avi@redhat.com>
-> CC: Anthony Liguori <aliguori@us.ibm.com>
-> CC: Eric B Munson <emunson@mgebm.net>
-> ---
->  arch/x86/include/asm/kvm_host.h |    8 +++++
->  arch/x86/include/asm/kvm_para.h |    4 ++
->  arch/x86/kvm/x86.c              |   60 +++++++++++++++++++++++++++++++++++++--
->  3 files changed, 69 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index fc38eca..5dce014 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -388,6 +388,14 @@ struct kvm_vcpu_arch {
->  	unsigned int hw_tsc_khz;
->  	unsigned int time_offset;
->  	struct page *time_page;
-> +
-> +	struct {
-> +		u64 msr_val;
-> +		gpa_t stime;
-> +		struct kvm_steal_time steal;
-> +		u64 this_time_out;
-> +	} st;
-> +
->  	u64 last_guest_tsc;
->  	u64 last_kernel_ns;
->  	u64 last_tsc_nsec;
-> diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-> index ac306c4..0341e61 100644
-> --- a/arch/x86/include/asm/kvm_para.h
-> +++ b/arch/x86/include/asm/kvm_para.h
-> @@ -45,6 +45,10 @@ struct kvm_steal_time {
->  	__u32 pad[6];
->  };
->  
-> +#define KVM_STEAL_ALIGNMENT_BITS 5
-> +#define KVM_STEAL_VALID_BITS ((-1ULL << (KVM_STEAL_ALIGNMENT_BITS + 1)))
-> +#define KVM_STEAL_RESERVED_MASK (((1 << KVM_STEAL_ALIGNMENT_BITS) - 1 ) << 1)
-> +
->  #define KVM_MAX_MMU_OP_BATCH           32
->  
->  #define KVM_ASYNC_PF_ENABLED			(1 << 0)
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 6645634..10fe028 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -797,12 +797,12 @@ EXPORT_SYMBOL_GPL(kvm_get_dr);
->   * kvm-specific. Those are put in the beginning of the list.
->   */
->  
-> -#define KVM_SAVE_MSRS_BEGIN	8
-> +#define KVM_SAVE_MSRS_BEGIN	9
->  static u32 msrs_to_save[] = {
->  	MSR_KVM_SYSTEM_TIME, MSR_KVM_WALL_CLOCK,
->  	MSR_KVM_SYSTEM_TIME_NEW, MSR_KVM_WALL_CLOCK_NEW,
->  	HV_X64_MSR_GUEST_OS_ID, HV_X64_MSR_HYPERCALL,
-> -	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN,
-> +	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN, MSR_KVM_STEAL_TIME,
->  	MSR_IA32_SYSENTER_CS, MSR_IA32_SYSENTER_ESP, MSR_IA32_SYSENTER_EIP,
->  	MSR_STAR,
->  #ifdef CONFIG_X86_64
-> @@ -1480,6 +1480,34 @@ static void kvmclock_reset(struct kvm_vcpu *vcpu)
->  	}
->  }
->  
-> +static void record_steal_time(struct kvm_vcpu *vcpu)
-> +{
-> +	u64 delta;
-> +
-> +	if (vcpu->arch.st.stime && vcpu->arch.st.this_time_out) {
-> +
-> +		if (unlikely(kvm_read_guest(vcpu->kvm, vcpu->arch.st.stime,
-> +			&vcpu->arch.st.steal, sizeof(struct kvm_steal_time)))) {
-> +
-> +			vcpu->arch.st.stime = 0;
-> +			return;
-> +		}
-> +
-> +		delta = (get_kernel_ns() - vcpu->arch.st.this_time_out);
-> +
-> +		vcpu->arch.st.steal.steal += delta;
-> +		vcpu->arch.st.steal.version += 2;
-> +
-> +		if (unlikely(kvm_write_guest(vcpu->kvm, vcpu->arch.st.stime,
-Why not use kvm_write_guest_cached() here and introduce kvm_read_guest_cached()
-for the read above?
+> * While transferring data from I2C, I suppose the work item is fully
+>   occupying the CPU?
 
-> +			&vcpu->arch.st.steal, sizeof(struct kvm_steal_time)))) {
-> +
-> +			vcpu->arch.st.stime = 0;
-> +			return;
-> +		}
-> +	}
-> +
-> +}
-> +
->  int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
->  {
->  	switch (msr) {
-> @@ -1562,6 +1590,23 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
->  		if (kvm_pv_enable_async_pf(vcpu, data))
->  			return 1;
->  		break;
-> +	case MSR_KVM_STEAL_TIME:
-> +		vcpu->arch.st.msr_val = data;
-> +
-> +		if (!(data & KVM_MSR_ENABLED)) {
-> +			vcpu->arch.st.stime = 0;
-> +			break;
-> +		}
-> +
-> +		if (data & KVM_STEAL_RESERVED_MASK)
-> +			return 1;
-> +
-> +		vcpu->arch.st.this_time_out = get_kernel_ns();
-> +		vcpu->arch.st.stime = data & KVM_STEAL_VALID_BITS;
-> +		record_steal_time(vcpu);
-> +
-> +		break;
-> +
->  	case MSR_IA32_MCG_CTL:
->  	case MSR_IA32_MCG_STATUS:
->  	case MSR_IA32_MC0_CTL ... MSR_IA32_MC0_CTL + 4 * KVM_MAX_MCE_BANKS - 1:
-> @@ -1847,6 +1892,9 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
->  	case MSR_KVM_ASYNC_PF_EN:
->  		data = vcpu->arch.apf.msr_val;
->  		break;
-> +	case MSR_KVM_STEAL_TIME:
-> +		data = vcpu->arch.st.msr_val;
-> +		break;
->  	case MSR_IA32_P5_MC_ADDR:
->  	case MSR_IA32_P5_MC_TYPE:
->  	case MSR_IA32_MCG_CAP:
-> @@ -2158,6 +2206,8 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
->  			kvm_migrate_timers(vcpu);
->  		vcpu->cpu = cpu;
->  	}
-> +
-> +	record_steal_time(vcpu);
->  }
->  
->  void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
-> @@ -2165,6 +2215,7 @@ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
->  	kvm_x86_ops->vcpu_put(vcpu);
->  	kvm_put_guest_fpu(vcpu);
->  	kvm_get_msr(vcpu, MSR_IA32_TSC, &vcpu->arch.last_guest_tsc);
-> +	vcpu->arch.st.this_time_out = get_kernel_ns();
->  }
->  
-Shouldn't we call record_steal_time(vcpu)/vcpu->arch.st.this_time_out = get_kernel_ns();
-just before/after entering/exiting a guest? vcpu_(put|get) are called
-for each vcpu ioctl, not only VCPU_RUN.
+Not exactly on OMAP platforms at least. We do not have busy looping in low 
+level driver (we wait with wait_for_completion_timeout for the transfer to be 
+done), so scheduling on the same CPU can be possible.
 
->  static int is_efer_nx(void)
-> @@ -2477,7 +2528,8 @@ static void do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
->  			     (1 << KVM_FEATURE_NOP_IO_DELAY) |
->  			     (1 << KVM_FEATURE_CLOCKSOURCE2) |
->  			     (1 << KVM_FEATURE_ASYNC_PF) |
-> -			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT);
-> +			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
-> +			     (1 << KVM_FEATURE_STEAL_TIME);
->  		entry->ebx = 0;
->  		entry->ecx = 0;
->  		entry->edx = 0;
-> @@ -6200,6 +6252,8 @@ int kvm_arch_vcpu_reset(struct kvm_vcpu *vcpu)
->  
->  	kvmclock_reset(vcpu);
->  
-> +	vcpu->arch.st.stime = 0;
-> +
->  	kvm_clear_async_pf_completion_queue(vcpu);
->  	kvm_async_pf_hash_reset(vcpu);
->  	vcpu->arch.apf.halted = false;
-> -- 
-> 1.7.3.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>   If so, how long delay are we talking about?
+>   Millisecs?
 
---
-			Gleb.
+It is hard to predict, but it can be few tens of ms for one device, if we have 
+several devices on the same bus (which we tend to have), and they want to 
+read/write something at the same time we can see hundred(s) ms in total - it 
+is rare to happen, and hard to reproduce, but it does happen for sure.
+ 
+> * You said that the if one task is accessing I2C bus, the other would
+>   wait even if scheduled on a different CPU.  Is access to I2C bus
+>   protected with a spinlock?
+
+At the bottom it is using rt_mutex_lock/unlick to protect the bus.
+And yes, the others need to wait till the ongoing transfer has been finished.
+ 
+> Also, as it's currently implemented, single threaded wq's effectively
+> bypass concurrency level control.  This is an implementation detail
+> which may change in the future, so even if you're seeing lower latency
+> by using a separate single threaded wq, it's an accident and if you
+> require lower latency you should be expressing the requirement
+> explicitly.
+
+I see, do you have suggestion to which would be best for this kind of 
+scenarios.
+In most cases global wq would be OK for this, but time-to-time we face with 
+sudden latency spikes, which makes the user experience really bad.
+Currently with singlethreaded wq we can avoid these spikes.
+
+Thank you, 
+Péter
