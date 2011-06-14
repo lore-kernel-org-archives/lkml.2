@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952Ab1FNSky (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 14:40:54 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63241 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab1FNSku convert rfc822-to-8bit (ORCPT
+	id S1753249Ab1FNSmT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 14:42:19 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54214 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108Ab1FNSmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 14:40:50 -0400
+	Tue, 14 Jun 2011 14:42:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:content-type:to:cc:subject:references:date:mime-version
-         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
-        b=EZ37+CatjcwYrsfV7tUS25EC/rF0I2nLIs6mHPh8nfGXhKJygJR3/Ovlv9BNaLEitC
-         TDVNpm2+Kg8F5xQ/KDUbCxmFpMJAp9yS5JE/AHA+OtkhbbvNr4LIOdNRqNt0ahjQNX0N
-         T3I6mhYbaCn8tNuWt/drMoOYH5gbxl+Ci9Sc8=
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Arnd Bergmann" <arnd@arndb.de>
-Cc: "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Mel Gorman'" <mel@csn.ul.ie>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>
-Subject: Re: [PATCH 08/10] mm: cma: Contiguous Memory Allocator added
-References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
- <201106141803.00876.arnd@arndb.de> <op.vw2r3xrj3l0zgt@mnazarewicz-glaptop>
- <201106142030.07549.arnd@arndb.de>
-Date: Tue, 14 Jun 2011 20:40:46 +0200
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=dxVIK8BnIu4JTFk/1wqTpnpe/xYWFB8vX2Pjg8UxrhuSVN6B0n94eNrti3C0npTD3N
+         mCqOMwJpMUZlnF2Q/Y9+d40sZxJNUYvCYQ2Rg1iUaqQYuOBGWr+r2VgXw9IqU2QMJAxk
+         h7sEt6eSJkb4on/qIo88eBmm8xku0idpTlJHo=
+Message-ID: <4DF7AB84.3080000@gmail.com>
+Date: Tue, 14 Jun 2011 12:42:12 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.vw2wt8cs3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <201106142030.07549.arnd@arndb.de>
-User-Agent: Opera Mail/11.10 (Linux)
+To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com,
+        tglx@linutronix.de
+CC: acme@ghostprotocols.net, paulus@samba.org
+Subject: Re: [PATCH 0/6] Add time-of-day option to perf events
+References: <1307490806-24548-1-git-send-email-dsahern@gmail.com>
+In-Reply-To: <1307490806-24548-1-git-send-email-dsahern@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tuesday 14 June 2011 18:58:35 Michal Nazarewicz wrote:
->> Is having support for multiple regions a bad thing?  Frankly,
->> removing this support will change code from reading context passed
->> as argument to code reading context from global variable.  Nothing
->> is gained; functionality is lost.
+ping?
 
-On Tue, 14 Jun 2011 20:30:07 +0200, Arnd Bergmann wrote:
-> What is bad IMHO is making them the default, which forces the board
-> code to care about memory management details. I would much prefer
-> to have contiguous allocation parameters tuned automatically to just
-> work on most boards before we add ways to do board-specific hacks.
-
-I see those as orthogonal problems.  The code can have support for
-multiple contexts but by default use a single global context exported
-as cma_global variable (or some such).
-
-And I'm not arguing against having “contiguous allocation parameters
-tuned automatically to just work on most boards”.  I just don't see
-the reason to delete functionality that is already there, does not
-add much code and can be useful.
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+On 06/07/2011 05:53 PM, David Ahern wrote:
+> Another attempt at printing time-of-day strings on perf events - this
+> time with tracepoints in the timekeeping code to catch updates to
+> xtime.
+> 
+> David Ahern (6):
+>   trace: add tracepoints to timekeeping code - xtime changes
+>   perf utils: export parse_single_tracepoint_event
+>   perf: add reference time event
+>   perf record: add time-of-day option
+>   perf script: pass trace event to print_trace_event
+>   perf script: add time-of-day option for displaying events
+> 
+>  include/trace/events/timekeeping.h       |   43 ++++++++
+>  kernel/time/timekeeping.c                |    8 ++
+>  tools/perf/Documentation/perf-record.txt |    3 +
+>  tools/perf/Documentation/perf-script.txt |    8 ++-
+>  tools/perf/builtin-record.c              |  102 +++++++++++++++++++-
+>  tools/perf/builtin-script.c              |  157 +++++++++++++++++++++++++++++-
+>  tools/perf/util/event.c                  |    1 +
+>  tools/perf/util/event.h                  |    8 ++
+>  tools/perf/util/parse-events.c           |   13 +--
+>  tools/perf/util/parse-events.h           |   12 +++
+>  tools/perf/util/session.c                |    4 +
+>  tools/perf/util/session.h                |    3 +-
+>  tools/perf/util/trace-event-parse.c      |   12 +--
+>  tools/perf/util/trace-event.h            |    2 +-
+>  14 files changed, 350 insertions(+), 26 deletions(-)
+>  create mode 100644 include/trace/events/timekeeping.h
+> 
