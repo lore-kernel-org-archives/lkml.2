@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab1FNKLM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 06:11:12 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:50576 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755916Ab1FNKLJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 06:11:09 -0400
-Date: Tue, 14 Jun 2011 12:10:47 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Minchan Kim <minchan.kim@gmail.com>, mgorman@suse.de,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, aarcange@redhat.com,
-        kamezawa.hiroyu@jp.fujitsu.com, fengguang.wu@intel.com,
-        andi@firstfloor.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        riel@redhat.com
-Subject: Re: Easy portable testcase! (Re: Kernel falls apart under light
- memory pressure (i.e. linking vmlinux))
-Message-ID: <20110614101047.GG6371@cmpxchg.org>
-References: <BANLkTinptn4-+u+jgOr2vf2iuiVS3mmYXA@mail.gmail.com>
- <BANLkTimDtpVeLYisfon7g_=H80D0XXgkGQ@mail.gmail.com>
- <BANLkTim8ngH8ASTk9js-G9DxySWVb7VL3A@mail.gmail.com>
- <BANLkTim67zDojKPezhyAM=rzt-Mop1SFeg@mail.gmail.com>
+	id S1755979Ab1FNKPu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 06:15:50 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57157 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754241Ab1FNKPs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 06:15:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=VYTPVIRh1j6GNcQ0PIdYRNKnMeifVw/19R6gs2aVPemKpjRWoUhkcfAe3Th59l6PSu
+         C51YXUu05JmGGZPGMUBOBYFbNqSjtSzXDrK0DybYpiaZLK+IohAGr5evKLIFl2zeAhkq
+         ceg04y4ILSgVOOZfETuU7TYqNpdkM/WSj3+ak=
+Date: Tue, 14 Jun 2011 11:16:10 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: johnlinn@comcast.net
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: DMA setup for ARM platform with hole low in memory
+Message-ID: <20110614101610.GA12419@1n450.cable.virginmedia.net>
+References: <1347566644.1505253.1308000163643.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
+ <315025466.1505794.1308000719987.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTim67zDojKPezhyAM=rzt-Mop1SFeg@mail.gmail.com>
+In-Reply-To: <315025466.1505794.1308000719987.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 29, 2011 at 08:28:46PM -0400, Andrew Lutomirski wrote:
-> On Sun, May 29, 2011 at 2:28 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> >>
-> >> It works only if the zone meets high watermark. If allocation is
-> >> faster than reclaim(ie, it's true for slow swap device), the zone
-> >> would remain congested.
-> >> It means swapout would block.
-> >> As we see the OOM log, we can know that DMA32 zone can't meet high watermark.
-> >>
-> >> Does my guessing make sense?
-> >
-> > Hi Andrew.
-> > I got failed your scenario in my machine so could you be willing to
-> > test this patch for proving my above scenario?
-> > The patch is just revert patch of 0e093d99[do not sleep on the
-> > congestion queue...] for 2.6.38.6.
-> > I would like to test it for proving my above zone congestion scenario.
-> >
-> > I did it based on 2.6.38.6 for your easy apply so you must apply it
-> > cleanly on vanilla v2.6.38.6.
-> > And you have to add !pgdat_balanced and shrink_slab patch.
+On Mon, Jun 13, 2011 at 09:31:59PM +0000, johnlinn@comcast.net wrote:
+> I'm trying to decide the best way to setup this ARM platform DMA to
+> deal with the fact that the lowest 512K of memory can not be DMAed
+> into.  The rest of memory space is fine.
 > 
-> No, because my laptop just decided that it doesn't like to turn on. :(
-> 
-> I'll test it on my VM on Tuesday and (fingers crossed) on my repaired
-> laptop next weekend.
+> From my digging and prototyping it seems like a DMA zone will do the
+> job, but maybe there's an easier way. The DMA mask doesn't seem to
+> really help with this hole in memory and would still need to be
+> 0xFFFFFFFF it appears.
 
-Any updates on this?
+The DMA zone won't help because it assumes that it is always at the
+bottom of the RAM. The simples way is to mark that area as reserved and
+never use it. It's not that bad since I suspect you already have the
+kernel and swapper_pg_dir using most of it.
+
+Have a look at arch/arm/mach-integrator/core.c - integrator_reserve().
+
+-- 
+Catalin
