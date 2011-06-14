@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752908Ab1FNOEH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 10:04:07 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:32579 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750864Ab1FNOEF (ORCPT
+	id S1752898Ab1FNOGs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 10:06:48 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:60581 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751397Ab1FNOGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 10:04:05 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: WnJZFbwVM1lHy5cE0Ix_5Hvb5lV8beo0Y9S1AMX_6SvAAMA
- RksWcxRf3Z7VSSWHV5zw6TVJhNoP93yFJ9yiXtKtA60Qep6UOR4sGJ6OdsYg
- .38wY59li5i2YoIjUUr3IncmNeyvIdQG.R4uiVHItdB7lkIJs.wQXIPc9l9w
- VUKRd_yLt4G5MyoDY.3SWs8L6fFwkQ6jnnapvNrPCYvQL_w0DKI2pxoLZW4l
- HTP.tmcwbfw1r.Xug3olAUA1tWfjhMdkBnAx5E9PdnGEE6axMC2hl7yhym4u
- Db40e4Sk1QSizCPAvxoZc8UwHIeqqOKfKA6owq_0VHfm6EB6U96GPejSOvlL
- ahSB5vzdwjcddyVgK4F4qVGMa
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 14 Jun 2011 09:04:01 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Ingo Molnar <mingo@elte.hu>
-cc: Pekka Enberg <penberg@cs.helsinki.fi>, "H. Peter Anvin" <hpa@zytor.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, tj@kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [slubllv7 04/17] x86: Add support for cmpxchg_double
-In-Reply-To: <20110614080436.GB29900@elte.hu>
-Message-ID: <alpine.DEB.2.00.1106140903480.32130@router.home>
-References: <20110601172543.437240675@linux.com> <20110601172614.173427964@linux.com> <4DF09827.7070809@cs.helsinki.fi> <alpine.DEB.2.00.1106101016420.30968@router.home> <BANLkTikHOsvR-KXZ-VQvpAaMgrNOR0sB3g@mail.gmail.com> <alpine.DEB.2.00.1106111202110.32170@router.home>
- <4DF6F659.3000109@cs.helsinki.fi> <20110614080436.GB29900@elte.hu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 14 Jun 2011 10:06:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:reply-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=stO+JfAbnXTe+QvpvZ9xGlcyewp3OrlpCYdjIas2uP1bgvJ9IzsJD86ZrjV9wtME8P
+         oliYQ88q5vd3iJL0o6CtSjIpQrtKxdlbF7vE3ZQjRIWE/rzeunBHtY0MpRrIE8fPr67B
+         SJAPILEijNraksPECUCDrOuzev0WkBM8KUrSQ=
+Date: Tue, 14 Jun 2011 07:06:42 -0700
+From: mark gross <markgross@thegnar.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, markgross@thegnar.org,
+        Raffaele Recalcati <lamiaposta71@gmail.com>,
+        linux-pm@lists.linux-foundation.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [linux-pm] pm loss development
+Message-ID: <20110614140642.GA14509@gvim.org>
+Reply-To: markgross@thegnar.org
+References: <1305220265-9020-1-git-send-email-lamiaposta71@gmail.com>
+ <201105180107.58078.rjw@sisk.pl>
+ <20110518031203.GA3640@gvim.org>
+ <201105182143.13237.rjw@sisk.pl>
+ <20110602222111.GA15414@ucw.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110602222111.GA15414@ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Jun 2011, Ingo Molnar wrote:
+On Fri, Jun 03, 2011 at 12:21:11AM +0200, Pavel Machek wrote:
+> Hi!
+> 
+> > > > What do you mean by safe state?
+> > > >
+> > > I need to get more details on this but I assume its a state where the
+> > > meta data of the file system is committed to the emmc before lights go
+> > > off such that when power is reapplied that the damage isn't too big. 
+> > 
+> > I don't think you can guarantee that the metadata won't be damaged
+> > without notifying the filesystem of the event (and making it react
+> > appropriately).
+> 
+> Journalling filesystem should survive power loss at random time, as
+> long as block device behaves like a disk (i.e. writes whole sectors).
+> 
+> And that can be guaranteed at driver level...
+> 
 
->
-> * Pekka Enberg <penberg@cs.helsinki.fi> wrote:
->
-> > On 6/11/11 8:02 PM, Christoph Lameter wrote:
-> > >On Sat, 11 Jun 2011, Pekka Enberg wrote:
-> > >
-> > >>Oh, I don't know - but I definitely need more ACKs to even consider
-> > >>pushing this through slab.git.
-> > >
-> > >Any additional ackers out there?;-)
-> >
-> > Ingo, ping? Could we have this in -tip so I can pull from there?
-> > This is blocking me from queuing SLUB performance improvements to
-> > linux-next.
->
-> hpa, what's your take on this patch?
+What if the battery falls out of the device at a bad time?  The HW will
+have micro to mili seconds of time to close out whatever transaction is
+in flight.
 
-He acked it.
+I know nothing about journalling file systems or how well they limit the
+critical sections of time where the file system is exposed to corruption
+from sudden power failure.  Its an interesting question though.
+
+--mark
 
