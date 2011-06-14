@@ -1,48 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072Ab1FNVUA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 17:20:00 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:55830 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751905Ab1FNVT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 17:19:58 -0400
-Date: Tue, 14 Jun 2011 23:19:42 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>
-Subject: Re: [PATCH] MAINTAINERS: Add x86 RAS people
-Message-ID: <20110614211942.GD12249@elte.hu>
-References: <1308067734-6156-1-git-send-email-bp@amd64.org>
+	id S1754084Ab1FNVWh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 17:22:37 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34863 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752799Ab1FNVWg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 17:22:36 -0400
+Message-ID: <4DF7D0AE.3000301@landley.net>
+Date: Tue, 14 Jun 2011 16:20:46 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308067734-6156-1-git-send-email-bp@amd64.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: LKML <linux-kernel@vger.kernel.org>, torvalds@linux-foundation.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: When does torvalds/linux-3.git show up?
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Are we still going to pull linux 3.0 from the 2.6 repo indefinitely?
+(Or does it get renamed to just "linux", or...)
 
-* Borislav Petkov <bp@amd64.org> wrote:
+Just wondering.  (Also, having a git://git.kernel.org/linux.git symlink
+to Linus's tree wouuld be awesome.  I have to look it up again every
+time I clone to a new box, and it's down the list a ways...)
 
-> Announce the new RAS infrastructure maintainers. The file patterns below
-> will change after we start the restructuring.
-> 
-> Signed-off-by: Borislav Petkov <bp@amd64.org>
-> Signed-off-by: Tony Luck <tony.luck@intel.com>
-
-Acked-by: Ingo Molnar <mingo@elte.hu>
-
-Thanks,
-
-	Ingo
+Rob
