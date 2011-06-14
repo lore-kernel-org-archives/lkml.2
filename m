@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab1FNPcg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 11:32:36 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:35962 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753349Ab1FNPcf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 11:32:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=OXiadkuoX580JGMQh7FKbz/4oix5BiVqYs78NowqFpCzib7Nm4NhI8qRnx3i11+W60
-         ulMNRD8wcWQyA6lJucZK8CUVZ8NHExdLNnCQOsbna/kyo8vvnX68olIhqQeME4MiBKta
-         +s/Hp+oaufD2IUKk0bowrPpM6nWrh+mnM/zq8=
-Message-ID: <4DF77ECB.4030709@gmail.com>
-Date: Tue, 14 Jun 2011 17:31:23 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
+	id S1753319Ab1FNPcW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 11:32:22 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:36442 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753278Ab1FNPcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 11:32:17 -0400
+Date: Tue, 14 Jun 2011 08:32:13 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Alex,Shi" <alex.shi@intel.com>, "Li, Shaohua" <shaohua.li@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>, rostedt@goodmis.org
+Subject: Re: rcu: performance regression
+Message-ID: <20110614153213.GE2288@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1308029185.15392.147.camel@sli10-conroe>
+ <1308040388.21027.1847.camel@debian>
+ <20110614130203.GF2264@linux.vnet.ibm.com>
+ <1308057298.19856.40.camel@twins>
+ <1308057522.19856.41.camel@twins>
+ <20110614150155.GC2288@linux.vnet.ibm.com>
+ <1308064225.19856.76.camel@twins>
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Yinghai Lu <yinghai@kernel.org>, Jim Bos <jim876@xs4all.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, efi: Do not reserve boot services regions within
- reserved areas
-References: <4DF77832.9020407@gmail.com> <20110614152101.GA17773@srcf.ucam.org>
-In-Reply-To: <20110614152101.GA17773@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308064225.19856.76.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 14-06-11 17:21, Matthew Garrett schreef:
-> On Tue, Jun 14, 2011 at 05:03:14PM +0200, Maarten Lankhorst wrote:
->
->> +		/* Could not reserve boot area */
->> +		if (!size)
->> +			continue;
->> +
->> +		printk(KERN_INFO PFX "Freeing boot area "
->> +			"[0x%llx-0x%llx)\n", start, start+size);
-> Probably don't need the printk - we could be dumping a few hundred of 
-> those.
-Ok, I believe you are right about the succesful ones, since memblock=debug
-will let you see those anyhow.
+On Tue, Jun 14, 2011 at 05:10:25PM +0200, Peter Zijlstra wrote:
+> On Tue, 2011-06-14 at 08:01 -0700, Paul E. McKenney wrote:
+> > Hmmm...  This is going to be fun for the -rt guys given the mapping of
+> > softirq and irq to kthreads, but then again, perhaps people will
+> > confine use of -rt to smaller systems. 
+> 
+> Its those -rt guys that wrote this stuff :-)
 
-Should I change the unsuccesful ones to use memblock_dbg instead of printk?
-In that case you can still debug it if needed. Same question for free path,
-change printk to memblock_dbg?
->> -		  "Kernel-defined memdesc doesn't match the one from EFI!\n");
->> +		  "Kernel-defined memdesc (%lu) "
->> +			"doesn't match the one from EFI(%lu)!\n",
->> +			sizeof(efi_memory_desc_t), memmap.desc_size);
-> And drop this hunk. It's entirely valid for an implementation to do 
-> this, we should just delete the message entirely.
-Ok. Just wasn't sure what to make of it, since that message kept popping up here.
+Fair point!  ;-)
 
-~Maarten
+							Thanx, Paul
