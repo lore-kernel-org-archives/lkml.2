@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752313Ab1FNFUW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 01:20:22 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:32350 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081Ab1FNFUV (ORCPT
+	id S1752543Ab1FNFXa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 01:23:30 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:59334 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751081Ab1FNFX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 01:20:21 -0400
-X-AuditID: cbfee61b-b7c62ae0000056ed-66-4df6ef9379ca
-Date: Tue, 14 Jun 2011 14:20:14 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH] dma-mapping: Undefine dma_map_single(),
- etc if CONFIG_HAVE_DMA_ATTRS is defined
-In-reply-to: <1308025989-877-1-git-send-email-pullip.cho@samsung.com>
-To: pullip.cho@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: arnd@arndb.de, fujita.tomonori@lab.ntt.co.jp, rmk@arm.linux.org.uk,
-        joerg.roedel@amd.com
-Message-id: <005501cc2a52$c05df650$4119e2f0$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: AcwqT98PPspThvKbTqiM3Z7L93nCCwAAOAHw
-References: <1308025989-877-1-git-send-email-pullip.cho@samsung.com>
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 14 Jun 2011 01:23:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=MCTmPVs0KaMgoSnscdw5FDw51GabrQj1pp09jFbnSxcWEa/F5O0UgWypVZT9eIXLpN
+         CBY3eJEdfyS++/DAOje+Zhz8qcvfrN7vd/RVb4ABxfdLFUNlJuo8UZafaLLt/SMVP8uC
+         b77FFjwx1H2TIV82PXpRvohEdoDYUo2USW80g=
+MIME-Version: 1.0
+In-Reply-To: <337c22b774ff7f007b90b266b25c9a33ff555c48.1308024069.git.joe@perches.com>
+References: <cover.1308024069.git.joe@perches.com> <337c22b774ff7f007b90b266b25c9a33ff555c48.1308024069.git.joe@perches.com>
+From: Julian Calaby <julian.calaby@gmail.com>
+Date: Tue, 14 Jun 2011 15:23:07 +1000
+Message-ID: <BANLkTi=i30Rn7gpCDbn9KKJucq8CB=hssA@mail.gmail.com>
+Subject: Re: [PATCH net-next 1/2] wireless: Remove casts of void *
+To: Joe Perches <joe@perches.com>
+Cc: netdev@vger.kernel.org, "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        Jouni Malinen <jmalinen@atheros.com>,
+        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
+        Senthil Balasubramanian <senthilkumar@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pullip.cho@samsung.com wrote:
-> 
-> From: KyongHo Cho <pullip.cho@samsung.com>
-> 
-> If <asm/dma-mapping.h> includes <asm-generic/dma-mapping-common.h>,
-> dma_map_single() become defined recursively when CONFIG_HAVE_DMA_ATTRS
-> is not defined.
-> Since dma_map_*_attrs() are defined in <linux/dma-mapping.h>, those
-> in <asm-generic/dma-mapping-common.h> must be not defined
-> if CONFIG_HAVE_DMA_ATTRS is not defined.
-> 
-> Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
-> CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> CC: Joerg Roedel <joerg.roedel@amd.com>
-> CC Arnd Bergmann <arnd@arndb.de>
-> 
-> Change-Id: Ib99ee2b355dbe679263ce2e4e27d6219148c8338
+Joe,
 
-Please don't use this here.
+On Tue, Jun 14, 2011 at 14:02, Joe Perches <joe@perches.com> wrote:
+> Unnecessary casts of void * clutter the code.
+>
+> These are the remainder casts after several specific
+> patches to remove netdev_priv and dev_priv.
 
-Thanks.
+You seem to have removed a lot of casts that don't relate to these cleanups.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+In particular, some of the casts seem to relate more to documentation
+rather than just changing pointer types to make the compiler happy. In
+particular, I'm referring to the casts describing the different usages
+of data_buf in mwiflex, and around some pointer math in ath9k.
 
+Whilst I'm sure that the compiler is smart enough to handle automatic
+casts between pointer types, some of these, in particular the mwiflex
+bits, add some documentation to the code.
+
+Thanks,
+
+-- 
+Julian Calaby
+
+Email: julian.calaby@gmail.com
+Profile: http://www.google.com/profiles/julian.calaby/
+.Plan: http://sites.google.com/site/juliancalaby/
