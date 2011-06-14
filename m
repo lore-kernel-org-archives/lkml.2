@@ -1,1923 +1,2018 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab1FNVOu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 17:14:50 -0400
-Received: from yumi.tdiedrich.de ([85.10.210.183]:34373 "EHLO mx.tdiedrich.de"
+	id S1753903Ab1FNVPm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 17:15:42 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:56433 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751145Ab1FNVOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 17:14:45 -0400
-Date: Tue, 14 Jun 2011 23:14:41 +0200
-From: Tobias Diedrich <ranma@tdiedrich.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: xen-users@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-users] 3.0.0-rc2: Xen: High amount of kernel "reserved"
- memory, about 33% in 256MB DOMU
-Message-ID: <20110614211441.GF7417@yumi.tdiedrich.de>
-Mail-Followup-To: Tobias Diedrich <ranma@tdiedrich.de>,
-	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-	xen-users@lists.xensource.com, linux-kernel@vger.kernel.org
-References: <20110613205003.GD20616@yumi.tdiedrich.de>
- <20110613215900.GB19117@dumpdata.com>
+	id S1750947Ab1FNVPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 17:15:37 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [PATCH 8/8] ARM / shmobile: Support for I/O PM domains for SH7372 (v5)
+Date: Tue, 14 Jun 2011 23:16:02 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org
+References: <201106112223.04972.rjw@sisk.pl> <201106112240.11621.rjw@sisk.pl> <BANLkTi=-1Fpp9L17T7CwxoO9JfSes4FeKg@mail.gmail.com>
+In-Reply-To: <BANLkTi=-1Fpp9L17T7CwxoO9JfSes4FeKg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110613215900.GB19117@dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Multipart/Mixed;
+  boundary="Boundary-00=_S+89NLdTEjOXnsd"
+Message-Id: <201106142316.02812.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk wrote:
-> On Mon, Jun 13, 2011 at 10:50:03PM +0200, Tobias Diedrich wrote:
-> > Hi,
-> > 
-> > another issue I'm seeing with 3.0-rc2 and Xen is that there is an
-> > unexpectedly high amount of kernel reserved memory.
+--Boundary-00=_S+89NLdTEjOXnsd
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+
+On Tuesday, June 14, 2011, Magnus Damm wrote:
+> Hi Rafael,
+
+Hi,
+
+> On Sun, Jun 12, 2011 at 5:40 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> >
+> > Use the generic power domains support introduced by the previous
+> > patch to implement support for power domains on SH7372.
+> >
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > ---
 > 
-> > 
-> > I suspect that Linux allocates page table entries and corresponding
-> > data structures for the whole 6GB areas of the provided 'physical
-> > RAM map' even though it has rather big unusable holes in it.
+> Thanks for your work on this. I just tried this on my Mackerel board,
+> but I can't seem to get the pd_power_up() and pd_power_down()
+> callbacks to be executed. It is probably a misconfiguration from my
+> side.
+
+They trigger for me e.g. after doing
+
+# echo 3 > /sys/devices/platform/sh_mobile_lcdc_fb.0/graphics/fb0/blank
+
+Attached is the .config I've been using.
+
+> Here's some feedback on the sh7372-specific code:
 > 
-> Can you run it with 'memblock=debug debug loglevel=8 initcall_debug'?
-> It should tell you where it tries (and for much space) the pagetables.
+> > --- linux-2.6.orig/arch/arm/mach-shmobile/Kconfig
+> > +++ linux-2.6/arch/arm/mach-shmobile/Kconfig
+> > @@ -19,6 +19,7 @@ config ARCH_SH7372
+> >        select CPU_V7
+> >        select SH_CLK_CPG
+> >        select ARCH_WANT_OPTIONAL_GPIOLIB
+> > +       select PM_GENERIC_DOMAINS
+> 
+> We want to support a single ARM binary for multiple boards,
 
-Here is a diff between verbose domu with and without mem=256M
-(with "s@after [0-9]* usecs@after XX usecs@g" to suppress the
-timing differences somewhat)
---- noextraopts	2011-06-14 23:02:24.549323941 +0200
-+++ mem256	2011-06-14 23:01:46.140538541 +0200
-@@ -1,7 +1,7 @@
- Initializing cgroup subsys cpuset
- Initializing cgroup subsys cpu
- Linux version 3.0.0-rc2 (ranma@nukunuku) (gcc version 4.5.2 (Debian 4.5.2-11) ) #53 SMP Tue Jun 14 15:33:45 CEST 2011
--Command line: root=/dev/xvda1 memblock=debug debug loglevel=8 initcall_debug ro ip=192.168.12.1:127.0.255.255:192.168.12.2:255.255.255.0:yumi.uguu.de:eth0:off 4
-+Command line: root=/dev/xvda1 memblock=debug debug loglevel=8 initcall_debug ro mem=256M ip=192.168.12.1:127.0.255.255:192.168.12.2:255.255.255.0:yumi.uguu.de:eth0:off 4
- ACPI in unprivileged domain disabled
- released 0 pages of unused memory
- Set 0 page(s) to 1-1 mapping.
-@@ -10,22 +10,25 @@
-  Xen: 00000000000a0000 - 0000000000100000 (reserved)
-  Xen: 0000000000100000 - 0000000010000000 (usable)
-  Xen: 0000000100000000 - 0000000100800000 (usable)
-+e820 remove range: 0000000010000000 - ffffffffffffffff (usable)
- NX (Execute Disable) protection: active
- MPS support code is not built-in.
- Using acpi=off or acpi=noirq or pci=noacpi may have problem
-+user-defined physical RAM map:
-+ user: 0000000000000000 - 00000000000a0000 (usable)
-+ user: 00000000000a0000 - 0000000000100000 (reserved)
-+ user: 0000000000100000 - 0000000010000000 (usable)
- DMI not present or invalid.
- e820 update range: 0000000000000000 - 0000000000010000 (usable) ==> (reserved)
- e820 remove range: 00000000000a0000 - 0000000000100000 (usable)
- No AGP bridge found
--last_pfn = 0x100800 max_arch_pfn = 0x400000000
- last_pfn = 0x10000 max_arch_pfn = 0x400000000
-     memblock_x86_reserve_range: [0x01ce8000-0x01cf8fff]              BRK
- MEMBLOCK configuration:
-- memory size = 0x10790000
-- memory.cnt  = 0x3
-+ memory size = 0xff90000
-+ memory.cnt  = 0x2
-  memory[0x0]	[0x00000000010000-0x0000000009ffff], 0x90000 bytes
-  memory[0x1]	[0x00000000100000-0x0000000fffffff], 0xff00000 bytes
-- memory[0x2]	[0x00000100000000-0x000001007fffff], 0x800000 bytes
-  reserved.cnt  = 0x3
-  reserved[0x0]	[0x00000001000000-0x00000001cf8fff], 0xcf9000 bytes
-  reserved[0x1]	[0x00000001e1e000-0x00000001eb3fff], 0x96000 bytes
-@@ -38,123 +41,109 @@
- kernel direct mapping tables up to 10000000 @ ff7e000-10000000
-     memblock_x86_reserve_range: [0x0ff7e000-0x0ffe9fff]          PGTABLE
- xen: setting RW the range ffea000 - 10000000
--init_memory_mapping: 0000000100000000-0000000100800000
-- 0100000000 - 0100800000 page 4k
--kernel direct mapping tables up to 100800000 @ f774000-ff7e000
--    memblock_x86_reserve_range: [0x0f774000-0x0f778fff]          PGTABLE
--xen: setting RW the range f779000 - ff7e000
-     memblock_x86_reserve_range: [0x0ffff000-0x0fffffff]          BOOTMEM
-     memblock_x86_reserve_range: [0x0fb7e000-0x0ff7dfff]          BOOTMEM
--    memblock_x86_reserve_range: [0x0fffef80-0x0fffefc7]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0fffefc0-0x0fffefef]          BOOTMEM
-     memblock_x86_reserve_range: [0x0f77e000-0x0fb7dfff]          BOOTMEM
--    memblock_x86_reserve_range: [0x0f000000-0x0f5fffff]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0f200000-0x0f5fffff]          BOOTMEM
-     memblock_x86_reserve_range: [0x0fffd000-0x0fffdfff]          BOOTMEM
-     memblock_x86_reserve_range: [0x0fffc000-0x0fffcfff]          BOOTMEM
-     memblock_x86_reserve_range: [0x0fffb000-0x0fffbfff]          BOOTMEM
-     memblock_x86_reserve_range: [0x0fffa000-0x0fffafff]          BOOTMEM
--    memblock_x86_reserve_range: [0x0fff9000-0x0fff9fff]          BOOTMEM
--       memblock_x86_free_range: [0x0f540000-0x0f5fffff]
-+       memblock_x86_free_range: [0x0f580000-0x0f5fffff]
-        memblock_x86_free_range: [0x0f77e000-0x0fb7dfff]
-        memblock_x86_free_range: [0x0fb7e000-0x0ff7dfff]
- Zone PFN ranges:
-   DMA      0x00000010 -> 0x00001000
-   DMA32    0x00001000 -> 0x00100000
--  Normal   0x00100000 -> 0x00100800
-+  Normal   empty
- Movable zone start PFN for each node
--early_node_map[3] active PFN ranges
-+early_node_map[2] active PFN ranges
-     0: 0x00000010 -> 0x000000a0
-     0: 0x00000100 -> 0x00010000
--    0: 0x00100000 -> 0x00100800
--On node 0 totalpages: 67472
-+On node 0 totalpages: 65424
-   DMA zone: 56 pages used for memmap
-   DMA zone: 2 pages reserved
-   DMA zone: 3926 pages, LIFO batch:0
--    memblock_x86_reserve_range: [0x0fffee00-0x0fffef7f]          BOOTMEM
--  DMA32 zone: 14280 pages used for memmap
--  DMA32 zone: 47160 pages, LIFO batch:15
--    memblock_x86_reserve_range: [0x0ff66000-0x0ff7dfff]          BOOTMEM
--  Normal zone: 28 pages used for memmap
--  Normal zone: 2020 pages, LIFO batch:0
--    memblock_x86_reserve_range: [0x0fffed40-0x0fffedff]          BOOTMEM
--    memblock_x86_reserve_range: [0x0fff8000-0x0fff8fff]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0fffee40-0x0fffefbf]          BOOTMEM
-+  DMA32 zone: 840 pages used for memmap
-+  DMA32 zone: 60600 pages, LIFO batch:15
-+    memblock_x86_reserve_range: [0x0fff8800-0x0fff9fff]          BOOTMEM
-     memblock_x86_reserve_range: [0x0fff7000-0x0fff7fff]          BOOTMEM
-     memblock_x86_reserve_range: [0x0fff6000-0x0fff6fff]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0fff5000-0x0fff5fff]          BOOTMEM
- SMP: Allowing 1 CPUs, 0 hotplug CPUs
- No local APIC present
- APIC: disable apic facility
- APIC: switched to apic NOOP
- nr_irqs_gsi: 16
--    memblock_x86_reserve_range: [0x0fffec00-0x0fffed17]          BOOTMEM
--    memblock_x86_reserve_range: [0x0fffeb80-0x0fffebe7]          BOOTMEM
--    memblock_x86_reserve_range: [0x0fffeb00-0x0fffeb67]          BOOTMEM
--    memblock_x86_reserve_range: [0x0fffea80-0x0fffeae7]          BOOTMEM
--    memblock_x86_reserve_range: [0x0fffea00-0x0fffea67]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0fffed40-0x0fffee1f]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0fffecc0-0x0fffed27]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0fffec40-0x0fffeca7]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0fffebc0-0x0fffec27]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0fffeb40-0x0fffeba7]          BOOTMEM
- Allocating PCI resources starting at 10000000 (gap: 10000000:f0000000)
- Booting paravirtualized kernel on Xen
- Xen version: 4.1.0 (preserve-AD)
--    memblock_x86_reserve_range: [0x0fffe940-0x0fffe9d2]          BOOTMEM
--    memblock_x86_reserve_range: [0x0fffe880-0x0fffe912]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0fffea80-0x0fffeb1b]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0fffe9c0-0x0fffea5b]          BOOTMEM
- setup_percpu: NR_CPUS:2 nr_cpumask_bits:2 nr_cpu_ids:1 nr_node_ids:1
--    memblock_x86_reserve_range: [0x0fff5000-0x0fff5fff]          BOOTMEM
-     memblock_x86_reserve_range: [0x0fff4000-0x0fff4fff]          BOOTMEM
--    memblock_x86_reserve_range: [0x0ff4b000-0x0ff65fff]          BOOTMEM
--PERCPU: Embedded 27 pages/cpu @ffff88000ff4b000 s79488 r8192 d22912 u110592
--    memblock_x86_reserve_range: [0x0fffe840-0x0fffe847]          BOOTMEM
--    memblock_x86_reserve_range: [0x0fffe800-0x0fffe807]          BOOTMEM
--    memblock_x86_reserve_range: [0x0fffe7c0-0x0fffe7c3]          BOOTMEM
--    memblock_x86_reserve_range: [0x0fffe780-0x0fffe787]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0fff3000-0x0fff3fff]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0ff63000-0x0ff7dfff]          BOOTMEM
-+PERCPU: Embedded 27 pages/cpu @ffff88000ff63000 s79488 r8192 d22912 u110592
-+    memblock_x86_reserve_range: [0x0fffe980-0x0fffe987]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0fffe940-0x0fffe947]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0fffe900-0x0fffe903]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0fffe8c0-0x0fffe8c7]          BOOTMEM
- pcpu-alloc: s79488 r8192 d22912 u110592 alloc=27*4096
- pcpu-alloc: [0] 0 
--    memblock_x86_reserve_range: [0x0fffe680-0x0fffe77f]          BOOTMEM
--    memblock_x86_reserve_range: [0x0fffe600-0x0fffe647]          BOOTMEM
--    memblock_x86_reserve_range: [0x0fffe580-0x0fffe5c7]          BOOTMEM
--       memblock_x86_free_range: [0x0fff5000-0x0fff5fff]
-+    memblock_x86_reserve_range: [0x0fffe7c0-0x0fffe8bf]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0fffe740-0x0fffe787]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0fffe6c0-0x0fffe707]          BOOTMEM
-        memblock_x86_free_range: [0x0fff4000-0x0fff4fff]
--Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 53106
--Kernel command line: root=/dev/xvda1 memblock=debug debug loglevel=8 initcall_debug ro ip=192.168.12.1:127.0.255.255:192.168.12.2:255.255.255.0:yumi.uguu.de:eth0:off 4
--    memblock_x86_reserve_range: [0x0fff4000-0x0fff5fff]          BOOTMEM
-+       memblock_x86_free_range: [0x0fff3000-0x0fff3fff]
-+Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 64526
-+Kernel command line: root=/dev/xvda1 memblock=debug debug loglevel=8 initcall_debug ro mem=256M ip=192.168.12.1:127.0.255.255:192.168.12.2:255.255.255.0:yumi.uguu.de:eth0:off 4
-+    memblock_x86_reserve_range: [0x0fff3000-0x0fff4fff]          BOOTMEM
- PID hash table entries: 1024 (order: 1, 8192 bytes)
--    memblock_x86_reserve_range: [0x0ff0b000-0x0ff4afff]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0ff23000-0x0ff62fff]          BOOTMEM
- Dentry cache hash table entries: 32768 (order: 6, 262144 bytes)
--    memblock_x86_reserve_range: [0x0feeb000-0x0ff0afff]          BOOTMEM
-+    memblock_x86_reserve_range: [0x0ff03000-0x0ff22fff]          BOOTMEM
- Inode-cache hash table entries: 16384 (order: 5, 131072 bytes)
--    memblock_x86_reserve_range: [0x0b000000-0x0effffff]          BOOTMEM
--    memblock_x86_reserve_range: [0x0fecb000-0x0feeafff]          BOOTMEM
--    memblock_x86_reserve_range: [0x0fe8b000-0x0fecafff]          BOOTMEM
--    memblock_x86_reserve_range: [0x0ffec000-0x0fff3fff]          BOOTMEM
- Checking aperture...
- No AGP bridge found
- Subtract (23 early reservations)
-   [000009e000-000009ffff]
-   [0001000000-0001cf8fff]
-   [0001e1e000-0001eb3fff]
--  [000b000000-000f53ffff]
--  [000f774000-000f778fff]
--  [000fe8b000-000ffe9fff]
--  [000ffec000-000fffdfff]
--  [000fffe580-000fffe5c7]
--  [000fffe600-000fffe647]
--  [000fffe680-000fffe787]
--  [000fffe7c0-000fffe7c3]
--  [000fffe800-000fffe807]
--  [000fffe840-000fffe847]
--  [000fffe880-000fffe912]
--  [000fffe940-000fffe9d2]
--  [000fffea00-000fffea67]
--  [000fffea80-000fffeae7]
--  [000fffeb00-000fffeb67]
--  [000fffeb80-000fffebe7]
--  [000fffec00-000fffed17]
--  [000fffed40-000fffefc7]
-+  [000f200000-000f57ffff]
-+  [000ff03000-000ffe9fff]
-+  [000fff3000-000fff7fff]
-+  [000fff8800-000fffdfff]
-+  [000fffe6c0-000fffe707]
-+  [000fffe740-000fffe787]
-+  [000fffe7c0-000fffe8c7]
-+  [000fffe900-000fffe903]
-+  [000fffe940-000fffe947]
-+  [000fffe980-000fffe987]
-+  [000fffe9c0-000fffea5b]
-+  [000fffea80-000fffeb1b]
-+  [000fffeb40-000fffeba7]
-+  [000fffebc0-000fffec27]
-+  [000fffec40-000fffeca7]
-+  [000fffecc0-000fffed27]
-+  [000fffed40-000fffee1f]
-+  [000fffee40-000fffefef]
-   [000ffff000-000fffffff]
-   [0100000000-01007fffff]
--Memory: 175388k/4202496k available (6122k kernel code, 3932608k absent, 94500k reserved, 4761k data, 576k init)
-+Memory: 243244k/262144k available (6122k kernel code, 448k absent, 18452k reserved, 4761k data, 576k init)
- Hierarchical RCU implementation.
- NR_IRQS:320
- Console: colour dummy device 80x25
- console [tty0] enabled
- console [hvc0] enabled
--allocated 3145728 bytes of page_cgroup
-+allocated 2097152 bytes of page_cgroup
- please try 'cgroup_disable=memory' option if you don't want memory cgroups
- Xen: using vcpuop timer interface
- installing Xen timer for CPU 0
-@@ -244,8 +233,8 @@
- initcall debugfs_init+0x0/0x5c returned 0 after XX usecs
- calling  calibrate_xor_blocks+0x0/0xa0 @ 1
- xor: automatically using best checksumming function: generic_sse
--   generic_sse:  2901.200 MB/sec
--xor: using function: generic_sse (2901.200 MB/sec)
-+   generic_sse:  2833.600 MB/sec
-+xor: using function: generic_sse (2833.600 MB/sec)
- initcall calibrate_xor_blocks+0x0/0xa0 returned 0 after XX usecs
- calling  random32_init+0x0/0xd8 @ 1
- initcall random32_init+0x0/0xd8 returned 0 after XX usecs
-@@ -336,14 +325,14 @@
- calling  genhd_device_init+0x0/0x7c @ 1
- initcall genhd_device_init+0x0/0x7c returned 0 after XX usecs
- calling  raid6_select_algo+0x0/0x1bd @ 1
--raid6: int64x1   2032 MB/s
--raid6: int64x2   2398 MB/s
--raid6: int64x4   1711 MB/s
--raid6: int64x8   1243 MB/s
--raid6: sse2x1    1750 MB/s
--raid6: sse2x2    2362 MB/s
--raid6: sse2x4    1807 MB/s
--raid6: using algorithm sse2x2 (2362 MB/s)
-+raid6: int64x1   2027 MB/s
-+raid6: int64x2   2392 MB/s
-+raid6: int64x4   1703 MB/s
-+raid6: int64x8   1241 MB/s
-+raid6: sse2x1    1810 MB/s
-+raid6: sse2x2    2515 MB/s
-+raid6: sse2x4    3221 MB/s
-+raid6: using algorithm sse2x4 (3221 MB/s)
- initcall raid6_select_algo+0x0/0x1bd returned 0 after XX usecs
- calling  pci_slot_init+0x0/0x46 @ 1
- initcall pci_slot_init+0x0/0x46 returned 0 after XX usecs
-@@ -362,7 +351,7 @@
- initcall xen_setup_shutdown_event+0x0/0x22 returned 0 after XX usecs
- calling  balloon_init+0x0/0x130 @ 1
- xen/balloon: Initialising balloon driver.
--last_pfn = 0x100800 max_arch_pfn = 0x400000000
-+last_pfn = 0x10000 max_arch_pfn = 0x400000000
- initcall balloon_init+0x0/0x130 returned 0 after XX usecs
- calling  xenbus_probe_backend_init+0x0/0x2d @ 1
- initcall xenbus_probe_backend_init+0x0/0x2d returned 0 after XX usecs
-@@ -499,9 +488,6 @@
- calling  populate_rootfs+0x0/0x9e @ 1
- initcall populate_rootfs+0x0/0x9e returned 0 after XX usecs
- calling  pci_iommu_init+0x0/0x41 @ 1
--PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
--Placing 64MB software IO TLB between ffff88000b000000 - ffff88000f000000
--software IO TLB at phys 0xb000000 - 0xf000000
- initcall pci_iommu_init+0x0/0x41 returned 0 after XX usecs
- calling  irqfd_module_init+0x0/0x31 @ 1
- initcall irqfd_module_init+0x0/0x31 returned 0 after XX usecs
-@@ -728,7 +714,7 @@
- SGI XFS with ACLs, security attributes, large block/inode numbers, no debug enabled
- initcall init_xfs_fs+0x0/0xa9 returned 0 after XX usecs
- calling  ipc_init+0x0/0x23 @ 1
--msgmni has been set to 342
-+msgmni has been set to 475
- initcall ipc_init+0x0/0x23 returned 0 after XX usecs
- calling  ipc_sysctl_init+0x0/0x14 @ 1
- initcall ipc_sysctl_init+0x0/0x14 returned 0 after XX usecs
-@@ -864,7 +850,6 @@
- calling  xen_blkif_init+0x0/0x276 @ 1
- initcall xen_blkif_init+0x0/0x276 returned 0 after XX usecs
- calling  init_sd+0x0/0x112 @ 1
--blkfront: xvda2: flush diskcache: enabled
- initcall init_sd+0x0/0x112 returned 0 after XX usecs
- calling  init_sr+0x0/0x46 @ 1
- initcall init_sr+0x0/0x46 returned 0 after XX usecs
-@@ -885,6 +870,7 @@
- calling  pdc2027x_init+0x0/0x1b @ 1
- initcall pdc2027x_init+0x0/0x1b returned 0 after XX usecs
- calling  sil680_init+0x0/0x1b @ 1
-+blkfront: xvda2: flush diskcache: enabled
- initcall sil680_init+0x0/0x1b returned 0 after XX usecs
- calling  via_init+0x0/0x1b @ 1
- initcall via_init+0x0/0x1b returned 0 after XX usecs
-@@ -1210,7 +1196,7 @@
- calling  nfnetlink_log_init+0x0/0xd7 @ 1
- initcall nfnetlink_log_init+0x0/0xd7 returned 0 after XX usecs
- calling  nf_conntrack_standalone_init+0x0/0x12 @ 1
--nf_conntrack version 0.5.0 (1370 buckets, 5480 max)
-+nf_conntrack version 0.5.0 (1900 buckets, 7600 max)
- initcall nf_conntrack_standalone_init+0x0/0x12 returned 0 after XX usecs
- calling  ctnetlink_init+0x0/0x76 @ 1
- ctnetlink v0.93: registering with nfnetlink.
-@@ -1468,16 +1454,19 @@
- calling  initialize_hashrnd+0x0/0x19 @ 1
- initcall initialize_hashrnd+0x0/0x19 returned 0 after XX usecs
- async_waiting @ 1
--async_continuing @ 1 after 0 usec
-+async_continuing @ 1 after 44 usec
- md: Waiting for all devices to be available before autodetect
- md: If you don't use raid, use raid=noautodetect
- async_waiting @ 1
--async_continuing @ 1 after 0 usec
-+async_continuing @ 1 after 3 usec
- md: Autodetecting RAID arrays.
- md: Scanned 0 and added 0 devices.
- md: autorun ...
- md: ... autorun DONE.
- EXT3-fs (xvda1): error: couldn't mount because of unsupported optional features (240)
--EXT2-fs (xvda1): error: couldn't mount because of unsupported optional features (240)
-+EXT2-fs (xvda1): error: couldn't mount because of unsupported optional features (244)
-+EXT4-fs (xvda1): INFO: recovery required on readonly filesystem
-+EXT4-fs (xvda1): write access will be enabled during recovery
-+EXT4-fs (xvda1): recovery complete
- EXT4-fs (xvda1): mounted filesystem with ordered data mode. Opts: (null)
- VFS: Mounted root (ext4 filesystem) readonly on device 202:1.
+Surely CONFIG_ARCH_SH7372 will be set in that binary?
 
-> What happens if you have 'maxmem' value equal to 'memory' in your guest config?
+> so this should be enabled for all SoCs in mach-shmobile as a whole.
 
-No difference:
---- verbose_noextraopts	2011-06-14 23:02:24.549323941 +0200
-+++ verbose_maxmem	2011-06-14 23:09:47.135304415 +0200
-@@ -244,8 +244,8 @@
- initcall debugfs_init+0x0/0x5c returned 0 after XX usecs
- calling  calibrate_xor_blocks+0x0/0xa0 @ 1
- xor: automatically using best checksumming function: generic_sse
--   generic_sse:  2901.200 MB/sec
--xor: using function: generic_sse (2901.200 MB/sec)
-+   generic_sse:  2834.000 MB/sec
-+xor: using function: generic_sse (2834.000 MB/sec)
- initcall calibrate_xor_blocks+0x0/0xa0 returned 0 after XX usecs
- calling  random32_init+0x0/0xd8 @ 1
- initcall random32_init+0x0/0xd8 returned 0 after XX usecs
-@@ -338,12 +338,12 @@
- calling  raid6_select_algo+0x0/0x1bd @ 1
- raid6: int64x1   2032 MB/s
- raid6: int64x2   2398 MB/s
--raid6: int64x4   1711 MB/s
-+raid6: int64x4   1710 MB/s
- raid6: int64x8   1243 MB/s
--raid6: sse2x1    1750 MB/s
--raid6: sse2x2    2362 MB/s
--raid6: sse2x4    1807 MB/s
--raid6: using algorithm sse2x2 (2362 MB/s)
-+raid6: sse2x1    1926 MB/s
-+raid6: sse2x2    2536 MB/s
-+raid6: sse2x4    1539 MB/s
-+raid6: using algorithm sse2x2 (2536 MB/s)
- initcall raid6_select_algo+0x0/0x1bd returned 0 after XX usecs
- calling  pci_slot_init+0x0/0x46 @ 1
- initcall pci_slot_init+0x0/0x46 returned 0 after XX usecs
-@@ -859,9 +859,9 @@
- calling  init_cryptoloop+0x0/0x2f @ 1
- initcall init_cryptoloop+0x0/0x2f returned 0 after XX usecs
- calling  xlblk_init+0x0/0x81 @ 1
--blkfront: xvda1: flush diskcache: enabled
- initcall xlblk_init+0x0/0x81 returned 0 after XX usecs
- calling  xen_blkif_init+0x0/0x276 @ 1
-+blkfront: xvda1: flush diskcache: enabled
- initcall xen_blkif_init+0x0/0x276 returned 0 after XX usecs
- calling  init_sd+0x0/0x112 @ 1
- blkfront: xvda2: flush diskcache: enabled
-@@ -1478,6 +1478,9 @@
- md: autorun ...
- md: ... autorun DONE.
- EXT3-fs (xvda1): error: couldn't mount because of unsupported optional features (240)
--EXT2-fs (xvda1): error: couldn't mount because of unsupported optional features (240)
-+EXT2-fs (xvda1): error: couldn't mount because of unsupported optional features (244)
-+EXT4-fs (xvda1): INFO: recovery required on readonly filesystem
-+EXT4-fs (xvda1): write access will be enabled during recovery
-+EXT4-fs (xvda1): recovery complete
- EXT4-fs (xvda1): mounted filesystem with ordered data mode. Opts: (null)
- VFS: Mounted root (ext4 filesystem) readonly on device 202:1.
+OK, where exactly do you want me to move it?
 
+> > --- linux-2.6.orig/arch/arm/mach-shmobile/pm-sh7372.c
+> > +++ linux-2.6/arch/arm/mach-shmobile/pm-sh7372.c
+> > @@ -15,16 +15,97 @@
+> >  #include <linux/list.h>
+> >  #include <linux/err.h>
+> >  #include <linux/slab.h>
+> > +#include <linux/pm_runtime.h>
+> > +#include <linux/platform_device.h>
+> >  #include <asm/system.h>
+> >  #include <asm/io.h>
+> >  #include <asm/tlbflush.h>
+> >  #include <mach/common.h>
+> > +#include <mach/sh7372.h>
+> >
+> >  #define SMFRAM 0xe6a70000
+> >  #define SYSTBCR 0xe6150024
+> >  #define SBAR 0xe6180020
+> >  #define APARMBAREA 0xe6f10020
+> >
+> > +#define SPDCR 0xe6180008
+> > +#define SWUCR 0xe6180014
+> > +#define PSTR 0xe6180080
+> > +
+> > +struct sh7372_domain_data {
+> > +       unsigned int bit_shift;
+> > +};
+> 
+> Is it possible to make struct sh7372_domain_data include struct
+> generic_pm_domain?
 
-And just the noextraopts base log:
+It should be possible to do that.
 
-Initializing cgroup subsys cpuset
-Initializing cgroup subsys cpu
-Linux version 3.0.0-rc2 (ranma@nukunuku) (gcc version 4.5.2 (Debian 4.5.2-11) ) #53 SMP Tue Jun 14 15:33:45 CEST 2011
-Command line: root=/dev/xvda1 memblock=debug debug loglevel=8 initcall_debug ro ip=192.168.12.1:127.0.255.255:192.168.12.2:255.255.255.0:yumi.uguu.de:eth0:off 4
-ACPI in unprivileged domain disabled
-released 0 pages of unused memory
-Set 0 page(s) to 1-1 mapping.
-BIOS-provided physical RAM map:
- Xen: 0000000000000000 - 00000000000a0000 (usable)
- Xen: 00000000000a0000 - 0000000000100000 (reserved)
- Xen: 0000000000100000 - 0000000010000000 (usable)
- Xen: 0000000100000000 - 0000000100800000 (usable)
-NX (Execute Disable) protection: active
-MPS support code is not built-in.
-Using acpi=off or acpi=noirq or pci=noacpi may have problem
-DMI not present or invalid.
-e820 update range: 0000000000000000 - 0000000000010000 (usable) ==> (reserved)
-e820 remove range: 00000000000a0000 - 0000000000100000 (usable)
-No AGP bridge found
-last_pfn = 0x100800 max_arch_pfn = 0x400000000
-last_pfn = 0x10000 max_arch_pfn = 0x400000000
-    memblock_x86_reserve_range: [0x01ce8000-0x01cf8fff]              BRK
-MEMBLOCK configuration:
- memory size = 0x10790000
- memory.cnt  = 0x3
- memory[0x0]	[0x00000000010000-0x0000000009ffff], 0x90000 bytes
- memory[0x1]	[0x00000000100000-0x0000000fffffff], 0xff00000 bytes
- memory[0x2]	[0x00000100000000-0x000001007fffff], 0x800000 bytes
- reserved.cnt  = 0x3
- reserved[0x0]	[0x00000001000000-0x00000001cf8fff], 0xcf9000 bytes
- reserved[0x1]	[0x00000001e1e000-0x00000001eb3fff], 0x96000 bytes
- reserved[0x2]	[0x00000100000000-0x000001007fffff], 0x800000 bytes
-initial memory mapped : 0 - 01e1e000
-    memblock_x86_reserve_range: [0x0009e000-0x0009ffff]       TRAMPOLINE
-Base memory trampoline at [ffff88000009e000] 9e000 size 8192
-init_memory_mapping: 0000000000000000-0000000010000000
- 0000000000 - 0010000000 page 4k
-kernel direct mapping tables up to 10000000 @ ff7e000-10000000
-    memblock_x86_reserve_range: [0x0ff7e000-0x0ffe9fff]          PGTABLE
-xen: setting RW the range ffea000 - 10000000
-init_memory_mapping: 0000000100000000-0000000100800000
- 0100000000 - 0100800000 page 4k
-kernel direct mapping tables up to 100800000 @ f774000-ff7e000
-    memblock_x86_reserve_range: [0x0f774000-0x0f778fff]          PGTABLE
-xen: setting RW the range f779000 - ff7e000
-    memblock_x86_reserve_range: [0x0ffff000-0x0fffffff]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fb7e000-0x0ff7dfff]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fffef80-0x0fffefc7]          BOOTMEM
-    memblock_x86_reserve_range: [0x0f77e000-0x0fb7dfff]          BOOTMEM
-    memblock_x86_reserve_range: [0x0f000000-0x0f5fffff]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fffd000-0x0fffdfff]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fffc000-0x0fffcfff]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fffb000-0x0fffbfff]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fffa000-0x0fffafff]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fff9000-0x0fff9fff]          BOOTMEM
-       memblock_x86_free_range: [0x0f540000-0x0f5fffff]
-       memblock_x86_free_range: [0x0f77e000-0x0fb7dfff]
-       memblock_x86_free_range: [0x0fb7e000-0x0ff7dfff]
-Zone PFN ranges:
-  DMA      0x00000010 -> 0x00001000
-  DMA32    0x00001000 -> 0x00100000
-  Normal   0x00100000 -> 0x00100800
-Movable zone start PFN for each node
-early_node_map[3] active PFN ranges
-    0: 0x00000010 -> 0x000000a0
-    0: 0x00000100 -> 0x00010000
-    0: 0x00100000 -> 0x00100800
-On node 0 totalpages: 67472
-  DMA zone: 56 pages used for memmap
-  DMA zone: 2 pages reserved
-  DMA zone: 3926 pages, LIFO batch:0
-    memblock_x86_reserve_range: [0x0fffee00-0x0fffef7f]          BOOTMEM
-  DMA32 zone: 14280 pages used for memmap
-  DMA32 zone: 47160 pages, LIFO batch:15
-    memblock_x86_reserve_range: [0x0ff66000-0x0ff7dfff]          BOOTMEM
-  Normal zone: 28 pages used for memmap
-  Normal zone: 2020 pages, LIFO batch:0
-    memblock_x86_reserve_range: [0x0fffed40-0x0fffedff]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fff8000-0x0fff8fff]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fff7000-0x0fff7fff]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fff6000-0x0fff6fff]          BOOTMEM
-SMP: Allowing 1 CPUs, 0 hotplug CPUs
-No local APIC present
-APIC: disable apic facility
-APIC: switched to apic NOOP
-nr_irqs_gsi: 16
-    memblock_x86_reserve_range: [0x0fffec00-0x0fffed17]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fffeb80-0x0fffebe7]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fffeb00-0x0fffeb67]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fffea80-0x0fffeae7]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fffea00-0x0fffea67]          BOOTMEM
-Allocating PCI resources starting at 10000000 (gap: 10000000:f0000000)
-Booting paravirtualized kernel on Xen
-Xen version: 4.1.0 (preserve-AD)
-    memblock_x86_reserve_range: [0x0fffe940-0x0fffe9d2]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fffe880-0x0fffe912]          BOOTMEM
-setup_percpu: NR_CPUS:2 nr_cpumask_bits:2 nr_cpu_ids:1 nr_node_ids:1
-    memblock_x86_reserve_range: [0x0fff5000-0x0fff5fff]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fff4000-0x0fff4fff]          BOOTMEM
-    memblock_x86_reserve_range: [0x0ff4b000-0x0ff65fff]          BOOTMEM
-PERCPU: Embedded 27 pages/cpu @ffff88000ff4b000 s79488 r8192 d22912 u110592
-    memblock_x86_reserve_range: [0x0fffe840-0x0fffe847]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fffe800-0x0fffe807]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fffe7c0-0x0fffe7c3]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fffe780-0x0fffe787]          BOOTMEM
-pcpu-alloc: s79488 r8192 d22912 u110592 alloc=27*4096
-pcpu-alloc: [0] 0 
-    memblock_x86_reserve_range: [0x0fffe680-0x0fffe77f]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fffe600-0x0fffe647]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fffe580-0x0fffe5c7]          BOOTMEM
-       memblock_x86_free_range: [0x0fff5000-0x0fff5fff]
-       memblock_x86_free_range: [0x0fff4000-0x0fff4fff]
-Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 53106
-Kernel command line: root=/dev/xvda1 memblock=debug debug loglevel=8 initcall_debug ro ip=192.168.12.1:127.0.255.255:192.168.12.2:255.255.255.0:yumi.uguu.de:eth0:off 4
-    memblock_x86_reserve_range: [0x0fff4000-0x0fff5fff]          BOOTMEM
-PID hash table entries: 1024 (order: 1, 8192 bytes)
-    memblock_x86_reserve_range: [0x0ff0b000-0x0ff4afff]          BOOTMEM
-Dentry cache hash table entries: 32768 (order: 6, 262144 bytes)
-    memblock_x86_reserve_range: [0x0feeb000-0x0ff0afff]          BOOTMEM
-Inode-cache hash table entries: 16384 (order: 5, 131072 bytes)
-    memblock_x86_reserve_range: [0x0b000000-0x0effffff]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fecb000-0x0feeafff]          BOOTMEM
-    memblock_x86_reserve_range: [0x0fe8b000-0x0fecafff]          BOOTMEM
-    memblock_x86_reserve_range: [0x0ffec000-0x0fff3fff]          BOOTMEM
-Checking aperture...
-No AGP bridge found
-Subtract (23 early reservations)
-  [000009e000-000009ffff]
-  [0001000000-0001cf8fff]
-  [0001e1e000-0001eb3fff]
-  [000b000000-000f53ffff]
-  [000f774000-000f778fff]
-  [000fe8b000-000ffe9fff]
-  [000ffec000-000fffdfff]
-  [000fffe580-000fffe5c7]
-  [000fffe600-000fffe647]
-  [000fffe680-000fffe787]
-  [000fffe7c0-000fffe7c3]
-  [000fffe800-000fffe807]
-  [000fffe840-000fffe847]
-  [000fffe880-000fffe912]
-  [000fffe940-000fffe9d2]
-  [000fffea00-000fffea67]
-  [000fffea80-000fffeae7]
-  [000fffeb00-000fffeb67]
-  [000fffeb80-000fffebe7]
-  [000fffec00-000fffed17]
-  [000fffed40-000fffefc7]
-  [000ffff000-000fffffff]
-  [0100000000-01007fffff]
-Memory: 175388k/4202496k available (6122k kernel code, 3932608k absent, 94500k reserved, 4761k data, 576k init)
-Hierarchical RCU implementation.
-NR_IRQS:320
-Console: colour dummy device 80x25
-console [tty0] enabled
-console [hvc0] enabled
-allocated 3145728 bytes of page_cgroup
-please try 'cgroup_disable=memory' option if you don't want memory cgroups
-Xen: using vcpuop timer interface
-installing Xen timer for CPU 0
-Detected 2199.838 MHz processor.
-Calibrating delay loop (skipped), value calculated using timer frequency.. 4399.67 BogoMIPS (lpj=21998380)
-pid_max: default: 32768 minimum: 301
-Mount-cache hash table entries: 256
-Initializing cgroup subsys cpuacct
-Initializing cgroup subsys memory
-Initializing cgroup subsys net_cls
-Initializing cgroup subsys blkio
-tseg: 007ff00000
-SMP alternatives: switching to UP code
-Freeing SMP alternatives: 28k freed
-calling  trace_init_flags_sys_exit+0x0/0x12 @ 1
-initcall trace_init_flags_sys_exit+0x0/0x12 returned 0 after XX usecs
-calling  trace_init_flags_sys_enter+0x0/0x12 @ 1
-initcall trace_init_flags_sys_enter+0x0/0x12 returned 0 after XX usecs
-calling  init_hw_perf_events+0x0/0xf1a @ 1
-Performance Events: 
-no APIC, boot with the "lapic" boot parameter to force-enable it.
-no hardware sampling interrupt available.
-Broken PMU hardware detected, using software events only.
-initcall init_hw_perf_events+0x0/0xf1a returned 0 after XX usecs
-calling  register_trigger_all_cpu_backtrace+0x0/0x14 @ 1
-initcall register_trigger_all_cpu_backtrace+0x0/0x14 returned 0 after XX usecs
-calling  migration_init+0x0/0x70 @ 1
-initcall migration_init+0x0/0x70 returned 0 after XX usecs
-calling  spawn_ksoftirqd+0x0/0x55 @ 1
-initcall spawn_ksoftirqd+0x0/0x55 returned 0 after XX usecs
-calling  init_workqueues+0x0/0x2ff @ 1
-initcall init_workqueues+0x0/0x2ff returned 0 after XX usecs
-calling  init_call_single_data+0x0/0x8c @ 1
-initcall init_call_single_data+0x0/0x8c returned 0 after XX usecs
-calling  cpu_stop_init+0x0/0xaa @ 1
-initcall cpu_stop_init+0x0/0xaa returned 0 after XX usecs
-calling  rcu_spawn_kthreads+0x0/0xc9 @ 1
-initcall rcu_spawn_kthreads+0x0/0xc9 returned 0 after XX usecs
-calling  relay_init+0x0/0x14 @ 1
-initcall relay_init+0x0/0x14 returned 0 after XX usecs
-calling  tracer_alloc_buffers+0x0/0x168 @ 1
-initcall tracer_alloc_buffers+0x0/0x168 returned 0 after XX usecs
-calling  init_trace_printk+0x0/0x12 @ 1
-initcall init_trace_printk+0x0/0x12 returned 0 after XX usecs
-NMI watchdog disabled (cpu0): hardware events not enabled
-Brought up 1 CPUs
-devtmpfs: initialized
-calling  init_mmap_min_addr+0x0/0x16 @ 1
-initcall init_mmap_min_addr+0x0/0x16 returned 0 after XX usecs
-calling  init_cpufreq_transition_notifier_list+0x0/0x1b @ 1
-initcall init_cpufreq_transition_notifier_list+0x0/0x1b returned 0 after XX usecs
-calling  net_ns_init+0x0/0x154 @ 1
-initcall net_ns_init+0x0/0x154 returned 0 after XX usecs
-calling  cpufreq_tsc+0x0/0x30 @ 1
-initcall cpufreq_tsc+0x0/0x30 returned 0 after XX usecs
-calling  pci_reboot_init+0x0/0x14 @ 1
-initcall pci_reboot_init+0x0/0x14 returned 0 after XX usecs
-calling  init_lapic_sysfs+0x0/0x20 @ 1
-initcall init_lapic_sysfs+0x0/0x20 returned 0 after XX usecs
-calling  init_smp_flush+0x0/0x2d @ 1
-initcall init_smp_flush+0x0/0x2d returned 0 after XX usecs
-calling  alloc_frozen_cpus+0x0/0x8 @ 1
-initcall alloc_frozen_cpus+0x0/0x8 returned 0 after XX usecs
-calling  sysctl_init+0x0/0x16 @ 1
-initcall sysctl_init+0x0/0x16 returned 0 after XX usecs
-calling  ksysfs_init+0x0/0x94 @ 1
-initcall ksysfs_init+0x0/0x94 returned 0 after XX usecs
-calling  init_jiffies_clocksource+0x0/0x12 @ 1
-initcall init_jiffies_clocksource+0x0/0x12 returned 0 after XX usecs
-calling  pm_init+0x0/0x63 @ 1
-initcall pm_init+0x0/0x63 returned 0 after XX usecs
-calling  init_zero_pfn+0x0/0x35 @ 1
-initcall init_zero_pfn+0x0/0x35 returned 0 after XX usecs
-calling  fsnotify_init+0x0/0x26 @ 1
-initcall fsnotify_init+0x0/0x26 returned 0 after XX usecs
-calling  filelock_init+0x0/0x2e @ 1
-initcall filelock_init+0x0/0x2e returned 0 after XX usecs
-calling  init_misc_binfmt+0x0/0x44 @ 1
-initcall init_misc_binfmt+0x0/0x44 returned 0 after XX usecs
-calling  init_script_binfmt+0x0/0x14 @ 1
-initcall init_script_binfmt+0x0/0x14 returned 0 after XX usecs
-calling  init_elf_binfmt+0x0/0x14 @ 1
-initcall init_elf_binfmt+0x0/0x14 returned 0 after XX usecs
-calling  init_compat_elf_binfmt+0x0/0x14 @ 1
-initcall init_compat_elf_binfmt+0x0/0x14 returned 0 after XX usecs
-calling  debugfs_init+0x0/0x5c @ 1
-initcall debugfs_init+0x0/0x5c returned 0 after XX usecs
-calling  calibrate_xor_blocks+0x0/0xa0 @ 1
-xor: automatically using best checksumming function: generic_sse
-   generic_sse:  2901.200 MB/sec
-xor: using function: generic_sse (2901.200 MB/sec)
-initcall calibrate_xor_blocks+0x0/0xa0 returned 0 after XX usecs
-calling  random32_init+0x0/0xd8 @ 1
-initcall random32_init+0x0/0xd8 returned 0 after XX usecs
-calling  __gnttab_init+0x0/0x21 @ 1
-Grant table initialized
-initcall __gnttab_init+0x0/0x21 returned 0 after XX usecs
-calling  cpufreq_core_init+0x0/0xad @ 1
-initcall cpufreq_core_init+0x0/0xad returned 0 after XX usecs
-calling  cpuidle_init+0x0/0x40 @ 1
-initcall cpuidle_init+0x0/0x40 returned 0 after XX usecs
-calling  sock_init+0x0/0x83 @ 1
-initcall sock_init+0x0/0x83 returned 0 after XX usecs
-calling  netpoll_init+0x0/0x31 @ 1
-initcall netpoll_init+0x0/0x31 returned 0 after XX usecs
-calling  netlink_proto_init+0x0/0x1ad @ 1
-NET: Registered protocol family 16
-initcall netlink_proto_init+0x0/0x1ad returned 0 after XX usecs
-calling  bdi_class_init+0x0/0x49 @ 1
-initcall bdi_class_init+0x0/0x49 returned 0 after XX usecs
-calling  kobject_uevent_init+0x0/0x21 @ 1
-initcall kobject_uevent_init+0x0/0x21 returned 0 after XX usecs
-calling  pcibus_class_init+0x0/0x19 @ 1
-initcall pcibus_class_init+0x0/0x19 returned 0 after XX usecs
-calling  pci_driver_init+0x0/0x12 @ 1
-initcall pci_driver_init+0x0/0x12 returned 0 after XX usecs
-calling  xenbus_init+0x0/0x371 @ 1
-initcall xenbus_init+0x0/0x371 returned 0 after XX usecs
-calling  tty_class_init+0x0/0x34 @ 1
-initcall tty_class_init+0x0/0x34 returned 0 after XX usecs
-calling  vtconsole_class_init+0x0/0xeb @ 1
-initcall vtconsole_class_init+0x0/0xeb returned 0 after XX usecs
-calling  wakeup_sources_debugfs_init+0x0/0x2b @ 1
-initcall wakeup_sources_debugfs_init+0x0/0x2b returned 0 after XX usecs
-calling  i2c_init+0x0/0x6f @ 1
-initcall i2c_init+0x0/0x6f returned 0 after XX usecs
-calling  amd_postcore_init+0x0/0x150 @ 1
-initcall amd_postcore_init+0x0/0x150 returned 0 after XX usecs
-calling  arch_kdebugfs_init+0x0/0x24 @ 1
-initcall arch_kdebugfs_init+0x0/0x24 returned 0 after XX usecs
-calling  configure_trampolines+0x0/0x29 @ 1
-initcall configure_trampolines+0x0/0x29 returned 0 after XX usecs
-calling  mtrr_if_init+0x0/0x64 @ 1
-initcall mtrr_if_init+0x0/0x64 returned -19 after XX usecs
-calling  ffh_cstate_init+0x0/0x2a @ 1
-initcall ffh_cstate_init+0x0/0x2a returned -1 after XX usecs
-initcall ffh_cstate_init+0x0/0x2a returned with error code -1 
-calling  acpi_pci_init+0x0/0x61 @ 1
-initcall acpi_pci_init+0x0/0x61 returned 0 after XX usecs
-calling  setup_vcpu_hotplug_event+0x0/0x22 @ 1
-initcall setup_vcpu_hotplug_event+0x0/0x22 returned 0 after XX usecs
-calling  register_xen_pci_notifier+0x0/0x31 @ 1
-initcall register_xen_pci_notifier+0x0/0x31 returned 0 after XX usecs
-calling  dmi_id_init+0x0/0x30e @ 1
-initcall dmi_id_init+0x0/0x30e returned -19 after XX usecs
-calling  pci_arch_init+0x0/0x69 @ 1
-PCI: setting up Xen PCI frontend stub
-PCI: pci_cache_line_size set to 64 bytes
-initcall pci_arch_init+0x0/0x69 returned 0 after XX usecs
-calling  topology_init+0x0/0x40 @ 1
-initcall topology_init+0x0/0x40 returned 0 after XX usecs
-calling  mtrr_init_finialize+0x0/0x36 @ 1
-initcall mtrr_init_finialize+0x0/0x36 returned 0 after XX usecs
-calling  init_vdso_vars+0x0/0xf8 @ 1
-initcall init_vdso_vars+0x0/0xf8 returned 0 after XX usecs
-calling  sysenter_setup+0x0/0x2c8 @ 1
-initcall sysenter_setup+0x0/0x2c8 returned 0 after XX usecs
-calling  param_sysfs_init+0x0/0x1b4 @ 1
-initcall param_sysfs_init+0x0/0x1b4 returned 0 after XX usecs
-calling  pm_sysrq_init+0x0/0x19 @ 1
-initcall pm_sysrq_init+0x0/0x19 returned 0 after XX usecs
-calling  default_bdi_init+0x0/0xa9 @ 1
-initcall default_bdi_init+0x0/0xa9 returned 0 after XX usecs
-calling  init_bio+0x0/0xe5 @ 1
-bio: create slab <bio-0> at 0
-initcall init_bio+0x0/0xe5 returned 0 after XX usecs
-calling  fsnotify_notification_init+0x0/0x8b @ 1
-initcall fsnotify_notification_init+0x0/0x8b returned 0 after XX usecs
-calling  cryptomgr_init+0x0/0x12 @ 1
-initcall cryptomgr_init+0x0/0x12 returned 0 after XX usecs
-calling  blk_settings_init+0x0/0x2a @ 1
-initcall blk_settings_init+0x0/0x2a returned 0 after XX usecs
-calling  blk_ioc_init+0x0/0x2a @ 1
-initcall blk_ioc_init+0x0/0x2a returned 0 after XX usecs
-calling  blk_softirq_init+0x0/0x6e @ 1
-initcall blk_softirq_init+0x0/0x6e returned 0 after XX usecs
-calling  blk_iopoll_setup+0x0/0x6e @ 1
-initcall blk_iopoll_setup+0x0/0x6e returned 0 after XX usecs
-calling  genhd_device_init+0x0/0x7c @ 1
-initcall genhd_device_init+0x0/0x7c returned 0 after XX usecs
-calling  raid6_select_algo+0x0/0x1bd @ 1
-raid6: int64x1   2032 MB/s
-raid6: int64x2   2398 MB/s
-raid6: int64x4   1711 MB/s
-raid6: int64x8   1243 MB/s
-raid6: sse2x1    1750 MB/s
-raid6: sse2x2    2362 MB/s
-raid6: sse2x4    1807 MB/s
-raid6: using algorithm sse2x2 (2362 MB/s)
-initcall raid6_select_algo+0x0/0x1bd returned 0 after XX usecs
-calling  pci_slot_init+0x0/0x46 @ 1
-initcall pci_slot_init+0x0/0x46 returned 0 after XX usecs
-calling  acpi_init+0x0/0xb6 @ 1
-ACPI: Interpreter disabled.
-initcall acpi_init+0x0/0xb6 returned -19 after XX usecs
-calling  dock_init+0x0/0xa5 @ 1
-initcall dock_init+0x0/0xa5 returned 0 after XX usecs
-calling  acpi_pci_root_init+0x0/0x28 @ 1
-initcall acpi_pci_root_init+0x0/0x28 returned 0 after XX usecs
-calling  acpi_pci_link_init+0x0/0x3e @ 1
-initcall acpi_pci_link_init+0x0/0x3e returned 0 after XX usecs
-calling  pnp_init+0x0/0x12 @ 1
-initcall pnp_init+0x0/0x12 returned 0 after XX usecs
-calling  xen_setup_shutdown_event+0x0/0x22 @ 1
-initcall xen_setup_shutdown_event+0x0/0x22 returned 0 after XX usecs
-calling  balloon_init+0x0/0x130 @ 1
-xen/balloon: Initialising balloon driver.
-last_pfn = 0x100800 max_arch_pfn = 0x400000000
-initcall balloon_init+0x0/0x130 returned 0 after XX usecs
-calling  xenbus_probe_backend_init+0x0/0x2d @ 1
-initcall xenbus_probe_backend_init+0x0/0x2d returned 0 after XX usecs
-calling  xenbus_probe_frontend_init+0x0/0x2d @ 1
-initcall xenbus_probe_frontend_init+0x0/0x2d returned 0 after XX usecs
-calling  balloon_init+0x0/0x100 @ 1
-xen-balloon: Initialising balloon driver.
-initcall balloon_init+0x0/0x100 returned 0 after XX usecs
-calling  misc_init+0x0/0xb7 @ 1
-initcall misc_init+0x0/0xb7 returned 0 after XX usecs
-calling  vga_arb_device_init+0x0/0xe4 @ 1
-vgaarb: loaded
-initcall vga_arb_device_init+0x0/0xe4 returned 0 after XX usecs
-calling  init_scsi+0x0/0x7c @ 1
-SCSI subsystem initialized
-initcall init_scsi+0x0/0x7c returned 0 after XX usecs
-calling  ata_init+0x0/0x349 @ 1
-libata version 3.00 loaded.
-initcall ata_init+0x0/0x349 returned 0 after XX usecs
-calling  usb_init+0x0/0x15f @ 1
-usbcore: registered new interface driver usbfs
-usbcore: registered new interface driver hub
-usbcore: registered new device driver usb
-initcall usb_init+0x0/0x15f returned 0 after XX usecs
-calling  serio_init+0x0/0x31 @ 1
-initcall serio_init+0x0/0x31 returned 0 after XX usecs
-calling  input_init+0x0/0x10c @ 1
-initcall input_init+0x0/0x10c returned 0 after XX usecs
-calling  rtc_init+0x0/0x6a @ 1
-initcall rtc_init+0x0/0x6a returned 0 after XX usecs
-calling  power_supply_class_init+0x0/0x40 @ 1
-initcall power_supply_class_init+0x0/0x40 returned 0 after XX usecs
-calling  hwmon_init+0x0/0xee @ 1
-initcall hwmon_init+0x0/0xee returned 0 after XX usecs
-calling  md_init+0x0/0x144 @ 1
-initcall md_init+0x0/0x144 returned 0 after XX usecs
-calling  init_soundcore+0x0/0x34 @ 1
-initcall init_soundcore+0x0/0x34 returned 0 after XX usecs
-calling  alsa_sound_init+0x0/0x90 @ 1
-Advanced Linux Sound Architecture Driver Version 1.0.24.
-initcall alsa_sound_init+0x0/0x90 returned 0 after XX usecs
-calling  pci_subsys_init+0x0/0x4d @ 1
-PCI: System does not support PCI
-PCI: System does not support PCI
-initcall pci_subsys_init+0x0/0x4d returned 0 after XX usecs
-calling  proto_init+0x0/0x12 @ 1
-initcall proto_init+0x0/0x12 returned 0 after XX usecs
-calling  net_dev_init+0x0/0x1d9 @ 1
-initcall net_dev_init+0x0/0x1d9 returned 0 after XX usecs
-calling  neigh_init+0x0/0x71 @ 1
-initcall neigh_init+0x0/0x71 returned 0 after XX usecs
-calling  fib_rules_init+0x0/0xa6 @ 1
-initcall fib_rules_init+0x0/0xa6 returned 0 after XX usecs
-calling  pktsched_init+0x0/0xed @ 1
-initcall pktsched_init+0x0/0xed returned 0 after XX usecs
-calling  tc_filter_init+0x0/0x4c @ 1
-initcall tc_filter_init+0x0/0x4c returned 0 after XX usecs
-calling  tc_action_init+0x0/0x4c @ 1
-initcall tc_action_init+0x0/0x4c returned 0 after XX usecs
-calling  genl_init+0x0/0x93 @ 1
-initcall genl_init+0x0/0x93 returned 0 after XX usecs
-calling  sysctl_init+0x0/0x48 @ 1
-initcall sysctl_init+0x0/0x48 returned 0 after XX usecs
-calling  print_ICs+0x0/0x510 @ 1
-initcall print_ICs+0x0/0x510 returned 0 after XX usecs
-calling  hpet_late_init+0x0/0xf4 @ 1
-initcall hpet_late_init+0x0/0xf4 returned -19 after XX usecs
-calling  init_amd_nbs+0x0/0xba @ 1
-initcall init_amd_nbs+0x0/0xba returned 0 after XX usecs
-calling  clocksource_done_booting+0x0/0x5a @ 1
-Switching to clocksource xen
-initcall clocksource_done_booting+0x0/0x5a returned 0 after XX usecs
-calling  rb_init_debugfs+0x0/0x2f @ 1
-initcall rb_init_debugfs+0x0/0x2f returned 0 after XX usecs
-calling  tracer_init_debugfs+0x0/0x36b @ 1
-initcall tracer_init_debugfs+0x0/0x36b returned 0 after XX usecs
-calling  init_trace_printk_function_export+0x0/0x2f @ 1
-initcall init_trace_printk_function_export+0x0/0x2f returned 0 after XX usecs
-calling  event_trace_init+0x0/0x2bd @ 1
-initcall event_trace_init+0x0/0x2bd returned 0 after XX usecs
-calling  init_pipe_fs+0x0/0x4c @ 1
-initcall init_pipe_fs+0x0/0x4c returned 0 after XX usecs
-calling  eventpoll_init+0x0/0xda @ 1
-initcall eventpoll_init+0x0/0xda returned 0 after XX usecs
-calling  anon_inode_init+0x0/0x12e @ 1
-initcall anon_inode_init+0x0/0x12e returned 0 after XX usecs
-calling  blk_scsi_ioctl_init+0x0/0x289 @ 1
-initcall blk_scsi_ioctl_init+0x0/0x289 returned 0 after XX usecs
-calling  acpi_event_init+0x0/0x52 @ 1
-initcall acpi_event_init+0x0/0x52 returned 0 after XX usecs
-calling  pnp_system_init+0x0/0x12 @ 1
-initcall pnp_system_init+0x0/0x12 returned 0 after XX usecs
-calling  pnpacpi_init+0x0/0x8c @ 1
-pnp: PnP ACPI: disabled
-initcall pnpacpi_init+0x0/0x8c returned 0 after XX usecs
-calling  chr_dev_init+0x0/0xc1 @ 1
-Switched to NOHz mode on CPU #0
-initcall chr_dev_init+0x0/0xc1 returned 0 after XX usecs
-calling  firmware_class_init+0x0/0x19 @ 1
-initcall firmware_class_init+0x0/0x19 returned 0 after XX usecs
-calling  thermal_init+0x0/0x75 @ 1
-initcall thermal_init+0x0/0x75 returned 0 after XX usecs
-calling  cpufreq_gov_performance_init+0x0/0x12 @ 1
-initcall cpufreq_gov_performance_init+0x0/0x12 returned 0 after XX usecs
-calling  init_acpi_pm_clocksource+0x0/0xe0 @ 1
-initcall init_acpi_pm_clocksource+0x0/0xe0 returned -19 after XX usecs
-calling  pcibios_assign_resources+0x0/0x74 @ 1
-PCI: max bus depth: 0 pci_try_num: 1
-initcall pcibios_assign_resources+0x0/0x74 returned 0 after XX usecs
-calling  sysctl_core_init+0x0/0x38 @ 1
-initcall sysctl_core_init+0x0/0x38 returned 0 after XX usecs
-calling  inet_init+0x0/0x286 @ 1
-NET: Registered protocol family 2
-IP route cache hash table entries: 2048 (order: 2, 16384 bytes)
-TCP established hash table entries: 8192 (order: 5, 131072 bytes)
-TCP bind hash table entries: 8192 (order: 5, 131072 bytes)
-TCP: Hash tables configured (established 8192 bind 8192)
-TCP reno registered
-UDP hash table entries: 128 (order: 0, 4096 bytes)
-UDP-Lite hash table entries: 128 (order: 0, 4096 bytes)
-initcall inet_init+0x0/0x286 returned 0 after XX usecs
-calling  af_unix_init+0x0/0x55 @ 1
-NET: Registered protocol family 1
-initcall af_unix_init+0x0/0x55 returned 0 after XX usecs
-calling  init_sunrpc+0x0/0x73 @ 1
-RPC: Registered named UNIX socket transport module.
-RPC: Registered udp transport module.
-RPC: Registered tcp transport module.
-RPC: Registered tcp NFSv4.1 backchannel transport module.
-initcall init_sunrpc+0x0/0x73 returned 0 after XX usecs
-calling  pci_apply_final_quirks+0x0/0x106 @ 1
-PCI: CLS 0 bytes, default 64
-initcall pci_apply_final_quirks+0x0/0x106 returned 0 after XX usecs
-calling  populate_rootfs+0x0/0x9e @ 1
-initcall populate_rootfs+0x0/0x9e returned 0 after XX usecs
-calling  pci_iommu_init+0x0/0x41 @ 1
-PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
-Placing 64MB software IO TLB between ffff88000b000000 - ffff88000f000000
-software IO TLB at phys 0xb000000 - 0xf000000
-initcall pci_iommu_init+0x0/0x41 returned 0 after XX usecs
-calling  irqfd_module_init+0x0/0x31 @ 1
-initcall irqfd_module_init+0x0/0x31 returned 0 after XX usecs
-calling  svm_init+0x0/0x1e @ 1
-has_svm: svm not available
-kvm: no hardware support
-initcall svm_init+0x0/0x1e returned -95 after XX usecs
-initcall svm_init+0x0/0x1e returned with error code -95 
-calling  i8259A_init_ops+0x0/0x21 @ 1
-initcall i8259A_init_ops+0x0/0x21 returned 0 after XX usecs
-calling  vsyscall_init+0x0/0x66 @ 1
-initcall vsyscall_init+0x0/0x66 returned 0 after XX usecs
-calling  sbf_init+0x0/0xe9 @ 1
-initcall sbf_init+0x0/0xe9 returned 0 after XX usecs
-calling  init_tsc_clocksource+0x0/0x5f @ 1
-initcall init_tsc_clocksource+0x0/0x5f returned 0 after XX usecs
-calling  add_rtc_cmos+0x0/0x97 @ 1
-platform rtc_cmos: registered platform RTC device (no PNP device found)
-initcall add_rtc_cmos+0x0/0x97 returned 0 after XX usecs
-calling  i8237A_init_ops+0x0/0x14 @ 1
-initcall i8237A_init_ops+0x0/0x14 returned 0 after XX usecs
-calling  cache_sysfs_init+0x0/0x64 @ 1
-initcall cache_sysfs_init+0x0/0x64 returned 0 after XX usecs
-calling  mcheck_init_device+0x0/0x100 @ 1
-initcall mcheck_init_device+0x0/0x100 returned -5 after XX usecs
-initcall mcheck_init_device+0x0/0x100 returned with error code -5 
-calling  threshold_init_device+0x0/0x4f @ 1
-initcall threshold_init_device+0x0/0x4f returned 0 after XX usecs
-calling  thermal_throttle_init_device+0x0/0x9b @ 1
-initcall thermal_throttle_init_device+0x0/0x9b returned 0 after XX usecs
-calling  ioapic_init_ops+0x0/0x14 @ 1
-initcall ioapic_init_ops+0x0/0x14 returned 0 after XX usecs
-calling  add_pcspkr+0x0/0x3a @ 1
-initcall add_pcspkr+0x0/0x3a returned 0 after XX usecs
-calling  aes_init+0x0/0x12 @ 1
-initcall aes_init+0x0/0x12 returned 0 after XX usecs
-calling  init+0x0/0x12 @ 1
-initcall init+0x0/0x12 returned 0 after XX usecs
-calling  ia32_binfmt_init+0x0/0x14 @ 1
-initcall ia32_binfmt_init+0x0/0x14 returned 0 after XX usecs
-calling  init_sched_debug_procfs+0x0/0x2c @ 1
-initcall init_sched_debug_procfs+0x0/0x2c returned 0 after XX usecs
-calling  proc_schedstat_init+0x0/0x22 @ 1
-initcall proc_schedstat_init+0x0/0x22 returned 0 after XX usecs
-calling  proc_execdomains_init+0x0/0x22 @ 1
-initcall proc_execdomains_init+0x0/0x22 returned 0 after XX usecs
-calling  ioresources_init+0x0/0x3c @ 1
-initcall ioresources_init+0x0/0x3c returned 0 after XX usecs
-calling  uid_cache_init+0x0/0x8d @ 1
-initcall uid_cache_init+0x0/0x8d returned 0 after XX usecs
-calling  init_posix_timers+0x0/0x1cf @ 1
-initcall init_posix_timers+0x0/0x1cf returned 0 after XX usecs
-calling  init_posix_cpu_timers+0x0/0xbf @ 1
-initcall init_posix_cpu_timers+0x0/0xbf returned 0 after XX usecs
-calling  nsproxy_cache_init+0x0/0x2d @ 1
-initcall nsproxy_cache_init+0x0/0x2d returned 0 after XX usecs
-calling  timekeeping_init_ops+0x0/0x14 @ 1
-initcall timekeeping_init_ops+0x0/0x14 returned 0 after XX usecs
-calling  init_clocksource_sysfs+0x0/0x50 @ 1
-initcall init_clocksource_sysfs+0x0/0x50 returned 0 after XX usecs
-calling  init_timer_list_procfs+0x0/0x2c @ 1
-initcall init_timer_list_procfs+0x0/0x2c returned 0 after XX usecs
-calling  alarmtimer_init+0x0/0x147 @ 1
-initcall alarmtimer_init+0x0/0x147 returned 0 after XX usecs
-calling  init_tstats_procfs+0x0/0x2c @ 1
-initcall init_tstats_procfs+0x0/0x2c returned 0 after XX usecs
-calling  futex_init+0x0/0x5d @ 1
-initcall futex_init+0x0/0x5d returned 0 after XX usecs
-calling  proc_dma_init+0x0/0x22 @ 1
-initcall proc_dma_init+0x0/0x22 returned 0 after XX usecs
-calling  proc_modules_init+0x0/0x22 @ 1
-initcall proc_modules_init+0x0/0x22 returned 0 after XX usecs
-calling  kallsyms_init+0x0/0x25 @ 1
-initcall kallsyms_init+0x0/0x25 returned 0 after XX usecs
-calling  ikconfig_init+0x0/0x3a @ 1
-initcall ikconfig_init+0x0/0x3a returned 0 after XX usecs
-calling  hung_task_init+0x0/0x56 @ 1
-initcall hung_task_init+0x0/0x56 returned 0 after XX usecs
-calling  utsname_sysctl_init+0x0/0x14 @ 1
-initcall utsname_sysctl_init+0x0/0x14 returned 0 after XX usecs
-calling  init_tracepoints+0x0/0x12 @ 1
-initcall init_tracepoints+0x0/0x12 returned 0 after XX usecs
-calling  init_lstats_procfs+0x0/0x25 @ 1
-initcall init_lstats_procfs+0x0/0x25 returned 0 after XX usecs
-calling  init_events+0x0/0x61 @ 1
-initcall init_events+0x0/0x61 returned 0 after XX usecs
-calling  init_mmio_trace+0x0/0x12 @ 1
-initcall init_mmio_trace+0x0/0x12 returned 0 after XX usecs
-calling  init_blk_tracer+0x0/0x55 @ 1
-initcall init_blk_tracer+0x0/0x55 returned 0 after XX usecs
-calling  perf_event_sysfs_init+0x0/0x93 @ 1
-initcall perf_event_sysfs_init+0x0/0x93 returned 0 after XX usecs
-calling  init_per_zone_wmark_min+0x0/0x88 @ 1
-initcall init_per_zone_wmark_min+0x0/0x88 returned 0 after XX usecs
-calling  kswapd_init+0x0/0x20 @ 1
-initcall kswapd_init+0x0/0x20 returned 0 after XX usecs
-calling  extfrag_debug_init+0x0/0x7b @ 1
-initcall extfrag_debug_init+0x0/0x7b returned 0 after XX usecs
-calling  setup_vmstat+0x0/0xc0 @ 1
-initcall setup_vmstat+0x0/0xc0 returned 0 after XX usecs
-calling  mm_sysfs_init+0x0/0x29 @ 1
-initcall mm_sysfs_init+0x0/0x29 returned 0 after XX usecs
-calling  proc_vmalloc_init+0x0/0x25 @ 1
-initcall proc_vmalloc_init+0x0/0x25 returned 0 after XX usecs
-calling  procswaps_init+0x0/0x22 @ 1
-initcall procswaps_init+0x0/0x22 returned 0 after XX usecs
-calling  hugetlb_init+0x0/0x3db @ 1
-HugeTLB registered 2 MB page size, pre-allocated 0 pages
-initcall hugetlb_init+0x0/0x3db returned 0 after XX usecs
-calling  slab_proc_init+0x0/0x25 @ 1
-initcall slab_proc_init+0x0/0x25 returned 0 after XX usecs
-calling  cpucache_init+0x0/0x40 @ 1
-initcall cpucache_init+0x0/0x40 returned 0 after XX usecs
-calling  hugepage_init+0x0/0x12a @ 1
-initcall hugepage_init+0x0/0x12a returned -22 after XX usecs
-initcall hugepage_init+0x0/0x12a returned with error code -22 
-calling  init_cleancache+0x0/0x1b @ 1
-initcall init_cleancache+0x0/0x1b returned 0 after XX usecs
-calling  fcntl_init+0x0/0x2a @ 1
-initcall fcntl_init+0x0/0x2a returned 0 after XX usecs
-calling  proc_filesystems_init+0x0/0x22 @ 1
-initcall proc_filesystems_init+0x0/0x22 returned 0 after XX usecs
-calling  fsnotify_mark_init+0x0/0x40 @ 1
-initcall fsnotify_mark_init+0x0/0x40 returned 0 after XX usecs
-calling  dnotify_init+0x0/0x7b @ 1
-initcall dnotify_init+0x0/0x7b returned 0 after XX usecs
-calling  inotify_user_setup+0x0/0x70 @ 1
-initcall inotify_user_setup+0x0/0x70 returned 0 after XX usecs
-calling  aio_setup+0x0/0x78 @ 1
-initcall aio_setup+0x0/0x78 returned 0 after XX usecs
-calling  proc_locks_init+0x0/0x22 @ 1
-initcall proc_locks_init+0x0/0x22 returned 0 after XX usecs
-calling  init_sys32_ioctl+0x0/0x28 @ 1
-initcall init_sys32_ioctl+0x0/0x28 returned 0 after XX usecs
-calling  init_mbcache+0x0/0x14 @ 1
-initcall init_mbcache+0x0/0x14 returned 0 after XX usecs
-calling  proc_cmdline_init+0x0/0x22 @ 1
-initcall proc_cmdline_init+0x0/0x22 returned 0 after XX usecs
-calling  proc_consoles_init+0x0/0x22 @ 1
-initcall proc_consoles_init+0x0/0x22 returned 0 after XX usecs
-calling  proc_cpuinfo_init+0x0/0x22 @ 1
-initcall proc_cpuinfo_init+0x0/0x22 returned 0 after XX usecs
-calling  proc_devices_init+0x0/0x22 @ 1
-initcall proc_devices_init+0x0/0x22 returned 0 after XX usecs
-calling  proc_interrupts_init+0x0/0x22 @ 1
-initcall proc_interrupts_init+0x0/0x22 returned 0 after XX usecs
-calling  proc_loadavg_init+0x0/0x22 @ 1
-initcall proc_loadavg_init+0x0/0x22 returned 0 after XX usecs
-calling  proc_meminfo_init+0x0/0x22 @ 1
-initcall proc_meminfo_init+0x0/0x22 returned 0 after XX usecs
-calling  proc_stat_init+0x0/0x22 @ 1
-initcall proc_stat_init+0x0/0x22 returned 0 after XX usecs
-calling  proc_uptime_init+0x0/0x22 @ 1
-initcall proc_uptime_init+0x0/0x22 returned 0 after XX usecs
-calling  proc_version_init+0x0/0x22 @ 1
-initcall proc_version_init+0x0/0x22 returned 0 after XX usecs
-calling  proc_softirqs_init+0x0/0x22 @ 1
-initcall proc_softirqs_init+0x0/0x22 returned 0 after XX usecs
-calling  proc_kcore_init+0x0/0xa9 @ 1
-initcall proc_kcore_init+0x0/0xa9 returned 0 after XX usecs
-calling  proc_kmsg_init+0x0/0x25 @ 1
-initcall proc_kmsg_init+0x0/0x25 returned 0 after XX usecs
-calling  proc_page_init+0x0/0x42 @ 1
-initcall proc_page_init+0x0/0x42 returned 0 after XX usecs
-calling  configfs_init+0x0/0xb3 @ 1
-initcall configfs_init+0x0/0xb3 returned 0 after XX usecs
-calling  init_devpts_fs+0x0/0x4c @ 1
-initcall init_devpts_fs+0x0/0x4c returned 0 after XX usecs
-calling  init_ext3_fs+0x0/0x6f @ 1
-initcall init_ext3_fs+0x0/0x6f returned 0 after XX usecs
-calling  init_ext2_fs+0x0/0x6f @ 1
-initcall init_ext2_fs+0x0/0x6f returned 0 after XX usecs
-calling  ext4_init_fs+0x0/0x20c @ 1
-initcall ext4_init_fs+0x0/0x20c returned 0 after XX usecs
-calling  journal_init+0x0/0x97 @ 1
-initcall journal_init+0x0/0x97 returned 0 after XX usecs
-calling  journal_init+0x0/0x104 @ 1
-initcall journal_init+0x0/0x104 returned 0 after XX usecs
-calling  init_squashfs_fs+0x0/0x66 @ 1
-squashfs: version 4.0 (2009/01/31) Phillip Lougher
-initcall init_squashfs_fs+0x0/0x66 returned 0 after XX usecs
-calling  init_ramfs_fs+0x0/0x12 @ 1
-initcall init_ramfs_fs+0x0/0x12 returned 0 after XX usecs
-calling  init_hugetlbfs_fs+0x0/0x98 @ 1
-initcall init_hugetlbfs_fs+0x0/0x98 returned 0 after XX usecs
-calling  init_fat_fs+0x0/0x4f @ 1
-initcall init_fat_fs+0x0/0x4f returned 0 after XX usecs
-calling  init_vfat_fs+0x0/0x12 @ 1
-initcall init_vfat_fs+0x0/0x12 returned 0 after XX usecs
-calling  init_iso9660_fs+0x0/0x5c @ 1
-initcall init_iso9660_fs+0x0/0x5c returned 0 after XX usecs
-calling  init_nfs_fs+0x0/0x10e @ 1
-initcall init_nfs_fs+0x0/0x10e returned 0 after XX usecs
-calling  init_nfsd+0x0/0xbb @ 1
-Installing knfsd (copyright (C) 1996 okir@monad.swb.de).
-initcall init_nfsd+0x0/0xbb returned 0 after XX usecs
-calling  init_nlm+0x0/0x22 @ 1
-initcall init_nlm+0x0/0x22 returned 0 after XX usecs
-calling  init_nls_cp437+0x0/0x12 @ 1
-initcall init_nls_cp437+0x0/0x12 returned 0 after XX usecs
-calling  init_nls_cp850+0x0/0x12 @ 1
-initcall init_nls_cp850+0x0/0x12 returned 0 after XX usecs
-calling  init_nls_cp932+0x0/0x12 @ 1
-initcall init_nls_cp932+0x0/0x12 returned 0 after XX usecs
-calling  init_nls_euc_jp+0x0/0x48 @ 1
-initcall init_nls_euc_jp+0x0/0x48 returned 0 after XX usecs
-calling  init_nls_iso8859_1+0x0/0x12 @ 1
-initcall init_nls_iso8859_1+0x0/0x12 returned 0 after XX usecs
-calling  init_nls_iso8859_15+0x0/0x12 @ 1
-initcall init_nls_iso8859_15+0x0/0x12 returned 0 after XX usecs
-calling  init_nls_utf8+0x0/0x29 @ 1
-initcall init_nls_utf8+0x0/0x29 returned 0 after XX usecs
-calling  init_ntfs_fs+0x0/0x1d1 @ 1
-NTFS driver 2.1.30 [Flags: R/W].
-initcall init_ntfs_fs+0x0/0x1d1 returned 0 after XX usecs
-calling  init_autofs4_fs+0x0/0x26 @ 1
-initcall init_autofs4_fs+0x0/0x26 returned 0 after XX usecs
-calling  fuse_init+0x0/0x141 @ 1
-fuse init (API version 7.16)
-initcall fuse_init+0x0/0x141 returned 0 after XX usecs
-calling  init_udf_fs+0x0/0x5c @ 1
-initcall init_udf_fs+0x0/0x5c returned 0 after XX usecs
-calling  init_xfs_fs+0x0/0xa9 @ 1
-SGI XFS with ACLs, security attributes, large block/inode numbers, no debug enabled
-initcall init_xfs_fs+0x0/0xa9 returned 0 after XX usecs
-calling  ipc_init+0x0/0x23 @ 1
-msgmni has been set to 342
-initcall ipc_init+0x0/0x23 returned 0 after XX usecs
-calling  ipc_sysctl_init+0x0/0x14 @ 1
-initcall ipc_sysctl_init+0x0/0x14 returned 0 after XX usecs
-calling  key_proc_init+0x0/0x33 @ 1
-initcall key_proc_init+0x0/0x33 returned 0 after XX usecs
-calling  crypto_wq_init+0x0/0x31 @ 1
-initcall crypto_wq_init+0x0/0x31 returned 0 after XX usecs
-calling  crypto_algapi_init+0x0/0xd @ 1
-initcall crypto_algapi_init+0x0/0xd returned 0 after XX usecs
-calling  skcipher_module_init+0x0/0x36 @ 1
-initcall skcipher_module_init+0x0/0x36 returned 0 after XX usecs
-calling  chainiv_module_init+0x0/0x12 @ 1
-initcall chainiv_module_init+0x0/0x12 returned 0 after XX usecs
-calling  eseqiv_module_init+0x0/0x12 @ 1
-initcall eseqiv_module_init+0x0/0x12 returned 0 after XX usecs
-calling  seqiv_module_init+0x0/0x12 @ 1
-initcall seqiv_module_init+0x0/0x12 returned 0 after XX usecs
-calling  hmac_module_init+0x0/0x12 @ 1
-initcall hmac_module_init+0x0/0x12 returned 0 after XX usecs
-calling  md5_mod_init+0x0/0x12 @ 1
-initcall md5_mod_init+0x0/0x12 returned 0 after XX usecs
-calling  sha1_generic_mod_init+0x0/0x12 @ 1
-initcall sha1_generic_mod_init+0x0/0x12 returned 0 after XX usecs
-calling  sha256_generic_mod_init+0x0/0x3f @ 1
-initcall sha256_generic_mod_init+0x0/0x3f returned 0 after XX usecs
-calling  crypto_cbc_module_init+0x0/0x12 @ 1
-initcall crypto_cbc_module_init+0x0/0x12 returned 0 after XX usecs
-calling  crypto_ctr_module_init+0x0/0x3e @ 1
-initcall crypto_ctr_module_init+0x0/0x3e returned 0 after XX usecs
-calling  cryptd_init+0x0/0xc5 @ 1
-initcall cryptd_init+0x0/0xc5 returned 0 after XX usecs
-calling  des_generic_mod_init+0x0/0x3f @ 1
-initcall des_generic_mod_init+0x0/0x3f returned 0 after XX usecs
-calling  blowfish_mod_init+0x0/0x12 @ 1
-initcall blowfish_mod_init+0x0/0x12 returned 0 after XX usecs
-calling  aes_init+0x0/0x12 @ 1
-initcall aes_init+0x0/0x12 returned 0 after XX usecs
-calling  krng_mod_init+0x0/0x12 @ 1
-initcall krng_mod_init+0x0/0x12 returned 0 after XX usecs
-calling  async_pq_init+0x0/0x44 @ 1
-initcall async_pq_init+0x0/0x44 returned 0 after XX usecs
-calling  proc_genhd_init+0x0/0x3c @ 1
-initcall proc_genhd_init+0x0/0x3c returned 0 after XX usecs
-calling  init_cgroup_blkio+0x0/0x12 @ 1
-initcall init_cgroup_blkio+0x0/0x12 returned 0 after XX usecs
-calling  throtl_init+0x0/0x44 @ 1
-initcall throtl_init+0x0/0x44 returned 0 after XX usecs
-calling  noop_init+0x0/0x14 @ 1
-io scheduler noop registered
-initcall noop_init+0x0/0x14 returned 0 after XX usecs
-calling  deadline_init+0x0/0x14 @ 1
-io scheduler deadline registered
-initcall deadline_init+0x0/0x14 returned 0 after XX usecs
-calling  cfq_init+0x0/0xb3 @ 1
-io scheduler cfq registered (default)
-initcall cfq_init+0x0/0xb3 returned 0 after XX usecs
-calling  init_kmp+0x0/0x12 @ 1
-initcall init_kmp+0x0/0x12 returned 0 after XX usecs
-calling  init_bm+0x0/0x12 @ 1
-initcall init_bm+0x0/0x12 returned 0 after XX usecs
-calling  init_fsm+0x0/0x12 @ 1
-initcall init_fsm+0x0/0x12 returned 0 after XX usecs
-calling  percpu_counter_startup+0x0/0x19 @ 1
-initcall percpu_counter_startup+0x0/0x19 returned 0 after XX usecs
-calling  pci_proc_init+0x0/0x6b @ 1
-initcall pci_proc_init+0x0/0x6b returned 0 after XX usecs
-calling  pcie_portdrv_init+0x0/0x7a @ 1
-initcall pcie_portdrv_init+0x0/0x7a returned 0 after XX usecs
-calling  aer_service_init+0x0/0x22 @ 1
-initcall aer_service_init+0x0/0x22 returned 0 after XX usecs
-calling  pcie_pme_service_init+0x0/0x12 @ 1
-initcall pcie_pme_service_init+0x0/0x12 returned 0 after XX usecs
-calling  ioapic_init+0x0/0x1b @ 1
-initcall ioapic_init+0x0/0x1b returned 0 after XX usecs
-calling  pcifront_init+0x0/0x5c @ 1
-initcall pcifront_init+0x0/0x5c returned 0 after XX usecs
-calling  acpi_reserve_resources+0x0/0xeb @ 1
-initcall acpi_reserve_resources+0x0/0xeb returned 0 after XX usecs
-calling  irqrouter_init_ops+0x0/0x26 @ 1
-initcall irqrouter_init_ops+0x0/0x26 returned 0 after XX usecs
-calling  acpi_button_init+0x0/0x12 @ 1
-initcall acpi_button_init+0x0/0x12 returned -19 after XX usecs
-calling  acpi_fan_init+0x0/0x18 @ 1
-initcall acpi_fan_init+0x0/0x18 returned -19 after XX usecs
-calling  acpi_pci_slot_init+0x0/0x20 @ 1
-initcall acpi_pci_slot_init+0x0/0x20 returned 0 after XX usecs
-calling  acpi_processor_init+0x0/0xcd @ 1
-initcall acpi_processor_init+0x0/0xcd returned 0 after XX usecs
-calling  acpi_container_init+0x0/0x4a @ 1
-initcall acpi_container_init+0x0/0x4a returned -19 after XX usecs
-calling  acpi_thermal_init+0x0/0x42 @ 1
-initcall acpi_thermal_init+0x0/0x42 returned -19 after XX usecs
-calling  xenbus_probe_initcall+0x0/0x3b @ 1
-initcall xenbus_probe_initcall+0x0/0x3b returned 0 after XX usecs
-calling  xen_tmem_init+0x0/0x5c @ 1
-initcall xen_tmem_init+0x0/0x5c returned 0 after XX usecs
-calling  evtchn_init+0x0/0x6e @ 1
-Event-channel device installed.
-initcall evtchn_init+0x0/0x6e returned 0 after XX usecs
-calling  xenfs_init+0x0/0x2d @ 1
-initcall xenfs_init+0x0/0x2d returned 0 after XX usecs
-calling  hypervisor_subsys_init+0x0/0x25 @ 1
-initcall hypervisor_subsys_init+0x0/0x25 returned 0 after XX usecs
-calling  hyper_sysfs_init+0x0/0xbf @ 1
-initcall hyper_sysfs_init+0x0/0xbf returned 0 after XX usecs
-calling  pty_init+0x0/0x26a @ 1
-initcall pty_init+0x0/0x26a returned 0 after XX usecs
-calling  sysrq_init+0x0/0x68 @ 1
-initcall sysrq_init+0x0/0x68 returned 0 after XX usecs
-calling  xen_hvc_init+0x0/0x144 @ 1
-initcall xen_hvc_init+0x0/0x144 returned 0 after XX usecs
-calling  serial8250_init+0x0/0x18e @ 1
-Serial: 8250/16550 driver, 1 ports, IRQ sharing disabled
-initcall serial8250_init+0x0/0x18e returned 0 after XX usecs
-calling  serial8250_pnp_init+0x0/0x12 @ 1
-initcall serial8250_pnp_init+0x0/0x12 returned 0 after XX usecs
-calling  serial8250_pci_init+0x0/0x1b @ 1
-initcall serial8250_pci_init+0x0/0x1b returned 0 after XX usecs
-calling  rand_initialize+0x0/0x2c @ 1
-initcall rand_initialize+0x0/0x2c returned 0 after XX usecs
-calling  hpet_init+0x0/0x6a @ 1
-initcall hpet_init+0x0/0x6a returned -19 after XX usecs
-calling  topology_sysfs_init+0x0/0x50 @ 1
-initcall topology_sysfs_init+0x0/0x50 returned 0 after XX usecs
-calling  loop_init+0x0/0x231 @ 1
-loop: module loaded
-initcall loop_init+0x0/0x231 returned 0 after XX usecs
-calling  init_cryptoloop+0x0/0x2f @ 1
-initcall init_cryptoloop+0x0/0x2f returned 0 after XX usecs
-calling  xlblk_init+0x0/0x81 @ 1
-blkfront: xvda1: flush diskcache: enabled
-initcall xlblk_init+0x0/0x81 returned 0 after XX usecs
-calling  xen_blkif_init+0x0/0x276 @ 1
-initcall xen_blkif_init+0x0/0x276 returned 0 after XX usecs
-calling  init_sd+0x0/0x112 @ 1
-blkfront: xvda2: flush diskcache: enabled
-initcall init_sd+0x0/0x112 returned 0 after XX usecs
-calling  init_sr+0x0/0x46 @ 1
-initcall init_sr+0x0/0x46 returned 0 after XX usecs
-calling  init_sg+0x0/0xc7 @ 1
-initcall init_sg+0x0/0xc7 returned 0 after XX usecs
-calling  ahci_init+0x0/0x1b @ 1
-initcall ahci_init+0x0/0x1b returned 0 after XX usecs
-calling  piix_init+0x0/0x29 @ 1
-initcall piix_init+0x0/0x29 returned 0 after XX usecs
-calling  mv_init+0x0/0x45 @ 1
-initcall mv_init+0x0/0x45 returned 0 after XX usecs
-calling  nv_init+0x0/0x1b @ 1
-initcall nv_init+0x0/0x1b returned 0 after XX usecs
-calling  svia_init+0x0/0x1b @ 1
-initcall svia_init+0x0/0x1b returned 0 after XX usecs
-calling  amd_init+0x0/0x1b @ 1
-initcall amd_init+0x0/0x1b returned 0 after XX usecs
-calling  pdc2027x_init+0x0/0x1b @ 1
-initcall pdc2027x_init+0x0/0x1b returned 0 after XX usecs
-calling  sil680_init+0x0/0x1b @ 1
-initcall sil680_init+0x0/0x1b returned 0 after XX usecs
-calling  via_init+0x0/0x1b @ 1
-initcall via_init+0x0/0x1b returned 0 after XX usecs
-calling  e1000_init_module+0x0/0x87 @ 1
-e1000: Intel(R) PRO/1000 Network Driver - version 7.3.21-k8-NAPI
-e1000: Copyright (c) 1999-2006 Intel Corporation.
-initcall e1000_init_module+0x0/0x87 returned 0 after XX usecs
-calling  e1000_init_module+0x0/0x3e @ 1
-e1000e: Intel(R) PRO/1000 Network Driver - 1.3.10-k2
-e1000e: Copyright(c) 1999 - 2011 Intel Corporation.
-initcall e1000_init_module+0x0/0x3e returned 0 after XX usecs
-calling  e100_init_module+0x0/0x5d @ 1
-e100: Intel(R) PRO/100 Network Driver, 3.5.24-k2-NAPI
-e100: Copyright(c) 1999-2006 Intel Corporation
-initcall e100_init_module+0x0/0x5d returned 0 after XX usecs
-calling  net_olddevs_init+0x0/0x9e @ 1
-initcall net_olddevs_init+0x0/0x9e returned 0 after XX usecs
-calling  ppp_init+0x0/0xe4 @ 1
-PPP generic driver version 2.4.2
-initcall ppp_init+0x0/0xe4 returned 0 after XX usecs
-calling  ppp_async_init+0x0/0x36 @ 1
-initcall ppp_async_init+0x0/0x36 returned 0 after XX usecs
-calling  ppp_sync_init+0x0/0x36 @ 1
-initcall ppp_sync_init+0x0/0x36 returned 0 after XX usecs
-calling  deflate_init+0x0/0x3b @ 1
-PPP Deflate Compression module registered
-initcall deflate_init+0x0/0x3b returned 0 after XX usecs
-calling  bsdcomp_init+0x0/0x2f @ 1
-PPP BSD Compression module registered
-initcall bsdcomp_init+0x0/0x2f returned 0 after XX usecs
-calling  pppox_init+0x0/0x12 @ 1
-NET: Registered protocol family 24
-initcall pppox_init+0x0/0x12 returned 0 after XX usecs
-calling  pppoe_init+0x0/0x87 @ 1
-initcall pppoe_init+0x0/0x87 returned 0 after XX usecs
-calling  netif_init+0x0/0x66 @ 1
-Initialising Xen virtual ethernet driver.
-initcall netif_init+0x0/0x66 returned 0 after XX usecs
-calling  netback_init+0x0/0x219 @ 1
-initcall netback_init+0x0/0x219 returned 0 after XX usecs
-calling  dummy_init_module+0x0/0xaa @ 1
-initcall dummy_init_module+0x0/0xaa returned 0 after XX usecs
-calling  ifb_init_module+0x0/0xad @ 1
-initcall ifb_init_module+0x0/0xad returned 0 after XX usecs
-calling  cp_init+0x0/0x1b @ 1
-initcall cp_init+0x0/0x1b returned 0 after XX usecs
-calling  rtl8139_init_module+0x0/0x1b @ 1
-initcall rtl8139_init_module+0x0/0x1b returned 0 after XX usecs
-calling  tun_init+0x0/0x93 @ 1
-tun: Universal TUN/TAP device driver, 1.6
-tun: (C) 1999-2004 Max Krasnyansky <maxk@qualcomm.com>
-initcall tun_init+0x0/0x93 returned 0 after XX usecs
-calling  rtl8169_init_module+0x0/0x1b @ 1
-initcall rtl8169_init_module+0x0/0x1b returned 0 after XX usecs
-calling  cdc_init+0x0/0x1b @ 1
-usbcore: registered new interface driver cdc_ether
-initcall cdc_init+0x0/0x1b returned 0 after XX usecs
-calling  cdc_subset_init+0x0/0x1b @ 1
-usbcore: registered new interface driver cdc_subset
-initcall cdc_subset_init+0x0/0x1b returned 0 after XX usecs
-calling  zaurus_init+0x0/0x1b @ 1
-usbcore: registered new interface driver zaurus
-initcall zaurus_init+0x0/0x1b returned 0 after XX usecs
-calling  usbnet_init+0x0/0x2b @ 1
-initcall usbnet_init+0x0/0x2b returned 0 after XX usecs
-calling  cdc_ncm_init+0x0/0x29 @ 1
-cdc_ncm: 01-June-2011
-usbcore: registered new interface driver cdc_ncm
-initcall cdc_ncm_init+0x0/0x29 returned 0 after XX usecs
-calling  de_init+0x0/0x1b @ 1
-initcall de_init+0x0/0x1b returned 0 after XX usecs
-calling  tulip_init+0x0/0x33 @ 1
-initcall tulip_init+0x0/0x33 returned 0 after XX usecs
-calling  de4x5_module_init+0x0/0x1b @ 1
-initcall de4x5_module_init+0x0/0x1b returned 0 after XX usecs
-calling  init_netconsole+0x0/0x23e @ 1
-console [netcon0] enabled
-netconsole: network logging started
-initcall init_netconsole+0x0/0x23e returned 0 after XX usecs
-calling  cdrom_init+0x0/0xd @ 1
-initcall cdrom_init+0x0/0xd returned 0 after XX usecs
-calling  mon_init+0x0/0xfc @ 1
-initcall mon_init+0x0/0xfc returned 0 after XX usecs
-calling  ehci_hcd_init+0x0/0x78 @ 1
-ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
-initcall ehci_hcd_init+0x0/0x78 returned 0 after XX usecs
-calling  ohci_hcd_mod_init+0x0/0x54 @ 1
-ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
-initcall ohci_hcd_mod_init+0x0/0x54 returned 0 after XX usecs
-calling  uhci_hcd_init+0x0/0xc6 @ 1
-uhci_hcd: USB Universal Host Controller Interface driver
-initcall uhci_hcd_init+0x0/0xc6 returned 0 after XX usecs
-calling  acm_init+0x0/0xfd @ 1
-usbcore: registered new interface driver cdc_acm
-cdc_acm: USB Abstract Control Model driver for USB modems and ISDN adapters
-initcall acm_init+0x0/0xfd returned 0 after XX usecs
-calling  usblp_init+0x0/0x1b @ 1
-usbcore: registered new interface driver usblp
-initcall usblp_init+0x0/0x1b returned 0 after XX usecs
-calling  usb_serial_init+0x0/0x1e5 @ 1
-usbcore: registered new interface driver usbserial
-USB Serial support registered for generic
-usbcore: registered new interface driver usbserial_generic
-usbserial: USB Serial Driver core
-initcall usb_serial_init+0x0/0x1e5 returned 0 after XX usecs
-calling  pl2303_init+0x0/0x58 @ 1
-USB Serial support registered for pl2303
-usbcore: registered new interface driver pl2303
-pl2303: Prolific PL2303 USB to serial adaptor driver
-initcall pl2303_init+0x0/0x58 returned 0 after XX usecs
-calling  i8042_init+0x0/0x3a2 @ 1
-i8042: PNP: No PS/2 controller found. Probing ports directly.
-i8042: No controller found
-initcall i8042_init+0x0/0x3a2 returned -19 after XX usecs
-calling  serport_init+0x0/0x34 @ 1
-initcall serport_init+0x0/0x34 returned 0 after XX usecs
-calling  mousedev_init+0x0/0x8e @ 1
-mousedev: PS/2 mouse device common for all mice
-initcall mousedev_init+0x0/0x8e returned 0 after XX usecs
-calling  joydev_init+0x0/0x12 @ 1
-initcall joydev_init+0x0/0x12 returned 0 after XX usecs
-calling  evdev_init+0x0/0x12 @ 1
-initcall evdev_init+0x0/0x12 returned 0 after XX usecs
-calling  atkbd_init+0x0/0x27 @ 1
-initcall atkbd_init+0x0/0x27 returned 0 after XX usecs
-calling  cmos_init+0x0/0x6a @ 1
-rtc_cmos rtc_cmos: rtc core: registered rtc_cmos as rtc0
-rtc_cmos: probe of rtc_cmos failed with error -38
-initcall cmos_init+0x0/0x6a returned -19 after XX usecs
-calling  i2c_dev_init+0x0/0xca @ 1
-i2c /dev entries driver
-initcall i2c_dev_init+0x0/0xca returned 0 after XX usecs
-calling  i2c_piix4_init+0x0/0x1b @ 1
-initcall i2c_piix4_init+0x0/0x1b returned 0 after XX usecs
-calling  sm_it87_init+0x0/0x3f5 @ 1
-initcall sm_it87_init+0x0/0x3f5 returned -19 after XX usecs
-calling  k8temp_init+0x0/0x1b @ 1
-initcall k8temp_init+0x0/0x1b returned 0 after XX usecs
-calling  sm_vt8231_init+0x0/0x1b @ 1
-initcall sm_vt8231_init+0x0/0x1b returned 0 after XX usecs
-calling  raid_init+0x0/0x12 @ 1
-md: raid1 personality registered for level 1
-initcall raid_init+0x0/0x12 returned 0 after XX usecs
-calling  raid5_init+0x0/0x2c @ 1
-md: raid6 personality registered for level 6
-md: raid5 personality registered for level 5
-md: raid4 personality registered for level 4
-initcall raid5_init+0x0/0x2c returned 0 after XX usecs
-calling  dm_init+0x0/0x46 @ 1
-device-mapper: ioctl: 4.20.0-ioctl (2011-02-02) initialised: dm-devel@redhat.com
-initcall dm_init+0x0/0x46 returned 0 after XX usecs
-calling  dm_crypt_init+0x0/0x69 @ 1
-initcall dm_crypt_init+0x0/0x69 returned 0 after XX usecs
-calling  dm_snapshot_init+0x0/0x205 @ 1
-initcall dm_snapshot_init+0x0/0x205 returned 0 after XX usecs
-calling  dm_mirror_init+0x0/0x79 @ 1
-initcall dm_mirror_init+0x0/0x79 returned 0 after XX usecs
-calling  dm_dirty_log_init+0x0/0x59 @ 1
-initcall dm_dirty_log_init+0x0/0x59 returned 0 after XX usecs
-calling  cpufreq_stats_init+0x0/0x9d @ 1
-initcall cpufreq_stats_init+0x0/0x9d returned 0 after XX usecs
-calling  cpufreq_gov_dbs_init+0x0/0x5e @ 1
-initcall cpufreq_gov_dbs_init+0x0/0x5e returned 0 after XX usecs
-calling  init_ladder+0x0/0x12 @ 1
-cpuidle: using governor ladder
-initcall init_ladder+0x0/0x12 returned 0 after XX usecs
-calling  init_menu+0x0/0x12 @ 1
-cpuidle: using governor menu
-initcall init_menu+0x0/0x12 returned 0 after XX usecs
-calling  hid_init+0x0/0x4d @ 1
-initcall hid_init+0x0/0x4d returned 0 after XX usecs
-calling  a4_init+0x0/0x1b @ 1
-initcall a4_init+0x0/0x1b returned 0 after XX usecs
-calling  apple_init+0x0/0x38 @ 1
-initcall apple_init+0x0/0x38 returned 0 after XX usecs
-calling  belkin_init+0x0/0x1b @ 1
-initcall belkin_init+0x0/0x1b returned 0 after XX usecs
-calling  ch_init+0x0/0x1b @ 1
-initcall ch_init+0x0/0x1b returned 0 after XX usecs
-calling  ch_init+0x0/0x1b @ 1
-initcall ch_init+0x0/0x1b returned 0 after XX usecs
-calling  cp_init+0x0/0x1b @ 1
-initcall cp_init+0x0/0x1b returned 0 after XX usecs
-calling  dr_init+0x0/0x1b @ 1
-initcall dr_init+0x0/0x1b returned 0 after XX usecs
-calling  ez_init+0x0/0x1b @ 1
-initcall ez_init+0x0/0x1b returned 0 after XX usecs
-calling  gyration_init+0x0/0x1b @ 1
-initcall gyration_init+0x0/0x1b returned 0 after XX usecs
-calling  ks_init+0x0/0x1b @ 1
-initcall ks_init+0x0/0x1b returned 0 after XX usecs
-calling  kye_init+0x0/0x1b @ 1
-initcall kye_init+0x0/0x1b returned 0 after XX usecs
-calling  lg_init+0x0/0x1b @ 1
-initcall lg_init+0x0/0x1b returned 0 after XX usecs
-calling  ms_init+0x0/0x1b @ 1
-initcall ms_init+0x0/0x1b returned 0 after XX usecs
-calling  mr_init+0x0/0x1b @ 1
-initcall mr_init+0x0/0x1b returned 0 after XX usecs
-calling  ntrig_init+0x0/0x1b @ 1
-initcall ntrig_init+0x0/0x1b returned 0 after XX usecs
-calling  ortek_init+0x0/0x1b @ 1
-initcall ortek_init+0x0/0x1b returned 0 after XX usecs
-calling  pl_init+0x0/0x1b @ 1
-initcall pl_init+0x0/0x1b returned 0 after XX usecs
-calling  pl_init+0x0/0x1b @ 1
-initcall pl_init+0x0/0x1b returned 0 after XX usecs
-calling  samsung_init+0x0/0x1b @ 1
-initcall samsung_init+0x0/0x1b returned 0 after XX usecs
-calling  sjoy_init+0x0/0x1b @ 1
-initcall sjoy_init+0x0/0x1b returned 0 after XX usecs
-calling  sony_init+0x0/0x1b @ 1
-initcall sony_init+0x0/0x1b returned 0 after XX usecs
-calling  sp_init+0x0/0x1b @ 1
-initcall sp_init+0x0/0x1b returned 0 after XX usecs
-calling  ga_init+0x0/0x1b @ 1
-initcall ga_init+0x0/0x1b returned 0 after XX usecs
-calling  tm_init+0x0/0x1b @ 1
-initcall tm_init+0x0/0x1b returned 0 after XX usecs
-calling  ts_init+0x0/0x1b @ 1
-initcall ts_init+0x0/0x1b returned 0 after XX usecs
-calling  twinhan_init+0x0/0x1b @ 1
-initcall twinhan_init+0x0/0x1b returned 0 after XX usecs
-calling  zp_init+0x0/0x1b @ 1
-initcall zp_init+0x0/0x1b returned 0 after XX usecs
-calling  hid_init+0x0/0x79 @ 1
-usbcore: registered new interface driver usbhid
-usbhid: USB HID core driver
-initcall hid_init+0x0/0x79 returned 0 after XX usecs
-calling  staging_init+0x0/0x8 @ 1
-initcall staging_init+0x0/0x8 returned 0 after XX usecs
-calling  alsa_hwdep_init+0x0/0x64 @ 1
-initcall alsa_hwdep_init+0x0/0x64 returned 0 after XX usecs
-calling  alsa_timer_init+0x0/0x146 @ 1
-initcall alsa_timer_init+0x0/0x146 returned 0 after XX usecs
-calling  alsa_pcm_init+0x0/0x6c @ 1
-initcall alsa_pcm_init+0x0/0x6c returned 0 after XX usecs
-calling  snd_mem_init+0x0/0x2c @ 1
-initcall snd_mem_init+0x0/0x2c returned 0 after XX usecs
-calling  patch_realtek_init+0x0/0x12 @ 1
-initcall patch_realtek_init+0x0/0x12 returned 0 after XX usecs
-calling  patch_cmedia_init+0x0/0x12 @ 1
-initcall patch_cmedia_init+0x0/0x12 returned 0 after XX usecs
-calling  patch_analog_init+0x0/0x12 @ 1
-initcall patch_analog_init+0x0/0x12 returned 0 after XX usecs
-calling  patch_sigmatel_init+0x0/0x12 @ 1
-initcall patch_sigmatel_init+0x0/0x12 returned 0 after XX usecs
-calling  patch_si3054_init+0x0/0x12 @ 1
-initcall patch_si3054_init+0x0/0x12 returned 0 after XX usecs
-calling  patch_cirrus_init+0x0/0x12 @ 1
-initcall patch_cirrus_init+0x0/0x12 returned 0 after XX usecs
-calling  patch_ca0110_init+0x0/0x12 @ 1
-initcall patch_ca0110_init+0x0/0x12 returned 0 after XX usecs
-calling  patch_conexant_init+0x0/0x12 @ 1
-initcall patch_conexant_init+0x0/0x12 returned 0 after XX usecs
-calling  patch_via_init+0x0/0x12 @ 1
-initcall patch_via_init+0x0/0x12 returned 0 after XX usecs
-calling  patch_hdmi_init+0x0/0x12 @ 1
-initcall patch_hdmi_init+0x0/0x12 returned 0 after XX usecs
-calling  alsa_card_azx_init+0x0/0x1b @ 1
-initcall alsa_card_azx_init+0x0/0x1b returned 0 after XX usecs
-calling  alsa_sound_last_init+0x0/0x6f @ 1
-ALSA device list:
-  No soundcards found.
-initcall alsa_sound_last_init+0x0/0x6f returned 0 after XX usecs
-calling  llc_init+0x0/0x20 @ 1
-initcall llc_init+0x0/0x20 returned 0 after XX usecs
-calling  snap_init+0x0/0x39 @ 1
-initcall snap_init+0x0/0x39 returned 0 after XX usecs
-calling  blackhole_module_init+0x0/0x12 @ 1
-initcall blackhole_module_init+0x0/0x12 returned 0 after XX usecs
-calling  police_init_module+0x0/0x12 @ 1
-initcall police_init_module+0x0/0x12 returned 0 after XX usecs
-calling  cbq_module_init+0x0/0x12 @ 1
-initcall cbq_module_init+0x0/0x12 returned 0 after XX usecs
-calling  htb_module_init+0x0/0x12 @ 1
-initcall htb_module_init+0x0/0x12 returned 0 after XX usecs
-calling  red_module_init+0x0/0x12 @ 1
-initcall red_module_init+0x0/0x12 returned 0 after XX usecs
-calling  gred_module_init+0x0/0x12 @ 1
-initcall gred_module_init+0x0/0x12 returned 0 after XX usecs
-calling  ingress_module_init+0x0/0x12 @ 1
-initcall ingress_module_init+0x0/0x12 returned 0 after XX usecs
-calling  dsmark_module_init+0x0/0x12 @ 1
-initcall dsmark_module_init+0x0/0x12 returned 0 after XX usecs
-calling  sfb_module_init+0x0/0x12 @ 1
-initcall sfb_module_init+0x0/0x12 returned 0 after XX usecs
-calling  sfq_module_init+0x0/0x12 @ 1
-initcall sfq_module_init+0x0/0x12 returned 0 after XX usecs
-calling  tbf_module_init+0x0/0x12 @ 1
-initcall tbf_module_init+0x0/0x12 returned 0 after XX usecs
-calling  teql_init+0x0/0xf1 @ 1
-initcall teql_init+0x0/0xf1 returned 0 after XX usecs
-calling  prio_module_init+0x0/0x12 @ 1
-initcall prio_module_init+0x0/0x12 returned 0 after XX usecs
-calling  mqprio_module_init+0x0/0x12 @ 1
-initcall mqprio_module_init+0x0/0x12 returned 0 after XX usecs
-calling  choke_module_init+0x0/0x12 @ 1
-initcall choke_module_init+0x0/0x12 returned 0 after XX usecs
-calling  init_u32+0x0/0x2e @ 1
-u32 classifier
-    Actions configured
-initcall init_u32+0x0/0x2e returned 0 after XX usecs
-calling  init_route4+0x0/0x12 @ 1
-initcall init_route4+0x0/0x12 returned 0 after XX usecs
-calling  init_fw+0x0/0x12 @ 1
-initcall init_fw+0x0/0x12 returned 0 after XX usecs
-calling  init_rsvp+0x0/0x12 @ 1
-initcall init_rsvp+0x0/0x12 returned 0 after XX usecs
-calling  init_tcindex+0x0/0x12 @ 1
-initcall init_tcindex+0x0/0x12 returned 0 after XX usecs
-calling  init_rsvp+0x0/0x12 @ 1
-initcall init_rsvp+0x0/0x12 returned 0 after XX usecs
-calling  init_basic+0x0/0x12 @ 1
-initcall init_basic+0x0/0x12 returned 0 after XX usecs
-calling  init_cgroup_cls+0x0/0x3c @ 1
-initcall init_cgroup_cls+0x0/0x3c returned 0 after XX usecs
-calling  nfnetlink_init+0x0/0x27 @ 1
-Netfilter messages via NETLINK v0.30.
-initcall nfnetlink_init+0x0/0x27 returned 0 after XX usecs
-calling  nfnetlink_queue_init+0x0/0xa4 @ 1
-initcall nfnetlink_queue_init+0x0/0xa4 returned 0 after XX usecs
-calling  nfnetlink_log_init+0x0/0xd7 @ 1
-initcall nfnetlink_log_init+0x0/0xd7 returned 0 after XX usecs
-calling  nf_conntrack_standalone_init+0x0/0x12 @ 1
-nf_conntrack version 0.5.0 (1370 buckets, 5480 max)
-initcall nf_conntrack_standalone_init+0x0/0x12 returned 0 after XX usecs
-calling  ctnetlink_init+0x0/0x76 @ 1
-ctnetlink v0.93: registering with nfnetlink.
-initcall ctnetlink_init+0x0/0x76 returned 0 after XX usecs
-calling  nf_conntrack_ftp_init+0x0/0x1a4 @ 1
-initcall nf_conntrack_ftp_init+0x0/0x1a4 returned 0 after XX usecs
-calling  nf_conntrack_h323_init+0x0/0xd4 @ 1
-initcall nf_conntrack_h323_init+0x0/0xd4 returned 0 after XX usecs
-calling  nf_conntrack_irc_init+0x0/0x181 @ 1
-initcall nf_conntrack_irc_init+0x0/0x181 returned 0 after XX usecs
-calling  nf_conntrack_sip_init+0x0/0x1ca @ 1
-initcall nf_conntrack_sip_init+0x0/0x1ca returned 0 after XX usecs
-calling  xt_init+0x0/0x117 @ 1
-initcall xt_init+0x0/0x117 returned 0 after XX usecs
-calling  tcpudp_mt_init+0x0/0x17 @ 1
-initcall tcpudp_mt_init+0x0/0x17 returned 0 after XX usecs
-calling  mark_mt_init+0x0/0x40 @ 1
-initcall mark_mt_init+0x0/0x40 returned 0 after XX usecs
-calling  connmark_mt_init+0x0/0x40 @ 1
-initcall connmark_mt_init+0x0/0x40 returned 0 after XX usecs
-calling  classify_tg_init+0x0/0x17 @ 1
-initcall classify_tg_init+0x0/0x17 returned 0 after XX usecs
-calling  dscp_tg_init+0x0/0x17 @ 1
-initcall dscp_tg_init+0x0/0x17 returned 0 after XX usecs
-calling  hl_tg_init+0x0/0x17 @ 1
-initcall hl_tg_init+0x0/0x17 returned 0 after XX usecs
-calling  nflog_tg_init+0x0/0x12 @ 1
-initcall nflog_tg_init+0x0/0x12 returned 0 after XX usecs
-calling  nfqueue_tg_init+0x0/0x17 @ 1
-initcall nfqueue_tg_init+0x0/0x17 returned 0 after XX usecs
-calling  tcpmss_tg_init+0x0/0x17 @ 1
-initcall tcpmss_tg_init+0x0/0x17 returned 0 after XX usecs
-calling  comment_mt_init+0x0/0x12 @ 1
-initcall comment_mt_init+0x0/0x12 returned 0 after XX usecs
-calling  connbytes_mt_init+0x0/0x12 @ 1
-initcall connbytes_mt_init+0x0/0x12 returned 0 after XX usecs
-calling  connlimit_mt_init+0x0/0x17 @ 1
-initcall connlimit_mt_init+0x0/0x17 returned 0 after XX usecs
-calling  conntrack_mt_init+0x0/0x17 @ 1
-initcall conntrack_mt_init+0x0/0x17 returned 0 after XX usecs
-calling  dscp_mt_init+0x0/0x17 @ 1
-initcall dscp_mt_init+0x0/0x17 returned 0 after XX usecs
-calling  hashlimit_mt_init+0x0/0x8c @ 1
-initcall hashlimit_mt_init+0x0/0x8c returned 0 after XX usecs
-calling  helper_mt_init+0x0/0x12 @ 1
-initcall helper_mt_init+0x0/0x12 returned 0 after XX usecs
-calling  hl_mt_init+0x0/0x17 @ 1
-initcall hl_mt_init+0x0/0x17 returned 0 after XX usecs
-calling  length_mt_init+0x0/0x17 @ 1
-initcall length_mt_init+0x0/0x17 returned 0 after XX usecs
-calling  limit_mt_init+0x0/0x12 @ 1
-initcall limit_mt_init+0x0/0x12 returned 0 after XX usecs
-calling  mac_mt_init+0x0/0x12 @ 1
-initcall mac_mt_init+0x0/0x12 returned 0 after XX usecs
-calling  multiport_mt_init+0x0/0x17 @ 1
-initcall multiport_mt_init+0x0/0x17 returned 0 after XX usecs
-calling  xt_osf_init+0x0/0x8d @ 1
-initcall xt_osf_init+0x0/0x8d returned 0 after XX usecs
-calling  owner_mt_init+0x0/0x12 @ 1
-initcall owner_mt_init+0x0/0x12 returned 0 after XX usecs
-calling  pkttype_mt_init+0x0/0x12 @ 1
-initcall pkttype_mt_init+0x0/0x12 returned 0 after XX usecs
-calling  quota_mt_init+0x0/0x12 @ 1
-initcall quota_mt_init+0x0/0x12 returned 0 after XX usecs
-calling  realm_mt_init+0x0/0x12 @ 1
-initcall realm_mt_init+0x0/0x12 returned 0 after XX usecs
-calling  recent_mt_init+0x0/0x7a @ 1
-initcall recent_mt_init+0x0/0x7a returned 0 after XX usecs
-calling  state_mt_init+0x0/0x12 @ 1
-initcall state_mt_init+0x0/0x12 returned 0 after XX usecs
-calling  statistic_mt_init+0x0/0x12 @ 1
-initcall statistic_mt_init+0x0/0x12 returned 0 after XX usecs
-calling  string_mt_init+0x0/0x12 @ 1
-initcall string_mt_init+0x0/0x12 returned 0 after XX usecs
-calling  tcpmss_mt_init+0x0/0x17 @ 1
-initcall tcpmss_mt_init+0x0/0x17 returned 0 after XX usecs
-calling  u32_mt_init+0x0/0x12 @ 1
-initcall u32_mt_init+0x0/0x12 returned 0 after XX usecs
-calling  sysctl_ipv4_init+0x0/0x87 @ 1
-initcall sysctl_ipv4_init+0x0/0x87 returned 0 after XX usecs
-calling  ipip_init+0x0/0x60 @ 1
-IPv4 over IPv4 tunneling driver
-initcall ipip_init+0x0/0x60 returned 0 after XX usecs
-calling  init_syncookies+0x0/0x19 @ 1
-initcall init_syncookies+0x0/0x19 returned 0 after XX usecs
-calling  tunnel4_init+0x0/0x66 @ 1
-initcall tunnel4_init+0x0/0x66 returned 0 after XX usecs
-calling  ipv4_netfilter_init+0x0/0x12 @ 1
-initcall ipv4_netfilter_init+0x0/0x12 returned 0 after XX usecs
-calling  nf_conntrack_l3proto_ipv4_init+0x0/0x14b @ 1
-initcall nf_conntrack_l3proto_ipv4_init+0x0/0x14b returned 0 after XX usecs
-calling  nf_nat_init+0x0/0x111 @ 1
-initcall nf_nat_init+0x0/0x111 returned 0 after XX usecs
-calling  nf_defrag_init+0x0/0x17 @ 1
-initcall nf_defrag_init+0x0/0x17 returned 0 after XX usecs
-calling  nf_nat_ftp_init+0x0/0x1f @ 1
-initcall nf_nat_ftp_init+0x0/0x1f returned 0 after XX usecs
-calling  init+0x0/0xd7 @ 1
-initcall init+0x0/0xd7 returned 0 after XX usecs
-calling  nf_nat_irc_init+0x0/0x1f @ 1
-initcall nf_nat_irc_init+0x0/0x1f returned 0 after XX usecs
-calling  nf_nat_sip_init+0x0/0xa9 @ 1
-initcall nf_nat_sip_init+0x0/0xa9 returned 0 after XX usecs
-calling  ip_tables_init+0x0/0xaa @ 1
-ip_tables: (C) 2000-2006 Netfilter Core Team
-initcall ip_tables_init+0x0/0xaa returned 0 after XX usecs
-calling  iptable_filter_init+0x0/0x6f @ 1
-initcall iptable_filter_init+0x0/0x6f returned 0 after XX usecs
-calling  iptable_mangle_init+0x0/0x51 @ 1
-initcall iptable_mangle_init+0x0/0x51 returned 0 after XX usecs
-calling  nf_nat_standalone_init+0x0/0x59 @ 1
-initcall nf_nat_standalone_init+0x0/0x59 returned 0 after XX usecs
-calling  ecn_mt_init+0x0/0x12 @ 1
-initcall ecn_mt_init+0x0/0x12 returned 0 after XX usecs
-calling  ecn_tg_init+0x0/0x12 @ 1
-initcall ecn_tg_init+0x0/0x12 returned 0 after XX usecs
-calling  log_tg_init+0x0/0x29 @ 1
-initcall log_tg_init+0x0/0x29 returned 0 after XX usecs
-calling  masquerade_tg_init+0x0/0x39 @ 1
-initcall masquerade_tg_init+0x0/0x39 returned 0 after XX usecs
-calling  netmap_tg_init+0x0/0x12 @ 1
-initcall netmap_tg_init+0x0/0x12 returned 0 after XX usecs
-calling  redirect_tg_init+0x0/0x12 @ 1
-initcall redirect_tg_init+0x0/0x12 returned 0 after XX usecs
-calling  reject_tg_init+0x0/0x12 @ 1
-initcall reject_tg_init+0x0/0x12 returned 0 after XX usecs
-calling  ip_queue_init+0x0/0x13a @ 1
-initcall ip_queue_init+0x0/0x13a returned 0 after XX usecs
-calling  inet_diag_init+0x0/0x72 @ 1
-initcall inet_diag_init+0x0/0x72 returned 0 after XX usecs
-calling  tcp_diag_init+0x0/0x12 @ 1
-initcall tcp_diag_init+0x0/0x12 returned 0 after XX usecs
-calling  bictcp_register+0x0/0x12 @ 1
-TCP bic registered
-initcall bictcp_register+0x0/0x12 returned 0 after XX usecs
-calling  cubictcp_register+0x0/0x6c @ 1
-TCP cubic registered
-initcall cubictcp_register+0x0/0x6c returned 0 after XX usecs
-calling  tcp_westwood_register+0x0/0x12 @ 1
-TCP westwood registered
-initcall tcp_westwood_register+0x0/0x12 returned 0 after XX usecs
-calling  hybla_register+0x0/0x12 @ 1
-TCP hybla registered
-initcall hybla_register+0x0/0x12 returned 0 after XX usecs
-calling  tcp_vegas_register+0x0/0x14 @ 1
-TCP vegas registered
-initcall tcp_vegas_register+0x0/0x14 returned 0 after XX usecs
-calling  inet6_init+0x0/0x2ba @ 1
-NET: Registered protocol family 10
-initcall inet6_init+0x0/0x2ba returned 0 after XX usecs
-calling  tunnel6_init+0x0/0x66 @ 1
-initcall tunnel6_init+0x0/0x66 returned 0 after XX usecs
-calling  ip6_tables_init+0x0/0xaa @ 1
-ip6_tables: (C) 2000-2006 Netfilter Core Team
-initcall ip6_tables_init+0x0/0xaa returned 0 after XX usecs
-calling  ip6table_filter_init+0x0/0x6f @ 1
-initcall ip6table_filter_init+0x0/0x6f returned 0 after XX usecs
-calling  ip6table_mangle_init+0x0/0x51 @ 1
-initcall ip6table_mangle_init+0x0/0x51 returned 0 after XX usecs
-calling  nf_conntrack_l3proto_ipv6_init+0x0/0xfc @ 1
-initcall nf_conntrack_l3proto_ipv6_init+0x0/0xfc returned 0 after XX usecs
-calling  nf_defrag_init+0x0/0x54 @ 1
-initcall nf_defrag_init+0x0/0x54 returned 0 after XX usecs
-calling  log_tg6_init+0x0/0x29 @ 1
-initcall log_tg6_init+0x0/0x29 returned 0 after XX usecs
-calling  reject_tg6_init+0x0/0x12 @ 1
-initcall reject_tg6_init+0x0/0x12 returned 0 after XX usecs
-calling  sit_init+0x0/0x60 @ 1
-IPv6 over IPv4 tunneling driver
-initcall sit_init+0x0/0x60 returned 0 after XX usecs
-calling  ip6_tunnel_init+0x0/0x8e @ 1
-initcall ip6_tunnel_init+0x0/0x8e returned 0 after XX usecs
-calling  packet_init+0x0/0x47 @ 1
-NET: Registered protocol family 17
-initcall packet_init+0x0/0x47 returned 0 after XX usecs
-calling  br_init+0x0/0xa2 @ 1
-initcall br_init+0x0/0xa2 returned 0 after XX usecs
-calling  init_rpcsec_gss+0x0/0x4d @ 1
-initcall init_rpcsec_gss+0x0/0x4d returned 0 after XX usecs
-calling  vlan_proto_init+0x0/0x82 @ 1
-802.1Q VLAN Support v1.8
-initcall vlan_proto_init+0x0/0x82 returned 0 after XX usecs
-calling  init_dns_resolver+0x0/0x108 @ 1
-Registering the dns_resolver key type
-initcall init_dns_resolver+0x0/0x108 returned 0 after XX usecs
-calling  mcheck_debugfs_init+0x0/0x3b @ 1
-initcall mcheck_debugfs_init+0x0/0x3b returned 0 after XX usecs
-calling  severities_debugfs_init+0x0/0x3b @ 1
-initcall severities_debugfs_init+0x0/0x3b returned 0 after XX usecs
-calling  hpet_insert_resource+0x0/0x23 @ 1
-initcall hpet_insert_resource+0x0/0x23 returned 1 after XX usecs
-initcall hpet_insert_resource+0x0/0x23 returned with error code 1 
-calling  lapic_insert_resource+0x0/0x3f @ 1
-initcall lapic_insert_resource+0x0/0x3f returned -1 after XX usecs
-initcall lapic_insert_resource+0x0/0x3f returned with error code -1 
-calling  io_apic_bug_finalize+0x0/0x1b @ 1
-initcall io_apic_bug_finalize+0x0/0x1b returned 0 after XX usecs
-calling  check_early_ioremap_leak+0x0/0x50 @ 1
-initcall check_early_ioremap_leak+0x0/0x50 returned 0 after XX usecs
-calling  pat_memtype_list_init+0x0/0x32 @ 1
-initcall pat_memtype_list_init+0x0/0x32 returned 0 after XX usecs
-calling  sched_init_debug+0x0/0x24 @ 1
-initcall sched_init_debug+0x0/0x24 returned 0 after XX usecs
-calling  init_oops_id+0x0/0x31 @ 1
-initcall init_oops_id+0x0/0x31 returned 0 after XX usecs
-calling  printk_late_init+0x0/0x50 @ 1
-initcall printk_late_init+0x0/0x50 returned 0 after XX usecs
-calling  pm_qos_power_init+0x0/0xca @ 1
-initcall pm_qos_power_init+0x0/0xca returned 0 after XX usecs
-calling  alarmtimer_init_late+0x0/0x73 @ 1
-No RTC device found, ALARM timers will not wake from suspend
-initcall alarmtimer_init_late+0x0/0x73 returned 0 after XX usecs
-calling  clear_boot_tracer+0x0/0x2d @ 1
-initcall clear_boot_tracer+0x0/0x2d returned 0 after XX usecs
-calling  max_swapfiles_check+0x0/0x8 @ 1
-initcall max_swapfiles_check+0x0/0x8 returned 0 after XX usecs
-calling  set_recommended_min_free_kbytes+0x0/0x82 @ 1
-initcall set_recommended_min_free_kbytes+0x0/0x82 returned 0 after XX usecs
-calling  random32_reseed+0x0/0xb3 @ 1
-initcall random32_reseed+0x0/0xb3 returned 0 after XX usecs
-calling  pci_resource_alignment_sysfs_init+0x0/0x19 @ 1
-initcall pci_resource_alignment_sysfs_init+0x0/0x19 returned 0 after XX usecs
-calling  pci_sysfs_init+0x0/0x51 @ 1
-initcall pci_sysfs_init+0x0/0x51 returned 0 after XX usecs
-calling  boot_wait_for_devices+0x0/0x30 @ 1
-XENBUS: Device with no driver: device/console/0
-initcall boot_wait_for_devices+0x0/0x30 returned 0 after XX usecs
-calling  seqgen_init+0x0/0xf @ 1
-initcall seqgen_init+0x0/0xf returned 0 after XX usecs
-calling  scsi_complete_async_scans+0x0/0x11b @ 1
-initcall scsi_complete_async_scans+0x0/0x11b returned 0 after XX usecs
-calling  rtc_hctosys+0x0/0x10d @ 1
-drivers/rtc/hctosys.c: unable to open rtc device (rtc0)
-initcall rtc_hctosys+0x0/0x10d returned -19 after XX usecs
-calling  powernowk8_init+0x0/0x1bf @ 1
-powernow-k8: Found 1 AMD Athlon(tm) 64 Processor 3700+ (1 cpu cores) (version 2.20.00)
-[Firmware Bug]: powernow-k8: No PSB or ACPI _PSS objects
-powernow-k8: Make sure that your BIOS is up to date and Cool'N'Quiet support is enabled in BIOS setup
-initcall powernowk8_init+0x0/0x1bf returned -19 after XX usecs
-calling  acpi_cpufreq_init+0x0/0xc1 @ 1
-initcall acpi_cpufreq_init+0x0/0xc1 returned 0 after XX usecs
-calling  memmap_init+0x0/0x34 @ 1
-initcall memmap_init+0x0/0x34 returned 0 after XX usecs
-calling  pci_mmcfg_late_insert_resources+0x0/0x5e @ 1
-initcall pci_mmcfg_late_insert_resources+0x0/0x5e returned 1 after XX usecs
-initcall pci_mmcfg_late_insert_resources+0x0/0x5e returned with error code 1 
-calling  tcp_congestion_default+0x0/0x12 @ 1
-initcall tcp_congestion_default+0x0/0x12 returned 0 after XX usecs
-calling  ip_auto_config+0x0/0xd7b @ 1
-IP-Config: Complete:
-     device=eth0, addr=192.168.12.1, mask=255.255.255.0, gw=192.168.12.2,
-     host=yumi, domain=, nis-domain=uguu.de,
-     bootserver=127.0.255.255, rootserver=127.0.255.255, rootpath=
-initcall ip_auto_config+0x0/0xd7b returned 0 after XX usecs
-calling  initialize_hashrnd+0x0/0x19 @ 1
-initcall initialize_hashrnd+0x0/0x19 returned 0 after XX usecs
-async_waiting @ 1
-async_continuing @ 1 after 0 usec
-md: Waiting for all devices to be available before autodetect
-md: If you don't use raid, use raid=noautodetect
-async_waiting @ 1
-async_continuing @ 1 after 0 usec
-md: Autodetecting RAID arrays.
-md: Scanned 0 and added 0 devices.
-md: autorun ...
-md: ... autorun DONE.
-EXT3-fs (xvda1): error: couldn't mount because of unsupported optional features (240)
-EXT2-fs (xvda1): error: couldn't mount because of unsupported optional features (240)
-EXT4-fs (xvda1): mounted filesystem with ordered data mode. Opts: (null)
-VFS: Mounted root (ext4 filesystem) readonly on device 202:1.
+Do I understand it correctly that you want one structure definition per
+power domain instead of the two?
 
--- 
-Tobias						PGP: http://8ef7ddba.uguu.de
+> I suspect so since these two data types seem to be linked together.
+> I guess container_of() can be used for conversion between the types?
+
+I don't think that will be necessary. :-)
+
+> > +
+> > +static int pd_power_down(struct dev_pm_domain *domain)
+> > +{
+> > +       struct sh7372_domain_data *dd = domain->platform_data;
+> > +       unsigned int mask = 1 << dd->bit_shift;
+> > +
+> > +       if (__raw_readl(PSTR) & mask) {
+> > +               __raw_writel(mask, SPDCR);
+> > +
+> > +               while (__raw_readl(SPDCR) & mask) {}
+> 
+> This probably wants a cpu_relax() in the polling loop. I realize that
+> my prototype hack lacked that...
+
+OK
+
+> > +               pr_debug("sh7372 power domain down 0x%08x -> PSTR = 0x%08x\n",
+> > +                        mask, __raw_readl(PSTR));
+> > +       }
+> > +
+> > +       return 0;
+> > +}
+> > +
+> > +static int pd_power_up(struct dev_pm_domain *domain)
+> > +{
+> > +       struct sh7372_domain_data *dd = domain->platform_data;
+> > +       unsigned int mask = 1 << dd->bit_shift;
+> > +
+> > +       if (!(__raw_readl(PSTR) & mask)) {
+> > +               __raw_writel(mask, SWUCR);
+> > +
+> > +               while (__raw_readl(SWUCR) & mask) {}
+> 
+> Same cpu_relax() here.
+
+OK
+
+> > +static int __init sh7372_power_domains_init(void)
+> > +{
+> > +       sh7372_init_domain(&sh7372_a4lc_domain, &sh7372_a4lc_domain_data);
+> > +       return 0;
+> > +}
+> > +core_initcall(sh7372_power_domains_init);
+> 
+> This initcall is going to be executed regardless which SoC we're
+> running on. We only want it called for sh7372 though.
+
+OK
+
+> If you look at other SoC-specific code then you will notice that
+> initcalls are only used for functions in mach-shmobile/ that are
+> common for all SoCs implemented under mach-shmobile.
+> 
+> You most likely want to initialize from sh7372_pm_init(), but for that
+> to work you probably have to reorder your code inside mackerel_init().
+
+OK, I'll figure out how to do the initialization correctly.
+
+Thanks,
+Rafael
+
+--Boundary-00=_S+89NLdTEjOXnsd
+Content-Type: text/plain;
+  charset="UTF-8";
+  name="mackerel-config"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename="mackerel-config"
+
+#
+# Automatically generated make config: don't edit
+# Linux/arm 3.0.0-rc2 Kernel Configuration
+#
+CONFIG_ARM=y
+CONFIG_SYS_SUPPORTS_APM_EMULATION=y
+CONFIG_GENERIC_GPIO=y
+# CONFIG_ARCH_USES_GETTIMEOFFSET is not set
+CONFIG_GENERIC_CLOCKEVENTS=y
+CONFIG_KTIME_SCALAR=y
+CONFIG_HAVE_PROC_CPU=y
+CONFIG_NO_IOPORT=y
+CONFIG_STACKTRACE_SUPPORT=y
+CONFIG_HAVE_LATENCYTOP_SUPPORT=y
+CONFIG_LOCKDEP_SUPPORT=y
+CONFIG_TRACE_IRQFLAGS_SUPPORT=y
+CONFIG_HARDIRQS_SW_RESEND=y
+CONFIG_GENERIC_IRQ_PROBE=y
+CONFIG_RWSEM_GENERIC_SPINLOCK=y
+CONFIG_ARCH_HAS_CPU_IDLE_WAIT=y
+CONFIG_GENERIC_HWEIGHT=y
+CONFIG_GENERIC_CALIBRATE_DELAY=y
+CONFIG_NEED_DMA_MAP_STATE=y
+CONFIG_VECTORS_BASE=0xffff0000
+# CONFIG_ARM_PATCH_PHYS_VIRT is not set
+CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
+CONFIG_CONSTRUCTORS=y
+CONFIG_HAVE_IRQ_WORK=y
+
+#
+# General setup
+#
+CONFIG_EXPERIMENTAL=y
+CONFIG_BROKEN_ON_SMP=y
+CONFIG_INIT_ENV_ARG_LIMIT=32
+CONFIG_CROSS_COMPILE=""
+CONFIG_LOCALVERSION=""
+CONFIG_LOCALVERSION_AUTO=y
+CONFIG_HAVE_KERNEL_GZIP=y
+CONFIG_HAVE_KERNEL_LZMA=y
+CONFIG_HAVE_KERNEL_LZO=y
+CONFIG_KERNEL_GZIP=y
+# CONFIG_KERNEL_LZMA is not set
+# CONFIG_KERNEL_LZO is not set
+CONFIG_SWAP=y
+CONFIG_SYSVIPC=y
+CONFIG_SYSVIPC_SYSCTL=y
+# CONFIG_POSIX_MQUEUE is not set
+# CONFIG_BSD_PROCESS_ACCT is not set
+# CONFIG_FHANDLE is not set
+# CONFIG_TASKSTATS is not set
+# CONFIG_AUDIT is not set
+CONFIG_HAVE_GENERIC_HARDIRQS=y
+
+#
+# IRQ subsystem
+#
+CONFIG_GENERIC_HARDIRQS=y
+CONFIG_HAVE_SPARSE_IRQ=y
+CONFIG_GENERIC_IRQ_SHOW=y
+CONFIG_SPARSE_IRQ=y
+
+#
+# RCU Subsystem
+#
+CONFIG_TINY_RCU=y
+# CONFIG_PREEMPT_RCU is not set
+# CONFIG_RCU_TRACE is not set
+# CONFIG_TREE_RCU_TRACE is not set
+CONFIG_IKCONFIG=y
+CONFIG_IKCONFIG_PROC=y
+CONFIG_LOG_BUF_SHIFT=16
+# CONFIG_CGROUPS is not set
+CONFIG_NAMESPACES=y
+# CONFIG_UTS_NS is not set
+# CONFIG_IPC_NS is not set
+# CONFIG_USER_NS is not set
+# CONFIG_PID_NS is not set
+# CONFIG_NET_NS is not set
+# CONFIG_SCHED_AUTOGROUP is not set
+CONFIG_SYSFS_DEPRECATED=y
+CONFIG_SYSFS_DEPRECATED_V2=y
+# CONFIG_RELAY is not set
+CONFIG_BLK_DEV_INITRD=y
+CONFIG_INITRAMFS_SOURCE="/home/rafael/src/arm/initramfs_data.cpio"
+CONFIG_INITRAMFS_ROOT_UID=0
+CONFIG_INITRAMFS_ROOT_GID=0
+CONFIG_RD_GZIP=y
+CONFIG_RD_BZIP2=y
+CONFIG_RD_LZMA=y
+CONFIG_RD_XZ=y
+CONFIG_RD_LZO=y
+CONFIG_INITRAMFS_COMPRESSION_NONE=y
+# CONFIG_INITRAMFS_COMPRESSION_GZIP is not set
+# CONFIG_INITRAMFS_COMPRESSION_BZIP2 is not set
+# CONFIG_INITRAMFS_COMPRESSION_LZMA is not set
+# CONFIG_INITRAMFS_COMPRESSION_XZ is not set
+# CONFIG_INITRAMFS_COMPRESSION_LZO is not set
+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+CONFIG_SYSCTL=y
+CONFIG_ANON_INODES=y
+# CONFIG_EXPERT is not set
+CONFIG_UID16=y
+CONFIG_SYSCTL_SYSCALL=y
+CONFIG_KALLSYMS=y
+CONFIG_KALLSYMS_ALL=y
+CONFIG_HOTPLUG=y
+CONFIG_PRINTK=y
+CONFIG_BUG=y
+CONFIG_ELF_CORE=y
+CONFIG_BASE_FULL=y
+CONFIG_FUTEX=y
+CONFIG_EPOLL=y
+CONFIG_SIGNALFD=y
+CONFIG_TIMERFD=y
+CONFIG_EVENTFD=y
+CONFIG_SHMEM=y
+CONFIG_AIO=y
+# CONFIG_EMBEDDED is not set
+CONFIG_HAVE_PERF_EVENTS=y
+CONFIG_PERF_USE_VMALLOC=y
+
+#
+# Kernel Performance Events And Counters
+#
+# CONFIG_PERF_EVENTS is not set
+# CONFIG_PERF_COUNTERS is not set
+CONFIG_VM_EVENT_COUNTERS=y
+CONFIG_COMPAT_BRK=y
+CONFIG_SLAB=y
+# CONFIG_SLUB is not set
+# CONFIG_PROFILING is not set
+CONFIG_HAVE_OPROFILE=y
+CONFIG_HAVE_KPROBES=y
+CONFIG_HAVE_KRETPROBES=y
+CONFIG_HAVE_REGS_AND_STACK_ACCESS_API=y
+CONFIG_HAVE_CLK=y
+CONFIG_HAVE_DMA_API_DEBUG=y
+
+#
+# GCOV-based kernel profiling
+#
+# CONFIG_GCOV_KERNEL is not set
+CONFIG_HAVE_GENERIC_DMA_COHERENT=y
+CONFIG_SLABINFO=y
+CONFIG_RT_MUTEXES=y
+CONFIG_BASE_SMALL=0
+# CONFIG_MODULES is not set
+CONFIG_BLOCK=y
+CONFIG_LBDAF=y
+# CONFIG_BLK_DEV_BSG is not set
+# CONFIG_BLK_DEV_INTEGRITY is not set
+
+#
+# IO Schedulers
+#
+CONFIG_IOSCHED_NOOP=y
+# CONFIG_IOSCHED_DEADLINE is not set
+# CONFIG_IOSCHED_CFQ is not set
+CONFIG_DEFAULT_NOOP=y
+CONFIG_DEFAULT_IOSCHED="noop"
+# CONFIG_INLINE_SPIN_TRYLOCK is not set
+# CONFIG_INLINE_SPIN_TRYLOCK_BH is not set
+# CONFIG_INLINE_SPIN_LOCK is not set
+# CONFIG_INLINE_SPIN_LOCK_BH is not set
+# CONFIG_INLINE_SPIN_LOCK_IRQ is not set
+# CONFIG_INLINE_SPIN_LOCK_IRQSAVE is not set
+CONFIG_INLINE_SPIN_UNLOCK=y
+# CONFIG_INLINE_SPIN_UNLOCK_BH is not set
+CONFIG_INLINE_SPIN_UNLOCK_IRQ=y
+# CONFIG_INLINE_SPIN_UNLOCK_IRQRESTORE is not set
+# CONFIG_INLINE_READ_TRYLOCK is not set
+# CONFIG_INLINE_READ_LOCK is not set
+# CONFIG_INLINE_READ_LOCK_BH is not set
+# CONFIG_INLINE_READ_LOCK_IRQ is not set
+# CONFIG_INLINE_READ_LOCK_IRQSAVE is not set
+CONFIG_INLINE_READ_UNLOCK=y
+# CONFIG_INLINE_READ_UNLOCK_BH is not set
+CONFIG_INLINE_READ_UNLOCK_IRQ=y
+# CONFIG_INLINE_READ_UNLOCK_IRQRESTORE is not set
+# CONFIG_INLINE_WRITE_TRYLOCK is not set
+# CONFIG_INLINE_WRITE_LOCK is not set
+# CONFIG_INLINE_WRITE_LOCK_BH is not set
+# CONFIG_INLINE_WRITE_LOCK_IRQ is not set
+# CONFIG_INLINE_WRITE_LOCK_IRQSAVE is not set
+CONFIG_INLINE_WRITE_UNLOCK=y
+# CONFIG_INLINE_WRITE_UNLOCK_BH is not set
+CONFIG_INLINE_WRITE_UNLOCK_IRQ=y
+# CONFIG_INLINE_WRITE_UNLOCK_IRQRESTORE is not set
+# CONFIG_MUTEX_SPIN_ON_OWNER is not set
+CONFIG_FREEZER=y
+
+#
+# System Type
+#
+CONFIG_MMU=y
+# CONFIG_ARCH_INTEGRATOR is not set
+# CONFIG_ARCH_REALVIEW is not set
+# CONFIG_ARCH_VERSATILE is not set
+# CONFIG_ARCH_VEXPRESS is not set
+# CONFIG_ARCH_AT91 is not set
+# CONFIG_ARCH_BCMRING is not set
+# CONFIG_ARCH_CLPS711X is not set
+# CONFIG_ARCH_CNS3XXX is not set
+# CONFIG_ARCH_GEMINI is not set
+# CONFIG_ARCH_EBSA110 is not set
+# CONFIG_ARCH_EP93XX is not set
+# CONFIG_ARCH_FOOTBRIDGE is not set
+# CONFIG_ARCH_MXC is not set
+# CONFIG_ARCH_MXS is not set
+# CONFIG_ARCH_NETX is not set
+# CONFIG_ARCH_H720X is not set
+# CONFIG_ARCH_IOP13XX is not set
+# CONFIG_ARCH_IOP32X is not set
+# CONFIG_ARCH_IOP33X is not set
+# CONFIG_ARCH_IXP23XX is not set
+# CONFIG_ARCH_IXP2000 is not set
+# CONFIG_ARCH_IXP4XX is not set
+# CONFIG_ARCH_DOVE is not set
+# CONFIG_ARCH_KIRKWOOD is not set
+# CONFIG_ARCH_LOKI is not set
+# CONFIG_ARCH_LPC32XX is not set
+# CONFIG_ARCH_MV78XX0 is not set
+# CONFIG_ARCH_ORION5X is not set
+# CONFIG_ARCH_MMP is not set
+# CONFIG_ARCH_KS8695 is not set
+# CONFIG_ARCH_W90X900 is not set
+# CONFIG_ARCH_NUC93X is not set
+# CONFIG_ARCH_TEGRA is not set
+# CONFIG_ARCH_PNX4008 is not set
+# CONFIG_ARCH_PXA is not set
+# CONFIG_ARCH_MSM is not set
+CONFIG_ARCH_SHMOBILE=y
+# CONFIG_ARCH_RPC is not set
+# CONFIG_ARCH_SA1100 is not set
+# CONFIG_ARCH_S3C2410 is not set
+# CONFIG_ARCH_S3C64XX is not set
+# CONFIG_ARCH_S5P64X0 is not set
+# CONFIG_ARCH_S5PC100 is not set
+# CONFIG_ARCH_S5PV210 is not set
+# CONFIG_ARCH_EXYNOS4 is not set
+# CONFIG_ARCH_SHARK is not set
+# CONFIG_ARCH_TCC_926 is not set
+# CONFIG_ARCH_U300 is not set
+# CONFIG_ARCH_U8500 is not set
+# CONFIG_ARCH_NOMADIK is not set
+# CONFIG_ARCH_DAVINCI is not set
+# CONFIG_ARCH_OMAP is not set
+# CONFIG_PLAT_SPEAR is not set
+# CONFIG_ARCH_VT8500 is not set
+# CONFIG_GPIO_PCA953X is not set
+# CONFIG_KEYBOARD_GPIO_POLLED is not set
+
+#
+# System MMU
+#
+
+#
+# SH-Mobile System Type
+#
+# CONFIG_ARCH_SH7367 is not set
+# CONFIG_ARCH_SH7377 is not set
+CONFIG_ARCH_SH7372=y
+# CONFIG_ARCH_SH73A0 is not set
+
+#
+# SH-Mobile Board Type
+#
+# CONFIG_MACH_AP4EVB is not set
+CONFIG_MACH_MACKEREL=y
+
+#
+# SH-Mobile System Configuration
+#
+
+#
+# Memory configuration
+#
+CONFIG_MEMORY_START=0x40000000
+CONFIG_MEMORY_SIZE=0x10000000
+
+#
+# Timer and clock configuration
+#
+CONFIG_SHMOBILE_TIMER_HZ=128
+CONFIG_SH_TIMER_CMT=y
+# CONFIG_SH_TIMER_TMU is not set
+CONFIG_SH_CLK_CPG=y
+
+#
+# SuperH / SH-Mobile Driver Options
+#
+
+#
+# Interrupt controller options
+#
+# CONFIG_INTC_USERIMASK is not set
+# CONFIG_INTC_MAPPING_DEBUG is not set
+
+#
+# Processor Type
+#
+CONFIG_CPU_V7=y
+CONFIG_CPU_32v6K=y
+CONFIG_CPU_32v7=y
+CONFIG_CPU_ABRT_EV7=y
+CONFIG_CPU_PABRT_V7=y
+CONFIG_CPU_CACHE_V7=y
+CONFIG_CPU_CACHE_VIPT=y
+CONFIG_CPU_COPY_V6=y
+CONFIG_CPU_TLB_V7=y
+CONFIG_CPU_HAS_ASID=y
+CONFIG_CPU_CP15=y
+CONFIG_CPU_CP15_MMU=y
+
+#
+# Processor Features
+#
+CONFIG_ARM_THUMB=y
+# CONFIG_ARM_THUMBEE is not set
+# CONFIG_SWP_EMULATE is not set
+# CONFIG_CPU_ICACHE_DISABLE is not set
+# CONFIG_CPU_DCACHE_DISABLE is not set
+CONFIG_CPU_BPREDICT_DISABLE=y
+CONFIG_OUTER_CACHE=y
+CONFIG_OUTER_CACHE_SYNC=y
+CONFIG_CACHE_L2X0=y
+CONFIG_CACHE_PL310=y
+CONFIG_ARM_L1_CACHE_SHIFT=5
+CONFIG_ARM_DMA_MEM_BUFFERABLE=y
+CONFIG_CPU_HAS_PMU=y
+CONFIG_MULTI_IRQ_HANDLER=y
+CONFIG_ARM_ERRATA_430973=y
+CONFIG_ARM_ERRATA_458693=y
+# CONFIG_ARM_ERRATA_460075 is not set
+# CONFIG_PL310_ERRATA_588369 is not set
+# CONFIG_PL310_ERRATA_727915 is not set
+# CONFIG_ARM_ERRATA_743622 is not set
+CONFIG_ARM_ERRATA_753970=y
+# CONFIG_ARM_ERRATA_754322 is not set
+
+#
+# Bus support
+#
+# CONFIG_PCI_SYSCALL is not set
+# CONFIG_ARCH_SUPPORTS_MSI is not set
+# CONFIG_PCCARD is not set
+
+#
+# Kernel Features
+#
+# CONFIG_NO_HZ is not set
+# CONFIG_HIGH_RES_TIMERS is not set
+CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
+# CONFIG_SMP is not set
+CONFIG_VMSPLIT_3G=y
+# CONFIG_VMSPLIT_2G is not set
+# CONFIG_VMSPLIT_1G is not set
+CONFIG_PAGE_OFFSET=0xC0000000
+CONFIG_PREEMPT_NONE=y
+# CONFIG_PREEMPT_VOLUNTARY is not set
+# CONFIG_PREEMPT is not set
+CONFIG_HZ=128
+# CONFIG_THUMB2_KERNEL is not set
+CONFIG_AEABI=y
+# CONFIG_OABI_COMPAT is not set
+# CONFIG_ARCH_SPARSEMEM_DEFAULT is not set
+# CONFIG_ARCH_SELECT_MEMORY_MODEL is not set
+CONFIG_HAVE_ARCH_PFN_VALID=y
+# CONFIG_HIGHMEM is not set
+CONFIG_SELECT_MEMORY_MODEL=y
+CONFIG_FLATMEM_MANUAL=y
+CONFIG_FLATMEM=y
+CONFIG_FLAT_NODE_MEM_MAP=y
+CONFIG_HAVE_MEMBLOCK=y
+CONFIG_PAGEFLAGS_EXTENDED=y
+CONFIG_SPLIT_PTLOCK_CPUS=4
+# CONFIG_COMPACTION is not set
+# CONFIG_PHYS_ADDR_T_64BIT is not set
+CONFIG_ZONE_DMA_FLAG=0
+CONFIG_VIRT_TO_BUS=y
+# CONFIG_KSM is not set
+CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
+CONFIG_NEED_PER_CPU_KM=y
+# CONFIG_CLEANCACHE is not set
+CONFIG_FORCE_MAX_ZONEORDER=13
+CONFIG_ALIGNMENT_TRAP=y
+# CONFIG_UACCESS_WITH_MEMCPY is not set
+# CONFIG_SECCOMP is not set
+# CONFIG_CC_STACKPROTECTOR is not set
+# CONFIG_DEPRECATED_PARAM_STRUCT is not set
+
+#
+# Boot options
+#
+CONFIG_USE_OF=y
+CONFIG_ZBOOT_ROM_TEXT=0x0
+CONFIG_ZBOOT_ROM_BSS=0x0
+CONFIG_CMDLINE="console=tty0 console=ttySC0,115200 earlyprintk=sh-sci.0,115200 ignore_loglevel memblock=debug memchunk.veu0=4m no_console_suspend"
+# CONFIG_CMDLINE_FROM_BOOTLOADER is not set
+# CONFIG_CMDLINE_EXTEND is not set
+CONFIG_CMDLINE_FORCE=y
+# CONFIG_XIP_KERNEL is not set
+CONFIG_KEXEC=y
+CONFIG_ATAGS_PROC=y
+# CONFIG_CRASH_DUMP is not set
+# CONFIG_AUTO_ZRELADDR is not set
+
+#
+# CPU Power Management
+#
+# CONFIG_CPU_IDLE is not set
+
+#
+# Floating point emulation
+#
+
+#
+# At least one emulation must be selected
+#
+# CONFIG_VFP is not set
+
+#
+# Userspace binary formats
+#
+CONFIG_BINFMT_ELF=y
+# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+CONFIG_HAVE_AOUT=y
+# CONFIG_BINFMT_AOUT is not set
+# CONFIG_BINFMT_MISC is not set
+
+#
+# Power management options
+#
+CONFIG_SUSPEND=y
+CONFIG_SUSPEND_FREEZER=y
+CONFIG_PM_SLEEP=y
+CONFIG_PM_RUNTIME=y
+CONFIG_PM=y
+CONFIG_PM_DEBUG=y
+CONFIG_PM_ADVANCED_DEBUG=y
+# CONFIG_PM_TEST_SUSPEND is not set
+CONFIG_CAN_PM_TRACE=y
+# CONFIG_APM_EMULATION is not set
+CONFIG_PM_RUNTIME_CLK=y
+CONFIG_PM_GENERIC_DOMAINS=y
+CONFIG_ARCH_SUSPEND_POSSIBLE=y
+CONFIG_NET=y
+
+#
+# Networking options
+#
+CONFIG_PACKET=y
+CONFIG_UNIX=y
+CONFIG_XFRM=y
+# CONFIG_XFRM_USER is not set
+# CONFIG_XFRM_SUB_POLICY is not set
+# CONFIG_XFRM_MIGRATE is not set
+# CONFIG_XFRM_STATISTICS is not set
+# CONFIG_NET_KEY is not set
+CONFIG_INET=y
+CONFIG_IP_MULTICAST=y
+# CONFIG_IP_ADVANCED_ROUTER is not set
+# CONFIG_IP_PNP is not set
+# CONFIG_NET_IPIP is not set
+# CONFIG_NET_IPGRE_DEMUX is not set
+# CONFIG_IP_MROUTE is not set
+# CONFIG_ARPD is not set
+# CONFIG_SYN_COOKIES is not set
+# CONFIG_INET_AH is not set
+# CONFIG_INET_ESP is not set
+# CONFIG_INET_IPCOMP is not set
+# CONFIG_INET_XFRM_TUNNEL is not set
+# CONFIG_INET_TUNNEL is not set
+CONFIG_INET_XFRM_MODE_TRANSPORT=y
+CONFIG_INET_XFRM_MODE_TUNNEL=y
+CONFIG_INET_XFRM_MODE_BEET=y
+CONFIG_INET_LRO=y
+CONFIG_INET_DIAG=y
+CONFIG_INET_TCP_DIAG=y
+# CONFIG_TCP_CONG_ADVANCED is not set
+CONFIG_TCP_CONG_CUBIC=y
+CONFIG_DEFAULT_TCP_CONG="cubic"
+# CONFIG_TCP_MD5SIG is not set
+# CONFIG_IPV6 is not set
+# CONFIG_NETWORK_SECMARK is not set
+# CONFIG_NETWORK_PHY_TIMESTAMPING is not set
+# CONFIG_NETFILTER is not set
+# CONFIG_IP_DCCP is not set
+# CONFIG_IP_SCTP is not set
+# CONFIG_RDS is not set
+# CONFIG_TIPC is not set
+# CONFIG_ATM is not set
+# CONFIG_L2TP is not set
+# CONFIG_BRIDGE is not set
+# CONFIG_NET_DSA is not set
+# CONFIG_VLAN_8021Q is not set
+# CONFIG_DECNET is not set
+# CONFIG_LLC2 is not set
+# CONFIG_IPX is not set
+# CONFIG_ATALK is not set
+# CONFIG_X25 is not set
+# CONFIG_LAPB is not set
+# CONFIG_ECONET is not set
+# CONFIG_WAN_ROUTER is not set
+# CONFIG_PHONET is not set
+# CONFIG_IEEE802154 is not set
+# CONFIG_NET_SCHED is not set
+# CONFIG_DCB is not set
+# CONFIG_BATMAN_ADV is not set
+
+#
+# Network testing
+#
+# CONFIG_NET_PKTGEN is not set
+# CONFIG_HAMRADIO is not set
+# CONFIG_CAN is not set
+# CONFIG_IRDA is not set
+# CONFIG_BT is not set
+# CONFIG_AF_RXRPC is not set
+# CONFIG_WIRELESS is not set
+# CONFIG_WIMAX is not set
+# CONFIG_RFKILL is not set
+# CONFIG_NET_9P is not set
+# CONFIG_CAIF is not set
+# CONFIG_CEPH_LIB is not set
+
+#
+# Device Drivers
+#
+
+#
+# Generic Driver Options
+#
+CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+# CONFIG_DEVTMPFS is not set
+CONFIG_STANDALONE=y
+CONFIG_PREVENT_FIRMWARE_BUILD=y
+CONFIG_FW_LOADER=y
+CONFIG_FIRMWARE_IN_KERNEL=y
+CONFIG_EXTRA_FIRMWARE=""
+# CONFIG_DEBUG_DRIVER is not set
+# CONFIG_DEBUG_DEVRES is not set
+# CONFIG_SYS_HYPERVISOR is not set
+# CONFIG_CONNECTOR is not set
+CONFIG_MTD=y
+# CONFIG_MTD_DEBUG is not set
+# CONFIG_MTD_REDBOOT_PARTS is not set
+# CONFIG_MTD_CMDLINE_PARTS is not set
+# CONFIG_MTD_AFS_PARTS is not set
+CONFIG_MTD_OF_PARTS=y
+# CONFIG_MTD_AR7_PARTS is not set
+
+#
+# User Modules And Translation Layers
+#
+CONFIG_MTD_CHAR=y
+CONFIG_MTD_BLKDEVS=y
+CONFIG_MTD_BLOCK=y
+# CONFIG_FTL is not set
+# CONFIG_NFTL is not set
+# CONFIG_INFTL is not set
+# CONFIG_RFD_FTL is not set
+# CONFIG_SSFDC is not set
+# CONFIG_SM_FTL is not set
+# CONFIG_MTD_OOPS is not set
+# CONFIG_MTD_SWAP is not set
+
+#
+# RAM/ROM/Flash chip drivers
+#
+CONFIG_MTD_CFI=y
+# CONFIG_MTD_JEDECPROBE is not set
+CONFIG_MTD_GEN_PROBE=y
+# CONFIG_MTD_CFI_ADV_OPTIONS is not set
+CONFIG_MTD_MAP_BANK_WIDTH_1=y
+CONFIG_MTD_MAP_BANK_WIDTH_2=y
+CONFIG_MTD_MAP_BANK_WIDTH_4=y
+# CONFIG_MTD_MAP_BANK_WIDTH_8 is not set
+# CONFIG_MTD_MAP_BANK_WIDTH_16 is not set
+# CONFIG_MTD_MAP_BANK_WIDTH_32 is not set
+CONFIG_MTD_CFI_I1=y
+CONFIG_MTD_CFI_I2=y
+# CONFIG_MTD_CFI_I4 is not set
+# CONFIG_MTD_CFI_I8 is not set
+CONFIG_MTD_CFI_INTELEXT=y
+# CONFIG_MTD_CFI_AMDSTD is not set
+# CONFIG_MTD_CFI_STAA is not set
+CONFIG_MTD_CFI_UTIL=y
+# CONFIG_MTD_RAM is not set
+# CONFIG_MTD_ROM is not set
+# CONFIG_MTD_ABSENT is not set
+
+#
+# Mapping drivers for chip access
+#
+# CONFIG_MTD_COMPLEX_MAPPINGS is not set
+CONFIG_MTD_PHYSMAP=y
+# CONFIG_MTD_PHYSMAP_COMPAT is not set
+CONFIG_MTD_PHYSMAP_OF=y
+# CONFIG_MTD_ARM_INTEGRATOR is not set
+# CONFIG_MTD_PLATRAM is not set
+
+#
+# Self-contained MTD device drivers
+#
+# CONFIG_MTD_SLRAM is not set
+# CONFIG_MTD_PHRAM is not set
+# CONFIG_MTD_MTDRAM is not set
+# CONFIG_MTD_BLOCK2MTD is not set
+
+#
+# Disk-On-Chip Device Drivers
+#
+# CONFIG_MTD_DOC2000 is not set
+# CONFIG_MTD_DOC2001 is not set
+# CONFIG_MTD_DOC2001PLUS is not set
+CONFIG_MTD_NAND_ECC=y
+# CONFIG_MTD_NAND_ECC_SMC is not set
+CONFIG_MTD_NAND=y
+# CONFIG_MTD_NAND_VERIFY_WRITE is not set
+# CONFIG_MTD_NAND_ECC_BCH is not set
+# CONFIG_MTD_SM_COMMON is not set
+# CONFIG_MTD_NAND_MUSEUM_IDS is not set
+# CONFIG_MTD_NAND_GPIO is not set
+CONFIG_MTD_NAND_IDS=y
+# CONFIG_MTD_NAND_DISKONCHIP is not set
+# CONFIG_MTD_NAND_NANDSIM is not set
+# CONFIG_MTD_NAND_PLATFORM is not set
+# CONFIG_MTD_ALAUDA is not set
+CONFIG_MTD_NAND_SH_FLCTL=y
+# CONFIG_MTD_ONENAND is not set
+
+#
+# LPDDR flash memory drivers
+#
+# CONFIG_MTD_LPDDR is not set
+# CONFIG_MTD_UBI is not set
+CONFIG_DTC=y
+CONFIG_OF=y
+
+#
+# Device Tree and Open Firmware support
+#
+CONFIG_PROC_DEVICETREE=y
+CONFIG_OF_FLATTREE=y
+CONFIG_OF_EARLY_FLATTREE=y
+CONFIG_OF_ADDRESS=y
+CONFIG_OF_IRQ=y
+CONFIG_OF_DEVICE=y
+CONFIG_OF_GPIO=y
+CONFIG_OF_I2C=y
+CONFIG_OF_NET=y
+CONFIG_OF_MDIO=y
+# CONFIG_PARPORT is not set
+# CONFIG_BLK_DEV is not set
+# CONFIG_SENSORS_LIS3LV02D is not set
+# CONFIG_MISC_DEVICES is not set
+CONFIG_HAVE_IDE=y
+# CONFIG_IDE is not set
+
+#
+# SCSI device support
+#
+CONFIG_SCSI_MOD=y
+# CONFIG_RAID_ATTRS is not set
+# CONFIG_SCSI is not set
+# CONFIG_SCSI_DMA is not set
+# CONFIG_SCSI_NETLINK is not set
+# CONFIG_ATA is not set
+# CONFIG_MD is not set
+CONFIG_NETDEVICES=y
+# CONFIG_DUMMY is not set
+# CONFIG_BONDING is not set
+# CONFIG_MACVLAN is not set
+# CONFIG_EQUALIZER is not set
+# CONFIG_TUN is not set
+# CONFIG_VETH is not set
+CONFIG_MII=y
+CONFIG_PHYLIB=y
+
+#
+# MII PHY device drivers
+#
+# CONFIG_MARVELL_PHY is not set
+# CONFIG_DAVICOM_PHY is not set
+# CONFIG_QSEMI_PHY is not set
+# CONFIG_LXT_PHY is not set
+# CONFIG_CICADA_PHY is not set
+# CONFIG_VITESSE_PHY is not set
+# CONFIG_SMSC_PHY is not set
+# CONFIG_BROADCOM_PHY is not set
+# CONFIG_BCM63XX_PHY is not set
+# CONFIG_ICPLUS_PHY is not set
+# CONFIG_REALTEK_PHY is not set
+# CONFIG_NATIONAL_PHY is not set
+# CONFIG_STE10XP is not set
+# CONFIG_LSI_ET1011C_PHY is not set
+# CONFIG_MICREL_PHY is not set
+# CONFIG_FIXED_PHY is not set
+# CONFIG_MDIO_BITBANG is not set
+CONFIG_NET_ETHERNET=y
+# CONFIG_AX88796 is not set
+# CONFIG_SMC91X is not set
+# CONFIG_DM9000 is not set
+# CONFIG_ETHOC is not set
+# CONFIG_SMC911X is not set
+CONFIG_SMSC911X=y
+# CONFIG_SMSC911X_ARCH_HOOKS is not set
+# CONFIG_DNET is not set
+# CONFIG_IBM_NEW_EMAC_ZMII is not set
+# CONFIG_IBM_NEW_EMAC_RGMII is not set
+# CONFIG_IBM_NEW_EMAC_TAH is not set
+# CONFIG_IBM_NEW_EMAC_EMAC4 is not set
+# CONFIG_IBM_NEW_EMAC_NO_FLOW_CTRL is not set
+# CONFIG_IBM_NEW_EMAC_MAL_CLR_ICINTSTAT is not set
+# CONFIG_IBM_NEW_EMAC_MAL_COMMON_ERR is not set
+# CONFIG_B44 is not set
+# CONFIG_KS8851_MLL is not set
+# CONFIG_FTMAC100 is not set
+# CONFIG_NETDEV_1000 is not set
+# CONFIG_NETDEV_10000 is not set
+# CONFIG_WLAN is not set
+
+#
+# Enable WiMAX (Networking options) to see the WiMAX drivers
+#
+
+#
+# USB Network Adapters
+#
+# CONFIG_USB_CATC is not set
+# CONFIG_USB_KAWETH is not set
+# CONFIG_USB_PEGASUS is not set
+# CONFIG_USB_RTL8150 is not set
+CONFIG_USB_USBNET=y
+# CONFIG_USB_NET_AX8817X is not set
+# CONFIG_USB_NET_CDCETHER is not set
+# CONFIG_USB_NET_CDC_EEM is not set
+CONFIG_USB_NET_CDC_NCM=y
+CONFIG_USB_NET_DM9601=y
+# CONFIG_USB_NET_SMSC75XX is not set
+# CONFIG_USB_NET_SMSC95XX is not set
+# CONFIG_USB_NET_GL620A is not set
+# CONFIG_USB_NET_NET1080 is not set
+# CONFIG_USB_NET_PLUSB is not set
+# CONFIG_USB_NET_MCS7830 is not set
+# CONFIG_USB_NET_RNDIS_HOST is not set
+# CONFIG_USB_NET_CDC_SUBSET is not set
+# CONFIG_USB_NET_ZAURUS is not set
+# CONFIG_USB_NET_CX82310_ETH is not set
+# CONFIG_USB_NET_INT51X1 is not set
+# CONFIG_USB_IPHETH is not set
+# CONFIG_USB_SIERRA_NET is not set
+# CONFIG_WAN is not set
+
+#
+# CAIF transport drivers
+#
+# CONFIG_PPP is not set
+# CONFIG_SLIP is not set
+# CONFIG_NETCONSOLE is not set
+# CONFIG_NETPOLL is not set
+# CONFIG_NET_POLL_CONTROLLER is not set
+# CONFIG_ISDN is not set
+# CONFIG_PHONE is not set
+
+#
+# Input device support
+#
+CONFIG_INPUT=y
+# CONFIG_INPUT_FF_MEMLESS is not set
+# CONFIG_INPUT_POLLDEV is not set
+# CONFIG_INPUT_SPARSEKMAP is not set
+
+#
+# Userland interfaces
+#
+CONFIG_INPUT_MOUSEDEV=y
+# CONFIG_INPUT_MOUSEDEV_PSAUX is not set
+CONFIG_INPUT_MOUSEDEV_SCREEN_X=1024
+CONFIG_INPUT_MOUSEDEV_SCREEN_Y=768
+# CONFIG_INPUT_JOYDEV is not set
+CONFIG_INPUT_EVDEV=y
+# CONFIG_INPUT_EVBUG is not set
+
+#
+# Input Device Drivers
+#
+CONFIG_INPUT_KEYBOARD=y
+# CONFIG_KEYBOARD_ADP5588 is not set
+# CONFIG_KEYBOARD_ADP5589 is not set
+# CONFIG_KEYBOARD_ATKBD is not set
+# CONFIG_KEYBOARD_QT1070 is not set
+# CONFIG_KEYBOARD_QT2160 is not set
+# CONFIG_KEYBOARD_LKKBD is not set
+# CONFIG_KEYBOARD_GPIO is not set
+# CONFIG_KEYBOARD_TCA6416 is not set
+# CONFIG_KEYBOARD_MATRIX is not set
+CONFIG_KEYBOARD_LM8323=y
+# CONFIG_KEYBOARD_MAX7359 is not set
+# CONFIG_KEYBOARD_MCS is not set
+# CONFIG_KEYBOARD_MPR121 is not set
+# CONFIG_KEYBOARD_NEWTON is not set
+# CONFIG_KEYBOARD_OPENCORES is not set
+# CONFIG_KEYBOARD_STOWAWAY is not set
+# CONFIG_KEYBOARD_SUNKBD is not set
+CONFIG_KEYBOARD_SH_KEYSC=y
+# CONFIG_KEYBOARD_XTKBD is not set
+# CONFIG_INPUT_MOUSE is not set
+# CONFIG_INPUT_JOYSTICK is not set
+# CONFIG_INPUT_TABLET is not set
+CONFIG_INPUT_TOUCHSCREEN=y
+# CONFIG_TOUCHSCREEN_AD7879 is not set
+# CONFIG_TOUCHSCREEN_ATMEL_MXT is not set
+# CONFIG_TOUCHSCREEN_BU21013 is not set
+# CONFIG_TOUCHSCREEN_CY8CTMG110 is not set
+# CONFIG_TOUCHSCREEN_DYNAPRO is not set
+# CONFIG_TOUCHSCREEN_HAMPSHIRE is not set
+# CONFIG_TOUCHSCREEN_EETI is not set
+# CONFIG_TOUCHSCREEN_FUJITSU is not set
+# CONFIG_TOUCHSCREEN_GUNZE is not set
+# CONFIG_TOUCHSCREEN_ELO is not set
+# CONFIG_TOUCHSCREEN_WACOM_W8001 is not set
+# CONFIG_TOUCHSCREEN_MAX11801 is not set
+# CONFIG_TOUCHSCREEN_MCS5000 is not set
+# CONFIG_TOUCHSCREEN_MTOUCH is not set
+# CONFIG_TOUCHSCREEN_INEXIO is not set
+# CONFIG_TOUCHSCREEN_MK712 is not set
+# CONFIG_TOUCHSCREEN_PENMOUNT is not set
+# CONFIG_TOUCHSCREEN_TOUCHRIGHT is not set
+# CONFIG_TOUCHSCREEN_TOUCHWIN is not set
+# CONFIG_TOUCHSCREEN_USB_COMPOSITE is not set
+# CONFIG_TOUCHSCREEN_TOUCHIT213 is not set
+CONFIG_TOUCHSCREEN_TSC2007=y
+# CONFIG_TOUCHSCREEN_W90X900 is not set
+# CONFIG_TOUCHSCREEN_ST1232 is not set
+# CONFIG_TOUCHSCREEN_TPS6507X is not set
+# CONFIG_INPUT_MISC is not set
+
+#
+# Hardware I/O ports
+#
+CONFIG_SERIO=y
+CONFIG_SERIO_SERPORT=y
+# CONFIG_SERIO_RAW is not set
+# CONFIG_SERIO_ALTERA_PS2 is not set
+# CONFIG_SERIO_PS2MULT is not set
+# CONFIG_GAMEPORT is not set
+
+#
+# Character devices
+#
+CONFIG_VT=y
+CONFIG_CONSOLE_TRANSLATIONS=y
+CONFIG_VT_CONSOLE=y
+CONFIG_HW_CONSOLE=y
+# CONFIG_VT_HW_CONSOLE_BINDING is not set
+CONFIG_UNIX98_PTYS=y
+# CONFIG_DEVPTS_MULTIPLE_INSTANCES is not set
+# CONFIG_LEGACY_PTYS is not set
+# CONFIG_SERIAL_NONSTANDARD is not set
+# CONFIG_N_GSM is not set
+# CONFIG_TRACE_SINK is not set
+CONFIG_DEVKMEM=y
+
+#
+# Serial drivers
+#
+# CONFIG_SERIAL_8250 is not set
+
+#
+# Non-8250 serial port support
+#
+CONFIG_SERIAL_SH_SCI=y
+CONFIG_SERIAL_SH_SCI_NR_UARTS=8
+CONFIG_SERIAL_SH_SCI_CONSOLE=y
+CONFIG_SERIAL_CORE=y
+CONFIG_SERIAL_CORE_CONSOLE=y
+# CONFIG_SERIAL_TIMBERDALE is not set
+# CONFIG_SERIAL_ALTERA_JTAGUART is not set
+# CONFIG_SERIAL_ALTERA_UART is not set
+# CONFIG_SERIAL_XILINX_PS_UART is not set
+# CONFIG_HVC_DCC is not set
+# CONFIG_IPMI_HANDLER is not set
+# CONFIG_HW_RANDOM is not set
+# CONFIG_R3964 is not set
+# CONFIG_RAW_DRIVER is not set
+# CONFIG_TCG_TPM is not set
+# CONFIG_RAMOOPS is not set
+CONFIG_I2C=y
+CONFIG_I2C_BOARDINFO=y
+CONFIG_I2C_COMPAT=y
+# CONFIG_I2C_CHARDEV is not set
+# CONFIG_I2C_MUX is not set
+CONFIG_I2C_HELPER_AUTO=y
+
+#
+# I2C Hardware Bus support
+#
+
+#
+# I2C system bus drivers (mostly embedded / system-on-chip)
+#
+# CONFIG_I2C_DESIGNWARE is not set
+# CONFIG_I2C_GPIO is not set
+# CONFIG_I2C_OCORES is not set
+# CONFIG_I2C_PCA_PLATFORM is not set
+# CONFIG_I2C_PXA_PCI is not set
+CONFIG_I2C_SH_MOBILE=y
+# CONFIG_I2C_SIMTEC is not set
+# CONFIG_I2C_XILINX is not set
+
+#
+# External I2C/SMBus adapter drivers
+#
+CONFIG_I2C_DIOLAN_U2C=y
+# CONFIG_I2C_PARPORT_LIGHT is not set
+# CONFIG_I2C_TAOS_EVM is not set
+# CONFIG_I2C_TINY_USB is not set
+
+#
+# Other I2C/SMBus bus drivers
+#
+# CONFIG_I2C_DEBUG_CORE is not set
+# CONFIG_I2C_DEBUG_ALGO is not set
+# CONFIG_I2C_DEBUG_BUS is not set
+# CONFIG_SPI is not set
+
+#
+# PPS support
+#
+# CONFIG_PPS is not set
+
+#
+# PPS generators support
+#
+
+#
+# PTP clock support
+#
+
+#
+# Enable Device Drivers -> PPS to see the PTP clock options.
+#
+CONFIG_ARCH_WANT_OPTIONAL_GPIOLIB=y
+CONFIG_ARCH_REQUIRE_GPIOLIB=y
+CONFIG_GPIOLIB=y
+# CONFIG_DEBUG_GPIO is not set
+# CONFIG_GPIO_SYSFS is not set
+
+#
+# Memory mapped GPIO drivers:
+#
+# CONFIG_GPIO_BASIC_MMIO is not set
+# CONFIG_GPIO_IT8761E is not set
+
+#
+# I2C GPIO expanders:
+#
+# CONFIG_GPIO_MAX7300 is not set
+# CONFIG_GPIO_MAX732X is not set
+# CONFIG_GPIO_PCF857X is not set
+# CONFIG_GPIO_SX150X is not set
+# CONFIG_GPIO_ADP5588 is not set
+
+#
+# PCI GPIO expanders:
+#
+
+#
+# SPI GPIO expanders:
+#
+
+#
+# AC97 GPIO expanders:
+#
+
+#
+# MODULbus GPIO expanders:
+#
+# CONFIG_W1 is not set
+# CONFIG_POWER_SUPPLY is not set
+# CONFIG_HWMON is not set
+# CONFIG_THERMAL is not set
+# CONFIG_WATCHDOG is not set
+CONFIG_SSB_POSSIBLE=y
+
+#
+# Sonics Silicon Backplane
+#
+# CONFIG_SSB is not set
+CONFIG_BCMA_POSSIBLE=y
+
+#
+# Broadcom specific AMBA
+#
+# CONFIG_BCMA is not set
+CONFIG_MFD_SUPPORT=y
+# CONFIG_MFD_CORE is not set
+# CONFIG_MFD_88PM860X is not set
+# CONFIG_MFD_SM501 is not set
+# CONFIG_MFD_ASIC3 is not set
+# CONFIG_HTC_EGPIO is not set
+# CONFIG_HTC_PASIC3 is not set
+# CONFIG_HTC_I2CPLD is not set
+# CONFIG_TPS6105X is not set
+# CONFIG_TPS65010 is not set
+# CONFIG_TPS6507X is not set
+# CONFIG_MFD_TPS6586X is not set
+# CONFIG_TWL4030_CORE is not set
+# CONFIG_MFD_STMPE is not set
+# CONFIG_MFD_TC3589X is not set
+# CONFIG_MFD_TMIO is not set
+# CONFIG_MFD_T7L66XB is not set
+# CONFIG_MFD_TC6387XB is not set
+# CONFIG_MFD_TC6393XB is not set
+# CONFIG_PMIC_DA903X is not set
+# CONFIG_PMIC_ADP5520 is not set
+# CONFIG_MFD_MAX8925 is not set
+# CONFIG_MFD_MAX8997 is not set
+# CONFIG_MFD_MAX8998 is not set
+# CONFIG_MFD_WM8400 is not set
+# CONFIG_MFD_WM831X_I2C is not set
+# CONFIG_MFD_WM8350_I2C is not set
+# CONFIG_MFD_WM8994 is not set
+# CONFIG_MFD_PCF50633 is not set
+# CONFIG_ABX500_CORE is not set
+# CONFIG_MFD_WL1273_CORE is not set
+# CONFIG_MFD_TPS65910 is not set
+# CONFIG_REGULATOR is not set
+CONFIG_MEDIA_SUPPORT=y
+
+#
+# Multimedia core support
+#
+CONFIG_MEDIA_CONTROLLER=y
+CONFIG_VIDEO_DEV=y
+CONFIG_VIDEO_V4L2_COMMON=y
+CONFIG_VIDEO_V4L2_SUBDEV_API=y
+# CONFIG_DVB_CORE is not set
+CONFIG_VIDEO_MEDIA=y
+
+#
+# Multimedia drivers
+#
+CONFIG_RC_CORE=y
+CONFIG_LIRC=y
+CONFIG_RC_MAP=y
+CONFIG_IR_NEC_DECODER=y
+CONFIG_IR_RC5_DECODER=y
+CONFIG_IR_RC6_DECODER=y
+CONFIG_IR_JVC_DECODER=y
+CONFIG_IR_SONY_DECODER=y
+CONFIG_IR_RC5_SZ_DECODER=y
+CONFIG_IR_LIRC_CODEC=y
+# CONFIG_IR_IMON is not set
+# CONFIG_IR_MCEUSB is not set
+# CONFIG_IR_REDRAT3 is not set
+# CONFIG_IR_STREAMZAP is not set
+# CONFIG_RC_LOOPBACK is not set
+CONFIG_MEDIA_TUNER=y
+# CONFIG_MEDIA_TUNER_CUSTOMISE is not set
+CONFIG_MEDIA_TUNER_SIMPLE=y
+CONFIG_MEDIA_TUNER_TDA8290=y
+CONFIG_MEDIA_TUNER_TDA827X=y
+CONFIG_MEDIA_TUNER_TDA18271=y
+CONFIG_MEDIA_TUNER_TDA9887=y
+CONFIG_MEDIA_TUNER_TEA5761=y
+CONFIG_MEDIA_TUNER_TEA5767=y
+CONFIG_MEDIA_TUNER_MT20XX=y
+CONFIG_MEDIA_TUNER_XC2028=y
+CONFIG_MEDIA_TUNER_XC5000=y
+CONFIG_MEDIA_TUNER_MC44S803=y
+CONFIG_VIDEO_V4L2=y
+CONFIG_VIDEOBUF_GEN=y
+CONFIG_VIDEOBUF2_CORE=y
+CONFIG_VIDEOBUF2_MEMOPS=y
+CONFIG_VIDEOBUF2_DMA_CONTIG=y
+CONFIG_VIDEO_CAPTURE_DRIVERS=y
+# CONFIG_VIDEO_ADV_DEBUG is not set
+CONFIG_VIDEO_FIXED_MINOR_RANGES=y
+CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
+CONFIG_VIDEO_IR_I2C=y
+
+#
+# Audio decoders, processors and mixers
+#
+
+#
+# RDS decoders
+#
+
+#
+# Video decoders
+#
+
+#
+# Video and audio decoders
+#
+
+#
+# MPEG video encoders
+#
+
+#
+# Video encoders
+#
+
+#
+# Camera sensor devices
+#
+
+#
+# Video improvement chips
+#
+
+#
+# Miscelaneous helper chips
+#
+# CONFIG_VIDEO_SH_VOU is not set
+# CONFIG_VIDEO_VIVI is not set
+# CONFIG_VIDEO_CPIA2 is not set
+# CONFIG_VIDEO_TIMBERDALE is not set
+# CONFIG_VIDEO_SR030PC30 is not set
+CONFIG_VIDEO_NOON010PC30=y
+# CONFIG_VIDEO_M5MOLS is not set
+CONFIG_SOC_CAMERA=y
+CONFIG_SOC_CAMERA_IMX074=y
+# CONFIG_SOC_CAMERA_MT9M001 is not set
+# CONFIG_SOC_CAMERA_MT9M111 is not set
+# CONFIG_SOC_CAMERA_MT9T031 is not set
+# CONFIG_SOC_CAMERA_MT9T112 is not set
+# CONFIG_SOC_CAMERA_MT9V022 is not set
+# CONFIG_SOC_CAMERA_RJ54N1 is not set
+# CONFIG_SOC_CAMERA_TW9910 is not set
+CONFIG_SOC_CAMERA_PLATFORM=y
+# CONFIG_SOC_CAMERA_OV2640 is not set
+# CONFIG_SOC_CAMERA_OV6650 is not set
+# CONFIG_SOC_CAMERA_OV772X is not set
+# CONFIG_SOC_CAMERA_OV9640 is not set
+CONFIG_SOC_CAMERA_OV9740=y
+CONFIG_VIDEO_SH_MOBILE_CSI2=y
+CONFIG_VIDEO_SH_MOBILE_CEU=y
+# CONFIG_V4L_USB_DRIVERS is not set
+# CONFIG_V4L_MEM2MEM_DRIVERS is not set
+# CONFIG_RADIO_ADAPTERS is not set
+
+#
+# Graphics support
+#
+# CONFIG_DRM is not set
+# CONFIG_VGASTATE is not set
+# CONFIG_VIDEO_OUTPUT_CONTROL is not set
+CONFIG_FB=y
+# CONFIG_FIRMWARE_EDID is not set
+# CONFIG_FB_DDC is not set
+# CONFIG_FB_BOOT_VESA_SUPPORT is not set
+# CONFIG_FB_CFB_FILLRECT is not set
+# CONFIG_FB_CFB_COPYAREA is not set
+# CONFIG_FB_CFB_IMAGEBLIT is not set
+# CONFIG_FB_CFB_REV_PIXELS_IN_BYTE is not set
+CONFIG_FB_SYS_FILLRECT=y
+CONFIG_FB_SYS_COPYAREA=y
+CONFIG_FB_SYS_IMAGEBLIT=y
+# CONFIG_FB_FOREIGN_ENDIAN is not set
+CONFIG_FB_SYS_FOPS=y
+# CONFIG_FB_WMT_GE_ROPS is not set
+CONFIG_FB_DEFERRED_IO=y
+# CONFIG_FB_SVGALIB is not set
+# CONFIG_FB_MACMODES is not set
+CONFIG_FB_BACKLIGHT=y
+CONFIG_FB_MODE_HELPERS=y
+# CONFIG_FB_TILEBLITTING is not set
+
+#
+# Frame buffer hardware drivers
+#
+# CONFIG_FB_S1D13XXX is not set
+CONFIG_FB_SH_MOBILE_LCDC=y
+CONFIG_FB_SH_MOBILE_HDMI=y
+CONFIG_FB_SH_MOBILE_MERAM=y
+# CONFIG_FB_UDL is not set
+# CONFIG_FB_VIRTUAL is not set
+# CONFIG_FB_METRONOME is not set
+# CONFIG_FB_BROADSHEET is not set
+CONFIG_BACKLIGHT_LCD_SUPPORT=y
+CONFIG_LCD_CLASS_DEVICE=y
+CONFIG_LCD_PLATFORM=y
+CONFIG_BACKLIGHT_CLASS_DEVICE=y
+CONFIG_BACKLIGHT_GENERIC=y
+CONFIG_BACKLIGHT_ADP8860=y
+
+#
+# Display device support
+#
+# CONFIG_DISPLAY_SUPPORT is not set
+
+#
+# Console display driver support
+#
+CONFIG_DUMMY_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
+# CONFIG_FRAMEBUFFER_CONSOLE_ROTATION is not set
+CONFIG_FONTS=y
+CONFIG_FONT_8x8=y
+# CONFIG_FONT_8x16 is not set
+# CONFIG_FONT_6x11 is not set
+# CONFIG_FONT_7x14 is not set
+# CONFIG_FONT_PEARL_8x8 is not set
+# CONFIG_FONT_ACORN_8x8 is not set
+# CONFIG_FONT_MINI_4x6 is not set
+# CONFIG_FONT_SUN8x16 is not set
+# CONFIG_FONT_SUN12x22 is not set
+# CONFIG_FONT_10x18 is not set
+CONFIG_LOGO=y
+# CONFIG_LOGO_LINUX_MONO is not set
+CONFIG_LOGO_LINUX_VGA16=y
+# CONFIG_LOGO_LINUX_CLUT224 is not set
+CONFIG_SOUND=y
+CONFIG_SOUND_OSS_CORE=y
+CONFIG_SOUND_OSS_CORE_PRECLAIM=y
+CONFIG_SND=y
+CONFIG_SND_TIMER=y
+CONFIG_SND_PCM=y
+CONFIG_SND_JACK=y
+# CONFIG_SND_SEQUENCER is not set
+CONFIG_SND_OSSEMUL=y
+CONFIG_SND_MIXER_OSS=y
+CONFIG_SND_PCM_OSS=y
+CONFIG_SND_PCM_OSS_PLUGINS=y
+# CONFIG_SND_DYNAMIC_MINORS is not set
+CONFIG_SND_SUPPORT_OLD_API=y
+CONFIG_SND_VERBOSE_PROCFS=y
+# CONFIG_SND_VERBOSE_PRINTK is not set
+# CONFIG_SND_DEBUG is not set
+# CONFIG_SND_RAWMIDI_SEQ is not set
+# CONFIG_SND_OPL3_LIB_SEQ is not set
+# CONFIG_SND_OPL4_LIB_SEQ is not set
+# CONFIG_SND_SBAWE_SEQ is not set
+# CONFIG_SND_EMU10K1_SEQ is not set
+# CONFIG_SND_DRIVERS is not set
+# CONFIG_SND_ARM is not set
+# CONFIG_SND_USB is not set
+CONFIG_SND_SOC=y
+# CONFIG_SND_SOC_CACHE_LZO is not set
+
+#
+# SoC Audio support for SuperH
+#
+CONFIG_SND_SOC_SH4_FSI=y
+CONFIG_SND_FSI_AK4642=y
+# CONFIG_SND_FSI_DA7210 is not set
+# CONFIG_SND_FSI_HDMI is not set
+CONFIG_SND_SOC_I2C_AND_SPI=y
+# CONFIG_SND_SOC_ALL_CODECS is not set
+CONFIG_SND_SOC_AK4642=y
+# CONFIG_SOUND_PRIME is not set
+# CONFIG_HID_SUPPORT is not set
+CONFIG_USB_SUPPORT=y
+CONFIG_USB_ARCH_HAS_HCD=y
+# CONFIG_USB_ARCH_HAS_OHCI is not set
+# CONFIG_USB_ARCH_HAS_EHCI is not set
+CONFIG_USB=y
+# CONFIG_USB_DEBUG is not set
+# CONFIG_USB_ANNOUNCE_NEW_DEVICES is not set
+
+#
+# Miscellaneous USB options
+#
+# CONFIG_USB_DEVICEFS is not set
+CONFIG_USB_DEVICE_CLASS=y
+# CONFIG_USB_DYNAMIC_MINORS is not set
+# CONFIG_USB_SUSPEND is not set
+# CONFIG_USB_MON is not set
+# CONFIG_USB_WUSB is not set
+# CONFIG_USB_WUSB_CBAF is not set
+
+#
+# USB Host Controller Drivers
+#
+# CONFIG_USB_C67X00_HCD is not set
+# CONFIG_USB_OXU210HP_HCD is not set
+# CONFIG_USB_ISP116X_HCD is not set
+# CONFIG_USB_ISP1760_HCD is not set
+# CONFIG_USB_ISP1362_HCD is not set
+# CONFIG_USB_SL811_HCD is not set
+CONFIG_USB_R8A66597_HCD=y
+# CONFIG_USB_HWA_HCD is not set
+# CONFIG_USB_MUSB_HDRC is not set
+CONFIG_USB_RENESAS_USBHS=y
+
+#
+# USB Device Class drivers
+#
+# CONFIG_USB_ACM is not set
+# CONFIG_USB_PRINTER is not set
+# CONFIG_USB_WDM is not set
+# CONFIG_USB_TMC is not set
+
+#
+# NOTE: USB_STORAGE depends on SCSI but BLK_DEV_SD may
+#
+
+#
+# also be needed; see USB_STORAGE Help for more info
+#
+# CONFIG_USB_LIBUSUAL is not set
+
+#
+# USB Imaging devices
+#
+# CONFIG_USB_MDC800 is not set
+
+#
+# USB port drivers
+#
+# CONFIG_USB_SERIAL is not set
+
+#
+# USB Miscellaneous drivers
+#
+# CONFIG_USB_EMI62 is not set
+# CONFIG_USB_EMI26 is not set
+# CONFIG_USB_ADUTUX is not set
+# CONFIG_USB_SEVSEG is not set
+# CONFIG_USB_RIO500 is not set
+# CONFIG_USB_LEGOTOWER is not set
+# CONFIG_USB_LCD is not set
+# CONFIG_USB_LED is not set
+# CONFIG_USB_CYPRESS_CY7C63 is not set
+# CONFIG_USB_CYTHERM is not set
+# CONFIG_USB_IDMOUSE is not set
+# CONFIG_USB_FTDI_ELAN is not set
+# CONFIG_USB_APPLEDISPLAY is not set
+# CONFIG_USB_LD is not set
+# CONFIG_USB_TRANCEVIBRATOR is not set
+# CONFIG_USB_IOWARRIOR is not set
+# CONFIG_USB_TEST is not set
+# CONFIG_USB_ISIGHTFW is not set
+# CONFIG_USB_YUREX is not set
+# CONFIG_USB_GADGET is not set
+
+#
+# OTG and related infrastructure
+#
+# CONFIG_USB_GPIO_VBUS is not set
+# CONFIG_USB_ULPI is not set
+# CONFIG_NOP_USB_XCEIV is not set
+CONFIG_MMC=y
+# CONFIG_MMC_DEBUG is not set
+# CONFIG_MMC_UNSAFE_RESUME is not set
+# CONFIG_MMC_CLKGATE is not set
+
+#
+# MMC/SD/SDIO Card Drivers
+#
+CONFIG_MMC_BLOCK=y
+CONFIG_MMC_BLOCK_MINORS=8
+CONFIG_MMC_BLOCK_BOUNCE=y
+# CONFIG_SDIO_UART is not set
+# CONFIG_MMC_TEST is not set
+
+#
+# MMC/SD/SDIO Host Controller Drivers
+#
+# CONFIG_MMC_SDHCI is not set
+CONFIG_MMC_TMIO_CORE=y
+CONFIG_MMC_SDHI=y
+# CONFIG_MMC_DW is not set
+CONFIG_MMC_SH_MMCIF=y
+CONFIG_MMC_VUB300=y
+# CONFIG_MMC_USHC is not set
+# CONFIG_MEMSTICK is not set
+CONFIG_NEW_LEDS=y
+CONFIG_LEDS_CLASS=y
+
+#
+# LED drivers
+#
+CONFIG_LEDS_LM3530=y
+CONFIG_LEDS_PCA9532=y
+# CONFIG_LEDS_PCA9532_GPIO is not set
+CONFIG_LEDS_GPIO=y
+CONFIG_LEDS_GPIO_PLATFORM=y
+CONFIG_LEDS_GPIO_OF=y
+CONFIG_LEDS_LP3944=y
+CONFIG_LEDS_LP5521=y
+CONFIG_LEDS_LP5523=y
+CONFIG_LEDS_PCA955X=y
+CONFIG_LEDS_BD2802=y
+CONFIG_LEDS_LT3593=y
+CONFIG_LEDS_TRIGGERS=y
+
+#
+# LED Triggers
+#
+CONFIG_LEDS_TRIGGER_TIMER=y
+CONFIG_LEDS_TRIGGER_HEARTBEAT=y
+CONFIG_LEDS_TRIGGER_BACKLIGHT=y
+CONFIG_LEDS_TRIGGER_GPIO=y
+CONFIG_LEDS_TRIGGER_DEFAULT_ON=y
+
+#
+# iptables trigger is under Netfilter config (LED target)
+#
+# CONFIG_NFC_DEVICES is not set
+# CONFIG_ACCESSIBILITY is not set
+CONFIG_RTC_LIB=y
+CONFIG_RTC_CLASS=y
+CONFIG_RTC_HCTOSYS=y
+CONFIG_RTC_HCTOSYS_DEVICE="rtc0"
+# CONFIG_RTC_DEBUG is not set
+
+#
+# RTC interfaces
+#
+CONFIG_RTC_INTF_SYSFS=y
+CONFIG_RTC_INTF_PROC=y
+CONFIG_RTC_INTF_DEV=y
+CONFIG_RTC_INTF_DEV_UIE_EMUL=y
+# CONFIG_RTC_DRV_TEST is not set
+
+#
+# I2C RTC drivers
+#
+# CONFIG_RTC_DRV_DS1307 is not set
+# CONFIG_RTC_DRV_DS1374 is not set
+# CONFIG_RTC_DRV_DS1672 is not set
+# CONFIG_RTC_DRV_DS3232 is not set
+# CONFIG_RTC_DRV_MAX6900 is not set
+CONFIG_RTC_DRV_RS5C372=y
+# CONFIG_RTC_DRV_ISL1208 is not set
+# CONFIG_RTC_DRV_ISL12022 is not set
+# CONFIG_RTC_DRV_X1205 is not set
+# CONFIG_RTC_DRV_PCF8563 is not set
+# CONFIG_RTC_DRV_PCF8583 is not set
+# CONFIG_RTC_DRV_M41T80 is not set
+# CONFIG_RTC_DRV_BQ32K is not set
+# CONFIG_RTC_DRV_S35390A is not set
+# CONFIG_RTC_DRV_FM3130 is not set
+# CONFIG_RTC_DRV_RX8581 is not set
+# CONFIG_RTC_DRV_RX8025 is not set
+# CONFIG_RTC_DRV_EM3027 is not set
+# CONFIG_RTC_DRV_RV3029C2 is not set
+
+#
+# SPI RTC drivers
+#
+
+#
+# Platform RTC drivers
+#
+# CONFIG_RTC_DRV_CMOS is not set
+# CONFIG_RTC_DRV_DS1286 is not set
+# CONFIG_RTC_DRV_DS1511 is not set
+# CONFIG_RTC_DRV_DS1553 is not set
+# CONFIG_RTC_DRV_DS1742 is not set
+# CONFIG_RTC_DRV_STK17TA8 is not set
+# CONFIG_RTC_DRV_M48T86 is not set
+# CONFIG_RTC_DRV_M48T35 is not set
+# CONFIG_RTC_DRV_M48T59 is not set
+# CONFIG_RTC_DRV_MSM6242 is not set
+# CONFIG_RTC_DRV_BQ4802 is not set
+# CONFIG_RTC_DRV_RP5C01 is not set
+# CONFIG_RTC_DRV_V3020 is not set
+
+#
+# on-CPU RTC drivers
+#
+CONFIG_DMADEVICES=y
+# CONFIG_DMADEVICES_DEBUG is not set
+
+#
+# DMA Devices
+#
+# CONFIG_DW_DMAC is not set
+# CONFIG_SH_DMAE is not set
+# CONFIG_TIMB_DMA is not set
+# CONFIG_AUXDISPLAY is not set
+CONFIG_UIO=y
+# CONFIG_UIO_PDRV is not set
+CONFIG_UIO_PDRV_GENIRQ=y
+# CONFIG_STAGING is not set
+CONFIG_CLKDEV_LOOKUP=y
+
+#
+# File systems
+#
+# CONFIG_EXT2_FS is not set
+# CONFIG_EXT3_FS is not set
+# CONFIG_EXT4_FS is not set
+# CONFIG_REISERFS_FS is not set
+# CONFIG_JFS_FS is not set
+# CONFIG_XFS_FS is not set
+# CONFIG_GFS2_FS is not set
+# CONFIG_BTRFS_FS is not set
+# CONFIG_NILFS2_FS is not set
+# CONFIG_FS_POSIX_ACL is not set
+CONFIG_FILE_LOCKING=y
+CONFIG_FSNOTIFY=y
+# CONFIG_DNOTIFY is not set
+CONFIG_INOTIFY_USER=y
+# CONFIG_FANOTIFY is not set
+# CONFIG_QUOTA is not set
+# CONFIG_QUOTACTL is not set
+# CONFIG_AUTOFS4_FS is not set
+# CONFIG_FUSE_FS is not set
+
+#
+# Caches
+#
+# CONFIG_FSCACHE is not set
+
+#
+# CD-ROM/DVD Filesystems
+#
+# CONFIG_ISO9660_FS is not set
+# CONFIG_UDF_FS is not set
+
+#
+# DOS/FAT/NT Filesystems
+#
+# CONFIG_MSDOS_FS is not set
+# CONFIG_VFAT_FS is not set
+# CONFIG_NTFS_FS is not set
+
+#
+# Pseudo filesystems
+#
+CONFIG_PROC_FS=y
+CONFIG_PROC_SYSCTL=y
+CONFIG_PROC_PAGE_MONITOR=y
+CONFIG_SYSFS=y
+CONFIG_TMPFS=y
+# CONFIG_TMPFS_POSIX_ACL is not set
+# CONFIG_TMPFS_XATTR is not set
+# CONFIG_HUGETLB_PAGE is not set
+# CONFIG_CONFIGFS_FS is not set
+CONFIG_MISC_FILESYSTEMS=y
+# CONFIG_ADFS_FS is not set
+# CONFIG_AFFS_FS is not set
+# CONFIG_HFS_FS is not set
+# CONFIG_HFSPLUS_FS is not set
+# CONFIG_BEFS_FS is not set
+# CONFIG_BFS_FS is not set
+# CONFIG_EFS_FS is not set
+# CONFIG_JFFS2_FS is not set
+# CONFIG_LOGFS is not set
+# CONFIG_CRAMFS is not set
+# CONFIG_SQUASHFS is not set
+# CONFIG_VXFS_FS is not set
+# CONFIG_MINIX_FS is not set
+# CONFIG_OMFS_FS is not set
+# CONFIG_HPFS_FS is not set
+# CONFIG_QNX4FS_FS is not set
+# CONFIG_ROMFS_FS is not set
+# CONFIG_PSTORE is not set
+# CONFIG_SYSV_FS is not set
+# CONFIG_UFS_FS is not set
+CONFIG_NETWORK_FILESYSTEMS=y
+# CONFIG_NFS_FS is not set
+# CONFIG_NFSD is not set
+# CONFIG_CEPH_FS is not set
+# CONFIG_CIFS is not set
+# CONFIG_NCP_FS is not set
+# CONFIG_CODA_FS is not set
+# CONFIG_AFS_FS is not set
+
+#
+# Partition Types
+#
+# CONFIG_PARTITION_ADVANCED is not set
+CONFIG_MSDOS_PARTITION=y
+CONFIG_NLS=y
+CONFIG_NLS_DEFAULT="iso8859-1"
+# CONFIG_NLS_CODEPAGE_437 is not set
+# CONFIG_NLS_CODEPAGE_737 is not set
+# CONFIG_NLS_CODEPAGE_775 is not set
+# CONFIG_NLS_CODEPAGE_850 is not set
+# CONFIG_NLS_CODEPAGE_852 is not set
+# CONFIG_NLS_CODEPAGE_855 is not set
+# CONFIG_NLS_CODEPAGE_857 is not set
+# CONFIG_NLS_CODEPAGE_860 is not set
+# CONFIG_NLS_CODEPAGE_861 is not set
+# CONFIG_NLS_CODEPAGE_862 is not set
+# CONFIG_NLS_CODEPAGE_863 is not set
+# CONFIG_NLS_CODEPAGE_864 is not set
+# CONFIG_NLS_CODEPAGE_865 is not set
+# CONFIG_NLS_CODEPAGE_866 is not set
+# CONFIG_NLS_CODEPAGE_869 is not set
+# CONFIG_NLS_CODEPAGE_936 is not set
+# CONFIG_NLS_CODEPAGE_950 is not set
+# CONFIG_NLS_CODEPAGE_932 is not set
+# CONFIG_NLS_CODEPAGE_949 is not set
+# CONFIG_NLS_CODEPAGE_874 is not set
+# CONFIG_NLS_ISO8859_8 is not set
+# CONFIG_NLS_CODEPAGE_1250 is not set
+# CONFIG_NLS_CODEPAGE_1251 is not set
+# CONFIG_NLS_ASCII is not set
+# CONFIG_NLS_ISO8859_1 is not set
+# CONFIG_NLS_ISO8859_2 is not set
+# CONFIG_NLS_ISO8859_3 is not set
+# CONFIG_NLS_ISO8859_4 is not set
+# CONFIG_NLS_ISO8859_5 is not set
+# CONFIG_NLS_ISO8859_6 is not set
+# CONFIG_NLS_ISO8859_7 is not set
+# CONFIG_NLS_ISO8859_9 is not set
+# CONFIG_NLS_ISO8859_13 is not set
+# CONFIG_NLS_ISO8859_14 is not set
+# CONFIG_NLS_ISO8859_15 is not set
+# CONFIG_NLS_KOI8_R is not set
+# CONFIG_NLS_KOI8_U is not set
+# CONFIG_NLS_UTF8 is not set
+
+#
+# Kernel hacking
+#
+# CONFIG_PRINTK_TIME is not set
+CONFIG_DEFAULT_MESSAGE_LOGLEVEL=4
+CONFIG_ENABLE_WARN_DEPRECATED=y
+CONFIG_ENABLE_MUST_CHECK=y
+CONFIG_FRAME_WARN=1024
+CONFIG_MAGIC_SYSRQ=y
+# CONFIG_STRIP_ASM_SYMS is not set
+# CONFIG_UNUSED_SYMBOLS is not set
+CONFIG_DEBUG_FS=y
+# CONFIG_HEADERS_CHECK is not set
+# CONFIG_DEBUG_SECTION_MISMATCH is not set
+CONFIG_DEBUG_KERNEL=y
+# CONFIG_DEBUG_SHIRQ is not set
+CONFIG_LOCKUP_DETECTOR=y
+# CONFIG_HARDLOCKUP_DETECTOR is not set
+# CONFIG_BOOTPARAM_HARDLOCKUP_PANIC is not set
+CONFIG_BOOTPARAM_HARDLOCKUP_PANIC_VALUE=0
+CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC=y
+CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC_VALUE=1
+# CONFIG_DETECT_HUNG_TASK is not set
+# CONFIG_SCHED_DEBUG is not set
+# CONFIG_SCHEDSTATS is not set
+# CONFIG_TIMER_STATS is not set
+# CONFIG_DEBUG_OBJECTS is not set
+# CONFIG_DEBUG_SLAB is not set
+# CONFIG_DEBUG_KMEMLEAK is not set
+# CONFIG_DEBUG_RT_MUTEXES is not set
+# CONFIG_RT_MUTEX_TESTER is not set
+# CONFIG_DEBUG_SPINLOCK is not set
+# CONFIG_DEBUG_MUTEXES is not set
+# CONFIG_DEBUG_LOCK_ALLOC is not set
+# CONFIG_PROVE_LOCKING is not set
+# CONFIG_SPARSE_RCU_POINTER is not set
+# CONFIG_LOCK_STAT is not set
+# CONFIG_DEBUG_SPINLOCK_SLEEP is not set
+# CONFIG_DEBUG_LOCKING_API_SELFTESTS is not set
+# CONFIG_DEBUG_STACK_USAGE is not set
+# CONFIG_DEBUG_KOBJECT is not set
+CONFIG_DEBUG_BUGVERBOSE=y
+# CONFIG_DEBUG_INFO is not set
+# CONFIG_DEBUG_VM is not set
+# CONFIG_DEBUG_WRITECOUNT is not set
+CONFIG_DEBUG_MEMORY_INIT=y
+# CONFIG_DEBUG_LIST is not set
+# CONFIG_TEST_LIST_SORT is not set
+# CONFIG_DEBUG_SG is not set
+# CONFIG_DEBUG_NOTIFIERS is not set
+# CONFIG_DEBUG_CREDENTIALS is not set
+# CONFIG_BOOT_PRINTK_DELAY is not set
+# CONFIG_RCU_TORTURE_TEST is not set
+# CONFIG_BACKTRACE_SELF_TEST is not set
+# CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
+# CONFIG_DEBUG_FORCE_WEAK_PER_CPU is not set
+# CONFIG_LKDTM is not set
+# CONFIG_FAULT_INJECTION is not set
+# CONFIG_LATENCYTOP is not set
+# CONFIG_SYSCTL_SYSCALL_CHECK is not set
+# CONFIG_DEBUG_PAGEALLOC is not set
+CONFIG_HAVE_FUNCTION_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
+CONFIG_HAVE_DYNAMIC_FTRACE=y
+CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
+CONFIG_HAVE_C_RECORDMCOUNT=y
+CONFIG_TRACING_SUPPORT=y
+# CONFIG_FTRACE is not set
+CONFIG_DYNAMIC_DEBUG=y
+# CONFIG_DMA_API_DEBUG is not set
+# CONFIG_ATOMIC64_SELFTEST is not set
+# CONFIG_SAMPLES is not set
+CONFIG_HAVE_ARCH_KGDB=y
+# CONFIG_KGDB is not set
+# CONFIG_TEST_KSTRTOX is not set
+# CONFIG_STRICT_DEVMEM is not set
+CONFIG_ARM_UNWIND=y
+# CONFIG_DEBUG_USER is not set
+# CONFIG_DEBUG_LL is not set
+# CONFIG_OC_ETM is not set
+
+#
+# Security options
+#
+# CONFIG_KEYS is not set
+# CONFIG_SECURITY_DMESG_RESTRICT is not set
+# CONFIG_SECURITY is not set
+# CONFIG_SECURITYFS is not set
+CONFIG_DEFAULT_SECURITY_DAC=y
+CONFIG_DEFAULT_SECURITY=""
+CONFIG_CRYPTO=y
+
+#
+# Crypto core or helper
+#
+# CONFIG_CRYPTO_FIPS is not set
+CONFIG_CRYPTO_ALGAPI=y
+CONFIG_CRYPTO_ALGAPI2=y
+CONFIG_CRYPTO_RNG=y
+CONFIG_CRYPTO_RNG2=y
+# CONFIG_CRYPTO_MANAGER is not set
+# CONFIG_CRYPTO_MANAGER2 is not set
+# CONFIG_CRYPTO_GF128MUL is not set
+# CONFIG_CRYPTO_NULL is not set
+# CONFIG_CRYPTO_CRYPTD is not set
+# CONFIG_CRYPTO_AUTHENC is not set
+
+#
+# Authenticated Encryption with Associated Data
+#
+# CONFIG_CRYPTO_CCM is not set
+# CONFIG_CRYPTO_GCM is not set
+# CONFIG_CRYPTO_SEQIV is not set
+
+#
+# Block modes
+#
+# CONFIG_CRYPTO_CBC is not set
+# CONFIG_CRYPTO_CTR is not set
+# CONFIG_CRYPTO_CTS is not set
+# CONFIG_CRYPTO_ECB is not set
+# CONFIG_CRYPTO_LRW is not set
+# CONFIG_CRYPTO_PCBC is not set
+# CONFIG_CRYPTO_XTS is not set
+
+#
+# Hash modes
+#
+# CONFIG_CRYPTO_HMAC is not set
+# CONFIG_CRYPTO_XCBC is not set
+# CONFIG_CRYPTO_VMAC is not set
+
+#
+# Digest
+#
+# CONFIG_CRYPTO_CRC32C is not set
+# CONFIG_CRYPTO_GHASH is not set
+# CONFIG_CRYPTO_MD4 is not set
+# CONFIG_CRYPTO_MD5 is not set
+# CONFIG_CRYPTO_MICHAEL_MIC is not set
+# CONFIG_CRYPTO_RMD128 is not set
+# CONFIG_CRYPTO_RMD160 is not set
+# CONFIG_CRYPTO_RMD256 is not set
+# CONFIG_CRYPTO_RMD320 is not set
+# CONFIG_CRYPTO_SHA1 is not set
+# CONFIG_CRYPTO_SHA256 is not set
+# CONFIG_CRYPTO_SHA512 is not set
+# CONFIG_CRYPTO_TGR192 is not set
+# CONFIG_CRYPTO_WP512 is not set
+
+#
+# Ciphers
+#
+CONFIG_CRYPTO_AES=y
+# CONFIG_CRYPTO_ANUBIS is not set
+# CONFIG_CRYPTO_ARC4 is not set
+# CONFIG_CRYPTO_BLOWFISH is not set
+# CONFIG_CRYPTO_CAMELLIA is not set
+# CONFIG_CRYPTO_CAST5 is not set
+# CONFIG_CRYPTO_CAST6 is not set
+# CONFIG_CRYPTO_DES is not set
+# CONFIG_CRYPTO_FCRYPT is not set
+# CONFIG_CRYPTO_KHAZAD is not set
+# CONFIG_CRYPTO_SALSA20 is not set
+# CONFIG_CRYPTO_SEED is not set
+# CONFIG_CRYPTO_SERPENT is not set
+# CONFIG_CRYPTO_TEA is not set
+# CONFIG_CRYPTO_TWOFISH is not set
+
+#
+# Compression
+#
+# CONFIG_CRYPTO_DEFLATE is not set
+# CONFIG_CRYPTO_ZLIB is not set
+# CONFIG_CRYPTO_LZO is not set
+
+#
+# Random Number Generation
+#
+CONFIG_CRYPTO_ANSI_CPRNG=y
+# CONFIG_CRYPTO_USER_API_HASH is not set
+# CONFIG_CRYPTO_USER_API_SKCIPHER is not set
+CONFIG_CRYPTO_HW=y
+# CONFIG_BINARY_PRINTF is not set
+
+#
+# Library routines
+#
+CONFIG_BITREVERSE=y
+# CONFIG_CRC_CCITT is not set
+# CONFIG_CRC16 is not set
+# CONFIG_CRC_T10DIF is not set
+# CONFIG_CRC_ITU_T is not set
+CONFIG_CRC32=y
+# CONFIG_CRC7 is not set
+# CONFIG_LIBCRC32C is not set
+CONFIG_ZLIB_INFLATE=y
+CONFIG_LZO_DECOMPRESS=y
+CONFIG_XZ_DEC=y
+CONFIG_XZ_DEC_X86=y
+CONFIG_XZ_DEC_POWERPC=y
+CONFIG_XZ_DEC_IA64=y
+CONFIG_XZ_DEC_ARM=y
+CONFIG_XZ_DEC_ARMTHUMB=y
+CONFIG_XZ_DEC_SPARC=y
+CONFIG_XZ_DEC_BCJ=y
+# CONFIG_XZ_DEC_TEST is not set
+CONFIG_DECOMPRESS_GZIP=y
+CONFIG_DECOMPRESS_BZIP2=y
+CONFIG_DECOMPRESS_LZMA=y
+CONFIG_DECOMPRESS_XZ=y
+CONFIG_DECOMPRESS_LZO=y
+CONFIG_HAS_IOMEM=y
+CONFIG_HAS_DMA=y
+CONFIG_NLATTR=y
+# CONFIG_AVERAGE is not set
+
+--Boundary-00=_S+89NLdTEjOXnsd--
