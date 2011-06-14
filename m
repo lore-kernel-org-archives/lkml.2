@@ -1,54 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923Ab1FNQJU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 12:09:20 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:57647 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab1FNQJT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 12:09:19 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@amd64.org>,
-        Tony Luck <tony.luck@intel.com>
-Subject: [PATCH] MAINTAINERS: Add x86 RAS people
-Date: Tue, 14 Jun 2011 18:08:54 +0200
-Message-Id: <1308067734-6156-1-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.4.rc2
+	id S1753313Ab1FNQJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 12:09:58 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:42683 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750899Ab1FNQJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 12:09:56 -0400
+Message-ID: <4DF787BC.8050701@linux.vnet.ibm.com>
+Date: Tue, 14 Jun 2011 11:09:32 -0500
+From: Brian King <brking@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Wayne Boyer <wayneb@linux.vnet.ibm.com>
+CC: Julia Lawall <julia@diku.dk>, Brian King <brking@us.ibm.com>,
+        kernel-janitors@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/scsi/ipr.c: reorder error handling code to include
+ iounmap
+References: <1306851409-14963-1-git-send-email-julia@diku.dk> <4DF0EC00.9020603@linux.vnet.ibm.com>
+In-Reply-To: <4DF0EC00.9020603@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Announce the new RAS infrastructure maintainers. The file patterns below
-will change after we start the restructuring.
+On 06/09/2011 10:51 AM, Wayne Boyer wrote:
+> On 05/31/2011 07:16 AM, Julia Lawall wrote:
+>> From: Julia Lawall <julia@diku.dk>
+>>
+>> The out_msi_disable label should be before cleanup_nomem to additionally
+>> benefit from the call to iounmap.
+> 
+> Yes, this is a problem.  I propose the following patch instead.
 
-Signed-off-by: Borislav Petkov <bp@amd64.org>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
----
- MAINTAINERS |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+By removing the out_msi_disable label, if you fail initialization later
+on and goto cleanup_nomem, you will end up leaving MSI enabled when you exit
+with this patch.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 29801f7..901ed1c 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6997,6 +6997,13 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86.
- S:	Maintained
- F:	drivers/platform/x86
- 
-+X86 RAS INFRASTRUCTURE
-+M:	Tony Luck <tony.luck@intel.com>
-+M:	Borislav Petkov <bp@amd64.org>
-+L:	linux-edac@vger.kernel.org
-+S:	Maintained
-+F:	arch/x86/kernel/cpu/mcheck/*
-+
- XEN HYPERVISOR INTERFACE
- M:	Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
- M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+-Brian
+
+
+
+> 
+> ---
+> 
+> In the case where ipr_test_msi returns an error that is not -EOPNOTSUPP, the
+> execution jumps to the out_msi_disable label.  This misses the call to iounmap
+> for ipr_regs which was initialized earlier.
+> 
+> The fix is to do the call to pci_disable_msi when the error case is detected
+> and then goto the cleanup_nomem label if the error is not -EOPNOTSUPP.
+> 
+> Signed-off-by: Wayne Boyer <wayneb@linux.vnet.ibm.com>
+> ---
+> 
+>  drivers/scsi/ipr.c |   10 ++++------
+>  1 file changed, 4 insertions(+), 6 deletions(-)
+> 
+> Index: b/drivers/scsi/ipr.c
+> ===================================================================
+> --- a/drivers/scsi/ipr.c        2011-06-09 08:14:44.927740117 -0700
+> +++ b/drivers/scsi/ipr.c        2011-06-09 08:50:10.105630466 -0700
+> @@ -8763,11 +8763,11 @@ static int __devinit ipr_probe_ioa(struc
+>         /* Enable MSI style interrupts if they are supported. */
+>         if (ioa_cfg->ipr_chip->intr_type == IPR_USE_MSI && !pci_enable_msi(pdev)) {
+>                 rc = ipr_test_msi(ioa_cfg, pdev);
+> -               if (rc == -EOPNOTSUPP)
+> +               if (rc) {
+>                         pci_disable_msi(pdev);
+> -               else if (rc)
+> -                       goto out_msi_disable;
+> -               else
+> +                       if (rc != -EOPNOTSUPP)
+> +                               goto cleanup_nomem;
+> +               } else
+>                         dev_info(&pdev->dev, "MSI enabled with IRQ: %d\n", pdev->irq);
+>         } else if (ipr_debug)
+>                 dev_info(&pdev->dev, "Cannot enable MSI.\n");
+> @@ -8847,8 +8847,6 @@ cleanup_nolog:
+>         ipr_free_mem(ioa_cfg);
+>  cleanup_nomem:
+>         iounmap(ipr_regs);
+> -out_msi_disable:
+> -       pci_disable_msi(pdev);
+>  out_release_regions:
+>         pci_release_regions(pdev);
+>  out_scsi_host_put:
+> 
+> 
+
+
 -- 
-1.7.4.rc2
+Brian King
+Linux on Power Virtualization
+IBM Linux Technology Center
+
 
