@@ -1,34 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217Ab1FNIJg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 04:09:36 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:40299 "EHLO mx2.mail.elte.hu"
+	id S1755212Ab1FNINc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 04:13:32 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:57895 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754321Ab1FNIJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 04:09:34 -0400
-Date: Tue, 14 Jun 2011 10:09:15 +0200
+	id S1750886Ab1FNIN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 04:13:29 -0400
+Date: Tue, 14 Jun 2011 10:13:15 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: "tglx@linutronix.de" <tglx@linutronix.de>, "hpa@zytor.com" <hpa@zytor.com>,
-        "trenn@novell.com" <trenn@novell.com>,
-        "prarit@redhat.com" <prarit@redhat.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Song, Youquan" <youquan.song@intel.com>,
-        "stable@kernel.org" <stable@kernel.org>
-Subject: Re: [patch v4 1/2] stop_machine: enable __stop_machine() to be
- called from the cpu online path
-Message-ID: <20110614080915.GD29900@elte.hu>
-References: <20110613175832.331826123@sbsiddha-MOBL3.sc.intel.com>
- <20110613175915.504721985@sbsiddha-MOBL3.sc.intel.com>
- <20110613195613.GA11196@elte.hu>
- <1307998158.2682.33.camel@sbsiddha-MOBL3.sc.intel.com>
- <1307999142.2682.42.camel@sbsiddha-MOBL3.sc.intel.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: paulmck@linux.vnet.ibm.com, lkml <linux-kernel@vger.kernel.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>, "Shi, Alex" <alex.shi@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: rcu: performance regression
+Message-ID: <20110614081315.GE29900@elte.hu>
+References: <1308029185.15392.147.camel@sli10-conroe>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1307999142.2682.42.camel@sbsiddha-MOBL3.sc.intel.com>
+In-Reply-To: <1308029185.15392.147.camel@sli10-conroe>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -42,28 +34,48 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Suresh Siddha <suresh.b.siddha@intel.com> wrote:
+* Shaohua Li <shaohua.li@intel.com> wrote:
 
-> On Mon, 2011-06-13 at 13:49 -0700, Suresh Siddha wrote:
-> > On Mon, 2011-06-13 at 12:56 -0700, Ingo Molnar wrote:
-> > > * Suresh Siddha <suresh.b.siddha@intel.com> wrote:
-> > > 
-> > > >  include/linux/stop_machine.h |   11 +++--
-> > > >  kernel/stop_machine.c        |   91 ++++++++++++++++++++++++++++++++++++++++---
-> > > >  2 files changed, 93 insertions(+), 9 deletions(-)
-> > > 
-> > > Btw., this is *way* too risky for a -stable backport.
-> > > 
-> > 
-> > Ingo, we can have a smaller patch (appended) for the -stable. How do you
-> > want to go ahead? Take this small patch for both mainline and -stable
-> > and the two code cleanup/consolidation patches for -tip (to go into
-> > 3.1?). Thanks.
+> Commit a26ac2455ffcf3(rcu: move TREE_RCU from softirq to kthread)
+> introduced performance regression. In our AIM7 test, this commit caused
+> about 40% regression.
+
+Sigh, this commit is somewhat of a train-wreck.
+
+> The commit runs rcu callbacks in a kthread instead of softirq. We 
+> observed high rate of context switch which is caused by this. Out 
+> test system has 64 CPUs and HZ is 1000, so we saw more than 64k 
+> context switch per second which is caused by the rcu thread.
+>
+> I also did trace and found when rcy thread is woken up, most time 
+> the thread doesn't handle any callbacks actually, it just 
+> initializes new gp or end one gp or similar.
+>
+> From my understanding, the purpose to make rcu runs in kthread is 
+> to speed up rcu callbacks run (with help of rtmutex PI), not for 
+> end gp and so on, which runs pretty fast actually and doesn't need 
+> boost. To verify my findings, I had below debug patch applied. It 
+> still handles rcu callbacks in kthread if there is any pending 
+> callbacks, but other things are still running in softirq. this 
+> completely solved our regression. I thought this can still boost 
+> callbacks run. but I'm not expert in the area, so please help.
 > 
-> oops. sent it too soon. fixed a !CONFIG_SMP compilation issue. 
-> Updated simple patch appended.
+> Thanks,
+> Shaohua
+> ---
+>  Documentation/filesystems/proc.txt  |    1 +
+>  include/linux/interrupt.h           |    1 +
+>  include/trace/events/irq.h          |    3 ++-
+>  kernel/rcutree.c                    |   23 +++++++++++++++++++----
+>  kernel/rcutree.h                    |    1 +
+>  kernel/rcutree_plugin.h             |    9 +++++++++
+>  kernel/softirq.c                    |    2 +-
+>  tools/perf/util/trace-event-parse.c |    1 +
+>  8 files changed, 35 insertions(+), 6 deletions(-)
 
-See? It's by definition not a "simple" patch.
+Paul? Unless this patch is the obviously correct solution everyone 
+wants to have, the other obviously correct solution is to do the 
+revert ...
 
 Thanks,
 
