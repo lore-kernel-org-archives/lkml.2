@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab1FNQ7v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 12:59:51 -0400
-Received: from mga11.intel.com ([192.55.52.93]:41554 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751410Ab1FNQ7s convert rfc822-to-8bit (ORCPT
+	id S1752704Ab1FNRMq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 13:12:46 -0400
+Received: from bhuna.collabora.co.uk ([93.93.128.226]:45903 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410Ab1FNRMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 12:59:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,365,1304319600"; 
-   d="scan'208";a="16130225"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Avi Kivity <avi@redhat.com>
-CC: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Date: Tue, 14 Jun 2011 09:59:46 -0700
-Subject: RE: [PATCH 08/10] NOTIFIER: Take over TIF_MCE_NOTIFY and implement
- task return notifier
-Thread-Topic: [PATCH 08/10] NOTIFIER: Take over TIF_MCE_NOTIFY and implement
- task return notifier
-Thread-Index: Acwqh/i6aoZ3I0gKSYmUtFKXAd3DdAAKyExA
-Message-ID: <987664A83D2D224EAE907B061CE93D5301E7280DBF@orsmsx505.amr.corp.intel.com>
-References: <4df13a522720782e51@agluck-desktop.sc.intel.com>
-	<4df13cea27302b7ccf@agluck-desktop.sc.intel.com>
-	<20110612223840.GA23218@aftab>
-	<BANLkTi=-A5PYj8zpjGB4Xb-_VNq0qr+CGQ@mail.gmail.com>
-	<4DF5C36A.1040707@redhat.com>	<20110613095521.GA26316@aftab>
-	<4DF5F729.4060609@redhat.com>	<20110613124003.GA27918@aftab>
-	<4DF606C9.90308@redhat.com>	<20110613151208.GA29045@aftab>
-	<4DF63B7A.1030805@redhat.com>
- <BANLkTinUEqRni2u0DaMfSc45b3DmMMyYvA@mail.gmail.com>
- <4DF748C2.10009@redhat.com>
-In-Reply-To: <4DF748C2.10009@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 14 Jun 2011 13:12:42 -0400
+X-Greylist: delayed 642 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Jun 2011 13:12:42 EDT
+Date: Tue, 14 Jun 2011 18:01:58 +0100
+From: Daniel Stone <daniels@collabora.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Michal Nazarewicz <mina86@mina86.com>, "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Mel Gorman'" <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Subject: Re: [Linaro-mm-sig] [PATCH 08/10] mm: cma: Contiguous Memory
+ Allocator added
+Message-ID: <20110614170158.GU2419@fooishbar.org>
+Mail-Followup-To: Daniel Stone <daniels@collabora.com>,
+	Arnd Bergmann <arnd@arndb.de>,
+	Michal Nazarewicz <mina86@mina86.com>,
+	'Ankita Garg' <ankita@in.ibm.com>,
+	'Daniel Walker' <dwalker@codeaurora.org>,
+	'Jesse Barker' <jesse.barker@linaro.org>,
+	'Mel Gorman' <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+	linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+	'Kyungmin Park' <kyungmin.park@samsung.com>,
+	'KAMEZAWA Hiroyuki' <kamezawa.hiroyu@jp.fujitsu.com>,
+	'Andrew Morton' <akpm@linux-foundation.org>,
+	linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
+ <201106141549.29315.arnd@arndb.de>
+ <op.vw2jmhir3l0zgt@mnazarewicz-glaptop>
+ <201106141803.00876.arnd@arndb.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201106141803.00876.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Aren't these events extraordinarily rare?  I think we can afford a 
-> little inefficiency there.
+Hi,
 
-Yes. Very rare. But also very disruptive (On Intel all cpus are signaled
-and will be stuck processing the machine check for hundreds of microseconds).
-So we'd like to try hard not to take the same fault more than once.
+On Tue, Jun 14, 2011 at 06:03:00PM +0200, Arnd Bergmann wrote:
+> On Tuesday 14 June 2011, Michal Nazarewicz wrote:
+> > On Tue, 14 Jun 2011 15:49:29 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
+> > > Please explain the exact requirements that lead you to defining multiple
+> > > contexts.
+> > 
+> > Some devices may have access only to some banks of memory.  Some devices
+> > may use different banks of memory for different purposes.
+> 
+> For all I know, that is something that is only true for a few very special
+> Samsung devices, and is completely unrelated of the need for contiguous
+> allocations, so this approach becomes pointless as soon as the next
+> generation of that chip grows an IOMMU, where we don't handle the special
+> bank attributes. Also, the way I understood the situation for the Samsung
+> SoC during the Budapest discussion, it's only a performance hack, not a
+> functional requirement, unless you count '1080p playback' as a functional
+> requirement.
 
-There's also the issue of post-error analysis. Some people like to dig
-around in the MCA logs to figure out if the memory is really going bad,
-or is just being hit occasionally by stray alpha-particles or neutrons.
-Getting two errors close together might cause someone to replace a DIMM
-that isn't really bad.  In Linux user space tools we could take account
-of this repetition - but the OEM tools are imbedded in their BIOS or
-maintenance processors.
+Hm, I think that was something similar but not quite the same: talking
+about having allocations split to lie between two banks of RAM to
+maximise the read/write speed for performance reasons.  That's something
+that can be handled in the allocator, rather than an API constraint, as
+this is.
 
->I don't think that doing anything to the task is correct, though, as the 
->problem is with the page, not the task itself.  In fact if the task is 
->executing a vgather instruction, or if another thread munmap()s the 
->page, it may not hit the same page again when re-executed.
+Not that I know of any hardware which is limited as such, but eh.
 
-True the memory is the source of the problem - but the task is
-intimately affected.  Time for a car analogy :-) ...
-
-You are driving along the road when you notice a giant hole. You
-hit the brakes and stop on the very edge.  The problem is with the
-road, not with your car. But I don't think you want to start driving
-again (at least not in the forward direction!)
-
--Tony
+Cheers,
+Daniel
