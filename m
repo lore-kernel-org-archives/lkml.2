@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab1FNPR4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 11:17:56 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56260 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752454Ab1FNPRy (ORCPT
+	id S1753056Ab1FNPVQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 11:21:16 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:42622 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930Ab1FNPVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 11:17:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=V5WIy5NQjxWDVDy8xVbJ40fhQOqX2K0smM1Djv7OTJ8aLczIr7nHhpkm/XpWaUnjZB
-         5dtTqzKlL+oqcsd+mSqDx6Q3ZuHz+0+GbcTfJDNdSpA2suUNc38wGLUsaULPrIf4QA0l
-         aQc5Cb2tcuK4mcT3jM54P5C2qDBHYde1JVuwc=
-From: yxlraid@gmail.com
-To: JBottomley@parallels.com
-Cc: James.Bottomley@suse.de, jack_wang@usish.com,
-        lucas.demarchi@profusion.mobi, maciej.trela@intel.com,
-        dan.j.williams@intel.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yuxiangl@marvell.com, jfeng@marvell.com
-Subject: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
-Date: Tue, 14 Jun 2011 23:17:08 +0800
-Message-Id: <1308064628-11826-1-git-send-email-yxlraid@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Tue, 14 Jun 2011 11:21:14 -0400
+Date: Tue, 14 Jun 2011 16:21:02 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Jim Bos <jim876@xs4all.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, efi: Do not reserve boot services regions within
+ reserved areas
+Message-ID: <20110614152101.GA17773@srcf.ucam.org>
+References: <4DF77832.9020407@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DF77832.9020407@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiangliang Yu <yuxiangl@marvell.com>
+On Tue, Jun 14, 2011 at 05:03:14PM +0200, Maarten Lankhorst wrote:
 
--- The value of child link rate should is minimum of link rate, or
-   command will fail if child link rate is bigger than parent link rate.
+> +		/* Could not reserve boot area */
+> +		if (!size)
+> +			continue;
+> +
+> +		printk(KERN_INFO PFX "Freeing boot area "
+> +			"[0x%llx-0x%llx)\n", start, start+size);
 
-Signed-off-by: Xiangliang Yu <yuxiangl@marvell.com>
----
- drivers/scsi/libsas/sas_expander.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Probably don't need the printk - we could be dumping a few hundred of 
+those.
 
-diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
-index 874e29d..6ccca09 100644
---- a/drivers/scsi/libsas/sas_expander.c
-+++ b/drivers/scsi/libsas/sas_expander.c
-@@ -638,7 +638,7 @@ static void sas_ex_get_linkrate(struct domain_device *parent,
- 			sas_port_add_phy(port, phy->phy);
- 		}
- 	}
--	child->linkrate = min(parent_phy->linkrate, child->max_linkrate);
-+	child->linkrate = min(parent_phy->linkrate, child->min_linkrate);
- 	child->pathways = min(child->pathways, parent->pathways);
- }
- 
+> -		  "Kernel-defined memdesc doesn't match the one from EFI!\n");
+> +		  "Kernel-defined memdesc (%lu) "
+> +			"doesn't match the one from EFI(%lu)!\n",
+> +			sizeof(efi_memory_desc_t), memmap.desc_size);
+
+And drop this hunk. It's entirely valid for an implementation to do 
+this, we should just delete the message entirely.
+
 -- 
-1.7.5.4
-
+Matthew Garrett | mjg59@srcf.ucam.org
