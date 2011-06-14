@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab1FNPMM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 11:12:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38607 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751484Ab1FNPML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 11:12:11 -0400
-Message-ID: <4DF778AB.3@zytor.com>
-Date: Tue, 14 Jun 2011 08:05:15 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, tj@kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [slubllv7 04/17] x86: Add support for cmpxchg_double
-References: <20110601172543.437240675@linux.com> <20110601172614.173427964@linux.com> <4DF09827.7070809@cs.helsinki.fi> <alpine.DEB.2.00.1106101016420.30968@router.home> <BANLkTikHOsvR-KXZ-VQvpAaMgrNOR0sB3g@mail.gmail.com> <alpine.DEB.2.00.1106111202110.32170@router.home> <4DF6F659.3000109@cs.helsinki.fi> <20110614080436.GB29900@elte.hu> <alpine.DEB.2.00.1106140903480.32130@router.home>
-In-Reply-To: <alpine.DEB.2.00.1106140903480.32130@router.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752260Ab1FNPId (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 11:08:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37413 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab1FNPIb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 11:08:31 -0400
+Subject: Re: [PATCH v4 3.0-rc2-tip 2/22]  2: uprobes: Breakground page
+ replacement.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110614142710.GB5139@redhat.com>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+	 <20110607125835.28590.25476.sendpatchset@localhost6.localdomain6>
+	 <20110613170020.GA27137@redhat.com> <1308056477.19856.35.camel@twins>
+	 <20110614142710.GB5139@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 14 Jun 2011 17:07:33 +0200
+Message-ID: <1308064053.19856.75.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2011 07:04 AM, Christoph Lameter wrote:
-> On Tue, 14 Jun 2011, Ingo Molnar wrote:
+On Tue, 2011-06-14 at 16:27 +0200, Oleg Nesterov wrote:
+> On 06/14, Peter Zijlstra wrote:
+> >
+> > On Mon, 2011-06-13 at 19:00 +0200, Oleg Nesterov wrote:
+> > >
+> > > Also. This is called under down_read(mmap_sem), can't we race with
+> > > access_process_vm() modifying the same memory?
+> >
+> > Shouldn't matter COW and similar things are serialized using the pte
+> > lock.
 > 
->>
->> * Pekka Enberg <penberg@cs.helsinki.fi> wrote:
->>
->>> On 6/11/11 8:02 PM, Christoph Lameter wrote:
->>>> On Sat, 11 Jun 2011, Pekka Enberg wrote:
->>>>
->>>>> Oh, I don't know - but I definitely need more ACKs to even consider
->>>>> pushing this through slab.git.
->>>>
->>>> Any additional ackers out there?;-)
->>>
->>> Ingo, ping? Could we have this in -tip so I can pull from there?
->>> This is blocking me from queuing SLUB performance improvements to
->>> linux-next.
->>
->> hpa, what's your take on this patch?
-> 
-> He acked it.
-> 
+> Yes, but afaics this doesn't matter. Suppose that write_opcode() is
+> called when access_process_vm() does copy_to_user_page(). We can cow
+> the page before memcpy() completes.
 
-Yep, looks fine now.
+access_process_vm() will end up doing a FOLL_WRITE itself when
+copy_to_user_page() is called since write=1 in that case.
 
-	-hpa
+At that point we have a COW-race, someone wins, but the other will then
+return the same page.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+At this point further PTRACE pokes can indeed race with the memcpy in
+write_opcode(). A possible fix would be to lock_page() around
+copy_to_user_page() (its already done in set_page_dirty_lock(), so
+pulling it out shouldn't matter much).
+
 
