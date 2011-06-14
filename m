@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab1FNSX5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 14:23:57 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:32963 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987Ab1FNSXv convert rfc822-to-8bit (ORCPT
+	id S1752934Ab1FNSXq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 14:23:46 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:44002 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752017Ab1FNSXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 14:23:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=sUm6mWtAI0lmr+06eA+Ip5KDAW8elKjRWD51FlFCWFh61aeLzfZosEFO1z14f3Lv1V
-         PZj9KWqNYgfX88lSR4wBPQ6ipofcHt1lduWLUstkv+b7MnkZjTzVlJF4GCp2Djl+/+o4
-         Zd2lzDaOAqsXdttucUAYMqebNzkxmB5v8VGpg=
-MIME-Version: 1.0
-In-Reply-To: <201106142017.41558.arnd@arndb.de>
-References: <1307079502-6326-1-git-send-email-jim.cromie@gmail.com>
- <201106141607.02171.arnd@arndb.de> <BANLkTinrbrsEORxMd96K2obvfGjswegP+g@mail.gmail.com>
- <201106142017.41558.arnd@arndb.de>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Tue, 14 Jun 2011 12:23:21 -0600
-Message-ID: <BANLkTinY_OA_sg+texQb-L-T9dowZ=2PrA@mail.gmail.com>
-Subject: Re: [PATCH] fix bogus use of rc = alloc_chrdev_region()
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, rpjday@crashcourse.ca
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 14 Jun 2011 14:23:43 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Jean Sacren <sakiwit@gmail.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] boot: Enhance performance by eliminating unnecessary calls to printf()
+In-Reply-To: Your message of "Sun, 12 Jun 2011 12:36:28 MDT."
+             <20110612183627.GA12311@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <20110606004038.GA28970@mail.gmail.com> <4DED0990.8090309@linux.intel.com>
+            <20110612183627.GA12311@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1308075820_2718P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 14 Jun 2011 14:23:40 -0400
+Message-ID: <55695.1308075820@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Info: (0) 
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020204.4DF7A72C.01DA,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 14, 2011 at 12:17 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 14 June 2011 18:23:50 Grant Likely wrote:
->> On Tue, Jun 14, 2011 at 8:07 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->>
->> > On the topic of drivers/char/{nsc_gpio,pc8736x_gpio,scx200_gpio}, I wonder
->> > if we should move them to drivers/gpio/nsc_gpio despite the fact that they
->> > use a different (older) interface than all the other gpio drivers.
->>
->> I have no problem with moving them into drivers/gpio.  When you do,
->> please rename then drivers/gpio/gpio-*.c
->
-> Ok. Should they be in a subdirectory drivers/gpio/nsc_gpio/gpio_* for the
-> nonstandard API or do you prefer them to live amongst the regular ones?
->
+--==_Exmh_1308075820_2718P
+Content-Type: text/plain; charset=us-ascii
 
-converting these to gpiolib has been on my list for a while, but
-pretty far down.
-Moving them is an easy 1st step.
-Once theyre converted, I guess they belong with the others,
-but its easy to move them again when the convert is done.
-preference ?
+On Sun, 12 Jun 2011 12:36:28 MDT, Jean Sacren said:
 
->        Arnd
->
+> Subject: [PATCH 1/1] boot: Enhance performance by eliminating unnecessary calls to printf()
+> 
+> Repeated calling to printf() for 13 times is a dire waste of CPU cycles.
+> For performance, combine all those calls into one while source code
+> formatting is preserved for readability.
+
+*facepalm*
+
+I defy anybody to find a *less* performance-critical piece of code to
+micro-optimize. It doesn't even make a boot faster, it makes a kernel build
+non-measurably faster.
+
+If you wanted to make kernel builds faster, go look at Ingo's numbers regarding
+the current #include mess - fixing *that* will be of more benefit than this...
+
+
+--==_Exmh_1308075820_2718P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFN96cscC3lWbTT17ARAnuiAKCPSWykhkJvedFKQf0po37U297MZACgreWq
+YhrCamM155YlqU+oX4rTEKE=
+=/pTQ
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1308075820_2718P--
+
