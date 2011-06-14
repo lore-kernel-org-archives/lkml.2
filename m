@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab1FNHSh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 03:18:37 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:57870 "EHLO comal.ext.ti.com"
+	id S1754636Ab1FNHT0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 03:19:26 -0400
+Received: from mail.perches.com ([173.55.12.10]:2969 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753579Ab1FNHSf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 03:18:35 -0400
-From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
-To: Tejun Heo <tj@kernel.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, "Girdwood, Liam" <lrg@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "Lopez Cruz, Misael" <misael.lopez@ti.com>
-Subject: Re: Re: Re: [PATCH v4 11/18] input: Add initial support for TWL6040 vibrator
-Date: Tue, 14 Jun 2011 10:17:10 +0300
-Message-ID: <8556714.NHVg2d8yTv@barack>
-User-Agent: KMail/4.6.0 (Linux/2.6.39-gentoo; KDE/4.6.4; x86_64; ; )
-In-Reply-To: <20110614063400.GB8141@htj.dyndns.org>
-References: <1307706876-4768-1-git-send-email-peter.ujfalusi@ti.com> <20110613212028.GA13138@core.coreip.homeip.net> <20110614063400.GB8141@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+	id S1753163Ab1FNHTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 03:19:24 -0400
+Subject: Re: [PATCH net-next 1/2] wireless: Remove casts of void *
+From: Joe Perches <joe@perches.com>
+To: Julian Calaby <julian.calaby@gmail.com>
+Cc: netdev@vger.kernel.org, "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        Jouni Malinen <jmalinen@atheros.com>,
+        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
+        Senthil Balasubramanian <senthilkumar@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTik4fWbCc8pRZfKCzvKD2f6sK9QCEw@mail.gmail.com>
+References: <cover.1308024069.git.joe@perches.com>
+	 <337c22b774ff7f007b90b266b25c9a33ff555c48.1308024069.git.joe@perches.com>
+	 <BANLkTi=i30Rn7gpCDbn9KKJucq8CB=hssA@mail.gmail.com>
+	 <1308029532.26699.68.camel@Joe-Laptop>
+	 <BANLkTik4fWbCc8pRZfKCzvKD2f6sK9QCEw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Jun 2011 00:19:21 -0700
+Message-ID: <1308035961.32499.3.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 14 June 2011 08:34:00 Tejun Heo wrote:
-> Yeap, using a separate workqueue doesn't do anything for latency
-> unless WQ_HIGHPRI and/or WQ_CPU_INTENSIVE is used; however, _please_
-> stay away from it unless absolutely sure it's necessary (ie. unless
-> you can pin point to where latency is coming from - even in that case,
-> the thing which induces the latency probably is the one which should
-> be fixed).
+On Tue, 2011-06-14 at 15:39 +1000, Julian Calaby wrote:
+> My issue here is that you mention in the commit log that this relates
+> to the removal of netdev_priv and dev_priv, but the casts removed
+> (mostly) don't.
 
-The latency in most cases comes from the fact, that we are running an embedded 
-system. Number of peripherals are connected via I2C, these drivers are using 
-workqueues to communicate with the IC.
-Since only one device can communicate through I2C at the time. This is 
-basically the source of the latency. It does not really matter, if the devices 
-are on the same I2C bus or not, it is enough if two work belonging to device, 
-which happens to be on the same I2C bus, and the first work in the queue takes 
-long time to complete (reading back bigger chunk of info, configuring, etc).
-Even if we could schedule the second work on the other CPU, it will be put 
-waiting till the I2C bus is free, so both CPU core has work assigned, the 
-first is keeping the I2C bus, the other waits for the I2C bus, and the third 
-is waiting to be scheduled (which will be happening, when the first work 
-finished).
-IMHO the tactile feedback (vibra) should have an excuse to have separate WQ to 
-avoid latency spikes.
-I agree, that most cases we can use the global wq.
+Sorry if that was unclear to you.
 
-> CMWQ is pretty good at keeping latency low unless something is
-> consuming large amount of CPU cycles and those work items are marked
-> WQ_CPU_INTENSIVE, not the other way around and WQ_HIGHPRI is for
-> things like MCE error reporting.
+None of these patches remove casts of netdev_priv.
 
-So this is not really about CPU utilization, it is due to the wide variety of 
-peripherals connected to an embedded system.
+What I meant to say was that net and drivers/net have
+had many patches that remove casts of void * like the
+patches that removed casts of netdev_priv.
 
--- 
-Péter
+These patches remove the last casts of void * types
+in net and drivers/net.
+
+cheers, Joe
+
