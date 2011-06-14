@@ -1,46 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab1FNTT3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 15:19:29 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54234 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751509Ab1FNTT2 convert rfc822-to-8bit (ORCPT
+	id S1753758Ab1FNTpl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 15:45:41 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:20539 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459Ab1FNTpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 15:19:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <201106142017.41558.arnd@arndb.de>
-References: <1307079502-6326-1-git-send-email-jim.cromie@gmail.com>
- <201106141607.02171.arnd@arndb.de> <BANLkTinrbrsEORxMd96K2obvfGjswegP+g@mail.gmail.com>
- <201106142017.41558.arnd@arndb.de>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 14 Jun 2011 13:19:08 -0600
-X-Google-Sender-Auth: txPQKcjFkxMnwARhL_oYJWuIz7w
-Message-ID: <BANLkTikDufSSNwcHe26YPdc8WLDcM1QG_g@mail.gmail.com>
-Subject: Re: [PATCH] fix bogus use of rc = alloc_chrdev_region()
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg KH <greg@kroah.com>, Jim Cromie <jim.cromie@gmail.com>,
-        linux-kernel@vger.kernel.org, rpjday@crashcourse.ca
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 14 Jun 2011 15:45:40 -0400
+Date: Tue, 14 Jun 2011 12:45:10 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>, len.brown@intel.com
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Whitcroft <apw@canonical.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [patch] Re: Linux 3.0-rc3 (APM fix)
+Message-Id: <20110614124510.e716bff1.randy.dunlap@oracle.com>
+In-Reply-To: <BANLkTinCfV4owNBhJ+F-yfF3V+wg1o=PLA@mail.gmail.com>
+References: <BANLkTinCfV4owNBhJ+F-yfF3V+wg1o=PLA@mail.gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4DF7BA52.0100:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 14, 2011 at 12:17 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 14 June 2011 18:23:50 Grant Likely wrote:
->> On Tue, Jun 14, 2011 at 8:07 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->>
->> > On the topic of drivers/char/{nsc_gpio,pc8736x_gpio,scx200_gpio}, I wonder
->> > if we should move them to drivers/gpio/nsc_gpio despite the fact that they
->> > use a different (older) interface than all the other gpio drivers.
->>
->> I have no problem with moving them into drivers/gpio.  When you do,
->> please rename then drivers/gpio/gpio-*.c
->
-> Ok. Should they be in a subdirectory drivers/gpio/nsc_gpio/gpio_* for the
-> nonstandard API or do you prefer them to live amongst the regular ones?'
+On Mon, 13 Jun 2011 16:01:26 -0700 Linus Torvalds wrote:
 
-I only see one files per non-standard driver.  I wouldn't bother with
-subdirectories.  Just put them in with the general population.
+> .. and this time even with a timely tar-ball, since I'm not traveling any more.
 
-g.
+
+ERROR: "pm_idle" [arch/x86/kernel/apm.ko] undefined!
+ERROR: "default_idle" [arch/x86/kernel/apm.ko] undefined!
+
+
+Fix was posted by Andy Whitcroft on June 8 and Ben Hutchings on June 9.
+https://lkml.org/lkml/2011/6/8/170
+https://lkml.org/lkml/2011/6/9/679
+
+Below is Andy's patch since it was posted first.
+Please merge some fix.
+
+
+---
+The commit below removed the export for pm_idle/default_idle unless the
+apm module was modularised and CONFIG_APM_CPU_IDLE was set.  The apm
+module uses pm_idle/default_idle unconditionally, CONFIG_APM_CPU_IDLE
+only affects the bios idle threshold.  Adjust the export accordingly.
+
+    commit 06ae40ce073daf233607a3c54a489f2c1e44683e
+    Author: Len Brown <len.brown@intel.com>
+    Date:   Fri Apr 1 15:28:09 2011 -0400
+
+	x86 idle: EXPORT_SYMBOL(default_idle, pm_idle) only when APM demands it
+
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+---
+ arch/x86/kernel/process.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 2e4928d..b8265d0 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -337,7 +337,7 @@ EXPORT_SYMBOL(boot_option_idle_override);
+  * Powermanagement idle function, if any..
+  */
+ void (*pm_idle)(void);
+-#if defined(CONFIG_APM_MODULE) && defined(CONFIG_APM_CPU_IDLE)
++#if defined(CONFIG_APM_MODULE)
+ EXPORT_SYMBOL(pm_idle);
+ #endif
+ 
+@@ -399,7 +399,7 @@ void default_idle(void)
+ 		cpu_relax();
+ 	}
+ }
+-#if defined(CONFIG_APM_MODULE) && defined(CONFIG_APM_CPU_IDLE)
++#if defined(CONFIG_APM_MODULE)
+ EXPORT_SYMBOL(default_idle);
+ #endif
+ 
+-- 
