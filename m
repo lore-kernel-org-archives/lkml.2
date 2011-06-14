@@ -1,91 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab1FNKKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 06:10:45 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56191 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755948Ab1FNKKn (ORCPT
+	id S1756000Ab1FNKLe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 06:11:34 -0400
+Received: from mga01.intel.com ([192.55.52.88]:55002 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755916Ab1FNKLd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 06:10:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=UbQ5JQmDns/Khb6cPHDrQ02BMewMwOTMTPcO4vJv50KhPH2G/4eiaDDjElQws9IMBL
-         9DLnst1yJUntf1tybh5Sh4mbyegfkG25pgdKU9ToMSB4SZVDNPAiHRZYoo9Yh2CRFXre
-         nFUalc7IsGpX1Egv1KGoekXOh3t+8DE04W8r0=
-Date: Tue, 14 Jun 2011 12:10:38 +0200
-From: "tj@kernel.org" <tj@kernel.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>, "trenn@novell.com" <trenn@novell.com>,
-        "prarit@redhat.com" <prarit@redhat.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Song, Youquan" <youquan.song@intel.com>,
-        "stable@kernel.org" <stable@kernel.org>
-Subject: Re: [patch v4 1/2] stop_machine: enable __stop_machine() to be
- called from the cpu online path
-Message-ID: <20110614101038.GH8141@htj.dyndns.org>
-References: <20110613175832.331826123@sbsiddha-MOBL3.sc.intel.com>
- <20110613175915.504721985@sbsiddha-MOBL3.sc.intel.com>
- <20110613195613.GA11196@elte.hu>
- <1307998158.2682.33.camel@sbsiddha-MOBL3.sc.intel.com>
+	Tue, 14 Jun 2011 06:11:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,363,1304319600"; 
+   d="scan'208";a="17978733"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: "gregkh@suse.de" <gregkh@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "a.miskiewicz@gmail.com" <a.miskiewicz@gmail.com>
+Date: Tue, 14 Jun 2011 13:10:38 +0300
+Subject: RE: [staging] staging/mei: fix suspend failure
+Thread-Topic: [staging] staging/mei: fix suspend failure
+Thread-Index: Acwpz1mzc1kiVqLJSL6f+r4Y4IchhAAq4Hdg
+Message-ID: <6F5C1D715B2DA5498A628E6B9C124F0401AD364297@hasmsx504.ger.corp.intel.com>
+References: <1307972371-14815-1-git-send-email-tomas.winkler@intel.com>
+In-Reply-To: <1307972371-14815-1-git-send-email-tomas.winkler@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307998158.2682.33.camel@sbsiddha-MOBL3.sc.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo, Suresh.
 
-On Mon, Jun 13, 2011 at 01:49:18PM -0700, Suresh Siddha wrote:
-> On Mon, 2011-06-13 at 12:56 -0700, Ingo Molnar wrote:
-> > * Suresh Siddha <suresh.b.siddha@intel.com> wrote:
-> > 
-> > >  include/linux/stop_machine.h |   11 +++--
-> > >  kernel/stop_machine.c        |   91 ++++++++++++++++++++++++++++++++++++++++---
-> > >  2 files changed, 93 insertions(+), 9 deletions(-)
-> > 
-> > Btw., this is *way* too risky for a -stable backport.
-> > 
+
+> -----Original Message-----
+> From: Winkler, Tomas
+> Sent: Monday, June 13, 2011 4:40 PM
+> To: gregkh@suse.de; a.miskiewicz@gmail.com
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org; Winkler,
+> Tomas
+> Subject: [staging] staging/mei: fix suspend failure
 > 
-> Ingo, we can have a smaller patch (appended) for the -stable. How do you
-> want to go ahead? Take this small patch for both mainline and -stable
-> and the two code cleanup/consolidation patches for -tip (to go into
-> 3.1?). Thanks.
+> wait_event_interruptible_timeout return value was wrongly used.
+> The remaining timeout was used as the error code.
+> This fix translated wait_event_interruptible_timeout return value into error
+> code that can be propagated.
+> 
+> [10291.674121] pci_pm_suspend(): mei_pci_suspend+0x0/0x8b [mei]
+> returns 2500 It's thinkpad t400 with
+> 00:03.0 Communication controller [0780]: Intel Corporation Mobile 4 Series
+> Chipset MEI Controller [8086:2a44] (rev 07)
+> 
+> Reported-by: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+> ---
 
-So, here's what I think we should do.
 
-* Polish up this simpler patch and send it for 3.0 through -tip.  It's
-  slightly scary but not too much and fixes a real bug.  After a
-  while, we can ask -stable to pull the simple version.
+Greg,  I forgot to state that this one is probably 3.0 material.
 
-* Work on proper update which drops custom implementation from mtrr
-  code for 3.1 window.  BTW, even after the recent revisions, I think
-  the stop machine change is a bit too hacky.  I'll reply to that
-  separately.
 
-> diff --git a/include/linux/stop_machine.h b/include/linux/stop_machine.h
-> index 092dc9b..8a28d4c 100644
-> --- a/include/linux/stop_machine.h
-> +++ b/include/linux/stop_machine.h
-> @@ -33,6 +33,10 @@ void stop_one_cpu_nowait(unsigned int cpu, cpu_stop_fn_t fn, void *arg,
->  int stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg);
->  int try_stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg);
->  
-> +void lock_stop_cpus(void);
-> +int try_lock_stop_cpus(void);
-> +void unlock_stop_cpus(void);
+Thanks
+Tomas
 
-Ugh... Can you please just export stop_cpus_mutex and have CONFIG_SMP
-in mtrr code.  After all, it's a temporary workaround for mtrr.  No
-reason to add three functions for that.
+---------------------------------------------------------------------
+Intel Israel (74) Limited
 
-Thank you.
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
 
--- 
-tejun
