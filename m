@@ -1,333 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179Ab1FNGmj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 02:42:39 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:55289 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754078Ab1FNGmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 02:42:33 -0400
-Date: Tue, 14 Jun 2011 16:42:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for June 14
-Message-Id: <20110614164223.a95d1dac.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__14_Jun_2011_16_42_23_+1000_ccWYIeeJ5ujB4jOd"
+	id S1753874Ab1FNGph (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 02:45:37 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38212 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753489Ab1FNGpe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 02:45:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=mpAFUL1cV40ipV5yH/rkg7vZ6ifEV7FWc23IwJtX9oItymih2yYb2Bi6NupQ/De2Wn
+         wF8sQIr2RodPAUsAajlQ64Z9Jguxu/BpMvLUKMVqvFik5Y+ofSuWahf7M91OcUkVEVOZ
+         2kVInZqe5obLHB16SsW/oJNcWNuJLXNy4/cAo=
+Date: Tue, 14 Jun 2011 08:45:29 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
+        pedro@codesourcery.com
+Subject: Re: [PATCH 17/17] ptrace: implement PTRACE_LISTEN
+Message-ID: <20110614064529.GC8141@htj.dyndns.org>
+References: <1306710760-16440-1-git-send-email-tj@kernel.org>
+ <1306710760-16440-18-git-send-email-tj@kernel.org>
+ <20110602173330.GA20384@redhat.com>
+ <20110613141023.GA8141@htj.dyndns.org>
+ <20110613203341.GA15695@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110613203341.GA15695@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__14_Jun_2011_16_42_23_+1000_ccWYIeeJ5ujB4jOd
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hey, Oleg.
 
-Hi all,
+On Mon, Jun 13, 2011 at 10:33:41PM +0200, Oleg Nesterov wrote:
+> >   and I don't see
+> >   good reasons to optimize it.  Moreover, I think it doesn't hurt to
+> >   have a way to reliably trigger spurious notification.
+> 
+> Well. I don't really understand why, but OK. Let's keep it this way.
 
-Changes since 20110610:
+So that we can just send SIGCONT to test how applications hold up
+against spurious notifications.  ie. making corner case a bit more
+common and easier to reproduce so that it's more discoverable /
+debuggable.
 
-The powerpc allyesconfig (and probably others) is still broken because we
-now build the staging drivers.
+> > However, I think it's
+> >   done the current way for a reason - always trying to wake up on
+> >   SIGCONT is more robust in case something went out of sync
+> 
+> Hmm. I am wondering if we can ever see why == 0 && __TASK_STOPPED with
+> the recent fixes...
 
-The net tree still has its build failure for which I applied a patch.
+Probably not but I still think it's a better style to make SIGCONT
+_always_ wake up.  <obligatory inaccurate car analogy> It's like a car
+brake.  If transmission is in parking, gear interlocking should keep
+the wheels from spinning and brake pedal input may be bypassed safely
+for most cases, but, still, it's better to guarantee that stepping on
+the brake pedal always makes the brake pads squeezed. </a>
 
-The sound tree gained a build failure for which I reverted a commit.
+Thanks.
 
-The sound-asoc tree gained a build failure so I used the version from
-next-20110610.
-
-The trivial tree gained conflicts against the l2-mtd and sound trees.
-
-The rcu tree lost its conflict.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 194 trees (counting Linus' and 28 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging kbuild-current/rc-fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging 52xx-and-virtex-current/powerpc/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging devicetree-current/devicetree/merge
-Merging spi-current/spi/merge
-Merging arm/for-next
-Merging arm-lpae/for-next
-CONFLICT (content): Merge conflict in arch/arm/include/asm/pgalloc.h
-CONFLICT (content): Merge conflict in arch/arm/include/asm/pgtable.h
-CONFLICT (content): Merge conflict in arch/arm/include/asm/tlb.h
-CONFLICT (content): Merge conflict in arch/arm/mm/context.c
-CONFLICT (content): Merge conflict in arch/arm/mm/proc-v7.S
-Merging at91/at91-next
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging linux-spec/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging ux500-core/ux500-core
-Merging xilinx/arm-next
-CONFLICT (add/add): Merge conflict in arch/arm/kernel/devtree.c
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/for-next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/powerpc/next
-Merging galak/next
-CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020ds.dts
-CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020rdb.dts
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-Merging sparc/master
-Merging tile/master
-Merging unicore32/unicore32
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-CONFLICT (content): Merge conflict in fs/ceph/export.c
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/dev
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-Merging pci/linux-next
-Merging of-pci/of-pci
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging docs/docs-move
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
-Merging powertools/tools-test
-Merging cpupowerutils/master
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging slave-dma/next
-Merging async_tx/next
-Merging net/master
-CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-agn-=
-rxon.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/rtlwifi/pci.c
-Applying: net/staging: add needed interrupt.h and hardirq.h includes
-Merging wireless/master
-CONFLICT (content): Merge conflict in drivers/net/wireless/rtlwifi/pci.c
-Merging bluetooth/master
-Merging mtd/master
-Merging l2-mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging sound-asoc/for-next
-$ git reset --hard HEAD^
-Merging refs/next/20110610/sound-asoc
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-Merging input-mt/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-CONFLICT (delete/modify): drivers/mmc/host/sdhci-of-core.c deleted in mmc/m=
-mc-next and modified in HEAD. Version HEAD of drivers/mmc/host/sdhci-of-cor=
-e.c left in tree.
-$ git rm -f drivers/mmc/host/sdhci-of-core.c
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging selinux/master
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-CONFLICT (content): Merge conflict in drivers/mtd/maps/pxa2xx-flash.c
-CONFLICT (content): Merge conflict in sound/soc/fsl/fsl_ssi.c
-Merging audit/for-next
-Merging suspend/linux-next
-Merging apm/for-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/devicetree/next
-Merging spi/spi/next
-Merging gpio/gpio/next
-CONFLICT (content): Merge conflict in arch/arm/mach-ep93xx/Makefile
-CONFLICT (content): Merge conflict in drivers/gpio/Kconfig
-Merging tip/auto-latest
-Merging rcu/rcu/next
-Merging kvm/linux-next
-Merging oprofile/for-next
-Merging ptrace/ptrace
-Merging xen/upstream/xen
-Merging xen-two/linux-next
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging namespace/master
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-Merging usb/usb-next
-Merging staging/staging-next
-CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/dh=
-d_linux.c
-CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/wl=
-_iw.c
-Merging bkl-config/config
-Merging tmem/linux-next
-Merging writeback/next
-Merging arm-dt/devicetree/arm-next
-Merging scsi-post-merge/merge-base:master
-[master b20dbc5] Revert "ALSA: hda - Fix beep_device compilation warnings"
-
---Signature=_Tue__14_Jun_2011_16_42_23_+1000_ccWYIeeJ5ujB4jOd
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN9wLPAAoJEDMEi1NhKgbs8zYIAJzazWwHbsWyS22q4qSLx9mP
-v8Og9z4KwGx0FnnWQKNlMiPjTMjpO/KtWKiHwUtbHk9w6Lg5DcXO71mp+glagLcY
-NzOH2I9OmSLNFMPNplSi7tDTnaqCJ3WVRCTs6KDPg/2cvlpO70aXO5C3VKuwoBsW
-H09KWyl/koRQaAfmxb+tKxv26T8+oWriGC2R8BDltnOM3Y4Ck50u55c7ewZ83RUo
-WyOoLv55ddc3uPQkX8OYviWVOhUo7hl8JEITlR6DtkaU+e4B+hdvraw1vB2wPOww
-Bovoc+EBo3wpaMGyIwOu2Mh17Od95YMYHei0+IKIy1bSDqELwMh1IBnWBgAjgLc=
-=rlOZ
------END PGP SIGNATURE-----
-
---Signature=_Tue__14_Jun_2011_16_42_23_+1000_ccWYIeeJ5ujB4jOd--
+-- 
+tejun
