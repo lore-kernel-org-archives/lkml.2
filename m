@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758Ab1FNTpl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 15:45:41 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20539 "EHLO
+	id S1753747Ab1FNTsv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 15:48:51 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64255 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753459Ab1FNTpk (ORCPT
+	with ESMTP id S1752017Ab1FNTsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 15:45:40 -0400
-Date: Tue, 14 Jun 2011 12:45:10 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>, len.brown@intel.com
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Whitcroft <apw@canonical.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [patch] Re: Linux 3.0-rc3 (APM fix)
-Message-Id: <20110614124510.e716bff1.randy.dunlap@oracle.com>
-In-Reply-To: <BANLkTinCfV4owNBhJ+F-yfF3V+wg1o=PLA@mail.gmail.com>
-References: <BANLkTinCfV4owNBhJ+F-yfF3V+wg1o=PLA@mail.gmail.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4DF7BA52.0100:SCFMA922111,ss=1,fgs=0
+	Tue, 14 Jun 2011 15:48:50 -0400
+Date: Tue, 14 Jun 2011 15:48:11 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Tobias Diedrich <ranma+xen@tdiedrich.de>, xen-users@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: 3.0.0-rc2: Xen: High amount of kernel "reserved" memory, about
+ 33% in 256MB DOMU [workaround included]
+Message-ID: <20110614194810.GA26728@dumpdata.com>
+References: <20110613205003.GD20616@yumi.tdiedrich.de>
+ <20110613215900.GB19117@dumpdata.com>
+ <20110614001055.GB7417@yumi.tdiedrich.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110614001055.GB7417@yumi.tdiedrich.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090208.4DF7BB1B.0072:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Jun 2011 16:01:26 -0700 Linus Torvalds wrote:
+On Tue, Jun 14, 2011 at 02:10:55AM +0200, Tobias Diedrich wrote:
+> Konrad Rzeszutek Wilk wrote:
+> > On Mon, Jun 13, 2011 at 10:50:03PM +0200, Tobias Diedrich wrote:
+> > > Hi,
+> > > 
+> > > another issue I'm seeing with 3.0-rc2 and Xen is that there is an
+> > > unexpectedly high amount of kernel reserved memory.
+> > 
+> > > 
+> > > I suspect that Linux allocates page table entries and corresponding
+> > > data structures for the whole 6GB areas of the provided 'physical
+> > > RAM map' even though it has rather big unusable holes in it.
+> > 
+> > Can you run it with 'memblock=debug debug loglevel=8 initcall_debug'?
+> > It should tell you where it tries (and for much space) the pagetables.
 
-> .. and this time even with a timely tar-ball, since I'm not traveling any more.
+Ugh. In the meantime I would suggest you do the combination of:
 
+Xen hypervisor line: "dom0_mem=max:512M" and on the Linux line: "mem=512M" to
+cut down on the extra pagetable creation..
 
-ERROR: "pm_idle" [arch/x86/kernel/apm.ko] undefined!
-ERROR: "default_idle" [arch/x86/kernel/apm.ko] undefined!
+.. snip ..
+> [    0.000000] init_memory_mapping: 0000000000000000-0000000010000000
+> [    0.000000]  0000000000 - 0010000000 page 4k
+> [    0.000000] kernel direct mapping tables up to 10000000 @ ff7e000-10000000
+> [    0.000000]     memblock_x86_reserve_range: [0x0ff7e000-0x0ffe9fff]          PGTABLE
+> [    0.000000] xen: setting RW the range ffea000 - 10000000
 
+So ff7e->ffea pages, or 432kBytes
+> [    0.000000] init_memory_mapping: 0000000100000000-000000016fef0000
+> [    0.000000]  0100000000 - 016fef0000 page 4k
+> [    0.000000] kernel direct mapping tables up to 16fef0000 @ f3f7000-ff7e000
+> [    0.000000]     memblock_x86_reserve_range: [0x0f3f7000-0x0f778fff]          PGTABLE
+> [    0.000000] xen: setting RW the range f779000 - ff7e000
 
-Fix was posted by Andy Whitcroft on June 8 and Ben Hutchings on June 9.
-https://lkml.org/lkml/2011/6/8/170
-https://lkml.org/lkml/2011/6/9/679
-
-Below is Andy's patch since it was posted first.
-Please merge some fix.
-
-
----
-The commit below removed the export for pm_idle/default_idle unless the
-apm module was modularised and CONFIG_APM_CPU_IDLE was set.  The apm
-module uses pm_idle/default_idle unconditionally, CONFIG_APM_CPU_IDLE
-only affects the bios idle threshold.  Adjust the export accordingly.
-
-    commit 06ae40ce073daf233607a3c54a489f2c1e44683e
-    Author: Len Brown <len.brown@intel.com>
-    Date:   Fri Apr 1 15:28:09 2011 -0400
-
-	x86 idle: EXPORT_SYMBOL(default_idle, pm_idle) only when APM demands it
-
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
----
- arch/x86/kernel/process.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 2e4928d..b8265d0 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -337,7 +337,7 @@ EXPORT_SYMBOL(boot_option_idle_override);
-  * Powermanagement idle function, if any..
-  */
- void (*pm_idle)(void);
--#if defined(CONFIG_APM_MODULE) && defined(CONFIG_APM_CPU_IDLE)
-+#if defined(CONFIG_APM_MODULE)
- EXPORT_SYMBOL(pm_idle);
- #endif
- 
-@@ -399,7 +399,7 @@ void default_idle(void)
- 		cpu_relax();
- 	}
- }
--#if defined(CONFIG_APM_MODULE) && defined(CONFIG_APM_CPU_IDLE)
-+#if defined(CONFIG_APM_MODULE)
- EXPORT_SYMBOL(default_idle);
- #endif
- 
--- 
+And here from f3f7 through f779, so 3592kB or 3.5MB for un-used potential balloon memory.
