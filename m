@@ -1,271 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593Ab1FNAup (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 20:50:45 -0400
-Received: from r00tworld.com ([212.85.137.150]:55134 "EHLO r00tworld.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753888Ab1FNAuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 20:50:44 -0400
-From: pageexec@freemail.hu
-To: Ingo Molnar <mingo@elte.hu>
-Date: Tue, 14 Jun 2011 02:48:35 +0200
-MIME-Version: 1.0
-Subject: Re: [PATCH v5 9/9] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
-Reply-to: pageexec@freemail.hu
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Andy Lutomirski <luto@mit.edu>,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Brian Gerst <brgerst@gmail.com>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
-Message-ID: <4DF6AFE3.11023.3919B397@pageexec.freemail.hu>
-In-reply-to: <20110610111932.GA30987@elte.hu>
-References: <cover.1307292171.git.luto@mit.edu>, <4DEEB31B.24457.19E64984@pageexec.freemail.hu>, <20110610111932.GA30987@elte.hu>
-X-mailer: Pegasus Mail for Windows (4.61)
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7BIT
-Content-description: Mail message body
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Tue, 14 Jun 2011 02:49:21 +0200 (CEST)
+	id S1755613Ab1FNAwL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 20:52:11 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:37772 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753888Ab1FNAwH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 20:52:07 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=i+NeyypNYTvTSL4Lr4PXlL18qTyswyYtOx3cdNvj+OXg201xT4B/v0xo9a0uMUG6N
+	NoR983qYsctSH9qOJesUA==
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Subject: [PATCH v2] trace: Add a proc file to stop tracing and free buffer
+Date: Mon, 13 Jun 2011 17:51:57 -0700
+Message-Id: <1308012717-11148-1-git-send-email-vnagarnaik@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1308006831-6219-1-git-send-email-vnagarnaik@google.com>
+References: <1308006831-6219-1-git-send-email-vnagarnaik@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 Jun 2011 at 13:19, Ingo Molnar wrote:
-> * pageexec@freemail.hu <pageexec@freemail.hu> wrote:
-> 
-> > let me tell you now a real distadvantage of your coverup: [...]
-> 
-> Our opinion is that the scheme you are suggesting [...]
+The proc file entry buffer_size_kb is used to set the size of tracing
+buffer. The memory to expand the buffer size is kernel memory. Consider
+a use case where tracing is handled by a user space utility, which acts
+as a gate keeper for tracing requests. In an OOM condition, tracing is
+considered a low priority task and if the utility gets killed the ring
+buffer memory cannot be released back to the kernel.
 
-why are you trying to make it 'my' scheme? it's not mine, i didn't come up
-with it, it's what pretty much everyone else (other than you, that is) in
-the world does, including your own employer, Red Hat.
+This patch adds a proc file called "free_buffer" whose purpose is to
+stop tracing and free up the ring buffer when it is closed.
 
-i already asked you about this and you never responded so here it is again:
-what do you think about Red Hat publishing security errata (including kernel
-vulnerabilities)? with CVEs, description of fault, etc.
+The user space process can then set the desired size in buffer_size_kb
+file and open the fd to the "free_buffer" file. Under OOM condition, if
+the process gets killed, the kernel closes the file descriptor. The
+release handler stops the tracing and releases the kernel memory
+automatically.
 
-it's diametrically opposite to what you've been claiming so there seems to be
-a disconnect here. do you actively disagree with your own employer's security
-bug handling policy? you see, they're doing exactly what you're not willing to.
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+---
+Changelog:
+v2-v1:
+* Change name of file from "free_ring_buffer" to "free_buffer"
 
-> [...] is flawed and reduces security, so we refuse to use it. That is not a
-> 'coverup', to the contrary, it *helps* security - see below. 
+ kernel/trace/trace.c |  108 +++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 73 insertions(+), 35 deletions(-)
 
-yeah well, we'll see about it. it looks like year after year you guys manage
-to outdo yourselves in absurdity, one wonders if there'll be a new category
-needed for this year's pwnie awards because you're likely to no longer fit the
-lamest vendor response category.
-
-> > [...] you're hurting the good guys (the defenders) a lot more than 
-> > you're hurting the bad guys (the attackers). why? because of the 
-> > usual asymmetry of the situation we often face in security. an 
-> > attacker needs to find only a single commit silently fixing a 
-> > security bug (never mind finding the earlier commit that introduced 
-> > it) whereas the defenders would have to find all of them.
-> > 
-> > thanks to your policy you can guess which side has a distinct 
-> > advantage from the start and how well the other side fares.
-> 
-> Firstly, the asymmetry is fundamental: attackers *always* have an 
-> easier way destroying stuff than the good guys are at building new 
-> things. This is the second law of thermodynamics.
-
-what garbage. both sides are building stuff! in fact, finding vulnerabilities,
-writing exploits is an even higher level creation process than normal development
-as it gives us knowledge well beyond what we'd have if we were doing only the
-usual development. what extra knowledge is that? without this kind of research
-we'd have to accept at face value a developer's claim (expressed in source code)
-that he's just written code that does this or that.
-
-the extra info we learn through all the work done by security research is whether
-said code lives up to its developer's claims or not. e.g., whenever someone finds
-a vulnerability that allows arbitrary code execution is basically a proof that a
-Turing machine thought to be non-universal is actually a universal one. and with
-a working exploit the proof is even machine verifiable. this is one of the rare
-instances when we can actually pull such stunts off for non-trivial codebases in
-fact.
-
-i find it amazing that this fact is even up for debate when in another subfield
-of security, cryptology, both sides (cryptography and cryptanalysis) are well
-accepted and studied subjects in academic, commercial, military, etc settings
-worldwide, without all the negative connotations that seem to plague vulnerability
-research in some minds.
-
-as for the asymmetry: whether it's present in all situations or not is something
-you don't know because you don't know all situations (in fact, you seem to know
-very little about this whole subject). since i tend to err on the side of safety,
-i said 'usual' and 'often' just because i can't exclude the possibility of a
-situation where such asymmetry is not present or is much less pronounced than
-what we face with vulnerabilities and exploits.
-
-> Secondly, you are missing one fundamental aspect: the 'good guys' are 
-> not just the 'defenders'. The good guys are a *much* broader group of 
-> people: the 'bug fixers'.
-
-is this language lawyering? what do you think bug fixers do? they reduce the
-attack surface of a system and therefore are part of the defender group.
-
-> Thirdly, you never replied in substance to our arguments that CVE 
-> numbers are woefully inadequate:
-
-heh, i replied to you many times already but you didn't respond to dozens of
-questions already (did you respond to this one because it was featured on LWN?).
-the answers are all there Ingo, you just have to read them.
-
-and it's never been about CVE per se btw, it was about 'some' information that
-would help one reading the commit clearly understand that it's a fix for a
-security bug, as far as the committer knew.
-
-whether a CVE or similar piece of information is inadequate depends on what the
-goal is. clearly, you're thinking in extreme black&white terms once again.
-somehow you seem to believe that if you can't provide perfect and complete
-information about security bugs then providing *no* information is somehow the
-better choice? and better for what? end users' security? truly mind boggling!
-
-> they miss the majority of bugs that can have a security impact.
-
-you don't understand the whole purpose of CVE and similar information. it's not
-about providing guaranteed full coverage about any and all vulnerabilities that
-exist. that knowledge is kinda non-existent as far as we know. instead, CVE is
-a mechanism that let's the world organize of what is *known* and communicate it
-between all parties (vendors, developers, users, etc). your stubborn refusal to
-even contemplate the idea of communicating your own knowledge to your own users
-is very stupid and haven't earned you many friends out there (it, however, serves
-as an excellent basis for every sales speech by every security vendor out there).
-
-> In fact i argue that the way software is written and fixed today it's
-> not possible to effectively map out 'bugs with a security impact' at
-> all: pretty much *any* bug that modifies the kernel image can have a
-> security impact. 
-
-this is a strawman, noone asks for this kind of work as you're not even in the
-position to be able to do this even if you tried. last but not least, it's also
-
-  "not possible to effectively map out 'bugs that can cause filesystem
-   corruption' at all: pretty much *any* bug that modifies the kernel
-   image can cause filesystem corruption".
-
-however that little fact somehow never prevented you guys from describing such
-fixes in the commits which contradicts your desire to not give your users a false
-sense of (filesystem) security. so if you want to follow your own words, you'll
-have to *stop* letting the world know when you fix a known filesystem corruption
-bug since based on what you argued so far, you can't guarantee that those are the
-*only* such bugs/fixes. what's more, covering up filesystem corruption bugs will
-also help everyone who has to backport them to their own supported kernels (for
-yet to be explained reasons, i'm sure the world's dying to know now how they're
-supposed to pull that off).
-
-> Bug fixers are not at all concentrated on thinking like parasitic
-> attackers, so security side effects often remain undiscovered.
-
-noone ever expects it from them as it's never been a matter of concentration,
-it's a matter of being skilled at it which you are not, there's nothing wrong
-with it.
-
-calling people who do the hard work of vulnerability research 'parasitic' shows
-only how insecure (no pun intended) you feel about this whole situation: you
-(presumably) do your best to write code and then comes someone out of the blue
-and pokes a hundred holes in it and your subconscious self-defense begins to
-distort your view of yourself and the others.
-
-btw, would you call every respected cryptographer out there a parasite? because
-that's what you effectively said.
-
-> Why pretend we have a list of CVEs when we know that it's only fake? 
-
-because CVEs are not about what you seem to think they are. knowing that a given
-bug is exploitable is not 'fake', communicating it to your users is not 'fake'.
-lying about it is however dishonest of utmost proportions. btw, how's all this
-sit with the 'full disclosure' declared in Documentation/SecurityBugs? ever
-thought of clearing it up?
-
-> Fourth, exactly how does putting CVE numbers make it harder for 
-> attackers?
-
-a little help in reading comprehension of what i said:
-
-> > you're hurting the good guys (the defenders) a lot more than 
-> > you're hurting the bad guys (the attackers).
-
-what (you think) makes life harder for attackers is *withholding* CVE or similar
-information from commits, not their inclusion.
-
-> It makes it distinctly *easier*: people will update their systems
-> based on a list of say 10 CVEs that affect them, totally blind to the
-> 100+ other bugs that may (or may not) have an effect on them. 
-
-'people' are not updating their systems based on any list. 'people' update their
-systems based on what their kernel supplier (vendor/distro/company's internal
-team/etc) provides them with (there's an extreme minority of users who build
-their own kernels of the latest vanilla tree).
-
-now the big question becomes whether these suppliers are helped or obstructed by
-your policy of covering up security fixes. given that pretty much none of them
-supports the latest vanilla tree, not even -stable, it means that in order to
-release new kernels they'll have to backport fixes. fixes that they don't even
-know they should be backporting because of your covering them up. so what happens
-is that everyone has to read every commit and do his best estimate whether it's
-worthy of backporting or not (notice the waste of duplicated effort). don't you
-think they could spend more time on finding actually important fixes if they
-could skip over the already known ones and just backport them?
-
-> An attacker will now only have to find an *already fixed* bug
-
-what makes you think an attacker is interested at all in already fixed bugs?
-who's gonna pay for an exploit against such a bug? that's not exactly where
-the market is.
-
-> that has a security impact and which didn't get a CVE and attack a 
-> large body of systems that people think are safe.
-
-people don't think that systems are safe just because there're no outstanding
-CVEs against them (where did this idea come from?) because everyone who has ever
-heard of CVEs knows about 0-day bugs as well (if for no other reason than the
-simple fact that there're CVEs issued for 0-day bugs as they became public).
-
-> With the current upstream kernel policy we do not deceive users: we 
-> say that the way to be most secure is to be uptodate.
-
-where do you say that?
-
-what you do say is that you practice full disclosure though which you're
-apparently not doing in practice as you cover up security fixes. besides, if,
-as you said above, you don't actually figure out the security impact of all the
-bugs you fix, what's the guarantee that the latest kernel (whatever up-to-date
-means, git HEAD?) didn't introduce more bugs than it fixed? if you can't provide
-such a guarantee (no, saying it is not it) then using the latest kernel is as
-good as using anything else, if not worse (since older kernels at least had
-more eyes scrutinize them by virtue of being around for longer).
-
-the biggest flaw with your argument is that noone uses up-to-date kernels because
-they have to rely on vendors/distros/etc. and for them to be able to produce an
-up-to-date kernel they'd need to know the exact information that you're omitting.
-so for the majority of users you make it impossible to be the most secure.
-
-> Attackers will have to find an entirely new, not yet fixed security
-> hole, instead of just a bug that missed the CVE filter ... 
-
-why would an attacker need to find a 0-day bug when he can just sit back and
-watch as the kernel suppliers struggle with backporting covered up security
-fixes and pick up the ones they missed? unless you want to claim that attackers
-are worse at identifying said silent fixes than kernel suppliers but i hope you
-realize how ridiculous that would be.
-
-> I.e. our opinion is, on very good and honest grounds,
-
-'good' and 'honest' are not exactly the words i'd use here ;)
-
-> that your scheme creates a false sense of security and actually harms
-> real security and we simply refuse to support such a scheme. 
-
-false sense of security is a term that you should understand before you use it
-in context. in particular, you didn't demonstrate the origin of any sense of
-security, never mind a false one. second, you didn't demonstrate any harm from
-properly disclosing security fixes (vs. covering them up).
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index ee9c921..7c19a07 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2767,7 +2767,7 @@ int tracer_init(struct tracer *t, struct trace_array *tr)
+ 	return t->init(tr);
+ }
+ 
+-static int tracing_resize_ring_buffer(unsigned long size)
++static int __tracing_resize_ring_buffer(unsigned long size)
+ {
+ 	int ret;
+ 
+@@ -2819,6 +2819,41 @@ static int tracing_resize_ring_buffer(unsigned long size)
+ 	return ret;
+ }
+ 
++static ssize_t tracing_resize_ring_buffer(unsigned long size)
++{
++	int cpu, ret = size;
++
++	mutex_lock(&trace_types_lock);
++
++	tracing_stop();
++
++	/* disable all cpu buffers */
++	for_each_tracing_cpu(cpu) {
++		if (global_trace.data[cpu])
++			atomic_inc(&global_trace.data[cpu]->disabled);
++		if (max_tr.data[cpu])
++			atomic_inc(&max_tr.data[cpu]->disabled);
++	}
++
++	if (size != global_trace.entries)
++		ret = __tracing_resize_ring_buffer(size);
++
++	if (ret < 0)
++		ret = -ENOMEM;
++
++	for_each_tracing_cpu(cpu) {
++		if (global_trace.data[cpu])
++			atomic_dec(&global_trace.data[cpu]->disabled);
++		if (max_tr.data[cpu])
++			atomic_dec(&max_tr.data[cpu]->disabled);
++	}
++
++	tracing_start();
++	mutex_unlock(&trace_types_lock);
++
++	return ret;
++}
++
+ 
+ /**
+  * tracing_update_buffers - used by tracing facility to expand ring buffers
+@@ -2836,7 +2871,7 @@ int tracing_update_buffers(void)
+ 
+ 	mutex_lock(&trace_types_lock);
+ 	if (!ring_buffer_expanded)
+-		ret = tracing_resize_ring_buffer(trace_buf_size);
++		ret = __tracing_resize_ring_buffer(trace_buf_size);
+ 	mutex_unlock(&trace_types_lock);
+ 
+ 	return ret;
+@@ -2860,7 +2895,7 @@ static int tracing_set_tracer(const char *buf)
+ 	mutex_lock(&trace_types_lock);
+ 
+ 	if (!ring_buffer_expanded) {
+-		ret = tracing_resize_ring_buffer(trace_buf_size);
++		ret = __tracing_resize_ring_buffer(trace_buf_size);
+ 		if (ret < 0)
+ 			goto out;
+ 		ret = 0;
+@@ -3435,7 +3470,7 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
+ {
+ 	unsigned long val;
+ 	char buf[64];
+-	int ret, cpu;
++	int ret;
+ 
+ 	if (cnt >= sizeof(buf))
+ 		return -EINVAL;
+@@ -3453,48 +3488,43 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
+ 	if (!val)
+ 		return -EINVAL;
+ 
+-	mutex_lock(&trace_types_lock);
+-
+-	tracing_stop();
+-
+-	/* disable all cpu buffers */
+-	for_each_tracing_cpu(cpu) {
+-		if (global_trace.data[cpu])
+-			atomic_inc(&global_trace.data[cpu]->disabled);
+-		if (max_tr.data[cpu])
+-			atomic_inc(&max_tr.data[cpu]->disabled);
+-	}
+-
+ 	/* value is in KB */
+ 	val <<= 10;
+ 
+-	if (val != global_trace.entries) {
+-		ret = tracing_resize_ring_buffer(val);
+-		if (ret < 0) {
+-			cnt = ret;
+-			goto out;
+-		}
+-	}
++	ret = tracing_resize_ring_buffer(val);
++	if (ret < 0)
++		return ret;
+ 
+ 	*ppos += cnt;
+ 
+-	/* If check pages failed, return ENOMEM */
+-	if (tracing_disabled)
+-		cnt = -ENOMEM;
+- out:
+-	for_each_tracing_cpu(cpu) {
+-		if (global_trace.data[cpu])
+-			atomic_dec(&global_trace.data[cpu]->disabled);
+-		if (max_tr.data[cpu])
+-			atomic_dec(&max_tr.data[cpu]->disabled);
+-	}
++	return cnt;
++}
+ 
+-	tracing_start();
+-	mutex_unlock(&trace_types_lock);
++static ssize_t
++tracing_free_buffer_write(struct file *filp, const char __user *ubuf,
++			  size_t cnt, loff_t *ppos)
++{
++	/*
++	 * There is no need to read what the user has written, this function
++	 * is just to make sure that there is no error when "echo" is used
++	 */
++
++	*ppos += cnt;
+ 
+ 	return cnt;
+ }
+ 
++static int
++tracing_free_buffer_release(struct inode *inode, struct file *filp)
++{
++	/* disable tracing */
++	tracing_off();
++	/* resize the ring buffer to 0 */
++	tracing_resize_ring_buffer(0);
++
++	return 0;
++}
++
+ static int mark_printk(const char *fmt, ...)
+ {
+ 	int ret;
+@@ -3640,6 +3670,11 @@ static const struct file_operations tracing_entries_fops = {
+ 	.llseek		= generic_file_llseek,
+ };
+ 
++static const struct file_operations tracing_free_buffer_fops = {
++	.write		= tracing_free_buffer_write,
++	.release	= tracing_free_buffer_release,
++};
++
+ static const struct file_operations tracing_mark_fops = {
+ 	.open		= tracing_open_generic,
+ 	.write		= tracing_mark_write,
+@@ -4365,6 +4400,9 @@ static __init int tracer_init_debugfs(void)
+ 	trace_create_file("buffer_size_kb", 0644, d_tracer,
+ 			&global_trace, &tracing_entries_fops);
+ 
++	trace_create_file("free_buffer", 0644, d_tracer,
++			&global_trace, &tracing_free_buffer_fops);
++
+ 	trace_create_file("trace_marker", 0220, d_tracer,
+ 			NULL, &tracing_mark_fops);
+ 
+-- 
+1.7.3.1
 
