@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab1FNBGa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 21:06:30 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45098 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752605Ab1FNBG3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 21:06:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wd5naJn6tBpK6Q7YGgp9Q6+Fw5V6qG0BXY9S+TBoSpC98gfeY7+Wz4qO/kPtd2Fw2d
-         BNyDTerm1j0lZhcrAJQe2LabUJOlsOHT01j4xKz0p3ZwFQ7IDH8b4shKc6U6oUroqXyM
-         t38SHr6SqS31JerMM+CcmCy71xp946aXgpEiw=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTi=snWs0srAKON71yysvFcN_HHO05Q@mail.gmail.com>
-References: <BANLkTi=i-NDzgsT2mCqL0p+r5ok_-=znGdWDYV-oi9z-8e9LvQ@mail.gmail.com>
-	<BANLkTi=snWs0srAKON71yysvFcN_HHO05Q@mail.gmail.com>
-Date: Tue, 14 Jun 2011 03:06:27 +0200
-Message-ID: <BANLkTimqmcY1ciKkbZZ50Kg7nCm+_S7zK-9EHaxaQeC_HpKaaQ@mail.gmail.com>
-Subject: Re: [3.0.0-rc2+][nouveau] BUG: unable to handle kernel NULL pointer
- dereference nv50_vm_map_sg+0x37/0xb0
-From: Jan Seiffert <kaffeemonster@googlemail.com>
-To: =?UTF-8?Q?Rui_Tiago_Ca=C3=A7=C3=A3o_Matos?= <tiagomatos@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ben Skeggs <bskeggs@redhat.com>, dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753145Ab1FNBSd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 21:18:33 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30478 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751214Ab1FNBSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 21:18:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,361,1304319600"; 
+   d="scan'208";a="14139562"
+Subject: 3.0-rc3 patch compile issue
+From: "Alex,Shi" <alex.shi@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: torvalds@osdl.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Jun 2011 09:18:09 +0800
+Message-ID: <1308014289.21027.1455.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/6/13 Rui Tiago Cação Matos <tiagomatos@gmail.com>:
-> Looks suspiciously like
-> https://bugzilla.redhat.com/show_bug.cgi?id=699551 which has been
-> happening since at least 2.6.38.
->
+The rc3
+patch(http://www.kernel.org/pub/linux/kernel/v3.0/testing/patch-3.0-rc3.bz2) can not be compiled since srcipts/depmod.sh is not executable but Makefile want to it be. 
 
-Yes, the backtrace looks very similar, but i can not reproduce with
-the reproducer image attached to the bugreport.
-(Tried with Gwenview and eog).
-I don't know how to reproduce at all, all i did was to scroll through
-a PDF, but did so for hours before the crash...
+$ ll scripts/depmod.sh 
+-rw-rw-r-- 1 alexs alexs 1231 2011-06-14 16:11 scripts/depmod.sh
 
-> Rui
->
+But the file attribute is correct in Linus' git tree. So, the guys need
+to update above patch file or change something in Makefile. 
 
-Greetings
-Jan
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+diff --git a/Makefile b/Makefile
+index badb923..2a26917 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1526,7 +1526,7 @@ quiet_cmd_rmfiles = $(if $(wildcard $(rm-files)),CLEAN   $(wildcard $(rm-files))
+ 
+ # Run depmod only if we have System.map and depmod is executable
+ quiet_cmd_depmod = DEPMOD  $(KERNELRELEASE)
+-      cmd_depmod = $(srctree)/scripts/depmod.sh $(DEPMOD) $(KERNELRELEASE)
++      cmd_depmod = $(shell $(CONFIG_SHELL) $(srctree)/scripts/depmod.sh $(DEPMOD) $(KERNELRELEASE))
+ 
+ # Create temporary dir for module support files
+ # clean it up only when building all modules
+
+
