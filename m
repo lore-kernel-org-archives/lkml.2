@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab1FNLQM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 07:16:12 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:50545 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754362Ab1FNLQK convert rfc822-to-8bit (ORCPT
+	id S1756213Ab1FNLRM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 07:17:12 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35451 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754362Ab1FNLRL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 07:16:10 -0400
+	Tue, 14 Jun 2011 07:17:11 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=kYmiPvOqoWtfQU8R/vC/OdkKlhKC2MXSxZ6bjey1B2mz0rZD5clrZYQfOI+oGovFsB
-         wrSIz0mUvccg3VKVLk/gr4+upc3PHe4pAYwcjV8O7uTdvCQ9dcB0coMd2NAVVgORMYHK
-         jJrsmWmDxBELmWi4VUx+my4vgzm0zgT15B2Ks=
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=FnicpKkVhQ4zY3fgxD9V3SWf1aucd0TazFniSo0u62z9EGGS+DdeEfbH4iTeJgKoop
+         MGdkP6wwn0PFuiVCPzltqZZek6kU3guymHBI7bPCXElbVKmC/cd0hhimBMM6vnwU/qX0
+         QM+F8E0M6X691WEi0ejwp1wx325KPSsa+zNcs=
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1106140356240.29206@sister.anvils>
-References: <alpine.LSU.2.00.1106140327550.29206@sister.anvils>
-	<alpine.LSU.2.00.1106140356240.29206@sister.anvils>
-Date: Tue, 14 Jun 2011 14:16:09 +0300
-X-Google-Sender-Auth: 3p0I2UUgFKnVaW50uqTuOO9nNMw
-Message-ID: <BANLkTinh+C2a4+mWCtMrRb5GcpQqiF5CUw@mail.gmail.com>
-Subject: Re: [PATCH 11/12] tmpfs: use kmemdup for short symlinks
-From: Pekka Enberg <penberg@kernel.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
+In-Reply-To: <alpine.LFD.2.02.1106141202531.11814@ionos>
+References: <BANLkTi=urdW0WBHcVbVzDwwLzupP_Vh2EA@mail.gmail.com>
+	<alpine.LFD.2.02.1106141202531.11814@ionos>
+Date: Tue, 14 Jun 2011 13:17:10 +0200
+Message-ID: <BANLkTim5hRZ9SromkAnY=Nbp=ntorypbjg@mail.gmail.com>
+Subject: Re: chained irq handler problems
+From: Manuel Lauss <manuel.lauss@googlemail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 14, 2011 at 1:57 PM, Hugh Dickins <hughd@google.com> wrote:
-> But we've not yet removed the old swp_entry_t i_direct[16] from
-> shmem_inode_info.  That's because it was still being shared with the
-> inline symlink.  Remove it now (saving 64 or 128 bytes from shmem inode
-> size), and use kmemdup() for short symlinks, say, those up to 128 bytes.
+On Tue, Jun 14, 2011 at 12:05 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Sun, 12 Jun 2011, Manuel Lauss wrote:
+>> My question is: what are the differences in interrupt handling between the
+>> "traditional" handler and the cascade handler case?
+>> I also noticed that the cascade irq (the muxer irq line to the cpu) is not
+>> disabled when the interrupt is serviced. Is this by design?
 >
-> I wonder why mpol_free_shared_policy() is done in shmem_destroy_inode()
-> rather than shmem_evict_inode(), where we usually do such freeing?  I
-> guess it doesn't matter, and I'm not into NUMA mpol testing right now.
->
-> Signed-off-by: Hugh Dickins <hughd@google.com>
+> The normal handler, which should btw never ever be setup from an
+> startup callback, deals with the irq chip functions (mask, ack, eoi)
+> which are assigned to that irq line. The chained handler is called
+> directly from the low level entry code and bypasses the standard
+> handling mechanism. That means no chip functions are called. If your
+> irq chip of the primary line requires e.g. an ack, then this needs to
+> be done explicitely in the chained handler itself.
 
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
+I added calls to disable/enable the cascade around the call
+to generic_handle_irq() and now it works (no ack necessary since
+the cascade is set up as level-triggered).
+
+Thanks!
+        Manuel Lauss
