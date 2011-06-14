@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab1FNS2q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 14:28:46 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56090 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752093Ab1FNS2o (ORCPT
+	id S1753167Ab1FNSbE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 14:31:04 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:62592 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108Ab1FNSbC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 14:28:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=SgfZSJRgCH5SjG6eSVHPedbVMByabxPzEBBlTtiDlxzBuf9DEpBL5whbevQG2hOJVR
-         WrLW9cvjDfx0v5A4jJjsC6UmI0Tnf77jKM2rDc3Bir05qclG+2zU1ri1a1eYX+sai+jb
-         XNKkBZPVzBzr36Vc4KPENE68PLU7avKidVpyQ=
+	Tue, 14 Jun 2011 14:31:02 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Michal Nazarewicz" <mina86@mina86.com>
+Subject: Re: [PATCH 08/10] mm: cma: Contiguous Memory Allocator added
+Date: Tue, 14 Jun 2011 20:30:07 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>
+References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com> <201106141803.00876.arnd@arndb.de> <op.vw2r3xrj3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <op.vw2r3xrj3l0zgt@mnazarewicz-glaptop>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTina_Y5xekoE9SnbG125CVFLopym2A@mail.gmail.com>
-References: <4df13a522720782e51@agluck-desktop.sc.intel.com>
-	<4df13cea27302b7ccf@agluck-desktop.sc.intel.com>
-	<20110612223840.GA23218@aftab>
-	<BANLkTi=-A5PYj8zpjGB4Xb-_VNq0qr+CGQ@mail.gmail.com>
-	<4DF5C36A.1040707@redhat.com>
-	<20110613095521.GA26316@aftab>
-	<4DF5F729.4060609@redhat.com>
-	<20110613124003.GA27918@aftab>
-	<4DF606C9.90308@redhat.com>
-	<20110613151208.GA29045@aftab>
-	<4DF63B7A.1030805@redhat.com>
-	<BANLkTinUEqRni2u0DaMfSc45b3DmMMyYvA@mail.gmail.com>
-	<4DF6CC58.8050601@jp.fujitsu.com>
-	<4DF6CD25.7040405@jp.fujitsu.com>
-	<BANLkTina_Y5xekoE9SnbG125CVFLopym2A@mail.gmail.com>
-Date: Tue, 14 Jun 2011 11:28:42 -0700
-X-Google-Sender-Auth: 1NsSpn5kDSXv5ERU7pONHNyNya0
-Message-ID: <BANLkTimY1X73pTJmMd8G5GKpsCBVmXLfOw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] x86, mce: rework use of TIF_MCE_NOTIFY
-From: Tony Luck <tony.luck@intel.com>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, Borislav Petkov <bp@amd64.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106142030.07549.arnd@arndb.de>
+X-Provags-ID: V02:K0:gAq7pKBxl+LLLpNrzx/c5ey6ShlHHmeHilpK5lYSpfm
+ DWG323q2nPZgt61yNZPbl2r7C116fuFVOK55jsNDGn5qHPbc9D
+ H7nPLNzCBdXRLANXIxk+GoAcxo3K3pvawt5n9I65THfHoubch/
+ Oc902jN0p60h2BjYOfGs/c/fxpjrcrUoRAvqMLcWKBnd6KTbmk
+ 2Zq7J9hn2wYUpqEn+meaQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 14, 2011 at 11:02 AM, Tony Luck <tony.luck@intel.com> wrote:
-> need (failing address) to take some action. That was put into
-> the ring
+On Tuesday 14 June 2011 18:58:35 Michal Nazarewicz wrote:
+> On Tue, 14 Jun 2011 18:03:00 +0200, Arnd Bergmann wrote:
+> > For all I know, that is something that is only true for a few very  
+> > special Samsung devices,
+> 
+> Maybe.  I'm just answering your question. :)
+> 
+> Ah yes, I forgot that separate regions for different purposes could
+> decrease fragmentation.
 
-Correction - we only put the pfn into the ring for AO (action optional)
-errors [in the current state of the patch series].
+That is indeed a good point, but having a good allocator algorithm
+could also solve this. I don't know too much about these allocation
+algorithms, but there are probably multiple working approaches to this.
 
-But the need for a path to get the pfn from the MC handler to the
-mce_notify_process() function remains the same.
+> > I would suggest going forward without having multiple regions:
+> 
+> Is having support for multiple regions a bad thing?  Frankly,
+> removing this support will change code from reading context passed
+> as argument to code reading context from global variable.  Nothing
+> is gained; functionality is lost.
 
--Tony
+What is bad IMHO is making them the default, which forces the board
+code to care about memory management details. I would much prefer
+to have contiguous allocation parameters tuned automatically to just
+work on most boards before we add ways to do board-specific hacks.
+
+	Arnd
