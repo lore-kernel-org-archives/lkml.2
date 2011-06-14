@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab1FNNTV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 09:19:21 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39417 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215Ab1FNNTS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 09:19:18 -0400
-Subject: Re: rcu: performance regression
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: "Alex,Shi" <alex.shi@intel.com>, "Li, Shaohua" <shaohua.li@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>, rostedt@goodmis.org
-In-Reply-To: <1308057298.19856.40.camel@twins>
-References: <1308029185.15392.147.camel@sli10-conroe>
-	 <1308040388.21027.1847.camel@debian>
-	 <20110614130203.GF2264@linux.vnet.ibm.com>
-	 <1308057298.19856.40.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 14 Jun 2011 15:18:42 +0200
-Message-ID: <1308057522.19856.41.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752415Ab1FNNXs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 09:23:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29354 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751312Ab1FNNXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 09:23:46 -0400
+Message-ID: <4DF760D7.70608@redhat.com>
+Date: Tue, 14 Jun 2011 09:23:35 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Glauber Costa <glommer@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 4/7] KVM-GST: Add a pv_ops stub for steal time
+References: <1308007897-17013-1-git-send-email-glommer@redhat.com> <1308007897-17013-5-git-send-email-glommer@redhat.com>
+In-Reply-To: <1308007897-17013-5-git-send-email-glommer@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-14 at 15:14 +0200, Peter Zijlstra wrote:
-> On Tue, 2011-06-14 at 06:02 -0700, Paul E. McKenney wrote:
-> > > This commit also cause hackbench process mode performance dropping, and
-> > > Shaohua's patch do recovered this. But in hackbench testing, the vmstat
-> > > show context switch have some reduce. And perf tool show
-> > > root_domain->cpupri->prio_to_cpu[]->lock has contention with the commit.
-> > 
-> > Steven, Peter, would any of the recent fixes address this lock contention? 
-> 
-> No. People occasionally run into that thing, but given the constraints
-> on SCHED_FIFO SMP (run the n highest priority tasks on m cpus; n<=m)
-> there isn't really much we can do.
-> 
-> IIRC Chris Mason once proposed a lockless version, but that opened up
-> race windows, Steve might know the details better.
+On 06/13/2011 07:31 PM, Glauber Costa wrote:
+> This patch adds a function pointer in one of the many paravirt_ops
+> structs, to allow guests to register a steal time function.
+>
+> Signed-off-by: Glauber Costa<glommer@redhat.com>
+> CC: Rik van Riel<riel@redhat.com>
+> CC: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
+> CC: Peter Zijlstra<peterz@infradead.org>
+> CC: Avi Kivity<avi@redhat.com>
+> CC: Anthony Liguori<aliguori@us.ibm.com>
+> CC: Eric B Munson<emunson@mgebm.net>
 
-Note that even a lockless version will die of cacheline contention.
+Acked-by: Rik van Riel <riel@redhat.com>
+
+-- 
+All rights reversed
