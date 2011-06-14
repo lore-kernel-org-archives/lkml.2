@@ -1,105 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab1FNVYn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 17:24:43 -0400
-Received: from mta11.charter.net ([216.33.127.80]:63016 "EHLO
-	mta11.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753303Ab1FNVYj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 17:24:39 -0400
-X-Authority-Analysis: v=1.1 cv=vT9vkN3vVXssH3Ov7r/wQUs/sfIFjNPEFFf4aeKIi4A=
- c=1 sm=1 a=p9YancsnzTcA:10 a=lE-93N_JSvIA:10 a=8nJEP1OIZ-IA:10
- a=xzrYXqw+0zwiO4gHSXHcAg==:17 a=1TOdV14S6Zg42AI6UZ0A:9
- a=5k-5Q243HpCcdUEdT9QA:7 a=wPNLvfGTeEIA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:117
-Message-ID: <4DF7D197.5070205@cuw.edu>
-Date: Tue, 14 Jun 2011 16:24:39 -0500
-From: Greg Dietsche <gregory.dietsche@cuw.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110505 Icedove/3.0.11
+	id S1754115Ab1FNV2b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 17:28:31 -0400
+Received: from yumi.tdiedrich.de ([85.10.210.183]:43460 "EHLO mx.tdiedrich.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753303Ab1FNV23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 17:28:29 -0400
+Date: Tue, 14 Jun 2011 23:28:27 +0200
+From: Tobias Diedrich <ranma+xen@tdiedrich.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: xen-users@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: 3.0.0-rc2: Xen: powernow-k8: Kernel panic - not syncing:
+ Attempted to kill init!
+Message-ID: <20110614212827.GH7417@yumi.tdiedrich.de>
+Mail-Followup-To: Tobias Diedrich <ranma+xen@tdiedrich.de>,
+	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	xen-users@lists.xensource.com, linux-kernel@vger.kernel.org
+References: <20110613202622.GC20616@yumi.tdiedrich.de>
+ <20110613215123.GA19117@dumpdata.com>
+ <20110613235221.GA7417@yumi.tdiedrich.de>
+ <20110614001333.GC7417@yumi.tdiedrich.de>
+ <20110614013457.GB414@dumpdata.com>
+ <20110614134634.GD7417@yumi.tdiedrich.de>
+ <20110614175940.GA22859@dumpdata.com>
 MIME-Version: 1.0
-To: Julia Lawall <julia@diku.dk>
-CC: Gilles.Muller@lip6.fr, npalix.work@gmail.com, cocci@diku.dk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] coccinelle: if (ret) return ret; return ret; semantic
- patch
-References: <Pine.LNX.4.64.1106060656050.7113@ask.diku.dk> <1307989386-17666-1-git-send-email-Gregory.Dietsche@cuw.edu> <Pine.LNX.4.64.1106132033460.24125@ask.diku.dk> <4DF67933.9080707@cuw.edu> <Pine.LNX.4.64.1106140746590.14970@ask.diku.dk>
-In-Reply-To: <Pine.LNX.4.64.1106140746590.14970@ask.diku.dk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110614175940.GA22859@dumpdata.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2011 12:50 AM, Julia Lawall wrote:
-> On Mon, 13 Jun 2011, Greg Dietsche wrote:
->    
->> just curious... i see you usually just write "return ret;" here when posting.
->> I've assumed that's because it will 1) work and 2) is close enough.
->>
->> You'll notice I've been doing:
->> -return ret;
->> +return ret;
->> because it seems to help coccinelle realize that it can get rid of extra line
->> feeds - does this make sense - or should i just be doing a "return ret"?
->>      
-> I wondered why you were doing that :)
->
-> Is the problem that the removed if is being replaced by a blank line?  If
-> so, that is not intentional.  I will look into it.  If it doesn't happen
-> always, an example where it does happen could be helpful.
->
->    
+Konrad Rzeszutek Wilk wrote:
+> On Tue, Jun 14, 2011 at 03:46:34PM +0200, Tobias Diedrich wrote:
+> > [    5.740826] powernow-k8: fid 0x2 (1000 MHz), vid 0x12
+> > [    5.740941] powernow-k8: fid 0xa (1800 MHz), vid 0xa
+> > [    5.741057] powernow-k8: fid 0xc (2000 MHz), vid 0x8
+> > [    5.741170] powernow-k8: fid 0xe (2200 MHz), vid 0x8
+> > [    5.741304] cpufreq_stats_create_table: policy->cur is 800000
+> > [    5.741475] last_index set to -1 in cpufreq_stats_create_table!
+> > 
+> > I think policy->cur used here probably set in powernowk8_cpu_init.
+> 
+> Yup, and there is not much that can be done there. Lets try this patch
 
-Some times it gets it right, so it's not always wrong. For example:
+Thanks, this works fine for suppressing the crash.
 
-diff -u -p a/arch/m68k/math-emu/fp_log.c b/arch/m68k/math-emu/fp_log.c
---- a/arch/m68k/math-emu/fp_log.c 2011-06-13 14:06:37.943954469 -0500
-+++ b/arch/m68k/math-emu/fp_log.c 2011-06-14 16:07:22.394954040 -0500
-@@ -105,9 +105,6 @@ fp_fetoxm1(struct fp_ext *dest, struct f
+> diff --git a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
+> index 2368e38..7e4a664 100644
+> --- a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
+> +++ b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
+> @@ -1079,8 +1079,10 @@ static int transition_frequency_fidvid(struct powernow_k8_data *data,
+>  	}
+>  
+>  	res = transition_fid_vid(data, fid, vid);
+> -	freqs.new = find_khz_freq_from_fid(data->currfid);
+> +	if (res)
+> +		return res;
+>  
+> +	freqs.new = find_khz_freq_from_fid(data->currfid);
+>  	for_each_cpu(i, data->available_cores) {
+>  		freqs.cpu = i;
+>  		cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
+> @@ -1112,6 +1114,9 @@ static int transition_frequency_pstate(struct powernow_k8_data *data,
+>  	}
+>  
+>  	res = transition_pstate(data, pstate);
+> +	if (res)
+> +		return res;
+> +
+>  	freqs.new = find_khz_freq_from_pstate(data->powernow_table, pstate);
+>  
+>  	for_each_cpu(i, data->available_cores) {
+> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+> index 4f1b8de..0ecb1e2 100644
+> --- a/drivers/cpufreq/cpufreq_stats.c
+> +++ b/drivers/cpufreq/cpufreq_stats.c
+> @@ -298,11 +298,13 @@ static int cpufreq_stat_notifier_trans(struct notifier_block *nb,
+>  	old_index = stat->last_index;
+>  	new_index = freq_table_get_index(stat, freq->new);
+>  
+> -	cpufreq_stats_update(freq->cpu);
+> -	if (old_index == new_index)
+> +	/* We can't do stat->time_in_state[-1]= .. */
+> +	if (old_index == -1 || new_index == -1)
+>  		return 0;
+>  
+> -	if (old_index == -1 || new_index == -1)
+> +	cpufreq_stats_update(freq->cpu);
+> +
+> +	if (old_index == new_index)
+>  		return 0;
+>  
+>  	spin_lock(&cpufreq_stats_lock);
 
-         fp_monadic_check(dest, src);
-
--       if (IS_ZERO(dest))
--               return dest;
--
-         return dest;
-  }
-
-
-
-Here's an example where it got it "wrong" - notice how the blank line is 
-missing the - :
-
-diff -u -p a/arch/frv/mm/pgalloc.c b/arch/frv/mm/pgalloc.c
---- a/arch/frv/mm/pgalloc.c 2011-06-13 14:06:37.855954391 -0500
-+++ b/arch/frv/mm/pgalloc.c 2011-06-14 16:07:16.714954008 -0500
-@@ -136,8 +136,6 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
-         pgd_t *pgd;
-
-         pgd = quicklist_alloc(0, GFP_KERNEL, pgd_ctor);
--       if (!pgd)
--               return pgd;
-
-         return pgd;
-  }
-
-
-but when I do
--return ret;
-+return ret;
-
-then both of the above examples are "correct"
-
-
-Greg
-
-
-> The disadvantage of removing something and then adding it back is that
-> then Coccinelle takes over the pretty printing of that thing.  Since ret
-> is usually a variable, it doesn't matter, and since Coccinelle tries to
-> follow Linux spacing conventions it might not matter either.  But eg
-> f(a,b,c,d) would become f(a, b, c, d).
->
-> julia
->    
-
-
+-- 
+Tobias						PGP: http://8ef7ddba.uguu.de
