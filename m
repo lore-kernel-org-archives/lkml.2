@@ -1,64 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883Ab1FNHoq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 03:44:46 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58618 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751189Ab1FNHop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 03:44:45 -0400
-Date: Tue, 14 Jun 2011 15:44:18 +0800
-From: Hu Tao <hutao@cn.fujitsu.com>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.co>
-Subject: Re: [patch 00/15] CFS Bandwidth Control V6
-Message-ID: <20110614074418.GA3089@localhost.localdomain>
-References: <20110503092846.022272244@google.com>
- <20110614065807.GA19111@localhost.localdomain>
- <4DF70DED.2030803@jp.fujitsu.com>
+	id S1755055Ab1FNHpQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 03:45:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17059 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753260Ab1FNHpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 03:45:13 -0400
+Date: Tue, 14 Jun 2011 10:45:00 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Glauber Costa <glommer@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 3/7] KVM-HV: KVM Steal time implementation
+Message-ID: <20110614074500.GM491@redhat.com>
+References: <1308007897-17013-1-git-send-email-glommer@redhat.com>
+ <1308007897-17013-4-git-send-email-glommer@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <4DF70DED.2030803@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-14 15:44:24,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-14 15:44:27,
-	Serialize complete at 2011-06-14 15:44:27
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1308007897-17013-4-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 14, 2011 at 04:29:49PM +0900, Hidetoshi Seto wrote:
-> (2011/06/14 15:58), Hu Tao wrote:
-> > Hi,
-> > 
-> > I've run several tests including hackbench, unixbench, massive-intr
-> > and kernel building. CPU is Intel(R) Xeon(R) CPU X3430  @ 2.40GHz,
-> > 4 cores, and 4G memory.
-> > 
-> > Most of the time the results differ few, but there are problems:
-> > 
-> > 1. unixbench: execl throughout has about 5% drop.
-> > 2. unixbench: process creation has about 5% drop.
-> > 3. massive-intr: when running 200 processes for 5mins, the number
-> >    of loops each process runs differ more than before cfs-bandwidth-v6.
-> > 
-> > The results are attached.
+On Mon, Jun 13, 2011 at 07:31:33PM -0400, Glauber Costa wrote:
+> To implement steal time, we need the hypervisor to pass the guest information
+> about how much time was spent running other processes outside the VM.
+> This is per-vcpu, and using the kvmclock structure for that is an abuse
+> we decided not to make.
 > 
-> I know the score of unixbench is not so stable that the problem might
-> be noises ... but the result of massive-intr is interesting.
-> Could you give a try to find which piece (xx/15) in the series cause
-> the problems?
-
-OK. I'll do it.
-
+> In this patchset, I am introducing a new msr, KVM_MSR_STEAL_TIME, that
+> holds the memory area address containing information about steal time
 > 
-> Thanks,
-> H.Seto
+> This patch contains the hypervisor part for it. I am keeping it separate from
+> the headers to facilitate backports to people who wants to backport the kernel
+> part but not the hypervisor, or the other way around.
+> 
+> Signed-off-by: Glauber Costa <glommer@redhat.com>
+> CC: Rik van Riel <riel@redhat.com>
+> CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> CC: Avi Kivity <avi@redhat.com>
+> CC: Anthony Liguori <aliguori@us.ibm.com>
+> CC: Eric B Munson <emunson@mgebm.net>
+> ---
+>  arch/x86/include/asm/kvm_host.h |    8 +++++
+>  arch/x86/include/asm/kvm_para.h |    4 ++
+>  arch/x86/kvm/x86.c              |   60 +++++++++++++++++++++++++++++++++++++--
+>  3 files changed, 69 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index fc38eca..5dce014 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -388,6 +388,14 @@ struct kvm_vcpu_arch {
+>  	unsigned int hw_tsc_khz;
+>  	unsigned int time_offset;
+>  	struct page *time_page;
+> +
+> +	struct {
+> +		u64 msr_val;
+> +		gpa_t stime;
+> +		struct kvm_steal_time steal;
+> +		u64 this_time_out;
+> +	} st;
+> +
+>  	u64 last_guest_tsc;
+>  	u64 last_kernel_ns;
+>  	u64 last_tsc_nsec;
+> diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+> index ac306c4..0341e61 100644
+> --- a/arch/x86/include/asm/kvm_para.h
+> +++ b/arch/x86/include/asm/kvm_para.h
+> @@ -45,6 +45,10 @@ struct kvm_steal_time {
+>  	__u32 pad[6];
+>  };
+>  
+> +#define KVM_STEAL_ALIGNMENT_BITS 5
+> +#define KVM_STEAL_VALID_BITS ((-1ULL << (KVM_STEAL_ALIGNMENT_BITS + 1)))
+> +#define KVM_STEAL_RESERVED_MASK (((1 << KVM_STEAL_ALIGNMENT_BITS) - 1 ) << 1)
+> +
+>  #define KVM_MAX_MMU_OP_BATCH           32
+>  
+>  #define KVM_ASYNC_PF_ENABLED			(1 << 0)
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 6645634..10fe028 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -797,12 +797,12 @@ EXPORT_SYMBOL_GPL(kvm_get_dr);
+>   * kvm-specific. Those are put in the beginning of the list.
+>   */
+>  
+> -#define KVM_SAVE_MSRS_BEGIN	8
+> +#define KVM_SAVE_MSRS_BEGIN	9
+>  static u32 msrs_to_save[] = {
+>  	MSR_KVM_SYSTEM_TIME, MSR_KVM_WALL_CLOCK,
+>  	MSR_KVM_SYSTEM_TIME_NEW, MSR_KVM_WALL_CLOCK_NEW,
+>  	HV_X64_MSR_GUEST_OS_ID, HV_X64_MSR_HYPERCALL,
+> -	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN,
+> +	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN, MSR_KVM_STEAL_TIME,
+>  	MSR_IA32_SYSENTER_CS, MSR_IA32_SYSENTER_ESP, MSR_IA32_SYSENTER_EIP,
+>  	MSR_STAR,
+>  #ifdef CONFIG_X86_64
+> @@ -1480,6 +1480,34 @@ static void kvmclock_reset(struct kvm_vcpu *vcpu)
+>  	}
+>  }
+>  
+> +static void record_steal_time(struct kvm_vcpu *vcpu)
+> +{
+> +	u64 delta;
+> +
+> +	if (vcpu->arch.st.stime && vcpu->arch.st.this_time_out) {
+> +
+> +		if (unlikely(kvm_read_guest(vcpu->kvm, vcpu->arch.st.stime,
+> +			&vcpu->arch.st.steal, sizeof(struct kvm_steal_time)))) {
+> +
+> +			vcpu->arch.st.stime = 0;
+> +			return;
+> +		}
+> +
+> +		delta = (get_kernel_ns() - vcpu->arch.st.this_time_out);
+> +
+> +		vcpu->arch.st.steal.steal += delta;
+> +		vcpu->arch.st.steal.version += 2;
+> +
+> +		if (unlikely(kvm_write_guest(vcpu->kvm, vcpu->arch.st.stime,
+Why not use kvm_write_guest_cached() here and introduce kvm_read_guest_cached()
+for the read above?
+
+> +			&vcpu->arch.st.steal, sizeof(struct kvm_steal_time)))) {
+> +
+> +			vcpu->arch.st.stime = 0;
+> +			return;
+> +		}
+> +	}
+> +
+> +}
+> +
+>  int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+>  {
+>  	switch (msr) {
+> @@ -1562,6 +1590,23 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+>  		if (kvm_pv_enable_async_pf(vcpu, data))
+>  			return 1;
+>  		break;
+> +	case MSR_KVM_STEAL_TIME:
+> +		vcpu->arch.st.msr_val = data;
+> +
+> +		if (!(data & KVM_MSR_ENABLED)) {
+> +			vcpu->arch.st.stime = 0;
+> +			break;
+> +		}
+> +
+> +		if (data & KVM_STEAL_RESERVED_MASK)
+> +			return 1;
+> +
+> +		vcpu->arch.st.this_time_out = get_kernel_ns();
+> +		vcpu->arch.st.stime = data & KVM_STEAL_VALID_BITS;
+> +		record_steal_time(vcpu);
+> +
+> +		break;
+> +
+>  	case MSR_IA32_MCG_CTL:
+>  	case MSR_IA32_MCG_STATUS:
+>  	case MSR_IA32_MC0_CTL ... MSR_IA32_MC0_CTL + 4 * KVM_MAX_MCE_BANKS - 1:
+> @@ -1847,6 +1892,9 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
+>  	case MSR_KVM_ASYNC_PF_EN:
+>  		data = vcpu->arch.apf.msr_val;
+>  		break;
+> +	case MSR_KVM_STEAL_TIME:
+> +		data = vcpu->arch.st.msr_val;
+> +		break;
+>  	case MSR_IA32_P5_MC_ADDR:
+>  	case MSR_IA32_P5_MC_TYPE:
+>  	case MSR_IA32_MCG_CAP:
+> @@ -2158,6 +2206,8 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+>  			kvm_migrate_timers(vcpu);
+>  		vcpu->cpu = cpu;
+>  	}
+> +
+> +	record_steal_time(vcpu);
+>  }
+>  
+>  void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
+> @@ -2165,6 +2215,7 @@ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
+>  	kvm_x86_ops->vcpu_put(vcpu);
+>  	kvm_put_guest_fpu(vcpu);
+>  	kvm_get_msr(vcpu, MSR_IA32_TSC, &vcpu->arch.last_guest_tsc);
+> +	vcpu->arch.st.this_time_out = get_kernel_ns();
+>  }
+>  
+Shouldn't we call record_steal_time(vcpu)/vcpu->arch.st.this_time_out = get_kernel_ns();
+just before/after entering/exiting a guest? vcpu_(put|get) are called
+for each vcpu ioctl, not only VCPU_RUN.
+
+>  static int is_efer_nx(void)
+> @@ -2477,7 +2528,8 @@ static void do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+>  			     (1 << KVM_FEATURE_NOP_IO_DELAY) |
+>  			     (1 << KVM_FEATURE_CLOCKSOURCE2) |
+>  			     (1 << KVM_FEATURE_ASYNC_PF) |
+> -			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT);
+> +			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
+> +			     (1 << KVM_FEATURE_STEAL_TIME);
+>  		entry->ebx = 0;
+>  		entry->ecx = 0;
+>  		entry->edx = 0;
+> @@ -6200,6 +6252,8 @@ int kvm_arch_vcpu_reset(struct kvm_vcpu *vcpu)
+>  
+>  	kvmclock_reset(vcpu);
+>  
+> +	vcpu->arch.st.stime = 0;
+> +
+>  	kvm_clear_async_pf_completion_queue(vcpu);
+>  	kvm_async_pf_hash_reset(vcpu);
+>  	vcpu->arch.apf.halted = false;
+> -- 
+> 1.7.3.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+--
+			Gleb.
