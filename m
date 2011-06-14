@@ -1,124 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab1FNWMV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 18:12:21 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:56530 "EHLO ogre.sisk.pl"
+	id S1753841Ab1FNWOX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 18:14:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32377 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751509Ab1FNWMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 18:12:18 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Colin Cross <ccross@android.com>
-Subject: Re: [PATCH 0/3] CPU PM notifiers
-Date: Wed, 15 Jun 2011 00:12:57 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-References: <1307925825-28566-1-git-send-email-ccross@android.com> <201106142334.09362.rjw@sisk.pl> <BANLkTino9JopSw-vxHOsV3SqS+0UT1q_3w@mail.gmail.com>
-In-Reply-To: <BANLkTino9JopSw-vxHOsV3SqS+0UT1q_3w@mail.gmail.com>
+	id S1751228Ab1FNWOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 18:14:22 -0400
+Date: Tue, 14 Jun 2011 18:13:40 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: akpm@linux-foundation.org, xiyou.wangcong@gmail.com, ebiederm@xmission.com,
+        linux-kernel@vger.kernel.org, jwilson@redhat.com, seiji.aguchi@hds.com
+Subject: Re: [Patch] kexec: remove KMSG_DUMP_KEXEC (was Re: Query about
+ kdump_msg hook into crash_kexec())
+Message-ID: <20110614221340.GJ2525@redhat.com>
+References: <20110203095837.93A2.A69D9226@jp.fujitsu.com>
+ <20110203020703.GB21603@redhat.com>
+ <20110203135324.93BC.A69D9226@jp.fujitsu.com>
+ <20110526131028.7052a893.akpm@linux-foundation.org>
+ <4DE3277D.8070109@jp.fujitsu.com>
+ <20110531215126.GW16382@redhat.com>
+ <4DF0A7B8.6030102@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106150012.57459.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DF0A7B8.6030102@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 14, 2011, Colin Cross wrote:
-> On Tue, Jun 14, 2011 at 2:34 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Tuesday, June 14, 2011, Colin Cross wrote:
-> >> On Tue, Jun 14, 2011 at 2:00 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> > On Monday, June 13, 2011, Colin Cross wrote:
-> >> >> On Mon, Jun 13, 2011 at 11:37 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> >> > On Monday, June 13, 2011, Colin Cross wrote:
-> >> >> >> This patch set tries to address Russell's concerns with platform
-> >> >> >> pm code calling into the driver for every block in the Cortex A9s
-> >> >> >> during idle, hotplug, and suspend.  The first patch adds cpu pm
-> >> >> >> notifiers that can be called by platform code, the second uses
-> >> >> >> the notifier to save and restore the GIC state, and the third
-> >> >> >> saves the VFP state.
-> >> >> >>
-> >> >> >> The notifiers are used for two types of events, CPU PM events and
-> >> >> >> CPU complex PM events.  CPU PM events are used to save and restore
-> >> >> >> per-cpu context when a single CPU is preparing to enter or has
-> >> >> >> just exited a low power state.  For example, the VFP saves the
-> >> >> >> last thread context, and the GIC saves banked CPU registers.
-> >> >> >>
-> >> >> >> CPU complex events are used after all the CPUs in a power domain
-> >> >> >> have been prepared for the low power state.  The GIC uses these
-> >> >> >> events to save global register state.
-> >> >> >>
-> >> >> >> Platforms that call the cpu_pm APIs must select
-> >> >> >> CONFIG_ARCH_USES_CPU_PM
-> >> >> >>
-> >> >> >> L2 cache is not covered by this patch set, as the determination
-> >> >> >> of when the L2 is reset and when it is retained is
-> >> >> >> platform-specific, and most of the APIs necessary are already
-> >> >> >> present.
-> >> >> >>
-> >> >> >>  arch/arm/Kconfig              |    7 ++
-> >> >> >>  arch/arm/common/gic.c         |  212 +++++++++++++++++++++++++++++++++++++++++
-> >> >> >>  arch/arm/include/asm/cpu_pm.h |   54 +++++++++++
-> >> >> >>  arch/arm/kernel/Makefile      |    1 +
-> >> >> >>  arch/arm/kernel/cpu_pm.c      |  181 +++++++++++++++++++++++++++++++++++
-> >> >> >
-> >> >> > Is there any reason why this has to be ARM-specific?  There are other
-> >> >> > architectures where this kind of feature might make sense (SH and
-> >> >> > powerpc at least).
-> >> >>
-> >> >> Nothing other than there are currently no adaptations for any drivers
-> >> >> besides ARM, but I can move it somewhere outside ARM.  Any suggestions
-> >> >> where?
-> >> >
-> >> > Well, there is kernel/cpu.c.  It contains mostly CPU hotplug and PM
-> >> > code at the moment, so it looks like a good place.
-> >>
-> >> OK, I'll look at moving it there.
-> >>
-> >> >> > Besides, is there any overlap between this feature and the CPU hotplug
-> >> >> > notifiers?
-> >> >>
-> >> >> I don't think so - the hotplug notifiers are used when a CPU is being
-> >> >> removed from the system, so no saving and restoring is necessary - the
-> >> >> CPU will be rebooted from scratch.  They are used by systems outside
-> >> >> the CPU that need to know that a CPU no longer exists.
-> >> >>
-> >> >> CPU PM notifiers are used when a CPU is going through reset in a way
-> >> >> that should be transparent to most of the system.
-> >> >
-> >> > Do I guess correctly that you mean cpuidle?
-> >>
-> >> cpuidle is the major user, but primary CPUs in suspend have to save
-> >> and restore the same blocks, and tend to use the same platform sleep
-> >> code as idle, so it's logical to use the notifiers for both.  On the
-> >> other hand, some drivers that would use cpu_pm notifiers already use
-> >> syscore ops to handle suspend and resume (like vfp) - maybe these
-> >> notifiers should only be used in cpuidle, and syscore ops added to the
-> >> gic driver?  I could also convert the notifiers to new syscore_ops -
-> >> cpu_idle, cpu_unidle, cpu_cluster_idle, cpu_cluster_unidle, but I
-> >> don't know how well that fits in to the intention for syscore.
-> >
-> > Basically, syscore_ops deal with the situation during system suspend
-> > when all CPUs but one have been switched off (through CPU hotplug)
-> > and interrupts are off on the only active CPU.  If there's anything
-> > you need to do at this point, syscore_ops is the right thing to use.
-> > And analogously for system resume.
-> >
-> > Moreover, for system suspend switching off the "boot" CPU (i.e. the only one
-> > that remains active through the whole sequence) should really be the last
-> > thing done, everything else should have been handled through syscore_ops
-> > before.
+On Thu, Jun 09, 2011 at 08:00:08PM +0900, KOSAKI Motohiro wrote:
+> Hi
 > 
-> Yes, but what to do with idle, which generally needs to do the exact
-> same things as handled in some syscore ops?  Extend syscore ops, or
-> add the new notifier, and each driver can implement both syscore and
-> cpu_pm listeners (and probably call the same helper function to handle
-> both)?
+> Sorry for the delay. I had got stuck LinuxCon Japan and piled up plenty
+> paper works.
+> 
+> >>> I think I can agree your proposal. But could you please explain why do 
+> >>> you think kmsg _before_ kdump and kmsg _in_ kdump are so different? 
+> >>> I think it is only C level difference. CPU don't care C function and 
+> >>> anyway the kernel call kmsg_dump() because invoke second kernel even 
+> >>> if you proposal applied. 
+> >>> It is only curious. I'm not against your proposal. 
+> >>> Thanks. 
+> > 
+> > Few reasons.
+> > 
+> > - There is no correlation between crash_kexec() and kdump_msg(). What
+> >   you are creating is equivalent of panic notifiers and calling those
+> >   notifiers before dump happened. So calling it inside of crash_kexec()
+> >   does not make much sense from code point of view.
+> 
+> Thank you for the replay. I got you _think_ no makes sense, but I haven't
+> explain what you talk about the code of "code point of view".
+> If you read the code, you can understand kdump_msg() and panic_notifiers
+> are not same point.
+> 
+> 
+> > - Why does somebody need to keep track of event KMSG_DUMP_KEXEC?
+> 
+> I believe I answered already at last thread.
+> 
+> http://groups.google.com/group/linux.kernel/browse_thread/thread/1084f406573d76ac/daa1a08804385089?q=kexec%3A+remove+KMSG_DUMP_KEXEC&lnk=ol&
+> 
 
-Good question.  I don't think I have a good answer to it at the moment, need
-to ponder that a bit more.
+Frankly speaking I never understood it. The only thing I got is that
+you are saying embedded devices want to do something upon a KEXEC and
+I do not understand what's that action embedded devices want to take
+upon an KEXEC.
+
+And it is not just KEXEC, I am also curious about hooks in places
+like emergency_restart(). Who needs to know about it and is it
+safe to do.
+
+So if would be great if you could explain it in detail again.
+
+> 
+> > - There is one kernel CONFIG option introduce which looks completely
+> >   superfluous.
+> 
+> What you mean "superfluous"? We already have billion kernel CONFIG.
+> Is it also bad?
+
+We have lots of config options but every config option goes through
+some thought process and it is taken in if it makes sense. In this
+case this additional config option did not make any sense.
+
+> 
+> > My general take on the whole issue.
+> > 
+> > - In general I think exporting a hook to module so that they can do
+> >   anything before crash is a bad idea. Now this can be overloaded to
+> >   do things like sending crash notifications in clustered environement
+> >   where we recommend doing it in second kernel.
+> 
+> ??
+> It's not my issue and I haven't talked about such thing. I guess you
+> confuse I and Aguch-san or someone else.
+
+Once you export the hook to a module, anybody can do that. In the
+past people have asked for it reapeatedly. So I am just giving you
+one example that what will people start doing once the hook is
+there.
+
+> 
+> > 
+> > - Even if we really have to do it, there seemed to be two concern
+> >   areas.
+> > 
+> > 	- Reliability of kdump_msg() generic infrastructure and its
+> >   	  capability in terms of handling races with other cpus and
+> > 	  NMIs.
+> > 
+> > 	- Reliability of module which is getting the callback from
+> > 	  kdump_msg().
+> 
+> Indeed. I thought Aguch-san said he promised he work on improve them.
+> However it doesn't happen yet. Okay, I
+> 
+> 
+> >  I think in one of the mails I was discussing that common infrastructure
+> >  between kdump and kmsg_dump() can be put in a separate function, like
+> >  stopping all cpus etc to avoid races in generic infrastrucutre and
+> >  then first we can all kmsg_dump() and then crash_kexec().
+> 
+> Nice idea! Yes. I didn't think enterprise folks start to use this feature
+> and it now happen.
+> If nobody are working on this, I'll do it.
+
+It would be great if you could work on it and make sure kdump_msg()
+and crash_kexec() could share common infrastructure which takes care
+of common actions like stopping cpus, taking care of NMIs and invocation
+of panic() on mutliple cpus etc.
+
+> 
+> 
+> >  But this still does not provide us any protection against modules getting
+> >  control after crash and possiblly worsen the situation.
+> 
+> I think this doesn't big matter. If module author hope to get hook, they
+> can use kprobe in nowadays. I don't think we can make perfect kprobe protection.
+> I think I wrote this at last thread too.
+> 
+> Probably most reliability stupid module detect way is, watching lkml and revewing
+> kmsg_dump() user conteniously. However, if you strongly worry about this issue,
+> I can agree we make tiny foolish module protection. (but I don't have concrete
+> idea yet)
+
+I do worry about modules. Once the system has paniced, I personally don't
+think that anbody and everybody should be able to look at that event and
+take whatever actions they want to.
+
+Having said that personally I like the idea of being able to save 
+backtrace on some non volatile storage and access it over next boot
+through pstore interface.
+
+So if care is taken to make kmsg_dump() generic infrastructure fool proof
+probably it is good start and then we can look into module thing later.
+
+Thanks
+Vivek
