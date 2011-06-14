@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab1FNE7l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 00:59:41 -0400
-Received: from ganesha.gnumonks.org ([213.95.27.120]:34731 "EHLO
-	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab1FNE7j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 00:59:39 -0400
-From: pullip.cho@samsung.com
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Cc: kgene.kim@samsung.com, arnd@arndb.de, fujita.tomonori@lab.ntt.co.jp,
-        rmk@arm.linux.org.uk, joerg.roedel@amd.com,
-        KyongHo Cho <pullip.cho@samsung.com>
-Subject: [PATCH] dma-mapping: Undefine dma_map_single(), etc if CONFIG_HAVE_DMA_ATTRS is defined
-Date: Tue, 14 Jun 2011 13:33:09 +0900
-Message-Id: <1308025989-877-1-git-send-email-pullip.cho@samsung.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752208Ab1FNFAT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 01:00:19 -0400
+Received: from gate.crashing.org ([63.228.1.57]:58413 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751171Ab1FNFAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 01:00:15 -0400
+Subject: Re: [PATCH] slub: fix kernel BUG at mm/slub.c:1950!
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Pekka Enberg <penberg@kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Christoph Lameter <cl@linux.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <BANLkTik-KGtuoVFKvy_rk7voBRAxSsR9FRg0fhb0k3NCSg-fWQ@mail.gmail.com>
+References: <alpine.LSU.2.00.1106121842250.31463@sister.anvils>
+	 <alpine.DEB.2.00.1106131258300.3108@router.home>
+	 <1307990048.11288.3.camel@jaguar>
+	 <alpine.DEB.2.00.1106131428560.5601@router.home>
+	 <BANLkTi=RYq0Dd210VC+NeTXWWuFbz7cxeg@mail.gmail.com>
+	 <BANLkTik-KGtuoVFKvy_rk7voBRAxSsR9FRg0fhb0k3NCSg-fWQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Jun 2011 14:51:18 +1000
+Message-ID: <1308027078.2874.1005.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KyongHo Cho <pullip.cho@samsung.com>
+On Mon, 2011-06-13 at 14:00 -0700, Hugh Dickins wrote:
+> On Mon, Jun 13, 2011 at 1:34 PM, Pekka Enberg <penberg@kernel.org> wrote:
+> > On Mon, Jun 13, 2011 at 10:29 PM, Christoph Lameter <cl@linux.com> wrote:
+> >> On Mon, 13 Jun 2011, Pekka Enberg wrote:
+> >>
+> >>> > Hmmm.. The allocpercpu in alloc_kmem_cache_cpus should take care of the
+> >>> > alignment. Uhh.. I see that a patch that removes the #ifdef CMPXCHG_LOCAL
+> >>> > was not applied? Pekka?
+> >>>
+> >>> This patch?
+> >>>
+> >>> http://git.kernel.org/?p=linux/kernel/git/penberg/slab-2.6.git;a=commitdiff;h=d4d84fef6d0366b585b7de13527a0faeca84d9ce
+> >>>
+> >>> It's queued and will be sent to Linus soon.
+> >>
+> >> Ok it will also fix Hugh's problem then.
+> >
+> > It's in Linus' tree now. Hugh, can you please confirm it fixes your machine too?
+> 
+> I expect it to, thanks: I'll confirm tonight.
 
-If <asm/dma-mapping.h> includes <asm-generic/dma-mapping-common.h>,
-dma_map_single() become defined recursively when CONFIG_HAVE_DMA_ATTRS
-is not defined.
-Since dma_map_*_attrs() are defined in <linux/dma-mapping.h>, those
-in <asm-generic/dma-mapping-common.h> must be not defined
-if CONFIG_HAVE_DMA_ATTRS is not defined.
+>From report to resolution before I got to read the thread, that's how I
+like them ! Thanks guys :-)
 
-Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
-CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-CC: Joerg Roedel <joerg.roedel@amd.com>
-CC Arnd Bergmann <arnd@arndb.de>
+Cheers,
+Ben.
 
-Change-Id: Ib99ee2b355dbe679263ce2e4e27d6219148c8338
----
- include/asm-generic/dma-mapping-common.h |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
-
-diff --git a/include/asm-generic/dma-mapping-common.h b/include/asm-generic/dma-mapping-common.h
-index 0c80bb3..b9a2040 100644
---- a/include/asm-generic/dma-mapping-common.h
-+++ b/include/asm-generic/dma-mapping-common.h
-@@ -6,6 +6,7 @@
- #include <linux/dma-debug.h>
- #include <linux/dma-attrs.h>
- 
-+#ifdef CONFIG_HAVE_DMA_ATTRS
- static inline dma_addr_t dma_map_single_attrs(struct device *dev, void *ptr,
- 					      size_t size,
- 					      enum dma_data_direction dir,
-@@ -67,6 +68,13 @@ static inline void dma_unmap_sg_attrs(struct device *dev, struct scatterlist *sg
- 		ops->unmap_sg(dev, sg, nents, dir, attrs);
- }
- 
-+#define dma_map_single(d, a, s, r) dma_map_single_attrs(d, a, s, r, NULL)
-+#define dma_unmap_single(d, a, s, r) dma_unmap_single_attrs(d, a, s, r, NULL)
-+#define dma_map_sg(d, s, n, r) dma_map_sg_attrs(d, s, n, r, NULL)
-+#define dma_unmap_sg(d, s, n, r) dma_unmap_sg_attrs(d, s, n, r, NULL)
-+
-+#endif /* CONFIG_HAVE_DMA_ATTRS */
-+
- static inline dma_addr_t dma_map_page(struct device *dev, struct page *page,
- 				      size_t offset, size_t size,
- 				      enum dma_data_direction dir)
-@@ -160,9 +168,4 @@ dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
- 
- }
- 
--#define dma_map_single(d, a, s, r) dma_map_single_attrs(d, a, s, r, NULL)
--#define dma_unmap_single(d, a, s, r) dma_unmap_single_attrs(d, a, s, r, NULL)
--#define dma_map_sg(d, s, n, r) dma_map_sg_attrs(d, s, n, r, NULL)
--#define dma_unmap_sg(d, s, n, r) dma_unmap_sg_attrs(d, s, n, r, NULL)
--
- #endif
--- 
-1.7.1
 
