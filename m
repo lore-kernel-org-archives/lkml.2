@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab1FNOJg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 10:09:36 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51055 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752535Ab1FNOJf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 10:09:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Oq2Snss4hkjaPm9biqZXZtvqzIxscAWS2qs7tqkb6/OJUslAXXaiouAk6UNh7DfEEE
-         506TSrqc9RYNDh0GAPZIw8WlC5Ht/t3DEkEBlGHIRMvm7XLBrNaeCfh1P00RABMpI4LW
-         55lUiXLCYYzZz++fzlCbQIVxZzitHZMGAbGSE=
+	id S1751773Ab1FNOXV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 10:23:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54392 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751114Ab1FNOXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 10:23:19 -0400
+Date: Tue, 14 Jun 2011 16:20:23 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 3.0-rc2-tip 2/22]  2: uprobes: Breakground page
+	replacement.
+Message-ID: <20110614142023.GA5139@redhat.com>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6> <20110607125835.28590.25476.sendpatchset@localhost6.localdomain6> <20110613170020.GA27137@redhat.com> <20110614123530.GC4952@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20110614071540.GE8141@htj.dyndns.org>
-References: <20110614070732.GA3355@maxin>
-	<20110614071540.GE8141@htj.dyndns.org>
-Date: Tue, 14 Jun 2011 15:09:34 +0100
-Message-ID: <BANLkTimHjVX6ymALT-ZBeSs1S+PRDRwQaQ@mail.gmail.com>
-Subject: Re: [PATCH] [RESEND] devres: Fix possible use after free
-From: Maxin B John <maxin.john@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linux-foundation.org, segooon@gmail.com, jkosina@suse.cz,
-        tglx@linutronix.de, eike-kernel@sf-tec.de,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110614123530.GC4952@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, Jun 14, 2011 at 8:15 AM, Tejun Heo <tj@kernel.org> wrote:
-> On Tue, Jun 14, 2011 at 10:07:32AM +0300, Maxin B John wrote:
->> A freed pointer is passed as an argument to the function "devres_destroy()" in
->> "kernel/irq/devres.c" and "lib/devres.c". This patch fixes the possible use
->> after free.
->>
->> It's notabug at this time, but the code is dangerous.
+On 06/14, Srikar Dronamraju wrote:
 >
-> The code is not dangerous.  The pointer value is used strictly as key
-> and the code path is always properly serialized.  The change is to
-> appease access-after-free detection logic, similar to the way we
-> change the code to better accomodate sparse or other code analysys
-> tools.  Can you please update the patch description to reflect that?
+> > > +static int write_opcode(struct task_struct *tsk, struct uprobe * uprobe,
+> > > +			unsigned long vaddr, uprobe_opcode_t opcode)
+> > > +{
+> > > +	struct page *old_page, *new_page;
+> > > +	void *vaddr_old, *vaddr_new;
+> > > +	struct vm_area_struct *vma;
+> > > +	unsigned long addr;
+> > > +	int ret;
+> > > +
+> > > +	/* Read the page with vaddr into memory */
+> > > +	ret = get_user_pages(tsk, tsk->mm, vaddr, 1, 1, 1, &old_page, &vma);
+> >
+> > Sorry if this was already discussed... But why we are using FOLL_WRITE here?
+> > We are not going to write into this page, and this provokes the unnecessary
+> > cow, no?
+>
+> Yes, We are not going to write to the page returned by get_user_pages
+> but a copy of that page.
 
-You are right. I shouldn't have mentioned it as dangerous. I was trying to
-make this patch description similar to the description present in the
-previous patch:
-http://www.spinics.net/lists/mm-commits/msg84313.html
+Yes I see. But the page returned by get_user_pages(write => 1) is already
+a cow'ed copy (this mapping should be read-only).
 
-This patch silences the Coverity Prevent's complains about this as
-use-after-free bug. Please let me know if the updated patch description is OK.
+> The idea was if we cow the page then we dont
+> need to cow it at the replace_page time
 
-"
-A freed pointer is passed as an argument to the function "devres_destroy()" in
-"kernel/irq/devres.c" and "lib/devres.c". This patch fixes the possible use
-after free.
-The change silences the static analysis tool (Coverity Prevent) complains
-about this as use-after-free bug.
-"
+Yes, replace_page() shouldn't cow.
 
-Best Regards,
-Maxin
+> and since get_user_pages knows
+> the right way to cow the page, we dont have to write another routine to
+> cow the page.
+
+Confused. write_opcode() allocs another page and does memcpy. This is
+correct, but I don't understand the first cow.
+
+> I am still not clear on your concern.
+
+Probably I missed something... but could you please explain why we can't
+
+	- ret = get_user_pages(tsk, tsk->mm, vaddr, 1, 1, 1, &old_page, &vma);
+	+ ret = get_user_pages(tsk, tsk->mm, vaddr, 1, 0, 0, &old_page, &vma);
+
+?
+
+> > Also. This is called under down_read(mmap_sem), can't we race with
+> > access_process_vm() modifying the same memory?
+>
+> Yes, we could be racing with access_process_vm on the same memory.
+>
+> Do we have any other option other than making write_opcode/read_opcode
+> being called under down_write(mmap_sem)?
+
+I dunno. Probably we can simply ignore this issue, there are other ways
+to modify this memory.
+
+Oleg.
+
