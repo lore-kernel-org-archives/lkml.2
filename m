@@ -1,50 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919Ab1FNJtE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 05:49:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57585 "EHLO mx1.redhat.com"
+	id S1755935Ab1FNJt1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 05:49:27 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42171 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755855Ab1FNJtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 05:49:00 -0400
-Date: Tue, 14 Jun 2011 11:48:11 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>
-Subject: Re: [BUGFIX][PATCH 4/5] memcg:  fix wrong check of noswap with
- softlimit
-Message-ID: <20110614094811.GD6371@redhat.com>
-References: <20110613120054.3336e997.kamezawa.hiroyu@jp.fujitsu.com>
- <20110613121105.b8f251e2.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1755908Ab1FNJtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 05:49:25 -0400
+Date: Tue, 14 Jun 2011 09:49:10 GMT
+From: tip-bot for Max Asbock <masbock@linux.vnet.ibm.com>
+Message-ID: <tip-1123d93963cbd2546449d4d9f0c568e323cb0ac6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, masbock@linux.vnet.ibm.com, hpa@zytor.com,
+        mingo@redhat.com, johnstul@linux.vnet.ibm.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, masbock@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, johnstul@linux.vnet.ibm.com,
+        tglx@linutronix.de
+In-Reply-To: <1307985512.4710.41.camel@w-amax.beaverton.ibm.com>
+References: <1307985512.4710.41.camel@w-amax.beaverton.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/urgent] timerfd: Fix wakeup of processes when timer is cancelled on clock change
+Git-Commit-ID: 1123d93963cbd2546449d4d9f0c568e323cb0ac6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20110613121105.b8f251e2.kamezawa.hiroyu@jp.fujitsu.com>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 14 Jun 2011 09:49:12 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 12:11:05PM +0900, KAMEZAWA Hiroyuki wrote:
-> >From 0a0358d300330a4ba86e39ea56ed63f1e4519dfd Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Mon, 13 Jun 2011 10:31:16 +0900
-> Subject: [PATCH 4/5]  fix wrong check of noswap with softlimit
-> 
-> Hierarchical reclaim doesn't swap out if memsw and resource limits are
-> same (memsw_is_minimum == true) because we would hit mem+swap limit
-> anyway (during hard limit reclaim).
-> If it comes to the solft limit we shouldn't consider memsw_is_minimum at
-> all because it doesn't make much sense. Either the soft limit is bellow
-> the hard limit and then we cannot hit mem+swap limit or the direct
-> reclaim takes a precedence.
-> 
-> Reviewed-by: Michal Hocko <mhocko@suse.cz>
-> Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Commit-ID:  1123d93963cbd2546449d4d9f0c568e323cb0ac6
+Gitweb:     http://git.kernel.org/tip/1123d93963cbd2546449d4d9f0c568e323cb0ac6
+Author:     Max Asbock <masbock@linux.vnet.ibm.com>
+AuthorDate: Mon, 13 Jun 2011 10:18:32 -0700
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 14 Jun 2011 11:46:14 +0200
 
-Acked-by: Johannes Weiner <jweiner@redhat.com>
+timerfd: Fix wakeup of processes when timer is cancelled on clock change
+
+Currently processes waiting with poll on cancelable timerfd timers are
+not woken up when the timers are canceled. When the system time is set
+the clock_was_set() function calls timerfd_clock_was_set() to cancel
+and wake up processes waiting on potential cancelable timerfd
+timers. However the wake up currently has no effect because in the
+case of timerfd_read it is dependent on ctx->ticks not being
+0. timerfd_poll also requires ctx->ticks being non zero. As a
+consequence processes waiting on cancelable timers only get woken up
+when the timers expire. This patch fixes this by incrementing
+ctx->ticks before calling wake_up.
+
+Signed-off-by: Max Asbock <masbock@linux.vnet.ibm.com>
+Cc: kay.sievers@vrfy.org
+Cc: virtuoso@slind.org
+Cc: johnstul <johnstul@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1307985512.4710.41.camel@w-amax.beaverton.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ fs/timerfd.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/fs/timerfd.c b/fs/timerfd.c
+index f67acbd..dffeb37 100644
+--- a/fs/timerfd.c
++++ b/fs/timerfd.c
+@@ -61,7 +61,9 @@ static enum hrtimer_restart timerfd_tmrproc(struct hrtimer *htmr)
+ 
+ /*
+  * Called when the clock was set to cancel the timers in the cancel
+- * list.
++ * list. This will wake up processes waiting on these timers. The
++ * wake-up requires ctx->ticks to be non zero, therefore we increment
++ * it before calling wake_up_locked().
+  */
+ void timerfd_clock_was_set(void)
+ {
+@@ -76,6 +78,7 @@ void timerfd_clock_was_set(void)
+ 		spin_lock_irqsave(&ctx->wqh.lock, flags);
+ 		if (ctx->moffs.tv64 != moffs.tv64) {
+ 			ctx->moffs.tv64 = KTIME_MAX;
++			ctx->ticks++;
+ 			wake_up_locked(&ctx->wqh);
+ 		}
+ 		spin_unlock_irqrestore(&ctx->wqh.lock, flags);
