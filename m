@@ -1,74 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330Ab1FNXRM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 19:17:12 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:50652 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752398Ab1FNXRK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 19:17:10 -0400
-Date: Wed, 15 Jun 2011 01:04:38 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: hayeswang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net/r8169: Update the new parser for the new firmware
-Message-ID: <20110614230438.GA1746@electric-eye.fr.zoreil.com>
-References: <1307956594-1248-1-git-send-email-hayeswang@realtek.com> <20110613143241.GA1579@electric-eye.fr.zoreil.com> <AAB6D1CA92564062BD4DA23B485C6B55@realtek.com.tw>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AAB6D1CA92564062BD4DA23B485C6B55@realtek.com.tw>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	id S1751746Ab1FNXFX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 19:05:23 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:39464 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751303Ab1FNXFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 19:05:22 -0400
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH 1 of 6] x86, UV: smp_processor_id in a preemptable region
+Cc: mingo@elte.hu
+Message-Id: <E1QWcgn-0004Mv-T6@eag09.americas.sgi.com>
+From: Cliff Wickman <cpw@sgi.com>
+Date: Tue, 14 Jun 2011 18:06:29 -0500
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hayeswang <hayeswang@realtek.com> :
-[...]
-> I want to keep the old firmware used by the old paser. The old paser cannot
-> use the new firmware and the new paser cannot use the old firmware, so I
-> separate them.
+From: Cliff Wickman <cpw@sgi.com>
 
-Two points:
-1. it can be done anyway. See below.
-2. I agree with a different name, thoug only in the linux-firmware git
-   repository and in the local filesystem firmware directory. Naming the
-   relevant file for FIRMWARE_8168D_1 something like "rtl8168d-1[_-.]x.y.z"
-   in the linux-firmware repository exhibits some self documenting virtues.
-   rtl8168d-1.fw only needs to link to the firmware of the day. On the other
-   hand, retrieving FIRMWARE_8168D_1 through rtl8168d-3.fw - and tomorrow
-   through rtl8168d-7.fw ? - is imho convoluted and mildly nice to maintain
-   when there are FIRMWARE_8168D_1, FIRMWARE_8168D_2 etc.
+Calling smp_processor_id() from within a preemptable region will issue
+a warning if DEBUG_PREEMPT is set.
 
-[...]
-> > Imho the new firmware format could include some specific 
-> > string so that the driver can identify the new firmware 
-> > format and fallback to the old format otherwise. Any fixed 
-> > magic prefix would be enough as the new format mandates the 
-> > version information.
-> > 
-> > This way Linus's test machine won't risk of breaking 
-> > (again...) if he builds a new kernel without updating the 
-> > firmware at the same time.
-> > 
-> 
-> I plan to let the old paser loads the old firmware and the new paser loads the
-> new firmware. If you build the new kernel without updating the firmware, you
-> just load no firmware because the new firmware doesn't exist. However, it is
-> more dangerous for the old paser to load the new firmware. That is why I
-> create the new ones, not replace the existing files.
+Diffed against 3.0.0-rc3
 
-Regarding the old driver and new firmware combination, it is possible to
-design the new firmware format so that it gets ignored by the old driver.
-If the new firmware format starts with a huge PHY_SKIPN instruction,
-the old parser will not use it and will emit an "Out of range of firmware"
-error message. Add a magic prefix and the new driver has some decent
-heuristic to figure if it handles a new / old format firmware.
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+---
+ arch/x86/platform/uv/tlb_uv.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Regarding the new driver and old firmware combination, why should the new
-driver be allowed to refuse working with the old firmware if the old firmware
-is not known broken ?
-
--- 
-Ueimor
+Index: linux/arch/x86/platform/uv/tlb_uv.c
+===================================================================
+--- linux.orig/arch/x86/platform/uv/tlb_uv.c
++++ linux/arch/x86/platform/uv/tlb_uv.c
+@@ -1334,7 +1334,9 @@ static ssize_t tunables_write(struct fil
+ 
+ 	instr[count] = '\0';
+ 
++	preempt_disable(); /* avoid DEBUG_PREEMPT warning */
+ 	bcp = &per_cpu(bau_control, smp_processor_id());
++	preempt_enable_no_resched();
+ 
+ 	ret = parse_tunables_write(bcp, instr, count);
+ 	if (ret)
