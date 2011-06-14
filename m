@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab1FNJBJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 05:01:09 -0400
-Received: from protonic.xs4all.nl ([213.84.116.84]:13726 "EHLO
-	protonic.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755569Ab1FNJAv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 05:00:51 -0400
-From: David Jander <david@protonic.nl>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        David Jander <david@protonic.nl>
-Subject: [PATCH v5 5/5] GPIO: pca953x.c: Fix warning of enabled interrupts in handler
-Date: Tue, 14 Jun 2011 11:00:58 +0200
-Message-Id: <1308042058-20107-6-git-send-email-david@protonic.nl>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1308042058-20107-1-git-send-email-david@protonic.nl>
-References: <1308042058-20107-1-git-send-email-david@protonic.nl>
+	id S1755795Ab1FNJYh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 05:24:37 -0400
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:58514 "EHLO smtp2.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755068Ab1FNJYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 05:24:36 -0400
+X-Greylist: delayed 1066 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Jun 2011 05:24:36 EDT
+Date: Tue, 14 Jun 2011 12:06:49 +0300 (EEST)
+From: Meelis Roos <mroos@ut.ee>
+To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
+cc: Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: 3.0-rc3: No RTC device found
+In-Reply-To: <alpine.SOC.1.00.1106081454240.8911@math.ut.ee>
+Message-ID: <alpine.SOC.1.00.1106141203350.11764@math.ut.ee>
+References: <alpine.SOC.1.00.1106081454240.8911@math.ut.ee>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using nested threaded irqs, use handle_nested_irq(). This function
-does not call the chip handler, so no handler is set.
+This was my earlier report that I tought was sparc64 specific:
 
-Signed-off-by: David Jander <david@protonic.nl>
----
- drivers/gpio/pca953x.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+> Dmesg finds both OF RTC and PC RTC but later complains
+> "No RTC device found, ALARM timers will not wake from suspend"
 
-diff --git a/drivers/gpio/pca953x.c b/drivers/gpio/pca953x.c
-index 9bdbc16..2eceb2c 100644
---- a/drivers/gpio/pca953x.c
-+++ b/drivers/gpio/pca953x.c
-@@ -435,7 +435,7 @@ static irqreturn_t pca953x_irq_handler(int irq, void *devid)
- 
- 	do {
- 		level = __ffs(pending);
--		generic_handle_irq(level + chip->irq_base);
-+		handle_nested_irq(level + chip->irq_base);
- 
- 		pending &= ~(1 << level);
- 	} while (pending);
-@@ -483,8 +483,8 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
- 
- 			irq_clear_status_flags(irq, IRQ_NOREQUEST);
- 			irq_set_chip_data(irq, chip);
--			irq_set_chip_and_handler(irq, &pca953x_irq_chip,
--						 handle_simple_irq);
-+			irq_set_chip(irq, &pca953x_irq_chip);
-+			irq_set_nested_thread(irq, true);
- #ifdef CONFIG_ARM
- 			set_irq_flags(irq, IRQF_VALID);
- #else
+But today I noticed this while testing 3.0-rc3 on a PC:
+
+[    0.313944] No RTC device found, ALARM timers will not wake from suspend
+[    0.314275] drivers/rtc/hctosys.c: unable to open rtc device (rtc0)
+
+Later it detects PC RTC:
+
+[    3.610210] rtc_cmos 00:03: RTC can wake from S4
+[    3.611554] rtc_cmos 00:03: rtc core: registered rtc_cmos as rtc0
+[    3.611669] rtc0: alarms up to one year, y3k, 114 bytes nvram
+
+Bisecting it on sparc64 got me nowhere. Have not tried bisecting it on 
+PC yet.
+
 -- 
-1.7.4.1
-
+Meelis Roos (mroos@linux.ee)
