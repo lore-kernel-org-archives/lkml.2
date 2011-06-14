@@ -1,95 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab1FNSCg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 14:02:36 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:51748 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101Ab1FNSCf convert rfc822-to-8bit (ORCPT
+	id S1753286Ab1FNSDZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 14:03:25 -0400
+Received: from DMZ-MAILSEC-SCANNER-2.MIT.EDU ([18.9.25.13]:47197 "EHLO
+	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752491Ab1FNSDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 14:02:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=OFohi+KipypyyU+myrO7NnwpaUbEM5tROU1cEdv8xk8wzcMsQy7VaDN7RAP1Si2IPD
-         AXbRDrGl5YKZSqmHltxKocdPApz30UEQmm3tN0iv+9YJtXCYqO2cg4iYr3uhGy98i3UZ
-         +Qq8RcjBo2lRsVeqHSsW86vmTyrDxx0HgHk7c=
+	Tue, 14 Jun 2011 14:03:24 -0400
+X-AuditID: 1209190d-b7bdeae0000004f8-32-4df7a224cae9
+Message-ID: <4DF7A264.3030901@mit.edu>
+Date: Tue, 14 Jun 2011 14:03:16 -0400
+From: Andy Lutomirski <luto@MIT.EDU>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <4DF6CD25.7040405@jp.fujitsu.com>
-References: <4df13a522720782e51@agluck-desktop.sc.intel.com>
-	<4df13cea27302b7ccf@agluck-desktop.sc.intel.com>
-	<20110612223840.GA23218@aftab>
-	<BANLkTi=-A5PYj8zpjGB4Xb-_VNq0qr+CGQ@mail.gmail.com>
-	<4DF5C36A.1040707@redhat.com>
-	<20110613095521.GA26316@aftab>
-	<4DF5F729.4060609@redhat.com>
-	<20110613124003.GA27918@aftab>
-	<4DF606C9.90308@redhat.com>
-	<20110613151208.GA29045@aftab>
-	<4DF63B7A.1030805@redhat.com>
-	<BANLkTinUEqRni2u0DaMfSc45b3DmMMyYvA@mail.gmail.com>
-	<4DF6CC58.8050601@jp.fujitsu.com>
-	<4DF6CD25.7040405@jp.fujitsu.com>
-Date: Tue, 14 Jun 2011 11:02:34 -0700
-X-Google-Sender-Auth: GgZIvhIqoScIs-yJUrSjwha-NM8
-Message-ID: <BANLkTina_Y5xekoE9SnbG125CVFLopym2A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] x86, mce: rework use of TIF_MCE_NOTIFY
-From: Tony Luck <tony.luck@intel.com>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, Borislav Petkov <bp@amd64.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Rakib Mullick <rakib.mullick@gmail.com>
+CC: mingo@elte.hu, hpa@zytor.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, vsyscall: Fix build warning in vsyscall_64.c
+References: <1307777464.25182.3.camel@localhost.localdomain>	<BANLkTi=SQb6EL4+bdH2Q+iwaW9E3i+48Ew@mail.gmail.com>	<BANLkTi=yEo9fcXW8SqUCtSOag7Mn_+Ni9Q@mail.gmail.com>	<BANLkTimv6F8NsH0Lg7q6gi1-oiBv8nUrSA@mail.gmail.com>	<BANLkTikbnsu05+Nae8isATuZ8Fucj14+LQ@mail.gmail.com>	<BANLkTi=nsCK2bFf2v+PkKj=Opsxseqe9pQ@mail.gmail.com>	<BANLkTi=ZETGToRcOHXg5gxAQO3EKN+YyLg@mail.gmail.com> <BANLkTi=-xJizWP5H9vNvaJhRN-Vm-ubraA@mail.gmail.com>
+In-Reply-To: <BANLkTi=-xJizWP5H9vNvaJhRN-Vm-ubraA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsUixG6nrquy6LuvweOvQhbTNopbXN41h81i
+	y6VmVotNJ34zWmzeNJXZ4seGx6wObB632v4we+ycdZfdY9OqTjaPd+fOsXt83iTncaLlC2sA
+	WxSXTUpqTmZZapG+XQJXxopTvawFfyQq1nUuY29gnCnSxcjJISFgIrHvyzFWCFtM4sK99Wxd
+	jFwcQgL7GCV+HJ3IBOFsYJR4u+YgM4RzgUli9qfZzCAtvAJqEo9uXwRrZxFQlbh+YCcLiM0m
+	oCLRsfQBE4gtKlApMennDlaIekGJkzOfANVwcIgIaEu8/WgHYjILZEusXp8EUiEs4CZxeusK
+	NhBbSGA9s8TvqVwgNqeAo8SuPd/ZIMqtJb7tLgIJMwvIS2x/O4d5AqPgLCTzZyFUzUJStYCR
+	eRWjbEpulW5uYmZOcWqybnFyYl5eapGukV5uZoleakrpJkZQHHBK8u5gfHdQ6RCjAAejEg/v
+	2crvvkKsiWXFlbmHGCU5mJREecUXAoX4kvJTKjMSizPii0pzUosPMUpwMCuJ8Pa++uIrxJuS
+	WFmVWpQPk5LmYFES550pqe4rJJCeWJKanZpakFoEk5Xh4FCS4L0IMlSwKDU9tSItM6cEIc3E
+	wQkynAdo+AWQGt7igsTc4sx0iPwpRkUpcd5bIAkBkERGaR5cLyxNvWIUB3pFGKKdB5ji4Lpf
+	AQ1mAhp86+U3kMEliQgpqQbGKR9/TbqbFf7JTszwntik+ywNf4++Pb6i72LxmSPisybO6Zxk
+	Zip9lvXwgg/KDu5dzGtm7Nme1P0o+tnPtQ7mbLqp/JJB5k/Fr8/laP1TmsNleaaZqfRmj2TN
+	fxbTnSoL0i+br824+75HLvpWq9yxk0J9ZxbN+ai10KY86uWbo2/TOBlCs0JZlViKMxINtZiL
+	ihMB5SBzxS4DAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 7:53 PM, Hidetoshi Seto
-<seto.hidetoshi@jp.fujitsu.com> wrote:
-> + * Called in process context that interrupted by MCE and marked with
-> + * TIF_MCE_NOTFY, just before returning to errorneous userland.
-> + * This code is allowed to sleep.
-> + * Attempt possible recovery such as calling the high level VM handler to
-> + * process any corrupted pages, and kill/signal current process if required.
->  */
->  void mce_notify_process(void)
->  {
-> -       mce_notify_irq();
-> -       mce_memory_failure_process();
-> +       clear_thread_flag(TIF_MCE_NOTIFY);
-> +
-> +       /* TBD: do recovery for action required event */
->  }
+On 06/14/2011 01:43 PM, Rakib Mullick wrote:
+> On Tue, Jun 14, 2011 at 12:06 AM, Andrew Lutomirski<luto@mit.edu>  wrote:
+>> On Mon, Jun 13, 2011 at 4:45 AM, Rakib Mullick<rakib.mullick@gmail.com>  wrote:
+>>> On Mon, Jun 13, 2011 at 10:54 AM, Rakib Mullick<rakib.mullick@gmail.com>  wrote:
+>>>> On Mon, Jun 13, 2011 at 8:52 AM, Andrew Lutomirski<luto@mit.edu>  wrote:
+>>>>> On Sun, Jun 12, 2011 at 1:12 AM, Rakib Mullick<rakib.mullick@gmail.com>  wrote:
+>>>>>> On Sat, Jun 11, 2011 at 5:01 PM, Andrew Lutomirski<luto@mit.edu>  wrote:
+>>>>>>> On Sat, Jun 11, 2011 at 3:31 AM, Rakib Mullick<rakib.mullick@gmail.com>  wrote:
+>>>>>
+>>>>> I think there are three separate issues here:
+>>>>>
+>>>>> 1. Can ret be used uninitialized?  I say no, even as seen by the
+>>>>> compiler.  If vsyscall_nr is 0, 1, or 2, then ret is initialized.  If
+>>>>> vsyscall_nr is 3, then the BUG gets hit.  BUG is defined as some
+>>>>> assembly magic followed by unreachable(), and the compiler is supposed
+>>>>> to know that code after unreachable() is qunreachable.  So how can ret
+>>>>> be used uninitialized?
+>>>>>
+>>>> I don't have much knowledge of advance assembly, so I really don't
+>>>> understand that part - how BUG handles this. If it really makes sure
+>>>> that, it will handle it properly then I think you can drop this patch.
+>>>>
+>>>>> What version of gcc do you have?  gcc (GCC) 4.6.0 20110530 (Red Hat
+>>>>> 4.6.0-9) does not produce this warning.
+>>>>>
+>>>> Currently, I'm replying from outside my home. I'll let you know when
+>>>> I'm back home.
+>>>>
+>>> Here is my GCC version - gcc version 4.5.1 20100924 (Red Hat 4.5.1-4)
+>>> (GCC). I'm using Fedora 14.
+>>
+>> I also have gcc (GCC) 4.5.1 20100924 (Red Hat 4.5.1-4) on another box,
+>> and I still can't reproduce this.
+>>
+>> Can you tell me which git revision you're building and send me your
+>> .config and the output of:
+>>
+> I'm using 3.0.0-rc2 (lastly I pulled tip tree 3 days ago). I've
+> attached the .config (config.log).
+>
+>> $ touch arch/x86/kernel/vsyscall_64.o
+>> $ make V=1 arch/x86/kernel/vsyscall_64.o
+>>
+> Output of the above steps are attached (vsyscall_64.log). Hope that will help.
 
-I liked where this series was going - but I'm not sure how we will
-be able to write code to fill in the TBD here.  You've got us to
-a good state ... the process that hit the action-required error
-can't get to user space to re-execute because of TIF_MCE_NOTIFY.
-So that part is great.  But ... we don't have the information we
-need (failing address) to take some action. That was put into
-the ring ... and it might still be there, but it could have been
-grabbed and handled by the worker thread (???). So the error
-might have been handled (or might be in the process of being
-handled - we could be racing with the worker) - but we don't know.
+Aha!  You have CONFIG_BUG=n.  I'm not sure that fixing warnings for that 
+case is worth it (or is even a good idea).
 
-I think that for action-required we need to pass the PFN from
-the MC handler to this mce_notify_process() function. Andi
-put it into the task structure - and although I didn't like that
-much (and Ingo hated it even more) - it was a quite simple way
-to pass the information.  The bad "pfn" *is* task relevant data.
-It's the reason that the task can't run, and the only hope to get
-the process back onto its feet again.
+Can you try this patch, though:
 
-My detour into task-return-notifiers was a massively more
-complex way to achieve this same goal (the pfn there was
-dropped into the container structure for the "urn" pointer that
-was passed to the handler.)
+Signed-off-by: Andy Lutomirski <luto@mit.edu>
 
-Maybe I'm missing something obvious - but I think that
-to fix the action-required error - we need to know some more
-about the error than which task is affected.
+diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+index dfb0ec6..f4083f4 100644
+--- a/include/asm-generic/bug.h
++++ b/include/asm-generic/bug.h
+@@ -107,11 +107,11 @@ extern void warn_slowpath_null(const char *file, 
+const int line);
 
--Tony
+  #else /* !CONFIG_BUG */
+  #ifndef HAVE_ARCH_BUG
+-#define BUG() do {} while(0)
++#define BUG() do { unreachable(); } while(0)
+  #endif
+
+  #ifndef HAVE_ARCH_BUG_ON
+-#define BUG_ON(condition) do { if (condition) ; } while(0)
++#define BUG_ON(condition) do { if (condition) unreachable(); } while(0)
+  #endif
+
+  #ifndef HAVE_ARCH_WARN_ON
+
+It may silence a lot of warnings, although it'll come at a cost of 
+increased code size with CONFIG_BUG=n on older gcc.  On newer GCC, 
+you'll get possibly faster and smaller code.
+
+--Andy
