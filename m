@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab1FNVAS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 17:00:18 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:56395 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753517Ab1FNVAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 17:00:13 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Colin Cross <ccross@android.com>
-Subject: Re: [PATCH 0/3] CPU PM notifiers
-Date: Tue, 14 Jun 2011 23:00:42 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-References: <1307925825-28566-1-git-send-email-ccross@android.com> <201106132037.49009.rjw@sisk.pl> <BANLkTi=zTVPkgDO1xXPhypn5Fz6c0PTp79Wq2a6s4jrz3WrJyQ@mail.gmail.com>
-In-Reply-To: <BANLkTi=zTVPkgDO1xXPhypn5Fz6c0PTp79Wq2a6s4jrz3WrJyQ@mail.gmail.com>
+	id S1754023Ab1FNVBb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 17:01:31 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:49630 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753517Ab1FNVBa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 17:01:30 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6377"; a="97510782"
+Message-ID: <4DF7CC22.6050602@codeaurora.org>
+Date: Tue, 14 Jun 2011 15:01:22 -0600
+From: Jordan Crouse <jcrouse@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Zach Pfeffer <zach.pfeffer@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Daniel Stone <daniels@collabora.com>, linux-mm@kvack.org,
+        Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+        Michal Nazarewicz <mina86@mina86.com>, linaro-mm-sig@lists.linaro.org,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-media@vger.kernel.org
+Subject: Re: [Linaro-mm-sig] [PATCH 08/10] mm: cma: Contiguous Memory	Allocator
+ added
+References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>	<20110614170158.GU2419@fooishbar.org>	<BANLkTi=cJisuP8=_YSg4h-nsjGj3zsM7sg@mail.gmail.com> <201106142242.25157.arnd@arndb.de>
+In-Reply-To: <201106142242.25157.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106142300.42487.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 13, 2011, Colin Cross wrote:
-> On Mon, Jun 13, 2011 at 11:37 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Monday, June 13, 2011, Colin Cross wrote:
-> >> This patch set tries to address Russell's concerns with platform
-> >> pm code calling into the driver for every block in the Cortex A9s
-> >> during idle, hotplug, and suspend.  The first patch adds cpu pm
-> >> notifiers that can be called by platform code, the second uses
-> >> the notifier to save and restore the GIC state, and the third
-> >> saves the VFP state.
-> >>
-> >> The notifiers are used for two types of events, CPU PM events and
-> >> CPU complex PM events.  CPU PM events are used to save and restore
-> >> per-cpu context when a single CPU is preparing to enter or has
-> >> just exited a low power state.  For example, the VFP saves the
-> >> last thread context, and the GIC saves banked CPU registers.
-> >>
-> >> CPU complex events are used after all the CPUs in a power domain
-> >> have been prepared for the low power state.  The GIC uses these
-> >> events to save global register state.
-> >>
-> >> Platforms that call the cpu_pm APIs must select
-> >> CONFIG_ARCH_USES_CPU_PM
-> >>
-> >> L2 cache is not covered by this patch set, as the determination
-> >> of when the L2 is reset and when it is retained is
-> >> platform-specific, and most of the APIs necessary are already
-> >> present.
-> >>
-> >>  arch/arm/Kconfig              |    7 ++
-> >>  arch/arm/common/gic.c         |  212 +++++++++++++++++++++++++++++++++++++++++
-> >>  arch/arm/include/asm/cpu_pm.h |   54 +++++++++++
-> >>  arch/arm/kernel/Makefile      |    1 +
-> >>  arch/arm/kernel/cpu_pm.c      |  181 +++++++++++++++++++++++++++++++++++
-> >
-> > Is there any reason why this has to be ARM-specific?  There are other
-> > architectures where this kind of feature might make sense (SH and
-> > powerpc at least).
-> 
-> Nothing other than there are currently no adaptations for any drivers
-> besides ARM, but I can move it somewhere outside ARM.  Any suggestions
-> where?
+On 06/14/2011 02:42 PM, Arnd Bergmann wrote:
+> On Tuesday 14 June 2011 20:58:25 Zach Pfeffer wrote:
+>> I've seen this split bank allocation in Qualcomm and TI SoCs, with
+>> Samsung, that makes 3 major SoC vendors (I would be surprised if
+>> Nvidia didn't also need to do this) - so I think some configurable
+>> method to control allocations is necessarily. The chips can't do
+>> decode without it (and by can't do I mean 1080P and higher decode is
+>> not functionally useful). Far from special, this would appear to be
+>> the default.
+>
+> Thanks for the insight, that's a much better argument than 'something
+> may need it'. Are those all chips without an IOMMU or do we also
+> need to solve the IOMMU case with split bank allocation?
 
-Well, there is kernel/cpu.c.  It contains mostly CPU hotplug and PM
-code at the moment, so it looks like a good place.
+Yes. The IOMMU case with split bank allocation is key, especially for shared
+buffers. Consider the case where video is using a certain bank for performance
+purposes and that frame is shared with the GPU.
 
-> > Besides, is there any overlap between this feature and the CPU hotplug
-> > notifiers?
-> 
-> I don't think so - the hotplug notifiers are used when a CPU is being
-> removed from the system, so no saving and restoring is necessary - the
-> CPU will be rebooted from scratch.  They are used by systems outside
-> the CPU that need to know that a CPU no longer exists.
-> 
-> CPU PM notifiers are used when a CPU is going through reset in a way
-> that should be transparent to most of the system.
-
-Do I guess correctly that you mean cpuidle?
-
-Rafael
+Jordan
