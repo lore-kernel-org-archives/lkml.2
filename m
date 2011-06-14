@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab1FNSaX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 14:30:23 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56431 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751101Ab1FNSaW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 14:30:22 -0400
+	id S1752796Ab1FNS2q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 14:28:46 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56090 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093Ab1FNS2o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 14:28:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=SgfZSJRgCH5SjG6eSVHPedbVMByabxPzEBBlTtiDlxzBuf9DEpBL5whbevQG2hOJVR
+         WrLW9cvjDfx0v5A4jJjsC6UmI0Tnf77jKM2rDc3Bir05qclG+2zU1ri1a1eYX+sai+jb
+         XNKkBZPVzBzr36Vc4KPENE68PLU7avKidVpyQ=
 MIME-Version: 1.0
-In-Reply-To: <1308054796.16682.14.camel@hcegtvedt.norway.atmel.com>
-References: <1308054796.16682.14.camel@hcegtvedt.norway.atmel.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 14 Jun 2011 11:28:20 -0700
-Message-ID: <BANLkTi=rf1bhyL-xKtZfFM8-phZWA-8S0Q@mail.gmail.com>
-Subject: Re: [GIT PULL] AVR32 update for 3.0
-To: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-Cc: AVR32 Linux Kernel <kernel@avr32linux.org>,
-        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <BANLkTina_Y5xekoE9SnbG125CVFLopym2A@mail.gmail.com>
+References: <4df13a522720782e51@agluck-desktop.sc.intel.com>
+	<4df13cea27302b7ccf@agluck-desktop.sc.intel.com>
+	<20110612223840.GA23218@aftab>
+	<BANLkTi=-A5PYj8zpjGB4Xb-_VNq0qr+CGQ@mail.gmail.com>
+	<4DF5C36A.1040707@redhat.com>
+	<20110613095521.GA26316@aftab>
+	<4DF5F729.4060609@redhat.com>
+	<20110613124003.GA27918@aftab>
+	<4DF606C9.90308@redhat.com>
+	<20110613151208.GA29045@aftab>
+	<4DF63B7A.1030805@redhat.com>
+	<BANLkTinUEqRni2u0DaMfSc45b3DmMMyYvA@mail.gmail.com>
+	<4DF6CC58.8050601@jp.fujitsu.com>
+	<4DF6CD25.7040405@jp.fujitsu.com>
+	<BANLkTina_Y5xekoE9SnbG125CVFLopym2A@mail.gmail.com>
+Date: Tue, 14 Jun 2011 11:28:42 -0700
+X-Google-Sender-Auth: 1NsSpn5kDSXv5ERU7pONHNyNya0
+Message-ID: <BANLkTimY1X73pTJmMd8G5GKpsCBVmXLfOw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] x86, mce: rework use of TIF_MCE_NOTIFY
+From: Tony Luck <tony.luck@intel.com>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, Borislav Petkov <bp@amd64.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 14, 2011 at 5:33 AM, Hans-Christian Egtvedt
-<hans-christian.egtvedt@atmel.com> wrote:
->
->  arch/avr32/configs/atngw100_defconfig              |    1 -
->  arch/avr32/configs/atngw100_evklcd100_defconfig    |    1 -
->  arch/avr32/configs/atngw100_evklcd101_defconfig    |    1 -
->  arch/avr32/configs/atngw100_mrmt_defconfig         |    1 -
->  arch/avr32/configs/atngw100mkii_defconfig          |    1 -
->  .../avr32/configs/atngw100mkii_evklcd100_defconfig |    1 -
->  .../avr32/configs/atngw100mkii_evklcd101_defconfig |    1 -
->  arch/avr32/configs/atstk1002_defconfig             |    1 -
->  arch/avr32/configs/atstk1003_defconfig             |    1 -
->  arch/avr32/configs/atstk1004_defconfig             |    1 -
->  arch/avr32/configs/atstk1006_defconfig             |    1 -
->  arch/avr32/configs/favr-32_defconfig               |    1 -
->  arch/avr32/configs/hammerhead_defconfig            |    1 -
->  arch/avr32/configs/merisc_defconfig                |    1 -
->  arch/avr32/configs/mimc200_defconfig               |    1 -
->  arch/avr32/include/asm/processor.h                 |    1 +
->  arch/avr32/mach-at32ap/at32ap700x.c                |    3 +--
->  arch/avr32/mach-at32ap/include/mach/cpu.h          |   12 ------------
->  arch/avr32/mach-at32ap/intc.c                      |    4 +++-
->  19 files changed, 5 insertions(+), 30 deletions(-)
+On Tue, Jun 14, 2011 at 11:02 AM, Tony Luck <tony.luck@intel.com> wrote:
+> need (failing address) to take some action. That was put into
+> the ring
 
-How did you generate that pull request? I was all "Yay - code
-removal!", but then when actually pulling, noticed that your diffstat
-was exactly the wrong way around (the removals were adds, the adds
-were removals), and the real stats end up being
+Correction - we only put the pfn into the ring for AO (action optional)
+errors [in the current state of the patch series].
 
- 19 files changed, 30 insertions(+), 5 deletions(-)
+But the need for a path to get the pfn from the MC handler to the
+mce_notify_process() function remains the same.
 
-instead :(
-
-                    Linus
+-Tony
