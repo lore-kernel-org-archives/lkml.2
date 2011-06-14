@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab1FNPFD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 11:05:03 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:58236 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780Ab1FNPFB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 11:05:01 -0400
-Date: Tue, 14 Jun 2011 20:27:06 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Corbet <corbet@lwn.net>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 2/22]  2: uprobes: Breakground page
- replacement.
-Message-ID: <20110614145706.GD4952@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
- <20110607125835.28590.25476.sendpatchset@localhost6.localdomain6>
- <1307660609.2497.1773.camel@laptop>
- <20110613085955.GD27130@linux.vnet.ibm.com>
- <1308056249.19856.34.camel@twins>
+	id S1752499Ab1FNO6n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 10:58:43 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61640 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391Ab1FNO6l convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 10:58:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=rhEIMvMuMOxFDX6ufS8TebD26+uKxxNYLpKkv9HnWntLsbDApv1Hep7PKIvwOYr4X2
+         0kjJXN3Ri3pJtSP/Rq8a2YSnVaFK+0grcGxlH9NU6N+2O2HJFyGyH5xnMPsrSE0qeFSB
+         owjchs54eRcZER1kcQHn4/NB+EZ9lh2e4qeU8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1308056249.19856.34.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <BANLkTimL=+vaa7NB5FW192rZd08Gv-Z-OA@mail.gmail.com>
+References: <BANLkTimU+E8Y0_9+H2nsF6CMg66_TDH0LQ@mail.gmail.com>
+	<BANLkTimL=+vaa7NB5FW192rZd08Gv-Z-OA@mail.gmail.com>
+Date: Tue, 14 Jun 2011 16:58:40 +0200
+Message-ID: <BANLkTik+TD1+k1hd-hEteE5OTeDrDAuMZQ@mail.gmail.com>
+Subject: [PATCH] s3c2410_udc: udc command always disables pull-up instead of
+ passing the command
+From: Skacore Systems <skacore.systems@gmail.com>
+To: linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 
-> > /*
-> >  * NOTE:
-> >  * Expect the breakpoint instruction to be the smallest size instruction for
-> >  * the architecture. If an arch has variable length instruction and the
-> >  * breakpoint instruction is not of the smallest length instruction
-> >  * supported by that architecture then we need to modify read_opcode /
-> >  * write_opcode accordingly. This would never be a problem for archs that
-> >  * have fixed length instructions.
-> >  */
-> 
-> Whoever reads comments anyway? :-)
-> 
-> > Do we have archs which have a breakpoint instruction which isnt of the
-> > smallest instruction size for that arch. If we do have can we change the
-> > write_opcode/read_opcode while we support that architecture?
-> 
-> Why not put a simple WARN_ON_ONCE() in there that checks the assumption?
+Hello *,
 
-Okay, will do.
+Sorry for the HTML,
+There is a bug in s3c2410_udc driver, which triggers when using custom
+UDC command for USB pull-up.
+As a result driver is always calling user defined UDC command with
+wrong parameter (S3C2410_UDC_P_DISABLE) instead of
+just passing the parameter to the user defined function.
 
--- 
-Thanks and Regards
-Srikar
+BR.
+
+Vilo
+
+--- Linux-2.6.39-wp/2.6.39/drivers/usb/gadget/s3c2410_udc.c
+2011-05-19 06:06:34.000000000 +0200
++++ Linux-2.6.39/linux-paytec/drivers/usb/gadget/s3c2410_udc.c
+2011-06-14 11:59:55.000000000 +0200
+@@ -1566,7 +1566,7 @@
+                return;
+        if (udc_info->udc_command) {
+-               udc_info->udc_command(S3C2410_UDC_P_DISABLE);
++               udc_info->udc_command(cmd);
+        } else if (gpio_is_valid(udc_info->pullup_pin)) {
+                int value;
