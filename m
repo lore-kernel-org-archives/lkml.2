@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab1FNW4h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 18:56:37 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:47156 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753898Ab1FNW4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 18:56:35 -0400
-Date: Wed, 15 Jun 2011 08:56:17 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg KH <greg@kroah.com>, Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: linux-next: build failure after merge of the net tree
-Message-Id: <20110615085617.949d418f.sfr@canb.auug.org.au>
-In-Reply-To: <20110609145657.96fae0d0.sfr@canb.auug.org.au>
-References: <20110609145657.96fae0d0.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1753330Ab1FNXRM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 19:17:12 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:50652 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752398Ab1FNXRK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 19:17:10 -0400
+Date: Wed, 15 Jun 2011 01:04:38 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: hayeswang <hayeswang@realtek.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/r8169: Update the new parser for the new firmware
+Message-ID: <20110614230438.GA1746@electric-eye.fr.zoreil.com>
+References: <1307956594-1248-1-git-send-email-hayeswang@realtek.com> <20110613143241.GA1579@electric-eye.fr.zoreil.com> <AAB6D1CA92564062BD4DA23B485C6B55@realtek.com.tw>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__15_Jun_2011_08_56_17_+1000_/1ovAeAwvHKn8Vb9"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AAB6D1CA92564062BD4DA23B485C6B55@realtek.com.tw>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__15_Jun_2011_08_56_17_+1000_/1ovAeAwvHKn8Vb9
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+hayeswang <hayeswang@realtek.com> :
+[...]
+> I want to keep the old firmware used by the old paser. The old paser cannot
+> use the new firmware and the new paser cannot use the old firmware, so I
+> separate them.
 
-Hi Dave,
+Two points:
+1. it can be done anyway. See below.
+2. I agree with a different name, thoug only in the linux-firmware git
+   repository and in the local filesystem firmware directory. Naming the
+   relevant file for FIRMWARE_8168D_1 something like "rtl8168d-1[_-.]x.y.z"
+   in the linux-firmware repository exhibits some self documenting virtues.
+   rtl8168d-1.fw only needs to link to the firmware of the day. On the other
+   hand, retrieving FIRMWARE_8168D_1 through rtl8168d-3.fw - and tomorrow
+   through rtl8168d-7.fw ? - is imho convoluted and mildly nice to maintain
+   when there are FIRMWARE_8168D_1, FIRMWARE_8168D_2 etc.
 
-On Thu, 9 Jun 2011 14:56:57 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
->
-> After merging the net tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
->=20
-> [See summary in patch below.]
->=20
-> [Hmmm, suddenly allmodconfig is building stuff in staging?  Ah ha!
-> Commit fe35a59e16fb ("Staging: remove STAGING_EXCLUDE_BUILD
-> option")  Greg, a bit of warning might have been nice :-( ]
->=20
-> I assume that this is fallout from commit a6b7a407865a ("net: remove
-> interrupt.h inclusion from netdevice.h").
->=20
-> I added the following patch for today:
->=20
-> From 520e46c255afa851b33e5c4a2bcf2112ecccbb6f Mon Sep 17 00:00:00 2001
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Thu, 9 Jun 2011 14:19:09 +1000
-> Subject: [PATCH] net/staging: add needed interrupt.h and hardirq.h includ=
-es
+[...]
+> > Imho the new firmware format could include some specific 
+> > string so that the driver can identify the new firmware 
+> > format and fallback to the old format otherwise. Any fixed 
+> > magic prefix would be enough as the new format mandates the 
+> > version information.
+> > 
+> > This way Linus's test machine won't risk of breaking 
+> > (again...) if he builds a new kernel without updating the 
+> > firmware at the same time.
+> > 
+> 
+> I plan to let the old paser loads the old firmware and the new paser loads the
+> new firmware. If you build the new kernel without updating the firmware, you
+> just load no firmware because the new firmware doesn't exist. However, it is
+> more dangerous for the old paser to load the new firmware. That is why I
+> create the new ones, not replace the existing files.
 
-I am still getting these build errors and applying the patch.  I would
-assume that if you merge Linus' tree (-rc3 will do it) into net-next, you
-will get these failures as well (for an x86_64 allmodconfig build at
-least).
+Regarding the old driver and new firmware combination, it is possible to
+design the new firmware format so that it gets ignored by the old driver.
+If the new firmware format starts with a huge PHY_SKIPN instruction,
+the old parser will not use it and will emit an "Out of range of firmware"
+error message. Add a magic prefix and the new driver has some decent
+heuristic to figure if it handles a new / old format firmware.
 
-I think that this patch would probably apply to just the net-next tree
-anyway.
+Regarding the new driver and old firmware combination, why should the new
+driver be allowed to refuse working with the old firmware if the old firmware
+is not known broken ?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__15_Jun_2011_08_56_17_+1000_/1ovAeAwvHKn8Vb9
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN9+cRAAoJEDMEi1NhKgbsQ3EH/0rhax959/IdekarHqQ+tpPz
-P/56fGNnq+LrpHUR1JbQ57yPs0Hr2cbjcrKUYQSC50Y5bNwAtJ/DdYbdCAME400q
-X1cVKm24c4AY1HlbD5vYxDXbNRinQbjWn+Chqe4RiVG54paQSaQz4zQ/Md5qjjOg
-PbuK8hQCwvSh2+Z8EO9kVHNxQUznFjbxHsAluOEx0xaxMMPE0sKC/hFMINqOiewl
-RsfN4IRqYZXJh+dZUPqlfF8LP2n7yqrUg+z43TwKRi1YvZUf/T0Uy1+J7PDyLa3p
-FshQC+bGCfpjaTd9+eqhIYS6kxJgOF7xO/8J/q5CfXdqVO6zJFQiA/KGmNgYmeI=
-=TSJf
------END PGP SIGNATURE-----
-
---Signature=_Wed__15_Jun_2011_08_56_17_+1000_/1ovAeAwvHKn8Vb9--
+-- 
+Ueimor
