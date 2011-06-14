@@ -1,77 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab1FNAe2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 20:34:28 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:37454 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187Ab1FNAeZ convert rfc822-to-8bit (ORCPT
+	id S1755547Ab1FNAfq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 20:35:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:62101 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755122Ab1FNAfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 20:34:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=pi9c1WwP/C2bWov/Cao1/CLNOuifj482WfflQC5bBXGBiUnc1EGnT2A5w9hY6oorHQ
-         emIdPYHjoYZYOsnN0voQ==
-MIME-Version: 1.0
-In-Reply-To: <20110613181212.571f8e76@s6510.ftrdhcpuser.net>
-References: <xr93vcw9s9zc.fsf@gthelen.mtv.corp.google.com> <20110613181212.571f8e76@s6510.ftrdhcpuser.net>
-From: Greg Thelen <gthelen@google.com>
-Date: Mon, 13 Jun 2011 17:34:00 -0700
-Message-ID: <BANLkTi=jw5=9LcwxnXW6xNkF4RbFhHaB55Au=oDhn1yYWf53dA@mail.gmail.com>
-Subject: Re: [PATCH] sky2: avoid using uninitialized variable
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Stephen Hemminger <shemminger@linux-foundation.org>,
-        netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Mon, 13 Jun 2011 20:35:45 -0400
+X-Authority-Analysis: v=1.1 cv=PfPQ8rIoTcZsncbPZjVSZ7K0hy8Zc4hmL68r4VPNpKE= c=1 sm=0 a=nbpwko1cA38A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=BjAo3GHOZZvjUevs1r4A:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: BUG on 3.0-rc on commit
+ d72bce0e67e8afc6eb959f656013cbb577426f1e
+From: Steven Rostedt <rostedt@goodmis.org>
+To: habanero@linux.vnet.ibm.com
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1308009910.23688.34.camel@atheurer-ubuntu10>
+References: <1307711837.23688.33.camel@atheurer-ubuntu10>
+	 <1307715084.3941.166.camel@twins>  <1307717156.3941.169.camel@twins>
+	 <1307720081.17297.6.camel@atheurer-w510>  <1307723232.3941.178.camel@twins>
+	 <1307977614.17297.12.camel@atheurer-w510>
+	 <1307979239.9218.76.camel@gandalf.stny.rr.com>
+	 <1308009910.23688.34.camel@atheurer-ubuntu10>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 13 Jun 2011 20:35:42 -0400
+Message-ID: <1308011742.9218.103.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 3:12 PM, Stephen Hemminger
-<shemminger@vyatta.com> wrote:
-> On Mon, 13 Jun 2011 14:21:59 -0700
-> Greg Thelen <gthelen@google.com> wrote:
->
->> I am not sure if 0 or ~0 would be a better choice in the gm_phy_read()
->> error case.  I used 0.  A more complete solution might be to plumb up
->> error handling to the callers of gm_phy_read().
->>
->> ==
->> From 37486219a3d93881f3b2619a4b2bb21be62db7d4 Mon Sep 17 00:00:00 2001
->> From: Greg Thelen <gthelen@google.com>
->> Date: Mon, 13 Jun 2011 14:09:07 -0700
->> Subject: [PATCH] sky2: avoid using uninitialized variable
->>
->> Prior to this change gm_phy_read() could return an uninitialized
->> variable if __gm_phy_read() failed.
->>
->> This change returns zero in the failure case.
->>
->> Signed-off-by: Greg Thelen <gthelen@google.com>
->
-> Shouldn't the callers be changed to check rather than just returning
-> 0 and masking the problem.
+On Mon, 2011-06-13 at 19:05 -0500, Andrew Theurer wrote:
 
-I agree that the right long term solution is to plumb the error
-handling up through the callers.  This would involve deleting the
-error-free gm_phy_read() routine and replacing all calls to it with
-calls to error-capable __gm_phy_read().  This would require converting
-several routines from returning void to returning int allowing errors
-to propagate upwards.  Notable affected routines include:
-sky2_phy_power_up(), sky2_wol_init(), sky2_phy_power_down(),
-sky2_hw_down(), sky2_mac_init(), sky2_hw_up(), sky2_phy_intr(),
-sky2_led().  sky2_restart() would likely have to re-queue the work
-item in the case of failure.  Presumably sky2_poll() would return 0 if
-error is seen.  On a related note, it also seems that gm_phy_write()
-callers should be checking its return value to also handle the same
-class of I/O errors.  Testing these changes would involve injecting
-error values or access to certain kinds of broken hardware.
+> > Could you try this patch?
+> 
+> Yes, and it works!  Thanks very much!
+> > 
+> >
 
-For the short term I figured that not consuming random data was a step
-in right direction.  But I understand if you prefer to hold out for
-the complete solution.  Unfortunately, I do not currently have time to
-contribute to the complete solution.
+Great! I'll make a patch up. Can I add your reported-by and tested-by
+tags?
+
+-- Steve
+
+
