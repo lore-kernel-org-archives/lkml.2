@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab1FNANf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jun 2011 20:13:35 -0400
-Received: from yumi.tdiedrich.de ([85.10.210.183]:40815 "EHLO mx.tdiedrich.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755054Ab1FNANe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jun 2011 20:13:34 -0400
-Date: Tue, 14 Jun 2011 02:13:33 +0200
-From: Tobias Diedrich <ranma+xen@tdiedrich.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-users@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: 3.0.0-rc2: Xen: powernow-k8: Kernel panic - not syncing:
- Attempted to kill init!
-Message-ID: <20110614001333.GC7417@yumi.tdiedrich.de>
-Mail-Followup-To: Tobias Diedrich <ranma+xen@tdiedrich.de>,
-	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-	xen-users@lists.xensource.com, linux-kernel@vger.kernel.org
-References: <20110613202622.GC20616@yumi.tdiedrich.de>
- <20110613215123.GA19117@dumpdata.com>
- <20110613235221.GA7417@yumi.tdiedrich.de>
+	id S1755545Ab1FNAe2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jun 2011 20:34:28 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:37454 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753187Ab1FNAeZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jun 2011 20:34:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=pi9c1WwP/C2bWov/Cao1/CLNOuifj482WfflQC5bBXGBiUnc1EGnT2A5w9hY6oorHQ
+         emIdPYHjoYZYOsnN0voQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110613235221.GA7417@yumi.tdiedrich.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110613181212.571f8e76@s6510.ftrdhcpuser.net>
+References: <xr93vcw9s9zc.fsf@gthelen.mtv.corp.google.com> <20110613181212.571f8e76@s6510.ftrdhcpuser.net>
+From: Greg Thelen <gthelen@google.com>
+Date: Mon, 13 Jun 2011 17:34:00 -0700
+Message-ID: <BANLkTi=jw5=9LcwxnXW6xNkF4RbFhHaB55Au=oDhn1yYWf53dA@mail.gmail.com>
+Subject: Re: [PATCH] sky2: avoid using uninitialized variable
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Stephen Hemminger <shemminger@linux-foundation.org>,
+        netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tobias Diedrich wrote:
-> Konrad Rzeszutek Wilk wrote:
-> > > [    5.523199] rtc_cmos 00:05: setting system clock to 2011-06-13 20:20:00 UTC (1307996400)
-> > > [    5.523400] powernow-k8: Found 1 AMD Athlon(tm) 64 Processor 3700+ (1 cpu cores) (version 2.20.00)
-> > > [    5.530956] powernow-k8: fid 0x2 (1000 MHz), vid 0x12
-> > > [    5.531072] powernow-k8: fid 0xa (1800 MHz), vid 0xa
-> > > [    5.531187] powernow-k8: fid 0xc (2000 MHz), vid 0x8
-> > > [    5.531301] powernow-k8: fid 0xe (2200 MHz), vid 0x8
-> > > [    5.531460] Marking TSC unstable due to cpufreq changes
-> > > [    5.531680] powernow-k8: fid trans failed, fid 0x2, curr 0x0
-> > > [    5.531802] BUG: unable to handle kernel paging request at ffff880807e07b78
-> > > [    5.531982] IP: [<ffffffff81479163>] cpufreq_stats_update+0x46/0x5b
-> > 
-> > For this one, you will have to fire out gdb and disassemble the code to
-> > figure out where it failed. Look for 'gdb vmlinux' and 'disassembly' on this
-> > mailing list - that should provide some hints.
-> 
-> Probably because of the 'fid trans failed' stat->last_index is -1
+On Mon, Jun 13, 2011 at 3:12 PM, Stephen Hemminger
+<shemminger@vyatta.com> wrote:
+> On Mon, 13 Jun 2011 14:21:59 -0700
+> Greg Thelen <gthelen@google.com> wrote:
+>
+>> I am not sure if 0 or ~0 would be a better choice in the gm_phy_read()
+>> error case.  I used 0.  A more complete solution might be to plumb up
+>> error handling to the callers of gm_phy_read().
+>>
+>> ==
+>> From 37486219a3d93881f3b2619a4b2bb21be62db7d4 Mon Sep 17 00:00:00 2001
+>> From: Greg Thelen <gthelen@google.com>
+>> Date: Mon, 13 Jun 2011 14:09:07 -0700
+>> Subject: [PATCH] sky2: avoid using uninitialized variable
+>>
+>> Prior to this change gm_phy_read() could return an uninitialized
+>> variable if __gm_phy_read() failed.
+>>
+>> This change returns zero in the failure case.
+>>
+>> Signed-off-by: Greg Thelen <gthelen@google.com>
+>
+> Shouldn't the callers be changed to check rather than just returning
+> 0 and masking the problem.
 
-It's set to -1 in cpufreq_stats_create_table(), the second call to
-freq_table_get_index() doesn't check against -1 (expecting the call
-to always succeed):
+I agree that the right long term solution is to plumb the error
+handling up through the callers.  This would involve deleting the
+error-free gm_phy_read() routine and replacing all calls to it with
+calls to error-capable __gm_phy_read().  This would require converting
+several routines from returning void to returning int allowing errors
+to propagate upwards.  Notable affected routines include:
+sky2_phy_power_up(), sky2_wol_init(), sky2_phy_power_down(),
+sky2_hw_down(), sky2_mac_init(), sky2_hw_up(), sky2_phy_intr(),
+sky2_led().  sky2_restart() would likely have to re-queue the work
+item in the case of failure.  Presumably sky2_poll() would return 0 if
+error is seen.  On a related note, it also seems that gm_phy_write()
+callers should be checking its return value to also handle the same
+class of I/O errors.  Testing these changes would involve injecting
+error values or access to certain kinds of broken hardware.
 
-	stat->last_time = get_jiffies_64();
-	stat->last_index = freq_table_get_index(stat, policy->cur);
-
--- 
-Tobias						PGP: http://8ef7ddba.uguu.de
+For the short term I figured that not consuming random data was a step
+in right direction.  But I understand if you prefer to hold out for
+the complete solution.  Unfortunately, I do not currently have time to
+contribute to the complete solution.
