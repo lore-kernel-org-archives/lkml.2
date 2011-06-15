@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755694Ab1FPHAx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:00:53 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:38471 "EHLO
+	id S1754611Ab1FPHBA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:01:00 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:41783 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755515Ab1FPHAn (ORCPT
+	by vger.kernel.org with ESMTP id S1755435Ab1FPHAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:00:43 -0400
-X-Sasl-enc: iHtuwVkhvYAW3U3q6qGOKo8F8Jfg91HOU5qDqxYscq1v 1308207642
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:31 2011
-Message-Id: <20110616000231.841256077@clark.kroah.org>
+	Thu, 16 Jun 2011 03:00:44 -0400
+X-Sasl-enc: XrVHBsgwhUeL7WW4RBUyeVSwoPDHtZ9JQz3q67gfY3Bp 1308207643
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:32 2011
+Message-Id: <20110616000231.935366188@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 16:59:52 -0700
+Date: Wed, 15 Jun 2011 16:59:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jordan Hargrave <jordan_hargrave@dell.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [29/89] PCI: Set PCIE maxpayload for card during hotplug insertion
+        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [30/89] powerpc: Fix 32-bit SMP build
 In-Reply-To: <20110616000258.GA14529@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,85 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Jordan_Hargrave@Dell.com" <Jordan_Hargrave@Dell.com>
+From: Josh Boyer <jwboyer@linux.vnet.ibm.com>
 
-commit e522a7126c7c144a1dd14c6f217ac31e71082b1d upstream.
+commit 6de06f313a65d0ecabf055e708d082002b568866 upstream.
 
-The following patch sets the MaxPayload setting to match the parent
-reading when inserting a PCIE card into a hotplug slot.  On our system,
-the upstream bridge is set to 256, but when inserting a card, the card
-setting defaults to 128.  As soon as I/O is performed to the card it
-starts receiving errors since the payload size is too small.
+Commit 69e3cea8d5fd526 ("powerpc/smp: Make start_secondary_resume
+available to all CPU variants") introduced start_secondary_resume to
+misc_32.S, however it uses a 64-bit instruction which is not valid on
+32-bit platforms.  Use 'stw' instead.
 
-Reviewed-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Signed-off-by: Jordan Hargrave <jordan_hargrave@dell.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Reported-by: Richard Cochran <richardcochran@gmail.com>
+Tested-by: Richard Cochran <richardcochran@gmail.com>
+Signed-off-by: Josh Boyer <jwboyer@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/hotplug/pcihp_slot.c |   45 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 45 insertions(+)
+ arch/powerpc/kernel/head_32.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/pci/hotplug/pcihp_slot.c
-+++ b/drivers/pci/hotplug/pcihp_slot.c
-@@ -158,6 +158,47 @@ static void program_hpp_type2(struct pci
- 	 */
- }
- 
-+/* Program PCIE MaxPayload setting on device: ensure parent maxpayload <= device */
-+static int pci_set_payload(struct pci_dev *dev)
-+{
-+       int pos, ppos;
-+       u16 pctl, psz;
-+       u16 dctl, dsz, dcap, dmax;
-+       struct pci_dev *parent;
-+
-+       parent = dev->bus->self;
-+       pos = pci_find_capability(dev, PCI_CAP_ID_EXP);
-+       if (!pos)
-+               return 0;
-+
-+       /* Read Device MaxPayload capability and setting */
-+       pci_read_config_word(dev, pos + PCI_EXP_DEVCTL, &dctl);
-+       pci_read_config_word(dev, pos + PCI_EXP_DEVCAP, &dcap);
-+       dsz = (dctl & PCI_EXP_DEVCTL_PAYLOAD) >> 5;
-+       dmax = (dcap & PCI_EXP_DEVCAP_PAYLOAD);
-+
-+       /* Read Parent MaxPayload setting */
-+       ppos = pci_find_capability(parent, PCI_CAP_ID_EXP);
-+       if (!ppos)
-+               return 0;
-+       pci_read_config_word(parent, ppos + PCI_EXP_DEVCTL, &pctl);
-+       psz = (pctl &  PCI_EXP_DEVCTL_PAYLOAD) >> 5;
-+
-+       /* If parent payload > device max payload -> error
-+        * If parent payload > device payload -> set speed
-+        * If parent payload <= device payload -> do nothing
-+        */
-+       if (psz > dmax)
-+               return -1;
-+       else if (psz > dsz) {
-+               dev_info(&dev->dev, "Setting MaxPayload to %d\n", 128 << psz);
-+               pci_write_config_word(dev, pos + PCI_EXP_DEVCTL,
-+                                     (dctl & ~PCI_EXP_DEVCTL_PAYLOAD) +
-+                                     (psz << 5));
-+       }
-+       return 0;
-+}
-+
- void pci_configure_slot(struct pci_dev *dev)
- {
- 	struct pci_dev *cdev;
-@@ -169,6 +210,10 @@ void pci_configure_slot(struct pci_dev *
- 			(dev->class >> 8) == PCI_CLASS_BRIDGE_PCI)))
- 		return;
- 
-+       ret = pci_set_payload(dev);
-+       if (ret)
-+               dev_warn(&dev->dev, "could not set device max payload\n");
-+
- 	memset(&hpp, 0, sizeof(hpp));
- 	ret = pci_get_hp_params(dev, &hpp);
- 	if (ret)
+--- a/arch/powerpc/kernel/head_32.S
++++ b/arch/powerpc/kernel/head_32.S
+@@ -896,7 +896,7 @@ _GLOBAL(start_secondary_resume)
+ 	rlwinm	r1,r1,0,0,(31-THREAD_SHIFT)	/* current_thread_info() */
+ 	addi	r1,r1,THREAD_SIZE-STACK_FRAME_OVERHEAD
+ 	li	r3,0
+-	std	r3,0(r1)		/* Zero the stack frame pointer	*/
++	stw	r3,0(r1)		/* Zero the stack frame pointer	*/
+ 	bl	start_secondary
+ 	b	.
+ #endif /* CONFIG_SMP */
 
 
