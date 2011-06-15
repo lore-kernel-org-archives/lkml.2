@@ -1,95 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151Ab1FOTJL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 15:09:11 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:56419 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935Ab1FOTJI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 15:09:08 -0400
+	id S1754161Ab1FOTLu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 15:11:50 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55895 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752294Ab1FOTLs convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 15:11:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110615190754.11693.26335.stgit@ponder>
-References: <20110615190754.11693.26335.stgit@ponder>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 15 Jun 2011 13:08:48 -0600
-X-Google-Sender-Auth: 9joi1qurpWbba9U3aJJPUglN5-w
-Message-ID: <BANLkTikg=rzB3R3Gwed3+y1V8OXQhmm1Lg@mail.gmail.com>
-Subject: Re: [PATCH] spi/tegra: add devicetree support
-To: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Erik Gilling <konkers@android.com>
-Cc: Stephen Warren <swarren@nvidia.com>
+In-Reply-To: <1308135495.15315.38.camel@twins>
+References: <1308097798.17300.142.camel@schen9-DESK> <1308134200.15315.32.camel@twins>
+ <1308135495.15315.38.camel@twins>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 15 Jun 2011 12:11:19 -0700
+Message-ID: <BANLkTikt88KnxTy8TuGGVrBVnXvsnL7nMQ@mail.gmail.com>
+Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
+ to mutex
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, ak@linux.intel.com,
+        shaohua.li@intel.com, alex.shi@intel.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, "Rafael J. Wysocki" <rjw@sisk.pl>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 1:07 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> Allow the tegra spi driver to obtain populate the spi bus with devices
-> from the device tree.
+On Wed, Jun 15, 2011 at 3:58 AM, Peter Zijlstra <peterz@infradead.org> wrote:
 >
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> The first thing that stood out when running it was:
+>
+> 31694 root      20   0 26660 1460 1212 S 17.5  0.0   0:01.97 exim
+>    7 root      -2  19     0    0    0 S 12.7  0.0   0:06.14 rcuc0
+...
+>
+> Which is an impressive amount of RCU usage..
 
-I'll commit this to spi/next in a few days if nobody objects.
+Gaah. Can we just revert that crazy "use threads for RCU" thing already?
 
-g.
+It's wrong. It's clearly expensive. It's using threads FOR NO GOOD
+REASON, since the only reason for using them are config options that
+nobody even uses, for chissake!
 
-> ---
->  .../devicetree/bindings/spi/spi_nvidia.txt         |    5 +++++
->  drivers/spi/spi-tegra.c                            |   12 ++++++++++++
->  2 files changed, 17 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/spi/spi_nvidia.txt
->
-> diff --git a/Documentation/devicetree/bindings/spi/spi_nvidia.txt b/Documentation/devicetree/bindings/spi/spi_nvidia.txt
-> new file mode 100644
-> index 0000000..bde450b
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/spi/spi_nvidia.txt
-> @@ -0,0 +1,5 @@
-> +NVIDIA Tegra 2 SPI device
-> +
-> +Required properties:
-> +- compatible : should be "nvidia,tegra250-spi".
-> +- gpios : should specify GPIOs used for chipselect.
-> diff --git a/drivers/spi/spi-tegra.c b/drivers/spi/spi-tegra.c
-> index 8e30727..a43ceeb 100644
-> --- a/drivers/spi/spi-tegra.c
-> +++ b/drivers/spi/spi-tegra.c
-> @@ -546,6 +546,7 @@ static int __init spi_tegra_probe(struct platform_device *pdev)
->        tspi->rx_dma_req.req_sel = spi_tegra_req_sels[pdev->id];
->        tspi->rx_dma_req.dev = tspi;
->
-> +       master->dev.of_node = pdev->dev.of_node;
->        ret = spi_register_master(master);
->
->        if (ret < 0)
-> @@ -595,10 +596,21 @@ static int __devexit spi_tegra_remove(struct platform_device *pdev)
->
->  MODULE_ALIAS("platform:spi_tegra");
->
-> +#ifdef CONFIG_OF
-> +static struct of_device_id spi_tegra_of_match_table[] __devinitdata = {
-> +       { .compatible = "nvidia,tegra250-spi", },
-> +       {}
-> +};
-> +MODULE_DEVICE_TABLE(of, spi_tegra_of_match_table);
-> +#else /* CONFIG_OF */
-> +#define spi_tegra_of_match_table NULL
-> +#endif /* CONFIG_OF */
-> +
->  static struct platform_driver spi_tegra_driver = {
->        .driver = {
->                .name =         "spi_tegra",
->                .owner =        THIS_MODULE,
-> +               .of_match_table = spi_tegra_of_match_table,
->        },
->        .remove =       __devexit_p(spi_tegra_remove),
->  };
->
->
+And it results in real problems. For example, if you use "perf record"
+to see what the hell is up, the use of kernel threads for RCU
+callbacks means that the RCU cost is never even seen. I don't know how
+Tim did his profiling to figure out the costs, and I don't know how he
+decided that the spinlock to semaphore conversion was the culprit, but
+it is entirely possible that Tim didn't actually bisect the problem,
+but instead used "perf record" on the exim task, saw that the
+semaphore costs had gone up, and decided that it must be the
+conversion.
 
+And sure, maybe 50% of it was the conversion, and maybe 50% of it the
+RCU changes - and "perf record" just never showed the RCU component.
+We already know that it causes huge slowdowns on some other loads. We
+just don't know.
 
+So using anonymous kernel threads is actually a real downside. It
+makes it much less obvious what is going on. We saw that exact same
+thing with the generic worker thread conversions: things that used to
+have clear performance issues ("oh, the iwl-phy0 thread is using 3% of
+CPU time because it is polling for IO, and I can see that in 'top'")
+turned into much-harder-to-see issues ("oh, kwork0 us using 3% CPU
+time according to 'top' - I have no idea why").
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Now, with RCU using softirq's, clearly the costs of RCU can sometimes
+be mis-attributed because it turns out that the softirq is run from
+some other thread. But statistically, if you end up having a heavy
+softirq load, it _usually_ ends up being triggered in the context of
+whoever causes that load. Not always, and not reliably, but I suspect
+it ends up being easier to see.
+
+And quite frankly, just look at commit a26ac2455ffc: it sure as hell
+isn't making anything simpler. It adds several hundred lines of code,
+and it's already been implicated in one major performance regression,
+and is a possible reason for this one.
+
+So Ingo, Paul: can we *please* just revert it, and agree that if you
+want to re-instate it, the code should be
+
+ (a) only done for the case where it matters (ie for the RCUBOOST case)
+
+ (b) tested better for performance issues (and maybe shared with the
+tinyrcu case that also uses threads?)
+
+Please? It's more than a revert of that one commit - there's tons of
+commits on top of that to actually do the boosting etc (and fixing
+some of the fallout). But really, by now I'd prefer to just revert it
+all, rather than see if it can be fixed up.. According to Peter,
+Shaohua Li's patch that largely fixes the performance issue for the
+other load (by moving *some* of the RCU stuff back to softirq context)
+helps, but still leaves the rcu threads with a lot of CPU time.
+
+Considering that most of the RCU callbacks are not very CPU intensive,
+I bet that there's a *ton* of them, and that the context switch
+overhead is quite noticeable. And quite frankly, even if Shaohua Li's
+patch largely fixes the performance issue, it does so by making the
+RCU situation EVEN MORE COMPLEX, with RCU now using *both* threads and
+softirq.
+
+That's just crazy. If you really want to do both the threads and
+softirq thing for the magical RCU_BOOST case, go ahead, but please
+don't do crazy things for the sane configurations.
+
+                                Linus
