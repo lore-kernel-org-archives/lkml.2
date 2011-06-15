@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067Ab1FONcN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 09:32:13 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:32827 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754221Ab1FONcK (ORCPT
+	id S1754694Ab1FONfb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 09:35:31 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:54879 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064Ab1FONfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 09:32:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=OWOjp3TsUIj93RBlGIZr817SqRb0kUwn7NK0fNlFK5mT8hLxSC2t4vgOifHo0kUpyh
-         XHvoJXeHX6H1gL+Koaeuxm0gXeYENInWm4pCxse+dAIXhdTeNZGrMoahY2IOuU5D2H5r
-         ouWvkxmI/ZGAV2vGVA3RnQdJfWPoV0CdTimGc=
-Date: Wed, 15 Jun 2011 15:32:06 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Patrick Boettcher <pboettcher@kernellabs.com>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] dvb-usb/technisat-usb2: don't use flush_scheduled_work()
-Message-ID: <20110615133206.GW8141@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 15 Jun 2011 09:35:30 -0400
+From: Andy Whitcroft <apw@canonical.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        Andy Whitcroft <apw@canonical.com>
+Subject: [PATCH 1/1] perf: clear out make flags when calling kernel make kernelver
+Date: Wed, 15 Jun 2011 14:35:00 +0100
+Message-Id: <1308144900-1945-1-git-send-email-apw@canonical.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-flush_scheduled_work() is deprecated and scheduled to be removed.
-technisat-usb2 already sync-cancels the only work item it uses and
-there's no reason for it to call flush_scheduled_work().  Don't use
-it.
+When generating the perf version from the kernel version using 'make
+kernelver' it is necessary to clear out any MAKEFLAGS otherwise they may
+trigger additional output which pollute the contents.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Patrick Boettcher <pboettcher@kernellabs.com>
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
 ---
-I was re-scanning source tree to prepare for deprecation of
-flush_scheduled_work() and found out new driver added usage
-unnecessarily.  Can you please include this patch so that it gets
-propagated to linux-next soonish?
+ tools/perf/util/PERF-VERSION-GEN |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thank you.
-
- drivers/media/dvb/dvb-usb/technisat-usb2.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
-
-Index: work/drivers/media/dvb/dvb-usb/technisat-usb2.c
-===================================================================
---- work.orig/drivers/media/dvb/dvb-usb/technisat-usb2.c
-+++ work/drivers/media/dvb/dvb-usb/technisat-usb2.c
-@@ -765,10 +765,8 @@ static void technisat_usb2_disconnect(st
- 	/* work and stuff was only created when the device is is hot-state */
- 	if (dev != NULL) {
- 		struct technisat_usb2_state *state = dev->priv;
--		if (state != NULL) {
-+		if (state != NULL)
- 			cancel_delayed_work_sync(&state->green_led_work);
--			flush_scheduled_work();
--		}
- 	}
+diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
+index 9c5fb4d..ad73300 100755
+--- a/tools/perf/util/PERF-VERSION-GEN
++++ b/tools/perf/util/PERF-VERSION-GEN
+@@ -23,7 +23,7 @@ if test -d ../../.git -o -f ../../.git &&
+ then
+ 	VN=$(echo "$VN" | sed -e 's/-/./g');
+ else
+-	VN=$(make -sC ../.. kernelversion)
++	VN=$(MAKEFLAGS= make -sC ../.. kernelversion)
+ fi
  
- 	dvb_usb_device_exit(intf);
+ VN=$(expr "$VN" : v*'\(.*\)')
+-- 
+1.7.4.1
+
