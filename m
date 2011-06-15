@@ -1,94 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973Ab1FOIPf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 04:15:35 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:64101 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753042Ab1FOIP1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 04:15:27 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=us-ascii
-Date: Wed, 15 Jun 2011 10:14:53 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCH 08/10] mm: cma: Contiguous Memory Allocator added
-In-reply-to: <201106150937.18524.arnd@arndb.de>
-To: "'Arnd Bergmann'" <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
-Cc: "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Mel Gorman'" <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-media@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Message-id: <000701cc2b34$4e090710$ea1b1530$%szyprowski@samsung.com>
-Organization: SPRC
-X-Mailer: Microsoft Office Outlook 12.0
-Content-language: pl
-Thread-index: AcwrLxkD605FLoZtSFqEU/y3xpjZ4QAAiccQ
-References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
- <201106142030.07549.arnd@arndb.de>
- <000501cc2b2b$789a54b0$69cefe10$%szyprowski@samsung.com>
- <201106150937.18524.arnd@arndb.de>
+	id S1753598Ab1FOIP0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 04:15:26 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:54529 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752321Ab1FOIPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 04:15:22 -0400
+Date: Wed, 15 Jun 2011 10:15:18 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Sam Liao <phyomh@gmail.com>
+Cc: Arun Sharma <asharma@fb.com>, linux-kernel@vger.kernel.org,
+        linux-perf-users@vger.kernel.org
+Subject: Re: [PATCH] [perf] Add inverted call graph report support.
+Message-ID: <20110615081518.GC12496@elte.hu>
+References: <BANLkTi=svHgWzyKiEHjMc-j5Hq4y5R8Mow@mail.gmail.com>
+ <20110609193300.GA16858@dev1756.snc6.facebook.com>
+ <20110614221517.GA20319@dev1756.snc6.facebook.com>
+ <BANLkTikcxA53t1ummUG3-3TagFhj==qYjw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTikcxA53t1ummUG3-3TagFhj==qYjw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Wednesday, June 15, 2011 9:37 AM Arnd Bergmann wrote:
+* Sam Liao <phyomh@gmail.com> wrote:
 
-> On Wednesday 15 June 2011 09:11:39 Marek Szyprowski wrote:
-> > I see your concerns, but I really wonder how to determine the properties
-> > of the global/default cma pool. You definitely don't want to give all
-> > available memory o CMA, because it will have negative impact on kernel
-> > operation (kernel really needs to allocate unmovable pages from time to
-> > time).
+> On Wed, Jun 15, 2011 at 6:15 AM, Arun Sharma <asharma@fb.com> wrote:
+> > Sam,
+> >
+> > $ perf report -g graph,0.5,caller --sort pid
+> >
+> > is a bit hard to type. Perhaps add a simpler command line option
+> > that has the same effect?
+> >
+> >  -Arun
+> >
+> >
 > 
-> Exactly. This is a hard problem, so I would prefer to see a solution for
-> coming up with reasonable defaults.
-
-The problem is to define these reasonable defaults, because they also depend
-on the target usage pattern for the board. If one doesn't plan to use video
-codec at all, then the value calculated for full HD movie decoding are 
-definitely too high.
-
-> > The only solution I see now is to provide Kconfig entry to determine
-> > the size of the global CMA pool, but this still have some issues,
-> > especially for multi-board kernels (each board probably will have
-> > different amount of RAM and different memory-consuming devices
-> > available). It looks that each board startup code still might need to
-> > tweak the size of CMA pool. I can add a kernel command line option for
-> > it, but such solution also will not solve all the cases (afair there
-> > was a discussion about kernel command line parameters for memory
-> > configuration and the conclusion was that it should be avoided).
+> How about perf report -g [caller/callee,][graph,0.1] -s pid
 > 
-> The command line option can be a last resort if the heuristics fail,
-> but it's not much better than a fixed Kconfig setting.
-> 
-> How about a Kconfig option that defines the percentage of memory
-> to set aside for contiguous allocations?
+> or remove the order of the options for "-g"
 
-There can be probably both types of Kconfig entries: for absolute value
-and the percentage of the total memory, but still, creating a 
-fully-functional multi-board kernel will be really hard.
+We could alias the -G flag to the inverse graph.
 
-However there is one more issue here. It is quite common that embedded
-systems have memory that is not really contiguous in address space
-(there are some holes that splits it into 'banks' or regions). So we
-might have a system with 256MiB of memory split into 2 memory banks.
-In this case the CMA pool can use only one of them (the pool must be
-contiguous internally). I'm not sure if such systems might require more
-memory for contiguous buffers.
+Plus it would be nice to allow a .perfconfig flag for people to 
+configure their desired default reporting parameters.
 
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
+Thanks,
 
-
+	Ingo
