@@ -1,101 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698Ab1FOVGa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 17:06:30 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42131 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260Ab1FOVG1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 17:06:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references
-         :mime-version:content-type:content-transfer-encoding;
-        b=PP3SSuJzgTm2VWwPsROUxhMsf2hjxFO8PXmA5ql+lUTEn7kU78xFFFEQji8CyiaYCl
-         9aMKaGZ/ThnuJ8tqJ/Sw6xMUCdhD/RY2RnS46cC6Zr96TjrRlkpupdYi6RokWePvHwXb
-         s2bOqIIGkumpSIGo/gUnkITUe2Z4mkRvEzYlM=
-From: =?UTF-8?q?T=C3=B6r=C3=B6k=20Edwin?= <edwintorok@gmail.com>
-To: Dave Jones <davej@redhat.com>, Eric Sandeen <sandeen@redhat.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>,
-        Norbert Preining <preining@logic.at>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?T=C3=B6r=C3=B6k=20Edwin?= <edwintorok@gmail.com>
-Subject: [PATCH] fix wrong iput on d_inode introduced by e6bc45d65d
-Date: Thu, 16 Jun 2011 00:06:14 +0300
-Message-Id: <1308171974-7323-1-git-send-email-edwintorok@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <4DF868C8.3040903@gmail.com>
-References: <4DF868C8.3040903@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1754837Ab1FOVLm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 17:11:42 -0400
+Received: from mga02.intel.com ([134.134.136.20]:36111 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751991Ab1FOVLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 17:11:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,371,1304319600"; 
+   d="scan'208";a="13996021"
+Subject: Re: REGRESSION: Performance regressions from switching
+ anon_vma->lock to mutex
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+In-Reply-To: <4DF91CB9.5080504@linux.intel.com>
+References: <1308097798.17300.142.camel@schen9-DESK>
+	 <1308101214.15392.151.camel@sli10-conroe> <1308138750.15315.62.camel@twins>
+	 <20110615161827.GA11769@tassilo.jf.intel.com>
+	 <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
+	 <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Jun 2011 14:12:16 -0700
+Message-ID: <1308172336.17300.177.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Git bisection shows that commit e6bc45d65df8599fdbae73be9cec4ceed274db53 causes
-BUG_ONs under high I/O load:
+On Wed, 2011-06-15 at 13:57 -0700, Andi Kleen wrote:
+> >       7.44%        exim  [kernel.kallsyms]              [k] format_decode
+> >                    |
+> >                    --- format_decod
+> 
+> 
+> This is a glibc issue. exim calls libdb and libdb asks sysconf for the 
+> number of CPUs to tune
+> its locking, and glibc reads /proc/stat.  And /proc/stat is incredible slow.
+> 
+> I would blame glibc, but in this case it's really the kernel to blame 
+> for not providing proper
+> interface.
+> 
+> This was my motivation for the sysconf() syscall I submitted some time ago.
+> https://lkml.org/lkml/2011/5/13/455
+> 
+> Anyways a quick workaround is to use this LD_PRELOAD: 
+> http://halobates.de/smallsrc/sysconf.c
+> But it's not 100% equivalent.
+> 
 
-kernel BUG at fs/inode.c:1368!
-[ 2862.501007] Call Trace:
-[ 2862.501007]  [<ffffffff811691d8>] d_kill+0xf8/0x140
-[ 2862.501007]  [<ffffffff81169c19>] dput+0xc9/0x190
-[ 2862.501007]  [<ffffffff8115577f>] fput+0x15f/0x210
-[ 2862.501007]  [<ffffffff81152171>] filp_close+0x61/0x90
-[ 2862.501007]  [<ffffffff81152251>] sys_close+0xb1/0x110
-[ 2862.501007]  [<ffffffff814c14fb>] system_call_fastpath+0x16/0x1b
+Thanks to Andi for providing the info.  We've used this workaround in
+our testing so it will not mask true kernel scaling bottlenecks.
 
-A reliable way to reproduce this bug is:
-Login to KDE, run 'rsnapshot sync', and apt-get install openjdk-6-jdk,
-and apt-get remove openjdk-6-jdk.
-
-The buggy part of the patch is this:
-	struct inode *inode = NULL;
-.....
--               if (nd.last.name[nd.last.len])
--                       goto slashes;
-                inode = dentry->d_inode;
--               if (inode)
--                       ihold(inode);
-+               if (nd.last.name[nd.last.len] || !inode)
-+                       goto slashes;
-+               ihold(inode)
-...
-	if (inode)
-		iput(inode);	/* truncate the inode here */
-
-If nd.last.name[nd.last.len] is nonzero (and thus goto slashes branch is taken),
-and dentry->d_inode is non-NULL, then this code now does an additional iput on
-the inode, which is wrong.
-
-Fix this by only setting the inode variable if nd.last.name[nd.last.len] is 0.
-
-Reference: https://lkml.org/lkml/2011/6/15/50
-Reported-by: Norbert Preining <preining@logic.at>
-Reported-by: Török Edwin <edwintorok@gmail.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Török Edwin <edwintorok@gmail.com>
----
- fs/namei.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/fs/namei.c b/fs/namei.c
-index 9802345..6301963 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2713,8 +2713,10 @@ static long do_unlinkat(int dfd, const char __user *pathname)
- 	error = PTR_ERR(dentry);
- 	if (!IS_ERR(dentry)) {
- 		/* Why not before? Because we want correct error value */
-+		if (nd.last.name[nd.last.len])
-+			goto slashes;
- 		inode = dentry->d_inode;
--		if (nd.last.name[nd.last.len] || !inode)
-+		if (!inode)
- 			goto slashes;
- 		ihold(inode);
- 		error = mnt_want_write(nd.path.mnt);
--- 
-1.7.5.4
+Tim
 
