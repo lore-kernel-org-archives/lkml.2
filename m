@@ -1,174 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab1FONx5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 09:53:57 -0400
+	id S1755486Ab1FONyy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 09:54:54 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:46782 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755234Ab1FONwk (ORCPT
+	with ESMTP id S1755202Ab1FONwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 09:52:40 -0400
-X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=vhdKIqpQuCYA:10 a=JgHJG0ugl1kA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=Pti448zk3G17pSqWglMA:9 a=3C-JpFLhGyf9GypZ7gAA:7 a=DHQQ7jDAcw4A:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Wed, 15 Jun 2011 09:52:38 -0400
+X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=vhdKIqpQuCYA:10 a=wQN7Np9vXKwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=Mtx7430EFADTQ8tIKooA:9 a=DHQQ7jDAcw4A:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110615135234.409846754@goodmis.org>
+Message-Id: <20110615135234.693444406@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 15 Jun 2011 09:48:48 -0400
+Date: Wed, 15 Jun 2011 09:48:49 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 07/16 v2] tracing, function_graph: Remove dependency of abstime and duration
+Subject: [PATCH 08/16 v2] tracing, function_graph: Merge overhead and duration display
 References: <20110615134841.767565350@goodmis.org>
-Content-Disposition: inline; filename=0007-tracing-function_graph-Remove-dependency-of-abstime-.patch
- fields on latency
+Content-Disposition: inline; filename=0008-tracing-function_graph-Merge-overhead-and-duration-d.patch
+ functions
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-The display of absolute time and duration fields is based on the
-latency field. This was added during the irqsoff/wakeup tracers
-graph support changes.
+Functions print_graph_overhead() and print_graph_duration() displays
+data for one field - DURATION.
 
-It's causing confusion in what fields will be displayed for the
-function_graph tracer itself. So I'm removing this depency, and
-adding absolute time and duration fields to the preemptirqsoff
-preemptoff irqsoff wakeup tracers.
+I merged them into single function print_graph_duration(),
+and added a way to display the empty parts of the field.
 
-With following commands:
-	# echo function_graph > ./current_tracer
-	# cat trace
-
-This is what it looked like before:
-# tracer: function_graph
-#
-#     TIME        CPU  DURATION                  FUNCTION CALLS
-#      |          |     |   |                     |   |   |   |
- 0)   0.068 us    |          } /* page_add_file_rmap */
- 0)               |          _raw_spin_unlock() {
-...
-
-This is what it looks like now:
-# tracer: function_graph
-#
-# CPU  DURATION                  FUNCTION CALLS
-# |     |   |                     |   |   |   |
- 0)   0.068 us    |                } /* add_preempt_count */
- 0)   0.993 us    |              } /* vfsmount_lock_local_lock */
-...
-
-For preemptirqsoff preemptoff irqsoff wakeup tracers,
-this is what it looked like before:
-SNIP
-#                       _-----=> irqs-off
-#                      / _----=> need-resched
-#                     | / _---=> hardirq/softirq
-#                     || / _--=> preempt-depth
-#                     ||| / _-=> lock-depth
-#                     |||| /
-# CPU  TASK/PID       |||||  DURATION                  FUNCTION CALLS
-# |     |    |        |||||   |   |                     |   |   |   |
- 1)    <idle>-0    |  d..1  0.000 us    |  acpi_idle_enter_simple();
-...
-
-This is what it looks like now:
-SNIP
-#
-#                                       _-----=> irqs-off
-#                                      / _----=> need-resched
-#                                     | / _---=> hardirq/softirq
-#                                     || / _--=> preempt-depth
-#                                     ||| /
-#     TIME        CPU  TASK/PID       ||||  DURATION                  FUNCTION CALLS
-#      |          |     |    |        ||||   |   |                     |   |   |   |
-   19.847735 |   1)    <idle>-0    |  d..1  0.000 us    |  acpi_idle_enter_simple();
-...
+This way the print_graph_irq() function can use this column to display
+the IRQ signs if needed and the DURATION field details stays inside
+the print_graph_duration() function.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1307113131-10045-2-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1307113131-10045-3-git-send-email-jolsa@redhat.com
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_functions_graph.c |   19 +++----------------
- kernel/trace/trace_irqsoff.c         |    4 +++-
- kernel/trace/trace_sched_wakeup.c    |    4 +++-
- 3 files changed, 9 insertions(+), 18 deletions(-)
+ kernel/trace/trace_functions_graph.c |  148 +++++++++++++++++-----------------
+ 1 files changed, 74 insertions(+), 74 deletions(-)
 
 diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index 962cdb2..352652e 100644
+index 352652e..44b955f 100644
 --- a/kernel/trace/trace_functions_graph.c
 +++ b/kernel/trace/trace_functions_graph.c
-@@ -1207,7 +1207,7 @@ print_graph_comment(struct trace_seq *s, struct trace_entry *ent,
+@@ -74,6 +74,20 @@ static struct tracer_flags tracer_flags = {
  
+ static struct trace_array *graph_array;
  
- enum print_line_t
--__print_graph_function_flags(struct trace_iterator *iter, u32 flags)
-+print_graph_function_flags(struct trace_iterator *iter, u32 flags)
- {
- 	struct ftrace_graph_ent_entry *field;
- 	struct fgraph_data *data = iter->private;
-@@ -1270,18 +1270,7 @@ __print_graph_function_flags(struct trace_iterator *iter, u32 flags)
- static enum print_line_t
- print_graph_function(struct trace_iterator *iter)
- {
--	return __print_graph_function_flags(iter, tracer_flags.val);
++/*
++ * DURATION column is being also used to display IRQ signs,
++ * following values are used by print_graph_irq and others
++ * to fill in space into DURATION column.
++ */
++enum {
++	DURATION_FILL_FULL  = -1,
++	DURATION_FILL_START = -2,
++	DURATION_FILL_END   = -3,
++};
++
++static enum print_line_t
++print_graph_duration(unsigned long long duration, struct trace_seq *s,
++		     u32 flags);
+ 
+ /* Add a function return address to the trace stack on thread info.*/
+ int
+@@ -577,32 +591,6 @@ get_return_for_leaf(struct trace_iterator *iter,
+ 	return next;
+ }
+ 
+-/* Signal a overhead of time execution to the output */
+-static int
+-print_graph_overhead(unsigned long long duration, struct trace_seq *s,
+-		     u32 flags)
+-{
+-	/* If duration disappear, we don't need anything */
+-	if (!(flags & TRACE_GRAPH_PRINT_DURATION))
+-		return 1;
+-
+-	/* Non nested entry or return */
+-	if (duration == -1)
+-		return trace_seq_printf(s, "  ");
+-
+-	if (flags & TRACE_GRAPH_PRINT_OVERHEAD) {
+-		/* Duration exceeded 100 msecs */
+-		if (duration > 100000ULL)
+-			return trace_seq_printf(s, "! ");
+-
+-		/* Duration exceeded 10 msecs */
+-		if (duration > 10000ULL)
+-			return trace_seq_printf(s, "+ ");
+-	}
+-
+-	return trace_seq_printf(s, "  ");
 -}
 -
--enum print_line_t print_graph_function_flags(struct trace_iterator *iter,
--					     u32 flags)
--{
--	if (trace_flags & TRACE_ITER_LATENCY_FMT)
--		flags |= TRACE_GRAPH_PRINT_DURATION;
--	else
--		flags |= TRACE_GRAPH_PRINT_ABS_TIME;
--
--	return __print_graph_function_flags(iter, flags);
-+	return print_graph_function_flags(iter, tracer_flags.val);
+ static int print_graph_abs_time(u64 t, struct trace_seq *s)
+ {
+ 	unsigned long usecs_rem;
+@@ -650,9 +638,9 @@ print_graph_irq(struct trace_iterator *iter, unsigned long addr,
+ 	}
+ 
+ 	/* No overhead */
+-	ret = print_graph_overhead(-1, s, flags);
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
++	ret = print_graph_duration(DURATION_FILL_START, s, flags);
++	if (ret != TRACE_TYPE_HANDLED)
++		return ret;
+ 
+ 	if (type == TRACE_GRAPH_ENT)
+ 		ret = trace_seq_printf(s, "==========>");
+@@ -662,9 +650,10 @@ print_graph_irq(struct trace_iterator *iter, unsigned long addr,
+ 	if (!ret)
+ 		return TRACE_TYPE_PARTIAL_LINE;
+ 
+-	/* Don't close the duration column if haven't one */
+-	if (flags & TRACE_GRAPH_PRINT_DURATION)
+-		trace_seq_printf(s, " |");
++	ret = print_graph_duration(DURATION_FILL_END, s, flags);
++	if (ret != TRACE_TYPE_HANDLED)
++		return ret;
++
+ 	ret = trace_seq_printf(s, "\n");
+ 
+ 	if (!ret)
+@@ -716,9 +705,48 @@ trace_print_graph_duration(unsigned long long duration, struct trace_seq *s)
  }
  
  static enum print_line_t
-@@ -1364,9 +1353,7 @@ void print_graph_headers_flags(struct seq_file *s, u32 flags)
- 			return;
- 
- 		print_trace_header(s, iter);
--		flags |= TRACE_GRAPH_PRINT_DURATION;
--	} else
--		flags |= TRACE_GRAPH_PRINT_ABS_TIME;
+-print_graph_duration(unsigned long long duration, struct trace_seq *s)
++print_graph_duration(unsigned long long duration, struct trace_seq *s,
++		     u32 flags)
+ {
+-	int ret;
++	int ret = -1;
++
++	if (!(flags & TRACE_GRAPH_PRINT_DURATION))
++		return TRACE_TYPE_HANDLED;
++
++	/* No real adata, just filling the column with spaces */
++	switch (duration) {
++	case DURATION_FILL_FULL:
++		ret = trace_seq_printf(s, "              |  ");
++		return ret ? TRACE_TYPE_HANDLED : TRACE_TYPE_PARTIAL_LINE;
++	case DURATION_FILL_START:
++		ret = trace_seq_printf(s, "  ");
++		return ret ? TRACE_TYPE_HANDLED : TRACE_TYPE_PARTIAL_LINE;
++	case DURATION_FILL_END:
++		ret = trace_seq_printf(s, " |");
++		return ret ? TRACE_TYPE_HANDLED : TRACE_TYPE_PARTIAL_LINE;
 +	}
++
++	/* Signal a overhead of time execution to the output */
++	if (flags & TRACE_GRAPH_PRINT_OVERHEAD) {
++		/* Duration exceeded 100 msecs */
++		if (duration > 100000ULL)
++			ret = trace_seq_printf(s, "! ");
++		/* Duration exceeded 10 msecs */
++		else if (duration > 10000ULL)
++			ret = trace_seq_printf(s, "+ ");
++	}
++
++	/*
++	 * The -1 means we either did not exceed the duration tresholds
++	 * or we dont want to print out the overhead. Either way we need
++	 * to fill out the space.
++	 */
++	if (ret == -1)
++		ret = trace_seq_printf(s, "  ");
++
++	/* Catching here any failure happenned above */
++	if (!ret)
++		return TRACE_TYPE_PARTIAL_LINE;
  
- 	__print_graph_headers_flags(s, flags);
- }
-diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
-index c77424b..667aa8c 100644
---- a/kernel/trace/trace_irqsoff.c
-+++ b/kernel/trace/trace_irqsoff.c
-@@ -226,7 +226,9 @@ static void irqsoff_trace_close(struct trace_iterator *iter)
- }
+ 	ret = trace_print_graph_duration(duration, s);
+ 	if (ret != TRACE_TYPE_HANDLED)
+@@ -767,18 +795,11 @@ print_graph_entry_leaf(struct trace_iterator *iter,
+ 			cpu_data->enter_funcs[call->depth] = 0;
+ 	}
  
- #define GRAPH_TRACER_FLAGS (TRACE_GRAPH_PRINT_CPU | \
--			    TRACE_GRAPH_PRINT_PROC)
-+			    TRACE_GRAPH_PRINT_PROC | \
-+			    TRACE_GRAPH_PRINT_ABS_TIME | \
-+			    TRACE_GRAPH_PRINT_DURATION)
+-	/* Overhead */
+-	ret = print_graph_overhead(duration, s, flags);
+-	if (!ret)
++	/* Overhead and duration */
++	ret = print_graph_duration(duration, s, flags);
++	if (ret == TRACE_TYPE_PARTIAL_LINE)
+ 		return TRACE_TYPE_PARTIAL_LINE;
  
- static enum print_line_t irqsoff_print_line(struct trace_iterator *iter)
- {
-diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
-index f029dd4..e4a70c0 100644
---- a/kernel/trace/trace_sched_wakeup.c
-+++ b/kernel/trace/trace_sched_wakeup.c
-@@ -227,7 +227,9 @@ static void wakeup_trace_close(struct trace_iterator *iter)
- 		graph_trace_close(iter);
- }
+-	/* Duration */
+-	if (flags & TRACE_GRAPH_PRINT_DURATION) {
+-		ret = print_graph_duration(duration, s);
+-		if (ret == TRACE_TYPE_PARTIAL_LINE)
+-			return TRACE_TYPE_PARTIAL_LINE;
+-	}
+-
+ 	/* Function */
+ 	for (i = 0; i < call->depth * TRACE_GRAPH_INDENT; i++) {
+ 		ret = trace_seq_printf(s, " ");
+@@ -815,17 +836,10 @@ print_graph_entry_nested(struct trace_iterator *iter,
+ 			cpu_data->enter_funcs[call->depth] = call->func;
+ 	}
  
--#define GRAPH_TRACER_FLAGS (TRACE_GRAPH_PRINT_PROC)
-+#define GRAPH_TRACER_FLAGS (TRACE_GRAPH_PRINT_PROC | \
-+			    TRACE_GRAPH_PRINT_ABS_TIME | \
-+			    TRACE_GRAPH_PRINT_DURATION)
+-	/* No overhead */
+-	ret = print_graph_overhead(-1, s, flags);
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+ 	/* No time */
+-	if (flags & TRACE_GRAPH_PRINT_DURATION) {
+-		ret = trace_seq_printf(s, "            |  ");
+-		if (!ret)
+-			return TRACE_TYPE_PARTIAL_LINE;
+-	}
++	ret = print_graph_duration(DURATION_FILL_FULL, s, flags);
++	if (ret != TRACE_TYPE_HANDLED)
++		return ret;
  
- static enum print_line_t wakeup_print_line(struct trace_iterator *iter)
- {
+ 	/* Function */
+ 	for (i = 0; i < call->depth * TRACE_GRAPH_INDENT; i++) {
+@@ -1078,18 +1092,11 @@ print_graph_return(struct ftrace_graph_ret *trace, struct trace_seq *s,
+ 	if (print_graph_prologue(iter, s, 0, 0, flags))
+ 		return TRACE_TYPE_PARTIAL_LINE;
+ 
+-	/* Overhead */
+-	ret = print_graph_overhead(duration, s, flags);
+-	if (!ret)
++	/* Overhead and duration */
++	ret = print_graph_duration(duration, s, flags);
++	if (ret == TRACE_TYPE_PARTIAL_LINE)
+ 		return TRACE_TYPE_PARTIAL_LINE;
+ 
+-	/* Duration */
+-	if (flags & TRACE_GRAPH_PRINT_DURATION) {
+-		ret = print_graph_duration(duration, s);
+-		if (ret == TRACE_TYPE_PARTIAL_LINE)
+-			return TRACE_TYPE_PARTIAL_LINE;
+-	}
+-
+ 	/* Closing brace */
+ 	for (i = 0; i < trace->depth * TRACE_GRAPH_INDENT; i++) {
+ 		ret = trace_seq_printf(s, " ");
+@@ -1146,17 +1153,10 @@ print_graph_comment(struct trace_seq *s, struct trace_entry *ent,
+ 	if (print_graph_prologue(iter, s, 0, 0, flags))
+ 		return TRACE_TYPE_PARTIAL_LINE;
+ 
+-	/* No overhead */
+-	ret = print_graph_overhead(-1, s, flags);
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+ 	/* No time */
+-	if (flags & TRACE_GRAPH_PRINT_DURATION) {
+-		ret = trace_seq_printf(s, "            |  ");
+-		if (!ret)
+-			return TRACE_TYPE_PARTIAL_LINE;
+-	}
++	ret = print_graph_duration(DURATION_FILL_FULL, s, flags);
++	if (ret != TRACE_TYPE_HANDLED)
++		return ret;
+ 
+ 	/* Indentation */
+ 	if (depth > 0)
 -- 
 1.7.4.4
 
