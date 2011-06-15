@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab1FOB7T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 21:59:19 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49775 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753636Ab1FOB7R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 21:59:17 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 15 Jun 2011 10:52:21 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>
-Subject: [BUGFIX][PATCH v2] memcg: avoid percpu cached charge draining at
- softlimit
-Message-Id: <20110615105221.fa869a53.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110615104935.ccefc6b5.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110613120054.3336e997.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110613121648.3d28afcd.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110615104935.ccefc6b5.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1754604Ab1FOCES (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 22:04:18 -0400
+Received: from support.opsdc.com ([65.254.219.9]:37107 "EHLO support.opsdc.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752940Ab1FOCEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 22:04:16 -0400
+Subject: Re: Panic on OOM
+From: Chris Fowler <cfowler@outpostsentinel.com>
+Reply-To: cfowler@opsdc.com
+To: David Rientjes <rientjes@google.com>
+Cc: Chris Fowler <cfowler@opsdc.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.DEB.2.00.1106141656220.31202@chino.kir.corp.google.com>
+References: <1308058276.2074.295.camel@compaq-desktop>
+	 <alpine.DEB.2.00.1106141656220.31202@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Jun 2011 22:04:03 -0400
+Message-ID: <1308103443.2074.357.camel@compaq-desktop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on Michal Hokko's comment.
+On Tue, 2011-06-14 at 17:13 -0700, David Rientjes wrote:
+> Using /proc/sys/vm/panic_on_oom also won't panic the machine if you
+> happen to use a cpuset or mempolicy.  You'll want to write '2' instead
+> if you want to panic in all possible oom conditions.
+> 
+> 
 
-=
->From 5d1121e4e5425187a58025cb63be8e297a97f624 Mon Sep 17 00:00:00 2001
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Wed, 15 Jun 2011 10:44:29 +0900
-Subject: [PATCH 6/6] memcg: avoid percpu cached charge draining at softlimit.
+2 did it.  Thank you.
 
- We are not draining per cpu cached charges during soft limit reclaim
- because background reclaim doesn't care about charges. It tries to free
- some memory and charges will not give any.
- Cached charges might influence only selection of the biggest soft limit
- offender but as the call is done only after the selection has been
- already done it makes no change.
+perl -e 'my @mem = (); while(1) { push @mem, "XXXXXXXXXXXXXXXX"; }'
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+I lost connection and it came back after about 30s.  Reboot worked.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 8fb29de..fa5c918 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1670,7 +1670,13 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
- 		victim = mem_cgroup_select_victim(root_mem);
- 		if (victim == root_mem) {
- 			loop++;
--			if (loop >= 1)
-+			/*
-+			 * We are not draining per cpu cached charges during
-+			 * soft limit reclaim  because global reclaim doesn't
-+			 * care about charges. It tries to free some memory and
-+			 * charges will not give any.
-+			 */
-+			if (!check_soft && loop >= 1)
- 				drain_all_stock_async(root_mem);
- 			if (loop >= 2) {
- 				/*
--- 
-1.7.4.1
+In the past I've had OOM conditions "lock" a device so to keep from
+having to call someone to reboot it I started using this method instead.
+Out of memory conditions are rare and would only be caused by memory
+leaks.  I've found all memory leaks that I could fine and the first OOM
+condition was caused by the program doing exactly what I told it to
+do. :)
 
+On the device that is running 2.6.38 this is the first time I'm planning
+on using some PERL code on the device.  I am a bit concerned about
+possibly memory leaks taking down the device so I wanted to be sure this
+works.  This box does not have any swap space and never real.  The 1G of
+memory will be all that is available.
+
+Thanks,
+Chris
 
