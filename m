@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab1FOPqX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 11:46:23 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:54838 "EHLO relay.sgi.com"
+	id S1756050Ab1FOPqg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 11:46:36 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:60557 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755271Ab1FOPqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 11:46:20 -0400
+	id S1755986Ab1FOPqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 11:46:22 -0400
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 7/8 v2] x86, UV: correct failed topology memory leak
+Subject: [PATCH 8/8 v2] x86, UV: correct UV2 BAU destination timeout
 Cc: mingo@elte.hu
-Message-Id: <E1QWsJT-0008GO-OJ@eag09.americas.sgi.com>
+Message-Id: <E1QWsJY-0008GV-GU@eag09.americas.sgi.com>
 From: Cliff Wickman <cpw@sgi.com>
-Date: Wed, 15 Jun 2011 10:47:27 -0500
+Date: Wed, 15 Jun 2011 10:47:32 -0500
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cliff Wickman <cpw@sgi.com>
 
-Fix a memory leak in init_per_cpu() when the topology checks fail.
+Correct the UV2 broacast assist unit's destination timeout period.
+  The period is set in 4 bits of memory-mapped register MISC_CONTROL.
+  The left bit toggles base period between 10us and 80us.
+  The other 3 bits are the multiplier.
+Decimal 15, hex f, gives the maximum: 7 * 80us
 
-The leak should never occur in practice.  It would only occur in an
-unexpected topology that would make the BAU unuseable as a result.  
+And the activation status register in UV2 should be tested for a destination
+timeout with a 4, not a 2.  The values for Active versus Timeout were reversed.
+
+This patch is critical for TLB shootdown on an Altix UV2 system (i.e. the
+follow-on to the current Altix UV).
 
 Diffed against 3.0.0-rc3
-
 Signed-off-by: Cliff Wickman <cpw@sgi.com>
 
 ---
- arch/x86/platform/uv/tlb_uv.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/uv/uv_bau.h |   18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
-Index: linux/arch/x86/platform/uv/tlb_uv.c
+Index: linux/arch/x86/include/asm/uv/uv_bau.h
 ===================================================================
---- linux.orig/arch/x86/platform/uv/tlb_uv.c
-+++ linux/arch/x86/platform/uv/tlb_uv.c
-@@ -1798,15 +1798,20 @@ static int __init init_per_cpu(int nuvhu
- 	uvhub_mask = kzalloc((nuvhubs+7)/8, GFP_KERNEL);
+--- linux.orig/arch/x86/include/asm/uv/uv_bau.h
++++ linux/arch/x86/include/asm/uv/uv_bau.h
+@@ -67,7 +67,7 @@
+  *  we're using 655us, similar to UV1: 65 units of 10us
+  */
+ #define UV1_INTD_SOFT_ACK_TIMEOUT_PERIOD (9UL)
+-#define UV2_INTD_SOFT_ACK_TIMEOUT_PERIOD (65*10UL)
++#define UV2_INTD_SOFT_ACK_TIMEOUT_PERIOD (15UL)
  
- 	if (get_cpu_topology(base_part_pnode, uvhub_descs, uvhub_mask))
--		return 1;
-+		goto fail;
- 
- 	if (summarize_uvhub_sockets(nuvhubs, uvhub_descs, uvhub_mask))
--		return 1;
-+		goto fail;
- 
- 	kfree(uvhub_descs);
- 	kfree(uvhub_mask);
- 	init_per_cpu_tunables();
- 	return 0;
-+
-+fail:
-+	kfree(uvhub_descs);
-+	kfree(uvhub_mask);
-+	return 1;
- }
- 
+ #define UV_INTD_SOFT_ACK_TIMEOUT_PERIOD	(is_uv1_hub() ?			\
+ 		UV1_INTD_SOFT_ACK_TIMEOUT_PERIOD :			\
+@@ -106,12 +106,20 @@
+ #define DS_SOURCE_TIMEOUT		3
  /*
+  * bits put together from HRP_LB_BAU_SB_ACTIVATION_STATUS_0/1/2
+- * values 1 and 5 will not occur
++ * values 1 and 3 will not occur
++ *        Decoded meaning              ERROR  BUSY    AUX ERR
++ * -------------------------------     ----   -----   -------
++ * IDLE                                 0       0        0
++ * BUSY (active)                        0       1        0
++ * SW Ack Timeout (destination)         1       0        0
++ * SW Ack INTD rejected (strong NACK)   1       0        1
++ * Source Side Time Out Detected        1       1        0
++ * Destination Side PUT Failed          1       1        1
+  */
+ #define UV2H_DESC_IDLE			0
+-#define UV2H_DESC_DEST_TIMEOUT		2
+-#define UV2H_DESC_DEST_STRONG_NACK	3
+-#define UV2H_DESC_BUSY			4
++#define UV2H_DESC_BUSY			2
++#define UV2H_DESC_DEST_TIMEOUT		4
++#define UV2H_DESC_DEST_STRONG_NACK	5
+ #define UV2H_DESC_SOURCE_TIMEOUT	6
+ #define UV2H_DESC_DEST_PUT_ERR		7
+ 
