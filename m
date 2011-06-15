@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab1FPHA3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:00:29 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:35432 "EHLO
+	id S1755851Ab1FPHkf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:40:35 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:58450 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755174Ab1FPHAY (ORCPT
+	by vger.kernel.org with ESMTP id S1754991Ab1FPHAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:00:24 -0400
-X-Sasl-enc: OOoaLrCpUPTOyaD/YcrOhAZ3En+/P+eqomfcBqZ7qW8y 1308207623
+	Thu, 16 Jun 2011 03:00:25 -0400
+X-Sasl-enc: 0XiYgQ/dBQ/CFJkKDuAtjQ7guye7duQSbUt36W7uDJJw 1308207624
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:30 2011
-Message-Id: <20110616000230.580182239@clark.kroah.org>
+Message-Id: <20110616000230.675788886@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 16:59:39 -0700
+Date: Wed, 15 Jun 2011 16:59:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        James Bottomley <jbottomley@parallels.com>
-Subject: [16/89] [SCSI] Fix oops caused by queue refcounting failure
+        Rajkumar Manoharan <rmanoharan@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [17/89] ath9k: Reset chip on baseband hang
 In-Reply-To: <20110616000258.GA14529@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,47 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
+From: Rajkumar Manoharan <rmanoharan@atheros.com>
 
-commit e73e079bf128d68284efedeba1fbbc18d78610f9 upstream.
+commit a4d86d953b8593791cb29cf2acffd48f9ee6c4f9 upstream.
 
-In certain circumstances, we can get an oops from a torn down device.
-Most notably this is from CD roms trying to call scsi_ioctl.  The root
-cause of the problem is the fact that after scsi_remove_device() has
-been called, the queue is fully torn down.  This is actually wrong
-since the queue can be used until the sdev release function is called.
-Therefore, we add an extra reference to the queue which is released in
-sdev->release, so the queue always exists.
+Resetting hardware helps to recover from baseband
+hang/panic for AR9003 based chips.
 
-Reported-by: Parag Warudkar <parag.lkml@gmail.com>
-Signed-off-by: James Bottomley <jbottomley@parallels.com>
+Signed-off-by: Rajkumar Manoharan <rmanoharan@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/scsi_scan.c  |    2 +-
- drivers/scsi/scsi_sysfs.c |    1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/main.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -297,7 +297,7 @@ static struct scsi_device *scsi_alloc_sd
- 		kfree(sdev);
- 		goto out;
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -633,7 +633,8 @@ void ath9k_tasklet(unsigned long data)
+ 	u32 status = sc->intrstatus;
+ 	u32 rxmask;
+ 
+-	if (status & ATH9K_INT_FATAL) {
++	if ((status & ATH9K_INT_FATAL) ||
++	    (status & ATH9K_INT_BB_WATCHDOG)) {
+ 		ath_reset(sc, true);
+ 		return;
  	}
--
-+	blk_get_queue(sdev->request_queue);
- 	sdev->request_queue->queuedata = sdev;
- 	scsi_adjust_queue_depth(sdev, 0, sdev->host->cmd_per_lun);
- 
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -322,6 +322,7 @@ static void scsi_device_dev_release_user
- 		kfree(evt);
- 	}
- 
-+	blk_put_queue(sdev->request_queue);
- 	/* NULL queue means the device can't be used */
- 	sdev->request_queue = NULL;
- 
+@@ -699,6 +700,7 @@ irqreturn_t ath_isr(int irq, void *dev)
+ {
+ #define SCHED_INTR (				\
+ 		ATH9K_INT_FATAL |		\
++		ATH9K_INT_BB_WATCHDOG |		\
+ 		ATH9K_INT_RXORN |		\
+ 		ATH9K_INT_RXEOL |		\
+ 		ATH9K_INT_RX |			\
 
 
