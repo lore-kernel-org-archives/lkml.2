@@ -1,111 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab1FOJDS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 05:03:18 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:36735 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753408Ab1FOJDR (ORCPT
+	id S1754427Ab1FOJDa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 05:03:30 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40006 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754357Ab1FOJD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 05:03:17 -0400
-Date: Wed, 15 Jun 2011 14:25:15 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 2/22]  2: uprobes: Breakground page
- replacement.
-Message-ID: <20110615085515.GE4952@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
- <20110607125835.28590.25476.sendpatchset@localhost6.localdomain6>
- <20110613170020.GA27137@redhat.com>
- <20110614123530.GC4952@linux.vnet.ibm.com>
- <20110614142023.GA5139@redhat.com>
+	Wed, 15 Jun 2011 05:03:29 -0400
+Date: Wed, 15 Jun 2011 10:02:57 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: Colin Cross <ccross@android.com>, Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: mm: cache-l2x0: Add support for re-enabling l2x0
+Message-ID: <20110615090257.GC31110@e102144-lin.cambridge.arm.com>
+References: <1307926019-28958-1-git-send-email-ccross@android.com>
+ <20110613101942.GA7924@e102568-lin.cambridge.arm.com>
+ <BANLkTingENSjDaE7O+Lb6P=ED4JtuJY1jkV25b3SW6RhsOQQkw@mail.gmail.com>
+ <20110614173013.GA9234@e102568-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110614142023.GA5139@redhat.com>
+In-Reply-To: <20110614173013.GA9234@e102568-lin.cambridge.arm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > +
-> > > > +	/* Read the page with vaddr into memory */
-> > > > +	ret = get_user_pages(tsk, tsk->mm, vaddr, 1, 1, 1, &old_page, &vma);
-> > >
-> > > Sorry if this was already discussed... But why we are using FOLL_WRITE here?
-> > > We are not going to write into this page, and this provokes the unnecessary
-> > > cow, no?
-> >
-> > Yes, We are not going to write to the page returned by get_user_pages
-> > but a copy of that page.
-> 
-> Yes I see. But the page returned by get_user_pages(write => 1) is already
-> a cow'ed copy (this mapping should be read-only).
-> 
-> > The idea was if we cow the page then we dont
-> > need to cow it at the replace_page time
-> 
-> Yes, replace_page() shouldn't cow.
-> 
-> > and since get_user_pages knows
-> > the right way to cow the page, we dont have to write another routine to
-> > cow the page.
-> 
-> Confused. write_opcode() allocs another page and does memcpy. This is
-> correct, but I don't understand the first cow.
-> 
+Hi guys,
 
-we decided on get_user_pages(FOLL_WRITE|FOLL_FORCE) based on discussions
-in these threads https://lkml.org/lkml/2010/4/23/327 and
-https://lkml.org/lkml/2010/5/12/119
-
-Summary of those two sub-threads as I understand was to have
-get_user_pages do the "real" cow for us.
-
-If I understand correctly, your concern is on the extra overhead added
-by the get_user_pages. Other than that is there any side-effect of we
-forcing the cow through get_user_pages.
-
-> > I am still not clear on your concern.
+On Tue, Jun 14, 2011 at 06:30:19PM +0100, Lorenzo Pieralisi wrote:
+> On Mon, Jun 13, 2011 at 07:20:34PM +0100, Colin Cross wrote:
+>
+> According to the PL310 TRM (r3p2 3-9) on disable the PL310 syncs, which means
+> it flushes internal buffers, but it is not supposed to clean dirty lines.
+> It seems unsafe to me to use the stack and other cacheable data right before
+> disabling.
 > 
-> Probably I missed something... but could you please explain why we can't
+> > Otherwise, wouldn't a flush_cache_all() and l2x0_flush_all() in
+> > l2x0_disable() ensure the stack lines were flushed out?  Probably
+> > needs a readl_releaxed as well, to ensure the disable has taken
+> > effect.
+> > 
 > 
-> 	- ret = get_user_pages(tsk, tsk->mm, vaddr, 1, 1, 1, &old_page, &vma);
-> 	+ ret = get_user_pages(tsk, tsk->mm, vaddr, 1, 0, 0, &old_page, &vma);
-> 
-> ?
+> I reckon the safest option is to clean and disable in one C
+> function. Moreover at that point in time spinlocks might not be an option
+> anymore (CPU out of coherency), which makes those functions unusable.
 
-I tried the code with this change and it works for regular cases.
-I am not sure if it affects cases where programs do mprotect 
-So I am okay to not force cow through get_user_pages.
+I was planning to add this functionality as part of my kexec patches since
+otherwise the l2x0_lock gets blown away on disable. I initially attributed
+this to loss of coherency, but that's clearly not the case as I still had L1
+running.
 
-> 
-> > > Also. This is called under down_read(mmap_sem), can't we race with
-> > > access_process_vm() modifying the same memory?
-> >
-> > Yes, we could be racing with access_process_vm on the same memory.
-> >
-> > Do we have any other option other than making write_opcode/read_opcode
-> > being called under down_write(mmap_sem)?
-> 
-> I dunno. Probably we can simply ignore this issue, there are other ways
-> to modify this memory.
-> 
+Colin - I'll add you to CC for v3 of that series.
 
-Okay.
-
--- 
-Thanks and Regards
-Srikar
+Will
