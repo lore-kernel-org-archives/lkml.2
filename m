@@ -1,25 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755118Ab1FOLmz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 07:42:55 -0400
-Received: from mga11.intel.com ([192.55.52.93]:38507 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755066Ab1FOLmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 07:42:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,370,1304319600"; 
-   d="scan'208";a="16490394"
-Message-ID: <4DF89AAB.8000100@linux.intel.com>
-Date: Wed, 15 Jun 2011 14:42:35 +0300
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110606 Iceowl/1.0b2 Icedove/3.1.10
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: auth 3e058a96 subscribe linux-kernel david.a.cohen@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755044Ab1FOLpI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 07:45:08 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37886 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754209Ab1FOLpG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 07:45:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=k2XdThKEjKA33XiZADVb/mIwYrMGgTsw1ifTMHqw0QyhYfsXMEVcsXexq09cX0dPEt
+         w8ydVHZnjIvaLohck2Dz4RsIfk3Gbjj7uwSvUz5IHsaXU648p9zz6HbtLhfnpzj1Xrli
+         xJRyCypQVqYD0+UT3K6/kPxOTdePHMocMqF/4=
+Subject: re:Build regressions/improvements in v3.0-rc3
+From: Wanlong Gao <wanlong.gao@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Linux-Next <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Jun 2011 19:44:41 +0800
+Message-ID: <1308138281.4112.3.camel@Tux>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+<snip>
+I see that some mips fixes in ralf's tree but not been pulled. almost
+for about one month.
+
+Thanks
 
