@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886Ab1FOLx0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 07:53:26 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:58263 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904Ab1FOLxY (ORCPT
+	id S1753339Ab1FOMDi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 08:03:38 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:58802 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270Ab1FOMDg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 07:53:24 -0400
+	Wed, 15 Jun 2011 08:03:36 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=ffwll.ch; s=google;
-        h=mime-version:x-originating-ip:in-reply-to:references:date
-         :message-id:subject:from:to:cc:content-type;
-        b=dae5CudbqUMJeNh3rNATixkWc34cWYT+Iu/l7QbTsD+JXuqx8wrdTgxPIM5XDSrl+s
-         gPzLqoEyIzRx3uoV11ZR1y3JZB2oTol2MtqQH4qQlF9x8PscZ+FBMekVhSWcpgFbKWWi
-         xascSZmzmBxmjbOiULsUncfje7ShmPt6+nlTA=
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=LeZs5dcfWghO2I6Qco4GolYxNzCy4XuO5ZDgl/X/noUHQ/wioAkdN+8kus3RO3wUvX
+         WxXTZowiIaak1a8+ZKjLjhkeH5FM28MfpOL9tdOm7T5JGFfQDTIzicpDA3esHBY4Xs0V
+         AzdIbV53tIHRCcax7R5N8GuTYaSHOw0kBe5eA=
 MIME-Version: 1.0
-X-Originating-IP: [212.120.32.74]
-In-Reply-To: <201106142030.07549.arnd@arndb.de>
-References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
-	<201106141803.00876.arnd@arndb.de>
-	<op.vw2r3xrj3l0zgt@mnazarewicz-glaptop>
-	<201106142030.07549.arnd@arndb.de>
-Date: Wed, 15 Jun 2011 13:53:22 +0200
-Message-ID: <BANLkTi=XTJuF4np7+rYHzJqWK20OxMrBsw@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [PATCH 08/10] mm: cma: Contiguous Memory
- Allocator added
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Michal Nazarewicz <mina86@mina86.com>, Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Jesse Barker <jesse.barker@linaro.org>, Mel Gorman <mel@csn.ul.ie>,
-        linux-kernel@vger.kernel.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <alpine.DEB.2.00.1106151111200.18110@ayla.of.borg>
+References: <alpine.DEB.2.00.1106151111200.18110@ayla.of.borg>
+Date: Wed, 15 Jun 2011 15:03:35 +0300
+Message-ID: <BANLkTi=cY5ecJS+Mqo12OsZEkBiHn82GHw@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.0-rc3
+From: Tomas Winkler <tomasw@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 14, 2011 at 20:30, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 14 June 2011 18:58:35 Michal Nazarewicz wrote:
->> Ah yes, I forgot that separate regions for different purposes could
->> decrease fragmentation.
+On Wed, Jun 15, 2011 at 12:11 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> Below is the list of build error/warning regressions/improvements in
+> v3.0-rc3[1] compared to v2.6.39[2].
 >
-> That is indeed a good point, but having a good allocator algorithm
-> could also solve this. I don't know too much about these allocation
-> algorithms, but there are probably multiple working approaches to this.
+> Summarized:
+>  - build errors: +21/-66
+>  - build warnings: +202/-421
+>
+> JFYI, when comparing v3.0-rc3 to v3.0-rc2[3], the summaries are:
+>  - build errors: +20/-45
+>  - build warnings: +92/-101
+>
+> Note that there may be false regressions, as some logs are incomplete.
+> Still, they're build errors/warnings.
+>
+> In addition, I put the verbose summary at
+> http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/v3.0-rc3.summary.gz
+> so you can easily find out for which configs and architectures the
+> errors/warnings you're interested in are happening.
+>
+> Happy fixing! ;-)
+>
 
-imo no allocator algorithm is gonna help if you have comparably large,
-variable-sized contiguous allocations out of a restricted address range.
-It might work well enough if there are only a few sizes and/or there's
-decent headroom. But for really generic workloads this would require
-sync objects and eviction callbacks (i.e. what Thomas Hellstrom pushed
-with ttm).
+>  -
+>  + drivers/staging/mei/interrupt.c: warning: 'buffer' may be used uninitialized in this function:  => 198
 
-So if this is only a requirement on very few platforms and can be
-cheaply fixed with multiple cma allocation areas (heck, we have
-slabs for the same reasons in the kernel), it might be a sensible
-compromise.
--Daniel
--- 
-Daniel Vetter
-daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+This is a real issue, but I'm not able to reproduce this warning in my
+compilation environment, even with sparse and CF="-Wall"
+Any hints
+
+Thanks
