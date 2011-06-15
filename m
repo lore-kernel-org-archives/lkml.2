@@ -1,109 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab1FON6a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 09:58:30 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37600 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755380Ab1FON6Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 09:58:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=AOlJbuyk9SxkGJWM46n0Yp31M3AGxuILT9MhuYgipbwO9So9YxOCHUlzFcNJX5e9Uc
-         wkG8ANLVhWdifLDyrr5/SvS291EOdVpifZe8jm0rZjchGMxlu6upMlt7esYNi3MfLVW7
-         lNF+mZ5UnUENWZ+Ss09AWzjF76QT/OyYhVhUo=
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Nikanth Karthikesan <knikanth@suse.de>,
-        David Rientjes <rientjes@google.com>, Matt Mackall <mpm@selenic.com>,
-        linux-doc@vger.kernel.org
-Subject: [RFC 5/5 v3] procfs: add documentation for procfs mount options
-Date: Wed, 15 Jun 2011 17:58:19 +0400
-Message-Id: <1308146299-13015-1-git-send-email-segoon@openwall.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1754978Ab1FOOF6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 10:05:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64109 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753026Ab1FOOF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 10:05:57 -0400
+Message-ID: <4DF8BC42.4050508@redhat.com>
+Date: Wed, 15 Jun 2011 10:05:54 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Cong Wang <amwang@redhat.com>
+CC: Linux kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Neil Horman <nhorman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: netconsole regression w/ 8d8fc29d
+References: <4DF8660A.8020800@redhat.com> <4DF868DE.9000402@redhat.com>
+In-Reply-To: <4DF868DE.9000402@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add documentation for procfs mount options.
+On 06/15/2011 04:10 AM, Cong Wang wrote:
+> 于 2011年06月15日 15:58, Rik van Riel 写道:
+>> After commit 8d8fc29d02a33e4bd5f4fa47823c1fd386346093
+>> (netpoll: disable netpoll when enslave a device), it is
+>> no longer possible to use netconsole together with bridged
+>> KVM guests.
+>>
+>> I can see why the change looked reasonable from a networking
+>> point of view, but this has completely disabled netconsole
+>> functionality for a common KVM use case.
+>>
+>> After the change, netconsole refuses to bind to eth0.
+>>
+>> Since the bridge interface does not support polling,
+>> netconsole cannot use that, either.
+>
+>
+> Bridge does support polling now. :) You can just setup
+> netconsole on a bridge device.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
----
- Documentation/filesystems/proc.txt |   51 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 51 insertions(+), 0 deletions(-)
+This turns out to be mutually exclusive with attaching
+virtual interfaces (for KVM guests) to a bridge.
 
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index f481780..327a640 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -41,6 +41,8 @@ Table of Contents
-   3.5	/proc/<pid>/mountinfo - Information about mounts
-   3.6	/proc/<pid>/comm  & /proc/<pid>/task/<tid>/comm
- 
-+  4	Configuring procfs
-+  4.1	Mount options
- 
- ------------------------------------------------------------------------------
- Preface
-@@ -1541,3 +1543,52 @@ a task to set its own or one of its thread siblings comm value. The comm value
- is limited in size compared to the cmdline value, so writing anything longer
- then the kernel's TASK_COMM_LEN (currently 16 chars) will result in a truncated
- comm value.
-+
-+
-+------------------------------------------------------------------------------
-+Configuring procfs
-+------------------------------------------------------------------------------
-+
-+4.1	Mount options
-+---------------------
-+
-+The following mount options are supported:
-+
-+	hidepid=	Set /proc/<pid>/ access mode.
-+	hidenet		Hide /proc/<pid>/net/ from nonauthorized users.
-+	nohidenet	Don't hide /proc/<pid>/net/ from nonauthorized users.
-+	gid=		Set the group authorized to learn processes and
-+			networking information.
-+
-+hidepid=0 means classic mode - everybody may access all /proc/<pid>/ directories
-+(default).
-+
-+hidepid=1 means users may not access any /proc/<pid>/ directories, but their
-+own.  Sensitive files like cmdline, io, sched*, status, wchan are now protected
-+against other users.  This makes impossible to learn whether any user runs
-+specific program (given the program doesn't reveal itself by its behaviour).
-+As an additional bonus, as /proc/<pid>/cmdline is unaccessible for other users,
-+poorly written programs passing sensitive information via program arguments are
-+now protected against local eavesdroppers.
-+
-+hidepid=2 means hidepid=1 plus all /proc/<pid>/ will be fully invisible to other
-+users.  It doesn't mean that it hides a fact whether a process with a specific
-+pid value exists (it can be learned by other means, e.g. by sending signals),
-+but it hides process' uid and gid, which may be learned by stat()'ing
-+/proc/<pid>/ otherwise.  It greatly complicates intruder's task of gathering info
-+about running processes, whether some daemon runs with elevated privileges,
-+whether other user runs some sensitive program, whether other users run any
-+program at all, etc.
-+
-+hidenet means /proc/<pid>/net/ will be accessible to processes with
-+CAP_NET_ADMIN capability or to members of a special group.  It means
-+nonauthorized users may not learn any networking connections information.  If
-+network namespaces support is enabled (CONFIG_NET_NS=y) then common users would
-+obtain net directory, but all files would indicate no networking activity at
-+all.  If network namespaces are disabled, net directory is unaccessible to
-+common users.
-+
-+gid= means group authorized to learn processes information prohibited by
-+hidepid= and networking information prohibited by hidenet.  If you use some
-+daemon like identd which have to learn information about net/processes
-+information, just add identd to this group.
+If I start netconsole first, my KVM guests won't start.
+
+If I start the KVM guests first, netconsole won't start,
+and fails with these errors:
+
+netconsole:: inserting netconsole module with arguments 
+netconsole=6666@74.92.59.68/br0,514@74.92.59.66/00:13:72:17:4A:9C
+kernel: [ 1020.927240] netconsole: local port 6666
+kernel: [ 1020.927243] netconsole: local IP 74.92.59.68
+kernel: [ 1020.927245] netconsole: interface 'br0'
+kernel: [ 1020.927246] netconsole: remote port 514
+kernel: [ 1020.927247] netconsole: remote IP 74.92.59.66
+kernel: [ 1020.927252] netconsole: remote ethernet address 00:13:72:17:4a:9c
+kernel: [ 1020.927256] (null):  doesn't support polling, aborting.
+kernel: [ 1020.927258] netconsole: cleaning up
+systemd[1]: netconsole.service: control process exited, code=exited status=1
+systemd[1]: Unit netconsole.service entered failed state.
+
+In short, I am still not able to use netconsole and bridged
+KVM guests at the same time...
+
+# brctl show
+bridge name	bridge id		STP enabled	interfaces
+br0		8000.0024e838995c	no		eth0
+							vnet0
+							vnet1
+							vnet2
+
+
 -- 
-1.7.0.4
-
+All rights reversed
