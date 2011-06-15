@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab1FOPyQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 11:54:16 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40437 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755191Ab1FOPyP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 11:54:15 -0400
+	id S1755973Ab1FOPyu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 11:54:50 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:52905 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755191Ab1FOPyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 11:54:49 -0400
+Date: Wed, 15 Jun 2011 17:54:45 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Cliff Wickman <cpw@sgi.com>
+Cc: Rakib Mullick <rakib.mullick@gmail.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1 of 6] x86, UV: smp_processor_id in a preemptable region
+Message-ID: <20110615155445.GC4096@elte.hu>
+References: <E1QWcgn-0004Mv-T6@eag09.americas.sgi.com>
+ <BANLkTinpqPhTNRtqPGnfZznefESwD19iXA@mail.gmail.com>
+ <20110615135213.GA29493@sgi.com>
 MIME-Version: 1.0
-In-Reply-To: <20110615103431.GA15127@carfax.org.uk>
-References: <4DF86FFF.5000406@gmail.com>
-	<20110615103431.GA15127@carfax.org.uk>
-Date: Wed, 15 Jun 2011 10:54:13 -0500
-Message-ID: <BANLkTik5TXXBx6tnYiKNs075n9xHq4_zSw@mail.gmail.com>
-Subject: Re: [PATCH v2] btrfs: Remove all sysfs entries
-From: Mitch Harder <mitch.harder@sabayonlinux.org>
-To: Hugo Mills <hugo@carfax.org.uk>,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kreijack@libero.it
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110615135213.GA29493@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 5:34 AM, Hugo Mills <hugo@carfax.org.uk> wrote:
-> On Wed, Jun 15, 2011 at 10:40:31AM +0200, Maarten Lankhorst wrote:
->> Seems that currently none of the sysfs are created any more, so just
->> remove sysfs support entirely.
->>
->> Fixes compiling warnings in 3.0rc3
->
->   I would actually like to retain sysfs support -- the current
-> entries may not be used (or useful, or in the right place, or even
-> visible these days), but there's plenty of things that could and
-> should go in sysfs from btrfs.
->
->   So, please do remove the unwanted/unused file entries, but could
-> you leave the sysfs file itself, and the (limited) bits that create
-> the btrfs subdir? Otherwise, I'm going to be putting it all back in
-> this weekend when I get the time to revisit Goffredo's old sysfs
-> patch...
->
->   Thanks,
->   Hugo.
->
->> Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
->>
->> --
->
->   (I think this should be three - signs, not two: my signature-
-> cropping script removed the whole patch)
->
 
-I'm not sure if Goffredo is following this thread, but I think you'll
-need a missing patch to provide a fs/btrfs/sysfs.h file in order to
-use his sysfs patch.
+* Cliff Wickman <cpw@sgi.com> wrote:
+
+> On Wed, Jun 15, 2011 at 12:05:17PM +0600, Rakib Mullick wrote:
+> > On Wed, Jun 15, 2011 at 5:06 AM, Cliff Wickman <cpw@sgi.com> wrote:
+> > > From: Cliff Wickman <cpw@sgi.com>
+> > >
+> > > Calling smp_processor_id() from within a preemptable region will issue
+> > > a warning if DEBUG_PREEMPT is set.
+> > >
+> > > Diffed against 3.0.0-rc3
+> > >
+> > > Signed-off-by: Cliff Wickman <cpw@sgi.com>
+> > > ---
+> > > ?arch/x86/platform/uv/tlb_uv.c | ? ?2 ++
+> > > ?1 file changed, 2 insertions(+)
+> > >
+> > > Index: linux/arch/x86/platform/uv/tlb_uv.c
+> > > ===================================================================
+> > > --- linux.orig/arch/x86/platform/uv/tlb_uv.c
+> > > +++ linux/arch/x86/platform/uv/tlb_uv.c
+> > > @@ -1334,7 +1334,9 @@ static ssize_t tunables_write(struct fil
+> > >
+> > > ? ? ? ?instr[count] = '\0';
+> > >
+> > > + ? ? ? preempt_disable(); /* avoid DEBUG_PREEMPT warning */
+> > 
+> > I think above code comment, "avoid DEBUG_PREEMPT warning" should be to
+> > something more meaningful. It's a BUG, if smp_processor_id() is called
+> > within preemptible context. So, we don't want to hit that BUG.
+> 
+> I agree that calling smp_processor_id() within a preemptible context is
+> going to produce unpredictable results.  In this particular case we just
+> need a valid cpu number so that we can find a per-cpu structure.
+> That structure contains a reasonable (sanity-checking) limit to the value
+> of the tunable that is being written.
+
+So what happens if the code gets preempted away and this CPU is 
+hotplugged away? You'll reference a CPU ID that does not exist 
+anymore.
+
+Thanks,
+
+	Ingo
