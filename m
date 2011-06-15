@@ -1,92 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751284Ab1FOEWG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 00:22:06 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34556 "EHLO smtps.tip.net.au"
+	id S1752021Ab1FOEny (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 00:43:54 -0400
+Received: from gate.crashing.org ([63.228.1.57]:60886 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750883Ab1FOEWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 00:22:04 -0400
-Date: Wed, 15 Jun 2011 14:21:55 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: brudley@broadcom.com, henryp@broadcom.com, rvossen@broadcom.com,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the final tree
- (staging related)
-Message-Id: <20110615142155.bd538b73.sfr@canb.auug.org.au>
-In-Reply-To: <20110610223423.GB15868@kroah.com>
-References: <20110609172745.dfd3a298.sfr@canb.auug.org.au>
-	<20110609184127.GA2760@kroah.com>
-	<20110609192243.GA3980@kroah.com>
-	<20110610160548.529797c7.sfr@canb.auug.org.au>
-	<20110610160938.cd01c408.sfr@canb.auug.org.au>
-	<20110610223423.GB15868@kroah.com>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1751028Ab1FOEnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 00:43:52 -0400
+Subject: Re: 3.0-rc3: WARNING: at fs/fs-writeback.c:356
+ writeback_single_inode+0x3e/0x18f()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Meelis Roos <mroos@linux.ee>
+Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, Wu Fengguang <fengguang.wu@intel.com>,
+        Christoph Hellwig <hch@infradead.org>
+In-Reply-To: <alpine.SOC.1.00.1106141213570.11764@math.ut.ee>
+References: <alpine.SOC.1.00.1106141213570.11764@math.ut.ee>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Jun 2011 14:42:56 +1000
+Message-ID: <1308112976.2635.27.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__15_Jun_2011_14_21_55_+1000_i4py0U7hgmpj0JoX"
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__15_Jun_2011_14_21_55_+1000_i4py0U7hgmpj0JoX
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2011-06-14 at 12:15 +0300, Meelis Roos wrote:
+> Tested 3.0-rc3 on my PC (2 PATA disks, single duron CPU). Got several of 
+> these in dmesg:
 
-Hi Greg,
+Same here on a powerpc64 machine while doing a fresh debian install
+(while the installer's installing the packages), -rc3 as well.
 
-On Fri, 10 Jun 2011 15:34:23 -0700 Greg KH <greg@kroah.com> wrote:
->
-> On Fri, Jun 10, 2011 at 04:09:38PM +1000, Stephen Rothwell wrote:
-> >=20
-> > On Fri, 10 Jun 2011 16:05:48 +1000 Stephen Rothwell <sfr@canb.auug.org.=
-au> wrote:
-> > >
-> > > No, I still get these:
-> > >=20
-> > > In file included from drivers/staging/comedi/drivers/addi_apci_035.c:=
-7:0:
-> > > drivers/staging/comedi/drivers/addi-data/addi_common.c: In function '=
-i_ADDI_Attach':
-> > > drivers/staging/comedi/drivers/addi-data/addi_common.c:2765:7: error:=
- implicit declaration of function 'virt_to_bus'
-> > >=20
-> > > virt_to_bus is only defined for 32 bit powerpc (not 64 bit) (and maybe
-> > > not at all on some architectures e.g. sparc).
-> > >=20
-> > > From Documentation/DMA-API-HOWTO.txt:
-> > > "All drivers should be using these interfaces with no exceptions.  It
-> > > is planned to completely remove virt_to_bus() and bus_to_virt() as
-> > > they are entirely deprecated.  Some ports already do not provide these
-> > > as it is impossible to correctly support them."
-> >=20
-> > Drivers that use virt_to_bus should Kconfig depend on VIRT_TO_BUS.
->=20
-> Ah, I missed that, sorry.  I'll go make that change as well.
-
-Ping?
-
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Ben.
 
---Signature=_Wed__15_Jun_2011_14_21_55_+1000_i4py0U7hgmpj0JoX
-Content-Type: application/pgp-signature
+> [  842.680141] ------------[ cut here ]------------
+> [  842.680172] WARNING: at fs/fs-writeback.c:356 writeback_single_inode+0x3e/0x18f()
+> [  842.680178] Hardware name:         
+> [  842.680182] Modules linked in: mga ppdev lp ipv6 fuse loop snd_ens1371 gameport snd_ac97_codec snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq sg sr_mod snd_timer snd_seq_device pcspkr evdev cdrom snd uhci_hcd ehci_hcd parport_pc rtc_cmos parport soundcore usbcore via686a snd_page_alloc ac97_bus hwmon i2c_viapro processor button
+> [  842.680248] Pid: 1341, comm: flush-8:0 Not tainted 3.0.0-rc3 #67
+> [  842.680254] Call Trace:
+> [  842.680269]  [<c1254ada>] ? printk+0x18/0x1a
+> [  842.680281]  [<c101fb6b>] warn_slowpath_common+0x77/0x8c
+> [  842.680288]  [<c1092f8e>] ? writeback_single_inode+0x3e/0x18f
+> [  842.680294]  [<c1092f8e>] ? writeback_single_inode+0x3e/0x18f
+> [  842.680300]  [<c101fb9d>] warn_slowpath_null+0x1d/0x1f
+> [  842.680306]  [<c1092f8e>] writeback_single_inode+0x3e/0x18f
+> [  842.680313]  [<c1093519>] writeback_sb_inodes+0xcb/0x153
+> [  842.680320]  [<c1093aba>] writeback_inodes_wb+0xb0/0xf1
+> [  842.680326]  [<c1093c1d>] wb_writeback+0x122/0x1b0
+> [  842.680334]  [<c1093d15>] wb_check_old_data_flush+0x6a/0x76
+> [  842.680340]  [<c1093dc1>] wb_do_writeback+0xa0/0xf3
+> [  842.680347]  [<c1093e53>] bdi_writeback_thread+0x3f/0xd7
+> [  842.680354]  [<c1093e14>] ? wb_do_writeback+0xf3/0xf3
+> [  842.680366]  [<c10328cc>] kthread+0x61/0x66
+> [  842.680373]  [<c103286b>] ? kthread_worker_fn+0xf7/0xf7
+> [  842.680383]  [<c125ce7e>] kernel_thread_helper+0x6/0xd
+> [  842.680388] ---[ end trace c75e8a0e74c129b7 ]---
+> 
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJN+DNjAAoJEDMEi1NhKgbsv8kIAKCZic3iOslCCBXMGGQLc08K
-OmtvzoteyXdJmB3qtzN/K1uwRpHmNmesS5l2bVYaIgB2aPU4vQovqPHJtt7cIQML
-IIx1BKE2xhSHfJ2OdL4UnLxn+fa/wE9yufPcTcLeRh4HKIjacesf66dF9nbZ4xp+
-4FKgYMgIWpO5mq71YQihGhT/D90qaQOvedpWbluTw9i9RqeasUV2FD3jIoHaOqgo
-9ZNK+BHP5Kcfl4Tgb+egMayqIAmR5ZVIoHHNHiHj9nLgcCNB6ov+Mj0RhQQp7oTG
-TrpWute9+Qh6aIPjaCkPzId4KK6B8H9yXyWJzJ9TpIh+NfqbijrDqmyq6N57UUI=
-=95mT
------END PGP SIGNATURE-----
-
---Signature=_Wed__15_Jun_2011_14_21_55_+1000_i4py0U7hgmpj0JoX--
