@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab1FOIMS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 04:12:18 -0400
-Received: from cantor.suse.de ([195.135.220.2]:51851 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752872Ab1FOIMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 04:12:15 -0400
-Subject: bug: kernel 3.0-rc3 not relocatable on i386?
-From: Petr Tesarik <ptesarik@suse.cz>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain
-Organization: SUSE LINUX
-Date: Wed, 15 Jun 2011 10:12:13 +0200
-Message-Id: <1308125533.4641.33.camel@nathan.suse.cz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
+	id S1753908Ab1FOINZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 04:13:25 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44017 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752201Ab1FOINW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 04:13:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=gHmkjVeExEiVPWBFZvULBo0/ifzfB8B5WpqsFh1iKWhFgYOHhI5M/BGCPdYP9EXRbk
+         nKJQFMMrE98BNax9bftGC3t1icj3L8AdYGIXl6YYuY0JHPPR0ZDNj0p9krCdiYcysrdB
+         1bukRWxAQPzJRq6ae/OmNTFzBHT/66JWpN2WA=
+Date: Wed, 15 Jun 2011 10:13:17 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Maxin B John <maxin.john@gmail.com>
+Cc: akpm@linux-foundation.org, segooon@gmail.com, jkosina@suse.cz,
+        tglx@linutronix.de, eike-kernel@sf-tec.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RESEND] devres: Fix possible use after free
+Message-ID: <20110615081317.GL8141@htj.dyndns.org>
+References: <20110614070732.GA3355@maxin>
+ <20110614071540.GE8141@htj.dyndns.org>
+ <BANLkTimHjVX6ymALT-ZBeSs1S+PRDRwQaQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTimHjVX6ymALT-ZBeSs1S+PRDRwQaQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Hello, Maxin.
 
-it seems that the 3.0-rc3 kernel is not relocatable on i386. I get
-warnings about jiffies being an absolute symbol, and indeed, when GRUB
-loads the kernel at a non-default address, jiffies is not relocated.
+On Tue, Jun 14, 2011 at 03:09:34PM +0100, Maxin B John wrote:
+> You are right. I shouldn't have mentioned it as dangerous. I was trying to
+> make this patch description similar to the description present in the
+> previous patch:
+> http://www.spinics.net/lists/mm-commits/msg84313.html
+> 
+> This patch silences the Coverity Prevent's complains about this as
+> use-after-free bug. Please let me know if the updated patch description is OK.
+> 
+> "
+> A freed pointer is passed as an argument to the function "devres_destroy()" in
+> "kernel/irq/devres.c" and "lib/devres.c". This patch fixes the possible use
+> after free.
+> The change silences the static analysis tool (Coverity Prevent) complains
+> about this as use-after-free bug.
+> "
 
-In my example the kernel is configured with
-CONFIG_PHYSICAL_START=0x1000000
-CONFIG_PHYSICAL_ALIGN=0x200000
-CONFIG_RELOCATABLE=y
-and loaded at 0x200000 by GRUB.
+Yeap, sounds mostly okay but there's no 'possible use after free'.
+Maybe something like, "devres uses the pointer value as key after it's
+freed, which is safe but triggers spurious use-after-free warnings on
+some static analysis tools.  Rearrange code to avoid such warnings".
 
-Booting fails when checking whether the timer works, because do_timer()
-increments jiffies_64, but timer_irq_works() checks jiffies. The code
-looks like this:
+Thanks.
 
-c13daab7:       8b 3d 40 7a 39 c1       mov    0xc1397a40,%edi
-
-but arch/x86/boot/compressed/vmlinux.relocs does not contain c13daaba.
-Consequently, timer_irq_works() reads the wrong memory location and
-fails, causing a panic:
-
-kernel panic: IO-APIC + timer doesn't work! Boot with apic=debug and
-send a report.  Then try booting with the 'noapic' option.
-
-Needless to say, the kernel freezes a few initcalls later when booted
-with noapic, because IO-APIC worked fine, in fact. I verified that by
-inserting a debugging printk() in do_timer(), and I also verified with
-that printk() that the address of jiffies_64 and the address of jiffies
-differ at run time.
-
-Any idea how to fix this?
-
-Petr Tesarik
-
+-- 
+tejun
