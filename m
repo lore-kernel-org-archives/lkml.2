@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457Ab1FOUjb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 16:39:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13212 "EHLO mga09.intel.com"
+	id S1754159Ab1FOUkv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 16:40:51 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38277 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755189Ab1FOUj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 16:39:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,371,1304319600"; 
-   d="scan'208";a="15247934"
-Date: Wed, 15 Jun 2011 13:39:27 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Cc: linux-usb@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xhci: Add reset on resume quirk for asrock p67 host
-Message-ID: <20110615203927.GG5382@xanatos>
-References: <4DF85A1F.1080001@gmail.com>
- <20110615165842.GB5382@xanatos>
- <4DF8EE62.3060407@gmail.com>
- <20110615195928.GD5382@xanatos>
- <4DF9160D.8090109@gmail.com>
- <20110615203631.GF5382@xanatos>
- <4DF9184A.9030308@gmail.com>
+	id S1752248Ab1FOUks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 16:40:48 -0400
+From: Ambresh K <ambresh@ti.com>
+To: linux kernel <linux-kernel@vger.kernel.org>
+CC: Philippe Mazet <p-mazet@ti.com>, Kevin Hilman <khilman@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Colin Cross <ccross@android.com>,
+        linux omap <linux-omap@vger.kernel.org>
+Subject: [PATCH] OMAP4: GPIO: Fix missing interrupts during device wakeup due to IOPAD.
+Date: Wed, 15 Jun 2011 13:40:45 -0700
+Message-ID: <1308170445-30665-1-git-send-email-ambresh@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DF9184A.9030308@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 10:38:34PM +0200, Maarten Lankhorst wrote:
-> Hi Sarah,
-> 
-> Op 15-06-11 22:36, Sarah Sharp schreef:
-> > On Wed, Jun 15, 2011 at 10:29:01PM +0200, Maarten Lankhorst wrote:
-> >> The asrock p67 xhci controller completely dies on resume,
-> >> add a quirk for this, to bring the host back online after a suspend.
-> >>
-> >> This should be backported to stable kernels as far back as 2.6.34.
-> > Why 2.6.34?  Only kernels as old as 2.6.37 had xHCI suspend and resume
-> > support.  Before 2.6.37, the xHCI driver would prevent the system from
-> > suspending at all.
-> Oh my bad, I was just looking at my previous commit, expected
-> resume to already be available since xhci was in the kernel for so long.
-> 
-> Should I resend or will you amend the commit message?
+From: Ambresh K <ambresh@ti.com>
 
-I'll just amend it.  No worries. :)
+If gpio pins from bank[2-5] are marked as wakeup enable and if the wake is
+through gpio IO pad wakeup, then that wakeup gpio interrupt is lost.
 
-Sarah Sharp
+In the current implementation, GPIO driver stores the context of DATAIN of
+all the gpio in the bank. During GPIO resuming, it checks DATAIN with wakeup
+enabled pins of gpio bank. If there is status change, then manually toggle
+GPIO_LEVELDETECT to generate pseudo interrupt.
+
+Reported-by: Philippe Mazet <p-mazet@ti.com>
+Tested-by: Philippe Mazet <p-mazet@ti.com>
+Signed-off-by: Ambresh K <ambresh@ti.com>
+---
+ drivers/gpio/gpio-omap.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
+index 6c51191..eaf3d78 100644
+--- a/drivers/gpio/gpio-omap.c
++++ b/drivers/gpio/gpio-omap.c
+@@ -477,8 +477,9 @@ static inline void set_24xx_gpio_triggering(struct gpio_bank *bank, int gpio,
+ 					+ OMAP24XX_GPIO_CLEARWKUENA);
+ 		}
+ 	}
+-	/* This part needs to be executed always for OMAP34xx */
+-	if (cpu_is_omap34xx() || (bank->non_wakeup_gpios & gpio_bit)) {
++	/* This part needs to be executed always for OMAP{34xx, 44xx} */
++	if (cpu_is_omap34xx() || cpu_is_omap44xx() ||
++			(bank->non_wakeup_gpios & gpio_bit)) {
+ 		/*
+ 		 * Log the edge gpio and manually trigger the IRQ
+ 		 * after resume if the input level changes
+-- 
+1.7.0.4
+
