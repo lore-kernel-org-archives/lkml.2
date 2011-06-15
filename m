@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab1FOOmK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 10:42:10 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:5154 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755411Ab1FOOmI (ORCPT
+	id S1755551Ab1FOOgl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 10:36:41 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44134 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754966Ab1FOOgh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 10:42:08 -0400
-Message-Id: <201106151442.p5FEg4ir010298@farm-0002.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Wed, 15 Jun 2011 10:35:38 -0400
-Subject: [PATCH] arch/tile: remove useless set_fixmap_nocache() macro
-To: "Geert Uytterhoeven" <geert@linux-m68k.org>,
-        "Stephen Rothwell" <sfr@canb.auug.org.au>, "Greg KH" <greg@kroah.com>,
-        <brudley@broadcom.com>, <henryp@broadcom.com>, <rvossen@broadcom.com>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Linus" <torvalds@linux-foundation.org>, <sparclinux@vger.kernel.org>,
-        "Linux-Arch" <linux-arch@vger.kernel.org>
-In-Reply-To: <20110610160548.529797c7.sfr@canb.auug.org.au>
-References: <20110609172745.dfd3a298.sfr@canb.auug.org.au><20110609184127.GA2760@kroah.com><20110609192243.GA3980@kroah.com><20110610160548.529797c7.sfr@canb.auug.org.au>
-X-OriginalArrivalTime: 15 Jun 2011 14:42:07.0504 (UTC) FILETIME=[669DB100:01CC2B6A]
+	Wed, 15 Jun 2011 10:36:37 -0400
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: Vladimir Pantelic <vladoman@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Wed, 15 Jun 2011 20:06:32 +0530
+Subject: RE: [PATCH] omap v4l2: fix wrong resizer calculation
+Thread-Topic: [PATCH] omap v4l2: fix wrong resizer calculation
+Thread-Index: AcwrRT1MsuA/uMijRhebCLRNP7pMwwAGUTig
+Message-ID: <19F8576C6E063C45BE387C64729E739404E307228C@dbde02.ent.ti.com>
+References: <4DB67614.7030008@gmail.com> <4DF8865F.5010007@gmail.com>
+In-Reply-To: <4DF8865F.5010007@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TILE doesn't support PAGE_KERNEL_NOCACHE so the macro isn't useful;
-it's a copy-and-paste from the first version of this header in 2007.
+> -----Original Message-----
+> From: Vladimir Pantelic [mailto:vladoman@gmail.com]
+> Sent: Wednesday, June 15, 2011 3:46 PM
+> To: Kernel development list
+> Cc: linux-omap@vger.kernel.org; Hiremath, Vaibhav
+> Subject: Re: [PATCH] omap v4l2: fix wrong resizer calculation
+> 
+> ping
+[Hiremath, Vaibhav] Sorry for delayed response, somehow I completely missed this patch.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- arch/tile/include/asm/fixmap.h |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+Thanks for finding this bug, the patch looks ok to me. Only one suggestion I have is to update the description of patch commit, request you to change like following - 
 
-diff --git a/arch/tile/include/asm/fixmap.h b/arch/tile/include/asm/fixmap.h
-index 51537ff..c66f793 100644
---- a/arch/tile/include/asm/fixmap.h
-+++ b/arch/tile/include/asm/fixmap.h
-@@ -75,12 +75,6 @@ extern void __set_fixmap(enum fixed_addresses idx,
- 
- #define set_fixmap(idx, phys) \
- 		__set_fixmap(idx, phys, PAGE_KERNEL)
--/*
-- * Some hardware wants to get fixmapped without caching.
-- */
--#define set_fixmap_nocache(idx, phys) \
--		__set_fixmap(idx, phys, PAGE_KERNEL_NOCACHE)
--
- #define clear_fixmap(idx) \
- 		__set_fixmap(idx, 0, __pgprot(0))
- 
--- 
-1.6.5.2
+----
+The omap_vout_new_crop() function has possible bug, uses uninitialized
+variable "crop.width/height" which is actually output of the function. 
+Instead we should be using "try_crop.width/height" to calculate the resizer value.
+----
+
+Rest everything looks ok, while submitting patch again you can add my ack; I will queue to my Arago repo.
+
+Also I have tested this patch on OMAP3EVM platform, and it seems to be working fine.
+
+Thanks,
+Vaibhav
 
