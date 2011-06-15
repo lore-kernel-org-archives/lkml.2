@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab1FOWZk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 18:25:40 -0400
-Received: from mta31.charter.net ([216.33.127.82]:42155 "EHLO
-	mta31.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382Ab1FOWZi (ORCPT
+	id S1755667Ab1FOW0p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 18:26:45 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41980 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755628Ab1FOW0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 18:25:38 -0400
-X-Authority-Analysis: v=1.1 cv=1b2X7W/SifksZeClH/haT1SUt4udqxFGF00pZw2/jJk=
- c=1 sm=1 a=IjlVrzqBmqAA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
- a=sjYXV76F8JLtp2qyPm0A:9 a=aEXJh0E5FJhFWPT7sHUA:7
- a=xzrYXqw+0zwiO4gHSXHcAg==:117
-From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
-To: gregkh@suse.de
-Cc: brudley@broadcom.com, henryp@broadcom.com, dowan@broadcom.com,
-        rvossen@broadcom.com, arend@broadcom.com,
-        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Greg Dietsche <Gregory.Dietsche@cuw.edu>
-Subject: [PATCH] staging: brcm80211: return false if not a broadcom board
-Date: Wed, 15 Jun 2011 17:25:09 -0500
-Message-Id: <1308176709-14765-1-git-send-email-Gregory.Dietsche@cuw.edu>
-X-Mailer: git-send-email 1.7.2.5
+	Wed, 15 Jun 2011 18:26:44 -0400
+Date: Wed, 15 Jun 2011 18:26:08 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        davej@redhat.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, cpufreq@vger.kernel.org, andre.przywara@amd.com,
+        Mark.Langsdorf@amd.com
+Subject: Re: [PATCH 1/2] [CPUFREQ] powernow-k8: Don't notify of successful
+ transition if we failed.
+Message-ID: <20110615222608.GA14031@dumpdata.com>
+References: <1308164520-14145-1-git-send-email-konrad.wilk@oracle.com>
+ <1308164520-14145-2-git-send-email-konrad.wilk@oracle.com>
+ <20110615221636.GB9725@liondog.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110615221636.GB9725@liondog.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4DF9318B.009D:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This code looks wrong to me. I think it meant to return false
-if the board's vendor id isn't Broadcom's.
+> > @@ -1112,6 +1114,9 @@ static int transition_frequency_pstate(struct powernow_k8_data *data,
+> >  	}
+> >  
+> >  	res = transition_pstate(data, pstate);
+> > +	if (res)
+> > +		return res;
+> 
+> That's wrong because transition_pstate() returns 0 unconditionally
+> (at least it does so on 3.0-rc3). But this change accidentally fixes
+> a different bug because res is used uninitialized, containing stack
+> garbage otherwise.
+> 
+> A proper fix should be to check against data->max_hw_pstate and
+> check whether the entry is not CPUFREQ_ENTRY_INVALID (look at
+> fill_powernow_table_pstate() for example).
 
-Compile tested only.
+Aha! I can respin a patch for that tomorrow.
+> 
+> I'm guessing this oops happens when powernow-k8 is loaded in the guest
+> and that the actual power management is done in the hypervisor?
 
-Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
----
- drivers/staging/brcm80211/brcmsmac/wlc_bmac.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c b/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
-index 4534926..ee13238 100644
---- a/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
-+++ b/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
-@@ -1943,7 +1943,7 @@ static bool wlc_validboardtype(struct wlc_hw_info *wlc_hw)
- 	}
- 
- 	if (wlc_hw->sih->boardvendor != PCI_VENDOR_ID_BROADCOM)
--		return goodboard;
-+		goodboard = false; 
- 
- 	return goodboard;
- }
--- 
-1.7.2.5
-
+Yes.
