@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab1FOBa3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 21:30:29 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39257 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754245Ab1FOBa2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 21:30:28 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DF80B03.7000204@jp.fujitsu.com>
-Date: Wed, 15 Jun 2011 10:29:39 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Tony Luck <tony.luck@intel.com>
-CC: Avi Kivity <avi@redhat.com>, Borislav Petkov <bp@amd64.org>,
-        Ingo Molnar <mingo@elte.hu>,
+	id S1754506Ab1FOBrT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 21:47:19 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:45709 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752334Ab1FOBrQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 21:47:16 -0400
+From: Xiangliang Yu <yuxiangl@marvell.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        "yxlraid@gmail.com" <yxlraid@gmail.com>
+CC: "jack_wang@usish.com" <jack_wang@usish.com>,
+        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
+        "maciej.trela@intel.com" <maciej.trela@intel.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>
-Subject: Re: [PATCH 2/2] x86, mce: rework use of TIF_MCE_NOTIFY
-References: <4df13a522720782e51@agluck-desktop.sc.intel.com>	<4df13cea27302b7ccf@agluck-desktop.sc.intel.com>	<20110612223840.GA23218@aftab>	<BANLkTi=-A5PYj8zpjGB4Xb-_VNq0qr+CGQ@mail.gmail.com>	<4DF5C36A.1040707@redhat.com>	<20110613095521.GA26316@aftab>	<4DF5F729.4060609@redhat.com>	<20110613124003.GA27918@aftab>	<4DF606C9.90308@redhat.com>	<20110613151208.GA29045@aftab>	<4DF63B7A.1030805@redhat.com>	<BANLkTinUEqRni2u0DaMfSc45b3DmMMyYvA@mail.gmail.com>	<4DF6CC58.8050601@jp.fujitsu.com>	<4DF6CD25.7040405@jp.fujitsu.com>	<BANLkTina_Y5xekoE9SnbG125CVFLopym2A@mail.gmail.com> <BANLkTimY1X73pTJmMd8G5GKpsCBVmXLfOw@mail.gmail.com>
-In-Reply-To: <BANLkTimY1X73pTJmMd8G5GKpsCBVmXLfOw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Jacky Feng <jfeng@marvell.com>
+Date: Tue, 14 Jun 2011 18:44:26 -0700
+Subject: RE: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
+Thread-Topic: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
+Thread-Index: Acwqp9vMNbR+W9HUQXesEQiSUlxiugAUnwsg
+Message-ID: <F766E4F80769BD478052FB6533FA745D19FAE669AF@SC-VEXCH4.marvell.com>
+References: <1308064628-11826-1-git-send-email-yxlraid@gmail.com>
+ <1308065367.2401.24.camel@mulgrave>
+In-Reply-To: <1308065367.2401.24.camel@mulgrave>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/15 3:28), Tony Luck wrote:
-> On Tue, Jun 14, 2011 at 11:02 AM, Tony Luck <tony.luck@intel.com> wrote:
->> need (failing address) to take some action. That was put into
->> the ring
-> 
-> Correction - we only put the pfn into the ring for AO (action optional)
-> errors [in the current state of the patch series].
-> 
-> But the need for a path to get the pfn from the MC handler to the
-> mce_notify_process() function remains the same.
+Subject: Re: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
 
-Are there any reason why we cannot have a small special buffer for AR?
-For example:
+On Tue, 2011-06-14 at 23:17 +0800, yxlraid@gmail.com wrote:
+>> From: Xiangliang Yu <yuxiangl@marvell.com>
+>> 
+>> -- The value of child link rate should is minimum of link rate, or
+>>    command will fail if child link rate is bigger than parent link rate.
+>> 
+>> Signed-off-by: Xiangliang Yu <yuxiangl@marvell.com>
+>> ---
+>>  drivers/scsi/libsas/sas_expander.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>> 
+>> diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
+>> index 874e29d..6ccca09 100644
+>> --- a/drivers/scsi/libsas/sas_expander.c
+>> +++ b/drivers/scsi/libsas/sas_expander.c
+>> @@ -638,7 +638,7 @@ static void sas_ex_get_linkrate(struct domain_device *parent,
+>>  			sas_port_add_phy(port, phy->phy);
+>>  		}
+>>  	}
+>> -	child->linkrate = min(parent_phy->linkrate, child->max_linkrate);
+>> +	child->linkrate = min(parent_phy->linkrate, child->min_linkrate);
 
-# writer side:
-  for (i = 0; i < ar_buf_size; i++) {
-    if (!cmpxchg(&ar_buf[i].pid, 0, current->pid)) {
-      ar_buf[i].pfn = pfn;
-      return 0;
-    }
-  }
-  return -1; /* buffer full */
+>This patch doesn't look right.  It will clamp the phy to the minim
+>possible link rate.  
+Link negotiation should get the minimum.
 
-# reader side:
-  for (i = 0; i < ar_buf_size; i++) {
-    if (ar_buf[i].pid == current->pid) {
-      mce_handle_srar(ar_buf[i].pfn);
-      ar_buf[i].pid = 0;
-    }
-  }
+>The child is supposed to support everywhere between
+>child->min_linkrate and child->max_linkrate.  The reason why we pick the
+>max is because we should use that if the parent supports it, and fall
+>back only if the parent isn't capable.
+Now, the problem is command fail, and LIBSAS seem to do nothing.
+Do you mean drive need to fix the link error?
+Thanks!
 
-I think it is not intrusive rather than having X-bytes for each thread,
-which is usually 99.99% unused for its lifetime.
-
-Or ... is it possible to push siginfo w/ addr and pop here?
-
-
-Thanks,
-H.Seto
+PS: The Kernel will panic when link error happening.
 
