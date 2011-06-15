@@ -1,114 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab1FOVkF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 17:40:05 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:64321 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751578Ab1FOVkC (ORCPT
+	id S1754987Ab1FOVl2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 17:41:28 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:60063 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752008Ab1FOVl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 17:40:02 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6378"; a="97767849"
-Date: Wed, 15 Jun 2011 14:39:58 -0700
-From: Larry Bassel <lbassel@codeaurora.org>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Zach Pfeffer'" <zach.pfeffer@linaro.org>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Daniel Stone'" <daniels@collabora.com>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Mel Gorman'" <mel@csn.ul.ie>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Subject: Re: [Linaro-mm-sig] [PATCH 08/10] mm: cma: Contiguous Memory
- Allocator added
-Message-ID: <20110615213958.GB28032@labbmf-linux.qualcomm.com>
-References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
- <20110614170158.GU2419@fooishbar.org>
- <BANLkTi=cJisuP8=_YSg4h-nsjGj3zsM7sg@mail.gmail.com>
- <201106142242.25157.arnd@arndb.de>
- <000901cc2b37$4c21f030$e465d090$%szyprowski@samsung.com>
+	Wed, 15 Jun 2011 17:41:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=JYqpwA4xW7Ta17/nP+TD6vA3LAAweaR3Gn/QY3DEwBelD7dGCE16/0aZU1KHFqOSIF
+         ahDoesl2AhaWsSG1oIGmjlPo8b7ewEuyTrXSgvw4bThR1tp4ssE8SIZ9As11rPQoR93z
+         lTlOON/brWKCcBGpxORJB7PKcBJhp8UUHnXfE=
+Message-ID: <4DF92703.7000408@gmail.com>
+Date: Wed, 15 Jun 2011 23:41:23 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000901cc2b37$4c21f030$e465d090$%szyprowski@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xhci: Add reset on resume quirk for asrock p67 host
+References: <20110615203631.GF5382@xanatos> <Pine.LNX.4.44L0.1106151657560.1650-100000@iolanthe.rowland.org> <20110615212135.GH5382@xanatos>
+In-Reply-To: <20110615212135.GH5382@xanatos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 Jun 11 10:36, Marek Szyprowski wrote:
-> Hello,
-> 
-> On Tuesday, June 14, 2011 10:42 PM Arnd Bergmann wrote:
-> 
-> > On Tuesday 14 June 2011 20:58:25 Zach Pfeffer wrote:
-> > > I've seen this split bank allocation in Qualcomm and TI SoCs, with
-> > > Samsung, that makes 3 major SoC vendors (I would be surprised if
-> > > Nvidia didn't also need to do this) - so I think some configurable
-> > > method to control allocations is necessarily. The chips can't do
-> > > decode without it (and by can't do I mean 1080P and higher decode is
-> > > not functionally useful). Far from special, this would appear to be
-> > > the default.
+Op 15-06-11 23:21, Sarah Sharp schreef:
+> On Wed, Jun 15, 2011 at 05:00:17PM -0400, Alan Stern wrote:
+>> On Wed, 15 Jun 2011, Sarah Sharp wrote:
+>>
+>>> On Wed, Jun 15, 2011 at 10:29:01PM +0200, Maarten Lankhorst wrote:
+>>>> The asrock p67 xhci controller completely dies on resume,
+>>>> add a quirk for this, to bring the host back online after a suspend.
+>>>>
+>>>> This should be backported to stable kernels as far back as 2.6.34.
+>>> Why 2.6.34?  Only kernels as old as 2.6.37 had xHCI suspend and resume
+>>> support.  Before 2.6.37, the xHCI driver would prevent the system from
+>>> suspending at all.
+>>>
+>>> Otherwise looks fine.
+>>>
+>>> Sarah Sharp
+>>>
+>>>> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+>>>> index 06e7023..42fd032 100644
+>>>> --- a/drivers/usb/host/xhci.c
+>>>> +++ b/drivers/usb/host/xhci.c
+>>>> @@ -759,6 +759,8 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
+>>>>  		msleep(100);
+>>>>  
+>>>>  	spin_lock_irq(&xhci->lock);
+>>>> +	if (xhci->quirks & XHCI_RESET_ON_RESUME)
+>>>> +		hibernated = 0;
+>> Shouldn't this be "hibernated = true;"?  You want the driver to treat 
+>> suspend as though it were hibernation, not the other way around.
+> Yes, good catch.  Maarten, can you respin this patch (and with the
+> note that it should be backported as far as 2.6.37).
+>
+> Sarah Sharp
+Odd! I could have sworn I had a succesful suspend with the quirk printed
+in dmesg. The hang appears to not happen 100% of the time then. Weird,
+wish I had saved the log. Will respin the patch.
 
-We at Qualcomm have some platforms that have memory of different
-performance characteristics, some drivers will need a way of
-specifying that they need fast memory for an allocation (and would prefer
-an error if it is not available rather than a fallback to slower
-memory). It would also be bad if allocators who don't need fast
-memory got it "accidentally", depriving those who really need it.
+Of course the act of observing made it impossible to reproduce. :-/
 
-> > 
-> > Thanks for the insight, that's a much better argument than 'something
-> > may need it'. Are those all chips without an IOMMU or do we also
-> > need to solve the IOMMU case with split bank allocation?
-> > 
-> > I think I'd still prefer to see the support for multiple regions split
-> > out into one of the later patches, especially since that would defer
-> > the question of how to do the initialization for this case and make
-> > sure we first get a generic way.
-> > 
-> > You've convinced me that we need to solve the problem of allocating
-> > memory from a specific bank eventually, but separating it from the
-> > one at hand (contiguous allocation) should help getting the important
-> > groundwork in at first.
-> >
-> > The possible conflict that I still see with per-bank CMA regions are:
-> > 
-> > * It completely destroys memory power management in cases where that
-> >   is based on powering down entire memory banks.
-> 
-> I don't think that per-bank CMA regions destroys memory power management
-> more than the global CMA pool. Please note that the contiguous buffers
-> (or in general dma-buffers) right now are unmovable so they don't fit
-> well into memory power management.
-
-We also have platforms where a well-defined part of the memory
-can be powered off, and other parts can't (or won't). We need a way
-to steer the place allocations come from to the memory that won't be
-turned off (so that CMA allocations are not an obstacle to memory
-hotremove).
-
-> 
-> Best regards
-> -- 
-> Marek Szyprowski
-> Samsung Poland R&D Center
-> 
-> 
-> 
-> _______________________________________________
-> Linaro-mm-sig mailing list
-> Linaro-mm-sig@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-mm-sig
-
-Larry Bassel
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+~Maarten
