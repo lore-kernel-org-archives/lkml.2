@@ -1,81 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab1FOIiW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 04:38:22 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:42962 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753059Ab1FOIiR (ORCPT
+	id S1754105Ab1FOIkg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 04:40:36 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37873 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708Ab1FOIke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 04:38:17 -0400
-Date: Wed, 15 Jun 2011 11:38:12 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Skacore Systems <skacore.systems@gmail.com>
-Cc: balbi@ti.com, linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] s3c2410_udc: udc command always disables pull-up instead
- of passing the command
-Message-ID: <20110615083811.GD31876@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <BANLkTimU+E8Y0_9+H2nsF6CMg66_TDH0LQ@mail.gmail.com>
- <BANLkTimL=+vaa7NB5FW192rZd08Gv-Z-OA@mail.gmail.com>
- <BANLkTik+TD1+k1hd-hEteE5OTeDrDAuMZQ@mail.gmail.com>
- <20110614164900.GR2353@legolas.emea.dhcp.ti.com>
- <BANLkTi==s4adWqt0uLhJHmeDe1H2RD_5Bw@mail.gmail.com>
+	Wed, 15 Jun 2011 04:40:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=n7UJ3bsukHnzuwhdzJ5D1HHLGSaUQW6P/Y6AX3XrxuQRJUtj8zET5l3Z2cH7+95swW
+         HoDkt0Z4zwZ9QVhmNA3/lfrzcAvsrxxgyKwMskf63JmeEjNl+G0+p7cF6LqrtBVj347+
+         Uy2bGjm8xdHL/UopkvSxST5a2GeNwNwowNW5U=
+Message-ID: <4DF86FFF.5000406@gmail.com>
+Date: Wed, 15 Jun 2011 10:40:31 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eqp4TxRxnD4KrmFZ"
-Content-Disposition: inline
-In-Reply-To: <BANLkTi==s4adWqt0uLhJHmeDe1H2RD_5Bw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chris Mason <chris.mason@oracle.com>
+CC: linux-btrfs@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] btrfs: Remove all sysfs entries
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Seems that currently none of the sysfs are created any more, so just
+remove sysfs support entirely.
 
---eqp4TxRxnD4KrmFZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Fixes compiling warnings in 3.0rc3
 
-Hi,
+Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
 
-On Wed, Jun 15, 2011 at 09:30:00AM +0200, Skacore Systems wrote:
-> I don't care much about pushing this into mainline. It's a bug and
-> it's up to kernel developers to fix that.
-> I was aware that kernel devs are bunch of lazy dicks and I'm not going
-> to do more work for one line patch.
+--
+Oops, forgot to amend the compiling fix
 
-You are the lazy dick here. All I asked was to follow our standards, do
-you have any idea how many patches each kernel maintainer has to go
-through ? It doesn't scale if we have to re-format the ugly crap you
-send us.
+diff --git a/fs/btrfs/Makefile b/fs/btrfs/Makefile
+index 9b72dcf..78fdd86 100644
+--- a/fs/btrfs/Makefile
++++ b/fs/btrfs/Makefile
+@@ -4,7 +4,7 @@ obj-$(CONFIG_BTRFS_FS) := btrfs.o
+ btrfs-y += super.o ctree.o extent-tree.o print-tree.o root-tree.o dir-item.o \
+ 	   file-item.o inode-item.o inode-map.o disk-io.o \
+ 	   transaction.o inode.o file.o tree-defrag.o \
+-	   extent_map.o sysfs.o struct-funcs.o xattr.o ordered-data.o \
++	   extent_map.o struct-funcs.o xattr.o ordered-data.o \
+ 	   extent_io.o volumes.o async-thread.o ioctl.o locking.o orphan.o \
+ 	   export.o tree-log.o acl.o free-space-cache.o zlib.o lzo.o \
+ 	   compression.o delayed-ref.o relocation.o delayed-inode.o scrub.o
+diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
+index 378b5b4..6aefbb2 100644
+--- a/fs/btrfs/ctree.h
++++ b/fs/btrfs/ctree.h
+@@ -1181,7 +1181,6 @@ struct btrfs_root {
+ 	struct btrfs_key defrag_max;
+ 	int defrag_running;
+ 	char *name;
+-	int in_sysfs;
+ 
+ 	/* the dirty list is only used by non-reference counted roots */
+ 	struct list_head dirty_list;
+@@ -2604,10 +2603,6 @@ int btrfs_dirty_pages(struct btrfs_root *root, struct inode *inode,
+ int btrfs_defrag_leaves(struct btrfs_trans_handle *trans,
+ 			struct btrfs_root *root, int cache_only);
+ 
+-/* sysfs.c */
+-int btrfs_init_sysfs(void);
+-void btrfs_exit_sysfs(void);
+-
+ /* xattr.c */
+ ssize_t btrfs_listxattr(struct dentry *dentry, char *buffer, size_t size);
+ 
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index 9f68c68..5df6d8f 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -1044,7 +1044,6 @@ static int __setup_root(u32 nodesize, u32 leafsize, u32 sectorsize,
+ 	root->last_trans = 0;
+ 	root->highest_objectid = 0;
+ 	root->name = NULL;
+-	root->in_sysfs = 0;
+ 	root->inode_tree = RB_ROOT;
+ 	INIT_RADIX_TREE(&root->delayed_nodes_tree, GFP_ATOMIC);
+ 	root->block_rsv = NULL;
+diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
+index 0bb4ebb..02bf74e 100644
+--- a/fs/btrfs/super.c
++++ b/fs/btrfs/super.c
+@@ -1228,13 +1228,9 @@ static int __init init_btrfs_fs(void)
+ {
+ 	int err;
+ 
+-	err = btrfs_init_sysfs();
+-	if (err)
+-		return err;
+-
+ 	err = btrfs_init_compress();
+ 	if (err)
+-		goto free_sysfs;
++		return err;
+ 
+ 	err = btrfs_init_cachep();
+ 	if (err)
+@@ -1275,8 +1271,6 @@ free_cachep:
+ 	btrfs_destroy_cachep();
+ free_compress:
+ 	btrfs_exit_compress();
+-free_sysfs:
+-	btrfs_exit_sysfs();
+ 	return err;
+ }
+ 
+@@ -1288,7 +1282,6 @@ static void __exit exit_btrfs_fs(void)
+ 	extent_io_exit();
+ 	btrfs_interface_exit();
+ 	unregister_filesystem(&btrfs_fs_type);
+-	btrfs_exit_sysfs();
+ 	btrfs_cleanup_fs_uuids();
+ 	btrfs_exit_compress();
+ }
+diff --git a/fs/btrfs/sysfs.c b/fs/btrfs/sysfs.c
+deleted file mode 100644
+index c3c223a..0000000
+--- a/fs/btrfs/sysfs.c
++++ /dev/null
+@@ -1,192 +0,0 @@
+-/*
+- * Copyright (C) 2007 Oracle.  All rights reserved.
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public
+- * License v2 as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+- * General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public
+- * License along with this program; if not, write to the
+- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+- * Boston, MA 021110-1307, USA.
+- */
+-
+-#include <linux/sched.h>
+-#include <linux/slab.h>
+-#include <linux/spinlock.h>
+-#include <linux/completion.h>
+-#include <linux/buffer_head.h>
+-#include <linux/module.h>
+-#include <linux/kobject.h>
+-
+-#include "ctree.h"
+-#include "disk-io.h"
+-#include "transaction.h"
+-
+-static ssize_t root_blocks_used_show(struct btrfs_root *root, char *buf)
+-{
+-	return snprintf(buf, PAGE_SIZE, "%llu\n",
+-		(unsigned long long)btrfs_root_used(&root->root_item));
+-}
+-
+-static ssize_t root_block_limit_show(struct btrfs_root *root, char *buf)
+-{
+-	return snprintf(buf, PAGE_SIZE, "%llu\n",
+-		(unsigned long long)btrfs_root_limit(&root->root_item));
+-}
+-
+-static ssize_t super_blocks_used_show(struct btrfs_fs_info *fs, char *buf)
+-{
+-
+-	return snprintf(buf, PAGE_SIZE, "%llu\n",
+-		(unsigned long long)btrfs_super_bytes_used(&fs->super_copy));
+-}
+-
+-static ssize_t super_total_blocks_show(struct btrfs_fs_info *fs, char *buf)
+-{
+-	return snprintf(buf, PAGE_SIZE, "%llu\n",
+-		(unsigned long long)btrfs_super_total_bytes(&fs->super_copy));
+-}
+-
+-static ssize_t super_blocksize_show(struct btrfs_fs_info *fs, char *buf)
+-{
+-	return snprintf(buf, PAGE_SIZE, "%llu\n",
+-		(unsigned long long)btrfs_super_sectorsize(&fs->super_copy));
+-}
+-
+-/* this is for root attrs (subvols/snapshots) */
+-struct btrfs_root_attr {
+-	struct attribute attr;
+-	ssize_t (*show)(struct btrfs_root *, char *);
+-	ssize_t (*store)(struct btrfs_root *, const char *, size_t);
+-};
+-
+-#define ROOT_ATTR(name, mode, show, store) \
+-static struct btrfs_root_attr btrfs_root_attr_##name = __ATTR(name, mode, \
+-							      show, store)
+-
+-ROOT_ATTR(blocks_used,	0444,	root_blocks_used_show,	NULL);
+-ROOT_ATTR(block_limit,	0644,	root_block_limit_show,	NULL);
+-
+-static struct attribute *btrfs_root_attrs[] = {
+-	&btrfs_root_attr_blocks_used.attr,
+-	&btrfs_root_attr_block_limit.attr,
+-	NULL,
+-};
+-
+-/* this is for super attrs (actual full fs) */
+-struct btrfs_super_attr {
+-	struct attribute attr;
+-	ssize_t (*show)(struct btrfs_fs_info *, char *);
+-	ssize_t (*store)(struct btrfs_fs_info *, const char *, size_t);
+-};
+-
+-#define SUPER_ATTR(name, mode, show, store) \
+-static struct btrfs_super_attr btrfs_super_attr_##name = __ATTR(name, mode, \
+-								show, store)
+-
+-SUPER_ATTR(blocks_used,		0444,	super_blocks_used_show,		NULL);
+-SUPER_ATTR(total_blocks,	0444,	super_total_blocks_show,	NULL);
+-SUPER_ATTR(blocksize,		0444,	super_blocksize_show,		NULL);
+-
+-static struct attribute *btrfs_super_attrs[] = {
+-	&btrfs_super_attr_blocks_used.attr,
+-	&btrfs_super_attr_total_blocks.attr,
+-	&btrfs_super_attr_blocksize.attr,
+-	NULL,
+-};
+-
+-static ssize_t btrfs_super_attr_show(struct kobject *kobj,
+-				    struct attribute *attr, char *buf)
+-{
+-	struct btrfs_fs_info *fs = container_of(kobj, struct btrfs_fs_info,
+-						super_kobj);
+-	struct btrfs_super_attr *a = container_of(attr,
+-						  struct btrfs_super_attr,
+-						  attr);
+-
+-	return a->show ? a->show(fs, buf) : 0;
+-}
+-
+-static ssize_t btrfs_super_attr_store(struct kobject *kobj,
+-				     struct attribute *attr,
+-				     const char *buf, size_t len)
+-{
+-	struct btrfs_fs_info *fs = container_of(kobj, struct btrfs_fs_info,
+-						super_kobj);
+-	struct btrfs_super_attr *a = container_of(attr,
+-						  struct btrfs_super_attr,
+-						  attr);
+-
+-	return a->store ? a->store(fs, buf, len) : 0;
+-}
+-
+-static ssize_t btrfs_root_attr_show(struct kobject *kobj,
+-				    struct attribute *attr, char *buf)
+-{
+-	struct btrfs_root *root = container_of(kobj, struct btrfs_root,
+-						root_kobj);
+-	struct btrfs_root_attr *a = container_of(attr,
+-						 struct btrfs_root_attr,
+-						 attr);
+-
+-	return a->show ? a->show(root, buf) : 0;
+-}
+-
+-static ssize_t btrfs_root_attr_store(struct kobject *kobj,
+-				     struct attribute *attr,
+-				     const char *buf, size_t len)
+-{
+-	struct btrfs_root *root = container_of(kobj, struct btrfs_root,
+-						root_kobj);
+-	struct btrfs_root_attr *a = container_of(attr,
+-						 struct btrfs_root_attr,
+-						 attr);
+-	return a->store ? a->store(root, buf, len) : 0;
+-}
+-
+-static void btrfs_super_release(struct kobject *kobj)
+-{
+-	struct btrfs_fs_info *fs = container_of(kobj, struct btrfs_fs_info,
+-						super_kobj);
+-	complete(&fs->kobj_unregister);
+-}
+-
+-static void btrfs_root_release(struct kobject *kobj)
+-{
+-	struct btrfs_root *root = container_of(kobj, struct btrfs_root,
+-						root_kobj);
+-	complete(&root->kobj_unregister);
+-}
+-
+-static const struct sysfs_ops btrfs_super_attr_ops = {
+-	.show	= btrfs_super_attr_show,
+-	.store	= btrfs_super_attr_store,
+-};
+-
+-static const struct sysfs_ops btrfs_root_attr_ops = {
+-	.show	= btrfs_root_attr_show,
+-	.store	= btrfs_root_attr_store,
+-};
+-
+-/* /sys/fs/btrfs/ entry */
+-static struct kset *btrfs_kset;
+-
+-int btrfs_init_sysfs(void)
+-{
+-	btrfs_kset = kset_create_and_add("btrfs", NULL, fs_kobj);
+-	if (!btrfs_kset)
+-		return -ENOMEM;
+-	return 0;
+-}
+-
+-void btrfs_exit_sysfs(void)
+-{
+-	kset_unregister(btrfs_kset);
+-}
+-
 
-Get over yourself and if you want this fixed, then send a proper patch.
 
-It's just a small set of instructions we are asking you to follow, try
-saying the same to your Income Tax office and see if they'll like that
-you didn't follow their instructions.
-
-Lazy dicks... hah... the one who can't get a simple set of instructions
-right is calling us lazy dicks. What a prick!
-
---=20
-balbi
-
---eqp4TxRxnD4KrmFZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN+G9zAAoJEAv8Txj19kN1RIUH/18qxM0qb8EZznkp4s6v/9ET
-4+pEuRRuAHSQQZi5Tiu7LxXOilInk6fibAsu91y5rzll1yyZr6iPW9S/NEzNDcVX
-4Pgk2oqV9S+1kdut4YgEUp2UAac/PagyMLg4x+ga5uU8PTAwparXc4nwTdEdEPk6
-StcjAD+ohPJRvwg35hZ85mOFm6b8NlNEPQrJL0T8hdifzrqMQdd4Cz3BG5k86F0B
-feRd2LEeDgynNiAJM67bNnNjsV9QbUJVKRfJeUSXPQqbT7s3q/ulX6a101hWvmTm
-t9njhQSAqfJUhPnQxtqu/LgzJqz37P3MMyt5xK+k9Av1esgXlab3kfH1jjzwpzE=
-=wtof
------END PGP SIGNATURE-----
-
---eqp4TxRxnD4KrmFZ--
