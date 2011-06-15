@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab1FOAHI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 20:07:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:41043 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753831Ab1FOAHD (ORCPT
+	id S1753449Ab1FOARS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 20:17:18 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59716 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752016Ab1FOARR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 20:07:03 -0400
-Date: Tue, 14 Jun 2011 17:06:02 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, alsa-devel@alsa-project.org,
-        Dmitry Artamonow <mad_soft@inbox.ru>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-        Harald Welte <laforge@gnufiish.org>
-Subject: [PATCH 2/2] gpio: include linux/gpio.h where needed
-Message-Id: <20110614170602.7a51b1af.randy.dunlap@oracle.com>
-In-Reply-To: <20110614161357.GB1839@ponder.secretlab.ca>
-References: <4DDB3AFF.9030006@oracle.com>
-	<20110524075248.GB19734@sirena.org.uk>
-	<20110527074552.GA907@ponder.secretlab.ca>
-	<4DDFE391.2030507@oracle.com>
-	<20110527201201.GA6645@ponder.secretlab.ca>
-	<BANLkTin-KSVcG2cQfRM3Ys0_g_uJVruDMw@mail.gmail.com>
-	<20110603171837.GA9918@opensource.wolfsonmicro.com>
-	<BANLkTi=oko_C8_46Y8p5O1Qvw1KEn-1PjA@mail.gmail.com>
-	<4DEC4D67.6010506@oracle.com>
-	<20110614091211.465553de.randy.dunlap@oracle.com>
-	<20110614161357.GB1839@ponder.secretlab.ca>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Tue, 14 Jun 2011 20:17:17 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 15 Jun 2011 09:09:35 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>
+Subject: Re: [BUGFIX][PATCH 5/5] memcg: fix percpu cached charge draining
+ frequency
+Message-Id: <20110615090935.d5789b58.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110613142501.15e14b2f.akpm@linux-foundation.org>
+References: <20110613120054.3336e997.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110613121648.3d28afcd.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110613142501.15e14b2f.akpm@linux-foundation.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090201.4DF7F796.001C:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Mon, 13 Jun 2011 14:25:01 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-Some files use GPIOF_ macros but don't include the header file
-for them.  These macros are being moved to <linux/gpio.h>, so add
-includes for <linux/gpio.h> where needed.
+> On Mon, 13 Jun 2011 12:16:48 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > >From 18b12e53f1cdf6d7feed1f9226c189c34866338c Mon Sep 17 00:00:00 2001
+> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > Date: Mon, 13 Jun 2011 11:25:43 +0900
+> > Subject: [PATCH 5/5] memcg: fix percpu cached charge draining frequency
+> > 
+> >  For performance, memory cgroup caches some "charge" from res_counter
+> >  into per cpu cache. This works well but because it's cache,
+> >  it needs to be flushed in some cases. Typical cases are
+> >          1. when someone hit limit.
+> >          2. when rmdir() is called and need to charges to be 0.
+> > 
+> > But "1" has problem.
+> > 
+> > Recently, with large SMP machines, we see many kworker runs because
+> > of flushing memcg's cache. Bad things in implementation are
+> > that even if a cpu contains a cache for memcg not related to
+> > a memcg which hits limit, drain code is called.
+> > 
+> > This patch does
+> > 	A) check percpu cache contains a useful data or not.
+> > 	B) check other asynchronous percpu draining doesn't run.
+> > 	C) don't call local cpu callback.
+> > 	D) don't call at softlimit reclaim.
+> > 
+> >
+> > ...
+> >
+> > +DEFINE_MUTEX(percpu_charge_mutex);
+> 
+> I made this static.  If we later wish to give it kernel-wide scope then
+> "percpu_charge_mutex" will not be a good choice of name.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- arch/arm/mach-pxa/spitz_pm.c    |    1 +
- drivers/pcmcia/pxa2xx_vpac270.c |    1 +
- 2 files changed, 2 insertions(+)
+Thank you.
+And, yes..... memcg_cached_charge_mutex ?
 
---- linux-next-20110614.orig/arch/arm/mach-pxa/spitz_pm.c
-+++ linux-next-20110614/arch/arm/mach-pxa/spitz_pm.c
-@@ -14,6 +14,7 @@
- #include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/delay.h>
-+#include <linux/gpio.h>
- #include <linux/interrupt.h>
- #include <linux/platform_device.h>
- #include <linux/apm-emulation.h>
---- linux-next-20110614.orig/drivers/pcmcia/pxa2xx_vpac270.c
-+++ linux-next-20110614/drivers/pcmcia/pxa2xx_vpac270.c
-@@ -11,6 +11,7 @@
-  *
-  */
- 
-+#include <linux/gpio.h>
- #include <linux/module.h>
- #include <linux/platform_device.h>
- 
+Thanks,
+-Kame
+
