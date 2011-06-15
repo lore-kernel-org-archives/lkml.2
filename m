@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755631Ab1FOPDU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 11:03:20 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:43426 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755233Ab1FOPDQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 11:03:16 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: R0CUHrcVM1nCS8YG4ehe.T4SCOqzME3qzf2EGRbRlbTH45m
- fGsWxGQIBhrHHKvy5p5y.dJCrtTuNNAYFPXk2C3F7EjEqbr54SpoLHZ4ku22
- OUi3KKjtfpqid8l.8wpeODl8ZWXTIEvTJ1A_LCvRaKnp2K5G62D.JwAxC29c
- EtQzPqcur4sTdeBCmV1mIEFiR8uO0VHruxdOk1j38SjOEGZ9QqjmhpGNmOgJ
- g7g8IX8gXUfMBV7XXylyx1gyfvAQCWHyg4gYC9a.gBr8s09K_3I_b8MfqIGz
- dcwGoXYk_CRZMR_Foc4DlWKJkR6c4ppoxtjJ9XONrtGl3Qa5X
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 15 Jun 2011 10:03:14 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Rik van Riel <riel@redhat.com>
-cc: Linux kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kyle McMartin <kyle@redhat.com>
-Subject: Re: SLUB BUG: check_slab called with interrupts enabled
-In-Reply-To: <4DF8C80F.7090403@redhat.com>
-Message-ID: <alpine.DEB.2.00.1106150959500.768@router.home>
-References: <4DF8C80F.7090403@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755778Ab1FOP30 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 11:29:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59768 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754857Ab1FOP3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 11:29:25 -0400
+Date: Wed, 15 Jun 2011 08:03:26 -0700
+From: Greg KH <gregkh@suse.de>
+To: Ortwin =?iso-8859-1?Q?Gl=FCck?= <odi@odi.ch>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 2.6.39.1 input regression
+Message-ID: <20110615150326.GA7128@suse.de>
+References: <4DF85C5F.4080307@odi.ch>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4DF85C5F.4080307@odi.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jun 2011, Rik van Riel wrote:
+On Wed, Jun 15, 2011 at 09:16:47AM +0200, Ortwin Glück wrote:
+> Hi Greg,
+> 
+> This patch in 2.6.39.1 breaks magicmouse support for me completely.
+> a5ccaac64c17ce3cc1878a6d479a6f1b16092c24
+> HID: magicmouse: ignore 'ivalid report id' while switching modes
+> 
+> The device will no longer work at all:
+> magicmouse 0005:05AC:030D.0005: input,hidraw2: BLUETOOTH HID v0.84 Mouse
+> [gandalf mouse] on 7C:6D:62:9F:DB:2D
+> magicmouse 0005:05AC:030D.0005: unable to request touch data (2)
+> 
+> Fine in previous kernels.
 
-> Hi Christoph,
->
-> last night I got an interesting backtrace running 3.0-rc3
-> (Fedora Rawhide kernel package).  Unfortunately netconsole
-> seems to be incompatible with KVM at the moment, so I had
-> to capture the oops on my digital camera and will be
-> transcribing just the backtrace.
->
-> Essentially, kernel 3.0-rc3 hit this bug:
->
-> static int check_slab(struct kmem_cache *s, struct page *page)
-> {
->         int maxobj;
->
->         VM_BUG_ON(!irqs_disabled());
->
-> The call trace:
->
-> check_slab
-> alloc_debug_processing
-> __slab_alloc
-> kmem_cache_alloc
-> bvec_alloc_bs
-> bio_alloc_bioset
-> bio_alloc
-> mpage_alloc
-> do_mpage_readpage
-> ... followed by ext4 and VFS code, obviously innocent
+This has been discussed already, and it should be fixed in Linus's tree
+right now, right?
 
-__slab_alloc() disables interrupts so alloc_debug_processing() should not
-run into this issue.
+If so, can someone please send stable@kernel.org the proper fix for
+this?
 
-There are no additional special slub patches applied right? Because some
-of the patches under discussion change the interrupt disable handling a
-bit.
+thanks,
 
+greg k-h
