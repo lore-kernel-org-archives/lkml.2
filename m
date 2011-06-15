@@ -1,70 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801Ab1FOQim (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 12:38:42 -0400
-Received: from gabe.freedesktop.org ([131.252.210.177]:51973 "EHLO
-	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751603Ab1FOQij (ORCPT
+	id S1752270Ab1FOQkA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 12:40:00 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43194 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335Ab1FOQj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 12:38:39 -0400
-From: Eric Anholt <eric@anholt.net>
-To: Daniel J Blueman <daniel.blueman@gmail.com>,
-        Ben Widawsky <ben@bwidawsk.net>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>
-Subject: Re: [Intel-gfx] [PATCH 3.0-rc3] i915: Fix gen6 (SNB) GPU stalling
-In-Reply-To: <BANLkTin1fqKMzutfOyLNegOGOuSQu-4jpA@mail.gmail.com>
-References: <1308070307-2630-1-git-send-email-daniel.blueman@gmail.com> <20110615044359.GA27884@snipes.kumite> <BANLkTin1fqKMzutfOyLNegOGOuSQu-4jpA@mail.gmail.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 15 Jun 2011 09:38:30 -0700
-Message-ID: <87sjrbkq2h.fsf@eliezer.anholt.net>
+	Wed, 15 Jun 2011 12:39:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=C220YjCRbl+OuyiZCZCYLStHYZnlD36lJE8TlRe4z62nW8Wfmr+d2hUCge++ucylYZ
+         SPkOxAq8ZR56KPqWTTdG74aCy6Qt6r4LtPJ3PpRccr8pm0jEPWIyosXz+GLviZqDF/WT
+         vqwAQl3PXT/gySnKKM345uMcdCX1vbIZtrewU=
+Date: Wed, 15 Jun 2011 18:39:52 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+        David Rientjes <rientjes@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [slubllv7 04/17] x86: Add support for cmpxchg_double
+Message-ID: <20110615163952.GE8141@htj.dyndns.org>
+References: <20110601172543.437240675@linux.com>
+ <20110601172614.173427964@linux.com>
+ <20110615085512.GO8141@htj.dyndns.org>
+ <alpine.DEB.2.00.1106150917520.768@router.home>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1106150917520.768@router.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Hello, Christoph.
 
-On Wed, 15 Jun 2011 13:04:51 +0800, Daniel J Blueman <daniel.blueman@gmail.=
-com> wrote:
-> The render HWSTAM is tweaked in preinstall, but we need to tweak the
-> blitter HWSTAM (new to gen6).
+On Wed, Jun 15, 2011 at 09:26:15AM -0500, Christoph Lameter wrote:
+> > Do we really need cmpxchg16b*() macros separately?  Why not just
+> > collapse them into cmpxchg_double*()?  Also, it would be better if we
+> > have the same level of VM_BUG_ON() checks as in percpu cmpxchg_double
+> > ops.  Maybe we should put them in a separate macro?
+> 
+> The method here is to put all the high level checks in cmpxchg_double()
+> and then do the low level asm stuff in cmpxchg16b macros. I think that is
+> a good separation.
 
-This still doesn't *really* make sense -- HWSTAM is supposed to be
-masking updates to the status page's copy of the IIR, which we never
-read, and not be involved in masking updates to the MMIO I[IS]R.  So it
-seems to me that this is just happening to get lucky and serialize in
-the hardware for the way that we do actually read IIR (through MMIO).
-And hey, we should be using the status page copy instead of MMIO some
-day anyway, so that's more reason to do this patch even if we don't like
-workarounds.
+I don't know; then, I think the name better clearly indicate that
+they're not used outside of implementation.  I don't see merit in
+keeping them separate.
 
-> To me, it makes sense to reset the blitter HWSTAM register to what the
-> driver expects, in case anything before the i915 module loads and
-> adjusts it for a particular purpose (including debug); the render
-> HWSTAM is set this way too. I could add a comment to both perhaps?
->=20
-> Updating the blitter HWSTAM in the postinstall was a marginally safer
-> choice, as there'll not be any potential race with a blitter user
-> interrupt getting emitted before we're ready (which wouldn't have been
-> tested), but the risk is probably so low that it could just go into
-> the preinstall.
+> > > +#define system_has_cmpxchg_double() cpu_has_cx16
+> >
+> > Where's the fallback %false definition for the above feature macro for
+> > archs which don't support cmpxchg_double?  Also, is system_has_*()
+> > conventional?  Isn't arch_has_*() more conventional for this purpose?
+> 
+> There is a convention for querying processor flags from core code?
 
-The GPU is idle before our driver shows up, so there's no risk (there's
-a bunch of leftover paranoia in the driver from the DRI1 days, none of
-which ever made much sense).
+At least generic ptrace code uses arch_has_block/single_step().
+Probably better than introducing something completely new.
 
---=-=-=
-Content-Type: application/pgp-signature
+> The system_has_cmpxchg_double() is only used if the arch defines
+> CONFIG_CMPXCHG_DOUBLE
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Why?  What's the benefit of that?
 
-iEYEARECAAYFAk344AYACgkQHUdvYGzw6vftFQCcC2rI3PeYFe5r5Iad+A6qCpZx
-j+UAn0Hrem/d3pY/PqmnaPqwr76WUnVH
-=8fyp
------END PGP SIGNATURE-----
---=-=-=--
+> This way it is done in the same way on 32 bit than on 64 bit. The use of
+> cmpxchg64 also means that some of the parameters would have to be combined
+> to form 64 bit ints from the 32 bit ones before __cmpxchg64 could be used.
+> 
+> __cmpxchg64 has different parameter conventions.
+
+But they all just deal with the starting addresses and the _local
+version already has proper fallback implementation.
+
+> > Another thing is that choosing different code path depending on
+> > has_cmpxchg_double() would be quite messy and won't bode well with
+> > many people.  I agree that fallback implementation would be heavier
+> > for SMP safe operations but some archs already do that for cmpxchg
+> > (forgot which one).  If we're gonna export this to generic code,
+> > wouldn't it be better to implement proper generic fallbacks and
+> > provide has_*() as hint?
+> 
+> A generic fallback for cmpxchg_double would mean having to disable
+> interrupts and then take a global spinlock. There are significant scaling
+> problems with such an implementation.
+> 
+> The fallback through the subsystem means that the subsystem can do locking
+> that scales better. In the case of SLUB we fall back to a bit lock in the
+> page struct which is a hot cache line in the hotpaths. This is the same
+> approach as used before the lockless patches and we expect the performance
+> on platforms not supporting cmpxchg_double to stay the same.
+
+Yes, that's nice but you're introducing new operations and they should
+meet the usual conventions and cmpxchg fallback on the arch which I
+don't recall now already uses hashed lock so it's not like this is
+completely new.  As added, the interface basically requires extreme
+ifdeffery which isn't good.
+
+Thanks.
+
+-- 
+tejun
