@@ -1,293 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab1FONxJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 09:53:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:46782 "EHLO
+	id S1755356Ab1FON70 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 09:59:26 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:52239 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755261Ab1FONwn (ORCPT
+	with ESMTP id S1755177Ab1FON7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 09:52:43 -0400
-X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=vhdKIqpQuCYA:10 a=Yil3cgBou_wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=mXFo69PVMRp-lK1vSngA:9 a=DHQQ7jDAcw4A:10 a=_RhRFcbxBZMA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Wed, 15 Jun 2011 09:59:21 -0400
+X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=vhdKIqpQuCYA:10 a=3IU65XaaRhcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1XWaLZrsAAAA:8 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=8ptb5Uy6ivW2y5QcxncA:9 a=U9ctsTGuUy1NW2ajw4MA:7 a=UTB_XpHje0EA:10 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=MbCQTi7IOFYeluSK:21 a=7aD7Ez85Ie4lI5iA:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110615135235.712598126@goodmis.org>
+Message-Id: <20110615135235.991241140@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 15 Jun 2011 09:48:53 -0400
+Date: Wed, 15 Jun 2011 09:48:54 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 12/16 v2] tracing: Convert to kstrtoul_from_user
+        David Rientjes <rientjes@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>
+Subject: [PATCH 13/16 v2] ring-buffer: Set __GFP_NORETRY flag for ring buffer allocating
 References: <20110615134841.767565350@goodmis.org>
-Content-Disposition: inline; filename=0012-tracing-Convert-to-kstrtoul_from_user.patch
+Content-Disposition: inline; filename=0013-ring-buffer-Set-__GFP_NORETRY-flag-for-ring-buffer-a.patch
+ process
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Huewe <peterhuewe@gmx.de>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
 
-This patch replaces the code for getting an unsigned long from a
-userspace buffer by a simple call to kstroul_from_user.
-This makes it easier to read and less error prone.
+The tracing ring buffer is allocated from kernel memory. While
+allocating a large chunk of memory, OOM might happen which destabilizes
+the system. Thus random processes might get killed during the
+allocation.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-Link: http://lkml.kernel.org/r/1307476707-14762-1-git-send-email-peterhuewe@gmx.de
+This patch adds __GFP_NORETRY flag to the ring buffer allocation calls
+to make it fail more gracefully if the system will not be able to
+complete the allocation request.
+
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Michael Rubin <mrubin@google.com>
+Cc: David Sharp <dhsharp@google.com>
+Link: http://lkml.kernel.org/r/1307491302-9236-1-git-send-email-vnagarnaik@google.com
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c       |   13 +-------
- kernel/trace/ring_buffer.c  |   13 +-------
- kernel/trace/trace.c        |   65 ++++++------------------------------------
- kernel/trace/trace_events.c |   26 ++--------------
- kernel/trace/trace_stack.c  |   13 +-------
- 5 files changed, 20 insertions(+), 110 deletions(-)
+ kernel/trace/ring_buffer.c |   25 +++++++++++++++++++------
+ 1 files changed, 19 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index e153807..458018a 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -803,19 +803,10 @@ ftrace_profile_write(struct file *filp, const char __user *ubuf,
- 		     size_t cnt, loff_t *ppos)
- {
- 	unsigned long val;
--	char buf[64];		/* big enough to hold a number */
- 	int ret;
- 
--	if (cnt >= sizeof(buf))
--		return -EINVAL;
--
--	if (copy_from_user(&buf, ubuf, cnt))
--		return -EFAULT;
--
--	buf[cnt] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-+	if (ret)
- 		return ret;
- 
- 	val = !!val;
 diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 725153d..f00ede3 100644
+index f00ede3..731201b 100644
 --- a/kernel/trace/ring_buffer.c
 +++ b/kernel/trace/ring_buffer.c
-@@ -3980,20 +3980,11 @@ rb_simple_write(struct file *filp, const char __user *ubuf,
- 		size_t cnt, loff_t *ppos)
- {
- 	unsigned long *p = filp->private_data;
--	char buf[64];
- 	unsigned long val;
- 	int ret;
+@@ -1004,9 +1004,14 @@ static int rb_allocate_pages(struct ring_buffer_per_cpu *cpu_buffer,
  
--	if (cnt >= sizeof(buf))
--		return -EINVAL;
+ 	for (i = 0; i < nr_pages; i++) {
+ 		struct page *page;
 -
--	if (copy_from_user(&buf, ubuf, cnt))
--		return -EFAULT;
--
--	buf[cnt] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-+	if (ret)
- 		return ret;
++		/*
++		 * __GFP_NORETRY flag makes sure that the allocation fails
++		 * gracefully without invoking oom-killer and the system is
++		 * not destabilized.
++		 */
+ 		bpage = kzalloc_node(ALIGN(sizeof(*bpage), cache_line_size()),
+-				    GFP_KERNEL, cpu_to_node(cpu_buffer->cpu));
++				    GFP_KERNEL | __GFP_NORETRY,
++				    cpu_to_node(cpu_buffer->cpu));
+ 		if (!bpage)
+ 			goto free_pages;
  
- 	if (val)
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index cf22b4b..c977018 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2706,20 +2706,11 @@ tracing_ctrl_write(struct file *filp, const char __user *ubuf,
- 		   size_t cnt, loff_t *ppos)
- {
- 	struct trace_array *tr = filp->private_data;
--	char buf[64];
- 	unsigned long val;
- 	int ret;
+@@ -1015,7 +1020,7 @@ static int rb_allocate_pages(struct ring_buffer_per_cpu *cpu_buffer,
+ 		list_add(&bpage->list, &pages);
  
--	if (cnt >= sizeof(buf))
--		return -EINVAL;
--
--	if (copy_from_user(&buf, ubuf, cnt))
--		return -EFAULT;
--
--	buf[cnt] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-+	if (ret)
- 		return ret;
+ 		page = alloc_pages_node(cpu_to_node(cpu_buffer->cpu),
+-					GFP_KERNEL, 0);
++					GFP_KERNEL | __GFP_NORETRY, 0);
+ 		if (!page)
+ 			goto free_pages;
+ 		bpage->page = page_address(page);
+@@ -1377,13 +1382,20 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size)
+ 	for_each_buffer_cpu(buffer, cpu) {
+ 		for (i = 0; i < new_pages; i++) {
+ 			struct page *page;
++			/*
++			 * __GFP_NORETRY flag makes sure that the allocation
++			 * fails gracefully without invoking oom-killer and
++			 * the system is not destabilized.
++			 */
+ 			bpage = kzalloc_node(ALIGN(sizeof(*bpage),
+ 						  cache_line_size()),
+-					    GFP_KERNEL, cpu_to_node(cpu));
++					    GFP_KERNEL | __GFP_NORETRY,
++					    cpu_to_node(cpu));
+ 			if (!bpage)
+ 				goto free_pages;
+ 			list_add(&bpage->list, &pages);
+-			page = alloc_pages_node(cpu_to_node(cpu), GFP_KERNEL, 0);
++			page = alloc_pages_node(cpu_to_node(cpu),
++						GFP_KERNEL | __GFP_NORETRY, 0);
+ 			if (!page)
+ 				goto free_pages;
+ 			bpage->page = page_address(page);
+@@ -3737,7 +3749,8 @@ void *ring_buffer_alloc_read_page(struct ring_buffer *buffer, int cpu)
+ 	struct buffer_data_page *bpage;
+ 	struct page *page;
  
- 	val = !!val;
-@@ -3006,20 +2997,11 @@ tracing_max_lat_write(struct file *filp, const char __user *ubuf,
- 		      size_t cnt, loff_t *ppos)
- {
- 	unsigned long *ptr = filp->private_data;
--	char buf[64];
- 	unsigned long val;
- 	int ret;
+-	page = alloc_pages_node(cpu_to_node(cpu), GFP_KERNEL, 0);
++	page = alloc_pages_node(cpu_to_node(cpu),
++				GFP_KERNEL | __GFP_NORETRY, 0);
+ 	if (!page)
+ 		return NULL;
  
--	if (cnt >= sizeof(buf))
--		return -EINVAL;
--
--	if (copy_from_user(&buf, ubuf, cnt))
--		return -EFAULT;
--
--	buf[cnt] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-+	if (ret)
- 		return ret;
- 
- 	*ptr = val * 1000;
-@@ -3474,19 +3456,10 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
- 		      size_t cnt, loff_t *ppos)
- {
- 	unsigned long val;
--	char buf[64];
- 	int ret;
- 
--	if (cnt >= sizeof(buf))
--		return -EINVAL;
--
--	if (copy_from_user(&buf, ubuf, cnt))
--		return -EFAULT;
--
--	buf[cnt] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-+	if (ret)
- 		return ret;
- 
- 	/* must have at least 1 entry */
-@@ -4139,19 +4112,10 @@ trace_options_write(struct file *filp, const char __user *ubuf, size_t cnt,
- {
- 	struct trace_option_dentry *topt = filp->private_data;
- 	unsigned long val;
--	char buf[64];
- 	int ret;
- 
--	if (cnt >= sizeof(buf))
--		return -EINVAL;
--
--	if (copy_from_user(&buf, ubuf, cnt))
--		return -EFAULT;
--
--	buf[cnt] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-+	if (ret)
- 		return ret;
- 
- 	if (val != 0 && val != 1)
-@@ -4199,20 +4163,11 @@ trace_options_core_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 			 loff_t *ppos)
- {
- 	long index = (long)filp->private_data;
--	char buf[64];
- 	unsigned long val;
- 	int ret;
- 
--	if (cnt >= sizeof(buf))
--		return -EINVAL;
--
--	if (copy_from_user(&buf, ubuf, cnt))
--		return -EFAULT;
--
--	buf[cnt] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-+	if (ret)
- 		return ret;
- 
- 	if (val != 0 && val != 1)
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 686ec39..4d7e149 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -486,20 +486,11 @@ event_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 		   loff_t *ppos)
- {
- 	struct ftrace_event_call *call = filp->private_data;
--	char buf[64];
- 	unsigned long val;
- 	int ret;
- 
--	if (cnt >= sizeof(buf))
--		return -EINVAL;
--
--	if (copy_from_user(&buf, ubuf, cnt))
--		return -EFAULT;
--
--	buf[cnt] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-+	if (ret)
- 		return ret;
- 
- 	ret = tracing_update_buffers();
-@@ -571,19 +562,10 @@ system_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
- {
- 	const char *system = filp->private_data;
- 	unsigned long val;
--	char buf[64];
- 	ssize_t ret;
- 
--	if (cnt >= sizeof(buf))
--		return -EINVAL;
--
--	if (copy_from_user(&buf, ubuf, cnt))
--		return -EFAULT;
--
--	buf[cnt] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-+	if (ret)
- 		return ret;
- 
- 	ret = tracing_update_buffers();
-diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index b0b53b8..77575b3 100644
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -156,20 +156,11 @@ stack_max_size_write(struct file *filp, const char __user *ubuf,
- {
- 	long *ptr = filp->private_data;
- 	unsigned long val, flags;
--	char buf[64];
- 	int ret;
- 	int cpu;
- 
--	if (count >= sizeof(buf))
--		return -EINVAL;
--
--	if (copy_from_user(&buf, ubuf, count))
--		return -EFAULT;
--
--	buf[count] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, count, 10, &val);
-+	if (ret)
- 		return ret;
- 
- 	local_irq_save(flags);
 -- 
 1.7.4.4
 
