@@ -1,152 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308Ab1FONwp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 09:52:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:52981 "EHLO
+	id S1754681Ab1FONxJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 09:53:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:46782 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754857Ab1FONwk (ORCPT
+	with ESMTP id S1755261Ab1FONwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 09:52:40 -0400
-X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=vhdKIqpQuCYA:10 a=piYV-GeHtI0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=41rJZUIFWswt2Kl4fJIA:9 a=DHQQ7jDAcw4A:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Wed, 15 Jun 2011 09:52:43 -0400
+X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=vhdKIqpQuCYA:10 a=Yil3cgBou_wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=mXFo69PVMRp-lK1vSngA:9 a=DHQQ7jDAcw4A:10 a=_RhRFcbxBZMA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110615135235.480971241@goodmis.org>
+Message-Id: <20110615135235.712598126@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 15 Jun 2011 09:48:52 -0400
+Date: Wed, 15 Jun 2011 09:48:53 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 11/16 v2] tracing, function_graph: Add context-info support for function_graph
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH 12/16 v2] tracing: Convert to kstrtoul_from_user
 References: <20110615134841.767565350@goodmis.org>
-Content-Disposition: inline; filename=0011-tracing-function_graph-Add-context-info-support-for-.patch
- tracer
+Content-Disposition: inline; filename=0012-tracing-Convert-to-kstrtoul_from_user.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Peter Huewe <peterhuewe@gmx.de>
 
-The function_graph tracer does not follow global context-info option.
-Adding TRACE_ITER_CONTEXT_INFO trace_flags check to enable it.
+This patch replaces the code for getting an unsigned long from a
+userspace buffer by a simple call to kstroul_from_user.
+This makes it easier to read and less error prone.
 
-With following commands:
-	# echo function_graph > ./current_tracer
-	# echo 0 > options/context-info
-	# cat trace
-
-This is what it looked like before:
-# tracer: function_graph
-#
-#     TIME        CPU  DURATION                  FUNCTION CALLS
-#      |          |     |   |                     |   |   |   |
- 1)   0.079 us    |          } /* __vma_link_rb */
- 1)   0.056 us    |          copy_page_range();
- 1)               |          security_vm_enough_memory() {
-...
-
-This is what it looks like now:
-# tracer: function_graph
-#
-  } /* update_ts_time_stats */
-  timekeeping_max_deferment();
-...
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1307113131-10045-6-git-send-email-jolsa@redhat.com
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Link: http://lkml.kernel.org/r/1307476707-14762-1-git-send-email-peterhuewe@gmx.de
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_functions_graph.c |   53 ++++++++++++++++++++--------------
- 1 files changed, 31 insertions(+), 22 deletions(-)
+ kernel/trace/ftrace.c       |   13 +-------
+ kernel/trace/ring_buffer.c  |   13 +-------
+ kernel/trace/trace.c        |   65 ++++++------------------------------------
+ kernel/trace/trace_events.c |   26 ++--------------
+ kernel/trace/trace_stack.c  |   13 +-------
+ 5 files changed, 20 insertions(+), 110 deletions(-)
 
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index 1da5b97..e8d6bb5 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -613,28 +613,30 @@ print_graph_irq(struct trace_iterator *iter, unsigned long addr,
- 		addr >= (unsigned long)__irqentry_text_end)
- 		return TRACE_TYPE_UNHANDLED;
- 
--	/* Absolute time */
--	if (flags & TRACE_GRAPH_PRINT_ABS_TIME) {
--		ret = print_graph_abs_time(iter->ts, s);
--		if (!ret)
--			return TRACE_TYPE_PARTIAL_LINE;
--	}
-+	if (trace_flags & TRACE_ITER_CONTEXT_INFO) {
-+		/* Absolute time */
-+		if (flags & TRACE_GRAPH_PRINT_ABS_TIME) {
-+			ret = print_graph_abs_time(iter->ts, s);
-+			if (!ret)
-+				return TRACE_TYPE_PARTIAL_LINE;
-+		}
- 
--	/* Cpu */
--	if (flags & TRACE_GRAPH_PRINT_CPU) {
--		ret = print_graph_cpu(s, cpu);
--		if (ret == TRACE_TYPE_PARTIAL_LINE)
--			return TRACE_TYPE_PARTIAL_LINE;
--	}
-+		/* Cpu */
-+		if (flags & TRACE_GRAPH_PRINT_CPU) {
-+			ret = print_graph_cpu(s, cpu);
-+			if (ret == TRACE_TYPE_PARTIAL_LINE)
-+				return TRACE_TYPE_PARTIAL_LINE;
-+		}
- 
--	/* Proc */
--	if (flags & TRACE_GRAPH_PRINT_PROC) {
--		ret = print_graph_proc(s, pid);
--		if (ret == TRACE_TYPE_PARTIAL_LINE)
--			return TRACE_TYPE_PARTIAL_LINE;
--		ret = trace_seq_printf(s, " | ");
--		if (!ret)
--			return TRACE_TYPE_PARTIAL_LINE;
-+		/* Proc */
-+		if (flags & TRACE_GRAPH_PRINT_PROC) {
-+			ret = print_graph_proc(s, pid);
-+			if (ret == TRACE_TYPE_PARTIAL_LINE)
-+				return TRACE_TYPE_PARTIAL_LINE;
-+			ret = trace_seq_printf(s, " | ");
-+			if (!ret)
-+				return TRACE_TYPE_PARTIAL_LINE;
-+		}
- 	}
- 
- 	/* No overhead */
-@@ -710,8 +712,9 @@ print_graph_duration(unsigned long long duration, struct trace_seq *s,
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index e153807..458018a 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -803,19 +803,10 @@ ftrace_profile_write(struct file *filp, const char __user *ubuf,
+ 		     size_t cnt, loff_t *ppos)
  {
- 	int ret = -1;
+ 	unsigned long val;
+-	char buf[64];		/* big enough to hold a number */
+ 	int ret;
  
--	if (!(flags & TRACE_GRAPH_PRINT_DURATION))
--		return TRACE_TYPE_HANDLED;
-+	if (!(flags & TRACE_GRAPH_PRINT_DURATION) ||
-+	    !(trace_flags & TRACE_ITER_CONTEXT_INFO))
-+			return TRACE_TYPE_HANDLED;
+-	if (cnt >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, cnt))
+-		return -EFAULT;
+-
+-	buf[cnt] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
++	if (ret)
+ 		return ret;
  
- 	/* No real adata, just filling the column with spaces */
- 	switch (duration) {
-@@ -879,6 +882,9 @@ print_graph_prologue(struct trace_iterator *iter, struct trace_seq *s,
- 			return TRACE_TYPE_PARTIAL_LINE;
- 	}
- 
-+	if (!(trace_flags & TRACE_ITER_CONTEXT_INFO))
-+		return 0;
-+
- 	/* Absolute time */
- 	if (flags & TRACE_GRAPH_PRINT_ABS_TIME) {
- 		ret = print_graph_abs_time(iter->ts, s);
-@@ -1346,6 +1352,9 @@ void print_graph_headers_flags(struct seq_file *s, u32 flags)
+ 	val = !!val;
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 725153d..f00ede3 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -3980,20 +3980,11 @@ rb_simple_write(struct file *filp, const char __user *ubuf,
+ 		size_t cnt, loff_t *ppos)
  {
- 	struct trace_iterator *iter = s->private;
+ 	unsigned long *p = filp->private_data;
+-	char buf[64];
+ 	unsigned long val;
+ 	int ret;
  
-+	if (!(trace_flags & TRACE_ITER_CONTEXT_INFO))
-+		return;
-+
- 	if (trace_flags & TRACE_ITER_LATENCY_FMT) {
- 		/* print nothing if the buffers are empty */
- 		if (trace_empty(iter))
+-	if (cnt >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, cnt))
+-		return -EFAULT;
+-
+-	buf[cnt] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
++	if (ret)
+ 		return ret;
+ 
+ 	if (val)
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index cf22b4b..c977018 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2706,20 +2706,11 @@ tracing_ctrl_write(struct file *filp, const char __user *ubuf,
+ 		   size_t cnt, loff_t *ppos)
+ {
+ 	struct trace_array *tr = filp->private_data;
+-	char buf[64];
+ 	unsigned long val;
+ 	int ret;
+ 
+-	if (cnt >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, cnt))
+-		return -EFAULT;
+-
+-	buf[cnt] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
++	if (ret)
+ 		return ret;
+ 
+ 	val = !!val;
+@@ -3006,20 +2997,11 @@ tracing_max_lat_write(struct file *filp, const char __user *ubuf,
+ 		      size_t cnt, loff_t *ppos)
+ {
+ 	unsigned long *ptr = filp->private_data;
+-	char buf[64];
+ 	unsigned long val;
+ 	int ret;
+ 
+-	if (cnt >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, cnt))
+-		return -EFAULT;
+-
+-	buf[cnt] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
++	if (ret)
+ 		return ret;
+ 
+ 	*ptr = val * 1000;
+@@ -3474,19 +3456,10 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
+ 		      size_t cnt, loff_t *ppos)
+ {
+ 	unsigned long val;
+-	char buf[64];
+ 	int ret;
+ 
+-	if (cnt >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, cnt))
+-		return -EFAULT;
+-
+-	buf[cnt] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
++	if (ret)
+ 		return ret;
+ 
+ 	/* must have at least 1 entry */
+@@ -4139,19 +4112,10 @@ trace_options_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ {
+ 	struct trace_option_dentry *topt = filp->private_data;
+ 	unsigned long val;
+-	char buf[64];
+ 	int ret;
+ 
+-	if (cnt >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, cnt))
+-		return -EFAULT;
+-
+-	buf[cnt] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
++	if (ret)
+ 		return ret;
+ 
+ 	if (val != 0 && val != 1)
+@@ -4199,20 +4163,11 @@ trace_options_core_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 			 loff_t *ppos)
+ {
+ 	long index = (long)filp->private_data;
+-	char buf[64];
+ 	unsigned long val;
+ 	int ret;
+ 
+-	if (cnt >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, cnt))
+-		return -EFAULT;
+-
+-	buf[cnt] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
++	if (ret)
+ 		return ret;
+ 
+ 	if (val != 0 && val != 1)
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 686ec39..4d7e149 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -486,20 +486,11 @@ event_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 		   loff_t *ppos)
+ {
+ 	struct ftrace_event_call *call = filp->private_data;
+-	char buf[64];
+ 	unsigned long val;
+ 	int ret;
+ 
+-	if (cnt >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, cnt))
+-		return -EFAULT;
+-
+-	buf[cnt] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
++	if (ret)
+ 		return ret;
+ 
+ 	ret = tracing_update_buffers();
+@@ -571,19 +562,10 @@ system_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ {
+ 	const char *system = filp->private_data;
+ 	unsigned long val;
+-	char buf[64];
+ 	ssize_t ret;
+ 
+-	if (cnt >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, cnt))
+-		return -EFAULT;
+-
+-	buf[cnt] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
++	if (ret)
+ 		return ret;
+ 
+ 	ret = tracing_update_buffers();
+diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
+index b0b53b8..77575b3 100644
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -156,20 +156,11 @@ stack_max_size_write(struct file *filp, const char __user *ubuf,
+ {
+ 	long *ptr = filp->private_data;
+ 	unsigned long val, flags;
+-	char buf[64];
+ 	int ret;
+ 	int cpu;
+ 
+-	if (count >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, count))
+-		return -EFAULT;
+-
+-	buf[count] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, count, 10, &val);
++	if (ret)
+ 		return ret;
+ 
+ 	local_irq_save(flags);
 -- 
 1.7.4.4
 
