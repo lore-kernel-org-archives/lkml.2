@@ -1,92 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683Ab1FOJ6H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 05:58:07 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56066 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754167Ab1FOJ6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 05:58:04 -0400
-Subject: Re: bug: kernel 3.0-rc3 not relocatable on i386?
-From: Petr Tesarik <ptesarik@suse.cz>
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+	id S1754665Ab1FOJ77 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 05:59:59 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:36965 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754167Ab1FOJ76 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 05:59:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=AbcAu8Cxdfs4nzHFNRTS813KSObjEEU7cNG5/TbpGJTqb5Om2mz4P9FCbrdZWV9/k4
+         LM2jxztbIDW4ZF+5dDiH9ilE9BfgnX72I+hVwHI/qR5ieZtzS7Y8D2M6qKNUncLdhof0
+         LsiBePaWXMoHlaMoyD9uF+Rz8wRHBhA6Z0KU0=
+MIME-Version: 1.0
+In-Reply-To: <20110615081317.GL8141@htj.dyndns.org>
+References: <20110614070732.GA3355@maxin>
+	<20110614071540.GE8141@htj.dyndns.org>
+	<BANLkTimHjVX6ymALT-ZBeSs1S+PRDRwQaQ@mail.gmail.com>
+	<20110615081317.GL8141@htj.dyndns.org>
+Date: Wed, 15 Jun 2011 10:59:57 +0100
+Message-ID: <BANLkTimvNoS2ht7vYJn2w6EC9q78TQkhVA@mail.gmail.com>
+Subject: Re: [PATCH] [RESEND] devres: Fix possible use after free
+From: Maxin B John <maxin.john@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linux-foundation.org, segooon@gmail.com, jkosina@suse.cz,
+        tglx@linutronix.de, eike-kernel@sf-tec.de,
         linux-kernel@vger.kernel.org
-In-Reply-To: <4DF87D2B.7090201@gmail.com>
-References: <1308125533.4641.33.camel@nathan.suse.cz>
-	 <4DF87D2B.7090201@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: SUSE LINUX
-Date: Wed, 15 Jun 2011 11:58:02 +0200
-Message-Id: <1308131882.4641.35.camel@nathan.suse.cz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maarten Lankhorst píše v St 15. 06. 2011 v 11:36 +0200:
-> Hi Petr,
-> 
-> Op 15-06-11 10:12, Petr Tesarik schreef:
-> > Hi all,
-> >
-> > it seems that the 3.0-rc3 kernel is not relocatable on i386. I get
-> > warnings about jiffies being an absolute symbol, and indeed, when GRUB
-> > loads the kernel at a non-default address, jiffies is not relocated.
-> >
-> > In my example the kernel is configured with
-> > CONFIG_PHYSICAL_START=0x1000000
-> > CONFIG_PHYSICAL_ALIGN=0x200000
-> > CONFIG_RELOCATABLE=y
-> > and loaded at 0x200000 by GRUB.
-> >
-> > Booting fails when checking whether the timer works, because do_timer()
-> > increments jiffies_64, but timer_irq_works() checks jiffies. The code
-> > looks like this:
-> >
-> > c13daab7:       8b 3d 40 7a 39 c1       mov    0xc1397a40,%edi
-> >
-> > but arch/x86/boot/compressed/vmlinux.relocs does not contain c13daaba.
-> > Consequently, timer_irq_works() reads the wrong memory location and
-> > fails, causing a panic:
-> >
-> > kernel panic: IO-APIC + timer doesn't work! Boot with apic=debug and
-> > send a report.  Then try booting with the 'noapic' option.
-> >
-> > Needless to say, the kernel freezes a few initcalls later when booted
-> > with noapic, because IO-APIC worked fine, in fact. I verified that by
-> > inserting a debugging printk() in do_timer(), and I also verified with
-> > that printk() that the address of jiffies_64 and the address of jiffies
-> > differ at run time.
-> 
-> Can you try this patch?
+Hi Tejun,
 
-Hi Maarten,
+On Wed, Jun 15, 2011 at 9:13 AM, Tejun Heo <tj@kernel.org> wrote:
+>
+> Yeap, sounds mostly okay but there's no 'possible use after free'.
+> Maybe something like, "devres uses the pointer value as key after it's
+> freed, which is safe but triggers spurious use-after-free warnings on
+> some static analysis tools. �Rearrange code to avoid such warnings".
+>
+Thanks a lot for this suggestion. I think, this describes the patch in
+a much better way.
 
-thanks for the quick replay, but no, I won't even try. It can't work,
-because jiffies is undefined in the final vmlinux link on 32-bit, so I
-believe the link will simply fail because of undefined symbols. ;)
-
-Petr
-
-> diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-> index 89aed99..49e666e 100644
-> --- a/arch/x86/kernel/vmlinux.lds.S
-> +++ b/arch/x86/kernel/vmlinux.lds.S
-> @@ -34,12 +34,11 @@ OUTPUT_FORMAT(CONFIG_OUTPUT_FORMAT, CONFIG_OUTPUT_FORMAT, CONFIG_OUTPUT_FORMAT)
->  #ifdef CONFIG_X86_32
->  OUTPUT_ARCH(i386)
->  ENTRY(phys_startup_32)
-> -jiffies = jiffies_64;
->  #else
->  OUTPUT_ARCH(i386:x86-64)
->  ENTRY(phys_startup_64)
-> -jiffies_64 = jiffies;
->  #endif
-> +jiffies_64 = jiffies;
->  
->  #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
->  /*
-
+Warm Regards,
+Maxin
