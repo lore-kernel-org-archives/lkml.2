@@ -1,110 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab1FODn2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 23:43:28 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59359 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753916Ab1FODn1 (ORCPT
+	id S1754767Ab1FODv0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 23:51:26 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:47948 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754083Ab1FODvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 23:43:27 -0400
+	Tue, 14 Jun 2011 23:51:17 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.11 with qID p5F3lFgS029657
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH v2] net/r8169: update the new parser for the new firmware
+Date: Wed, 15 Jun 2011 11:45:31 +0800
+X-BOX-Message-Id: p5F3lFgS029657
+Message-ID: <1308109531-31698-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-In-Reply-To: <BANLkTinEhVY4aZ+M6H=380zd0Osr_6VFCA@mail.gmail.com>
-References: <1308097798.17300.142.camel@schen9-DESK> <BANLkTinEhVY4aZ+M6H=380zd0Osr_6VFCA@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 14 Jun 2011 20:42:27 -0700
-Message-ID: <BANLkTinFtUXar+dRnSLakhBe6Bf25p7YAA@mail.gmail.com>
-Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
- to mutex
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, ak@linux.intel.com,
-        shaohua.li@intel.com, alex.shi@intel.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: multipart/mixed; boundary=bcaec5014ba927443104a5b7f2ba
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bcaec5014ba927443104a5b7f2ba
-Content-Type: text/plain; charset=ISO-8859-1
+Update the parser for the new firmware which is embedded some information.
 
-On Tue, Jun 14, 2011 at 6:21 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Anyway, please check me if I'm wrong, but won't the "anon_vma->root"
-> be the same for all the anon_vma's that are associated with one
-> particular vma?
->
-> The reason I ask [...]
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/r8169.c |   96 +++++++++++++++++++++++++++++++++++++--------------
+ 1 files changed, 70 insertions(+), 26 deletions(-)
 
-So here's a trial patch that moves the anon_vma locking one level up
-in the anon_vma_clone() call chain. It actually does allow the root to
-change, but has a WARN_ON_ONCE() if that ever happens.
+diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+index ef1ce2e..bd9e78f 100644
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -594,6 +594,14 @@ struct ring_info {
+ 	u8		__pad[sizeof(void *) - sizeof(u32)];
+ };
+ 
++struct fw_info {
++	u32	magic;
++	char	version[32];
++	u32	fw_start;
++	u32	fw_len;
++	u8	chksum;
++};
++
+ enum features {
+ 	RTL_FEATURE_WOL		= (1 << 0),
+ 	RTL_FEATURE_MSI		= (1 << 1),
+@@ -1740,21 +1748,57 @@ static void rtl_writephy_batch(struct rtl8169_private *tp,
+ #define PHY_DELAY_MS		0xe0000000
+ #define PHY_WRITE_ERI_WORD	0xf0000000
+ 
++static int is_firmware_valid(const struct firmware *fw)
++{
++	struct fw_info *f_info = (struct fw_info *)fw->data;
++
++	if (f_info->magic == 0) {
++		size_t i, fw_size;
++		u8 checksum = 0;
++
++		for (i = 0; i < fw->size; i++) {
++			checksum += fw->data[i];
++		}
++
++		if (checksum != 0)
++			return 0;
++
++		fw_size = (fw->size - le32_to_cpu(f_info->fw_start)) / 4;
++		if (fw_size < le32_to_cpu(f_info->fw_len))
++			return 0;
++	} else if (fw->size % 4) {
++		return 0;
++	}
++
++	return 1;
++}
++
+ static void
+ rtl_phy_write_fw(struct rtl8169_private *tp, const struct firmware *fw)
+ {
+-	__le32 *phytable = (__le32 *)fw->data;
++	struct fw_info *f_info = (struct fw_info *)fw->data;
+ 	struct net_device *dev = tp->dev;
+-	size_t index, fw_size = fw->size / sizeof(*phytable);
++	__le32 *phytable;
++	size_t i, fw_size;
+ 	u32 predata, count;
+ 
+-	if (fw->size % sizeof(*phytable)) {
+-		netif_err(tp, probe, dev, "odd sized firmware %zd\n", fw->size);
++	if (!is_firmware_valid(fw)) {
++		netif_err(tp, probe, dev, "Invalid firwmare\n");
+ 		return;
+ 	}
+ 
+-	for (index = 0; index < fw_size; index++) {
+-		u32 action = le32_to_cpu(phytable[index]);
++	if (f_info->magic == 0) {
++		netif_info(tp, probe, dev, "firmware: %s\n", f_info->version);
++
++		phytable = (__le32 *)(fw->data + le32_to_cpu(f_info->fw_start));
++		fw_size = le32_to_cpu(f_info->fw_len);
++	} else {
++		phytable = (__le32 *)fw->data;
++		fw_size = fw->size / sizeof(*phytable);
++	}
++
++	for (i = 0; i < fw_size; i++) {
++		u32 action = le32_to_cpu(phytable[i]);
+ 		u32 regno = (action & 0x0fff0000) >> 16;
+ 
+ 		switch(action & 0xf0000000) {
+@@ -1769,14 +1813,14 @@ rtl_phy_write_fw(struct rtl8169_private *tp, const struct firmware *fw)
+ 			break;
+ 
+ 		case PHY_BJMPN:
+-			if (regno > index) {
++			if (regno > i) {
+ 				netif_err(tp, probe, tp->dev,
+ 					  "Out of range of firmware\n");
+ 				return;
+ 			}
+ 			break;
+ 		case PHY_READCOUNT_EQ_SKIP:
+-			if (index + 2 >= fw_size) {
++			if (i + 2 >= fw_size) {
+ 				netif_err(tp, probe, tp->dev,
+ 					  "Out of range of firmware\n");
+ 				return;
+@@ -1785,7 +1829,7 @@ rtl_phy_write_fw(struct rtl8169_private *tp, const struct firmware *fw)
+ 		case PHY_COMP_EQ_SKIPN:
+ 		case PHY_COMP_NEQ_SKIPN:
+ 		case PHY_SKIPN:
+-			if (index + 1 + regno >= fw_size) {
++			if (i + 1 + regno >= fw_size) {
+ 				netif_err(tp, probe, tp->dev,
+ 					  "Out of range of firmware\n");
+ 				return;
+@@ -1805,8 +1849,8 @@ rtl_phy_write_fw(struct rtl8169_private *tp, const struct firmware *fw)
+ 	predata = 0;
+ 	count = 0;
+ 
+-	for (index = 0; index < fw_size; ) {
+-		u32 action = le32_to_cpu(phytable[index]);
++	for (i = 0; i < fw_size; ) {
++		u32 action = le32_to_cpu(phytable[i]);
+ 		u32 data = action & 0x0000ffff;
+ 		u32 regno = (action & 0x0fff0000) >> 16;
+ 
+@@ -1817,54 +1861,54 @@ rtl_phy_write_fw(struct rtl8169_private *tp, const struct firmware *fw)
+ 		case PHY_READ:
+ 			predata = rtl_readphy(tp, regno);
+ 			count++;
+-			index++;
++			i++;
+ 			break;
+ 		case PHY_DATA_OR:
+ 			predata |= data;
+-			index++;
++			i++;
+ 			break;
+ 		case PHY_DATA_AND:
+ 			predata &= data;
+-			index++;
++			i++;
+ 			break;
+ 		case PHY_BJMPN:
+-			index -= regno;
++			i -= regno;
+ 			break;
+ 		case PHY_READ_EFUSE:
+ 			predata = rtl8168d_efuse_read(tp->mmio_addr, regno);
+-			index++;
++			i++;
+ 			break;
+ 		case PHY_CLEAR_READCOUNT:
+ 			count = 0;
+-			index++;
++			i++;
+ 			break;
+ 		case PHY_WRITE:
+ 			rtl_writephy(tp, regno, data);
+-			index++;
++			i++;
+ 			break;
+ 		case PHY_READCOUNT_EQ_SKIP:
+-			index += (count == data) ? 2 : 1;
++			i += (count == data) ? 2 : 1;
+ 			break;
+ 		case PHY_COMP_EQ_SKIPN:
+ 			if (predata == data)
+-				index += regno;
+-			index++;
++				i += regno;
++			i++;
+ 			break;
+ 		case PHY_COMP_NEQ_SKIPN:
+ 			if (predata != data)
+-				index += regno;
+-			index++;
++				i += regno;
++			i++;
+ 			break;
+ 		case PHY_WRITE_PREVIOUS:
+ 			rtl_writephy(tp, regno, predata);
+-			index++;
++			i++;
+ 			break;
+ 		case PHY_SKIPN:
+-			index += regno + 1;
++			i += regno + 1;
+ 			break;
+ 		case PHY_DELAY_MS:
+ 			mdelay(data);
+-			index++;
++			i++;
+ 			break;
+ 
+ 		case PHY_READ_MAC_BYTE:
+-- 
+1.7.3.2
 
-I *suspect* this will help the locking numbers a bit, but I'd like to
-note that it does this *only* for the anon_vma_clone() case, and the
-exact same thing should be done for the exit case too (ie the
-unlink_anon_vmas()). So if it does work it's still just one step on
-the way, and there would be more work along the same lines to possibly
-improve the locking further.
-
-The patch is "tested" in the sense that I booted the kernel and am
-running it right now (and compiled a kernel with it). But that's not a
-whole lot of actual real life testing, so caveat emptor.
-
-And I won't really even guarantee that the main problem locking-wise
-would be a long chain of "same_vma" anon-vma's that this does with
-just a single lock. So who knows - maybe it doesn't help at all. I
-suspect it's worth testing, though.
-
-                              Linus
-
---bcaec5014ba927443104a5b7f2ba
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_goxqgqiz0
-
-IG1tL3JtYXAuYyB8ICAgMTggKysrKysrKysrKysrKysrKy0tCiAxIGZpbGVzIGNoYW5nZWQsIDE2
-IGluc2VydGlvbnMoKyksIDIgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvbW0vcm1hcC5jIGIv
-bW0vcm1hcC5jCmluZGV4IDBlYjQ2M2VhODhkZC4uMjA2YzNmYjA3MmFmIDEwMDY0NAotLS0gYS9t
-bS9ybWFwLmMKKysrIGIvbW0vcm1hcC5jCkBAIC0yMDgsMTMgKzIwOCwxMSBAQCBzdGF0aWMgdm9p
-ZCBhbm9uX3ZtYV9jaGFpbl9saW5rKHN0cnVjdCB2bV9hcmVhX3N0cnVjdCAqdm1hLAogCWF2Yy0+
-YW5vbl92bWEgPSBhbm9uX3ZtYTsKIAlsaXN0X2FkZCgmYXZjLT5zYW1lX3ZtYSwgJnZtYS0+YW5v
-bl92bWFfY2hhaW4pOwogCi0JYW5vbl92bWFfbG9jayhhbm9uX3ZtYSk7CiAJLyoKIAkgKiBJdCdz
-IGNyaXRpY2FsIHRvIGFkZCBuZXcgdm1hcyB0byB0aGUgdGFpbCBvZiB0aGUgYW5vbl92bWEsCiAJ
-ICogc2VlIGNvbW1lbnQgaW4gaHVnZV9tZW1vcnkuYzpfX3NwbGl0X2h1Z2VfcGFnZSgpLgogCSAq
-LwogCWxpc3RfYWRkX3RhaWwoJmF2Yy0+c2FtZV9hbm9uX3ZtYSwgJmFub25fdm1hLT5oZWFkKTsK
-LQlhbm9uX3ZtYV91bmxvY2soYW5vbl92bWEpOwogfQogCiAvKgpAQCAtMjI0LDE2ICsyMjIsMzAg
-QEAgc3RhdGljIHZvaWQgYW5vbl92bWFfY2hhaW5fbGluayhzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3Qg
-KnZtYSwKIGludCBhbm9uX3ZtYV9jbG9uZShzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKmRzdCwgc3Ry
-dWN0IHZtX2FyZWFfc3RydWN0ICpzcmMpCiB7CiAJc3RydWN0IGFub25fdm1hX2NoYWluICphdmMs
-ICpwYXZjOworCXN0cnVjdCBhbm9uX3ZtYSAqcm9vdCA9IE5VTEw7CiAKIAlsaXN0X2Zvcl9lYWNo
-X2VudHJ5X3JldmVyc2UocGF2YywgJnNyYy0+YW5vbl92bWFfY2hhaW4sIHNhbWVfdm1hKSB7CisJ
-CXN0cnVjdCBhbm9uX3ZtYSAqYW5vbl92bWEgPSBwYXZjLT5hbm9uX3ZtYSwgKm5ld19yb290ID0g
-YW5vbl92bWEtPnJvb3Q7CisKKwkJaWYgKG5ld19yb290ICE9IHJvb3QpIHsKKwkJCWlmIChXQVJO
-X09OX09OQ0Uocm9vdCkpCisJCQkJbXV0ZXhfdW5sb2NrKCZyb290LT5tdXRleCk7CisJCQlyb290
-ID0gbmV3X3Jvb3Q7CisJCQltdXRleF9sb2NrKCZyb290LT5tdXRleCk7CisJCX0KKwogCQlhdmMg
-PSBhbm9uX3ZtYV9jaGFpbl9hbGxvYygpOwogCQlpZiAoIWF2YykKIAkJCWdvdG8gZW5vbWVtX2Zh
-aWx1cmU7CiAJCWFub25fdm1hX2NoYWluX2xpbmsoZHN0LCBhdmMsIHBhdmMtPmFub25fdm1hKTsK
-IAl9CisJaWYgKHJvb3QpCisJCW11dGV4X3VubG9jaygmcm9vdC0+bXV0ZXgpOwogCXJldHVybiAw
-OwogCiAgZW5vbWVtX2ZhaWx1cmU6CisJaWYgKHJvb3QpCisJCW11dGV4X3VubG9jaygmcm9vdC0+
-bXV0ZXgpOwogCXVubGlua19hbm9uX3ZtYXMoZHN0KTsKIAlyZXR1cm4gLUVOT01FTTsKIH0KQEAg
-LTI4MCw3ICsyOTIsOSBAQCBpbnQgYW5vbl92bWFfZm9yayhzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3Qg
-KnZtYSwgc3RydWN0IHZtX2FyZWFfc3RydWN0ICpwdm1hKQogCWdldF9hbm9uX3ZtYShhbm9uX3Zt
-YS0+cm9vdCk7CiAJLyogTWFyayB0aGlzIGFub25fdm1hIGFzIHRoZSBvbmUgd2hlcmUgb3VyIG5l
-dyAoQ09XZWQpIHBhZ2VzIGdvLiAqLwogCXZtYS0+YW5vbl92bWEgPSBhbm9uX3ZtYTsKKwlhbm9u
-X3ZtYV9sb2NrKGFub25fdm1hKTsKIAlhbm9uX3ZtYV9jaGFpbl9saW5rKHZtYSwgYXZjLCBhbm9u
-X3ZtYSk7CisJYW5vbl92bWFfdW5sb2NrKGFub25fdm1hKTsKIAogCXJldHVybiAwOwogCg==
---bcaec5014ba927443104a5b7f2ba--
