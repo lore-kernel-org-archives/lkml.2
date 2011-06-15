@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab1FOAjj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 20:39:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6751 "EHLO mx1.redhat.com"
+	id S1754277Ab1FOAkv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 20:40:51 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:52246 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752089Ab1FOAjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 20:39:37 -0400
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] EFIFB: Fix error handling
-To: pjones@redhat.com
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, Peter Jones <pjones@redhat.com>,
-        linux-fbdev@vger.kernel.org, stable@kernel.org
-Date: Wed, 15 Jun 2011 01:38:17 +0100
-Message-ID: <20110615003817.18883.41030.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1752089Ab1FOAks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 20:40:48 -0400
+Date: Tue, 14 Jun 2011 17:40:45 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Theurer <habanero@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/2] sched: Check if lowest_mask is initialized in
+ find_lowest_rq
+Message-ID: <20110615004045.GU2288@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110614223623.876681637@goodmis.org>
+ <20110614223657.824872966@goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110614223657.824872966@goodmis.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the error handling in the EFIFB driver if platform_driver_probe() fails.
-In that case, the code will pass the driver struct to the _device_
-unregistration function.  It presumably should pass a pointer to the device
-struct instead.
+On Tue, Jun 14, 2011 at 06:36:25PM -0400, Steven Rostedt wrote:
+> From: Steven Rostedt <rostedt@goodmis.org>
+> 
+> On system boot up, the lowest_mask is initialized with early_initcall.
+> But RT tasks may wake up on other early_initcall callers before the
+> lowest_mask is initialized, causing a system crash.
+> 
+> The commit d72bce0e67 rcu: Cure load woes
+> was the first commit to wake up RT tasks in early init. Before this
+> commit this bug should not happen.
 
-The compiler gives the following warning to indicate this:
+I never was able to reproduce this, but after adding Shaohua's patch, I
+need this one too on some systems.  So:
 
-drivers/video/efifb.c: In function 'efifb_init':
-drivers/video/efifb.c:544:3: warning: passing argument 1 of 'platform_device_unregister' from incompatible pointer type
-include/linux/platform_device.h:40:13: note: expected 'struct platform_device *' but argument is of type 'struct platform_driver *'
+Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Peter Jones <pjones@redhat.com>
-cc: linux-fbdev@vger.kernel.org
-cc: stable@kernel.org
----
-
- drivers/video/efifb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
-index 69c49df..784139a 100644
---- a/drivers/video/efifb.c
-+++ b/drivers/video/efifb.c
-@@ -541,7 +541,7 @@ static int __init efifb_init(void)
- 	 */
- 	ret = platform_driver_probe(&efifb_driver, efifb_probe);
- 	if (ret) {
--		platform_device_unregister(&efifb_driver);
-+		platform_device_unregister(&efifb_device);
- 		return ret;
- 	}
- 
-
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+> Reported-by: Andrew Theurer <habanero@linux.vnet.ibm.com>
+> Tested-by: Andrew Theurer <habanero@linux.vnet.ibm.com>
+> Link: http://lkml.kernel.org/r/1308014683.9218.107.camel@gandalf.stny.rr.com
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  kernel/sched_rt.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+> index 9b8d5dc..10d0182 100644
+> --- a/kernel/sched_rt.c
+> +++ b/kernel/sched_rt.c
+> @@ -1239,6 +1239,10 @@ static int find_lowest_rq(struct task_struct *task)
+>  	int this_cpu = smp_processor_id();
+>  	int cpu      = task_cpu(task);
+> 
+> +	/* Make sure the mask is initialized first */
+> +	if (unlikely(!lowest_mask))
+> +		return -1;
+> +
+>  	if (task->rt.nr_cpus_allowed == 1)
+>  		return -1; /* No other targets possible */
+> 
+> -- 
+> 1.7.4.4
+> 
+> 
