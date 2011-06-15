@@ -1,88 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab1FOKHb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 06:07:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47740 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751500Ab1FOKHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 06:07:30 -0400
-Subject: Re: bug: kernel 3.0-rc3 not relocatable on i386?
-From: Petr Tesarik <ptesarik@suse.cz>
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1308132078.4641.38.camel@nathan.suse.cz>
-References: <1308125533.4641.33.camel@nathan.suse.cz>
-	 <BANLkTikoxYAz7G7pvKABbVPzOuxUzLkO=Q@mail.gmail.com>
-	 <1308132078.4641.38.camel@nathan.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Organization: SUSE LINUX
-Date: Wed, 15 Jun 2011 12:07:28 +0200
-Message-Id: <1308132448.4641.41.camel@nathan.suse.cz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 8bit
+	id S1754758Ab1FOKMq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 06:12:46 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:40258 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754458Ab1FOKMp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 06:12:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=YUOvurSaJ6BZ6vj9FENW/YbC3vTcQ3avxT89dYK7h5W3zcupzidtwjHYPb0j6VSgZZ
+         On7lxhJQLv0FDELOLuWUtKxpmG/lGoAoMYeCxSm46rwNFJYtTWfFdRIT/jRe9Yf4eXpx
+         g9SFgs++P0H6U2h7MHbIl/a8whjKJyZLQxwjM=
+MIME-Version: 1.0
+In-Reply-To: <25c1ce98c838621aeb514e6e0e843949.squirrel@webmail.sf-mail.de>
+References: <20110614070732.GA3355@maxin>
+	<20110614071540.GE8141@htj.dyndns.org>
+	<BANLkTimHjVX6ymALT-ZBeSs1S+PRDRwQaQ@mail.gmail.com>
+	<20110615081317.GL8141@htj.dyndns.org>
+	<25c1ce98c838621aeb514e6e0e843949.squirrel@webmail.sf-mail.de>
+Date: Wed, 15 Jun 2011 11:12:44 +0100
+Message-ID: <BANLkTimaBC0uGfcoX9mBLLdGOo7Mj5CJwg@mail.gmail.com>
+Subject: Re: [PATCH] [RESEND] devres: Fix possible use after free
+From: Maxin B John <maxin.john@gmail.com>
+To: Rolf Eike Beer <eike-kernel@sf-tec.de>
+Cc: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org, segooon@gmail.com,
+        jkosina@suse.cz, tglx@linutronix.de, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Petr Tesarik píše v St 15. 06. 2011 v 12:01 +0200:
-> Maarten Lankhorst píše v St 15. 06. 2011 v 11:21 +0200:
-> > Hi Petr,
-> > 
-> > 2011/6/15 Petr Tesarik <ptesarik@suse.cz>:
-> > > Hi all,
-> > >
-> > > it seems that the 3.0-rc3 kernel is not relocatable on i386. I get
-> > > warnings about jiffies being an absolute symbol, and indeed, when GRUB
-> > > loads the kernel at a non-default address, jiffies is not relocated.
-> > >
-> > > In my example the kernel is configured with
-> > > CONFIG_PHYSICAL_START=0x1000000
-> > > CONFIG_PHYSICAL_ALIGN=0x200000
-> > > CONFIG_RELOCATABLE=y
-> > > and loaded at 0x200000 by GRUB.
-> > >
-> > > Booting fails when checking whether the timer works, because do_timer()
-> > > increments jiffies_64, but timer_irq_works() checks jiffies. The code
-> > > looks like this:
-> > >
-> > > c13daab7:       8b 3d 40 7a 39 c1       mov    0xc1397a40,%edi
-> > >
-> > > but arch/x86/boot/compressed/vmlinux.relocs does not contain c13daaba.
-> > > Consequently, timer_irq_works() reads the wrong memory location and
-> > > fails, causing a panic:
-> > >
-> > > kernel panic: IO-APIC + timer doesn't work! Boot with apic=debug and
-> > > send a report.  Then try booting with the 'noapic' option.
-> > >
-> > > Needless to say, the kernel freezes a few initcalls later when booted
-> > > with noapic, because IO-APIC worked fine, in fact. I verified that by
-> > > inserting a debugging printk() in do_timer(), and I also verified with
-> > > that printk() that the address of jiffies_64 and the address of jiffies
-> > > differ at run time.
-> > >
-> > > Any idea how to fix this?
-> > Does reverting this commit fix it?
-> 
-> Isn't this related to VDSO? I've got no troubles with the VDSO. It's
-> just that the kernel assumes a fixed location of jiffies (in the kernel
-> direct mapping), so it cannot be relocated.
-> 
-> OTOH this must have worked the other day, so searching for the commit
-> that broke it is a good hint. I'll try it here, too.
+Hi Eike,
 
-Ah, it turns out this is in fact reported here:
+On Wed, Jun 15, 2011 at 11:00 AM, Rolf Eike Beer <eike-kernel@sf-tec.de> wrote:
+>
+> Sounds good. And please merge both patches together.
+>
+I'll merge both patches into a single patch and repost it today itself.
 
-http://sourceware.org/bugzilla/show_bug.cgi?id=12327
-
-But the patch was reverted by commit
-6b35eb9ddcddde7b510726de03fae071178f1ec4, so these binutils have been
-broken again since January.
-
-Yes, I've got binutils-2.21 here. :/
-
-Petr
-
-
+Warm Regards,
+Maxin
