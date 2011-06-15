@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab1FPHlR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:41:17 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:43204 "EHLO
+	id S1755638Ab1FPHkw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:40:52 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:58450 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755083Ab1FPHAV (ORCPT
+	by vger.kernel.org with ESMTP id S1755124Ab1FPHAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:00:21 -0400
-X-Sasl-enc: Cyid3EklEpn5O3SEEXu+MX6xXiqD/NqgXzoHLC1/R+F5 1308207620
+	Thu, 16 Jun 2011 03:00:23 -0400
+X-Sasl-enc: /XNVpgr0fk5HepcEHQ/LGnlQxi09i8T8U3ap1cXgYAZI 1308207621
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:30 2011
-Message-Id: <20110616000230.377726335@clark.kroah.org>
+Message-Id: <20110616000230.479628690@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 16:59:37 -0700
+Date: Wed, 15 Jun 2011 16:59:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>
-Subject: [14/89] block: blkdev_get() should access ->bd_disk only after
+        Namhyung Kim <namhyung@gmail.com>,
+        Laurent Vivier <Laurent.Vivier@bull.net>,
+        Paul Clements <Paul.Clements@steeleye.com>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: [15/89] nbd: limit module parameters to a sane value
 In-Reply-To: <20110616000258.GA14529@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +29,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
- success
 
-From: Tejun Heo <tj@kernel.org>
+From: Namhyung Kim <namhyung@gmail.com>
 
-commit 4c49ff3fe128ca68dabd07537415c419ad7f82f9 upstream.
+commit 3b2710824e00d238554c13b5add347e6c701ab1a upstream.
 
-d4dc210f69 (block: don't block events on excl write for non-optical
-devices) added dereferencing of bdev->bd_disk to test
-GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE; however, bdev->bd_disk can be
-%NULL if open failed which can lead to an oops.
+The 'max_part' parameter controls the number of maximum partition
+a nbd device can have. However if a user specifies very large
+value it would exceed the limitation of device minor number and
+can cause a kernel oops (or, at least, produce invalid device
+nodes in some cases).
 
-Test the flag after testing open was successful, not before.
+In addition, specifying large 'nbds_max' value causes same
+problem for the same reason.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: David Miller <davem@davemloft.net>
-Tested-by: David Miller <davem@davemloft.net>
+On my desktop, following command results to the kernel bug:
+
+$ sudo modprobe nbd max_part=100000
+ kernel BUG at /media/Linux_Data/project/linux/fs/sysfs/group.c:65!
+ invalid opcode: 0000 [#1] SMP
+ last sysfs file: /sys/devices/virtual/block/nbd4/range
+ CPU 1
+ Modules linked in: nbd(+) bridge stp llc kvm_intel kvm asus_atk0110 sg sr_mod cdrom
+
+ Pid: 2522, comm: modprobe Tainted: G        W   2.6.39-leonard+ #159 System manufacturer System Product Name/P5G41TD-M PRO
+ RIP: 0010:[<ffffffff8115aa08>]  [<ffffffff8115aa08>] internal_create_group+0x2f/0x166
+ RSP: 0018:ffff8801009f1de8  EFLAGS: 00010246
+ RAX: 00000000ffffffef RBX: ffff880103920478 RCX: 00000000000a7bd3
+ RDX: ffffffff81a2dbe0 RSI: 0000000000000000 RDI: ffff880103920478
+ RBP: ffff8801009f1e38 R08: ffff880103920468 R09: ffff880103920478
+ R10: ffff8801009f1de8 R11: ffff88011eccbb68 R12: ffffffff81a2dbe0
+ R13: ffff880103920468 R14: 0000000000000000 R15: ffff880103920400
+ FS:  00007f3c49de9700(0000) GS:ffff88011f800000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: 00007f3b7fe7c000 CR3: 00000000cd58d000 CR4: 00000000000406e0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Process modprobe (pid: 2522, threadinfo ffff8801009f0000, task ffff8801009a93a0)
+ Stack:
+  ffff8801009f1e58 ffffffff812e8f6e ffff8801009f1e58 ffffffff812e7a80
+  ffff880000000010 ffff880103920400 ffff8801002fd0c0 ffff880103920468
+  0000000000000011 ffff880103920400 ffff8801009f1e48 ffffffff8115ab6a
+ Call Trace:
+  [<ffffffff812e8f6e>] ? device_add+0x4f1/0x5e4
+  [<ffffffff812e7a80>] ? dev_set_name+0x41/0x43
+  [<ffffffff8115ab6a>] sysfs_create_group+0x13/0x15
+  [<ffffffff810b857e>] blk_trace_init_sysfs+0x14/0x16
+  [<ffffffff811ee58b>] blk_register_queue+0x4c/0xfd
+  [<ffffffff811f3bdf>] add_disk+0xe4/0x29c
+  [<ffffffffa007e2ab>] nbd_init+0x2ab/0x30d [nbd]
+  [<ffffffffa007e000>] ? 0xffffffffa007dfff
+  [<ffffffff8100020f>] do_one_initcall+0x7f/0x13e
+  [<ffffffff8107ab0a>] sys_init_module+0xa1/0x1e3
+  [<ffffffff814f3542>] system_call_fastpath+0x16/0x1b
+ Code: 41 57 41 56 41 55 41 54 53 48 83 ec 28 0f 1f 44 00 00 48 89 fb 41 89 f6 49 89 d4 48 85 ff 74 0b 85 f6 75 0b 48 83
+  7f 30 00 75 14 <0f> 0b eb fe b9 ea ff ff ff 48 83 7f 30 00 0f 84 09 01 00 00 49
+ RIP  [<ffffffff8115aa08>] internal_create_group+0x2f/0x166
+  RSP <ffff8801009f1de8>
+ ---[ end trace 753285ffbf72c57c ]---
+
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Cc: Laurent Vivier <Laurent.Vivier@bull.net>
+Cc: Paul Clements <Paul.Clements@steeleye.com>
 Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/block_dev.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/block/nbd.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1272,8 +1272,8 @@ int blkdev_get(struct block_device *bdev
- 		 * individual writeable reference is too fragile given the
- 		 * way @mode is used in blkdev_get/put().
- 		 */
--		if ((disk->flags & GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE) &&
--		    !res && (mode & FMODE_WRITE) && !bdev->bd_write_holder) {
-+		if (!res && (mode & FMODE_WRITE) && !bdev->bd_write_holder &&
-+		    (disk->flags & GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE)) {
- 			bdev->bd_write_holder = true;
- 			disk_block_events(disk);
- 		}
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -756,6 +756,12 @@ static int __init nbd_init(void)
+ 	if (max_part > 0)
+ 		part_shift = fls(max_part);
+ 
++	if ((1UL << part_shift) > DISK_MAX_PARTS)
++		return -EINVAL;
++
++	if (nbds_max > 1UL << (MINORBITS - part_shift))
++		return -EINVAL;
++
+ 	for (i = 0; i < nbds_max; i++) {
+ 		struct gendisk *disk = alloc_disk(1 << part_shift);
+ 		if (!disk)
 
 
