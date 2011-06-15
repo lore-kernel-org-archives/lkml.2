@@ -1,111 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab1FOSwJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 14:52:09 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63060 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753675Ab1FOSwF (ORCPT
+	id S1754094Ab1FOSwX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 14:52:23 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:58957 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753731Ab1FOSwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 14:52:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=mbAZKC7iHxIcU2JNxbdLtDnNB6Q0zfBHp3CoZrQx3rcs8Hjxsdz1spUw8h70KzHCkB
-         QZnk9+uGI+KMwsUglaDxYhAuwDyqc50hEoSjmG0S1cKX7fOQkpQb9OHDIs1jwnd8rOW5
-         FtpKun3zXC1oeaMvcFCXn/qyxiaFhXlh6UTlU=
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Nikanth Karthikesan <knikanth@suse.de>,
-        David Rientjes <rientjes@google.com>, Matt Mackall <mpm@selenic.com>,
-        linux-doc@vger.kernel.org
-Subject: [RFC 5/5 v4] procfs: add documentation for procfs mount options
-Date: Wed, 15 Jun 2011 22:51:59 +0400
-Message-Id: <1308163920-6198-1-git-send-email-segoon@openwall.com>
-X-Mailer: git-send-email 1.7.0.4
+	Wed, 15 Jun 2011 14:52:06 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=QPXSk+sCtQgJfYeSDkh0hX4mqEH0y2NS4k/W21OGibI1g9y0AGkV3/rkyUEQ4arI/yyMaoOEcXQwxgcT2Ny+d6Fh1xmqxndGzND1RlmryoWLQ93oD7bYxHwnhZtmr27P;
+Date: Wed, 15 Jun 2011 11:52:01 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "Dennis Jansen" <dennis.jansen@web.de>
+Subject: Re: [Bug #36392] 2.6.39, 3.0-rc2 Intel DRI Regression: Black Screen
+ after trying to play video
+Message-ID: <20110615115201.0264039b@jbarnes-desktop>
+In-Reply-To: <kTLfM29CaqB.A.tBF.6zS9NB@chimera>
+References: <9NVbY1BZ_5D.A.2lE.jzS9NB@chimera>
+	<kTLfM29CaqB.A.tBF.6zS9NB@chimera>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add documentation for procfs mount options.
+On Sun, 12 Jun 2011 23:12:11 +0200 (CEST)
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-v4 - grammar fixes.
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.38 and 2.6.39.
+> 
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.38 and 2.6.39.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+> 
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=36392
+> Subject		: 2.6.39, 3.0-rc2 Intel DRI Regression: Black Screen after trying to play video
+> Submitter	: Dennis Jansen <dennis.jansen@web.de>
+> Date		: 2011-06-01 04:41 (12 days old)
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
----
- Documentation/filesystems/proc.txt |   51 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 51 insertions(+), 0 deletions(-)
+Did you ever bisect this issue?
 
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index f481780..327a640 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -41,6 +41,8 @@ Table of Contents
-   3.5	/proc/<pid>/mountinfo - Information about mounts
-   3.6	/proc/<pid>/comm  & /proc/<pid>/task/<tid>/comm
- 
-+  4	Configuring procfs
-+  4.1	Mount options
- 
- ------------------------------------------------------------------------------
- Preface
-@@ -1541,3 +1543,52 @@ a task to set its own or one of its thread siblings comm value. The comm value
- is limited in size compared to the cmdline value, so writing anything longer
- then the kernel's TASK_COMM_LEN (currently 16 chars) will result in a truncated
- comm value.
-+
-+
-+------------------------------------------------------------------------------
-+Configuring procfs
-+------------------------------------------------------------------------------
-+
-+4.1	Mount options
-+---------------------
-+
-+The following mount options are supported:
-+
-+	hidepid=	Set /proc/<pid>/ access mode.
-+	hidenet		Hide /proc/<pid>/net/ from nonauthorized users.
-+	nohidenet	Don't hide /proc/<pid>/net/ from nonauthorized users.
-+	gid=		Set the group authorized to learn processes and
-+			networking information.
-+
-+hidepid=0 means classic mode - everybody may access all /proc/<pid>/ directories
-+(default).
-+
-+hidepid=1 means users may not access any /proc/<pid>/ directories but their
-+own.  Sensitive files like cmdline, io, sched*, status, wchan are now protected
-+against other users.  This makes it impossible to learn whether any user runs
-+specific program (given the program doesn't reveal itself by its behaviour).
-+As an additional bonus, as /proc/<pid>/cmdline is unaccessible for other users,
-+poorly written programs passing sensitive information via program arguments are
-+now protected against local eavesdroppers.
-+
-+hidepid=2 means hidepid=1 plus all /proc/<pid>/ will be fully invisible to other
-+users.  It doesn't mean that it hides whether a process with a specific
-+pid value exists (it can be learned by other means, e.g. by sending signals),
-+but it hides process' uid and gid, which may be learned by stat()'ing
-+/proc/<pid>/ otherwise.  It greatly complicates an intruder's task of gathering
-+information about running processes, whether some daemon runs with elevated privileges,
-+whether another user runs some sensitive program, whether other users run any
-+program at all, etc.
-+
-+hidenet means /proc/<pid>/net/ will be accessible to processes with
-+CAP_NET_ADMIN capability or to members of a special group.  It means
-+nonauthorized users may not learn any networking connections information.  If
-+network namespaces support is enabled (CONFIG_NET_NS=y) then common users would
-+obtain net directory, but all files would indicate no networking activity at
-+all.  If network namespaces are disabled, net directory is unaccessible to
-+common users.
-+
-+gid= means group authorized to learn processes information prohibited by
-+hidepid= and networking information prohibited by hidenet.  If you use some
-+daemon like identd which has to learn information about net/processes
-+information, just add identd to this group.
 -- 
-1.7.0.4
-
+Jesse Barnes, Intel Open Source Technology Center
