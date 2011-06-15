@@ -1,93 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab1FOVvE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 17:51:04 -0400
-Received: from hera.kernel.org ([140.211.167.34]:38100 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751339Ab1FOVvA convert rfc822-to-8bit (ORCPT
+	id S1755585Ab1FOVwF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 17:52:05 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:63873 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754551Ab1FOVwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 17:51:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=ta5L5ubu9vlg4youfgrvj+cbyIP+E5Mf769HKkT42LQK8MNMECrPRBNBw3JHNUphCS
-         NNvnjYvrSojvW02rSs7ycQ03n+jV2jzIgs9xZgo6gaOvLcj7fv6Ntuu2NaO0QFGITTcD
-         RUcjO6KGXSOa+e/HcW9Zq1ggYXFO0AgDQdr8I=
+	Wed, 15 Jun 2011 17:52:01 -0400
+References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe> <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com> <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK> <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com> <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1308173849.15315.91.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTik03b2CWwfVpN3atNfVZbDe=Wz3qw@mail.gmail.com>
-References: <BANLkTik03b2CWwfVpN3atNfVZbDe=Wz3qw@mail.gmail.com>
-Date: Wed, 15 Jun 2011 18:50:57 -0300
-Message-ID: <BANLkTinvpmn6fMBDNq_GxOhWW6W5XDErXQ@mail.gmail.com>
-Subject: Re: PROBLEM: unable to enumerate USB device on port 6 (3 kernel test)
-From: =?ISO-8859-1?Q?Franco_Gast=F3n_Pellegrini?= 
-	<francogpellegrini@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [140.211.167.34]); Wed, 15 Jun 2011 21:51:00 +0000 (UTC)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock to mutex
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 15 Jun 2011 14:51:34 -0700
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Tim Chen <tim.c.chen@linux.intel.com>
+CC: Andi Kleen <ak@linux.intel.com>, Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Message-ID: <87ea4bd7-8b16-4b24-8fcb-d8e9b6f421ec@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi again,
-
-when i use the following workaround, the messeges stop spamming ttys
-and usb keep working fine, Why? is hardware or kernel problem? (i know
-a lot of people with the same problem):
-
-Workaround:
-Edit /etc/rc.local
-
-Insert the following:
-
-cd /sys/bus/pci/drivers/ehci_hcd
-for i in `ls -d 0000:00:*`;do echo $i > unbind;sleep 5; echo $i > bind; done
 
 
+Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>removing
+>that sysconf() wreckage closed the gap considerably (needing to know
+>the
+>number of cpus to optimize locking sounds like a trainwreck all of its
+>own, needing it _that_ often instead of just once at startup is even
+>worse).
 
+Yeah, I think it's ridiculous to say that glibc is not doing something stupid and that it's a problem with kernel interfaces.
 
-2011/5/13 Franco Gastón Pellegrini <francogpellegrini@gmail.com>:
-> I tested the kernels:
->
-> 2.6.38-8-generic
-> 2.6.39-0-generic (kernel-ppa/ppa)
->
-> In all I have the same problem, except 2.6.35 and earlier versions,
-> where no error occurs.
->
-> I inform you that on my laptop is connected only integrated SD card
-> reader (ACER 5520 with nForce 610M mother).
->
->
-> ---------- Forwarded message ----------
-> From: Franco Gastón Pellegrini <francogpellegrini@gmail.com>
-> Date: 2011/5/3
-> Subject: PROBLEM: unable to enumerate USB device on port 6
-> To: linux-kernel@vger.kernel.org
->
->
-> Kernel version: 2.6.38-8-generic #42-Ubuntu SMP Mon Apr 11 03:31:24
-> UTC 2011 x86_64 x86_64 x86_64 GNU/Linux
->
-> hi,
-> I have an ACER 5520, with ubuntu 11.04 and all my TTY repeats
-> indefinitly (every 1/3 seconds) the mesages:
->
-> .....
-> May 1 18:34:27 franco-Aspire-5520 kernel: [ 888.350128] hub 1-0:1.0:
-> unable to enumerate USB device on port 6
-> May 1 18:34:27 franco-Aspire-5520 kernel: [ 888.610230] hub 3-0:1.0:
-> unable to enumerate USB device on port 6
-> May 1 18:34:27 franco-Aspire-5520 kernel: [ 888.890098] hub 1-0:1.0:
-> unable to enumerate USB device on port 6
-> May 1 18:34:28 franco-Aspire-5520 kernel: [ 889.150111] hub 3-0:1.0:
-> unable to enumerate USB device on port 6
-> ....
->
-> i cant use any TTY, how can i fix it? any kernel before do this for me.
->
-> PD: what info do you need to complete my report?
->
-> Excuse my english
->
+Do the proc file parsing once and cache the result in a static variable. Doing it over and over again is just crazy.
+
+Adding new system calls because glibc is crazy is insane.
+
+       Linus
+
