@@ -1,105 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034Ab1FOR5M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 13:57:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42209 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751725Ab1FOR5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 13:57:09 -0400
-Date: Wed, 15 Jun 2011 19:54:55 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 2/22]  2: uprobes: Breakground page
-	replacement.
-Message-ID: <20110615175455.GB12652@redhat.com>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6> <20110607125835.28590.25476.sendpatchset@localhost6.localdomain6> <20110613170020.GA27137@redhat.com> <20110614123530.GC4952@linux.vnet.ibm.com> <20110614142023.GA5139@redhat.com> <20110615085515.GE4952@linux.vnet.ibm.com>
+	id S1753127Ab1FOR7e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 13:59:34 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51456 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752545Ab1FOR7d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 13:59:33 -0400
+Message-ID: <4DF8F2E5.4090705@oracle.com>
+Date: Wed, 15 Jun 2011 10:59:01 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110615085515.GE4952@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org, Dmitry Artamonow <mad_soft@inbox.ru>,
+        x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-next@vger.kernel.org, Harald Welte <laforge@gnufiish.org>
+Subject: Re: [PATCH 2/2] gpio: include linux/gpio.h where needed
+References: <4DDB3AFF.9030006@oracle.com>	<20110524075248.GB19734@sirena.org.uk>	<20110527074552.GA907@ponder.secretlab.ca>	<4DDFE391.2030507@oracle.com>	<20110527201201.GA6645@ponder.secretlab.ca>	<BANLkTin-KSVcG2cQfRM3Ys0_g_uJVruDMw@mail.gmail.com>	<20110603171837.GA9918@opensource.wolfsonmicro.com>	<BANLkTi=oko_C8_46Y8p5O1Qvw1KEn-1PjA@mail.gmail.com>	<4DEC4D67.6010506@oracle.com>	<20110614091211.465553de.randy.dunlap@oracle.com>	<20110614161357.GB1839@ponder.secretlab.ca>	<20110614170602.7a51b1af.randy.dunlap@oracle.com> <20110615103420.1578eb5c.sfr@canb.auug.org.au>
+In-Reply-To: <20110615103420.1578eb5c.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4DF8F2F6.0046:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15, Srikar Dronamraju wrote:
->
-> > > > > +
-> > > > > +	/* Read the page with vaddr into memory */
-> > > > > +	ret = get_user_pages(tsk, tsk->mm, vaddr, 1, 1, 1, &old_page, &vma);
-> > > >
-> > > > Sorry if this was already discussed... But why we are using FOLL_WRITE here?
-> > > > We are not going to write into this page, and this provokes the unnecessary
-> > > > cow, no?
-> > >
-> > > Yes, We are not going to write to the page returned by get_user_pages
-> > > but a copy of that page.
-> >
-> > Yes I see. But the page returned by get_user_pages(write => 1) is already
-> > a cow'ed copy (this mapping should be read-only).
-> >
-> > > The idea was if we cow the page then we dont
-> > > need to cow it at the replace_page time
-> >
-> > Yes, replace_page() shouldn't cow.
-> >
-> > > and since get_user_pages knows
-> > > the right way to cow the page, we dont have to write another routine to
-> > > cow the page.
-> >
-> > Confused. write_opcode() allocs another page and does memcpy. This is
-> > correct, but I don't understand the first cow.
-> >
->
-> we decided on get_user_pages(FOLL_WRITE|FOLL_FORCE) based on discussions
-> in these threads https://lkml.org/lkml/2010/4/23/327 and
-> https://lkml.org/lkml/2010/5/12/119
+On 06/14/11 17:34, Stephen Rothwell wrote:
+> Hi Randy,
+> 
+> On Tue, 14 Jun 2011 17:06:02 -0700 Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>>
+>> From: Randy Dunlap <randy.dunlap@oracle.com>
+>>
+>> Some files use GPIOF_ macros but don't include the header file
+>> for them.  These macros are being moved to <linux/gpio.h>, so add
+>> includes for <linux/gpio.h> where needed.
+> 
+> Shouldn't these patches be in the other order to avoid bisection problems?
 
-Failed to Connect.
+Hm, I suppose so.
 
-> Summary of those two sub-threads as I understand was to have
-> get_user_pages do the "real" cow for us.
->
-> If I understand correctly, your concern is on the extra overhead added
-> by the get_user_pages.
+Grant, can you apply these with patch 2/2 first or do I need to resend
+the patches?
 
-No. My main concern is that I do not understand why do we need an extra cow.
-This is fine, I am not vm expert. But I think it is not fine that you can't
-explain why your code needs it ;)
-
-What this 'get_user_pages do the "real" cow for us' actually means? It does
-not do cow for us, __replace_page() does the actual/final cow. It re-installs
-the modified copy of the page returned by get_user_pages() at the same pte.
-
-> > Probably I missed something... but could you please explain why we can't
-> >
-> > 	- ret = get_user_pages(tsk, tsk->mm, vaddr, 1, 1, 1, &old_page, &vma);
-> > 	+ ret = get_user_pages(tsk, tsk->mm, vaddr, 1, 0, 0, &old_page, &vma);
-> >
-> > ?
->
-> I tried the code with this change and it works for regular cases.
-> I am not sure if it affects cases where programs do mprotect
-
-Hmm... How can mprotect make a difference? This mapping should be read
-only, and we are not going to do pte_mkwrite.
-
-> So I am okay to not force cow through get_user_pages.
-
-I am okay either way ;) But, imho, if we use FOLL_WRITE|FOLL_FORCE then
-it would be nice to document why it this needed.
-
-Oleg.
-
+thanks,
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
