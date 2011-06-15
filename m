@@ -1,40 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab1FOCyG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 22:54:06 -0400
-Received: from support.opsdc.com ([65.254.219.9]:47005 "EHLO support.opsdc.com"
+	id S1754679Ab1FODJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 23:09:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13040 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753965Ab1FOCyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 22:54:05 -0400
-Subject: Re: Panic on OOM
-From: Chris Fowler <cfowler@outpostsentinel.com>
-Reply-To: cfowler@opsdc.com
-To: David Rientjes <rientjes@google.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.DEB.2.00.1106141947570.8257@chino.kir.corp.google.com>
-References: <1308058276.2074.295.camel@compaq-desktop>
-	 <alpine.DEB.2.00.1106141656220.31202@chino.kir.corp.google.com>
-	 <1308103443.2074.357.camel@compaq-desktop>
-	 <alpine.DEB.2.00.1106141908100.7025@chino.kir.corp.google.com>
-	 <1308105693.2074.361.camel@compaq-desktop>
-	 <alpine.DEB.2.00.1106141947570.8257@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Jun 2011 22:53:51 -0400
-Message-ID: <1308106431.2074.365.camel@compaq-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1754173Ab1FODJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 23:09:56 -0400
+Message-ID: <4DF8226B.20408@redhat.com>
+Date: Wed, 15 Jun 2011 00:09:31 -0300
+From: Glauber Costa <glommer@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 3/7] KVM-HV: KVM Steal time implementation
+References: <1308007897-17013-1-git-send-email-glommer@redhat.com> <1308007897-17013-4-git-send-email-glommer@redhat.com> <20110614074500.GM491@redhat.com>
+In-Reply-To: <20110614074500.GM491@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-14 at 19:51 -0700, David Rientjes wrote:
-> So the issue is that the machine becomes unresponsive for an
-> indefinite period of time between invoking your perl script and seeing
-> the panic, or that the machine fails to reboot after "Rebooting in 10
-> seconds..."? 
+On 06/14/2011 04:45 AM, Gleb Natapov wrote:
+> On Mon, Jun 13, 2011 at 07:31:33PM -0400, Glauber Costa wrote:
+>> To implement steal time, we need the hypervisor to pass the guest information
+>> about how much time was spent running other processes outside the VM.
+>> This is per-vcpu, and using the kvmclock structure for that is an abuse
+>> we decided not to make.
+>>
+>> In this patchset, I am introducing a new msr, KVM_MSR_STEAL_TIME, that
+>> holds the memory area address containing information about steal time
+>>
+>> This patch contains the hypervisor part for it. I am keeping it separate from
+>> the headers to facilitate backports to people who wants to backport the kernel
+>> part but not the hypervisor, or the other way around.
+>>
+>> Signed-off-by: Glauber Costa<glommer@redhat.com>
+>> CC: Rik van Riel<riel@redhat.com>
+>> CC: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
+>> CC: Peter Zijlstra<peterz@infradead.org>
+>> CC: Avi Kivity<avi@redhat.com>
+>> CC: Anthony Liguori<aliguori@us.ibm.com>
+>> CC: Eric B Munson<emunson@mgebm.net>
+>> ---
+>>   arch/x86/include/asm/kvm_host.h |    8 +++++
+>>   arch/x86/include/asm/kvm_para.h |    4 ++
+>>   arch/x86/kvm/x86.c              |   60 +++++++++++++++++++++++++++++++++++++--
+>>   3 files changed, 69 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+>> index fc38eca..5dce014 100644
+>> --- a/arch/x86/include/asm/kvm_host.h
+>> +++ b/arch/x86/include/asm/kvm_host.h
+>> @@ -388,6 +388,14 @@ struct kvm_vcpu_arch {
+>>   	unsigned int hw_tsc_khz;
+>>   	unsigned int time_offset;
+>>   	struct page *time_page;
+>> +
+>> +	struct {
+>> +		u64 msr_val;
+>> +		gpa_t stime;
+>> +		struct kvm_steal_time steal;
+>> +		u64 this_time_out;
+>> +	} st;
+>> +
+>>   	u64 last_guest_tsc;
+>>   	u64 last_kernel_ns;
+>>   	u64 last_tsc_nsec;
+>> diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+>> index ac306c4..0341e61 100644
+>> --- a/arch/x86/include/asm/kvm_para.h
+>> +++ b/arch/x86/include/asm/kvm_para.h
+>> @@ -45,6 +45,10 @@ struct kvm_steal_time {
+>>   	__u32 pad[6];
+>>   };
+>>
+>> +#define KVM_STEAL_ALIGNMENT_BITS 5
+>> +#define KVM_STEAL_VALID_BITS ((-1ULL<<  (KVM_STEAL_ALIGNMENT_BITS + 1)))
+>> +#define KVM_STEAL_RESERVED_MASK (((1<<  KVM_STEAL_ALIGNMENT_BITS) - 1 )<<  1)
+>> +
+>>   #define KVM_MAX_MMU_OP_BATCH           32
+>>
+>>   #define KVM_ASYNC_PF_ENABLED			(1<<  0)
+>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>> index 6645634..10fe028 100644
+>> --- a/arch/x86/kvm/x86.c
+>> +++ b/arch/x86/kvm/x86.c
+>> @@ -797,12 +797,12 @@ EXPORT_SYMBOL_GPL(kvm_get_dr);
+>>    * kvm-specific. Those are put in the beginning of the list.
+>>    */
+>>
+>> -#define KVM_SAVE_MSRS_BEGIN	8
+>> +#define KVM_SAVE_MSRS_BEGIN	9
+>>   static u32 msrs_to_save[] = {
+>>   	MSR_KVM_SYSTEM_TIME, MSR_KVM_WALL_CLOCK,
+>>   	MSR_KVM_SYSTEM_TIME_NEW, MSR_KVM_WALL_CLOCK_NEW,
+>>   	HV_X64_MSR_GUEST_OS_ID, HV_X64_MSR_HYPERCALL,
+>> -	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN,
+>> +	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN, MSR_KVM_STEAL_TIME,
+>>   	MSR_IA32_SYSENTER_CS, MSR_IA32_SYSENTER_ESP, MSR_IA32_SYSENTER_EIP,
+>>   	MSR_STAR,
+>>   #ifdef CONFIG_X86_64
+>> @@ -1480,6 +1480,34 @@ static void kvmclock_reset(struct kvm_vcpu *vcpu)
+>>   	}
+>>   }
+>>
+>> +static void record_steal_time(struct kvm_vcpu *vcpu)
+>> +{
+>> +	u64 delta;
+>> +
+>> +	if (vcpu->arch.st.stime&&  vcpu->arch.st.this_time_out) {
+>> +
+>> +		if (unlikely(kvm_read_guest(vcpu->kvm, vcpu->arch.st.stime,
+>> +			&vcpu->arch.st.steal, sizeof(struct kvm_steal_time)))) {
+>> +
+>> +			vcpu->arch.st.stime = 0;
+>> +			return;
+>> +		}
+>> +
+>> +		delta = (get_kernel_ns() - vcpu->arch.st.this_time_out);
+>> +
+>> +		vcpu->arch.st.steal.steal += delta;
+>> +		vcpu->arch.st.steal.version += 2;
+>> +
+>> +		if (unlikely(kvm_write_guest(vcpu->kvm, vcpu->arch.st.stime,
+> Why not use kvm_write_guest_cached() here and introduce kvm_read_guest_cached()
+> for the read above?
 
-Both.  It still has not paniced.  I'm going to allow it to sit all night
-and I'll see if it finally paniced in the morning.
+Actually, I'd expect most read/writes to benefit from caching, no?
+So why don't we just rename kvm_write_guest_cached() to 
+kvm_write_guest(), and the few places - if any - that need to force 
+transversing of the gfn mappings, get renamed to kvm_write_guest_uncached ?
 
+>> +			&vcpu->arch.st.steal, sizeof(struct kvm_steal_time)))) {
+>> +
+>> +			vcpu->arch.st.stime = 0;
+>> +			return;
+>> +		}
+>> +	}
+>> +
+>> +}
+>> +
+>>   int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+>>   {
+>>   	switch (msr) {
+>> @@ -1562,6 +1590,23 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+>>   		if (kvm_pv_enable_async_pf(vcpu, data))
+>>   			return 1;
+>>   		break;
+>> +	case MSR_KVM_STEAL_TIME:
+>> +		vcpu->arch.st.msr_val = data;
+>> +
+>> +		if (!(data&  KVM_MSR_ENABLED)) {
+>> +			vcpu->arch.st.stime = 0;
+>> +			break;
+>> +		}
+>> +
+>> +		if (data&  KVM_STEAL_RESERVED_MASK)
+>> +			return 1;
+>> +
+>> +		vcpu->arch.st.this_time_out = get_kernel_ns();
+>> +		vcpu->arch.st.stime = data&  KVM_STEAL_VALID_BITS;
+>> +		record_steal_time(vcpu);
+>> +
+>> +		break;
+>> +
+>>   	case MSR_IA32_MCG_CTL:
+>>   	case MSR_IA32_MCG_STATUS:
+>>   	case MSR_IA32_MC0_CTL ... MSR_IA32_MC0_CTL + 4 * KVM_MAX_MCE_BANKS - 1:
+>> @@ -1847,6 +1892,9 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
+>>   	case MSR_KVM_ASYNC_PF_EN:
+>>   		data = vcpu->arch.apf.msr_val;
+>>   		break;
+>> +	case MSR_KVM_STEAL_TIME:
+>> +		data = vcpu->arch.st.msr_val;
+>> +		break;
+>>   	case MSR_IA32_P5_MC_ADDR:
+>>   	case MSR_IA32_P5_MC_TYPE:
+>>   	case MSR_IA32_MCG_CAP:
+>> @@ -2158,6 +2206,8 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+>>   			kvm_migrate_timers(vcpu);
+>>   		vcpu->cpu = cpu;
+>>   	}
+>> +
+>> +	record_steal_time(vcpu);
+>>   }
+>>
+>>   void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
+>> @@ -2165,6 +2215,7 @@ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
+>>   	kvm_x86_ops->vcpu_put(vcpu);
+>>   	kvm_put_guest_fpu(vcpu);
+>>   	kvm_get_msr(vcpu, MSR_IA32_TSC,&vcpu->arch.last_guest_tsc);
+>> +	vcpu->arch.st.this_time_out = get_kernel_ns();
+>>   }
+>>
+> Shouldn't we call record_steal_time(vcpu)/vcpu->arch.st.this_time_out = get_kernel_ns();
+> just before/after entering/exiting a guest? vcpu_(put|get) are called
+> for each vcpu ioctl, not only VCPU_RUN.
+Sorry, missed that the first time I've read your e-mail.
+
+If done like you said, time spent on the hypervisor is accounted as 
+steal time. I don't think it is.
+
+Steal time is time spent running someone else's job instead of yours. 
+The name for the time spent in the hypervisor doing something for *you* 
+is just overhead.
+
+>
+>>   static int is_efer_nx(void)
+>> @@ -2477,7 +2528,8 @@ static void do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+>>   			     (1<<  KVM_FEATURE_NOP_IO_DELAY) |
+>>   			     (1<<  KVM_FEATURE_CLOCKSOURCE2) |
+>>   			     (1<<  KVM_FEATURE_ASYNC_PF) |
+>> -			     (1<<  KVM_FEATURE_CLOCKSOURCE_STABLE_BIT);
+>> +			     (1<<  KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
+>> +			     (1<<  KVM_FEATURE_STEAL_TIME);
+>>   		entry->ebx = 0;
+>>   		entry->ecx = 0;
+>>   		entry->edx = 0;
+>> @@ -6200,6 +6252,8 @@ int kvm_arch_vcpu_reset(struct kvm_vcpu *vcpu)
+>>
+>>   	kvmclock_reset(vcpu);
+>>
+>> +	vcpu->arch.st.stime = 0;
+>> +
+>>   	kvm_clear_async_pf_completion_queue(vcpu);
+>>   	kvm_async_pf_hash_reset(vcpu);
+>>   	vcpu->arch.apf.halted = false;
+>> --
+>> 1.7.3.4
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe kvm" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+> --
+> 			Gleb.
 
