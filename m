@@ -1,325 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab1FOIkg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 04:40:36 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37873 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753708Ab1FOIke (ORCPT
+	id S1754155Ab1FOInZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 04:43:25 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:9513 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381Ab1FOInW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 04:40:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=n7UJ3bsukHnzuwhdzJ5D1HHLGSaUQW6P/Y6AX3XrxuQRJUtj8zET5l3Z2cH7+95swW
-         HoDkt0Z4zwZ9QVhmNA3/lfrzcAvsrxxgyKwMskf63JmeEjNl+G0+p7cF6LqrtBVj347+
-         Uy2bGjm8xdHL/UopkvSxST5a2GeNwNwowNW5U=
-Message-ID: <4DF86FFF.5000406@gmail.com>
-Date: Wed, 15 Jun 2011 10:40:31 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Chris Mason <chris.mason@oracle.com>
-CC: linux-btrfs@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] btrfs: Remove all sysfs entries
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Jun 2011 04:43:22 -0400
+X-AuditID: cbfee61b-b7c62ae0000056ed-9d-4df870a87927
+Date: Wed, 15 Jun 2011 17:42:51 +0900
+From: Donggeun Kim <dg77.kim@samsung.com>
+Subject: [PATCH][RESEND] rtc: rtc-s3c: Update RTC driver for supporting clock
+ gating
+To: rtc-linux@googlegroups.com
+Cc: a.zummo@towertech.it, linux-kernel@vger.kernel.org, ben-linux@fluff.org,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        dg77.kim@samsung.com
+Message-id: <1308127371-12926-1-git-send-email-dg77.kim@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+Content-transfer-encoding: 7BIT
+X-OriginalArrivalTime: 15 Jun 2011 08:43:12.0823 (UTC)
+ FILETIME=[42F22470:01CC2B38]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seems that currently none of the sysfs are created any more, so just
-remove sysfs support entirely.
+This patch supports clock gating.
+Power consumption can be reduced by
+setting rtc_clk disabled state except for when RTC related registers are accessed.
 
-Fixes compiling warnings in 3.0rc3
+Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: KyungMin Park <kyungmin.park@samsung.com>
 
-Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Resend to fix clock usage counter related error in s3c_rtc_remove function.
+---
+ drivers/rtc/rtc-s3c.c |   27 ++++++++++++++++++++++++++-
+ 1 files changed, 26 insertions(+), 1 deletions(-)
 
---
-Oops, forgot to amend the compiling fix
-
-diff --git a/fs/btrfs/Makefile b/fs/btrfs/Makefile
-index 9b72dcf..78fdd86 100644
---- a/fs/btrfs/Makefile
-+++ b/fs/btrfs/Makefile
-@@ -4,7 +4,7 @@ obj-$(CONFIG_BTRFS_FS) := btrfs.o
- btrfs-y += super.o ctree.o extent-tree.o print-tree.o root-tree.o dir-item.o \
- 	   file-item.o inode-item.o inode-map.o disk-io.o \
- 	   transaction.o inode.o file.o tree-defrag.o \
--	   extent_map.o sysfs.o struct-funcs.o xattr.o ordered-data.o \
-+	   extent_map.o struct-funcs.o xattr.o ordered-data.o \
- 	   extent_io.o volumes.o async-thread.o ioctl.o locking.o orphan.o \
- 	   export.o tree-log.o acl.o free-space-cache.o zlib.o lzo.o \
- 	   compression.o delayed-ref.o relocation.o delayed-inode.o scrub.o
-diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
-index 378b5b4..6aefbb2 100644
---- a/fs/btrfs/ctree.h
-+++ b/fs/btrfs/ctree.h
-@@ -1181,7 +1181,6 @@ struct btrfs_root {
- 	struct btrfs_key defrag_max;
- 	int defrag_running;
- 	char *name;
--	int in_sysfs;
- 
- 	/* the dirty list is only used by non-reference counted roots */
- 	struct list_head dirty_list;
-@@ -2604,10 +2603,6 @@ int btrfs_dirty_pages(struct btrfs_root *root, struct inode *inode,
- int btrfs_defrag_leaves(struct btrfs_trans_handle *trans,
- 			struct btrfs_root *root, int cache_only);
- 
--/* sysfs.c */
--int btrfs_init_sysfs(void);
--void btrfs_exit_sysfs(void);
--
- /* xattr.c */
- ssize_t btrfs_listxattr(struct dentry *dentry, char *buffer, size_t size);
- 
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 9f68c68..5df6d8f 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -1044,7 +1044,6 @@ static int __setup_root(u32 nodesize, u32 leafsize, u32 sectorsize,
- 	root->last_trans = 0;
- 	root->highest_objectid = 0;
- 	root->name = NULL;
--	root->in_sysfs = 0;
- 	root->inode_tree = RB_ROOT;
- 	INIT_RADIX_TREE(&root->delayed_nodes_tree, GFP_ATOMIC);
- 	root->block_rsv = NULL;
-diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
-index 0bb4ebb..02bf74e 100644
---- a/fs/btrfs/super.c
-+++ b/fs/btrfs/super.c
-@@ -1228,13 +1228,9 @@ static int __init init_btrfs_fs(void)
+diff --git a/drivers/rtc/rtc-s3c.c b/drivers/rtc/rtc-s3c.c
+index 16512ec..53c99b1 100644
+--- a/drivers/rtc/rtc-s3c.c
++++ b/drivers/rtc/rtc-s3c.c
+@@ -57,11 +57,13 @@ static irqreturn_t s3c_rtc_alarmirq(int irq, void *id)
  {
- 	int err;
+ 	struct rtc_device *rdev = id;
  
--	err = btrfs_init_sysfs();
--	if (err)
--		return err;
--
- 	err = btrfs_init_compress();
- 	if (err)
--		goto free_sysfs;
-+		return err;
++	clk_enable(rtc_clk);
+ 	rtc_update_irq(rdev, 1, RTC_AF | RTC_IRQF);
  
- 	err = btrfs_init_cachep();
- 	if (err)
-@@ -1275,8 +1271,6 @@ free_cachep:
- 	btrfs_destroy_cachep();
- free_compress:
- 	btrfs_exit_compress();
--free_sysfs:
--	btrfs_exit_sysfs();
- 	return err;
+ 	if (s3c_rtc_cpu_type == TYPE_S3C64XX)
+ 		writeb(S3C2410_INTP_ALM, s3c_rtc_base + S3C2410_INTP);
+ 
++	clk_disable(rtc_clk);
+ 	return IRQ_HANDLED;
  }
  
-@@ -1288,7 +1282,6 @@ static void __exit exit_btrfs_fs(void)
- 	extent_io_exit();
- 	btrfs_interface_exit();
- 	unregister_filesystem(&btrfs_fs_type);
--	btrfs_exit_sysfs();
- 	btrfs_cleanup_fs_uuids();
- 	btrfs_exit_compress();
+@@ -69,11 +71,13 @@ static irqreturn_t s3c_rtc_tickirq(int irq, void *id)
+ {
+ 	struct rtc_device *rdev = id;
+ 
++	clk_enable(rtc_clk);
+ 	rtc_update_irq(rdev, 1, RTC_PF | RTC_IRQF);
+ 
+ 	if (s3c_rtc_cpu_type == TYPE_S3C64XX)
+ 		writeb(S3C2410_INTP_TIC, s3c_rtc_base + S3C2410_INTP);
+ 
++	clk_disable(rtc_clk);
+ 	return IRQ_HANDLED;
  }
-diff --git a/fs/btrfs/sysfs.c b/fs/btrfs/sysfs.c
-deleted file mode 100644
-index c3c223a..0000000
---- a/fs/btrfs/sysfs.c
-+++ /dev/null
-@@ -1,192 +0,0 @@
--/*
-- * Copyright (C) 2007 Oracle.  All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or
-- * modify it under the terms of the GNU General Public
-- * License v2 as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-- * General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public
-- * License along with this program; if not, write to the
-- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-- * Boston, MA 021110-1307, USA.
-- */
--
--#include <linux/sched.h>
--#include <linux/slab.h>
--#include <linux/spinlock.h>
--#include <linux/completion.h>
--#include <linux/buffer_head.h>
--#include <linux/module.h>
--#include <linux/kobject.h>
--
--#include "ctree.h"
--#include "disk-io.h"
--#include "transaction.h"
--
--static ssize_t root_blocks_used_show(struct btrfs_root *root, char *buf)
--{
--	return snprintf(buf, PAGE_SIZE, "%llu\n",
--		(unsigned long long)btrfs_root_used(&root->root_item));
--}
--
--static ssize_t root_block_limit_show(struct btrfs_root *root, char *buf)
--{
--	return snprintf(buf, PAGE_SIZE, "%llu\n",
--		(unsigned long long)btrfs_root_limit(&root->root_item));
--}
--
--static ssize_t super_blocks_used_show(struct btrfs_fs_info *fs, char *buf)
--{
--
--	return snprintf(buf, PAGE_SIZE, "%llu\n",
--		(unsigned long long)btrfs_super_bytes_used(&fs->super_copy));
--}
--
--static ssize_t super_total_blocks_show(struct btrfs_fs_info *fs, char *buf)
--{
--	return snprintf(buf, PAGE_SIZE, "%llu\n",
--		(unsigned long long)btrfs_super_total_bytes(&fs->super_copy));
--}
--
--static ssize_t super_blocksize_show(struct btrfs_fs_info *fs, char *buf)
--{
--	return snprintf(buf, PAGE_SIZE, "%llu\n",
--		(unsigned long long)btrfs_super_sectorsize(&fs->super_copy));
--}
--
--/* this is for root attrs (subvols/snapshots) */
--struct btrfs_root_attr {
--	struct attribute attr;
--	ssize_t (*show)(struct btrfs_root *, char *);
--	ssize_t (*store)(struct btrfs_root *, const char *, size_t);
--};
--
--#define ROOT_ATTR(name, mode, show, store) \
--static struct btrfs_root_attr btrfs_root_attr_##name = __ATTR(name, mode, \
--							      show, store)
--
--ROOT_ATTR(blocks_used,	0444,	root_blocks_used_show,	NULL);
--ROOT_ATTR(block_limit,	0644,	root_block_limit_show,	NULL);
--
--static struct attribute *btrfs_root_attrs[] = {
--	&btrfs_root_attr_blocks_used.attr,
--	&btrfs_root_attr_block_limit.attr,
--	NULL,
--};
--
--/* this is for super attrs (actual full fs) */
--struct btrfs_super_attr {
--	struct attribute attr;
--	ssize_t (*show)(struct btrfs_fs_info *, char *);
--	ssize_t (*store)(struct btrfs_fs_info *, const char *, size_t);
--};
--
--#define SUPER_ATTR(name, mode, show, store) \
--static struct btrfs_super_attr btrfs_super_attr_##name = __ATTR(name, mode, \
--								show, store)
--
--SUPER_ATTR(blocks_used,		0444,	super_blocks_used_show,		NULL);
--SUPER_ATTR(total_blocks,	0444,	super_total_blocks_show,	NULL);
--SUPER_ATTR(blocksize,		0444,	super_blocksize_show,		NULL);
--
--static struct attribute *btrfs_super_attrs[] = {
--	&btrfs_super_attr_blocks_used.attr,
--	&btrfs_super_attr_total_blocks.attr,
--	&btrfs_super_attr_blocksize.attr,
--	NULL,
--};
--
--static ssize_t btrfs_super_attr_show(struct kobject *kobj,
--				    struct attribute *attr, char *buf)
--{
--	struct btrfs_fs_info *fs = container_of(kobj, struct btrfs_fs_info,
--						super_kobj);
--	struct btrfs_super_attr *a = container_of(attr,
--						  struct btrfs_super_attr,
--						  attr);
--
--	return a->show ? a->show(fs, buf) : 0;
--}
--
--static ssize_t btrfs_super_attr_store(struct kobject *kobj,
--				     struct attribute *attr,
--				     const char *buf, size_t len)
--{
--	struct btrfs_fs_info *fs = container_of(kobj, struct btrfs_fs_info,
--						super_kobj);
--	struct btrfs_super_attr *a = container_of(attr,
--						  struct btrfs_super_attr,
--						  attr);
--
--	return a->store ? a->store(fs, buf, len) : 0;
--}
--
--static ssize_t btrfs_root_attr_show(struct kobject *kobj,
--				    struct attribute *attr, char *buf)
--{
--	struct btrfs_root *root = container_of(kobj, struct btrfs_root,
--						root_kobj);
--	struct btrfs_root_attr *a = container_of(attr,
--						 struct btrfs_root_attr,
--						 attr);
--
--	return a->show ? a->show(root, buf) : 0;
--}
--
--static ssize_t btrfs_root_attr_store(struct kobject *kobj,
--				     struct attribute *attr,
--				     const char *buf, size_t len)
--{
--	struct btrfs_root *root = container_of(kobj, struct btrfs_root,
--						root_kobj);
--	struct btrfs_root_attr *a = container_of(attr,
--						 struct btrfs_root_attr,
--						 attr);
--	return a->store ? a->store(root, buf, len) : 0;
--}
--
--static void btrfs_super_release(struct kobject *kobj)
--{
--	struct btrfs_fs_info *fs = container_of(kobj, struct btrfs_fs_info,
--						super_kobj);
--	complete(&fs->kobj_unregister);
--}
--
--static void btrfs_root_release(struct kobject *kobj)
--{
--	struct btrfs_root *root = container_of(kobj, struct btrfs_root,
--						root_kobj);
--	complete(&root->kobj_unregister);
--}
--
--static const struct sysfs_ops btrfs_super_attr_ops = {
--	.show	= btrfs_super_attr_show,
--	.store	= btrfs_super_attr_store,
--};
--
--static const struct sysfs_ops btrfs_root_attr_ops = {
--	.show	= btrfs_root_attr_show,
--	.store	= btrfs_root_attr_store,
--};
--
--/* /sys/fs/btrfs/ entry */
--static struct kset *btrfs_kset;
--
--int btrfs_init_sysfs(void)
--{
--	btrfs_kset = kset_create_and_add("btrfs", NULL, fs_kobj);
--	if (!btrfs_kset)
--		return -ENOMEM;
--	return 0;
--}
--
--void btrfs_exit_sysfs(void)
--{
--	kset_unregister(btrfs_kset);
--}
--
-
+ 
+@@ -84,12 +88,14 @@ static int s3c_rtc_setaie(struct device *dev, unsigned int enabled)
+ 
+ 	pr_debug("%s: aie=%d\n", __func__, enabled);
+ 
++	clk_enable(rtc_clk);
+ 	tmp = readb(s3c_rtc_base + S3C2410_RTCALM) & ~S3C2410_RTCALM_ALMEN;
+ 
+ 	if (enabled)
+ 		tmp |= S3C2410_RTCALM_ALMEN;
+ 
+ 	writeb(tmp, s3c_rtc_base + S3C2410_RTCALM);
++	clk_disable(rtc_clk);
+ 
+ 	return 0;
+ }
+@@ -103,6 +109,7 @@ static int s3c_rtc_setfreq(struct device *dev, int freq)
+ 	if (!is_power_of_2(freq))
+ 		return -EINVAL;
+ 
++	clk_enable(rtc_clk);
+ 	spin_lock_irq(&s3c_rtc_pie_lock);
+ 
+ 	if (s3c_rtc_cpu_type == TYPE_S3C2410) {
+@@ -114,6 +121,7 @@ static int s3c_rtc_setfreq(struct device *dev, int freq)
+ 
+ 	writel(tmp, s3c_rtc_base + S3C2410_TICNT);
+ 	spin_unlock_irq(&s3c_rtc_pie_lock);
++	clk_disable(rtc_clk);
+ 
+ 	return 0;
+ }
+@@ -125,6 +133,7 @@ static int s3c_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
+ 	unsigned int have_retried = 0;
+ 	void __iomem *base = s3c_rtc_base;
+ 
++	clk_enable(rtc_clk);
+  retry_get_time:
+ 	rtc_tm->tm_min  = readb(base + S3C2410_RTCMIN);
+ 	rtc_tm->tm_hour = readb(base + S3C2410_RTCHOUR);
+@@ -157,6 +166,7 @@ static int s3c_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
+ 	rtc_tm->tm_year += 100;
+ 	rtc_tm->tm_mon -= 1;
+ 
++	clk_disable(rtc_clk);
+ 	return rtc_valid_tm(rtc_tm);
+ }
+ 
+@@ -165,6 +175,7 @@ static int s3c_rtc_settime(struct device *dev, struct rtc_time *tm)
+ 	void __iomem *base = s3c_rtc_base;
+ 	int year = tm->tm_year - 100;
+ 
++	clk_enable(rtc_clk);
+ 	pr_debug("set time %04d.%02d.%02d %02d:%02d:%02d\n",
+ 		 1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
+ 		 tm->tm_hour, tm->tm_min, tm->tm_sec);
+@@ -182,6 +193,7 @@ static int s3c_rtc_settime(struct device *dev, struct rtc_time *tm)
+ 	writeb(bin2bcd(tm->tm_mday), base + S3C2410_RTCDATE);
+ 	writeb(bin2bcd(tm->tm_mon + 1), base + S3C2410_RTCMON);
+ 	writeb(bin2bcd(year), base + S3C2410_RTCYEAR);
++	clk_disable(rtc_clk);
+ 
+ 	return 0;
+ }
+@@ -192,6 +204,7 @@ static int s3c_rtc_getalarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 	void __iomem *base = s3c_rtc_base;
+ 	unsigned int alm_en;
+ 
++	clk_enable(rtc_clk);
+ 	alm_tm->tm_sec  = readb(base + S3C2410_ALMSEC);
+ 	alm_tm->tm_min  = readb(base + S3C2410_ALMMIN);
+ 	alm_tm->tm_hour = readb(base + S3C2410_ALMHOUR);
+@@ -243,6 +256,7 @@ static int s3c_rtc_getalarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 	else
+ 		alm_tm->tm_year = -1;
+ 
++	clk_disable(rtc_clk);
+ 	return 0;
+ }
+ 
+@@ -252,6 +266,7 @@ static int s3c_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 	void __iomem *base = s3c_rtc_base;
+ 	unsigned int alrm_en;
+ 
++	clk_enable(rtc_clk);
+ 	pr_debug("s3c_rtc_setalarm: %d, %04d.%02d.%02d %02d:%02d:%02d\n",
+ 		 alrm->enabled,
+ 		 1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
+@@ -282,6 +297,7 @@ static int s3c_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 
+ 	s3c_rtc_setaie(dev, alrm->enabled);
+ 
++	clk_disable(rtc_clk);
+ 	return 0;
+ }
+ 
+@@ -289,6 +305,7 @@ static int s3c_rtc_proc(struct device *dev, struct seq_file *seq)
+ {
+ 	unsigned int ticnt;
+ 
++	clk_enable(rtc_clk);
+ 	if (s3c_rtc_cpu_type == TYPE_S3C64XX) {
+ 		ticnt = readw(s3c_rtc_base + S3C2410_RTCCON);
+ 		ticnt &= S3C64XX_RTCCON_TICEN;
+@@ -298,6 +315,7 @@ static int s3c_rtc_proc(struct device *dev, struct seq_file *seq)
+ 	}
+ 
+ 	seq_printf(seq, "periodic_IRQ\t: %s\n", ticnt  ? "yes" : "no");
++	clk_disable(rtc_clk);
+ 	return 0;
+ }
+ 
+@@ -360,6 +378,7 @@ static void s3c_rtc_enable(struct platform_device *pdev, int en)
+ 	if (s3c_rtc_base == NULL)
+ 		return;
+ 
++	clk_enable(rtc_clk);
+ 	if (!en) {
+ 		tmp = readw(base + S3C2410_RTCCON);
+ 		if (s3c_rtc_cpu_type == TYPE_S3C64XX)
+@@ -399,6 +418,7 @@ static void s3c_rtc_enable(struct platform_device *pdev, int en)
+ 				base + S3C2410_RTCCON);
+ 		}
+ 	}
++	clk_disable(rtc_clk);
+ }
+ 
+ static int __devexit s3c_rtc_remove(struct platform_device *dev)
+@@ -410,7 +430,6 @@ static int __devexit s3c_rtc_remove(struct platform_device *dev)
+ 
+ 	s3c_rtc_setaie(&dev->dev, 0);
+ 
+-	clk_disable(rtc_clk);
+ 	clk_put(rtc_clk);
+ 	rtc_clk = NULL;
+ 
+@@ -530,6 +549,8 @@ static int __devinit s3c_rtc_probe(struct platform_device *pdev)
+ 
+ 	s3c_rtc_setfreq(&pdev->dev, 1);
+ 
++	clk_disable(rtc_clk);
++
+ 	return 0;
+ 
+  err_nortc:
+@@ -555,6 +576,7 @@ static int ticnt_save, ticnt_en_save;
+ 
+ static int s3c_rtc_suspend(struct platform_device *pdev, pm_message_t state)
+ {
++	clk_enable(rtc_clk);
+ 	/* save TICNT for anyone using periodic interrupts */
+ 	ticnt_save = readb(s3c_rtc_base + S3C2410_TICNT);
+ 	if (s3c_rtc_cpu_type == TYPE_S3C64XX) {
+@@ -569,6 +591,7 @@ static int s3c_rtc_suspend(struct platform_device *pdev, pm_message_t state)
+ 		else
+ 			dev_err(&pdev->dev, "enable_irq_wake failed\n");
+ 	}
++	clk_disable(rtc_clk);
+ 
+ 	return 0;
+ }
+@@ -577,6 +600,7 @@ static int s3c_rtc_resume(struct platform_device *pdev)
+ {
+ 	unsigned int tmp;
+ 
++	clk_enable(rtc_clk);
+ 	s3c_rtc_enable(pdev, 1);
+ 	writeb(ticnt_save, s3c_rtc_base + S3C2410_TICNT);
+ 	if (s3c_rtc_cpu_type == TYPE_S3C64XX && ticnt_en_save) {
+@@ -588,6 +612,7 @@ static int s3c_rtc_resume(struct platform_device *pdev)
+ 		disable_irq_wake(s3c_rtc_alarmno);
+ 		wake_en = false;
+ 	}
++	clk_disable(rtc_clk);
+ 
+ 	return 0;
+ }
+-- 
+1.7.4.1
 
