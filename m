@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab1FOX0N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 19:26:13 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:19390 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752251Ab1FOX0L convert rfc822-to-8bit (ORCPT
+	id S1753788Ab1FOXbj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 19:31:39 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55670 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752557Ab1FOXbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 19:26:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=PwiZaB4PFQ64BSJfdi366RlVviEGNfs+NyOJBa4eAv1TEIMvS9eyCAywxig3CHdc5t
-         SHLsWGNvYD0Z/Ky5HDjA==
-MIME-Version: 1.0
-In-Reply-To: <20110606135221.GG12242@legolas.emea.dhcp.ti.com>
-References: <1307367739-20110-1-git-send-email-keshava_mgowda@ti.com>
-	<20110606135221.GG12242@legolas.emea.dhcp.ti.com>
-Date: Wed, 15 Jun 2011 16:25:48 -0700
-X-Google-Sender-Auth: AzIDtn37z31OWhB-9ABO87XRBSA
-Message-ID: <BANLkTingZ1A=7YxZ4E4aZ40QETs5MHQnfSYOj9x6sUG2657M9w@mail.gmail.com>
-Subject: Re: [PATCH] mfd: omap: fix the crash during omap ehci or ohci driver initialization
-From: Dima Zavin <dima@android.com>
-To: balbi@ti.com
-Cc: Keshava Munegowda <keshava_mgowda@ti.com>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        gadiyar@ti.com, sameo@linux.intel.com, parthab@india.ti.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Wed, 15 Jun 2011 19:31:38 -0400
+Date: Wed, 15 Jun 2011 16:31:15 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Arun Sharma <asharma@fb.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH 1/3] atomic: use <linux/atomic.h>
+Message-Id: <20110615163115.773d072e.akpm@linux-foundation.org>
+In-Reply-To: <1307381251-15729-1-git-send-email-asharma@fb.com>
+References: <1307381251-15729-1-git-send-email-asharma@fb.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Why is this not just a straight revert of
-7e6502d577106fb5b202bbaac64c5f1b065e6daa?
 
-On Mon, Jun 6, 2011 at 6:52 AM, Felipe Balbi <balbi@ti.com> wrote:
-> On Mon, Jun 06, 2011 at 07:12:19PM +0530, Keshava Munegowda wrote:
->> From: Keshava Munegowda <Keshava_mgowda@ti.com>
->>
->> Oops are produced during initialization of ehci and ohci
->> drivers. This is because the run time pm apis are used by
->> the driver but the corresponding hwmod structures and
->> initialization is not merged. hence revering  back the
->> commit id 7e6502d577106fb5b202bbaac64c5f1b065e6daa
->>
->> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
->
-> Reported-by: Luciano Coelho <coelho@ti.com>
-> Acked-by: Felipe Balbi <balbi@ti.com>
->
-> --
-> balbi
->
+I didn't merge patch #3.  With patches 1 & 2 applied, i386 allnoconfig:
+
+
+  CC      arch/x86/kernel/asm-offsets.s
+In file included from /usr/src/devel/arch/x86/include/asm/atomic.h:321,
+                 from include/linux/atomic.h:3,
+                 from include/linux/crypto.h:20,
+                 from arch/x86/kernel/asm-offsets.c:8:
+include/asm-generic/atomic-long.h: In function 'atomic_long_add_unless':
+include/asm-generic/atomic-long.h:246: error: implicit declaration of function 'atomic_add_unless'
+In file included from include/linux/crypto.h:20,
+                 from arch/x86/kernel/asm-offsets.c:8:
+include/linux/atomic.h: At top level:
+include/linux/atomic.h:14: error: static declaration of 'atomic_add_unless' follows non-static declaration
+include/asm-generic/atomic-long.h:246: note: previous implicit declaration of 'atomic_add_unless' was here
