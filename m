@@ -1,77 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050Ab1FOPqg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 11:46:36 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:60557 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755986Ab1FOPqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 11:46:22 -0400
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 8/8 v2] x86, UV: correct UV2 BAU destination timeout
-Cc: mingo@elte.hu
-Message-Id: <E1QWsJY-0008GV-GU@eag09.americas.sgi.com>
-From: Cliff Wickman <cpw@sgi.com>
-Date: Wed, 15 Jun 2011 10:47:32 -0500
+	id S1755894Ab1FOPsh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 11:48:37 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40780 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754715Ab1FOPsf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 11:48:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=szeredi.hu; s=google;
+        h=from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=rWkYkePxBBStfk3+DPT0Yvukp2yhWc1hcwRyMT1RUrGj+0TYKl11hM6WUvk4TFWgYo
+         co949hHl3rVNpkH36Msf/Q70YHrANbSp5+iyqi12ouZ2L6mSXnUyyeHBj4bX3e5YUnRl
+         MgAM6vK/YG5Tb93jSdpaxnFvvwoefgWwAADCE=
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Valerie Aurora <val@vaaconsulting.com>,
+        Andrew Morton <akpm@linux-foundation.org>, NeilBrown <neilb@suse.de>,
+        viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        apw@canonical.com, nbd@openwrt.org, hramrach@centrum.cz,
+        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu
+Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
+References: <20110609125114.8dff08da.akpm@linux-foundation.org>
+	<BANLkTi=uWDSw96v0Y4W94NZvgD=j=3r3zg@mail.gmail.com>
+	<20110610100143.28037551@lxorguk.ukuu.org.uk>
+	<8739jbjqa7.fsf@tucsk.pomaz.szeredi.hu> <11186.1308148376@jrobl>
+Date: Wed, 15 Jun 2011 17:49:05 +0200
+In-Reply-To: <11186.1308148376@jrobl> (J. R. Okajima's message of "Wed, 15 Jun
+	2011 23:32:56 +0900")
+Message-ID: <87vcw7hz7y.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cliff Wickman <cpw@sgi.com>
+"J. R. Okajima" <hooanon05@yahoo.co.jp> writes:
 
-Correct the UV2 broacast assist unit's destination timeout period.
-  The period is set in 4 bits of memory-mapped register MISC_CONTROL.
-  The left bit toggles base period between 10us and 80us.
-  The other 3 bits are the multiplier.
-Decimal 15, hex f, gives the maximum: 7 * 80us
+> Miklos Szeredi:
+>> For example "rmdir /ovl/a/b" will do the following:
+>>
+>>   1. find the underlying dentry for "a" -> upper-a
+>>   2. lock upper-a
+>>   3. find the underlying dentry for "b" -> upper-b
+>>   4. verify that upper-b is a child of upper-a
+>>   5. remove upper-b
+>
+> It is good to verify in step 4.
+> Essentially (or ideally) this verification should be equivalent to all
+> of what VFS does before vfs_rmdir(). I know overlayfs makes the upper
+> mnt_want_write()-ed in early stage and keeps it. So it might be better
+> to lookup again (as step 3 and 4) instead of comparing d_parent
+> simply. If you think it is unnecessary to lookup here, then I'd suggest
+> you to make it option (choosable by user).
 
-And the activation status register in UV2 should be tested for a destination
-timeout with a 4, not a 2.  The values for Active versus Timeout were reversed.
+The parent verification is only to make sure the locking is correct.
+It's not to make sure that modifications of underlying filesystems will
+have sane semantics.
 
-This patch is critical for TLB shootdown on an Altix UV2 system (i.e. the
-follow-on to the current Altix UV).
+Until someone comes up with a sane use case for allowing modification of
+underlying filesystem I won't bother with that.
 
-Diffed against 3.0.0-rc3
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
+> I see ovl_rmdir() does,
+> - lookup and unlink all whiteouts
+> - rmdir the target dir
+> - create a whiteout for the target
+> Right?
 
----
- arch/x86/include/asm/uv/uv_bau.h |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+Not quite.
 
-Index: linux/arch/x86/include/asm/uv/uv_bau.h
-===================================================================
---- linux.orig/arch/x86/include/asm/uv/uv_bau.h
-+++ linux/arch/x86/include/asm/uv/uv_bau.h
-@@ -67,7 +67,7 @@
-  *  we're using 655us, similar to UV1: 65 units of 10us
-  */
- #define UV1_INTD_SOFT_ACK_TIMEOUT_PERIOD (9UL)
--#define UV2_INTD_SOFT_ACK_TIMEOUT_PERIOD (65*10UL)
-+#define UV2_INTD_SOFT_ACK_TIMEOUT_PERIOD (15UL)
- 
- #define UV_INTD_SOFT_ACK_TIMEOUT_PERIOD	(is_uv1_hub() ?			\
- 		UV1_INTD_SOFT_ACK_TIMEOUT_PERIOD :			\
-@@ -106,12 +106,20 @@
- #define DS_SOURCE_TIMEOUT		3
- /*
-  * bits put together from HRP_LB_BAU_SB_ACTIVATION_STATUS_0/1/2
-- * values 1 and 5 will not occur
-+ * values 1 and 3 will not occur
-+ *        Decoded meaning              ERROR  BUSY    AUX ERR
-+ * -------------------------------     ----   -----   -------
-+ * IDLE                                 0       0        0
-+ * BUSY (active)                        0       1        0
-+ * SW Ack Timeout (destination)         1       0        0
-+ * SW Ack INTD rejected (strong NACK)   1       0        1
-+ * Source Side Time Out Detected        1       1        0
-+ * Destination Side PUT Failed          1       1        1
-  */
- #define UV2H_DESC_IDLE			0
--#define UV2H_DESC_DEST_TIMEOUT		2
--#define UV2H_DESC_DEST_STRONG_NACK	3
--#define UV2H_DESC_BUSY			4
-+#define UV2H_DESC_BUSY			2
-+#define UV2H_DESC_DEST_TIMEOUT		4
-+#define UV2H_DESC_DEST_STRONG_NACK	5
- #define UV2H_DESC_SOURCE_TIMEOUT	6
- #define UV2H_DESC_DEST_PUT_ERR		7
- 
+ - checks if directory is empty (all lower entries are whiteouted)
+ - marks directory opaque
+ - unlinks whiteouts
+ - rmdir
+ - create whiteout
+
+> But I am afraid that any error can happen in every step on the upper
+> dir. And if it happens, then ovl_rmdir() returns the error but the dir
+> left in incomplete status. It may be one of these.
+> - some whiteouts are unlinked but others are left
+> - all whiteouts are gone but the target dir remains
+> - the target dir is removed but the whiteout is not created
+> Of course, it is bad and makes users really confused, since it will show
+> users things which should not be. At the same time, I don't know how
+> possible it can happen.
+
+Atomic whiteout and atomic copy-up would be nice, that's one feature I'm
+willing to think about.
+
+> Anyway if you have read aufs, then you would know how aufs solves these
+> problems. I don't think the approaches in aufs is best or one and
+> only. I just could not get another good idea.
+
+Rollback on failure is an incomplete solution, rollback itself can fail.
+And it doesn't protect against machine crashing in the middle of
+operation.
+
+Thanks,
+Miklos
