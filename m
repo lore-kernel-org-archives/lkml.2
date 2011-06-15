@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab1FOKAK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 06:00:10 -0400
-Received: from mail.sf-mail.de ([62.27.20.61]:38238 "EHLO mail.sf-mail.de"
+	id S1754575Ab1FOKBW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 06:01:22 -0400
+Received: from cantor.suse.de ([195.135.220.2]:56295 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754209Ab1FOKAF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 06:00:05 -0400
-Message-ID: <25c1ce98c838621aeb514e6e0e843949.squirrel@webmail.sf-mail.de>
-In-Reply-To: <20110615081317.GL8141@htj.dyndns.org>
-References: <20110614070732.GA3355@maxin>
-    <20110614071540.GE8141@htj.dyndns.org>
-    <BANLkTimHjVX6ymALT-ZBeSs1S+PRDRwQaQ@mail.gmail.com>
-    <20110615081317.GL8141@htj.dyndns.org>
-Date: Wed, 15 Jun 2011 12:00:02 +0200
-Subject: Re: [PATCH] [RESEND] devres: Fix possible use after free
-From: "Rolf Eike Beer" <eike-kernel@sf-tec.de>
-To: "Tejun Heo" <tj@kernel.org>
-Cc: "Maxin B John" <maxin.john@gmail.com>, akpm@linux-foundation.org,
-        segooon@gmail.com, jkosina@suse.cz, tglx@linutronix.de,
+	id S1754138Ab1FOKBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 06:01:20 -0400
+Subject: Re: bug: kernel 3.0-rc3 not relocatable on i386?
+From: Petr Tesarik <ptesarik@suse.cz>
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
         linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.21
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+In-Reply-To: <BANLkTikoxYAz7G7pvKABbVPzOuxUzLkO=Q@mail.gmail.com>
+References: <1308125533.4641.33.camel@nathan.suse.cz>
+	 <BANLkTikoxYAz7G7pvKABbVPzOuxUzLkO=Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: SUSE LINUX
+Date: Wed, 15 Jun 2011 12:01:18 +0200
+Message-Id: <1308132078.4641.38.camel@nathan.suse.cz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hello, Maxin.
->
-> On Tue, Jun 14, 2011 at 03:09:34PM +0100, Maxin B John wrote:
->> You are right. I shouldn't have mentioned it as dangerous. I was trying
->> to
->> make this patch description similar to the description present in the
->> previous patch:
->> http://www.spinics.net/lists/mm-commits/msg84313.html
->>
->> This patch silences the Coverity Prevent's complains about this as
->> use-after-free bug. Please let me know if the updated patch description
->> is OK.
->>
->> "
->> A freed pointer is passed as an argument to the function
->> "devres_destroy()" in
->> "kernel/irq/devres.c" and "lib/devres.c". This patch fixes the possible
->> use
->> after free.
->> The change silences the static analysis tool (Coverity Prevent)
->> complains
->> about this as use-after-free bug.
->> "
->
-> Yeap, sounds mostly okay but there's no 'possible use after free'.
-> Maybe something like, "devres uses the pointer value as key after it's
-> freed, which is safe but triggers spurious use-after-free warnings on
-> some static analysis tools.  Rearrange code to avoid such warnings".
+Maarten Lankhorst píše v St 15. 06. 2011 v 11:21 +0200:
+> Hi Petr,
+> 
+> 2011/6/15 Petr Tesarik <ptesarik@suse.cz>:
+> > Hi all,
+> >
+> > it seems that the 3.0-rc3 kernel is not relocatable on i386. I get
+> > warnings about jiffies being an absolute symbol, and indeed, when GRUB
+> > loads the kernel at a non-default address, jiffies is not relocated.
+> >
+> > In my example the kernel is configured with
+> > CONFIG_PHYSICAL_START=0x1000000
+> > CONFIG_PHYSICAL_ALIGN=0x200000
+> > CONFIG_RELOCATABLE=y
+> > and loaded at 0x200000 by GRUB.
+> >
+> > Booting fails when checking whether the timer works, because do_timer()
+> > increments jiffies_64, but timer_irq_works() checks jiffies. The code
+> > looks like this:
+> >
+> > c13daab7:       8b 3d 40 7a 39 c1       mov    0xc1397a40,%edi
+> >
+> > but arch/x86/boot/compressed/vmlinux.relocs does not contain c13daaba.
+> > Consequently, timer_irq_works() reads the wrong memory location and
+> > fails, causing a panic:
+> >
+> > kernel panic: IO-APIC + timer doesn't work! Boot with apic=debug and
+> > send a report.  Then try booting with the 'noapic' option.
+> >
+> > Needless to say, the kernel freezes a few initcalls later when booted
+> > with noapic, because IO-APIC worked fine, in fact. I verified that by
+> > inserting a debugging printk() in do_timer(), and I also verified with
+> > that printk() that the address of jiffies_64 and the address of jiffies
+> > differ at run time.
+> >
+> > Any idea how to fix this?
+> Does reverting this commit fix it?
 
-Sounds good. And please merge both patches together.
+Isn't this related to VDSO? I've got no troubles with the VDSO. It's
+just that the kernel assumes a fixed location of jiffies (in the kernel
+direct mapping), so it cannot be relocated.
 
-Eike
+OTOH this must have worked the other day, so searching for the commit
+that broke it is a good hint. I'll try it here, too.
+
+Petr
+
+> commit 8c49d9a74bac5ea3f18480307057241b808fcc0c
+> Author: Andy Lutomirski <luto@MIT.EDU>
+> Date:   Mon May 23 09:31:24 2011 -0400
+> 
+>     x86-64: Clean up vdso/kernel shared variables
+> 
+> ~Maarten
+
