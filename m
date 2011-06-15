@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab1FONzT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 09:55:19 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:52981 "EHLO
+	id S1755469Ab1FONzP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 09:55:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:62491 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755029Ab1FONwh (ORCPT
+	with ESMTP id S1755194Ab1FONwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Jun 2011 09:52:37 -0400
-X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=vhdKIqpQuCYA:10 a=wRsxznEwhCEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=1XWaLZrsAAAA:8 a=meVymXHHAAAA:8 a=KafphG0z4mm1vLWHmeAA:9 a=jEp0ucaQiEUA:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=vhdKIqpQuCYA:10 a=vsfTdGnOn2AA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=KptQAqvHqVzwRrhwPwgA:9 a=SNmEBZ7QmHj0cCXluNcA:7 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110615135233.668997490@goodmis.org>
+Message-Id: <20110615135233.944726159@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 15 Jun 2011 09:48:45 -0400
+Date: Wed, 15 Jun 2011 09:48:46 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH 04/16 v2] tracing: Add disable_on_free option
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul McQuade <tungstentide@gmail.com>
+Subject: [PATCH 05/16 v2] ftrace: Fixed an include coding style issue
 References: <20110615134841.767565350@goodmis.org>
-Content-Disposition: inline; filename=0004-tracing-Add-disable_on_free-option.patch
+Content-Disposition: inline; filename=0005-ftrace-Fixed-an-include-coding-style-issue.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Paul McQuade <tungstentide@gmail.com>
 
-Add a trace option to disable tracing on free. When this option is
-set, a write into the free_buffer file will not only shrink the
-ring buffer down to zero, but it will also disable tracing.
+Removed <asm/ftrace.h> because <linux/ftrace.h> was already declared.
+Braces of struct's coding style fixed.
 
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Paul McQuade <tungstentide@gmail.com>
+Link: http://lkml.kernel.org/r/4DE59711.3090900@gmail.com
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.c |    6 ++++--
- kernel/trace/trace.h |    1 +
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ kernel/trace/ftrace.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 9c557ae..42fdf3a 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -425,6 +425,7 @@ static const char *trace_options[] = {
- 	"graph-time",
- 	"record-cmd",
- 	"overwrite",
-+	"disable_on_free",
- 	NULL
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 1ee417f..e153807 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -32,7 +32,6 @@
+ 
+ #include <trace/events/sched.h>
+ 
+-#include <asm/ftrace.h>
+ #include <asm/setup.h>
+ 
+ #include "trace_output.h"
+@@ -82,8 +81,7 @@ static int ftrace_disabled __read_mostly;
+ 
+ static DEFINE_MUTEX(ftrace_lock);
+ 
+-static struct ftrace_ops ftrace_list_end __read_mostly =
+-{
++static struct ftrace_ops ftrace_list_end __read_mostly = {
+ 	.func		= ftrace_stub,
  };
  
-@@ -3518,8 +3519,9 @@ tracing_free_buffer_write(struct file *filp, const char __user *ubuf,
- static int
- tracing_free_buffer_release(struct inode *inode, struct file *filp)
- {
--	/* disable tracing */
--	tracing_off();
-+	/* disable tracing ? */
-+	if (trace_flags & TRACE_ITER_STOP_ON_FREE)
-+		tracing_off();
- 	/* resize the ring buffer to 0 */
- 	tracing_resize_ring_buffer(0);
- 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 229f859..742f545 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -609,6 +609,7 @@ enum trace_iterator_flags {
- 	TRACE_ITER_GRAPH_TIME		= 0x80000,
- 	TRACE_ITER_RECORD_CMD		= 0x100000,
- 	TRACE_ITER_OVERWRITE		= 0x200000,
-+	TRACE_ITER_STOP_ON_FREE		= 0x400000,
+@@ -785,8 +783,7 @@ static void unregister_ftrace_profiler(void)
+ 	unregister_ftrace_graph();
+ }
+ #else
+-static struct ftrace_ops ftrace_profile_ops __read_mostly =
+-{
++static struct ftrace_ops ftrace_profile_ops __read_mostly = {
+ 	.func		= function_profile_call,
  };
  
- /*
 -- 
 1.7.4.4
 
