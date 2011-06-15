@@ -1,91 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab1FOAhV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 20:37:21 -0400
-Received: from mga09.intel.com ([134.134.136.24]:15846 "EHLO mga09.intel.com"
+	id S1754213Ab1FOAjj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 20:39:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6751 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752666Ab1FOAhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 20:37:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,368,1304319600"; 
-   d="scan'208";a="13595240"
-Date: Tue, 14 Jun 2011 17:36:00 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, shaohua.li@intel.com,
-        alex.shi@intel.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: REGRESSION: Performance regressions from switching
- anon_vma->lock to mutex
-Message-ID: <20110615003600.GA9602@tassilo.jf.intel.com>
-References: <1308097798.17300.142.camel@schen9-DESK>
+	id S1752089Ab1FOAjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 20:39:37 -0400
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] EFIFB: Fix error handling
+To: pjones@redhat.com
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Peter Jones <pjones@redhat.com>,
+        linux-fbdev@vger.kernel.org, stable@kernel.org
+Date: Wed, 15 Jun 2011 01:38:17 +0100
+Message-ID: <20110615003817.18883.41030.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308097798.17300.142.camel@schen9-DESK>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 2.6.39, the contention of anon_vma->lock occupies 3.25% of cpu.
-> However, after the switch of the lock to mutex on 3.0-rc2, the mutex
-> acquisition jumps to 18.6% of cpu.  This seems to be the main cause of
-> the 52% throughput regression.
-> 
-This patch makes the mutex in Tim's workload take a bit less CPU time
-(4% down) but it doesn't really fix the regression. When spinning for a 
-value it's always better to read it first before attempting to write it.
-This saves expensive operations on the interconnect.
+Fix the error handling in the EFIFB driver if platform_driver_probe() fails.
+In that case, the code will pass the driver struct to the _device_
+unregistration function.  It presumably should pass a pointer to the device
+struct instead.
 
-So it's not really a fix for this, but may be a slight improvement for 
-other workloads.
+The compiler gives the following warning to indicate this:
 
--Andi
+drivers/video/efifb.c: In function 'efifb_init':
+drivers/video/efifb.c:544:3: warning: passing argument 1 of 'platform_device_unregister' from incompatible pointer type
+include/linux/platform_device.h:40:13: note: expected 'struct platform_device *' but argument is of type 'struct platform_driver *'
 
->From 34d4c1e579b3dfbc9a01967185835f5829bd52f0 Mon Sep 17 00:00:00 2001
-From: Andi Kleen <ak@linux.intel.com>
-Date: Tue, 14 Jun 2011 16:27:54 -0700
-Subject: [PATCH] mutex: while spinning read count before attempting cmpxchg
-
-Under heavy contention it's better to read first before trying
-to do an atomic operation on the interconnect.
-
-This gives a few percent improvement for the mutex CPU time
-under heavy contention and likely saves some power too.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Peter Jones <pjones@redhat.com>
+cc: linux-fbdev@vger.kernel.org
+cc: stable@kernel.org
 ---
- kernel/mutex.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/mutex.c b/kernel/mutex.c
-index d607ed5..1abffa9 100644
---- a/kernel/mutex.c
-+++ b/kernel/mutex.c
-@@ -170,7 +170,8 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		if (owner && !mutex_spin_on_owner(lock, owner))
- 			break;
+ drivers/video/efifb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
+index 69c49df..784139a 100644
+--- a/drivers/video/efifb.c
++++ b/drivers/video/efifb.c
+@@ -541,7 +541,7 @@ static int __init efifb_init(void)
+ 	 */
+ 	ret = platform_driver_probe(&efifb_driver, efifb_probe);
+ 	if (ret) {
+-		platform_device_unregister(&efifb_driver);
++		platform_device_unregister(&efifb_device);
+ 		return ret;
+ 	}
  
--		if (atomic_cmpxchg(&lock->count, 1, 0) == 1) {
-+		if (atomic_read(&lock->count) == 1 && 
-+		    atomic_cmpxchg(&lock->count, 1, 0) == 1) {
- 			lock_acquired(&lock->dep_map, ip);
- 			mutex_set_owner(lock);
- 			preempt_enable();
--- 
-1.7.4.4
 
