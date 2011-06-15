@@ -1,68 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab1FOJzX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 05:55:23 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47658 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754348Ab1FOJzT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 05:55:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=UzvguiJOvUZ7FhrrVwAN9RJ4cYiqExpDN7oYhwvraLFh8M0kA/jv6Er7GiWeR5erM5
-         TGgGbAAJ2t7qXRc9Fiiz9l7mGvJEdoef03hk2Os50Y766bKJaxa2z8sxv32rYoDC9Fh+
-         KVla9u7Ir/+sfNOuwJhfus5LGeOB8CaEonInA=
-From: Richard Cochran <richardcochran@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: <netdev@vger.kernel.org>, David Miller <davem@davemloft.net>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH for 3.0-rc4 2/2] dp83640: drop PHY status frames in the driver.
-Date: Wed, 15 Jun 2011 11:55:20 +0200
-Message-Id: <c09567e3debd1b20c091e294ab06e071c0654e67.1308129342.git.richard.cochran@omicron.at>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <cover.1308129342.git.richard.cochran@omicron.at>
-References: <cover.1308129342.git.richard.cochran@omicron.at>
-In-Reply-To: <cover.1308129342.git.richard.cochran@omicron.at>
-References: <cover.1308129342.git.richard.cochran@omicron.at>
+	id S1754683Ab1FOJ6H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 05:58:07 -0400
+Received: from cantor.suse.de ([195.135.220.2]:56066 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754167Ab1FOJ6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 05:58:04 -0400
+Subject: Re: bug: kernel 3.0-rc3 not relocatable on i386?
+From: Petr Tesarik <ptesarik@suse.cz>
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4DF87D2B.7090201@gmail.com>
+References: <1308125533.4641.33.camel@nathan.suse.cz>
+	 <4DF87D2B.7090201@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: SUSE LINUX
+Date: Wed, 15 Jun 2011 11:58:02 +0200
+Message-Id: <1308131882.4641.35.camel@nathan.suse.cz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dp83640 PHY provides time stamp and other information via special
-PHY status frames. Previously, the driver decoded the frames and then
-let the network stack drop them. This works fine when the PTP messages
-come over UDP.
+Maarten Lankhorst píše v St 15. 06. 2011 v 11:36 +0200:
+> Hi Petr,
+> 
+> Op 15-06-11 10:12, Petr Tesarik schreef:
+> > Hi all,
+> >
+> > it seems that the 3.0-rc3 kernel is not relocatable on i386. I get
+> > warnings about jiffies being an absolute symbol, and indeed, when GRUB
+> > loads the kernel at a non-default address, jiffies is not relocated.
+> >
+> > In my example the kernel is configured with
+> > CONFIG_PHYSICAL_START=0x1000000
+> > CONFIG_PHYSICAL_ALIGN=0x200000
+> > CONFIG_RELOCATABLE=y
+> > and loaded at 0x200000 by GRUB.
+> >
+> > Booting fails when checking whether the timer works, because do_timer()
+> > increments jiffies_64, but timer_irq_works() checks jiffies. The code
+> > looks like this:
+> >
+> > c13daab7:       8b 3d 40 7a 39 c1       mov    0xc1397a40,%edi
+> >
+> > but arch/x86/boot/compressed/vmlinux.relocs does not contain c13daaba.
+> > Consequently, timer_irq_works() reads the wrong memory location and
+> > fails, causing a panic:
+> >
+> > kernel panic: IO-APIC + timer doesn't work! Boot with apic=debug and
+> > send a report.  Then try booting with the 'noapic' option.
+> >
+> > Needless to say, the kernel freezes a few initcalls later when booted
+> > with noapic, because IO-APIC worked fine, in fact. I verified that by
+> > inserting a debugging printk() in do_timer(), and I also verified with
+> > that printk() that the address of jiffies_64 and the address of jiffies
+> > differ at run time.
+> 
+> Can you try this patch?
 
-However, when receiving PTP messages via L2 packets, this creates a
-problem. The status frames use the official PTP destination MAC address,
-and so they are delivered to user space along with the "real" frames,
-causing confusion for applications.
+Hi Maarten,
 
-This commit fixes the issue by simply dropping the PHY status frames
-in the driver.
+thanks for the quick replay, but no, I won't even try. It can't work,
+because jiffies is undefined in the final vmlinux link on 32-bit, so I
+believe the link will simply fail because of undefined symbols. ;)
 
-Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
----
- drivers/net/phy/dp83640.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Petr
 
-diff --git a/drivers/net/phy/dp83640.c b/drivers/net/phy/dp83640.c
-index ead323e..2cd8dc5 100644
---- a/drivers/net/phy/dp83640.c
-+++ b/drivers/net/phy/dp83640.c
-@@ -1044,8 +1044,8 @@ static bool dp83640_rxtstamp(struct phy_device *phydev,
- 
- 	if (is_status_frame(skb, type)) {
- 		decode_status_frame(dp83640, skb);
--		/* Let the stack drop this frame. */
--		return false;
-+		kfree_skb(skb);
-+		return true;
- 	}
- 
- 	SKB_PTP_TYPE(skb) = type;
--- 
-1.7.0.4
+> diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+> index 89aed99..49e666e 100644
+> --- a/arch/x86/kernel/vmlinux.lds.S
+> +++ b/arch/x86/kernel/vmlinux.lds.S
+> @@ -34,12 +34,11 @@ OUTPUT_FORMAT(CONFIG_OUTPUT_FORMAT, CONFIG_OUTPUT_FORMAT, CONFIG_OUTPUT_FORMAT)
+>  #ifdef CONFIG_X86_32
+>  OUTPUT_ARCH(i386)
+>  ENTRY(phys_startup_32)
+> -jiffies = jiffies_64;
+>  #else
+>  OUTPUT_ARCH(i386:x86-64)
+>  ENTRY(phys_startup_64)
+> -jiffies_64 = jiffies;
+>  #endif
+> +jiffies_64 = jiffies;
+>  
+>  #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
+>  /*
 
