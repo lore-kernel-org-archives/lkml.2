@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab1FOUr4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 16:47:56 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:46290 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752776Ab1FOUrz (ORCPT
+	id S1754715Ab1FOUtM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 16:49:12 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44924 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752901Ab1FOUtJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 16:47:55 -0400
-References: <1308097798.17300.142.camel@schen9-DESK> <1308134200.15315.32.camel@twins> <1308135495.15315.38.camel@twins> <BANLkTikt88KnxTy8TuGGVrBVnXvsnL7nMQ@mail.gmail.com> <20110615201216.GA4762@elte.hu> <20110615202956.GG2267@linux.vnet.ibm.com>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20110615202956.GG2267@linux.vnet.ibm.com>
+	Wed, 15 Jun 2011 16:49:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [GIT PULL] Re: REGRESSION: Performance regressions from switching anon_vma->lock to mutex
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 15 Jun 2011 13:47:33 -0700
-To: paulmck@linux.vnet.ibm.com, Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, ak@linux.intel.com,
-        shaohua.li@intel.com, alex.shi@intel.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Message-ID: <5a89bf11-4c80-418b-b2ff-ae904983ebb8@email.android.com>
+In-Reply-To: <BANLkTinij15PZw11Y3Qt=PV1kkP1pw1oaszTdMfD55Cf8cOJkw@mail.gmail.com>
+References: <20110615193734.23641.8004.stgit@ponder> <BANLkTinij15PZw11Y3Qt=PV1kkP1pw1oaszTdMfD55Cf8cOJkw@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 15 Jun 2011 14:48:48 -0600
+X-Google-Sender-Auth: L89kK7WEHVkJHK_1Wx8j-jrhPCM
+Message-ID: <BANLkTik6C1mBeitYkA+NNM6XAhNY9cbgOw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] gpio/tegra: Move Tegra gpio driver to drivers/gpio
+To: Colin Cross <ccross@android.com>
+Cc: Erik Gilling <konkers@android.com>, lkml <linux-kernel@vger.kernel.org>,
+        linux-tegra <linux-tegra@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        spi-devel-general@lists.sourceforge.net,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On Wed, Jun 15, 2011 at 2:21 PM, Colin Cross <ccross@android.com> wrote:
+> On Wed, Jun 15, 2011 at 12:37 PM, Grant Likely
+> <grant.likely@secretlab.ca> wrote:
+>> As part of the gpio driver consolidation, this patch moves the Tegra driver
+>> into drivers/gpio
+>>
+>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>> ---
+>>
+>> If there are no objections, I'll merge this via gpio/next
 >
->It would be much lower risk to make the current code always use softirq
->if !RCU_BOOST -- last time I attempted the revert, it was quite hairy.
+> I have this patch as part of a series that should get posted later
+> this week, as well as a patch on top of it that depends on this change
+> and another change in my tree, but I'm pessimistic that my series will
+> get in to 3.1 since it depends on some common consolidation that
+> hasn't been agreed upon yet.  So,
+> Acked-by: Colin Cross <ccross@android.com>
+>
+> Put it in gpio/next, and I'll make sure any other Tegra patches with
+> dependencies get pulled after yours.
 
-I don't care if it's a real revert or not, but I want the threads gone. Entirely. Not just the patch that uses softirqs for some things, and threads for the callbacks. No, I don't want the threads to show up or exist at all.
+How about I put it in a separate branch so that if you need to pull it
+for dependencies then you can do so without pulling in all the
+gpio/next commits.
 
-And to be sure, I'd like the code to set up and use the threads to actually compile away statically, so that there clearly isn't some way it's partially enabled.
+g.
 
-        Linus
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
