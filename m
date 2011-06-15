@@ -1,40 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756073Ab1FOQav (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 12:30:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26626 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754357Ab1FOQat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 12:30:49 -0400
-Message-ID: <4DF8DE26.1070301@redhat.com>
-Date: Wed, 15 Jun 2011 19:30:30 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+	id S1756104Ab1FOQbz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 12:31:55 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57302 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755284Ab1FOQbx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 12:31:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=UT8lgJFFHRE1VjdaGLhI5ZwTrUmicTjzsrcnhdVoROXfIXiEdDfxt7l+JeCBg2AtEk
+         7le6P6a3kxO5bjvc4NMKJEERzXY+g0lFOdPJp/QIq8pkP7muslg9NgsT2nhO7ImbAsqw
+         Wv5KD9eTwFC9TYHZ8xcb6H1IxHUZ9+IolD36k=
+Date: Wed, 15 Jun 2011 20:31:48 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Prasad Joshi <prasadjoshi124@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>
-Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
-References: <1308153214.7566.6.camel@jaguar>
-In-Reply-To: <1308153214.7566.6.camel@jaguar>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
+        Nikanth Karthikesan <knikanth@suse.de>,
+        David Rientjes <rientjes@google.com>, Matt Mackall <mpm@selenic.com>,
+        linux-doc@vger.kernel.org
+Subject: Re: [RFC 5/5 v3] procfs: add documentation for procfs mount options
+Message-ID: <20110615163147.GA17087@albatros>
+References: <1308146299-13015-1-git-send-email-segoon@openwall.com>
+ <20110615092221.b143c45a.rdunlap@xenotime.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110615092221.b143c45a.rdunlap@xenotime.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2011 06:53 PM, Pekka Enberg wrote:
-> - Fast QCOW2 image read-write support beating Qemu in fio benchmarks. See the
->    following URL for test result details: https://gist.github.com/1026888
+On Wed, Jun 15, 2011 at 09:22 -0700, Randy Dunlap wrote:
+> On Wed, 15 Jun 2011 17:58:19 +0400 Vasiliy Kulikov wrote:
+> > +hidepid=1 means users may not access any /proc/<pid>/ directories, but their
+> 
+> comma not needed above. [...]
 
-This is surprising.  How is qemu invoked?
-
-btw the dump above is a little hard to interpret.
+Indeed, thank you for the fixes!
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
