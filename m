@@ -1,59 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751747Ab1FOFhv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 01:37:51 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:46632 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab1FOFht convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 01:37:49 -0400
+	id S1751531Ab1FOFrN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 01:47:13 -0400
+Received: from mail.lang.hm ([64.81.33.126]:53790 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751231Ab1FOFrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 01:47:13 -0400
+Date: Tue, 14 Jun 2011 22:46:36 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Rob Landley <rob@landley.net>
+cc: LKML <linux-kernel@vger.kernel.org>, torvalds@linux-foundation.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: When does torvalds/linux-3.git show up?
+In-Reply-To: <4DF7D0AE.3000301@landley.net>
+Message-ID: <alpine.DEB.2.02.1106142246040.6728@asgard.lang.hm>
+References: <4DF7D0AE.3000301@landley.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=rV0K3J4rsPVKw73KRG-E2h_CE=A@mail.gmail.com>
-References: <1305657064-4531-1-git-send-email-johnlinn@comcast.net> <BANLkTi=rV0K3J4rsPVKw73KRG-E2h_CE=A@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 14 Jun 2011 23:37:29 -0600
-X-Google-Sender-Auth: gv2FftrzCzpkp5nMu0FqiFVoo3s
-Message-ID: <BANLkTinrBw1RsP09bwbmDJC9Pd5NguMEUQ@mail.gmail.com>
-Subject: Re: [PATCH V2] ARM: Xilinx: Adding Xilinx board support
-To: Barry Song <21cnbao@gmail.com>
-Cc: johnlinn@comcast.net, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
-        nicolas.pitre@linaro.org, John Linn <john.linn@xilinx.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 14, 2011 at 9:23 PM, Barry Song <21cnbao@gmail.com> wrote:
-> 2011/5/18  <johnlinn@comcast.net>:
->> +static struct of_device_id zynq_of_bus_ids[] __initdata = {
->> +       { .compatible = "simple-bus", },
->> +       {}
->> +};
->> +
->> +/**
->> + * xilinx_init_machine() - System specific initialization, intended to be
->> + *                        called from board specific initialization.
->> + */
->> +void __init xilinx_init_machine(void)
->> +{
->> +#ifdef CONFIG_CACHE_L2X0
->> +       /*
->> +        * 64KB way size, 8-way associativity, parity disabled
->> +        */
->> +       l2x0_init(PL310_L2CC_BASE, 0x02060000, 0xF0F0FFFF);
->> +#endif
->> +
->> +       of_platform_bus_probe(NULL, zynq_of_bus_ids, NULL);
->> +}
+On Tue, 14 Jun 2011, Rob Landley wrote:
+
+> Are we still going to pull linux 3.0 from the 2.6 repo indefinitely?
+> (Or does it get renamed to just "linux", or...)
 >
-> it looks to me a common machine init function is calling a
-> chip/board-special device probing. xilinx_init_machine  is calling
-> zynq_of_bus_ids. what will happen if we add a new different with zynq?
+> Just wondering.  (Also, having a git://git.kernel.org/linux.git symlink
+> to Linus's tree wouuld be awesome.  I have to look it up again every
+> time I clone to a new box, and it's down the list a ways...)
 
-The bus_ids are actually pretty generic.  I've got a patch in my tree
-which I'll be posting soon that creates a generic bus id table that
-most platforms can use.
+the current plan is to leave it as the linux-2.6 repo, but there may be a 
+symlink created.
 
-g.
+David Lang
