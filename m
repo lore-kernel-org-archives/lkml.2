@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab1FOTiJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 15:38:09 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54341 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754611Ab1FOTiG (ORCPT
+	id S1754911Ab1FOTlK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 15:41:10 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:45583 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754750Ab1FOTlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 15:38:06 -0400
-Subject: [PATCH 2/2] gpio/tegra: add devicetree support
-To: Erik Gilling <konkers@android.com>, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>,
-        spi-devel-general@lists.sourceforge.net,
-        linux-arm-kernel@lists.infradead.org
-From: Grant Likely <grant.likely@secretlab.ca>
-Cc: Stephen Warren <swarren@nvidia.com>
-Date: Wed, 15 Jun 2011 13:38:04 -0600
-Message-ID: <20110615193759.23641.26212.stgit@ponder>
-In-Reply-To: <20110615193734.23641.8004.stgit@ponder>
-References: <20110615193734.23641.8004.stgit@ponder>
-User-Agent: StGit/0.15
+	Wed, 15 Jun 2011 15:41:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=rhKuwHXu70QNgLokK0d8hlIU/plcSmBZFmr9F6tVf9esCHdgy7RVy0XDE+t5Q46CqO
+         RR5+oCNJuF4GLeavp+IY5qVDaK7G5qVT+Qg/Q+o0XJ19pEK2K1s3gG7KORUkMrl+qYXa
+         Y71OQ7OSwmmQFzEo0Ujt43pt1R8N6rtnQyPMk=
+Date: Wed, 15 Jun 2011 21:40:55 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Sam Liao <phyomh@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-perf-users@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Arun Sharma <asharma@fb.com>
+Subject: Re: [PATCH] [perf] Add inverted call graph report support.
+Message-ID: <20110615194045.GA18403@somewhere.redhat.com>
+References: <BANLkTi=svHgWzyKiEHjMc-j5Hq4y5R8Mow@mail.gmail.com>
+ <20110610204208.GC13694@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110610204208.GC13694@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for decoding gpios from the device tree
+On Fri, Jun 10, 2011 at 05:42:08PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Jun 09, 2011 at 02:44:19PM +0800, Sam Liao escreveu:
+> > Add "caller/callee" option to support inverted butterfly report,
+> > in the inverted report (with caller option), the call graph start
+> > from the callee's ancestor. Users can use such view to catch system's
+> > performance bottleneck from a sysprof like view. Using this option
+> > with specified sort order like pid gives us high level view of call
+> > graph statistics.
+> 
+> Looks OK, haven't had time to test tho.
+> 
+> Frédéric, can you process this one? Tomorrow I'll be off the grid,
+> vacations!
+> 
+> Thanks a lot,
+> 
+> - Arnaldo
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
----
- .../devicetree/bindings/gpio/gpio_nvidia.txt       |    7 +++++++
- drivers/gpio/gpio-tegra.c                          |   10 ++++++++++
- 2 files changed, 17 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio_nvidia.txt
+Yeah, the patch is nice and works well.
 
-diff --git a/Documentation/devicetree/bindings/gpio/gpio_nvidia.txt b/Documentation/devicetree/bindings/gpio/gpio_nvidia.txt
-new file mode 100644
-index 0000000..afb3ff3
---- /dev/null
-+++ b/Documentation/devicetree/bindings/gpio/gpio_nvidia.txt
-@@ -0,0 +1,7 @@
-+NVIDIA Tegra 2 GPIO controller
-+
-+Required properties:
-+- compatible : "nvidia,tegra250-gpio"
-+- #gpio-cells : Should be two. The first cell is the pin number and the
-+  second cell is used to specify optional parameters (currently unused).
-+- gpio-controller : Marks the device node as a GPIO controller.
-diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
-index 919d638..13afb88 100644
---- a/drivers/gpio/gpio-tegra.c
-+++ b/drivers/gpio/gpio-tegra.c
-@@ -23,6 +23,7 @@
- 
- #include <linux/io.h>
- #include <linux/gpio.h>
-+#include <linux/of.h>
- 
- #include <asm/mach/irq.h>
- 
-@@ -340,6 +341,15 @@ static int __init tegra_gpio_init(void)
- 		}
- 	}
- 
-+#ifdef CONFIG_OF_GPIO
-+	/*
-+	 * This isn't ideal, but it gets things hooked up until this
-+	 * driver is converted into a platform_device
-+	 */
-+	tegra_gpio_chip.of_node = of_find_compatible_node(NULL, NULL,
-+						"nvidia,tegra250-gpio");
-+#endif /* CONFIG_OF_GPIO */
-+
- 	gpiochip_add(&tegra_gpio_chip);
- 
- 	for (i = INT_GPIO_BASE; i < (INT_GPIO_BASE + TEGRA_NR_GPIOS); i++) {
+I'm applying it.
 
+Thanks.
