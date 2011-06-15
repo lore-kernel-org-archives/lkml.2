@@ -1,128 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783Ab1FOKOo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 06:14:44 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48223 "EHLO
+	id S1754791Ab1FOKQF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 06:16:05 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41392 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752173Ab1FOKOl (ORCPT
+	with ESMTP id S1753960Ab1FOKQC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 06:14:41 -0400
+	Wed, 15 Jun 2011 06:16:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Yw4li0WoqTT+wUriypOMtGdsaDq8caDf1uIwjppa1Pm5rZuTqjDPjzfDDvU6UauMP6
-         v9BVfqtvr9UYma7gY4dN1hHxU+1SDYQtiKHenNB/wZIwzkVNgiIHW2uCCUy4MqjLzevf
-         8Rf8De/2cjbdv5QBJG+/gL0fxacc/DlZZUnqc=
-Date: Wed, 15 Jun 2011 12:14:36 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Yuan-Hsin Chen <yuanlmm@gmail.com>
-Cc: jgarzik@pobox.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yuan-Hsin Chen <yhchen@faraday-tech.com>
-Subject: Re: [PATCH v2] ahci: fix pmp softreset with HDD
-Message-ID: <20110615101436.GT8141@htj.dyndns.org>
-References: <20110614065213.GD8141@htj.dyndns.org>
- <1308132252-1981-1-git-send-email-yuanlmm@gmail.com>
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type;
+        b=KRyzS3ceaz2TVfJw/lDSvXclxTyeBurbCl1GXmIwxRmstTLxqPc3tPuPYAXmbp83r5
+         V0olgpPh6ceo28bLscN4+Znx58xjdBKHEmj/proz48s1cFBH8H0thNbAqQnp9hYsuwGo
+         CPmdBazQ9bxxnXHPt2kyAwlRCKWeb7Oyo47gI=
+Message-ID: <4DF8865F.5010007@gmail.com>
+Date: Wed, 15 Jun 2011 12:15:59 +0200
+From: Vladimir Pantelic <vladoman@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:2.0.1) Gecko/20110511 Firefox/4.0.1 SeaMonkey/2.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308132252-1981-1-git-send-email-yuanlmm@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kernel development list <linux-kernel@vger.kernel.org>
+CC: linux-omap@vger.kernel.org, "Hiremath, Vaibhav" <hvaibhav@ti.com>
+Subject: Re: [PATCH] omap v4l2: fix wrong resizer calculation
+References: <4DB67614.7030008@gmail.com>
+In-Reply-To: <4DB67614.7030008@gmail.com>
+Content-Type: multipart/mixed;
+ boundary="------------060408030204090801090000"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This is a multi-part message in MIME format.
+--------------060408030204090801090000
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-On Wed, Jun 15, 2011 at 06:04:12PM +0800, Yuan-Hsin Chen wrote:
-> From: Yuan-Hsin Chen <yhchen@faraday-tech.com>
-> 
-> When enabling both port multiplier and platform ahci sata,
-> ahci times out while connecting to HDD directly. This is
-> because soft reset fails with IPMS set. Do soft reset
-> again to port 0.
-> 
-> The soft reset sequence is copied from ahci.c.
-> 
-> Signed-off-by: Yuan-Hsin Chen <yhchen@faraday-tech.com>
+ping
 
-Getting closer.
+--------------060408030204090801090000
+Content-Type: text/x-diff;
+ name="0001-omap-v4l2-fix-wrong-resizer-calculation.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0001-omap-v4l2-fix-wrong-resizer-calculation.patch"
 
-> +config SATA_PMP_RST
-> +	bool "SATA PMP softreset"
-> +	depends on SATA_PMP
-> +	default n
-> +	help
-> +	  When enabling both port multiplier and platform ahci sata,
-> +	  ahci times out while connecting to HDD directly in some
-> +	  ahci controller. This is because soft reset fails with
-> +	  IPMS set. Do soft reset again to port 0.
-> +
+>From 47473f26bda2ef2e3a5e8f0203fde0c74c412c36 Mon Sep 17 00:00:00 2001
+From: Vladimir Pantelic <vladoman@gmail.com>
+Date: Tue, 26 Apr 2011 09:28:11 +0200
+Subject: [PATCH] omap v4l2: fix wrong resizer calculation
 
-Hmmm... Is there any way to detect the specific controller from
-ahci_platform.c?  This is workaround for a controller bug.  It should
-be enabled automatically.  Making it a config option doesn't make
-whole lot of sense.
+in omap_vout_new_crop(), "crop" is the output parameter and
+therefore new_crop/try_crop should be used to calculate the
+resizer values
 
-> @@ -1329,6 +1338,56 @@ static int ahci_softreset(struct ata_link *link, unsigned int *class,
->  }
->  EXPORT_SYMBOL_GPL(ahci_do_softreset);
->  
-> +static int ahci_pmp_check_ready(struct ata_link *link)
-> +{
-> +	void __iomem *port_mmio = ahci_port_base(link->ap);
-> +	u8 status = readl(port_mmio + PORT_TFDATA) & 0xFF;
-> +	u32 irq_status = readl(port_mmio + PORT_IRQ_STAT);
-> +
-> +	/*
-> +	 * There is no need to check TFDATA if BAD PMP is found due to HW bug,
-> +	 * which can save timeout delay.
-> +	 */
-> +	if (irq_status & PORT_IRQ_BAD_PMP)
-> +		return -EIO;
-> +
-> +	printk("%s:TFT 0x%x\n", __func__, status);
-> +	return ata_check_ready(status);
-> +}
-> +
-> +static int ahci_pmp_softreset(struct ata_link *link, unsigned int *class,
-> +				unsigned long deadline)
-> +{
-> +	struct ata_port *ap = link->ap;
-> +	void __iomem *port_mmio = ahci_port_base(ap);
-> +	int pmp = sata_srst_pmp(link);
-> +	int rc;
-> +	u32 irq_sts;
-> +
-> +	DPRINTK("ENTER\n");
-> +
-> +	rc = ahci_do_softreset(link, class, pmp, deadline,
-> +			       ahci_pmp_check_ready);
-> +
-> +	/*
-> +	 * Soft reset fails with IPMS set when PMP is enabled but
-> +	 * SATA HDD/ODD is connected to SATA port, do soft reset
-> +	 * again to port 0.
-> +	 */
-> +	if (rc == -EIO) {
-> +		irq_sts = readl(port_mmio + PORT_IRQ_STAT);
-> +		if (irq_sts & PORT_IRQ_BAD_PMP) {
-> +			ata_link_printk(link, KERN_WARNING,
-> +					"applying PMP SRST workaround "
-> +					"and retrying\n");
-> +			rc = ahci_do_softreset(link, class, 0, deadline,
-> +					       ahci_check_ready);
-> +		}
-> +	}
-> +
-> +	return rc;
-> +}
+Signed-off-by: Vladimir Pantelic <vladoman@gmail.com>
+---
+ drivers/media/video/omap/omap_voutlib.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Please make two separate patches.  One to rename & move sb600 ops to
-libahci.c and another to use it for platform.  There's no reason to
-have two identical sets of functions doing the same thing.
-
-Thanks.
-
+diff --git a/drivers/media/video/omap/omap_voutlib.c b/drivers/media/video/omap/omap_voutlib.c
+index 2aa6a76..8ae7481 100644
+--- a/drivers/media/video/omap/omap_voutlib.c
++++ b/drivers/media/video/omap/omap_voutlib.c
+@@ -193,7 +193,7 @@ int omap_vout_new_crop(struct v4l2_pix_format *pix,
+ 		return -EINVAL;
+ 
+ 	if (cpu_is_omap24xx()) {
+-		if (crop->height != win->w.height) {
++		if (try_crop.height != win->w.height) {
+ 			/* If we're resizing vertically, we can't support a
+ 			 * crop width wider than 768 pixels.
+ 			 */
+@@ -202,7 +202,7 @@ int omap_vout_new_crop(struct v4l2_pix_format *pix,
+ 		}
+ 	}
+ 	/* vertical resizing */
+-	vresize = (1024 * crop->height) / win->w.height;
++	vresize = (1024 * try_crop.height) / win->w.height;
+ 	if (cpu_is_omap24xx() && (vresize > 2048))
+ 		vresize = 2048;
+ 	else if (cpu_is_omap34xx() && (vresize > 4096))
+@@ -221,7 +221,7 @@ int omap_vout_new_crop(struct v4l2_pix_format *pix,
+ 			try_crop.height = 2;
+ 	}
+ 	/* horizontal resizing */
+-	hresize = (1024 * crop->width) / win->w.width;
++	hresize = (1024 * try_crop.width) / win->w.width;
+ 	if (cpu_is_omap24xx() && (hresize > 2048))
+ 		hresize = 2048;
+ 	else if (cpu_is_omap34xx() && (hresize > 4096))
 -- 
-tejun
+1.6.0.2
+
+
+--------------060408030204090801090000--
