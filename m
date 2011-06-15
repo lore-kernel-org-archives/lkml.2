@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609Ab1FOCMQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 22:12:16 -0400
-Received: from gabe.freedesktop.org ([131.252.210.177]:46664 "EHLO
-	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624Ab1FOCMN (ORCPT
+	id S1754614Ab1FOCKJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 22:10:09 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49897 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753508Ab1FOCKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 22:12:13 -0400
-X-Greylist: delayed 338 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Jun 2011 22:12:13 EDT
-From: Eric Anholt <eric@anholt.net>
-To: Daniel J Blueman <daniel.blueman@gmail.com>
-Cc: Keith Packard <keithp@keithp.com>, Dave Airlie <airlied@redhat.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel J Blueman <daniel.blueman@gmail.com>
-Subject: Re: [PATCH 3.0-rc3] i915: Fix gen6 (SNB) GPU stalling
-In-Reply-To: <1308070307-2630-1-git-send-email-daniel.blueman@gmail.com>
-References: <1308070307-2630-1-git-send-email-daniel.blueman@gmail.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Tue, 14 Jun 2011 19:06:30 -0700
-Message-ID: <877h8nc0gp.fsf@eliezer.anholt.net>
+	Tue, 14 Jun 2011 22:10:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=VwzKfo+no/8fc7z13xj+MG2S/TJTKaGotKQ8ukDfor8cikttlm/4qJKzjjjwXihVLX
+         joQ6adRzM7uxT6RsP6AoAWdvSd58VD4Ght1U22P7j6KnPOibRdp89ShbYiudXBrDHJoO
+         w1Jhrwvivs7Qhpxsdw+GAqo+U7FS0AfY2Frp4=
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+In-Reply-To: <4DF80B03.7000204@jp.fujitsu.com>
+References: <4df13a522720782e51@agluck-desktop.sc.intel.com>
+	<4df13cea27302b7ccf@agluck-desktop.sc.intel.com>
+	<20110612223840.GA23218@aftab>
+	<BANLkTi=-A5PYj8zpjGB4Xb-_VNq0qr+CGQ@mail.gmail.com>
+	<4DF5C36A.1040707@redhat.com>
+	<20110613095521.GA26316@aftab>
+	<4DF5F729.4060609@redhat.com>
+	<20110613124003.GA27918@aftab>
+	<4DF606C9.90308@redhat.com>
+	<20110613151208.GA29045@aftab>
+	<4DF63B7A.1030805@redhat.com>
+	<BANLkTinUEqRni2u0DaMfSc45b3DmMMyYvA@mail.gmail.com>
+	<4DF6CC58.8050601@jp.fujitsu.com>
+	<4DF6CD25.7040405@jp.fujitsu.com>
+	<BANLkTina_Y5xekoE9SnbG125CVFLopym2A@mail.gmail.com>
+	<BANLkTimY1X73pTJmMd8G5GKpsCBVmXLfOw@mail.gmail.com>
+	<4DF80B03.7000204@jp.fujitsu.com>
+Date: Tue, 14 Jun 2011 19:10:06 -0700
+X-Google-Sender-Auth: 0jL-D_Ve8fslq-4NqN-SQN4rW_w
+Message-ID: <BANLkTi=HheN6zzuhviPX-+77oZyY+D_yfA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] x86, mce: rework use of TIF_MCE_NOTIFY
+From: Tony Luck <tony.luck@intel.com>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, Borislav Petkov <bp@amd64.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jun 14, 2011 at 6:29 PM, Hidetoshi Seto
+<seto.hidetoshi@jp.fujitsu.com> wrote:
+> Or ... is it possible to push siginfo w/ addr and pop here?
 
-On Wed, 15 Jun 2011 00:51:47 +0800, Daniel J Blueman <daniel.blueman@gmail.=
-com> wrote:
-> On 14 June 2011 13:23, Eric Anholt <eric@anholt.net> wrote:
-> > On Tue, 14 Jun 2011 12:18:36 +0800, Daniel J Blueman <daniel.blueman@gm=
-ail.com> wrote:
-> >> Hi Eric,
-> >>
-> >> The frequent ~1.5s pauses I hit with SNB hardware in the gnome3 UI (eg
-> >> whenever you hit the top-left of the screen to show all windows) are
-> >> nicely addressed by your recent wake patch [1] (ported to -rc3). Thus
-> >> I see no 'missed IRQ' kernel messages.
-> >>
-> >> As this addresses a significant usability regression, are you happy to
-> >> add it to the 3.0-rc queue? I think it has very good value in -stable
-> >> also (assuming correctness). What do you think?
-> >
-> > This one had significant performance impacts, and later hacks in this
-> > series worked around the problem to approximately the same level of
-> > success with less impact, and we don't actually have a justification of
-> > why any of them work.  We were still hoping to come up with some clue,
-> > and haven't yet.
->=20
-> True; that is quite heavy handed delay looping.
->=20
-> It's a pity the usual Intel font didn't make it to the programmer's
-> reference manuals. Anyway, unmasking the blitter user interrupt in the ha=
-rdware
-> status mask register addresses the root cause. Out of reset it's FFFFFFFF=
-h,
-> so we don't need to read it here.
->=20
-> It would be good to get this into -rc4. -stable probably needs some addit=
-ional
-> tweaks.
->=20
-> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+I chatted to Peter Anvin about this over lunch ... his suggestion was that since
+we know (for now) that the recovery case is always from user mode. We can
+let all the non-involved cpus return from do_machine_check() .. but catch the
+cpu with the problem and do a sideways stack jump from the machine check
+stack to the normal trap stack.  At this point we'll be executing in a context
+that is effectively the same as a page fault - so we have plenty of safe options
+on functions we can call, locks we can take etc.
 
-So you're saying that our interrupts at the top-level IMR are triggered
-by the write to the status page of the lower-level ring?  That's
-surprising to me.  Or do you think that this write is just happening to
-trigger serialization so the interrupt comes after the DWORD write of
-the seqno by the ring?  (hw folks just recently indicated that our
-particular code is not expected to serialize the interrupt after the
-seqno store, unless we had an MI_FLUSH_DWORD in between)
+So perhaps we can change "void do_machine_check()" to "unsigned long
+do_machine_check()" and have the bystander cpus "return 0;" and the
+cpu that hit the error "return m.addr;" ... and then do the necessary magic
+in entry_64.S to leap from stack to stack in one mighty leap (and  then
+onto a "handle_action_required(regs, addr)" function.
 
-This patch has now passed 7000 iterations of the testcase that had a
-~.5% failure rate before.
-
-Tested-by: Eric Anholt <eric@anholt.net>
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk34E6YACgkQHUdvYGzw6vd4cgCeOnuRHx/8bAoYOJbtFchfQX1d
-+CkAn1VrM3CLjjQfrV3RQy+9pmXzB31/
-=qp2k
------END PGP SIGNATURE-----
---=-=-=--
+-Tony
