@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab1FPHAk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:00:40 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:54006 "EHLO
+	id S1755447Ab1FPHAh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:00:37 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:42066 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755316Ab1FPHAb (ORCPT
+	by vger.kernel.org with ESMTP id S1755318Ab1FPHAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:00:31 -0400
-X-Sasl-enc: DujbS+Dsyw74X32xGafhZWrxM7HBa/6xWS8sZ8PU6p+Z 1308207630
+	Thu, 16 Jun 2011 03:00:32 -0400
+X-Sasl-enc: YaiK4bepspnrR07znXBq+xR361sFUDehoy8A9pA9IoHs 1308207632
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:31 2011
-Message-Id: <20110616000231.058619346@clark.kroah.org>
+Message-Id: <20110616000231.145802733@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 16:59:44 -0700
+Date: Wed, 15 Jun 2011 16:59:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <khali@linux-fr.org>, Carsten Emde <C.Emde@osadl.org>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [21/89] hwmon: (coretemp) Relax target temperature range check
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [22/89] iwl4965: fix 5GHz operation
 In-Reply-To: <20110616000258.GA14529@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,36 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 4c6e0f8101e62d8b2d01dc94b835a98b191a1454 upstream.
+commit aac11c1b351413aa3412e258e2b2dcba31777209 upstream.
 
-The current temperature range check of MSR_IA32_TEMPERATURE_TARGET
-seems too strict to me, some TjMax values documented in
-Documentation/hwmon/coretemp wouldn't pass. Relax the check so that
-all the documented values pass.
+rx_status.band is used uninitialized, what disallow to work on 5GHz .
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: Carsten Emde <C.Emde@osadl.org>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- drivers/hwmon/coretemp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/iwlegacy/iwl-4965-lib.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -263,7 +263,7 @@ static int __devinit get_tjmax(struct cp
- 		 * If the TjMax is not plausible, an assumption
- 		 * will be used
- 		 */
--		if ((val > 80) && (val < 120)) {
-+		if (val >= 70 && val <= 125) {
- 			dev_info(dev, "TjMax is %d C.\n", val);
- 			return val * 1000;
- 		}
+--- a/drivers/net/wireless/iwlegacy/iwl-4965-lib.c
++++ b/drivers/net/wireless/iwlegacy/iwl-4965-lib.c
+@@ -628,11 +628,11 @@ void iwl4965_rx_reply_rx(struct iwl_priv
+ 
+ 	/* rx_status carries information about the packet to mac80211 */
+ 	rx_status.mactime = le64_to_cpu(phy_res->timestamp);
++	rx_status.band = (phy_res->phy_flags & RX_RES_PHY_FLAGS_BAND_24_MSK) ?
++				IEEE80211_BAND_2GHZ : IEEE80211_BAND_5GHZ;
+ 	rx_status.freq =
+ 		ieee80211_channel_to_frequency(le16_to_cpu(phy_res->channel),
+ 							rx_status.band);
+-	rx_status.band = (phy_res->phy_flags & RX_RES_PHY_FLAGS_BAND_24_MSK) ?
+-				IEEE80211_BAND_2GHZ : IEEE80211_BAND_5GHZ;
+ 	rx_status.rate_idx =
+ 		iwl4965_hwrate_to_mac80211_idx(rate_n_flags, rx_status.band);
+ 	rx_status.flag = 0;
 
 
