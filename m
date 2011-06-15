@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab1FOT3c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 15:29:32 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:49481 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754728Ab1FOT3b convert rfc822-to-8bit (ORCPT
+	id S1754781Ab1FOTdM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 15:33:12 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53246 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753377Ab1FOTdG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 15:29:31 -0400
+	Wed, 15 Jun 2011 15:33:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04992C060C@HQMAIL01.nvidia.com>
-References: <20110615190754.11693.26335.stgit@ponder> <74CDBE0F657A3D45AFBB94109FB122FF04992C060C@HQMAIL01.nvidia.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 15 Jun 2011 13:29:11 -0600
-X-Google-Sender-Auth: ZwlZL9dDcqSgvrj7YKRQMYINJzk
-Message-ID: <BANLkTimi8n-yik5g=f2jhVQPZoKLuWKgHQ@mail.gmail.com>
-Subject: Re: [PATCH] spi/tegra: add devicetree support
-To: Stephen Warren <swarren@nvidia.com>
-Cc: "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Erik Gilling <konkers@android.com>
+In-Reply-To: <BANLkTinxKV-Kprm+ezfbt2a=C1fz+-7wrg@mail.gmail.com>
+References: <BANLkTikbnsu05+Nae8isATuZ8Fucj14+LQ@mail.gmail.com>
+ <BANLkTi=nsCK2bFf2v+PkKj=Opsxseqe9pQ@mail.gmail.com> <BANLkTi=ZETGToRcOHXg5gxAQO3EKN+YyLg@mail.gmail.com>
+ <BANLkTi=-xJizWP5H9vNvaJhRN-Vm-ubraA@mail.gmail.com> <4DF7A264.3030901@mit.edu>
+ <20110614211613.GB12249@elte.hu> <BANLkTi=W1xFdoSFxnNBGX9gt_pYOH4oF=A@mail.gmail.com>
+ <20110614213109.GA9725@elte.hu> <BANLkTimXYaf_14VbB6ex0kG6sPnTUfzu6g@mail.gmail.com>
+ <BANLkTi=mwowbSy0M=rjdQW_cKDVf1tBBpA@mail.gmail.com> <20110615072553.GA26003@elte.hu>
+ <BANLkTinSac=XHNk7jnsYGDo06B=ChXsnAQ@mail.gmail.com> <BANLkTinxKV-Kprm+ezfbt2a=C1fz+-7wrg@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 15 Jun 2011 12:32:42 -0700
+Message-ID: <BANLkTinJimOb4CMQeDm+Ob60N5v4QAMWwg@mail.gmail.com>
+Subject: Re: [PATCH] x86, vsyscall: Fix build warning in vsyscall_64.c
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Ingo Molnar <mingo@elte.hu>, Rakib Mullick <rakib.mullick@gmail.com>,
+        hpa@zytor.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 1:25 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> Grant Likely wrote at Wednesday, June 15, 2011 1:08 PM:
->> Allow the tegra spi driver to obtain populate the spi bus with devices
+On Wed, Jun 15, 2011 at 12:24 PM, Andrew Lutomirski <luto@mit.edu> wrote:
 >
-> Remote "obtain"?
+> Well, let's say that my logic is wrong and this particular BUG can be
+> hit because some kernel bug allows some user program to trigger it.
 
-heh, oops.
+Christ, we already check the particular address. And if a user can
+generate the buggy situation, THEN THE BUG_ON() SURE AS HELL ISN'T
+HELPING ANYTHING!
 
->
->> from the device tree.
->>
->> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
->> ---
->>  .../devicetree/bindings/spi/spi_nvidia.txt         |    5 +++++
->>  drivers/spi/spi-tegra.c                            |   12 ++++++++++++
->>  2 files changed, 17 insertions(+), 0 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/spi/spi_nvidia.txt
->>
->> diff --git a/Documentation/devicetree/bindings/spi/spi_nvidia.txt b/Documentation/devicetree/bindings/spi/spi_nvidia.txt
->> new file mode 100644
->> index 0000000..bde450b
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/spi/spi_nvidia.txt
->> @@ -0,0 +1,5 @@
->> +NVIDIA Tegra 2 SPI device
->> +
->> +Required properties:
->> +- compatible : should be "nvidia,tegra250-spi".
->> +- gpios : should specify GPIOs used for chipselect.
->
-> Are things like reg, interrupts, and other general stuff implicit?
-> I notice that fsl-spi.txt does specify those, but spi_altera.txt
-> and spi_oc_tiny.txt don't.
+Guys, if that BUG_ON can ever be triggered, IT IS A SECURITY HOLE IN
+ITSELF! What's so hard to understand about that?
 
-yeah, standard properties are pretty much implicit.  I don't bother
-writing the words if there isn't much value to them.  I've been
-contemplating a tool that will take DT documentation written in a
-certain form, and automatically fill in standard properties as needed,
-but that's a project for another day.
+BUG_ON's are not "good ways to figure out something went wrong". They
+are an absolute last-case situation. They are NOT "let's fix that
+security hole by halting the whole machine" kind of valid.
 
-g.
+If you're really worried about it ever triggering, then dammit, HANDLE THE CASE.
+
+Don't add a BUG_ON() for something you're afraid of. That is NEVER the
+right thing to do. If you're worried that that situation can trigger,
+then do the right code for that situation. Don't throw your hands in
+the air and say "that's a bug".
+
+                             Linus
