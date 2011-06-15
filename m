@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab1FOKzN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 06:55:13 -0400
-Received: from fep18.mx.upcmail.net ([62.179.121.38]:61667 "EHLO
-	fep18.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680Ab1FOKzL (ORCPT
+	id S1754898Ab1FOK7h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 06:59:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58885 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754435Ab1FOK7g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 06:55:11 -0400
-X-Greylist: delayed 1315 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Jun 2011 06:55:10 EDT
-X-SourceIP: 14.96.129.230
-Reply-To: <verification_supteam@yahoo.com>
-From: "CHELLO HELP DESK" <brezzi@uniroma3.it>
-Subject: Upgrade Notification To All Chello  Owners
-Date: Wed, 15 Jun 2011 16:25:05 +0530
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="koi8-u"
-Content-Transfer-Encoding: 7bit
-X-Priority: 1
-X-MSMail-Priority: High
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20110615105508.ZXBN1513.viefep18-int.chello.at@edge04.upcmail.net>
-X-Cloudmark-Analysis: v=1.1 cv=FXfX1j538S0toKVv4AeTokQJ/Dr7x98IW2CddS+R9NE= c=1 sm=0 a=DbtclO8bUAkA:10 a=jJ2x2qjR5_cA:10 a=oJL9TIRMo0YA:10 a=8EU9Q7FnrCoA:10 a=WODYTJZ2CjYA:10 a=nDOwLv4DKMQA:10 a=IlxDg-uQRhWj0xev7wgA:9 a=l05e8yZ80SQSuJXHzcQA:7 a=sOKxrc_Uve4A:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 15 Jun 2011 06:59:36 -0400
+Subject: Re: REGRESSION: Performance regressions from switching
+ anon_vma->lock to mutex
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, ak@linux.intel.com,
+        shaohua.li@intel.com, alex.shi@intel.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1308134200.15315.32.camel@twins>
+References: <1308097798.17300.142.camel@schen9-DESK>
+	 <1308134200.15315.32.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 15 Jun 2011 12:58:15 +0200
+Message-ID: <1308135495.15315.38.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Upgrade Notification To All Chello  Owners
+On Wed, 2011-06-15 at 12:36 +0200, Peter Zijlstra wrote:
+> On Tue, 2011-06-14 at 17:29 -0700, Tim Chen wrote:
+> > MOSBENCH test suite.
+> 
+> Argh, I'm trying to get this thing to run, but its all snake poo..
+> 
+> /me takes up a heavy club and goes snake hunting, should make a pretty
+> hat or something.
 
-This Email is from Chello  Web e-Mail support team and we are sending it to
-every Mail Email User Accounts Owner for safety. we are having congestions
-due to the anonymous registration of mail accounts so we are shutting down
-some mail accounts and your account was among those to be deleted. We,are
-sending this email to you so that you can verify and let us know if you
-still want to use this account. If you are still interested please confirm
-your account by filling the space below.Your User name, password, date of
-birth would be needed to verify your account.
+Sweet, I've got meself a snake-skin hat!
 
-Due to the congestion in all Mail back-users and removal of all unused
-Mail Accounts, We would be shutting down all unused Accounts, You will
-have to confirm your E-Mail by filling out your Chello  user Information
-below after clicking the reply Maillot, or your account will be suspended
-within 48 hours for security reasons.
+The first thing that stood out when running it was:
 
-* Username:
-* Password:
-* Date of Birth:
+31694 root      20   0 26660 1460 1212 S 17.5  0.0   0:01.97 exim 
+    7 root      -2  19     0    0    0 S 12.7  0.0   0:06.14 rcuc0 
+   24 root      -2  19     0    0    0 S 11.7  0.0   0:04.15 rcuc3 
+   34 root      -2  19     0    0    0 S 11.7  0.0   0:04.10 rcuc5 
+   39 root      -2  19     0    0    0 S 11.7  0.0   0:06.38 rcuc6 
+   44 root      -2  19     0    0    0 S 11.7  0.0   0:04.53 rcuc7 
+   49 root      -2  19     0    0    0 S 11.7  0.0   0:04.11 rcuc8 
+   79 root      -2  19     0    0    0 S 11.7  0.0   0:03.91 rcuc14 
+   89 root      -2  19     0    0    0 S 11.7  0.0   0:03.90 rcuc16 
+  110 root      -2  19     0    0    0 S 11.7  0.0   0:03.90 rcuc20 
+  120 root      -2  19     0    0    0 S 11.7  0.0   0:03.82 rcuc22 
+   13 root      -2  19     0    0    0 S 10.7  0.0   0:04.37 rcuc1 
+   19 root      -2  19     0    0    0 S 10.7  0.0   0:04.19 rcuc2 
+   29 root      -2  19     0    0    0 S 10.7  0.0   0:04.12 rcuc4 
+   54 root      -2  19     0    0    0 S 10.7  0.0   0:04.11 rcuc9 
+   59 root      -2  19     0    0    0 S 10.7  0.0   0:04.40 rcuc10 
+   64 root      -2  19     0    0    0 R 10.7  0.0   0:04.17 rcuc11 
+   69 root      -2  19     0    0    0 R 10.7  0.0   0:04.23 rcuc12 
+   84 root      -2  19     0    0    0 S 10.7  0.0   0:03.90 rcuc15 
+   95 root      -2  19     0    0    0 S 10.7  0.0   0:03.99 rcuc17 
+  100 root      -2  19     0    0    0 S 10.7  0.0   0:03.88 rcuc18 
+  105 root      -2  19     0    0    0 S 10.7  0.0   0:04.14 rcuc19 
+  125 root      -2  19     0    0    0 S 10.7  0.0   0:03.79 rcuc23 
+   74 root      -2  19     0    0    0 S  9.7  0.0   0:04.33 rcuc13 
+  115 root      -2  19     0    0    0 R  9.7  0.0   0:03.82 rcuc21 
 
-After following the instructions in the sheet, your account will not be
-interrupted and will continue as normal. Thanks for your attention to this
-request. We apologize for any inconveniences.
-
-Warning!!! Account owner that refuses to update his/her account after two
-weeks of receiving this warning will lose his or her account permanently.
-
-Sincerely
-Chello  Communications Help Desk
+Which is an impressive amount of RCU usage..
