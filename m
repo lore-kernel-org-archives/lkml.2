@@ -1,61 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180Ab1FOWPj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 18:15:39 -0400
-Received: from mga09.intel.com ([134.134.136.24]:29164 "EHLO mga09.intel.com"
+	id S1755230Ab1FOWQp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 18:16:45 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34437 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754171Ab1FOWPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 18:15:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,371,1304319600"; 
-   d="scan'208";a="15290112"
-Message-ID: <4DF92F04.6000704@linux.intel.com>
-Date: Wed, 15 Jun 2011 15:15:32 -0700
-From: Andi Kleen <ak@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	id S1751573Ab1FOWQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 18:16:41 -0400
+Date: Thu, 16 Jun 2011 00:16:36 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, davej@redhat.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        cpufreq@vger.kernel.org, andre.przywara@amd.com,
+        Mark.Langsdorf@amd.com
+Subject: Re: [PATCH 1/2] [CPUFREQ] powernow-k8: Don't notify of successful
+ transition if we failed.
+Message-ID: <20110615221636.GB9725@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	linux-kernel@vger.kernel.org, davej@redhat.com, tglx@linutronix.de,
+	mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+	cpufreq@vger.kernel.org, andre.przywara@amd.com,
+	Mark.Langsdorf@amd.com
+References: <1308164520-14145-1-git-send-email-konrad.wilk@oracle.com>
+ <1308164520-14145-2-git-send-email-konrad.wilk@oracle.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Tim Chen <tim.c.chen@linux.intel.com>, Shaohua Li <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
- to mutex
-References: <1308097798.17300.142.camel@schen9-DESK>	 <1308101214.15392.151.camel@sli10-conroe> <1308138750.15315.62.camel@twins>	 <20110615161827.GA11769@tassilo.jf.intel.com>	 <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>	 <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>	 <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
-In-Reply-To: <1308173849.15315.91.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1308164520-14145-2-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(needing to know the
-> number of cpus to optimize locking sounds like a trainwreck all of its
-> own, needing it _that_ often instead of just once at startup is even
-> worse).
+On Wed, Jun 15, 2011 at 03:01:59PM -0400, Konrad Rzeszutek Wilk wrote:
+> Before this patch if we failed the transition (either p-state or
+> voltage) we would still try to submit the "new" frequencies to cpufreq.
+> That is incorrect - also we could submit a non-existing frequency value
+> which would cause cpufreq to crash. The ultimate fix is in cpufreq
+> to deal with incorrect values, but this patch improves the error
+> recovery in the AMD powernowk8 driver.
+> 
+> The failure that was reported was as follow:
+> 
+> powernow-k8: Found 1 AMD Athlon(tm) 64 Processor 3700+ (1 cpu cores) (version 2.20.00)
+> powernow-k8: fid 0x2 (1000 MHz), vid 0x12
+> powernow-k8: fid 0xa (1800 MHz), vid 0xa
+> powernow-k8: fid 0xc (2000 MHz), vid 0x8
+> powernow-k8: fid 0xe (2200 MHz), vid 0x8
+> Marking TSC unstable due to cpufreq changes
+> powernow-k8: fid trans failed, fid 0x2, curr 0x0
+> BUG: unable to handle kernel paging request at ffff880807e07b78
+> IP: [<ffffffff81479163>] cpufreq_stats_update+0x46/0x5b
+> ...
+> 
+> And transition fails and data->currfid ends up with 0. Since
+> the machine does not support 800Mhz value when the calculation is
+> done ('find_khz_freq_from_fid(data->currfid);') it reports the
+> new frequency as 800000 which is bogus. This patch fixes
+> the issue during target setting.
+> 
+> The patch however does not fix the issue in 'powernowk8_cpu_init'
+> where the pol->cur can also be set with the 800000 value:
+> 
+>           pol->cur = find_khz_freq_from_fid(data->currfid);
+>   dprintk("policy current frequency %d kHz\n", pol->cur);
+> 
+>   /* min/max the cpu is capable of */
+>   if (cpufreq_frequency_table_cpuinfo(pol, data->powernow_table)) {
+> 
+> The fix for that looks to update cpufreq_frequency_table_cpuinfo to
+> check pol->cur.... but that would cause an regression in how the
+> acpi-cpufreq driver works (it sets cpu->cur after calling
+> cpufreq_frequency_table_cpuinfo). Instead the fix will be to let
+> cpufreq gracefully handle bogus data.
+> 
+> Reported-by: Tobias Diedrich <ranma+xen@tdiedrich.de>
+> Tested-by: Tobias Diedrich <ranma+xen@tdiedrich.de>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  arch/x86/kernel/cpu/cpufreq/powernow-k8.c |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
+> index 2368e38..7e4a664 100644
+> --- a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
+> +++ b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
+> @@ -1079,8 +1079,10 @@ static int transition_frequency_fidvid(struct powernow_k8_data *data,
+>  	}
+>  
+>  	res = transition_fid_vid(data, fid, vid);
+> -	freqs.new = find_khz_freq_from_fid(data->currfid);
+> +	if (res)
+> +		return res;
+>  
+> +	freqs.new = find_khz_freq_from_fid(data->currfid);
+>  	for_each_cpu(i, data->available_cores) {
+>  		freqs.cpu = i;
+>  		cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
+> @@ -1112,6 +1114,9 @@ static int transition_frequency_pstate(struct powernow_k8_data *data,
+>  	}
+>  
+>  	res = transition_pstate(data, pstate);
+> +	if (res)
+> +		return res;
 
-libdb does it only once per startup, it's just that it gets restarted 
-for every
-child (it's a library, not a server)
+That's wrong because transition_pstate() returns 0 unconditionally
+(at least it does so on 3.0-rc3). But this change accidentally fixes
+a different bug because res is used uninitialized, containing stack
+garbage otherwise.
 
-Really the kernel just needs to provide a faster way to get that.
-Requiring /proc/stat for that is just insane.
+A proper fix should be to check against data->max_hw_pstate and
+check whether the entry is not CPUFREQ_ENTRY_INVALID (look at
+fill_powernow_table_pstate() for example).
 
-I'll resend the sysconf patchkit I guess :-)
+I'm guessing this oops happens when powernow-k8 is loaded in the guest
+and that the actual power management is done in the hypervisor?
 
--Andi
+Adding some more people to CC.
 
-
+-- 
+Regards/Gruss,
+    Boris.
