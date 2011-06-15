@@ -1,60 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab1FOCsq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 22:48:46 -0400
-Received: from support.opsdc.com ([65.254.219.9]:47079 "EHLO support.opsdc.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753508Ab1FOCsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 22:48:45 -0400
-Subject: Re: Panic on OOM
-From: Chris Fowler <cfowler@outpostsentinel.com>
-Reply-To: cfowler@opsdc.com
-To: David Rientjes <rientjes@google.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.DEB.2.00.1106141908100.7025@chino.kir.corp.google.com>
-References: <1308058276.2074.295.camel@compaq-desktop>
-	 <alpine.DEB.2.00.1106141656220.31202@chino.kir.corp.google.com>
-	 <1308103443.2074.357.camel@compaq-desktop>
-	 <alpine.DEB.2.00.1106141908100.7025@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Jun 2011 22:48:39 -0400
-Message-ID: <1308106119.2074.363.camel@compaq-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1754633Ab1FOCuK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 22:50:10 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:44569 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753709Ab1FOCuH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 22:50:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=UixmnOUjlr2Bj4pzYUdV9llgTFRws1DlART4D9kOU5IoasJSOg4wbwr8O2JJ9dmoLc
+         on+vC7+mT2gu+b3BYpQrX0MPNNywyY5D4wJx/862nQazSyzycL26f1pPAfd7X1GPNQ1w
+         izLjH5xXD31qCby02g3oItPd+yRdXBqjr94+w=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTimiJheFauWXjh-8GszGHoqMOa0Kkw@mail.gmail.com>
+References: <1308030504-3026-1-git-send-email-yuanlmm@gmail.com>
+	<BANLkTimiJheFauWXjh-8GszGHoqMOa0Kkw@mail.gmail.com>
+Date: Wed, 15 Jun 2011 10:50:05 +0800
+Message-ID: <BANLkTin0CHX82s5t1cbqBUP_P1oBiQPCqA@mail.gmail.com>
+Subject: Fwd: [PATCH] ahci: enable pmp but connected to HDD issue fixed
+From: BingJiun Luo <luobingjiun@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-14 at 19:32 -0700, David Rientjes wrote:
-> On Tue, 14 Jun 2011, Chris Fowler wrote:
-> 
-> > > Using /proc/sys/vm/panic_on_oom also won't panic the machine if you
-> > > happen to use a cpuset or mempolicy.  You'll want to write '2' instead
-> > > if you want to panic in all possible oom conditions.
-> > > 
-> > > 
-> > 
-> > 2 did it.  Thank you.
-> > 
-> > perl -e 'my @mem = (); while(1) { push @mem, "XXXXXXXXXXXXXXXX"; }'
-> > 
-> > I lost connection and it came back after about 30s.  Reboot worked.
-> > 
-> 
-> That wasn't meant as a fix for the problem but rather just a suggestion 
-> based on how you're using the device.
-> 
-> It's just a coincidence that it worked that time, because 
-> /proc/sys/vm/panic_on_oom == 2 is the exact same as 
-> /proc/sys/vm/panic_on_oom == 1 with the .config you posted (since you 
-> don't have CONFIG_NUMA, constrained_alloc() always returns CONSTRAINT_NONE 
-> in the oom killer).
-
-Yea you're right.  I just did it again and it does not reboot.  It goes
-in this state where it no longer responds.  The keyboard is not
-responsive the screen blank no longer works, etc.  
-
-Right now I'm just waiting for it to panic.
-
-
+Since more than one controllers has software reset failed problem when PMP
+enabled, I think it would be better to move ahci_sb600_softreset() from ahci.c
+to libahci.c and rename it, let's say: ahci_pmpenable_softreset() .
+(Just arbitrary
+name, please someone may give a better function name)
+Controller that has software reset problem when PMP enable may point its
+softreset and pmp_softreset call back function of struct ata_port_operations to
+ahci_pmpenable_softreset(). Regardless of PCI or Platform based AHCI controller.
+(ahci.c or ahci_platform.c)
+Regards,
+BingJiun
+On Tue, Jun 14, 2011 at 1:48 PM, Yuan-Hsin Chen <yuanlmm@gmail.com> wrote:
+>
+> From: Yuan-Hsin Chen <yhchen@faraday-tech.com>
+>
+> When enabling both port multiplier and platform ahci sata, ahci
+> times out while connecting to HDD directly. This is because soft
+> reset fails with IPMS set. Do soft reset again to port 0.
+>
+> The soft reset sequence is copied from ahci.c.
+>
+> Signed-off-by: Yuan-Hsin Chen <yhchen@faraday-tech.com>
+> ---
+>  drivers/ata/ahci_platform.c |   62 ++++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 61 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+> index 6fef1fa..6eab716 100644
+> --- a/drivers/ata/ahci_platform.c
+> +++ b/drivers/ata/ahci_platform.c
+> @@ -27,6 +27,66 @@ static struct scsi_host_template ahci_platform_sht = {
+>        AHCI_SHT("ahci_platform"),
+>  };
+>
+> +static int ahci_pmp_softreset(struct ata_link *link, unsigned int *class,
+> +                         unsigned long deadline);
+> +
+> +static struct ata_port_operations ahci_pmp_ops = {
+> +       .inherits               = &ahci_ops,
+> +       .softreset              = ahci_pmp_softreset,
+> +       .pmp_softreset          = ahci_pmp_softreset,
+> +};
+> +
+> +static int ahci_pmp_check_ready(struct ata_link *link)
+> +{
+> +       void __iomem *port_mmio = ahci_port_base(link->ap);
+> +       u8 status = readl(port_mmio + PORT_TFDATA) & 0xFF;
+> +       u32 irq_status = readl(port_mmio + PORT_IRQ_STAT);
+> +
+> +       /*
+> +        * There is no need to check TFDATA if BAD PMP is found due to HW bug,
+> +        * which can save timeout delay.
+> +        */
+> +       if (irq_status & PORT_IRQ_BAD_PMP)
+> +               return -EIO;
+> +
+> +       printk("%s:TFT 0x%x\n", __func__, status);
+> +       return ata_check_ready(status);
+> +}
+> +
+> +static int ahci_pmp_softreset(struct ata_link *link, unsigned int *class,
+> +                               unsigned long deadline)
+> +{
+> +       struct ata_port *ap = link->ap;
+> +       void __iomem *port_mmio = ahci_port_base(ap);
+> +       int pmp = sata_srst_pmp(link);
+> +       int rc;
+> +       u32 irq_sts;
+> +
+> +       DPRINTK("ENTER\n");
+> +
+> +       rc = ahci_do_softreset(link, class, pmp, deadline,
+> +                              ahci_pmp_check_ready);
+> +
+> +       /*
+> +        * Soft reset fails with IPMS set when PMP is enabled but
+> +        * SATA HDD/ODD is connected to SATA port, do soft reset
+> +        * again to port 0.
+> +        */
+> +       if (rc == -EIO) {
+> +               irq_sts = readl(port_mmio + PORT_IRQ_STAT);
+> +               if (irq_sts & PORT_IRQ_BAD_PMP) {
+> +                       ata_link_printk(link, KERN_WARNING,
+> +                                       "applying PMP SRST workaround "
+> +                                       "and retrying\n");
+> +                       rc = ahci_do_softreset(link, class, 0, deadline,
+> +                                              ahci_check_ready);
+> +               }
+> +       }
+> +
+> +       return rc;
+> +}
+> +
+> +
+>  static int __init ahci_probe(struct platform_device *pdev)
+>  {
+>        struct device *dev = &pdev->dev;
+> @@ -35,7 +95,7 @@ static int __init ahci_probe(struct platform_device *pdev)
+>                .flags          = AHCI_FLAG_COMMON,
+>                .pio_mask       = ATA_PIO4,
+>                .udma_mask      = ATA_UDMA6,
+> -               .port_ops       = &ahci_ops,
+> +               .port_ops       = &ahci_pmp_ops,
+>        };
+>        const struct ata_port_info *ppi[] = { &pi, NULL };
+>        struct ahci_host_priv *hpriv;
+> --
+> 1.7.3.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ide" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
