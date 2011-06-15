@@ -1,98 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753161Ab1FOANL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 20:13:11 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:33644 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab1FOANJ (ORCPT
+	id S1752874Ab1FOAXy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 20:23:54 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51973 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab1FOAXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 20:13:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=DZ+PvWpgzYXOCfox2Q4YINo3vqDyMoO839dEOdO/4gC3OBmfwkPU+VckPDr58qsY6r
-         vBprjyW9C33Js4OoO5Rg==
-Date: Tue, 14 Jun 2011 17:13:04 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Chris Fowler <cfowler@opsdc.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: Panic on OOM
-In-Reply-To: <1308058276.2074.295.camel@compaq-desktop>
-Message-ID: <alpine.DEB.2.00.1106141656220.31202@chino.kir.corp.google.com>
-References: <1308058276.2074.295.camel@compaq-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Tue, 14 Jun 2011 20:23:52 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 15 Jun 2011 09:16:52 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>
+Subject: Re: [BUGFIX][PATCH 5/5] memcg: fix percpu cached charge draining
+ frequency
+Message-Id: <20110615091652.7d29baca.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110614100412.GE6371@redhat.com>
+References: <20110613120054.3336e997.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110613121648.3d28afcd.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110614100412.GE6371@redhat.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Jun 2011, Chris Fowler wrote:
+On Tue, 14 Jun 2011 12:04:12 +0200
+Johannes Weiner <jweiner@redhat.com> wrote:
 
-> I'm running into a problem in 2.6.38 where the kernel is not doing what
-> I'm expecting it to do.  I'm guessing that some things have changed and
-> that is what it going on.
+> On Mon, Jun 13, 2011 at 12:16:48PM +0900, KAMEZAWA Hiroyuki wrote:
+> > @@ -1670,8 +1670,8 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
+> >  		victim = mem_cgroup_select_victim(root_mem);
+> >  		if (victim == root_mem) {
+> >  			loop++;
+> > -			if (loop >= 1)
+> > -				drain_all_stock_async();
+> > +			if (!check_soft && loop >= 1)
+> > +				drain_all_stock_async(root_mem);
 > 
-> First,  The tune at boot:
-> 
->         f.open("/proc/sys/vm/panic_on_oom", std::ios::out);
->         f << "1";
->         f.close();
-> 
->         f.open("/proc/sys/kernel/panic", std::ios::out);
->         f << "10";
->         f.close();
-> 
-
-Hmm, you don't check that the writes to the sysctls actually succeed?
-
-Using /proc/sys/vm/panic_on_oom also won't panic the machine if you happen 
-to use a cpuset or mempolicy.  You'll want to write '2' instead if you 
-want to panic in all possible oom conditions.
-
-> I want the kernel to panic on out of memory.  I then want it to wait 10s
-> before doing a reboot.
-> 
-> This program will consume all memory and make the box unresponsive
-> 
-> #!/usr/bin/perl
-> 
-> my @mem = ()
-> while(1) {
->   push @mem, "########################";
-> }
-> 
-> It does not take long to fill up 1G of space.  There is NO swap on this
-> device and never will be.  I did notice that after a long period of time
-> (I've not timed it) I finally do see a panic and I do see "rebooting in
-> 10 seconds..." .  It does not reboot.
+> I agree with Michal, this should be a separate change.
 > 
 
-Ok, it seems like the oom killer is being called correctly and respecting 
-your panic_on_oom setting because it is a system-wide oom condition (your 
-perl script wasn't bound to any cpuset or mempolicy).
+Hm, ok, I'll do.
 
-So that leaves the panic() not rebooting properly when the timeout is set.  
-You would only see the "Rebooting in 10 seconds..." message if the write 
-to /proc/sys/kernel/panic suceeded, and there's this little comment in 
-kernel/panic.c:
+> > @@ -2008,26 +2011,50 @@ static void refill_stock(struct mem_cgroup *mem, unsigned int nr_pages)
+> >   * expects some charges will be back to res_counter later but cannot wait for
+> >   * it.
+> >   */
+> > -static void drain_all_stock_async(void)
+> > +static void drain_all_stock_async(struct mem_cgroup *root_mem)
+> >  {
+> > -	int cpu;
+> > -	/* This function is for scheduling "drain" in asynchronous way.
+> > -	 * The result of "drain" is not directly handled by callers. Then,
+> > -	 * if someone is calling drain, we don't have to call drain more.
+> > -	 * Anyway, WORK_STRUCT_PENDING check in queue_work_on() will catch if
+> > -	 * there is a race. We just do loose check here.
+> > +	int cpu, curcpu;
+> > +	/*
+> > +	 * If someone calls draining, avoid adding more kworker runs.
+> >  	 */
+> > -	if (atomic_read(&memcg_drain_count))
+> > +	if (!mutex_trylock(&percpu_charge_mutex))
+> >  		return;
+> >  	/* Notify other cpus that system-wide "drain" is running */
+> > -	atomic_inc(&memcg_drain_count);
+> >  	get_online_cpus();
+> > +
+> > +	/*
+> > +	 * get a hint for avoiding draining charges on the current cpu,
+> > +	 * which must be exhausted by our charging. But this is not
+> > +	 * required to be a precise check, We use raw_smp_processor_id()
+> > +	 * instead of getcpu()/putcpu().
+> > +	 */
+> > +	curcpu = raw_smp_processor_id();
+> >  	for_each_online_cpu(cpu) {
+> >  		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
+> > -		schedule_work_on(cpu, &stock->work);
+> > +		struct mem_cgroup *mem;
+> > +
+> > +		if (cpu == curcpu)
+> > +			continue;
+> > +
+> > +		mem = stock->cached;
+> > +		if (!mem)
+> > +			continue;
+> > +		if (mem != root_mem) {
+> > +			if (!root_mem->use_hierarchy)
+> > +				continue;
+> > +			/* check whether "mem" is under tree of "root_mem" */
+> > +			rcu_read_lock();
+> > +			if (!css_is_ancestor(&mem->css, &root_mem->css)) {
+> > +				rcu_read_unlock();
+> > +				continue;
+> > +			}
+> > +			rcu_read_unlock();
+> 
+> css_is_ancestor() takes the rcu read lock itself already.
+> 
 
-	/*
-	 * This will not be a clean reboot, with everything
-	 * shutting down.  But if there is a chance of
-	 * rebooting the system it will be rebooted.
-	 */
+you're right.
 
-with a call to emergency_restart().  You didn't specify your architecture, 
-but assuming you're using x86 without a hypervisor and didn't specify a 
-reboot= parameter on the command line, it should suceed although there are 
-some hardware dependencies.  Does using
+I'll post an update.
 
-	reboot=force
+Thanks,
+-Kame
 
-on the command line help?
-
-Either way, could you send your /proc/cpuinfo and .config?
