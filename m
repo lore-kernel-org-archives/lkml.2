@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463Ab1FOTh6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 15:37:58 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:36839 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754109Ab1FOTh5 (ORCPT
+	id S1754870Ab1FOTiJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 15:38:09 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54341 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754611Ab1FOTiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 15:37:57 -0400
-Subject: [PATCH 1/2] gpio/tegra: Move Tegra gpio driver to drivers/gpio
+	Wed, 15 Jun 2011 15:38:06 -0400
+Subject: [PATCH 2/2] gpio/tegra: add devicetree support
 To: Erik Gilling <konkers@android.com>, linux-kernel@vger.kernel.org,
         linux-tegra@vger.kernel.org, Colin Cross <ccross@android.com>,
         Olof Johansson <olof@lixom.net>,
@@ -15,8 +15,10 @@ To: Erik Gilling <konkers@android.com>, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
 From: Grant Likely <grant.likely@secretlab.ca>
 Cc: Stephen Warren <swarren@nvidia.com>
-Date: Wed, 15 Jun 2011 13:37:54 -0600
-Message-ID: <20110615193734.23641.8004.stgit@ponder>
+Date: Wed, 15 Jun 2011 13:38:04 -0600
+Message-ID: <20110615193759.23641.26212.stgit@ponder>
+In-Reply-To: <20110615193734.23641.8004.stgit@ponder>
+References: <20110615193734.23641.8004.stgit@ponder>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -25,48 +27,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As part of the gpio driver consolidation, this patch moves the Tegra driver
-into drivers/gpio
+Add support for decoding gpios from the device tree
 
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
+ .../devicetree/bindings/gpio/gpio_nvidia.txt       |    7 +++++++
+ drivers/gpio/gpio-tegra.c                          |   10 ++++++++++
+ 2 files changed, 17 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio_nvidia.txt
 
-If there are no objections, I'll merge this via gpio/next
-
-g.
-
- arch/arm/mach-tegra/Makefile |    1 -
- drivers/gpio/Makefile        |    1 +
- drivers/gpio/gpio-tegra.c    |    0 
- 3 files changed, 1 insertions(+), 1 deletions(-)
- rename arch/arm/mach-tegra/gpio.c => drivers/gpio/gpio-tegra.c (100%)
-
-diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
-index 823c703..ed58ef9 100644
---- a/arch/arm/mach-tegra/Makefile
-+++ b/arch/arm/mach-tegra/Makefile
-@@ -4,7 +4,6 @@ obj-y                                   += io.o
- obj-y                                   += irq.o
- obj-y                                   += clock.o
- obj-y                                   += timer.o
--obj-y                                   += gpio.o
- obj-y                                   += pinmux.o
- obj-y                                   += powergate.o
- obj-y					+= fuse.o
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 68e3bfd..0fbdd75 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -43,6 +43,7 @@ obj-$(CONFIG_GPIO_SCH)		+= gpio-sch.o
- obj-$(CONFIG_GPIO_STMPE)	+= gpio-stmpe.o
- obj-$(CONFIG_GPIO_SX150X)	+= gpio-sx150x.o
- obj-$(CONFIG_GPIO_TC3589X)	+= gpio-tc3589x.o
-+obj-$(CONFIG_ARCH_TEGRA)	+= gpio-tegra.o
- obj-$(CONFIG_GPIO_TIMBERDALE)	+= gpio-timberdale.o
- obj-$(CONFIG_GPIO_TPS65910)	+= gpio-tps65910.o
- obj-$(CONFIG_GPIO_TWL4030)	+= gpio-twl4030.o
-diff --git a/arch/arm/mach-tegra/gpio.c b/drivers/gpio/gpio-tegra.c
-similarity index 100%
-rename from arch/arm/mach-tegra/gpio.c
-rename to drivers/gpio/gpio-tegra.c
+diff --git a/Documentation/devicetree/bindings/gpio/gpio_nvidia.txt b/Documentation/devicetree/bindings/gpio/gpio_nvidia.txt
+new file mode 100644
+index 0000000..afb3ff3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/gpio_nvidia.txt
+@@ -0,0 +1,7 @@
++NVIDIA Tegra 2 GPIO controller
++
++Required properties:
++- compatible : "nvidia,tegra250-gpio"
++- #gpio-cells : Should be two. The first cell is the pin number and the
++  second cell is used to specify optional parameters (currently unused).
++- gpio-controller : Marks the device node as a GPIO controller.
+diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
+index 919d638..13afb88 100644
+--- a/drivers/gpio/gpio-tegra.c
++++ b/drivers/gpio/gpio-tegra.c
+@@ -23,6 +23,7 @@
+ 
+ #include <linux/io.h>
+ #include <linux/gpio.h>
++#include <linux/of.h>
+ 
+ #include <asm/mach/irq.h>
+ 
+@@ -340,6 +341,15 @@ static int __init tegra_gpio_init(void)
+ 		}
+ 	}
+ 
++#ifdef CONFIG_OF_GPIO
++	/*
++	 * This isn't ideal, but it gets things hooked up until this
++	 * driver is converted into a platform_device
++	 */
++	tegra_gpio_chip.of_node = of_find_compatible_node(NULL, NULL,
++						"nvidia,tegra250-gpio");
++#endif /* CONFIG_OF_GPIO */
++
+ 	gpiochip_add(&tegra_gpio_chip);
+ 
+ 	for (i = INT_GPIO_BASE; i < (INT_GPIO_BASE + TEGRA_NR_GPIOS); i++) {
 
