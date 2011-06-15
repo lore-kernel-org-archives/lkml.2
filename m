@@ -1,61 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab1FOWTP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 18:19:15 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37021 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752362Ab1FOWTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 18:19:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,371,1304319600"; 
-   d="scan'208";a="15291343"
-Message-ID: <4DF92FE1.5010208@linux.intel.com>
-Date: Wed, 15 Jun 2011 15:19:13 -0700
-From: Andi Kleen <ak@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	id S1755509Ab1FOWUI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 18:20:08 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:49683 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362Ab1FOWUF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 18:20:05 -0400
+Message-ID: <4DF93010.1040006@codemonkey.ws>
+Date: Wed, 15 Jun 2011 17:20:00 -0500
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
- to mutex
-References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe> <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com> <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK> <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com> <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins> <87ea4bd7-8b16-4b24-8fcb-d8e9b6f421ec@email.android.com>
-In-Reply-To: <87ea4bd7-8b16-4b24-8fcb-d8e9b6f421ec@email.android.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Alexander Graf <agraf@suse.de>
+CC: Prasad Joshi <prasadjoshi124@gmail.com>, Pekka Enberg <penberg@kernel.org>,
+        Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
+References: <1308153214.7566.6.camel@jaguar>	<4DF8DE26.1070301@redhat.com>	<BANLkTi=SHENDBHdtFY_7_qtfqJb_+qKJSw@mail.gmail.com> <BANLkTinMDz-sqaX0cyWEoLXt70dowxofvg@mail.gmail.com> <4DF92C80.3030106@codemonkey.ws> <7A30A509-47AA-4E72-ABF3-937005900F9D@suse.de>
+In-Reply-To: <7A30A509-47AA-4E72-ABF3-937005900F9D@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> Yeah, I think it's ridiculous to say that glibc is not doing something stupid and that it's a problem with kernel interfaces.
+On 06/15/2011 05:07 PM, Alexander Graf wrote:
 >
-> Do the proc file parsing once and cache the result in a static variable. Doing it over and over again is just crazy.
+> On 16.06.2011, at 00:04, Anthony Liguori wrote:
 >
-> Adding new system calls because glibc is crazy is insane.
+>> On 06/15/2011 03:13 PM, Prasad Joshi wrote:
+>>> On Wed, Jun 15, 2011 at 6:10 PM, Pekka Enberg<penberg@kernel.org>   wrote:
+>>>> On Wed, Jun 15, 2011 at 7:30 PM, Avi Kivity<avi@redhat.com>   wrote:
+>>>>> On 06/15/2011 06:53 PM, Pekka Enberg wrote:
+>>>>>>
+>>>>>> - Fast QCOW2 image read-write support beating Qemu in fio benchmarks. See
+>>>>>> the
+>>>>>>    following URL for test result details: https://gist.github.com/1026888
+>>>>>
+>>>>> This is surprising.  How is qemu invoked?
+>>>>
+>>>> Prasad will have the details. Please note that the above are with Qemu
+>>>> defaults which doesn't use virtio. The results with virtio are little
+>>>> better but still in favor of tools/kvm.
+>>>>
+>>>
+>>> The qcow2 image used for testing was copied on to /dev/shm to avoid
+>>> the disk delays in performance measurement.
+>>>
+>>> QEMU was invoked with following parameters
+>>>
+>>> $ qemu-system-x86_64 -hda<disk image on hard disk>   -hdb
+>>> /dev/shm/test.qcow2 -m 1024M
+>>
+>> Looking more closely at native KVM tools, you would need to use the following invocation to have an apples-to-apples comparison:
+>>
+>> qemu-system-x86_64 -drive file=/dev/shm/test.qcow2,cache=writeback,if=virtio
+>
+> Wouldn't this still be using threaded AIO mode? I thought KVM tools used native AIO?
 
-Caching doesn't help because the library gets reinitialized in every child
-(it may already do caching, not fully sure for this; it does it for 
-other sysconfs at least)
+Nope.  The relevant code is:
 
-I don't think glibc is crazy in this. It has no other choice.
+> 	/* blk device ?*/
+> 	disk		= blkdev__probe(filename, &st);
+> 	if (disk)
+> 		return disk;
+>
+> 	fd		= open(filename, readonly ? O_RDONLY : O_RDWR);
+> 	if (fd < 0)
+> 		return NULL;
+>
+> 	/* qcow image ?*/
+> 	disk		= qcow_probe(fd, readonly);
+> 	if (disk)
+> 		return disk;
+>
+> 	/* raw image ?*/
+> 	disk		= raw_image__probe(fd, &st, readonly);
+> 	if (disk)
+> 		return disk;
 
--Andi
+It uses a synchronous I/O model similar to qcow2 in QEMU with what I 
+assume is a global lock that's outside of the actual implementation.
 
+I think it lacks some of the caching that Kevin's added recently though 
+so I assume that if QEMU was run with cache=writeback, it would probably 
+do quite a bit better than native KVM tool.
+
+It also turns out that while they have the infrastructure to deal with 
+FLUSH, they don't implement it for qcow2 :-/
+
+So even if the guest does an fsync(), it native KVM tool will never 
+actually sync the data to disk...
+
+That's probably why it's fast, it doesn't preserve data integrity :(
+
+Regards,
+
+Anthony Liguori
+
+>
+>
+> Alex
+>
 
