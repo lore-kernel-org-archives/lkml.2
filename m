@@ -1,180 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab1FORX5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 13:23:57 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61830 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751703Ab1FORXp (ORCPT
+	id S1752672Ab1FORhb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 13:37:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:65086 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752251Ab1FORh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 13:23:45 -0400
+	Wed, 15 Jun 2011 13:37:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=v6DOiVU0u3HfYy1HJT+M2tWWSwiAgelTfjWlRj2cD6AqXNssPTEeaXe2hlt/qLY/TU
-         132EXr4Ld3BbPBwC/dzrbd1drDLg9PRA2O1oPSFGWy/RLphTaRX+Q1fRBJLSl75+I56i
-         wtqJ54C6XF1kGTHopk75o8LHQKQWuew8V3vDI=
-From: dirk.brandewie@gmail.com
-To: linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Kristen Carlson Accardi <kristen@linux.intel.com>
-Subject: [PATCH 5/5] spi_dw_pci: Add runtime power management
-Date: Wed, 15 Jun 2011 10:23:08 -0700
-Message-Id: <1308158588-17249-6-git-send-email-dirk.brandewie@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1308158588-17249-1-git-send-email-dirk.brandewie@gmail.com>
-References: <1308158588-17249-1-git-send-email-dirk.brandewie@gmail.com>
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=PtGS/AMWqD/3uamqGnGkQS1197VPIxSME4G0Lb3gxge7tHS3Xh6U4LG1lwVnuA+Fxq
+         X9JggBI5FdPG15qfmzO4hVDblpub/989pgo0k+AIlawgYaBqH1QpfW7ysnpcXdIbUEoh
+         zhzlk6MRjgjgNIMKFWzqf5dZ6s4STKDVHvQjw=
+Message-ID: <4DF8EBF7.2030702@gmail.com>
+Date: Wed, 15 Jun 2011 19:29:27 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: linux-usb@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: device plugged into xhci port not detected after a resume
+References: <4DF85A1F.1080001@gmail.com> <20110615165842.GB5382@xanatos>
+In-Reply-To: <20110615165842.GB5382@xanatos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
+Hey,
 
-This patch adds runtime power management to the PCI variant of the
-designware SPI host controller driver.
+Op 15-06-11 18:58, Sarah Sharp schreef:
+> On Wed, Jun 15, 2011 at 09:07:11AM +0200, Maarten Lankhorst wrote:
+>> I plugged a simple usb mouse in xhci that isn't found after a resume.
+>>
+>> It's with the same lovely controller as I used with the previous bug.
+>> Plugging in the controller to the same port doesn't cause it to be
+>> detected again, I need to remodprobe xhci-hcd
+> I will have to look at the log closely to be sure that this isn't a
+> software issue, but it seems like the host controller just died after
+> being suspended.
+That's what I gathered as well.
+>> [  505.821216] xhci_hcd 0000:04:00.0: Queueing ctrl tx for slot id 1, ep 0
+> ...
+>> [  510.805001] xhci_hcd 0000:04:00.0: Cancel URB ffff8801c7a0ae40
+> The xHCI driver submits a control transfer (probably to read the
+> descriptor from your mouse) and the host doesn't give it back.  It times
+> out, so the xHCI driver issues a Stop Endpoint command to allow the
+> driver to take the control transfer off the endpoint ring.
+>
+>> [  515.794819] xhci_hcd 0000:04:00.0: xHCI host not responding to stop endpoint command.
+> But the host doesn't respond to that command, so the xHCI driver assumes
+> the hardware is hosed:
+>
+>> [  515.794823] xhci_hcd 0000:04:00.0: Assuming host is dying, halting host.
+>> [  515.794830] xhci_hcd 0000:04:00.0: // Halt the HC
+>> [  515.794840] xhci_hcd 0000:04:00.0: Killing URBs for slot ID 1, ep index 0
+>> [  515.794847] xhci_hcd 0000:04:00.0: Killing URBs for slot ID 1, ep index 2
+>> [  515.794850] xhci_hcd 0000:04:00.0: Killing URBs for slot ID 1, ep index 4
+>> [  515.794854] xhci_hcd 0000:04:00.0: Calling usb_hc_died()
+>> [  515.794856] xhci_hcd 0000:04:00.0: HC died; cleaning up
+>> [  515.794860] xhci_hcd 0000:04:00.0: xHCI host controller is dead.
+> Does the host controller work when you don't have any devices plugged
+> in during resume?  I.e. unplug the mouse and then re-plug it in on
+> resume.  Does suspend work when other devices are left plugged in?
+Yikes, it doesn't seem to work even without any devices plugged in.
+It's frozen. This is with suspend-to-ram, not to disk.
 
-Signed-off-by: Kristen Carlson Accardi <kristen@linux.intel.com>
-Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
----
- drivers/spi/spi-dw-pci.c |   59 +++++++++++++++++++++++++++++++++++++++++++++-
- drivers/spi/spi-dw.c     |    4 ++-
- 2 files changed, 61 insertions(+), 2 deletions(-)
+> Does hibernate work, either with no devices plugged in, or the mouse
+> plugged in?  If it does work, the host controller may not be able to
+> handle the context save and restore during suspend/resume, and we may
+> need to unconditionally tell the USB core that the host lost power
+> across suspend.
+It works after a resume from suspend-to-disk.
 
-diff --git a/drivers/spi/spi-dw-pci.c b/drivers/spi/spi-dw-pci.c
-index eb35fa5..d661c2a 100644
---- a/drivers/spi/spi-dw-pci.c
-+++ b/drivers/spi/spi-dw-pci.c
-@@ -20,6 +20,7 @@
- #include <linux/interrupt.h>
- #include <linux/pci.h>
- #include <linux/slab.h>
-+#include <linux/pm_runtime.h>
- #include <linux/spi/spi.h>
- 
- #include "spi-dw.h"
-@@ -91,6 +92,11 @@ static int __devinit spi_pci_probe(struct pci_dev *pdev,
- 
- 	/* PCI hook and SPI hook use the same drv data */
- 	pci_set_drvdata(pdev, dwpci);
-+
-+	pm_suspend_ignore_children(&pdev->dev, true);
-+	pm_runtime_put_noidle(&pdev->dev);
-+	pm_runtime_allow(&pdev->dev);
-+
- 	return 0;
- 
- err_unmap:
-@@ -110,6 +116,9 @@ static void __devexit spi_pci_remove(struct pci_dev *pdev)
- 
- 	pci_set_drvdata(pdev, NULL);
- 	spi_dw_remove_host(&dwpci->dws);
-+	pm_runtime_forbid(&pdev->dev);
-+	pm_runtime_get_noresume(&pdev->dev);
-+
- 	iounmap(dwpci->dws.regs);
- 	pci_release_region(pdev, 0);
- 	kfree(dwpci);
-@@ -143,16 +152,61 @@ static int spi_resume(struct pci_dev *pdev)
- 		return ret;
- 	return spi_dw_resume_host(&dwpci->dws);
- }
-+
-+static int spi_dw_pci_runtime_suspend(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct dw_spi_pci *dwpci = pci_get_drvdata(pdev);
-+	int ret;
-+
-+	dev_dbg(dev, "PCI runtime suspend called\n");
-+
-+	ret = spi_dw_stop_queue(&dwpci->dws);
-+	if (ret == 0)
-+		spi_dw_enable(&dwpci->dws);
-+
-+	return ret;
-+}
-+
-+static int spi_dw_pci_runtime_resume(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct dw_spi_pci *dwpci = pci_get_drvdata(pdev);
-+
-+	dev_dbg(dev, "pci_runtime_resume called\n");
-+	return spi_dw_resume_host(&dwpci->dws);
-+}
-+
-+static int spi_dw_pci_runtime_idle(struct device *dev)
-+{
-+	int err;
-+
-+	dev_dbg(dev, "pci_runtime_idle called\n");
-+
-+	err = pm_schedule_suspend(dev, 500);
-+	if (err != 0)
-+		return 0;
-+	return -EBUSY;
-+}
-+
- #else
- #define spi_suspend	NULL
- #define spi_resume	NULL
-+#define spi_dw_pci_runtime_suspend NULL
-+#define spi_dw_pci_runtime_resume NULL
-+#define spi_dw_pci_runtime_idle NULL
- #endif
- 
- static const struct pci_device_id pci_ids[] __devinitdata = {
--	/* Intel MID platform SPI controller 0 */
-+	/* Intel Moorestown platform SPI controller 0 */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0800) },
- 	{},
- };
-+static const struct dev_pm_ops dw_spi_pm_ops = {
-+	.runtime_suspend = spi_dw_pci_runtime_suspend,
-+	.runtime_resume = spi_dw_pci_runtime_resume,
-+	.runtime_idle = spi_dw_pci_runtime_idle,
-+};
- 
- static struct pci_driver dw_spi_driver = {
- 	.name =		DRIVER_NAME,
-@@ -161,6 +215,9 @@ static struct pci_driver dw_spi_driver = {
- 	.remove =	__devexit_p(spi_pci_remove),
- 	.suspend =	spi_suspend,
- 	.resume	=	spi_resume,
-+	.driver	=	{
-+		.pm	= &dw_spi_pm_ops,
-+	}, 
- };
- 
- static int __init mrst_spi_init(void)
-diff --git a/drivers/spi/spi-dw.c b/drivers/spi/spi-dw.c
-index 20f94fa..1210460 100644
---- a/drivers/spi/spi-dw.c
-+++ b/drivers/spi/spi-dw.c
-@@ -22,6 +22,7 @@
- #include <linux/highmem.h>
- #include <linux/delay.h>
- #include <linux/slab.h>
-+#include <linux/pm_runtime.h>
- #include <linux/spi/spi.h>
- 
- #include "spi-dw.h"
-@@ -438,7 +439,7 @@ static void pump_messages(struct work_struct *work)
- 	struct slave_cfg *controller;
- 	int err = 0;
- 
--
-+	pm_runtime_get_sync(dws->parent_dev);
- 	message = get_message(dws);
- 
- 	while (message && dws->run != QUEUE_STOPPED) {
-@@ -473,6 +474,7 @@ static void pump_messages(struct work_struct *work)
- 	}
- 	if (dws->run == QUEUE_STOPPED)
- 		drain_message_queue(dws);
-+	pm_runtime_put_sync(dws->parent_dev);
- }
- 
- /* spi_device use this to queue in their spi_msg */
--- 
-1.7.3.4
-
+~Maarten
