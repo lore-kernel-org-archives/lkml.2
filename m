@@ -1,56 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754481Ab1FOM5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 08:57:31 -0400
-Received: from mail-vw0-f66.google.com ([209.85.212.66]:60926 "EHLO
-	mail-vw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187Ab1FOM53 (ORCPT
+	id S1754631Ab1FOM6h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 08:58:37 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:54345 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753146Ab1FOM6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 08:57:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Ub02bsS47EG1wXR31ewBr5v5OhpYBmuwz7BEmh1UTIGLLkuctKU+A6UVuPjc056FL9
-         Jv9i6dYwULjm3Au6gPKEc8F5ZQIixyVHNvBxJrX2ZzFSUmmRVNJ/Hfns3pxLoBCTSV3P
-         v8NKec+YMijZvv9/hLMqw8nXKvOZIqcF/gEAM=
+	Wed, 15 Jun 2011 08:58:36 -0400
+Date: Wed, 15 Jun 2011 18:28:16 +0530
+From: Ankita Garg <ankita@in.ibm.com>
+To: Josh Hunt <johunt@akamai.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Tapan Dhimant <tdhimant@akamai.com>
+Subject: Re: [PATCH] lkdtm: Fix race when crashpoint is hit multiple times
+ before checking count
+Message-ID: <20110615125816.GB23151@in.ibm.com>
+Reply-To: Ankita Garg <ankita@in.ibm.com>
+References: <1308094827-29684-1-git-send-email-johunt@akamai.com>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=pgbKHtSX9rhnunvoYYQjMMtdpPg@mail.gmail.com>
-References: <BANLkTi=pgbKHtSX9rhnunvoYYQjMMtdpPg@mail.gmail.com>
-Date: Wed, 15 Jun 2011 05:57:29 -0700
-Message-ID: <BANLkTinhBMsWyj2ArfBiXYJpTqk=8XHm3A@mail.gmail.com>
-Subject: kernel 2.6.32-27 crash in tcp
-From: Vishal Study <vishal.study@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308094827-29684-1-git-send-email-johunt@akamai.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi,
 
-I'm using kernel 2.6.32-27 on a mips platform and get following kernel crash.
+On Tue, Jun 14, 2011 at 04:40:27PM -0700, Josh Hunt wrote:
+> We observed the crash point count going negative in cases where the crash point
+> is hit multiple times before the check of "count == 0" is done. Because of this
+> we never call lkdtm_do_action(). This patch just adds a spinlock to protect
+> count.
+> 
 
-I'm running open-source IET iSCSI Stack and get this error during
-heavy load test. Any ideas on what could be happening or if this is
-known issue in 2.6.32 kernel?
+Good catch! The fix Looks fine.
 
-Thanks,
-Vishal.
+> Reported-by: Tapan Dhimant <tdhimant@akamai.com>
+> Signed-off-by: Josh Hunt <johunt@akamai.com>
 
-------------[ cut here ]------------
-WARNING: at net/ipv4/tcp.c:1457 tcp_recvmsg+0x7c0/0x990()
-recvmsg bug 2: copied 8D07C2AD seq 1EAA6653 rcvnxt 8D083A71 fl 4000
-Modules linked in: iscsi_trgt test_ethernet ipv6
-Call Trace:
-[<ffffffff801127d0>] dump_stack+0x8/0x34
-[<ffffffff8024a8e8>] warn_slowpath_common+0x70/0xb0
-[<ffffffff8024a97c>] warn_slowpath_fmt+0x34/0x40
-[<ffffffff805c0130>] tcp_recvmsg+0x7c0/0x990
-[<ffffffff8057bd8c>] sock_common_recvmsg+0x34/0x58
-[<ffffffff8057a050>] sock_recvmsg+0x100/0x140
-[<ffffffffc0081800>] do_recv+0x120/0x238 [iscsi_trgt]
-[<ffffffffc0081ef8>] istd+0x5e0/0x1408 [iscsi_trgt]
-[<ffffffff80264820>] kthread+0x88/0x90
-[<ffffffff80221ea8>] kernel_thread_helper+0x10/0x18
+Acked-by: Ankita Garg <ankita@in.ibm.com>
+
+> ---
+>  drivers/misc/lkdtm.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/misc/lkdtm.c b/drivers/misc/lkdtm.c
+> index 81d7fa4..150cd70 100644
+> --- a/drivers/misc/lkdtm.c
+> +++ b/drivers/misc/lkdtm.c
+> @@ -120,6 +120,7 @@ static int recur_count = REC_NUM_DEFAULT;
+>  static enum cname cpoint = CN_INVALID;
+>  static enum ctype cptype = CT_NONE;
+>  static int count = DEFAULT_COUNT;
+> +static DEFINE_SPINLOCK(count_lock);
+> 
+>  module_param(recur_count, int, 0644);
+>  MODULE_PARM_DESC(recur_count, " Recursion level for the stack overflow test, "\
+> @@ -230,11 +231,14 @@ static const char *cp_name_to_str(enum cname name)
+>  static int lkdtm_parse_commandline(void)
+>  {
+>  	int i;
+> +	unsigned long flags;
+> 
+>  	if (cpoint_count < 1 || recur_count < 1)
+>  		return -EINVAL;
+> 
+> +	spin_lock_irqsave(&count_lock, flags);
+>  	count = cpoint_count;
+> +	spin_unlock_irqrestore(&count_lock, flags);
+> 
+>  	/* No special parameters */
+>  	if (!cpoint_type && !cpoint_name)
+> @@ -349,6 +353,9 @@ static void lkdtm_do_action(enum ctype which)
+> 
+>  static void lkdtm_handler(void)
+>  {
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&count_lock, flags);
+>  	count--;
+>  	printk(KERN_INFO "lkdtm: Crash point %s of type %s hit, trigger in %d rounds\n",
+>  			cp_name_to_str(cpoint), cp_type_to_str(cptype), count);
+> @@ -357,6 +364,7 @@ static void lkdtm_handler(void)
+>  		lkdtm_do_action(cptype);
+>  		count = cpoint_count;
+>  	}
+> +	spin_unlock_irqrestore(&count_lock, flags);
+>  }
+> 
+>  static int lkdtm_register_cpoint(enum cname which)
+
+-- 
+Regards,
+Ankita Garg (ankita@in.ibm.com)
+Linux Technology Center
+IBM India Systems & Technology Labs,
+Bangalore, India
