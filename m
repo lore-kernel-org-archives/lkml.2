@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab1FOVwF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 17:52:05 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:63873 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754551Ab1FOVwB (ORCPT
+	id S1755059Ab1FOVxl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 17:53:41 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:61285 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166Ab1FOVxj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 17:52:01 -0400
-References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe> <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com> <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK> <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com> <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1308173849.15315.91.camel@twins>
+	Wed, 15 Jun 2011 17:53:39 -0400
+Message-ID: <4DF929E0.1030806@codemonkey.ws>
+Date: Wed, 15 Jun 2011 16:53:36 -0500
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock to mutex
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 15 Jun 2011 14:51:34 -0700
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Tim Chen <tim.c.chen@linux.intel.com>
-CC: Andi Kleen <ak@linux.intel.com>, Shaohua Li <shaohua.li@intel.com>,
+To: Prasad Joshi <prasadjoshi124@gmail.com>
+CC: Pekka Enberg <penberg@kernel.org>, Avi Kivity <avi@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Message-ID: <87ea4bd7-8b16-4b24-8fcb-d8e9b6f421ec@email.android.com>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
+References: <1308153214.7566.6.camel@jaguar>	<4DF8DE26.1070301@redhat.com>	<BANLkTi=SHENDBHdtFY_7_qtfqJb_+qKJSw@mail.gmail.com> <BANLkTinMDz-sqaX0cyWEoLXt70dowxofvg@mail.gmail.com>
+In-Reply-To: <BANLkTinMDz-sqaX0cyWEoLXt70dowxofvg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/15/2011 03:13 PM, Prasad Joshi wrote:
+> On Wed, Jun 15, 2011 at 6:10 PM, Pekka Enberg<penberg@kernel.org>  wrote:
+>> On Wed, Jun 15, 2011 at 7:30 PM, Avi Kivity<avi@redhat.com>  wrote:
+>>> On 06/15/2011 06:53 PM, Pekka Enberg wrote:
+>>>>
+>>>> - Fast QCOW2 image read-write support beating Qemu in fio benchmarks. See
+>>>> the
+>>>>    following URL for test result details: https://gist.github.com/1026888
+>>>
+>>> This is surprising.  How is qemu invoked?
+>>
+>> Prasad will have the details. Please note that the above are with Qemu
+>> defaults which doesn't use virtio. The results with virtio are little
+>> better but still in favor of tools/kvm.
+>>
+>
+> The qcow2 image used for testing was copied on to /dev/shm to avoid
+> the disk delays in performance measurement.
 
+Our experience has been that this is actually not a great way to 
+simulate fast storage.
 
-Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->removing
->that sysconf() wreckage closed the gap considerably (needing to know
->the
->number of cpus to optimize locking sounds like a trainwreck all of its
->own, needing it _that_ often instead of just once at startup is even
->worse).
+Spindle based storage has very different characteristics than memory as 
+there is a significant cost for seeking.
 
-Yeah, I think it's ridiculous to say that glibc is not doing something stupid and that it's a problem with kernel interfaces.
+-hdb uses IDE too.  That's pretty unfair since IDE is limited to a 
+single request at a time whereas virtio can support multiple requests 
+(and native kvm tools is using virtio).
 
-Do the proc file parsing once and cache the result in a static variable. Doing it over and over again is just crazy.
+Regards,
 
-Adding new system calls because glibc is crazy is insane.
-
-       Linus
-
+Anthony Liguori
