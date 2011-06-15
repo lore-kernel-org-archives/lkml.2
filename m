@@ -1,137 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756001Ab1FOQW1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 12:22:27 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:44557 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755056Ab1FOQWY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 12:22:24 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=tWeutT1Ixbr/O/awEnxhJ8JCV8SRlBajF6i34e1lw72cfW5D7n4FryJkkbLd4DdghU2KLBjInXUvOdzZ/gopNcc40iyMVgD4pbZVrLuen0VAroD2++fewGd2NxgnGBWq;
-Date: Wed, 15 Jun 2011 09:22:21 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
-        Nikanth Karthikesan <knikanth@suse.de>,
-        David Rientjes <rientjes@google.com>, Matt Mackall <mpm@selenic.com>,
-        linux-doc@vger.kernel.org
-Subject: Re: [RFC 5/5 v3] procfs: add documentation for procfs mount options
-Message-Id: <20110615092221.b143c45a.rdunlap@xenotime.net>
-In-Reply-To: <1308146299-13015-1-git-send-email-segoon@openwall.com>
-References: <1308146299-13015-1-git-send-email-segoon@openwall.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755843Ab1FOQY3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 12:24:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17597 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754357Ab1FOQY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 12:24:28 -0400
+Message-ID: <4DF8DCB8.9050103@redhat.com>
+Date: Wed, 15 Jun 2011 12:24:24 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: Linux kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kyle McMartin <kyle@redhat.com>
+Subject: Re: SLUB BUG: check_slab called with interrupts enabled
+References: <4DF8C80F.7090403@redhat.com> <alpine.DEB.2.00.1106150959500.768@router.home> <4DF8CCE1.80400@redhat.com> <alpine.DEB.2.00.1106151040020.768@router.home>
+In-Reply-To: <alpine.DEB.2.00.1106151040020.768@router.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jun 2011 17:58:19 +0400 Vasiliy Kulikov wrote:
+On 06/15/2011 11:45 AM, Christoph Lameter wrote:
+> On Wed, 15 Jun 2011, Rik van Riel wrote:
+>
+>> > There are no additional special slub patches applied right? Because
+>> some
+>> > of the patches under discussion change the interrupt disable handling a
+>> > bit.
+>>
+>> Just the two attached ones, which don't seem to touch the
+>> code path in question...
+>
+> I also do not see how these could break something. But they are mucking
+> around with the __GFP_WAIT flag. __GFP_WAIT determines the reenabling and
+> redisabling of interrupts in __slab_alloc(). If some variables gets
+> corrupted then this could be the result.
+>
+> Print out the value of gfpflags before and after the call to new_slab()
+> from __slab_alloc()?
 
-> Add documentation for procfs mount options.
-> 
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-> ---
->  Documentation/filesystems/proc.txt |   51 ++++++++++++++++++++++++++++++++++++
->  1 files changed, 51 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-> index f481780..327a640 100644
-> --- a/Documentation/filesystems/proc.txt
-> +++ b/Documentation/filesystems/proc.txt
-> @@ -41,6 +41,8 @@ Table of Contents
->    3.5	/proc/<pid>/mountinfo - Information about mounts
->    3.6	/proc/<pid>/comm  & /proc/<pid>/task/<tid>/comm
->  
-> +  4	Configuring procfs
-> +  4.1	Mount options
->  
->  ------------------------------------------------------------------------------
->  Preface
-> @@ -1541,3 +1543,52 @@ a task to set its own or one of its thread siblings comm value. The comm value
->  is limited in size compared to the cmdline value, so writing anything longer
->  then the kernel's TASK_COMM_LEN (currently 16 chars) will result in a truncated
->  comm value.
-> +
-> +
-> +------------------------------------------------------------------------------
-> +Configuring procfs
-> +------------------------------------------------------------------------------
-> +
-> +4.1	Mount options
-> +---------------------
-> +
-> +The following mount options are supported:
-> +
-> +	hidepid=	Set /proc/<pid>/ access mode.
-> +	hidenet		Hide /proc/<pid>/net/ from nonauthorized users.
-> +	nohidenet	Don't hide /proc/<pid>/net/ from nonauthorized users.
-> +	gid=		Set the group authorized to learn processes and
-> +			networking information.
-> +
-> +hidepid=0 means classic mode - everybody may access all /proc/<pid>/ directories
-> +(default).
-> +
-> +hidepid=1 means users may not access any /proc/<pid>/ directories, but their
+Since I'm building a new kernel anyway (with Neil Horman's
+patch to make netconsole work with tun/tap), I have commented
+out these two slub patches.
 
-comma not needed above.
+Lets see what happens...
 
-> +own.  Sensitive files like cmdline, io, sched*, status, wchan are now protected
-> +against other users.  This makes impossible to learn whether any user runs
-
-                              makes it impossible
-
-> +specific program (given the program doesn't reveal itself by its behaviour).
-> +As an additional bonus, as /proc/<pid>/cmdline is unaccessible for other users,
-> +poorly written programs passing sensitive information via program arguments are
-> +now protected against local eavesdroppers.
-> +
-> +hidepid=2 means hidepid=1 plus all /proc/<pid>/ will be fully invisible to other
-> +users.  It doesn't mean that it hides a fact whether a process with a specific
-
-                           that it hides whether a process
-
-> +pid value exists (it can be learned by other means, e.g. by sending signals),
-> +but it hides process' uid and gid, which may be learned by stat()'ing
-> +/proc/<pid>/ otherwise.  It greatly complicates intruder's task of gathering info
-
-                                                   an intruder's
-
-I would also prefer "information" instead of "info" (globally).
-
-> +about running processes, whether some daemon runs with elevated privileges,
-> +whether other user runs some sensitive program, whether other users run any
-
-   whether another user runs
-
-> +program at all, etc.
-> +
-> +hidenet means /proc/<pid>/net/ will be accessible to processes with
-> +CAP_NET_ADMIN capability or to members of a special group.  It means
-> +nonauthorized users may not learn any networking connections information.  If
-> +network namespaces support is enabled (CONFIG_NET_NS=y) then common users would
-> +obtain net directory, but all files would indicate no networking activity at
-> +all.  If network namespaces are disabled, net directory is unaccessible to
-> +common users.
-> +
-> +gid= means group authorized to learn processes information prohibited by
-> +hidepid= and networking information prohibited by hidenet.  If you use some
-> +daemon like identd which have to learn information about net/processes
-
-                      which has to learn
-
-> +information, just add identd to this group.
-> -- 
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+All rights reversed
