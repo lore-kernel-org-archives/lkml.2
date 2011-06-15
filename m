@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303Ab1FOF5h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 01:57:37 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55452 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751922Ab1FOF5e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 01:57:34 -0400
-Subject: RE: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Xiangliang Yu <yuxiangl@marvell.com>
-Cc: "yxlraid@gmail.com" <yxlraid@gmail.com>,
-        "jack_wang@usish.com" <jack_wang@usish.com>,
-        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
-        "maciej.trela@intel.com" <maciej.trela@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jacky Feng <jfeng@marvell.com>
-In-Reply-To: <F766E4F80769BD478052FB6533FA745D19FAE669AF@SC-VEXCH4.marvell.com>
-References: <1308064628-11826-1-git-send-email-yxlraid@gmail.com>
-	 <1308065367.2401.24.camel@mulgrave>
-	 <F766E4F80769BD478052FB6533FA745D19FAE669AF@SC-VEXCH4.marvell.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 15 Jun 2011 01:57:30 -0400
-Message-ID: <1308117450.2329.31.camel@mulgrave>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	id S1751776Ab1FOF5Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 01:57:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18544 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751116Ab1FOF5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 01:57:22 -0400
+Date: Wed, 15 Jun 2011 07:57:32 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Cc: Greg KH <greg@kroah.com>, stable@linux.kernel.org, donald.h.fry@intel.com,
+        reinette.chatre@intel.com, wey-yi.w.guy@intel.com, ilw@linux.intel.com,
+        linville@tuxdriver.com, ak@linux.intel.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [stable] Please revert "iwlagn: Support new 5000 microcode."
+ from 2.6.32 and 2.6.33
+Message-ID: <20110615055731.GB2214@redhat.com>
+References: <20110613181317.GA3385@herton-IdeaPad-Y430>
+ <20110614230344.GA2065@kroah.com>
+ <20110615011443.GA13680@herton-IdeaPad-Y430>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110615011443.GA13680@herton-IdeaPad-Y430>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-14 at 18:44 -0700, Xiangliang Yu wrote:
-> Subject: Re: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
+On Tue, Jun 14, 2011 at 10:14:44PM -0300, Herton Ronaldo Krzesinski wrote:
+> On Tue, Jun 14, 2011 at 04:03:44PM -0700, Greg KH wrote:
+> > On Mon, Jun 13, 2011 at 03:13:18PM -0300, Herton Ronaldo Krzesinski wrote:
+> > > The patch ("iwlagn: Support new 5000 microcode") shoudn't have been
+> > > applied on 2.6.32 and 2.6.33 stable trees, it doesn't support new
+> > > firmware file format, thus if the new firmware is on the disk, loading
+> > > fails, as reported on:
+> > > https://bugs.launchpad.net/ubuntu/+source/linux/+bug/796336
+> > > 
+> > > Support for the iwlagn new firmware file format was only added beginning
+> > > with 2.6.35 (commit "iwlagn: implement loading a new firmware file
+> > > type"), so iwlagn works with new firmware only with 2.6.35 or later.
+> > 
+> > Can I get an ack from the developer of the patch and the people involved
+> > with it first?  It was asked to be backported for a reason, so I would
+> > at least like to get the people who asked for the backport to have a
+> > chance to respond please.
+> > 
+> > It's only nice, why would you exclude them?
 > 
-> On Tue, 2011-06-14 at 23:17 +0800, yxlraid@gmail.com wrote:
-> >> From: Xiangliang Yu <yuxiangl@marvell.com>
-> >> 
-> >> -- The value of child link rate should is minimum of link rate, or
-> >>    command will fail if child link rate is bigger than parent link rate.
-> >> 
-> >> Signed-off-by: Xiangliang Yu <yuxiangl@marvell.com>
-> >> ---
-> >>  drivers/scsi/libsas/sas_expander.c |    2 +-
-> >>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >> 
-> >> diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
-> >> index 874e29d..6ccca09 100644
-> >> --- a/drivers/scsi/libsas/sas_expander.c
-> >> +++ b/drivers/scsi/libsas/sas_expander.c
-> >> @@ -638,7 +638,7 @@ static void sas_ex_get_linkrate(struct domain_device *parent,
-> >>  			sas_port_add_phy(port, phy->phy);
-> >>  		}
-> >>  	}
-> >> -	child->linkrate = min(parent_phy->linkrate, child->max_linkrate);
-> >> +	child->linkrate = min(parent_phy->linkrate, child->min_linkrate);
+> I didn't intend to exclude anyone and I'm just reporting it, it didn't
+> came to my mind CC'ing people while sending to stable, and hopefully
+> everyone related are CC'ed now.
 > 
-> >This patch doesn't look right.  It will clamp the phy to the minim
-> >possible link rate.  
-> Link negotiation should get the minimum.
-
-No ... according to the spec it should be the max of what the child
-supports taking into account the max the expander phy supports.
-
-> >The child is supposed to support everywhere between
-> >child->min_linkrate and child->max_linkrate.  The reason why we pick the
-> >max is because we should use that if the parent supports it, and fall
-> >back only if the parent isn't capable.
-> Now, the problem is command fail, and LIBSAS seem to do nothing.
-> Do you mean drive need to fix the link error?
-> Thanks!
+> Also note that this revert request is for 2.6.32 and 2.6.33 *only*
 > 
-> PS: The Kernel will panic when link error happening.
+> And seems the right thing to do for them.
+> 
+> The other stable release where this was applied (2.6.35) looks fine
+> but these two are too old to support the new firmware (don't work, need
+> extra patches backported which weren't, like the commit I mentioned --
+> commit "iwlagn: implement loading a new firmware file type"), as yourself
+> can check reading the code/bug report, and what I wrote.
 
-Post the panic then ... it's probably a negotiation problem.  If the
-child can't support the highest possible link rate because of problems
-like transmission errors, it should fall back.
+ACK for revert. I could be wrong, but I think some more patches, except mentioned
+new format patch, are needed to make driver work reliably with the new firmware.
 
-James
-
-
+Stanislaw
