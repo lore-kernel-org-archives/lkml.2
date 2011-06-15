@@ -1,66 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab1FON6H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 09:58:07 -0400
+	id S1755373Ab1FON6S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 09:58:18 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:37600 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755219Ab1FON6C (ORCPT
+	with ESMTP id S1755221Ab1FON6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 09:58:02 -0400
+	Wed, 15 Jun 2011 09:58:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=KCvt/KHC7eXMPnWD5jQ/dcbpVcCiyulp6JtY2GWt68BwQuqsqksV4AYg35Ox0iBi50
-         lzQPf6DCK73n2t3yeNdiHSeQonUHdvRdOeqMDwXmllsb1YbeZ3qWq9DT4eSSqRuQM7wU
-         HeRAM/TtfhiWtx8nZ+lVsG0GQ9A9q/uSH1SGI=
+        b=W8Fi4YaTEI8wPlB/3rpox0tw8FWFDjCtFFzjCRaHO9eFDUIHn9ZyAHLGsSg5qdAtGI
+         tN+sEqvB0tKLReDgk7QrTEWTUzq3TpQOcTt+NAQCiGqObHRIH5XvqiKAyVdr7931RJWe
+         +1ooqM1k3b09MGlgqlaq0cVfRQ6/hqr4p4Rwk=
 From: Vasiliy Kulikov <segoon@openwall.com>
 To: linux-kernel@vger.kernel.org
 Cc: kernel-hardening@lists.openwall.com,
         Andrew Morton <akpm@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@suse.de>,
-        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>
-Subject: [RFC 0/5 v3] procfs: introduce hidepid=, hidenet=, gid= mount options
-Date: Wed, 15 Jun 2011 17:57:56 +0400
-Message-Id: <1308146276-12750-1-git-send-email-segoon@openwall.com>
+        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Subject: [RFC 1/5 v3] procfs: parse mount options
+Date: Wed, 15 Jun 2011 17:58:00 +0400
+Message-Id: <1308146281-12792-1-git-send-email-segoon@openwall.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series adds support of procfs mount options and adds
-mount options to restrict /proc/<pid>/ directories to owners and
-/proc/<pid>/net/* to root.  Additional group may be defined via
-gid=, and this group will be privileged to study others /proc/<pid>/
-and networking information.
+This patch adds support of procfs mount options.
+Actual mount options are comming in the next patches.
 
-Similar features are implemented for old kernels in -ow patches (for
-Linux 2.2 and 2.4) and for Linux 2.6 in -grsecurity, but both of them
-are implemented as configure options, not cofigurable in runtime, with
-changes of gid of /proc/<pid>/, and without backward-compatible
-/proc/<pid>/net/* handling.
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+ fs/proc/inode.c    |   10 +++++++++
+ fs/proc/internal.h |    1 +
+ fs/proc/root.c     |   56 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 65 insertions(+), 2 deletions(-)
 
-
-The first patch introduces mount option parsing without any new options.
-The second patch adds options of /proc/<pid>/ restrictions.
-The third patch makes net_create() globally visible.
-The fourth patch adds options of /proc/<pid>/net/ restrictions.
-The fifth patch adds documentations for options above.
-
-Vasiliy Kulikov (5):
-  procfs: parse mount options
-  procfs: add hidepid= and gid= mount options
-  net: restore net_create and make it globally visible
-  procfs: Add hidenet/nohidenet procfs mount options.
-  procfs: add documentation for procfs mount options
-
- Documentation/filesystems/proc.txt |   51 ++++++++++++++++++++++
- fs/proc/base.c                     |   62 ++++++++++++++++++++++++++-
- fs/proc/inode.c                    |   20 +++++++++
- fs/proc/internal.h                 |    1 +
- fs/proc/proc_net.c                 |   26 +++++++++++
- fs/proc/root.c                     |   83 +++++++++++++++++++++++++++++++++++-
- include/linux/pid_namespace.h      |    3 +
- include/net/net_namespace.h        |    2 +
- net/core/net_namespace.c           |   12 +++--
- 9 files changed, 253 insertions(+), 7 deletions(-)
+diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+index 74b48cf..b5f49eb 100644
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@ -7,6 +7,7 @@
+ #include <linux/time.h>
+ #include <linux/proc_fs.h>
+ #include <linux/kernel.h>
++#include <linux/pid_namespace.h>
+ #include <linux/mm.h>
+ #include <linux/string.h>
+ #include <linux/stat.h>
+@@ -17,7 +18,9 @@
+ #include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/sysctl.h>
++#include <linux/seq_file.h>
+ #include <linux/slab.h>
++#include <linux/mount.h>
+ 
+ #include <asm/system.h>
+ #include <asm/uaccess.h>
+@@ -102,12 +105,19 @@ void __init proc_init_inodecache(void)
+ 					     init_once);
+ }
+ 
++static int proc_show_options(struct seq_file *seq, struct vfsmount *vfs)
++{
++	return 0;
++}
++
+ static const struct super_operations proc_sops = {
+ 	.alloc_inode	= proc_alloc_inode,
+ 	.destroy_inode	= proc_destroy_inode,
+ 	.drop_inode	= generic_delete_inode,
+ 	.evict_inode	= proc_evict_inode,
+ 	.statfs		= simple_statfs,
++	.remount_fs	= proc_remount,
++	.show_options	= proc_show_options,
+ };
+ 
+ static void __pde_users_dec(struct proc_dir_entry *pde)
+diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+index 7838e5c..2925775 100644
+--- a/fs/proc/internal.h
++++ b/fs/proc/internal.h
+@@ -117,6 +117,7 @@ void pde_put(struct proc_dir_entry *pde);
+ 
+ int proc_fill_super(struct super_block *);
+ struct inode *proc_get_inode(struct super_block *, struct proc_dir_entry *);
++int proc_remount(struct super_block *sb, int *flags, char *data);
+ 
+ /*
+  * These are generic /proc routines that use the internal
+diff --git a/fs/proc/root.c b/fs/proc/root.c
+index a9000e9..b2571fe 100644
+--- a/fs/proc/root.c
++++ b/fs/proc/root.c
+@@ -18,6 +18,7 @@
+ #include <linux/bitops.h>
+ #include <linux/mount.h>
+ #include <linux/pid_namespace.h>
++#include <linux/parser.h>
+ 
+ #include "internal.h"
+ 
+@@ -35,6 +36,49 @@ static int proc_set_super(struct super_block *sb, void *data)
+ 	return set_anon_super(sb, NULL);
+ }
+ 
++enum {
++	Opt_err,
++};
++
++static const match_table_t tokens = {
++	{Opt_err, NULL},
++};
++
++static int proc_parse_options(char *options, struct pid_namespace *pid)
++{
++	char *p;
++	substring_t args[MAX_OPT_ARGS];
++	int option;
++
++	pr_debug("proc: options = %s\n", options);
++
++	if (!options)
++		return 1;
++
++	while ((p = strsep(&options, ",")) != NULL) {
++		int token;
++		if (!*p)
++			continue;
++
++		args[0].to = args[0].from = 0;
++		token = match_token(p, tokens, args);
++		switch (token) {
++		default:
++			pr_err("proc: unrecognized mount option \"%s\" "
++			       "or missing value", p);
++			return 0;
++		}
++	}
++
++	return 1;
++}
++
++int proc_remount(struct super_block *sb, int *flags, char *data)
++{
++	struct pid_namespace *pid = sb->s_fs_info;
++	return !proc_parse_options(data, pid);
++}
++
+ static struct dentry *proc_mount(struct file_system_type *fs_type,
+ 	int flags, const char *dev_name, void *data)
+ {
+@@ -42,11 +86,15 @@ static struct dentry *proc_mount(struct file_system_type *fs_type,
+ 	struct super_block *sb;
+ 	struct pid_namespace *ns;
+ 	struct proc_inode *ei;
++	char *options;
+ 
+-	if (flags & MS_KERNMOUNT)
++	if (flags & MS_KERNMOUNT) {
+ 		ns = (struct pid_namespace *)data;
+-	else
++		options = NULL;
++	} else {
+ 		ns = current->nsproxy->pid_ns;
++		options = data;
++	}
+ 
+ 	sb = sget(fs_type, proc_test_super, proc_set_super, ns);
+ 	if (IS_ERR(sb))
+@@ -54,6 +102,10 @@ static struct dentry *proc_mount(struct file_system_type *fs_type,
+ 
+ 	if (!sb->s_root) {
+ 		sb->s_flags = flags;
++		if (!proc_parse_options(options, ns)) {
++			deactivate_locked_super(sb);
++			return ERR_PTR(-EINVAL);
++		}
+ 		err = proc_fill_super(sb);
+ 		if (err) {
+ 			deactivate_locked_super(sb);
+-- 
+1.7.0.4
 
