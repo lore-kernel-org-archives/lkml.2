@@ -1,75 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab1FOAkv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 20:40:51 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:52246 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752089Ab1FOAks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 20:40:48 -0400
-Date: Tue, 14 Jun 2011 17:40:45 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Theurer <habanero@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2] sched: Check if lowest_mask is initialized in
- find_lowest_rq
-Message-ID: <20110615004045.GU2288@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110614223623.876681637@goodmis.org>
- <20110614223657.824872966@goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110614223657.824872966@goodmis.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754309Ab1FOAsO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 20:48:14 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43514 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752666Ab1FOAsM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 20:48:12 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 15 Jun 2011 09:41:13 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: cfowler@opsdc.com
+Cc: Chris Fowler <cfowler@outpostsentinel.com>, linux-kernel@vger.kernel.org,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: Panic on OOM
+Message-Id: <20110615094113.fa89be99.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1308058276.2074.295.camel@compaq-desktop>
+References: <1308058276.2074.295.camel@compaq-desktop>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 14, 2011 at 06:36:25PM -0400, Steven Rostedt wrote:
-> From: Steven Rostedt <rostedt@goodmis.org>
-> 
-> On system boot up, the lowest_mask is initialized with early_initcall.
-> But RT tasks may wake up on other early_initcall callers before the
-> lowest_mask is initialized, causing a system crash.
-> 
-> The commit d72bce0e67 rcu: Cure load woes
-> was the first commit to wake up RT tasks in early init. Before this
-> commit this bug should not happen.
+On Tue, 14 Jun 2011 09:31:16 -0400
+Chris Fowler <cfowler@outpostsentinel.com> wrote:
 
-I never was able to reproduce this, but after adding Shaohua's patch, I
-need this one too on some systems.  So:
+> I'm running into a problem in 2.6.38 where the kernel is not doing what
+> I'm expecting it to do.  I'm guessing that some things have changed and
+> that is what it going on.
+> 
+> First,  The tune at boot:
+> 
+>         f.open("/proc/sys/vm/panic_on_oom", std::ios::out);
+>         f << "1";
+>         f.close();
+> 
+>         f.open("/proc/sys/kernel/panic", std::ios::out);
+>         f << "10";
+>         f.close();
+> 
+> I want the kernel to panic on out of memory.  I then want it to wait 10s
+> before doing a reboot.
+> 
+> This program will consume all memory and make the box unresponsive
+> 
+> #!/usr/bin/perl
+> 
+> my @mem = ()
+> while(1) {
+>   push @mem, "########################";
+> }
+> 
 
-Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Hmm, then, OOM-Killer wasn't invoked ?
 
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-> Reported-by: Andrew Theurer <habanero@linux.vnet.ibm.com>
-> Tested-by: Andrew Theurer <habanero@linux.vnet.ibm.com>
-> Link: http://lkml.kernel.org/r/1308014683.9218.107.camel@gandalf.stny.rr.com
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  kernel/sched_rt.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
+> It does not take long to fill up 1G of space.  There is NO swap on this
+> device and never will be.  I did notice that after a long period of time
+> (I've not timed it) I finally do see a panic and I do see "rebooting in
+> 10 seconds..." .  It does not reboot.
 > 
-> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-> index 9b8d5dc..10d0182 100644
-> --- a/kernel/sched_rt.c
-> +++ b/kernel/sched_rt.c
-> @@ -1239,6 +1239,10 @@ static int find_lowest_rq(struct task_struct *task)
->  	int this_cpu = smp_processor_id();
->  	int cpu      = task_cpu(task);
+
+In these month(after 2.6.38), there has been some discussion
+that "oom-killer doesn't work enough or lru scan very slow" problem
+in linux-mm list. (and some improvemetns have been done.)
+
+Then, if you can post your 'test case' with precise description of
+machine set up, we're glad.
+
 > 
-> +	/* Make sure the mask is initialized first */
-> +	if (unlikely(!lowest_mask))
-> +		return -1;
-> +
->  	if (task->rt.nr_cpus_allowed == 1)
->  		return -1; /* No other targets possible */
+> I'm guessing that there are some tweaks or new behavior I just need to
+> be aware of.
 > 
-> -- 
-> 1.7.4.4
-> 
-> 
+
+What version of kernel did you used in previous setup ?
+
+Thanks,
+-Kame
+
+
+
+   
+
+
+
+
