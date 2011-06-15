@@ -1,134 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614Ab1FOA3V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 20:29:21 -0400
-Received: from mga09.intel.com ([134.134.136.24]:8889 "EHLO mga09.intel.com"
+	id S1753703Ab1FOAef (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 20:34:35 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:45577 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751369Ab1FOA3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 20:29:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,368,1304319600"; 
-   d="scan'208";a="14748214"
-Subject: REGRESSION: Performance regressions from switching anon_vma->lock
- to mutex
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, ak@linux.intel.com,
-        shaohua.li@intel.com, alex.shi@intel.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Jun 2011 17:29:58 -0700
-Message-ID: <1308097798.17300.142.camel@schen9-DESK>
+	id S1751369Ab1FOAed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 20:34:33 -0400
+Date: Wed, 15 Jun 2011 10:34:20 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org, Dmitry Artamonow <mad_soft@inbox.ru>,
+        x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-next@vger.kernel.org, Harald Welte <laforge@gnufiish.org>
+Subject: Re: [PATCH 2/2] gpio: include linux/gpio.h where needed
+Message-Id: <20110615103420.1578eb5c.sfr@canb.auug.org.au>
+In-Reply-To: <20110614170602.7a51b1af.randy.dunlap@oracle.com>
+References: <4DDB3AFF.9030006@oracle.com>
+	<20110524075248.GB19734@sirena.org.uk>
+	<20110527074552.GA907@ponder.secretlab.ca>
+	<4DDFE391.2030507@oracle.com>
+	<20110527201201.GA6645@ponder.secretlab.ca>
+	<BANLkTin-KSVcG2cQfRM3Ys0_g_uJVruDMw@mail.gmail.com>
+	<20110603171837.GA9918@opensource.wolfsonmicro.com>
+	<BANLkTi=oko_C8_46Y8p5O1Qvw1KEn-1PjA@mail.gmail.com>
+	<4DEC4D67.6010506@oracle.com>
+	<20110614091211.465553de.randy.dunlap@oracle.com>
+	<20110614161357.GB1839@ponder.secretlab.ca>
+	<20110614170602.7a51b1af.randy.dunlap@oracle.com>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__15_Jun_2011_10_34_20_+1000_eEv+UJVGIb5jaCpk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems like that the recent changes to make the anon_vma->lock into a
-mutex (commit 2b575eb6) causes a 52% regression in throughput (2.6.39 vs
-3.0-rc2) on exim mail server workload in the MOSBENCH test suite.
+--Signature=_Wed__15_Jun_2011_10_34_20_+1000_eEv+UJVGIb5jaCpk
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Our test setup is on a 4 socket Westmere EX system, with 10 cores per
-socket.  40 clients are created on the test machine which send email
-to the exim server residing on the sam test machine.
+Hi Randy,
 
-Exim forks off child processes to handle the incoming mail, and the
-process exits after the mail delivery completes. We see quite a bit of
-acquisition of the anon_vma->lock as a result.  
+On Tue, 14 Jun 2011 17:06:02 -0700 Randy Dunlap <randy.dunlap@oracle.com> w=
+rote:
+>
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+>=20
+> Some files use GPIOF_ macros but don't include the header file
+> for them.  These macros are being moved to <linux/gpio.h>, so add
+> includes for <linux/gpio.h> where needed.
 
-On 2.6.39, the contention of anon_vma->lock occupies 3.25% of cpu.
-However, after the switch of the lock to mutex on 3.0-rc2, the mutex
-acquisition jumps to 18.6% of cpu.  This seems to be the main cause of
-the 52% throughput regression.
+Shouldn't these patches be in the other order to avoid bisection problems?
 
-Other workloads which have a lot of forks/exits may be similarly
-affected by this regression.  Workloads which are vm lock intensive
-could be affected too.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-I've listed the profile of 3.0-rc2 and 2.6.39 below for comparison.
+--Signature=_Wed__15_Jun_2011_10_34_20_+1000_eEv+UJVGIb5jaCpk
+Content-Type: application/pgp-signature
 
-Thanks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Tim
+iQEcBAEBAgAGBQJN9/4MAAoJEDMEi1NhKgbsPmIH/jcSid3qbYU9J/uN7GaaISSk
+1rm+wUlbmhCEao0a2PI/hJG0RR4v3P+cLgXb9JlB7KnFu62NT4+hwktKxxEr2OVy
+FlGDymANSLGHqZHNUzuU7NHfXgiCT7hiwpTJdpWPxI2X4MOlPwKwuB4gWn3jLDqS
+vmmBB7zfAIHXFleMJ9cGN/ziRoFsl/s6MpWsyaLO7ZeDMBeY/id00iSis8QJVGnA
+OGsg3Qfvz7g8pbq0xijzFMLilLxh80Ok34BdkMRC5bhYJTplQhYpi1ANRUktWPMW
+wKG9QUKKNKvM8L+YcBz0ojDPe9WWdx32/P2/DCZkRABHW+vhn+HVQ/EMS0jPc5M=
+=f3ZQ
+-----END PGP SIGNATURE-----
 
-
----------------------------
-3.0-rc2 profile:
-
--     18.60%          exim  [kernel.kallsyms]        [k] __mutex_lock_common.clone.5 
-   - __mutex_lock_common.clone.5                                                     
-      - 99.99% __mutex_lock_slowpath                                                 
-         - mutex_lock                                                                
-            - 99.54% anon_vma_lock.clone.10                                          
-               + 38.99% anon_vma_clone                                               
-               + 37.56% unlink_anon_vmas                                             
-               + 11.92% anon_vma_fork                                                
-               + 11.53% anon_vma_free                                                
-+      4.03%          exim  [kernel.kallsyms]        [k] _raw_spin_lock_irqsave      
--      3.00%          exim  [kernel.kallsyms]        [k] do_raw_spin_lock            
-   - do_raw_spin_lock                                                                
-      - 94.11% _raw_spin_lock                                                        
-         + 47.32% __mutex_lock_common.clone.5                                        
-         + 14.23% __mutex_unlock_slowpath                                            
-         + 4.06% handle_pte_fault                                                    
-         + 3.81% __do_fault                                                          
-         + 3.16% unmap_vmas                                                          
-         + 2.46% lock_flocks                                                         
-         + 2.43% copy_pte_range                                                      
-         + 2.28% __task_rq_lock                                                      
-         + 1.30% __percpu_counter_add                                                
-         + 1.30% dput                                                                
-         + 1.27% add_partial                                                         
-         + 1.24% free_pcppages_bulk                                                  
-         + 1.07% d_alloc                                                             
-         + 1.07% get_page_from_freelist                                              
-         + 1.02% complete_walk                                                       
-         + 0.89% dget                                                                
-         + 0.71% new_inode                                                           
-         + 0.61% __mod_timer                                                         
-         + 0.58% dup_fd                                                              
-         + 0.50% double_rq_lock                                                      
-      + 3.66% _raw_spin_lock_irq                                                     
-      + 0.87% _raw_spin_lock_bh                                                      
-+      2.90%          exim  [kernel.kallsyms]        [k] page_fault                  
-+      2.25%          exim  [kernel.kallsyms]        [k] mutex_unlock     
-
-
------------------------------------
-
-2.6.39 profile:
-+      4.84%          exim  [kernel.kallsyms]        [k] page_fault
-+      3.83%          exim  [kernel.kallsyms]        [k] clear_page_c
--      3.25%          exim  [kernel.kallsyms]        [k] do_raw_spin_lock
-   - do_raw_spin_lock
-      - 91.86% _raw_spin_lock
-         + 14.16% unlink_anon_vmas
-         + 12.54% unlink_file_vma
-         + 7.30% anon_vma_clone_batch
-         + 6.17% dup_mm
-         + 5.77% __do_fault
-         + 5.77% __pte_alloc
-         + 5.31% lock_flocks
-        ...
-+      3.22%          exim  [kernel.kallsyms]        [k] unmap_vmas
-+      2.27%          exim  [kernel.kallsyms]        [k] page_cache_get_speculative
-+      2.02%          exim  [kernel.kallsyms]        [k] copy_page_c
-+      1.63%          exim  [kernel.kallsyms]        [k] __list_del_entry
-+      1.58%          exim  [kernel.kallsyms]        [k] get_page_from_freelist
-
-
-
+--Signature=_Wed__15_Jun_2011_10_34_20_+1000_eEv+UJVGIb5jaCpk--
