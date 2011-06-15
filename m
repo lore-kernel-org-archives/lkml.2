@@ -1,64 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab1FOAsX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 20:48:23 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:48766 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753538Ab1FOAsN (ORCPT
+	id S1754344Ab1FOAtj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 20:49:39 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:3468 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab1FOAtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 20:48:13 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-10.tower-127.messagelabs.com!1308098892!8385994!1
-X-StarScan-Version: 6.2.17; banners=-,-,-
-X-Originating-IP: [216.166.12.180]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 14 Jun 2011 19:47:19 -0500
-Subject: [Q] mm/memblock.c: cast truncates bits from RED_INACTIVE
-Thread-Topic: [Q] mm/memblock.c: cast truncates bits from RED_INACTIVE
-Thread-Index: Acwq9cgcVKSC4A1wQDqE/nar82cq3Q==
-Message-ID: <ADE657CA350FB648AAC2C43247A983F001F382220E0F@AUSP01VMBX24.collaborationhost.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Tue, 14 Jun 2011 20:49:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=oIHhDC8q9TJGXlj1CR4QqtKtBjOK4Lvau9qlUZj2U7dAOfnEWpdg5naSVNnIxRE4Rz
+         2VB3khM1pNHzx16ooPjw==
+Date: Tue, 14 Jun 2011 17:49:13 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH v2 12/12] mm: a few small updates for radix-swap
+In-Reply-To: <alpine.LSU.2.00.1106140357350.29206@sister.anvils>
+Message-ID: <alpine.LSU.2.00.1106141746270.678@sister.anvils>
+References: <alpine.LSU.2.00.1106140327550.29206@sister.anvils> <alpine.LSU.2.00.1106140357350.29206@sister.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p5F0mfod016902
 
-Hello all,
+Remove PageSwapBacked (!page_is_file_cache) cases from
+add_to_page_cache_locked() and add_to_page_cache_lru():
+those pages now go through shmem_add_to_page_cache().
 
-Sparse is reporting a couple warnings in mm/memblock.c:
+Remove a comment on maximum tmpfs size from fsstack_copy_inode_size(),
+and add a comment on swap entries to invalidate_mapping_pages().
 
-	warning: cast truncates bits from constant value (9f911029d74e35b becomes 9d74e35b)
+And mincore_page() uses find_get_page() on what might be shmem or a
+tmpfs file: allow for a radix_tree_exceptional_entry(), and proceed to
+find_get_page() on swapper_space if so (oh, swapper_space needs #ifdef).
 
-The warnings are due to the cast of RED_INACTIVE in memblock_analyze():
+v2: Fix NULL dereference I introduced in mincore_page().
 
-	/* Check marker in the unused last array entry */
-	WARN_ON(memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS].base
-		!= (phys_addr_t)RED_INACTIVE);
-	WARN_ON(memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS].base
-		!= (phys_addr_t)RED_INACTIVE);
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
+ fs/stack.c    |    5 +----
+ mm/filemap.c  |   21 +++------------------
+ mm/mincore.c  |   10 ++++++----
+ mm/truncate.c |    8 ++++++++
+ 4 files changed, 18 insertions(+), 26 deletions(-)
 
-And in memblock_init():
-
-	/* Write a marker in the unused last array entry */
-	memblock.memory.regions[INIT_MEMBLOCK_REGIONS].base = (phys_addr_t)RED_INACTIVE;
-	memblock.reserved.regions[INIT_MEMBLOCK_REGIONS].base = (phys_addr_t)RED_INACTIVE;
-
-Could this cause any problems?  If not, is there anyway to quiet the sparse noise?
-
-Regards,
-Hartley
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+--- linux.orig/fs/stack.c	2011-06-14 01:22:10.768120780 -0700
++++ linux/fs/stack.c	2011-06-14 01:23:26.088494288 -0700
+@@ -29,10 +29,7 @@ void fsstack_copy_inode_size(struct inod
+ 	 *
+ 	 * We don't actually know what locking is used at the lower level;
+ 	 * but if it's a filesystem that supports quotas, it will be using
+-	 * i_lock as in inode_add_bytes().  tmpfs uses other locking, and
+-	 * its 32-bit is (just) able to exceed 2TB i_size with the aid of
+-	 * holes; but its i_blocks cannot carry into the upper long without
+-	 * almost 2TB swap - let's ignore that case.
++	 * i_lock as in inode_add_bytes().
+ 	 */
+ 	if (sizeof(i_blocks) > sizeof(long))
+ 		spin_lock(&src->i_lock);
+--- linux.orig/mm/filemap.c	2011-06-14 01:22:10.768120780 -0700
++++ linux/mm/filemap.c	2011-06-14 01:23:26.088494288 -0700
+@@ -33,7 +33,6 @@
+ #include <linux/cpuset.h>
+ #include <linux/hardirq.h> /* for BUG_ON(!in_atomic()) only */
+ #include <linux/memcontrol.h>
+-#include <linux/mm_inline.h> /* for page_is_file_cache() */
+ #include <linux/cleancache.h>
+ #include "internal.h"
+ 
+@@ -465,6 +464,7 @@ int add_to_page_cache_locked(struct page
+ 	int error;
+ 
+ 	VM_BUG_ON(!PageLocked(page));
++	VM_BUG_ON(PageSwapBacked(page));
+ 
+ 	error = mem_cgroup_cache_charge(page, current->mm,
+ 					gfp_mask & GFP_RECLAIM_MASK);
+@@ -482,8 +482,6 @@ int add_to_page_cache_locked(struct page
+ 		if (likely(!error)) {
+ 			mapping->nrpages++;
+ 			__inc_zone_page_state(page, NR_FILE_PAGES);
+-			if (PageSwapBacked(page))
+-				__inc_zone_page_state(page, NR_SHMEM);
+ 			spin_unlock_irq(&mapping->tree_lock);
+ 		} else {
+ 			page->mapping = NULL;
+@@ -505,22 +503,9 @@ int add_to_page_cache_lru(struct page *p
+ {
+ 	int ret;
+ 
+-	/*
+-	 * Splice_read and readahead add shmem/tmpfs pages into the page cache
+-	 * before shmem_readpage has a chance to mark them as SwapBacked: they
+-	 * need to go on the anon lru below, and mem_cgroup_cache_charge
+-	 * (called in add_to_page_cache) needs to know where they're going too.
+-	 */
+-	if (mapping_cap_swap_backed(mapping))
+-		SetPageSwapBacked(page);
+-
+ 	ret = add_to_page_cache(page, mapping, offset, gfp_mask);
+-	if (ret == 0) {
+-		if (page_is_file_cache(page))
+-			lru_cache_add_file(page);
+-		else
+-			lru_cache_add_anon(page);
+-	}
++	if (ret == 0)
++		lru_cache_add_file(page);
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(add_to_page_cache_lru);
+--- linux.orig/mm/mincore.c	2011-06-14 01:22:10.768120780 -0700
++++ linux/mm/mincore.c	2011-06-14 17:41:15.760211585 -0700
+@@ -69,12 +69,14 @@ static unsigned char mincore_page(struct
+ 	 * file will not get a swp_entry_t in its pte, but rather it is like
+ 	 * any other file mapping (ie. marked !present and faulted in with
+ 	 * tmpfs's .fault). So swapped out tmpfs mappings are tested here.
+-	 *
+-	 * However when tmpfs moves the page from pagecache and into swapcache,
+-	 * it is still in core, but the find_get_page below won't find it.
+-	 * No big deal, but make a note of it.
+ 	 */
+ 	page = find_get_page(mapping, pgoff);
++#ifdef CONFIG_SWAP
++	if (radix_tree_exceptional_entry(page)) {
++		swp_entry_t swap = radix_to_swp_entry(page);
++		page = find_get_page(&swapper_space, swap.val);
++	}
++#endif
+ 	if (page) {
+ 		present = PageUptodate(page);
+ 		page_cache_release(page);
+--- linux.orig/mm/truncate.c	2011-06-14 01:22:10.768120780 -0700
++++ linux/mm/truncate.c	2011-06-14 01:23:26.092494303 -0700
+@@ -331,6 +331,14 @@ unsigned long invalidate_mapping_pages(s
+ 	unsigned long count = 0;
+ 	int i;
+ 
++	/*
++	 * Note: this function may get called on a shmem/tmpfs mapping:
++	 * pagevec_lookup() might then return 0 prematurely (because it
++	 * got a gangful of swap entries); but it's hardly worth worrying
++	 * about - it can rarely have anything to free from such a mapping
++	 * (most pages are dirty), and already skips over any difficulties.
++	 */
++
+ 	pagevec_init(&pvec, 0);
+ 	while (index <= end && pagevec_lookup(&pvec, mapping, index,
+ 			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1)) {
