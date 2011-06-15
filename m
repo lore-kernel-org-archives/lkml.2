@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab1FOJ1s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 05:27:48 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:62628 "EHLO mgw-sa01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754209Ab1FOJ1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 05:27:46 -0400
-From: Andras Domokos <Andras.Domokos@nokia.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org, sre@debian.org,
-        linus.walleij@linaro.org, govindraj.ti@gmail.com,
-        pawel.szyszuk@stericsson.com, sjur.brandeland@stericsson.com,
-        peter_henn@gmx.de, Carlos Chinea <carlos.chinea@nokia.com>,
-        Andras Domokos <Andras.Domokos@nokia.com>
-Subject: Re: [RFC PATCHv5 0/7] HSI framework and drivers
-Date: Wed, 15 Jun 2011 12:27:03 +0300
-Message-Id: <1308130023-20667-1-git-send-email-Andras.Domokos@nokia.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <20110614103548.3b336dac@lxorguk.ukuu.org.uk>
-References: <1307713124-3946-1-git-send-email-carlos.chinea@nokia.com>, <20110614103548.3b336dac@lxorguk.ukuu.org.uk>
-X-Nokia-AV: Clean
+	id S1754602Ab1FOJ2v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 05:28:51 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33137 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754209Ab1FOJ2t convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 05:28:49 -0400
+Subject: Re: [PATCH 5/7] KVM-GST: KVM Steal time accounting
+From: Peter Zijlstra <peterz@infradead.org>
+To: Glauber Costa <glommer@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Avi Kivity <avi@redhat.com>, Anthony Liguori <aliguori@us.ibm.com>,
+        Eric B Munson <emunson@mgebm.net>
+In-Reply-To: <4DF805F3.4030603@redhat.com>
+References: <1308007897-17013-1-git-send-email-glommer@redhat.com>
+	 <1308007897-17013-6-git-send-email-glommer@redhat.com>
+	 <1308046203.19856.9.camel@twins>  <4DF805F3.4030603@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 15 Jun 2011 11:28:22 +0200
+Message-ID: <1308130102.15315.17.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2011-06-14 at 22:08 -0300, Glauber Costa wrote:
+> >> +               while (steal>  TICK_NSEC) {
+> >
+> >                       /* really, if we wanted a division we'd have
+> written one */
+> >                       asm("" : "+rm" (steal));
+> 
+> Out of curiosity, have we seen any compiler de-optimize it to a 
+> division, or are you just being careful ?
+> 
+> >> +                       steal -= TICK_NSEC;
+> >> +                       st++;
+> >> +               } 
 
-On 01/-10/-28163 09:59 PM, ext Alan Cox wrote:
-> On Fri, 10 Jun 2011 16:38:37 +0300
-> Carlos Chinea <carlos.chinea@nokia.com> wrote:
->
->> Hi !
->>
->> Here you have the fifth round of the HSI framework patches.
->
-> Looks good to me - only other oddity I found is to build hsi_char on x86
-> you need slab.h before kmemleak.h or the build errors
-
-We checked with Carlos why hsi_char was building for the ARM
-architecture in our environment.
-We found the reason, it was a kernel configuration issue after all, we
-didn't have CONFIG_DEBUG_KMEMLEAK option enabled in our .config file,
-that's why the oddity you have mentioned didn't show up in our case. But
-once the kernel option was turned on, we started seeing the compilation
-errors.
-
-We'll fix the problem based on your comments.
-
-Thank you!
-
-Regards,
-Andras
+No that really happened a number of times, there's one in
+sched_avg_period() that actually triggered and __iter_div_u64_rem() that
+started it all iirc.
