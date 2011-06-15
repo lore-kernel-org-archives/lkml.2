@@ -1,140 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508Ab1FOVr1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 17:47:27 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:39249 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754883Ab1FOVrY (ORCPT
+	id S1755525Ab1FOVs3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 17:48:29 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6814 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339Ab1FOVs0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 17:47:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type;
-        b=gDiFogmScut1qFYQDEZm9undQxT6AryIdaesRJLwecpjO8RtaJe/2zBUob5vFPfp82
-         kO8px2Ul7sIYv6FJs3c7c5Cu75bGLYmwDsr8HD5jOEObtmlPGJ5jglN2moNV9cov+fb7
-         deo4MLNbxqqzX7/3L8R4/g5GHw69A5r3tEcU4=
-Message-ID: <4DF92869.50105@gmail.com>
-Date: Wed, 15 Jun 2011 23:47:21 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
+	Wed, 15 Jun 2011 17:48:26 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 15 Jun 2011 14:48:03 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Grant Likely <grant.likely@secretlab.ca>, Lee Jones <lee.jones@linaro.org>,
+        Martin Persson <martin.persson@stericsson.com>,
+        Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Wed, 15 Jun 2011 14:48:02 -0700
+Subject: More pinmux feedback, and GPIO vs. pinmux interaction
+Thread-Topic: More pinmux feedback, and GPIO vs. pinmux interaction
+Thread-Index: AcwrpVHXnLIbUaScTRSwCCKtpn4eow==
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04992C067D@HQMAIL01.nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH v2] xhci: Add reset on resume quirk for asrock p67 host
-Content-Type: multipart/mixed;
- boundary="------------010406020907000809020702"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010406020907000809020702
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Linus (W),
 
-The asrock p67 xhci controller completely dies on resume, add a
-quirk for this, to bring the host back online after a suspend.
+Some more thoughts on pinmux:
 
-This should be backported to stable kernels up until 2.6.37.
+========== GPIO/pinmux API interactions
 
-Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Cc: stable@kernel.org
----
-V2: Fix inversed logic, and correct kernel version
+I'd like to understand how the gpio and pinmux subsystems are intended
+to interact.
 
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index 17541d0..cb16de2 100644
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -29,6 +29,9 @@
- #define PCI_VENDOR_ID_FRESCO_LOGIC	0x1b73
- #define PCI_DEVICE_ID_FRESCO_LOGIC_PDK	0x1000
- 
-+#define PCI_VENDOR_ID_ETRON		0x1b6f
-+#define PCI_DEVICE_ID_ASROCK_P67	0x7023
-+
- static const char hcd_name[] = "xhci_hcd";
- 
- /* called after powerup, by probe or system-pm "wakeup" */
-@@ -134,6 +137,11 @@ static int xhci_pci_setup(struct usb_hcd *hcd)
- 		xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
- 		xhci->limit_active_eps = 64;
- 	}
-+	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
-+			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
-+		xhci->quirks |= XHCI_RESET_ON_RESUME;
-+		xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
-+	}
- 
- 	/* Make sure the HC is halted. */
- 	retval = xhci_halt(xhci);
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 06e7023..17a0a08 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -759,6 +759,8 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
- 		msleep(100);
- 
- 	spin_lock_irq(&xhci->lock);
-+	if (xhci->quirks & XHCI_RESET_ON_RESUME)
-+		hibernated = true;
- 
- 	if (!hibernated) {
- 		/* step 1: restore register */
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index 7d1ea3b..b769a75 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1308,6 +1308,7 @@ struct xhci_hcd {
-  */
- #define XHCI_EP_LIMIT_QUIRK	(1 << 5)
- #define XHCI_BROKEN_MSI		(1 << 6)
-+#define XHCI_RESET_ON_RESUME	(1 << 7)
- 	unsigned int		num_active_eps;
- 	unsigned int		limit_active_eps;
- 	/* There are two roothubs to keep track of bus suspend info for */
+Quoting from Documentation/gpio.txt:
 
+  Note that requesting a GPIO does NOT cause it to be configured in any
+  way; it just marks that GPIO as in use.  Separate code must handle any
+  pin setup (e.g. controlling which pin the GPIO uses, pullup/pulldown).
 
+Due to this, the current Tegra GPIO driver contains additional non-
+standard functions:
 
---------------010406020907000809020702
-Content-Type: application/mbox;
- name="xhci.patch"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="xhci.patch"
+void tegra_gpio_enable(int gpio);
+void tegra_gpio_disable(int gpio);
 
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvdXNiL2hvc3QveGhjaS1wY2kuYyBiL2RyaXZlcnMvdXNi
-L2hvc3QveGhjaS1wY2kuYwppbmRleCAxNzU0MWQwLi5jYjE2ZGUyIDEwMDY0NAotLS0gYS9k
-cml2ZXJzL3VzYi9ob3N0L3hoY2ktcGNpLmMKKysrIGIvZHJpdmVycy91c2IvaG9zdC94aGNp
-LXBjaS5jCkBAIC0yOSw2ICsyOSw5IEBACiAjZGVmaW5lIFBDSV9WRU5ET1JfSURfRlJFU0NP
-X0xPR0lDCTB4MWI3MwogI2RlZmluZSBQQ0lfREVWSUNFX0lEX0ZSRVNDT19MT0dJQ19QREsJ
-MHgxMDAwCiAKKyNkZWZpbmUgUENJX1ZFTkRPUl9JRF9FVFJPTgkJMHgxYjZmCisjZGVmaW5l
-IFBDSV9ERVZJQ0VfSURfQVNST0NLX1A2NwkweDcwMjMKKwogc3RhdGljIGNvbnN0IGNoYXIg
-aGNkX25hbWVbXSA9ICJ4aGNpX2hjZCI7CiAKIC8qIGNhbGxlZCBhZnRlciBwb3dlcnVwLCBi
-eSBwcm9iZSBvciBzeXN0ZW0tcG0gIndha2V1cCIgKi8KQEAgLTEzNCw2ICsxMzcsMTEgQEAg
-c3RhdGljIGludCB4aGNpX3BjaV9zZXR1cChzdHJ1Y3QgdXNiX2hjZCAqaGNkKQogCQl4aGNp
-LT5xdWlya3MgfD0gWEhDSV9FUF9MSU1JVF9RVUlSSzsKIAkJeGhjaS0+bGltaXRfYWN0aXZl
-X2VwcyA9IDY0OwogCX0KKwlpZiAocGRldi0+dmVuZG9yID09IFBDSV9WRU5ET1JfSURfRVRS
-T04gJiYKKwkJCXBkZXYtPmRldmljZSA9PSBQQ0lfREVWSUNFX0lEX0FTUk9DS19QNjcpIHsK
-KwkJeGhjaS0+cXVpcmtzIHw9IFhIQ0lfUkVTRVRfT05fUkVTVU1FOworCQl4aGNpX2RiZyh4
-aGNpLCAiUVVJUks6IFJlc2V0dGluZyBvbiByZXN1bWVcbiIpOworCX0KIAogCS8qIE1ha2Ug
-c3VyZSB0aGUgSEMgaXMgaGFsdGVkLiAqLwogCXJldHZhbCA9IHhoY2lfaGFsdCh4aGNpKTsK
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvdXNiL2hvc3QveGhjaS5jIGIvZHJpdmVycy91c2IvaG9z
-dC94aGNpLmMKaW5kZXggMDZlNzAyMy4uMTdhMGEwOCAxMDA2NDQKLS0tIGEvZHJpdmVycy91
-c2IvaG9zdC94aGNpLmMKKysrIGIvZHJpdmVycy91c2IvaG9zdC94aGNpLmMKQEAgLTc1OSw2
-ICs3NTksOCBAQCBpbnQgeGhjaV9yZXN1bWUoc3RydWN0IHhoY2lfaGNkICp4aGNpLCBib29s
-IGhpYmVybmF0ZWQpCiAJCW1zbGVlcCgxMDApOwogCiAJc3Bpbl9sb2NrX2lycSgmeGhjaS0+
-bG9jayk7CisJaWYgKHhoY2ktPnF1aXJrcyAmIFhIQ0lfUkVTRVRfT05fUkVTVU1FKQorCQlo
-aWJlcm5hdGVkID0gdHJ1ZTsKIAogCWlmICghaGliZXJuYXRlZCkgewogCQkvKiBzdGVwIDE6
-IHJlc3RvcmUgcmVnaXN0ZXIgKi8KZGlmZiAtLWdpdCBhL2RyaXZlcnMvdXNiL2hvc3QveGhj
-aS5oIGIvZHJpdmVycy91c2IvaG9zdC94aGNpLmgKaW5kZXggN2QxZWEzYi4uYjc2OWE3NSAx
-MDA2NDQKLS0tIGEvZHJpdmVycy91c2IvaG9zdC94aGNpLmgKKysrIGIvZHJpdmVycy91c2Iv
-aG9zdC94aGNpLmgKQEAgLTEzMDgsNiArMTMwOCw3IEBAIHN0cnVjdCB4aGNpX2hjZCB7CiAg
-Ki8KICNkZWZpbmUgWEhDSV9FUF9MSU1JVF9RVUlSSwkoMSA8PCA1KQogI2RlZmluZSBYSENJ
-X0JST0tFTl9NU0kJCSgxIDw8IDYpCisjZGVmaW5lIFhIQ0lfUkVTRVRfT05fUkVTVU1FCSgx
-IDw8IDcpCiAJdW5zaWduZWQgaW50CQludW1fYWN0aXZlX2VwczsKIAl1bnNpZ25lZCBpbnQJ
-CWxpbWl0X2FjdGl2ZV9lcHM7CiAJLyogVGhlcmUgYXJlIHR3byByb290aHVicyB0byBrZWVw
-IHRyYWNrIG9mIGJ1cyBzdXNwZW5kIGluZm8gZm9yICovCg==
---------------010406020907000809020702--
+In some cases, those functions are called by board files at boot time,
+and in other cases by drivers themselves, right before gpio_request().
+
+Is it your intention that such custom functions be replaced by
+pinmux_request_gpio(), and the Tegra pinmux driver's gpio_request_enable
+op should call tegra_gpio_enable?
+
+That seems like the right idea to me.
+
+========== pinmux calling GPIO or vice-versa?
+
+Having pinmux call gpio appears to conflict with a couple of things from
+your recent pinmux patchset:
+
+> diff --git a/drivers/Kconfig b/drivers/Kconfig
+> +# pinctrl before gpio - gpio drivers may need it
+> +
+> +source "drivers/pinctrl/Kconfig"
+> +
+>  source "drivers/gpio/Kconfig"
+>
+> diff --git a/drivers/Makefile b/drivers/Makefile
+>...
+> +# GPIO must come after pinctrl as gpios may need to mux pins etc
+> +obj-y				+= pinctrl/
+
+Don't those patches imply that the GPIO controller code is calling into
+the pinmux code to perform muxing, not the other way around?
+
+========== When pins get marked as in-used
+
+There seems to be a discrepancy in the way the client APIs work: For
+special functions, the client calls pinmux_get, then later pinmux_enable,
+whereas for GPIOs, the client just calls pinmux_request_gpio. I'm not
+sure of the benefit of having separate pinmux_get and pinmux_enable
+calls; I thought the idea was that a client could:
+
+a = pinmux_get(dev, "funca");
+b = pinmux_get(dev, "funcb");
+pinmux_enable(a);
+...
+pinmux_disable(a);
+pinmux_enable(b);
+...
+pinmux_disable(b);
+pinmux_put(b);
+pinmux_put(a);
+
+However, since the pins are marked as reserved/in-use when pinmux_get
+is called rather than pinmux_enable, the code above won't work; it'd
+need to be:
+
+a = pinmux_get(dev, "funca");
+pinmux_enable(a);
+...
+pinmux_disable(a);
+pinmux_put(a);
+b = pinmux_get(dev, "funcb");
+pinmux_enable(b);
+...
+pinmux_disable(b);
+pinmux_put(b);
+
+Perhaps pin usage marking should be moved into enable/disable?
+
+========== Matched request/free calls for GPIOs
+
+A couple more comments on your recent pinmux patches in light of this:
+
+>From pin_request():
+
++	/*
++	 * If there is no kind of request function for the pin we just assume
++	 * we got it by default and proceed.
++	 */
++	if (gpio && ops->gpio_request_enable)
++		/* This requests and enables a single GPIO pin */
++		status = ops->gpio_request_enable(pmxdev,
++						  pin - pmxdev->desc->base);
++	else if (ops->request)
++		status = ops->request(pmxdev,
++				      pin - pmxdev->desc->base);
++	else
++		status = 0;
+
+a) I feel the default should be to error out, not succeed; the whole
+point of the API is for HW where something must be programmed to enable
+each function. As such, if you don't provide that ops->request* function,
+that seems like an error.
+
+I think the logic above should be to always call ops->gpio_request_enable
+if (gpio):
+
+	if (gpio)
+		if (ops->gpio_request_enable)
+			/* This requests and enables a single GPIO pin */
+			status = ops->gpio_request_enable(pmxdev,
+						  pin - pmxdev->desc->base);
+	else
+		status = ops->request(pmxdev,
+				      pin - pmxdev->desc->base);
+
+(ops->gpio_request_enable could be optional if GPIOs aren't supported on
+any pinmux pins, whereas ops->request isn't optional, and should be checked
+during pinmux_register)
+
+Also, ops->gpio_request_enable should also be passed the GPIO number,
+so the driver can validate that it's the correct one. Often, only
+one value would be legal, but perhaps some pinmuxs allow 1 of N different
+GPIOs to be mapped to some pin, so selection of which GPIO is on par with
+selection of which special function to mux out, yet the driver still
+doesn't want to expose every GPIO possibility as a pinmux "function" due
+to explosion of the number of functions if it did that.
+
+b) When ops->gpio_request_enable is called to request a pin, it'd be nice
+if the core could track this, and specifically call a new ops->gpio_disable
+to free it, rather than the generic ops->free. There are two cases in HW:
+
+b1) "GPIO" is just another special function in a list, e.g. SPI, I2C, GPIO.
+In this case, free for a GPIO needs to either do nothing (the next call to
+request will simply set the desired function), or possibly do something to
+disable the pin in the same way as any other function. This works fine with
+a single free function.
+
+b2) GPIO enable/disable is a separate concept from the pinmuxing; on Tegra
+it'll be implemented by calling tegra_gpio_enable/disable. As such, a
+single free function would require the pinmux driver to store state
+indicating whether ops->free should call tegra_gpio_disable, or whether it
+should do cleanup to the pinmux registers. Since the core is managing GPIO
+vs. function allocation, I think the storing that state in the core makes
+sense.
+
+Thanks for reading. Hopefully this email didn't jump about too much.
+
+-- 
+nvpublic
+
