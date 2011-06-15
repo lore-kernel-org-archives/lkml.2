@@ -1,185 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717Ab1FOKEx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 06:04:53 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59405 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753447Ab1FOKEu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 06:04:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=bKCtXk0PYRutCFnocC1oB7zu4/RbHBfM/jHn3kGKnxbSQNCAy/XhZZr/o0huI0BgFO
-         XxaOT9jGNHo8Iy35PJbR15t6qvYqdG+aWxYhb1yXObKGwYjgYAaTeapF5SaA7umCsvMb
-         fmNK/JdovS9uB9oE9/9hJ/ba4uU2W9Rfu4Lvc=
-From: Yuan-Hsin Chen <yuanlmm@gmail.com>
-To: jgarzik@pobox.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: tj@kernel.org, Yuan-Hsin Chen <yhchen@faraday-tech.com>
-Subject: [PATCH v2] ahci: fix pmp softreset with HDD
-Date: Wed, 15 Jun 2011 18:04:12 +0800
-Message-Id: <1308132252-1981-1-git-send-email-yuanlmm@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20110614065213.GD8141@htj.dyndns.org>
-References: <20110614065213.GD8141@htj.dyndns.org>
+	id S1754707Ab1FOKHb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 06:07:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47740 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751500Ab1FOKHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 06:07:30 -0400
+Subject: Re: bug: kernel 3.0-rc3 not relocatable on i386?
+From: Petr Tesarik <ptesarik@suse.cz>
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1308132078.4641.38.camel@nathan.suse.cz>
+References: <1308125533.4641.33.camel@nathan.suse.cz>
+	 <BANLkTikoxYAz7G7pvKABbVPzOuxUzLkO=Q@mail.gmail.com>
+	 <1308132078.4641.38.camel@nathan.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Organization: SUSE LINUX
+Date: Wed, 15 Jun 2011 12:07:28 +0200
+Message-Id: <1308132448.4641.41.camel@nathan.suse.cz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yuan-Hsin Chen <yhchen@faraday-tech.com>
+Petr Tesarik píše v St 15. 06. 2011 v 12:01 +0200:
+> Maarten Lankhorst píše v St 15. 06. 2011 v 11:21 +0200:
+> > Hi Petr,
+> > 
+> > 2011/6/15 Petr Tesarik <ptesarik@suse.cz>:
+> > > Hi all,
+> > >
+> > > it seems that the 3.0-rc3 kernel is not relocatable on i386. I get
+> > > warnings about jiffies being an absolute symbol, and indeed, when GRUB
+> > > loads the kernel at a non-default address, jiffies is not relocated.
+> > >
+> > > In my example the kernel is configured with
+> > > CONFIG_PHYSICAL_START=0x1000000
+> > > CONFIG_PHYSICAL_ALIGN=0x200000
+> > > CONFIG_RELOCATABLE=y
+> > > and loaded at 0x200000 by GRUB.
+> > >
+> > > Booting fails when checking whether the timer works, because do_timer()
+> > > increments jiffies_64, but timer_irq_works() checks jiffies. The code
+> > > looks like this:
+> > >
+> > > c13daab7:       8b 3d 40 7a 39 c1       mov    0xc1397a40,%edi
+> > >
+> > > but arch/x86/boot/compressed/vmlinux.relocs does not contain c13daaba.
+> > > Consequently, timer_irq_works() reads the wrong memory location and
+> > > fails, causing a panic:
+> > >
+> > > kernel panic: IO-APIC + timer doesn't work! Boot with apic=debug and
+> > > send a report.  Then try booting with the 'noapic' option.
+> > >
+> > > Needless to say, the kernel freezes a few initcalls later when booted
+> > > with noapic, because IO-APIC worked fine, in fact. I verified that by
+> > > inserting a debugging printk() in do_timer(), and I also verified with
+> > > that printk() that the address of jiffies_64 and the address of jiffies
+> > > differ at run time.
+> > >
+> > > Any idea how to fix this?
+> > Does reverting this commit fix it?
+> 
+> Isn't this related to VDSO? I've got no troubles with the VDSO. It's
+> just that the kernel assumes a fixed location of jiffies (in the kernel
+> direct mapping), so it cannot be relocated.
+> 
+> OTOH this must have worked the other day, so searching for the commit
+> that broke it is a good hint. I'll try it here, too.
 
-When enabling both port multiplier and platform ahci sata,
-ahci times out while connecting to HDD directly. This is
-because soft reset fails with IPMS set. Do soft reset
-again to port 0.
+Ah, it turns out this is in fact reported here:
 
-The soft reset sequence is copied from ahci.c.
+http://sourceware.org/bugzilla/show_bug.cgi?id=12327
 
-Signed-off-by: Yuan-Hsin Chen <yhchen@faraday-tech.com>
----
-v2:
-1.add ahci_pmp_softreset function and ahci_pmp_ops to libahci.c
-2.add SATA_PMP_RST to Kconfig
+But the patch was reverted by commit
+6b35eb9ddcddde7b510726de03fae071178f1ec4, so these binutils have been
+broken again since January.
 
- drivers/ata/Kconfig         |   10 +++++++
- drivers/ata/ahci.h          |    1 +
- drivers/ata/ahci_platform.c |    4 +++
- drivers/ata/libahci.c       |   59 +++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 74 insertions(+), 0 deletions(-)
+Yes, I've got binutils-2.21 here. :/
 
-diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
-index 75afa75..a6681df 100644
---- a/drivers/ata/Kconfig
-+++ b/drivers/ata/Kconfig
-@@ -65,6 +65,16 @@ config SATA_PMP
- 	  This option adds support for SATA Port Multipliers
- 	  (the SATA version of an ethernet hub, or SAS expander).
- 
-+config SATA_PMP_RST
-+	bool "SATA PMP softreset"
-+	depends on SATA_PMP
-+	default n
-+	help
-+	  When enabling both port multiplier and platform ahci sata,
-+	  ahci times out while connecting to HDD directly in some
-+	  ahci controller. This is because soft reset fails with
-+	  IPMS set. Do soft reset again to port 0.
-+
- comment "Controllers with non-SFF native interface"
- 
- config SATA_AHCI
-diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-index 12c5282..e20f8d7 100644
---- a/drivers/ata/ahci.h
-+++ b/drivers/ata/ahci.h
-@@ -312,6 +312,7 @@ extern struct device_attribute *ahci_sdev_attrs[];
- 	.sdev_attrs		= ahci_sdev_attrs
- 
- extern struct ata_port_operations ahci_ops;
-+extern struct ata_port_operations ahci_pmp_ops;
- 
- void ahci_fill_cmd_slot(struct ahci_port_priv *pp, unsigned int tag,
- 			u32 opts);
-diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-index 6fef1fa..1c6dc16 100644
---- a/drivers/ata/ahci_platform.c
-+++ b/drivers/ata/ahci_platform.c
-@@ -35,7 +35,11 @@ static int __init ahci_probe(struct platform_device *pdev)
- 		.flags		= AHCI_FLAG_COMMON,
- 		.pio_mask	= ATA_PIO4,
- 		.udma_mask	= ATA_UDMA6,
-+#ifdef CONFIG_SATA_PMP_RST
-+		.port_ops	= &ahci_pmp_ops,
-+#else
- 		.port_ops	= &ahci_ops,
-+#endif
- 	};
- 	const struct ata_port_info *ppi[] = { &pi, NULL };
- 	struct ahci_host_priv *hpriv;
-diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-index d38c40f..c4cbee9 100644
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -82,6 +82,8 @@ static void ahci_pmp_attach(struct ata_port *ap);
- static void ahci_pmp_detach(struct ata_port *ap);
- static int ahci_softreset(struct ata_link *link, unsigned int *class,
- 			  unsigned long deadline);
-+static int ahci_pmp_softreset(struct ata_link *link, unsigned int *class,
-+			  unsigned long deadline);
- static int ahci_hardreset(struct ata_link *link, unsigned int *class,
- 			  unsigned long deadline);
- static void ahci_postreset(struct ata_link *link, unsigned int *class);
-@@ -141,6 +143,13 @@ struct device_attribute *ahci_sdev_attrs[] = {
- };
- EXPORT_SYMBOL_GPL(ahci_sdev_attrs);
- 
-+struct ata_port_operations ahci_pmp_ops = {
-+	.inherits		= &ahci_ops,
-+	.softreset		= ahci_pmp_softreset,
-+	.pmp_softreset		= ahci_pmp_softreset,
-+};
-+EXPORT_SYMBOL_GPL(ahci_pmp_ops);
-+
- struct ata_port_operations ahci_ops = {
- 	.inherits		= &sata_pmp_port_ops,
- 
-@@ -1329,6 +1338,56 @@ static int ahci_softreset(struct ata_link *link, unsigned int *class,
- }
- EXPORT_SYMBOL_GPL(ahci_do_softreset);
- 
-+static int ahci_pmp_check_ready(struct ata_link *link)
-+{
-+	void __iomem *port_mmio = ahci_port_base(link->ap);
-+	u8 status = readl(port_mmio + PORT_TFDATA) & 0xFF;
-+	u32 irq_status = readl(port_mmio + PORT_IRQ_STAT);
-+
-+	/*
-+	 * There is no need to check TFDATA if BAD PMP is found due to HW bug,
-+	 * which can save timeout delay.
-+	 */
-+	if (irq_status & PORT_IRQ_BAD_PMP)
-+		return -EIO;
-+
-+	printk("%s:TFT 0x%x\n", __func__, status);
-+	return ata_check_ready(status);
-+}
-+
-+static int ahci_pmp_softreset(struct ata_link *link, unsigned int *class,
-+				unsigned long deadline)
-+{
-+	struct ata_port *ap = link->ap;
-+	void __iomem *port_mmio = ahci_port_base(ap);
-+	int pmp = sata_srst_pmp(link);
-+	int rc;
-+	u32 irq_sts;
-+
-+	DPRINTK("ENTER\n");
-+
-+	rc = ahci_do_softreset(link, class, pmp, deadline,
-+			       ahci_pmp_check_ready);
-+
-+	/*
-+	 * Soft reset fails with IPMS set when PMP is enabled but
-+	 * SATA HDD/ODD is connected to SATA port, do soft reset
-+	 * again to port 0.
-+	 */
-+	if (rc == -EIO) {
-+		irq_sts = readl(port_mmio + PORT_IRQ_STAT);
-+		if (irq_sts & PORT_IRQ_BAD_PMP) {
-+			ata_link_printk(link, KERN_WARNING,
-+					"applying PMP SRST workaround "
-+					"and retrying\n");
-+			rc = ahci_do_softreset(link, class, 0, deadline,
-+					       ahci_check_ready);
-+		}
-+	}
-+
-+	return rc;
-+}
-+
- static int ahci_hardreset(struct ata_link *link, unsigned int *class,
- 			  unsigned long deadline)
- {
--- 
-1.7.3.1
+Petr
+
 
