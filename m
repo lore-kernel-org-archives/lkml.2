@@ -1,59 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab1FOKeG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 06:34:06 -0400
-Received: from fep32.mx.upcmail.net ([62.179.121.50]:33364 "EHLO
-	fep32.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754138Ab1FOKeD (ORCPT
+	id S1754854Ab1FOKej (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 06:34:39 -0400
+Received: from frost.carfax.org.uk ([212.13.194.111]:41704 "EHLO
+	frost.carfax.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680Ab1FOKeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 06:34:03 -0400
-X-SourceIP: 14.96.199.83
-Reply-To: <verification_supteam@hotmail.com>
-From: "CHELLO HELP DESK" <brezzi@uniroma3.it>
-Subject: Upgrade Notification To All Chello  Owners
-Date: Wed, 15 Jun 2011 16:03:10 +0530
+	Wed, 15 Jun 2011 06:34:36 -0400
+Date: Wed, 15 Jun 2011 11:34:31 +0100
+From: Hugo Mills <hugo@carfax.org.uk>
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Cc: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] btrfs: Remove all sysfs entries
+Message-ID: <20110615103431.GA15127@carfax.org.uk>
+Mail-Followup-To: Hugo Mills <hugo@carfax.org.uk>,
+	Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+	Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <4DF86FFF.5000406@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="koi8-u"
-Content-Transfer-Encoding: 7bit
-X-Priority: 1
-X-MSMail-Priority: High
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20110615103312.XJRD15206.viefep11-int.chello.at@edge01.upcmail.net>
-X-Cloudmark-Analysis: v=1.1 cv=kRmApA04uPli/d8B8u1M0swu98hronvs6VvAqI8uQP0= c=1 sm=0 a=DbtclO8bUAkA:10 a=sV6JYTPS36EA:10 a=WHsXhg87phMA:10 a=8EU9Q7FnrCoA:10 a=-k1zT0TIonIA:10 a=nDOwLv4DKMQA:10 a=IlxDg-uQRhWj0xev7wgA:9 a=l05e8yZ80SQSuJXHzcQA:7 a=sOKxrc_Uve4A:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="n8g4imXOkfNTN/H1"
+Content-Disposition: inline
+In-Reply-To: <4DF86FFF.5000406@gmail.com>
+X-GPG-Fingerprint: 8C59 86C7 81F3 93FE BB02  DDB1 20AC B3BE 515C 238D
+X-GPG-Key: 515C238D
+X-Parrot: It is no more. It has joined the choir invisible.
+X-IRC-Nicks: darksatanic darkersatanic darkling darkthing
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-frost.carfax.org.uk-Spam-Score: -0.0 (/)
+X-frost.carfax.org.uk-Spam-Report: Spam detection software, running on the system "admin.kwak.bitfolk.com", has
+ identified this incoming email as possible spam.  The original message
+ has been attached to this so you can view it (if it isn't spam) or label
+ similar future email.  If you have any questions, see
+ the administrator of that system for details.
+ Content preview:  On Wed, Jun 15, 2011 at 10:40:31AM +0200, Maarten Lankhorst
+    wrote: > Seems that currently none of the sysfs are created any more, so
+   just > remove sysfs support entirely. > > Fixes compiling warnings in 3.0rc3
+    [...] 
+ Content analysis details:   (-0.0 points, 5.0 required)
+  pts rule name              description
+ ---- ---------------------- --------------------------------------------------
+ -0.0 T_RP_MATCHES_RCVD      Envelope sender domain matches handover relay
+                             domain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Upgrade Notification To All Chello  Owners
 
-This Email is from Chello  Web e-Mail support team and we are sending it to
-every Mail Email User Accounts Owner for safety. we are having congestions
-due to the anonymous registration of mail accounts so we are shutting down
-some mail accounts and your account was among those to be deleted. We,are
-sending this email to you so that you can verify and let us know if you
-still want to use this account. If you are still interested please confirm
-your account by filling the space below.Your User name, password, date of
-birth would be needed to verify your account.
+--n8g4imXOkfNTN/H1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Due to the congestion in all Mail back-users and removal of all unused
-Mail Accounts, We would be shutting down all unused Accounts, You will
-have to confirm your E-Mail by filling out your Chello  user Information
-below after clicking the reply Maillot, or your account will be suspended
-within 48 hours for security reasons.
+On Wed, Jun 15, 2011 at 10:40:31AM +0200, Maarten Lankhorst wrote:
+> Seems that currently none of the sysfs are created any more, so just
+> remove sysfs support entirely.
+>=20
+> Fixes compiling warnings in 3.0rc3
 
-* Username:
-* Password:
-* Date of Birth:
+   I would actually like to retain sysfs support -- the current
+entries may not be used (or useful, or in the right place, or even
+visible these days), but there's plenty of things that could and
+should go in sysfs from btrfs.
 
-After following the instructions in the sheet, your account will not be
-interrupted and will continue as normal. Thanks for your attention to this
-request. We apologize for any inconveniences.
+   So, please do remove the unwanted/unused file entries, but could
+you leave the sysfs file itself, and the (limited) bits that create
+the btrfs subdir? Otherwise, I'm going to be putting it all back in
+this weekend when I get the time to revisit Goffredo's old sysfs
+patch...
 
-Warning!!! Account owner that refuses to update his/her account after two
-weeks of receiving this warning will lose his or her account permanently.
+   Thanks,
+   Hugo.
 
-Sincerely
-Chello  Communications Help Desk
+> Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+>=20
+> --
+
+   (I think this should be three - signs, not two: my signature-
+cropping script removed the whole patch)
+
+--=20
+=3D=3D=3D Hugo Mills: hugo@... carfax.org.uk | darksatanic.net | lug.org.uk=
+ =3D=3D=3D
+  PGP key: 515C238D from wwwkeys.eu.pgp.net or http://www.carfax.org.uk
+      --- What's a Nazg=FBl like you doing in a place like this? ---     =
+=20
+
+--n8g4imXOkfNTN/H1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iD8DBQFN+Iq3IKyzvlFcI40RAhGnAJ9Egsnp1XI8TiFC4jiWnakefORnGQCeL+XW
+/FxmTMu8x9AMKiMg7vrRF9E=
+=B5df
+-----END PGP SIGNATURE-----
+
+--n8g4imXOkfNTN/H1--
