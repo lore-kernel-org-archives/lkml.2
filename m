@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614Ab1FOCKJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 22:10:09 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49897 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753508Ab1FOCKG (ORCPT
+	id S1754537Ab1FOCcZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 22:32:25 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:24628 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753709Ab1FOCcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 22:10:06 -0400
+	Tue, 14 Jun 2011 22:32:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=VwzKfo+no/8fc7z13xj+MG2S/TJTKaGotKQ8ukDfor8cikttlm/4qJKzjjjwXihVLX
-         joQ6adRzM7uxT6RsP6AoAWdvSd58VD4Ght1U22P7j6KnPOibRdp89ShbYiudXBrDHJoO
-         w1Jhrwvivs7Qhpxsdw+GAqo+U7FS0AfY2Frp4=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=CE/ED9+eyM89SZpWdBuHJb5iJCEAxAoZNtRP3MNSQVhGHQ8o4h93WEwjmPqOz1JyHV
+         dwvrLZg3+38Bhb2f/R5w==
+Date: Tue, 14 Jun 2011 19:32:18 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Chris Fowler <cfowler@opsdc.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: Panic on OOM
+In-Reply-To: <1308103443.2074.357.camel@compaq-desktop>
+Message-ID: <alpine.DEB.2.00.1106141908100.7025@chino.kir.corp.google.com>
+References: <1308058276.2074.295.camel@compaq-desktop> <alpine.DEB.2.00.1106141656220.31202@chino.kir.corp.google.com> <1308103443.2074.357.camel@compaq-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4DF80B03.7000204@jp.fujitsu.com>
-References: <4df13a522720782e51@agluck-desktop.sc.intel.com>
-	<4df13cea27302b7ccf@agluck-desktop.sc.intel.com>
-	<20110612223840.GA23218@aftab>
-	<BANLkTi=-A5PYj8zpjGB4Xb-_VNq0qr+CGQ@mail.gmail.com>
-	<4DF5C36A.1040707@redhat.com>
-	<20110613095521.GA26316@aftab>
-	<4DF5F729.4060609@redhat.com>
-	<20110613124003.GA27918@aftab>
-	<4DF606C9.90308@redhat.com>
-	<20110613151208.GA29045@aftab>
-	<4DF63B7A.1030805@redhat.com>
-	<BANLkTinUEqRni2u0DaMfSc45b3DmMMyYvA@mail.gmail.com>
-	<4DF6CC58.8050601@jp.fujitsu.com>
-	<4DF6CD25.7040405@jp.fujitsu.com>
-	<BANLkTina_Y5xekoE9SnbG125CVFLopym2A@mail.gmail.com>
-	<BANLkTimY1X73pTJmMd8G5GKpsCBVmXLfOw@mail.gmail.com>
-	<4DF80B03.7000204@jp.fujitsu.com>
-Date: Tue, 14 Jun 2011 19:10:06 -0700
-X-Google-Sender-Auth: 0jL-D_Ve8fslq-4NqN-SQN4rW_w
-Message-ID: <BANLkTi=HheN6zzuhviPX-+77oZyY+D_yfA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] x86, mce: rework use of TIF_MCE_NOTIFY
-From: Tony Luck <tony.luck@intel.com>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, Borislav Petkov <bp@amd64.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 14, 2011 at 6:29 PM, Hidetoshi Seto
-<seto.hidetoshi@jp.fujitsu.com> wrote:
-> Or ... is it possible to push siginfo w/ addr and pop here?
+On Tue, 14 Jun 2011, Chris Fowler wrote:
 
-I chatted to Peter Anvin about this over lunch ... his suggestion was that since
-we know (for now) that the recovery case is always from user mode. We can
-let all the non-involved cpus return from do_machine_check() .. but catch the
-cpu with the problem and do a sideways stack jump from the machine check
-stack to the normal trap stack.  At this point we'll be executing in a context
-that is effectively the same as a page fault - so we have plenty of safe options
-on functions we can call, locks we can take etc.
+> > Using /proc/sys/vm/panic_on_oom also won't panic the machine if you
+> > happen to use a cpuset or mempolicy.  You'll want to write '2' instead
+> > if you want to panic in all possible oom conditions.
+> > 
+> > 
+> 
+> 2 did it.  Thank you.
+> 
+> perl -e 'my @mem = (); while(1) { push @mem, "XXXXXXXXXXXXXXXX"; }'
+> 
+> I lost connection and it came back after about 30s.  Reboot worked.
+> 
 
-So perhaps we can change "void do_machine_check()" to "unsigned long
-do_machine_check()" and have the bystander cpus "return 0;" and the
-cpu that hit the error "return m.addr;" ... and then do the necessary magic
-in entry_64.S to leap from stack to stack in one mighty leap (and  then
-onto a "handle_action_required(regs, addr)" function.
+That wasn't meant as a fix for the problem but rather just a suggestion 
+based on how you're using the device.
 
--Tony
+It's just a coincidence that it worked that time, because 
+/proc/sys/vm/panic_on_oom == 2 is the exact same as 
+/proc/sys/vm/panic_on_oom == 1 with the .config you posted (since you 
+don't have CONFIG_NUMA, constrained_alloc() always returns CONSTRAINT_NONE 
+in the oom killer).
+
+More supporting evidence is that in the initial report that you said you 
+had seen the panic and "Rebooting in 10 seconds..." message, yet no 
+reboot.  That indicates the oom killer is working fine in both conditions.
+
+So it's definitely the reboot code that is causing an issue that either 
+hangs or takes excessively long, and that only happens sporadically for 
+your machine.  The only differences between this code between v2.6.33 and 
+v2.6.38 is how reboots are handled for Dell Precision T7400, VersaLogic 
+Menlow based, and Apple iMac9,1.
