@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab1FONNY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 09:13:24 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:33415 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753811Ab1FONNW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 09:13:22 -0400
-Message-ID: <4DF8AFB5.10205@vmware.com>
-Date: Wed, 15 Jun 2011 15:12:21 +0200
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100624 Mandriva/3.0.5-0.1mdv2009.1 (2009.1) Thunderbird/3.0.5
+	id S1754825Ab1FONPQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 09:15:16 -0400
+Received: from d1.icnet.pl ([212.160.220.21]:54804 "EHLO d1.icnet.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753811Ab1FONPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 09:15:15 -0400
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Organization: Tele-Info-System, Poznan, PL
+To: balbi@ti.com
+Subject: Re: [PATCH 3.0-rc2] OMAP: ams-delta: fix broken uevent sysfs entries
+Date: Wed, 15 Jun 2011 15:14:04 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r5; KDE/4.4.5; i686; ; )
+Cc: Tony Lindgren <tony@atomide.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <201106070316.41099.jkrzyszt@tis.icnet.pl> <201106151453.07945.jkrzyszt@tis.icnet.pl> <20110615130005.GM471@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20110615130005.GM471@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-CC: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Daniel Walker <dwalker@codeaurora.org>, linux-mm@kvack.org,
-        Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-        Michal Nazarewicz <mina86@mina86.com>, linaro-mm-sig@lists.linaro.org,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-media@vger.kernel.org
-Subject: Re: [Linaro-mm-sig] [PATCH 08/10] mm: cma: Contiguous Memory Allocator
- added
-References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>	<201106141803.00876.arnd@arndb.de>	<op.vw2r3xrj3l0zgt@mnazarewicz-glaptop>	<201106142030.07549.arnd@arndb.de> <BANLkTi=XTJuF4np7+rYHzJqWK20OxMrBsw@mail.gmail.com>
-In-Reply-To: <BANLkTi=XTJuF4np7+rYHzJqWK20OxMrBsw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201106151514.11574.jkrzyszt@tis.icnet.pl>
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2011 01:53 PM, Daniel Vetter wrote:
-> On Tue, Jun 14, 2011 at 20:30, Arnd Bergmann<arnd@arndb.de>  wrote:
->    
->> On Tuesday 14 June 2011 18:58:35 Michal Nazarewicz wrote:
->>      
->>> Ah yes, I forgot that separate regions for different purposes could
->>> decrease fragmentation.
->>>        
->> That is indeed a good point, but having a good allocator algorithm
->> could also solve this. I don't know too much about these allocation
->> algorithms, but there are probably multiple working approaches to this.
->>      
-> imo no allocator algorithm is gonna help if you have comparably large,
-> variable-sized contiguous allocations out of a restricted address range.
-> It might work well enough if there are only a few sizes and/or there's
-> decent headroom. But for really generic workloads this would require
-> sync objects and eviction callbacks (i.e. what Thomas Hellstrom pushed
-> with ttm).
->    
+On Wed 15 Jun 2011 at 15:00:08 Felipe Balbi wrote:
+> Hi,
+> 
+> On Wed, Jun 15, 2011 at 02:53:01PM +0200, Janusz Krzysztofik wrote:
+> > 
+> > $ grep -r "struct .* platform_device .* = {" .|grep "__initdata"|grep -v '*'
+> > ./arch/arm/mach-omap1/board-ams-delta.c:static struct platform_device ams_delta_kp_device __initdata = {
+> > ./arch/arm/mach-omap1/board-ams-delta.c:static struct platform_device ams_delta_lcd_device __initdata = {
+> > ./arch/arm/mach-omap1/board-ams-delta.c:static struct platform_device ams_delta_led_device __initdata = {
+> > ./arch/arm/mach-omap1/board-ams-delta.c:static struct platform_device ams_delta_camera_device __initdata = {
+> > ./arch/arm/mach-omap1/gpio7xx.c:static struct __initdata platform_device omap7xx_mpu_gpio = {
+> > ./arch/arm/mach-omap1/gpio7xx.c:static struct __initdata platform_device omap7xx_gpio1 = {
+> > ./arch/arm/mach-omap1/gpio7xx.c:static struct __initdata platform_device omap7xx_gpio2 = {
+> > ./arch/arm/mach-omap1/gpio7xx.c:static struct __initdata platform_device omap7xx_gpio3 = {
+> > ./arch/arm/mach-omap1/gpio7xx.c:static struct __initdata platform_device omap7xx_gpio4 = {
+> > ./arch/arm/mach-omap1/gpio7xx.c:static struct __initdata platform_device omap7xx_gpio5 = {
+> > ./arch/arm/mach-omap1/gpio7xx.c:static struct __initdata platform_device omap7xx_gpio6 = {
+> > ./arch/arm/mach-omap1/gpio15xx.c:static struct __initdata platform_device omap15xx_mpu_gpio = {
+> > ./arch/arm/mach-omap1/gpio15xx.c:static struct __initdata platform_device omap15xx_gpio = {
+> > ./arch/arm/mach-omap1/gpio16xx.c:static struct __initdata platform_device omap16xx_mpu_gpio = {
+> > ./arch/arm/mach-omap1/gpio16xx.c:static struct __initdata platform_device omap16xx_gpio1 = {
+> > ./arch/arm/mach-omap1/gpio16xx.c:static struct __initdata platform_device omap16xx_gpio2 = {
+> > ./arch/arm/mach-omap1/gpio16xx.c:static struct __initdata platform_device omap16xx_gpio3 = {
+> > ./arch/arm/mach-omap1/gpio16xx.c:static struct __initdata platform_device omap16xx_gpio4 = {
+> > ./arch/arm/mach-omap2/board-rx51-peripherals.c:static struct platform_device rx51_si4713_dev __initdata_or_module = {
+> > 
+> > So, there is no single exact pattern found in the whole tree, and a
+> > few instances of similiar patterns of two kinds found only inside
+> > omap. If I follow any of the two, either moving '__initdata' in
+> > front of 'platform_device' or using '__initdata_or_module'
+> > instead, the problem no longer hits me (using my custom
+> > defconfig). However, the former seems not conformant to what one
+> > can learn from include/linux/init.h, so I suspect that placing
+> > __initdata like this can be a noop, while the latter means "can be
+> > init if no module support", which would probably still exhibit the
+> > problem if so configured.
+> > 
+> > How would you like to have this corrected then?
+> 
+> I guess removing __initdata from all platoform_device structures is
+> the way to go. We need to find another way to silent the section
+> mismatch warnings.
 
-Indeed, IIRC on the meeting I pointed out that there is no way to 
-generically solve the fragmentation problem without movable buffers. 
-(I'd do it as a simple CMA backend to TTM). This is exactly the same 
-problem as trying to fit buffers in a limited VRAM area.
+OK. I'll cook a patch which removes __initdata from all listed above 
+instead of only from board-ams-delta.
 
-/Thomas
-
-
+Thanks,
+Janusz
