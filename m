@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab1FOJgs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 05:36:48 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:41549 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754209Ab1FOJgr (ORCPT
+	id S1754621Ab1FOJnp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 05:43:45 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55641 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753553Ab1FOJnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 05:36:47 -0400
+	Wed, 15 Jun 2011 05:43:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=kSgFhviYI2SKzQVPHGzssi/NuWJi6u6Fb3Db4+ettrUZI625yKmRdh0o/oeODjv9t/
-         ZyCLnRAr61egKuE8TXrfxLUqBmCeDY7aL+CHtmyJQruYj1sbtUcY4WYDTFuOagAZhDKQ
-         x7fPpNKhGZmueAscUiiEhnichXva/rMSdy5IY=
-Message-ID: <4DF87D2B.7090201@gmail.com>
-Date: Wed, 15 Jun 2011 11:36:43 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Petr Tesarik <ptesarik@suse.cz>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: bug: kernel 3.0-rc3 not relocatable on i386?
-References: <1308125533.4641.33.camel@nathan.suse.cz>
-In-Reply-To: <1308125533.4641.33.camel@nathan.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=F6PstvGBcKGJM1cRaZ5uY1V81sCy54fkQR0j/p05ixC/a1P9AkHgrXqyUyChkmQPcg
+         JfDMnV2jBQyMpH4thQawcS/ccHIBhm5xKRP9TH1JqbkYB0i5jxVyfgdqCFvQmAxwwEIi
+         ZGW9vJfEk/Lc0in2Ya5+nMgwVc/9LClS4ufmQ=
+Subject: Re: tc match MAC destination
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: ierdnah@gmail.com
+Cc: linux-kernel@vger.kernel.org, pdoru.kernel@evox.ro, netdev@vger.kernel.org
+In-Reply-To: <1308125523.30324.64.camel@ierdnac-hp>
+References: <1308125523.30324.64.camel@ierdnac-hp>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Jun 2011 11:43:28 +0200
+Message-ID: <1308131008.9302.6.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Petr,
+Le mercredi 15 juin 2011 à 11:12 +0300, Andrei Popa a écrit :
+> Hello,
+> 
+> I want to shape PVSTP+ traffic (traffic that has MAC destination
+> 01:00:0c:cc:cc:cd) and it doesn't work.
+> I've tried
+> filter parent 1: protocol 802_3 pref 2 u32 fh 802::11 order 17 key ht
+> 802 bkt 0 flowid 1:3 
+>   match 01000ccc/ffffffff at 0
+> but it doesn't work.
+> 
+> With
+> filter parent 1: protocol arp pref 1 u32 
+> filter parent 1: protocol arp pref 1 u32 fh 801: ht divisor 1 
+> filter parent 1: protocol arp pref 1 u32 fh 801::7 order 7 key ht 801
+> bkt 0 flowid 1:3 
+>   match 00000000/00000000 at 0
+> filter parent 1: protocol 802_3 pref 2 u32 
+> filter parent 1: protocol 802_3 pref 2 u32 fh 802: ht divisor 1 
+> filter parent 1: protocol 802_3 pref 2 u32 fh 802::3 order 3 key ht 802
+> bkt 0 flowid 1:3 
+>   match 00000000/00000000 at 0
+>         action order 1: mirred (Egress Mirror to device ifb1) pipe
+>         index 1923 ref 1 bind 1
+> 
+> I see arp trafic with tcpdump on ifb1, but no STP traffic or any kind of
+> traffic except arp, because I've matched all MAC addreses.
+> Can somebody verify that this match works ?
+> 
+> I use kernel 2.6.39.1.
+> 
+> Thank you,
 
-Op 15-06-11 10:12, Petr Tesarik schreef:
-> Hi all,
->
-> it seems that the 3.0-rc3 kernel is not relocatable on i386. I get
-> warnings about jiffies being an absolute symbol, and indeed, when GRUB
-> loads the kernel at a non-default address, jiffies is not relocated.
->
-> In my example the kernel is configured with
-> CONFIG_PHYSICAL_START=0x1000000
-> CONFIG_PHYSICAL_ALIGN=0x200000
-> CONFIG_RELOCATABLE=y
-> and loaded at 0x200000 by GRUB.
->
-> Booting fails when checking whether the timer works, because do_timer()
-> increments jiffies_64, but timer_irq_works() checks jiffies. The code
-> looks like this:
->
-> c13daab7:       8b 3d 40 7a 39 c1       mov    0xc1397a40,%edi
->
-> but arch/x86/boot/compressed/vmlinux.relocs does not contain c13daaba.
-> Consequently, timer_irq_works() reads the wrong memory location and
-> fails, causing a panic:
->
-> kernel panic: IO-APIC + timer doesn't work! Boot with apic=debug and
-> send a report.  Then try booting with the 'noapic' option.
->
-> Needless to say, the kernel freezes a few initcalls later when booted
-> with noapic, because IO-APIC worked fine, in fact. I verified that by
-> inserting a debugging printk() in do_timer(), and I also verified with
-> that printk() that the address of jiffies_64 and the address of jiffies
-> differ at run time.
+Hi Andrei
 
-Can you try this patch?
+Since you refer to a very complex network setup, it would really help if
+you provide a self contained script so that we can take a look.
 
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index 89aed99..49e666e 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -34,12 +34,11 @@ OUTPUT_FORMAT(CONFIG_OUTPUT_FORMAT, CONFIG_OUTPUT_FORMAT, CONFIG_OUTPUT_FORMAT)
- #ifdef CONFIG_X86_32
- OUTPUT_ARCH(i386)
- ENTRY(phys_startup_32)
--jiffies = jiffies_64;
- #else
- OUTPUT_ARCH(i386:x86-64)
- ENTRY(phys_startup_64)
--jiffies_64 = jiffies;
- #endif
-+jiffies_64 = jiffies;
- 
- #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
- /*
+We netdev guys saw your first mail days ago but are a bit busy, so the
+7th point listed in "REPORTING-BUGS" would be nice :
+
+[7.] A small shell script or example program which triggers the problem
+
+
