@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803Ab1FPHAH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:00:07 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:53462 "EHLO
+	id S1755185Ab1FPHmq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:42:46 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:44796 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751357Ab1FPHAF (ORCPT
+	by vger.kernel.org with ESMTP id S1754777Ab1FPHAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:00:05 -0400
-X-Sasl-enc: FLRgi/9Q/s0EOFO+64FYkY8N1S/3IM08d5GfEfXCsTMd 1308207604
+	Thu, 16 Jun 2011 03:00:06 -0400
+X-Sasl-enc: TpNrw8/JwPpn6I8yDgGhkgOSBvHbcFpkm/KyM/tNhwFl 1308207605
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:29 2011
-Message-Id: <20110616000229.296909765@clark.kroah.org>
+Message-Id: <20110616000229.383591685@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 16:59:26 -0700
+Date: Wed, 15 Jun 2011 16:59:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Williamson <alex.williamson@redhat.com>,
+        Mike Travis <travis@sgi.com>,
         David Woodhouse <David.Woodhouse@intel.com>
-Subject: [03/89] intel-iommu: Only unlink device domains from iommu
+Subject: [04/89] intel-iommu: Check for identity mapping candidate using
 In-Reply-To: <20110616000258.GA14529@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,49 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
+ system dma mask
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Chris Wright <chrisw@sous-sol.org>
 
-commit 9b4554b21ed07e8556405510638171f0c787742a upstream.
+commit 8fcc5372fbac085199d84a880503ed67aba3fe49 upstream.
 
-Commit a97590e5 added unlinking domains from iommus to reciprocate the
-iommu from domains unlinking that was already done.  We actually want
-to only do this for device domains and never for the static
-identity map domain or VM domains.  The SI domain is special and
-never freed, while VM domain->id lives in their own special address
-space, separate from iommu->domain_ids.
+The identity mapping code appears to make the assumption that if the
+devices dma_mask is greater than 32bits the device can use identity
+mapping.  But that is not true: take the case where we have a 40bit
+device in a 44bit architecture. The device can potentially receive a
+physical address that it will truncate and cause incorrect addresses
+to be used.
 
-In the current code, a VM can get domain->id zero, then mark that
-domain unused when unbound from pci-stub.  This leads to DMAR
-write faults when the device is re-bound to the host driver.
+Instead check to see if the device's dma_mask is large enough
+to address the system's dma_mask.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Mike Travis <travis@sgi.com>
+Reviewed-by: Mike Habeck <habeck@sgi.com>
 Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/intel-iommu.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/pci/intel-iommu.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
 --- a/drivers/pci/intel-iommu.c
 +++ b/drivers/pci/intel-iommu.c
-@@ -3422,10 +3422,13 @@ static void domain_remove_one_dev_info(s
- 		domain_update_iommu_cap(domain);
- 		spin_unlock_irqrestore(&domain->iommu_lock, tmp_flags);
+@@ -2190,8 +2190,19 @@ static int iommu_should_identity_map(str
+ 	 * Assume that they will -- if they turn out not to be, then we can 
+ 	 * take them out of the 1:1 domain later.
+ 	 */
+-	if (!startup)
+-		return pdev->dma_mask > DMA_BIT_MASK(32);
++	if (!startup) {
++		/*
++		 * If the device's dma_mask is less than the system's memory
++		 * size then this is not a candidate for identity mapping.
++		 */
++		u64 dma_mask = pdev->dma_mask;
++
++		if (pdev->dev.coherent_dma_mask &&
++		    pdev->dev.coherent_dma_mask < dma_mask)
++			dma_mask = pdev->dev.coherent_dma_mask;
++
++		return dma_mask >= dma_get_required_mask(&pdev->dev);
++	}
  
--		spin_lock_irqsave(&iommu->lock, tmp_flags);
--		clear_bit(domain->id, iommu->domain_ids);
--		iommu->domains[domain->id] = NULL;
--		spin_unlock_irqrestore(&iommu->lock, tmp_flags);
-+		if (!(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) &&
-+		    !(domain->flags & DOMAIN_FLAG_STATIC_IDENTITY)) {
-+			spin_lock_irqsave(&iommu->lock, tmp_flags);
-+			clear_bit(domain->id, iommu->domain_ids);
-+			iommu->domains[domain->id] = NULL;
-+			spin_unlock_irqrestore(&iommu->lock, tmp_flags);
-+		}
- 	}
- 
- 	spin_unlock_irqrestore(&device_domain_lock, flags);
+ 	return 1;
+ }
 
 
