@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab1FOTVb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 15:21:31 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:60359 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754096Ab1FOTV1 convert rfc822-to-8bit (ORCPT
+	id S1754507Ab1FOTXS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 15:23:18 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38672 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752383Ab1FOTXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 15:21:27 -0400
+	Wed, 15 Jun 2011 15:23:16 -0400
+Date: Wed, 15 Jun 2011 16:23:38 -0300
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth-2.6 2011-06-15
+Message-ID: <20110615192338.GC23248@joana>
+Mail-Followup-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <4DF8F2E5.4090705@oracle.com>
-References: <4DDB3AFF.9030006@oracle.com> <20110524075248.GB19734@sirena.org.uk>
- <20110527074552.GA907@ponder.secretlab.ca> <4DDFE391.2030507@oracle.com>
- <20110527201201.GA6645@ponder.secretlab.ca> <BANLkTin-KSVcG2cQfRM3Ys0_g_uJVruDMw@mail.gmail.com>
- <20110603171837.GA9918@opensource.wolfsonmicro.com> <BANLkTi=oko_C8_46Y8p5O1Qvw1KEn-1PjA@mail.gmail.com>
- <4DEC4D67.6010506@oracle.com> <20110614091211.465553de.randy.dunlap@oracle.com>
- <20110614161357.GB1839@ponder.secretlab.ca> <20110614170602.7a51b1af.randy.dunlap@oracle.com>
- <20110615103420.1578eb5c.sfr@canb.auug.org.au> <4DF8F2E5.4090705@oracle.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 15 Jun 2011 13:21:07 -0600
-X-Google-Sender-Auth: zqa_psgK7agyxv5aLYBI3lf5YoI
-Message-ID: <BANLkTikJ8v-hhvfApJm4Pz0w7-ttiTYADw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] gpio: include linux/gpio.h where needed
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org, Dmitry Artamonow <mad_soft@inbox.ru>,
-        x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-next@vger.kernel.org, Harald Welte <laforge@gnufiish.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 11:59 AM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> On 06/14/11 17:34, Stephen Rothwell wrote:
->> Hi Randy,
->>
->> On Tue, 14 Jun 2011 17:06:02 -0700 Randy Dunlap <randy.dunlap@oracle.com> wrote:
->>>
->>> From: Randy Dunlap <randy.dunlap@oracle.com>
->>>
->>> Some files use GPIOF_ macros but don't include the header file
->>> for them.  These macros are being moved to <linux/gpio.h>, so add
->>> includes for <linux/gpio.h> where needed.
->>
->> Shouldn't these patches be in the other order to avoid bisection problems?
->
-> Hm, I suppose so.
->
-> Grant, can you apply these with patch 2/2 first or do I need to resend
-> the patches?
+Hi John,
 
-You don't need to resend.  I'll apply them in the correct order.
+Three regressions fix intended for 3.0. Two of them fix a change made in our
+HCI security process for 3.0. The third one fixes an issue with non-SSP devices.
+All of them are critical fixes. They should be in 3.0. Please pull! Thanks.
 
-g.
+	Gustavo
+
+
+The following changes since commit d6124baf8a098aacdbb85ff5b171da68dad6930e:
+
+  Merge branch 'master' of master.kernel.org:/pub/scm/linux/kernel/git/padovan/bluetooth-2.6 (2011-06-10 15:05:34 -0400)
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/padovan/bluetooth-2.6.git master
+
+Ilia Kolomisnky (1):
+      Bluetooth: Fix L2CAP connection establishment
+
+Johan Hedberg (1):
+      Bluetooth: Fix accepting connect requests for defer_setup
+
+Luiz Augusto von Dentz (1):
+      Bluetooth: Fix L2CAP security check
+
+ net/bluetooth/hci_conn.c   |    6 +++---
+ net/bluetooth/l2cap_core.c |   21 +++++++++++++++------
+ 2 files changed, 18 insertions(+), 9 deletions(-)
+
