@@ -1,136 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab1FOIey (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 04:34:54 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:54048 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753358Ab1FOIew convert rfc822-to-8bit (ORCPT
+	id S1754083Ab1FOIg7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 04:36:59 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:25354 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754002Ab1FOIgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 04:34:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=u0j4WoYQqIT7h52diCk5al8v5IsQLSFdCK07+ktGim8n/kp/Y3L4SVwY9ykENG14uv
-         7jptQ3pcVJ458rwZsT0Zf2XaB5vDM2xNRN3JI6otH9qvsjgl/nSHv6DzzKL/gWR15mul
-         uRZSr0cDjtBdhH0sZzGjAUB2JBdTijKWtu1q0=
-MIME-Version: 1.0
-In-Reply-To: <1308035825-22410-1-git-send-email-eric.miao@linaro.org>
-References: <1308035825-22410-1-git-send-email-eric.miao@linaro.org>
-From: Eric Miao <eric.miao@linaro.org>
-Date: Wed, 15 Jun 2011 16:34:31 +0800
-X-Google-Sender-Auth: FBQXSil49pU1EwH9uY7hezwsNbI
-Message-ID: <BANLkTi=1hMNNWeq_4bcCr_ynT8osY3efaA@mail.gmail.com>
-Subject: Re: [PATCH] i2c: imx: choose the better clock divider
-To: Ben Dooks <ben-linux@fluff.org>
-Cc: linux-i2c@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
-        linux-kernel@vger.kernel.org, Eric Miao <eric.miao@linaro.org>,
-        Richard Zhao <richard.zhao@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 15 Jun 2011 04:36:53 -0400
+Date: Wed, 15 Jun 2011 10:36:18 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [Linaro-mm-sig] [PATCH 08/10] mm: cma: Contiguous Memory Allocator
+ added
+In-reply-to: <201106142242.25157.arnd@arndb.de>
+To: "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Zach Pfeffer'" <zach.pfeffer@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Daniel Stone'" <daniels@collabora.com>, linux-mm@kvack.org,
+        "'Mel Gorman'" <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        linaro-mm-sig@lists.linaro.org,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-media@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Message-id: <000901cc2b37$4c21f030$e465d090$%szyprowski@samsung.com>
+Organization: SPRC
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: pl
+Content-transfer-encoding: 7BIT
+Thread-index: Acwq08w+hLuENvqsQ6WxCs8SVZBnZAAV+1Dg
+References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
+ <20110614170158.GU2419@fooishbar.org>
+ <BANLkTi=cJisuP8=_YSg4h-nsjGj3zsM7sg@mail.gmail.com>
+ <201106142242.25157.arnd@arndb.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry forgot to include Ben.
+Hello,
 
-Ben, any ideas?
+On Tuesday, June 14, 2011 10:42 PM Arnd Bergmann wrote:
 
-On Tue, Jun 14, 2011 at 3:17 PM, Eric Miao <eric.miao@linaro.org> wrote:
-> The original algorithm doesn't perform very well in some cases, e.g.
+> On Tuesday 14 June 2011 20:58:25 Zach Pfeffer wrote:
+> > I've seen this split bank allocation in Qualcomm and TI SoCs, with
+> > Samsung, that makes 3 major SoC vendors (I would be surprised if
+> > Nvidia didn't also need to do this) - so I think some configurable
+> > method to control allocations is necessarily. The chips can't do
+> > decode without it (and by can't do I mean 1080P and higher decode is
+> > not functionally useful). Far from special, this would appear to be
+> > the default.
+> 
+> Thanks for the insight, that's a much better argument than 'something
+> may need it'. Are those all chips without an IOMMU or do we also
+> need to solve the IOMMU case with split bank allocation?
+> 
+> I think I'd still prefer to see the support for multiple regions split
+> out into one of the later patches, especially since that would defer
+> the question of how to do the initialization for this case and make
+> sure we first get a generic way.
+> 
+> You've convinced me that we need to solve the problem of allocating
+> memory from a specific bank eventually, but separating it from the
+> one at hand (contiguous allocation) should help getting the important
+> groundwork in at first.
 >
->  When the source clock of the I2C controller is 66MHz, and the
->  requested rate is 100KHz, it gives a divider of 768 instead of
->  the better 640.
->
-> Choose a better clock divider so the final clock rate is closer to
-> the requested one by comparing the rate distances calculated by
-> two adjacent dividers.
->
-> Cc: Richard Zhao <richard.zhao@linaro.org>
-> Signed-off-by: Eric Miao <eric.miao@linaro.org>
-> ---
->  drivers/i2c/busses/i2c-imx.c |   46 ++++++++++++++++++++++++++++-------------
->  1 files changed, 31 insertions(+), 15 deletions(-)
->
-> diff --git a/drivers/i2c/busses/i2c-imx.c b/drivers/i2c/busses/i2c-imx.c
-> index 4c2a62b..cd640ff 100644
-> --- a/drivers/i2c/busses/i2c-imx.c
-> +++ b/drivers/i2c/busses/i2c-imx.c
-> @@ -112,6 +112,8 @@ static u16 __initdata i2c_clk_div[50][2] = {
->        { 3072, 0x1E }, { 3840, 0x1F }
->  };
->
-> +#define I2C_CLK_DIV_NUM                ARRAY_SIZE(i2c_clk_div)
-> +
->  struct imx_i2c_struct {
->        struct i2c_adapter      adapter;
->        struct resource         *res;
-> @@ -240,22 +242,37 @@ static void i2c_imx_stop(struct imx_i2c_struct *i2c_imx)
->        clk_disable(i2c_imx->clk);
->  }
->
-> -static void __init i2c_imx_set_clk(struct imx_i2c_struct *i2c_imx,
-> -                                                       unsigned int rate)
-> +/* find the index into i2c_clk_div[] array, compare with the two
-> + * dividers found, return the one with smaller error
-> + */
-> +static int find_div(unsigned long i2c_clk_rate, unsigned long rate)
->  {
-> -       unsigned int i2c_clk_rate;
-> -       unsigned int div;
-> +       unsigned long div, delta_l, delta_h;
->        int i;
->
-> -       /* Divider value calculation */
-> -       i2c_clk_rate = clk_get_rate(i2c_imx->clk);
->        div = (i2c_clk_rate + rate - 1) / rate;
-> +
->        if (div < i2c_clk_div[0][0])
-> -               i = 0;
-> -       else if (div > i2c_clk_div[ARRAY_SIZE(i2c_clk_div) - 1][0])
-> -               i = ARRAY_SIZE(i2c_clk_div) - 1;
-> -       else
-> -               for (i = 0; i2c_clk_div[i][0] < div; i++);
-> +               return 0;
-> +
-> +       if (div > i2c_clk_div[I2C_CLK_DIV_NUM - 1][0])
-> +               return I2C_CLK_DIV_NUM;
-> +
-> +       for (i = 0; i < I2C_CLK_DIV_NUM; i++)
-> +               if (i2c_clk_div[i][0] > div)
-> +                       break;
-> +
-> +       delta_h = (i2c_clk_rate / i2c_clk_div[i - 1][0]) - rate;
-> +       delta_l = rate - (i2c_clk_rate / i2c_clk_div[i][0]);
-> +
-> +       return (delta_l < delta_h) ? i : i - 1;
-> +}
-> +
-> +static void __init i2c_imx_set_clk(struct imx_i2c_struct *i2c_imx,
-> +                                  unsigned int rate)
-> +{
-> +       unsigned long i2c_clk_rate = clk_get_rate(i2c_imx->clk);
-> +       int i = find_div(i2c_clk_rate, rate);
->
->        /* Store divider value */
->        i2c_imx->ifdr = i2c_clk_div[i][1];
-> @@ -271,10 +288,9 @@ static void __init i2c_imx_set_clk(struct imx_i2c_struct *i2c_imx,
->
->        /* dev_dbg() can't be used, because adapter is not yet registered */
->  #ifdef CONFIG_I2C_DEBUG_BUS
-> -       printk(KERN_DEBUG "I2C: <%s> I2C_CLK=%d, REQ DIV=%d\n",
-> -               __func__, i2c_clk_rate, div);
-> -       printk(KERN_DEBUG "I2C: <%s> IFDR[IC]=0x%x, REAL DIV=%d\n",
-> -               __func__, i2c_clk_div[i][1], i2c_clk_div[i][0]);
-> +       pr_debug("<%s> I2C_CLK=%ld, REQ RATE=%d, DIV=%d, IFDR[IC]=0x%x\n",
-> +               __func__, i2c_clk_rate, rate,
-> +               i2c_clk_div[i][0], i2c_clk_div[i][1]);
->  #endif
->  }
->
-> --
-> 1.7.4.1
->
->
+> The possible conflict that I still see with per-bank CMA regions are:
+> 
+> * It completely destroys memory power management in cases where that
+>   is based on powering down entire memory banks.
+
+I don't think that per-bank CMA regions destroys memory power management
+more than the global CMA pool. Please note that the contiguous buffers
+(or in general dma-buffers) right now are unmovable so they don't fit
+well into memory power management.
+
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
