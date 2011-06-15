@@ -1,126 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680Ab1FOAZL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 20:25:11 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:43332 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752666Ab1FOAZI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 20:25:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=rTPNBR8sYSAoxZLLA41EiohFKxNG6RflYerlCH/GenyIm1fYuFI/YMZ+uQ896IXAKK
-         nvYczWG4guBeYk8ROWVw==
-Date: Tue, 14 Jun 2011 17:24:38 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Pekka Enberg <penberg@kernel.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 1/12] radix_tree: exceptional entries and indices
-In-Reply-To: <BANLkTinGHSpn2aF-HM-R-eu12ZqMTpHQdQ@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1106141707540.31043@sister.anvils>
-References: <alpine.LSU.2.00.1106140327550.29206@sister.anvils> <alpine.LSU.2.00.1106140341070.29206@sister.anvils> <BANLkTinGHSpn2aF-HM-R-eu12ZqMTpHQdQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-1819746192-1308097494=:31043"
-X-System-Of-Record: true
+	id S1753614Ab1FOA3V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 20:29:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:8889 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751369Ab1FOA3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 20:29:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,368,1304319600"; 
+   d="scan'208";a="14748214"
+Subject: REGRESSION: Performance regressions from switching anon_vma->lock
+ to mutex
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, ak@linux.intel.com,
+        shaohua.li@intel.com, alex.shi@intel.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Jun 2011 17:29:58 -0700
+Message-ID: <1308097798.17300.142.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+It seems like that the recent changes to make the anon_vma->lock into a
+mutex (commit 2b575eb6) causes a 52% regression in throughput (2.6.39 vs
+3.0-rc2) on exim mail server workload in the MOSBENCH test suite.
 
---8323584-1819746192-1308097494=:31043
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Our test setup is on a 4 socket Westmere EX system, with 10 cores per
+socket.  40 clients are created on the test machine which send email
+to the exim server residing on the sam test machine.
 
-Hi Pekka!
+Exim forks off child processes to handle the incoming mail, and the
+process exits after the mail delivery completes. We see quite a bit of
+acquisition of the anon_vma->lock as a result.  
 
-Thanks for taking a look.
+On 2.6.39, the contention of anon_vma->lock occupies 3.25% of cpu.
+However, after the switch of the lock to mutex on 3.0-rc2, the mutex
+acquisition jumps to 18.6% of cpu.  This seems to be the main cause of
+the 52% throughput regression.
 
-On Tue, 14 Jun 2011, Pekka Enberg wrote:
-> On Tue, Jun 14, 2011 at 1:42 PM, Hugh Dickins <hughd@google.com> wrote:
-> > @@ -39,7 +39,15 @@
-> > =A0* when it is shrunk, before we rcu free the node. See shrink code fo=
-r
-> > =A0* details.
-> > =A0*/
-> > -#define RADIX_TREE_INDIRECT_PTR =A0 =A0 =A0 =A01
-> > +#define RADIX_TREE_INDIRECT_PTR =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A01
-> > +/*
-> > + * A common use of the radix tree is to store pointers to struct pages=
-;
-> > + * but shmem/tmpfs needs also to store swap entries in the same tree:
-> > + * those are marked as exceptional entries to distinguish them.
-> > + * EXCEPTIONAL_ENTRY tests the bit, EXCEPTIONAL_SHIFT shifts content p=
-ast it.
-> > + */
-> > +#define RADIX_TREE_EXCEPTIONAL_ENTRY =A0 2
-> > +#define RADIX_TREE_EXCEPTIONAL_SHIFT =A0 2
-> >
-> > =A0#define radix_tree_indirect_to_ptr(ptr) \
-> > =A0 =A0 =A0 =A0radix_tree_indirect_to_ptr((void __force *)(ptr))
-> > @@ -174,6 +182,28 @@ static inline int radix_tree_deref_retry
-> > =A0}
-> >
-> > =A0/**
-> > + * radix_tree_exceptional_entry =A0 =A0 =A0 =A0- radix_tree_deref_slot=
- gave exceptional entry?
-> > + * @arg: =A0 =A0 =A0 value returned by radix_tree_deref_slot
-> > + * Returns: =A0 =A00 if well-aligned pointer, non-0 if exceptional ent=
-ry.
-> > + */
-> > +static inline int radix_tree_exceptional_entry(void *arg)
-> > +{
-> > + =A0 =A0 =A0 /* Not unlikely because radix_tree_exception often tested=
- first */
-> > + =A0 =A0 =A0 return (unsigned long)arg & RADIX_TREE_EXCEPTIONAL_ENTRY;
-> > +}
-> > +
-> > +/**
-> > + * radix_tree_exception =A0 =A0 =A0 =A0- radix_tree_deref_slot returne=
-d either exception?
-> > + * @arg: =A0 =A0 =A0 value returned by radix_tree_deref_slot
-> > + * Returns: =A0 =A00 if well-aligned pointer, non-0 if either kind of =
-exception.
-> > + */
-> > +static inline int radix_tree_exception(void *arg)
-> > +{
-> > + =A0 =A0 =A0 return unlikely((unsigned long)arg &
-> > + =A0 =A0 =A0 =A0 =A0 =A0 =A0 (RADIX_TREE_INDIRECT_PTR | RADIX_TREE_EXC=
-EPTIONAL_ENTRY));
-> > +}
->=20
-> Would something like radix_tree_augmented() be a better name for this
-> (with RADIX_TREE_AUGMENTED_MASK defined)? This one seems too easy to
-> confuse with radix_tree_exceptional_entry() to me which is not the
-> same thing, right?
+Other workloads which have a lot of forks/exits may be similarly
+affected by this regression.  Workloads which are vm lock intensive
+could be affected too.
 
-They're not _quite_ the same thing, and I agree that a different naming
-that would make it clearer (without going on and on) would be welcome.
+I've listed the profile of 3.0-rc2 and 2.6.39 below for comparison.
 
-But I don't think the word "augmented" helps or really fits in there.
+Thanks.
 
-What I had in mind was: there are two exceptional conditions which you
-can meet in reading the radix tree, and radix_tree_exception() covers
-both of those conditions.
+Tim
 
-One exceptional condition is the radix_tree_deref_retry() case, a
-momentary condition where you just have to go back and read it again.
 
-The other exceptional condition is the radix_tree_exceptional_entry():
-you've read a valid entry, but it's not the usual type of thing stored
-there, you need to be careful to process it differently (not try to
-increment its "page" count in our case).
+---------------------------
+3.0-rc2 profile:
 
-I'm fairly happy with "radix_tree_exceptional_entry" for the second;
-we could make the test for both more explicit by calling it
-"radix_tree_exceptional_entry_or_deref_retry", but
-I grow bored before I reach the end of that!
+-     18.60%          exim  [kernel.kallsyms]        [k] __mutex_lock_common.clone.5 
+   - __mutex_lock_common.clone.5                                                     
+      - 99.99% __mutex_lock_slowpath                                                 
+         - mutex_lock                                                                
+            - 99.54% anon_vma_lock.clone.10                                          
+               + 38.99% anon_vma_clone                                               
+               + 37.56% unlink_anon_vmas                                             
+               + 11.92% anon_vma_fork                                                
+               + 11.53% anon_vma_free                                                
++      4.03%          exim  [kernel.kallsyms]        [k] _raw_spin_lock_irqsave      
+-      3.00%          exim  [kernel.kallsyms]        [k] do_raw_spin_lock            
+   - do_raw_spin_lock                                                                
+      - 94.11% _raw_spin_lock                                                        
+         + 47.32% __mutex_lock_common.clone.5                                        
+         + 14.23% __mutex_unlock_slowpath                                            
+         + 4.06% handle_pte_fault                                                    
+         + 3.81% __do_fault                                                          
+         + 3.16% unmap_vmas                                                          
+         + 2.46% lock_flocks                                                         
+         + 2.43% copy_pte_range                                                      
+         + 2.28% __task_rq_lock                                                      
+         + 1.30% __percpu_counter_add                                                
+         + 1.30% dput                                                                
+         + 1.27% add_partial                                                         
+         + 1.24% free_pcppages_bulk                                                  
+         + 1.07% d_alloc                                                             
+         + 1.07% get_page_from_freelist                                              
+         + 1.02% complete_walk                                                       
+         + 0.89% dget                                                                
+         + 0.71% new_inode                                                           
+         + 0.61% __mod_timer                                                         
+         + 0.58% dup_fd                                                              
+         + 0.50% double_rq_lock                                                      
+      + 3.66% _raw_spin_lock_irq                                                     
+      + 0.87% _raw_spin_lock_bh                                                      
++      2.90%          exim  [kernel.kallsyms]        [k] page_fault                  
++      2.25%          exim  [kernel.kallsyms]        [k] mutex_unlock     
 
-Hugh
---8323584-1819746192-1308097494=:31043--
+
+-----------------------------------
+
+2.6.39 profile:
++      4.84%          exim  [kernel.kallsyms]        [k] page_fault
++      3.83%          exim  [kernel.kallsyms]        [k] clear_page_c
+-      3.25%          exim  [kernel.kallsyms]        [k] do_raw_spin_lock
+   - do_raw_spin_lock
+      - 91.86% _raw_spin_lock
+         + 14.16% unlink_anon_vmas
+         + 12.54% unlink_file_vma
+         + 7.30% anon_vma_clone_batch
+         + 6.17% dup_mm
+         + 5.77% __do_fault
+         + 5.77% __pte_alloc
+         + 5.31% lock_flocks
+        ...
++      3.22%          exim  [kernel.kallsyms]        [k] unmap_vmas
++      2.27%          exim  [kernel.kallsyms]        [k] page_cache_get_speculative
++      2.02%          exim  [kernel.kallsyms]        [k] copy_page_c
++      1.63%          exim  [kernel.kallsyms]        [k] __list_del_entry
++      1.58%          exim  [kernel.kallsyms]        [k] get_page_from_freelist
+
+
+
