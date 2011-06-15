@@ -1,112 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626Ab1FOO4G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 10:56:06 -0400
-Received: from mtagate4.uk.ibm.com ([194.196.100.164]:39709 "EHLO
-	mtagate4.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754735Ab1FOO4D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 10:56:03 -0400
-From: Greg Kurz <gkurz@fr.ibm.com>
-Subject: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was Vpid:)
-To: akpm@linux-foundation.org
-Cc: containers@lists.osdl.org, linux-kernel@vger.kernel.org, serge@hallyn.com,
-        daniel.lezcano@free.fr, ebiederm@xmission.com, oleg@redhat.com,
-        xemul@openvz.org
-Date: Wed, 15 Jun 2011 16:55:27 +0200
-Message-ID: <20110615145527.4016.70157.stgit@bahia.local>
-User-Agent: StGIT/0.14.3
+	id S1755716Ab1FOO4X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 10:56:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62568 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755666Ab1FOO4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 10:56:20 -0400
+Message-ID: <4DF8C80F.7090403@redhat.com>
+Date: Wed, 15 Jun 2011 10:56:15 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Christoph Lameter <cl@linux.com>
+CC: Linux kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kyle McMartin <kyle@redhat.com>
+Subject: SLUB BUG: check_slab called with interrupts enabled
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since pid namespaces were introduced, there's a recurring demand: how one
-can correlate a pid from a child pid ns with a pid from a parent pid ns ?
-The need arises in the LXC community when one wants to send a signal from
-the host (aka. init_pid_ns context) to a container process for which one
-only knows the pid inside the container.
+Hi Christoph,
 
-In the future, this should be achievable thanks to Eric Biederman's setns()
-syscall but there's still some work to be done to support pid namespaces:
+last night I got an interesting backtrace running 3.0-rc3
+(Fedora Rawhide kernel package).  Unfortunately netconsole
+seems to be incompatible with KVM at the moment, so I had
+to capture the oops on my digital camera and will be
+transcribing just the backtrace.
 
-https://lkml.org/lkml/2011/5/21/162
+Essentially, kernel 3.0-rc3 hit this bug:
 
-As stated by Serge Hallyn in:
+static int check_slab(struct kmem_cache *s, struct page *page)
+{
+         int maxobj;
 
-http://sourceforge.net/mailarchive/message.php?msg_id=27424447
+         VM_BUG_ON(!irqs_disabled());
 
-"There is nothing that gives you a 100% guaranteed correct race-free
-correspondence right now.  You can look under /proc/<pid>/root/proc/ to
-see the pids valid in the container, and you can relate output of
-lxc-ps --forest to ps --forest output.  But nothing under /proc that I
-know of tells you "this task is the same as that task".  You can't
-even look at /proc/<pid> inode numbers since they are different
-filesystems for each proc mount."
+The call trace:
 
-This patch adds a single line to /proc/self/status. Provided one has kept
-track of its container tasks (with a cgroup like liblxc does for example),
-he may correlate global pids and container pids. This is still racy but
-definitely easier than what we have today.
+check_slab
+alloc_debug_processing
+__slab_alloc
+kmem_cache_alloc
+bvec_alloc_bs
+bio_alloc_bioset
+bio_alloc
+mpage_alloc
+do_mpage_readpage
+... followed by ext4 and VFS code, obviously innocent
 
-ChangeLog:
-	v2: - changed Vpid: to ActivePid:
-	    - lock ->sighand before calling task_active_pid_ns()
 
-Signed-off-by: Greg Kurz <gkurz@fr.ibm.com>
-Signed-off-by: Cedric Le Goater <clg@fr.ibm.com>
----
+Is this a known issue, Christoph?
 
- fs/proc/array.c |   17 +++++++++++++++--
- 1 files changed, 15 insertions(+), 2 deletions(-)
+If not, anything I can do to help debug/fix this?
 
-diff --git a/fs/proc/array.c b/fs/proc/array.c
-index 5e4f776..5f796d9 100644
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -165,7 +165,8 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
- 	int g;
- 	struct fdtable *fdt = NULL;
- 	const struct cred *cred;
--	pid_t ppid, tpid;
-+	pid_t ppid, tpid, actpid;
-+	struct sighand_struct *sighand;
- 
- 	rcu_read_lock();
- 	ppid = pid_alive(p) ?
-@@ -176,6 +177,17 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
- 		if (tracer)
- 			tpid = task_pid_nr_ns(tracer, ns);
- 	}
-+	actpid = 0;
-+	sighand = rcu_dereference(p->sighand);
-+	if (sighand) {
-+		struct pid_namespace *pid_ns;
-+		unsigned long flags;
-+		spin_lock_irqsave(&sighand->siglock, flags);
-+		pid_ns = task_active_pid_ns(p);
-+		if (pid_ns)
-+			actpid = task_pid_nr_ns(p, pid_ns);
-+		spin_unlock_irqrestore(&sighand->siglock, flags);
-+	}
- 	cred = get_task_cred(p);
- 	seq_printf(m,
- 		"State:\t%s\n"
-@@ -183,12 +195,13 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
- 		"Pid:\t%d\n"
- 		"PPid:\t%d\n"
- 		"TracerPid:\t%d\n"
-+		"ActivePid:\t%d\n"
- 		"Uid:\t%d\t%d\t%d\t%d\n"
- 		"Gid:\t%d\t%d\t%d\t%d\n",
- 		get_task_state(p),
- 		task_tgid_nr_ns(p, ns),
- 		pid_nr_ns(pid, ns),
--		ppid, tpid,
-+		ppid, tpid, actpid,
- 		cred->uid, cred->euid, cred->suid, cred->fsuid,
- 		cred->gid, cred->egid, cred->sgid, cred->fsgid);
- 
-
+-- 
+All rights reversed
