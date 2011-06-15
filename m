@@ -1,67 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754326Ab1FOTMI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 15:12:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20128 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752294Ab1FOTMF (ORCPT
+	id S1754269Ab1FOTSW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 15:18:22 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:54397 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753503Ab1FOTST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 15:12:05 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Tom Goetz <tom.goetz@virtualcomputer.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 4/4] xen: When calling power_off, don't call the halt function.
-Date: Wed, 15 Jun 2011 15:11:35 -0400
-Message-Id: <1308165095-17303-5-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1308165095-17303-1-git-send-email-konrad.wilk@oracle.com>
-References: <1308165095-17303-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4DF903FF.00BB:SCFMA922111,ss=1,fgs=0
+	Wed, 15 Jun 2011 15:18:19 -0400
+Date: Wed, 15 Jun 2011 12:17:47 -0700
+From: Nishanth Aravamudan <nacc@us.ibm.com>
+To: jgarzik@pobox.com
+Cc: mbizon@freebox.fr, tj@kernel.org, benh@kernel.crashing.org,
+        wayneb@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: libata/ipr/powerpc: regression between 2.6.39-rc4 and 2.6.39-rc5
+Message-ID: <20110615191747.GA6324@us.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Operating-System: Linux 2.6.38-8-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tom Goetz <tom.goetz@virtualcomputer.com>
+Hi Jeff,
 
-.. As it won't actually power off the machine.
+It appears that commit 7b3a24c57d2eeda8dba9c205342b12689c4679f9 broke
+CD-ROMs on the IPR SATA bus on powerpc machines:
 
-Signed-off-by: Tom Goetz <tom.goetz@virtualcomputer.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/enlighten.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+ ata_port_alloc: ENTER
+ ata_port_probe: ata1: bus probe begin
+ ata1.00: ata_dev_read_id: ENTER
+ ata1.00: failed to IDENTIFY (I/O error, err_mask=0x40)
+ ata1.00: ata_dev_read_id: ENTER
+ ata1.00: failed to IDENTIFY (I/O error, err_mask=0x40)
+ ata1.00: limiting speed to UDMA7:PIO5
+ ata1.00: ata_dev_read_id: ENTER
+ ata1.00: failed to IDENTIFY (I/O error, err_mask=0x40)
+ ata1.00: disabled
+ ata_port_probe: ata1: bus probe end
+ scsi_alloc_sdev: Allocation failure during SCSI scanning, some SCSI devices might not be configured
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index dd7b88f..5525163 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1033,6 +1033,13 @@ static void xen_machine_halt(void)
- 	xen_reboot(SHUTDOWN_poweroff);
- }
- 
-+static void xen_machine_power_off(void)
-+{
-+	if (pm_power_off)
-+		pm_power_off();
-+	xen_reboot(SHUTDOWN_poweroff);
-+}
-+
- static void xen_crash_shutdown(struct pt_regs *regs)
+The commit in question is tagged as AHCI, but does touch the libata
+core. I'm not well-versed with this code, but here's what I think I know
+:)
+
+>From __scsi_add_device, we first allocate the target:
+
+ scsi_alloc_target ->
+  shost->hostt->target_alloc ->
+   ipr_target_alloc ->
+    ata_port_alloc ->
+     sets FROZEN
+
+We error out when we allocate the sdev:
+
+ scsi_alloc_sdev ->
+  shost->hostt->slave_alloc ->
+   ipr_slave_alloc ->
+    ipr_ata_slave_alloc ->
+     ata_sas_port_init ->
+      ata_port_probe
+
+>From what I can tell, the only place that explicitly clears the FROZEN
+flag is the error-handling code via ata_eh_thaw_port().
+
+So I thought either we're not invoking the error-handler at probe time
+correctly to kick the port or perhaps the SAS code is not clearing the
+flag?
+
+I tried the following patch:
+
+diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+index d51f979..abd0e0b 100644
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -3797,6 +3797,7 @@ EXPORT_SYMBOL_GPL(ata_sas_port_alloc);
+  */
+ int ata_sas_port_start(struct ata_port *ap)
  {
- 	xen_reboot(SHUTDOWN_crash);
-@@ -1058,7 +1065,7 @@ int xen_panic_handler_init(void)
- static const struct machine_ops xen_machine_ops __initconst = {
- 	.restart = xen_restart,
- 	.halt = xen_machine_halt,
--	.power_off = xen_machine_halt,
-+	.power_off = xen_machine_power_off,
- 	.shutdown = xen_machine_halt,
- 	.crash_shutdown = xen_crash_shutdown,
- 	.emergency_restart = xen_emergency_restart,
--- 
-1.7.4.1
++       ap->pflags &= ~ATA_PFLAG_FROZEN;
+        return 0;
+ }
+ EXPORT_SYMBOL_GPL(ata_sas_port_start);
 
+and the CD-ROM drive works, but I have no idea if it's the right thing
+to do. I chose this particular change, FWIW, because we call
+ata_sas_port_start before we probe in ata_sas_port_init and it seems
+like we need to mark the port as not frozen before we init it? Perhaps
+that should really be a call to a thaw function, not sure. Let's just
+say the ATA/SAS/SCSI interactions are a bit hard to follow at first :)
+
+Any insight you can provide would be great!
+
+Thanks,
+Nish
+
+
+-- 
+Nishanth Aravamudan <nacc@us.ibm.com>
+IBM Linux Technology Center
