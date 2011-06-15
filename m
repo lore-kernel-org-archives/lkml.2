@@ -1,48 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab1FOP30 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 11:29:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59768 "EHLO mx2.suse.de"
+	id S1755654Ab1FOPIM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 11:08:12 -0400
+Received: from tundra.namei.org ([65.99.196.166]:34659 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754857Ab1FOP3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 11:29:25 -0400
-Date: Wed, 15 Jun 2011 08:03:26 -0700
-From: Greg KH <gregkh@suse.de>
-To: Ortwin =?iso-8859-1?Q?Gl=FCck?= <odi@odi.ch>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.39.1 input regression
-Message-ID: <20110615150326.GA7128@suse.de>
-References: <4DF85C5F.4080307@odi.ch>
+	id S1754796Ab1FOPIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 11:08:10 -0400
+Date: Thu, 16 Jun 2011 01:07:56 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: linux-security-module@vger.kernel.org
+cc: linux-kernel@vger.kernel.org,
+        Linux Security Summit Program Committee 
+	<lss-pc@ext.namei.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, lwn@lwn.net
+Subject: [ANNOUNCE] Linux Security Summit 2011 Schedule
+Message-ID: <alpine.LRH.2.00.1106160101590.6380@tundra.namei.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4DF85C5F.4080307@odi.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 09:16:47AM +0200, Ortwin Glück wrote:
-> Hi Greg,
-> 
-> This patch in 2.6.39.1 breaks magicmouse support for me completely.
-> a5ccaac64c17ce3cc1878a6d479a6f1b16092c24
-> HID: magicmouse: ignore 'ivalid report id' while switching modes
-> 
-> The device will no longer work at all:
-> magicmouse 0005:05AC:030D.0005: input,hidraw2: BLUETOOTH HID v0.84 Mouse
-> [gandalf mouse] on 7C:6D:62:9F:DB:2D
-> magicmouse 0005:05AC:030D.0005: unable to request touch data (2)
-> 
-> Fine in previous kernels.
+This is to announce the program schedule for the upcoming Linux Security 
+Summit [1], to be held on Thursday, 8th September in Santa Clara in 
+conjunction with the Linux Plumbers Conference [2].
+ 
+Following a round of voting by the Program Committee, the following
+proposals were selected as main talks:
+  
+  * "Smack is Alive and Well"
+        Casey Schaufler
 
-This has been discussed already, and it should be fixed in Linus's tree
-right now, right?
+  * "MeeGo Security Update"
+        Ryan Ware, Intel
 
-If so, can someone please send stable@kernel.org the proper fix for
-this?
+  * "An Overview of the Linux Integrity Subsystem: Use Cases
+     and Demonstration"
+        David Safford and Mimi Zohar, IBM
 
-thanks,
+  * "Digital Signature support for IMA/EVM"
+        Dmitry Kasatkin and Ryan Ware, Intel
 
-greg k-h
+  * "Protecting the Filesystem Integrity of a Fedora 15 Virtual
+     Machine from Offline Attacks using IMA/EVM"
+        Peter Kruus, The Johns Hopkins University Applied Physics Laboratory
+
+  * "Efficient, TPM-free system integrity checking with device
+     mapper: dm-verity"
+         Will Drewry and Mandeep Baines, Google     
+
+
+There will also be two in-depth roundtable discussions:
+
+  * Kernel Hardening
+       Lead by Kees Cook, Canonical and Will Drewry, Google 
+ 
+  * LSM Architecture
+       Lead by Kees Cook, Canonical and Casey Schaufler 
+
+
+Full details of the program, including abstracts, may be found at:
+  
+  https://security.wiki.kernel.org/index.php/LinuxSecuritySummit2011/Schedule
+
+
+The Linux Security Summit is open to all registered attendees of Linux
+Plumbers Conference.
+
+
+PROGRAM COMMITTEE
+
+The Linux Security Summit for 2011 is organized by:
+
+    * James Morris, Red Hat
+    * Serge Hallyn, IBM
+    * Paul Moore, HP
+    * Stephen Smalley, NSA
+    * Joshua Brindle, Tresys
+    * Tetsuo Handa, NTT Data
+    * Herbert Xu, Red Hat
+    * John Johansen, Canonical
+    * Kees Cook, Canonical
+    * Casey Schaufler, Smack Project 
+
+
+REFERENCES  
+  
+  [1] Linux Security Summit 2011
+      https://security.wiki.kernel.org/index.php/LinuxSecuritySummit2011
+
+  [2] Linux Plumbers Conference 2011
+      http://www.linuxplumbersconf.org/2011/
+         
