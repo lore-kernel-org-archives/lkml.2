@@ -1,81 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983Ab1FOGiR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 02:38:17 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:53987 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751331Ab1FOGiO convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 02:38:14 -0400
-From: Xiangliang Yu <yuxiangl@marvell.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: "yxlraid@gmail.com" <yxlraid@gmail.com>,
-        "jack_wang@usish.com" <jack_wang@usish.com>,
-        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
-        "maciej.trela@intel.com" <maciej.trela@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jacky Feng <jfeng@marvell.com>
-Date: Tue, 14 Jun 2011 23:31:25 -0700
-Subject: RE: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
-Thread-Topic: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
-Thread-Index: AcwrIR/qdpMMo2uOTdi6EtZ/SnmPkgAAZ5KA
-Message-ID: <F766E4F80769BD478052FB6533FA745D19FAE66AAF@SC-VEXCH4.marvell.com>
-References: <1308064628-11826-1-git-send-email-yxlraid@gmail.com>
-	 <1308065367.2401.24.camel@mulgrave>
-	 <F766E4F80769BD478052FB6533FA745D19FAE669AF@SC-VEXCH4.marvell.com>
- <1308117450.2329.31.camel@mulgrave>
-In-Reply-To: <1308117450.2329.31.camel@mulgrave>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752843Ab1FOGgB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 02:36:01 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:36940 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751232Ab1FOGgA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 02:36:00 -0400
+Message-ID: <4DF852C7.6000904@ti.com>
+Date: Wed, 15 Jun 2011 12:05:51 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+CC: Colin Cross <ccross@android.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: mm: cache-l2x0: Add support for re-enabling l2x0
+References: <1307926019-28958-1-git-send-email-ccross@android.com> <20110613101942.GA7924@e102568-lin.cambridge.arm.com> <BANLkTingENSjDaE7O+Lb6P=ED4JtuJY1jkV25b3SW6RhsOQQkw@mail.gmail.com> <20110614173013.GA9234@e102568-lin.cambridge.arm.com>
+In-Reply-To: <20110614173013.GA9234@e102568-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Tue, 2011-06-14 at 18:44 -0700, Xiangliang Yu wrote:
->> Subject: Re: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
->> 
->> On Tue, 2011-06-14 at 23:17 +0800, yxlraid@gmail.com wrote:
->> >> From: Xiangliang Yu <yuxiangl@marvell.com>
->> >> 
->> >> -- The value of child link rate should is minimum of link rate, or
->> >>    command will fail if child link rate is bigger than parent link rate.
->> >> 
->> >> Signed-off-by: Xiangliang Yu <yuxiangl@marvell.com>
->> >> ---
->> >>  drivers/scsi/libsas/sas_expander.c |    2 +-
->> >>  1 files changed, 1 insertions(+), 1 deletions(-)
->> >> 
->> >> diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
->> >> index 874e29d..6ccca09 100644
->> >> --- a/drivers/scsi/libsas/sas_expander.c
->> >> +++ b/drivers/scsi/libsas/sas_expander.c
->> >> @@ -638,7 +638,7 @@ static void sas_ex_get_linkrate(struct domain_device *parent,
->> >>  			sas_port_add_phy(port, phy->phy);
->> >>  		}
->> >>  	}
->> >> -	child->linkrate = min(parent_phy->linkrate, child->max_linkrate);
->> >> +	child->linkrate = min(parent_phy->linkrate, child->min_linkrate);
->> 
->> >This patch doesn't look right.  It will clamp the phy to the minim
->> >possible link rate.  
->> Link negotiation should get the minimum.
-
->it's probably a negotiation problem.  If the
->child can't support the highest possible link rate because of problems
->like transmission errors, it should fall back.
-
-I get the issue like this: 
-1. HBA support 3Gbps, level 1 expander support 6Gbps, and level 2 expander support 6Gbps; 
-2. level 1 is fine, and find that level 2 link rate is 6Gbps in DISCOVER command response.
-3. LIBSAS think level 2 is 6Gbps by sas_ex_get_linkrate function, and send command to level 2 expander
-4. LIBSAS link error.
+On 6/14/2011 11:00 PM, Lorenzo Pieralisi wrote:
+> On Mon, Jun 13, 2011 at 07:20:34PM +0100, Colin Cross wrote:
+>> On Mon, Jun 13, 2011 at 3:19 AM, Lorenzo Pieralisi
+>> <lorenzo.pieralisi@arm.com>  wrote:
+>>> On Mon, Jun 13, 2011 at 01:46:58AM +0100, Colin Cross wrote:
+>>>> Remove __init annotation from l2x0_init so it can be used to
+>>>> reinitialize the l2x0 after it has been reset during suspend.
+>>>>
+>>>> Only print the init messages the first time l2x0_init is called.
+>>>>
+>>>> Add l2x0_enable to re-enable the l2x0 after l2x0_disable if
+>>>> the l2x0 was not reset.
+>>>>
+>>>> l2x0_disable cannot use writel, as writel calls wmb(), and wmb()
+>>>> may call outer_cache_sync, which takes the same spinlock as
+>>>> l2x0_disable.
+>>>>
+>>>> Signed-off-by: Colin Cross<ccross@android.com>
+>>>> ---
+>>>> ?arch/arm/include/asm/hardware/cache-l2x0.h | ? ?3 ++-
+>>>> ?arch/arm/mm/cache-l2x0.c ? ? ? ? ? ? ? ? ? | ? 18 ++++++++++++++----
+>>>> ?2 files changed, 16 insertions(+), 5 deletions(-)
+>>>>
+>>>
+>>> [...]
+>>>
+>>>> +/* enables l2x0 after l2x0_disable, does not invalidate */
+>>>> +void l2x0_enable(void)
+>>>> +{
+>>>> + ? ? unsigned long flags;
+>>>> +
+>>>> + ? ? spin_lock_irqsave(&l2x0_lock, flags);
+>>>> + ? ? writel_relaxed(1, l2x0_base + L2X0_CTRL);
+>>>> + ? ? spin_unlock_irqrestore(&l2x0_lock, flags);
+>>>> +}
+>>>> +
+>>>> ?static void l2x0_disable(void)
+>>>> ?{
+>>>> ? ? ? unsigned long flags;
+>>>>
+>>>> ? ? ? spin_lock_irqsave(&l2x0_lock, flags);
+>>>> - ? ? writel(0, l2x0_base + L2X0_CTRL);
+>>>> + ? ? writel_relaxed(0, l2x0_base + L2X0_CTRL);
+>>>> ? ? ? spin_unlock_irqrestore(&l2x0_lock, flags);
+>>>> ?}
+>>>
+>>> This function is still dodgy to use, since we are disabling L2
+>>> possibly with current function stack lines allocated, which might wreak havoc.
+>>
+>>  From my JTAG debugging, I think the PL310 (at least the one I'm
+>> working with) flushes on disable.  I had a problem where reads with
+>> the cache disabled were getting incorrect data because the data was
+>> stuck in the cache.  With the CPU paused, I disabled the PL310 with
+>> the L2X0_CTRL register, and my data appeared in memory.  I'll try to
+>> find some documentation to support this.
+>>
+>
+> According to the PL310 TRM (r3p2 3-9) on disable the PL310 syncs, which means
+> it flushes internal buffers, but it is not supposed to clean dirty lines.
+> It seems unsafe to me to use the stack and other cacheable data right before
+> disabling.
+>
+That's right. Disabling L2 won't clean the cache lines. They need
+to be cleaned before entering low power state where you loose
+it.
+Though, cleaning of L2 cache would work even with L2 enable
+is not set.
 
