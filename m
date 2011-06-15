@@ -1,76 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893Ab1FOUE4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 16:04:56 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:53961 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751546Ab1FOUEx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 16:04:53 -0400
-Date: Wed, 15 Jun 2011 22:04:48 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] scheduler fixes
-Message-ID: <20110615200448.GA7123@elte.hu>
+	id S1753097Ab1FOUHy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 16:07:54 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:21199 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751815Ab1FOUHx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 16:07:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=WE96mZs+Y0iCOLfvL1XyM+7pYPiGVjpqkyGSCuUDACM6ItX+ydaLq564Tr1vFE56OD
+         CT12DnRMCB09aH4sGBCg==
+Date: Wed, 15 Jun 2011 13:07:47 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: cfowler@opsdc.com
+cc: linux-kernel@vger.kernel.org
+Subject: Re: Panic on OOM
+In-Reply-To: <1308145805.2074.367.camel@compaq-desktop>
+Message-ID: <alpine.DEB.2.00.1106151307230.27546@chino.kir.corp.google.com>
+References: <1308058276.2074.295.camel@compaq-desktop> <alpine.DEB.2.00.1106141656220.31202@chino.kir.corp.google.com> <1308103443.2074.357.camel@compaq-desktop> <alpine.DEB.2.00.1106141908100.7025@chino.kir.corp.google.com> <1308105693.2074.361.camel@compaq-desktop>
+ <alpine.DEB.2.00.1106141947570.8257@chino.kir.corp.google.com> <1308145805.2074.367.camel@compaq-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Wed, 15 Jun 2011, Chris Fowler wrote:
 
-Please pull the latest sched-urgent-for-linus git tree from:
+> It has been almost 12 hours and no panic yet.  Externally the box seems
+> unresponsive.  No response to network activity.  No keyboard response,
+> etc.  On the screen I'm still seeing printk's from the hda-intel driver
+> complaining about a spurious interrupt.  I'm not to concerned about that
+> but it does tell me the kernel seems to be alive.
+> 
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git sched-urgent-for-linus
-
- Thanks,
-
-	Ingo
-
------------------->
-Hillf Danton (1):
-      sched: Fix need_resched() when checking peempt
-
-Steven Rostedt (1):
-      sched: Check if lowest_mask is initialized in find_lowest_rq()
-
-
- kernel/sched_rt.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-index 88725c9..10d0182 100644
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -1096,7 +1096,7 @@ static void check_preempt_curr_rt(struct rq *rq, struct task_struct *p, int flag
- 	 * to move current somewhere else, making room for our non-migratable
- 	 * task.
- 	 */
--	if (p->prio == rq->curr->prio && !need_resched())
-+	if (p->prio == rq->curr->prio && !test_tsk_need_resched(rq->curr))
- 		check_preempt_equal_prio(rq, p);
- #endif
- }
-@@ -1239,6 +1239,10 @@ static int find_lowest_rq(struct task_struct *task)
- 	int this_cpu = smp_processor_id();
- 	int cpu      = task_cpu(task);
- 
-+	/* Make sure the mask is initialized first */
-+	if (unlikely(!lowest_mask))
-+		return -1;
-+
- 	if (task->rt.nr_cpus_allowed == 1)
- 		return -1; /* No other targets possible */
- 
+You've tried 2.6.38.8?
