@@ -1,43 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab1FOQGl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 12:06:41 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:65471 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755022Ab1FOQGj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 12:06:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=JVzEp9hgH99WAy8kOQkgakrDEZwsT1jKlAEsBe6ruUM9UP+76voGCEkI0T3b5RqtD5
-         Y4tuYARUI3JObXnQDS+xUV7QB5Q/OBYB+awTRPrv4vyU0PqZeD7R18c2/t8f8x+hec+G
-         2joP+VyXRhlyInwYPmat7dBKRv2yQ+Ev7NDp4=
+	id S1755994Ab1FOQGe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 12:06:34 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:50618 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753704Ab1FOQGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 12:06:33 -0400
+Date: Wed, 15 Jun 2011 11:07:43 -0500
+From: Cliff Wickman <cpw@sgi.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1 of 6] x86, UV: smp_processor_id in a preemptable
+	region
+Message-ID: <20110615160743.GA32008@sgi.com>
+References: <E1QWcgn-0004Mv-T6@eag09.americas.sgi.com> <BANLkTinpqPhTNRtqPGnfZznefESwD19iXA@mail.gmail.com> <20110615135213.GA29493@sgi.com> <20110615155445.GC4096@elte.hu>
 MIME-Version: 1.0
-In-Reply-To: <E1QWsJ4-0008Fh-ER@eag09.americas.sgi.com>
-References: <E1QWsJ4-0008Fh-ER@eag09.americas.sgi.com>
-Date: Wed, 15 Jun 2011 19:06:11 +0300
-X-Google-Sender-Auth: 90wvH41GIqi_EcdqAOESTGyu7Pc
-Message-ID: <BANLkTimOJpexCfGPbBGGF6CdSRAntyK+DA@mail.gmail.com>
-Subject: Re: [PATCH 2/8 v2] x86, UV: inline header file functions
-From: Pekka Enberg <penberg@kernel.org>
-To: Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110615155445.GC4096@elte.hu>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 6:47 PM, Cliff Wickman <cpw@sgi.com> wrote:
-> From: Cliff Wickman <cpw@sgi.com>
->
-> Make all the functions in uv_bau.h inline so that it can
-> be included in the fake prom (used in simulations).
-> Otherwise they will generate warnings for unused functions.
->
-> Diffed against 3.0.0-rc3
->
-> Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Hi Ingo,
 
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
+On Wed, Jun 15, 2011 at 05:54:45PM +0200, Ingo Molnar wrote:
+> 
+> * Cliff Wickman <cpw@sgi.com> wrote:
+> 
+> > On Wed, Jun 15, 2011 at 12:05:17PM +0600, Rakib Mullick wrote:
+> > > On Wed, Jun 15, 2011 at 5:06 AM, Cliff Wickman <cpw@sgi.com> wrote:
+> > > > From: Cliff Wickman <cpw@sgi.com>
+> > > >
+> > > > Calling smp_processor_id() from within a preemptable region will issue
+> > > > a warning if DEBUG_PREEMPT is set.
+> > > >
+> > > > Diffed against 3.0.0-rc3
+> > > >
+> > > > Signed-off-by: Cliff Wickman <cpw@sgi.com>
+> > > > ---
+> > > > ?arch/x86/platform/uv/tlb_uv.c | ? ?2 ++
+> > > > ?1 file changed, 2 insertions(+)
+> > > >
+> > > > Index: linux/arch/x86/platform/uv/tlb_uv.c
+> > > > ===================================================================
+> > > > --- linux.orig/arch/x86/platform/uv/tlb_uv.c
+> > > > +++ linux/arch/x86/platform/uv/tlb_uv.c
+> > > > @@ -1334,7 +1334,9 @@ static ssize_t tunables_write(struct fil
+> > > >
+> > > > ? ? ? ?instr[count] = '\0';
+> > > >
+> > > > + ? ? ? preempt_disable(); /* avoid DEBUG_PREEMPT warning */
+> > > 
+> > > I think above code comment, "avoid DEBUG_PREEMPT warning" should be to
+> > > something more meaningful. It's a BUG, if smp_processor_id() is called
+> > > within preemptible context. So, we don't want to hit that BUG.
+> > 
+> > I agree that calling smp_processor_id() within a preemptible context is
+> > going to produce unpredictable results.  In this particular case we just
+> > need a valid cpu number so that we can find a per-cpu structure.
+> > That structure contains a reasonable (sanity-checking) limit to the value
+> > of the tunable that is being written.
+> 
+> So what happens if the code gets preempted away and this CPU is 
+> hotplugged away? You'll reference a CPU ID that does not exist 
+> anymore.
+
+You're right of course. But we don't support CPU hotplug on the UV hardware.
+There are enhancements needed in both the BIOS and Linux (BAU and GRU among
+them). They are on our work queue.
+
+-Cliff
+-- 
+Cliff Wickman
+SGI
+cpw@sgi.com
+(651) 683-3824
