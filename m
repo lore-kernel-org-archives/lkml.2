@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab1FOTwH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 15:52:07 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:41003 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752776Ab1FOTwE (ORCPT
+	id S1754891Ab1FOTz6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 15:55:58 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35874 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753674Ab1FOTzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 15:52:04 -0400
+	Wed, 15 Jun 2011 15:55:55 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=LOuYklvUXrtUecLyTOeZbNacue4iLpvabnkViekgdgP4GZE1oowrt3Dpra05892i9w
-         3xFDVRZUxMEI6v8oI8n8kXEDutZz82t2aG24smZG53qGlpPPAy3EFWhYq7O5J/vk5KuT
-         5mZG1oPsjVULwYiy+aPmLD0PYVJGaevCPrKeQ=
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=xu+4pxJrZ1gAf0HXowDE6t7WRV7wN30JbSOwmFmr3zRjlk/KM7Ka7RSYXCVfh2LGVv
+         s8w43rjfSnAHVd750l+xAOWqQy3fn9Gf7AdRaB7A0B4EatB+2PLoxx+EtYDYuSeYrsKy
+         XIxrS+sm5uZM0+j8I14xsRtM3Jey2lrto8oCI=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Martijn Uffing <mp3project@sarijopen.student.utwente.nl>
+Subject: Re: [OOPS] 3.0-rc1 cifs
+Date: Wed, 15 Jun 2011 21:55:47 +0200
+User-Agent: KMail/1.13.5 (Linux/3.0.0-rc1; KDE/4.4.5; i686; ; )
+Cc: linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <Pine.LNX.4.64.1106092211500.19687@sarijopen.student.utwente.nl>
+In-Reply-To: <Pine.LNX.4.64.1106092211500.19687@sarijopen.student.utwente.nl>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTinJimOb4CMQeDm+Ob60N5v4QAMWwg@mail.gmail.com>
-References: <BANLkTikbnsu05+Nae8isATuZ8Fucj14+LQ@mail.gmail.com>
- <BANLkTi=nsCK2bFf2v+PkKj=Opsxseqe9pQ@mail.gmail.com> <BANLkTi=ZETGToRcOHXg5gxAQO3EKN+YyLg@mail.gmail.com>
- <BANLkTi=-xJizWP5H9vNvaJhRN-Vm-ubraA@mail.gmail.com> <4DF7A264.3030901@mit.edu>
- <20110614211613.GB12249@elte.hu> <BANLkTi=W1xFdoSFxnNBGX9gt_pYOH4oF=A@mail.gmail.com>
- <20110614213109.GA9725@elte.hu> <BANLkTimXYaf_14VbB6ex0kG6sPnTUfzu6g@mail.gmail.com>
- <BANLkTi=mwowbSy0M=rjdQW_cKDVf1tBBpA@mail.gmail.com> <20110615072553.GA26003@elte.hu>
- <BANLkTinSac=XHNk7jnsYGDo06B=ChXsnAQ@mail.gmail.com> <BANLkTinxKV-Kprm+ezfbt2a=C1fz+-7wrg@mail.gmail.com>
- <BANLkTinJimOb4CMQeDm+Ob60N5v4QAMWwg@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Wed, 15 Jun 2011 15:51:42 -0400
-X-Google-Sender-Auth: 4IExyo3D9PCnY1l2yFc7zJTn21M
-Message-ID: <BANLkTimuqh9up9hsmuCZJBmbg2fGSwOZUg@mail.gmail.com>
-Subject: Re: [PATCH] x86, vsyscall: Fix build warning in vsyscall_64.c
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Rakib Mullick <rakib.mullick@gmail.com>,
-        hpa@zytor.com, tglx@linutronix.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106152155.48167.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 3:32 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> If you're really worried about it ever triggering, then dammit, HANDLE THE CASE.
+On czwartek, 9 czerwca 2011 o 22:15:05 Martijn Uffing wrote:
+> Ave People
+> 
+> 
+> I've got an oops with 3.0-rc1. (The same Oops also occurs with 3.0-rc2 and
+> the git snapshot of today linux-2.6-06e8684.)
+> The Oops occurs at boot time while the boot scripts try to automount a
+> samba share.
+> 
+> Last (tested)  working kernel	:	2.6.39
+> First (tested) oopsing kernel	:	3.0-rc1
 
-Like I said, I'll send a patch to handle the case.
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=37542
+for your bug report, please add your address to the CC list in there, thanks!
 
---Andy
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
