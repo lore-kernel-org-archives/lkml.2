@@ -1,194 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583Ab1FOPQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 11:16:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13656 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754209Ab1FOPQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 11:16:55 -0400
-Message-ID: <4DF8CCE1.80400@redhat.com>
-Date: Wed, 15 Jun 2011 11:16:49 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1755734Ab1FOPRm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 11:17:42 -0400
+Received: from 184-106-247-128.static.cloud-ips.com ([184.106.247.128]:33015
+	"EHLO cloud01.chad-versace.us" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753026Ab1FOPRk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 11:17:40 -0400
+Date: Wed, 15 Jun 2011 08:16:54 -0700
+From: Ben Widawsky <ben@bwidawsk.net>
+To: Daniel J Blueman <daniel.blueman@gmail.com>
+Cc: Eric Anholt <eric@anholt.net>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>
+Subject: Re: [Intel-gfx] [PATCH 3.0-rc3] i915: Fix gen6 (SNB) GPU stalling
+Message-ID: <20110615151654.GA31881@snipes.kumite>
+Mail-Followup-To: Daniel J Blueman <daniel.blueman@gmail.com>,
+	Eric Anholt <eric@anholt.net>, intel-gfx@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>
+References: <1308070307-2630-1-git-send-email-daniel.blueman@gmail.com>
+ <20110615044359.GA27884@snipes.kumite>
+ <BANLkTin1fqKMzutfOyLNegOGOuSQu-4jpA@mail.gmail.com>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Linux kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kyle McMartin <kyle@redhat.com>
-Subject: Re: SLUB BUG: check_slab called with interrupts enabled
-References: <4DF8C80F.7090403@redhat.com> <alpine.DEB.2.00.1106150959500.768@router.home>
-In-Reply-To: <alpine.DEB.2.00.1106150959500.768@router.home>
-Content-Type: multipart/mixed;
- boundary="------------000801070501020300060301"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTin1fqKMzutfOyLNegOGOuSQu-4jpA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000801070501020300060301
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+On Wed, Jun 15, 2011 at 01:04:51PM +0800, Daniel J Blueman wrote:
+> On 15 June 2011 12:43, Ben Widawsky <ben@bwidawsk.net> wrote:
+> > On Wed, Jun 15, 2011 at 12:51:47AM +0800, Daniel J Blueman wrote:
+> >> On 14 June 2011 13:23, Eric Anholt <eric@anholt.net> wrote:
+> >> > On Tue, 14 Jun 2011 12:18:36 +0800, Daniel J Blueman <daniel.blueman@gmail.com> wrote:
+> >> >> Hi Eric,
+> >> >>
+> >> >> The frequent ~1.5s pauses I hit with SNB hardware in the gnome3 UI (eg
+> >> >> whenever you hit the top-left of the screen to show all windows) are
+> >> >> nicely addressed by your recent wake patch [1] (ported to -rc3). Thus
+> >> >> I see no 'missed IRQ' kernel messages.
+> >> >>
+> >> >> As this addresses a significant usability regression, are you happy to
+> >> >> add it to the 3.0-rc queue? I think it has very good value in -stable
+> >> >> also (assuming correctness). What do you think?
+> >> >
+> >> > This one had significant performance impacts, and later hacks in this
+> >> > series worked around the problem to approximately the same level of
+> >> > success with less impact, and we don't actually have a justification of
+> >> > why any of them work. ?We were still hoping to come up with some clue,
+> >> > and haven't yet.
+> >>
+> >> True; that is quite heavy handed delay looping.
+> >>
+> >> It's a pity the usual Intel font didn't make it to the programmer's
+> >> reference manuals. Anyway, unmasking the blitter user interrupt in the hardware
+> >> status mask register addresses the root cause. Out of reset it's FFFFFFFFh,
+> >> so we don't need to read it here.
+> >>
+> >> It would be good to get this into -rc4. -stable probably needs some additional
+> >> tweaks.
+> >>
+> >> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+> >> ---
+> >> ?drivers/gpu/drm/i915/i915_irq.c | ? ?6 ++++++
+> >> ?1 files changed, 6 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
+> >> index b9fafe3..9a98c1b 100644
+> >> --- a/drivers/gpu/drm/i915/i915_irq.c
+> >> +++ b/drivers/gpu/drm/i915/i915_irq.c
+> >> @@ -1827,6 +1827,12 @@ int ironlake_irq_postinstall(struct drm_device *dev)
+> >> ? ? ? ? ? ? ? ironlake_enable_display_irq(dev_priv, DE_PCU_EVENT);
+> >> ? ? ? }
+> >>
+> >> + ? ? if (IS_GEN6(dev))
+> >> + ? ? ? ? ? ? /* allow blitter user interrupt to generate a MSI write from
+> >> + ? ? ? ? ? ? ? ?the ISR */
+> >> + ? ? ? ? ? ? I915_WRITE(GEN6_BLITTER_HWSTAM,
+> >> + ? ? ? ? ? ? ? ? ? ? 0xffffffff & ~GEN6_BLITTER_USER_INTERRUPT);
+> >> +
+> >> ? ? ? return 0;
+> >> ?}
+> >>
+> >
+> > I wish the docs said that that this hwstam unmasked MI_USER_INTERRUPTS
+> > parsed by the Blitter Command Parser, instead of the Render Command
+> > parser.
+> >
+> > I was just about to write an email about how this is just making the
+> > same interrupt happen twice, when I realized that the docs make no
+> > sense, and this must be a copy-paste doc bug.
+> >
+> > This patch sounds good to me. Two small comments:
+> > 1. The HWSTAM is touched in preinstall already, why not move this there?
+> > 2. I'd prefer you read the register even though as you say it isn't
+> > necessary. It just makes the code self-documented by doing it that way.
+> 
+> The render HWSTAM is tweaked in preinstall, but we need to tweak the
+> blitter HWSTAM (new to gen6).
+> 
+> To me, it makes sense to reset the blitter HWSTAM register to what the
+> driver expects, in case anything before the i915 module loads and
+> adjusts it for a particular purpose (including debug); the render
+> HWSTAM is set this way too. I could add a comment to both perhaps?
 
-On 06/15/2011 11:03 AM, Christoph Lameter wrote:
-> On Wed, 15 Jun 2011, Rik van Riel wrote:
->
->> Hi Christoph,
->>
->> last night I got an interesting backtrace running 3.0-rc3
->> (Fedora Rawhide kernel package).  Unfortunately netconsole
->> seems to be incompatible with KVM at the moment, so I had
->> to capture the oops on my digital camera and will be
->> transcribing just the backtrace.
->>
->> Essentially, kernel 3.0-rc3 hit this bug:
->>
->> static int check_slab(struct kmem_cache *s, struct page *page)
->> {
->>          int maxobj;
->>
->>          VM_BUG_ON(!irqs_disabled());
->>
->> The call trace:
->>
->> check_slab
->> alloc_debug_processing
->> __slab_alloc
->> kmem_cache_alloc
->> bvec_alloc_bs
->> bio_alloc_bioset
->> bio_alloc
->> mpage_alloc
->> do_mpage_readpage
->> ... followed by ext4 and VFS code, obviously innocent
->
-> __slab_alloc() disables interrupts so alloc_debug_processing() should not
-> run into this issue.
->
-> There are no additional special slub patches applied right? Because some
-> of the patches under discussion change the interrupt disable handling a
-> bit.
+Well on that note, the docs clearly state only 1 bit can be unmasked at
+a time. Not sure if that applies to masking as well, but if it does,
+that would be not good.
 
-Just the two attached ones, which don't seem to touch the
-code path in question...
+I'm fine with a comment. Seeing the current masking doesn't make it
+clear to me what is happening/why. Not sure I understand the reason for
+saving the read is in this case.
 
--- 
-All rights reversed
+> 
+> Updating the blitter HWSTAM in the postinstall was a marginally safer
+> choice, as there'll not be any potential race with a blitter user
+> interrupt getting emitted before we're ready (which wouldn't have been
+> tested), but the risk is probably so low that it could just go into
+> the preinstall.
+> 
+> What do you think?
 
---------------000801070501020300060301
-Content-Type: text/plain;
- name="mm-slub-do-not-take-expensive-steps-for-slubs-speculative-high-order-allocations.patch"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename*0="mm-slub-do-not-take-expensive-steps-for-slubs-speculative-hi";
- filename*1="gh-order-allocations.patch"
+I think there is no risk since this command could only be executed if
+the driver was up. I'd just like all HWSTAM writes in a single place. I
+don't have any preference which place.
 
-RnJvbSBsaW51eC1mc2RldmVsLW93bmVyQHZnZXIua2VybmVsLm9yZyBGcmkgTWF5IDEzIDEw
-OjA0OjE4IDIwMTEKRnJvbToJTWVsIEdvcm1hbiA8bWdvcm1hbkBzdXNlLmRlPgpUbzoJQW5k
-cmV3IE1vcnRvbiA8YWtwbUBsaW51eC1mb3VuZGF0aW9uLm9yZz4KQ2M6CUphbWVzIEJvdHRv
-bWxleSA8SmFtZXMuQm90dG9tbGV5QEhhbnNlblBhcnRuZXJzaGlwLmNvbT4sCglDb2xpbiBL
-aW5nIDxjb2xpbi5raW5nQGNhbm9uaWNhbC5jb20+LAoJUmFnaGF2ZW5kcmEgRCBQcmFiaHUg
-PHJhZ2h1LnByYWJodTEzQGdtYWlsLmNvbT4sCglKYW4gS2FyYSA8amFja0BzdXNlLmN6Piwg
-Q2hyaXMgTWFzb24gPGNocmlzLm1hc29uQG9yYWNsZS5jb20+LAoJQ2hyaXN0b3BoIExhbWV0
-ZXIgPGNsQGxpbnV4LmNvbT4sCglQZWtrYSBFbmJlcmcgPHBlbmJlcmdAa2VybmVsLm9yZz4s
-CglSaWsgdmFuIFJpZWwgPHJpZWxAcmVkaGF0LmNvbT4sCglKb2hhbm5lcyBXZWluZXIgPGhh
-bm5lc0BjbXB4Y2hnLm9yZz4sCglsaW51eC1mc2RldmVsIDxsaW51eC1mc2RldmVsQHZnZXIu
-a2VybmVsLm9yZz4sCglsaW51eC1tbSA8bGludXgtbW1Aa3ZhY2sub3JnPiwKCWxpbnV4LWtl
-cm5lbCA8bGludXgta2VybmVsQHZnZXIua2VybmVsLm9yZz4sCglsaW51eC1leHQ0IDxsaW51
-eC1leHQ0QHZnZXIua2VybmVsLm9yZz4sCglNZWwgR29ybWFuIDxtZ29ybWFuQHN1c2UuZGU+
-ClN1YmplY3Q6IFtQQVRDSCAzLzRdIG1tOiBzbHViOiBEbyBub3QgdGFrZSBleHBlbnNpdmUg
-c3RlcHMgZm9yIFNMVUJzIHNwZWN1bGF0aXZlIGhpZ2gtb3JkZXIgYWxsb2NhdGlvbnMKRGF0
-ZToJRnJpLCAxMyBNYXkgMjAxMSAxNTowMzoyMyArMDEwMApNZXNzYWdlLUlkOiA8MTMwNTI5
-NTQwNC0xMjEyOS00LWdpdC1zZW5kLWVtYWlsLW1nb3JtYW5Ac3VzZS5kZT4KWC1NYWlsaW5n
-LUxpc3Q6CWxpbnV4LWZzZGV2ZWxAdmdlci5rZXJuZWwub3JnCgpUbyBhdm9pZCBsb2NraW5n
-IGFuZCBwZXItY3B1IG92ZXJoZWFkLCBTTFVCIG9wdGltaXNpY2FsbHkgdXNlcwpoaWdoLW9y
-ZGVyIGFsbG9jYXRpb25zIGFuZCBmYWxscyBiYWNrIHRvIGxvd2VyIGFsbG9jYXRpb25zIGlm
-IHRoZXkKZmFpbC4gSG93ZXZlciwgYnkgc2ltcGx5IHRyeWluZyB0byBhbGxvY2F0ZSwgdGhl
-IGNhbGxlciBjYW4gZW50ZXIKY29tcGFjdGlvbiBvciByZWNsYWltIC0gYm90aCBvZiB3aGlj
-aCBhcmUgbGlrZWx5IHRvIGNvc3QgbW9yZSB0aGFuIHRoZQpiZW5lZml0IG9mIHVzaW5nIGhp
-Z2gtb3JkZXIgcGFnZXMgaW4gU0xVQi4gT24gYSBkZXNrdG9wIHN5c3RlbSwgdHdvCnVzZXJz
-IHJlcG9ydCB0aGF0IHRoZSBzeXN0ZW0gaXMgZ2V0dGluZyBzdGFsbGVkIHdpdGgga3N3YXBk
-IHVzaW5nIGxhcmdlCmFtb3VudHMgb2YgQ1BVLgoKVGhpcyBwYXRjaCBwcmV2ZW50cyBTTFVC
-IHRha2luZyBhbnkgZXhwZW5zaXZlIHN0ZXBzIHdoZW4gdHJ5aW5nIHRvIHVzZQpoaWdoLW9y
-ZGVyIGFsbG9jYXRpb25zLiBJbnN0ZWFkLCBpdCBpcyBleHBlY3RlZCB0byBmYWxsIGJhY2sg
-dG8gc21hbGxlcgpvcmRlcnMgbW9yZSBhZ2dyZXNzaXZlbHkuIFRlc3Rpbmcgd2FzIHNvbWV3
-aGF0IGluY29uY2x1c2l2ZSBvbiBob3cgbXVjaAp0aGlzIGhlbHBlZCBidXQgaXQgbWFrZXMg
-c2Vuc2UgdGhhdCBmYWxsaW5nIGJhY2sgdG8gb3JkZXItMCBhbGxvY2F0aW9ucwppcyBmYXN0
-ZXIgdGhhbiBlbnRlcmluZyBjb21wYWN0aW9uIG9yIGRpcmVjdCByZWNsYWltLgoKU2lnbmVk
-LW9mZi1ieTogTWVsIEdvcm1hbiA8bWdvcm1hbkBzdXNlLmRlPgotLS0KIG1tL3BhZ2VfYWxs
-b2MuYyB8ICAgIDMgKystCiBtbS9zbHViLmMgICAgICAgfCAgICAzICsrLQogMiBmaWxlcyBj
-aGFuZ2VkLCA0IGluc2VydGlvbnMoKyksIDIgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEv
-bW0vcGFnZV9hbGxvYy5jIGIvbW0vcGFnZV9hbGxvYy5jCmluZGV4IDlmOGE5N2IuLjA1N2Yx
-ZTIgMTAwNjQ0Ci0tLSBhL21tL3BhZ2VfYWxsb2MuYworKysgYi9tbS9wYWdlX2FsbG9jLmMK
-QEAgLTE5NzIsNiArMTk3Miw3IEBAIGdmcF90b19hbGxvY19mbGFncyhnZnBfdCBnZnBfbWFz
-aykKIHsKIAlpbnQgYWxsb2NfZmxhZ3MgPSBBTExPQ19XTUFSS19NSU4gfCBBTExPQ19DUFVT
-RVQ7CiAJY29uc3QgZ2ZwX3Qgd2FpdCA9IGdmcF9tYXNrICYgX19HRlBfV0FJVDsKKwljb25z
-dCBnZnBfdCBjYW5fd2FrZV9rc3dhcGQgPSAhKGdmcF9tYXNrICYgX19HRlBfTk9fS1NXQVBE
-KTsKIAogCS8qIF9fR0ZQX0hJR0ggaXMgYXNzdW1lZCB0byBiZSB0aGUgc2FtZSBhcyBBTExP
-Q19ISUdIIHRvIHNhdmUgYSBicmFuY2guICovCiAJQlVJTERfQlVHX09OKF9fR0ZQX0hJR0gg
-IT0gKF9fZm9yY2UgZ2ZwX3QpIEFMTE9DX0hJR0gpOwpAQCAtMTk4NCw3ICsxOTg1LDcgQEAg
-Z2ZwX3RvX2FsbG9jX2ZsYWdzKGdmcF90IGdmcF9tYXNrKQogCSAqLwogCWFsbG9jX2ZsYWdz
-IHw9IChfX2ZvcmNlIGludCkgKGdmcF9tYXNrICYgX19HRlBfSElHSCk7CiAKLQlpZiAoIXdh
-aXQpIHsKKwlpZiAoIXdhaXQgJiYgY2FuX3dha2Vfa3N3YXBkKSB7CiAJCS8qCiAJCSAqIE5v
-dCB3b3J0aCB0cnlpbmcgdG8gYWxsb2NhdGUgaGFyZGVyIGZvcgogCQkgKiBfX0dGUF9OT01F
-TUFMTE9DIGV2ZW4gaWYgaXQgY2FuJ3Qgc2NoZWR1bGUuCmRpZmYgLS1naXQgYS9tbS9zbHVi
-LmMgYi9tbS9zbHViLmMKaW5kZXggOThjMzU4ZC4uYzU3OTdhYiAxMDA2NDQKLS0tIGEvbW0v
-c2x1Yi5jCisrKyBiL21tL3NsdWIuYwpAQCAtMTE3MCw3ICsxMTcwLDggQEAgc3RhdGljIHN0
-cnVjdCBwYWdlICphbGxvY2F0ZV9zbGFiKHN0cnVjdCBrbWVtX2NhY2hlICpzLCBnZnBfdCBm
-bGFncywgaW50IG5vZGUpCiAJICogTGV0IHRoZSBpbml0aWFsIGhpZ2hlci1vcmRlciBhbGxv
-Y2F0aW9uIGZhaWwgdW5kZXIgbWVtb3J5IHByZXNzdXJlCiAJICogc28gd2UgZmFsbC1iYWNr
-IHRvIHRoZSBtaW5pbXVtIG9yZGVyIGFsbG9jYXRpb24uCiAJICovCi0JYWxsb2NfZ2ZwID0g
-KGZsYWdzIHwgX19HRlBfTk9XQVJOIHwgX19HRlBfTk9SRVRSWSB8IF9fR0ZQX05PX0tTV0FQ
-RCkgJiB+X19HRlBfTk9GQUlMOworCWFsbG9jX2dmcCA9IChmbGFncyB8IF9fR0ZQX05PV0FS
-TiB8IF9fR0ZQX05PX0tTV0FQRCkgJgorCQkJfihfX0dGUF9OT0ZBSUwgfCBfX0dGUF9XQUlU
-IHwgX19HRlBfUkVQRUFUKTsKIAogCXBhZ2UgPSBhbGxvY19zbGFiX3BhZ2UoYWxsb2NfZ2Zw
-LCBub2RlLCBvbyk7CiAJaWYgKHVubGlrZWx5KCFwYWdlKSkgewotLSAKMS43LjMuNAo=
---------------000801070501020300060301
-Content-Type: text/plain;
- name="mm-slub-do-not-wake-kswapd-for-slubs-speculative-high-order-allocations.patch"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename*0="mm-slub-do-not-wake-kswapd-for-slubs-speculative-high-order-";
- filename*1="allocations.patch"
-
-RnJvbSBsaW51eC1mc2RldmVsLW93bmVyQHZnZXIua2VybmVsLm9yZyBGcmkgTWF5IDEzIDEw
-OjA0OjAwIDIwMTEKRnJvbToJTWVsIEdvcm1hbiA8bWdvcm1hbkBzdXNlLmRlPgpUbzoJQW5k
-cmV3IE1vcnRvbiA8YWtwbUBsaW51eC1mb3VuZGF0aW9uLm9yZz4KQ2M6CUphbWVzIEJvdHRv
-bWxleSA8SmFtZXMuQm90dG9tbGV5QEhhbnNlblBhcnRuZXJzaGlwLmNvbT4sCglDb2xpbiBL
-aW5nIDxjb2xpbi5raW5nQGNhbm9uaWNhbC5jb20+LAoJUmFnaGF2ZW5kcmEgRCBQcmFiaHUg
-PHJhZ2h1LnByYWJodTEzQGdtYWlsLmNvbT4sCglKYW4gS2FyYSA8amFja0BzdXNlLmN6Piwg
-Q2hyaXMgTWFzb24gPGNocmlzLm1hc29uQG9yYWNsZS5jb20+LAoJQ2hyaXN0b3BoIExhbWV0
-ZXIgPGNsQGxpbnV4LmNvbT4sCglQZWtrYSBFbmJlcmcgPHBlbmJlcmdAa2VybmVsLm9yZz4s
-CglSaWsgdmFuIFJpZWwgPHJpZWxAcmVkaGF0LmNvbT4sCglKb2hhbm5lcyBXZWluZXIgPGhh
-bm5lc0BjbXB4Y2hnLm9yZz4sCglsaW51eC1mc2RldmVsIDxsaW51eC1mc2RldmVsQHZnZXIu
-a2VybmVsLm9yZz4sCglsaW51eC1tbSA8bGludXgtbW1Aa3ZhY2sub3JnPiwKCWxpbnV4LWtl
-cm5lbCA8bGludXgta2VybmVsQHZnZXIua2VybmVsLm9yZz4sCglsaW51eC1leHQ0IDxsaW51
-eC1leHQ0QHZnZXIua2VybmVsLm9yZz4sCglNZWwgR29ybWFuIDxtZ29ybWFuQHN1c2UuZGU+
-ClN1YmplY3Q6IFtQQVRDSCAyLzRdIG1tOiBzbHViOiBEbyBub3Qgd2FrZSBrc3dhcGQgZm9y
-IFNMVUJzIHNwZWN1bGF0aXZlIGhpZ2gtb3JkZXIgYWxsb2NhdGlvbnMKRGF0ZToJRnJpLCAx
-MyBNYXkgMjAxMSAxNTowMzoyMiArMDEwMApNZXNzYWdlLUlkOiA8MTMwNTI5NTQwNC0xMjEy
-OS0zLWdpdC1zZW5kLWVtYWlsLW1nb3JtYW5Ac3VzZS5kZT4KWC1NYWlsaW5nLUxpc3Q6CWxp
-bnV4LWZzZGV2ZWxAdmdlci5rZXJuZWwub3JnCgpUbyBhdm9pZCBsb2NraW5nIGFuZCBwZXIt
-Y3B1IG92ZXJoZWFkLCBTTFVCIG9wdGltaXNpY2FsbHkgdXNlcwpoaWdoLW9yZGVyIGFsbG9j
-YXRpb25zIGFuZCBmYWxscyBiYWNrIHRvIGxvd2VyIGFsbG9jYXRpb25zIGlmIHRoZXkKZmFp
-bC4gIEhvd2V2ZXIsIGJ5IHNpbXBseSB0cnlpbmcgdG8gYWxsb2NhdGUsIGtzd2FwZCBpcyB3
-b2tlbiB1cCB0bwpzdGFydCByZWNsYWltaW5nIGF0IHRoYXQgb3JkZXIuIE9uIGEgZGVza3Rv
-cCBzeXN0ZW0sIHR3byB1c2VycyByZXBvcnQKdGhhdCB0aGUgc3lzdGVtIGlzIGdldHRpbmcg
-bG9ja2VkIHVwIHdpdGgga3N3YXBkIHVzaW5nIGxhcmdlIGFtb3VudHMKb2YgQ1BVLiAgVXNp
-bmcgU0xBQiBpbnN0ZWFkIG9mIFNMVUIgbWFkZSB0aGlzIHByb2JsZW0gZ28gYXdheS4KClRo
-aXMgcGF0Y2ggcHJldmVudHMga3N3YXBkIGJlaW5nIHdva2VuIHVwIGZvciBoaWdoLW9yZGVy
-IGFsbG9jYXRpb25zLgpUZXN0aW5nIGluZGljYXRlZCB0aGF0IHdpdGggdGhpcyBwYXRjaCBh
-cHBsaWVkLCB0aGUgc3lzdGVtIHdhcyBtdWNoCmhhcmRlciB0byBoYW5nIGFuZCBldmVuIHdo
-ZW4gaXQgZGlkLCBpdCBldmVudHVhbGx5IHJlY292ZXJlZC4KClNpZ25lZC1vZmYtYnk6IE1l
-bCBHb3JtYW4gPG1nb3JtYW5Ac3VzZS5kZT4KLS0tCiBtbS9zbHViLmMgfCAgICAyICstCiAx
-IGZpbGVzIGNoYW5nZWQsIDEgaW5zZXJ0aW9ucygrKSwgMSBkZWxldGlvbnMoLSkKCmRpZmYg
-LS1naXQgYS9tbS9zbHViLmMgYi9tbS9zbHViLmMKaW5kZXggOWQyZTVlNC4uOThjMzU4ZCAx
-MDA2NDQKLS0tIGEvbW0vc2x1Yi5jCisrKyBiL21tL3NsdWIuYwpAQCAtMTE3MCw3ICsxMTcw
-LDcgQEAgc3RhdGljIHN0cnVjdCBwYWdlICphbGxvY2F0ZV9zbGFiKHN0cnVjdCBrbWVtX2Nh
-Y2hlICpzLCBnZnBfdCBmbGFncywgaW50IG5vZGUpCiAJICogTGV0IHRoZSBpbml0aWFsIGhp
-Z2hlci1vcmRlciBhbGxvY2F0aW9uIGZhaWwgdW5kZXIgbWVtb3J5IHByZXNzdXJlCiAJICog
-c28gd2UgZmFsbC1iYWNrIHRvIHRoZSBtaW5pbXVtIG9yZGVyIGFsbG9jYXRpb24uCiAJICov
-Ci0JYWxsb2NfZ2ZwID0gKGZsYWdzIHwgX19HRlBfTk9XQVJOIHwgX19HRlBfTk9SRVRSWSkg
-JiB+X19HRlBfTk9GQUlMOworCWFsbG9jX2dmcCA9IChmbGFncyB8IF9fR0ZQX05PV0FSTiB8
-IF9fR0ZQX05PUkVUUlkgfCBfX0dGUF9OT19LU1dBUEQpICYgfl9fR0ZQX05PRkFJTDsKIAog
-CXBhZ2UgPSBhbGxvY19zbGFiX3BhZ2UoYWxsb2NfZ2ZwLCBub2RlLCBvbyk7CiAJaWYgKHVu
-bGlrZWx5KCFwYWdlKSkgewotLSAKMS43LjMuNAo=
---------------000801070501020300060301--
+> 
+> Daniel
+Ben
