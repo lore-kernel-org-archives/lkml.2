@@ -1,40 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab1FOVbf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 17:31:35 -0400
-Received: from trinity.fluff.org ([89.16.178.74]:54163 "EHLO trinity.fluff.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751804Ab1FOVbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 17:31:32 -0400
-Date: Wed, 15 Jun 2011 22:31:32 +0100
-From: Ben Dooks <ben-i2c@fluff.org>
-To: dirk.brandewie@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [PATCH 13/13] i2c-intel-mid.c: Remove i2c-intel-mid.c
-Message-ID: <20110615213132.GG15795@trinity.fluff.org>
-References: <1307647310-24332-1-git-send-email-dirk.brandewie@gmail.com> <1307647310-24332-14-git-send-email-dirk.brandewie@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307647310-24332-14-git-send-email-dirk.brandewie@gmail.com>
-X-Disclaimer: These are my views alone.
-X-URL: http://www.fluff.org/
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@trinity.fluff.org
-X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
+	id S1755441Ab1FOVih (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 17:38:37 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38599 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755056Ab1FOVif convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 17:38:35 -0400
+Subject: Re: REGRESSION: Performance regressions from switching
+ anon_vma->lock to mutex
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>, Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+In-Reply-To: <1308172336.17300.177.camel@schen9-DESK>
+References: <1308097798.17300.142.camel@schen9-DESK>
+	 <1308101214.15392.151.camel@sli10-conroe> <1308138750.15315.62.camel@twins>
+	 <20110615161827.GA11769@tassilo.jf.intel.com>
+	 <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
+	 <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
+	 <1308172336.17300.177.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 15 Jun 2011 23:37:29 +0200
+Message-ID: <1308173849.15315.91.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applying: i2c-intel-mid.c: Remove i2c-intel-mid.c
-error: patch failed: drivers/i2c/busses/i2c-intel-mid.c:1
-error: drivers/i2c/busses/i2c-intel-mid.c: patch does not apply
-Patch failed at 0013 i2c-intel-mid.c: Remove i2c-intel-mid.c
+On Wed, 2011-06-15 at 14:12 -0700, Tim Chen wrote:
+> Thanks to Andi for providing the info.  We've used this workaround in
+> our testing so it will not mask true kernel scaling bottlenecks.
 
--- 
-Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
 
-Large Hadron Colada: A large Pina Colada that makes the universe disappear.
+http://programming.kicks-ass.net/sekrit/39-2.txt.bz2
+http://programming.kicks-ass.net/sekrit/tip-2.txt.bz2
+
+tip+sirq+linus is still slightly faster than .39 here, although removing
+that sysconf() wreckage closed the gap considerably (needing to know the
+number of cpus to optimize locking sounds like a trainwreck all of its
+own, needing it _that_ often instead of just once at startup is even
+worse).
 
