@@ -1,95 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab1FODYm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 23:24:42 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:39066 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754245Ab1FODYj convert rfc822-to-8bit (ORCPT
+	id S1754699Ab1FODn2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 23:43:28 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59359 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753916Ab1FODn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 23:24:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=l4zOhPa0AE5q1fJoteAME8CJl3zxLnmcrkxkNjEmqieQWPMl2x2TpqatQTl84W3ScR
-         oReF4cPKaMxikz6MD2qcZ1Akz766t16MR0nRhmwySf/xn5TXsoPY4nFKgh0kHNfZknf9
-         5134ut40yodMEP74N5Kn0DH+0BecXGAQ7+AHc=
+	Tue, 14 Jun 2011 23:43:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <877h8nc0gp.fsf@eliezer.anholt.net>
-References: <1308070307-2630-1-git-send-email-daniel.blueman@gmail.com>
-	<877h8nc0gp.fsf@eliezer.anholt.net>
-Date: Wed, 15 Jun 2011 11:24:38 +0800
-Message-ID: <BANLkTinYuqzdg3OtzBRBGGnig2sC3fSsYQ@mail.gmail.com>
-Subject: Re: [PATCH 3.0-rc3] i915: Fix gen6 (SNB) GPU stalling
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Eric Anholt <eric@anholt.net>
-Cc: Keith Packard <keithp@keithp.com>, Dave Airlie <airlied@redhat.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <BANLkTinEhVY4aZ+M6H=380zd0Osr_6VFCA@mail.gmail.com>
+References: <1308097798.17300.142.camel@schen9-DESK> <BANLkTinEhVY4aZ+M6H=380zd0Osr_6VFCA@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 14 Jun 2011 20:42:27 -0700
+Message-ID: <BANLkTinFtUXar+dRnSLakhBe6Bf25p7YAA@mail.gmail.com>
+Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
+ to mutex
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, ak@linux.intel.com,
+        shaohua.li@intel.com, alex.shi@intel.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: multipart/mixed; boundary=bcaec5014ba927443104a5b7f2ba
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 June 2011 10:06, Eric Anholt <eric@anholt.net> wrote:
-> On Wed, 15 Jun 2011 00:51:47 +0800, Daniel J Blueman <daniel.blueman@gmail.com> wrote:
->> On 14 June 2011 13:23, Eric Anholt <eric@anholt.net> wrote:
->> > On Tue, 14 Jun 2011 12:18:36 +0800, Daniel J Blueman <daniel.blueman@gmail.com> wrote:
->> >> Hi Eric,
->> >>
->> >> The frequent ~1.5s pauses I hit with SNB hardware in the gnome3 UI (eg
->> >> whenever you hit the top-left of the screen to show all windows) are
->> >> nicely addressed by your recent wake patch [1] (ported to -rc3). Thus
->> >> I see no 'missed IRQ' kernel messages.
->> >>
->> >> As this addresses a significant usability regression, are you happy to
->> >> add it to the 3.0-rc queue? I think it has very good value in -stable
->> >> also (assuming correctness). What do you think?
->> >
->> > This one had significant performance impacts, and later hacks in this
->> > series worked around the problem to approximately the same level of
->> > success with less impact, and we don't actually have a justification of
->> > why any of them work.  We were still hoping to come up with some clue,
->> > and haven't yet.
->>
->> True; that is quite heavy handed delay looping.
->>
->> It's a pity the usual Intel font didn't make it to the programmer's
->> reference manuals. Anyway, unmasking the blitter user interrupt in the hardware
->> status mask register addresses the root cause. Out of reset it's FFFFFFFFh,
->> so we don't need to read it here.
->>
->> It would be good to get this into -rc4. -stable probably needs some additional
->> tweaks.
->>
->> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+--bcaec5014ba927443104a5b7f2ba
+Content-Type: text/plain; charset=ISO-8859-1
 
-> So you're saying that our interrupts at the top-level IMR are triggered
-> by the write to the status page of the lower-level ring?  That's
-> surprising to me.  Or do you think that this write is just happening to
-> trigger serialization so the interrupt comes after the DWORD write of
-> the seqno by the ring?  (hw folks just recently indicated that our
-> particular code is not expected to serialize the interrupt after the
-> seqno store, unless we had an MI_FLUSH_DWORD in between)
-
-When ISR bits not masked by the hardware status mask register change,
-a write is generated with the ISR contents to the status page, so I
-believe that the blitter command streamer wasn't generating an
-interrupt when an MI_USER_INTERRUPT command was issued. The interrupt
-handler would kick in for other interrupts, read all the IIRs and
-notice the bit set and wake the ring interrupt queue anyway.
-
-I guess we could test this by observing that the BLT user interrupt
-IIR bit is always not set on it's own (ie another interrupt woke us)
-in the interrupt handler.
-
-Thanks,
-  Daniel
-
-> This patch has now passed 7000 iterations of the testcase that had a
-> ~.5% failure rate before.
+On Tue, Jun 14, 2011 at 6:21 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> Tested-by: Eric Anholt <eric@anholt.net>
--- 
-Daniel J Blueman
+> Anyway, please check me if I'm wrong, but won't the "anon_vma->root"
+> be the same for all the anon_vma's that are associated with one
+> particular vma?
+>
+> The reason I ask [...]
+
+So here's a trial patch that moves the anon_vma locking one level up
+in the anon_vma_clone() call chain. It actually does allow the root to
+change, but has a WARN_ON_ONCE() if that ever happens.
+
+I *suspect* this will help the locking numbers a bit, but I'd like to
+note that it does this *only* for the anon_vma_clone() case, and the
+exact same thing should be done for the exit case too (ie the
+unlink_anon_vmas()). So if it does work it's still just one step on
+the way, and there would be more work along the same lines to possibly
+improve the locking further.
+
+The patch is "tested" in the sense that I booted the kernel and am
+running it right now (and compiled a kernel with it). But that's not a
+whole lot of actual real life testing, so caveat emptor.
+
+And I won't really even guarantee that the main problem locking-wise
+would be a long chain of "same_vma" anon-vma's that this does with
+just a single lock. So who knows - maybe it doesn't help at all. I
+suspect it's worth testing, though.
+
+                              Linus
+
+--bcaec5014ba927443104a5b7f2ba
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_goxqgqiz0
+
+IG1tL3JtYXAuYyB8ICAgMTggKysrKysrKysrKysrKysrKy0tCiAxIGZpbGVzIGNoYW5nZWQsIDE2
+IGluc2VydGlvbnMoKyksIDIgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvbW0vcm1hcC5jIGIv
+bW0vcm1hcC5jCmluZGV4IDBlYjQ2M2VhODhkZC4uMjA2YzNmYjA3MmFmIDEwMDY0NAotLS0gYS9t
+bS9ybWFwLmMKKysrIGIvbW0vcm1hcC5jCkBAIC0yMDgsMTMgKzIwOCwxMSBAQCBzdGF0aWMgdm9p
+ZCBhbm9uX3ZtYV9jaGFpbl9saW5rKHN0cnVjdCB2bV9hcmVhX3N0cnVjdCAqdm1hLAogCWF2Yy0+
+YW5vbl92bWEgPSBhbm9uX3ZtYTsKIAlsaXN0X2FkZCgmYXZjLT5zYW1lX3ZtYSwgJnZtYS0+YW5v
+bl92bWFfY2hhaW4pOwogCi0JYW5vbl92bWFfbG9jayhhbm9uX3ZtYSk7CiAJLyoKIAkgKiBJdCdz
+IGNyaXRpY2FsIHRvIGFkZCBuZXcgdm1hcyB0byB0aGUgdGFpbCBvZiB0aGUgYW5vbl92bWEsCiAJ
+ICogc2VlIGNvbW1lbnQgaW4gaHVnZV9tZW1vcnkuYzpfX3NwbGl0X2h1Z2VfcGFnZSgpLgogCSAq
+LwogCWxpc3RfYWRkX3RhaWwoJmF2Yy0+c2FtZV9hbm9uX3ZtYSwgJmFub25fdm1hLT5oZWFkKTsK
+LQlhbm9uX3ZtYV91bmxvY2soYW5vbl92bWEpOwogfQogCiAvKgpAQCAtMjI0LDE2ICsyMjIsMzAg
+QEAgc3RhdGljIHZvaWQgYW5vbl92bWFfY2hhaW5fbGluayhzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3Qg
+KnZtYSwKIGludCBhbm9uX3ZtYV9jbG9uZShzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKmRzdCwgc3Ry
+dWN0IHZtX2FyZWFfc3RydWN0ICpzcmMpCiB7CiAJc3RydWN0IGFub25fdm1hX2NoYWluICphdmMs
+ICpwYXZjOworCXN0cnVjdCBhbm9uX3ZtYSAqcm9vdCA9IE5VTEw7CiAKIAlsaXN0X2Zvcl9lYWNo
+X2VudHJ5X3JldmVyc2UocGF2YywgJnNyYy0+YW5vbl92bWFfY2hhaW4sIHNhbWVfdm1hKSB7CisJ
+CXN0cnVjdCBhbm9uX3ZtYSAqYW5vbl92bWEgPSBwYXZjLT5hbm9uX3ZtYSwgKm5ld19yb290ID0g
+YW5vbl92bWEtPnJvb3Q7CisKKwkJaWYgKG5ld19yb290ICE9IHJvb3QpIHsKKwkJCWlmIChXQVJO
+X09OX09OQ0Uocm9vdCkpCisJCQkJbXV0ZXhfdW5sb2NrKCZyb290LT5tdXRleCk7CisJCQlyb290
+ID0gbmV3X3Jvb3Q7CisJCQltdXRleF9sb2NrKCZyb290LT5tdXRleCk7CisJCX0KKwogCQlhdmMg
+PSBhbm9uX3ZtYV9jaGFpbl9hbGxvYygpOwogCQlpZiAoIWF2YykKIAkJCWdvdG8gZW5vbWVtX2Zh
+aWx1cmU7CiAJCWFub25fdm1hX2NoYWluX2xpbmsoZHN0LCBhdmMsIHBhdmMtPmFub25fdm1hKTsK
+IAl9CisJaWYgKHJvb3QpCisJCW11dGV4X3VubG9jaygmcm9vdC0+bXV0ZXgpOwogCXJldHVybiAw
+OwogCiAgZW5vbWVtX2ZhaWx1cmU6CisJaWYgKHJvb3QpCisJCW11dGV4X3VubG9jaygmcm9vdC0+
+bXV0ZXgpOwogCXVubGlua19hbm9uX3ZtYXMoZHN0KTsKIAlyZXR1cm4gLUVOT01FTTsKIH0KQEAg
+LTI4MCw3ICsyOTIsOSBAQCBpbnQgYW5vbl92bWFfZm9yayhzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3Qg
+KnZtYSwgc3RydWN0IHZtX2FyZWFfc3RydWN0ICpwdm1hKQogCWdldF9hbm9uX3ZtYShhbm9uX3Zt
+YS0+cm9vdCk7CiAJLyogTWFyayB0aGlzIGFub25fdm1hIGFzIHRoZSBvbmUgd2hlcmUgb3VyIG5l
+dyAoQ09XZWQpIHBhZ2VzIGdvLiAqLwogCXZtYS0+YW5vbl92bWEgPSBhbm9uX3ZtYTsKKwlhbm9u
+X3ZtYV9sb2NrKGFub25fdm1hKTsKIAlhbm9uX3ZtYV9jaGFpbl9saW5rKHZtYSwgYXZjLCBhbm9u
+X3ZtYSk7CisJYW5vbl92bWFfdW5sb2NrKGFub25fdm1hKTsKIAogCXJldHVybiAwOwogCg==
+--bcaec5014ba927443104a5b7f2ba--
