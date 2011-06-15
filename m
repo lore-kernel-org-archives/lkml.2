@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437Ab1FOBTC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 21:19:02 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47473 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754206Ab1FOBTB (ORCPT
+	id S1754438Ab1FOBPG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 21:15:06 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:58819 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624Ab1FOBPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 21:19:01 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 15 Jun 2011 10:12:02 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Michal Hocko <mhocko@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Ying Han <yinghan@google.com>
-Subject: Re: [BUGFIX][PATCH 5/5] memcg: fix percpu cached charge draining
- frequency
-Message-Id: <20110615101202.fa8e9f76.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110615091245.e3267a6b.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110613120054.3336e997.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110613121648.3d28afcd.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110614073651.GA21197@tiehlicka.suse.cz>
-	<20110615091245.e3267a6b.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Jun 2011 21:15:03 -0400
+Date: Tue, 14 Jun 2011 22:14:44 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Greg KH <greg@kroah.com>
+Cc: stable@linux.kernel.org, donald.h.fry@intel.com, reinette.chatre@intel.com,
+        wey-yi.w.guy@intel.com, ilw@linux.intel.com, linville@tuxdriver.com,
+        sgruszka@redhat.com, ak@linux.intel.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [stable] Please revert "iwlagn: Support new 5000 microcode."
+ from 2.6.32 and 2.6.33
+Message-ID: <20110615011443.GA13680@herton-IdeaPad-Y430>
+References: <20110613181317.GA3385@herton-IdeaPad-Y430>
+ <20110614230344.GA2065@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110614230344.GA2065@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jun 2011 09:12:45 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-
-> On Tue, 14 Jun 2011 09:36:51 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > On Mon 13-06-11 12:16:48, KAMEZAWA Hiroyuki wrote:
-> > > From 18b12e53f1cdf6d7feed1f9226c189c34866338c Mon Sep 17 00:00:00 2001
-> > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > > Date: Mon, 13 Jun 2011 11:25:43 +0900
-> > > Subject: [PATCH 5/5] memcg: fix percpu cached charge draining frequency
-> > > 
-> > >  For performance, memory cgroup caches some "charge" from res_counter
-> > >  into per cpu cache. This works well but because it's cache,
-> > >  it needs to be flushed in some cases. Typical cases are
-> > >          1. when someone hit limit.
-> > >          2. when rmdir() is called and need to charges to be 0.
-> > > 
-> > > But "1" has problem.
-> > > 
-> > > Recently, with large SMP machines, we see many kworker runs because
-> > > of flushing memcg's cache. Bad things in implementation are
-> > > that even if a cpu contains a cache for memcg not related to
-> > > a memcg which hits limit, drain code is called.
-> > > 
-> > > This patch does
-> > > 	D) don't call at softlimit reclaim.
+On Tue, Jun 14, 2011 at 04:03:44PM -0700, Greg KH wrote:
+> On Mon, Jun 13, 2011 at 03:13:18PM -0300, Herton Ronaldo Krzesinski wrote:
+> > The patch ("iwlagn: Support new 5000 microcode") shoudn't have been
+> > applied on 2.6.32 and 2.6.33 stable trees, it doesn't support new
+> > firmware file format, thus if the new firmware is on the disk, loading
+> > fails, as reported on:
+> > https://bugs.launchpad.net/ubuntu/+source/linux/+bug/796336
 > > 
-> > I think this needs some justification. The decision is not that
-> > obvious IMO. I would say that this is a good decision because cached
-> > charges will not help to free any memory (at least not directly) during
-> > background reclaim. What about something like:
-> > "
-> > We are not draining per cpu cached charges during soft limit reclaim 
-> > because background reclaim doesn't care about charges. It tries to free
-> > some memory and charges will not give any.
-> > Cached charges might influence only selection of the biggest soft limit
-> > offender but as the call is done only after the selection has been
-> > already done it makes no change.
-> > "
-> > 
-> > Anyway, wouldn't it be better to have this change separate from the
-> > async draining logic change?
+> > Support for the iwlagn new firmware file format was only added beginning
+> > with 2.6.35 (commit "iwlagn: implement loading a new firmware file
+> > type"), so iwlagn works with new firmware only with 2.6.35 or later.
 > 
-> Hmm. I think calling "draining" at softlimit is just a bug.
+> Can I get an ack from the developer of the patch and the people involved
+> with it first?  It was asked to be backported for a reason, so I would
+> at least like to get the people who asked for the backport to have a
+> chance to respond please.
 > 
-I'll divide patches.
+> It's only nice, why would you exclude them?
 
-Thanks,
--kame
+I didn't intend to exclude anyone and I'm just reporting it, it didn't
+came to my mind CC'ing people while sending to stable, and hopefully
+everyone related are CC'ed now.
 
+Also note that this revert request is for 2.6.32 and 2.6.33 *only*
+
+And seems the right thing to do for them.
+
+The other stable release where this was applied (2.6.35) looks fine
+but these two are too old to support the new firmware (don't work, need
+extra patches backported which weren't, like the commit I mentioned --
+commit "iwlagn: implement loading a new firmware file type"), as yourself
+can check reading the code/bug report, and what I wrote.
+
+> 
+> greg k-h
+> 
+
+-- 
+[]'s
+Herton
