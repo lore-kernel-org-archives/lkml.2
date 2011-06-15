@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618Ab1FPHAr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:00:47 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:45389 "EHLO
+	id S1755694Ab1FPHAx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:00:53 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:38471 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755316Ab1FPHAl (ORCPT
+	by vger.kernel.org with ESMTP id S1755515Ab1FPHAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:00:41 -0400
-X-Sasl-enc: 3iLRXMyb36gOv8ltWPZsiJ5nw1fm/HmvR0m34EvGdWpk 1308207641
+	Thu, 16 Jun 2011 03:00:43 -0400
+X-Sasl-enc: iHtuwVkhvYAW3U3q6qGOKo8F8Jfg91HOU5qDqxYscq1v 1308207642
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:31 2011
-Message-Id: <20110616000231.738343164@clark.kroah.org>
+Message-Id: <20110616000231.841256077@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 16:59:51 -0700
+Date: Wed, 15 Jun 2011 16:59:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Slaby <jslaby@suse.cz>, Arnd Bergmann <arnd@arndb.de>
-Subject: [28/89] serial: core, remove uart_update_termios
+        Jordan Hargrave <jordan_hargrave@dell.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [29/89] PCI: Set PCIE maxpayload for card during hotplug insertion
 In-Reply-To: <20110616000258.GA14529@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,67 +28,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: "Jordan_Hargrave@Dell.com" <Jordan_Hargrave@Dell.com>
 
-commit 6f5c24ad0f7619502199185a026a228174a27e68 upstream.
+commit e522a7126c7c144a1dd14c6f217ac31e71082b1d upstream.
 
-Now, uart_update_termios is empty, so it's time to remove it. We no
-longer need a live tty in .dtr_rts. So this should prune all the bugs
-where tty is zeroed in port->tty during tty_port_block_til_ready.
+The following patch sets the MaxPayload setting to match the parent
+reading when inserting a PCIE card into a hotplug slot.  On our system,
+the upstream bridge is set to 256, but when inserting a card, the card
+setting defaults to 128.  As soon as I/O is performed to the card it
+starts receiving errors since the payload size is too small.
 
-There is one thing to note. We don't set ASYNC_NORMAL_ACTIVE now. It's
-because this is done already in tty_port_block_til_ready.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>
+Reviewed-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+Signed-off-by: Jordan Hargrave <jordan_hargrave@dell.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/tty/serial/serial_core.c |   25 +------------------------
- 1 file changed, 1 insertion(+), 24 deletions(-)
+ drivers/pci/hotplug/pcihp_slot.c |   45 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 45 insertions(+)
 
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -1470,21 +1470,6 @@ static void uart_hangup(struct tty_struc
- 	mutex_unlock(&port->mutex);
+--- a/drivers/pci/hotplug/pcihp_slot.c
++++ b/drivers/pci/hotplug/pcihp_slot.c
+@@ -158,6 +158,47 @@ static void program_hpp_type2(struct pci
+ 	 */
  }
  
--/**
-- *	uart_update_termios	-	update the terminal hw settings
-- *	@tty: tty associated with UART
-- *	@state: UART to update
-- *
-- *	Copy across the serial console cflag setting into the termios settings
-- *	for the initial open of the port.  This allows continuity between the
-- *	kernel settings, and the settings init adopts when it opens the port
-- *	for the first time.
-- */
--static void uart_update_termios(struct tty_struct *tty,
--						struct uart_state *state)
--{
--}
--
- static int uart_carrier_raised(struct tty_port *port)
++/* Program PCIE MaxPayload setting on device: ensure parent maxpayload <= device */
++static int pci_set_payload(struct pci_dev *dev)
++{
++       int pos, ppos;
++       u16 pctl, psz;
++       u16 dctl, dsz, dcap, dmax;
++       struct pci_dev *parent;
++
++       parent = dev->bus->self;
++       pos = pci_find_capability(dev, PCI_CAP_ID_EXP);
++       if (!pos)
++               return 0;
++
++       /* Read Device MaxPayload capability and setting */
++       pci_read_config_word(dev, pos + PCI_EXP_DEVCTL, &dctl);
++       pci_read_config_word(dev, pos + PCI_EXP_DEVCAP, &dcap);
++       dsz = (dctl & PCI_EXP_DEVCTL_PAYLOAD) >> 5;
++       dmax = (dcap & PCI_EXP_DEVCAP_PAYLOAD);
++
++       /* Read Parent MaxPayload setting */
++       ppos = pci_find_capability(parent, PCI_CAP_ID_EXP);
++       if (!ppos)
++               return 0;
++       pci_read_config_word(parent, ppos + PCI_EXP_DEVCTL, &pctl);
++       psz = (pctl &  PCI_EXP_DEVCTL_PAYLOAD) >> 5;
++
++       /* If parent payload > device max payload -> error
++        * If parent payload > device payload -> set speed
++        * If parent payload <= device payload -> do nothing
++        */
++       if (psz > dmax)
++               return -1;
++       else if (psz > dsz) {
++               dev_info(&dev->dev, "Setting MaxPayload to %d\n", 128 << psz);
++               pci_write_config_word(dev, pos + PCI_EXP_DEVCTL,
++                                     (dctl & ~PCI_EXP_DEVCTL_PAYLOAD) +
++                                     (psz << 5));
++       }
++       return 0;
++}
++
+ void pci_configure_slot(struct pci_dev *dev)
  {
- 	struct uart_state *state = container_of(port, struct uart_state, port);
-@@ -1504,16 +1489,8 @@ static void uart_dtr_rts(struct tty_port
- 	struct uart_state *state = container_of(port, struct uart_state, port);
- 	struct uart_port *uport = state->uart_port;
+ 	struct pci_dev *cdev;
+@@ -169,6 +210,10 @@ void pci_configure_slot(struct pci_dev *
+ 			(dev->class >> 8) == PCI_CLASS_BRIDGE_PCI)))
+ 		return;
  
--	if (onoff) {
-+	if (onoff)
- 		uart_set_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
--
--		/*
--		 * If this is the first open to succeed,
--		 * adjust things to suit.
--		 */
--		if (!test_and_set_bit(ASYNCB_NORMAL_ACTIVE, &port->flags))
--			uart_update_termios(port->tty, state);
--	}
- 	else
- 		uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
- }
++       ret = pci_set_payload(dev);
++       if (ret)
++               dev_warn(&dev->dev, "could not set device max payload\n");
++
+ 	memset(&hpp, 0, sizeof(hpp));
+ 	ret = pci_get_hp_params(dev, &hpp);
+ 	if (ret)
 
 
