@@ -1,39 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755923Ab1FOQRS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 12:17:18 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45164 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755056Ab1FOQRP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 12:17:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=PhVI+jqEUbDLnXbSmOjBdt3GY1SK6Ih34sm9YHYafCFERA4uozsuwUACg1L089BmAV
-         Ob0rr7VTRhrCeQ9DwFflyn/tKChdZ9GXWWYZPtyzrnFW29Zw6gQrb9amEPvkEU/DJpR9
-         1qUfql08g1UTioDE5Dum2qICihFc0lqENItBE=
-Message-ID: <4DF8DB09.40103@gmail.com>
-Date: Wed, 15 Jun 2011 18:17:13 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
+	id S1755766Ab1FOQTs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 12:19:48 -0400
+Received: from mga01.intel.com ([192.55.52.88]:50524 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753704Ab1FOQTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 12:19:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,370,1304319600"; 
+   d="scan'208";a="18555562"
+Date: Wed, 15 Jun 2011 09:18:27 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Shaohua Li <shaohua.li@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: REGRESSION: Performance regressions from switching
+ anon_vma->lock to mutex
+Message-ID: <20110615161827.GA11769@tassilo.jf.intel.com>
+References: <1308097798.17300.142.camel@schen9-DESK>
+ <1308101214.15392.151.camel@sli10-conroe>
+ <1308138750.15315.62.camel@twins>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: device plugged into xhci port not detected after a resume
-References: <4DF85A1F.1080001@gmail.com> <20110615153816.GC10160@kroah.com>
-In-Reply-To: <20110615153816.GC10160@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308138750.15315.62.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 15-06-11 17:38, Greg KH schreef:
-> On Wed, Jun 15, 2011 at 09:07:11AM +0200, Maarten Lankhorst wrote:
->> I plugged a simple usb mouse in xhci that isn't found after a resume.
-> What kernel version are you using?
->
-3.0rc3
+> Good spot that certainly isn't plain .39.
+
+True.
+
+> 
+> It looks like those (http://marc.info/?l=linux-mm&m=130533041726258) are
+> similar to Linus' patch, except Linus takes the hard line that the root
+
+One difference to Linus' patch is that it does batching for both fork+exit.
+I suspect Linus' patch could probably too.
+
+But the fork+exit patch only improved things slightly, it's very unlikely to 
+recover 52%. Maybe the overall locking here needs to be revisited.
+
+And in general it looks like blind conversion from spinlock to mutex
+is a bad idea right now.
+
+-Andi
