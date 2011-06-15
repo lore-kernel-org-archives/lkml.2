@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751776Ab1FOF5Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 01:57:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18544 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751116Ab1FOF5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 01:57:22 -0400
-Date: Wed, 15 Jun 2011 07:57:32 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: Greg KH <greg@kroah.com>, stable@linux.kernel.org, donald.h.fry@intel.com,
-        reinette.chatre@intel.com, wey-yi.w.guy@intel.com, ilw@linux.intel.com,
-        linville@tuxdriver.com, ak@linux.intel.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [stable] Please revert "iwlagn: Support new 5000 microcode."
- from 2.6.32 and 2.6.33
-Message-ID: <20110615055731.GB2214@redhat.com>
-References: <20110613181317.GA3385@herton-IdeaPad-Y430>
- <20110614230344.GA2065@kroah.com>
- <20110615011443.GA13680@herton-IdeaPad-Y430>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110615011443.GA13680@herton-IdeaPad-Y430>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1752468Ab1FOF6G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 01:58:06 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:37005 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab1FOF6F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 01:58:05 -0400
+Date: Wed, 15 Jun 2011 07:58:03 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Wanlong Gao <wanlong.gao@gmail.com>
+Cc: Francis Moreau <francis.moro@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
+        linux-fbdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Possible deadlock when suspending framebuffer
+Message-ID: <20110615075803.3348b4ec@pluto.restena.lu>
+In-Reply-To: <1308100165.2113.4.camel@Tux>
+References: <1308100165.2113.4.camel@Tux>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 14, 2011 at 10:14:44PM -0300, Herton Ronaldo Krzesinski wrote:
-> On Tue, Jun 14, 2011 at 04:03:44PM -0700, Greg KH wrote:
-> > On Mon, Jun 13, 2011 at 03:13:18PM -0300, Herton Ronaldo Krzesinski wrote:
-> > > The patch ("iwlagn: Support new 5000 microcode") shoudn't have been
-> > > applied on 2.6.32 and 2.6.33 stable trees, it doesn't support new
-> > > firmware file format, thus if the new firmware is on the disk, loading
-> > > fails, as reported on:
-> > > https://bugs.launchpad.net/ubuntu/+source/linux/+bug/796336
-> > > 
-> > > Support for the iwlagn new firmware file format was only added beginning
-> > > with 2.6.35 (commit "iwlagn: implement loading a new firmware file
-> > > type"), so iwlagn works with new firmware only with 2.6.35 or later.
-> > 
-> > Can I get an ack from the developer of the patch and the people involved
-> > with it first?  It was asked to be backported for a reason, so I would
-> > at least like to get the people who asked for the backport to have a
-> > chance to respond please.
-> > 
-> > It's only nice, why would you exclude them?
-> 
-> I didn't intend to exclude anyone and I'm just reporting it, it didn't
-> came to my mind CC'ing people while sending to stable, and hopefully
-> everyone related are CC'ed now.
-> 
-> Also note that this revert request is for 2.6.32 and 2.6.33 *only*
-> 
-> And seems the right thing to do for them.
-> 
-> The other stable release where this was applied (2.6.35) looks fine
-> but these two are too old to support the new firmware (don't work, need
-> extra patches backported which weren't, like the commit I mentioned --
-> commit "iwlagn: implement loading a new firmware file type"), as yourself
-> can check reading the code/bug report, and what I wrote.
+Hi,
 
-ACK for revert. I could be wrong, but I think some more patches, except mentioned
-new format patch, are needed to make driver work reliably with the new firmware.
+On Wed, 15 Jun 2011 09:09:24 Wanlong Gao <wanlong.gao@gmail.com> wrote:
+> <snip>
+> Hi Francis:
+> can you test this patch?
 
-Stanislaw
+Do you have a deadlock trace which you are trying to fix?
+
+It's either the caller of unregister_framebuffer() which must be
+changed to not call unregister_framebuffer with info's lock held or
+the code reacting on the notification that must not try to acquire the
+lock again.
+
+The interesting par is if console semaphore has some relation to this
+deadlock as the order for taking both varies... It could be
+lock_fb_info(); console_lock()  versus console_lock(); lock_fb_info()
+
+Bruno
+
+
+> Thanks
+> 
+> From fe026c42af4cbdce053460a428a445e99071586a Mon Sep 17 00:00:00 2001
+> From: Wanlong Gao <wanlong.gao@gmail.com>
+> Date: Wed, 15 Jun 2011 09:03:41 +0800
+> Subject: [PATCH] test
+> 
+> 
+> 
+> Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
+> ---
+>  drivers/video/fbmem.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+> index 5aac00e..6e6cef3 100644
+> --- a/drivers/video/fbmem.c
+> +++ b/drivers/video/fbmem.c
+> @@ -1642,11 +1642,8 @@ static int do_unregister_framebuffer(struct
+> fb_info *fb_info)
+>  	if (i < 0 || i >= FB_MAX || registered_fb[i] != fb_info)
+>  		return -EINVAL;
+>  
+> -	if (!lock_fb_info(fb_info))
+> -		return -ENODEV;
+>  	event.info = fb_info;
+>  	ret = fb_notifier_call_chain(FB_EVENT_FB_UNBIND, &event);
+> -	unlock_fb_info(fb_info);
+
+Not a good idea to stop taking fb_lock here.
+Pretty all calls of fb_notifier_call_chain are protected by info's
+lock, except the one for FB_EVENT_FB_UNREGISTERED a few lines further.
+
+IMHO it wou make sense to add the lock around that last one so all
+notifier chain calls are handled the same.
+
+>  	if (ret)
+>  		return -EINVAL;
+
