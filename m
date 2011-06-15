@@ -1,51 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922Ab1FOVMj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 17:12:39 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40017 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751736Ab1FOVMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 17:12:38 -0400
-From: Ambresh K <ambresh@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: linux-omap <linux-omap@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] OMAP4: DMTIMER: enable autoidle mode
-Date: Wed, 15 Jun 2011 14:12:35 -0700
-Message-ID: <1308172355-1694-1-git-send-email-ambresh@ti.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755031Ab1FOVNq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 17:13:46 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:61840 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753456Ab1FOVNn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 17:13:43 -0400
+Date: Wed, 15 Jun 2011 17:13:19 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        cpufreq@vger.kernel.org
+Subject: Re: [PATCH] cpufreq bug fixes (stable/cpufreq.bugfixes) for 3.0 (or
+ 3.1).
+Message-ID: <20110615211319.GB27438@dumpdata.com>
+References: <1308164520-14145-1-git-send-email-konrad.wilk@oracle.com>
+ <20110615192630.GC19704@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110615192630.GC19704@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090205.4DF9207A.00B5:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ambresh K <ambresh@ti.com>
+On Wed, Jun 15, 2011 at 03:26:30PM -0400, Dave Jones wrote:
+> On Wed, Jun 15, 2011 at 03:01:58PM -0400, Konrad Rzeszutek Wilk wrote:
+>  > The two patches attached make the cpufreq and powernowk8 driver more robust on
+>  > badly behaving machines (or hypervisors not passing through proper rmsdr calls).
+> 
+> I applied these (after fixing up the change of filename in the powernow driver)
+> I'll send Linus a pull req to make sure these get into 3.0 later.
 
-Currently autoidle is only enabled for OMAP2/3; by enabling autoidle,
-the automatic L4 clock gating strategy is applied based on L4 activity,
-otherwise L4 clock to module will be a free running.
-
-Signed-off-by: Ambresh K <ambresh@ti.com>
----
- arch/arm/plat-omap/dmtimer.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
-index ee9f6eb..02d0f7a 100644
---- a/arch/arm/plat-omap/dmtimer.c
-+++ b/arch/arm/plat-omap/dmtimer.c
-@@ -342,8 +342,8 @@ static void omap_dm_timer_reset(struct omap_dm_timer *timer)
- 	l |= 0x02 << 3;  /* Set to smart-idle mode */
- 	l |= 0x2 << 8;   /* Set clock activity to perserve f-clock on idle */
- 
--	/* Enable autoidle on OMAP2 / OMAP3 */
--	if (cpu_is_omap24xx() || cpu_is_omap34xx())
-+	/* Enable autoidle on OMAP2 CPUs. */
-+	if (cpu_class_is_omap2())
- 		l |= 0x1 << 0;
- 
- 	/*
--- 
-1.6.0
-
+Thank you. Sorry about missing the directory move and you having to do extra legwork.
