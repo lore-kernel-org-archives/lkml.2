@@ -1,96 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab1FOKQF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 06:16:05 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41392 "EHLO
+	id S1754806Ab1FOKSk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 06:18:40 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:35584 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753960Ab1FOKQC (ORCPT
+	with ESMTP id S1754167Ab1FOKSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 06:16:02 -0400
+	Wed, 15 Jun 2011 06:18:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type;
-        b=KRyzS3ceaz2TVfJw/lDSvXclxTyeBurbCl1GXmIwxRmstTLxqPc3tPuPYAXmbp83r5
-         V0olgpPh6ceo28bLscN4+Znx58xjdBKHEmj/proz48s1cFBH8H0thNbAqQnp9hYsuwGo
-         CPmdBazQ9bxxnXHPt2kyAwlRCKWeb7Oyo47gI=
-Message-ID: <4DF8865F.5010007@gmail.com>
-Date: Wed, 15 Jun 2011 12:15:59 +0200
-From: Vladimir Pantelic <vladoman@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:2.0.1) Gecko/20110511 Firefox/4.0.1 SeaMonkey/2.1
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=t4TKtZUmQHVLYOMy/M7R+m8/Avyb2FAvsqVHqQQnqozoxd5DnCOQSST7v+syIVn36w
+         TGvsFqlew+Rh/Pd8pls4OV7FdbqlaZdXbRaQlmOp8qqxg3sfDMlvbs5Bd/ajHawO8Tru
+         z1AY2vjT2922GV8bPZFoiJX54Ddtq1tAIJ8c8=
+Date: Wed, 15 Jun 2011 12:18:31 +0200
+From: Tejun Heo <tj@kernel.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Linux SCSI List <linux-scsi@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: Re: [PATCH RESEND] scsi: don't use execute_in_process_context()
+Message-ID: <20110615101831.GU8141@htj.dyndns.org>
+References: <20110430145602.GL29280@htj.dyndns.org>
 MIME-Version: 1.0
-To: Kernel development list <linux-kernel@vger.kernel.org>
-CC: linux-omap@vger.kernel.org, "Hiremath, Vaibhav" <hvaibhav@ti.com>
-Subject: Re: [PATCH] omap v4l2: fix wrong resizer calculation
-References: <4DB67614.7030008@gmail.com>
-In-Reply-To: <4DB67614.7030008@gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------060408030204090801090000"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110430145602.GL29280@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060408030204090801090000
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Sat, Apr 30, 2011 at 04:56:02PM +0200, Tejun Heo wrote:
+> SCSI is the only subsystem which uses execute_in_process_context() and
+> its use is racy against module unload.  ie. the reap work is not
+> properly flushed and could still be running after the scsi module is
+> unloaded.
+> 
+> Although execute_in_process_context() can be more efficient when the
+> caller already has a context, in this case, the call paths are quite
+> cold and the difference is practically meaningless.  With commit
+> c8efcc25 (workqueue: allow chained queueing during destruction), the
+> race condition can easily be fixed by using a dedicated workqueue and
+> destroying it on module unload.
+> 
+> Create and use scsi_wq instead of execute_in_process_context().
+> 
+> * scsi_device->ew is replaced with release_work.  scsi_target->ew is
+>   replaced with reap_work.
+> 
+> * Both works are initialized with the respective release/reap function
+>   during device/target init.  scsi_target_reap_usercontext() is moved
+>   upwards to avoid needing forward declaration.
+> 
+> * scsi_alloc_target() now explicitly flushes the reap_work of the
+>   found dying target before putting it instead of depending on
+>   flush_scheduled_work().
+> 
+> For more info on the issues, please read the following threads.
+> 
+>  http://thread.gmane.org/gmane.linux.scsi/62923
+>  http://thread.gmane.org/gmane.linux.kernel/1124773
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Steven Whitehouse <swhiteho@redhat.com>
 
-ping
+James, ping?
 
---------------060408030204090801090000
-Content-Type: text/x-diff;
- name="0001-omap-v4l2-fix-wrong-resizer-calculation.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="0001-omap-v4l2-fix-wrong-resizer-calculation.patch"
-
->From 47473f26bda2ef2e3a5e8f0203fde0c74c412c36 Mon Sep 17 00:00:00 2001
-From: Vladimir Pantelic <vladoman@gmail.com>
-Date: Tue, 26 Apr 2011 09:28:11 +0200
-Subject: [PATCH] omap v4l2: fix wrong resizer calculation
-
-in omap_vout_new_crop(), "crop" is the output parameter and
-therefore new_crop/try_crop should be used to calculate the
-resizer values
-
-Signed-off-by: Vladimir Pantelic <vladoman@gmail.com>
----
- drivers/media/video/omap/omap_voutlib.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/media/video/omap/omap_voutlib.c b/drivers/media/video/omap/omap_voutlib.c
-index 2aa6a76..8ae7481 100644
---- a/drivers/media/video/omap/omap_voutlib.c
-+++ b/drivers/media/video/omap/omap_voutlib.c
-@@ -193,7 +193,7 @@ int omap_vout_new_crop(struct v4l2_pix_format *pix,
- 		return -EINVAL;
- 
- 	if (cpu_is_omap24xx()) {
--		if (crop->height != win->w.height) {
-+		if (try_crop.height != win->w.height) {
- 			/* If we're resizing vertically, we can't support a
- 			 * crop width wider than 768 pixels.
- 			 */
-@@ -202,7 +202,7 @@ int omap_vout_new_crop(struct v4l2_pix_format *pix,
- 		}
- 	}
- 	/* vertical resizing */
--	vresize = (1024 * crop->height) / win->w.height;
-+	vresize = (1024 * try_crop.height) / win->w.height;
- 	if (cpu_is_omap24xx() && (vresize > 2048))
- 		vresize = 2048;
- 	else if (cpu_is_omap34xx() && (vresize > 4096))
-@@ -221,7 +221,7 @@ int omap_vout_new_crop(struct v4l2_pix_format *pix,
- 			try_crop.height = 2;
- 	}
- 	/* horizontal resizing */
--	hresize = (1024 * crop->width) / win->w.width;
-+	hresize = (1024 * try_crop.width) / win->w.width;
- 	if (cpu_is_omap24xx() && (hresize > 2048))
- 		hresize = 2048;
- 	else if (cpu_is_omap34xx() && (hresize > 4096))
 -- 
-1.6.0.2
-
-
---------------060408030204090801090000--
+tejun
