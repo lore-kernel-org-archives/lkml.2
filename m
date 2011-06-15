@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449Ab1FOARS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 20:17:18 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59716 "EHLO
+	id S1753485Ab1FOATs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 20:19:48 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51832 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016Ab1FOARR (ORCPT
+	with ESMTP id S1751369Ab1FOATq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 20:17:17 -0400
+	Tue, 14 Jun 2011 20:19:46 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 15 Jun 2011 09:09:35 +0900
+Date: Wed, 15 Jun 2011 09:12:45 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
         "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
         "bsingharora@gmail.com" <bsingharora@gmail.com>,
         "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>
+        Ying Han <yinghan@google.com>
 Subject: Re: [BUGFIX][PATCH 5/5] memcg: fix percpu cached charge draining
  frequency
-Message-Id: <20110615090935.d5789b58.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110613142501.15e14b2f.akpm@linux-foundation.org>
+Message-Id: <20110615091245.e3267a6b.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110614073651.GA21197@tiehlicka.suse.cz>
 References: <20110613120054.3336e997.kamezawa.hiroyu@jp.fujitsu.com>
 	<20110613121648.3d28afcd.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110613142501.15e14b2f.akpm@linux-foundation.org>
+	<20110614073651.GA21197@tiehlicka.suse.cz>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -33,13 +34,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Jun 2011 14:25:01 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+On Tue, 14 Jun 2011 09:36:51 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
-> On Mon, 13 Jun 2011 12:16:48 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> 
-> > >From 18b12e53f1cdf6d7feed1f9226c189c34866338c Mon Sep 17 00:00:00 2001
+> On Mon 13-06-11 12:16:48, KAMEZAWA Hiroyuki wrote:
+> > From 18b12e53f1cdf6d7feed1f9226c189c34866338c Mon Sep 17 00:00:00 2001
 > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > > Date: Mon, 13 Jun 2011 11:25:43 +0900
 > > Subject: [PATCH 5/5] memcg: fix percpu cached charge draining frequency
@@ -58,22 +57,27 @@ Andrew Morton <akpm@linux-foundation.org> wrote:
 > > a memcg which hits limit, drain code is called.
 > > 
 > > This patch does
-> > 	A) check percpu cache contains a useful data or not.
-> > 	B) check other asynchronous percpu draining doesn't run.
-> > 	C) don't call local cpu callback.
 > > 	D) don't call at softlimit reclaim.
-> > 
-> >
-> > ...
-> >
-> > +DEFINE_MUTEX(percpu_charge_mutex);
 > 
-> I made this static.  If we later wish to give it kernel-wide scope then
-> "percpu_charge_mutex" will not be a good choice of name.
+> I think this needs some justification. The decision is not that
+> obvious IMO. I would say that this is a good decision because cached
+> charges will not help to free any memory (at least not directly) during
+> background reclaim. What about something like:
+> "
+> We are not draining per cpu cached charges during soft limit reclaim 
+> because background reclaim doesn't care about charges. It tries to free
+> some memory and charges will not give any.
+> Cached charges might influence only selection of the biggest soft limit
+> offender but as the call is done only after the selection has been
+> already done it makes no change.
+> "
+> 
+> Anyway, wouldn't it be better to have this change separate from the
+> async draining logic change?
 
-Thank you.
-And, yes..... memcg_cached_charge_mutex ?
+Hmm. I think calling "draining" at softlimit is just a bug.
 
 Thanks,
 -Kame
+
 
