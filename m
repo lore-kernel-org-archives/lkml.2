@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495Ab1FORXl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 13:23:41 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61830 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751703Ab1FORXk (ORCPT
+	id S1752585Ab1FORXn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 13:23:43 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:62671 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935Ab1FORXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Jun 2011 13:23:40 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=rGgms4NHVALTr2z+LCRESX6+3VZK/0UX5dOfYMf+hz3banHYRwISu2jjbGzMk7X0si
-         JPV9F+VvuLE0pdmANcdpqupYDxmQtAa92cVhU9L6ARPOj8Ki87EKKBtmfL5A2/iC83s7
-         +MX6dRwq0GOVE9uOmHR9soAglTxHh0ibolWzg=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=vl+mqeFyGT9qcSaKDhmIqC3apGhSgxGMPSjkzZJ+BYUsIg7vZ2neEdEJuS3IsonmAO
+         In3IQ0z+BUh4FCeHFW1c5Gl230VLinSPo70WcNVuT+A+FATZdS9quYiqXZOJSdV82YN5
+         8b0BjeZYSPb8I8BrUwMjx/xYOvjZEjhL4Mkqc=
 From: dirk.brandewie@gmail.com
 To: linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net
 Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: [PATCH 0/5] Designware SPI driver update
-Date: Wed, 15 Jun 2011 10:23:03 -0700
-Message-Id: <1308158588-17249-1-git-send-email-dirk.brandewie@gmail.com>
+Subject: [PATCH 1/5] spi/makefile:  Fix typo from reorganize drivers patch.
+Date: Wed, 15 Jun 2011 10:23:04 -0700
+Message-Id: <1308158588-17249-2-git-send-email-dirk.brandewie@gmail.com>
 X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1308158588-17249-1-git-send-email-dirk.brandewie@gmail.com>
+References: <1308158588-17249-1-git-send-email-dirk.brandewie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-This patch set reworks the Designware SPI driver. This patch set is
-based on commit f8f82d4 on spi/next
+Fix Makefile to build designware driver.
 
-Patch 1:
-      Fixes trivial typo from commit f8f82d4 in spi/next
+Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+---
+ drivers/spi/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Patch 2:
-      exports the platform data structure for client driver use.
-
-Patch 3:
-      Reworks the core message and transfer handling.
-
-Patch 4:
-      Changes internal function naming convention to match new file
-      names.
-
-Patch 5:
-      Adds runtime power management to the PCI driver.
-
-
-
-Dirk Brandewie (5):
-  spi/makefile:  Fix typo from reorganize drivers patch.
-  spi/dw_spi: expose dw_spi platform data stucture.
-  dw_spi: rework message processing
-  spi/spi-dw: update function naming convention
-  spi_dw_pci: Add runtime power management
-
- drivers/spi/Makefile       |    2 +-
- drivers/spi/spi-dw-mid.c   |   47 +-
- drivers/spi/spi-dw-mmio.c  |   34 +-
- drivers/spi/spi-dw-pci.c   |   69 ++-
- drivers/spi/spi-dw.c       | 1674 +++++++++++++++++++-------------------------
- drivers/spi/spi-dw.h       |  138 ++--
- include/linux/spi/spi-dw.h |   20 +
- 7 files changed, 930 insertions(+), 1054 deletions(-)
- rewrite drivers/spi/spi-dw.c (62%)
- create mode 100644 include/linux/spi/spi-dw.h
-
+diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
+index f6d5018..b60b04b 100644
+--- a/drivers/spi/Makefile
++++ b/drivers/spi/Makefile
+@@ -23,7 +23,7 @@ obj-$(CONFIG_SPI_DAVINCI)		+= spi-davinci.o
+ obj-$(CONFIG_SPI_DESIGNWARE)		+= spi-dw.o
+ obj-$(CONFIG_SPI_DW_MMIO)		+= spi-dw-mmio.o
+ obj-$(CONFIG_SPI_DW_PCI)		+= spi-dw-midpci.o
+-spi_dw_midpci-objs			:= spi-dw-pci.o spi-dw-mid.o
++spi-dw-midpci-objs			:= spi-dw-pci.o spi-dw-mid.o
+ obj-$(CONFIG_SPI_EP93XX)		+= spi-ep93xx.o
+ obj-$(CONFIG_SPI_FSL_LIB)		+= spi-fsl-lib.o
+ obj-$(CONFIG_SPI_FSL_ESPI)		+= spi-fsl-espi.o
 -- 
 1.7.3.4
 
