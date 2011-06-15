@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521Ab1FOBZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 21:25:26 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57493 "EHLO hera.kernel.org"
+	id S1754517Ab1FOB0m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 21:26:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19386 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754293Ab1FOBZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 21:25:25 -0400
-Date: Wed, 15 Jun 2011 01:25:04 GMT
-From: tip-bot for Borislav Petkov <bp@amd64.org>
-Message-ID: <tip-4b9c25fcf748c37e0a3e5dfe918b2120d601e492@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tony.luck@intel.com, bp@amd64.org, tglx@linutronix.de,
-        hpa@linux.intel.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, tony.luck@intel.com, hpa@linux.intel.com,
-        bp@amd64.org, mingo@elte.hu
-In-Reply-To: <1308067734-6156-1-git-send-email-bp@amd64.org>
-References: <1308067734-6156-1-git-send-email-bp@amd64.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, MAINTAINERS: Add x86 RAS people
-Git-Commit-ID: 4b9c25fcf748c37e0a3e5dfe918b2120d601e492
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753508Ab1FOB0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 21:26:40 -0400
+Message-ID: <4DF80A40.9040201@redhat.com>
+Date: Tue, 14 Jun 2011 22:26:24 -0300
+From: Glauber Costa <glommer@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 15 Jun 2011 01:25:06 +0000 (UTC)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Avi Kivity <avi@redhat.com>, Anthony Liguori <aliguori@us.ibm.com>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 6/7] KVM-GST: adjust scheduler cpu power
+References: <1308007897-17013-1-git-send-email-glommer@redhat.com>	 <1308007897-17013-7-git-send-email-glommer@redhat.com> <1308048147.19856.14.camel@twins>
+In-Reply-To: <1308048147.19856.14.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4b9c25fcf748c37e0a3e5dfe918b2120d601e492
-Gitweb:     http://git.kernel.org/tip/4b9c25fcf748c37e0a3e5dfe918b2120d601e492
-Author:     Borislav Petkov <bp@amd64.org>
-AuthorDate: Tue, 14 Jun 2011 18:08:54 +0200
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 14 Jun 2011 18:14:26 -0700
+On 06/14/2011 07:42 AM, Peter Zijlstra wrote:
+> On Mon, 2011-06-13 at 19:31 -0400, Glauber Costa wrote:
+>> @@ -1981,12 +1987,29 @@ static void update_rq_clock_task(struct rq
+>> *rq, s64 delta)
+>>
+>>          rq->prev_irq_time += irq_delta;
+>>          delta -= irq_delta;
+>> +#endif
+>> +#ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
+>> +       if (static_branch((&paravirt_steal_rq_enabled))) {
+>
+> Why is that a different variable from the touch_steal_time() one?
 
-x86, MAINTAINERS: Add x86 RAS people
+because they track different things, touch_steal_time() and 
+update_rq_clock() are
+called from different places at different situations.
 
-Announce the new RAS infrastructure maintainers. The file patterns below
-will change after we start the restructuring.
+If we advance prev_steal_time in touch_steal_time(), and later on call 
+update_rq_clock_task(), we won't discount the time already flushed from 
+the rq_clock. Conversely, if we call update_rq_clock_task(), and only 
+then arrive at touch_steal_time, we won't account steal time properly.
 
-Signed-off-by: Borislav Petkov <bp@amd64.org>
-Link: http://lkml.kernel.org/r/1308067734-6156-1-git-send-email-bp@amd64.org
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Acked-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- MAINTAINERS |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+update_rq_clock_task() is called whenever update_rq_clock() is called.
+touch_steal_time is called every tick. If there is a causal relation 
+between them that would allow us to track it in a single location, I 
+fail to realize.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index e50fc6e..e33b1b8 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6994,6 +6994,13 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86.
- S:	Maintained
- F:	drivers/platform/x86
- 
-+X86 RAS INFRASTRUCTURE
-+M:	Tony Luck <tony.luck@intel.com>
-+M:	Borislav Petkov <bp@amd64.org>
-+L:	linux-edac@vger.kernel.org
-+S:	Maintained
-+F:	arch/x86/kernel/cpu/mcheck/*
-+
- XEN HYPERVISOR INTERFACE
- M:	Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
- M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> +
+>> +               steal = paravirt_steal_clock(cpu_of(rq));
+>> +               steal -= rq->prev_steal_time_acc;
+>> +
+>> +               rq->prev_steal_time_acc += steal;
+>
+> You have this addition in the wrong place, when you clip:
+
+I begin by disagreeing
+>> +               if (steal>  delta)
+>> +                       steal = delta;
+>
+> you just lost your steal delta, so the addition to prev_steal_time_acc
+> needs to be after the clip.
+Unlike irq time, steal time can be extremely huge. Just think of a 
+virtual machine that got interrupted for a very long time. We'd have 
+steal >> delta, leading to steal == delta for a big number of iterations.
+That would affect cpu power for an extended period of time, not
+reflecting present situation, just the past. So I like to think of delta
+as a hard cap for steal time.
+
+Obviously, I am open to debate.
+>
+>> +               delta -= steal;
+>> +       }
+>> +#endif
+>> +
+>>          rq->clock_task += delta;
+>>
+>> -       if (irq_delta&&  sched_feat(NONIRQ_POWER))
+>> -               sched_rt_avg_update(rq, irq_delta);
+>> +       if ((irq_delta + steal)&&  sched_feat(NONTASK_POWER))
+>> +               sched_rt_avg_update(rq, irq_delta + steal);
+>>   }
+
