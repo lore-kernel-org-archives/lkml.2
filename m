@@ -1,160 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821Ab1FOW6F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 18:58:05 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:59534 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035Ab1FOW6C convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 18:58:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=cJWMpGO3ERcOlP6wMQaRlKB1RaLHi0m231ZXSjetHkrEkB0LFanJWQx72CFwzsy3cg
-         fog5dYsOBOKfukeYRi5Q==
+	id S1753430Ab1FOXGR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 19:06:17 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:59569 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751614Ab1FOXGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 19:06:14 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [PATCH 8/8] ARM / shmobile: Support for I/O PM domains for SH7372 (v5)
+Date: Thu, 16 Jun 2011 01:06:40 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org
+References: <201106112223.04972.rjw@sisk.pl> <201106142316.02812.rjw@sisk.pl> <BANLkTi=u_eyGZt9e0CuVpyz9B08HarEyVw@mail.gmail.com>
+In-Reply-To: <BANLkTi=u_eyGZt9e0CuVpyz9B08HarEyVw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110610073638.GA15403@tiehlicka.suse.cz>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
-	<1306909519-7286-5-git-send-email-hannes@cmpxchg.org>
-	<BANLkTim5TSWpBfeF2dugGZwQmNC-Cf+GCNctraq8FtziJxsd2g@mail.gmail.com>
-	<BANLkTimuRks4+h=Kjt2Lzc-s-XsAHCH9vg@mail.gmail.com>
-	<20110609150026.GD3994@tiehlicka.suse.cz>
-	<20110610073638.GA15403@tiehlicka.suse.cz>
-Date: Wed, 15 Jun 2011 15:57:59 -0700
-Message-ID: <BANLkTikUmzF6kgJ6WUQGK0M=uzPH6Ac09koCnQwi8vMbxu40WQ@mail.gmail.com>
-Subject: Re: [patch 4/8] memcg: rework soft limit reclaim
-From: Ying Han <yinghan@google.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106160106.40553.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 12:36 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Thu 09-06-11 17:00:26, Michal Hocko wrote:
->> On Thu 02-06-11 22:25:29, Ying Han wrote:
->> > On Thu, Jun 2, 2011 at 2:55 PM, Ying Han <yinghan@google.com> wrote:
->> > > On Tue, May 31, 2011 at 11:25 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
->> > >> Currently, soft limit reclaim is entered from kswapd, where it selects
->> [...]
->> > >> diff --git a/mm/vmscan.c b/mm/vmscan.c
->> > >> index c7d4b44..0163840 100644
->> > >> --- a/mm/vmscan.c
->> > >> +++ b/mm/vmscan.c
->> > >> @@ -1988,9 +1988,13 @@ static void shrink_zone(int priority, struct zone *zone,
->> > >>                unsigned long reclaimed = sc->nr_reclaimed;
->> > >>                unsigned long scanned = sc->nr_scanned;
->> > >>                unsigned long nr_reclaimed;
->> > >> +               int epriority = priority;
->> > >> +
->> > >> +               if (mem_cgroup_soft_limit_exceeded(root, mem))
->> > >> +                       epriority -= 1;
->> > >
->> > > Here we grant the ability to shrink from all the memcgs, but only
->> > > higher the priority for those exceed the soft_limit. That is a design
->> > > change
->> > > for the "soft_limit" which giving a hint to which memcgs to reclaim
->> > > from first under global memory pressure.
->> >
->> >
->> > Basically, we shouldn't reclaim from a memcg under its soft_limit
->> > unless we have trouble reclaim pages from others.
->>
->> Agreed.
->>
->> > Something like the following makes better sense:
->> >
->> > diff --git a/mm/vmscan.c b/mm/vmscan.c
->> > index bdc2fd3..b82ba8c 100644
->> > --- a/mm/vmscan.c
->> > +++ b/mm/vmscan.c
->> > @@ -1989,6 +1989,8 @@ restart:
->> >         throttle_vm_writeout(sc->gfp_mask);
->> >  }
->> >
->> > +#define MEMCG_SOFTLIMIT_RECLAIM_PRIORITY       2
->> > +
->> >  static void shrink_zone(int priority, struct zone *zone,
->> >                                 struct scan_control *sc)
->> >  {
->> > @@ -2001,13 +2003,13 @@ static void shrink_zone(int priority, struct zone *zone,
->> >                 unsigned long reclaimed = sc->nr_reclaimed;
->> >                 unsigned long scanned = sc->nr_scanned;
->> >                 unsigned long nr_reclaimed;
->> > -               int epriority = priority;
->> >
->> > -               if (mem_cgroup_soft_limit_exceeded(root, mem))
->> > -                       epriority -= 1;
->> > +               if (!mem_cgroup_soft_limit_exceeded(root, mem) &&
->> > +                               priority > MEMCG_SOFTLIMIT_RECLAIM_PRIORITY)
->> > +                       continue;
->>
->> yes, this makes sense but I am not sure about the right(tm) value of the
->> MEMCG_SOFTLIMIT_RECLAIM_PRIORITY. 2 sounds too low.
->
-> There is also another problem. I have just realized that this code path
-> is shared with the cgroup direct reclaim. We shouldn't care about soft
-> limit in such a situation. It would be just a wasting of cycles. So we
-> have to:
->
-> if (current_is_kswapd() &&
->        !mem_cgroup_soft_limit_exceeded(root, mem) &&
->        priority > MEMCG_SOFTLIMIT_RECLAIM_PRIORITY)
->        continue;
+On Wednesday, June 15, 2011, Magnus Damm wrote:
+> On Wed, Jun 15, 2011 at 6:16 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Tuesday, June 14, 2011, Magnus Damm wrote:
+> >> On Sun, Jun 12, 2011 at 5:40 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> >> >
+> >> > Use the generic power domains support introduced by the previous
+> >> > patch to implement support for power domains on SH7372.
+> >> >
+> >> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> >> > ---
+> >>
+> >> Thanks for your work on this. I just tried this on my Mackerel board,
+> >> but I can't seem to get the pd_power_up() and pd_power_down()
+> >> callbacks to be executed. It is probably a misconfiguration from my
+> >> side.
+> >
+> > They trigger for me e.g. after doing
+> >
+> > # echo 3 > /sys/devices/platform/sh_mobile_lcdc_fb.0/graphics/fb0/blank
+> >
+> > Attached is the .config I've been using.
+> 
+> Thanks, I can trigger using sysfs and your kernel configuration.
 
-Agreed.
+Good.
 
->
-> Maybe the condition would have to be more complex for per-cgroup
-> background reclaim, though.
+> However, I assumed it also would work when the sceen saver kicked in.
+> I recall it being fbcon that controls the screen save, perhaps
+> something else. So just wait a bit and see if you also can reproduce
+> it. The console gets black but the power is still on...
 
-That would be the same logic for per-memcg direct reclaim. In general,
-we don't consider soft_limit
-unless the global memory pressure. So the condition could be something like:
+I noticed that, but I think it simply means pm_runtime_put() isn't
+called in that code path.
 
-> if (   global_reclaim(sc) &&
->        !mem_cgroup_soft_limit_exceeded(root, mem) &&
->        priority > MEMCG_SOFTLIMIT_RECLAIM_PRIORITY)
->        continue;
+> Also forcing to go back to powered-on state (see below) doesn't work that well:
+> # echo 0 > /sys/devices/platform/sh_mobile_lcdc_fb.0/graphics/fb0/blank
+> 
+> It looks like we loose the panning information somehow. Most likely a
+> LCDC driver bug. Unless the driver callbacks are not being invoked as
+> expected.
 
-make sense?
+That should be easy to verify, I'll do that.
 
-Thanks
+> Also, there is garbage in on the screen if FB_SH_MOBILE_MERAM is
+> enabled. The MERAM hardware is a 1.5 MiB memory block that can be used
+> as a LCD cache. It sits in the same hardware power domain as the
+> LCDCs. I don't think the MERAM software supports power down
+> unfortunately. Disabling MERAM support removes the garbage on the
+> screen.
 
---Ying
->
->> You would do quite a
->> lot of loops
->> (DEFAULT_PRIORITY-MEMCG_SOFTLIMIT_RECLAIM_PRIORITY) * zones * memcg_count
->> without any progress (assuming that all of them are under soft limit
->> which doesn't sound like a totally artificial configuration) until you
->> allow reclaiming from groups that are under soft limit. Then, when you
->> finally get to reclaiming, you scan rather aggressively.
->>
->> Maybe something like 3/4 of DEFAULT_PRIORITY? You would get 3 times
->> over all (unbalanced) zones and all cgroups that are above the limit
->> (scanning max{1/4096+1/2048+1/1024, 3*SWAP_CLUSTER_MAX} of the LRUs for
->> each cgroup) which could be enough to collect the low hanging fruit.
->
-> --
-> Michal Hocko
-> SUSE Labs
-> SUSE LINUX s.r.o.
-> Lihovarska 1060/12
-> 190 00 Praha 9
-> Czech Republic
->
+Well, I can't really comment here.
+
+> >> Here's some feedback on the sh7372-specific code:
+> >>
+> >> > --- linux-2.6.orig/arch/arm/mach-shmobile/Kconfig
+> >> > +++ linux-2.6/arch/arm/mach-shmobile/Kconfig
+> >> > @@ -19,6 +19,7 @@ config ARCH_SH7372
+> >> >        select CPU_V7
+> >> >        select SH_CLK_CPG
+> >> >        select ARCH_WANT_OPTIONAL_GPIOLIB
+> >> > +       select PM_GENERIC_DOMAINS
+> >>
+> >> We want to support a single ARM binary for multiple boards,
+> >
+> > Surely CONFIG_ARCH_SH7372 will be set in that binary?
+> >
+> >> so this should be enabled for all SoCs in mach-shmobile as a whole.
+> >
+> > OK, where exactly do you want me to move it?
+> 
+> Ideally to ARCH_SHMOBILE in arch/arm/Kconfig.
+
+OK
+
+> >> > --- linux-2.6.orig/arch/arm/mach-shmobile/pm-sh7372.c
+> >> > +++ linux-2.6/arch/arm/mach-shmobile/pm-sh7372.c
+> >> > @@ -15,16 +15,97 @@
+> >> >  #include <linux/list.h>
+> >> >  #include <linux/err.h>
+> >> >  #include <linux/slab.h>
+> >> > +#include <linux/pm_runtime.h>
+> >> > +#include <linux/platform_device.h>
+> >> >  #include <asm/system.h>
+> >> >  #include <asm/io.h>
+> >> >  #include <asm/tlbflush.h>
+> >> >  #include <mach/common.h>
+> >> > +#include <mach/sh7372.h>
+> >> >
+> >> >  #define SMFRAM 0xe6a70000
+> >> >  #define SYSTBCR 0xe6150024
+> >> >  #define SBAR 0xe6180020
+> >> >  #define APARMBAREA 0xe6f10020
+> >> >
+> >> > +#define SPDCR 0xe6180008
+> >> > +#define SWUCR 0xe6180014
+> >> > +#define PSTR 0xe6180080
+> >> > +
+> >> > +struct sh7372_domain_data {
+> >> > +       unsigned int bit_shift;
+> >> > +};
+> >>
+> >> Is it possible to make struct sh7372_domain_data include struct
+> >> generic_pm_domain?
+> >
+> > It should be possible to do that.
+> >
+> > Do I understand it correctly that you want one structure definition per
+> > power domain instead of the two?
+> 
+> Yes, at least that's what I would do to keep the data together. I
+> don't care that much though, so feel free to implement it however
+> you'd like.
+
+OK, I think I can merge them.
+
+Thanks,
+Rafael
