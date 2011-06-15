@@ -1,67 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270Ab1FOIno (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 04:43:44 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35931 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754044Ab1FOInm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 04:43:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=SFBC5J+MswxqzmRFziIbXtU4PwpBLBzBtMLALpb0MGSZR5AvUSUFQgNwEPak8ymotG
-         hHar1UHAL3Nm8EvgGQ0v1/36rnY46AvOQ8FQt6JM3FW6B7Po9GhsDjshwSHkATj4FV1c
-         KZ3HVEVdKRfJwwpCMetvjFeDRzCTzSiICTfdU=
+	id S1754067Ab1FOIvA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 04:51:00 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:45187 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752905Ab1FOIu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 04:50:57 -0400
+Date: Wed, 15 Jun 2011 10:50:51 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Brian King <brking@linux.vnet.ibm.com>
+Cc: Wayne Boyer <wayneb@linux.vnet.ibm.com>, Brian King <brking@us.ibm.com>,
+        kernel-janitors@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/scsi/ipr.c: reorder error handling code to
+ include iounmap
+In-Reply-To: <4DF787BC.8050701@linux.vnet.ibm.com>
+Message-ID: <Pine.LNX.4.64.1106151050430.10106@ask.diku.dk>
+References: <1306851409-14963-1-git-send-email-julia@diku.dk>
+ <4DF0EC00.9020603@linux.vnet.ibm.com> <4DF787BC.8050701@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20110615083811.GD31876@legolas.emea.dhcp.ti.com>
-References: <BANLkTimU+E8Y0_9+H2nsF6CMg66_TDH0LQ@mail.gmail.com>
-	<BANLkTimL=+vaa7NB5FW192rZd08Gv-Z-OA@mail.gmail.com>
-	<BANLkTik+TD1+k1hd-hEteE5OTeDrDAuMZQ@mail.gmail.com>
-	<20110614164900.GR2353@legolas.emea.dhcp.ti.com>
-	<BANLkTi==s4adWqt0uLhJHmeDe1H2RD_5Bw@mail.gmail.com>
-	<20110615083811.GD31876@legolas.emea.dhcp.ti.com>
-Date: Wed, 15 Jun 2011 10:43:41 +0200
-Message-ID: <BANLkTi=XvUxyATWPB19xk9xB37a0uk8Lsg@mail.gmail.com>
-Subject: Re: [PATCH] s3c2410_udc: udc command always disables pull-up instead
- of passing the command
-From: Skacore Systems <skacore.systems@gmail.com>
-To: balbi@ti.com
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You're lazy. I've already fixed it where I needed. You just trolling
-about some rules for one line patch.
-I'm not wasting any more time in this discussion.
+On Tue, 14 Jun 2011, Brian King wrote:
 
-On Wed, Jun 15, 2011 at 10:38 AM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Wed, Jun 15, 2011 at 09:30:00AM +0200, Skacore Systems wrote:
->> I don't care much about pushing this into mainline. It's a bug and
->> it's up to kernel developers to fix that.
->> I was aware that kernel devs are bunch of lazy dicks and I'm not going
->> to do more work for one line patch.
->
-> You are the lazy dick here. All I asked was to follow our standards, do
-> you have any idea how many patches each kernel maintainer has to go
-> through ? It doesn't scale if we have to re-format the ugly crap you
-> send us.
->
-> Get over yourself and if you want this fixed, then send a proper patch.
->
-> It's just a small set of instructions we are asking you to follow, try
-> saying the same to your Income Tax office and see if they'll like that
-> you didn't follow their instructions.
->
-> Lazy dicks... hah... the one who can't get a simple set of instructions
-> right is calling us lazy dicks. What a prick!
->
+> On 06/09/2011 10:51 AM, Wayne Boyer wrote:
+> > On 05/31/2011 07:16 AM, Julia Lawall wrote:
+> >> From: Julia Lawall <julia@diku.dk>
+> >>
+> >> The out_msi_disable label should be before cleanup_nomem to additionally
+> >> benefit from the call to iounmap.
+> > 
+> > Yes, this is a problem.  I propose the following patch instead.
+> 
+> By removing the out_msi_disable label, if you fail initialization later
+> on and goto cleanup_nomem, you will end up leaving MSI enabled when you exit
+> with this patch.
+
+I agree.
+
+julia
+
+> -Brian
+> 
+> 
+> 
+> > 
+> > ---
+> > 
+> > In the case where ipr_test_msi returns an error that is not -EOPNOTSUPP, the
+> > execution jumps to the out_msi_disable label.  This misses the call to iounmap
+> > for ipr_regs which was initialized earlier.
+> > 
+> > The fix is to do the call to pci_disable_msi when the error case is detected
+> > and then goto the cleanup_nomem label if the error is not -EOPNOTSUPP.
+> > 
+> > Signed-off-by: Wayne Boyer <wayneb@linux.vnet.ibm.com>
+> > ---
+> > 
+> >  drivers/scsi/ipr.c |   10 ++++------
+> >  1 file changed, 4 insertions(+), 6 deletions(-)
+> > 
+> > Index: b/drivers/scsi/ipr.c
+> > ===================================================================
+> > --- a/drivers/scsi/ipr.c        2011-06-09 08:14:44.927740117 -0700
+> > +++ b/drivers/scsi/ipr.c        2011-06-09 08:50:10.105630466 -0700
+> > @@ -8763,11 +8763,11 @@ static int __devinit ipr_probe_ioa(struc
+> >         /* Enable MSI style interrupts if they are supported. */
+> >         if (ioa_cfg->ipr_chip->intr_type == IPR_USE_MSI && !pci_enable_msi(pdev)) {
+> >                 rc = ipr_test_msi(ioa_cfg, pdev);
+> > -               if (rc == -EOPNOTSUPP)
+> > +               if (rc) {
+> >                         pci_disable_msi(pdev);
+> > -               else if (rc)
+> > -                       goto out_msi_disable;
+> > -               else
+> > +                       if (rc != -EOPNOTSUPP)
+> > +                               goto cleanup_nomem;
+> > +               } else
+> >                         dev_info(&pdev->dev, "MSI enabled with IRQ: %d\n", pdev->irq);
+> >         } else if (ipr_debug)
+> >                 dev_info(&pdev->dev, "Cannot enable MSI.\n");
+> > @@ -8847,8 +8847,6 @@ cleanup_nolog:
+> >         ipr_free_mem(ioa_cfg);
+> >  cleanup_nomem:
+> >         iounmap(ipr_regs);
+> > -out_msi_disable:
+> > -       pci_disable_msi(pdev);
+> >  out_release_regions:
+> >         pci_release_regions(pdev);
+> >  out_scsi_host_put:
+> > 
+> > 
+> 
+> 
+> -- 
+> Brian King
+> Linux on Power Virtualization
+> IBM Linux Technology Center
+> 
+> 
 > --
-> balbi
->
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
