@@ -1,99 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab1FOWnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 18:43:41 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47093 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753482Ab1FOWnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 18:43:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,371,1304319600"; 
-   d="scan'208";a="14025997"
-Date: Wed, 15 Jun 2011 15:43:38 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH v2] xhci: Add reset on resume quirk for asrock p67 host
-Message-ID: <20110615224338.GA8705@xanatos>
-References: <4DF92869.50105@gmail.com>
+	id S1755282Ab1FOWoX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 18:44:23 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:50949 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753668Ab1FOWoV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 18:44:21 -0400
+Message-ID: <4DF935C1.4020000@codemonkey.ws>
+Date: Wed, 15 Jun 2011 17:44:17 -0500
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DF92869.50105@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexander Graf <agraf@suse.de>
+CC: Prasad Joshi <prasadjoshi124@gmail.com>, Pekka Enberg <penberg@kernel.org>,
+        Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
+References: <1308153214.7566.6.camel@jaguar>	<4DF8DE26.1070301@redhat.com>	<BANLkTi=SHENDBHdtFY_7_qtfqJb_+qKJSw@mail.gmail.com> <BANLkTinMDz-sqaX0cyWEoLXt70dowxofvg@mail.gmail.com> <4DF92C80.3030106@codemonkey.ws> <7A30A509-47AA-4E72-ABF3-937005900F9D@suse.de> <4DF93010.1040006@codemonkey.ws>
+In-Reply-To: <4DF93010.1040006@codemonkey.ws>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No attached patches, just inline ones please. :)  I've fixed this up for
-now, since your first patch was inline.
+On 06/15/2011 05:20 PM, Anthony Liguori wrote:
+> On 06/15/2011 05:07 PM, Alexander Graf wrote:
+>>
+>> On 16.06.2011, at 00:04, Anthony Liguori wrote:
+>>
+>>> On 06/15/2011 03:13 PM, Prasad Joshi wrote:
+>>>> On Wed, Jun 15, 2011 at 6:10 PM, Pekka Enberg<penberg@kernel.org>
+>>>> wrote:
+>>>>> On Wed, Jun 15, 2011 at 7:30 PM, Avi Kivity<avi@redhat.com> wrote:
+>>>>>> On 06/15/2011 06:53 PM, Pekka Enberg wrote:
+>>>>>>>
+>>>>>>> - Fast QCOW2 image read-write support beating Qemu in fio
+>>>>>>> benchmarks. See
+>>>>>>> the
+>>>>>>> following URL for test result details:
+>>>>>>> https://gist.github.com/1026888
+>>>>>>
+>>>>>> This is surprising. How is qemu invoked?
+>>>>>
+>>>>> Prasad will have the details. Please note that the above are with Qemu
+>>>>> defaults which doesn't use virtio. The results with virtio are little
+>>>>> better but still in favor of tools/kvm.
+>>>>>
+>>>>
+>>>> The qcow2 image used for testing was copied on to /dev/shm to avoid
+>>>> the disk delays in performance measurement.
+>>>>
+>>>> QEMU was invoked with following parameters
+>>>>
+>>>> $ qemu-system-x86_64 -hda<disk image on hard disk> -hdb
+>>>> /dev/shm/test.qcow2 -m 1024M
+>>>
+>>> Looking more closely at native KVM tools, you would need to use the
+>>> following invocation to have an apples-to-apples comparison:
+>>>
+>>> qemu-system-x86_64 -drive
+>>> file=/dev/shm/test.qcow2,cache=writeback,if=virtio
+>>
+>> Wouldn't this still be using threaded AIO mode? I thought KVM tools
+>> used native AIO?
+>
+> Nope. The relevant code is:
+>
+>> /* blk device ?*/
+>> disk = blkdev__probe(filename, &st);
+>> if (disk)
+>> return disk;
+>>
+>> fd = open(filename, readonly ? O_RDONLY : O_RDWR);
+>> if (fd < 0)
+>> return NULL;
+>>
+>> /* qcow image ?*/
+>> disk = qcow_probe(fd, readonly);
+>> if (disk)
+>> return disk;
+>>
+>> /* raw image ?*/
+>> disk = raw_image__probe(fd, &st, readonly);
+>> if (disk)
+>> return disk;
+>
+> It uses a synchronous I/O model similar to qcow2 in QEMU with what I
+> assume is a global lock that's outside of the actual implementation.
+>
+> I think it lacks some of the caching that Kevin's added recently though
+> so I assume that if QEMU was run with cache=writeback, it would probably
+> do quite a bit better than native KVM tool.
+>
+> It also turns out that while they have the infrastructure to deal with
+> FLUSH, they don't implement it for qcow2 :-/
+>
+> So even if the guest does an fsync(), it native KVM tool will never
+> actually sync the data to disk...
+>
+> That's probably why it's fast, it doesn't preserve data integrity :(
 
-Sarah Sharp
+Actually, I misread the code.  It does unstable writes but it does do 
+fsync() on FLUSH.
 
-On Wed, Jun 15, 2011 at 11:47:21PM +0200, Maarten Lankhorst wrote:
-> The asrock p67 xhci controller completely dies on resume, add a
-> quirk for this, to bring the host back online after a suspend.
-> 
-> This should be backported to stable kernels up until 2.6.37.
-> 
-> Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-> Cc: stable@kernel.org
-> ---
-> V2: Fix inversed logic, and correct kernel version
-> 
-> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-> index 17541d0..cb16de2 100644
-> --- a/drivers/usb/host/xhci-pci.c
-> +++ b/drivers/usb/host/xhci-pci.c
-> @@ -29,6 +29,9 @@
->  #define PCI_VENDOR_ID_FRESCO_LOGIC	0x1b73
->  #define PCI_DEVICE_ID_FRESCO_LOGIC_PDK	0x1000
->  
-> +#define PCI_VENDOR_ID_ETRON		0x1b6f
-> +#define PCI_DEVICE_ID_ASROCK_P67	0x7023
-> +
->  static const char hcd_name[] = "xhci_hcd";
->  
->  /* called after powerup, by probe or system-pm "wakeup" */
-> @@ -134,6 +137,11 @@ static int xhci_pci_setup(struct usb_hcd *hcd)
->  		xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
->  		xhci->limit_active_eps = 64;
->  	}
-> +	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
-> +			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
-> +		xhci->quirks |= XHCI_RESET_ON_RESUME;
-> +		xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
-> +	}
->  
->  	/* Make sure the HC is halted. */
->  	retval = xhci_halt(xhci);
-> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-> index 06e7023..17a0a08 100644
-> --- a/drivers/usb/host/xhci.c
-> +++ b/drivers/usb/host/xhci.c
-> @@ -759,6 +759,8 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
->  		msleep(100);
->  
->  	spin_lock_irq(&xhci->lock);
-> +	if (xhci->quirks & XHCI_RESET_ON_RESUME)
-> +		hibernated = true;
->  
->  	if (!hibernated) {
->  		/* step 1: restore register */
-> diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-> index 7d1ea3b..b769a75 100644
-> --- a/drivers/usb/host/xhci.h
-> +++ b/drivers/usb/host/xhci.h
-> @@ -1308,6 +1308,7 @@ struct xhci_hcd {
->   */
->  #define XHCI_EP_LIMIT_QUIRK	(1 << 5)
->  #define XHCI_BROKEN_MSI		(1 << 6)
-> +#define XHCI_RESET_ON_RESUME	(1 << 7)
->  	unsigned int		num_active_eps;
->  	unsigned int		limit_active_eps;
->  	/* There are two roothubs to keep track of bus suspend info for */
-> 
-> 
+Regards,
 
-
+Anthony Liguori
