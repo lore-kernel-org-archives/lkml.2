@@ -1,93 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab1FOHPG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 03:15:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41301 "EHLO mx2.suse.de"
+	id S1753336Ab1FOHQB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 03:16:01 -0400
+Received: from dspnet.fr ([188.165.44.67]:54281 "EHLO dspnet.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752321Ab1FOHPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 03:15:04 -0400
-Date: Wed, 15 Jun 2011 09:15:00 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Ying Han <yinghan@google.com>
-Subject: Re: [BUGFIX][PATCH 5/5] memcg: fix percpu cached charge draining
- frequency
-Message-ID: <20110615071500.GA31868@tiehlicka.suse.cz>
-References: <20110613120054.3336e997.kamezawa.hiroyu@jp.fujitsu.com>
- <20110613121648.3d28afcd.kamezawa.hiroyu@jp.fujitsu.com>
- <20110614073651.GA21197@tiehlicka.suse.cz>
- <20110615091245.e3267a6b.kamezawa.hiroyu@jp.fujitsu.com>
- <20110615101202.fa8e9f76.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1752642Ab1FOHQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 03:16:00 -0400
+Date: Wed, 15 Jun 2011 09:15:56 +0200
+From: Olivier Galibert <galibert@pobox.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.0-rc3
+Message-ID: <20110615071555.GA26721@dspnet.fr>
+References: <BANLkTinCfV4owNBhJ+F-yfF3V+wg1o=PLA@mail.gmail.com>
+ <BANLkTim_bHKdZnykedzW4re6GMCg+1Ed2g@mail.gmail.com>
+ <BANLkTi=MvvdTZAHG3N=HHTQd9v6uPNHfzw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110615101202.fa8e9f76.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <BANLkTi=MvvdTZAHG3N=HHTQd9v6uPNHfzw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 15-06-11 10:12:02, KAMEZAWA Hiroyuki wrote:
-> On Wed, 15 Jun 2011 09:12:45 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Tue, Jun 14, 2011 at 10:59:41AM -0700, Linus Torvalds wrote:
+> On Tue, Jun 14, 2011 at 5:15 AM, Denys Vlasenko
+> <vda.linux@googlemail.com> wrote:
+> >
+> > I've got a patch for my project to fix parsing of kernel version which
+> > has only two numbers. Basically,
+> >
+> > - scanf(ver, "%u.%u.%u", &a, &b, &c)
+> > + sscanf(ver, "%u.%u", &a, &b)
 > 
-> > On Tue, 14 Jun 2011 09:36:51 +0200
-> > Michal Hocko <mhocko@suse.cz> wrote:
-> > 
-> > > On Mon 13-06-11 12:16:48, KAMEZAWA Hiroyuki wrote:
-> > > > From 18b12e53f1cdf6d7feed1f9226c189c34866338c Mon Sep 17 00:00:00 2001
-> > > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > > > Date: Mon, 13 Jun 2011 11:25:43 +0900
-> > > > Subject: [PATCH 5/5] memcg: fix percpu cached charge draining frequency
-> > > > 
-> > > >  For performance, memory cgroup caches some "charge" from res_counter
-> > > >  into per cpu cache. This works well but because it's cache,
-> > > >  it needs to be flushed in some cases. Typical cases are
-> > > >          1. when someone hit limit.
-> > > >          2. when rmdir() is called and need to charges to be 0.
-> > > > 
-> > > > But "1" has problem.
-> > > > 
-> > > > Recently, with large SMP machines, we see many kworker runs because
-> > > > of flushing memcg's cache. Bad things in implementation are
-> > > > that even if a cpu contains a cache for memcg not related to
-> > > > a memcg which hits limit, drain code is called.
-> > > > 
-> > > > This patch does
-> > > > 	D) don't call at softlimit reclaim.
-> > > 
-> > > I think this needs some justification. The decision is not that
-> > > obvious IMO. I would say that this is a good decision because cached
-> > > charges will not help to free any memory (at least not directly) during
-> > > background reclaim. What about something like:
-> > > "
-> > > We are not draining per cpu cached charges during soft limit reclaim 
-> > > because background reclaim doesn't care about charges. It tries to free
-> > > some memory and charges will not give any.
-> > > Cached charges might influence only selection of the biggest soft limit
-> > > offender but as the call is done only after the selection has been
-> > > already done it makes no change.
-> > > "
-> > > 
-> > > Anyway, wouldn't it be better to have this change separate from the
-> > > async draining logic change?
-> > 
-> > Hmm. I think calling "draining" at softlimit is just a bug.
-> > 
-> I'll divide patches.
+> Please just fix it.
+> 
+> The projects that care about kernel version are buggy in so many ways
+> that it's not funny.
 
-Thanks.
+His problem is recognizing "kernel version" vs. "filename" as a
+parameter.
+  depmod [ -e ]  [ -FSystem.map ]  [ -n ]  [ -v ]  [ version ]  [ filename... ]
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Oh course, that's a stupid interface, but probably a hard one to
+change.
+
+  OG.
+
