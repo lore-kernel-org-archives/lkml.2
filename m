@@ -1,65 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752021Ab1FOEny (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 00:43:54 -0400
-Received: from gate.crashing.org ([63.228.1.57]:60886 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751028Ab1FOEnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 00:43:52 -0400
-Subject: Re: 3.0-rc3: WARNING: at fs/fs-writeback.c:356
- writeback_single_inode+0x3e/0x18f()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Meelis Roos <mroos@linux.ee>
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, Wu Fengguang <fengguang.wu@intel.com>,
-        Christoph Hellwig <hch@infradead.org>
-In-Reply-To: <alpine.SOC.1.00.1106141213570.11764@math.ut.ee>
-References: <alpine.SOC.1.00.1106141213570.11764@math.ut.ee>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 15 Jun 2011 14:42:56 +1000
-Message-ID: <1308112976.2635.27.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752254Ab1FOEyl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 00:54:41 -0400
+Received: from 184-106-247-128.static.cloud-ips.com ([184.106.247.128]:56999
+	"EHLO cloud01.chad-versace.us" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751922Ab1FOEyj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 00:54:39 -0400
+X-Greylist: delayed 594 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Jun 2011 00:54:39 EDT
+Date: Tue, 14 Jun 2011 21:43:59 -0700
+From: Ben Widawsky <ben@bwidawsk.net>
+To: Daniel J Blueman <daniel.blueman@gmail.com>
+Cc: Eric Anholt <eric@anholt.net>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>
+Subject: Re: [Intel-gfx] [PATCH 3.0-rc3] i915: Fix gen6 (SNB) GPU stalling
+Message-ID: <20110615044359.GA27884@snipes.kumite>
+Mail-Followup-To: Daniel J Blueman <daniel.blueman@gmail.com>,
+	Eric Anholt <eric@anholt.net>, intel-gfx@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>
+References: <1308070307-2630-1-git-send-email-daniel.blueman@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308070307-2630-1-git-send-email-daniel.blueman@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-14 at 12:15 +0300, Meelis Roos wrote:
-> Tested 3.0-rc3 on my PC (2 PATA disks, single duron CPU). Got several of 
-> these in dmesg:
-
-Same here on a powerpc64 machine while doing a fresh debian install
-(while the installer's installing the packages), -rc3 as well.
-
-Cheers,
-Ben.
-
-> [  842.680141] ------------[ cut here ]------------
-> [  842.680172] WARNING: at fs/fs-writeback.c:356 writeback_single_inode+0x3e/0x18f()
-> [  842.680178] Hardware name:         
-> [  842.680182] Modules linked in: mga ppdev lp ipv6 fuse loop snd_ens1371 gameport snd_ac97_codec snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq sg sr_mod snd_timer snd_seq_device pcspkr evdev cdrom snd uhci_hcd ehci_hcd parport_pc rtc_cmos parport soundcore usbcore via686a snd_page_alloc ac97_bus hwmon i2c_viapro processor button
-> [  842.680248] Pid: 1341, comm: flush-8:0 Not tainted 3.0.0-rc3 #67
-> [  842.680254] Call Trace:
-> [  842.680269]  [<c1254ada>] ? printk+0x18/0x1a
-> [  842.680281]  [<c101fb6b>] warn_slowpath_common+0x77/0x8c
-> [  842.680288]  [<c1092f8e>] ? writeback_single_inode+0x3e/0x18f
-> [  842.680294]  [<c1092f8e>] ? writeback_single_inode+0x3e/0x18f
-> [  842.680300]  [<c101fb9d>] warn_slowpath_null+0x1d/0x1f
-> [  842.680306]  [<c1092f8e>] writeback_single_inode+0x3e/0x18f
-> [  842.680313]  [<c1093519>] writeback_sb_inodes+0xcb/0x153
-> [  842.680320]  [<c1093aba>] writeback_inodes_wb+0xb0/0xf1
-> [  842.680326]  [<c1093c1d>] wb_writeback+0x122/0x1b0
-> [  842.680334]  [<c1093d15>] wb_check_old_data_flush+0x6a/0x76
-> [  842.680340]  [<c1093dc1>] wb_do_writeback+0xa0/0xf3
-> [  842.680347]  [<c1093e53>] bdi_writeback_thread+0x3f/0xd7
-> [  842.680354]  [<c1093e14>] ? wb_do_writeback+0xf3/0xf3
-> [  842.680366]  [<c10328cc>] kthread+0x61/0x66
-> [  842.680373]  [<c103286b>] ? kthread_worker_fn+0xf7/0xf7
-> [  842.680383]  [<c125ce7e>] kernel_thread_helper+0x6/0xd
-> [  842.680388] ---[ end trace c75e8a0e74c129b7 ]---
+On Wed, Jun 15, 2011 at 12:51:47AM +0800, Daniel J Blueman wrote:
+> On 14 June 2011 13:23, Eric Anholt <eric@anholt.net> wrote:
+> > On Tue, 14 Jun 2011 12:18:36 +0800, Daniel J Blueman <daniel.blueman@gmail.com> wrote:
+> >> Hi Eric,
+> >>
+> >> The frequent ~1.5s pauses I hit with SNB hardware in the gnome3 UI (eg
+> >> whenever you hit the top-left of the screen to show all windows) are
+> >> nicely addressed by your recent wake patch [1] (ported to -rc3). Thus
+> >> I see no 'missed IRQ' kernel messages.
+> >>
+> >> As this addresses a significant usability regression, are you happy to
+> >> add it to the 3.0-rc queue? I think it has very good value in -stable
+> >> also (assuming correctness). What do you think?
+> >
+> > This one had significant performance impacts, and later hacks in this
+> > series worked around the problem to approximately the same level of
+> > success with less impact, and we don't actually have a justification of
+> > why any of them work.  We were still hoping to come up with some clue,
+> > and haven't yet.
 > 
+> True; that is quite heavy handed delay looping.
 > 
+> It's a pity the usual Intel font didn't make it to the programmer's
+> reference manuals. Anyway, unmasking the blitter user interrupt in the hardware
+> status mask register addresses the root cause. Out of reset it's FFFFFFFFh,
+> so we don't need to read it here.
+> 
+> It would be good to get this into -rc4. -stable probably needs some additional
+> tweaks.
+> 
+> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+> ---
+>  drivers/gpu/drm/i915/i915_irq.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
+> index b9fafe3..9a98c1b 100644
+> --- a/drivers/gpu/drm/i915/i915_irq.c
+> +++ b/drivers/gpu/drm/i915/i915_irq.c
+> @@ -1827,6 +1827,12 @@ int ironlake_irq_postinstall(struct drm_device *dev)
+>  		ironlake_enable_display_irq(dev_priv, DE_PCU_EVENT);
+>  	}
+>  
+> +	if (IS_GEN6(dev))
+> +		/* allow blitter user interrupt to generate a MSI write from
+> +		   the ISR */
+> +		I915_WRITE(GEN6_BLITTER_HWSTAM,
+> +			0xffffffff & ~GEN6_BLITTER_USER_INTERRUPT);
+> +
+>  	return 0;
+>  }
+>  
 
+I wish the docs said that that this hwstam unmasked MI_USER_INTERRUPTS
+parsed by the Blitter Command Parser, instead of the Render Command
+parser.
 
+I was just about to write an email about how this is just making the
+same interrupt happen twice, when I realized that the docs make no
+sense, and this must be a copy-paste doc bug.
+
+This patch sounds good to me. Two small comments:
+1. The HWSTAM is touched in preinstall already, why not move this there?
+2. I'd prefer you read the register even though as you say it isn't
+necessary. It just makes the code self-documented by doing it that way.
+
+Ben
