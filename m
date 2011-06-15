@@ -1,177 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab1FOUdk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 16:33:40 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41655 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277Ab1FOUdi convert rfc822-to-8bit (ORCPT
+	id S1753596Ab1FOUdE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 16:33:04 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:51064 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751357Ab1FOUdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 16:33:38 -0400
-Subject: Re: REGRESSION: Performance regressions from switching
- anon_vma->lock to mutex
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Andi Kleen <ak@linux.intel.com>, Shaohua Li <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-In-Reply-To: <1308163398.17300.147.camel@schen9-DESK>
-References: <1308097798.17300.142.camel@schen9-DESK>
-	 <1308101214.15392.151.camel@sli10-conroe> <1308138750.15315.62.camel@twins>
-	 <20110615161827.GA11769@tassilo.jf.intel.com>
-	 <1308156337.2171.23.camel@laptop>  <1308163398.17300.147.camel@schen9-DESK>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 15 Jun 2011 22:32:17 +0200
-Message-ID: <1308169937.15315.88.camel@twins>
+	Wed, 15 Jun 2011 16:33:01 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=AviXFUh2GcrGKBRm5Ix56nM/OaUrKCX2hQKsJkGlX5yb5gHFOFjD20LqDAUx1tyu40AcRYmQmpPM1mooiaUUsCnN1tkTSAmJg13VO4+qYdfGDo8VLIadyIVJ3c4WeHqy;
+Date: Wed, 15 Jun 2011 13:32:56 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Keith Packard <keithp@keithp.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: Oops in i915 intel_init_clock_gating
+Message-ID: <20110615133256.113293a0@jbarnes-desktop>
+In-Reply-To: <Pine.LNX.4.44L0.1106151555400.1650-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1106151555400.1650-100000@iolanthe.rowland.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-15 at 11:43 -0700, Tim Chen wrote:
+On Wed, 15 Jun 2011 16:08:51 -0400 (EDT)
+Alan Stern <stern@rowland.harvard.edu> wrote:
 
-> Wonder if you can provide the profile on your run so I can compare with
-> what I got on 4 sockets? 
+> The problem of dev_priv->display.init_clock_gating not getting set is 
+> still present in 3.0-rc3.  On my system this happens because 
+> intel_init_display() never gets called in the first place.
+> 
+> AFAICT, the normal calling sequence during driver initialization is:
+> 
+> 	i915_driver_load() -> i915_load_modeset_init() ->
+> 		intel_modeset_init() -> intel_init_display().
+> 
+> But in my case the call to i915_load_modeset_init() doesn't occur 
+> because drm_core_check_feature(dev, DRIVER_MODESET) is False.
 
-Sure, so this is on an Westmere-EP (2 sockets, 6 cores/socket, 2
-threads/core), what I did was:
+Ouch, a non-KMS config.  Any reason you can't use KMS?
 
-perf record -r2 -gf make bench
-perf report > foo.txt
-bzip2 -9 foo.txt
+This patch should help at any rate.
 
-Both files are about 0.5M, the tip one has the sirq-rcu patch and linus'
-patch applied (could do one without if wanted).
+-- 
+Jesse Barnes, Intel Open Source Technology Center
 
-http://programming.kicks-ass.net/sekrit/tip.txt.bz2
-http://programming.kicks-ass.net/sekrit/39.txt.bz2
-
-However, looking at them, the weird thing is, they're both dominated by
-(taken from 39.txt):
-
-     7.44%        exim  [kernel.kallsyms]              [k] format_decode
-                  |
-                  --- format_decode
-                     |          
-                     |--93.07%-- vsnprintf
-                     |          |          
-                     |          |--98.83%-- seq_printf
-                     |          |          show_stat
-                     |          |          seq_read
-                     |          |          proc_reg_read
-                     |          |          vfs_read
-                     |          |          sys_read
-                     |          |          system_call
-                     |          |          __GI___libc_read
-                     |          |          |          
-                     |          |          |--99.47%-- (nil)
-                     |          |           --0.53%-- [...]
-                     |          |          
-                     |           --1.17%-- snprintf
-                     |                     proc_flush_task
-                     |                     release_task
-                     |                     wait_consider_task
-                     |                     do_wait
-                     |                     sys_wait4
-                     |                     system_call
-                     |                     |          
-                     |                     |--93.15%-- __libc_wait
-                     |                     |          
-                     |                      --6.85%-- __waitpid
-                     |          
-                     |--6.84%-- seq_printf
-                     |          show_stat
-                     |          seq_read
-                     |          proc_reg_read
-                     |          vfs_read
-                     |          sys_read
-                     |          system_call
-                     |          __GI___libc_read
-                     |          |          
-                     |          |--99.56%-- (nil)
-                     |           --0.44%-- [...]
-                      --0.10%-- [...]
-
-
-I've no idea why its doing that, I've had massive trouble getting this
-MOSBENCH crap working in the first place since its all in python, but
-what I basically done was rip out everything !exim in config.py and put
-cores = [24]. In hosts.py I too ripped out everything !exim, cleared out
-the clients list and made 'tom' my localhost (removing that perflock
-thing).
-
-After that things more or less ran, I saw exim, and its giving me those
-msgs/sec/core numbers like:
-
-# perf record -r2 -gfo 39.perf.data make bench
-python config.py
-Starting results in: results/20110615-221914
-*** Starting configuration 1/1 (benchmark-exim) ***
-Starting Host.host-westmere...
-sending westmere: /./
-del.ing westmere: out/log/EximLoad.trial-2.host-westmere
-del.ing westmere: out/log/EximLoad.trial-1.host-westmere
-del.ing westmere: out/log/EximLoad.trial-0.host-westmere
-del.ing westmere: out/log/
-del.ing westmere: out/EximDaemon.host-westmere.configure
-del.ing westmere: out/
-sending westmere: /home/root/
-sending westmere: /home/root/test/mosbench/
-Starting Host.host-westmere... done
-Starting HostInfo.host-westmere...
-Starting HostInfo.host-westmere... done
-Starting FileSystem.host-westmere.fstype-tmpfs-separate...
-Starting FileSystem.host-westmere.fstype-tmpfs-separate... done
-Starting SetCPUs.host-westmere...
-FATAL: Module oprofile not found.
-FATAL: Module oprofile not found.
-Kernel doesn't support oprofile
-CPUs 0-23 are online
-CPUs 0-23 are online
-Starting SetCPUs.host-westmere... done
-Starting EximDaemon.host-westmere...
-Starting EximDaemon.host-westmere... done
-Waiting on EximLoad.trial-0.host-westmere...
-[EximLoad.trial-0.host-westmere] => 86983 messages (15.0032 secs, 241.568 messages/sec/core)
-Waiting on EximLoad.trial-0.host-westmere... done
-Waiting on EximLoad.trial-1.host-westmere...
-[EximLoad.trial-1.host-westmere] => 86770 messages (15.004 secs, 240.964 messages/sec/core)
-Waiting on EximLoad.trial-1.host-westmere... done
-Waiting on EximLoad.trial-2.host-westmere...
-[EximLoad.trial-2.host-westmere] => 86987 messages (15.0035 secs, 241.574 messages/sec/core)
-Waiting on EximLoad.trial-2.host-westmere... done
-Stopping EximDaemon.host-westmere...
-Stopping EximDaemon.host-westmere... done
-Stopping HostInfo.host-westmere...
-Stopping HostInfo.host-westmere... done
-Stopping Host.host-westmere...
-copying westmere: ./
-copying westmere: EximDaemon.host-westmere.configure
-copying westmere: log/
-copying westmere: log/EximLoad.trial-0.host-westmere
-copying westmere: log/EximLoad.trial-1.host-westmere
-copying westmere: log/EximLoad.trial-2.host-westmere
-Stopping Host.host-westmere... done
-Stopping ResultPath...
-Results in: results/20110615-221914/benchmark-exim
-Stopping ResultPath... done
-All results in: results/20110615-221914
-[ perf record: Woken up 3774 times to write data ]
-[ perf record: Captured and wrote 979.494 MB 39.perf.data (~42794760 samples) ]
-CPUs 0-23 are online
+diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
+index 0defd42..a1a28fb 100644
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -429,6 +429,9 @@ static int i915_drm_thaw(struct drm_device *dev)
+ 	/* KMS EnterVT equivalent */
+ 	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
+ 		mutex_lock(&dev->struct_mutex);
++
++		intel_init_clock_gating(dev);
++
+ 		dev_priv->mm.suspended = 0;
+ 
+ 		error = i915_gem_init_ringbuffer(dev);
+diff --git a/drivers/gpu/drm/i915/i915_suspend.c b/drivers/gpu/drm/i915/i915_suspend.c
+index 60a94d2..b478d16 100644
+--- a/drivers/gpu/drm/i915/i915_suspend.c
++++ b/drivers/gpu/drm/i915/i915_suspend.c
+@@ -863,8 +863,6 @@ int i915_restore_state(struct drm_device *dev)
+ 		I915_WRITE(IMR, dev_priv->saveIMR);
+ 	}
+ 
+-	intel_init_clock_gating(dev);
+-
+ 	if (IS_IRONLAKE_M(dev)) {
+ 		ironlake_enable_drps(dev);
+ 		intel_init_emon(dev);
 
