@@ -1,81 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229Ab1FOROa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 13:14:30 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:55071 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab1FORO2 (ORCPT
+	id S1752267Ab1FORTk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 13:19:40 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:34506 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751521Ab1FORTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 13:14:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=CjznJi6pWAmjA4Ely4VhwjMI49Qs75gVpbQkHXI6lcZtihENyhf+ByVcPykzNrpFRX
-         C5TRuF0nPmBsM4AHgTPcCNlheO6EL8bT1Rl3CEKRC6zD+ruuviw5M+ZYjkj684tPRGhu
-         ZxMOXEXahSXJ7up10HeKTI1qOyGZCkWTkVHIs=
-Date: Wed, 15 Jun 2011 20:14:19 +0300
-From: Maxin B John <maxin.john@gmail.com>
-To: akpm@linux-foundation.org
-Cc: tj@kernel.org, eike-kernel@sf-tec.de, segooon@gmail.com,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org, jkosina@suse.cz
-Subject: Re: [PATCH] [RESEND] devres: Fix possible use after free
-Message-ID: <20110615171419.GA2794@maxin>
+	Wed, 15 Jun 2011 13:19:39 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 1srJRmYVM1lVDcpzDp5yck4BtIwJtlk4dn3x0z7lsdDa67U
+ NY5UYX.ZnGW9M5CA9XPEEm.NJMhL.VJCV8NWve5dUyQbbTys91gadbl_rki8
+ pb0ClAyu5AnrefOGjRCdz9ZY31srQGNqng0BbBkFcwzw6_OYvIu3P2taXUlu
+ 2O4VzBVVhxOdbVGy.iwAfeG1.3raB2y93skblRxuAi0fNGD3f6L4YPBFA3Ah
+ yQndeAVnYrcn1How6pGiPf0rhAcUAqfxf9bikiGHmINhLgTksELZkt8eGUlR
+ V1QA9Y67LhjueckBaMYbV3qo_sSVTe1ZV9QSe4cJoaGPG6857
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 15 Jun 2011 12:19:35 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+        David Rientjes <rientjes@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [slubllv7 04/17] x86: Add support for cmpxchg_double
+In-Reply-To: <20110615163952.GE8141@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.00.1106151213180.4224@router.home>
+References: <20110601172543.437240675@linux.com> <20110601172614.173427964@linux.com> <20110615085512.GO8141@htj.dyndns.org> <alpine.DEB.2.00.1106150917520.768@router.home> <20110615163952.GE8141@htj.dyndns.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devres uses the pointer value as key after it's freed, which is safe but 
-triggers spurious use-after-free warnings on some static analysis tools. 
-Rearrange code to avoid such warnings.
+On Wed, 15 Jun 2011, Tejun Heo wrote:
 
-Signed-off-by: Maxin B. John <maxin.john@gmail.com>
-Reviewed-by: Rolf Eike Beer <eike-kernel@sf-tec.de>
-Acked-by: Tejun Heo <tj@kernel.org>
----
-diff --git a/kernel/irq/devres.c b/kernel/irq/devres.c
-index 1ef4ffc..bd8e788 100644
---- a/kernel/irq/devres.c
-+++ b/kernel/irq/devres.c
-@@ -87,8 +87,8 @@ void devm_free_irq(struct device *dev, unsigned int irq, void *dev_id)
- {
- 	struct irq_devres match_data = { irq, dev_id };
- 
--	free_irq(irq, dev_id);
- 	WARN_ON(devres_destroy(dev, devm_irq_release, devm_irq_match,
- 			       &match_data));
-+	free_irq(irq, dev_id);
- }
- EXPORT_SYMBOL(devm_free_irq);
-diff --git a/lib/devres.c b/lib/devres.c
-index 6efddf5..7c0e953 100644
---- a/lib/devres.c
-+++ b/lib/devres.c
-@@ -79,9 +79,9 @@ EXPORT_SYMBOL(devm_ioremap_nocache);
-  */
- void devm_iounmap(struct device *dev, void __iomem *addr)
- {
--	iounmap(addr);
- 	WARN_ON(devres_destroy(dev, devm_ioremap_release, devm_ioremap_match,
- 			       (void *)addr));
-+	iounmap(addr);
- }
- EXPORT_SYMBOL(devm_iounmap);
- 
-diff --git a/mm/dmapool.c b/mm/dmapool.c
-index 03bf3bb..fbb58e3 100644
---- a/mm/dmapool.c
-+++ b/mm/dmapool.c
-@@ -500,7 +500,7 @@ void dmam_pool_destroy(struct dma_pool *pool)
- {
- 	struct device *dev = pool->dev;
- 
--	dma_pool_destroy(pool);
- 	WARN_ON(devres_destroy(dev, dmam_pool_release, dmam_pool_match, pool));
-+	dma_pool_destroy(pool);
- }
- EXPORT_SYMBOL(dmam_pool_destroy);
+> > > > +#define system_has_cmpxchg_double() cpu_has_cx16
+> > >
+> > > Where's the fallback %false definition for the above feature macro for
+> > > archs which don't support cmpxchg_double?  Also, is system_has_*()
+> > > conventional?  Isn't arch_has_*() more conventional for this purpose?
+> >
+> > There is a convention for querying processor flags from core code?
+>
+> At least generic ptrace code uses arch_has_block/single_step().
+> Probably better than introducing something completely new.
+
+Its not a property of the arch that we are after. We need to know of the
+hardware that is running the kernel (the system) has that capability.
+
+> > The system_has_cmpxchg_double() is only used if the arch defines
+> > CONFIG_CMPXCHG_DOUBLE
+>
+> Why?  What's the benefit of that?
+
+You dont have to define system_has_cmpxchg_double() for systems without
+CONFIG_CMPXCHG_DOUBLE.
+
+> > This way it is done in the same way on 32 bit than on 64 bit. The use of
+> > cmpxchg64 also means that some of the parameters would have to be combined
+> > to form 64 bit ints from the 32 bit ones before __cmpxchg64 could be used.
+> >
+> > __cmpxchg64 has different parameter conventions.
+>
+> But they all just deal with the starting addresses and the _local
+> version already has proper fallback implementation.
+
+The local version is not that problematic since it is just provided for
+completeness. If you want to go through the gyrations of providing a
+conversion layer with casting and conversion between 32 and 64 bit
+entities then please do so. But its not going to be nice.
+
+> > The fallback through the subsystem means that the subsystem can do locking
+> > that scales better. In the case of SLUB we fall back to a bit lock in the
+> > page struct which is a hot cache line in the hotpaths. This is the same
+> > approach as used before the lockless patches and we expect the performance
+> > on platforms not supporting cmpxchg_double to stay the same.
+>
+> Yes, that's nice but you're introducing new operations and they should
+> meet the usual conventions and cmpxchg fallback on the arch which I
+> don't recall now already uses hashed lock so it's not like this is
+> completely new.  As added, the interface basically requires extreme
+> ifdeffery which isn't good.
+
+I'd be glad if you could improve on it. But the fallback to a hashed lock
+would also mean additional cache footprint which would not be acceptable
+for the hotpaths that this is used for now.
