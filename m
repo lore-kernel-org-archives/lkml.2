@@ -1,114 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282Ab1FOWoX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 18:44:23 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:50949 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668Ab1FOWoV (ORCPT
+	id S1755751Ab1FOWse (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 18:48:34 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:50408 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755697Ab1FOWsb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 18:44:21 -0400
-Message-ID: <4DF935C1.4020000@codemonkey.ws>
-Date: Wed, 15 Jun 2011 17:44:17 -0500
-From: Anthony Liguori <anthony@codemonkey.ws>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	Wed, 15 Jun 2011 18:48:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=G7mKS5PPJzM+hhFKt13AN9R2e5fBxU9La85UvLXK9jcnL7yheeahgvIjQJOf8FW2l+
+         7/4EeZ1DNZG8bU0d69Jg==
 MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: Prasad Joshi <prasadjoshi124@gmail.com>, Pekka Enberg <penberg@kernel.org>,
-        Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>,
-        Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
-References: <1308153214.7566.6.camel@jaguar>	<4DF8DE26.1070301@redhat.com>	<BANLkTi=SHENDBHdtFY_7_qtfqJb_+qKJSw@mail.gmail.com> <BANLkTinMDz-sqaX0cyWEoLXt70dowxofvg@mail.gmail.com> <4DF92C80.3030106@codemonkey.ws> <7A30A509-47AA-4E72-ABF3-937005900F9D@suse.de> <4DF93010.1040006@codemonkey.ws>
-In-Reply-To: <4DF93010.1040006@codemonkey.ws>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110609150026.GD3994@tiehlicka.suse.cz>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+	<1306909519-7286-5-git-send-email-hannes@cmpxchg.org>
+	<BANLkTim5TSWpBfeF2dugGZwQmNC-Cf+GCNctraq8FtziJxsd2g@mail.gmail.com>
+	<BANLkTimuRks4+h=Kjt2Lzc-s-XsAHCH9vg@mail.gmail.com>
+	<20110609150026.GD3994@tiehlicka.suse.cz>
+Date: Wed, 15 Jun 2011 15:48:25 -0700
+Message-ID: <BANLkTimbEnEHuxBDzKrEjPY7Y5F_aSoOdXkmjaOY+3xLBLzLdA@mail.gmail.com>
+Subject: Re: [patch 4/8] memcg: rework soft limit reclaim
+From: Ying Han <yinghan@google.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2011 05:20 PM, Anthony Liguori wrote:
-> On 06/15/2011 05:07 PM, Alexander Graf wrote:
+On Thu, Jun 9, 2011 at 8:00 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> On Thu 02-06-11 22:25:29, Ying Han wrote:
+>> On Thu, Jun 2, 2011 at 2:55 PM, Ying Han <yinghan@google.com> wrote:
+>> > On Tue, May 31, 2011 at 11:25 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+>> >> Currently, soft limit reclaim is entered from kswapd, where it selects
+> [...]
+>> >> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> >> index c7d4b44..0163840 100644
+>> >> --- a/mm/vmscan.c
+>> >> +++ b/mm/vmscan.c
+>> >> @@ -1988,9 +1988,13 @@ static void shrink_zone(int priority, struct zone *zone,
+>> >>                unsigned long reclaimed = sc->nr_reclaimed;
+>> >>                unsigned long scanned = sc->nr_scanned;
+>> >>                unsigned long nr_reclaimed;
+>> >> +               int epriority = priority;
+>> >> +
+>> >> +               if (mem_cgroup_soft_limit_exceeded(root, mem))
+>> >> +                       epriority -= 1;
+>> >
+>> > Here we grant the ability to shrink from all the memcgs, but only
+>> > higher the priority for those exceed the soft_limit. That is a design
+>> > change
+>> > for the "soft_limit" which giving a hint to which memcgs to reclaim
+>> > from first under global memory pressure.
 >>
->> On 16.06.2011, at 00:04, Anthony Liguori wrote:
 >>
->>> On 06/15/2011 03:13 PM, Prasad Joshi wrote:
->>>> On Wed, Jun 15, 2011 at 6:10 PM, Pekka Enberg<penberg@kernel.org>
->>>> wrote:
->>>>> On Wed, Jun 15, 2011 at 7:30 PM, Avi Kivity<avi@redhat.com> wrote:
->>>>>> On 06/15/2011 06:53 PM, Pekka Enberg wrote:
->>>>>>>
->>>>>>> - Fast QCOW2 image read-write support beating Qemu in fio
->>>>>>> benchmarks. See
->>>>>>> the
->>>>>>> following URL for test result details:
->>>>>>> https://gist.github.com/1026888
->>>>>>
->>>>>> This is surprising. How is qemu invoked?
->>>>>
->>>>> Prasad will have the details. Please note that the above are with Qemu
->>>>> defaults which doesn't use virtio. The results with virtio are little
->>>>> better but still in favor of tools/kvm.
->>>>>
->>>>
->>>> The qcow2 image used for testing was copied on to /dev/shm to avoid
->>>> the disk delays in performance measurement.
->>>>
->>>> QEMU was invoked with following parameters
->>>>
->>>> $ qemu-system-x86_64 -hda<disk image on hard disk> -hdb
->>>> /dev/shm/test.qcow2 -m 1024M
->>>
->>> Looking more closely at native KVM tools, you would need to use the
->>> following invocation to have an apples-to-apples comparison:
->>>
->>> qemu-system-x86_64 -drive
->>> file=/dev/shm/test.qcow2,cache=writeback,if=virtio
+>> Basically, we shouldn't reclaim from a memcg under its soft_limit
+>> unless we have trouble reclaim pages from others.
+>
+> Agreed.
+>
+>> Something like the following makes better sense:
 >>
->> Wouldn't this still be using threaded AIO mode? I thought KVM tools
->> used native AIO?
->
-> Nope. The relevant code is:
->
->> /* blk device ?*/
->> disk = blkdev__probe(filename, &st);
->> if (disk)
->> return disk;
+>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> index bdc2fd3..b82ba8c 100644
+>> --- a/mm/vmscan.c
+>> +++ b/mm/vmscan.c
+>> @@ -1989,6 +1989,8 @@ restart:
+>>         throttle_vm_writeout(sc->gfp_mask);
+>>  }
 >>
->> fd = open(filename, readonly ? O_RDONLY : O_RDWR);
->> if (fd < 0)
->> return NULL;
+>> +#define MEMCG_SOFTLIMIT_RECLAIM_PRIORITY       2
+>> +
+>>  static void shrink_zone(int priority, struct zone *zone,
+>>                                 struct scan_control *sc)
+>>  {
+>> @@ -2001,13 +2003,13 @@ static void shrink_zone(int priority, struct zone *zone,
+>>                 unsigned long reclaimed = sc->nr_reclaimed;
+>>                 unsigned long scanned = sc->nr_scanned;
+>>                 unsigned long nr_reclaimed;
+>> -               int epriority = priority;
 >>
->> /* qcow image ?*/
->> disk = qcow_probe(fd, readonly);
->> if (disk)
->> return disk;
->>
->> /* raw image ?*/
->> disk = raw_image__probe(fd, &st, readonly);
->> if (disk)
->> return disk;
+>> -               if (mem_cgroup_soft_limit_exceeded(root, mem))
+>> -                       epriority -= 1;
+>> +               if (!mem_cgroup_soft_limit_exceeded(root, mem) &&
+>> +                               priority > MEMCG_SOFTLIMIT_RECLAIM_PRIORITY)
+>> +                       continue;
 >
-> It uses a synchronous I/O model similar to qcow2 in QEMU with what I
-> assume is a global lock that's outside of the actual implementation.
->
-> I think it lacks some of the caching that Kevin's added recently though
-> so I assume that if QEMU was run with cache=writeback, it would probably
-> do quite a bit better than native KVM tool.
->
-> It also turns out that while they have the infrastructure to deal with
-> FLUSH, they don't implement it for qcow2 :-/
->
-> So even if the guest does an fsync(), it native KVM tool will never
-> actually sync the data to disk...
->
-> That's probably why it's fast, it doesn't preserve data integrity :(
+> yes, this makes sense but I am not sure about the right(tm) value of the
+> MEMCG_SOFTLIMIT_RECLAIM_PRIORITY. 2 sounds too low. You would do quite a
+> lot of loops
+> (DEFAULT_PRIORITY-MEMCG_SOFTLIMIT_RECLAIM_PRIORITY) * zones * memcg_count
+> without any progress (assuming that all of them are under soft limit
+> which doesn't sound like a totally artificial configuration) until you
+> allow reclaiming from groups that are under soft limit. Then, when you
+> finally get to reclaiming, you scan rather aggressively.
 
-Actually, I misread the code.  It does unstable writes but it does do 
-fsync() on FLUSH.
+Fair enough, something smarter is definitely needed :)
 
-Regards,
+>
+> Maybe something like 3/4 of DEFAULT_PRIORITY? You would get 3 times
+> over all (unbalanced) zones and all cgroups that are above the limit
+> (scanning max{1/4096+1/2048+1/1024, 3*SWAP_CLUSTER_MAX} of the LRUs for
+> each cgroup) which could be enough to collect the low hanging fruit.
 
-Anthony Liguori
+Hmm, that sounds more reasonable than the initial proposal.
+
+For the same worst case where all the memcgs are blow their soft
+limit, we need to scan 3 times of total memcgs before actually doing
+anything. For that condition, I can not think of anything solve the
+problem totally unless we have separate list of memcg (like what do
+currently) per-zone.
+
+--Ying
+
+> --
+> Michal Hocko
+> SUSE Labs
+> SUSE LINUX s.r.o.
+> Lihovarska 1060/12
+> 190 00 Praha 9
+> Czech Republic
+>
