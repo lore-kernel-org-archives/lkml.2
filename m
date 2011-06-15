@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721Ab1FOMlr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 08:41:47 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:38773 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752832Ab1FOMlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 08:41:46 -0400
-Date: Wed, 15 Jun 2011 22:41:39 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: Re: Build regressions/improvements in v3.0-rc3
-Message-Id: <20110615224139.96a28669.sfr@canb.auug.org.au>
-In-Reply-To: <alpine.DEB.2.00.1106151111200.18110@ayla.of.borg>
-References: <alpine.DEB.2.00.1106151111200.18110@ayla.of.borg>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1754092Ab1FOMuo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 08:50:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48940 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753326Ab1FOMun convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 08:50:43 -0400
+Subject: Re: REGRESSION: Performance regressions from switching
+ anon_vma->lock to mutex
+From: Peter Zijlstra <peterz@infradead.org>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+In-Reply-To: <1308138750.15315.62.camel@twins>
+References: <1308097798.17300.142.camel@schen9-DESK>
+	 <1308101214.15392.151.camel@sli10-conroe> <1308138750.15315.62.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 15 Jun 2011 14:49:36 +0200
+Message-ID: <1308142176.15315.78.camel@twins>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__15_Jun_2011_22_41_39_+1000_2=sD6fKDqFZJ9VJt"
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__15_Jun_2011_22_41_39_+1000_2=sD6fKDqFZJ9VJt
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2011-06-15 at 13:52 +0200, Peter Zijlstra wrote:
+> /me goes re-test without the sirq-rcu bits mixed in just to make sure.
 
-Hi Geert,
+I switched from PREEMPT=n to PREEMPT_VOLUNTARY=y, which seemed to make a
+difference:
 
-On Wed, 15 Jun 2011 11:11:54 +0200 (CEST) Geert Uytterhoeven <geert@linux-m=
-68k.org> wrote:
->
-> [1] http://kisskb.ellerman.id.au/kisskb/head/4110/ (107 out of 108 config=
-s)
-> [2] http://kisskb.ellerman.id.au/kisskb/head/4019/ (all 108 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/4085/ (107 out of 108 config=
-s)
+.39             257.651 messages/sec/core
+-tip            254.976 messages/sec/core
+    +linus      258.03  messages/sec/core
+    +sirq       265.951 messages/sec/core
 
-Hmm, the web page says that there are 107 configs.  The extra one is
-systemh_defconfig on sh4.  Not sure what is up there.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__15_Jun_2011_22_41_39_+1000_2=sD6fKDqFZJ9VJt
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN+KiDAAoJEDMEi1NhKgbsydMH/0a21bYPbnuFh2Vs/TIkTrQJ
-CCk4DX124TGQ3hZGiUllv5OsO83k/ADht9nIKBfuKAj0Eekz0uRRnJRJF0AxZwHS
-h3nHgXcAQ9lJy4WUTN9COoC4jifOLpgX+j7aCxWsWcR5JeUIk1UzbJ7HD41jZGDG
-vFHJF5E7RxAjvwCyTi7qAWP3Dh6y9TU6Tbjn246Seg8Q60ofUmnculdu+bX5zteo
-QwXt+2tI9ufkebFZ4K4C4OyWTqDxuvtHtl3LMu4WedoslyY9SAtJTiy+yT1Qq2Ud
-Fyj1Xs0ZJHrrWVkdnH+nWcs3/LurctUWNEZtjKpztrHqFXKJ0CGPv6HxS4RjpR4=
-=TkEm
------END PGP SIGNATURE-----
-
---Signature=_Wed__15_Jun_2011_22_41_39_+1000_2=sD6fKDqFZJ9VJt--
