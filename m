@@ -1,104 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab1FOKej (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 06:34:39 -0400
-Received: from frost.carfax.org.uk ([212.13.194.111]:41704 "EHLO
-	frost.carfax.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680Ab1FOKeg (ORCPT
+	id S1754835Ab1FOKiB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 06:38:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55430 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680Ab1FOKiA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 06:34:36 -0400
-Date: Wed, 15 Jun 2011 11:34:31 +0100
-From: Hugo Mills <hugo@carfax.org.uk>
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Cc: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] btrfs: Remove all sysfs entries
-Message-ID: <20110615103431.GA15127@carfax.org.uk>
-Mail-Followup-To: Hugo Mills <hugo@carfax.org.uk>,
-	Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-	Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <4DF86FFF.5000406@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="n8g4imXOkfNTN/H1"
-Content-Disposition: inline
-In-Reply-To: <4DF86FFF.5000406@gmail.com>
-X-GPG-Fingerprint: 8C59 86C7 81F3 93FE BB02  DDB1 20AC B3BE 515C 238D
-X-GPG-Key: 515C238D
-X-Parrot: It is no more. It has joined the choir invisible.
-X-IRC-Nicks: darksatanic darkersatanic darkling darkthing
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-frost.carfax.org.uk-Spam-Score: -0.0 (/)
-X-frost.carfax.org.uk-Spam-Report: Spam detection software, running on the system "admin.kwak.bitfolk.com", has
- identified this incoming email as possible spam.  The original message
- has been attached to this so you can view it (if it isn't spam) or label
- similar future email.  If you have any questions, see
- the administrator of that system for details.
- Content preview:  On Wed, Jun 15, 2011 at 10:40:31AM +0200, Maarten Lankhorst
-    wrote: > Seems that currently none of the sysfs are created any more, so
-   just > remove sysfs support entirely. > > Fixes compiling warnings in 3.0rc3
-    [...] 
- Content analysis details:   (-0.0 points, 5.0 required)
-  pts rule name              description
- ---- ---------------------- --------------------------------------------------
- -0.0 T_RP_MATCHES_RCVD      Envelope sender domain matches handover relay
-                             domain
+	Wed, 15 Jun 2011 06:38:00 -0400
+Subject: Re: REGRESSION: Performance regressions from switching
+ anon_vma->lock to mutex
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, ak@linux.intel.com,
+        shaohua.li@intel.com, alex.shi@intel.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+In-Reply-To: <1308097798.17300.142.camel@schen9-DESK>
+References: <1308097798.17300.142.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 15 Jun 2011 12:36:40 +0200
+Message-ID: <1308134200.15315.32.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2011-06-14 at 17:29 -0700, Tim Chen wrote:
+> MOSBENCH test suite.
 
---n8g4imXOkfNTN/H1
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Argh, I'm trying to get this thing to run, but its all snake poo..
 
-On Wed, Jun 15, 2011 at 10:40:31AM +0200, Maarten Lankhorst wrote:
-> Seems that currently none of the sysfs are created any more, so just
-> remove sysfs support entirely.
->=20
-> Fixes compiling warnings in 3.0rc3
-
-   I would actually like to retain sysfs support -- the current
-entries may not be used (or useful, or in the right place, or even
-visible these days), but there's plenty of things that could and
-should go in sysfs from btrfs.
-
-   So, please do remove the unwanted/unused file entries, but could
-you leave the sysfs file itself, and the (limited) bits that create
-the btrfs subdir? Otherwise, I'm going to be putting it all back in
-this weekend when I get the time to revisit Goffredo's old sysfs
-patch...
-
-   Thanks,
-   Hugo.
-
-> Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
->=20
-> --
-
-   (I think this should be three - signs, not two: my signature-
-cropping script removed the whole patch)
-
---=20
-=3D=3D=3D Hugo Mills: hugo@... carfax.org.uk | darksatanic.net | lug.org.uk=
- =3D=3D=3D
-  PGP key: 515C238D from wwwkeys.eu.pgp.net or http://www.carfax.org.uk
-      --- What's a Nazg=FBl like you doing in a place like this? ---     =
-=20
-
---n8g4imXOkfNTN/H1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iD8DBQFN+Iq3IKyzvlFcI40RAhGnAJ9Egsnp1XI8TiFC4jiWnakefORnGQCeL+XW
-/FxmTMu8x9AMKiMg7vrRF9E=
-=B5df
------END PGP SIGNATURE-----
-
---n8g4imXOkfNTN/H1--
+/me takes up a heavy club and goes snake hunting, should make a pretty
+hat or something.
