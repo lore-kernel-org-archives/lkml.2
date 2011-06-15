@@ -1,72 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab1FOVtq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 17:49:46 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:44083 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339Ab1FOVto (ORCPT
+	id S1753544Ab1FOVpK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 17:45:10 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:54029 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751725Ab1FOVpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 17:49:44 -0400
-X-Greylist: delayed 467 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Jun 2011 17:49:44 EDT
-Message-ID: <4DF9271E.2060701@codemonkey.ws>
-Date: Wed, 15 Jun 2011 16:41:50 -0500
-From: Anthony Liguori <anthony@codemonkey.ws>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	Wed, 15 Jun 2011 17:45:08 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Ingo Saitz <Ingo.Saitz@stud.uni-hannover.de>
+Cc: Daniel Lezcano <daniel.lezcano@free.fr>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+References: <20110615141948.GA2071@studserv2.stud.uni-hannover.de>
+Date: Wed, 15 Jun 2011 14:44:56 -0700
+In-Reply-To: <20110615141948.GA2071@studserv2.stud.uni-hannover.de> (Ingo
+	Saitz's message of "Wed, 15 Jun 2011 16:19:48 +0200")
+Message-ID: <m1wrgmdb1j.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Prasad Joshi <prasadjoshi124@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>
-Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
-References: <1308153214.7566.6.camel@jaguar>
-In-Reply-To: <1308153214.7566.6.camel@jaguar>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18io4NA1s/BYEWC2lJFYXw5vSfysfP9BrY=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_12 obfuscated drug references
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Ingo Saitz <Ingo.Saitz@stud.uni-hannover.de>
+X-Spam-Relay-Country: 
+Subject: Re: PROBLEM: /proc/$pid/ns/ access of zombies dies with null pointer
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2011 10:53 AM, Pekka Enberg wrote:
-> Hi all,
+Ingo Saitz <Ingo.Saitz@stud.uni-hannover.de> writes:
+
+> [1.] One line summary of the problem:
 >
-> We’re proud to announce the second version of the Native Linux KVM tool! We’re
-> now officially aiming for merging to mainline in 3.1.
+> /proc/$pid/ns/ access of zombies dies with null pointer
 >
-> Highlights:
 >
-> - Experimental GUI support using SDL and VNC
+> [2.] Full description of the problem/report:
 >
-> - SMP support. tools/kvm/ now has a highly scalable, largely lockless driver
->    interface and the individual drivers are using finegrained locks.
+> Linux 3.0 introduced /proc/$pid/ns/ directories. The contents of these
+> produce a null pointer BUG if the $pid belongs to a zombie process.
 >
-> - TAP-based virtio networking
+> This bug can be triggered e.g. by doing a ls in /proc/$pid/ns/ from
+> a zombie process.
 >
-> - Fast QCOW2 image read-write support beating Qemu in fio benchmarks. See the
->    following URL for test result details: https://gist.github.com/1026888
+> The kernel switches to a text console and prints the bug on it, and the
+> keyboard is not working. But otherwise it seems to run fine, after a
+> chvt from a remote login. Only the program accessing the file in proc (ls)
+> was killed.
 
-What was the commit hash for the QEMU you tested?
+This fixes it for me.  Can you confirm?
 
-The following caused a major regression in qcow2:
+>From 793925334f32e9026c22baee5c3c340f47d4ef7e Mon Sep 17 00:00:00 2001
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Wed, 15 Jun 2011 12:47:04 -0700
+Subject: [PATCH] proc: Fix Oops on stat of /proc/<zombie pid>/ns/net
 
+Don't call iput with the inode half setup to be a namespace filedescriptor.
+Instead rearrange the code so that we don't initialize ei->ns_ops until
+after I ns_ops->get succeeds, preventing us from invoking ns_ops->put
+when ns_ops->get failed.
 
-commit a16c53b101a9897b0b2be96a1bb3bde7c04380f2
-Author: Anthony Liguori <aliguori@us.ibm.com>
-Date:   Mon Jun 6 08:25:06 2011 -0500
+Reported-by: Ingo Saitz <Ingo.Saitz@stud.uni-hannover.de>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+---
+ fs/proc/namespaces.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-     Fix regression introduced by -machine accel=
+diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
+index 781dec5..be177f7 100644
+--- a/fs/proc/namespaces.c
++++ b/fs/proc/namespaces.c
+@@ -38,18 +38,21 @@ static struct dentry *proc_ns_instantiate(struct inode *dir,
+ 	struct inode *inode;
+ 	struct proc_inode *ei;
+ 	struct dentry *error = ERR_PTR(-ENOENT);
++	void *ns;
+ 
+ 	inode = proc_pid_make_inode(dir->i_sb, task);
+ 	if (!inode)
+ 		goto out;
+ 
++	ns = ns_ops->get(task);
++	if (!ns)
++		goto out_iput;
++
+ 	ei = PROC_I(inode);
+ 	inode->i_mode = S_IFREG|S_IRUSR;
+ 	inode->i_fop  = &ns_file_operations;
+ 	ei->ns_ops    = ns_ops;
+-	ei->ns	      = ns_ops->get(task);
+-	if (!ei->ns)
+-		goto out_iput;
++	ei->ns	      = ns;
+ 
+ 	dentry->d_op = &pid_dentry_operations;
+ 	d_add(dentry, inode);
+-- 
+1.7.5.1.217.g4e3aa
 
-     Commit 85097db6 changed the timing when kvm_allowed is set until after
-     kvm is initialized.  During initialization, the ioeventfd 
-initialization cod
-     checks kvm_enabled() and after this change, ioeventfd is 
-effectively disable
-
-If it's not in your tree, it would be useful to rerun the test with the 
-latest git.
-
-Regards,
-
-Anthony Liguori
