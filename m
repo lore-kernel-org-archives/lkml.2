@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528Ab1FOWYN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 18:24:13 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:56380 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362Ab1FOWYJ (ORCPT
+	id S1755603Ab1FOWZk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 18:25:40 -0400
+Received: from mta31.charter.net ([216.33.127.82]:42155 "EHLO
+	mta31.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753382Ab1FOWZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 18:24:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=kIPjN6nCQ85yiopL60lZvijKeN3iWp9PUl6dEKbKFZGcR+AH1EleMHOtR+gqowAM0r
-         GOLFNG89Y7yu00J/7o1AhUiH1rmu5dcgJAEyFJcLUgDySxtYZzOCwV6S/08GJVGMdoNa
-         7usA/ej4JPEO0sB5/6Rcimzac9tknd3EKO2HQ=
-Date: Thu, 16 Jun 2011 00:24:05 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Sam Liao <phyomh@gmail.com>, Arun Sharma <asharma@fb.com>,
-        linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org
-Subject: Re: [PATCH] [perf] Add inverted call graph report support.
-Message-ID: <20110615222402.GB18579@somewhere.redhat.com>
-References: <BANLkTi=svHgWzyKiEHjMc-j5Hq4y5R8Mow@mail.gmail.com>
- <20110609193300.GA16858@dev1756.snc6.facebook.com>
- <20110614221517.GA20319@dev1756.snc6.facebook.com>
- <BANLkTikcxA53t1ummUG3-3TagFhj==qYjw@mail.gmail.com>
- <20110615081518.GC12496@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110615081518.GC12496@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 15 Jun 2011 18:25:38 -0400
+X-Authority-Analysis: v=1.1 cv=1b2X7W/SifksZeClH/haT1SUt4udqxFGF00pZw2/jJk=
+ c=1 sm=1 a=IjlVrzqBmqAA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
+ a=sjYXV76F8JLtp2qyPm0A:9 a=aEXJh0E5FJhFWPT7sHUA:7
+ a=xzrYXqw+0zwiO4gHSXHcAg==:117
+From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+To: gregkh@suse.de
+Cc: brudley@broadcom.com, henryp@broadcom.com, dowan@broadcom.com,
+        rvossen@broadcom.com, arend@broadcom.com,
+        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Greg Dietsche <Gregory.Dietsche@cuw.edu>
+Subject: [PATCH] staging: brcm80211: return false if not a broadcom board
+Date: Wed, 15 Jun 2011 17:25:09 -0500
+Message-Id: <1308176709-14765-1-git-send-email-Gregory.Dietsche@cuw.edu>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 10:15:18AM +0200, Ingo Molnar wrote:
-> 
-> * Sam Liao <phyomh@gmail.com> wrote:
-> 
-> > On Wed, Jun 15, 2011 at 6:15 AM, Arun Sharma <asharma@fb.com> wrote:
-> > > Sam,
-> > >
-> > > $ perf report -g graph,0.5,caller --sort pid
-> > >
-> > > is a bit hard to type. Perhaps add a simpler command line option
-> > > that has the same effect?
-> > >
-> > >  -Arun
-> > >
-> > >
-> > 
-> > How about perf report -g [caller/callee,][graph,0.1] -s pid
-> > 
-> > or remove the order of the options for "-g"
-> 
-> We could alias the -G flag to the inverse graph.
+This code looks wrong to me. I think it meant to return false
+if the board's vendor id isn't Broadcom's.
 
-Agreed.
--g could map to fine tuning of callchain parameters like it does right now
-and we can use -G as a shortcut for inverted callchain keeping the default
-settings.
+Compile tested only.
+
+Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+---
+ drivers/staging/brcm80211/brcmsmac/wlc_bmac.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c b/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
+index 4534926..ee13238 100644
+--- a/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
++++ b/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
+@@ -1943,7 +1943,7 @@ static bool wlc_validboardtype(struct wlc_hw_info *wlc_hw)
+ 	}
  
-> Plus it would be nice to allow a .perfconfig flag for people to 
-> configure their desired default reporting parameters.
+ 	if (wlc_hw->sih->boardvendor != PCI_VENDOR_ID_BROADCOM)
+-		return goodboard;
++		goodboard = false; 
+ 
+ 	return goodboard;
+ }
+-- 
+1.7.2.5
 
-Yeah.
-
-It would be also nice to have a "caller" sorting mode:
-
-	perf report -G -s caller
-
-This can be useful to get the entire tree of calls for each callers.
