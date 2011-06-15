@@ -1,105 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752226Ab1FOF6p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 01:58:45 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:35809 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751410Ab1FOF6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 01:58:44 -0400
-Date: Wed, 15 Jun 2011 07:58:38 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Greg Dietsche <greg@farmergreg.com>
-Cc: Gilles.Muller@lip6.fr, npalix.work@gmail.com, cocci@diku.dk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] coccinelle: if (ret) return ret; return ret; semantic
- patch
-In-Reply-To: <4DF807B4.8010807@gregd.org>
-Message-ID: <Pine.LNX.4.64.1106150751390.27735@ask.diku.dk>
-References: <Pine.LNX.4.64.1106060656050.7113@ask.diku.dk>
- <1307989386-17666-1-git-send-email-Gregory.Dietsche@cuw.edu>
- <Pine.LNX.4.64.1106132033460.24125@ask.diku.dk> <4DF67933.9080707@cuw.edu>
- <Pine.LNX.4.64.1106140746590.14970@ask.diku.dk> <4DF7D197.5070205@cuw.edu>
- <4DF807B4.8010807@gregd.org>
+	id S1752760Ab1FOF7a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 01:59:30 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:48447 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752145Ab1FOF72 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 01:59:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=tdo5WnctIKE9fwrXLb+hyXKcZyEmO0jyKDf3OzqXp1ruN6obDFSoz9PQ75DXwE7VIG
+         RIgYaJBhGNVKj7ZCcZ0Fcbw9sBb81l9JfgvCb9afmZ1Zyuy8yrX/GnWt3rwqWbLWG+J9
+         WQfhgKgkouv7NugNY37Su4q/jcVswjHycMO+g=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <BANLkTimXYaf_14VbB6ex0kG6sPnTUfzu6g@mail.gmail.com>
+References: <BANLkTi=SQb6EL4+bdH2Q+iwaW9E3i+48Ew@mail.gmail.com>
+	<BANLkTi=yEo9fcXW8SqUCtSOag7Mn_+Ni9Q@mail.gmail.com>
+	<BANLkTimv6F8NsH0Lg7q6gi1-oiBv8nUrSA@mail.gmail.com>
+	<BANLkTikbnsu05+Nae8isATuZ8Fucj14+LQ@mail.gmail.com>
+	<BANLkTi=nsCK2bFf2v+PkKj=Opsxseqe9pQ@mail.gmail.com>
+	<BANLkTi=ZETGToRcOHXg5gxAQO3EKN+YyLg@mail.gmail.com>
+	<BANLkTi=-xJizWP5H9vNvaJhRN-Vm-ubraA@mail.gmail.com>
+	<4DF7A264.3030901@mit.edu>
+	<20110614211613.GB12249@elte.hu>
+	<BANLkTi=W1xFdoSFxnNBGX9gt_pYOH4oF=A@mail.gmail.com>
+	<20110614213109.GA9725@elte.hu>
+	<BANLkTimXYaf_14VbB6ex0kG6sPnTUfzu6g@mail.gmail.com>
+Date: Wed, 15 Jun 2011 11:59:27 +0600
+Message-ID: <BANLkTi=mwowbSy0M=rjdQW_cKDVf1tBBpA@mail.gmail.com>
+Subject: Re: [PATCH] x86, vsyscall: Fix build warning in vsyscall_64.c
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>, hpa@zytor.com,
+        tglx@linutronix.de, x86@kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Jun 2011, Greg Dietsche wrote:
+On Wed, Jun 15, 2011 at 3:33 AM, Andrew Lutomirski <luto@mit.edu> wrote:
+> On Tue, Jun 14, 2011 at 5:31 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>>
+>> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>>
+>>> On Tue, Jun 14, 2011 at 2:16 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>>> >
+>>> > I think correctness trumps code size and turning BUG() and BUG_ON()
+>>> > into a NOP is just crazy ...
+>>>
+>>> Umm. It's even CRAZIER to turn it into a "compiler generates random code".
+>>
+>> Sigh, i assumed it got turned into an infinite loop - that is what
+>> i've done in a prior patch.
+>>
+>> You are right, unreachable() is bogus and you'd also be right to
+>> suggest that i should not comment on patches after 11pm ;-)
+>
+> What we want is a magic GCC trick that says "don't warn about code
+> paths that go through here but generate the same code as you would
+> without this annotation."  I don't think such a thing exists.
+>
+No, I don't think we need such kind of thing. I think, we should less
+rely on GCC. Here, we need to reconsider the use of BUG. When
+vsyscall_nr is default, it hits BUG. Here is the code comment:
 
-> 
-> 
-> On 06/14/2011 04:24 PM, Greg Dietsche wrote:
-> > On 06/14/2011 12:50 AM, Julia Lawall wrote:
-> > > On Mon, 13 Jun 2011, Greg Dietsche wrote:
-> > > > just curious... i see you usually just write "return ret;" here when
-> > > > posting.
-> > > > I've assumed that's because it will 1) work and 2) is close enough.
-> > > >
-> > > > You'll notice I've been doing:
-> > > > -return ret;
-> > > > +return ret;
-> > > > because it seems to help coccinelle realize that it can get rid of
-> > > > extra line
-> > > > feeds - does this make sense - or should i just be doing a "return ret"?
-> > > I wondered why you were doing that :)
-> > >
-> > > Is the problem that the removed if is being replaced by a blank line? If
-> > > so, that is not intentional. I will look into it. If it doesn't happen
-> > > always, an example where it does happen could be helpful.
-> > >
-> >
-> > Some times it gets it right, so it's not always wrong. For example:
-> >
-> > diff -u -p a/arch/m68k/math-emu/fp_log.c b/arch/m68k/math-emu/fp_log.c
-> > --- a/arch/m68k/math-emu/fp_log.c 2011-06-13 14:06:37.943954469 -0500
-> > +++ b/arch/m68k/math-emu/fp_log.c 2011-06-14 16:07:22.394954040 -0500
-> > @@ -105,9 +105,6 @@ fp_fetoxm1(struct fp_ext *dest, struct f
-> >
-> > fp_monadic_check(dest, src);
-> >
-> > - if (IS_ZERO(dest))
-> > - return dest;
-> > -
-> > return dest;
-> > }
-> >
-> >
-> >
-> > Here's an example where it got it "wrong" - notice how the blank line is
-> > missing the - :
-> >
-> > diff -u -p a/arch/frv/mm/pgalloc.c b/arch/frv/mm/pgalloc.c
-> > --- a/arch/frv/mm/pgalloc.c 2011-06-13 14:06:37.855954391 -0500
-> > +++ b/arch/frv/mm/pgalloc.c 2011-06-14 16:07:16.714954008 -0500
-> > @@ -136,8 +136,6 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
-> > pgd_t *pgd;
-> >
-> > pgd = quicklist_alloc(0, GFP_KERNEL, pgd_ctor);
-> > - if (!pgd)
-> > - return pgd;
-> >
-> > return pgd;
-> > }
+               " * If we get here, then vsyscall_nr indicates that int 0xcc
+                 * happened at an address in the vsyscall page that doesn't
+                 * contain int 0xcc.  That can't happen. "
 
-OK, but it is going to be hard for Coccinelle to know that, although the 
-programmer previously thought that return should be separated from the 
-rest of the function by a blank line, that is now no longer the case.  
-Perhaps it is due to the fact that there is now only one other line in the 
-body of the function, but it seems like an opinion as to how to draw the 
-line.
+If that can't happen, I think we can treat it as a FAULT. So, rather
+than calling BUG we can ground it into EFAULT. Does it break ABI
+compatibility?
 
-So your - return ret; + return ret; is probably the appropriate solution.  
-You want to get rid of the whole pattern if (...) return ret; return ret; 
-and replace it with just return ret;, which will then be inserted at the 
-point of the beginning of the match to the pattern.
-
-It would be nicer to put the - return ret; + return ret; inside the last 
-line of the ( | ).  Then only those return ret's are rewritten rather than 
-every return ret in the program.  It should improver performance and 
-reduce the risk of changing spacing.  The other ifs in the ( | ) don't 
-need to be followed by return ret.  They are just ifs that you want to 
-ignore completely.
-
-julia
+Thanks,
+Rakib
