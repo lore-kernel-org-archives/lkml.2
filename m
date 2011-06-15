@@ -1,131 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab1FOSyt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 14:54:49 -0400
-Received: from mga09.intel.com ([134.134.136.24]:2712 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753724Ab1FOSys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 14:54:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,370,1304319600"; 
-   d="scan'208";a="13946511"
-Message-ID: <4DF8FFF6.4060000@linux.intel.com>
-Date: Wed, 15 Jun 2011 11:54:46 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1753836Ab1FOS4w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 14:56:52 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:35099 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753258Ab1FOS4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 14:56:50 -0400
+Date: Wed, 15 Jun 2011 13:58:01 -0500
+From: Cliff Wickman <cpw@sgi.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1 of 6] x86, UV: smp_processor_id in a preemptable region
+Message-ID: <20110615185801.GA2461@sgi.com>
+References: <E1QWcgn-0004Mv-T6@eag09.americas.sgi.com> <BANLkTinpqPhTNRtqPGnfZznefESwD19iXA@mail.gmail.com> <20110615135213.GA29493@sgi.com> <20110615155445.GC4096@elte.hu> <20110615160743.GA32008@sgi.com> <20110615161518.GA24948@elte.hu> <20110615164027.GA32641@sgi.com> <4DF8EA26.2000301@zytor.com>
 MIME-Version: 1.0
-To: Shawn Bohrer <sbohrer@rgmadvisors.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, peterz@infradead.org,
-        eric.dumazet@gmail.com, david@rgmadvisors.com,
-        linux-kernel@vger.kernel.org, zvonler@rgmadvisors.com,
-        hughd@google.com, tglx@linutronix.de, mingo@elte.hu
-Subject: Re: Change in functionality of futex() system call.
-References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com> <1307373819.3098.40.camel@edumazet-laptop> <1307376672.2322.167.camel@twins> <1307376989.2322.171.camel@twins> <4DF2099B.7030600@jp.fujitsu.com> <20110615185047.GA2171@BohrerMBP.rgmadvisors.com>
-In-Reply-To: <20110615185047.GA2171@BohrerMBP.rgmadvisors.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DF8EA26.2000301@zytor.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 06/15/2011 11:50 AM, Shawn Bohrer wrote:
-> On Fri, Jun 10, 2011 at 09:10:03PM +0900, KOSAKI Motohiro wrote:
->>>> Urgh,. maybe something like the below but with more conditionals that
->>>> enable the extra logic only for FUTEX_WAIT..
->>>>
->>>> The idea is to try a RO gup() when the RW gup() fails so as not to slow
->>>> down the common path of writable anonymous maps and bail when we used
->>>> the RO path on anonymous memory.
->>>>
->>>> ---
->>>> diff --git a/kernel/futex.c b/kernel/futex.c
->>>> index fe28dc2..11f2ad1 100644
->>>> --- a/kernel/futex.c
->>>> +++ b/kernel/futex.c
->>>> @@ -234,7 +234,7 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
->>>>  	unsigned long address = (unsigned long)uaddr;
->>>>  	struct mm_struct *mm = current->mm;
->>>>  	struct page *page, *page_head;
->>>> -	int err;
->>>> +	int err, ro = 0;
->>>>  
->>>>  	/*
->>>>  	 * The futex address must be "naturally" aligned.
->>>> @@ -262,6 +262,10 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
->>>>  
->>>>  again:
->>>>  	err = get_user_pages_fast(address, 1, 1, &page);
->>>> +	if (err == -EFAULT) {
->>>> +		err = get_user_pages_fast(address, 1, 0, &page);
->>>> +		ro = 1;
->>>> +	}
->>>>  	if (err < 0)
->>>>  		return err;
->>>>  
->>>> @@ -316,6 +320,11 @@ again:
->>>>  	 * the object not the particular process.
->>>>  	 */
->>>>  	if (PageAnon(page_head)) {
->>>> +		if (ro) {
->>>> +			err = -EFAULT;
->>>> +			goto out;
->>>> +		}
->>>> +
->>>>  		key->both.offset |= FUT_OFF_MMSHARED; /* ref taken on mm */
->>>>  		key->private.mm = mm;
->>>>  		key->private.address = address;
->>>> @@ -327,9 +336,10 @@ again:
->>>>  
->>>>  	get_futex_key_refs(key);
->>>>  
->>
->> Need err=0 here. (note: get_user_pages_fast() return 1) Other than that looks
->> good to me and this patch passed my test.
->> 	Reviewed-and-tested-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>
->>>> +out:
->>>>  	unlock_page(page_head);
->>>>  	put_page(page_head);
->>>> -	return 0;
->>>> +	return err;
->>>>  }
->>>>  
->>>>  static inline void put_futex_key(union futex_key *key)
->>>>
+On Wed, Jun 15, 2011 at 10:21:42AM -0700, H. Peter Anvin wrote:
+> On 06/15/2011 09:40 AM, Cliff Wickman wrote:
+> > 
+> > So would you say I should really widen the scope of the non-preemptible
+> > region to include everything done with the results of that call to
+> > smp_processor_id()?  
+> > Which in this case is the call to parse_tunables_write().
+> > Like this:
+> > 
+> >         preempt_disable();
+> >         bcp = &per_cpu(bau_control, smp_processor_id());
+> > 
+> >         ret = parse_tunables_write(bcp, instr, count);
+> >         preempt_enable_no_resched();
+> > 
 > 
-> I've reviewed and tested Peter's change with KOSAKI's addition against
-> 2.6.32.41 and this passes our tests using FUTEX_WAIT with read only
-> shared mappings.
+> Funny enough, this is such a common pattern that we have helpers for it.
+> We call this get_cpu() ... put_cpu().
 > 
-> Reviewed-and-tested-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+> 	-hpa
+
+OK thanks.  I'll use them.
 
 
-Would someone care to roll this all together and send a patch with
-commit log clearly documenting the issues and which are addressed with
-the patch?
+I'll fix that patch (1 of 8) and refresh/resend the whole series after a
+little time to allow for more reviews of the others.
 
-Kosaki, do you have updated futextest patches or should I look at the
-ones you send previously?
-
---
-Darren
-
-
-> 
-> --
-> Shawn
-> 
-> 
-> ---------------------------------------------------------------
-> This email, along with any attachments, is confidential. If you 
-> believe you received this message in error, please contact the 
-> sender immediately and delete all copies of the message.  
-> Thank you.
-> 
-
+-Cliff
 -- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+Cliff Wickman
+SGI
+cpw@sgi.com
+(651) 683-3824
