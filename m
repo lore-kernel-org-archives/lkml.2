@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab1FOJVY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 05:21:24 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63692 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754377Ab1FOJVW convert rfc822-to-8bit (ORCPT
+	id S1754533Ab1FOJ0y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 05:26:54 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42898 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754009Ab1FOJ0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 05:21:22 -0400
+	Wed, 15 Jun 2011 05:26:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ITTigz59zlAoJcEPBYLwUIZXx0uuDpvI1rUxAJ4cCLMADs2alxWCCHyxCog4ZsO0sO
-         IuocTp9CfvN8vnGDTsmoJ3/fHhyIA8ZN0jeQmqQ3BZyBujpeg72K2PjK0nn7DSJ6I2Rc
-         w+M+yxNZrDHGUyukDLCRahAvU8wBDCTnoQR0g=
+        h=sender:content-type:to:cc:subject:references:date:mime-version
+         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
+        b=jUdbt9EUwLTaIYy0c8WkOsFaxj6pr1ookXb87HhKbzOFJSIrCvHNQA2BMW92iGhHoq
+         lbEdAzJ8W5FDyE2IQK+sv51SYTecJANuopYyPyLjc2tESnmX2RO9ARPORlASUxBM/Rch
+         FGhDh9/zRLCNjsREn7dDi9YoHulrTiFC0z1bU=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Zach Pfeffer" <zach.pfeffer@linaro.org>, "Arnd Bergmann" <arnd@arndb.de>
+Cc: "Daniel Stone" <daniels@collabora.com>, "Ankita Garg" <ankita@in.ibm.com>,
+        "Daniel Walker" <dwalker@codeaurora.org>,
+        "Jesse Barker" <jesse.barker@linaro.org>, "Mel Gorman" <mel@csn.ul.ie>,
+        linux-kernel@vger.kernel.org, linaro-mm-sig@lists.linaro.org,
+        linux-mm@kvack.org, "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Subject: Re: [Linaro-mm-sig] [PATCH 08/10] mm: cma: Contiguous Memory
+ Allocator added
+References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
+ <20110614170158.GU2419@fooishbar.org>
+ <BANLkTi=cJisuP8=_YSg4h-nsjGj3zsM7sg@mail.gmail.com>
+ <201106142242.25157.arnd@arndb.de>
+Date: Wed, 15 Jun 2011 11:26:47 +0200
 MIME-Version: 1.0
-In-Reply-To: <1308125533.4641.33.camel@nathan.suse.cz>
-References: <1308125533.4641.33.camel@nathan.suse.cz>
-Date: Wed, 15 Jun 2011 11:21:21 +0200
-Message-ID: <BANLkTikoxYAz7G7pvKABbVPzOuxUzLkO=Q@mail.gmail.com>
-Subject: Re: bug: kernel 3.0-rc3 not relocatable on i386?
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-To: Petr Tesarik <ptesarik@suse.cz>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.vw31uxxl3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <201106142242.25157.arnd@arndb.de>
+User-Agent: Opera Mail/11.10 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Petr,
+On Tue, 14 Jun 2011 22:42:24 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
+> * We still need to solve the same problem in case of IOMMU mappings
+>   at some point, even if today's hardware doesn't have this combination.
+>   It would be good to use the same solution for both.
 
-2011/6/15 Petr Tesarik <ptesarik@suse.cz>:
-> Hi all,
->
-> it seems that the 3.0-rc3 kernel is not relocatable on i386. I get
-> warnings about jiffies being an absolute symbol, and indeed, when GRUB
-> loads the kernel at a non-default address, jiffies is not relocated.
->
-> In my example the kernel is configured with
-> CONFIG_PHYSICAL_START=0x1000000
-> CONFIG_PHYSICAL_ALIGN=0x200000
-> CONFIG_RELOCATABLE=y
-> and loaded at 0x200000 by GRUB.
->
-> Booting fails when checking whether the timer works, because do_timer()
-> increments jiffies_64, but timer_irq_works() checks jiffies. The code
-> looks like this:
->
-> c13daab7:       8b 3d 40 7a 39 c1       mov    0xc1397a40,%edi
->
-> but arch/x86/boot/compressed/vmlinux.relocs does not contain c13daaba.
-> Consequently, timer_irq_works() reads the wrong memory location and
-> fails, causing a panic:
->
-> kernel panic: IO-APIC + timer doesn't work! Boot with apic=debug and
-> send a report.  Then try booting with the 'noapic' option.
->
-> Needless to say, the kernel freezes a few initcalls later when booted
-> with noapic, because IO-APIC worked fine, in fact. I verified that by
-> inserting a debugging printk() in do_timer(), and I also verified with
-> that printk() that the address of jiffies_64 and the address of jiffies
-> differ at run time.
->
-> Any idea how to fix this?
-Does reverting this commit fix it?
+I don't think I follow.  What does IOMMU has to do with CMA?
 
-commit 8c49d9a74bac5ea3f18480307057241b808fcc0c
-Author: Andy Lutomirski <luto@MIT.EDU>
-Date:   Mon May 23 09:31:24 2011 -0400
-
-    x86-64: Clean up vdso/kernel shared variables
-
-~Maarten
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
