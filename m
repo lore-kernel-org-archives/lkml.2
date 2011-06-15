@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520Ab1FOLxv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 07:53:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35072 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904Ab1FOLxt convert rfc822-to-8bit (ORCPT
+	id S1751886Ab1FOLx0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 07:53:26 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:58263 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab1FOLxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 07:53:49 -0400
-Subject: Re: REGRESSION: Performance regressions from switching
- anon_vma->lock to mutex
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        "Luck, Tony" <tony.luck@intel.com>,
+	Wed, 15 Jun 2011 07:53:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=ffwll.ch; s=google;
+        h=mime-version:x-originating-ip:in-reply-to:references:date
+         :message-id:subject:from:to:cc:content-type;
+        b=dae5CudbqUMJeNh3rNATixkWc34cWYT+Iu/l7QbTsD+JXuqx8wrdTgxPIM5XDSrl+s
+         gPzLqoEyIzRx3uoV11ZR1y3JZB2oTol2MtqQH4qQlF9x8PscZ+FBMekVhSWcpgFbKWWi
+         xascSZmzmBxmjbOiULsUncfje7ShmPt6+nlTA=
+MIME-Version: 1.0
+X-Originating-IP: [212.120.32.74]
+In-Reply-To: <201106142030.07549.arnd@arndb.de>
+References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
+	<201106141803.00876.arnd@arndb.de>
+	<op.vw2r3xrj3l0zgt@mnazarewicz-glaptop>
+	<201106142030.07549.arnd@arndb.de>
+Date: Wed, 15 Jun 2011 13:53:22 +0200
+Message-ID: <BANLkTi=XTJuF4np7+rYHzJqWK20OxMrBsw@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [PATCH 08/10] mm: cma: Contiguous Memory
+ Allocator added
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Michal Nazarewicz <mina86@mina86.com>, Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Jesse Barker <jesse.barker@linaro.org>, Mel Gorman <mel@csn.ul.ie>,
+        linux-kernel@vger.kernel.org, linaro-mm-sig@lists.linaro.org,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Shi, Alex" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-In-Reply-To: <1308101214.15392.151.camel@sli10-conroe>
-References: <1308097798.17300.142.camel@schen9-DESK>
-	 <1308101214.15392.151.camel@sli10-conroe>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 15 Jun 2011 13:52:30 +0200
-Message-ID: <1308138750.15315.62.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-15 at 09:26 +0800, Shaohua Li wrote:
+On Tue, Jun 14, 2011 at 20:30, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 14 June 2011 18:58:35 Michal Nazarewicz wrote:
+>> Ah yes, I forgot that separate regions for different purposes could
+>> decrease fragmentation.
+>
+> That is indeed a good point, but having a good allocator algorithm
+> could also solve this. I don't know too much about these allocation
+> algorithms, but there are probably multiple working approaches to this.
 
-> On Wed, 2011-06-15 at 08:29 +0800, Tim Chen wrote:
-> >          + 7.30% anon_vma_clone_batch
+imo no allocator algorithm is gonna help if you have comparably large,
+variable-sized contiguous allocations out of a restricted address range.
+It might work well enough if there are only a few sizes and/or there's
+decent headroom. But for really generic workloads this would require
+sync objects and eviction callbacks (i.e. what Thomas Hellstrom pushed
+with ttm).
 
-> what are you testing? I didn't see Andi's batch anon->lock for fork
-> patches are merged in 2.6.39. 
-
-Good spot that certainly isn't plain .39.
-
-It looks like those (http://marc.info/?l=linux-mm&m=130533041726258) are
-similar to Linus' patch, except Linus takes the hard line that the root
-lock should stay the same. Let me try Linus' patch first to see if this
-workload can trigger his WARN.
-
-/me mutters something about patches in attachments and rebuilds.
-
-OK, the WARN doesn't trigger, but it also doesn't improve things (quite
-the opposite in fact):
-
--tip            260.092 messages/sec/core
-    +sirq-rcu   271.078 messages/sec/core
-    +linus      262.435 messages/sec/core
-
-So Linus' patch makes the throughput drop from 271 to 262, weird.
-
-/me goes re-test without the sirq-rcu bits mixed in just to make sure.
+So if this is only a requirement on very few platforms and can be
+cheaply fixed with multiple cma allocation areas (heck, we have
+slabs for the same reasons in the kernel), it might be a sensible
+compromise.
+-Daniel
+-- 
+Daniel Vetter
+daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
