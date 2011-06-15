@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab1FOKUu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 06:20:50 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:53017 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754174Ab1FOKUt convert rfc822-to-8bit (ORCPT
+	id S1754797Ab1FOK2J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 06:28:09 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:60559 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752173Ab1FOK2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 06:20:49 -0400
-Date: Wed, 15 Jun 2011 12:20:46 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Francis Moreau <francis.moro@gmail.com>
-Cc: Wanlong Gao <wanlong.gao@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
-        linux-fbdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Possible deadlock when suspending framebuffer
-Message-ID: <20110615122046.70e1ee17@pluto.restena.lu>
-In-Reply-To: <BANLkTinE+EZ9nr1qGKC0VY0bVHuF8U-R0w@mail.gmail.com>
-References: <1308100165.2113.4.camel@Tux>
-	<20110615075803.3348b4ec@pluto.restena.lu>
-	<BANLkTinE+EZ9nr1qGKC0VY0bVHuF8U-R0w@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	Wed, 15 Jun 2011 06:28:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=mEy+/1gHDlShcM1XO7SMProSlfXTxnFJbXGLVseGq6JKFxRpdVhLdqCgI5ViGHFCpF
+         Lki5sVxgePvcUO4K5J67WhXGBo1lmWgf1x9cX4gUaTk3ZSbQPIfceGnyuX8pN6hmU6ba
+         AwMQXnnO+PFRwxyz3EIwkVxSlZmcSA/m+Gk7g=
+Message-ID: <4DF88934.9040808@gmail.com>
+Date: Wed, 15 Jun 2011 12:28:04 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Petr Tesarik <ptesarik@suse.cz>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: bug: kernel 3.0-rc3 not relocatable on i386?
+References: <1308125533.4641.33.camel@nathan.suse.cz>	 <BANLkTikoxYAz7G7pvKABbVPzOuxUzLkO=Q@mail.gmail.com>	 <1308132078.4641.38.camel@nathan.suse.cz> <1308132448.4641.41.camel@nathan.suse.cz>
+In-Reply-To: <1308132448.4641.41.camel@nathan.suse.cz>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jun 2011 09:12:46 Francis Moreau wrote:
-> On Wed, Jun 15, 2011 at 7:58 AM, Bruno Prémont wrote:
-> Well, sorry for the dumb question but the fb/fbcon code is pretty hard
-> to follow for me.
+Op 15-06-11 12:07, Petr Tesarik schreef:
+> Ah, it turns out this is in fact reported here:
+>
+> http://sourceware.org/bugzilla/show_bug.cgi?id=12327
+>
+> But the patch was reverted by commit
+> 6b35eb9ddcddde7b510726de03fae071178f1ec4, so these binutils have been
+> broken again since January.
+>
+> Yes, I've got binutils-2.21 here. :/
+Ah, my bad for the stray path though, looked the only thing slightly related to breakage recently. I guess upgrading binutils triggered it. :)
 
-Certainly not just for you
-
-> Why does store_fbstate() and any fb driver's suspsend methods acquire
-> the console lock at all ?
-
->From my understanding, fbcon currently has very loose binding with
-framebuffers in general instead of just with those few framebuffers
-it is effectively mapped to (and active on!).
-James Simmons started a complete rework of fbcon/tty code which is
-expected to get things more fine-grained, until then console semaphore
-(console_lock) remains a kind of big kernel lock in the
-console/framebuffer area.
-
-As such any state change of framebuffer may influence/race against
-fbcon.
-e.g. for the suspend state you want to avoid fbcon to fiddle with
-your framebuffer while it is suspending (and have fbcon know about the
-suspended state). This way fbcon can unsuspend framebuffer if needed
-but also stop accessing it when it should not.
-
-Bruno
+~Maarten
