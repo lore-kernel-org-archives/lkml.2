@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796Ab1FOIWH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 04:22:07 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:12401 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753146Ab1FOIWE (ORCPT
+	id S1753973Ab1FOIPf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 04:15:35 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:64101 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753042Ab1FOIP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 04:22:04 -0400
-Date: Wed, 15 Jun 2011 10:13:31 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Ryan Mallon <rmallon@gmail.com>
-cc: Andre Renaud <andre@bluewatersys.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Andrew Victor <avictor.za@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, Anton Vorontsov <cbou@mail.ru>,
-        Paul Mundt <lethal@linux-sh.org>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>, trivial@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 trivial/treewide] Change Ryan Mallon's email address
- across the kernel
-In-Reply-To: <1308113136-3483-1-git-send-email-rmallon@gmail.com>
-Message-ID: <alpine.LNX.2.00.1106151012381.2452@swampdragon.chaosbits.net>
-References: <1308113136-3483-1-git-send-email-rmallon@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 15 Jun 2011 04:15:27 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=us-ascii
+Date: Wed, 15 Jun 2011 10:14:53 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCH 08/10] mm: cma: Contiguous Memory Allocator added
+In-reply-to: <201106150937.18524.arnd@arndb.de>
+To: "'Arnd Bergmann'" <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+Cc: "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Mel Gorman'" <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-media@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Message-id: <000701cc2b34$4e090710$ea1b1530$%szyprowski@samsung.com>
+Organization: SPRC
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: pl
+Thread-index: AcwrLxkD605FLoZtSFqEU/y3xpjZ4QAAiccQ
+References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
+ <201106142030.07549.arnd@arndb.de>
+ <000501cc2b2b$789a54b0$69cefe10$%szyprowski@samsung.com>
+ <201106150937.18524.arnd@arndb.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jun 2011, Ryan Mallon wrote:
+Hello,
 
-> I no longer work at Bluewater Systems. Update my email address accordingly. I
-> have deleted my email address from C files rather than change it. This
-> was suggested by several people, since the commit from my new email
-> address will cause scripts/get_maintainer.pl to function properly. I
-> have not added the .mailmap entry as suggested by Joe because I think
-> it is no longer necessary if I touch all the files which had my name
-> in them.
+On Wednesday, June 15, 2011 9:37 AM Arnd Bergmann wrote:
+
+> On Wednesday 15 June 2011 09:11:39 Marek Szyprowski wrote:
+> > I see your concerns, but I really wonder how to determine the properties
+> > of the global/default cma pool. You definitely don't want to give all
+> > available memory o CMA, because it will have negative impact on kernel
+> > operation (kernel really needs to allocate unmovable pages from time to
+> > time).
 > 
-> If possible, I would like to get this patch merged for 3.0
+> Exactly. This is a hard problem, so I would prefer to see a solution for
+> coming up with reasonable defaults.
+
+The problem is to define these reasonable defaults, because they also depend
+on the target usage pattern for the board. If one doesn't plan to use video
+codec at all, then the value calculated for full HD movie decoding are 
+definitely too high.
+
+> > The only solution I see now is to provide Kconfig entry to determine
+> > the size of the global CMA pool, but this still have some issues,
+> > especially for multi-board kernels (each board probably will have
+> > different amount of RAM and different memory-consuming devices
+> > available). It looks that each board startup code still might need to
+> > tweak the size of CMA pool. I can add a kernel command line option for
+> > it, but such solution also will not solve all the cases (afair there
+> > was a discussion about kernel command line parameters for memory
+> > configuration and the conclusion was that it should be avoided).
 > 
-> Signed-off-by: Ryan Mallon <rmallon@gmail.com>
-> Cc: Andre Renaud <andre@bluewatersys.com>
-> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: Andrew Victor <avictor.za@gmail.com>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: Anton Vorontsov <cbou@mail.ru>
-> Cc: Paul Mundt <lethal@linux-sh.org>
-> Cc: Liam Girdwood <lrg@ti.com>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-> Cc: Joe Perches <joe@perches.com>
-> Cc: Jesper Juhl <jj@chaosbits.net>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: trivial@kernel.org
-> Cc: linux-kernel@vger.kernel.org
+> The command line option can be a last resort if the heuristics fail,
+> but it's not much better than a fixed Kconfig setting.
+> 
+> How about a Kconfig option that defines the percentage of memory
+> to set aside for contiguous allocations?
 
-Looks good to me.
+There can be probably both types of Kconfig entries: for absolute value
+and the percentage of the total memory, but still, creating a 
+fully-functional multi-board kernel will be really hard.
 
-Reviewed-by: Jesper Juhl <jj@chaosbits.net>
+However there is one more issue here. It is quite common that embedded
+systems have memory that is not really contiguous in address space
+(there are some holes that splits it into 'banks' or regions). So we
+might have a system with 256MiB of memory split into 2 memory banks.
+In this case the CMA pool can use only one of them (the pool must be
+contiguous internally). I'm not sure if such systems might require more
+memory for contiguous buffers.
 
+Best regards
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+Marek Szyprowski
+Samsung Poland R&D Center
+
 
