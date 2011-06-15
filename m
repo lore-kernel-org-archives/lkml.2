@@ -1,72 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394Ab1FOMRT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 08:17:19 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:44354 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028Ab1FOMRS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 08:17:18 -0400
-Date: Wed, 15 Jun 2011 13:17:03 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH] ACPI, APEI, Add APEI _OSC support
-Message-ID: <20110615121703.GA8638@srcf.ucam.org>
-References: <1306303538-30524-1-git-send-email-ying.huang@intel.com>
- <20110614145246.GA17469@srcf.ucam.org>
- <4DF82CBC.5070400@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DF82CBC.5070400@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1753533Ab1FOM0b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 08:26:31 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33080 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751768Ab1FOM01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 08:26:27 -0400
+Subject: Re: bug: kernel 3.0-rc3 not relocatable on i386?
+From: Petr Tesarik <ptesarik@suse.cz>
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1308132448.4641.41.camel@nathan.suse.cz>
+References: <1308125533.4641.33.camel@nathan.suse.cz>
+	 <BANLkTikoxYAz7G7pvKABbVPzOuxUzLkO=Q@mail.gmail.com>
+	 <1308132078.4641.38.camel@nathan.suse.cz>
+	 <1308132448.4641.41.camel@nathan.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Organization: SUSE LINUX
+Date: Wed, 15 Jun 2011 14:26:23 +0200
+Message-Id: <1308140783.4641.141.camel@nathan.suse.cz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 11:53:32AM +0800, Huang Ying wrote:
-> Hi, Matthew,
-> On 06/14/2011 10:52 PM, Matthew Garrett wrote:
-> > And then tear down GHES. This seems wrong. A platform could predicate 
-> > APEI functionality on the ACPI spec APEI indication (which we currently 
-> > don't pass) without implementing WHEA, but with this patch we'd refuse 
-> > to enable GHES support? We should probably try both the standard method 
-> > and the WHEA method and only disable GHES if both fail.
+Petr Tesarik píše v St 15. 06. 2011 v 12:07 +0200:
+> Petr Tesarik píše v St 15. 06. 2011 v 12:01 +0200:
+> > Maarten Lankhorst píše v St 15. 06. 2011 v 11:21 +0200:
+> > > Hi Petr,
+> > > 
+> > > 2011/6/15 Petr Tesarik <ptesarik@suse.cz>:
+> > > > Hi all,
+> > > >
+> > > > it seems that the 3.0-rc3 kernel is not relocatable on i386. I get
+> > > > warnings about jiffies being an absolute symbol, and indeed, when GRUB
+> > > > loads the kernel at a non-default address, jiffies is not relocated.
+> > > >
+> > > > In my example the kernel is configured with
+> > > > CONFIG_PHYSICAL_START=0x1000000
+> > > > CONFIG_PHYSICAL_ALIGN=0x200000
+> > > > CONFIG_RELOCATABLE=y
+> > > > and loaded at 0x200000 by GRUB.
+> > > >
+> > > > Booting fails when checking whether the timer works, because do_timer()
+> > > > increments jiffies_64, but timer_irq_works() checks jiffies. The code
+> > > > looks like this:
+> > > >
+> > > > c13daab7:       8b 3d 40 7a 39 c1       mov    0xc1397a40,%edi
+> > > >
+> > > > but arch/x86/boot/compressed/vmlinux.relocs does not contain c13daaba.
+> > > > Consequently, timer_irq_works() reads the wrong memory location and
+> > > > fails, causing a panic:
+> > > >
+> > > > kernel panic: IO-APIC + timer doesn't work! Boot with apic=debug and
+> > > > send a report.  Then try booting with the 'noapic' option.
+> > > >
+> > > > Needless to say, the kernel freezes a few initcalls later when booted
+> > > > with noapic, because IO-APIC worked fine, in fact. I verified that by
+> > > > inserting a debugging printk() in do_timer(), and I also verified with
+> > > > that printk() that the address of jiffies_64 and the address of jiffies
+> > > > differ at run time.
+> > > >
+> > > > Any idea how to fix this?
+> > > Does reverting this commit fix it?
+> > 
+> > Isn't this related to VDSO? I've got no troubles with the VDSO. It's
+> > just that the kernel assumes a fixed location of jiffies (in the kernel
+> > direct mapping), so it cannot be relocated.
+> > 
+> > OTOH this must have worked the other day, so searching for the commit
+> > that broke it is a good hint. I'll try it here, too.
 > 
-> You means the "APEI Support" bit for standard UUID?  Do you know which
-> machine uses this bit?  I can write the code, but I have no machine to
-> test it.
-
-I have access to a Dell system that uses this.
-
-> BTW, it is better for us to enable APEI firmware first mode (that is,
-> what is enabled by evaluating the WHEA UUID) after GHES reporting is
-> ready (that is, after GHES module is successfully loaded).  That is
-> later than current ACPI _OSC evaluation with standard UUID.  Is it
-> possible to evaluate _OSC with standard UUID twice?  So that we can
-> enable APEI firmware first mode later.
-
-Urgh. One machine I've looked at enables APEI if the WHEA _OSC call is 
-made, and then clears a flag if any other _OSC call is made. In that 
-specific case it doesn't seem to matter (the flag never actually gets 
-checked in any of the other codepaths), but it seems that the intention 
-is for the generic call to be made and the WHEA one to be made after 
-that.
-
-> > (Also, are there any other sideeffects of indicating that we support 
-> > WHEA?)
+> Ah, it turns out this is in fact reported here:
 > 
-> After evaluating _OSC with this UUID, firmware will produce error record
-> to OS, otherwise only unknown NMI.
+> http://sourceware.org/bugzilla/show_bug.cgi?id=12327
+> 
+> But the patch was reverted by commit
+> 6b35eb9ddcddde7b510726de03fae071178f1ec4, so these binutils have been
+> broken again since January.
 
-Ok, that sounds fine.
+I tried to understand what was wrong with the approach taken by Shaohua
+and what caused a problem for Markus Trippelsdorf, but it seems the
+revert didn't help in any way: I don't get build failures. I get a
+non-booting kernel, and the traces didn't give me any clue what was
+wrong.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Anyway, what's wrong with the generic approach suggested by hpa?
+
+http://linux.derkeiler.com/Mailing-Lists/Kernel/2011-01/msg06976.html
+
+Petr
+
