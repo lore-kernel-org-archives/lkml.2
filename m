@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990Ab1FOIW5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 04:22:57 -0400
-Received: from mailx.hitachi.co.jp ([133.145.228.49]:59616 "EHLO
+	id S1754226Ab1FOIXs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 04:23:48 -0400
+Received: from mailx.hitachi.co.jp ([133.145.228.49]:59628 "EHLO
 	mailx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752321Ab1FOIWz (ORCPT
+	with ESMTP id S1753146Ab1FOIXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 04:22:55 -0400
-X-AuditID: b753bd60-a467eba0000050a4-33-4df86a65546d
-X-AuditID: b753bd60-a467eba0000050a4-33-4df86a65546d
+	Wed, 15 Jun 2011 04:23:45 -0400
+X-AuditID: b753bd60-a3cafba0000019f4-b2-4df86a6b2ec6
+X-AuditID: b753bd60-a3cafba0000019f4-b2-4df86a6b2ec6
 From: Nao Nishijima <nao.nishijima.xt@hitachi.com>
-Subject: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
+Subject: [PATCH 2/3] [RFC] sd: print preferred name in kernel messages.
 To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: James.Bottomley@HansenPartnership.com, greg@kroah.com,
         kay.sievers@vrfy.org, jcm@redhat.com, hare@suse.de,
         stefanr@s5r6.in-berlin.de, yrl.pp-manager.tt@hitachi.com,
         Nao Nishijima <nao.nishijima.xt@hitachi.com>
-Date: Wed, 15 Jun 2011 17:16:28 +0900
-Message-ID: <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp>
+Date: Wed, 15 Jun 2011 17:16:36 +0900
+Message-ID: <20110615081635.2237.84387.stgit@ltc233.sdl.hitachi.co.jp>
 In-Reply-To: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp>
 References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp>
 User-Agent: StGIT/0.14.3
@@ -29,112 +29,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow users to set the preferred name of device via sysfs interface.
-
-(Exsample) sda -> foo
-# echo foo > /sys/block/sda/preferred_name
+This patch modify sd_printk() and scmd_printk() to use preferred name.
 
 Suggested-by: James Bottomley <James.Bottomley@HansenPartnership.com>
 Suggested-by: Jon Masters <jcm@redhat.com>
 Signed-off-by: Nao Nishijima <nao.nishijima.xt@hitachi.com>
 ---
 
- block/genhd.c          |   28 ++++++++++++++++++++++++++++
- include/linux/device.h |    9 +++++++++
- 2 files changed, 37 insertions(+), 0 deletions(-)
+ drivers/scsi/sd.c          |    2 +-
+ drivers/scsi/sd.h          |    2 +-
+ include/scsi/scsi_device.h |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/block/genhd.c b/block/genhd.c
-index 95822ae..79b97f6 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -909,6 +909,31 @@ static int __init genhd_device_init(void)
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 953773c..6119760 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1071,7 +1071,7 @@ static int sd_ioctl(struct block_device *bdev, fmode_t mode,
+ 	int error;
+     
+ 	SCSI_LOG_IOCTL(1, printk("sd_ioctl: disk=%s, cmd=0x%x\n",
+-						disk->disk_name, cmd));
++				dev_name(disk_to_dev(disk)), cmd));
  
- subsys_initcall(genhd_device_init);
+ 	/*
+ 	 * If we are in the middle of error recovery, don't let anyone
+diff --git a/drivers/scsi/sd.h b/drivers/scsi/sd.h
+index 6ad798b..3fa14f8 100644
+--- a/drivers/scsi/sd.h
++++ b/drivers/scsi/sd.h
+@@ -91,7 +91,7 @@ static inline struct scsi_disk *scsi_disk(struct gendisk *disk)
+ #define sd_printk(prefix, sdsk, fmt, a...)				\
+         (sdsk)->disk ?							\
+ 	sdev_printk(prefix, (sdsk)->device, "[%s] " fmt,		\
+-		    (sdsk)->disk->disk_name, ##a) :			\
++		    dev_name(disk_to_dev((sdsk)->disk)), ##a) :		\
+ 	sdev_printk(prefix, (sdsk)->device, fmt, ##a)
  
-+static ssize_t preferred_name_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	return snprintf(buf, PREFERRED_NAME_LEN, "%s\n", dev->preferred_name);
-+}
-+
-+static ssize_t preferred_name_store(struct device *dev,
-+					struct device_attribute *attr,
-+					const char *buf, size_t count)
-+{
-+	struct gendisk *disk = dev_to_disk(dev);
-+	if (!count)
-+		return -EINVAL;
-+	if (strlen(buf) >= PREFERRED_NAME_LEN) {
-+		printk(KERN_ERR "preferred_name: %s is too long\n", buf);
-+		return -EINVAL;
-+	}
-+	dev->preferred_name = kasprintf(GFP_KERNEL, "%s", buf);
-+	if (!dev->preferred_name)
-+		return -ENOMEM;
-+	printk(KERN_INFO "preferred_name: assigned %s to %s\n",
-+		buf, disk->disk_name);
-+	return count;
-+}
-+
- static ssize_t disk_range_show(struct device *dev,
- 			       struct device_attribute *attr, char *buf)
- {
-@@ -968,6 +993,8 @@ static ssize_t disk_discard_alignment_show(struct device *dev,
- 	return sprintf(buf, "%d\n", queue_discard_alignment(disk->queue));
- }
+ /*
+diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+index dd82e02..0fb955a 100644
+--- a/include/scsi/scsi_device.h
++++ b/include/scsi/scsi_device.h
+@@ -219,7 +219,7 @@ struct scsi_dh_data {
+ #define scmd_printk(prefix, scmd, fmt, a...)				\
+         (scmd)->request->rq_disk ?					\
+ 	sdev_printk(prefix, (scmd)->device, "[%s] " fmt,		\
+-		    (scmd)->request->rq_disk->disk_name, ##a) :		\
++		dev_name(disk_to_dev((scmd)->request->rq_disk)), ##a) :	\
+ 	sdev_printk(prefix, (scmd)->device, fmt, ##a)
  
-+static DEVICE_ATTR(preferred_name, S_IRUGO|S_IWUSR, preferred_name_show,
-+			preferred_name_store);
- static DEVICE_ATTR(range, S_IRUGO, disk_range_show, NULL);
- static DEVICE_ATTR(ext_range, S_IRUGO, disk_ext_range_show, NULL);
- static DEVICE_ATTR(removable, S_IRUGO, disk_removable_show, NULL);
-@@ -990,6 +1017,7 @@ static struct device_attribute dev_attr_fail_timeout =
- #endif
- 
- static struct attribute *disk_attrs[] = {
-+	&dev_attr_preferred_name.attr,
- 	&dev_attr_range.attr,
- 	&dev_attr_ext_range.attr,
- 	&dev_attr_removable.attr,
-diff --git a/include/linux/device.h b/include/linux/device.h
-index c66111a..0486644 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -490,6 +490,9 @@ struct device_dma_parameters {
- 	unsigned long segment_boundary_mask;
- };
- 
-+/* maximum length of preferred name */
-+#define PREFERRED_NAME_LEN	256
-+
- /**
-  * struct device - The basic device structure
-  * @parent:	The device's "parent" device, the device to which it is attached.
-@@ -500,6 +503,7 @@ struct device_dma_parameters {
-  * 		See the comment of the struct device_private for detail.
-  * @kobj:	A top-level, abstract class from which other classes are derived.
-  * @init_name:	Initial name of the device.
-+ * @preferred_name: Preferred name of the device.
-  * @type:	The type of device.
-  * 		This identifies the device type and carries type-specific
-  * 		information.
-@@ -556,6 +560,7 @@ struct device {
- 
- 	struct kobject kobj;
- 	const char		*init_name; /* initial name of the device */
-+	const char	*preferred_name; /* preferred name of the device */
- 	const struct device_type *type;
- 
- 	struct mutex		mutex;	/* mutex to synchronize calls to
-@@ -608,6 +613,10 @@ struct device {
- 
- static inline const char *dev_name(const struct device *dev)
- {
-+	/* Use the preferred name when users set it */
-+	if (dev->preferred_name)
-+		return dev->preferred_name;
-+
- 	/* Use the init name until the kobject becomes available */
- 	if (dev->init_name)
- 		return dev->init_name;
+ enum scsi_target_state {
 
