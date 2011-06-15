@@ -1,103 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269Ab1FOTSW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 15:18:22 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:54397 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753503Ab1FOTST (ORCPT
+	id S1754779Ab1FOTVP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 15:21:15 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:63642 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754569Ab1FOTUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 15:18:19 -0400
-Date: Wed, 15 Jun 2011 12:17:47 -0700
-From: Nishanth Aravamudan <nacc@us.ibm.com>
-To: jgarzik@pobox.com
-Cc: mbizon@freebox.fr, tj@kernel.org, benh@kernel.crashing.org,
-        wayneb@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: libata/ipr/powerpc: regression between 2.6.39-rc4 and 2.6.39-rc5
-Message-ID: <20110615191747.GA6324@us.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Operating-System: Linux 2.6.38-8-generic (x86_64)
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 15 Jun 2011 15:20:09 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        stefano.stabellini@eu.citrix.com, Ian.Campbell@citrix.com
+Subject: [PATCH] cleanup in Xen PCI (arch/x86/pci/xen.c) code for 3.1
+Date: Wed, 15 Jun 2011 15:19:39 -0400
+Message-Id: <1308165587-24902-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.4.1
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090201.4DF905E1.00E4:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeff,
-
-It appears that commit 7b3a24c57d2eeda8dba9c205342b12689c4679f9 broke
-CD-ROMs on the IPR SATA bus on powerpc machines:
-
- ata_port_alloc: ENTER
- ata_port_probe: ata1: bus probe begin
- ata1.00: ata_dev_read_id: ENTER
- ata1.00: failed to IDENTIFY (I/O error, err_mask=0x40)
- ata1.00: ata_dev_read_id: ENTER
- ata1.00: failed to IDENTIFY (I/O error, err_mask=0x40)
- ata1.00: limiting speed to UDMA7:PIO5
- ata1.00: ata_dev_read_id: ENTER
- ata1.00: failed to IDENTIFY (I/O error, err_mask=0x40)
- ata1.00: disabled
- ata_port_probe: ata1: bus probe end
- scsi_alloc_sdev: Allocation failure during SCSI scanning, some SCSI devices might not be configured
-
-The commit in question is tagged as AHCI, but does touch the libata
-core. I'm not well-versed with this code, but here's what I think I know
-:)
-
->From __scsi_add_device, we first allocate the target:
-
- scsi_alloc_target ->
-  shost->hostt->target_alloc ->
-   ipr_target_alloc ->
-    ata_port_alloc ->
-     sets FROZEN
-
-We error out when we allocate the sdev:
-
- scsi_alloc_sdev ->
-  shost->hostt->slave_alloc ->
-   ipr_slave_alloc ->
-    ipr_ata_slave_alloc ->
-     ata_sas_port_init ->
-      ata_port_probe
-
->From what I can tell, the only place that explicitly clears the FROZEN
-flag is the error-handling code via ata_eh_thaw_port().
-
-So I thought either we're not invoking the error-handler at probe time
-correctly to kick the port or perhaps the SAS code is not clearing the
-flag?
-
-I tried the following patch:
-
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index d51f979..abd0e0b 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -3797,6 +3797,7 @@ EXPORT_SYMBOL_GPL(ata_sas_port_alloc);
-  */
- int ata_sas_port_start(struct ata_port *ap)
- {
-+       ap->pflags &= ~ATA_PFLAG_FROZEN;
-        return 0;
- }
- EXPORT_SYMBOL_GPL(ata_sas_port_start);
-
-and the CD-ROM drive works, but I have no idea if it's the right thing
-to do. I chose this particular change, FWIW, because we call
-ata_sas_port_start before we probe in ata_sas_port_init and it seems
-like we need to mark the port as not frozen before we init it? Perhaps
-that should really be a call to a thaw function, not sure. Let's just
-say the ATA/SAS/SCSI interactions are a bit hard to follow at first :)
-
-Any insight you can provide would be great!
-
-Thanks,
-Nish
+Proposing these eight patches for 3.1. The goal of these patches is to:
+ - clean up the Xen PCI glue code in xen.c to make it easier to maintain
+ - squash some common code together if possible
 
 
--- 
-Nishanth Aravamudan <nacc@us.ibm.com>
-IBM Linux Technology Center
+I've tested it as PV PCI, PV Dom0, and lightly PVonHVM - I keep on getting
+some really weird bootup problems with PVonHVM (it hangs on transitiong from
+IDE to PV drivers with or without these patches) - so I will redo that test
+shortly once I find out what is happening.
+
+The patches are also available at
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git  stable/pci.cleanups
+
+ arch/x86/include/asm/xen/pci.h |    5 +-
+ arch/x86/pci/xen.c             |  370 ++++++++++++++++++----------------------
+ drivers/xen/events.c           |    2 +-
+ 3 files changed, 170 insertions(+), 207 deletions(-)
