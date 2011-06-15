@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478Ab1FOULc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 16:11:32 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53933 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751093Ab1FOUL2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 16:11:28 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
-In-Reply-To: <20110615193734.23641.8004.stgit@ponder>
-References: <20110615193734.23641.8004.stgit@ponder>
-Date: Wed, 15 Jun 2011 13:11:26 -0700
-Message-ID: <BANLkTim-Up4xvwBpkN-3B8HFg86G7M3TUfSQUv5Tq_0Kf15wcw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio/tegra: Move Tegra gpio driver to drivers/gpio
-From: Olof Johansson <olof@lixom.net>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Erik Gilling <konkers@android.com>, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, Colin Cross <ccross@android.com>,
-        spi-devel-general@lists.sourceforge.net,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754802Ab1FOULw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 16:11:52 -0400
+Received: from support.opsdc.com ([65.254.219.9]:56105 "EHLO support.opsdc.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754708Ab1FOULv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 16:11:51 -0400
+Subject: Re: Panic on OOM
+From: Chris Fowler <cfowler@outpostsentinel.com>
+Reply-To: cfowler@opsdc.com
+To: David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.DEB.2.00.1106151307230.27546@chino.kir.corp.google.com>
+References: <1308058276.2074.295.camel@compaq-desktop>
+	 <alpine.DEB.2.00.1106141656220.31202@chino.kir.corp.google.com>
+	 <1308103443.2074.357.camel@compaq-desktop>
+	 <alpine.DEB.2.00.1106141908100.7025@chino.kir.corp.google.com>
+	 <1308105693.2074.361.camel@compaq-desktop>
+	 <alpine.DEB.2.00.1106141947570.8257@chino.kir.corp.google.com>
+	 <1308145805.2074.367.camel@compaq-desktop>
+	 <alpine.DEB.2.00.1106151307230.27546@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Jun 2011 16:11:44 -0400
+Message-ID: <1308168704.2074.408.camel@compaq-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 12:37 PM, Grant Likely
-<grant.likely@secretlab.ca> wrote:
-> As part of the gpio driver consolidation, this patch moves the Tegra driver
-> into drivers/gpio
->
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+On Wed, 2011-06-15 at 13:07 -0700, David Rientjes wrote:
+> On Wed, 15 Jun 2011, Chris Fowler wrote:
+> 
+> > It has been almost 12 hours and no panic yet.  Externally the box seems
+> > unresponsive.  No response to network activity.  No keyboard response,
+> > etc.  On the screen I'm still seeing printk's from the hda-intel driver
+> > complaining about a spurious interrupt.  I'm not to concerned about that
+> > but it does tell me the kernel seems to be alive.
+> > 
+> 
+> You've tried 2.6.38.8?
 
-Acked-by: Olof Johansson <olof@lixom.net>
+I have not but can work on that tonight.
 
-Colin said he had plans to do it, or I would already have sent this
-out. Thanks for doing it! :)
+Chris
 
 
--Olof
+
