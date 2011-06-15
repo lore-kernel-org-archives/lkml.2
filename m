@@ -1,105 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab1FOLnG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 07:43:06 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60700 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755142Ab1FOLnC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 07:43:02 -0400
-Subject: Re: REGRESSION: Performance regressions from switching
- anon_vma->lock to mutex
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, ak@linux.intel.com,
-        shaohua.li@intel.com, alex.shi@intel.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1308135495.15315.38.camel@twins>
-References: <1308097798.17300.142.camel@schen9-DESK>
-	 <1308134200.15315.32.camel@twins>  <1308135495.15315.38.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 15 Jun 2011 13:41:31 +0200
-Message-ID: <1308138091.15315.50.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755118Ab1FOLmz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 07:42:55 -0400
+Received: from mga11.intel.com ([192.55.52.93]:38507 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755066Ab1FOLmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 07:42:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,370,1304319600"; 
+   d="scan'208";a="16490394"
+Message-ID: <4DF89AAB.8000100@linux.intel.com>
+Date: Wed, 15 Jun 2011 14:42:35 +0300
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110606 Iceowl/1.0b2 Icedove/3.1.10
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: auth 3e058a96 subscribe linux-kernel david.a.cohen@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-On Wed, 2011-06-15 at 12:58 +0200, Peter Zijlstra wrote:
-> On Wed, 2011-06-15 at 12:36 +0200, Peter Zijlstra wrote:
-> > On Tue, 2011-06-14 at 17:29 -0700, Tim Chen wrote:
-> > > MOSBENCH test suite.
-> > 
-> > Argh, I'm trying to get this thing to run, but its all snake poo..
-> > 
-> > /me takes up a heavy club and goes snake hunting, should make a pretty
-> > hat or something.
-> 
-> Sweet, I've got meself a snake-skin hat!
-> 
-> The first thing that stood out when running it was:
-> 
-> 31694 root      20   0 26660 1460 1212 S 17.5  0.0   0:01.97 exim 
->     7 root      -2  19     0    0    0 S 12.7  0.0   0:06.14 rcuc0 
->    24 root      -2  19     0    0    0 S 11.7  0.0   0:04.15 rcuc3 
->    34 root      -2  19     0    0    0 S 11.7  0.0   0:04.10 rcuc5 
->    39 root      -2  19     0    0    0 S 11.7  0.0   0:06.38 rcuc6 
->    44 root      -2  19     0    0    0 S 11.7  0.0   0:04.53 rcuc7 
->    49 root      -2  19     0    0    0 S 11.7  0.0   0:04.11 rcuc8 
->    79 root      -2  19     0    0    0 S 11.7  0.0   0:03.91 rcuc14 
->    89 root      -2  19     0    0    0 S 11.7  0.0   0:03.90 rcuc16 
->   110 root      -2  19     0    0    0 S 11.7  0.0   0:03.90 rcuc20 
->   120 root      -2  19     0    0    0 S 11.7  0.0   0:03.82 rcuc22 
->    13 root      -2  19     0    0    0 S 10.7  0.0   0:04.37 rcuc1 
->    19 root      -2  19     0    0    0 S 10.7  0.0   0:04.19 rcuc2 
->    29 root      -2  19     0    0    0 S 10.7  0.0   0:04.12 rcuc4 
->    54 root      -2  19     0    0    0 S 10.7  0.0   0:04.11 rcuc9 
->    59 root      -2  19     0    0    0 S 10.7  0.0   0:04.40 rcuc10 
->    64 root      -2  19     0    0    0 R 10.7  0.0   0:04.17 rcuc11 
->    69 root      -2  19     0    0    0 R 10.7  0.0   0:04.23 rcuc12 
->    84 root      -2  19     0    0    0 S 10.7  0.0   0:03.90 rcuc15 
->    95 root      -2  19     0    0    0 S 10.7  0.0   0:03.99 rcuc17 
->   100 root      -2  19     0    0    0 S 10.7  0.0   0:03.88 rcuc18 
->   105 root      -2  19     0    0    0 S 10.7  0.0   0:04.14 rcuc19 
->   125 root      -2  19     0    0    0 S 10.7  0.0   0:03.79 rcuc23 
->    74 root      -2  19     0    0    0 S  9.7  0.0   0:04.33 rcuc13 
->   115 root      -2  19     0    0    0 R  9.7  0.0   0:03.82 rcuc21 
-> 
-> Which is an impressive amount of RCU usage..
-
-FWIW, Alex Shi's patch:
-
-http://lkml.kernel.org/r/1308029185.15392.147.camel@sli10-conroe
-
-Improves the situation to:
-
- 3745 root      20   0 26664 1460 1212 S 18.5  0.0   0:01.28 exim 
-   39 root      -2  19     0    0    0 S  4.9  0.0   0:02.83 rcuc6 
-  105 root      -2  19     0    0    0 S  4.9  0.0   0:02.79 rcuc19 
-    7 root      -2  19     0    0    0 S  3.9  0.0   0:02.70 rcuc0 
-   13 root      -2  19     0    0    0 S  3.9  0.0   0:02.54 rcuc1 
-   19 root      -2  19     0    0    0 S  3.9  0.0   0:02.76 rcuc2 
-   24 root      -2  19     0    0    0 S  3.9  0.0   0:02.75 rcuc3 
-...
-
-And throughput increases like:
-
--tip            260.092 messages/sec/core
--tip+sirq-rcu   271.078 messages/sec/core
 
 
