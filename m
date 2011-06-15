@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908Ab1FOINZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 04:13:25 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44017 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752201Ab1FOINW (ORCPT
+	id S1753796Ab1FOIWH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 04:22:07 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:12401 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753146Ab1FOIWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 04:13:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=gHmkjVeExEiVPWBFZvULBo0/ifzfB8B5WpqsFh1iKWhFgYOHhI5M/BGCPdYP9EXRbk
-         nKJQFMMrE98BNax9bftGC3t1icj3L8AdYGIXl6YYuY0JHPPR0ZDNj0p9krCdiYcysrdB
-         1bukRWxAQPzJRq6ae/OmNTFzBHT/66JWpN2WA=
-Date: Wed, 15 Jun 2011 10:13:17 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Maxin B John <maxin.john@gmail.com>
-Cc: akpm@linux-foundation.org, segooon@gmail.com, jkosina@suse.cz,
-        tglx@linutronix.de, eike-kernel@sf-tec.de,
+	Wed, 15 Jun 2011 04:22:04 -0400
+Date: Wed, 15 Jun 2011 10:13:31 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Ryan Mallon <rmallon@gmail.com>
+cc: Andre Renaud <andre@bluewatersys.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Victor <avictor.za@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, Anton Vorontsov <cbou@mail.ru>,
+        Paul Mundt <lethal@linux-sh.org>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>, trivial@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RESEND] devres: Fix possible use after free
-Message-ID: <20110615081317.GL8141@htj.dyndns.org>
-References: <20110614070732.GA3355@maxin>
- <20110614071540.GE8141@htj.dyndns.org>
- <BANLkTimHjVX6ymALT-ZBeSs1S+PRDRwQaQ@mail.gmail.com>
+Subject: Re: [PATCH V2 trivial/treewide] Change Ryan Mallon's email address
+ across the kernel
+In-Reply-To: <1308113136-3483-1-git-send-email-rmallon@gmail.com>
+Message-ID: <alpine.LNX.2.00.1106151012381.2452@swampdragon.chaosbits.net>
+References: <1308113136-3483-1-git-send-email-rmallon@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimHjVX6ymALT-ZBeSs1S+PRDRwQaQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Maxin.
+On Wed, 15 Jun 2011, Ryan Mallon wrote:
 
-On Tue, Jun 14, 2011 at 03:09:34PM +0100, Maxin B John wrote:
-> You are right. I shouldn't have mentioned it as dangerous. I was trying to
-> make this patch description similar to the description present in the
-> previous patch:
-> http://www.spinics.net/lists/mm-commits/msg84313.html
+> I no longer work at Bluewater Systems. Update my email address accordingly. I
+> have deleted my email address from C files rather than change it. This
+> was suggested by several people, since the commit from my new email
+> address will cause scripts/get_maintainer.pl to function properly. I
+> have not added the .mailmap entry as suggested by Joe because I think
+> it is no longer necessary if I touch all the files which had my name
+> in them.
 > 
-> This patch silences the Coverity Prevent's complains about this as
-> use-after-free bug. Please let me know if the updated patch description is OK.
+> If possible, I would like to get this patch merged for 3.0
 > 
-> "
-> A freed pointer is passed as an argument to the function "devres_destroy()" in
-> "kernel/irq/devres.c" and "lib/devres.c". This patch fixes the possible use
-> after free.
-> The change silences the static analysis tool (Coverity Prevent) complains
-> about this as use-after-free bug.
-> "
+> Signed-off-by: Ryan Mallon <rmallon@gmail.com>
+> Cc: Andre Renaud <andre@bluewatersys.com>
+> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Cc: Andrew Victor <avictor.za@gmail.com>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Anton Vorontsov <cbou@mail.ru>
+> Cc: Paul Mundt <lethal@linux-sh.org>
+> Cc: Liam Girdwood <lrg@ti.com>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> Cc: Joe Perches <joe@perches.com>
+> Cc: Jesper Juhl <jj@chaosbits.net>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: trivial@kernel.org
+> Cc: linux-kernel@vger.kernel.org
 
-Yeap, sounds mostly okay but there's no 'possible use after free'.
-Maybe something like, "devres uses the pointer value as key after it's
-freed, which is safe but triggers spurious use-after-free warnings on
-some static analysis tools.  Rearrange code to avoid such warnings".
+Looks good to me.
 
-Thanks.
+Reviewed-by: Jesper Juhl <jj@chaosbits.net>
 
 -- 
-tejun
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
