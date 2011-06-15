@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630Ab1FPHkM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:40:12 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:38044 "EHLO
+	id S1755588Ab1FPHj4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:39:56 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:46244 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755222Ab1FPHA1 (ORCPT
+	by vger.kernel.org with ESMTP id S1755029Ab1FPHA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:00:27 -0400
-X-Sasl-enc: VWA9WbxKHALfpTx7Q+kirvTPqMoL+IgLkb/m1H+oJ+4i 1308207626
+	Thu, 16 Jun 2011 03:00:28 -0400
+X-Sasl-enc: X0qRFaAY3/u6MRcHdsKIFWmvWFCDu2dS2/U4yQvySpqg 1308207627
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:30 2011
-Message-Id: <20110616000230.772747349@clark.kroah.org>
+Message-Id: <20110616000230.872700990@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 16:59:41 -0700
+Date: Wed, 15 Jun 2011 16:59:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Rajkumar Manoharan <rmanoharan@atheros.com>,
+        Daniel Halperin <dhalperi@cs.washington.edu>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [18/89] ath9k: set 40 Mhz rate only if hw is configured in ht40
+Subject: [19/89] ath9k: fix two more bugs in tx power
 In-Reply-To: <20110616000258.GA14529@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,45 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rajkumar Manoharan <rmanoharan@atheros.com>
+From: Daniel Halperin <dhalperi@cs.washington.edu>
 
-commit 41e2b05b9598d6bdf91fc20280bfc538d853f769 upstream.
+commit 21fdc87248d1d28492c775e05fa92b3c8c7bc8db upstream.
 
-Whenever there is a channel width change from 40 Mhz to 20 Mhz,
-the hardware is reconfigured to ht20. Meantime before doing
-the rate control updation, the packets are being transmitted are
-selected rate with IEEE80211_TX_RC_40_MHZ_WIDTH.
+This is the same fix as
 
-While transmitting ht40 rate packets in ht20 mode is causing
-baseband panic with AR9003 based chips.
+   commit 841051602e3fa18ea468fe5a177aa92b6eb44b56
+   Author: Matteo Croce <technoboy85@gmail.com>
+   Date:   Fri Dec 3 02:25:08 2010 +0100
 
-==== BB update: BB status=0x02001109 ====
-ath: ** BB state: wd=1 det=1 rdar=0 rOFDM=1 rCCK=1 tOFDM=0 tCCK=0 agc=2
-src=0 **
-ath: ** BB WD cntl: cntl1=0xffff0085 cntl2=0x00000004 **
-ath: ** BB mode: BB_gen_controls=0x000033c0 **
-ath: ** BB busy times: rx_clear=99%, rx_frame=0%, tx_frame=0% **
-ath: ==== BB update: done ====
+   The ath9k driver subtracts 3 dBm to the txpower as with two radios the
+   signal power is doubled.
+   The resulting value is assigned in an u16 which overflows and makes
+   the card work at full power.
 
-Signed-off-by: Rajkumar Manoharan <rmanoharan@atheros.com>
+in two more places. I grepped the ath tree and didn't find any others.
+
+Signed-off-by: Daniel Halperin <dhalperi@cs.washington.edu>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/rc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |   10 ++++++++--
+ drivers/net/wireless/ath/ath9k/eeprom_9287.c   |   10 ++++++++--
+ 2 files changed, 16 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/rc.c
-+++ b/drivers/net/wireless/ath/ath9k/rc.c
-@@ -689,7 +689,8 @@ static void ath_rc_rate_set_series(const
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+@@ -4598,10 +4598,16 @@ static void ar9003_hw_set_power_per_rate
+ 	case 1:
+ 		break;
+ 	case 2:
+-		scaledPower -= REDUCE_SCALED_POWER_BY_TWO_CHAIN;
++		if (scaledPower > REDUCE_SCALED_POWER_BY_TWO_CHAIN)
++			scaledPower -= REDUCE_SCALED_POWER_BY_TWO_CHAIN;
++		else
++			scaledPower = 0;
+ 		break;
+ 	case 3:
+-		scaledPower -= REDUCE_SCALED_POWER_BY_THREE_CHAIN;
++		if (scaledPower > REDUCE_SCALED_POWER_BY_THREE_CHAIN)
++			scaledPower -= REDUCE_SCALED_POWER_BY_THREE_CHAIN;
++		else
++			scaledPower = 0;
+ 		break;
+ 	}
  
- 	if (WLAN_RC_PHY_HT(rate_table->info[rix].phy)) {
- 		rate->flags |= IEEE80211_TX_RC_MCS;
--		if (WLAN_RC_PHY_40(rate_table->info[rix].phy))
-+		if (WLAN_RC_PHY_40(rate_table->info[rix].phy) &&
-+		    conf_is_ht40(&txrc->hw->conf))
- 			rate->flags |= IEEE80211_TX_RC_40_MHZ_WIDTH;
- 		if (WLAN_RC_PHY_SGI(rate_table->info[rix].phy))
- 			rate->flags |= IEEE80211_TX_RC_SHORT_GI;
+--- a/drivers/net/wireless/ath/ath9k/eeprom_9287.c
++++ b/drivers/net/wireless/ath/ath9k/eeprom_9287.c
+@@ -522,10 +522,16 @@ static void ath9k_hw_set_ar9287_power_pe
+ 	case 1:
+ 		break;
+ 	case 2:
+-		scaledPower -= REDUCE_SCALED_POWER_BY_TWO_CHAIN;
++		if (scaledPower > REDUCE_SCALED_POWER_BY_TWO_CHAIN)
++			scaledPower -= REDUCE_SCALED_POWER_BY_TWO_CHAIN;
++		else
++			scaledPower = 0;
+ 		break;
+ 	case 3:
+-		scaledPower -= REDUCE_SCALED_POWER_BY_THREE_CHAIN;
++		if (scaledPower > REDUCE_SCALED_POWER_BY_THREE_CHAIN)
++			scaledPower -= REDUCE_SCALED_POWER_BY_THREE_CHAIN;
++		else
++			scaledPower = 0;
+ 		break;
+ 	}
+ 	scaledPower = max((u16)0, scaledPower);
 
 
