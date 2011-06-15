@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491Ab1FOJTv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 05:19:51 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56626 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754215Ab1FOJTt convert rfc822-to-8bit (ORCPT
+	id S1754510Ab1FOJVY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 05:21:24 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63692 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754377Ab1FOJVW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 05:19:49 -0400
+	Wed, 15 Jun 2011 05:21:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=xjMAKuFs5p6Wvlduc54XZwn/VktpuigzlL51gfoHzkclDU7mvuvv87/dRSt5wV7mM2
-         g476H9uuCt0+As2X4PQGmgTEoXZpD9WRl47FOM8WIoM4F96UI39q8vjYf1sHpuS1gX57
-         8JzLWHLmAVwry9g70n/ZQxPXmpSv+0chnylGI=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ITTigz59zlAoJcEPBYLwUIZXx0uuDpvI1rUxAJ4cCLMADs2alxWCCHyxCog4ZsO0sO
+         IuocTp9CfvN8vnGDTsmoJ3/fHhyIA8ZN0jeQmqQ3BZyBujpeg72K2PjK0nn7DSJ6I2Rc
+         w+M+yxNZrDHGUyukDLCRahAvU8wBDCTnoQR0g=
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1106151111200.18110@ayla.of.borg>
-References: <alpine.DEB.2.00.1106151111200.18110@ayla.of.borg>
-Date: Wed, 15 Jun 2011 11:19:48 +0200
-X-Google-Sender-Auth: coWm9wIz-wBTBHi3v3Sgw9NBqJ0
-Message-ID: <BANLkTikBDVR=S5J-=Kjq1QW3OU64WzHYRg@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.0-rc3
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Michael Ellerman <michael@ellerman.id.au>
-Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Linux-Next <linux-next@vger.kernel.org>
+In-Reply-To: <1308125533.4641.33.camel@nathan.suse.cz>
+References: <1308125533.4641.33.camel@nathan.suse.cz>
+Date: Wed, 15 Jun 2011 11:21:21 +0200
+Message-ID: <BANLkTikoxYAz7G7pvKABbVPzOuxUzLkO=Q@mail.gmail.com>
+Subject: Re: bug: kernel 3.0-rc3 not relocatable on i386?
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+To: Petr Tesarik <ptesarik@suse.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 11:11, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> Below is the list of build error/warning regressions/improvements in
-> v3.0-rc3[1] compared to v2.6.39[2].
+Hi Petr,
+
+2011/6/15 Petr Tesarik <ptesarik@suse.cz>:
+> Hi all,
 >
-> Summarized:
->  - build errors: +21/-66
->  - build warnings: +202/-421
+> it seems that the 3.0-rc3 kernel is not relocatable on i386. I get
+> warnings about jiffies being an absolute symbol, and indeed, when GRUB
+> loads the kernel at a non-default address, jiffies is not relocated.
 >
-> JFYI, when comparing v3.0-rc3 to v3.0-rc2[3], the summaries are:
->  - build errors: +20/-45
->  - build warnings: +92/-101
+> In my example the kernel is configured with
+> CONFIG_PHYSICAL_START=0x1000000
+> CONFIG_PHYSICAL_ALIGN=0x200000
+> CONFIG_RELOCATABLE=y
+> and loaded at 0x200000 by GRUB.
+>
+> Booting fails when checking whether the timer works, because do_timer()
+> increments jiffies_64, but timer_irq_works() checks jiffies. The code
+> looks like this:
+>
+> c13daab7:       8b 3d 40 7a 39 c1       mov    0xc1397a40,%edi
+>
+> but arch/x86/boot/compressed/vmlinux.relocs does not contain c13daaba.
+> Consequently, timer_irq_works() reads the wrong memory location and
+> fails, causing a panic:
+>
+> kernel panic: IO-APIC + timer doesn't work! Boot with apic=debug and
+> send a report.  Then try booting with the 'noapic' option.
+>
+> Needless to say, the kernel freezes a few initcalls later when booted
+> with noapic, because IO-APIC worked fine, in fact. I verified that by
+> inserting a debugging printk() in do_timer(), and I also verified with
+> that printk() that the address of jiffies_64 and the address of jiffies
+> differ at run time.
+>
+> Any idea how to fix this?
+Does reverting this commit fix it?
 
-While looking what kind of fix got applied for one of the
-improvements, I noticed it
-didn't get fixed at all. But m68k/allmodconfig is broken due to an
-unrelated change, after
-which the build stops, so it never got to compile the file I was looking into.
+commit 8c49d9a74bac5ea3f18480307057241b808fcc0c
+Author: Andy Lutomirski <luto@MIT.EDU>
+Date:   Mon May 23 09:31:24 2011 -0400
 
-Would it be possible to build with `make -k', so it continues in case
-of an error, and
-tries to build as much as possible?
-Yes, I know this may increase build time considerably, but in an ideal
-world, there
-are no compile errors and everything is built anyway ;-)
+    x86-64: Clean up vdso/kernel shared variables
 
-Thanks!
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+~Maarten
