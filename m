@@ -1,123 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293Ab1FOIzT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 04:55:19 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47715 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754030Ab1FOIzR (ORCPT
+	id S1754320Ab1FOJDS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 05:03:18 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:36735 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753408Ab1FOJDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 04:55:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Jze4WbbEWkzHEzZaZq6HTpom0kHETKfIUyow2CewvmrM6v/Fi0kKisVTd2LjJZYld9
-         piWpQ7iXxFOnEopmLYAdEADlfymoy69bxW32ED7y366fLgm3Lds4ZiazvxBKccoweVkW
-         ZKJ1cUsxG0CNH+XGbcxqKJQXaW3Gk/1aNAN3E=
-Date: Wed, 15 Jun 2011 10:55:12 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-        David Rientjes <rientjes@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [slubllv7 04/17] x86: Add support for cmpxchg_double
-Message-ID: <20110615085512.GO8141@htj.dyndns.org>
-References: <20110601172543.437240675@linux.com>
- <20110601172614.173427964@linux.com>
+	Wed, 15 Jun 2011 05:03:17 -0400
+Date: Wed, 15 Jun 2011 14:25:15 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 3.0-rc2-tip 2/22]  2: uprobes: Breakground page
+ replacement.
+Message-ID: <20110615085515.GE4952@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+ <20110607125835.28590.25476.sendpatchset@localhost6.localdomain6>
+ <20110613170020.GA27137@redhat.com>
+ <20110614123530.GC4952@linux.vnet.ibm.com>
+ <20110614142023.GA5139@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110601172614.173427964@linux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110614142023.GA5139@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Christoph, Pekka.  Sorry about the delay.
+> > > > +
+> > > > +	/* Read the page with vaddr into memory */
+> > > > +	ret = get_user_pages(tsk, tsk->mm, vaddr, 1, 1, 1, &old_page, &vma);
+> > >
+> > > Sorry if this was already discussed... But why we are using FOLL_WRITE here?
+> > > We are not going to write into this page, and this provokes the unnecessary
+> > > cow, no?
+> >
+> > Yes, We are not going to write to the page returned by get_user_pages
+> > but a copy of that page.
+> 
+> Yes I see. But the page returned by get_user_pages(write => 1) is already
+> a cow'ed copy (this mapping should be read-only).
+> 
+> > The idea was if we cow the page then we dont
+> > need to cow it at the replace_page time
+> 
+> Yes, replace_page() shouldn't cow.
+> 
+> > and since get_user_pages knows
+> > the right way to cow the page, we dont have to write another routine to
+> > cow the page.
+> 
+> Confused. write_opcode() allocs another page and does memcpy. This is
+> correct, but I don't understand the first cow.
+> 
 
-On Wed, Jun 01, 2011 at 12:25:47PM -0500, Christoph Lameter wrote:
-> Index: linux-2.6/arch/x86/include/asm/cmpxchg_64.h
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/include/asm/cmpxchg_64.h	2011-06-01 11:01:05.002406114 -0500
-> +++ linux-2.6/arch/x86/include/asm/cmpxchg_64.h	2011-06-01 11:01:48.222405834 -0500
-> +#define cmpxchg_double(ptr, o1, o2, n1, n2)				\
-> +({									\
-> +	BUILD_BUG_ON(sizeof(*(ptr)) != 8);				\
-> +	VM_BUG_ON((unsigned long)(ptr) % 16);				\
-> +	cmpxchg16b((ptr), (o1), (o2), (n1), (n2));			\
-> +})
-> +
-> +#define cmpxchg_double_local(ptr, o1, o2, n1, n2)			\
-> +({									\
-> +	BUILD_BUG_ON(sizeof(*(ptr)) != 8);				\
-> +	VM_BUG_ON((unsigned long)(ptr) % 16);				\
-> +	cmpxchg16b_local((ptr), (o1), (o2), (n1), (n2));		\
-> +})
+we decided on get_user_pages(FOLL_WRITE|FOLL_FORCE) based on discussions
+in these threads https://lkml.org/lkml/2010/4/23/327 and
+https://lkml.org/lkml/2010/5/12/119
 
-Do we really need cmpxchg16b*() macros separately?  Why not just
-collapse them into cmpxchg_double*()?  Also, it would be better if we
-have the same level of VM_BUG_ON() checks as in percpu cmpxchg_double
-ops.  Maybe we should put them in a separate macro?
+Summary of those two sub-threads as I understand was to have
+get_user_pages do the "real" cow for us.
 
-> +#define system_has_cmpxchg_double() cpu_has_cx16
+If I understand correctly, your concern is on the extra overhead added
+by the get_user_pages. Other than that is there any side-effect of we
+forcing the cow through get_user_pages.
 
-Where's the fallback %false definition for the above feature macro for
-archs which don't support cmpxchg_double?  Also, is system_has_*()
-conventional?  Isn't arch_has_*() more conventional for this purpose?
+> > I am still not clear on your concern.
+> 
+> Probably I missed something... but could you please explain why we can't
+> 
+> 	- ret = get_user_pages(tsk, tsk->mm, vaddr, 1, 1, 1, &old_page, &vma);
+> 	+ ret = get_user_pages(tsk, tsk->mm, vaddr, 1, 0, 0, &old_page, &vma);
+> 
+> ?
 
->  #endif /* _ASM_X86_CMPXCHG_64_H */
-> Index: linux-2.6/arch/x86/include/asm/cmpxchg_32.h
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/include/asm/cmpxchg_32.h	2011-06-01 11:01:05.022406109 -0500
-> +++ linux-2.6/arch/x86/include/asm/cmpxchg_32.h	2011-06-01 11:01:48.222405834 -0500
-> @@ -280,4 +280,52 @@ static inline unsigned long cmpxchg_386(
->  
->  #endif
->  
-> +#define cmpxchg8b(ptr, o1, o2, n1, n2)				\
-> +({								\
-> +	char __ret;						\
-> +	__typeof__(o2) __dummy;					\
-> +	__typeof__(*(ptr)) __old1 = (o1);			\
-> +	__typeof__(o2) __old2 = (o2);				\
-> +	__typeof__(*(ptr)) __new1 = (n1);			\
-> +	__typeof__(o2) __new2 = (n2);				\
-> +	asm volatile(LOCK_PREFIX "cmpxchg8b %2; setz %1"	\
-> +		       : "=d"(__dummy), "=a" (__ret), "+m" (*ptr)\
-> +		       : "a" (__old1), "d"(__old2),		\
-> +		         "b" (__new1), "c" (__new2)		\
-> +		       : "memory");				\
-> +	__ret; })
-> +
-> +
-> +#define cmpxchg8b_local(ptr, o1, o2, n1, n2)			\
-> +({								\
-> +	char __ret;						\
-> +	__typeof__(o2) __dummy;					\
-> +	__typeof__(*(ptr)) __old1 = (o1);			\
-> +	__typeof__(o2) __old2 = (o2);				\
-> +	__typeof__(*(ptr)) __new1 = (n1);			\
-> +	__typeof__(o2) __new2 = (n2);				\
-> +	asm volatile("cmpxchg8b %2; setz %1"			\
-> +		       : "=d"(__dummy), "=a"(__ret), "+m" (*ptr)\
-> +		       : "a" (__old), "d"(__old2),		\
-> +		         "b" (__new1), "c" (__new2),		\
-> +		       : "memory");				\
-> +	__ret; })
+I tried the code with this change and it works for regular cases.
+I am not sure if it affects cases where programs do mprotect 
+So I am okay to not force cow through get_user_pages.
 
-Wouldn't it be better to use cmpxchg64() for cmpxchg_double()?
+> 
+> > > Also. This is called under down_read(mmap_sem), can't we race with
+> > > access_process_vm() modifying the same memory?
+> >
+> > Yes, we could be racing with access_process_vm on the same memory.
+> >
+> > Do we have any other option other than making write_opcode/read_opcode
+> > being called under down_write(mmap_sem)?
+> 
+> I dunno. Probably we can simply ignore this issue, there are other ways
+> to modify this memory.
+> 
 
-Another thing is that choosing different code path depending on
-has_cmpxchg_double() would be quite messy and won't bode well with
-many people.  I agree that fallback implementation would be heavier
-for SMP safe operations but some archs already do that for cmpxchg
-(forgot which one).  If we're gonna export this to generic code,
-wouldn't it be better to implement proper generic fallbacks and
-provide has_*() as hint?
-
-Thank you.
+Okay.
 
 -- 
-tejun
+Thanks and Regards
+Srikar
