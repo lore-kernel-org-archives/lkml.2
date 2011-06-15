@@ -1,110 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab1FOIvA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 04:51:00 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:45187 "EHLO mgw2.diku.dk"
+	id S1754150Ab1FOIvj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 04:51:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1281 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752905Ab1FOIu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 04:50:57 -0400
-Date: Wed, 15 Jun 2011 10:50:51 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Brian King <brking@linux.vnet.ibm.com>
-Cc: Wayne Boyer <wayneb@linux.vnet.ibm.com>, Brian King <brking@us.ibm.com>,
-        kernel-janitors@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/scsi/ipr.c: reorder error handling code to
- include iounmap
-In-Reply-To: <4DF787BC.8050701@linux.vnet.ibm.com>
-Message-ID: <Pine.LNX.4.64.1106151050430.10106@ask.diku.dk>
-References: <1306851409-14963-1-git-send-email-julia@diku.dk>
- <4DF0EC00.9020603@linux.vnet.ibm.com> <4DF787BC.8050701@linux.vnet.ibm.com>
+	id S1753408Ab1FOIvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 04:51:38 -0400
+Message-ID: <4DF8727F.3050507@redhat.com>
+Date: Wed, 15 Jun 2011 11:51:11 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Luck, Tony" <tony.luck@intel.com>
+CC: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: Re: [PATCH 08/10] NOTIFIER: Take over TIF_MCE_NOTIFY and implement
+ task return notifier
+References: <BANLkTi=-A5PYj8zpjGB4Xb-_VNq0qr+CGQ@mail.gmail.com> <4DF5C36A.1040707@redhat.com> <20110613095521.GA26316@aftab> <4DF5F729.4060609@redhat.com> <20110613124003.GA27918@aftab> <4DF606C9.90308@redhat.com> <20110613151208.GA29045@aftab> <4DF63B7A.1030805@redhat.com> <BANLkTinUEqRni2u0DaMfSc45b3DmMMyYvA@mail.gmail.com> <4DF748C2.10009@redhat.com> <20110614133323.GB2830@aftab> <4DF76586.1090308@redhat.com> <987664A83D2D224EAE907B061CE93D5301E7280DF7@orsmsx505.amr.corp.intel.com>
+In-Reply-To: <987664A83D2D224EAE907B061CE93D5301E7280DF7@orsmsx505.amr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Jun 2011, Brian King wrote:
+On 06/14/2011 08:13 PM, Luck, Tony wrote:
+> >Since we can't have nested #MC (due to the IST mechanism resetting %rsp
+> >and clobbering the previous invocation's stack), we have to clear MCIP
+> >outside the #MC handler.  And that means irq_work_queue()
+> >
+> >(note that this changes the behaviour from memory corruption to shutdown
+> >state; both suck, but one more than the other).
+>
+> Hmm. We currently clear MCIP inside the handler (at the very end, but
+> still inside).  Deferring clearing would make sense - but we'd have to
+> be sure to do so a.s.a.p on all processors.  It also would change how
+> we look at the possibility of a process being able to run and re-execute
+> an instruction that causes a machine check. If we defer clearing MCIP
+> this won't just be annoying, it will be fatal (if any cpu hasn't yet
+> got to the work queue to clear MCIP).
 
-> On 06/09/2011 10:51 AM, Wayne Boyer wrote:
-> > On 05/31/2011 07:16 AM, Julia Lawall wrote:
-> >> From: Julia Lawall <julia@diku.dk>
-> >>
-> >> The out_msi_disable label should be before cleanup_nomem to additionally
-> >> benefit from the call to iounmap.
-> > 
-> > Yes, this is a problem.  I propose the following patch instead.
-> 
-> By removing the out_msi_disable label, if you fail initialization later
-> on and goto cleanup_nomem, you will end up leaving MSI enabled when you exit
-> with this patch.
+Clearly, the work queue (or thread) has to be real-time at the highest 
+priority.
 
-I agree.
+-- 
+error compiling committee.c: too many arguments to function
 
-julia
-
-> -Brian
-> 
-> 
-> 
-> > 
-> > ---
-> > 
-> > In the case where ipr_test_msi returns an error that is not -EOPNOTSUPP, the
-> > execution jumps to the out_msi_disable label.  This misses the call to iounmap
-> > for ipr_regs which was initialized earlier.
-> > 
-> > The fix is to do the call to pci_disable_msi when the error case is detected
-> > and then goto the cleanup_nomem label if the error is not -EOPNOTSUPP.
-> > 
-> > Signed-off-by: Wayne Boyer <wayneb@linux.vnet.ibm.com>
-> > ---
-> > 
-> >  drivers/scsi/ipr.c |   10 ++++------
-> >  1 file changed, 4 insertions(+), 6 deletions(-)
-> > 
-> > Index: b/drivers/scsi/ipr.c
-> > ===================================================================
-> > --- a/drivers/scsi/ipr.c        2011-06-09 08:14:44.927740117 -0700
-> > +++ b/drivers/scsi/ipr.c        2011-06-09 08:50:10.105630466 -0700
-> > @@ -8763,11 +8763,11 @@ static int __devinit ipr_probe_ioa(struc
-> >         /* Enable MSI style interrupts if they are supported. */
-> >         if (ioa_cfg->ipr_chip->intr_type == IPR_USE_MSI && !pci_enable_msi(pdev)) {
-> >                 rc = ipr_test_msi(ioa_cfg, pdev);
-> > -               if (rc == -EOPNOTSUPP)
-> > +               if (rc) {
-> >                         pci_disable_msi(pdev);
-> > -               else if (rc)
-> > -                       goto out_msi_disable;
-> > -               else
-> > +                       if (rc != -EOPNOTSUPP)
-> > +                               goto cleanup_nomem;
-> > +               } else
-> >                         dev_info(&pdev->dev, "MSI enabled with IRQ: %d\n", pdev->irq);
-> >         } else if (ipr_debug)
-> >                 dev_info(&pdev->dev, "Cannot enable MSI.\n");
-> > @@ -8847,8 +8847,6 @@ cleanup_nolog:
-> >         ipr_free_mem(ioa_cfg);
-> >  cleanup_nomem:
-> >         iounmap(ipr_regs);
-> > -out_msi_disable:
-> > -       pci_disable_msi(pdev);
-> >  out_release_regions:
-> >         pci_release_regions(pdev);
-> >  out_scsi_host_put:
-> > 
-> > 
-> 
-> 
-> -- 
-> Brian King
-> Linux on Power Virtualization
-> IBM Linux Technology Center
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
