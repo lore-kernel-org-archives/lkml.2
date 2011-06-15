@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753724Ab1FOVC3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 17:02:29 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:61697 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904Ab1FOVC1 convert rfc822-to-8bit (ORCPT
+	id S1753772Ab1FOVDl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 17:03:41 -0400
+Received: from grimli.r00tworld.net ([83.169.44.195]:43626 "EHLO
+	mail.r00tworld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab1FOVDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 17:02:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=SNCbj0jIPUeU2hnzhIP0DvK4u5LVwyGc6W4Zdvw1yLg0vfRT7PAPTBRQBaRGayNb3I
-         VSxm3uOF+33vMTULUuBA==
-MIME-Version: 1.0
-In-Reply-To: <BANLkTik4fna_C-1JHt9KoF4UsYCuqVy6Nw@mail.gmail.com>
-References: <20110615193734.23641.8004.stgit@ponder>
-	<BANLkTinij15PZw11Y3Qt=PV1kkP1pw1oaszTdMfD55Cf8cOJkw@mail.gmail.com>
-	<BANLkTik6C1mBeitYkA+NNM6XAhNY9cbgOw@mail.gmail.com>
-	<BANLkTik4fna_C-1JHt9KoF4UsYCuqVy6Nw@mail.gmail.com>
-Date: Wed, 15 Jun 2011 14:02:23 -0700
-X-Google-Sender-Auth: M6LJGwwLqwO46yGjyBOjOUdCuGg
-Message-ID: <BANLkTik2YfpxJvHjiGOqvqPj7U2rhq-RyPTKHpWHU1BMCSrWJw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio/tegra: Move Tegra gpio driver to drivers/gpio
-From: Colin Cross <ccross@android.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Erik Gilling <konkers@android.com>, lkml <linux-kernel@vger.kernel.org>,
-        linux-tegra <linux-tegra@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        spi-devel-general@lists.sourceforge.net,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Warren <swarren@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Wed, 15 Jun 2011 17:03:40 -0400
+From: Mathias Krause <minipli@googlemail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH] tools/perf: fix static build of perf tool
+Date: Wed, 15 Jun 2011 23:03:38 +0200
+Message-Id: <1308171818-20370-1-git-send-email-minipli@googlemail.com>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 2:00 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Wed, Jun 15, 2011 at 2:48 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
->> On Wed, Jun 15, 2011 at 2:21 PM, Colin Cross <ccross@android.com> wrote:
->>> On Wed, Jun 15, 2011 at 12:37 PM, Grant Likely
->>> <grant.likely@secretlab.ca> wrote:
->>>> As part of the gpio driver consolidation, this patch moves the Tegra driver
->>>> into drivers/gpio
->>>>
->>>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
->>>> ---
->>>>
->>>> If there are no objections, I'll merge this via gpio/next
->>>
->>> I have this patch as part of a series that should get posted later
->>> this week, as well as a patch on top of it that depends on this change
->>> and another change in my tree, but I'm pessimistic that my series will
->>> get in to 3.1 since it depends on some common consolidation that
->>> hasn't been agreed upon yet.  So,
->>> Acked-by: Colin Cross <ccross@android.com>
->>>
->>> Put it in gpio/next, and I'll make sure any other Tegra patches with
->>> dependencies get pulled after yours.
->>
->> How about I put it in a separate branch so that if you need to pull it
->> for dependencies then you can do so without pulling in all the
->> gpio/next commits.
->
-> I've pushed it out to the following branch.  If everything looks okay
-> to you, then I'll merge it into gpio/next and push it out.
->
-> The following changes since commit 2c53b436a30867eb6b47dd7bab23ba638d1fb0d2:
->
->  Linux 3.0-rc3 (2011-06-13 15:29:59 -0700)
->
-> are available in the git repository at:
->  git://git.secretlab.ca/git/linux-2.6 gpio/next-tegra
->
-> Grant Likely (2):
->      gpio/tegra: Move Tegra gpio driver to drivers/gpio
->      gpio/tegra: add devicetree support
->
->  .../devicetree/bindings/gpio/gpio_nvidia.txt       |    7 +++++++
->  arch/arm/mach-tegra/Makefile                       |    1 -
->  drivers/gpio/Makefile                              |    1 +
->  .../mach-tegra/gpio.c => drivers/gpio/gpio-tegra.c |   10 ++++++++++
->  4 files changed, 18 insertions(+), 1 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/gpio/gpio_nvidia.txt
->  rename arch/arm/mach-tegra/gpio.c => drivers/gpio/gpio-tegra.c (97%)
->
+To build a statically linked version of the perf tool all needed
+libraries must be added in the correct order to get the symbols
+resolved. Currently this is broken when, e.g. python or newt support is
+enabled -- libpython needs libpthread which is an unconditional link
+dependency of the perf tool; libslang needs libm, another unconditional
+dependency. To solve the problem in the long run without the need to
+keep track of transitive library dependencies, simply make the linker
+look at the EXTLIBS multiple times until it has all symbols resolved.
 
-Thanks, that sounds good.
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc:  Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc:  Paul Mackerras <paulus@samba.org>
+Cc:  Ingo Molnar <mingo@elte.hu>
+Cc:  Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+---
+ tools/perf/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 032ba63..940257b 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -633,7 +633,7 @@ prefix_SQ = $(subst ','\'',$(prefix))
+ 
+ SHELL_PATH_SQ = $(subst ','\'',$(SHELL_PATH))
+ 
+-LIBS = -Wl,--whole-archive $(PERFLIBS) -Wl,--no-whole-archive $(EXTLIBS)
++LIBS = -Wl,--whole-archive $(PERFLIBS) -Wl,--no-whole-archive -Wl,--start-group $(EXTLIBS) -Wl,--end-group
+ 
+ ALL_CFLAGS += $(BASIC_CFLAGS)
+ ALL_CFLAGS += $(ARCH_CFLAGS)
+-- 
+1.5.6.5
+
