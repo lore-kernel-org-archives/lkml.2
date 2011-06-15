@@ -1,176 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755620Ab1FOPpJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 11:45:09 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:36850 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755434Ab1FOPpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 11:45:06 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: wRTCmU4VM1m3d91um0B7Woxvf5bKYNVKmg5.iYWEmWF9iCP
- a7R0o_dBOdtDTnDZobT_xY1FV26MQXmaeksWLVfLnhikvwXWifscaJbqOJY_
- i9aDs6gSUB9OJdv844_8YZudVe7AtjGpgmixs.NGEQqckybNLSsvJxin28GD
- 9zp_2EtKp4..04lV8QLElhLo6S09WdeYsBkUzAfmOwAaGWSI4SofKh1rXHiA
- kIEMoga0qk9IQYMvpKO7jMuRZKGJ5C4xEPW8TmvVt1goCVjWT_e1G2ZwnNiv
- pMamIgyK.6.byt8n6_Hh3r4YSYdftFY6CgWkDWcyUo5ayqUShCaZoYZod0LO
- YM9Ci6Pvy8yCvbU7xxLGkihW.
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 15 Jun 2011 10:45:03 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Rik van Riel <riel@redhat.com>
-cc: Linux kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kyle McMartin <kyle@redhat.com>
-Subject: Re: SLUB BUG: check_slab called with interrupts enabled
-In-Reply-To: <4DF8CCE1.80400@redhat.com>
-Message-ID: <alpine.DEB.2.00.1106151040020.768@router.home>
-References: <4DF8C80F.7090403@redhat.com> <alpine.DEB.2.00.1106150959500.768@router.home> <4DF8CCE1.80400@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY=------------000801070501020300060301
-Content-ID: <alpine.DEB.2.00.1106151040021.768@router.home>
+	id S1755866Ab1FOPps (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 11:45:48 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:38170 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752379Ab1FOPpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 11:45:45 -0400
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/8 v2] x86, UV: smp_processor_id in a preemptable region
+Cc: mingo@elte.hu
+Message-Id: <E1QWsIy-0008FZ-3Y@eag09.americas.sgi.com>
+From: Cliff Wickman <cpw@sgi.com>
+Date: Wed, 15 Jun 2011 10:46:56 -0500
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+From: Cliff Wickman <cpw@sgi.com>
 
---------------000801070501020300060301
-Content-Type: TEXT/PLAIN; CHARSET=US-ASCII; FORMAT=flowed
-Content-ID: <alpine.DEB.2.00.1106151040022.768@router.home>
+Calling smp_processor_id() from within a preemptable region will issue
+a warning if DEBUG_PREEMPT is set.
 
-On Wed, 15 Jun 2011, Rik van Riel wrote:
+Which cpu is returned by smp_processor_id() is actually arbitrary here, as
+every cpu has a per-cpu structure with the needed limit for the tunable. But
+the call should be non-preemptable to avoid a warning in a DEBUG_PREEMPT
+kernel.
 
-> > There are no additional special slub patches applied right? Because some
-> > of the patches under discussion change the interrupt disable handling a
-> > bit.
->
-> Just the two attached ones, which don't seem to touch the
-> code path in question...
+Diffed against 3.0.0-rc3
 
-I also do not see how these could break something. But they are mucking
-around with the __GFP_WAIT flag. __GFP_WAIT determines the reenabling and
-redisabling of interrupts in __slab_alloc(). If some variables gets
-corrupted then this could be the result.
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+---
+ arch/x86/platform/uv/tlb_uv.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Print out the value of gfpflags before and after the call to new_slab()
-from __slab_alloc()?
---------------000801070501020300060301
-Content-Type: TEXT/PLAIN; NAME*0=mm-slub-do-not-take-expensive-steps-for-slubs-speculative-high-order-allocations.; NAME*1=patch
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.DEB.2.00.1106151040023.768@router.home>
-Content-Description: 
-Content-Disposition: ATTACHMENT; FILENAME*0=mm-slub-do-not-take-expensive-steps-for-slubs-speculative-hi; FILENAME*1=gh-order-allocations.patch
-
-RnJvbSBsaW51eC1mc2RldmVsLW93bmVyQHZnZXIua2VybmVsLm9yZyBGcmkgTWF5IDEzIDEw
-OjA0OjE4IDIwMTEKRnJvbToJTWVsIEdvcm1hbiA8bWdvcm1hbkBzdXNlLmRlPgpUbzoJQW5k
-cmV3IE1vcnRvbiA8YWtwbUBsaW51eC1mb3VuZGF0aW9uLm9yZz4KQ2M6CUphbWVzIEJvdHRv
-bWxleSA8SmFtZXMuQm90dG9tbGV5QEhhbnNlblBhcnRuZXJzaGlwLmNvbT4sCglDb2xpbiBL
-aW5nIDxjb2xpbi5raW5nQGNhbm9uaWNhbC5jb20+LAoJUmFnaGF2ZW5kcmEgRCBQcmFiaHUg
-PHJhZ2h1LnByYWJodTEzQGdtYWlsLmNvbT4sCglKYW4gS2FyYSA8amFja0BzdXNlLmN6Piwg
-Q2hyaXMgTWFzb24gPGNocmlzLm1hc29uQG9yYWNsZS5jb20+LAoJQ2hyaXN0b3BoIExhbWV0
-ZXIgPGNsQGxpbnV4LmNvbT4sCglQZWtrYSBFbmJlcmcgPHBlbmJlcmdAa2VybmVsLm9yZz4s
-CglSaWsgdmFuIFJpZWwgPHJpZWxAcmVkaGF0LmNvbT4sCglKb2hhbm5lcyBXZWluZXIgPGhh
-bm5lc0BjbXB4Y2hnLm9yZz4sCglsaW51eC1mc2RldmVsIDxsaW51eC1mc2RldmVsQHZnZXIu
-a2VybmVsLm9yZz4sCglsaW51eC1tbSA8bGludXgtbW1Aa3ZhY2sub3JnPiwKCWxpbnV4LWtl
-cm5lbCA8bGludXgta2VybmVsQHZnZXIua2VybmVsLm9yZz4sCglsaW51eC1leHQ0IDxsaW51
-eC1leHQ0QHZnZXIua2VybmVsLm9yZz4sCglNZWwgR29ybWFuIDxtZ29ybWFuQHN1c2UuZGU+
-ClN1YmplY3Q6IFtQQVRDSCAzLzRdIG1tOiBzbHViOiBEbyBub3QgdGFrZSBleHBlbnNpdmUg
-c3RlcHMgZm9yIFNMVUJzIHNwZWN1bGF0aXZlIGhpZ2gtb3JkZXIgYWxsb2NhdGlvbnMKRGF0
-ZToJRnJpLCAxMyBNYXkgMjAxMSAxNTowMzoyMyArMDEwMApNZXNzYWdlLUlkOiA8MTMwNTI5
-NTQwNC0xMjEyOS00LWdpdC1zZW5kLWVtYWlsLW1nb3JtYW5Ac3VzZS5kZT4KWC1NYWlsaW5n
-LUxpc3Q6CWxpbnV4LWZzZGV2ZWxAdmdlci5rZXJuZWwub3JnCgpUbyBhdm9pZCBsb2NraW5n
-IGFuZCBwZXItY3B1IG92ZXJoZWFkLCBTTFVCIG9wdGltaXNpY2FsbHkgdXNlcwpoaWdoLW9y
-ZGVyIGFsbG9jYXRpb25zIGFuZCBmYWxscyBiYWNrIHRvIGxvd2VyIGFsbG9jYXRpb25zIGlm
-IHRoZXkKZmFpbC4gSG93ZXZlciwgYnkgc2ltcGx5IHRyeWluZyB0byBhbGxvY2F0ZSwgdGhl
-IGNhbGxlciBjYW4gZW50ZXIKY29tcGFjdGlvbiBvciByZWNsYWltIC0gYm90aCBvZiB3aGlj
-aCBhcmUgbGlrZWx5IHRvIGNvc3QgbW9yZSB0aGFuIHRoZQpiZW5lZml0IG9mIHVzaW5nIGhp
-Z2gtb3JkZXIgcGFnZXMgaW4gU0xVQi4gT24gYSBkZXNrdG9wIHN5c3RlbSwgdHdvCnVzZXJz
-IHJlcG9ydCB0aGF0IHRoZSBzeXN0ZW0gaXMgZ2V0dGluZyBzdGFsbGVkIHdpdGgga3N3YXBk
-IHVzaW5nIGxhcmdlCmFtb3VudHMgb2YgQ1BVLgoKVGhpcyBwYXRjaCBwcmV2ZW50cyBTTFVC
-IHRha2luZyBhbnkgZXhwZW5zaXZlIHN0ZXBzIHdoZW4gdHJ5aW5nIHRvIHVzZQpoaWdoLW9y
-ZGVyIGFsbG9jYXRpb25zLiBJbnN0ZWFkLCBpdCBpcyBleHBlY3RlZCB0byBmYWxsIGJhY2sg
-dG8gc21hbGxlcgpvcmRlcnMgbW9yZSBhZ2dyZXNzaXZlbHkuIFRlc3Rpbmcgd2FzIHNvbWV3
-aGF0IGluY29uY2x1c2l2ZSBvbiBob3cgbXVjaAp0aGlzIGhlbHBlZCBidXQgaXQgbWFrZXMg
-c2Vuc2UgdGhhdCBmYWxsaW5nIGJhY2sgdG8gb3JkZXItMCBhbGxvY2F0aW9ucwppcyBmYXN0
-ZXIgdGhhbiBlbnRlcmluZyBjb21wYWN0aW9uIG9yIGRpcmVjdCByZWNsYWltLgoKU2lnbmVk
-LW9mZi1ieTogTWVsIEdvcm1hbiA8bWdvcm1hbkBzdXNlLmRlPgotLS0KIG1tL3BhZ2VfYWxs
-b2MuYyB8ICAgIDMgKystCiBtbS9zbHViLmMgICAgICAgfCAgICAzICsrLQogMiBmaWxlcyBj
-aGFuZ2VkLCA0IGluc2VydGlvbnMoKyksIDIgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEv
-bW0vcGFnZV9hbGxvYy5jIGIvbW0vcGFnZV9hbGxvYy5jCmluZGV4IDlmOGE5N2IuLjA1N2Yx
-ZTIgMTAwNjQ0Ci0tLSBhL21tL3BhZ2VfYWxsb2MuYworKysgYi9tbS9wYWdlX2FsbG9jLmMK
-QEAgLTE5NzIsNiArMTk3Miw3IEBAIGdmcF90b19hbGxvY19mbGFncyhnZnBfdCBnZnBfbWFz
-aykKIHsKIAlpbnQgYWxsb2NfZmxhZ3MgPSBBTExPQ19XTUFSS19NSU4gfCBBTExPQ19DUFVT
-RVQ7CiAJY29uc3QgZ2ZwX3Qgd2FpdCA9IGdmcF9tYXNrICYgX19HRlBfV0FJVDsKKwljb25z
-dCBnZnBfdCBjYW5fd2FrZV9rc3dhcGQgPSAhKGdmcF9tYXNrICYgX19HRlBfTk9fS1NXQVBE
-KTsKIAogCS8qIF9fR0ZQX0hJR0ggaXMgYXNzdW1lZCB0byBiZSB0aGUgc2FtZSBhcyBBTExP
-Q19ISUdIIHRvIHNhdmUgYSBicmFuY2guICovCiAJQlVJTERfQlVHX09OKF9fR0ZQX0hJR0gg
-IT0gKF9fZm9yY2UgZ2ZwX3QpIEFMTE9DX0hJR0gpOwpAQCAtMTk4NCw3ICsxOTg1LDcgQEAg
-Z2ZwX3RvX2FsbG9jX2ZsYWdzKGdmcF90IGdmcF9tYXNrKQogCSAqLwogCWFsbG9jX2ZsYWdz
-IHw9IChfX2ZvcmNlIGludCkgKGdmcF9tYXNrICYgX19HRlBfSElHSCk7CiAKLQlpZiAoIXdh
-aXQpIHsKKwlpZiAoIXdhaXQgJiYgY2FuX3dha2Vfa3N3YXBkKSB7CiAJCS8qCiAJCSAqIE5v
-dCB3b3J0aCB0cnlpbmcgdG8gYWxsb2NhdGUgaGFyZGVyIGZvcgogCQkgKiBfX0dGUF9OT01F
-TUFMTE9DIGV2ZW4gaWYgaXQgY2FuJ3Qgc2NoZWR1bGUuCmRpZmYgLS1naXQgYS9tbS9zbHVi
-LmMgYi9tbS9zbHViLmMKaW5kZXggOThjMzU4ZC4uYzU3OTdhYiAxMDA2NDQKLS0tIGEvbW0v
-c2x1Yi5jCisrKyBiL21tL3NsdWIuYwpAQCAtMTE3MCw3ICsxMTcwLDggQEAgc3RhdGljIHN0
-cnVjdCBwYWdlICphbGxvY2F0ZV9zbGFiKHN0cnVjdCBrbWVtX2NhY2hlICpzLCBnZnBfdCBm
-bGFncywgaW50IG5vZGUpCiAJICogTGV0IHRoZSBpbml0aWFsIGhpZ2hlci1vcmRlciBhbGxv
-Y2F0aW9uIGZhaWwgdW5kZXIgbWVtb3J5IHByZXNzdXJlCiAJICogc28gd2UgZmFsbC1iYWNr
-IHRvIHRoZSBtaW5pbXVtIG9yZGVyIGFsbG9jYXRpb24uCiAJICovCi0JYWxsb2NfZ2ZwID0g
-KGZsYWdzIHwgX19HRlBfTk9XQVJOIHwgX19HRlBfTk9SRVRSWSB8IF9fR0ZQX05PX0tTV0FQ
-RCkgJiB+X19HRlBfTk9GQUlMOworCWFsbG9jX2dmcCA9IChmbGFncyB8IF9fR0ZQX05PV0FS
-TiB8IF9fR0ZQX05PX0tTV0FQRCkgJgorCQkJfihfX0dGUF9OT0ZBSUwgfCBfX0dGUF9XQUlU
-IHwgX19HRlBfUkVQRUFUKTsKIAogCXBhZ2UgPSBhbGxvY19zbGFiX3BhZ2UoYWxsb2NfZ2Zw
-LCBub2RlLCBvbyk7CiAJaWYgKHVubGlrZWx5KCFwYWdlKSkgewotLSAKMS43LjMuNAo=
---------------000801070501020300060301
-Content-Type: TEXT/PLAIN; NAME=mm-slub-do-not-wake-kswapd-for-slubs-speculative-high-order-allocations.patch
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.DEB.2.00.1106151040024.768@router.home>
-Content-Description: 
-Content-Disposition: ATTACHMENT; FILENAME*0=mm-slub-do-not-wake-kswapd-for-slubs-speculative-high-order-; FILENAME*1=allocations.patch
-
-RnJvbSBsaW51eC1mc2RldmVsLW93bmVyQHZnZXIua2VybmVsLm9yZyBGcmkgTWF5IDEzIDEw
-OjA0OjAwIDIwMTEKRnJvbToJTWVsIEdvcm1hbiA8bWdvcm1hbkBzdXNlLmRlPgpUbzoJQW5k
-cmV3IE1vcnRvbiA8YWtwbUBsaW51eC1mb3VuZGF0aW9uLm9yZz4KQ2M6CUphbWVzIEJvdHRv
-bWxleSA8SmFtZXMuQm90dG9tbGV5QEhhbnNlblBhcnRuZXJzaGlwLmNvbT4sCglDb2xpbiBL
-aW5nIDxjb2xpbi5raW5nQGNhbm9uaWNhbC5jb20+LAoJUmFnaGF2ZW5kcmEgRCBQcmFiaHUg
-PHJhZ2h1LnByYWJodTEzQGdtYWlsLmNvbT4sCglKYW4gS2FyYSA8amFja0BzdXNlLmN6Piwg
-Q2hyaXMgTWFzb24gPGNocmlzLm1hc29uQG9yYWNsZS5jb20+LAoJQ2hyaXN0b3BoIExhbWV0
-ZXIgPGNsQGxpbnV4LmNvbT4sCglQZWtrYSBFbmJlcmcgPHBlbmJlcmdAa2VybmVsLm9yZz4s
-CglSaWsgdmFuIFJpZWwgPHJpZWxAcmVkaGF0LmNvbT4sCglKb2hhbm5lcyBXZWluZXIgPGhh
-bm5lc0BjbXB4Y2hnLm9yZz4sCglsaW51eC1mc2RldmVsIDxsaW51eC1mc2RldmVsQHZnZXIu
-a2VybmVsLm9yZz4sCglsaW51eC1tbSA8bGludXgtbW1Aa3ZhY2sub3JnPiwKCWxpbnV4LWtl
-cm5lbCA8bGludXgta2VybmVsQHZnZXIua2VybmVsLm9yZz4sCglsaW51eC1leHQ0IDxsaW51
-eC1leHQ0QHZnZXIua2VybmVsLm9yZz4sCglNZWwgR29ybWFuIDxtZ29ybWFuQHN1c2UuZGU+
-ClN1YmplY3Q6IFtQQVRDSCAyLzRdIG1tOiBzbHViOiBEbyBub3Qgd2FrZSBrc3dhcGQgZm9y
-IFNMVUJzIHNwZWN1bGF0aXZlIGhpZ2gtb3JkZXIgYWxsb2NhdGlvbnMKRGF0ZToJRnJpLCAx
-MyBNYXkgMjAxMSAxNTowMzoyMiArMDEwMApNZXNzYWdlLUlkOiA8MTMwNTI5NTQwNC0xMjEy
-OS0zLWdpdC1zZW5kLWVtYWlsLW1nb3JtYW5Ac3VzZS5kZT4KWC1NYWlsaW5nLUxpc3Q6CWxp
-bnV4LWZzZGV2ZWxAdmdlci5rZXJuZWwub3JnCgpUbyBhdm9pZCBsb2NraW5nIGFuZCBwZXIt
-Y3B1IG92ZXJoZWFkLCBTTFVCIG9wdGltaXNpY2FsbHkgdXNlcwpoaWdoLW9yZGVyIGFsbG9j
-YXRpb25zIGFuZCBmYWxscyBiYWNrIHRvIGxvd2VyIGFsbG9jYXRpb25zIGlmIHRoZXkKZmFp
-bC4gIEhvd2V2ZXIsIGJ5IHNpbXBseSB0cnlpbmcgdG8gYWxsb2NhdGUsIGtzd2FwZCBpcyB3
-b2tlbiB1cCB0bwpzdGFydCByZWNsYWltaW5nIGF0IHRoYXQgb3JkZXIuIE9uIGEgZGVza3Rv
-cCBzeXN0ZW0sIHR3byB1c2VycyByZXBvcnQKdGhhdCB0aGUgc3lzdGVtIGlzIGdldHRpbmcg
-bG9ja2VkIHVwIHdpdGgga3N3YXBkIHVzaW5nIGxhcmdlIGFtb3VudHMKb2YgQ1BVLiAgVXNp
-bmcgU0xBQiBpbnN0ZWFkIG9mIFNMVUIgbWFkZSB0aGlzIHByb2JsZW0gZ28gYXdheS4KClRo
-aXMgcGF0Y2ggcHJldmVudHMga3N3YXBkIGJlaW5nIHdva2VuIHVwIGZvciBoaWdoLW9yZGVy
-IGFsbG9jYXRpb25zLgpUZXN0aW5nIGluZGljYXRlZCB0aGF0IHdpdGggdGhpcyBwYXRjaCBh
-cHBsaWVkLCB0aGUgc3lzdGVtIHdhcyBtdWNoCmhhcmRlciB0byBoYW5nIGFuZCBldmVuIHdo
-ZW4gaXQgZGlkLCBpdCBldmVudHVhbGx5IHJlY292ZXJlZC4KClNpZ25lZC1vZmYtYnk6IE1l
-bCBHb3JtYW4gPG1nb3JtYW5Ac3VzZS5kZT4KLS0tCiBtbS9zbHViLmMgfCAgICAyICstCiAx
-IGZpbGVzIGNoYW5nZWQsIDEgaW5zZXJ0aW9ucygrKSwgMSBkZWxldGlvbnMoLSkKCmRpZmYg
-LS1naXQgYS9tbS9zbHViLmMgYi9tbS9zbHViLmMKaW5kZXggOWQyZTVlNC4uOThjMzU4ZCAx
-MDA2NDQKLS0tIGEvbW0vc2x1Yi5jCisrKyBiL21tL3NsdWIuYwpAQCAtMTE3MCw3ICsxMTcw
-LDcgQEAgc3RhdGljIHN0cnVjdCBwYWdlICphbGxvY2F0ZV9zbGFiKHN0cnVjdCBrbWVtX2Nh
-Y2hlICpzLCBnZnBfdCBmbGFncywgaW50IG5vZGUpCiAJICogTGV0IHRoZSBpbml0aWFsIGhp
-Z2hlci1vcmRlciBhbGxvY2F0aW9uIGZhaWwgdW5kZXIgbWVtb3J5IHByZXNzdXJlCiAJICog
-c28gd2UgZmFsbC1iYWNrIHRvIHRoZSBtaW5pbXVtIG9yZGVyIGFsbG9jYXRpb24uCiAJICov
-Ci0JYWxsb2NfZ2ZwID0gKGZsYWdzIHwgX19HRlBfTk9XQVJOIHwgX19HRlBfTk9SRVRSWSkg
-JiB+X19HRlBfTk9GQUlMOworCWFsbG9jX2dmcCA9IChmbGFncyB8IF9fR0ZQX05PV0FSTiB8
-IF9fR0ZQX05PUkVUUlkgfCBfX0dGUF9OT19LU1dBUEQpICYgfl9fR0ZQX05PRkFJTDsKIAog
-CXBhZ2UgPSBhbGxvY19zbGFiX3BhZ2UoYWxsb2NfZ2ZwLCBub2RlLCBvbyk7CiAJaWYgKHVu
-bGlrZWx5KCFwYWdlKSkgewotLSAKMS43LjMuNAo=
---------------000801070501020300060301--
+Index: linux/arch/x86/platform/uv/tlb_uv.c
+===================================================================
+--- linux.orig/arch/x86/platform/uv/tlb_uv.c
++++ linux/arch/x86/platform/uv/tlb_uv.c
+@@ -1334,7 +1334,9 @@ static ssize_t tunables_write(struct fil
+ 
+ 	instr[count] = '\0';
+ 
++	preempt_disable(); /* avoid DEBUG_PREEMPT warning */
+ 	bcp = &per_cpu(bau_control, smp_processor_id());
++	preempt_enable_no_resched();
+ 
+ 	ret = parse_tunables_write(bcp, instr, count);
+ 	if (ret)
