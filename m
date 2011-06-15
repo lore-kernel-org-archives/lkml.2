@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab1FPHkf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:40:35 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:58450 "EHLO
+	id S1755630Ab1FPHkM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:40:12 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:38044 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754991Ab1FPHAZ (ORCPT
+	by vger.kernel.org with ESMTP id S1755222Ab1FPHA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:00:25 -0400
-X-Sasl-enc: 0XiYgQ/dBQ/CFJkKDuAtjQ7guye7duQSbUt36W7uDJJw 1308207624
+	Thu, 16 Jun 2011 03:00:27 -0400
+X-Sasl-enc: VWA9WbxKHALfpTx7Q+kirvTPqMoL+IgLkb/m1H+oJ+4i 1308207626
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:30 2011
-Message-Id: <20110616000230.675788886@clark.kroah.org>
+Message-Id: <20110616000230.772747349@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 16:59:40 -0700
+Date: Wed, 15 Jun 2011 16:59:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Rajkumar Manoharan <rmanoharan@atheros.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [17/89] ath9k: Reset chip on baseband hang
+Subject: [18/89] ath9k: set 40 Mhz rate only if hw is configured in ht40
 In-Reply-To: <20110616000258.GA14529@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,38 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rajkumar Manoharan <rmanoharan@atheros.com>
 
-commit a4d86d953b8593791cb29cf2acffd48f9ee6c4f9 upstream.
+commit 41e2b05b9598d6bdf91fc20280bfc538d853f769 upstream.
 
-Resetting hardware helps to recover from baseband
-hang/panic for AR9003 based chips.
+Whenever there is a channel width change from 40 Mhz to 20 Mhz,
+the hardware is reconfigured to ht20. Meantime before doing
+the rate control updation, the packets are being transmitted are
+selected rate with IEEE80211_TX_RC_40_MHZ_WIDTH.
+
+While transmitting ht40 rate packets in ht20 mode is causing
+baseband panic with AR9003 based chips.
+
+==== BB update: BB status=0x02001109 ====
+ath: ** BB state: wd=1 det=1 rdar=0 rOFDM=1 rCCK=1 tOFDM=0 tCCK=0 agc=2
+src=0 **
+ath: ** BB WD cntl: cntl1=0xffff0085 cntl2=0x00000004 **
+ath: ** BB mode: BB_gen_controls=0x000033c0 **
+ath: ** BB busy times: rx_clear=99%, rx_frame=0%, tx_frame=0% **
+ath: ==== BB update: done ====
 
 Signed-off-by: Rajkumar Manoharan <rmanoharan@atheros.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/main.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/rc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -633,7 +633,8 @@ void ath9k_tasklet(unsigned long data)
- 	u32 status = sc->intrstatus;
- 	u32 rxmask;
+--- a/drivers/net/wireless/ath/ath9k/rc.c
++++ b/drivers/net/wireless/ath/ath9k/rc.c
+@@ -689,7 +689,8 @@ static void ath_rc_rate_set_series(const
  
--	if (status & ATH9K_INT_FATAL) {
-+	if ((status & ATH9K_INT_FATAL) ||
-+	    (status & ATH9K_INT_BB_WATCHDOG)) {
- 		ath_reset(sc, true);
- 		return;
- 	}
-@@ -699,6 +700,7 @@ irqreturn_t ath_isr(int irq, void *dev)
- {
- #define SCHED_INTR (				\
- 		ATH9K_INT_FATAL |		\
-+		ATH9K_INT_BB_WATCHDOG |		\
- 		ATH9K_INT_RXORN |		\
- 		ATH9K_INT_RXEOL |		\
- 		ATH9K_INT_RX |			\
+ 	if (WLAN_RC_PHY_HT(rate_table->info[rix].phy)) {
+ 		rate->flags |= IEEE80211_TX_RC_MCS;
+-		if (WLAN_RC_PHY_40(rate_table->info[rix].phy))
++		if (WLAN_RC_PHY_40(rate_table->info[rix].phy) &&
++		    conf_is_ht40(&txrc->hw->conf))
+ 			rate->flags |= IEEE80211_TX_RC_40_MHZ_WIDTH;
+ 		if (WLAN_RC_PHY_SGI(rate_table->info[rix].phy))
+ 			rate->flags |= IEEE80211_TX_RC_SHORT_GI;
 
 
