@@ -1,97 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab1FOM0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 08:26:31 -0400
-Received: from cantor.suse.de ([195.135.220.2]:33080 "EHLO mx1.suse.de"
+	id S1753585Ab1FOM3r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 08:29:47 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:45741 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751768Ab1FOM01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 08:26:27 -0400
-Subject: Re: bug: kernel 3.0-rc3 not relocatable on i386?
-From: Petr Tesarik <ptesarik@suse.cz>
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1308132448.4641.41.camel@nathan.suse.cz>
-References: <1308125533.4641.33.camel@nathan.suse.cz>
-	 <BANLkTikoxYAz7G7pvKABbVPzOuxUzLkO=Q@mail.gmail.com>
-	 <1308132078.4641.38.camel@nathan.suse.cz>
-	 <1308132448.4641.41.camel@nathan.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Organization: SUSE LINUX
-Date: Wed, 15 Jun 2011 14:26:23 +0200
-Message-Id: <1308140783.4641.141.camel@nathan.suse.cz>
+	id S1751028Ab1FOM3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 08:29:44 -0400
+Date: Wed, 15 Jun 2011 22:29:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Wanlong Gao <wanlong.gao@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Linux-Next <linux-next@vger.kernel.org>
+Subject: Re: Build regressions/improvements in v3.0-rc3
+Message-Id: <20110615222932.05a863fc.sfr@canb.auug.org.au>
+In-Reply-To: <1308138281.4112.3.camel@Tux>
+References: <1308138281.4112.3.camel@Tux>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__15_Jun_2011_22_29_32_+1000_ZRcosJOo/Tj7C/XG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Petr Tesarik píše v St 15. 06. 2011 v 12:07 +0200:
-> Petr Tesarik píše v St 15. 06. 2011 v 12:01 +0200:
-> > Maarten Lankhorst píše v St 15. 06. 2011 v 11:21 +0200:
-> > > Hi Petr,
-> > > 
-> > > 2011/6/15 Petr Tesarik <ptesarik@suse.cz>:
-> > > > Hi all,
-> > > >
-> > > > it seems that the 3.0-rc3 kernel is not relocatable on i386. I get
-> > > > warnings about jiffies being an absolute symbol, and indeed, when GRUB
-> > > > loads the kernel at a non-default address, jiffies is not relocated.
-> > > >
-> > > > In my example the kernel is configured with
-> > > > CONFIG_PHYSICAL_START=0x1000000
-> > > > CONFIG_PHYSICAL_ALIGN=0x200000
-> > > > CONFIG_RELOCATABLE=y
-> > > > and loaded at 0x200000 by GRUB.
-> > > >
-> > > > Booting fails when checking whether the timer works, because do_timer()
-> > > > increments jiffies_64, but timer_irq_works() checks jiffies. The code
-> > > > looks like this:
-> > > >
-> > > > c13daab7:       8b 3d 40 7a 39 c1       mov    0xc1397a40,%edi
-> > > >
-> > > > but arch/x86/boot/compressed/vmlinux.relocs does not contain c13daaba.
-> > > > Consequently, timer_irq_works() reads the wrong memory location and
-> > > > fails, causing a panic:
-> > > >
-> > > > kernel panic: IO-APIC + timer doesn't work! Boot with apic=debug and
-> > > > send a report.  Then try booting with the 'noapic' option.
-> > > >
-> > > > Needless to say, the kernel freezes a few initcalls later when booted
-> > > > with noapic, because IO-APIC worked fine, in fact. I verified that by
-> > > > inserting a debugging printk() in do_timer(), and I also verified with
-> > > > that printk() that the address of jiffies_64 and the address of jiffies
-> > > > differ at run time.
-> > > >
-> > > > Any idea how to fix this?
-> > > Does reverting this commit fix it?
-> > 
-> > Isn't this related to VDSO? I've got no troubles with the VDSO. It's
-> > just that the kernel assumes a fixed location of jiffies (in the kernel
-> > direct mapping), so it cannot be relocated.
-> > 
-> > OTOH this must have worked the other day, so searching for the commit
-> > that broke it is a good hint. I'll try it here, too.
-> 
-> Ah, it turns out this is in fact reported here:
-> 
-> http://sourceware.org/bugzilla/show_bug.cgi?id=12327
-> 
-> But the patch was reverted by commit
-> 6b35eb9ddcddde7b510726de03fae071178f1ec4, so these binutils have been
-> broken again since January.
+--Signature=_Wed__15_Jun_2011_22_29_32_+1000_ZRcosJOo/Tj7C/XG
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I tried to understand what was wrong with the approach taken by Shaohua
-and what caused a problem for Markus Trippelsdorf, but it seems the
-revert didn't help in any way: I don't get build failures. I get a
-non-booting kernel, and the traces didn't give me any clue what was
-wrong.
+On Wed, 15 Jun 2011 19:44:41 +0800 Wanlong Gao <wanlong.gao@gmail.com> wrot=
+e:
+>
+> <snip>
+> I see that some mips fixes in ralf's tree but not been pulled. almost
+> for about one month.
 
-Anyway, what's wrong with the generic approach suggested by hpa?
+Well, the mips tree in linux-next is
+git://git.linux-mips.org/pub/scm/upstream-sfr.git#mips-for-linux-next and
+I fetch it every day.
 
-http://linux.derkeiler.com/Mailing-Lists/Kernel/2011-01/msg06976.html
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Petr
+--Signature=_Wed__15_Jun_2011_22_29_32_+1000_ZRcosJOo/Tj7C/XG
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN+KWsAAoJEDMEi1NhKgbsGTAH/14CwQWtKSViDwvgCtUDInS1
+rs4EvYTT6/B28U3M5l+BNEDH5aTUVM6rKxZYpS+xDMb5nD6fQq4OW66C/ilAqWfw
+oRMbv1AmikJf2KXyTDTI3oghe6aDfZusWhSPIo+/gHeOCRXTAuiIOLFuASgjD+G7
+8CEKIRFDSLBDXUitjXFOUy7DjcwqSsy66yL/kUaSQa6SZpJPqZ9xytaokhiC8Frw
+Z5Ih4awd1VX3+hAaXcjFLyfIGe6ZymPuRmg1IwBB4QHDLdKUOX+Dgd2s/NZVg2JS
+TsF9Z84xQXu2sGMo1MyK0XAyL9hx++3IB58RSVIyKrXLhe2nj+75y9ogxZNkg9Y=
+=oewP
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__15_Jun_2011_22_29_32_+1000_ZRcosJOo/Tj7C/XG--
