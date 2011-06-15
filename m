@@ -1,101 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab1FOGgB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 02:36:01 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:36940 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751232Ab1FOGgA (ORCPT
+	id S1753058Ab1FOGyU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 02:54:20 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:51779 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751728Ab1FOGyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 02:36:00 -0400
-Message-ID: <4DF852C7.6000904@ti.com>
-Date: Wed, 15 Jun 2011 12:05:51 +0530
+	Wed, 15 Jun 2011 02:54:19 -0400
+Message-ID: <4DF85713.8040208@ti.com>
+Date: Wed, 15 Jun 2011 12:24:11 +0530
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-CC: Colin Cross <ccross@android.com>,
+To: Colin Cross <ccross@android.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: mm: cache-l2x0: Add support for re-enabling l2x0
-References: <1307926019-28958-1-git-send-email-ccross@android.com> <20110613101942.GA7924@e102568-lin.cambridge.arm.com> <BANLkTingENSjDaE7O+Lb6P=ED4JtuJY1jkV25b3SW6RhsOQQkw@mail.gmail.com> <20110614173013.GA9234@e102568-lin.cambridge.arm.com>
-In-Reply-To: <20110614173013.GA9234@e102568-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/3] CPU PM notifiers
+References: <1307925825-28566-1-git-send-email-ccross@android.com> <201106142334.09362.rjw@sisk.pl> <BANLkTino9JopSw-vxHOsV3SqS+0UT1q_3w@mail.gmail.com> <201106150012.57459.rjw@sisk.pl>
+In-Reply-To: <201106150012.57459.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/14/2011 11:00 PM, Lorenzo Pieralisi wrote:
-> On Mon, Jun 13, 2011 at 07:20:34PM +0100, Colin Cross wrote:
->> On Mon, Jun 13, 2011 at 3:19 AM, Lorenzo Pieralisi
->> <lorenzo.pieralisi@arm.com>  wrote:
->>> On Mon, Jun 13, 2011 at 01:46:58AM +0100, Colin Cross wrote:
->>>> Remove __init annotation from l2x0_init so it can be used to
->>>> reinitialize the l2x0 after it has been reset during suspend.
+Colin,
+On 6/15/2011 3:42 AM, Rafael J. Wysocki wrote:
+> On Tuesday, June 14, 2011, Colin Cross wrote:
+>> On Tue, Jun 14, 2011 at 2:34 PM, Rafael J. Wysocki<rjw@sisk.pl>  wrote:
+>>> On Tuesday, June 14, 2011, Colin Cross wrote:
+>>>> On Tue, Jun 14, 2011 at 2:00 PM, Rafael J. Wysocki<rjw@sisk.pl>  wrote:
+>>>>> On Monday, June 13, 2011, Colin Cross wrote:
+>>>>>> On Mon, Jun 13, 2011 at 11:37 AM, Rafael J. Wysocki<rjw@sisk.pl>  wrote:
+>>>>>>> On Monday, June 13, 2011, Colin Cross wrote:
+>>>>>>>> This patch set tries to address Russell's concerns with platform
+>>>>>>>> pm code calling into the driver for every block in the Cortex A9s
+>>>>>>>> during idle, hotplug, and suspend.  The first patch adds cpu pm
+>>>>>>>> notifiers that can be called by platform code, the second uses
+>>>>>>>> the notifier to save and restore the GIC state, and the third
+>>>>>>>> saves the VFP state.
+>>>>>>>>
+>>>>>>>> The notifiers are used for two types of events, CPU PM events and
+>>>>>>>> CPU complex PM events.  CPU PM events are used to save and restore
+>>>>>>>> per-cpu context when a single CPU is preparing to enter or has
+>>>>>>>> just exited a low power state.  For example, the VFP saves the
+>>>>>>>> last thread context, and the GIC saves banked CPU registers.
+>>>>>>>>
+>>>>>>>> CPU complex events are used after all the CPUs in a power domain
+>>>>>>>> have been prepared for the low power state.  The GIC uses these
+>>>>>>>> events to save global register state.
+>>>>>>>>
+>>>>>>>> Platforms that call the cpu_pm APIs must select
+>>>>>>>> CONFIG_ARCH_USES_CPU_PM
+>>>>>>>>
+>>>>>>>> L2 cache is not covered by this patch set, as the determination
+>>>>>>>> of when the L2 is reset and when it is retained is
+>>>>>>>> platform-specific, and most of the APIs necessary are already
+>>>>>>>> present.
+>>>>>>>>
+>>>>>>>>   arch/arm/Kconfig              |    7 ++
+>>>>>>>>   arch/arm/common/gic.c         |  212 +++++++++++++++++++++++++++++++++++++++++
+>>>>>>>>   arch/arm/include/asm/cpu_pm.h |   54 +++++++++++
+>>>>>>>>   arch/arm/kernel/Makefile      |    1 +
+>>>>>>>>   arch/arm/kernel/cpu_pm.c      |  181 +++++++++++++++++++++++++++++++++++
+>>>>>>>
+>>>>>>> Is there any reason why this has to be ARM-specific?  There are other
+>>>>>>> architectures where this kind of feature might make sense (SH and
+>>>>>>> powerpc at least).
+>>>>>>
+>>>>>> Nothing other than there are currently no adaptations for any drivers
+>>>>>> besides ARM, but I can move it somewhere outside ARM.  Any suggestions
+>>>>>> where?
+>>>>>
+>>>>> Well, there is kernel/cpu.c.  It contains mostly CPU hotplug and PM
+>>>>> code at the moment, so it looks like a good place.
 >>>>
->>>> Only print the init messages the first time l2x0_init is called.
+>>>> OK, I'll look at moving it there.
 >>>>
->>>> Add l2x0_enable to re-enable the l2x0 after l2x0_disable if
->>>> the l2x0 was not reset.
+>>>>>>> Besides, is there any overlap between this feature and the CPU hotplug
+>>>>>>> notifiers?
+>>>>>>
+>>>>>> I don't think so - the hotplug notifiers are used when a CPU is being
+>>>>>> removed from the system, so no saving and restoring is necessary - the
+>>>>>> CPU will be rebooted from scratch.  They are used by systems outside
+>>>>>> the CPU that need to know that a CPU no longer exists.
+>>>>>>
+>>>>>> CPU PM notifiers are used when a CPU is going through reset in a way
+>>>>>> that should be transparent to most of the system.
+>>>>>
+>>>>> Do I guess correctly that you mean cpuidle?
 >>>>
->>>> l2x0_disable cannot use writel, as writel calls wmb(), and wmb()
->>>> may call outer_cache_sync, which takes the same spinlock as
->>>> l2x0_disable.
->>>>
->>>> Signed-off-by: Colin Cross<ccross@android.com>
->>>> ---
->>>> ?arch/arm/include/asm/hardware/cache-l2x0.h | ? ?3 ++-
->>>> ?arch/arm/mm/cache-l2x0.c ? ? ? ? ? ? ? ? ? | ? 18 ++++++++++++++----
->>>> ?2 files changed, 16 insertions(+), 5 deletions(-)
->>>>
+>>>> cpuidle is the major user, but primary CPUs in suspend have to save
+>>>> and restore the same blocks, and tend to use the same platform sleep
+>>>> code as idle, so it's logical to use the notifiers for both.  On the
+>>>> other hand, some drivers that would use cpu_pm notifiers already use
+>>>> syscore ops to handle suspend and resume (like vfp) - maybe these
+>>>> notifiers should only be used in cpuidle, and syscore ops added to the
+>>>> gic driver?  I could also convert the notifiers to new syscore_ops -
+>>>> cpu_idle, cpu_unidle, cpu_cluster_idle, cpu_cluster_unidle, but I
+>>>> don't know how well that fits in to the intention for syscore.
 >>>
->>> [...]
+>>> Basically, syscore_ops deal with the situation during system suspend
+>>> when all CPUs but one have been switched off (through CPU hotplug)
+>>> and interrupts are off on the only active CPU.  If there's anything
+>>> you need to do at this point, syscore_ops is the right thing to use.
+>>> And analogously for system resume.
 >>>
->>>> +/* enables l2x0 after l2x0_disable, does not invalidate */
->>>> +void l2x0_enable(void)
->>>> +{
->>>> + ? ? unsigned long flags;
->>>> +
->>>> + ? ? spin_lock_irqsave(&l2x0_lock, flags);
->>>> + ? ? writel_relaxed(1, l2x0_base + L2X0_CTRL);
->>>> + ? ? spin_unlock_irqrestore(&l2x0_lock, flags);
->>>> +}
->>>> +
->>>> ?static void l2x0_disable(void)
->>>> ?{
->>>> ? ? ? unsigned long flags;
->>>>
->>>> ? ? ? spin_lock_irqsave(&l2x0_lock, flags);
->>>> - ? ? writel(0, l2x0_base + L2X0_CTRL);
->>>> + ? ? writel_relaxed(0, l2x0_base + L2X0_CTRL);
->>>> ? ? ? spin_unlock_irqrestore(&l2x0_lock, flags);
->>>> ?}
->>>
->>> This function is still dodgy to use, since we are disabling L2
->>> possibly with current function stack lines allocated, which might wreak havoc.
+>>> Moreover, for system suspend switching off the "boot" CPU (i.e. the only one
+>>> that remains active through the whole sequence) should really be the last
+>>> thing done, everything else should have been handled through syscore_ops
+>>> before.
 >>
->>  From my JTAG debugging, I think the PL310 (at least the one I'm
->> working with) flushes on disable.  I had a problem where reads with
->> the cache disabled were getting incorrect data because the data was
->> stuck in the cache.  With the CPU paused, I disabled the PL310 with
->> the L2X0_CTRL register, and my data appeared in memory.  I'll try to
->> find some documentation to support this.
->>
->
-> According to the PL310 TRM (r3p2 3-9) on disable the PL310 syncs, which means
-> it flushes internal buffers, but it is not supposed to clean dirty lines.
-> It seems unsafe to me to use the stack and other cacheable data right before
-> disabling.
->
-That's right. Disabling L2 won't clean the cache lines. They need
-to be cleaned before entering low power state where you loose
-it.
-Though, cleaning of L2 cache would work even with L2 enable
-is not set.
+IIUC, you mentioned about moving the GIC, L2 to syscore_ops. Now the
+state of these can still change till the last CPU goes down and in that
+case it's necessary to handle these as part of the last CPU sleep
+code. In other case, the syscore_ops callback would happen before
+last CPU suspend has started.
 
+>> Yes, but what to do with idle, which generally needs to do the exact
+>> same things as handled in some syscore ops?  Extend syscore ops, or
+>> add the new notifier, and each driver can implement both syscore and
+>> cpu_pm listeners (and probably call the same helper function to handle
+>> both)?
+>
+> Good question.  I don't think I have a good answer to it at the moment, need
+> to ponder that a bit more.
+
+So I am not sure CPU cluster related modules can be handled via sys_core 
+ops even for suspend. And if that happens to be the case, then
+doing all of that through PM cluster notifier for both idle and suspend 
+is most logical.
+
+Regards
+Santosh
