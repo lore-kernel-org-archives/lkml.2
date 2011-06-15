@@ -1,263 +1,782 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754388Ab1FOJKK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 05:10:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30725 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753408Ab1FOJKE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 05:10:04 -0400
-Date: Wed, 15 Jun 2011 12:09:51 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Glauber Costa <glommer@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH 3/7] KVM-HV: KVM Steal time implementation
-Message-ID: <20110615090951.GQ491@redhat.com>
-References: <1308007897-17013-1-git-send-email-glommer@redhat.com>
- <1308007897-17013-4-git-send-email-glommer@redhat.com>
- <20110614074500.GM491@redhat.com>
- <4DF8226B.20408@redhat.com>
+	id S1754486Ab1FOJME (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 05:12:04 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:44037 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754349Ab1FOJL6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 05:11:58 -0400
+Date: Wed, 15 Jun 2011 11:11:54 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Build regressions/improvements in v3.0-rc3
+Message-ID: <alpine.DEB.2.00.1106151111200.18110@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DF8226B.20408@redhat.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 12:09:31AM -0300, Glauber Costa wrote:
-> On 06/14/2011 04:45 AM, Gleb Natapov wrote:
-> >On Mon, Jun 13, 2011 at 07:31:33PM -0400, Glauber Costa wrote:
-> >>To implement steal time, we need the hypervisor to pass the guest information
-> >>about how much time was spent running other processes outside the VM.
-> >>This is per-vcpu, and using the kvmclock structure for that is an abuse
-> >>we decided not to make.
-> >>
-> >>In this patchset, I am introducing a new msr, KVM_MSR_STEAL_TIME, that
-> >>holds the memory area address containing information about steal time
-> >>
-> >>This patch contains the hypervisor part for it. I am keeping it separate from
-> >>the headers to facilitate backports to people who wants to backport the kernel
-> >>part but not the hypervisor, or the other way around.
-> >>
-> >>Signed-off-by: Glauber Costa<glommer@redhat.com>
-> >>CC: Rik van Riel<riel@redhat.com>
-> >>CC: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
-> >>CC: Peter Zijlstra<peterz@infradead.org>
-> >>CC: Avi Kivity<avi@redhat.com>
-> >>CC: Anthony Liguori<aliguori@us.ibm.com>
-> >>CC: Eric B Munson<emunson@mgebm.net>
-> >>---
-> >>  arch/x86/include/asm/kvm_host.h |    8 +++++
-> >>  arch/x86/include/asm/kvm_para.h |    4 ++
-> >>  arch/x86/kvm/x86.c              |   60 +++++++++++++++++++++++++++++++++++++--
-> >>  3 files changed, 69 insertions(+), 3 deletions(-)
-> >>
-> >>diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> >>index fc38eca..5dce014 100644
-> >>--- a/arch/x86/include/asm/kvm_host.h
-> >>+++ b/arch/x86/include/asm/kvm_host.h
-> >>@@ -388,6 +388,14 @@ struct kvm_vcpu_arch {
-> >>  	unsigned int hw_tsc_khz;
-> >>  	unsigned int time_offset;
-> >>  	struct page *time_page;
-> >>+
-> >>+	struct {
-> >>+		u64 msr_val;
-> >>+		gpa_t stime;
-> >>+		struct kvm_steal_time steal;
-> >>+		u64 this_time_out;
-> >>+	} st;
-> >>+
-> >>  	u64 last_guest_tsc;
-> >>  	u64 last_kernel_ns;
-> >>  	u64 last_tsc_nsec;
-> >>diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-> >>index ac306c4..0341e61 100644
-> >>--- a/arch/x86/include/asm/kvm_para.h
-> >>+++ b/arch/x86/include/asm/kvm_para.h
-> >>@@ -45,6 +45,10 @@ struct kvm_steal_time {
-> >>  	__u32 pad[6];
-> >>  };
-> >>
-> >>+#define KVM_STEAL_ALIGNMENT_BITS 5
-> >>+#define KVM_STEAL_VALID_BITS ((-1ULL<<  (KVM_STEAL_ALIGNMENT_BITS + 1)))
-> >>+#define KVM_STEAL_RESERVED_MASK (((1<<  KVM_STEAL_ALIGNMENT_BITS) - 1 )<<  1)
-> >>+
-> >>  #define KVM_MAX_MMU_OP_BATCH           32
-> >>
-> >>  #define KVM_ASYNC_PF_ENABLED			(1<<  0)
-> >>diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> >>index 6645634..10fe028 100644
-> >>--- a/arch/x86/kvm/x86.c
-> >>+++ b/arch/x86/kvm/x86.c
-> >>@@ -797,12 +797,12 @@ EXPORT_SYMBOL_GPL(kvm_get_dr);
-> >>   * kvm-specific. Those are put in the beginning of the list.
-> >>   */
-> >>
-> >>-#define KVM_SAVE_MSRS_BEGIN	8
-> >>+#define KVM_SAVE_MSRS_BEGIN	9
-> >>  static u32 msrs_to_save[] = {
-> >>  	MSR_KVM_SYSTEM_TIME, MSR_KVM_WALL_CLOCK,
-> >>  	MSR_KVM_SYSTEM_TIME_NEW, MSR_KVM_WALL_CLOCK_NEW,
-> >>  	HV_X64_MSR_GUEST_OS_ID, HV_X64_MSR_HYPERCALL,
-> >>-	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN,
-> >>+	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN, MSR_KVM_STEAL_TIME,
-> >>  	MSR_IA32_SYSENTER_CS, MSR_IA32_SYSENTER_ESP, MSR_IA32_SYSENTER_EIP,
-> >>  	MSR_STAR,
-> >>  #ifdef CONFIG_X86_64
-> >>@@ -1480,6 +1480,34 @@ static void kvmclock_reset(struct kvm_vcpu *vcpu)
-> >>  	}
-> >>  }
-> >>
-> >>+static void record_steal_time(struct kvm_vcpu *vcpu)
-> >>+{
-> >>+	u64 delta;
-> >>+
-> >>+	if (vcpu->arch.st.stime&&  vcpu->arch.st.this_time_out) {
-> >>+
-> >>+		if (unlikely(kvm_read_guest(vcpu->kvm, vcpu->arch.st.stime,
-> >>+			&vcpu->arch.st.steal, sizeof(struct kvm_steal_time)))) {
-> >>+
-> >>+			vcpu->arch.st.stime = 0;
-> >>+			return;
-> >>+		}
-> >>+
-> >>+		delta = (get_kernel_ns() - vcpu->arch.st.this_time_out);
-> >>+
-> >>+		vcpu->arch.st.steal.steal += delta;
-> >>+		vcpu->arch.st.steal.version += 2;
-> >>+
-> >>+		if (unlikely(kvm_write_guest(vcpu->kvm, vcpu->arch.st.stime,
-> >Why not use kvm_write_guest_cached() here and introduce kvm_read_guest_cached()
-> >for the read above?
-> 
-> Actually, I'd expect most read/writes to benefit from caching, no?
-> So why don't we just rename kvm_write_guest_cached() to
-> kvm_write_guest(), and the few places - if any - that need to force
-> transversing of the gfn mappings, get renamed to
-> kvm_write_guest_uncached ?
-> 
-Good idea. I do not see any places where kvm_write_guest_uncached is
-needed from a brief look. Avi?
+Below is the list of build error/warning regressions/improvements in
+v3.0-rc3[1] compared to v2.6.39[2].
 
-> >>+			&vcpu->arch.st.steal, sizeof(struct kvm_steal_time)))) {
-> >>+
-> >>+			vcpu->arch.st.stime = 0;
-> >>+			return;
-> >>+		}
-> >>+	}
-> >>+
-> >>+}
-> >>+
-> >>  int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
-> >>  {
-> >>  	switch (msr) {
-> >>@@ -1562,6 +1590,23 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
-> >>  		if (kvm_pv_enable_async_pf(vcpu, data))
-> >>  			return 1;
-> >>  		break;
-> >>+	case MSR_KVM_STEAL_TIME:
-> >>+		vcpu->arch.st.msr_val = data;
-> >>+
-> >>+		if (!(data&  KVM_MSR_ENABLED)) {
-> >>+			vcpu->arch.st.stime = 0;
-> >>+			break;
-> >>+		}
-> >>+
-> >>+		if (data&  KVM_STEAL_RESERVED_MASK)
-> >>+			return 1;
-> >>+
-> >>+		vcpu->arch.st.this_time_out = get_kernel_ns();
-> >>+		vcpu->arch.st.stime = data&  KVM_STEAL_VALID_BITS;
-> >>+		record_steal_time(vcpu);
-> >>+
-> >>+		break;
-> >>+
-> >>  	case MSR_IA32_MCG_CTL:
-> >>  	case MSR_IA32_MCG_STATUS:
-> >>  	case MSR_IA32_MC0_CTL ... MSR_IA32_MC0_CTL + 4 * KVM_MAX_MCE_BANKS - 1:
-> >>@@ -1847,6 +1892,9 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
-> >>  	case MSR_KVM_ASYNC_PF_EN:
-> >>  		data = vcpu->arch.apf.msr_val;
-> >>  		break;
-> >>+	case MSR_KVM_STEAL_TIME:
-> >>+		data = vcpu->arch.st.msr_val;
-> >>+		break;
-> >>  	case MSR_IA32_P5_MC_ADDR:
-> >>  	case MSR_IA32_P5_MC_TYPE:
-> >>  	case MSR_IA32_MCG_CAP:
-> >>@@ -2158,6 +2206,8 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
-> >>  			kvm_migrate_timers(vcpu);
-> >>  		vcpu->cpu = cpu;
-> >>  	}
-> >>+
-> >>+	record_steal_time(vcpu);
-> >>  }
-> >>
-> >>  void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
-> >>@@ -2165,6 +2215,7 @@ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
-> >>  	kvm_x86_ops->vcpu_put(vcpu);
-> >>  	kvm_put_guest_fpu(vcpu);
-> >>  	kvm_get_msr(vcpu, MSR_IA32_TSC,&vcpu->arch.last_guest_tsc);
-> >>+	vcpu->arch.st.this_time_out = get_kernel_ns();
-> >>  }
-> >>
-> >Shouldn't we call record_steal_time(vcpu)/vcpu->arch.st.this_time_out = get_kernel_ns();
-> >just before/after entering/exiting a guest? vcpu_(put|get) are called
-> >for each vcpu ioctl, not only VCPU_RUN.
-> Sorry, missed that the first time I've read your e-mail.
-> 
-> If done like you said, time spent on the hypervisor is accounted as
-> steal time. I don't think it is.
-I thought that this is the point of a steal time. Running other
-tasks/guests is a hypervisor overhead too after all :) Also what about
-time spend serving host interrupts between put/get? It will not be
-accounted as steal time, correct?
+Summarized:
+  - build errors: +21/-66
+  - build warnings: +202/-421
 
-> 
-> Steal time is time spent running someone else's job instead of
-> yours. The name for the time spent in the hypervisor doing something
-> for *you* is just overhead.
-OK. That is the question of a definition I guess. If you define it like
-that the code is correct.
+JFYI, when comparing v3.0-rc3 to v3.0-rc2[3], the summaries are:
+  - build errors: +20/-45
+  - build warnings: +92/-101
 
-> 
-> >
-> >>  static int is_efer_nx(void)
-> >>@@ -2477,7 +2528,8 @@ static void do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
-> >>  			     (1<<  KVM_FEATURE_NOP_IO_DELAY) |
-> >>  			     (1<<  KVM_FEATURE_CLOCKSOURCE2) |
-> >>  			     (1<<  KVM_FEATURE_ASYNC_PF) |
-> >>-			     (1<<  KVM_FEATURE_CLOCKSOURCE_STABLE_BIT);
-> >>+			     (1<<  KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
-> >>+			     (1<<  KVM_FEATURE_STEAL_TIME);
-> >>  		entry->ebx = 0;
-> >>  		entry->ecx = 0;
-> >>  		entry->edx = 0;
-> >>@@ -6200,6 +6252,8 @@ int kvm_arch_vcpu_reset(struct kvm_vcpu *vcpu)
-> >>
-> >>  	kvmclock_reset(vcpu);
-> >>
-> >>+	vcpu->arch.st.stime = 0;
-> >>+
-> >>  	kvm_clear_async_pf_completion_queue(vcpu);
-> >>  	kvm_async_pf_hash_reset(vcpu);
-> >>  	vcpu->arch.apf.halted = false;
-> >>--
-> >>1.7.3.4
-> >>
-> >>--
-> >>To unsubscribe from this list: send the line "unsubscribe kvm" in
-> >>the body of a message to majordomo@vger.kernel.org
-> >>More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
-> >--
-> >			Gleb.
+Note that there may be false regressions, as some logs are incomplete.
+Still, they're build errors/warnings.
+
+In addition, I put the verbose summary at
+http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/v3.0-rc3.summary.gz
+so you can easily find out for which configs and architectures the
+errors/warnings you're interested in are happening.
+
+Happy fixing! ;-)
+
+Thanks to the linux-next team for providing the build service.
+
+[1] http://kisskb.ellerman.id.au/kisskb/head/4110/ (107 out of 108 configs)
+[2] http://kisskb.ellerman.id.au/kisskb/head/4019/ (all 108 configs)
+[3] http://kisskb.ellerman.id.au/kisskb/head/4085/ (107 out of 108 configs)
+
+
+*** ERRORS ***
+
+21 regressions:
+  + arch/avr32/mach-at32ap/at32ap700x.c: error: 'portnr' undeclared (first use in this function):  => 1047
+  + arch/avr32/mach-at32ap/at32ap700x.c: error: (Each undeclared identifier is reported only once:  => 1047
+  + arch/avr32/mach-at32ap/at32ap700x.c: error: for each function it appears in.):  => 1047
+  + arch/mips/kernel/i8259.c: error: unknown field 'resume' specified in initializer:  => 240
+  + arch/mips/kernel/i8259.c: error: unknown field 'shutdown' specified in initializer:  => 241
+  + arch/x86/include/asm/uaccess_32.h: error: call to 'copy_from_user_overflow' declared with attribute error: copy_from_user() buffer size is not provably correct:  => 211
+  + arch/xtensa/include/asm/uaccess.h: error: implicit declaration of function 'prefetch':  => 403
+  + arch/xtensa/include/asm/uaccess.h: error: implicit declaration of function 'prefetchw':  => 412
+  + drivers/parisc/iommu-helpers.h: error: implicit declaration of function 'prefetchw':  => 62
+  + drivers/staging/brcm80211/brcmsmac/wlc_ampdu.c: error: invalid operands to binary ^ (have 'volatile u32 *' and 'int'):  => 850, 858
+  + drivers/staging/brcm80211/brcmsmac/wlc_bmac.c: error: invalid operands to binary ^ (have 'u16 *' and 'int'):  => 2557
+  + drivers/staging/brcm80211/brcmsmac/wlc_bmac.c: error: invalid operands to binary ^ (have 'u32 *' and 'int'):  => 2560
+  + drivers/staging/brcm80211/brcmsmac/wlc_bmac.c: error: invalid operands to binary ^ (have 'volatile u16 *' and 'int'):  => 2428, 1574, 2422, 2475, 2420, 2186, 3095, 193, 2379, 2190, 2423, 3471, 2477, 2188, 1576, 3451, 2419, 197, 2187, 2431, 3469, 2417, 2430, 2378, 2354, 1577, 2416, 3453, 1575, 2427
+  + drivers/staging/brcm80211/brcmsmac/wlc_bmac.c: error: invalid operands to binary ^ (have 'volatile u32 *' and 'int'):  => 1591, 1661, 1674, 3231, 3095, 3102, 1270, 3267, 1619, 2369, 2725, 1031, 1893, 2343, 3010, 1693, 3258, 1275, 3273, 1607, 1267, 3540, 1620, 1627, 1262, 1689, 2249, 2251, 1597, 397, 1618, 3138, 3136, 2370, 2367, 3259, 3336, 3077, 2795, 2540, 2909, 3285, 3314, 3251, 2542, 3260, 3272, 2539, 2344, 3268, 3065, 3542, 2620, 1628, 3543, 2709, 3256, 823, 2675, 2896, 3143, 2710, 3255, 241, 1190, 3130, 2371, 3536, 3254, 3467, 3281, 3287, 3249, 3466, 3349, 1258, 3350, 3271, 1159, 3539, 2324, 1253, 361, 3317, 3282, 2333, 1629, 3321, 3018, 3280, 3232, 2347, 2868, 3088, 3449, 3360, 1203, 318, 3538, 2011, 2372, 3448, 2900, 2666, 3091, 2874, 2895, 2368, 2342, 2244, 3250, 1484, 3328, 3330, 3269
+  + drivers/staging/comedi/comedi_fops.c: error: 'PAGE_SHARED' undeclared (first use in this function):  => 1509
+  + drivers/staging/comedi/comedi_fops.c: error: (Each undeclared identifier is reported only once:  => 1509
+  + drivers/staging/comedi/comedi_fops.c: error: for each function it appears in.):  => 1509
+  + drivers/staging/comedi/drivers.c: error: 'PAGE_KERNEL_NOCACHE' undeclared (first use in this function):  => 505
+  + drivers/staging/comedi/drivers.c: error: (Each undeclared identifier is reported only once:  => 505
+  + drivers/staging/comedi/drivers.c: error: for each function it appears in.):  => 505
+  + sound/oss/sb_mixer.c: error: conflicting types for 'change_bits':  => 235
+
+66 improvements:
+  - arch/cris/arch-v10/drivers/sync_serial.c: error: 'ret' undeclared (first use in this function): 628 => 
+  - arch/cris/arch-v10/drivers/sync_serial.c: error: (Each undeclared identifier is reported only once: 628 => 
+  - arch/cris/arch-v10/drivers/sync_serial.c: error: conflicting types for 'sync_serial_ioctl': 961 => 
+  - arch/cris/arch-v10/drivers/sync_serial.c: error: for each function it appears in.): 628 => 
+  - arch/cris/arch-v10/drivers/sync_serial.c: error: previous declaration of 'sync_serial_ioctl' was here: 161 => 
+  - arch/cris/arch-v10/kernel/kgdb.c: error: expected string literal before '.' token: 1274 => 
+  - arch/cris/arch-v10/kernel/kgdb.c: error: missing terminating " character: 1457, 1273, 1359, 1370 => 
+  - arch/powerpc/sysdev/mv64x60_dev.c: error: implicit declaration of function 'of_get_mac_address': 253 => 
+  - arch/sh/boards/board-shmin.c: error: implicit declaration of function '__set_io_port_base': 27 => 
+  - drivers/block/hd.c: error: implicit declaration of function 'inb_p': 257 => 
+  - drivers/block/hd.c: error: implicit declaration of function 'outb_p': 298 => 
+  - drivers/block/paride/bpck.c: error: invalid operands to binary & (have 'void *' and 'int'): 56, 62 => 
+  - drivers/bluetooth/bt3c_cs.c: error: implicit declaration of function 'inb': 140 => 
+  - drivers/bluetooth/bt3c_cs.c: error: implicit declaration of function 'outb': 119 => 
+  - drivers/char/ipmi/ipmi_si_intf.c: error: invalid operands to binary << (have 'void *' and 'int'): 1406, 1391 => 
+  - drivers/char/pcmcia/synclink_cs.c: error: implicit declaration of function 'inb': 683 => 
+  - drivers/char/pcmcia/synclink_cs.c: error: implicit declaration of function 'inw': 860 => 
+  - drivers/char/pcmcia/synclink_cs.c: error: implicit declaration of function 'outb': 694 => 
+  - drivers/char/pcmcia/synclink_cs.c: error: implicit declaration of function 'outw': 342 => 
+  - drivers/char/tpm/tpm.h: error: invalid operands to binary & (have 'void *' and 'int'): 130 => 
+  - drivers/char/tpm/tpm_tis.c: error: implicit declaration of function 'ioread32': 413 => 
+  - drivers/char/tpm/tpm_tis.c: error: implicit declaration of function 'ioread8': 104 => 
+  - drivers/char/tpm/tpm_tis.c: error: implicit declaration of function 'iowrite32': 422 => 
+  - drivers/char/tpm/tpm_tis.c: error: implicit declaration of function 'iowrite8': 117 => 
+  - drivers/hwmon/pc87360.c: error: implicit declaration of function 'inb': 97 => 
+  - drivers/hwmon/pc87360.c: error: implicit declaration of function 'inb_p': 1300 => 
+  - drivers/hwmon/pc87360.c: error: implicit declaration of function 'outb': 90 => 
+  - drivers/hwmon/pc87360.c: error: implicit declaration of function 'outb_p': 1299 => 
+  - drivers/hwmon/sch5627.c: error: implicit declaration of function 'inb': 115 => 
+  - drivers/hwmon/sch5627.c: error: implicit declaration of function 'outb': 114 => 
+  - drivers/tty/serial/pch_uart.c: error: implicit declaration of function 'kfree': 670 => 
+  - drivers/tty/serial/pch_uart.c: error: implicit declaration of function 'kzalloc': 869 => 
+  - drivers/usb/host/xhci-pci.c: error: implicit declaration of function 'kfree': 157 => 
+  - drivers/usb/host/xhci-pci.c: error: implicit declaration of function 'kzalloc': 61 => 
+  - drivers/video/backlight/hp680_bl.c: error: implicit declaration of function 'inw': 48 => 
+  - drivers/video/backlight/hp680_bl.c: error: implicit declaration of function 'outw': 50 => 
+  - error: hung_task.c: undefined reference to `ack_bad_irq': .text+0x1fec8) => 
+  - error: vsprintf.c: relocation truncated to fit: R_AVR32_11H_PCREL against `.text'+61c: (.text+0xa22) => 
+  - include/linux/gameport.h: error: implicit declaration of function 'inb': 189 => 
+  - include/linux/gameport.h: error: implicit declaration of function 'outb': 181 => 
+  - lib/atomic64_test.c: error: 'atomic64_t' undeclared (first use in this function): 24 => 
+  - lib/atomic64_test.c: error: 'v' undeclared (first use in this function): 26 => 
+  - lib/atomic64_test.c: error: (Each undeclared identifier is reported only once: 24 => 
+  - lib/atomic64_test.c: error: expected ';' before 'v': 24 => 
+  - lib/atomic64_test.c: error: for each function it appears in.): 24 => 
+  - lib/atomic64_test.c: error: implicit declaration of function 'atomic64_add': 34 => 
+  - lib/atomic64_test.c: error: implicit declaration of function 'atomic64_add_return': 45 => 
+  - lib/atomic64_test.c: error: implicit declaration of function 'atomic64_add_unless': 108 => 
+  - lib/atomic64_test.c: error: implicit declaration of function 'atomic64_cmpxchg': 99 => 
+  - lib/atomic64_test.c: error: implicit declaration of function 'atomic64_dec': 84 => 
+  - lib/atomic64_test.c: error: implicit declaration of function 'atomic64_dec_return': 90 => 
+  - lib/atomic64_test.c: error: implicit declaration of function 'atomic64_inc': 74 => 
+  - lib/atomic64_test.c: error: implicit declaration of function 'atomic64_inc_not_zero': 135 => 
+  - lib/atomic64_test.c: error: implicit declaration of function 'atomic64_inc_return': 80 => 
+  - lib/atomic64_test.c: error: implicit declaration of function 'atomic64_read': 31 => 
+  - lib/atomic64_test.c: error: implicit declaration of function 'atomic64_set': 28 => 
+  - lib/atomic64_test.c: error: implicit declaration of function 'atomic64_sub': 54 => 
+  - lib/atomic64_test.c: error: implicit declaration of function 'atomic64_sub_return': 65 => 
+  - lib/atomic64_test.c: error: implicit declaration of function 'atomic64_xchg': 94 => 
+  - net/mac80211/ieee80211_i.h: error: field 'trig' has incomplete type: 639 => 
+  - sound/pcmcia/pdaudiocf/pdaudiocf.h: error: implicit declaration of function 'inw': 127 => 
+  - sound/pcmcia/pdaudiocf/pdaudiocf.h: error: implicit declaration of function 'outw': 122 => 
+  - sound/soc/fsl/mpc5200_dma.c: error: (near initialization for 'mpc5200_hpcd_of_driver.shutdown'): 524, 523, 522 => 
+  - sound/soc/fsl/mpc5200_dma.c: error: dereferencing pointer to incomplete type: 384, 389, 491, 401, 427, 495, 413, 474, 382, 383, 507, 477, 493 => 
+  - sound/soc/fsl/mpc5200_dma.c: error: field name not in record or union initializer: 524, 523, 522 => 
+  - sound/soc/fsl/mpc5200_dma.c: error: unknown field 'dev' specified in initializer: 521 => 
+
+
+*** WARNINGS ***
+
+202 regressions:
+  + ./include/generated/autoconf.h: warning: this is the location of the previous definition:  => 2085:1, 1210:1, 1911:1, 2154:1, 2041:1
+  + /tmp/ccJfahJ5.s: Warning: source register same as write-back base:  => 104
+  + <stdin>: warning: #warning syscall sendmmsg not implemented:  => 1554:2
+  + arch/avr32/mach-at32ap/intc.c: warning: initialization from incompatible pointer type:  => 186
+  + arch/ia64/kernel/perfmon.c: warning: 'task' may be used uninitialized in this function:  => 4201
+  + arch/ia64/kernel/traps.c: warning: 'rv.arg1' is used uninitialized in this function:  => 399
+  + arch/ia64/kernel/traps.c: warning: 'rv.arg2' is used uninitialized in this function:  => 399
+  + arch/ia64/kernel/traps.c: warning: 'rv.arg3' is used uninitialized in this function:  => 399
+  + arch/m68k/include/asm/atarihw.h: warning: this is the location of the previous definition:  => 403:1, 402:1
+  + arch/mips/kernel/i8259.c: warning: (near initialization for 'i8259_sysdev_class.drivers'):  => 240
+  + arch/mips/kernel/i8259.c: warning: initialization from incompatible pointer type:  => 240, 241
+  + arch/mips/kernel/i8259.c: warning: missing braces around initializer:  => 240
+  + arch/parisc/include/asm/pdc.h: warning: this is the location of the previous definition:  => 680:1
+  + arch/powerpc/configs/ps3_defconfig: warning: symbol value 'm' invalid for RTC_CLASS:  => 144
+  + arch/powerpc/configs/pseries_defconfig: warning: override: reassigning to symbol SCSI_BNX2_ISCSI:  => 151
+  + arch/s390/mm/pgtable.c: warning: 'page' may be used uninitialized in this function:  => 180
+  + arch/s390/mm/pgtable.c: warning: 'table' may be used uninitialized in this function:  => 181
+  + arch/sh/configs/titan_defconfig: warning: symbol value 'm' invalid for RTC_CLASS:  => 230
+  + arch/x86/kernel/apic/x2apic_uv_x.c: warning: passing argument 1 of 'pci_register_set_vga_state' from incompatible pointer type:  => 882
+  + arch/x86/kernel/cpu/perf_event.c: warning: 'emptyconstraint' defined but not used:  => 1427
+  + arch/x86/kernel/cpu/perf_event.c: warning: 'x86_get_event_constraints' defined but not used:  => 1430
+  + arch/x86/kernel/cpu/perf_event.c: warning: 'x86_pmu_disable_all' defined but not used:  => 712
+  + arch/x86/kernel/cpu/perf_event.c: warning: 'x86_pmu_enable_all' defined but not used:  => 755
+  + arch/x86/kernel/cpu/perf_event.c: warning: 'x86_pmu_enable_event' defined but not used:  => 1094
+  + arch/x86/kernel/cpu/perf_event.c: warning: 'x86_pmu_handle_irq' defined but not used:  => 1286
+  + arch/x86/kernel/cpu/perf_event.c: warning: 'x86_pmu_hw_config' defined but not used:  => 639
+  + arch/x86/kernel/cpu/perf_event.c: warning: 'x86_schedule_events' defined but not used:  => 777
+  + arch/x86/kvm/paging_tmpl.h: warning: 'ptep_user' may be used uninitialized in this function:  => 124
+  + arch/x86/kvm/x86.c: warning: 'exchanged' may be used uninitialized in this function:  => 4034
+  + drivers/firmware/google/gsmi.c: warning: comparison of distinct pointer types lacks a cast:  => 347
+  + drivers/gpu/drm/nouveau/nv50_display.c: warning: 'mc' may be used uninitialized in this function:  => 616
+  + drivers/gpu/drm/nouveau/nv50_display.c: warning: 'or' may be used uninitialized in this function:  => 740, 617
+  + drivers/hwmon/acpi_power_meter.c: warning: 'val' may be used uninitialized in this function:  => 380
+  + drivers/hwmon/i5k_amb.c: warning: control reaches end of non-void function:  => 492
+  + drivers/md/raid5.c: warning: 'target' may be used uninitialized in this function:  => 810
+  + drivers/media/video/m5mols/m5mols_capture.c: warning: 'timeout' may be used uninitialized in this function:  => 126
+  + drivers/memstick/core/mspro_block.c: warning: control reaches end of non-void function:  => 664
+  + drivers/mtd/maps/physmap.c: warning: assignment from incompatible pointer type:  => 255
+  + drivers/net/cnic.c: warning: large integer implicitly truncated to unsigned type:  => 1380, 1368, 1395, 1410
+  + drivers/net/phy/dp83640_reg.h: warning: "PAGE0" redefined:  => 7:1
+  + drivers/net/wireless/iwlwifi/iwl-tx.c: warning: passing argument 2 of 'pci_map_single' discards qualifiers from pointer target type:  => 702
+  + drivers/net/wireless/mwifiex/cmdevt.c: warning: format '%lu' expects type 'long unsigned int', but argument 5 has type '__kernel_suseconds_t':  => 830, 742, 169, 396
+  + drivers/net/wireless/mwifiex/sta_event.c: warning: comparison of distinct pointer types lacks a cast:  => 382
+  + drivers/net/wireless/rtlwifi/core.c: warning: passing argument 3 of 'get_sta' discards qualifiers from pointer target type:  => 688, 653
+  + drivers/net/wireless/rtlwifi/rtl8192c/../rtl8192ce/reg.h: warning: "GPIO_IN" redefined:  => 369:1
+  + drivers/net/wireless/rtlwifi/rtl8192c/../rtl8192ce/reg.h: warning: "GPIO_OUT" redefined:  => 370:1
+  + drivers/net/wireless/rtlwifi/rtl8192se/reg.h: warning: "GPIO_IN" redefined:  => 252:1
+  + drivers/net/wireless/rtlwifi/rtl8192se/reg.h: warning: "GPIO_OUT" redefined:  => 253:1
+  + drivers/scsi/bnx2i/bnx2i_iscsi.c: warning: large integer implicitly truncated to unsigned type:  => 550
+  + drivers/scsi/lpfc/lpfc_bsg.c: warning: 'mbxstatus' may be used uninitialized in this function:  => 1744, 1570
+  + drivers/scsi/lpfc/lpfc_debugfs.c: warning: 'reg_val' may be used uninitialized in this function:  => 2259
+  + drivers/staging/ath6kl/os/linux/ar6000_drv.c: warning: "CONFIG_AR600x_BT_RESET_PIN" redefined:  => 1331:1
+  + drivers/staging/bcm/CmHost.c: warning: cast to pointer from integer of different size:  => 1716, 1752, 1763
+  + drivers/staging/brcm80211/brcmfmac/bcmsdh_sdmmc.c: warning: cast from pointer to integer of different size:  => 966, 1061
+  + drivers/staging/brcm80211/brcmfmac/dhd_sdio.c: warning: cast from pointer to integer of different size:  => 6014
+  + drivers/staging/brcm80211/brcmfmac/dhd_sdio.c: warning: cast to pointer from integer of different size:  => 5282
+  + drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c: warning: initialization from incompatible pointer type:  => 2306
+  + drivers/staging/brcm80211/brcmsmac/wl_mac80211.c: warning: ignoring return value of 'kstrtoul', declared with attribute warn_unused_result:  => 1301, 1290
+  + drivers/staging/cxt1e1/functions.c: warning: cast from pointer to integer of different size:  => 275
+  + drivers/staging/gma500/psb_bl.c: warning: 'device_backlight_init' defined but not used:  => 127
+  + drivers/staging/gma500/psb_drv.c: warning: cast from pointer to integer of different size:  => 324, 323, 314
+  + drivers/staging/gma500/psb_drv.c: warning: cast to pointer from integer of different size:  => 943
+  + drivers/staging/gma500/psb_drv.c: warning: unused variable 'bd':  => 787, 772
+  + drivers/staging/gma500/psb_gtt.c: warning: 'ret' may be used uninitialized in this function:  => 218
+  + drivers/staging/gma500/psb_gtt.c: warning: format '%s' expects type 'char *', but argument 5 has type 'void *':  => 493
+  + drivers/staging/gma500/psb_gtt.c: warning: too few arguments for format:  => 493
+  + drivers/staging/gma500/psb_gtt.c: warning: unused variable 'dev_priv':  => 81
+  + drivers/staging/iio/accel/lis3l02dq_core.c: warning: initialization from incompatible pointer type:  => 661
+  + drivers/staging/iio/accel/sca3000_ring.c: warning: 'sca3000_show_ring_bpse' defined but not used:  => 236
+  + drivers/staging/iio/accel/sca3000_ring.c: warning: 'sca3000_store_ring_bpse' defined but not used:  => 266
+  + drivers/staging/iio/adc/ad7150.c: warning: 'iio_dev_attr_available_conversion_modes' defined but not used:  => 180
+  + drivers/staging/iio/adc/ad7150.c: warning: 'iio_dev_attr_conversion_mode' defined but not used:  => 221
+  + drivers/staging/iio/adc/max1363_core.c: warning: 'st' may be used uninitialized in this function:  => 1253
+  + drivers/staging/iio/industrialio-core.c: warning: 'mask' may be used uninitialized in this function:  => 891
+  + drivers/staging/iio/light/tsl2563.c: warning: initialization from incompatible pointer type:  => 701
+  + drivers/staging/mei/interrupt.c: warning: 'buffer' may be used uninitialized in this function:  => 198
+  + drivers/staging/rtl8192e/ieee80211/ieee80211_module.c: warning: comparison of distinct pointer types lacks a cast:  => 254
+  + drivers/staging/sm7xx/smtcfb.c: warning: 'sm712vga_setup' defined but not used:  => 829
+  + drivers/staging/vme/bridges/vme_ca91cx42.c: warning: cast from pointer to integer of different size:  => 926, 920, 980, 872, 866
+  + drivers/staging/wlan-ng/prism2fw.c: warning: the frame size of 4272 bytes is larger than 2048 bytes:  => 1115
+  + drivers/target/tcm_fc/tfc_cmd.c: warning: 'data_dir' may be used uninitialized in this function:  => 566
+  + drivers/target/tcm_fc/tfc_conf.c: warning: 'ft_init' defined but not used:  => 641, 642
+  + drivers/target/tcm_fc/tfc_io.c: warning: comparison of distinct pointer types lacks a cast:  => 160
+  + drivers/target/tcm_fc/tfc_io.c: warning: format '%x' expects type 'unsigned int', but argument 5 has type 'size_t':  => 209
+  + drivers/tty/n_gsm.c: warning: unused variable 'buf':  => 2138
+  + drivers/tty/serial/8250_pci.c: warning: initialization from incompatible pointer type:  => 1457
+  + drivers/tty/serial/ifx6x60.c: warning: 'ifx_spi_spi_remove' defined but not used:  => 1190
+  + drivers/video/efifb.c: warning: passing argument 1 of 'platform_device_unregister' from incompatible pointer type:  => 544
+  + drivers/video/via/viafbdev.c: warning: unused variable 'r':  => 2019
+  + drivers/xen/events.c: warning: unused variable 'desc':  => 398
+  + drivers/xen/tmem.c: warning: 'tmem_cleancache_ops' defined but not used:  => 234
+  + drivers/xen/tmem.c: warning: unused variable 'old_ops':  => 246
+  + fs/btrfs/delayed-inode.c: warning: 'root' may be used uninitialized in this function:  => 424
+  + fs/btrfs/sysfs.c: warning: 'btrfs_root_attrs' defined but not used:  => 76
+  + fs/btrfs/sysfs.c: warning: 'btrfs_root_release' defined but not used:  => 161, 160
+  + fs/btrfs/sysfs.c: warning: 'btrfs_super_attrs' defined but not used:  => 97
+  + fs/btrfs/sysfs.c: warning: 'btrfs_super_release' defined but not used:  => 154, 153
+  + fs/btrfs/volumes.c: warning: 'max_chunk_size' may be used uninitialized in this function:  => 2310
+  + fs/btrfs/volumes.c: warning: 'max_stripe_size' may be used uninitialized in this function:  => 2309
+  + fs/cifs/connect.c: warning: 'pSesInfo' may be used uninitialized in this function:  => 2976
+  + fs/cifs/connect.c: warning: 'tcon' may be used uninitialized in this function:  => 2977
+  + fs/cifs/connect.c: warning: 'xid' may be used uninitialized in this function:  => 2975
+  + fs/jfs/jfs_dmap.c: warning: 'leafidx' may be used uninitialized in this function:  => 1622
+  + fs/nfs/objlayout/objlayout.c: warning: format '%ld' expects type 'long int', but argument 3 has type 'ssize_t':  => 294
+  + fs/read_write.c: warning: unused variable 'buf':  => 625
+  + include/linux/mtd/map.h: warning: 'r' may be used uninitialized in this function:  => 410
+  + kernel/profile.c: warning: 'profile_cpu_callback' defined but not used:  => 355
+  + kernel/profile.c: warning: 'profile_discard_flip_buffers' defined but not used:  => 291
+  + kernel/profile.c: warning: 'profile_flip_buffers' defined but not used:  => 268
+  + kernel/sched.c: warning: initialization from incompatible pointer type:  => 7206
+  + kernel/trace/ring_buffer.c: warning: unused variable 'local_clock_stable':  => 2175
+  + kernel/trace/trace_events.c: warning: enumeration value 'TRACE_REG_PERF_REGISTER' not handled in switch:  => 152
+  + kernel/trace/trace_events.c: warning: enumeration value 'TRACE_REG_PERF_UNREGISTER' not handled in switch:  => 152
+  + kernel/trace/trace_printk.c: warning: 'fmt' may be used uninitialized in this function:  => 52
+  + kernel/watchdog.c: warning: 'watchdog_disable_all_cpus' defined but not used:  => 498
+  + kernel/watchdog.c: warning: 'watchdog_enable_all_cpus' defined but not used:  => 481
+  + modpost: WARNING: modpost: Found 16 section mismatch(es).:  => N/A
+  + modpost: WARNING: modpost: Found 17 section mismatch(es).:  => N/A
+  + modpost: WARNING: modpost: Found 8 section mismatch(es).:  => N/A
+  + net/mac80211/util.c: warning: label 'wake_up' defined but not used:  => 1279
+  + sound/pci/ctxfi/ctvmem.c: warning: 'entry' may be used uninitialized in this function:  => 34, 79
+  + sound/soc/soc-cache.c: warning: 'ret' may be used uninitialized in this function:  => 299
+  + warning: (BATTERY_DS2780) selects W1 which has unmet direct dependencies (HAS_IOMEM):  => N/A
+  + warning: (CAVIUM_OCTEON_REFERENCE_BOARD && SOC_AR71XX && SOC_AR724X && BCM63XX_CPU_6338) selects USB_ARCH_HAS_OHCI which has unmet direct dependencies (USB_SUPPORT):  => N/A
+  + warning: (CAVIUM_OCTEON_REFERENCE_BOARD && SOC_AR71XX && SOC_AR724X && SOC_AR913X) selects USB_ARCH_HAS_EHCI which has unmet direct dependencies (USB_SUPPORT):  => N/A
+  + warning: (GOOGLE_SMI) selects EFI_VARS which has unmet direct dependencies (EFI):  => N/A
+  + warning: (IWM && WIMAX_IWMC3200_SDIO) selects IWMC3200TOP which has unmet direct dependencies (MISC_DEVICES && MMC && EXPERIMENTAL):  => N/A
+  + warning: (MTD_DOC2000 && MTD_DOC2001 && MTD_DOC2001PLUS) selects MTD_NAND_IDS which has unmet direct dependencies (MTD && MTD_NAND):  => N/A
+  + warning: (PM_SLEEP_SMP) selects HOTPLUG_CPU which has unmet direct dependencies (SMP && HOTPLUG && EXPERIMENTAL && (PPC_PSERIES || PPC_PMAC)):  => N/A
+  + warning: (RADIO_WL128X) selects TI_ST which has unmet direct dependencies (MISC_DEVICES && NET && GPIOLIB):  => N/A
+  + warning: arch/powerpc/kernel/built-in.o(.text+0x5bc98): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier():  => N/A
+  + warning: arch/powerpc/kernel/built-in.o(.text+0x5bcb4): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier():  => N/A
+  + warning: arch/powerpc/kernel/built-in.o(.text+0x5bcd0): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier():  => N/A
+  + warning: arch/powerpc/kernel/built-in.o(.text+0x5d7f0): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier():  => N/A
+  + warning: arch/powerpc/kernel/built-in.o(.text+0x5d80c): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier():  => N/A
+  + warning: arch/powerpc/kernel/built-in.o(.text+0x5d828): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier():  => N/A
+  + warning: arch/powerpc/mm/built-in.o(.text+0xb3a4): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.get_node_active_region():  => N/A
+  + warning: arch/powerpc/mm/built-in.o(.text+0xb488): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.get_node_active_region():  => N/A
+  + warning: arch/powerpc/sysdev/built-in.o(.text+0x101c4): Section mismatch in reference from the function .icp_native_init() to the function .init.text:.icp_native_init_one_node():  => N/A
+  + warning: arch/powerpc/sysdev/built-in.o(.text+0x10274): Section mismatch in reference from the function .icp_native_init() to the function .init.text:.icp_native_init_one_node():  => N/A
+  + warning: arch/powerpc/sysdev/built-in.o(.text+0x10c74): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics():  => N/A
+  + warning: arch/powerpc/sysdev/built-in.o(.text+0xe72c): Section mismatch in reference from the function .icp_native_init() to the function .init.text:.icp_native_init_one_node():  => N/A
+  + warning: arch/powerpc/sysdev/built-in.o(.text+0xe7dc): Section mismatch in reference from the function .icp_native_init() to the function .init.text:.icp_native_init_one_node():  => N/A
+  + warning: arch/powerpc/sysdev/built-in.o(.text+0xf1dc): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics():  => N/A
+  + warning: arch/powerpc/sysdev/xics/built-in.o(.text+0x16d0): Section mismatch in reference from the function .icp_native_init() to the function .init.text:.icp_native_init_one_node():  => N/A
+  + warning: arch/powerpc/sysdev/xics/built-in.o(.text+0x1780): Section mismatch in reference from the function .icp_native_init() to the function .init.text:.icp_native_init_one_node():  => N/A
+  + warning: arch/powerpc/sysdev/xics/built-in.o(.text+0x2180): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics():  => N/A
+  + warning: drivers/built-in.o(.text+0x52ed5e): Section mismatch in reference from the function ip2_request_firmware() to the function .init.text:platform_device_register_resndata():  => N/A
+  + warning: drivers/gpu/built-in.o(.text+0x137d88): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF():  => N/A
+  + warning: drivers/gpu/drm/built-in.o(.text+0x137d88): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF():  => N/A
+  + warning: drivers/gpu/drm/radeon/built-in.o(.text+0xd3da8): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF():  => N/A
+  + warning: drivers/gpu/drm/radeon/radeon.o(.text+0x49010): Section mismatch in reference from the function radeon_get_clock_info() to the function .devinit.text:radeon_read_clocks_OF():  => N/A
+  + warning: drivers/gpu/drm/radeon/radeon.o(.text+0xd3da8): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF():  => N/A
+  + warning: drivers/gpu/drm/radeon/radeon.o(.text+0xd3dac): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF():  => N/A
+  + warning: drivers/input/built-in.o(.text+0x279ec): Section mismatch in reference from the function .tc3589x_keypad_open() to the function .devinit.text:.tc3589x_keypad_init_key_hardware():  => N/A
+  + warning: drivers/input/keyboard/built-in.o(.text+0x10860): Section mismatch in reference from the function .tc3589x_keypad_open() to the function .devinit.text:.tc3589x_keypad_init_key_hardware():  => N/A
+  + warning: drivers/leds/built-in.o(.text+0xb830): Section mismatch in reference from the function .lp5521_probe() to the function .init.text:.lp5521_init_led():  => N/A
+  + warning: drivers/leds/built-in.o(.text+0xe5c0): Section mismatch in reference from the function .lp5523_probe() to the function .init.text:.lp5523_init_led():  => N/A
+  + warning: drivers/net/irda/smsc-ircc2.o(.devinit.text+0x1a7): Section mismatch in reference from the function smsc_ircc_pnp_probe() to the function .init.text:smsc_ircc_open():  => N/A
+  + warning: drivers/sbus/char/bbc.o(.devinit.text+0x8): Section mismatch in reference from the function bbc_i2c_probe() to the function .init.text:T.356():  => N/A
+  + warning: drivers/staging/comedi/drivers/s626.o(.text+0x2efe): Section mismatch in reference from the function s626_attach() to the variable .devinit.rodata:s626_pci_table:  => N/A
+  + warning: drivers/staging/comedi/drivers/s626.o(.text+0x2f08): Section mismatch in reference from the function s626_attach() to the variable .devinit.rodata:s626_pci_table:  => N/A
+  + warning: drivers/staging/comedi/drivers/s626.o(.text+0x2f0f): Section mismatch in reference from the function s626_attach() to the variable .devinit.rodata:s626_pci_table:  => N/A
+  + warning: drivers/staging/comedi/drivers/s626.o(.text+0x2f2f): Section mismatch in reference from the function s626_attach() to the variable .devinit.rodata:s626_pci_table:  => N/A
+  + warning: drivers/video/sm501fb.o(.text+0x21d4): Section mismatch in reference from the function sm501fb_init_fb() to the variable .devinit.data:sm501_default_mode:  => N/A
+  + warning: sound/built-in.o(.text+0x1fba28): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_pcm():  => N/A
+  + warning: sound/built-in.o(.text+0x1fba64): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_pcm():  => N/A
+  + warning: sound/built-in.o(.text+0x1fbaa0): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_pins():  => N/A
+  + warning: sound/built-in.o(.text+0x1fbadc): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_pins():  => N/A
+  + warning: sound/built-in.o(.text+0x1fbb2c): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_clock_widget():  => N/A
+  + warning: sound/built-in.o(.text+0x1fbb8c): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_mixer_widget():  => N/A
+  + warning: sound/pci/built-in.o(.text+0x13951c): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_pcm():  => N/A
+  + warning: sound/pci/built-in.o(.text+0x139558): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_pcm():  => N/A
+  + warning: sound/pci/built-in.o(.text+0x139594): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_pins():  => N/A
+  + warning: sound/pci/built-in.o(.text+0x1395d0): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_pins():  => N/A
+  + warning: sound/pci/built-in.o(.text+0x139620): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_clock_widget():  => N/A
+  + warning: sound/pci/built-in.o(.text+0x139680): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_mixer_widget():  => N/A
+  + warning: sound/pci/lola/built-in.o(.text+0x2ebc): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_pcm():  => N/A
+  + warning: sound/pci/lola/built-in.o(.text+0x2ef8): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_pcm():  => N/A
+  + warning: sound/pci/lola/built-in.o(.text+0x2f34): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_pins():  => N/A
+  + warning: sound/pci/lola/built-in.o(.text+0x2f70): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_pins():  => N/A
+  + warning: sound/pci/lola/built-in.o(.text+0x2fc0): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_clock_widget():  => N/A
+  + warning: sound/pci/lola/built-in.o(.text+0x3020): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_mixer_widget():  => N/A
+  + warning: sound/pci/lola/snd-lola.o(.text+0x2ebc): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_pcm():  => N/A
+  + warning: sound/pci/lola/snd-lola.o(.text+0x2ef8): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_pcm():  => N/A
+  + warning: sound/pci/lola/snd-lola.o(.text+0x2f34): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_pins():  => N/A
+  + warning: sound/pci/lola/snd-lola.o(.text+0x2f70): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_pins():  => N/A
+  + warning: sound/pci/lola/snd-lola.o(.text+0x2fc0): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_clock_widget():  => N/A
+  + warning: sound/pci/lola/snd-lola.o(.text+0x3020): Section mismatch in reference from the function .lola_parse_tree() to the function .devinit.text:.lola_init_mixer_widget():  => N/A
+  + warning: sound/pci/lola/snd-lola.o(.text+0xae4): Section mismatch in reference from the function lola_parse_tree() to the function .devinit.text:lola_init_pcm():  => N/A
+  + warning: sound/pci/lola/snd-lola.o(.text+0xafc): Section mismatch in reference from the function lola_parse_tree() to the function .devinit.text:lola_init_pcm():  => N/A
+  + warning: sound/pci/lola/snd-lola.o(.text+0xb14): Section mismatch in reference from the function lola_parse_tree() to the function .devinit.text:lola_init_pins():  => N/A
+  + warning: sound/pci/lola/snd-lola.o(.text+0xb2c): Section mismatch in reference from the function lola_parse_tree() to the function .devinit.text:lola_init_pins():  => N/A
+  + warning: sound/pci/lola/snd-lola.o(.text+0xb5c): Section mismatch in reference from the function lola_parse_tree() to the function .devinit.text:lola_init_clock_widget():  => N/A
+  + warning: sound/pci/lola/snd-lola.o(.text+0xb94): Section mismatch in reference from the function lola_parse_tree() to the function .devinit.text:lola_init_mixer_widget():  => N/A
+  + warning: sound/pci/lola/snd-lola.o(.text+0xda4): Section mismatch in reference from the function lola_parse_tree() to the function .devinit.text:lola_init_pcm():  => N/A
+  + warning: sound/pci/lola/snd-lola.o(.text+0xdcb): Section mismatch in reference from the function lola_parse_tree() to the function .devinit.text:lola_init_pcm():  => N/A
+  + warning: sound/pci/lola/snd-lola.o(.text+0xdf5): Section mismatch in reference from the function lola_parse_tree() to the function .devinit.text:lola_init_pins():  => N/A
+  + warning: sound/pci/lola/snd-lola.o(.text+0xe1d): Section mismatch in reference from the function lola_parse_tree() to the function .devinit.text:lola_init_pins():  => N/A
+  + warning: sound/pci/lola/snd-lola.o(.text+0xe52): Section mismatch in reference from the function lola_parse_tree() to the function .devinit.text:lola_init_clock_widget():  => N/A
+  + warning: sound/pci/lola/snd-lola.o(.text+0xe8a): Section mismatch in reference from the function lola_parse_tree() to the function .devinit.text:lola_init_mixer_widget():  => N/A
+  + warning: vmlinux.o(.devinit.text+0x9269): Section mismatch in reference from the function cnb20le_res() to the function .init.text:acpi_os_get_root_pointer():  => N/A
+
+421 improvements:
+  - /tmp/cckVNE3Z.s: Warning: source register same as write-back base: 104 => 
+  - <stdin>: warning: #warning syscall sync_file_range not implemented: 1430:2 => 
+  - <stdin>: warning: #warning syscall umount2 not implemented: 394:2 => 
+  - arch/cris/arch-v10/drivers/sync_serial.c: warning: initialization from incompatible pointer type: 252 => 
+  - arch/cris/arch-v10/drivers/sync_serial.c: warning: passing argument 1 of 'memcpy' discards qualifiers from pointer target type: 1353, 1343 => 
+  - arch/cris/arch-v10/drivers/sync_serial.c: warning: passing argument 1 of 'virt_to_phys' discards qualifiers from pointer target type: 1224 => 
+  - arch/cris/arch-v10/kernel/kgdb.c: warning: missing terminating " character: 1359:1, 1273:6, 1457:1, 1370:6 => 
+  - arch/cris/arch-v10/kernel/kgdb.c: warning: type defaults to 'int' in declaration of 'write_stack_register': 267 => 
+  - arch/mips/configs/malta_defconfig: warning: symbol value 'm' invalid for LEDS_CLASS: 377 => 
+  - arch/parisc/kernel/cache.c: warning: format '%s' expects type 'char *', but argument 4 has type 'void * const': 310 => 
+  - arch/parisc/kernel/cache.c: warning: pointer type mismatch in conditional expression: 310 => 
+  - arch/powerpc/configs/pmac32_defconfig: warning: symbol value 'm' invalid for BT_L2CAP: 115 => 
+  - arch/powerpc/configs/pmac32_defconfig: warning: symbol value 'm' invalid for BT_SCO: 116 => 
+  - arch/powerpc/configs/ppc6xx_defconfig: warning: symbol value 'm' invalid for BT_L2CAP: 354 => 
+  - arch/powerpc/configs/ppc6xx_defconfig: warning: symbol value 'm' invalid for BT_SCO: 355 => 
+  - arch/powerpc/configs/ps3_defconfig: warning: symbol value 'm' invalid for BT_L2CAP: 55 => 
+  - arch/powerpc/configs/ps3_defconfig: warning: symbol value 'm' invalid for BT_SCO: 56 => 
+  - arch/powerpc/sysdev/mv64x60_dev.c: warning: assignment makes pointer from integer without a cast: 253 => 
+  - arch/s390/mm/extmem.c: warning: 'end_addr' may be used uninitialized in this function: 411, 573 => 
+  - arch/s390/mm/extmem.c: warning: 'start_addr' may be used uninitialized in this function: 411, 573 => 
+  - arch/x86/include/asm/uaccess_32.h: warning: call to 'copy_from_user_overflow' declared with attribute warning: copy_from_user() buffer size is not provably correct: 212 => 
+  - arch/xtensa/include/asm/regs.h: warning: this is the location of the previous definition: 59:1 => 
+  - arch/xtensa/kernel/entry.S: Warning: value 0xffffffff30000000 truncated to 0x30000000: 1545 => 
+  - arch/xtensa/kernel/irq.c: warning: passing argument 1 of 'xtensa_irq_mask' makes pointer from integer without a cast: 92 => 
+  - arch/xtensa/kernel/irq.c: warning: passing argument 1 of 'xtensa_irq_unmask' makes pointer from integer without a cast: 87 => 
+  - arch/xtensa/kernel/process.c: warning: unused variable 'ti': 180 => 
+  - arch/xtensa/kernel/time.c: warning: initialization from incompatible pointer type: 42 => 
+  - arch/xtensa/mm/tlb.c: warning: comparison of distinct pointer types lacks a cast: 71, 68 => 
+  - block/elevator.c: warning: 'elevator_get' uses dynamic stack allocation: 175 => 
+  - drivers/base/memory.c: warning: 'ret' may be used uninitialized in this function: 404 => 
+  - drivers/base/power/sysfs.c: warning: 'dev_attr_wakeup' defined but not used: 249 => 
+  - drivers/block/hd.c: warning: statement with no effect: 468 => 
+  - drivers/block/xd.c: warning: 'address' may be used uninitialized in this function: 159 => 
+  - drivers/block/xd.c: warning: 'controller' may be used uninitialized in this function: 158 => 
+  - drivers/char/tpm/tpm.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t': 433, 400 => 
+  - drivers/dma/ioat/dma_v2.c: warning: unused variable 'chanerr': 556 => 
+  - drivers/dma/pch_dma.c: warning: 'i' may be used uninitialized in this function: 406 => 
+  - drivers/gpio/bt8xxgpio.c: warning: ignoring return value of 'gpiochip_remove', declared with attribute warn_unused_result: 247 => 
+  - drivers/gpio/ml_ioh_gpio.c: warning: 'ioh_gpio_restore_reg_conf' defined but not used: 153 => 
+  - drivers/gpio/ml_ioh_gpio.c: warning: 'ioh_gpio_save_reg_conf' defined but not used: 144 => 
+  - drivers/infiniband/hw/nes/nes.c: warning: ignoring return value of 'kstrtoul', declared with attribute warn_unused_result: 1141 => 
+  - drivers/infiniband/ulp/srp/ib_srp.c: warning: cast to pointer from integer of different size: 1150, 1234 => 
+  - drivers/input/keyboard/matrix_keypad.c: warning: 'matrix_keypad_resume' defined but not used: 284 => 
+  - drivers/input/keyboard/matrix_keypad.c: warning: 'matrix_keypad_suspend' defined but not used: 271 => 
+  - drivers/input/misc/adxl34x-i2c.c: warning: 'adxl34x_i2c_resume' defined but not used: 119 => 
+  - drivers/input/misc/adxl34x-i2c.c: warning: 'adxl34x_i2c_suspend' defined but not used: 109 => 
+  - drivers/input/touchscreen/mcs5000_ts.c: warning: 'mcs5000_ts_resume' defined but not used: 274 => 
+  - drivers/input/touchscreen/mcs5000_ts.c: warning: 'mcs5000_ts_suspend' defined but not used: 264 => 
+  - drivers/media/video/gspca/sonixj.c: warning: comparison is always false due to limited range of data type: 2905 => 
+  - drivers/message/fusion/mptsas.c: warning: unused variable 'log_info': 5015 => 
+  - drivers/mfd/wl1273-core.c: warning: unused variable 'val': 156 => 
+  - drivers/misc/hpilo.c: warning: 'ilo_remove' defined but not used: 722 => 
+  - drivers/mtd/chips/cfi_cmdset_0001.c: warning: the frame size of 1044 bytes is larger than 1024 bytes: 861 => 
+  - drivers/mtd/maps/latch-addr-flash.c: warning: 'latch_addr_flash_remove' defined but not used: 102 => 
+  - drivers/mtd/ubi/vmt.c: warning: 'err' may be used uninitialized in this function: 411 => 
+  - drivers/net/atl1c/atl1c_main.c: warning: 'atl1c_resume' defined but not used: 2539, 2540 => 
+  - drivers/net/atlx/atl1.c: warning: 'atl1_resume' defined but not used: 2823 => 
+  - drivers/net/jme.c: warning: 'jme_resume' defined but not used: 3216 => 
+  - drivers/net/jme.c: warning: 'jme_suspend' defined but not used: 3177 => 
+  - drivers/net/rionet.c: warning: cast from pointer to integer of different size: 166 => 
+  - drivers/net/skge.c: warning: 'skge_resume' defined but not used: 4067 => 
+  - drivers/net/skge.c: warning: 'skge_suspend' defined but not used: 4042 => 
+  - drivers/net/stmmac/stmmac_main.c: warning: ignoring return value of 'kstrtoul', declared with attribute warn_unused_result: 1984, 1980, 1987, 1975, 1968, 1978, 1970, 1972, 1982 => 
+  - drivers/net/wireless/ath/ath5k/reset.c: warning: 'txf2txs' may be used uninitialized in this function: 100 => 
+  - drivers/net/wireless/b43/phy_n.c: warning: 'last' may be used uninitialized in this function: 3093 => 
+  - drivers/net/wireless/b43/phy_n.c: warning: 'save_regs_phy$7' may be used uninitialized in this function: 2270 => 
+  - drivers/net/wireless/b43/phy_n.c: warning: 'save_regs_phy$8' may be used uninitialized in this function: 2270 => 
+  - drivers/net/wireless/b43/phy_n.c: warning: 'save_regs_phy[7]' may be used uninitialized in this function: 2270 => 
+  - drivers/net/wireless/b43/phy_n.c: warning: 'save_regs_phy[8]' may be used uninitialized in this function: 2270 => 
+  - drivers/net/wireless/b43/phy_n.c: warning: 'tabent_r2' may be used uninitialized in this function: 3848 => 
+  - drivers/net/wireless/b43/phy_n.c: warning: 'tabent_r3' may be used uninitialized in this function: 3849 => 
+  - drivers/net/wireless/mwl8k.c: warning: 'ap_legacy_rates' may be used uninitialized in this function: 3990 => 
+  - drivers/net/wireless/p54/eeprom.c: warning: 'freq' may be used uninitialized in this function: 494 => 
+  - drivers/net/wireless/rt2x00/rt2800lib.c: warning: 'comp_value' may be used uninitialized in this function: 1822 => 
+  - drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c: warning: 'cck_index' may be used uninitialized in this function: 637 => 
+  - drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c: warning: 'cck_index_old' may be used uninitialized in this function: 637 => 
+  - drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c: warning: 'box_extreg' may be used uninitialized in this function: 303 => 
+  - drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c: warning: 'box_reg' may be used uninitialized in this function: 303 => 
+  - drivers/net/wireless/rtlwifi/rtl8192ce/rf.c: warning: 'chnlgroup' may be used uninitialized in this function: 205 => 
+  - drivers/net/wireless/rtlwifi/rtl8192ce/rf.c: warning: 'u4_regvalue' may be used uninitialized in this function: 450 => 
+  - drivers/net/wireless/rtlwifi/rtl8192cu/hw.c: warning: 'hq_sele' may be used uninitialized in this function: 924 => 
+  - drivers/pci/intel-iommu.c: warning: no return statement in function returning non-void: 3231 => 
+  - drivers/pci/pcie/aer/aer_inject.c: warning: 'cor_mask_orig' may be used uninitialized in this function: 329 => 
+  - drivers/pci/pcie/aer/aer_inject.c: warning: 'uncor_mask_orig' may be used uninitialized in this function: 329 => 
+  - drivers/platform/x86/ibm_rtl.c: warning: cast from pointer to integer of different size: 278, 290 => 
+  - drivers/platform/x86/sony-laptop.c: warning: unused variable 'handle': 976, 964 => 
+  - drivers/power/bq27x00_battery.c: warning: 'bq27x00_powersupply_init' defined but not used: 520 => 
+  - drivers/power/bq27x00_battery.c: warning: 'bq27x00_powersupply_unregister' defined but not used: 546 => 
+  - drivers/regulator/wm831x-dcdc.c: warning: unused variable 'wm831x': 779, 603 => 
+  - drivers/rtc/rtc-ds1374.c: warning: 'ds1374_resume' defined but not used: 422 => 
+  - drivers/rtc/rtc-ds1374.c: warning: 'ds1374_suspend' defined but not used: 413 => 
+  - drivers/scsi/aic7xxx_old.c: warning: passing argument 3 of 'pci_free_consistent' discards qualifiers from pointer target type: 8484 => 
+  - drivers/scsi/fcoe/fcoe.c: warning: label 'out_nodev' defined but not used: 1855, 1812 => 
+  - drivers/scsi/stex.c: warning: passing argument 2 of 'scsi_sg_copy_from_buffer' discards qualifiers from pointer target type: 636 => 
+  - drivers/staging/iio/magnetometer/ak8975.c: warning: 'ak8975_remove' defined but not used: 513 => 
+  - drivers/tty/cyclades.c: warning: 'cyz_interrupt' defined but not used: 1200 => 
+  - drivers/tty/n_gsm.c: warning: zero-length gnu_printf format string: 535 => 
+  - drivers/tty/n_gsm.c: warning: zero-length printf format string: 535 => 
+  - drivers/tty/rocket.c: warning: 'rmSpeakerReset' defined but not used: 3166 => 
+  - drivers/tty/rocket.c: warning: 'sPCIInitController' defined but not used: 2625 => 
+  - drivers/tty/serial/8250_hp300.c: warning: #warning CONFIG_8250 defined but neither CONFIG_HPDCA nor CONFIG_HPAPCI defined, are you sure?: 24:2 => 
+  - drivers/tty/serial/mfd.c: warning: 'serial_hsu_remove' defined but not used: 1406 => 
+  - drivers/tty/serial/pch_uart.c: warning: assignment makes pointer from integer without a cast: 1399, 869 => 
+  - drivers/usb/core/devio.c: warning: cast from pointer to integer of different size: 1380 => 
+  - drivers/usb/gadget/fusb300_udc.c: warning: 'fusb300_ep0_complete' defined but not used: 985, 983 => 983
+  - drivers/usb/gadget/fusb300_udc.c: warning: 'fusb300_set_ep_bycnt' defined but not used: 1032, 1033 => 1032
+  - drivers/usb/gadget/fusb300_udc.c: warning: 'fusb300_wrfifo' defined but not used: 773, 771 => 771
+  - drivers/usb/host/xhci-pci.c: warning: assignment makes pointer from integer without a cast: 61 => 
+  - drivers/usb/misc/usbtest.c: warning: cast from pointer to integer of different size: 273 => 
+  - drivers/usb/otg/ab8500-usb.c: warning: 'event' may be used uninitialized in this function: 156 => 
+  - drivers/usb/otg/twl6030-usb.c: warning: ISO C90 forbids mixed declarations and code: 183 => 
+  - drivers/usb/storage/realtek_cr.c: warning: 'config_autodelink_before_power_down' defined but not used: 494, 493 => 493
+  - drivers/video/aty/atyfb_base.c: warning: 'aty_bl_exit' defined but not used: 2271 => 
+  - drivers/video/aty/atyfb_base.c: warning: 'store_video_par' defined but not used: 2793 => 
+  - drivers/video/efifb.c: warning: cast to pointer from integer of different size: 247 => 
+  - drivers/video/mb862xx/mb862xxfb.c: warning: 'dev_attr_dispregs' defined but not used: 464 => 
+  - drivers/video/mb862xx/mb862xxfb.c: warning: 'mb862xxfb_init_fbinfo' defined but not used: 326 => 
+  - drivers/video/udlfb.c: warning: ignoring return value of 'device_create_bin_file', declared with attribute warn_unused_result: 1592 => 
+  - drivers/video/udlfb.c: warning: ignoring return value of 'device_create_file', declared with attribute warn_unused_result: 1590 => 
+  - drivers/video/udlfb.c: warning: passing argument 1 of 'prefetch_range' discards qualifiers from pointer target type: 421 => 
+  - fs/cifs/file.c: warning: 'rc' may be used uninitialized in this function: 1776 => 
+  - fs/ext4/balloc.c: warning: passing argument 2 of 'test_and_clear_bit' from incompatible pointer type: 443 => 
+  - fs/ncpfs/dir.c: warning: unused variable 'sb': 128 => 
+  - include/net/ipx.h: warning: 'packed' attribute ignored for field of type '__be16': 32, 30 => 
+  - include/net/ipx.h: warning: 'packed' attribute ignored for field of type 'struct ipx_address': 42, 41 => 
+  - include/trace/events/btrfs.h: warning: large integer implicitly truncated to unsigned type: 365, 197, 332, 273, 626, 68, 420, 47, 591, 144, 459, 541 => 
+  - kernel/irq/debug.h: warning: "PS" redefined: 8:1 => 
+  - lib/atomic64_test.c: warning: ISO C90 forbids mixed declarations and code: 25 => 
+  - modpost: WARNING: modpost: Found 12 section mismatch(es).: N/A => 
+  - modpost: WARNING: modpost: Found 13 section mismatch(es).: N/A => 
+  - modpost: WARNING: modpost: Found 14 section mismatch(es).: N/A => 
+  - modpost: WARNING: modpost: Found 15 section mismatch(es).: N/A => 
+  - modpost: WARNING: modpost: Found 4 section mismatch(es).: N/A => 
+  - net/bridge/netfilter/ebtables.c: warning: 'off' may be used uninitialized in this function: 1885 => 
+  - net/bridge/netfilter/ebtables.c: warning: 'size_kern' may be used uninitialized in this function: 1886 => 
+  - net/irda/irnet/irnet_ppp.c: warning: format '%Zd' expects type 'signed size_t', but argument 3 has type 'ssize_t': 334 => 
+  - net/packet/af_packet.c: warning: 'vnet_hdr_len' may be used uninitialized in this function: 1128 => 
+  - net/sched/sch_generic.c: warning: unused variable 'drivername': 254 => 
+  - security/selinux/hooks.c: warning: 'prefix' may be used uninitialized in this function: 964 => 
+  - security/selinux/hooks.c: warning: 'sclass' may be used uninitialized in this function: 1426 => 
+  - security/selinux/netnode.c: warning: 'idx' may be used uninitialized in this function: 173, 132 => 174
+  - security/selinux/selinuxfs.c: warning: passing argument 2 of 'security_read_policy' from incompatible pointer type: 400 => 
+  - sound/soc/codecs/alc5623.c: warning: 'alc5623_i2c_remove' defined but not used: 1067 => 
+  - sound/soc/codecs/wl1273.c: warning: initialization discards qualifiers from pointer target type: 212, 250 => 
+  - sound/soc/codecs/wm2000.c: warning: 'wm2000_i2c_resume' defined but not used: 847 => 
+  - sound/soc/codecs/wm2000.c: warning: 'wm2000_i2c_suspend' defined but not used: 839 => 
+  - sound/soc/fsl/mpc5200_dma.c: warning: 'struct of_device' declared inside parameter list: 371, 489 => 
+  - sound/soc/fsl/mpc5200_dma.c: warning: (near initialization for 'mpc5200_hpcd_of_driver.shutdown'): 521, 524, 523 => 
+  - sound/soc/fsl/mpc5200_dma.c: warning: braces around scalar initializer: 521 => 
+  - sound/soc/fsl/mpc5200_dma.c: warning: excess elements in scalar initializer: 524, 523 => 
+  - sound/soc/fsl/mpc5200_dma.c: warning: initialization from incompatible pointer type: 519, 522, 520 => 
+  - sound/soc/fsl/mpc5200_dma.c: warning: its scope is only this definition or declaration, which is probably not what you want: 371 => 
+  - warning: (CAVIUM_OCTEON_REFERENCE_BOARD && BCM63XX_CPU_6338) selects USB_ARCH_HAS_OHCI which has unmet direct dependencies (USB_SUPPORT): N/A => 
+  - warning: (CAVIUM_OCTEON_REFERENCE_BOARD) selects USB_ARCH_HAS_EHCI which has unmet direct dependencies (USB_SUPPORT): N/A => 
+  - warning: (GFS2_FS) selects DLM which has unmet direct dependencies (EXPERIMENTAL && INET && SYSFS && CONFIGFS_FS && (IPV6 || IPV6=n)): N/A => 
+  - warning: (I2C_ISCH && GPIO_SCH && GPIO_RDC321X && RADIO_WL1273) selects MFD_CORE which has unmet direct dependencies (MFD_SUPPORT): N/A => 
+  - warning: (I2C_ISCH && GPIO_SCH) selects LPC_SCH which has unmet direct dependencies (MFD_SUPPORT && PCI): N/A => 
+  - warning: (MEDIA_TUNER) selects MEDIA_TUNER_TEA5761 which has unmet direct dependencies (MEDIA_SUPPORT && VIDEO_MEDIA && I2C && EXPERIMENTAL): N/A => 
+  - warning: (SCHED_AUTOGROUP) selects CGROUP_SCHED which has unmet direct dependencies (CGROUPS && EXPERIMENTAL): N/A => 
+  - warning: 1 bad relocations: N/A => 
+  - warning: arch/powerpc/kernel/built-in.o(.text+0x567ac): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier(): N/A => 
+  - warning: arch/powerpc/kernel/built-in.o(.text+0x567c8): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier(): N/A => 
+  - warning: arch/powerpc/kernel/built-in.o(.text+0x567e4): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier(): N/A => 
+  - warning: arch/powerpc/kernel/built-in.o(.text+0x5830c): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier(): N/A => 
+  - warning: arch/powerpc/kernel/built-in.o(.text+0x58328): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier(): N/A => 
+  - warning: arch/powerpc/kernel/built-in.o(.text+0x58344): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier(): N/A => 
+  - warning: arch/powerpc/mm/built-in.o(.text+0xb1d0): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.get_node_active_region(): N/A => 
+  - warning: arch/powerpc/mm/built-in.o(.text+0xb2b4): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.get_node_active_region(): N/A => 
+  - warning: drivers/built-in.o(.text+0x25dae54): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/built-in.o(.text+0x25e13f8): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/built-in.o(.text+0x25e1444): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/built-in.o(.text+0x25e1478): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/built-in.o(.text+0x25e1bec): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/built-in.o(.text+0x25e1c38): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/built-in.o(.text+0x25e1c6c): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/built-in.o(.text+0x25e3b08): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/built-in.o(.text+0x261ff38): Section mismatch in reference from the function .tc3589x_keypad_open() to the function .devinit.text:.tc3589x_keypad_init_key_hardware(): N/A => 
+  - warning: drivers/built-in.o(.text+0x3252268): Section mismatch in reference from the function .lp5521_probe() to the function .init.text:.lp5521_init_led(): N/A => 
+  - warning: drivers/built-in.o(.text+0x3254ff8): Section mismatch in reference from the function .lp5523_probe() to the function .init.text:.lp5523_init_led(): N/A => 
+  - warning: drivers/built-in.o(.text+0x63e09c): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF(): N/A => 
+  - warning: drivers/gpu/built-in.o(.text+0x1377b4): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF(): N/A => 
+  - warning: drivers/gpu/drm/built-in.o(.text+0x1377b4): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF(): N/A => 
+  - warning: drivers/gpu/drm/radeon/built-in.o(.text+0xd27b4): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF(): N/A => 
+  - warning: drivers/gpu/drm/radeon/radeon.o(.text+0x48270): Section mismatch in reference from the function radeon_get_clock_info() to the function .devinit.text:radeon_read_clocks_OF(): N/A => 
+  - warning: drivers/gpu/drm/radeon/radeon.o(.text+0xd27b4): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF(): N/A => 
+  - warning: drivers/gpu/drm/radeon/radeon.o(.text+0xd27b8): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF(): N/A => 
+  - warning: drivers/input/built-in.o(.text+0x27028): Section mismatch in reference from the function .tc3589x_keypad_open() to the function .devinit.text:.tc3589x_keypad_init_key_hardware(): N/A => 
+  - warning: drivers/input/keyboard/built-in.o(.text+0xf8c4): Section mismatch in reference from the function .tc3589x_keypad_open() to the function .devinit.text:.tc3589x_keypad_init_key_hardware(): N/A => 
+  - warning: drivers/leds/built-in.o(.text+0xb2dc): Section mismatch in reference from the function .lp5521_probe() to the function .init.text:.lp5521_init_led(): N/A => 
+  - warning: drivers/leds/built-in.o(.text+0xe06c): Section mismatch in reference from the function .lp5523_probe() to the function .init.text:.lp5523_init_led(): N/A => 
+  - warning: drivers/leds/leds-lp5521.o(.text+0x1dd8): Section mismatch in reference from the function .lp5521_probe() to the function .init.text:.lp5521_init_led(): N/A => 
+  - warning: drivers/leds/leds-lp5521.o(.text+0xa6a): Section mismatch in reference from the function lp5521_probe() to the function .init.text:lp5521_init_led(): N/A => 
+  - warning: drivers/leds/leds-lp5521.o(.text+0xc50): Section mismatch in reference from the function lp5521_probe() to the function .init.text:lp5521_init_led(): N/A => 
+  - warning: drivers/leds/leds-lp5523.o(.text+0x12f8): Section mismatch in reference from the function lp5523_probe() to the function .init.text:lp5523_init_led(): N/A => 
+  - warning: drivers/leds/leds-lp5523.o(.text+0x29fc): Section mismatch in reference from the function .lp5523_probe() to the function .init.text:.lp5523_init_led(): N/A => 
+  - warning: drivers/leds/leds-lp5523.o(.text+0xfd2): Section mismatch in reference from the function lp5523_probe() to the function .init.text:lp5523_init_led(): N/A => 
+  - warning: drivers/misc/cs5535-mfgpt.o(.data+0x0): Section mismatch in reference from the variable cs5535_mfgpt_drv to the function .devinit.text:cs5535_mfgpt_probe(): N/A => 
+  - warning: drivers/mtd/devices/sst25l.o(.devinit.text+0xaa): Section mismatch in reference from the function sst25l_match_device() to the variable .init.data:sst25l_flash_info: N/A => 
+  - warning: drivers/mtd/devices/sst25l.o(.devinit.text+0xac): Section mismatch in reference from the function sst25l_match_device() to the variable .init.data:sst25l_flash_info: N/A => 
+  - warning: drivers/mtd/devices/sst25l.o(.devinit.text+0xb0): Section mismatch in reference from the function sst25l_match_device() to the variable .init.data:sst25l_flash_info: N/A => 
+  - warning: drivers/mtd/devices/sst25l.o(.devinit.text+0xb8): Section mismatch in reference from the function sst25l_match_device() to the variable .init.data:sst25l_flash_info: N/A => 
+  - warning: drivers/mtd/devices/sst25l.o(.devinit.text+0xbc): Section mismatch in reference from the function sst25l_match_device() to the (unknown reference) .init.data:(unknown): N/A => 
+  - warning: drivers/mtd/devices/sst25l.o(.devinit.text+0xbc): Section mismatch in reference from the function sst25l_match_device() to the variable .init.data:sst25l_flash_info: N/A => 
+  - warning: drivers/mtd/devices/sst25l.o(.devinit.text+0xc4): Section mismatch in reference from the function sst25l_match_device() to the variable .init.data:sst25l_flash_info: N/A => 
+  - warning: drivers/mtd/devices/sst25l.o(.devinit.text+0xc6): Section mismatch in reference from the function sst25l_match_device() to the variable .init.data:sst25l_flash_info: N/A => 
+  - warning: drivers/mtd/devices/sst25l.o(.devinit.text+0xe9): Section mismatch in reference from the function sst25l_match_device() to the (unknown reference) .init.data:(unknown): N/A => 
+  - warning: drivers/net/depca.o(.devinit.text+0x18): Section mismatch in reference from the function depca_isa_probe() to the function .init.text:depca_common_init(): N/A => 
+  - warning: drivers/net/depca.o(.devinit.text+0x40): Section mismatch in reference from the function depca_isa_probe() to the function .init.text:DepcaSignature(): N/A => 
+  - warning: drivers/net/depca.o(.devinit.text+0xa0): Section mismatch in reference from the function depca_isa_probe() to the function .init.text:depca_hw_init(): N/A => 
+  - warning: drivers/net/irda/smsc-ircc2.o(.devinit.text+0x1ac): Section mismatch in reference from the function smsc_ircc_pnp_probe() to the function .init.text:smsc_ircc_open(): N/A => 
+  - warning: drivers/parisc/built-in.o(.data+0x154): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe(): N/A => 
+  - warning: drivers/parisc/built-in.o(.data+0x1f0): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe(): N/A => 
+  - warning: drivers/parisc/built-in.o(.data+0x334): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe(): N/A => 
+  - warning: drivers/parisc/built-in.o(.data+0x428): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip(): N/A => 
+  - warning: drivers/parisc/built-in.o(.data+0x484): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip(): N/A => 
+  - warning: drivers/parisc/built-in.o(.data+0x4e0): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip(): N/A => 
+  - warning: drivers/parisc/built-in.o(.data+0x54c): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe(): N/A => 
+  - warning: drivers/parisc/built-in.o(.data+0x694): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe(): N/A => 
+  - warning: drivers/platform/x86/asus-wmi.o(.text+0x235e): Section mismatch in reference from the function asus_wmi_add() to the function .init.text:asus_wmi_platform_init(): N/A => 
+  - warning: drivers/platform/x86/msi-laptop.o(.text+0xf11): Section mismatch in reference from the function load_scm_model_init() to the function .init.text:msi_laptop_input_setup(): N/A => 
+  - warning: drivers/sbus/char/bbc.o(.devinit.text+0xc): Section mismatch in reference from the function bbc_i2c_probe() to the function .init.text:T.326(): N/A => 
+  - warning: drivers/scsi/zalon7xx.o(.data+0xc): Section mismatch in reference from the variable zalon_driver to the function .init.text:zalon_probe(): N/A => 
+  - warning: drivers/tty/serial/apbuart.o(.data+0x90): Section mismatch in reference from the variable grlib_apbuart_of_driver to the variable .init.data:apbuart_match: N/A => 
+  - warning: drivers/tty/serial/apbuart.o(.text+0x7a0): Section mismatch in reference from the function grlib_apbuart_configure() to the variable .init.data:apbuart_match: N/A => 
+  - warning: drivers/tty/serial/apbuart.o(.text+0x7a8): Section mismatch in reference from the function grlib_apbuart_configure() to the variable .init.data:apbuart_match: N/A => 
+  - warning: drivers/tty/serial/apbuart.o(.text+0x7e8): Section mismatch in reference from the function grlib_apbuart_configure() to the variable .init.data:apbuart_match: N/A => 
+  - warning: drivers/usb/gadget/built-in.o(.text+0x10a10): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/built-in.o(.text+0x7d5c): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/built-in.o(.text+0xe300): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/built-in.o(.text+0xe34c): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/built-in.o(.text+0xe380): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/built-in.o(.text+0xeaf4): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/built-in.o(.text+0xeb40): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/built-in.o(.text+0xeb74): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_audio.o(.text+0x2b8c): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_audio.o(.text+0x5c98): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x311c): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x3442): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x3b28): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x3b48): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x3b68): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x3d10): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x3f84): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x3fa4): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x3fc4): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x4a17): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x4a56): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x4a87): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x4f7f): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x4fbe): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x4fef): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x82b4): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x8300): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x8334): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x89f4): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x8a3c): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0x8a70): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_cdc.o(.text+0xb2e8): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0x3d6c): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0x3e28): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0x41a6): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0x515c): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0x517c): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0x519c): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0x562c): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0x564c): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0x566c): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0x58fc): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0x593b): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0x596c): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0x5ebf): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0x5efe): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0x5f2f): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0xa310): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0xa35c): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0xa390): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0xab04): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0xab50): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0xab84): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0xca1c): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_ether.o(.text+0xca20): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0x1263c): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0x53a0): Section mismatch in reference from the function __ffs_func_bind_do_descs() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0x546c): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0x57ea): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0x6ba0): Section mismatch in reference from the function __ffs_func_bind_do_descs() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0x6c9c): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0x6cbc): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0x6cdc): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0x716c): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0x718c): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0x71ac): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0x74d6): Section mismatch in reference from the function __ffs_func_bind_do_descs() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0x75f9): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0x7638): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0x7669): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0x7bba): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0x7bf9): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0x7c2a): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0x9978): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0xe0ec): Section mismatch in reference from the function .__ffs_func_bind_do_descs() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0xe2cc): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0xe318): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0xe34c): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0xeac0): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0xeb0c): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_ffs.o(.text+0xeb40): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_hid.o(.text+0x3e64): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_hid.o(.text+0x5aa4): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_mass_storage.o(.text+0x42de): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_mass_storage.o(.text+0x5874): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_mass_storage.o(.text+0x5898): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_mass_storage.o(.text+0x6855): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_mass_storage.o(.text+0x68a6): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_mass_storage.o(.text+0xab18): Section mismatch in reference from the function .fsg_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_mass_storage.o(.text+0xab74): Section mismatch in reference from the function .fsg_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_mass_storage.o(.text+0xb48c): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_mass_storage.o(.text+0xbc7c): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0x15bb8): Section mismatch in reference from the function .fsg_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0x15c14): Section mismatch in reference from the function .fsg_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0x15e28): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0x15e74): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0x15ea8): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0x1661c): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0x16668): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0x1669c): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0x16d5c): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0x16da4): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0x16dd8): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0x87b8): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0x88d2): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0x8c52): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0x8f78): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xae5c): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xae80): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xafac): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xafcc): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xafec): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xb47c): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xb49c): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xb4bc): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xb8d8): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xb8f8): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xb918): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xc896): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xc8e7): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xca5f): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xca9e): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xcacf): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xd020): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xd05f): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xd090): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xd586): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xd5c5): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xd5f6): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xe1c0): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_multi.o(.text+0xf37c): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_ncm.o(.text+0x30ec): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_ncm.o(.text+0x82a8): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x38b2): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x3bd8): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x4020): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x439c): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x43bc): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x43dc): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x47f8): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x4818): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x4838): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x546b): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x54aa): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x54db): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x59d1): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x5a10): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x5a41): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x97a0): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x97ec): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x9820): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x9ee0): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x9f28): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0x9f5c): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_nokia.o(.text+0xc7d4): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_serial.o(.text+0x2436): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_serial.o(.text+0x24e0): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_serial.o(.text+0x251f): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_serial.o(.text+0x2550): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_serial.o(.text+0x2970): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_serial.o(.text+0x2990): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_serial.o(.text+0x29b0): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_serial.o(.text+0x4d10): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_serial.o(.text+0x6278): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_serial.o(.text+0x62c0): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_serial.o(.text+0x62f4): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
+  - warning: drivers/usb/gadget/g_serial.o(.text+0x8b6c): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_webcam.o(.text+0x68f4): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_webcam.o(.text+0x83e4): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_zero.o(.text+0x5c08): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/usb/gadget/g_zero.o(.text+0x62a8): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
+  - warning: drivers/video/sm501fb.o(.text+0x1714): Section mismatch in reference from the function sm501fb_init_fb() to the variable .devinit.data:sm501_default_mode: N/A => 
+  - warning: drivers/video/sm501fb.o(.text+0x1720): Section mismatch in reference from the function sm501fb_init_fb() to the variable .devinit.data:sm501_default_mode: N/A => 
+  - warning: drivers/video/sm501fb.o(.text+0x180c): Section mismatch in reference from the function sm501fb_init_fb() to the variable .devinit.data:sm501_default_mode: N/A => 
+  - warning: drivers/video/sm501fb.o(.text+0x21bc): Section mismatch in reference from the function sm501fb_init_fb() to the variable .devinit.data:sm501_default_mode: N/A => 
+  - warning: vmlinux.o (.xt.lit): unexpected non-allocatable section.: N/A => 
+  - warning: vmlinux.o (.xt.prop): unexpected non-allocatable section.: N/A => 
+  - warning: vmlinux.o(.devinit.text+0x9358): Section mismatch in reference from the function cnb20le_res() to the function .init.text:acpi_os_get_root_pointer(): N/A => 
+  - warning: vmlinux.o(.text+0x33d94): Section mismatch in reference from the function .early_setup_secondary() to the function .cpuinit.text:.early_init_mmu_secondary(): N/A => 
+  - warning: vmlinux.o(.text+0x5b8e8): Section mismatch in reference from the function .wake_offline_cpus() to the function .cpuinit.text:.cpu_up(): N/A => 
+  - warning: vmlinux.o(.text+0x61c4c): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier(): N/A => 
+  - warning: vmlinux.o(.text+0x61c68): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier(): N/A => 
+  - warning: vmlinux.o(.text+0x61c84): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier(): N/A => 
+  - warning: vmlinux.o(.text+0x742c0): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.get_node_active_region(): N/A => 
+  - warning: vmlinux.o(.text+0x74370): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.reserve_bootmem_node(): N/A => 
+  - warning: vmlinux.o(.text+0x743a4): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.get_node_active_region(): N/A => 
+  - warning: vmlinux.o(.text+0x7d42): Section mismatch in reference from the function atari_stram_alloc() to the function .init.text:__alloc_bootmem_low(): N/A => 
+  - warning: vmlinux.o(.text+0x92f0): Section mismatch in reference from the function .start_secondary_prolog() to the function .devinit.text:.start_secondary(): N/A => 
+  - warning: vmlinux.o(.text+0x9304): Section mismatch in reference from the function .start_secondary_resume() to the function .devinit.text:.start_secondary(): N/A => 
+  - warning: vmlinux.o(.text+0xa2af8): Section mismatch in reference from the function .pci_dn_reconfig_notifier() to the function .devinit.text:.update_dn_pci_info(): N/A => 
+  - warning: vmlinux.o(.text+0xa88b8): Section mismatch in reference from the function .dlpar_online_cpu() to the function .cpuinit.text:.cpu_up(): N/A => 
+  - warning: vmlinux.o(.text+0xb3340): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.of_rescan_bus(): N/A => 
+  - warning: vmlinux.o(.text+0xb33d0): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.pcibios_setup_bus_devices(): N/A => 
+  - warning: vmlinux.o(.text+0xb3428): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.pci_scan_bridge(): N/A => 
+  - warning: vmlinux.o(.text+0xb8aee): Section mismatch in reference from the variable system_reset_iSeries to the variable .init.data:boot_paca: N/A => 
+
+Gr{oetje,eeting}s,
+
+						Geert
 
 --
-			Gleb.
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
