@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534Ab1FOToq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 15:44:46 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37353 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753991Ab1FOTop convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 15:44:45 -0400
+	id S1754765Ab1FOTpD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 15:45:03 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38879 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294Ab1FOTo7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 15:44:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=M/H+k1VW+HjoVtbInexDSaRqKD2kq1kFtI1yjbmNYVfNqLsPWyKTY5Ude5ITc2ze/K
+         wsAMUXkw1ltVa9WapwDxPNIC/gAUp3wW1hm2nUir/KqHF/BcU08vlcWKhHiNkq7QiKNA
+         +QHeHlVtB4AH8e/2glFf4BqoRvPKJKopVlN3s=
 MIME-Version: 1.0
-In-Reply-To: <4DF90801.4090904@mit.edu>
-References: <BANLkTinCfV4owNBhJ+F-yfF3V+wg1o=PLA@mail.gmail.com>
- <BANLkTim_bHKdZnykedzW4re6GMCg+1Ed2g@mail.gmail.com> <BANLkTi=MvvdTZAHG3N=HHTQd9v6uPNHfzw@mail.gmail.com>
- <20110615071555.GA26721@dspnet.fr> <4DF90801.4090904@mit.edu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 15 Jun 2011 12:44:23 -0700
-Message-ID: <BANLkTi=BDChiJfvj+b5iVamWHELDuWCT-A@mail.gmail.com>
-Subject: Re: Linux 3.0-rc3
-To: Andy Lutomirski <luto@mit.edu>
-Cc: Olivier Galibert <galibert@pobox.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <BANLkTimebx56-Wb5JPWxYVnND9gG8OVdsQ@mail.gmail.com>
+References: <alpine.DEB.2.00.1105282010370.16617@ayla.of.borg>
+	<BANLkTimebx56-Wb5JPWxYVnND9gG8OVdsQ@mail.gmail.com>
+Date: Wed, 15 Jun 2011 21:44:58 +0200
+X-Google-Sender-Auth: uL8IUSjrCXaD130000vSq20u3JM
+Message-ID: <BANLkTin+gp2Cnxj8kHbHRmuoEgyDR8YeaQ@mail.gmail.com>
+Subject: Re: m68k: Convert to genirq (WIP)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Linux/m68k" <linux-m68k@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 12:29 PM, Andy Lutomirski <luto@mit.edu> wrote:
+On Sat, Jun 4, 2011 at 19:56, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Sat, May 28, 2011 at 20:32, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>> Now sparc32 has beaten me, I pushed out my work in progress of converting m68k
+>> to use the generic hardirq framework:
+>>
+>> git://git.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git m68k-genirq
+>> http://git.kernel.org/?p=linux/kernel/git/geert/linux-m68k.git;a=shortlog;h=refs/heads/m68k-genirq
 >
-> Well, the man page says that the version parameter is used to find
-> /lib/modules/version. �So why not check if /lib/modules/version exists and,
-> if not, try the filename?
+>> Next on my list is Amiga, which will cover autovectored and chained interrupts.
+>
+> I rebased to 3.0-rc1 and added (not in that order):
+>  [10] m68k/irq: Add m68k_setup_irq_controller()
+>  [11] m68k/irq: Adding missing "irq" offset in m68k_setup_irq_controller()
+>  [12] m68k/irq: Fix auto and user chips and handlers
+>  [13] m68k/amiga: Refactor amiints.c
+>  [14] m68k/amiga: Convert Amiga to genirq
+>  [15] m68k/amiga: Optimize interrupts using chain handlers
+>
+> It works on Amiga now, too. It can still use some optimizations in the
+> irq_{enable,disable,ack,mask,mask_ack,unmask} area, as my BogoMIPS
+> rating dropped by ca 2.5% and is now under 16, for a 25 MHz 68040.
 
-Yeah, that's the only sane way to see if something is a filename: look
-up the file. If you can find it, it's a filename.
+Seems like everything (Atari/ARAnyM and Amiga) still works when using
+handle_simple_irq instead of handle_level_irq.
+As a bonus, BogoMIPS is above 16 again.
 
-It's what 'git' uses to decide between the ambiguity of a filename vs
-a commit name, for example. It works really well. And sometimes, when
-the ambiguity is not resolvable (ie you really meant a filename, but
-there's a version that has the exact same format), then you are
-fundamentally screwed - you need some other way to tell the difference
-(which could be a simple priority decision - "filename overrides
-version" - or it can be a command line thing).
+Gr{oetje,eeting}s,
 
-So stop trying to parse the version number, and just see if
-'/lib/modules/%s' exists for that (unparsed) version string. Or, if
-you want to prioritize it the other way, just check for existence of
-the file of the (again, unparsed) version string with a simple
-"access(%s, F_OK)" or something.
+                        Geert
 
-I really don't see why you should ever parse a version number.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-                               Linus
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
