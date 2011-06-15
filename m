@@ -1,80 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601Ab1FNXuF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 19:50:05 -0400
-Received: from prod-mail-xrelay01.akamai.com ([72.246.2.12]:47146 "EHLO
-	prod-mail-xrelay01.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751303Ab1FNXuC (ORCPT
+	id S1753659Ab1FOAEA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 20:04:00 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:39556 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752428Ab1FOAD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 19:50:02 -0400
-X-Greylist: delayed 574 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Jun 2011 19:50:02 EDT
-From: Josh Hunt <johunt@akamai.com>
-To: Ankita Garg <ankita@in.ibm.com>, Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Tapan Dhimant <tdhimant@akamai.com>
-Subject: [PATCH] lkdtm: Fix race when crashpoint is hit multiple times before checking count
-Date: Tue, 14 Jun 2011 16:40:27 -0700
-Message-Id: <1308094827-29684-1-git-send-email-johunt@akamai.com>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 14 Jun 2011 20:03:58 -0400
+Date: Tue, 14 Jun 2011 17:03:21 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, alsa-devel@alsa-project.org,
+        Dmitry Artamonow <mad_soft@inbox.ru>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
+        Harald Welte <laforge@gnufiish.org>
+Subject: Re: [PATCH] gpio: add GPIOF_ values regardless on kconfig settings
+Message-Id: <20110614170321.10e1caa7.randy.dunlap@oracle.com>
+In-Reply-To: <20110614161357.GB1839@ponder.secretlab.ca>
+References: <4DDB3AFF.9030006@oracle.com>
+	<20110524075248.GB19734@sirena.org.uk>
+	<20110527074552.GA907@ponder.secretlab.ca>
+	<4DDFE391.2030507@oracle.com>
+	<20110527201201.GA6645@ponder.secretlab.ca>
+	<BANLkTin-KSVcG2cQfRM3Ys0_g_uJVruDMw@mail.gmail.com>
+	<20110603171837.GA9918@opensource.wolfsonmicro.com>
+	<BANLkTi=oko_C8_46Y8p5O1Qvw1KEn-1PjA@mail.gmail.com>
+	<4DEC4D67.6010506@oracle.com>
+	<20110614091211.465553de.randy.dunlap@oracle.com>
+	<20110614161357.GB1839@ponder.secretlab.ca>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090208.4DF7F6D8.0019:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We observed the crash point count going negative in cases where the crash point
-is hit multiple times before the check of "count == 0" is done. Because of this
-we never call lkdtm_do_action(). This patch just adds a spinlock to protect
-count.
+On Tue, 14 Jun 2011 10:13:57 -0600 Grant Likely wrote:
 
-Reported-by: Tapan Dhimant <tdhimant@akamai.com>
-Signed-off-by: Josh Hunt <johunt@akamai.com>
+> On Tue, Jun 14, 2011 at 09:12:11AM -0700, Randy Dunlap wrote:
+> > On Sun, 05 Jun 2011 20:45:43 -0700 Randy Dunlap wrote:
+> > 
+> > > On 06/03/11 10:42, Grant Likely wrote:
+> > > > On Fri, Jun 3, 2011 at 11:18 AM, Mark Brown
+> > > > <broonie@opensource.wolfsonmicro.com> wrote:
+> > > >> On Fri, Jun 03, 2011 at 11:04:52AM -0600, Grant Likely wrote:
+> > > >>
+> > > >>> I ended up not pushing this one to Linus.  Turns out it causes other
+> > > >>> breakage on other platforms that don't include include/linux/gpio.h.
+> > > >>> Since I don't have confidence that I'll be able to find all the
+> > > >>> offenders, I'm dropping it.  I recommend making any drivers that are
+> > > >>
+> > > >> So, this originally came about because I pushed back on adding random
+> > > >> dependencies like this for features which are pretty much optional in
+> > > >> drivers - their use of GPIOs is totally optional and the dependencies
+> > > >> are just too fragile, leading to noise with all the randconfigs.  It
+> > > >> seems better to get the architectures to keep up with enhancements to
+> > > >> gpiolib (or convert to it) than to have to worry about this in drivers.
+> > > > 
+> > > > Fair enough.  Randy, if you or someone else can check that all GPIOF_
+> > > > users have the required #include <linux/gpio.h>, then I'm okay with
+> > > > this patch.
+> > > 
+> > > OK, I'll look at that.
+> > 
+> > Of the 70 files that use GPIOF_ macros:
+> > 
+> > hdr missing in: ./arch/arm/mach-pxa/spitz_pm.c
+> > hdr missing in: ./arch/avr32/mach-at32ap/pio.c
+> > hdr missing in: ./arch/avr32/mach-at32ap/include/mach/portmux.h
+> > hdr missing in: ./arch/avr32/boards/hammerhead/setup.c
+> > hdr missing in: ./arch/avr32/boards/hammerhead/flash.c
+> > hdr missing in: ./arch/avr32/boards/mimc200/setup.c
+> > hdr missing in: ./arch/avr32/boards/atstk1000/setup.c
+> > hdr missing in: ./drivers/pcmcia/pxa2xx_vpac270.c
+> > 
+> > 
+> > > Do you have any examples of builds that failed with this patch?
+> > 
+> > and would you merge patch(es) that add this header file to those source
+> > files?  If not, I'll need to make 3 separate patches for them.
+
+That list of files above is incorrect.  Bad grep pattern.
+Drop all of the avr32 files.  Ending patch is small -- sending it soon.
+
+> Yes I would.  I'm fine with it all being one patch.
+
+
 ---
- drivers/misc/lkdtm.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/misc/lkdtm.c b/drivers/misc/lkdtm.c
-index 81d7fa4..150cd70 100644
---- a/drivers/misc/lkdtm.c
-+++ b/drivers/misc/lkdtm.c
-@@ -120,6 +120,7 @@ static int recur_count = REC_NUM_DEFAULT;
- static enum cname cpoint = CN_INVALID;
- static enum ctype cptype = CT_NONE;
- static int count = DEFAULT_COUNT;
-+static DEFINE_SPINLOCK(count_lock);
- 
- module_param(recur_count, int, 0644);
- MODULE_PARM_DESC(recur_count, " Recursion level for the stack overflow test, "\
-@@ -230,11 +231,14 @@ static const char *cp_name_to_str(enum cname name)
- static int lkdtm_parse_commandline(void)
- {
- 	int i;
-+	unsigned long flags;
- 
- 	if (cpoint_count < 1 || recur_count < 1)
- 		return -EINVAL;
- 
-+	spin_lock_irqsave(&count_lock, flags);
- 	count = cpoint_count;
-+	spin_unlock_irqrestore(&count_lock, flags);
- 
- 	/* No special parameters */
- 	if (!cpoint_type && !cpoint_name)
-@@ -349,6 +353,9 @@ static void lkdtm_do_action(enum ctype which)
- 
- static void lkdtm_handler(void)
- {
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&count_lock, flags);
- 	count--;
- 	printk(KERN_INFO "lkdtm: Crash point %s of type %s hit, trigger in %d rounds\n",
- 			cp_name_to_str(cpoint), cp_type_to_str(cptype), count);
-@@ -357,6 +364,7 @@ static void lkdtm_handler(void)
- 		lkdtm_do_action(cptype);
- 		count = cpoint_count;
- 	}
-+	spin_unlock_irqrestore(&count_lock, flags);
- }
- 
- static int lkdtm_register_cpoint(enum cname which)
--- 
-1.7.0.4
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
