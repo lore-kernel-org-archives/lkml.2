@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703Ab1FOAef (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 20:34:35 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:45577 "EHLO smtps.tip.net.au"
+	id S1754116Ab1FOAhV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 20:37:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15846 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751369Ab1FOAed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 20:34:33 -0400
-Date: Wed, 15 Jun 2011 10:34:20 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org, Dmitry Artamonow <mad_soft@inbox.ru>,
-        x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-next@vger.kernel.org, Harald Welte <laforge@gnufiish.org>
-Subject: Re: [PATCH 2/2] gpio: include linux/gpio.h where needed
-Message-Id: <20110615103420.1578eb5c.sfr@canb.auug.org.au>
-In-Reply-To: <20110614170602.7a51b1af.randy.dunlap@oracle.com>
-References: <4DDB3AFF.9030006@oracle.com>
-	<20110524075248.GB19734@sirena.org.uk>
-	<20110527074552.GA907@ponder.secretlab.ca>
-	<4DDFE391.2030507@oracle.com>
-	<20110527201201.GA6645@ponder.secretlab.ca>
-	<BANLkTin-KSVcG2cQfRM3Ys0_g_uJVruDMw@mail.gmail.com>
-	<20110603171837.GA9918@opensource.wolfsonmicro.com>
-	<BANLkTi=oko_C8_46Y8p5O1Qvw1KEn-1PjA@mail.gmail.com>
-	<4DEC4D67.6010506@oracle.com>
-	<20110614091211.465553de.randy.dunlap@oracle.com>
-	<20110614161357.GB1839@ponder.secretlab.ca>
-	<20110614170602.7a51b1af.randy.dunlap@oracle.com>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__15_Jun_2011_10_34_20_+1000_eEv+UJVGIb5jaCpk"
+	id S1752666Ab1FOAhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jun 2011 20:37:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,368,1304319600"; 
+   d="scan'208";a="13595240"
+Date: Tue, 14 Jun 2011 17:36:00 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, shaohua.li@intel.com,
+        alex.shi@intel.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: REGRESSION: Performance regressions from switching
+ anon_vma->lock to mutex
+Message-ID: <20110615003600.GA9602@tassilo.jf.intel.com>
+References: <1308097798.17300.142.camel@schen9-DESK>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308097798.17300.142.camel@schen9-DESK>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__15_Jun_2011_10_34_20_+1000_eEv+UJVGIb5jaCpk
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On 2.6.39, the contention of anon_vma->lock occupies 3.25% of cpu.
+> However, after the switch of the lock to mutex on 3.0-rc2, the mutex
+> acquisition jumps to 18.6% of cpu.  This seems to be the main cause of
+> the 52% throughput regression.
+> 
+This patch makes the mutex in Tim's workload take a bit less CPU time
+(4% down) but it doesn't really fix the regression. When spinning for a 
+value it's always better to read it first before attempting to write it.
+This saves expensive operations on the interconnect.
 
-Hi Randy,
+So it's not really a fix for this, but may be a slight improvement for 
+other workloads.
 
-On Tue, 14 Jun 2011 17:06:02 -0700 Randy Dunlap <randy.dunlap@oracle.com> w=
-rote:
->
-> From: Randy Dunlap <randy.dunlap@oracle.com>
->=20
-> Some files use GPIOF_ macros but don't include the header file
-> for them.  These macros are being moved to <linux/gpio.h>, so add
-> includes for <linux/gpio.h> where needed.
+-Andi
 
-Shouldn't these patches be in the other order to avoid bisection problems?
+>From 34d4c1e579b3dfbc9a01967185835f5829bd52f0 Mon Sep 17 00:00:00 2001
+From: Andi Kleen <ak@linux.intel.com>
+Date: Tue, 14 Jun 2011 16:27:54 -0700
+Subject: [PATCH] mutex: while spinning read count before attempting cmpxchg
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Under heavy contention it's better to read first before trying
+to do an atomic operation on the interconnect.
 
---Signature=_Wed__15_Jun_2011_10_34_20_+1000_eEv+UJVGIb5jaCpk
-Content-Type: application/pgp-signature
+This gives a few percent improvement for the mutex CPU time
+under heavy contention and likely saves some power too.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ kernel/mutex.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-iQEcBAEBAgAGBQJN9/4MAAoJEDMEi1NhKgbsPmIH/jcSid3qbYU9J/uN7GaaISSk
-1rm+wUlbmhCEao0a2PI/hJG0RR4v3P+cLgXb9JlB7KnFu62NT4+hwktKxxEr2OVy
-FlGDymANSLGHqZHNUzuU7NHfXgiCT7hiwpTJdpWPxI2X4MOlPwKwuB4gWn3jLDqS
-vmmBB7zfAIHXFleMJ9cGN/ziRoFsl/s6MpWsyaLO7ZeDMBeY/id00iSis8QJVGnA
-OGsg3Qfvz7g8pbq0xijzFMLilLxh80Ok34BdkMRC5bhYJTplQhYpi1ANRUktWPMW
-wKG9QUKKNKvM8L+YcBz0ojDPe9WWdx32/P2/DCZkRABHW+vhn+HVQ/EMS0jPc5M=
-=f3ZQ
------END PGP SIGNATURE-----
+diff --git a/kernel/mutex.c b/kernel/mutex.c
+index d607ed5..1abffa9 100644
+--- a/kernel/mutex.c
++++ b/kernel/mutex.c
+@@ -170,7 +170,8 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 		if (owner && !mutex_spin_on_owner(lock, owner))
+ 			break;
+ 
+-		if (atomic_cmpxchg(&lock->count, 1, 0) == 1) {
++		if (atomic_read(&lock->count) == 1 && 
++		    atomic_cmpxchg(&lock->count, 1, 0) == 1) {
+ 			lock_acquired(&lock->dep_map, ip);
+ 			mutex_set_owner(lock);
+ 			preempt_enable();
+-- 
+1.7.4.4
 
---Signature=_Wed__15_Jun_2011_10_34_20_+1000_eEv+UJVGIb5jaCpk--
