@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab1FOWP1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 18:15:27 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:59660 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274Ab1FOWPV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 18:15:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=M2E/VDqIPPT9vqjaz6viYroELjQBuPId3vahlQCwo/pC4Ye1u97xVmzxjDJLzW5ST0
-         mDjBPsTeiHUjjmMxfXPSZM6M4qGrRVn/nZqvgaH14M/hvslAZAuir6daErSCB0aRxN6v
-         c1HkeWUSyghwYjl+6WXjQgcJ3tAVzLXdF5+tQ=
-Date: Thu, 16 Jun 2011 00:15:16 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Sam Liao <phyomh@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] [perf] Add inverted call graph report support.
-Message-ID: <20110615221513.GA18579@somewhere.redhat.com>
-References: <BANLkTi=svHgWzyKiEHjMc-j5Hq4y5R8Mow@mail.gmail.com>
+	id S1755180Ab1FOWPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 18:15:39 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29164 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754171Ab1FOWPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 18:15:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,371,1304319600"; 
+   d="scan'208";a="15290112"
+Message-ID: <4DF92F04.6000704@linux.intel.com>
+Date: Wed, 15 Jun 2011 15:15:32 -0700
+From: Andi Kleen <ak@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=svHgWzyKiEHjMc-j5Hq4y5R8Mow@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Tim Chen <tim.c.chen@linux.intel.com>, Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
+ to mutex
+References: <1308097798.17300.142.camel@schen9-DESK>	 <1308101214.15392.151.camel@sli10-conroe> <1308138750.15315.62.camel@twins>	 <20110615161827.GA11769@tassilo.jf.intel.com>	 <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>	 <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>	 <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
+In-Reply-To: <1308173849.15315.91.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 09, 2011 at 02:44:19PM +0800, Sam Liao wrote:
-> Add "caller/callee" option to support inverted butterfly report,
-> in the inverted report (with caller option), the call graph start
-> from the callee's ancestor. Users can use such view to catch system's
-> performance bottleneck from a sysprof like view. Using this option
-> with specified sort order like pid gives us high level view of call
-> graph statistics.
+(needing to know the
+> number of cpus to optimize locking sounds like a trainwreck all of its
+> own, needing it _that_ often instead of just once at startup is even
+> worse).
 
-Sam, can you give me your "Signed-off-by:" tag otherwise I can't apply
-the patch.
+libdb does it only once per startup, it's just that it gets restarted 
+for every
+child (it's a library, not a server)
 
-Thanks.
+Really the kernel just needs to provide a faster way to get that.
+Requiring /proc/stat for that is just insane.
+
+I'll resend the sysconf patchkit I guess :-)
+
+-Andi
+
+
