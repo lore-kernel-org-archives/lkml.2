@@ -1,63 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab1FOIP0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 04:15:26 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:54529 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752321Ab1FOIPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 04:15:22 -0400
-Date: Wed, 15 Jun 2011 10:15:18 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Sam Liao <phyomh@gmail.com>
-Cc: Arun Sharma <asharma@fb.com>, linux-kernel@vger.kernel.org,
-        linux-perf-users@vger.kernel.org
-Subject: Re: [PATCH] [perf] Add inverted call graph report support.
-Message-ID: <20110615081518.GC12496@elte.hu>
-References: <BANLkTi=svHgWzyKiEHjMc-j5Hq4y5R8Mow@mail.gmail.com>
- <20110609193300.GA16858@dev1756.snc6.facebook.com>
- <20110614221517.GA20319@dev1756.snc6.facebook.com>
- <BANLkTikcxA53t1ummUG3-3TagFhj==qYjw@mail.gmail.com>
+	id S1754199Ab1FOIXe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 04:23:34 -0400
+Received: from mailx.hitachi.co.jp ([133.145.228.49]:59618 "EHLO
+	mailx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753146Ab1FOIW4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 04:22:56 -0400
+X-AuditID: b753bd60-a46c9ba000003bac-b1-4df86a5ccd9c
+X-AuditID: b753bd60-a46c9ba000003bac-b1-4df86a5ccd9c
+From: Nao Nishijima <nao.nishijima.xt@hitachi.com>
+Subject: [PATCH 0/3] [RFC] Persistent device name using preferred name
+To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: James.Bottomley@HansenPartnership.com, greg@kroah.com,
+        kay.sievers@vrfy.org, jcm@redhat.com, hare@suse.de,
+        stefanr@s5r6.in-berlin.de, yrl.pp-manager.tt@hitachi.com
+Date: Wed, 15 Jun 2011 17:16:10 +0900
+Message-ID: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikcxA53t1ummUG3-3TagFhj==qYjw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-* Sam Liao <phyomh@gmail.com> wrote:
+This patch series provides preferred name into kernel and procfs
+messages. Preferred name is user's preferred name for a device.
 
-> On Wed, Jun 15, 2011 at 6:15 AM, Arun Sharma <asharma@fb.com> wrote:
-> > Sam,
-> >
-> > $ perf report -g graph,0.5,caller --sort pid
-> >
-> > is a bit hard to type. Perhaps add a simpler command line option
-> > that has the same effect?
-> >
-> >  -Arun
-> >
-> >
-> 
-> How about perf report -g [caller/callee,][graph,0.1] -s pid
-> 
-> or remove the order of the options for "-g"
+The purpose of this feature is to solve the persistent device
+naming issues which was discussed here:
 
-We could alias the -G flag to the inverse graph.
+ http://marc.info/?l=linux-scsi&m=130200794615884&w=2
 
-Plus it would be nice to allow a .perfconfig flag for people to 
-configure their desired default reporting parameters.
+There are four issues.
+1. kernel messages doesn't show persistent device names
+2. procfs messages doesn't show persistent device names
+3. Some commands didn't support persistent device name in arguments
+4. Some commands message didn't show persistent device names
+
+Then I suggested the intermediate device naming which changes
+the naming scheme, but it was rejected. I realized that we should
+use udev to provide persistent device names instead of change the
+naming scheme.
+
+In LKML discussion, a new idea was suggested by James Bottomley.
+This idea allows kernel messages show preferred names by adding a
+new attribute to a device, kernel messages show this new attribute.
+This idea's advantage is not to change the current naming scheme.
+
+I tried implementation of preferred name, and then there are two
+discussion points.
+
+(a) Which devices need support?
+Preferred name is stored in struct device. Therefore it is available
+for all devices if we make preferred name support with other device
+types.
+
+This patch series only support scsi block device. Is there the device
+which needs support? (e.g. Ntwork devices, generic SCSI devices, etc.)
+
+(b) What kind of procfs form is good?
+I implemented preferred name something like this,
+
+(preferred name assigned foo to sda)
+#cat /proc/partitions
+major minor  #blocks  name
+
+   8        0  488386584 foo
+   8        1     194560 foo1
+...
+
+Do you needs device name filed?
+Something like this,
+
+(preferred name assigned foo to sda)
+#cat /proc/partitions
+major minor  #blocks  name preferred
+
+   8        0  488386584 sda foo
+   8        1     194560 sda1 foo1
+...
+
+
+Issue 3 and 4 is command releated issue. Commands have to be
+modified to use preferred name. We need to create library for
+preferred name.
+
+Our goal is to solve those issues, and users can use and see
+preferred name anywhere.
+
+TODO:
+- To change kernel messages
+  I'm going to change a device name to a preferred name by
+  dev_name() in mmc, blk-core, sg, sr, st, fs, etc.
+
+I would welcome any thoughts, comments and suggestions.
 
 Thanks,
 
-	Ingo
+---
+
+Nao Nishijima (3):
+      [RFC] fs: print preferred name in procfs messages
+      [RFC] sd: print preferred name in kernel messages.
+      [RFC] genhd: add a new attribute in device structure
+
+
+ block/genhd.c              |   28 ++++++++++++++++++++++++++++
+ drivers/scsi/sd.c          |    2 +-
+ drivers/scsi/sd.h          |    2 +-
+ fs/partitions/check.c      |    8 +++++---
+ include/linux/device.h     |    9 +++++++++
+ include/scsi/scsi_device.h |    2 +-
+ 6 files changed, 45 insertions(+), 6 deletions(-)
+
+--
+Nao Nishijima (nao.nishijima.xt@hitachi.com)
