@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025Ab1FOQxn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 12:53:43 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:34058 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab1FOQxk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 12:53:40 -0400
-Date: Wed, 15 Jun 2011 22:23:21 +0530
-From: Ankita Garg <ankita@in.ibm.com>
-To: Arjan van de Ven <arjan@infradead.org>
-Cc: paulmck@linux.vnet.ibm.com, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        svaidy@linux.vnet.ibm.com, thomas.abraham@linaro.org
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-Message-ID: <20110615165321.GC23151@in.ibm.com>
-Reply-To: Ankita Garg <ankita@in.ibm.com>
-References: <20110610165529.GC2230@linux.vnet.ibm.com>
- <20110610170535.GC25774@srcf.ucam.org>
- <20110610171939.GE2230@linux.vnet.ibm.com>
- <20110610172307.GA27630@srcf.ucam.org>
- <20110610175248.GF2230@linux.vnet.ibm.com>
- <20110610180807.GB28500@srcf.ucam.org>
- <20110610184738.GG2230@linux.vnet.ibm.com>
- <20110610192329.GA30496@srcf.ucam.org>
- <20110610193713.GJ2230@linux.vnet.ibm.com>
- <20110610200233.5ddd5a31@infradead.org>
+	id S1751863Ab1FOQzS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 12:55:18 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:60938 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751142Ab1FOQzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 12:55:16 -0400
+Date: Wed, 15 Jun 2011 09:54:14 -0700
+From: Ram Pai <linuxram@us.ibm.com>
+To: Oliver Hartkopp <socketcan@hartkopp.net>
+Cc: Yinghai Lu <yinghai@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: sdhci-pci fails on 3.0.0-rc1 on Dell E6510
+Message-ID: <20110615165414.GA11421@ram-laptop>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <4DEBCA3F.8050205@hartkopp.net>
+ <BANLkTin_WHuy5MExNBHdeLiDmdmn7SZYkg@mail.gmail.com>
+ <4DED05C4.7050903@hartkopp.net>
+ <m3hb82wx6m.fsf@pullcord.laptop.org>
+ <4DEE6FC6.9040308@hartkopp.net>
+ <4DEE84AD.6050104@hartkopp.net>
+ <4DEEA3CD.30507@kernel.org>
+ <4DEF1606.5030803@hartkopp.net>
+ <20110612204406.GC30738@ram-laptop>
+ <4DF8E083.1080006@hartkopp.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110610200233.5ddd5a31@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4DF8E083.1080006@hartkopp.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Fri, Jun 10, 2011 at 08:02:33PM -0700, Arjan van de Ven wrote:
-> On Fri, 10 Jun 2011 12:37:13 -0700
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > On Fri, Jun 10, 2011 at 08:23:29PM +0100, Matthew Garrett wrote:
-> > > On Fri, Jun 10, 2011 at 11:47:38AM -0700, Paul E. McKenney wrote:
-> > > 
-> > > > And if I understand you correctly, then the patches that Ankita
-> > > > posted should help your self-refresh case, along with the
-> > > > originally intended the power-down case and special-purpose use
-> > > > of memory case.
-> > > 
-> > > Yeah, I'd hope so once we actually have capable hardware.
+On Wed, Jun 15, 2011 at 06:40:35PM +0200, Oliver Hartkopp wrote:
+> On 12.06.2011 22:44, Ram Pai wrote:
+> > On Wed, Jun 08, 2011 at 08:26:14AM +0200, Oliver Hartkopp wrote:
+> >> On 08.06.2011 00:18, Yinghai Lu wrote:
+> >>> thanks.
+> >>>
+> >>> second report.
+> >>>
+> >>> can you send out whole boot log.
+> >>
+> >> See attached dmesg output. The 'dirty' is due to the revert test of the sd/mmc
+> >> stuff (see below) - the rest is plain 3.0.0-rc2.
+> >>
+> >> Good luck :-)
 > > 
-> > Cool!!!
+> > Looks like the kernel; by default, tries to allocate mem resource of size
+> > 0x4000000 each to the BARs of the cardbus bridge. This cannot be satisfied
+> > meeting all the constraints. The BIOS had not allocated the resource to
+> > begin with.
 > > 
-> > So Ankita's patchset might be useful to you at some point, then.
-> > 
-> > Does it look like a reasonable implementation?
+> > Anyone knows if the default value can be reduced to something smaller?
+> > Or Should the resource requirements of cardbus bridge be made nice-to-have?
 > 
-> as someone who is working on hardware that is PASR capable right now,
-> I have to admit that our plan was to just hook into the buddy allocator,
-> and use PASR on the top level of buddy (eg PASR off blocks that are
-> free there, and PASR them back on once an allocation required the block
-> to be broken up)..... that looked the very most simple to me.
+> Don't know ...
 > 
+> Is anyone already working on this issue?
+> 
+> I'm currently running 3.0.0-rc3-00055-gada9c93 which still does not work.
+> 
+> Will say: 'Send more patches!' ... that i can test, if you still like the
+> problematic commit's idea ;-)
 
-The maximum order in buddy allocator is by default 1k pages. Isn't this
-too small a granularity to track blocks that might comprise a PASR unit? 
+Oliver,
 
-> Maybe something much more elaborate is needed, but I didn't see why so
-> far.
-> 
-> 
+	Yes. I am working on this. I will send you a patch soon; probably by
+the end of this week. See if they work for you.
 
--- 
-Regards,
-Ankita Garg (ankita@in.ibm.com)
-Linux Technology Center
-IBM India Systems & Technology Labs,
-Bangalore, India
+Currently my thought is to make cardbus-bridge resource allocation
+nice-to-have, which means it will be attempted to allocate. But if in case of
+failures, we wont go the full length of releasing other resources to satisfy
+this resource.
+
+
+RP
