@@ -1,55 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754094Ab1FOSwX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 14:52:23 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:58957 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753731Ab1FOSwG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 14:52:06 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=QPXSk+sCtQgJfYeSDkh0hX4mqEH0y2NS4k/W21OGibI1g9y0AGkV3/rkyUEQ4arI/yyMaoOEcXQwxgcT2Ny+d6Fh1xmqxndGzND1RlmryoWLQ93oD7bYxHwnhZtmr27P;
-Date: Wed, 15 Jun 2011 11:52:01 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Dennis Jansen" <dennis.jansen@web.de>
-Subject: Re: [Bug #36392] 2.6.39, 3.0-rc2 Intel DRI Regression: Black Screen
- after trying to play video
-Message-ID: <20110615115201.0264039b@jbarnes-desktop>
-In-Reply-To: <kTLfM29CaqB.A.tBF.6zS9NB@chimera>
-References: <9NVbY1BZ_5D.A.2lE.jzS9NB@chimera>
-	<kTLfM29CaqB.A.tBF.6zS9NB@chimera>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754073Ab1FOSyt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 14:54:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:2712 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753724Ab1FOSys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 14:54:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,370,1304319600"; 
+   d="scan'208";a="13946511"
+Message-ID: <4DF8FFF6.4060000@linux.intel.com>
+Date: Wed, 15 Jun 2011 11:54:46 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Shawn Bohrer <sbohrer@rgmadvisors.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, peterz@infradead.org,
+        eric.dumazet@gmail.com, david@rgmadvisors.com,
+        linux-kernel@vger.kernel.org, zvonler@rgmadvisors.com,
+        hughd@google.com, tglx@linutronix.de, mingo@elte.hu
+Subject: Re: Change in functionality of futex() system call.
+References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com> <1307373819.3098.40.camel@edumazet-laptop> <1307376672.2322.167.camel@twins> <1307376989.2322.171.camel@twins> <4DF2099B.7030600@jp.fujitsu.com> <20110615185047.GA2171@BohrerMBP.rgmadvisors.com>
+In-Reply-To: <20110615185047.GA2171@BohrerMBP.rgmadvisors.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Jun 2011 23:12:11 +0200 (CEST)
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.38 and 2.6.39.
-> 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.38 and 2.6.39.  Please verify if it still should
-> be listed and let the tracking team know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=36392
-> Subject		: 2.6.39, 3.0-rc2 Intel DRI Regression: Black Screen after trying to play video
-> Submitter	: Dennis Jansen <dennis.jansen@web.de>
-> Date		: 2011-06-01 04:41 (12 days old)
 
-Did you ever bisect this issue?
+On 06/15/2011 11:50 AM, Shawn Bohrer wrote:
+> On Fri, Jun 10, 2011 at 09:10:03PM +0900, KOSAKI Motohiro wrote:
+>>>> Urgh,. maybe something like the below but with more conditionals that
+>>>> enable the extra logic only for FUTEX_WAIT..
+>>>>
+>>>> The idea is to try a RO gup() when the RW gup() fails so as not to slow
+>>>> down the common path of writable anonymous maps and bail when we used
+>>>> the RO path on anonymous memory.
+>>>>
+>>>> ---
+>>>> diff --git a/kernel/futex.c b/kernel/futex.c
+>>>> index fe28dc2..11f2ad1 100644
+>>>> --- a/kernel/futex.c
+>>>> +++ b/kernel/futex.c
+>>>> @@ -234,7 +234,7 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
+>>>>  	unsigned long address = (unsigned long)uaddr;
+>>>>  	struct mm_struct *mm = current->mm;
+>>>>  	struct page *page, *page_head;
+>>>> -	int err;
+>>>> +	int err, ro = 0;
+>>>>  
+>>>>  	/*
+>>>>  	 * The futex address must be "naturally" aligned.
+>>>> @@ -262,6 +262,10 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
+>>>>  
+>>>>  again:
+>>>>  	err = get_user_pages_fast(address, 1, 1, &page);
+>>>> +	if (err == -EFAULT) {
+>>>> +		err = get_user_pages_fast(address, 1, 0, &page);
+>>>> +		ro = 1;
+>>>> +	}
+>>>>  	if (err < 0)
+>>>>  		return err;
+>>>>  
+>>>> @@ -316,6 +320,11 @@ again:
+>>>>  	 * the object not the particular process.
+>>>>  	 */
+>>>>  	if (PageAnon(page_head)) {
+>>>> +		if (ro) {
+>>>> +			err = -EFAULT;
+>>>> +			goto out;
+>>>> +		}
+>>>> +
+>>>>  		key->both.offset |= FUT_OFF_MMSHARED; /* ref taken on mm */
+>>>>  		key->private.mm = mm;
+>>>>  		key->private.address = address;
+>>>> @@ -327,9 +336,10 @@ again:
+>>>>  
+>>>>  	get_futex_key_refs(key);
+>>>>  
+>>
+>> Need err=0 here. (note: get_user_pages_fast() return 1) Other than that looks
+>> good to me and this patch passed my test.
+>> 	Reviewed-and-tested-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>
+>>>> +out:
+>>>>  	unlock_page(page_head);
+>>>>  	put_page(page_head);
+>>>> -	return 0;
+>>>> +	return err;
+>>>>  }
+>>>>  
+>>>>  static inline void put_futex_key(union futex_key *key)
+>>>>
+> 
+> I've reviewed and tested Peter's change with KOSAKI's addition against
+> 2.6.32.41 and this passes our tests using FUTEX_WAIT with read only
+> shared mappings.
+> 
+> Reviewed-and-tested-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+
+
+Would someone care to roll this all together and send a patch with
+commit log clearly documenting the issues and which are addressed with
+the patch?
+
+Kosaki, do you have updated futextest patches or should I look at the
+ones you send previously?
+
+--
+Darren
+
+
+> 
+> --
+> Shawn
+> 
+> 
+> ---------------------------------------------------------------
+> This email, along with any attachments, is confidential. If you 
+> believe you received this message in error, please contact the 
+> sender immediately and delete all copies of the message.  
+> Thank you.
+> 
 
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
