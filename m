@@ -1,96 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab1FPHEy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:04:54 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:35185 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755995Ab1FPHEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:04:47 -0400
-Date: Thu, 16 Jun 2011 09:03:35 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
+	id S1756807Ab1FPH0p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:26:45 -0400
+Received: from webbox687.server-home.net ([195.149.74.151]:47789 "EHLO
+	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756166Ab1FPHFb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 03:05:31 -0400
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: stable@kernel.org, linux-kernel@vger.kernel.org,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, ak@linux.intel.com,
-        shaohua.li@intel.com, alex.shi@intel.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [GIT PULL] Re: REGRESSION: Performance regressions from
- switching anon_vma->lock to mutex
-Message-ID: <20110616070335.GA7661@elte.hu>
-References: <1308097798.17300.142.camel@schen9-DESK>
- <1308134200.15315.32.camel@twins>
- <1308135495.15315.38.camel@twins>
- <BANLkTikt88KnxTy8TuGGVrBVnXvsnL7nMQ@mail.gmail.com>
- <20110615201216.GA4762@elte.hu>
- <35c0ff16-bd58-4b9c-9d9f-d1a4df2ae7b9@email.android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <35c0ff16-bd58-4b9c-9d9f-d1a4df2ae7b9@email.android.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+        Alexander Stein <alexander.stein@systec-electronic.com>
+Subject: [PATCH v2] pch_phub: Don't oops if dmi_get_system_info returns NULL
+Date: Thu, 16 Jun 2011 09:05:24 +0200
+Message-Id: <1308207924-14181-1-git-send-email-alexander.stein@systec-electronic.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1306910669-19348-1-git-send-email-alexander.stein@systec-electronic.com>
+References: <1306910669-19348-1-git-send-email-alexander.stein@systec-electronic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If dmi_get_system_info() returns NULL, pch_phub_probe() will
+dereferencea a zero pointer.
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+This oops was observed on an Atom based board which has no BIOS, but
+a bootloder which doesn't privde DMI data.
 
-> 
-> 
-> Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > I have this fix queued up currently:
-> >
-> >  09223371deac: rcu: Use softirq to address performance regression
-> 
-> I really don't think that is even close to enough.
+Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+---
+Changes in v2:
+* Adjust summary
+* Commit message is more verbose
 
-Yeah.
+ drivers/misc/pch_phub.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-> It still does all the callbacks in the threads, and according to 
-> Peter, about half the rcu time in the threads remained..
+diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
+index 5fe79df..01eb67b 100644
+--- a/drivers/misc/pch_phub.c
++++ b/drivers/misc/pch_phub.c
+@@ -686,6 +686,8 @@ static int __devinit pch_phub_probe(struct pci_dev *pdev,
+ 	}
+ 
+ 	if (id->driver_data == 1) { /* EG20T PCH */
++		const char *board_name;
++
+ 		retval = sysfs_create_file(&pdev->dev.kobj,
+ 					   &dev_attr_pch_mac.attr);
+ 		if (retval)
+@@ -701,7 +703,8 @@ static int __devinit pch_phub_probe(struct pci_dev *pdev,
+ 					       CLKCFG_CANCLK_MASK);
+ 
+ 		/* quirk for CM-iTC board */
+-		if (strstr(dmi_get_system_info(DMI_BOARD_NAME), "CM-iTC"))
++		board_name = dmi_get_system_info(DMI_BOARD_NAME);
++		if (board_name && strstr(board_name, "CM-iTC"))
+ 			pch_phub_read_modify_write_reg(chip,
+ 						(unsigned int)CLKCFG_REG_OFFSET,
+ 						CLKCFG_UART_48MHZ | CLKCFG_BAUDDIV |
+-- 
+1.7.3.4
 
-You are right - things that are a few percent on a 24 core machine 
-will definitely go exponentially worse on larger boxen. We'll get rid 
-of the kthreads entirely.
-
-The funny thing about this workload is that context-switches are 
-really a fastpath here and we are using anonymous IRQ-triggered 
-softirqs embedded in random task contexts as a workaround for that.
-
-[ I think we'll have to revisit this issue and do it properly:
-  quiescent state is mostly defined by context-switches here, so we
-  could do the RCU callbacks from the task that turns a CPU
-  quiescent, right in the scheduler context-switch path - perhaps
-  with an option for SCHED_FIFO tasks to *not* do GC.
-
-  That could possibly be more cache-efficient than softirq execution,
-  as we'll process a still-hot pool of callbacks instead of doing
-  them only once per timer tick. It will also make the RCU GC
-  behavior HZ independent. ]
-
-In any case the proxy kthread model clearly sucked, no argument about 
-that.
-
-Thanks,
-
-	Ingo
