@@ -1,135 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230Ab1FPAM7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 20:12:59 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:36658 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752618Ab1FPAM6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 20:12:58 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Colin Cross <ccross@android.com>
-Cc: "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Leif Lindholm <leif.lindholm@arm.com>
-Subject: Re: [PATCH 1/3] ARM: Add cpu power management notifiers
-Organization: Texas Instruments, Inc.
-References: <1307925825-28566-1-git-send-email-ccross@android.com>
-	<1307925825-28566-2-git-send-email-ccross@android.com>
-	<87ips9fka2.fsf@ti.com>
-	<BANLkTinnZtPFY1Aae=8uDbyt5sh9xAxiNw@mail.gmail.com>
-Date: Wed, 15 Jun 2011 17:12:53 -0700
-In-Reply-To: <BANLkTinnZtPFY1Aae=8uDbyt5sh9xAxiNw@mail.gmail.com> (Colin
-	Cross's message of "Mon, 13 Jun 2011 23:15:58 -0700")
-Message-ID: <87lix2y6pm.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1756270Ab1FPHFH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:05:07 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:51486 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756110Ab1FPHFC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 03:05:02 -0400
+X-Sasl-enc: gtH5ijkIrfnAmrn3qAcij1bDlB3LQ323FXp+JPAMT2yW 1308207901
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:16:09 2011
+Message-Id: <20110616001609.421140118@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Wed, 15 Jun 2011 17:14:58 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [01/91] ftrace: Only update the function code on write to filter files
+In-Reply-To: <20110616001900.GA25375@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Colin Cross <ccross@android.com> writes:
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-> On Mon, Jun 13, 2011 at 3:17 PM, Kevin Hilman <khilman@ti.com> wrote:
->> Colin Cross <ccross@android.com> writes:
->>
->>> During some CPU power modes entered during idle, hotplug and
->>> suspend, peripherals located in the CPU power domain, such as
->>> the GIC and VFP, may be powered down.  Add a notifier chain
->>> that allows drivers for those peripherals to be notified
->>> before and after they may be reset.
->>>
->>> Signed-off-by: Colin Cross <ccross@android.com>
->>
->> This is great, thanks!
->>
->> I had hacked up something OMAP-specific a while back to do something
->> similar, and have been meaning to make it more generic, so this is
->> perfect.  Also, if it is moved outside ARM, note that x86_64 has a
->> idle_notifier infrastructure that is somewhat similar, and if you're
->> motivated, it should probably be converted to this as well.  See
->> arch/x86/kernel/process_64.c.
->
-> I'll take a look at x86
->
->> Also, for the sake of the comments/changelog, the usefulness of these
->> notifiers is not limited to low-power states where power is off and IP
->> blocks may be reset.  It could be considered as simply a generic
->> notification mechanism for any CPU PM transitions.
->>
->> On OMAP we have other peripherals (not in the CPU power domain) where we
->> need to control their PM transitions in relation to the CPU PM
->> transitions so the notifiers are useful for any low-power state
->> transition of the CPU(s).  The drivers for these peripherals use runtime
->> PM in their CPU PM notifiers to trigger the device PM transitions. (The
->> drivers must use the synchronous versions of the runtime PM get/put
->> calls with device in pm_runtime_irq_safe() mode.)
->
-> Can you give a concrete example of this so I can describe it correctly?
->
+------------------
 
-One simple example is a clock controlling a thermal sensor.  The sensor
-(and thus the functional clock) should be active whenever the CPU is
-running, so the idle transition (clock gating) of this IP block should
-be coordinated with any idle transitions of the CPU cluster.
+From: Steven Rostedt <srostedt@redhat.com>
 
-Another example is any IP block that is not capable of waking up the CPU
-(or $DEITY forbid, where said wakeups are broken.)  A CPU_PM_EXIT
-notifier would be used to check for pending activity and take action.
+commit 058e297d34a404caaa5ed277de15698d8dc43000 upstream.
 
->> In this series, I don't see any calls to cpu_[complex_]pm_[enter|exit]().
->> Based on that, I assume you prefer to leave it up to platform-specific
->> idle/PM code to place these calls.  Or, do you plan to have this
->> triggered by generic CPUidle, suspend/resume and/or hotplug code?  At
->> least on OMAP, I prefer having the calls in platform-specific code.
->
-> I will post the Tegra code that uses this soon.  I expect that the
-> decision on exactly when to call these functions will be unique to
-> each platform, so I think it should start in the platform-specific
-> code.
+If function tracing is enabled, a read of the filter files will
+cause the call to stop_machine to update the function trace sites.
+It should only call stop_machine on write.
 
-Agreed.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
->> I have a minor enhancement request.  The notifier callbacks provide for
->> passing a void * through the notifier chain.  Could you add a way for a
->> void * to be registered at cpu_pm_register_notifier() time and that
->> would be passed through the notifier call chain?  This would allow using
->> the same struct notifier_block and callback for multiple instances of
->> the same IP, and the instances could be differentiated in the callback
->> using the void *.
->
-> The void * passed to the notifier comes from the call to
-> notifier_call_chain(), not from the call to register_notifier().  
+---
+ kernel/trace/ftrace.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-I see now.
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -2360,14 +2360,16 @@ ftrace_regex_release(struct inode *inode
+ 		ftrace_match_records(parser->buffer, parser->idx, enable);
+ 	}
+ 
+-	mutex_lock(&ftrace_lock);
+-	if (ftrace_start_up && ftrace_enabled)
+-		ftrace_run_update_code(FTRACE_ENABLE_CALLS);
+-	mutex_unlock(&ftrace_lock);
+-
+ 	trace_parser_put(parser);
+ 	kfree(iter);
+ 
++	if (file->f_mode & FMODE_WRITE) {
++		mutex_lock(&ftrace_lock);
++		if (ftrace_start_up && ftrace_enabled)
++			ftrace_run_update_code(FTRACE_ENABLE_CALLS);
++		mutex_unlock(&ftrace_lock);
++	}
++
+ 	mutex_unlock(&ftrace_regex_lock);
+ 	return 0;
+ }
 
-> You can get the behavior you want by putting the notifier_block inside
-> your device struct and using container_of on the notifier_bock.
-
-Yeah, that's the way I did it, but it requires a separate 'struct
-notifier_block' for each device instance.  It's only a minor issue, but
-being able to pass in the 'void *' at registration time would allow a
-single struct notifier_block' for all instances of the device.
-
->> Also, FWIW I tested this on OMAP3 (Cortex-A8 UP) using
->> cpu_pm_enter/exit() in the code path shared between idle and suspend.  I
->> successfully triggered PM transitions in non-CPU power-domain
->> peripherals, and it worked great.
->
-> Great!  Can I get a tested-by?
-
-Sure, meant to add it the first time.
-
-Tested-by: Kevin Hilman <khilman@ti.com>
-
-Kevin
 
