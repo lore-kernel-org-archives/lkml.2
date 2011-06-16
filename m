@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab1FPNZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 09:25:26 -0400
-Received: from webbox687.server-home.net ([195.149.74.151]:53358 "EHLO
-	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751304Ab1FPNZW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 09:25:22 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>
-Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Alexander Stein <alexander.stein@systec-electronic.com>
-Subject: [PATCH] i2c-isch: Add module parameter which actually set the clock divider
-Date: Thu, 16 Jun 2011 15:24:38 +0200
-Message-Id: <1308230678-28861-1-git-send-email-alexander.stein@systec-electronic.com>
-X-Mailer: git-send-email 1.7.3.4
+	id S1758016Ab1FPNtD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 09:49:03 -0400
+Received: from frodo.hserus.net ([204.74.68.40]:40911 "EHLO frodo.hserus.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757971Ab1FPNtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 09:49:01 -0400
+X-Greylist: delayed 1450 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Jun 2011 09:49:01 EDT
+Date: Thu, 16 Jun 2011 10:24:41 -0300
+From: Christian Robottom Reis <kiko@linaro.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org
+Subject: Re: [RFC] Add Arm cpu topology definition
+Message-ID: <20110616132441.GJ14846@anthem.async.com.br>
+References: <BANLkTinRGRUxKB=C_2Y2F93czWScEUo+Jw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTinRGRUxKB=C_2Y2F93czWScEUo+Jw@mail.gmail.com>
+Organization: http://www.linaro.org/
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was observed the Host Clock Divider was not written by the driver. It
-was still set to (default) 0 which caused garbage on SMBus.
-This driver adds 2 parameters which are used to calculate the divider
-appropriately.
+On Thu, Jun 16, 2011 at 10:49:13AM +0200, Vincent Guittot wrote:
+> @@ -219,6 +219,24 @@ source "kernel/Kconfig.freezer"
+> 
+>  menu "System Type"
+> 
+> +config SCHED_MC
+> +	bool "Multi-core scheduler support"
+> +	depends on SMP && ARM_CPU_TOPOLOGY
+> +	default n
+> +	help
+> +	  Multi-core scheduler support improves the CPU scheduler's decision
+> +	  making when dealing with multi-core CPU chips at a cost of slightly
+> +	  increased overhead in some places. If unsure say N here.
+> +
+> +config SCHED_SMT
+> +	bool "SMT scheduler support"
+> +	depends on SMP && ARM_CPU_TOPOLOGY
+> +	default n
+> +	help
+> +	  Improves the CPU scheduler's decision making when dealing with
+> +	  MultiThreading at a cost of slightly increased overhead in some
+> +	  places. If unsure say N here.
+> +
 
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
----
- drivers/i2c/busses/i2c-isch.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-isch.c b/drivers/i2c/busses/i2c-isch.c
-index 0682f8f..520bbd5 100644
---- a/drivers/i2c/busses/i2c-isch.c
-+++ b/drivers/i2c/busses/i2c-isch.c
-@@ -40,6 +40,7 @@
- /* SCH SMBus address offsets */
- #define SMBHSTCNT	(0 + sch_smba)
- #define SMBHSTSTS	(1 + sch_smba)
-+#define SMBHSTCLK	(2 + sch_smba)
- #define SMBHSTADD	(4 + sch_smba) /* TSA */
- #define SMBHSTCMD	(5 + sch_smba)
- #define SMBHSTDAT0	(6 + sch_smba)
-@@ -58,6 +59,8 @@
- 
- static unsigned short sch_smba;
- static struct i2c_adapter sch_adapter;
-+static int smbus_speed = 100; /* SMBus bus speed in Kbps */
-+static int backbone_speed = 33000; /* backbone speed in KHz */
- 
- /*
-  * Start the i2c transaction -- the i2c_access will prepare the transaction
-@@ -156,6 +159,9 @@ static s32 sch_access(struct i2c_adapter *adap, u16 addr,
- 		dev_dbg(&sch_adapter.dev, "SMBus busy (%02x)\n", temp);
- 		return -EAGAIN;
- 	}
-+	dev_dbg(&sch_adapter.dev, "access speed: %d KHz\n", smbus_speed);
-+	outb((backbone_speed / 4) / smbus_speed, SMBHSTCLK);
-+
- 	dev_dbg(&sch_adapter.dev, "access size: %d %s\n", size,
- 		(read_write)?"READ":"WRITE");
- 	switch (size) {
-@@ -323,3 +329,5 @@ MODULE_LICENSE("GPL");
- module_init(i2c_sch_init);
- module_exit(i2c_sch_exit);
- MODULE_ALIAS("platform:isch_smbus");
-+module_param(smbus_speed, int, (S_IRUSR | S_IWUSR));
-+module_param(backbone_speed, int, (S_IRUSR | S_IWUSR));
+Quick question: the patch doesn't actually seem to use the SCHED_MC and
+SCHED_SMT config bits; is that actually correct?
 -- 
-1.7.3.4
-
+Christian Robottom Reis   | [+55] 16 9112 6430 | http://launchpad.net/~kiko
+Linaro Engineering VP     | [ +1] 612 216 4935 | http://async.com.br/~kiko
