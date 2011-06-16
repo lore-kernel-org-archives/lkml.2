@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191Ab1FPHdr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:33:47 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:35133 "EHLO
+	id S1757206Ab1FPHdS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:33:18 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:56914 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755888Ab1FPHBR (ORCPT
+	by vger.kernel.org with ESMTP id S1755825Ab1FPHBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:01:17 -0400
-X-Sasl-enc: KixmzoC2fS4fZInpi8CchUqPEcBBwhaQVWzjP8jEIWHY 1308207676
+	Thu, 16 Jun 2011 03:01:19 -0400
+X-Sasl-enc: lDIdMHOjW+KDd5ZeqcegFkHyq6qlb0yUrYxVwdhsO8yx 1308207678
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:35 2011
-Message-Id: <20110616000234.982812588@clark.kroah.org>
+Message-Id: <20110616000235.083305813@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:00:24 -0700
+Date: Wed, 15 Jun 2011 17:00:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [61/89] xhci: Do not issue device reset when device is not setup
+Subject: [62/89] xhci: Disable MSI for some Fresco Logic hosts.
 In-Reply-To: <20110616000258.GA14529@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,51 +27,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 001fd3826f4c736ce292315782d015f768399080 upstream.
+commit f5182b4155b9d686c5540a6822486400e34ddd98 upstream.
 
-xHCI controllers respond to a Reset Device command when the Slot is in the
-Enabled/Disabled state by returning an error.  This is fine on other host
-controllers, but the Etron xHCI host controller returns a vendor-specific
-error code that the xHCI driver doesn't understand.  The xHCI driver then
-gives up on device enumeration.
+Some Fresco Logic hosts, including those found in the AUAU N533V laptop,
+advertise MSI, but fail to actually generate MSI interrupts.  Add a new
+xHCI quirk to skip MSI enabling for the Fresco Logic host controllers.
+Fresco Logic confirms that all chips with PCI vendor ID 0x1b73 and device
+ID 0x1000, regardless of PCI revision ID, do not support MSI.
 
-Instead of issuing a command that will fail, just return.  This fixes the
-issue with the xhci driver not working on ASRock P67 Pro/Extreme boards.
+This should be backported to stable kernels as far back as 2.6.36, which
+was the first kernel to support MSI on xHCI hosts.
 
-This should be backported to stable kernels as far back as 2.6.34.
-
-Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Sergey Galanov <sergey.e.galanov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/host/xhci-pci.c |   14 ++++++++++++--
+ drivers/usb/host/xhci.c     |    7 +++++++
+ drivers/usb/host/xhci.h     |    1 +
+ 3 files changed, 20 insertions(+), 2 deletions(-)
 
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -105,12 +105,22 @@ static int xhci_pci_setup(struct usb_hcd
+ 
+ 	/* Look for vendor-specific quirks */
+ 	if (pdev->vendor == PCI_VENDOR_ID_FRESCO_LOGIC &&
+-			pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK &&
+-			pdev->revision == 0x0) {
++			pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK) {
++		if (pdev->revision == 0x0) {
+ 			xhci->quirks |= XHCI_RESET_EP_QUIRK;
+ 			xhci_dbg(xhci, "QUIRK: Fresco Logic xHC needs configure"
+ 					" endpoint cmd after reset endpoint\n");
++		}
++		/* Fresco Logic confirms: all revisions of this chip do not
++		 * support MSI, even though some of them claim to in their PCI
++		 * capabilities.
++		 */
++		xhci->quirks |= XHCI_BROKEN_MSI;
++		xhci_dbg(xhci, "QUIRK: Fresco Logic revision %u "
++				"has broken MSI implementation\n",
++				pdev->revision);
+ 	}
++
+ 	if (pdev->vendor == PCI_VENDOR_ID_NEC)
+ 		xhci->quirks |= XHCI_NEC_HOST;
+ 
 --- a/drivers/usb/host/xhci.c
 +++ b/drivers/usb/host/xhci.c
-@@ -2284,6 +2284,7 @@ int xhci_discover_or_reset_device(struct
- 	struct xhci_command *reset_device_cmd;
- 	int timeleft;
- 	int last_freed_endpoint;
-+	struct xhci_slot_ctx *slot_ctx;
+@@ -430,12 +430,19 @@ int xhci_run(struct usb_hcd *hcd)
+ 		free_irq(hcd->irq, hcd);
+ 	hcd->irq = -1;
  
- 	ret = xhci_check_args(hcd, udev, NULL, 0, false, __func__);
- 	if (ret <= 0)
-@@ -2316,6 +2317,12 @@ int xhci_discover_or_reset_device(struct
- 			return -EINVAL;
- 	}
- 
-+	/* If device is not setup, there is no point in resetting it */
-+	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev->out_ctx);
-+	if (GET_SLOT_STATE(le32_to_cpu(slot_ctx->dev_state)) ==
-+						SLOT_STATE_DISABLED)
-+		return 0;
++	/* Some Fresco Logic host controllers advertise MSI, but fail to
++	 * generate interrupts.  Don't even try to enable MSI.
++	 */
++	if (xhci->quirks & XHCI_BROKEN_MSI)
++		goto legacy_irq;
 +
- 	xhci_dbg(xhci, "Resetting device with slot ID %u\n", slot_id);
- 	/* Allocate the command structure that holds the struct completion.
- 	 * Assume we're in process context, since the normal device reset
+ 	ret = xhci_setup_msix(xhci);
+ 	if (ret)
+ 		/* fall back to msi*/
+ 		ret = xhci_setup_msi(xhci);
+ 
+ 	if (ret) {
++legacy_irq:
+ 		/* fall back to legacy interrupt*/
+ 		ret = request_irq(pdev->irq, &usb_hcd_irq, IRQF_SHARED,
+ 					hcd->irq_descr, hcd);
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1286,6 +1286,7 @@ struct xhci_hcd {
+ #define XHCI_RESET_EP_QUIRK	(1 << 1)
+ #define XHCI_NEC_HOST		(1 << 2)
+ #define XHCI_AMD_PLL_FIX	(1 << 3)
++#define XHCI_BROKEN_MSI		(1 << 6)
+ 	/* There are two roothubs to keep track of bus suspend info for */
+ 	struct xhci_bus_state   bus_state[2];
+ 	/* Is each xHCI roothub port a USB 3.0, USB 2.0, or USB 1.1 port? */
 
 
