@@ -1,70 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758211Ab1FPRKt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 13:10:49 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39804 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758165Ab1FPRKq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 13:10:46 -0400
-Date: Thu, 16 Jun 2011 18:10:44 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [git pull] vfs patches for -rc4
-Message-ID: <20110616171044.GM11521@ZenIV.linux.org.uk>
+	id S1756506Ab1FPRQz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 13:16:55 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:55709 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751281Ab1FPRQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 13:16:52 -0400
+Date: Thu, 16 Jun 2011 10:16:44 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, ak@linux.intel.com,
+        shaohua.li@intel.com, alex.shi@intel.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [GIT PULL] Re: REGRESSION: Performance regressions from
+ switching anon_vma->lock to mutex
+Message-ID: <20110616171644.GK2582@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1308097798.17300.142.camel@schen9-DESK>
+ <1308134200.15315.32.camel@twins>
+ <1308135495.15315.38.camel@twins>
+ <BANLkTikt88KnxTy8TuGGVrBVnXvsnL7nMQ@mail.gmail.com>
+ <20110615201216.GA4762@elte.hu>
+ <35c0ff16-bd58-4b9c-9d9f-d1a4df2ae7b9@email.android.com>
+ <20110616070335.GA7661@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=unknown-8bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110616070335.GA7661@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Assorted fixes, including an automount race that had been around since late
-January - dhowells had finally narrowed it down to vfsmount refcounting
-problem around lock_mount().  Please, pull from
-git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
+On Thu, Jun 16, 2011 at 09:03:35AM +0200, Ingo Molnar wrote:
+> 
+> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> 
+> > 
+> > 
+> > Ingo Molnar <mingo@elte.hu> wrote:
+> > >
+> > > I have this fix queued up currently:
+> > >
+> > >  09223371deac: rcu: Use softirq to address performance regression
+> > 
+> > I really don't think that is even close to enough.
+> 
+> Yeah.
+> 
+> > It still does all the callbacks in the threads, and according to 
+> > Peter, about half the rcu time in the threads remained..
+> 
+> You are right - things that are a few percent on a 24 core machine 
+> will definitely go exponentially worse on larger boxen. We'll get rid 
+> of the kthreads entirely.
 
-Shortlog:
-Al Viro (6):
-      fix leak in proc_set_super()
-      ubifs: split allocation of ubifs_info into a separate function
-      ubifs: fix sget races
-      afs: fix sget() races, close leak on umount
-      Delay struct net freeing while there's a sysfs instance refering to it
-      VFS: Fix vfsmount overput on simultaneous automount
+I did indeed at one time have access to larger test systems than I
+do now, and I clearly need to fix that.  :-/
 
-Anton Blanchard (1):
-      afs: afs_fill_page reads too much, or wrong data
+> The funny thing about this workload is that context-switches are 
+> really a fastpath here and we are using anonymous IRQ-triggered 
+> softirqs embedded in random task contexts as a workaround for that.
 
-David Howells (2):
-      AFS: Set s_id in the superblock to the volume name
-      AFS: Use i_generation not i_version for the vnode uniquifier
+The other thing that the IRQ-triggered softirqs do is to get the callbacks
+invoked in cases where a CPU-bound user thread is never context switching.
+Of course, one alternative might be to set_need_resched() to force entry
+into the scheduler as needed.
 
-Jan Kara (1):
-      vfs: Fix data corruption after failed write in __block_write_begin()
+> [ I think we'll have to revisit this issue and do it properly:
+>   quiescent state is mostly defined by context-switches here, so we
+>   could do the RCU callbacks from the task that turns a CPU
+>   quiescent, right in the scheduler context-switch path - perhaps
+>   with an option for SCHED_FIFO tasks to *not* do GC.
 
-Török Edwin (1):
-      fix wrong iput on d_inode introduced by e6bc45d65d
+I considered this approach for TINY_RCU, but dropped it in favor of
+reducing the interlocking between the scheduler and RCU callbacks.
+Might be worth revisiting, though.  If SCHED_FIFO task omit RCU callback
+invocation, then there will need to be some override for CPUs with lots
+of SCHED_FIFO load, probably similar to RCU's current blimit stuff.
 
-Diffstat:
- fs/afs/dir.c                |    8 +-
- fs/afs/fsclient.c           |    3 +-
- fs/afs/inode.c              |   10 ++--
- fs/afs/super.c              |   74 ++++++++++-------------
- fs/afs/write.c              |   21 +++----
- fs/buffer.c                 |    4 +-
- fs/namei.c                  |   28 ++++++---
- fs/proc/root.c              |   11 ++--
- fs/sysfs/mount.c            |   37 ++++--------
- fs/sysfs/sysfs.h            |    2 +-
- fs/ubifs/super.c            |  137 ++++++++++++++++++++++++-------------------
- include/linux/kobject_ns.h  |   10 ++-
- include/linux/sysfs.h       |    7 --
- include/net/net_namespace.h |   10 +++-
- lib/kobject.c               |   26 +++-----
- net/core/net-sysfs.c        |   23 +++-----
- net/core/net_namespace.c    |   12 +++-
- 17 files changed, 210 insertions(+), 213 deletions(-)
+>   That could possibly be more cache-efficient than softirq execution,
+>   as we'll process a still-hot pool of callbacks instead of doing
+>   them only once per timer tick. It will also make the RCU GC
+>   behavior HZ independent. ]
+
+Well, the callbacks will normally be cache-cold in any case due to the
+grace-period delay, but on the other hand, both tick-independence and
+the ability to shield a given CPU from RCU callback execution might be
+quite useful.  The tick currently does the following for RCU:
+
+1.	Informs RCU of user-mode execution (rcu_sched and rcu_bh
+	quiescent state).
+
+2.	Informs RCU of non-dyntick idle mode (again, rcu_sched and
+	rcu_bh quiescent state).
+
+3.	Kicks the current CPU's RCU core processing as needed in
+	response to actions from other CPUs.
+
+Frederic's work avoiding ticks in long-running user-mode tasks
+might take care of #1, and it should be possible to make use of
+the current dyntick-idle APIs to deal with #2.  Replacing #3
+efficiently will take some thought.
+
+> In any case the proxy kthread model clearly sucked, no argument about 
+> that.
+
+Indeed, I lost track of the global nature of real-time scheduling.  :-(
+
+Whatever does the boosting will need to have process context and
+can be subject to delays, so that pretty much needs to be a kthread.
+But it will context-switch quite rarely, so should not be a problem.
+
+							Thanx, Paul
