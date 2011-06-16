@@ -1,105 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757208Ab1FPP1q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 11:27:46 -0400
-Received: from bohort.kerlabs.com ([90.80.97.101]:39925 "EHLO
-	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754343Ab1FPP1p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 11:27:45 -0400
-Date: Thu, 16 Jun 2011 17:27:33 +0200
-From: Louis Rilling <Louis.Rilling@kerlabs.com>
-To: Greg Kurz <gkurz@fr.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, containers@lists.osdl.org,
-        akpm@linux-foundation.org, xemul@openvz.org
-Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was
-	Vpid:)
-Message-ID: <20110616152733.GB15328@hawkmoon.kerlabs.com>
-Mail-Followup-To: Greg Kurz <gkurz@fr.ibm.com>,
-	Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-	ebiederm@xmission.com, containers@lists.osdl.org,
-	akpm@linux-foundation.org, xemul@openvz.org
-References: <20110615145527.4016.70157.stgit@bahia.local> <20110615184625.GA15573@redhat.com> <1308222107.8230.49.camel@bahia.local> <20110616123554.GA7230@hawkmoon.kerlabs.com> <1308229251.8230.77.camel@bahia.local> <20110616132551.GB7230@hawkmoon.kerlabs.com> <1308236499.8230.89.camel@bahia.local>
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_bohort-27127-1308237968-0001-2"
+	id S1757381Ab1FPP2n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 11:28:43 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:49055 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756968Ab1FPP2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 11:28:41 -0400
+Date: Thu, 16 Jun 2011 08:28:36 -0700
+From: Nishanth Aravamudan <nacc@us.ibm.com>
+To: Brian King <brking@linux.vnet.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>, linuxppc-dev@lists.ozlabs.org,
+        wayneb@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, mbizon@freebox.fr, jgarzik@pobox.com
+Subject: [PATCH] libata/sas: only set FROZEN flag if new EH is supported
+Message-ID: <20110616152836.GA15268@us.ibm.com>
+References: <20110615191747.GA6324@us.ibm.com>
+ <4DF90FCA.1040706@linux.vnet.ibm.com>
+ <20110615233417.GB6324@us.ibm.com>
+ <20110616075114.GH8141@htj.dyndns.org>
+ <4DFA0507.3090609@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1308236499.8230.89.camel@bahia.local>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4DFA0507.3090609@linux.vnet.ibm.com>
+X-Operating-System: Linux 2.6.38-8-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME-formatted message.  If you see this text it means that your
-E-mail software does not support MIME-formatted messages.
+On 16.06.2011 [08:28:39 -0500], Brian King wrote:
+> On 06/16/2011 02:51 AM, Tejun Heo wrote:
+> > On Wed, Jun 15, 2011 at 04:34:17PM -0700, Nishanth Aravamudan wrote:
+> >>> That looks like the right thing to do. For ipr's usage of
+> >>> libata, we don't have the concept of a port frozen state, so this flag
+> >>> should really never get set. The alternate way to fix this would be to
+> >>> only set ATA_PFLAG_FROZEN in ata_port_alloc if ap->ops->error_handler
+> >>> is not NULL.
+> >>
+> >> It seemed like ipr is as you say, but I wasn't sure if it was
+> >> appropriate to make the change above in the common libata-scis code or
+> >> not. I don't want to break some other device on accident.
+> >>
+> >> Also, I tried your suggestion, but I don't think that can happen in
+> >> ata_port_alloc? ata_port_alloc is allocated ap itself, and it seems like
+> >> ap->ops typically gets set only after ata_port_alloc returns?
+> > 
+> > Maybe we can test error_handler in ata_sas_port_start()?
+> 
+> Good point. Since libsas is converted to the new eh now, we would need to have
+> this test.
 
---=_bohort-27127-1308237968-0001-2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit 7b3a24c57d2eeda8dba9c205342b12689c4679f9 ("ahci: don't enable
+port irq before handler is registered") caused a regression for CD-ROMs
+attached to the IPR SATA bus on Power machines:
 
-On 16/06/11 17:01 +0200, Greg Kurz wrote:
-> On Thu, 2011-06-16 at 15:25 +0200, Louis Rilling wrote:
-> > > Ok. You're right, the RCU grace period is just what I need to ensure
-> > I
-> > > won't dereference a stale pointer. So I don't even have to bother
-> > with
-> > > ->siglock and just check pid_alive() before peeking into
-> > pid->numbers.
-> >=20
-> > It ends like open-coding an optimized version of task_pid_vnr(). If
-> > the
-> > optimization is really important (I guess this depends on the depth of
-> > recursive
-> > pid namespaces), it would be better to re-write task_pid_vnr().
-> > Otherwise, just
-> > use task_pid_vnr() as it is.
-> >=20
-> > Thanks,
-> >=20
-> > Louis
-> >=20
-> Hmm, sorry Louis but I'm looking for the pid number from the task active
-> pid_ns (AKA. the return value of getpid() if called by this task), so
-> task_pid_vnr() doesn't fit.
+  ata_port_alloc: ENTER
+  ata_port_probe: ata1: bus probe begin
+  ata1.00: ata_dev_read_id: ENTER
+  ata1.00: failed to IDENTIFY (I/O error, err_mask=0x40)
+  ata1.00: ata_dev_read_id: ENTER
+  ata1.00: failed to IDENTIFY (I/O error, err_mask=0x40)
+  ata1.00: limiting speed to UDMA7:PIO5
+  ata1.00: ata_dev_read_id: ENTER
+  ata1.00: failed to IDENTIFY (I/O error, err_mask=0x40)
+  ata1.00: disabled
+  ata_port_probe: ata1: bus probe end
+  scsi_alloc_sdev: Allocation failure during SCSI scanning, some SCSI devices might not be configured
 
-Yup, I should have somewhat recalled that _vnr() means "in the caller's pid
-namespace". Sorry for the wrong argument.
+The FROZEN flag added in that commit is only cleared by the new EH code,
+which is not used by ipr. Clear this flag in the SAS code if we don't
+support new EH.
 
->=20
-> About the open-coding argument, that's why I used task_pid_nr_ns() and
-> task_active_pid_ns() at first...
+Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
 
-Sure. I still think that if you end accessing pid->numbers[pid->level].nr, =
-then
-you're close to coding some (optimized) task_active_pid_nr() that could als=
-o be
-used by getpid(), using some task_active_tgid_nr() instead of task_tgid_vnr=
-().
-Anyway, optimization is not a relevant point here AFAICS.
+diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+index d51f979..ebe1685 100644
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -3797,6 +3797,12 @@ EXPORT_SYMBOL_GPL(ata_sas_port_alloc);
+  */
+ int ata_sas_port_start(struct ata_port *ap)
+ {
++	/*
++	 * the port is marked as frozen at allocation time, but if we don't
++	 * have new eh, we won't thaw it
++	 */
++	if (!ap->ops->error_handler)
++		ap->pflags &= ~ATA_PFLAG_FROZEN;
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(ata_sas_port_start);
 
-Thanks,
 
-Louis
-
---=20
-Dr Louis Rilling			Kerlabs
-Skype: louis.rilling			Batiment Germanium
-Phone: (+33|0) 6 80 89 08 23		80 avenue des Buttes de Coesmes
-http://www.kerlabs.com/			35700 Rennes
-
---=_bohort-27127-1308237968-0001-2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Transfer-Encoding: 7bit
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAk36IOUACgkQVKcRuvQ9Q1QipgCeKhrkBcIpPtTwvxVkbxLNr4DQ
-Ut4Anj1AyloYA+R4oRjivRBvcBb+zPv1
-=Ay+q
------END PGP SIGNATURE-----
-
---=_bohort-27127-1308237968-0001-2--
+-- 
+Nishanth Aravamudan <nacc@us.ibm.com>
+IBM Linux Technology Center
