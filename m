@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754274Ab1FPBg3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 21:36:29 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:4607 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752035Ab1FPBg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 21:36:27 -0400
-X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
-Date: Wed, 15 Jun 2011 18:36:16 -0700
-From: "Henry Ptasinski" <henryp@broadcom.com>
-To: "Greg Dietsche" <Gregory.Dietsche@cuw.edu>
-cc: "gregkh@suse.de" <gregkh@suse.de>, "Brett Rudley" <brudley@broadcom.com>,
-        "Dowan Kim" <dowan@broadcom.com>,
-        "Roland Vossen" <rvossen@broadcom.com>,
-        "Arend Van Spriel" <arend@broadcom.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+	id S1754090Ab1FPBi1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 21:38:27 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:50305 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753538Ab1FPBiZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 21:38:25 -0400
+Date: Thu, 16 Jun 2011 02:38:12 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Henry Ptasinski" <henryp@broadcom.com>
-Subject: Re: [PATCH] staging: brcm80211: return false if not a broadcom
- board
-Message-ID: <20110616013615.GA14700@broadcom.com>
-References: <1308176709-14765-1-git-send-email-Gregory.Dietsche@cuw.edu>
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH] ACPI, APEI, Add APEI _OSC support
+Message-ID: <20110616013812.GA32494@srcf.ucam.org>
+References: <1306303538-30524-1-git-send-email-ying.huang@intel.com>
+ <20110614145246.GA17469@srcf.ucam.org>
+ <4DF82CBC.5070400@intel.com>
+ <20110615121703.GA8638@srcf.ucam.org>
+ <4DF950EB.7050400@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1308176709-14765-1-git-send-email-Gregory.Dietsche@cuw.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-WSS-ID: 61E7809962O9546291-01-01
-Content-Type: text/plain;
- charset=us-ascii
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4DF950EB.7050400@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 03:25:09PM -0700, Greg Dietsche wrote:
-> This code looks wrong to me. I think it meant to return false
-> if the board's vendor id isn't Broadcom's.
+On Thu, Jun 16, 2011 at 08:40:11AM +0800, Huang Ying wrote:
+> On 06/15/2011 08:17 PM, Matthew Garrett wrote:
+> >> You means the "APEI Support" bit for standard UUID?  Do you know which
+> >> machine uses this bit?  I can write the code, but I have no machine to
+> >> test it.
+> > 
+> > I have access to a Dell system that uses this.
 > 
-> Compile tested only.
+> Great! Can you help us to test the code?
+
+Yup, no problem.
+
+> > Urgh. One machine I've looked at enables APEI if the WHEA _OSC call is 
+> > made, and then clears a flag if any other _OSC call is made. In that 
+> > specific case it doesn't seem to matter (the flag never actually gets 
+> > checked in any of the other codepaths), but it seems that the intention 
+> > is for the generic call to be made and the WHEA one to be made after 
+> > that.
 > 
-> Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
-> ---
->  drivers/staging/brcm80211/brcmsmac/wlc_bmac.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> Yes.  The WHEA call should be made after the generic one.  Another
+> situation is as follow:
 > 
-> diff --git a/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c b/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
-> index 4534926..ee13238 100644
-> --- a/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
-> +++ b/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
-> @@ -1943,7 +1943,7 @@ static bool wlc_validboardtype(struct wlc_hw_info *wlc_hw)
->  	}
->  
->  	if (wlc_hw->sih->boardvendor != PCI_VENDOR_ID_BROADCOM)
-> -		return goodboard;
-> +		goodboard = false; 
->  
->  	return goodboard;
->  }
+> - Generic _OSC call without "APEI Support" bit is called (in
+> acpi_bus_osc_support).
+> 
+> - After some time, when we think it is good to turn on firmware first
+> mode fully, usually after we checking HEST and initializing
+> corresponding module, we make generic _OSC call with "APEI Support" bit
+> to turn on firmware first mode fully in standard way.
+> 
+> Is it a good idea to make generic _OSC call twice, one without "APEI
+> Support" bit, the other with "APEI Support" bit?
 
-Actually, the original code is correct.
+I think we probably need to make the HEST decision early, and use that 
+to decide how to make the generic call. Our experience has been that 
+many firmware vendors only expect _OSC to be called once with any given 
+UUID - multiple calls can result in unexpected behaviour.
 
-For boards with the Broadcom ID, this function checks that the boardrev is
-sane. Dev boards that aren't properly configured may have invalid info, so this
-check is mainly to catch that problem.
-
-For boards with any other vendor, we don't have any sanity checks that we know
-should be done, so the board info is always considered good.
-
-The device ID is of course always checked.
-
-- Henry
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
