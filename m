@@ -1,103 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097Ab1FPNBL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 09:01:11 -0400
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:48006 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab1FPNBG (ORCPT
+	id S1754992Ab1FPNB2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 09:01:28 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33666 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751603Ab1FPNB0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 09:01:06 -0400
-Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was
- Vpid:)
-From: Greg Kurz <gkurz@fr.ibm.com>
-To: Louis Rilling <Louis.Rilling@kerlabs.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, containers@lists.osdl.org,
-        akpm@linux-foundation.org, xemul@openvz.org
-In-Reply-To: <20110616123554.GA7230@hawkmoon.kerlabs.com>
-References: <20110615145527.4016.70157.stgit@bahia.local>
-	 <20110615184625.GA15573@redhat.com> <1308222107.8230.49.camel@bahia.local>
-	 <20110616123554.GA7230@hawkmoon.kerlabs.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 Jun 2011 15:00:51 +0200
-Message-ID: <1308229251.8230.77.camel@bahia.local>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Jun 2011 09:01:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SjtpJXvZjgPjEs5Zc8UkxS7XvfYdqHTzCW7ty8+/ixa7nH5114rWCyRMPoYI1560bf
+         2tm0VWzOOB8K52WQsPdeRureslxJIQpcd7lfJKyxGYwVx0xNBOC8fwAhE4P1k68GxE6w
+         n4/FYHvl84qsNRnDlaZesJphfINwWSdP/M1OQ=
+MIME-Version: 1.0
+In-Reply-To: <20110616100937.GA12317@elte.hu>
+References: <20110613120054.3336e997.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110613120608.d5243bc9.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110616100937.GA12317@elte.hu>
+Date: Thu, 16 Jun 2011 22:01:25 +0900
+Message-ID: <BANLkTik8oETUSphYDfP8g8CgyHnDcaBXOg@mail.gmail.com>
+Subject: Re: [-git build bug, PATCH] Re: [BUGFIX][PATCH 2/5] memcg: fix
+ init_page_cgroup nid with sparsemem
+From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-16 at 14:35 +0200, Louis Rilling wrote:
-> On 16/06/11 13:01 +0200, Greg Kurz wrote:
-> > On Wed, 2011-06-15 at 20:46 +0200, Oleg Nesterov wrote:
-> > > On 06/15, Greg Kurz wrote:
-> > > >
-> > > > @@ -176,6 +177,17 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
-> > > >  		if (tracer)
-> > > >  			tpid = task_pid_nr_ns(tracer, ns);
-> > > >  	}
-> > > > +	actpid = 0;
-> > > > +	sighand = rcu_dereference(p->sighand);
-> > > > +	if (sighand) {
-> > > > +		struct pid_namespace *pid_ns;
-> > > > +		unsigned long flags;
-> > > > +		spin_lock_irqsave(&sighand->siglock, flags);
-> > > 
-> > > Well. This is not exactly right. We have lock_task_sighand() for this.
-> > > 
-> > 
-> > I see... ->sighand could change so we need the for(;;) loop in
-> > __lock_task_sighand() to be sure we have the right pointer, correct ?
-> > By the way, if we use lock_task_sighand() we'll end up with nested
-> > rcu_read_lock(): it will work but I don't know how it may affect
-> > performance...
-> 
-> rcu_read_lock() is very cheap.
-> 
-
-Fair enough. In this case, lock_task_sighand() would be the right choice
-if locking is needed.
-
-> > 
-> > > But. Why do you need ->siglock? Why rcu_read_lock() is not enough?
-> > > 
-> > 
-> > Because there's a race with
-> > __exit_signal()->__unhash_process()->detach_pid() that can break
-> > task_active_pid_ns() and rcu won't help here (unless *perhaps* by
-> > modifying __exit_signal() but I don't want to mess with such a critical
-> > path).
-> 
-> In case of race, the only risk is that task_active_pid_ns() returns NULL.
-> Otherwise, RCU guarantees that the pid_ns will stay alive (see below).
-> 
-> > 
-> > > Hmm. You don't even need pid_ns afaics, you could simply look at
-> > > pid->numbers[pid->level].
-> > > 
-> > 
-> > True but I will have the same problem: detach_pid() nullifies the pid.
-> 
-> But the pid won't be freed until an RCU grace period expires. See free_pid(). So
-> the non-determinism here is when /proc/<pid>/status is read at the same as
-> threaded execve() or task's exit(), in which case a stale pid (execve()) or
-> no pid (exit after __unhash_process()) can be accessed. This does not look like
-> a big deal...
-> 
-
-Ok. You're right, the RCU grace period is just what I need to ensure I
-won't dereference a stale pointer. So I don't even have to bother with
-->siglock and just check pid_alive() before peeking into pid->numbers.
-
+2011/6/16 Ingo Molnar <mingo@elte.hu>:
+>
+> * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>
+>> Date: Mon, 13 Jun 2011 10:09:17 +0900
+>> Subject: [PATCH 2/5] [BUGFIX] memcg: fix init_page_cgroup nid with sparsemem
+>
+> This fresh upstream commit commit:
+>
+>  37573e8c7182: memcg: fix init_page_cgroup nid with sparsemem
+>
+> is causing widespread build failures on latest -git, on x86:
+>
+>  mm/page_cgroup.c:308:3: error: implicit declaration of function ‘node_start_pfn’ [-Werror=implicit-function-declaration]
+>  mm/page_cgroup.c:309:3: error: implicit declaration of function ‘node_end_pfn’ [-Werror=implicit-function-declaration]
+>
+> On any config that has CONFIG_CGROUP_MEM_RES_CTLR=y enabled but
+> CONFIG_NUMA disabled.
+>
+> For now i've worked it around with the patch below, but the real
+> solution would be to make the page_cgroup.c code not depend on NUMA.
+>
 > Thanks,
-> 
-> Louis
-> 
+>
+>        Ingo
+>
+yes, very sorry. I'm now preparing a fix in this thread.
 
-Thanks for your help.
+http://marc.info/?t=130819986800002&r=1&w=2
 
---
-Greg
-
-
+I think I'll be able to post a final fix, tomorrow. I'll cc you when I'll post.
+Thanks,
+-Kame
