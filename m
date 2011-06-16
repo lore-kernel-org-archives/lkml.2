@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758449Ab1FPOq6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 10:46:58 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:43319 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758429Ab1FPOq4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 10:46:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=EFp9mvQPMtlLkcRmuofyGHQwlBBFX6rWdn2DuLmOPu/5jbOiwZAIll5Qp+ff0Vfmz0
-         HF65FPUGwsfgRJcjiqXAk30mbmxQsEg368qDXFpfeoHUwScmxbyOxp24VcgROG2MoGSt
-         EA8DOGoCtyat8b+fog3B6cE/FE+0OILAQpnAA=
-MIME-Version: 1.0
-Date: Thu, 16 Jun 2011 16:44:57 +0200
-Message-ID: <BANLkTikXUd8uorD+juMDvFubr3cz+OZnaQ@mail.gmail.com>
-Subject: Faking MMIO ops? Fooling a driver
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: linux-wireless@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1758401Ab1FPOqh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 10:46:37 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:59605 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758311Ab1FPOqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 10:46:36 -0400
+Date: Thu, 16 Jun 2011 10:46:26 -0400
+Message-Id: <E1QXDpy-0007Wr-5V@tytso-glaptop>
+To: linux-kernel@vger.kernel.org
+Subject: scheduler / perf stat question about CPU-migrations
+From: "Theodore Ts'o" <tytso@mit.edu>
+Phone: (781) 391-3464
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I analyze MMIO dumps of closed source driver and found such a place:
-W 2 3855.911536 9 0xb06003fc 0x810 0x0 0
-R 2 3855.911540 9 0xb06003fe 0x0 0x0 0
-W 2 3855.911541 9 0xb06003fe 0x0 0x0 0
+Can someone tell me how I'm being confused?
 
-After translation:
- phy_read(0x0810) -> 0x0000
-phy_write(0x0810) <- 0x0000
+I ran the following command as root:
 
-So it's quite obvious, the driver is reading PHY register, masking it
-and writing masked value. Unfortunately from just looking at such
-place we can not guess the mask driver uses.
+	perf stat schedtool -a 1 -e e2fsck -ft /dev/funarg/kbuild
 
-I'd like to fake value read from 0xb06003fe to be 0xFFFF.
-Is there some ready method for doing such a trick?
+This runs e2fsck under perf, with the cpu affinity nailed to a single
+CPU.  I therefore expected the CPU-migrations field reported by perf to
+be 0.  That was not what I found, though:
 
-Dump comes from Kernel hacking → Tracers → MMIO and ndiswrapper.
+Performance counter stats for 'schedtool -a 1 -e e2fsck -ft /dev/funarg/kbuild':
 
--- 
-Rafał
+        1169.715766  task-clock-msecs         #      0.180 CPUs 
+               9212  context-switches         #      0.008 M/sec
+                307  CPU-migrations           #      0.000 M/sec
+               1875  page-faults              #      0.002 M/sec
+         2737168498  cycles                   #   2340.029 M/sec
+         3125632038  instructions             #      1.142 IPC  
+          688556730  branches                 #    588.653 M/sec
+            7263580  branch-misses            #      1.055 %    
+           15222417  cache-references         #     13.014 M/sec
+            1488633  cache-misses             #      1.273 M/sec
+
+        6.481483548  seconds time elapsed
+
+How could this be?  The CPU-migrations event counter only gets
+incremented if a task changes CPU's, as seen in kernel/sched.c:
+
+	if (task_cpu(p) != new_cpu) {
+		p->se.nr_migrations++;
+		perf_sw_event(PERF_COUNT_SW_CPU_MIGRATIONS, 1, 1, NULL, 0);
+	}
+
+So it should be 0, not 307, right?    What am I missing?
+
+						- Ted
