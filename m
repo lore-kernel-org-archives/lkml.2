@@ -1,221 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757383Ab1FPJFD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 05:05:03 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62829 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752899Ab1FPJFB (ORCPT
+	id S1757333Ab1FPJJG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 05:09:06 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:40743 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752899Ab1FPJJD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 05:05:01 -0400
+	Thu, 16 Jun 2011 05:09:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=DEFROyQkK8oqXNsGmWKAKWiM0PVH1POIuPPNEp6pPfsH0T6lOS9C+JSgUANGCN/0N6
-         13HuBDkCHMZwTAz9kV+6t9F7bc76cgM80HOTi4TEPOL9OUj/YCpxyUCOu/7emtJYC0sD
-         86mpU+FNtZ8xumUjsj8tmECV3syea+coP/vaY=
-Message-ID: <4DF9C739.9010301@gmail.com>
-Date: Thu, 16 Jun 2011 11:04:57 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=VaUK93bchuAvW9pVmLlz2khD2li1hWGvx8uMiJDIrgWY9wt1e0yh9R9PL7iwktjXDi
+         yyNcvc2kwO9ww5d3txA9+N2zMcAwSamqR1lKMUPrcb1LhNGn/PtA2ziSLBJK1nA9PV6t
+         6S9JkxtwMnQ3H+HHsILwSZg/6Cowtrc71GVEo=
 MIME-Version: 1.0
-To: Chris Robinson <chris.kcat@gmail.com>
-CC: linux-btrfs@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Hugo Mills <hugo@carfax.org.uk>
-Subject: [PATCH] btrfs: Remove unused sysfs code
+In-Reply-To: <20110616072452.GA15366@elte.hu>
+References: <1308153214.7566.6.camel@jaguar>
+	<4DF8DE26.1070301@redhat.com>
+	<BANLkTi=SHENDBHdtFY_7_qtfqJb_+qKJSw@mail.gmail.com>
+	<BANLkTinMDz-sqaX0cyWEoLXt70dowxofvg@mail.gmail.com>
+	<4DF92C80.3030106@codemonkey.ws>
+	<7A30A509-47AA-4E72-ABF3-937005900F9D@suse.de>
+	<BANLkTi=Jm_50m6qyfQPCF0PuwUfuDNwMtg@mail.gmail.com>
+	<20110616072452.GA15366@elte.hu>
+Date: Thu, 16 Jun 2011 10:09:01 +0100
+Message-ID: <BANLkTi=j1EqMP7gwKKUYOCv4OET1N8uJrQ@mail.gmail.com>
+Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Pekka Enberg <penberg@kernel.org>, Alexander Graf <agraf@suse.de>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Prasad Joshi <prasadjoshi124@gmail.com>, Avi Kivity <avi@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>,
+        Jens Axboe <jaxboe@fusionio.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes code no longer used. The sysfs file itself is kept, because the
-btrfs developers expressed interest in putting new entries to sysfs.
+On Thu, Jun 16, 2011 at 8:24 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>  - executing AIO in the vcpu thread eats up precious vcpu execution
+>   time: combined QCOW2 throughput would be limited by a single
+>   core's performance, and any time spent on QCOW2 processing would
+>   not be spent running the guest CPU. (In such a model we certainly
+>   couldnt do more intelligent, CPU-intense storage solutions like on
+>   the fly compress/decompress of QCOW2 data.)
 
-Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
----
+This has been a problem in qemu-kvm.  io_submit(2) steals time from
+the guest (I think it was around 20us on the system I measured last
+year).
 
-diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
-index 378b5b4..81f4083 100644
---- a/fs/btrfs/ctree.h
-+++ b/fs/btrfs/ctree.h
-@@ -1181,7 +1181,6 @@ struct btrfs_root {
- 	struct btrfs_key defrag_max;
- 	int defrag_running;
- 	char *name;
--	int in_sysfs;
- 
- 	/* the dirty list is only used by non-reference counted roots */
- 	struct list_head dirty_list;
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 9f68c68..5df6d8f 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -1044,7 +1044,6 @@ static int __setup_root(u32 nodesize, u32 leafsize, u32 sectorsize,
- 	root->last_trans = 0;
- 	root->highest_objectid = 0;
- 	root->name = NULL;
--	root->in_sysfs = 0;
- 	root->inode_tree = RB_ROOT;
- 	INIT_RADIX_TREE(&root->delayed_nodes_tree, GFP_ATOMIC);
- 	root->block_rsv = NULL;
-diff --git a/fs/btrfs/sysfs.c b/fs/btrfs/sysfs.c
-index c3c223a..daac9ae 100644
---- a/fs/btrfs/sysfs.c
-+++ b/fs/btrfs/sysfs.c
-@@ -28,152 +28,6 @@
- #include "disk-io.h"
- #include "transaction.h"
- 
--static ssize_t root_blocks_used_show(struct btrfs_root *root, char *buf)
--{
--	return snprintf(buf, PAGE_SIZE, "%llu\n",
--		(unsigned long long)btrfs_root_used(&root->root_item));
--}
--
--static ssize_t root_block_limit_show(struct btrfs_root *root, char *buf)
--{
--	return snprintf(buf, PAGE_SIZE, "%llu\n",
--		(unsigned long long)btrfs_root_limit(&root->root_item));
--}
--
--static ssize_t super_blocks_used_show(struct btrfs_fs_info *fs, char *buf)
--{
--
--	return snprintf(buf, PAGE_SIZE, "%llu\n",
--		(unsigned long long)btrfs_super_bytes_used(&fs->super_copy));
--}
--
--static ssize_t super_total_blocks_show(struct btrfs_fs_info *fs, char *buf)
--{
--	return snprintf(buf, PAGE_SIZE, "%llu\n",
--		(unsigned long long)btrfs_super_total_bytes(&fs->super_copy));
--}
--
--static ssize_t super_blocksize_show(struct btrfs_fs_info *fs, char *buf)
--{
--	return snprintf(buf, PAGE_SIZE, "%llu\n",
--		(unsigned long long)btrfs_super_sectorsize(&fs->super_copy));
--}
--
--/* this is for root attrs (subvols/snapshots) */
--struct btrfs_root_attr {
--	struct attribute attr;
--	ssize_t (*show)(struct btrfs_root *, char *);
--	ssize_t (*store)(struct btrfs_root *, const char *, size_t);
--};
--
--#define ROOT_ATTR(name, mode, show, store) \
--static struct btrfs_root_attr btrfs_root_attr_##name = __ATTR(name, mode, \
--							      show, store)
--
--ROOT_ATTR(blocks_used,	0444,	root_blocks_used_show,	NULL);
--ROOT_ATTR(block_limit,	0644,	root_block_limit_show,	NULL);
--
--static struct attribute *btrfs_root_attrs[] = {
--	&btrfs_root_attr_blocks_used.attr,
--	&btrfs_root_attr_block_limit.attr,
--	NULL,
--};
--
--/* this is for super attrs (actual full fs) */
--struct btrfs_super_attr {
--	struct attribute attr;
--	ssize_t (*show)(struct btrfs_fs_info *, char *);
--	ssize_t (*store)(struct btrfs_fs_info *, const char *, size_t);
--};
--
--#define SUPER_ATTR(name, mode, show, store) \
--static struct btrfs_super_attr btrfs_super_attr_##name = __ATTR(name, mode, \
--								show, store)
--
--SUPER_ATTR(blocks_used,		0444,	super_blocks_used_show,		NULL);
--SUPER_ATTR(total_blocks,	0444,	super_total_blocks_show,	NULL);
--SUPER_ATTR(blocksize,		0444,	super_blocksize_show,		NULL);
--
--static struct attribute *btrfs_super_attrs[] = {
--	&btrfs_super_attr_blocks_used.attr,
--	&btrfs_super_attr_total_blocks.attr,
--	&btrfs_super_attr_blocksize.attr,
--	NULL,
--};
--
--static ssize_t btrfs_super_attr_show(struct kobject *kobj,
--				    struct attribute *attr, char *buf)
--{
--	struct btrfs_fs_info *fs = container_of(kobj, struct btrfs_fs_info,
--						super_kobj);
--	struct btrfs_super_attr *a = container_of(attr,
--						  struct btrfs_super_attr,
--						  attr);
--
--	return a->show ? a->show(fs, buf) : 0;
--}
--
--static ssize_t btrfs_super_attr_store(struct kobject *kobj,
--				     struct attribute *attr,
--				     const char *buf, size_t len)
--{
--	struct btrfs_fs_info *fs = container_of(kobj, struct btrfs_fs_info,
--						super_kobj);
--	struct btrfs_super_attr *a = container_of(attr,
--						  struct btrfs_super_attr,
--						  attr);
--
--	return a->store ? a->store(fs, buf, len) : 0;
--}
--
--static ssize_t btrfs_root_attr_show(struct kobject *kobj,
--				    struct attribute *attr, char *buf)
--{
--	struct btrfs_root *root = container_of(kobj, struct btrfs_root,
--						root_kobj);
--	struct btrfs_root_attr *a = container_of(attr,
--						 struct btrfs_root_attr,
--						 attr);
--
--	return a->show ? a->show(root, buf) : 0;
--}
--
--static ssize_t btrfs_root_attr_store(struct kobject *kobj,
--				     struct attribute *attr,
--				     const char *buf, size_t len)
--{
--	struct btrfs_root *root = container_of(kobj, struct btrfs_root,
--						root_kobj);
--	struct btrfs_root_attr *a = container_of(attr,
--						 struct btrfs_root_attr,
--						 attr);
--	return a->store ? a->store(root, buf, len) : 0;
--}
--
--static void btrfs_super_release(struct kobject *kobj)
--{
--	struct btrfs_fs_info *fs = container_of(kobj, struct btrfs_fs_info,
--						super_kobj);
--	complete(&fs->kobj_unregister);
--}
--
--static void btrfs_root_release(struct kobject *kobj)
--{
--	struct btrfs_root *root = container_of(kobj, struct btrfs_root,
--						root_kobj);
--	complete(&root->kobj_unregister);
--}
--
--static const struct sysfs_ops btrfs_super_attr_ops = {
--	.show	= btrfs_super_attr_show,
--	.store	= btrfs_super_attr_store,
--};
--
--static const struct sysfs_ops btrfs_root_attr_ops = {
--	.show	= btrfs_root_attr_show,
--	.store	= btrfs_root_attr_store,
--};
--
- /* /sys/fs/btrfs/ entry */
- static struct kset *btrfs_kset;
- 
+Add the fact that the guest kernel might be holding a spinlock and it
+becomes a scalability problem for SMP guests.
 
+Anything that takes noticable CPU time should be done outside the vcpu thread.
 
+Stefan
