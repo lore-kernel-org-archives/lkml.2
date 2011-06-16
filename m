@@ -1,104 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab1FPGDG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 02:03:06 -0400
-Received: from gate.crashing.org ([63.228.1.57]:52278 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753420Ab1FPGDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 02:03:04 -0400
-Subject: Re: Oops in VMA code
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alexander Graf <agraf@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>
-In-Reply-To: <CDE289EC-7844-48E1-BB6A-6230ADAF6B7C@suse.de>
-References: <47FAB15C-B113-40FD-9CE0-49566AACC0DF@suse.de>
-	 <BANLkTimubRW2Az2MmRbgV+iTB+s6UEF5-w@mail.gmail.com>
-	 <CDE289EC-7844-48E1-BB6A-6230ADAF6B7C@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 Jun 2011 16:02:51 +1000
-Message-ID: <1308204171.2516.65.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754390Ab1FPGMy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 02:12:54 -0400
+Received: from sr-smtp.usish.com ([210.5.144.203]:51871 "EHLO
+	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546Ab1FPGMv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 02:12:51 -0400
+From: "Jack Wang" <jack_wang@usish.com>
+To: "'Xiangliang Yu'" <yuxiangl@marvell.com>,
+        "'James Bottomley'" <James.Bottomley@HansenPartnership.com>
+Cc: <yxlraid@gmail.com>, <lucas.demarchi@profusion.mobi>,
+        <maciej.trela@intel.com>, <dan.j.williams@intel.com>,
+        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "'Jacky Feng'" <jfeng@marvell.com>
+References: <1308064628-11826-1-git-send-email-yxlraid@gmail.com> <1308065367.2401.24.camel@mulgrave> <F766E4F80769BD478052FB6533FA745D19FAE669AF@SC-VEXCH4.marvell.com> <1308117450.2329.31.camel@mulgrave> <F766E4F80769BD478052FB6533FA745D19FAE66AAF@SC-VEXCH4.marvell.com> <637AF86F1A314F15B816411A580575F0@usish.com.cn> <F766E4F80769BD478052FB6533FA745D19FAE66CAE@SC-VEXCH4.marvell.com> <51A55E816E3847EF97FE4E849A572717@usish.com.cn> <F766E4F80769BD478052FB6533FA745D19FAE66CCA@SC-VEXCH4.marvell.com> <C8FBA6A948D643679B01520A89FAC48A@usish.com.cn> <F766E4F80769BD478052FB6533FA745D19FAE66D1E@SC-VEXCH4.marvell.com>
+Subject: RE: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
+Date: Thu, 16 Jun 2011 14:12:19 +0800
+Message-ID: <E3CF09ECAD244C00A4C096DB374E140E@usish.com.cn>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: AcwrIR/qdpMMo2uOTdi6EtZ/SnmPkgAAZ5KAACgYoPAAAOfC4AABCYdAAABOEGAAA867gAAA6NjQAAMaV6A=
+In-Reply-To: <F766E4F80769BD478052FB6533FA745D19FAE66D1E@SC-VEXCH4.marvell.com>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6090
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-16 at 07:32 +0200, Alexander Graf wrote:
-> On 16.06.2011, at 06:32, Linus Torvalds wrote:
+> >> > [Jack Wang]
+> >> >It's the same, sas_ex_get_linkrate use DISCOVER response as linkrate.
+> >> But the function have problem, actually, the error statement is:
+> >> child->linkrate = min(parent_phy->linkrate, child->max_linkrate);
+> >> its mean like this:
+> >> child->linkrate = min(child_phy->linkrate,
+> >> max(parent->max_linkrate,child_phy->linkrate));
+> >> and if parent->max_linkrate(3Gbps) is less than
+> child_phy->linkrate(6Gbps),
+> >> the statement will be change this:
+> >> child->linkrate = child_phy->linkrate, forget the parent linkrate.
+> >[Jack Wang]
+> >I don't think the statement below is error:
+> >child->linkrate = min(parent_phy->linkrate, child->max_linkrate);
+> >parent_phy->linkrate is came from sas_set_ex_phy which will set the
+linkrate
+> >to negotiated logical linkrate. For your eg: you topo like this:
+> >hba(3G)---expander1(6G)---expander2(6G):
+> 
+> Yes, you can test like this.
+> >Then expander1's linkrate will set to 3G, and expander2's linkrate will
+set
+> >to 6G, that is correct.
+> yes
+> > But the connection rate will be 3G from hba to
+> >expander2.
+> How to configure the connection rate?
+> Now, MVSAS driver get 6G from sas_ex_get_linkrate function, and set
+linkrate
+> of OPEN address frame to the value. right?
+> 
+> --
+[Jack Wang] 
+Connection rate is auto, link layer will insert deletable primitives to do
+rate matching (sas2r15 7.14).
 
-> Thanks a lot for looking at it either way :).
-
-Yeah thanks ;-) Let me see what I can dig out.
-
-First it's a load from what looks like a valid pointer to the linear
-mapping that had one byte corrupted (or more but it looks reasonably
-"clean"). It's not a one bit error, there's at least 2 bad bits (the
-09):
-
-DAR: c00090026236bbc0
-
-Alex, how much RAM do you have ? If that was just a one byte corruption,
-the above would imply you have something valid between 9 and 10G. From
-the look of other registers, it seems that it could be a genuine pointer
-with just that stay "09" byte that landed onto it.
-
-> The latter is the one I'm executing, while the former still has all
-> the symbols. But you're right. It looks like this is simply an inlined
-> function - which is why it got stripped away. Here's the disassembly
-> of the whole do_unmap function. I hope it's of use despite your fading
-> PPC asm skills :). Host compiler is gcc 4.3.4 from SLES11SP1.
-
- .../...
-
-Ok, so let's see what we can dig from here. It -looks- like:
-
-if (!mm) goto out :
-
-> 0xc000000000190554 <find_vma_prev>:	cmpdi   cr7,r3,0
-> 0xc000000000190558 <find_vma_prev+4>:	beq     cr7,0xc0000000001907f0 <remove_vma_list+836>
-
-rb_node = mm->mm_rb.rb_node; (rb_node in r9):
-
-> 0xc00000000019055c <find_vma_prev+8>:	ld      r9,8(r3)
-
-vma = mm->mmap (vma in r28)
-
-> 0xc000000000190560 <find_vma_prev+12>:	ld      r28,0(r3)
-> 0xc000000000190564 <find_vma_prev+16>:	li      r11,0
-> 0xc000000000190568 <find_vma_prev+20>:	li      r26,0
-
-while(rb_node)...
-
-> 0xc00000000019056c <find_vma_prev+24>:	cmpdi   cr7,r9,0
-> 0xc000000000190570 <find_vma_prev+28>:	bne     cr7,0xc000000000190594 <find_vma_prev+64>
-> 0xc000000000190574 <find_vma_prev+32>:	b       0xc0000000001905d0 <do_munmap+368>
-> 0xc000000000190578 <find_vma_prev+36>:	nop
-> 0xc00000000019057c <find_vma_prev+40>:	nop
-> 0xc000000000190580 <find_vma_prev+44>:	ld      r9,16(r9)
-> 0xc000000000190584 <find_vma_prev+48>:	mr      r26,r11
-> 0xc000000000190588 <find_vma_prev+52>:	cmpdi   cr7,r9,0
-> 0xc00000000019058c <find_vma_prev+56>:	mr      r11,r26
-> 0xc000000000190590 <find_vma_prev+60>:	beq     cr7,0xc0000000001905c4 <find_vma_prev+112>
-
-vma_tmp = rb_entry(rb_node, struct vm_area_struct, vm_rb);
-
-> 0xc000000000190594 <find_vma_prev+64>:	addi    r26,r9,-56
-
-if (vma_tmp->vm_end)
-
-> 0xc000000000190598 <find_vma_prev+68>:	ld      r0,16(r26)
-
-Here we go. So here vma_tmp is crap, which we got out of the rb_tree,
-so it's either corruption or use after free I'd say. It could also be a
-completely unrelated memory corruption of course....
-
-If you had xmon we could have dug a little bit more to see what's
-before/after etc... but like this it doesn't ring any special bell to
-me.
-
-Cheers,
-Ben.
-
+Yes, you should set the linkrate to that value .
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
