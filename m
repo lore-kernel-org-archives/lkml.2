@@ -1,61 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab1FPMMv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 08:12:51 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:40344 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757300Ab1FPMMt (ORCPT
+	id S1755849Ab1FPMNf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 08:13:35 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49851 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755854Ab1FPMNa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 08:12:49 -0400
-X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Jun 2011 08:12:49 EDT
-Date: Thu, 16 Jun 2011 14:12:47 +0200
-From: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
-To: Duncan Sands <duncan.sands@free.fr>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: christian.dietrich@informatik.uni-erlangen.de
-Subject: [PATCH 07/11] drivers/usb/atm: use printk_ratelimited() instead of
- printk_ratelimit()
-Message-ID: <98558b2a3dbb8b14a3bc90e0a73ca7d61dd10a53.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
-References: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 16 Jun 2011 08:13:30 -0400
+Subject: Re: [PATCH 1/3] stop_machine: kill __stop_machine()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Tejun Heo <tj@kernel.org>
+Cc: x86@kernel.org, mingo@elte.hu, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, suresh.b.siddha@intel.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1308071218-5912-2-git-send-email-tj@kernel.org>
+References: <1308071218-5912-1-git-send-email-tj@kernel.org>
+	 <1308071218-5912-2-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 16 Jun 2011 14:12:52 +0200
+Message-ID: <1308226372.13240.42.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since printk_ratelimit() shouldn't be used anymore (see comment in
-include/linux/printk.h), replace it with printk_ratelimited()
+On Tue, 2011-06-14 at 19:06 +0200, Tejun Heo wrote:
+> +++ b/arch/x86/kernel/alternative.c
+> @@ -719,8 +719,7 @@ void *__kprobes text_poke_smp(void *addr, const void *opcode, size_t len)
+>         tpp.nparams = 1;
+>         atomic_set(&stop_machine_first, 1);
+>         wrote_text = 0;
+> -       /* Use __stop_machine() because the caller already got online_cpus. */
+> -       __stop_machine(stop_machine_text_poke, (void *)&tpp, cpu_online_mask);
+> +       stop_machine(stop_machine_text_poke, (void *)&tpp, cpu_online_mask);
+>         return addr;
+>  }
 
-Signed-off-by: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
+Please have a look at: 
+
 ---
- drivers/usb/atm/usbatm.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+commit d91309f69b7bdb64aeb30106fde8d18c5dd354b5
+Author: Peter Zijlstra <peterz@infradead.org>
+Date:   Fri Feb 11 22:07:46 2011 +0100
 
-diff --git a/drivers/usb/atm/usbatm.c b/drivers/usb/atm/usbatm.c
-index 989e16e..d3448ca 100644
---- a/drivers/usb/atm/usbatm.c
-+++ b/drivers/usb/atm/usbatm.c
-@@ -81,6 +81,7 @@
- #include <linux/timer.h>
- #include <linux/wait.h>
- #include <linux/kthread.h>
-+#include <linux/ratelimit.h>
+    x86: Fix text_poke_smp_batch() deadlock
+    
+    Fix this deadlock - we are already holding the mutex:
+    
+    =======================================================
+    [ INFO: possible circular locking dependency detected ] 2.6.38-rc4-test+ #1
+    -------------------------------------------------------
+    bash/1850 is trying to acquire lock:
+     (text_mutex){+.+.+.}, at: [<ffffffff8100a9c1>] return_to_handler+0x0/0x2f
+    
+    but task is already holding lock:
+     (smp_alt){+.+...}, at: [<ffffffff8100a9c1>] return_to_handler+0x0/0x2f
+    
+    which lock already depends on the new lock.
+    
+    the existing dependency chain (in reverse order) is:
+    
+    -> #2 (smp_alt){+.+...}:
+           [<ffffffff81082d02>] lock_acquire+0xcd/0xf8
+           [<ffffffff8192e119>] __mutex_lock_common+0x4c/0x339
+           [<ffffffff8192e4ca>] mutex_lock_nested+0x3e/0x43
+           [<ffffffff8101050f>] alternatives_smp_switch+0x77/0x1d8
+           [<ffffffff81926a6f>] do_boot_cpu+0xd7/0x762
+           [<ffffffff819277dd>] native_cpu_up+0xe6/0x16a
+           [<ffffffff81928e28>] _cpu_up+0x9d/0xee
+           [<ffffffff81928f4c>] cpu_up+0xd3/0xe7
+           [<ffffffff82268d4b>] kernel_init+0xe8/0x20a
+           [<ffffffff8100ba24>] kernel_thread_helper+0x4/0x10
+    
+    -> #1 (cpu_hotplug.lock){+.+.+.}:
+           [<ffffffff81082d02>] lock_acquire+0xcd/0xf8
+           [<ffffffff8192e119>] __mutex_lock_common+0x4c/0x339
+           [<ffffffff8192e4ca>] mutex_lock_nested+0x3e/0x43
+           [<ffffffff810568cc>] get_online_cpus+0x41/0x55
+           [<ffffffff810a1348>] stop_machine+0x1e/0x3e
+           [<ffffffff819314c1>] text_poke_smp_batch+0x3a/0x3c
+           [<ffffffff81932b6c>] arch_optimize_kprobes+0x10d/0x11c
+           [<ffffffff81933a51>] kprobe_optimizer+0x152/0x222
+           [<ffffffff8106bb71>] process_one_work+0x1d3/0x335
+           [<ffffffff8106cfae>] worker_thread+0x104/0x1a4
+           [<ffffffff810707c4>] kthread+0x9d/0xa5
+           [<ffffffff8100ba24>] kernel_thread_helper+0x4/0x10
+    
+    -> #0 (text_mutex){+.+.+.}:
+    
+    other info that might help us debug this:
+    
+    6 locks held by bash/1850:
+     #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff8100a9c1>] return_to_handler+0x0/0x2f
+     #1:  (s_active#75){.+.+.+}, at: [<ffffffff8100a9c1>] return_to_handler+0x0/0x2f
+     #2:  (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff8100a9c1>] return_to_handler+0x0/0x2f
+     #3:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff8100a9c1>] return_to_handler+0x0/0x2f
+     #4:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff8100a9c1>] return_to_handler+0x0/0x2f
+     #5:  (smp_alt){+.+...}, at: [<ffffffff8100a9c1>] return_to_handler+0x0/0x2f
+    
+    stack backtrace:
+    Pid: 1850, comm: bash Not tainted 2.6.38-rc4-test+ #1
+    Call Trace:
+    
+     [<ffffffff81080eb2>] print_circular_bug+0xa8/0xb7
+     [<ffffffff8192e4ca>] mutex_lock_nested+0x3e/0x43
+     [<ffffffff81010302>] alternatives_smp_unlock+0x3d/0x93
+     [<ffffffff81010630>] alternatives_smp_switch+0x198/0x1d8
+     [<ffffffff8102568a>] native_cpu_die+0x65/0x95
+     [<ffffffff818cc4ec>] _cpu_down+0x13e/0x202
+     [<ffffffff8117a619>] sysfs_write_file+0x108/0x144
+     [<ffffffff8111f5a2>] vfs_write+0xac/0xff
+     [<ffffffff8111f7a9>] sys_write+0x4a/0x6e
+    
+    Reported-by: Steven Rostedt <rostedt@goodmis.org>
+    Tested-by: Steven Rostedt <rostedt@goodmis.org>
+    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Cc: mathieu.desnoyers@efficios.com
+    Cc: rusty@rustcorp.com.au
+    Cc: ananth@in.ibm.com
+    Cc: masami.hiramatsu.pt@hitachi.com
+    Cc: fweisbec@gmail.com
+    Cc: jbeulich@novell.com
+    Cc: jbaron@redhat.com
+    Cc: mhiramat@redhat.com
+    LKML-Reference: <1297458466.5226.93.camel@laptop>
+    Signed-off-by: Ingo Molnar <mingo@elte.hu>
+
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index 1236085..7038b95 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -671,7 +671,7 @@ void __kprobes text_poke_smp_batch(struct text_poke_param *params, int n)
  
- #ifdef VERBOSE_DEBUG
- static int usbatm_print_packet(const unsigned char *data, int len);
-@@ -668,8 +669,7 @@ static int usbatm_atm_send(struct atm_vcc *vcc, struct sk_buff *skb)
- 	/* racy disconnection check - fine */
- 	if (!instance || instance->disconnected) {
- #ifdef DEBUG
--		if (printk_ratelimit())
--			printk(KERN_DEBUG "%s: %s!\n", __func__, instance ? "disconnected" : "NULL instance");
-+		printk_ratelimited(KERN_DEBUG "%s: %s!\n", __func__, instance ? "disconnected" : "NULL instance");
- #endif
- 		err = -ENODEV;
- 		goto fail;
--- 
-1.7.4.1
+ 	atomic_set(&stop_machine_first, 1);
+ 	wrote_text = 0;
+-	stop_machine(stop_machine_text_poke, (void *)&tpp, NULL);
++	__stop_machine(stop_machine_text_poke, (void *)&tpp, NULL);
+ }
+ 
+ #if defined(CONFIG_DYNAMIC_FTRACE) || defined(HAVE_JUMP_LABEL)
 
