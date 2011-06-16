@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758752Ab1FPVZw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 17:25:52 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:53814 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758238Ab1FPVZu (ORCPT
+	id S932687Ab1FPVdc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 17:33:32 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44039 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758321Ab1FPVdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 17:25:50 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Thu, 16 Jun 2011 23:25:26 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: dgilbert@interlog.com
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Greg KH <greg@kroah.com>, Nao Nishijima <nao.nishijima.xt@hitachi.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jcm@redhat.com, hare@suse.de, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device
- structure
-Message-ID: <20110616232526.68820a6f@stein>
-In-Reply-To: <4DFA44D4.2010602@interlog.com>
-References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp>
-	<20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp>
-	<20110615153337.GA10160@kroah.com>
-	<4DF9F11F.705@hitachi.com>
-	<20110616154129.GA31498@kroah.com>
-	<1308239454.2436.34.camel@mulgrave>
-	<20110616161442.GA32113@kroah.com>
-	<1308241506.2436.44.camel@mulgrave>
-	<BANLkTi=qHhzwGfp4v8B1CAmT+gtA=sOgvw@mail.gmail.com>
-	<BANLkTikUNqTxgD_+TTVpcFyRDu_fSesrsg@mail.gmail.com>
-	<4DFA44D4.2010602@interlog.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Jun 2011 17:33:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com>
+References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe>
+ <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com>
+ <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
+ <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
+ <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
+ <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com> <1308255972.17300.450.camel@schen9-DESK>
+ <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com> <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
+ <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 16 Jun 2011 14:26:41 -0700
+Message-ID: <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
+Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
+ to mutex
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Andi Kleen <ak@linux.intel.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jun 16 Douglas Gilbert wrote:
-> One obvious candidate for a preferred block device name
-> is:
->    - a SATA disk's WWN (NAA 5 64 bit), or
->    - a SCSI disk's logical unit name (e.g. SAS: NAA 5)
-> 
-> These names (actually numbers) are meant to be world wide
-> unique.
-> 
-> The kernel's device naming (following from how devices are
-> discovered) is topological.
+On Thu, Jun 16, 2011 at 2:06 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, Jun 16, 2011 at 2:05 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> This patch is UNTESTED!
+>
+> It was also UNATTACHED!
 
-I disagree.
+Hmm. And it doesn't work. We deadlock when we free the anon_vma
+because the *freeing* path wants to take the anon_vma lock. See that
+horrid code in anon_vma_free().
 
-1. The kernel name is not about topology.  It is from a flat
-   namespace where nothing else than oder of registration counts.
-   In some very simple systems there is a deceptively strong correlation
-   between topology and order of registration.  But in the general case
-   there is no correlation.
+So now we now hold the root over the whole series of frees, and get an
+instant deadlock.
 
-2. The persistent worldwide unique name of a device may actually not be
-   what a particular admin considers a "preferred" name.  They may prefer
-   a topological name ("disk in bay 7") or they may prefer a mnemonic name
-   from a label on the hardware, invented and tacked on by the vendor
-   (especially vendor--model name tuples like "Canon MV5i camcorder") or by
-   the admin themselves, or stored in device memory rather than written
-   out on a sticker.
+We also can happen to free the root anon_vma before we release the
+lock in it, which is another slight problem ;)
 
-Besides, the preference may change from situation to situation.  In some
-situations, _two_ names are actually required at the same time (besides the
-unloved kernel name).  So, a "preferred name" as a single datum per device
-does not cut it, as also already noted by Kay at the example of the netif
-alias.
+So the unlink_anon_vmas() case is actually much more complicated than
+the clone case.
 
-The retrieval and mapping of the list of "more or less preferred names"
-that people realistically use is probably better implemented in userland.
-Any kernel solution is bound to impose arbitrary limitations.
--- 
-Stefan Richter
--=====-==-== -==- =----
-http://arcgraph.de/sr/
+In other words, just forget that second patch. I'll have to think about it.
+
+                              Linus
