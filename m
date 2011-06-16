@@ -1,187 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509Ab1FPKgM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 06:36:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35336 "EHLO mx2.suse.de"
+	id S1756245Ab1FPKik (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 06:38:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1033 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753838Ab1FPKgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 06:36:10 -0400
-Date: Thu, 16 Jun 2011 11:35:59 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, dave@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Subject: Re: mmotm 2011-06-15-16-56 uploaded (mm/page_cgroup.c)
-Message-ID: <20110616103559.GA5244@suse.de>
-References: <201106160034.p5G0Y4dr028904@imap1.linux-foundation.org>
- <20110615214917.a7dce8e6.randy.dunlap@oracle.com>
- <20110616172819.1e2d325c.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1753692Ab1FPKij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 06:38:39 -0400
+Message-ID: <4DF9DD25.1000103@redhat.com>
+Date: Thu, 16 Jun 2011 07:38:29 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110616172819.1e2d325c.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiri Slaby <jirislaby@gmail.com>
+CC: Hans Petter Selasky <hselasky@c2i.net>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: DVB_NET help message is useless
+References: <4DF9AB93.1040903@gmail.com>
+In-Reply-To: <4DF9AB93.1040903@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 05:28:19PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Wed, 15 Jun 2011 21:49:17 -0700
-> Randy Dunlap <randy.dunlap@oracle.com> wrote:
+Em 16-06-2011 04:06, Jiri Slaby escreveu:
+> Hi,
 > 
-> > On Wed, 15 Jun 2011 16:56:49 -0700 akpm@linux-foundation.org wrote:
-> > 
-> > > The mm-of-the-moment snapshot 2011-06-15-16-56 has been uploaded to
-> > > 
-> > >    http://userweb.kernel.org/~akpm/mmotm/
-> > > 
-> > > and will soon be available at
-> > >    git://zen-kernel.org/kernel/mmotm.git
-> > > or
-> > >    git://git.cmpxchg.org/linux-mmotm.git
-> > > 
-> > > It contains the following patches against 3.0-rc3:
-> > 
-> > 
-> > (x86_64 build:)
-> > 
-> > mm/page_cgroup.c: In function 'page_cgroup_init':
-> > mm/page_cgroup.c:308: error: implicit declaration of function 'node_start_pfn'
-> > mm/page_cgroup.c:309: error: implicit declaration of function 'node_end_pfn'
-> > 
-> > 
+> I've just updated to 3.0-rc and saw CONFIG_DVB_NET. Hmm, let's see
+> what's that by asking with '?'. And I got this crap:
+> ================
+> CONFIG_DVB_NET:
 > 
-> Bug fix is here. Added CC to Mel to get review.
-> ==
-> From add3b670119f1c1f762194b432d3997d595bc213 Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Thu, 16 Jun 2011 17:28:07 +0900
-> Subject: [PATCH] Fix node_start/end_pfn() definition for mm/page_cgroup.c
+> The DVB network support in the DVB core can
+> optionally be disabled if this
+> option is set to N.
 > 
-> commit 21a3c96 uses node_start/end_pfn(nid) for detection start/end
-> of nodes. But, it's not defined in linux/mmzone.h but defined in
-> /arch/???/include/mmzone.h which is included only under
-> CONFIG_NEED_MULTIPLE_NODES=y.
+> If unsure say Y.
+> ================
+> Why do you think this help message is useful? It's clear to
+> everybody that if one eventually disables it it will be disabled. The
+> help message should mention _what_ the network support is.
 > 
-> Then, we see
-> mm/page_cgroup.c: In function 'page_cgroup_init':
-> mm/page_cgroup.c:308: error: implicit declaration of function 'node_start_pfn'
-> mm/page_cgroup.c:309: error: implicit declaration of function 'node_end_pfn'
-> 
-> So, fixing page_cgroup.c is an idea...
-> 
-> But node_start_pfn()/node_end_pfn() is a very generic macro and
-> should be implemented in the same manner for all archs.
-> (m32r has different implementation...)
-> 
+> I would send a patch, but I really have no idea what's that good for.
 
-I would expect node_start_pfn to always be the equivalent of
-NODE_DATA(nid)->node_start_pfn and that does appear to be case even
-though it is not universally defined;
+As Hans answered this option disables the IP stack from the DVB driver. The
+IP stack is part of the DVB standard. It is used, for example, by automatic 
+firmware updates used on STB's. It can also be used to access the Internet,
+via the DVB card, if the network provider supports it.
 
-alpha/include/asm/mmzone.h:#define node_start_pfn(nid) (NODE_DATA(nid)->node_start_pfn)
-m32r/include/asm/mmzone.h:#define node_start_pfn(nid) (NODE_DATA(nid)->node_start_pfn)
-parisc/include/asm/mmzone.h:#define node_start_pfn(nid) (NODE_DATA(nid)->node_start_pfn)
-powerpc/include/asm/mmzone.h:#define node_start_pfn(nid) (NODE_DATA(nid)->node_start_pfn)
-sh/include/asm/mmzone.h:#define node_start_pfn(nid) (NODE_DATA(nid)->node_start_pfn)
-sparc/include/asm/mmzone.h:#define node_start_pfn(nid) (NODE_DATA(nid)->node_start_pfn)
-tile/include/asm/mmzone.h:#define node_start_pfn(nid) (NODE_DATA(nid)->node_start_pfn)
-x86/include/asm/mmzone_32.h:#define node_start_pfn(nid) (NODE_DATA(nid)->node_start_pfn)
-x86/include/asm/mmzone_64.h:#define node_start_pfn(nid) (NODE_DATA(nid)->node_start_pfn)
+Before 3.0, this were enabled on all cards. However, if the IP stack is
+disabled, this would mean that the entire DVB would also be disabled.
+So, this option were added. It may make sense to make it dependent of
+CONFIG_EMBEDDED, as normal users should not need to disable it.
 
-Similarly I would always expect node_end_pfn to be related to
-node_spanned_pages which is true of x86, tile, sh and parisc. sparc
-and powerpc uses node_end_pfn which is a good trick because that
-is not a member of pglist_data (suspect they do not build on
-!CONFIG_NEED_MULTIPLE_NODES?).
+Feel free to send us a patch if you want to improve the Kconfig logic or
+help message.
 
-m32r does differ from everyone else in that it's
-__pgdat->node_start_pfn + __pgdat->node_spanned_pages - 1 and this was
-the case when it was introduced in 2004. It's not explained why it is
-like this but I suspect it's a mistake and I think your cleanup is
-appropriate.
-
-> This patch removes definitions of node_start/end_pfn() in each archs
-> and defines a unified one in linux/mmzone.h. It's not under
-> CONFIG_NEED_MULTIPLE_NODES, now.
-> 
-
-Does anyone remember *why* this did not happen in the first place? I
-can't think of a good reason so I've cc'd Dave Hansen as he might
-remember.
-
-Would it also be worth cleaning up users of node_spanned_pages to
-use node_end_pfn in mm/ where appropriate rather than having a mix
-of spanned_pages and node_end_pfn?
-
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-For the most part, it looks good! I haven't compile-tested this but
-I did spot one one problem unfortunately;
-
-> <SNIP>
-> diff --git a/arch/x86/include/asm/mmzone_32.h b/arch/x86/include/asm/mmzone_32.h
-> index 5e83a41..224e8c5 100644
-> --- a/arch/x86/include/asm/mmzone_32.h
-> +++ b/arch/x86/include/asm/mmzone_32.h
-> @@ -48,17 +48,6 @@ static inline int pfn_to_nid(unsigned long pfn)
->  #endif
->  }
->  
-> -/*
-> - * Following are macros that each numa implmentation must define.
-> - */
-> -
-> -#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
-> -#define node_end_pfn(nid)						\
-> -({									\
-> -	pg_data_t *__pgdat = NODE_DATA(nid);				\
-> -	__pgdat->node_start_pfn + __pgdat->node_spanned_pages;		\
-> -})
-> -
->  static inline int pfn_valid(int pfn)
->  {
->  	int nid = pfn_to_nid(pfn);
-> diff --git a/arch/x86/include/asm/mmzone_64.h b/arch/x86/include/asm/mmzone_64.h
-> index b3f88d7..129d9aa 100644
-> --- a/arch/x86/include/asm/mmzone_64.h
-> +++ b/arch/x86/include/asm/mmzone_64.h
-> @@ -13,8 +13,5 @@ extern struct pglist_data *node_data[];
->  
->  #define NODE_DATA(nid)		(node_data[nid])
->  
-> -#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
-> -#define node_end_pfn(nid)       (NODE_DATA(nid)->node_start_pfn +	\
-> -				 NODE_DATA(nid)->node_spanned_pages)
->  #endif
->  #endif /* _ASM_X86_MMZONE_64_H */
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index c928dac..892862e 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -647,6 +647,9 @@ typedef struct pglist_data {
->  #endif
->  #define nid_page_nr(nid, pagenr) 	pgdat_page_nr(NODE_DATA(nid),(pagenr))
->  
-> +#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
-> +#define node_end_pfn(nid)	(node_start_pfn(nid) + node_spanned_pages(nid))
-> +
-
-A caller that does node_end_pfn(nid++) will get a nasty surprise
-due to side-effects. I know architectures currently get this wrong
-including x86_64 but we might as well fix it up now. The definition
-in arch/x86/include/asm/mmzone_32.h is immune to side-effects and
-might be a better choice despite the use of a temporary variable.
-
->  #include <linux/memory_hotplug.h>
->  
->  extern struct mutex zonelists_mutex;
-> -- 
-> 1.7.4.1
-> 
-> 
-
--- 
-Mel Gorman
-SUSE Labs
+Thanks,
+Mauro
