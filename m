@@ -1,128 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422659Ab1FPWKR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 18:10:17 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58176 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030186Ab1FPWKO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 18:10:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
-References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe>
- <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com>
- <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
- <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
- <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
- <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com> <1308255972.17300.450.camel@schen9-DESK>
- <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com> <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 16 Jun 2011 14:06:15 -0700
-Message-ID: <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com>
-Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
- to mutex
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Andi Kleen <ak@linux.intel.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: multipart/mixed; boundary=0016e6dd9771ea1e3b04a5daa443
+	id S933046Ab1FPVIv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 17:08:51 -0400
+Received: from mga09.intel.com ([134.134.136.24]:54451 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752041Ab1FPVIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 17:08:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,377,1304319600"; 
+   d="scan'208";a="15896230"
+From: Andi Kleen <andi@firstfloor.org>
+To: viro@zeniv.linux.org.uk
+Cc: hch@infradead.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/5] VFS: Do (nearly) lockless generic_file_llseek
+Date: Thu, 16 Jun 2011 14:07:18 -0700
+Message-Id: <1308258442-19804-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e6dd9771ea1e3b04a5daa443
-Content-Type: text/plain; charset=ISO-8859-1
+From: Andi Kleen <ak@linux.intel.com>
 
-On Thu, Jun 16, 2011 at 2:05 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> This patch is UNTESTED!
+The i_mutex locking of generic _file_llseek hurts currently. It means
+that independent processes who just access the same file still
+synchronize. Under high utilization this can cause llseek to scale
+very poorly on larger systems.
 
-It was also UNATTACHED!
+First the 64bit f_pos is not necessarily atomic without locks
+on 32bit systems. This can already cause races with read() today.
+This was discussed on linux-kernel in the past and deemed acceptable.
 
-Now it's attached.
+The different seek modi:
 
-                    Linus
+SEEK_SET: Doesn't really need any locking.
+If there's a race one writer wins, the other loses.
 
---0016e6dd9771ea1e3b04a5daa443
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gp0790mx0
+For 32bit the non atomic update races against read()
+stay the same. Without a lock they can also happen
+against write() now.  The read() race was deemed
+acceptable in past discussions, and I think if it's
+ok for read it's not ok for write too.
 
-IG1tL3JtYXAuYyB8ICAgNTEgKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKystLS0t
-LS0tLS0tLS0tLS0tCiAxIGZpbGVzIGNoYW5nZWQsIDM1IGluc2VydGlvbnMoKyksIDE2IGRlbGV0
-aW9ucygtKQoKZGlmZiAtLWdpdCBhL21tL3JtYXAuYyBiL21tL3JtYXAuYwppbmRleCAwZWI0NjNl
-YTg4ZGQuLmQxZDI2OTAwYzA4MiAxMDA2NDQKLS0tIGEvbW0vcm1hcC5jCisrKyBiL21tL3JtYXAu
-YwpAQCAtMjA4LDEzICsyMDgsMTEgQEAgc3RhdGljIHZvaWQgYW5vbl92bWFfY2hhaW5fbGluayhz
-dHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZtYSwKIAlhdmMtPmFub25fdm1hID0gYW5vbl92bWE7CiAJ
-bGlzdF9hZGQoJmF2Yy0+c2FtZV92bWEsICZ2bWEtPmFub25fdm1hX2NoYWluKTsKIAotCWFub25f
-dm1hX2xvY2soYW5vbl92bWEpOwogCS8qCiAJICogSXQncyBjcml0aWNhbCB0byBhZGQgbmV3IHZt
-YXMgdG8gdGhlIHRhaWwgb2YgdGhlIGFub25fdm1hLAogCSAqIHNlZSBjb21tZW50IGluIGh1Z2Vf
-bWVtb3J5LmM6X19zcGxpdF9odWdlX3BhZ2UoKS4KIAkgKi8KIAlsaXN0X2FkZF90YWlsKCZhdmMt
-PnNhbWVfYW5vbl92bWEsICZhbm9uX3ZtYS0+aGVhZCk7Ci0JYW5vbl92bWFfdW5sb2NrKGFub25f
-dm1hKTsKIH0KIAogLyoKQEAgLTIyNCwxNiArMjIyLDMwIEBAIHN0YXRpYyB2b2lkIGFub25fdm1h
-X2NoYWluX2xpbmsoc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2bWEsCiBpbnQgYW5vbl92bWFfY2xv
-bmUoc3RydWN0IHZtX2FyZWFfc3RydWN0ICpkc3QsIHN0cnVjdCB2bV9hcmVhX3N0cnVjdCAqc3Jj
-KQogewogCXN0cnVjdCBhbm9uX3ZtYV9jaGFpbiAqYXZjLCAqcGF2YzsKKwlzdHJ1Y3QgYW5vbl92
-bWEgKnJvb3QgPSBOVUxMOwogCiAJbGlzdF9mb3JfZWFjaF9lbnRyeV9yZXZlcnNlKHBhdmMsICZz
-cmMtPmFub25fdm1hX2NoYWluLCBzYW1lX3ZtYSkgeworCQlzdHJ1Y3QgYW5vbl92bWEgKmFub25f
-dm1hID0gcGF2Yy0+YW5vbl92bWEsICpuZXdfcm9vdCA9IGFub25fdm1hLT5yb290OworCisJCWlm
-IChuZXdfcm9vdCAhPSByb290KSB7CisJCQlpZiAoV0FSTl9PTl9PTkNFKHJvb3QpKQorCQkJCW11
-dGV4X3VubG9jaygmcm9vdC0+bXV0ZXgpOworCQkJcm9vdCA9IG5ld19yb290OworCQkJbXV0ZXhf
-bG9jaygmcm9vdC0+bXV0ZXgpOworCQl9CisKIAkJYXZjID0gYW5vbl92bWFfY2hhaW5fYWxsb2Mo
-KTsKIAkJaWYgKCFhdmMpCiAJCQlnb3RvIGVub21lbV9mYWlsdXJlOwogCQlhbm9uX3ZtYV9jaGFp
-bl9saW5rKGRzdCwgYXZjLCBwYXZjLT5hbm9uX3ZtYSk7CiAJfQorCWlmIChyb290KQorCQltdXRl
-eF91bmxvY2soJnJvb3QtPm11dGV4KTsKIAlyZXR1cm4gMDsKIAogIGVub21lbV9mYWlsdXJlOgor
-CWlmIChyb290KQorCQltdXRleF91bmxvY2soJnJvb3QtPm11dGV4KTsKIAl1bmxpbmtfYW5vbl92
-bWFzKGRzdCk7CiAJcmV0dXJuIC1FTk9NRU07CiB9CkBAIC0yODAsNyArMjkyLDkgQEAgaW50IGFu
-b25fdm1hX2Zvcmsoc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2bWEsIHN0cnVjdCB2bV9hcmVhX3N0
-cnVjdCAqcHZtYSkKIAlnZXRfYW5vbl92bWEoYW5vbl92bWEtPnJvb3QpOwogCS8qIE1hcmsgdGhp
-cyBhbm9uX3ZtYSBhcyB0aGUgb25lIHdoZXJlIG91ciBuZXcgKENPV2VkKSBwYWdlcyBnby4gKi8K
-IAl2bWEtPmFub25fdm1hID0gYW5vbl92bWE7CisJYW5vbl92bWFfbG9jayhhbm9uX3ZtYSk7CiAJ
-YW5vbl92bWFfY2hhaW5fbGluayh2bWEsIGF2YywgYW5vbl92bWEpOworCWFub25fdm1hX3VubG9j
-ayhhbm9uX3ZtYSk7CiAKIAlyZXR1cm4gMDsKIApAQCAtMjkxLDM5ICszMDUsNDQgQEAgaW50IGFu
-b25fdm1hX2Zvcmsoc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2bWEsIHN0cnVjdCB2bV9hcmVhX3N0
-cnVjdCAqcHZtYSkKIAlyZXR1cm4gLUVOT01FTTsKIH0KIAotc3RhdGljIHZvaWQgYW5vbl92bWFf
-dW5saW5rKHN0cnVjdCBhbm9uX3ZtYV9jaGFpbiAqYW5vbl92bWFfY2hhaW4pCitzdGF0aWMgdm9p
-ZCBhbm9uX3ZtYV91bmxpbmsoc3RydWN0IGFub25fdm1hX2NoYWluICphbm9uX3ZtYV9jaGFpbiwg
-c3RydWN0IGFub25fdm1hICphbm9uX3ZtYSkKIHsKLQlzdHJ1Y3QgYW5vbl92bWEgKmFub25fdm1h
-ID0gYW5vbl92bWFfY2hhaW4tPmFub25fdm1hOwotCWludCBlbXB0eTsKLQotCS8qIElmIGFub25f
-dm1hX2ZvcmsgZmFpbHMsIHdlIGNhbiBnZXQgYW4gZW1wdHkgYW5vbl92bWFfY2hhaW4uICovCi0J
-aWYgKCFhbm9uX3ZtYSkKLQkJcmV0dXJuOwotCi0JYW5vbl92bWFfbG9jayhhbm9uX3ZtYSk7CiAJ
-bGlzdF9kZWwoJmFub25fdm1hX2NoYWluLT5zYW1lX2Fub25fdm1hKTsKIAogCS8qIFdlIG11c3Qg
-Z2FyYmFnZSBjb2xsZWN0IHRoZSBhbm9uX3ZtYSBpZiBpdCdzIGVtcHR5ICovCi0JZW1wdHkgPSBs
-aXN0X2VtcHR5KCZhbm9uX3ZtYS0+aGVhZCk7Ci0JYW5vbl92bWFfdW5sb2NrKGFub25fdm1hKTsK
-LQotCWlmIChlbXB0eSkKKwlpZiAobGlzdF9lbXB0eSgmYW5vbl92bWEtPmhlYWQpKQogCQlwdXRf
-YW5vbl92bWEoYW5vbl92bWEpOwogfQogCiB2b2lkIHVubGlua19hbm9uX3ZtYXMoc3RydWN0IHZt
-X2FyZWFfc3RydWN0ICp2bWEpCiB7CiAJc3RydWN0IGFub25fdm1hX2NoYWluICphdmMsICpuZXh0
-OworCXN0cnVjdCBhbm9uX3ZtYSAqcm9vdCA9IE5VTEw7CiAKIAkvKgogCSAqIFVubGluayBlYWNo
-IGFub25fdm1hIGNoYWluZWQgdG8gdGhlIFZNQS4gIFRoaXMgbGlzdCBpcyBvcmRlcmVkCiAJICog
-ZnJvbSBuZXdlc3QgdG8gb2xkZXN0LCBlbnN1cmluZyB0aGUgcm9vdCBhbm9uX3ZtYSBnZXRzIGZy
-ZWVkIGxhc3QuCiAJICovCiAJbGlzdF9mb3JfZWFjaF9lbnRyeV9zYWZlKGF2YywgbmV4dCwgJnZt
-YS0+YW5vbl92bWFfY2hhaW4sIHNhbWVfdm1hKSB7Ci0JCWFub25fdm1hX3VubGluayhhdmMpOwor
-CQlzdHJ1Y3QgYW5vbl92bWEgKmFub25fdm1hID0gYXZjLT5hbm9uX3ZtYTsKKworCQkvKiBJZiBh
-bm9uX3ZtYV9mb3JrIGZhaWxzLCB3ZSBjYW4gZ2V0IGFuIGVtcHR5IGFub25fdm1hX2NoYWluLiAq
-LworCQlpZiAoYW5vbl92bWEpIHsKKwkJCXN0cnVjdCBhbm9uX3ZtYSAqbmV3X3Jvb3QgPSBhbm9u
-X3ZtYS0+cm9vdDsKKworCQkJaWYgKG5ld19yb290ICE9IHJvb3QpIHsKKwkJCQlpZiAoV0FSTl9P
-Tl9PTkNFKHJvb3QpKQorCQkJCQltdXRleF91bmxvY2soJnJvb3QtPm11dGV4KTsKKwkJCQlyb290
-ID0gbmV3X3Jvb3Q7CisJCQkJbXV0ZXhfbG9jaygmcm9vdC0+bXV0ZXgpOworCQkJfQorCQkJYW5v
-bl92bWFfdW5saW5rKGF2YywgYW5vbl92bWEpOworCQl9CiAJCWxpc3RfZGVsKCZhdmMtPnNhbWVf
-dm1hKTsKIAkJYW5vbl92bWFfY2hhaW5fZnJlZShhdmMpOwogCX0KKwlpZiAocm9vdCkKKwkJbXV0
-ZXhfdW5sb2NrKCZyb290LT5tdXRleCk7CiB9CiAKIHN0YXRpYyB2b2lkIGFub25fdm1hX2N0b3Io
-dm9pZCAqZGF0YSkK
---0016e6dd9771ea1e3b04a5daa443--
+Don't need a lock.
+
+SEEK_END: This behaves like SEEK_SET plus it reads
+the maximum size too. Reading the maximum size would have the
+32bit atomic problem. But luckily we already have a way to read
+the maximum size without locking (i_size_read), so we
+can just use that instead.
+
+Without i_mutex there is no synchronization with write() anymore,
+however since the write() update is atomic on 64bit it just behaves
+like another racy SEEK_SET.  On non atomic 32bit it's the same
+as SEEK_SET.
+
+Don't need a lock, but need to use i_size_read()
+
+SEEK_CUR: This has a read-modify-write race window
+on the same file. One could argue that any application
+doing unsynchronized seeks on the same file is already broken.
+But for the sake of not adding a regression here I'm
+using the file->f_lock to synchronize this. Using this
+lock is much better than the inode mutex because it doesn't
+synchronize between processes.
+
+So still need a lock, but can use a cheap local one.
+
+This patch implements this new scheme in generic_file_llseek.
+I dropped generic_file_llseek_unlocked and changed all callers.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ fs/gfs2/file.c     |    4 ++--
+ fs/nfs/file.c      |    5 +++--
+ fs/read_write.c    |   33 ++++++---------------------------
+ include/linux/fs.h |    2 --
+ 4 files changed, 11 insertions(+), 33 deletions(-)
+
+diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+index a9f5cbe..5590c0f 100644
+--- a/fs/gfs2/file.c
++++ b/fs/gfs2/file.c
+@@ -63,11 +63,11 @@ static loff_t gfs2_llseek(struct file *file, loff_t offset, int origin)
+ 		error = gfs2_glock_nq_init(ip->i_gl, LM_ST_SHARED, LM_FLAG_ANY,
+ 					   &i_gh);
+ 		if (!error) {
+-			error = generic_file_llseek_unlocked(file, offset, origin);
++			error = generic_file_llseek(file, offset, origin);
+ 			gfs2_glock_dq_uninit(&i_gh);
+ 		}
+ 	} else
+-		error = generic_file_llseek_unlocked(file, offset, origin);
++		error = generic_file_llseek(file, offset, origin);
+ 
+ 	return error;
+ }
+diff --git a/fs/nfs/file.c b/fs/nfs/file.c
+index 2f093ed..6b52b09 100644
+--- a/fs/nfs/file.c
++++ b/fs/nfs/file.c
+@@ -195,11 +195,12 @@ static loff_t nfs_file_llseek(struct file *filp, loff_t offset, int origin)
+ 		if (retval < 0)
+ 			return (loff_t)retval;
+ 
++		/* AK: should drop this lock. Unlikely to be needed. */
+ 		spin_lock(&inode->i_lock);
+-		loff = generic_file_llseek_unlocked(filp, offset, origin);
++		loff = generic_file_llseek(filp, offset, origin);
+ 		spin_unlock(&inode->i_lock);
+ 	} else
+-		loff = generic_file_llseek_unlocked(filp, offset, origin);
++		loff = generic_file_llseek(filp, offset, origin);
+ 	return loff;
+ }
+ 
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 5520f8a..9bd5d23 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -36,22 +36,23 @@ static inline int unsigned_offsets(struct file *file)
+ }
+ 
+ /**
+- * generic_file_llseek_unlocked - lockless generic llseek implementation
++ * generic_file_llseek - generic llseek implementation for regular files
+  * @file:	file structure to seek on
+  * @offset:	file offset to seek to
+  * @origin:	type of seek
+  *
+- * Updates the file offset to the value specified by @offset and @origin.
+- * Locking must be provided by the caller.
++ * This is a generic implemenation of ->llseek useable for all normal local
++ * filesystems.  It just updates the file offset to the value specified by
++ * @offset and @origin under i_mutex.
+  */
+ loff_t
+-generic_file_llseek_unlocked(struct file *file, loff_t offset, int origin)
++generic_file_llseek(struct file *file, loff_t offset, int origin)
+ {
+ 	struct inode *inode = file->f_mapping->host;
+ 
+ 	switch (origin) {
+ 	case SEEK_END:
+-		offset += inode->i_size;
++		offset += i_size_read(inode);
+ 		break;
+ 	case SEEK_CUR:
+ 		/*
+@@ -79,28 +80,6 @@ generic_file_llseek_unlocked(struct file *file, loff_t offset, int origin)
+ 
+ 	return offset;
+ }
+-EXPORT_SYMBOL(generic_file_llseek_unlocked);
+-
+-/**
+- * generic_file_llseek - generic llseek implementation for regular files
+- * @file:	file structure to seek on
+- * @offset:	file offset to seek to
+- * @origin:	type of seek
+- *
+- * This is a generic implemenation of ->llseek useable for all normal local
+- * filesystems.  It just updates the file offset to the value specified by
+- * @offset and @origin under i_mutex.
+- */
+-loff_t generic_file_llseek(struct file *file, loff_t offset, int origin)
+-{
+-	loff_t rval;
+-
+-	mutex_lock(&file->f_dentry->d_inode->i_mutex);
+-	rval = generic_file_llseek_unlocked(file, offset, origin);
+-	mutex_unlock(&file->f_dentry->d_inode->i_mutex);
+-
+-	return rval;
+-}
+ EXPORT_SYMBOL(generic_file_llseek);
+ 
+ /**
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 1c77787..deec2cd 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2335,8 +2335,6 @@ file_ra_state_init(struct file_ra_state *ra, struct address_space *mapping);
+ extern loff_t noop_llseek(struct file *file, loff_t offset, int origin);
+ extern loff_t no_llseek(struct file *file, loff_t offset, int origin);
+ extern loff_t generic_file_llseek(struct file *file, loff_t offset, int origin);
+-extern loff_t generic_file_llseek_unlocked(struct file *file, loff_t offset,
+-			int origin);
+ extern int generic_file_open(struct inode * inode, struct file * filp);
+ extern int nonseekable_open(struct inode * inode, struct file * filp);
+ 
+-- 
+1.7.4.4
+
