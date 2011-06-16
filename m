@@ -1,120 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab1FPILd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 04:11:33 -0400
-Received: from b.evox.ro ([188.211.232.1]:41735 "EHLO b.evox.ro"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163Ab1FPIL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 04:11:29 -0400
-X-Greylist: delayed 869 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Jun 2011 04:11:29 EDT
-X-DKIM: Sendmail DKIM Filter v2.8.3 b.evox.ro p5G7uq87025473
-Subject: Re: tc match MAC destination - nothing matches on protocol 802_3
-From: Doru Theodor Petrescu <pdoru.kernel@evox.ro>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: ierdnah@gmail.com, linux-kernel@vger.kernel.org, pdoru.kernel@evox.ro,
-        netdev@vger.kernel.org
-In-Reply-To: <20110615092907.2b79ee66@s6510.ftrdhcpuser.net>
-References: <1308125523.30324.64.camel@ierdnac-hp>
-	 <20110615092907.2b79ee66@s6510.ftrdhcpuser.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 Jun 2011 10:56:52 +0300
-Message-ID: <1308211012.12982.36365.camel@u.evox.ro>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753704Ab1FPIEo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 04:04:44 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:56718 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829Ab1FPIEh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 04:04:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=BDLtgYWFW2/IDInXM1Qzg1ygiKDsc9Qhj7wO+eZHEftUtO56pGxJxjVay9KkJ22N4f
+         dvsE67chtK49/9bWzR8G3eBJbEBiemKFBVs4Yn0uxlH75n/5gx8nSnGn3+Tka3sEQxdu
+         Pim7DUNp3qljDrJd2hpYATdL40ct8J4DO2EyI=
+MIME-Version: 1.0
+Date: Thu, 16 Jun 2011 10:04:36 +0200
+Message-ID: <BANLkTin2w5muF+LV269DV1=L+_j8P6DT_Q@mail.gmail.com>
+Subject: [PATCH] s3c2410_udc: fix custom UDC command handling
+From: Viliam Mateicka <viliam.mateicka@gmail.com>
+To: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There is a bug in Samsung's UDC driver, which is completely disabling
+the USB device when a custom UDC command is used.
+Following patch seems to get the right behavior (e.g. enabling pull-up
+instead of disabling then Vcc is applied). Also I'm not in mailing
+list so please CC me.
 
+Greetingz,
+Vilo
 
-I updated my scripts to use the 'tc filter ... match ether src/dst'
-syntax. it really makes reading the script easier. thanks for the tip!
+Signed-off-by: Viliam Mateicka <viliam.mateicka@gmail.com>
 
-however the problem persists. I changed the rule to match ANY pachet of
-type 802_3 and redirect it to ifb1. but nothing arrives on ifb1.
-
-I tried to redirect ARP pachets using 'protocol arp' filter and it works
-perfectly as expected.
-
-so at this point the problem is no longer 'how to match ethernet header'
-but rather 'how to match a pachet of type 802_3'. My feeling is that
-there is a bug somewhere in kernel where the 'protocol 802_3' matching
-happens.
-
-
-I attach part of the script I use to generate the filters and classes. I
-removed everything related to HTB and IP pachets because there is no
-problem there. in case the formating is lost, you can download it from
-here: http://evox.ro/kernel_netdev_tc_protocol_802.3/
-
-
-Thx for any help,
-Doru Theodor Petrescu
-CTO, Evox Solutions SRL
-http://evox.ro/
-
-
-
-for DEV in bond0.2199 bond1.2199 bond0.3000 bond1.3001 ; do
-
-
-   tc qdisc  del dev $DEV root
-
-   tc qdisc  add dev $DEV root handle 1: htb default 2
-   tc class  add dev $DEV parent 1: classid 1:1 htb rate 930000kbit ceil
-930000kbit quantum 1600
-   
-   tc filter add dev $DEV parent 1: prio 5 protocol ip u32
-# ==> 800:
-
-   tc filter add dev $DEV parent 1: prio 1 protocol 0x0806 u32
-# ==> 801:      protocol ARP
-   tc filter add dev $DEV parent 1: prio 1 handle 801:0:7 protocol
-0x0806 u32  match u32 0 0 flowid 1:3
-
-   tc filter add dev $DEV parent 1: prio 2 protocol 802_3 u32
-# ==> 802:
-
-   tc filter add dev $DEV parent 1: prio 6 protocol ip u32
-# ==> 803:
-
-
-   tc filter replace dev $DEV parent 1: prio 2 handle 802:0:3  protocol
-802_3 u32 match u16 0 0 at 0 flowid 1:3 action mirred egress mirror dev
-ifb1
-   tc filter replace dev $DEV parent 1: prio 2 handle 802:0:9  protocol
-802_3 u32 match ether src 01:00:0c:cc:cc:cd flowid 1:3 action mirred
-egress mirror dev ifb1
-   tc filter replace dev $DEV parent 1: prio 2 handle 802:0:10 protocol
-802_3 u32 match ether dst 01:00:0c:cc:cc:cd flowid 1:3 action mirred
-egress mirror dev ifb1
-
-done
-
-
-# the 802_3 pachet filter:   
-# 
-# 802:0:3 should match ANY pachet of type 802_3 and mirror it to ifb1
-# 802:0:9 and 802:0:10 should match any pachet with src/dst
-01:00:0c:cc:cc:cd and mirror it to ifb1
-#
-# however NOTHING is going to ifb1    try 'tcpdump -nltve -i ifb1'
-# at the same time 'tcpdump -nltve -i bond1.2199 ether host
-0100.0ccc.cccd' will show about one pachet every second
-# 
-
-
-# at the same time the ARP filter works. you can mirror all ARP trafic
-to IFB1 like this:
-# tc filter replace dev $DEV parent 1: prio 1 handle 801:0:7 protocol
-0x0806 u32  match u32 0 0 flowid 1:3 action mirred egress mirror dev
-ifb1
-
-
-
-
-
-
-
-
+--- drivers/usb/gadget/s3c2410_udc.c.orig       2011-05-19
+06:06:34.000000000 +0200
++++ drivers/usb/gadget/s3c2410_udc.c    2011-06-16 08:57:19.000000000 +0200
+@@ -1566,7 +1566,7 @@ static void s3c2410_udc_command(enum s3c
+                return;
+        if (udc_info->udc_command) {
+-               udc_info->udc_command(S3C2410_UDC_P_DISABLE);
++               udc_info->udc_command(cmd);
+        } else if (gpio_is_valid(udc_info->pullup_pin)) {
+                int value;
