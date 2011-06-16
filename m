@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932077Ab1FPHL0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:11:26 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:43239 "EHLO
+	id S932095Ab1FPHLa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:11:30 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:50673 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757039Ab1FPHLT (ORCPT
+	by vger.kernel.org with ESMTP id S1756565Ab1FPHLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:11:19 -0400
-X-Sasl-enc: acQcCDqJGmSnYck+6Qlm8MOeIWdJwcuNzEyYfotQLl3s 1308208277
+	Thu, 16 Jun 2011 03:11:20 -0400
+X-Sasl-enc: 2kOLxw35JuIGeVMV9Wivxd0FHipCkZEFX4g0OavRBDMT 1308208278
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:29:10 2011
-Message-Id: <20110616002910.569916638@clark.kroah.org>
+Message-Id: <20110616002910.665327088@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:29:03 -0700
+Date: Wed, 15 Jun 2011 17:29:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Joerg Roedel <joerg.roedel@amd.com>
-Subject: [67/85] x86/amd-iommu: Fix 3 possible endless loops
+Subject: [68/85] x86/amd-iommu: Fix boot crash with hidden PCI devices
 In-Reply-To: <20110616002917.GA3627@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,50 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit 0de66d5b35ee148455e268b2782873204ffdef4b upstream.
+commit 26018874e3584f1658570d41d57d4c34f6a53aa0 upstream.
 
-The driver contains several loops counting on an u16 value
-where the exit-condition is checked against variables that
-can have values up to 0xffff. In this case the loops will
-never exit. This patch fixed 3 such loops.
+Some PCIe cards ship with a PCI-PCIe bridge which is not
+visible as a PCI device in Linux. But the device-id of the
+bridge is present in the IOMMU tables which causes a boot
+crash in the IOMMU driver.
+This patch fixes by removing these cards from the IOMMU
+handling. This is a pure -stable fix, a real fix to handle
+this situation appriatly will follow for the next merge
+window.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/amd_iommu_init.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/kernel/amd_iommu.c |   22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kernel/amd_iommu_init.c
-+++ b/arch/x86/kernel/amd_iommu_init.c
-@@ -646,8 +646,8 @@ static void __init init_iommu_from_acpi(
- {
- 	u8 *p = (u8 *)h;
- 	u8 *end = p, flags = 0;
--	u16 dev_i, devid = 0, devid_start = 0, devid_to = 0;
--	u32 ext_flags = 0;
-+	u16 devid = 0, devid_start = 0, devid_to = 0;
-+	u32 dev_i, ext_flags = 0;
- 	bool alias = false;
- 	struct ivhd_entry *e;
+--- a/arch/x86/kernel/amd_iommu.c
++++ b/arch/x86/kernel/amd_iommu.c
+@@ -154,6 +154,10 @@ static int iommu_init_device(struct devi
+ 	pdev = pci_get_bus_and_slot(PCI_BUS(alias), alias & 0xff);
+ 	if (pdev)
+ 		dev_data->alias = &pdev->dev;
++	else {
++		kfree(dev_data);
++		return -ENOTSUPP;
++	}
  
-@@ -802,7 +802,7 @@ static void __init init_iommu_from_acpi(
- /* Initializes the device->iommu mapping for the driver */
- static int __init init_iommu_devices(struct amd_iommu *iommu)
- {
--	u16 i;
-+	u32 i;
+ 	atomic_set(&dev_data->bind, 0);
  
- 	for (i = iommu->first_device; i <= iommu->last_device; ++i)
- 		set_iommu_for_device(iommu, i);
-@@ -1088,7 +1088,7 @@ static int __init init_memory_definition
-  */
- static void init_device_table(void)
- {
--	u16 devid;
-+	u32 devid;
+@@ -163,6 +167,20 @@ static int iommu_init_device(struct devi
+ 	return 0;
+ }
  
- 	for (devid = 0; devid <= amd_iommu_last_bdf; ++devid) {
- 		set_dev_entry_bit(devid, DEV_ENTRY_VALID);
++static void iommu_ignore_device(struct device *dev)
++{
++	u16 devid, alias;
++
++	devid = get_device_id(dev);
++	alias = amd_iommu_alias_table[devid];
++
++	memset(&amd_iommu_dev_table[devid], 0, sizeof(struct dev_table_entry));
++	memset(&amd_iommu_dev_table[alias], 0, sizeof(struct dev_table_entry));
++
++	amd_iommu_rlookup_table[devid] = NULL;
++	amd_iommu_rlookup_table[alias] = NULL;
++}
++
+ static void iommu_uninit_device(struct device *dev)
+ {
+ 	kfree(dev->archdata.iommu);
+@@ -192,7 +210,9 @@ int __init amd_iommu_init_devices(void)
+ 			continue;
+ 
+ 		ret = iommu_init_device(&pdev->dev);
+-		if (ret)
++		if (ret == -ENOTSUPP)
++			iommu_ignore_device(&pdev->dev);
++		else if (ret)
+ 			goto out_free;
+ 	}
+ 
 
 
