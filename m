@@ -1,35 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab1FPTLL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 15:11:11 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:7667 "EHLO
+	id S1756743Ab1FPTM6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 15:12:58 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:7905 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754787Ab1FPTLI convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754787Ab1FPTM5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 15:11:08 -0400
+	Thu, 16 Jun 2011 15:12:57 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 16 Jun 2011 12:10:53 -0700
+	by hqnvupgp07.nvidia.com on Thu, 16 Jun 2011 12:12:38 -0700
 From: Stephen Warren <swarren@nvidia.com>
 To: Linus Walleij <linus.walleij@linaro.org>
-CC: Linus Walleij <linus.walleij@stericsson.com>,
+CC: Grant Likely <grant.likely@secretlab.ca>, Lee Jones <lee.jones@linaro.org>,
+        Martin Persson <martin.persson@stericsson.com>,
+        Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>
-Date: Thu, 16 Jun 2011 12:10:51 -0700
-Subject: RE: [PATCH 1/2] drivers: create a pinmux subsystem v3
-Thread-Topic: [PATCH 1/2] drivers: create a pinmux subsystem v3
-Thread-Index: AcwsI4g/m7yhzXoQSv6bRbdLIQN/nQAIUHUw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04992C07E1@HQMAIL01.nvidia.com>
-References: <1307984291-9774-1-git-send-email-linus.walleij@stericsson.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF04992C02AC@HQMAIL01.nvidia.com>
-	<BANLkTinNmPVEM4Eu4efxkuwrCU_FVWFaAg@mail.gmail.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF04992C049D@HQMAIL01.nvidia.com>
- <BANLkTikFLbU70uJO0yrf8HipcVEwbUHgsw@mail.gmail.com>
-In-Reply-To: <BANLkTikFLbU70uJO0yrf8HipcVEwbUHgsw@mail.gmail.com>
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 16 Jun 2011 12:12:36 -0700
+Subject: RE: More pinmux feedback, and GPIO vs. pinmux interaction
+Thread-Topic: More pinmux feedback, and GPIO vs. pinmux interaction
+Thread-Index: AcwsNxACK05SEhO4QTq/VjjbnMfmVgAHIg6Q
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04992C07E5@HQMAIL01.nvidia.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF04992C067D@HQMAIL01.nvidia.com>
+ <BANLkTi==jWGxbiW4QZ7SSfAdyShhEgvMig@mail.gmail.com>
+In-Reply-To: <BANLkTi==jWGxbiW4QZ7SSfAdyShhEgvMig@mail.gmail.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -42,705 +38,411 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Thursday, June 16, 2011 6:47 AM:
-> On Wed, Jun 15, 2011 at 12:11 AM, Stephen Warren <swarren@nvidia.com> wrote:
-> > [Me]
-> >> Can't you just send some patch or example .h file for the API
-> >> you would like to see so I understand how you think about
-> >> this?
-> >
-> > Are your patches in git somewhere? It's much easier for me to pull
-> > at present than grab patches out of email; something I certainly need
-> > to fix...
+Linus Walleij wrote at Thursday, June 16, 2011 9:07 AM:
+> On Wed, Jun 15, 2011 at 11:48 PM, Stephen Warren <swarren@nvidia.com> wrote:
 >
-> Yep:
-> git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-stericsson.git
-> pinmux-subsystem
-> It's based on v3.0-rc3 as of now. I tend to rebase it though.
+> > Some more thoughts on pinmux:
+>
+> Thanks!
+>
+> Keep it coming until you get tired of me :-)
+>
+> > ========== GPIO/pinmux API interactions
+> >
+> > I'd like to understand how the gpio and pinmux subsystems are intended
+> > to interact.
+>
+> Mainly I'd like Grant to comment on that a bit. It refers to the (long)
+> reply I wrote in response to his feeback on these issues with some
+> open questions in it.
+>
+> >  Note that requesting a GPIO does NOT cause it to be configured in any
+> >  way; it just marks that GPIO as in use.  Separate code must handle any
+> >  pin setup (e.g. controlling which pin the GPIO uses, pullup/pulldown).
+> >
+> > Due to this, the current Tegra GPIO driver contains additional non-
+> > standard functions:
+> >
+> > void tegra_gpio_enable(int gpio);
+> > void tegra_gpio_disable(int gpio);
+> >
+> > In some cases, those functions are called by board files at boot time,
+> > and in other cases by drivers themselves, right before gpio_request().
+> >
+> > Is it your intention that such custom functions be replaced by
+> > pinmux_request_gpio(), and the Tegra pinmux driver's gpio_request_enable
+> > op should call tegra_gpio_enable?
+> >
+> > That seems like the right idea to me.
+>
+> Yes and no. As you saw in the last iteration I renamed the pinmux
+> framework "pinctrl" or "pin control". So being such a hopeless optimist
+> I set out to solve all pin controlling in this subsystem. The sales rap
+> would be something like:
+>
+> - Do you need to bias your pin to 3.3 V with an 1MOhm resistor?
+> - Do you want to mux your pin with differetn functions?
+> - Do you want to set the load capacitance of you pin to 10pF?
+> - Do you want to drive your pin as open collector?
+> - Is all or some the above software-controlled in your ASIC?
+> - Do you despair from the absence of relevant frameworks?
+>
+> DON'T WORRY!
+> The pinctrl subsystem is here to save YOU!
+>
+> However that's a bit of vaporware, since I just implemented the
+> pin numberspace and pin registration (that is the generic part)
+> and then the pinmux part. The rest (assorted pin control) is
+> yet to come.
 
-Great. Thanks.
+Just one note on the extra stuff for the future:
 
-> >> static unsigned int mmc0_1_pins[] = { 56, 57 };
-> >> static unsigned int mmc0_2_pins[] = { 56, 57, 58, 59 };
-> >> static unsigned int mmc0_3_pins[] = { 56, 57, 58, 59, 60, 61, 62, 63 };
+* Tegra has say 100 muxable pins.
+* GPIO vs. special function is selectable per pin.
+* Muxing of which special function (and some other features, such as
+pullup/down) is only at a granularity of "group of pins".
+* Some other pin features (such as slew rate, drive strength) is also
+only at a granularity of "group of pins" **but** the groups are defined
+differently for these features than for muxing.
+
+I figure the general model is:
+
+* N pins, each perhaps with some per-pin controls.
+* M groups of pins, each allowing muxing, and possibly other controls
+and also an arbitrary number of:
+* P groups of pins, allowing various other controls
+
+> > ========== pinmux calling GPIO or vice-versa?
+> >
+> > Having pinmux call gpio appears to conflict with a couple of things from
+> > your recent pinmux patchset:
+> >
+> >> diff --git a/drivers/Kconfig b/drivers/Kconfig
+> >> +# pinctrl before gpio - gpio drivers may need it
+> >> +
+> >> +source "drivers/pinctrl/Kconfig"
+> >> +
+> >>  source "drivers/gpio/Kconfig"
 > >>
-> >> static struct foo_pmx_func myfuncs[] = {
-> >>       {
-> >>               .name = "mmc0-2bit",
-> >>               .pins = mmc0_1_pins,
-> >>               .num_pins = ARRAY_SIZE(mmc0_1_pins),
-> >>       },
-> >>       {
-> >>               .name = "mmc0-4bit",
-> >>               .pins = mmc0_2_pins,
-> >>               .num_pins = ARRAY_SIZE(mmc0_2_pins),
-> >>       },
-> >>       {
-> >>               .name = "mmc0-8bit",
-> >>               .pins = mmc0_3_pins,
-> >>               .num_pins = ARRAY_SIZE(mmc0_3_pins),
-> >>       },
-> >> };
-> >>
-> >> Looks OK?
+> >> diff --git a/drivers/Makefile b/drivers/Makefile
+> >>...
+> >> +# GPIO must come after pinctrl as gpios may need to mux pins etc
+> >> +obj-y                                += pinctrl/
 > >
-> > I think that's exactly the setup I was looking to avoid. See the portion
-> > of the thread starting from:
+> > Don't those patches imply that the GPIO controller code is calling into
+> > the pinmux code to perform muxing, not the other way around?
 >
-> Gah. Baudelaire once said something like the reason people think
-> they agree is that they misunderstand each other all the time.
-> Sorry for my lameness :-/
+> Yes.
 >
-> > static unsigned int mmc0_1_pins[] = { 56, 57 };
-> > static unsigned int mmc0_2_pins[] = { 58, 59 };
-> > static unsigned int mmc0_3_pins[] = { 60, 61, 62, 63 };
+> Grant does not seem to like the idea of the gpio subsystem
+> meddeling with all this stuff anyway, so I intend to take all that
+> into pinctrl, and then gpio only deal with, well GPIO. Setting
+> bits quickly and such.
+>
+> That is, irrespective of the fact that these functions may live
+> in the same register range, this is a divide between functionality
+> not hardware blocks.
+>
+> > ========== When pins get marked as in-used
 > >
-> >        {
-> >                .name = "mmc0-1:0",
-> >                .pins = mmc0_1_pins,
-> >                .num_pins = ARRAY_SIZE(mmc0_1_pins),
-> >        },
-> >        {
-> >                .name = "mmc0-3:2",
-> >                .pins = mmc0_2_pins,
-> >                .num_pins = ARRAY_SIZE(mmc0_2_pins),
-> >        },
-> >        {
-> >                .name = "mmc0-7:4",
-> >                .pins = mmc0_3_pins,
-> >                .num_pins = ARRAY_SIZE(mmc0_3_pins),
-> >        },
+> > There seems to be a discrepancy in the way the client APIs work: For
+> > special functions, the client calls pinmux_get, then later pinmux_enable,
+> > whereas for GPIOs, the client just calls pinmux_request_gpio. I'm not
+> > sure of the benefit of having separate pinmux_get and pinmux_enable
+> > calls; I thought the idea was that a client could:
 > >
-> > So a board that happens to use a 2-bit bus would define:
+> > a = pinmux_get(dev, "funca");
+> > b = pinmux_get(dev, "funcb");
+> > pinmux_enable(a);
+> > ...
+> > pinmux_disable(a);
+> > pinmux_enable(b);
+> > ...
+> > pinmux_disable(b);
+> > pinmux_put(b);
+> > pinmux_put(a);
 > >
-> > static struct pinmux_map pmx_mapping[] = {
-> >        {
-> >                .functions = {"mmc0-1:0"},
-> >                .dev_name = "tegra-sdhci.0",
-> >        },
-> > };
+> > However, since the pins are marked as reserved/in-use when pinmux_get
+> > is called rather than pinmux_enable, the code above won't work;
+>
+> If the two functions share the same pins so they are mutually exclusive,
+> then yes.
+>
+> > it'd need to be:
 > >
-> > But a board that happens to use an 8-bit bus would define:
+> > a = pinmux_get(dev, "funca");
+> > pinmux_enable(a);
+> > ...
+> > pinmux_disable(a);
+> > pinmux_put(a);
+> > b = pinmux_get(dev, "funcb");
+> > pinmux_enable(b);
+> > ...
+> > pinmux_disable(b);
+> > pinmux_put(b);
 > >
-> > static struct pinmux_map pmx_mapping[] = {
-> >        {
-> >                .functions = {"mmc0-1:0", "mmc0-3:2", "mmc0-7:4"},
-> >                .dev_name = "tegra-sdhci.0",
-> >        },
-> > };
+> > Perhaps pin usage marking should be moved into enable/disable?
 >
-> NOW I  *think* I get it.
+> Actually no - my idea is that enable/disable shall be fast while
+> get/put will be allowed to take time. (fastpath vs slowpath if
+> you like).
 >
-> So we're basically talking about the function mapping API here.
-
-Yes, basically.
-
-In more detail, I'm talking about making the "functions" exposed to
-clients of the pinmux be a different set than the "functions"
-implemented by the pinmux driver. Perhaps we should call the former
-"mappings" not make that clear; I see you did just below!
-
-> So the idea is that one mapping can reference several functions.
-
-Yes.
-
-> So with this scheme actually both ways of doing this would be
-> possible IIUC.
-
-Yes, it's certainly possible for a board/machine/... to define
-mappings that expose the bus in the chunks that the HW supports,
-or aggregate the whole thing.
-
-But, I think that's slightly missing the point. I would expect:
-
-The pinmux driver itself to *always* expose functions as the raw chunks
-that the HW supports (whether HW supports individual pins, or groups of
-pins, whether multiple pins/groups end up being used as a bus or not).
-
-For Tegra's keyboard controller, that might be the following functions
-(actual names/widths probably incorrect; just for example):
-
-row[3:0]
-row[7:4]
-row[9:8]
-col[3:0]
-col[7:4]
-
-Recall that Tegra's keyboard controller module can be used with many
-different combinations of those sets of pins. I assert the pinmux driver
-itself needs to work identically, and expose the same data (functions,
-pins) without any knowledge of the board it's being used on.
-
-The mappings, provided by and specific to a particular board/machine
-would always expose only the exact configurations actually used on that
-board:
-
-mapping device: "tegra-kbc"
-mapping name: "config a"
-mapping function list: row[7:4], row[3:0], col[3:0]
-
-(note how I added a "mapping name" field here; more on this below. This
-is related to mapping and function names being different things)
-
-As a single mapping that the driver will just get and use.
-
-Note that if the driver is complex, and can dynamically switch between
-different setups at run-time on a specific board, then the mappings list
-might still contain multiple entries for the same device, which the
-device driver could get all of and switch between. However, I'd expect
-that to be pretty rare:
-
-mapping device: "tegra-kbc"
-mapping name: "config a"
-mapping function list: row[7:4], row[3:0], col[3:0]
-
-mapping device: "tegra-kbc"
-mapping name: "config b"
-mapping function list: row[3:0], col[3:0]
-
-> Note that this will be *quite* tricky to implement, since you have
-> an array of undetermined size with elements of undetermined size
-> in .functions = {"mmc0-1:0", "mmc0-3:2", "mmc0-7:4"}.
+> The rationale was described I think in the first patch set, that
+> switching pinmuxes tied to a device will be rare, whereas
+> enabling/disabling will be common. So get/put will do the
+> slow lookup of descriptors etc, whereas enable/disable will
+> typically involve poking some hardware register so it will be fast.
 >
-> You will need atleast to move the functions out of the mapping
-> something like this:
->
-> static char *mmc0_10[] = { "mmc0-1:0", "mmc0-3:2", "mmc0-7:4" };
->
-> static struct pinmux_map pmx_mapping[] = {
->        {
->                .functions = &mmc0_10,
->                .functions_len = ARRAY_SIZE(mmc0_10);
->                .dev_name = "tegra-sdhci.0",
->        },
-> };
->
-> Which sort of kludges up the syntax for all the simple cases that will
-> also have to add ARRAY_SIZE() and a separate string array for
-> each of its single-function maps.
->
-> So it has the downside of complicating the simple maps.
+> For example enabling/disabling on many systems need to be
+> done as part of idling the hardware, and thus it should be
+> fast since you may need to turn it back on quickly.
 
-Yes, you're right. I think I have a simpler solution that degenerates to
-the same syntax as in your current patch. Starting with your original:
+The issue with this model is that one can't fast-switch between two
+mappings that do both require the same pin (e.g. say between 2-bit and
+4-bit MMC bus). Given this is as you say probably not a very common case,
+and actually I don't think the lookup will be *that* slow, it sounds like
+everything will work fine.
 
-static struct pinmux_map pmx_mapping[] = {
-       {
-               .dev_name = "tegra-sdhci.0",
-               .function = "mmc0-1:0",
-       },
+It might be nice to provide a short example, just like the code I wrote
+above, on switching in the documentation just so people have something
+canonical to cut/paste into their driver so they get it right without
+having to internalize the model.
 
-(where devices look up mappings by ".function", among other options)
-
-We then add a new "mapping name" field; you'll see why soon:
-
-static struct pinmux_map pmx_mapping[] = {
-       {
-               .dev_name = "tegra-sdhci.0",
-               .map_name = "2 bit",
-               .function = "mmc0-1:0",
-       },
-
-(where we now use ".map_name" for searching the list instead of
-".function", which ties into my comment above about having explicit
-different sets of names for mapping entries and low-level pinmux driver
-internal function names.
-
-We can still set ".map_name" = NULL and omit it in the simple case where
-drivers search based on ".dev_name" and don't specify any specific
-.map_name to search for, and don't have multiple options for mappings
-they can switch between.
-
-Now, we can have multiple entries with the same .map_name:
-
-static struct pinmux_map pmx_mapping[] = {
-       {
-               .dev_name = "tegra-sdhci.0",
-               .map_name = "4 bit", # Note this is 4 now
-               .function = "mmc0-1:0",
-       },
-       {
-               .dev_name = "tegra-sdhci.0",
-               .map_name = "4 bit",
-               .function = "mmc0-3:2",
-       },
-
-This means that if a client request map name "4 bit", then both functions
-"mmc0-1:0" and "mmc0-3:2" are part of that mapping.
-
-If there is only a single logical mapping, and hence .map_name is omitted,
-there could still be multiple entries in the list for the same dev_name;
-all entries with .map_name==NULL are considered the same name.
-
-Putting the above in database terms, the primary key (albeit not unique)
-is the tuple (.dev_name, .map_name), and the set of .function values for
-all rows with that same primary key are logically part of the same mapping.
-(Yes, this isn't correct normalized form for a database, but it makes the
-simpler cases simpler to represent)
-
-We can still have multiple .map_name options for a given .dev_name,
-by simply combining the previous two examples:
-
-static struct pinmux_map pmx_mapping[] = {
-       {
-               .dev_name = "tegra-sdhci.0",
-               .map_name = "2 bit",
-               .function = "mmc0-1:0",
-       },
-       {
-               .dev_name = "tegra-sdhci.0",
-               .map_name = "4 bit",
-               .function = "mmc0-1:0",
-       },
-       {
-               .dev_name = "tegra-sdhci.0",
-               .map_name = "4 bit",
-               .function = "mmc0-3:2",
-       },
-
-And as a final addition to this example, suppose we have a second MMC
-controller, it can also have a "2 bit" map_name entry, since I'd like
-to assert that ".map_name" be interpreted relative/within/for a given
-.dev_name in most cases; lookup only by .map_name without a .dev_name
-should be rare.
-
-       {
-               .dev_name = "tegra-sdhci.1",
-               .map_name = "2 bit",
-               .function = "mmc1-1:0",
-       },
-
-In terms of implementation, this is still pretty easy; all we do when
-reserving or activating a given mapping is to walk the entire list, find
-*all* entries that match the client's search terms, and operate on all of
-them, instead of stopping at the first one.
-
-struct pinmux, as returned by pinmux_get(), would need some adjustments
-to store either an array of map entries, or just the .map_name of the
-found entry/entries, so the loop could be repeated later.
-
-> What I think we need to understand at this point is what will be the
-> most common case: that a mapping selects a single or multiple
-> functions. If the case is rare I'd opt for my scheme (i.e. defining
-> one function per bus width) to keep it simple, whereas if a vast
-> majority of the function tables and mappings for say Tegra will be
-> way simpler this way, it'll be worth the increase in complexity
-> of the function mapping API.
-
-So sorry but just to hammer home my point, the disadvantages of the pinmux
-driver itself (as opposed to the mapping list) aggregating multiple pins
-or groups-of-pins into functions for each supported combination are:
-
-* Potential explosion of functions exposed.
-
-* The same point, but think about a SW bit-banged bus consisting of 8
-GPIOs for the bus and 100 pins on the device. Each permutation of 8 out
-of 100 is scary... I'd love a board to be able to represent a single
-mapping for a particular board's set of GPIOs in this case, but not for
-the pinmux driver to expose all possibilities!
-
-* By having the pinmux driver expose the pins/groups in exactly the way
-the HW supports, the pinmux driver is purely a simple hardware driver,
-and doesn't know anything much beyond "program this pin/group to be this
-function". All the logic of aggregating sets of pins/groups-of-pins into
-mappings is defined by the board/machine/... when it sets up the mapping
-table. I like keeping the pinmux driver simpler, and having the boards
-describe functions in terms of which pins/groups should be set to which
-function, rather than picking for a pre-defined large list of all
-possibilities.
-
-> > ... although struct pinmux_map would probably need to grow a separate
-> > name field
->
-> I don't get this, the member "function" is a name of the function:
->
-> struct pinmux_map {
->         const char *function;
->         (...)
-> };
-
-Hopefully I explained this well above; it's the difference between a
-function name known to the pinmux driver vs. a mapping name known to the
-pinmux clients.
-
-> > to match against pinmux_get's 2nd parameter, rather than
-> > assuming the driver's function names and the mapping's function names
-> > were the same.
+> > ========== Matched request/free calls for GPIOs
 > >
-> > Such a new name field would also introduce a second namespace that'd
-> > satisfy my next concern.
+> > A couple more comments on your recent pinmux patches in light of this:
 > >
-> >> > ** How can the board/machine name pins? That should be a function of the
-> >> > chip (i.e. pinmux driver), since that's where the pins are located. A
-> >> > chip's pins don't have different names on different boards; the names of
-> >> > the signals on the PCB connected to those pins are defined by the board,
-> >> > but not the names of the actual pins themselves.
-> >>
-> >> Actually I don't really like the use of the concept of board and machine
-> >> for chip packages either. But if I say that without devicetrees it
-> >> could be something like arch/arm/plat-nomadik/package-db8500.c
-> >> defining the pins. Then it is still coming from the outside, for
-> >> a particular platform, for a particular chip package.
-> >>
-> >> Then the init function in that file gets called on relevant systems.
-> >>
-> >> As you can see in the example implementation for U300 I actually
-> >> do this in the driver itself by including the machine.h file to that one.
-> >> So this driver first registers pins, then functions.
-> >>
-> >> I think there is broad consensus that this should come in from
-> >> the device tree in the future. And if it comes from the device tree, it's
-> >> still the say arch/arm/plat-nomadik/package-db8500.c file that looks
-> >> up the pins from the device tree and registers them, just it gets the
-> >> data from the outside.
+> > From pin_request():
 > >
-> > I think discussion of DeviceTree here is a bit of a distraction; if the
-> > pinmux core APIs imply the correct data model, it doesn't seem especially
-> > relevant.
->
-> OK... maybe too much distraction here. All the DT noise
-> makes me dizzy too :-P
->
-> > For the pinmux drivers themselves, I expect the SoC's pinmux driver to
-> > define the set of pins available, and the set of functions available.
->
-> Yes, for those that map 1-to-1 for a certain platform.
-
-Personally, I think in all cases.
-
-For a pinmux driver that can apply to different platforms (e.g. the same
-register set applies to n different SoCs with different pin layouts), I
-think the pinmux driver itself can be parameterized with the mapping from
-register bits/fields to function names exported to the pinmux core. The
-parameterization could come from platform data, DeviceTree, ...
-
-> I'm a little bit sceptical due to the risk of getting into a situation
-> where every implementation claims to be special and ending up
-> having to consolidate a lot of stuff that really wasn't that special a few
-> years down the road, like the ARM tree right now. But maybe that's
-> our destiny  so no big deal :-)
->
-> > There will be a single static set of pins/functions for any Tegra 2
-> > device. Tegra 3 will have a different set of pins/functions since the
-> > HW changed quite a bit in this area. As such, DeviceTree doesn't really
-> > help much, since there will always be a custom driver per SoC, and the
-> > data a given driver uses will not vary between boards, so DeviceTree
-> > helps little.
->
-> Yep I get it. s/device tree/board file/g and the same reasoning holds
-> for anything coming from the platform/package/machine data.
->
-> > On the other hand, if you've got a very generic pinmux controller, and
-> > it gets included in N (versions of) SoCs with the same register layout,
-> >  but the actual pin names related to each register bit
-> > are different, then I can see it making sense for the pinmux driver
-> > itself to parameterize itself with data from DeviceTree.
->
-> We have that situation already in Ux500. c.f.:
-> arch/arm/mach-ux500/pins-db5500.h
-> arch/arm/mach-ux500/pins-db8500.h
->
-> Two ASICs, same set of hardware registers, but vastly different pin
-> assignments.
-
-OK, does the idea I floated a little above work; having the pinmux driver
-itself get its register->function-name mapping from some data structure
-provided to the pinmux driver?
-
-As you'll no doubt realize, I think that works:-)
-
-> > Either way
-> > though, this is purely an implementation detail within the pinmux driver,
-> > and not something the core would even be aware of.
->
-> OK with me for now atleast, I don't know about other people's
-> ambitions.
-
-That sounds like you agree:-)
-
-> > However, I do think the board-specific list of struct pinmux_map will
-> > come from DeviceTree. This will vary from board to board with potentially
-> > little commonality. DeviceTree seems a great solution to keep all that
-> > varying data out of the kernel. The core pinmux code could well include
-> > the common code to parse the DeviceTree for this data.
->
-> Agreed.
-
-Great.
-
-> >> > ** struct pinmux_map requires that each function name be globally unique,
-> >> > since one can only specify "function" not "function on a specific chip".
-> >> > This can't be a requirement; what if there are two instances of the same
-> >> > chip on the board (think some expansion chip attached to a memory-mapped
-> >> > bus rather than the primary SoC itself).
-> >>
-> >> Namespace clashes are a problem but the way I see it basically a
-> >> problem with how you design the namespace. It's just a string and
-> >> the document is just an example.
+> > +       /*
+> > +        * If there is no kind of request function for the pin we just assume
+> > +        * we got it by default and proceed.
+> > +        */
+> > +       if (gpio && ops->gpio_request_enable)
+> > +               /* This requests and enables a single GPIO pin */
+> > +               status = ops->gpio_request_enable(pmxdev,
+> > +                                                 pin - pmxdev->desc->base);
+> > +       else if (ops->request)
+> > +               status = ops->request(pmxdev,
+> > +                                     pin - pmxdev->desc->base);
+> > +       else
+> > +               status = 0;
 > >
-> > The issue here is that the pinmux driver defines a single namespace for
-> > functions, and struct pinmux_map's definition passes that single namespace
-> > through, since the value of .function comes from that same namespace, and
-> > is also the search key for the list of driver-visible functions.
+> > a) I feel the default should be to error out, not succeed; the whole
+> > point of the API is for HW where something must be programmed to enable
+> > each function. As such, if you don't provide that ops->request* function,
+> > that seems like an error.
 >
-> So this would be the case if you say had two identical chips on I2C, both
-> of which could m[u]x some their pins.
-
-Yes.
-
-> That (in the sense of the present design) would be an argument to mandate
-> to always pass the function names from platform data to drivers that
-> handle more than once instance, so the function names are always
-> unique.
+> This is designed for the case where the driver avoids to define either
+> a gpio_request_enable() or a single pin request() callback.
 >
-> (This is more about understanding, really, tell me if I got it wrong.)
+> The request() is entirely optional but intended to handle the case
+> where hardware puts additional restrictons on muxing apart from
+> pin ovelap (which is already handled by the core). For chips that
+> do not have any such hardware restrictions you don't implement the
+> callback and then it succeeds, as there is no restriction.
+>
+> The issue of HW restrictions on muxing was raised by Grant
+> only yesterday I think, it's a universal phenomenon, some have
+> it some don't.
 
-I think function names should be interpreted only within the context of a
-specific pinmux driver instance.
+OK. But I'm not sure request is the correct time to implement this, or
+at least not the only time it needs to be implemented. The special
+requirements that Tegra might implement could only be determined right
+when actually programming the pinmux registers, since the checks rely
+on which other functions actually end up being activated.
 
-I think mapping table entry names should generally be used in conjunction
-with a device name for lookup, so it's clear which device's mappings
-you're searching for.
+Well, unless you're not allowed to even request conflicting setups. But
+Then, the pinmux driver needs to have complete access to the pinmux core
+state on what's been *requested*, not just what's actually active in HW
+right now...
 
-Now, the final question is, given a mapping entry:
+In particular, the kind of checks Tegra would need are (although exact
+details of controller names etc, may be wrong):
 
-       {
-               .dev_name = "tegra-sdhci.0",
-               .map_name = "2 bit",
-               .function = "mmc0-1:0",
-       },
+* I2C controller 0 can be routed out to two different sets of pins. Only
+One set of pins must be connected to the I2C controller at once.
 
-How do you know which pinmux driver to go to when activating the function?
+* Foo controller 0 has two different kinds of interface to it; I2C slave
+and SPI slave. Only one of these two interfaces should be actually
+connected to pins at once.
 
-I think the answer is to expand the mapping table again, to be:
+I think the core pinmux code could implement some of these constraints
+if provided with appropriate data from the pinmux drivers. However, I
+think it'd be a good idea to defer that discussion until a little later
+once we've talked through some of the other data model issues primarily
+in the other email I just sent.
 
-       {
-               .dev_name = "tegra-sdhci.0",
-               .map_name = "2 bit",
-               .pmx_dev_name = "tegra-pinmux.0",
-               .function = "mmc0-1:0",
-       },
-
-The above entry means:
-
-For device "tegra-sdhci.0",
-when it wants to activate its pinmux mapping named "2 bit",
-  (where that name is optional if there's only 1 for the device)
-go to pinmux driver names "tegra-pinmux.0",
-and activate function "mmc0-1:0" there.
-
-Each registered pinmux driver would need a name. To cover the case of
-multiple instances of the exact same driver, the driver's name could
-e.g. encode I2C bus number and address for example "foochip@0.1a". I
-think that gpiolib names gpiochips along those lines? The naming that
-ASoC (ALSA for Systems on Chip; sound/soc/*) uses for I2C devices
-such as codecs works just like this.
-
-> > As I alluded to above, if struct pinmux_map had a separate field for the
-> > search key (for pinmux_get's use) v.s. the set of driver functions that
-> > key maps to, then there can be separate namespaces, and a place to resolve
-> > conflicts:
+> The kerneldoc for request() right now looks like this:
+>
+>  * @request: called by the core to see if a certain pin can be made available
+>  *      available for muxing. This is called by the core to acquire the pins
+>  *      before selecting any actual mux setting across a function. The driver
+>  *      is allowed to answer "no" by returning a negative error code
+>
+> Maybe it needs some clarification?
+>
+> > I think the logic above should be to always call ops->gpio_request_enable
+> > if (gpio):
 > >
-> > struct pinmux_map_entry {
-> >        struct pinmux_dev *pmxdev
-> >        const char *function; // pmxdev's specific function name-space
-> > };
->
-> This looks scary to me: we're already trying to avoid putting
-> struct device * into the map in favor of using dev_name to look
-> it up.
->
-> How do you intend to get struct pinmux_dev * into the map
-> entry?
-
-Yes, having "struct pinmux_dev *" here isn't a great idea. Using a
-device's name works much better.
-
-> Remember that the map is a static thing that is defined at
-> compile-time, whereas struct pinmux_dev * is something
-> that appears at runtime.
->
-> It seems smarter to me to use some naming convention,
-> but it definately need to keep track of instances, so we
-> need something like the device_name() from the
-> pinmux_dev:s struct device, that will be unique for each
-> instance, then match on that.
-
-OK, I think you're suggesting basically what I wrote above; my email
-reading lookahead buffer needs to be larger:-)
-
-> But maybe if you make a patch I can understand this better,
-> I might just not see how this could work.
->
-> > struct pinmux_map {
-> >        const char *name; // global driver-visible function name-space
-> >        struct device *dev;
->
-> This struct device *dev is curretly unused btw.
->
-> I even made my map a __initdata in the U300 case, and I think
-> that should be the norm, this would only be useful in runtime,
-> maybe with device trees.
-
-Hmm. I think the mapping table ends up being used at runtime a lot;
-I think it's reasonable for drivers to be able to expect to pinmux_get()
-at any time. New pinmux devices could be added/removed at arbitrary
-times, e.g. if a hotplugged PCI or USB device contained pinmuxing
-capabilities.
-
-> >        const char *dev_name;
-> >        int n_ functions;
-> >        const struct pinmux_map_entry * functions;
-> > };
+> >        if (gpio)
+> >                if (ops->gpio_request_enable)
+> >                        /* This requests and enables a single GPIO pin */
+> >                        status = ops->gpio_request_enable(pmxdev,
+> >                                                  pin - pmxdev->desc->base);
+> >        else
+> >                status = ops->request(pmxdev,
+> >                                      pin - pmxdev->desc->base);
 > >
-> > Thinking about this at a high level, this seems equivalent to the GPIO
-> > driver:
+> > (ops->gpio_request_enable could be optional if GPIOs aren't supported on
+> > any pinmux pins, whereas ops->request isn't optional, and should be checked
+> > during pinmux_register)
 >
-> Sorry, not following. Which GPIO driver? Are you referring to
-> gpiolib?
+> Well the idea is that if you want to reserve individual pins for GPIO
+> but only need to implement one function for all pins on the mux,
+> you need only implement ops->request(), this is the case for example
+> with ux500 - any muxable pin works the same way since *all* muxable
+> pins can also handle GPIO.
 
-Yes.
+If each pin can either be just GPIO or some other function, wouldn't you
+only need to implement ops->gpio_request_enable (to set whatever bit was required
+for GPIO mode); you wouldn't need ops->request at all, since the non-GPIO case
+was always valid?
 
-> > There are two name-spaces there:
+> > Also, ops->gpio_request_enable should also be passed the GPIO number,
+> > so the driver can validate that it's the correct one.
+>
+> Normally I think the pinmux driver should have no knowledge of
+> such GPIO stuff.
+>
+> It's two totally separate number spaces here,
+> one for pins, one for GPIO:s, I definately don't want to create
+> cross-dependencies between these two.
+>
+> The basic assumption is that the pin number request coming in
+> is sane, that the user knows what it is asking for.
+
+Hmmm. I'd argue not to pass the GPIO number into the pinmux API at all then;
+that way, there's no GPIO-related data that one has to decide whether to
+validate or not.
+
+> > Often, only
+> > one value would be legal, but perhaps some pinmuxs allow 1 of N different
+> > GPIOs to be mapped to some pin, so selection of which GPIO is on par with
+> > selection of which special function to mux out, yet the driver still
+> > doesn't want to expose every GPIO possibility as a pinmux "function" due
+> > to explosion of the number of functions if it did that.
 > >
-> > 1) One used by clients: A global name-space, equivalent to
-> > pinmux_map.name.
+> > b) When ops->gpio_request_enable is called to request a pin, it'd be nice
+> > if the core could track this, and specifically call a new ops- >gpio_disable
+> > to free it, rather than the generic ops->free. There are two cases in HW:
 > >
-> > 2) One used by GPIO drivers: A per-driver name-space, equivalent to
-> > pinmux_map_entry.function.
+> > b1) "GPIO" is just another special function in a list, e.g. SPI, I2C, GPIO.
+> > In this case, free for a GPIO needs to either do nothing (the next call to
+> > request will simply set the desired function), or possibly do something to
+> > disable the pin in the same way as any other function. This works fine with
+> > a single free function.
 > >
-> > ... and the GPIO core maps from (1) to (2) above internally.
-> >
-> > In the pinmux case, since everything is named by a string rather than a
-> > linear number range, the mapping process needs the pinmux_map_entry.function
-> > field, rather than just substracting a GPIO driver's base GPIO number.
+> > b2) GPIO enable/disable is a separate concept from the pinmuxing; on Tegra
+> > it'll be implemented by calling tegra_gpio_enable/disable. As such, a
+> > single free function would require the pinmux driver to store state
+> > indicating whether ops->free should call tegra_gpio_disable, or whether it
+> > should do cleanup to the pinmux registers. Since the core is managing GPIO
+> > vs. function allocation, I think the storing that state in the core makes
+> > sense.
 >
-> I see you refer to the way that the global GPIO ID is mapped to an
-> offset into the respective GPIO driver by subtracting the offset of each
-> GPIO chip. (Correct me if wrong.)
-
-Yes.
-
-> I think I understand what you mean, but I would claim that that an
-> unsigned integer number space has quite different semantics from a
-> namespace for them to be compared in that way. For example
-> it is very simple and quick to map one into the other by a simple
-> subtraction of an offset.
+> I understand, I think.
 >
-> In this case, with the design above you need to know two
-> namespaces instead of one when writing your platform data,
-> and that makes things more complex in my view.
-
-Well, I suppose two namespaces is indeed more complex than 1.
-
-However, in the simple case of no duplicates, you can probably get away
-with using the same names in each namespace... And having the option to
-use two separate namespaces solves a bunch of problems I've talked about
-above.
-
-> So instead of using a simple 1D string "chip0::mmc0" to identify
-> some function in a specific driver, you use the tuple
-> ("chip0", "mmc0") and I think it's getting complex and hard to
-> express as struct members, but that may be because I don't
-> quite see how clever this is.
+> But I don't know if passing the gpio number into the pinmux
+> driver helps with that. To me it sounds like a reason to keep
+> then even more strictly separated so the pinmux driver have no
+> clue whatsoever what it is muxing, it just performs the muxing.
 >
-> To me it seems plausible that the easiest way
-> to do this is that if a driver wants a private namespace
-> it just defines a separator such as "::" in above and we provide
-> some simple string split function to get chipname and function
-> name from that.
+> I had this similar usecase (I think from Sascha?) where two slightly
+> different GPIO blocks (different drive strengths etc) would be alternatively
+> muxed onto the same pins, on a per-pin basis.
+
+I'd imagine selecting between the two GPIO blocks would be represented as
+two different functions for each pin then. Of course, that runs into the
+issue of an explosion in the number of functions, which brings me to:
+
+Within a pinmux driver, the definition of a function describes both the
+particular pin (or group of pins) it applies to and the functionality to
+mux onto those pins.
+
+Hence, if we want to represent "GPIO" as a function, we end up with e.g.
+gpio0, gpio1, ..., gpio99 as functions; an explosion.
+
+This is why we ended up with specific pinmux APIs for the "GPIO" case.
+But, those APIs break down a little when there are 2 GPIO controllers;
+pinmux_request_gpio() doesn't let you say you want to use a pin "for
+GPIO controller <n>", but just "as a GPIO".
+
+----------==========----------==========----------==========----------==========
+To solve this, I propose that the definition of a function not include
+any reference to a pin/pin-group.
+
+Instead, we could have a *single* "gpio" function, that may be applied
+to *any* pin/group (that supports it).
+
+Then, to represent two GPIO controllers, you just end up with two
+functions; "gpio0" and "gpio1".
+
+This would require a pinmux driver to expose data slightly differently:
+
+* A list of pins, each probably having a name.
+
+Examples might be " A1", " A2", "A3", ...
+
+* A list of functions, each probably having a name, but not list of pins.
+
+Examples might be "I2C 0 SDA", "I2C 0 SCL", "I2C 1 SDA", "UART 0 RX", ...
+
+* A table indicating which pins can support which function.
+
+An example might be:
+
+pin  functions
+A1   UART 0 RX, I2C 0 SDA
+A2   UART 0 TX, I2C 0 SCL
+...
+
+(as an aside, this is pretty much the data model in the existing Tegra
+pinmux driver; see arch/arm/mach-tegra/include/mach/pinmux*.h and
+arch/arm/mach-tegra/pinmux*.c) Perhaps I'm biased, not that I wrote any
+of the existing Tegra pinmux code.
+
+Internally, each pinmux driver would need a lookup table that maps from
+the tuple (pin, function) to "register value to program into HW", since
+selecting a particular function on pin A might be a different register
+value than selecting that same logical function on pin B.
+
+An example might be:
+
+pin  function   register_value
+A1   UART 0 RX  0
+A1   I2C 0 SDA  1
+A2   UART 0 RX  5
+...
+
+If pinmux drivers exported this data model, then the pinmux core could
+probably implement some of the error-checking I talked about above, such
+as ensuring that a particular logical function was not activated on
+multiple pins/groups at once.
+
+> In that case I think it was modeled such that say GPIO pins [0-N]
+> were considered the same pins [0-N] on the other chip too.
+> In that case I'd say it would be more clever to say that you have
+> GPIO pins [0..N] and [N+1...2N], then let the physical pins
+> behind that be a different issue altogether.
 >
-> Non-surprsingly, that is exactly what the drivers/leds subsystem
-> commonly does to identify LEDs on different chips:
-
-Interesting. Having a mapping be:
-
-       {
-               .dev_name = "tegra-sdhci.0",
-               .map_name = "2 bit",
-               .function = " tegra-pinmux.0::mmc0-1:0",
-       },
-
-Instead of:
-
-       {
-               .dev_name = "tegra-sdhci.0",
-               .map_name = "2 bit",
-               .pmx_dev_name = "tegra-pinmux.0",
-               .function = "mmc0-1:0",
-       },
-
-Seems fine to me.
-
-However, having the pinmux drivers statically define their prefixes in
-strings at compile-time doesn't seem correct; it prevents one from having
-multiple instances of the same pinmux/led driver; having separate fields
-makes this pretty easy, and avoids having to dynamically construct
-prefixed strings at runtime.
-
-> drivers/leds$ grep '::' *
-> dell-led.c:   .name           = "dell::lid",
-> leds-ams-delta.c:                     .name           = "ams-delta::camera",
-> leds-ams-delta.c:                     .name           = "ams-delta::advert",
-> leds-ams-delta.c:                     .name           = "ams-delta::email",
-> leds-ams-delta.c:                     .name           = "ams-delta::handsfree",
-> leds-ams-delta.c:                     .name           = "ams-delta::voicemail",
-> leds-ams-delta.c:                     .name           = "ams-delta::voice",
-> leds-clevo-mail.c:    .name                   = "clevo::mail",
-> leds-cobalt-qube.c:   .name                   = "qube::front",
-> leds-cobalt-raq.c:    .name           = "raq::web",
-> leds-cobalt-raq.c:    .name                   = "raq::power-off",
-> leds-net48xx.c:       .name           = "net48xx::error",
-> leds-wrap.c:  .name                   = "wrap::power",
-> leds-wrap.c:  .name           = "wrap::error",
-> leds-wrap.c:  .name           = "wrap::extra",
+> For these cases I generally feel we need actual code to get
+> somewhere, it might get into too much premature upfront design
+> otherwise. I think it's better to look at patches here.
 >
-> So can't we use such a convention and some helpers
-> like drivers/leds does instead of trying to actually match
-> split the namespace to C struct members? It's still a
-> namespace, it's just not expressed in C, but in string
-> structure.
+> > Thanks for reading. Hopefully this email didn't jump about too much.
 >
-> If the first part (before the "::") shall be unique per
-> chip instance, that can be generated in runtime from
-> the device name or some specific .init_name to make
-> sure it does not vary too much.
->
-> If you're uncertain what to think about this I can implement
-> this namespacing scheme for U300 so we have some example?
->
-> So to summarize there are two related areas of discussion
-> here:
->
-> 1. Whether a pinmux map shall map one or 1..N functions
-> 2. How to handle per-driver instance namespacing of functions
->
-> In both cases I'm currently using simple strings and claiming
-> that by namespacing these strings cleverly we can avoid
-> complexity. So my answer to these are:
->
-> 1. Use several functions with ovelapping maps, just name
->   them differently
-> 2. Use a string convention and namespace by using
->   platform/machine/package data and string conventions
->   such as a "::" separator
-
-OK. I think I've address what I see as the disadvantages in those
-solutions in my rather long-wided discussions above:-)
-
-> While I *think* (and DO correct me!) that you would argue:
->
-> 1. Make it possible to map several functions to a single
->   device map
-
-Yes.
-
-> 2. Namespace device instances by different map field
->   members referring to specific instances
-
-Yes.
-
-> Is this correctly understood, even if we may not agree?
+> No problem... The more I read the more I learn.
 >
 > Thanks,
 > Linus Walleij
