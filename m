@@ -1,113 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757058Ab1FPH30 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:29:26 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57200 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756409Ab1FPH3W (ORCPT
+	id S1755915Ab1FPHda (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:33:30 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:53414 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755946Ab1FPHdR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:29:22 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DF9B0A3.4030904@jp.fujitsu.com>
-Date: Thu, 16 Jun 2011 16:28:35 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Thu, 16 Jun 2011 03:33:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=l3bcHD4j1NMPeJhUY0uNCMpDJG6vBzcE58VIUr2gaMBzDWwHy9AzUlA5y616rFcB0c
+         wD7n4x5RoeOZTNKClY68pMvBG0pnRz9zMIqcj83jfQTSgsnkhnVFbmH2l0Qe4xCUaaP2
+         NX0sWTR2vhbLMA9SZgT7RDTPCpdzzcbX7/z6c=
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] x86, mce: stop calling del_timer_sync() from interrupt
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110616072452.GA15366@elte.hu>
+References: <1308153214.7566.6.camel@jaguar>
+	<4DF8DE26.1070301@redhat.com>
+	<BANLkTi=SHENDBHdtFY_7_qtfqJb_+qKJSw@mail.gmail.com>
+	<BANLkTinMDz-sqaX0cyWEoLXt70dowxofvg@mail.gmail.com>
+	<4DF92C80.3030106@codemonkey.ws>
+	<7A30A509-47AA-4E72-ABF3-937005900F9D@suse.de>
+	<BANLkTi=Jm_50m6qyfQPCF0PuwUfuDNwMtg@mail.gmail.com>
+	<20110616072452.GA15366@elte.hu>
+Date: Thu, 16 Jun 2011 10:33:16 +0300
+X-Google-Sender-Auth: U2gd5VpfM45UrKqG58ht9pMIM1U
+Message-ID: <BANLkTikkgsZFLq-X0L2mzKucJetGyOmJNQ@mail.gmail.com>
+Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
+From: Pekka Enberg <penberg@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Alexander Graf <agraf@suse.de>, Anthony Liguori <anthony@codemonkey.ws>,
+        Prasad Joshi <prasadjoshi124@gmail.com>, Avi Kivity <avi@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>,
+        Jens Axboe <jaxboe@fusionio.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use of on_each_cpu() results in calling the function passed as the
-argument on interrupt context.
-Calling del_timer_sync() from interrupt context can cause deadlock
-if it interrupts the target timer running.
+Hi Ingo,
 
-MCE code has some such misuse of del_timer_sync() in parts for sysfs
-file; bank*, check_interval, cmci_disabled and ignore_ce.
-Fortunately these files are rare-used but you will be warned on write.
+On Thu, Jun 16, 2011 at 10:24 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>  - executing AIO in the vcpu thread eats up precious vcpu execution
+>   time: combined QCOW2 throughput would be limited by a single
+>   core's performance, and any time spent on QCOW2 processing would
+>   not be spent running the guest CPU. (In such a model we certainly
+>   couldnt do more intelligent, CPU-intense storage solutions like on
+>   the fly compress/decompress of QCOW2 data.)
 
-This patch will fix it.
+Most image formats have optional on-the-fly compression/decompression
+so we'd need to keep the current I/O thread scheme anyway.
 
-Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
----
- arch/x86/kernel/cpu/mcheck/mce.c |   22 ++++++++++++++++------
- 1 files changed, 16 insertions(+), 6 deletions(-)
+> I'd only consider KAIO it if it provides some *real* measurable
+> performance advantage of at least 10% in some important usecase.
+> A few percent probably wouldnt be worth it.
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index ff1ae9b..77df54f 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1170,6 +1170,17 @@ static void mce_start_timer(unsigned long data)
- 	add_timer_on(t, smp_processor_id());
- }
- 
-+/* Must not be called from interrupt where del_timer_sync() can deadlock */
-+static void mce_timer_delete_all(void)
-+{
-+	int cpu;
-+
-+	for_each_online_cpu(cpu) {
-+		if (mce_available(&per_cpu(cpu_info, cpu)))
-+			del_timer_sync(&per_cpu(mce_timer, cpu));
-+	}
-+}
-+
- static void mce_do_trigger(struct work_struct *work)
- {
- 	call_usermodehelper(mce_helper, mce_helper_argv, NULL, UMH_NO_WAIT);
-@@ -1768,7 +1779,6 @@ static struct syscore_ops mce_syscore_ops = {
- 
- static void mce_cpu_restart(void *data)
- {
--	del_timer_sync(&__get_cpu_var(mce_timer));
- 	if (!mce_available(__this_cpu_ptr(&cpu_info)))
- 		return;
- 	__mcheck_cpu_init_generic();
-@@ -1778,16 +1788,15 @@ static void mce_cpu_restart(void *data)
- /* Reinit MCEs after user configuration changes */
- static void mce_restart(void)
- {
-+	mce_timer_delete_all();
- 	on_each_cpu(mce_cpu_restart, NULL, 1);
- }
- 
- /* Toggle features for corrected errors */
--static void mce_disable_ce(void *all)
-+static void mce_disable_cmci(void *data)
- {
- 	if (!mce_available(__this_cpu_ptr(&cpu_info)))
- 		return;
--	if (all)
--		del_timer_sync(&__get_cpu_var(mce_timer));
- 	cmci_clear();
- }
- 
-@@ -1870,7 +1879,8 @@ static ssize_t set_ignore_ce(struct sys_device *s,
- 	if (mce_ignore_ce ^ !!new) {
- 		if (new) {
- 			/* disable ce features */
--			on_each_cpu(mce_disable_ce, (void *)1, 1);
-+			mce_timer_delete_all();
-+			on_each_cpu(mce_disable_cmci, NULL, 1);
- 			mce_ignore_ce = 1;
- 		} else {
- 			/* enable ce features */
-@@ -1893,7 +1903,7 @@ static ssize_t set_cmci_disabled(struct sys_device *s,
- 	if (mce_cmci_disabled ^ !!new) {
- 		if (new) {
- 			/* disable cmci */
--			on_each_cpu(mce_disable_ce, NULL, 1);
-+			on_each_cpu(mce_disable_cmci, NULL, 1);
- 			mce_cmci_disabled = 1;
- 		} else {
- 			/* enable cmci */
--- 
-1.7.1
+I've only been following AIO kernel development from the sidelines but
+I really haven't seen any reports of significant gains over
+read()/write() from a thread pool. Are there any such reports?
 
-
+                          Pekka
