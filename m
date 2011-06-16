@@ -1,66 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758658Ab1FPSiP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 14:38:15 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44354 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687Ab1FPSiK (ORCPT
+	id S1758501Ab1FPSgV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 14:36:21 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:47572 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752687Ab1FPSgT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 14:38:10 -0400
-Message-ID: <4DFA4CD9.9070601@solonet.org.ua>
-Date: Thu, 16 Jun 2011 21:35:05 +0300
-From: Denis Kuzmenko <list@solonet.org.ua>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-CC: Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm mach-s3c2440 mach-mini2440: New LCD-W35i support
-References: <4DF7C50A.7060602@solonet.org.ua> <4DF9EA45.3020101@ru.mvista.com>
-In-Reply-To: <4DF9EA45.3020101@ru.mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 16 Jun 2011 14:36:19 -0400
+Date: Thu, 16 Jun 2011 11:35:57 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Patil, Kiran" <kiran.patil@intel.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: [PATCH -next] target: fix tfc_io.c printk format warning
+Message-Id: <20110616113557.0e0b8abe.randy.dunlap@oracle.com>
+In-Reply-To: <1306183644.29724.55.camel@haakon2.linux-iscsi.org>
+References: <20110523154518.5e27cfb0.sfr@canb.auug.org.au>
+	<20110523113555.e37bc856.randy.dunlap@oracle.com>
+	<1306183644.29724.55.camel@haakon2.linux-iscsi.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090206.4DFA4D1B.0077:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2011 02:34 PM, Sergei Shtylyov wrote:
-> Hello.
-> Your signoff needs to be here. Sorry -- didn't notice the first time.
-> The patch has all tabs converted to spaces. Didn't notice it the first
-> time as well... :-/
+On Mon, 23 May 2011 13:47:24 -0700 Nicholas A. Bellinger wrote:
 
-Thanks for comments. How about this one?
+> On Mon, 2011-05-23 at 11:35 -0700, Randy Dunlap wrote:
+> > From: Randy Dunlap <randy.dunlap@oracle.com>
+> > 
+> > Fix printk format warning:
+> > 
+> > drivers/target/tcm_fc/tfc_io.c:209: warning: format '%x' expects type 'unsigned int', but argument 5 has type 'size_t'
+> > 
+> > Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> > ---
+> 
+> Hey Randy,
+> 
+> Kiran (CC'ed) was going to include this along with a bugfix patch for
+> scsi-misc, but it's probably easier to just change this in linux-next
+> now..
 
-From: Denis Kuzmenko <dart@solonet.org.ua>
-Date: 2011-06-16 21:30:00 +0300
+Hey Nick,
 
-LCD-W35i support for Mini2440 development board
+Is there some way to have this patch merged for linux-next and mainline?
 
-Signed-off-by: Denis Kuzmenko <dart@solonet.org.ua>
+Thanks.
 
---- linux-2.6.39.1/arch/arm/mach-s3c2440/mach-mini2440.c	2011-06-03 
-03:34:20.000000000 +0300
-+++ linux-2.6.39.1-dart/arch/arm/mach-s3c2440/mach-mini2440.c	2011-06-13 
-23:37:38.785984118 +0300
-@@ -167,6 +167,20 @@ static struct s3c2410fb_display mini2440
-  		.lcdcon5	= (S3C2410_LCDCON5_FRM565 |
-  				   S3C2410_LCDCON5_HWSWP),
-  	},
-+	/* LCD-W35i 3.5" display (LQ035Q1DG06)*/
-+	[3] = {
-+		_LCD_DECLARE(
-+			7,		/* clock */
-+			320, 68, 66, 4,	/* xres, margin_right, margin_left, hsync */
-+			240, 4, 4, 9,	/* yres, margin_top, margin_bottom, vsync */
-+			60),		/* refresh rate */
-+		.lcdcon5	= (S3C2410_LCDCON5_FRM565 |
-+				   S3C2410_LCDCON5_INVVDEN |
-+				   S3C2410_LCDCON5_INVVFRAME |
-+				   S3C2410_LCDCON5_INVVLINE |
-+				   S3C2410_LCDCON5_INVVCLK |
-+				   S3C2410_LCDCON5_HWSWP),
-+	},
-  };
+> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> 
+> >  drivers/target/tcm_fc/tfc_io.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > and please put an entry in the MAINTAINERS file for drivers/target/
+> > 
+> 
+> <nod>, sending out that patch shortly.
+> 
+> Thanks,
+> 
+> --nab
+> 
+> > 
+> > --- linux-next-20110523.orig/drivers/target/tcm_fc/tfc_io.c
+> > +++ linux-next-20110523/drivers/target/tcm_fc/tfc_io.c
+> > @@ -203,7 +203,7 @@ int ft_queue_data_in(struct se_cmd *se_c
+> >  			/* XXX For now, initiator will retry */
+> >  			if (printk_ratelimit())
+> >  				printk(KERN_ERR "%s: Failed to send frame %p, "
+> > -						"xid <0x%x>, remaining <0x%x>, "
+> > +						"xid <0x%x>, remaining <0x%zx>, "
+> >  						"lso_max <0x%x>\n",
+> >  						__func__, fp, ep->xid,
+> >  						remaining, lport->lso_max);
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-next" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-  /* todo - put into gpio header */
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
