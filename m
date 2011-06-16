@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318Ab1FPTti (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 15:49:38 -0400
-Received: from higgs.elka.pw.edu.pl ([194.29.160.5]:56167 "EHLO
-	higgs.elka.pw.edu.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932307Ab1FPTtg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 15:49:36 -0400
-X-Comment: RFC 2476 MSA function at elektron.elka.pw.edu.pl logged sender identity as: wzabolot
-Message-ID: <4DFA5E41.5090803@ise.pw.edu.pl>
-Date: Thu, 16 Jun 2011 21:49:21 +0200
-From: wzab <wzab@ise.pw.edu.pl>
-Reply-To: wzab@ise.pw.edu.pl
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Icedove/3.1.10
+	id S932275Ab1FPTyH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 15:54:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36620 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758141Ab1FPTyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 15:54:02 -0400
+Date: Thu, 16 Jun 2011 21:51:38 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
+        pedro@codesourcery.com
+Subject: Re: [PATCH 4/5] ptrace: implement TRAP_NOTIFY and use it for group
+	stop events
+Message-ID: <20110616195138.GB14786@redhat.com>
+References: <1308043218-23619-1-git-send-email-tj@kernel.org> <1308043218-23619-5-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: maciej.rutecki@gmail.com
-Subject: Probably solved or worked around: 2.6.37 says WARNING: at arch/x86/kernel/apic/apic.c:1287
- setup_local_APIC+0x18f/0x263()
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308043218-23619-5-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I had similar problems as reported in 
-https://bugzilla.kernel.org/show_bug.cgi?id=27642
+On 06/14, Tejun Heo wrote:
+>
+> When group stop state of a seized tracee changes, JOBCTL_TRAP_NOTIFY
+> is set,
 
-I was using buildroot buildroot-2011.02 with kernel 2.6.37.2 on virtual 
-machine inside of QEMU
-The warning shown in the subject further lead to incorrect routing of 
-IRQs from PCI devices
-connected withg QEMU's option "-device DEVICE_NAME".
+I already applied this series. But somehow I have the fuzzy feeling we
+can simplify JOBCTL_TRAP_NOTIFY/JOBCTL_TRAP_STOP logic later. No, I can't
+explain what I mean ;)
 
-The warning was reported as:
-------------[ cut here ]------------
-WARNING: at arch/x86/kernel/apic/apic.c:1287 setup_local_APIC+0x22a/0x34d()
-Hardware name: Bochs
-Modules linked in:
-Pid: 0, comm: kworker/0:0 Tainted: G        W   2.6.37 #3
-Call Trace:
-  [<c102f318>] ? warn_slowpath_common+0x78/0xb0
-  [<c12ebde5>] ? setup_local_APIC+0x22a/0x34d
-  [<c12ebde5>] ? setup_local_APIC+0x22a/0x34d
-  [<c102f36b>] ? warn_slowpath_null+0x1b/0x20
-  [<c12ebde5>] ? setup_local_APIC+0x22a/0x34d
-  [<c12eb0d8>] ? start_secondary+0xd3/0x1c1
----[ end trace 4eaa2a86a8e2da23 ]---
+One question,
 
-And IRQs were routed as follows:
+> @@ -1797,8 +1824,10 @@ static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
+>  	if (why == CLD_STOPPED && (current->jobctl & JOBCTL_STOP_PENDING))
+>  		gstop_done = task_participate_group_stop(current);
+>
+> -	/* any trap clears pending STOP trap */
+> +	/* any trap clears pending STOP trap, STOP trap clears NOTIFY */
+>  	task_clear_jobctl_pending(current, JOBCTL_TRAP_STOP);
+> +	if (info && info->si_code >> 8 == PTRACE_EVENT_STOP)
+> +		task_clear_jobctl_pending(current, JOBCTL_TRAP_NOTIFY);
 
-wzab_enc1 0000:00:04.0: PCI->APIC IRQ transform: INT A -> IRQ 35
-  mmio_start=f2060000, mmio_end=f2060fff, mmio_len=1000, irq=35
+OK, but can't we check why == CLD_STOPPED instead of PTRACE_EVENT_STOP?
 
-IRQ35 was not available in the emulated system so driver was not able to 
-request it.
+In fact, can't we move all code above under 'if (why == CLD_STOPPED)' ?
+JOBCTL_TRAP_STOP can't be set otherwise, no? I am almost sure I missed
+something though.
 
-The problem disappeared, after I have switched on the following options 
-in kernel configuration:
-CONFIG_PM=y
-CONFIG_ACPI=y
-
-I have verified, that this resulted in automatic selection of option
-CONFIG_PCI_IOAPIC=y
-
-After recompilation of kernel, I don't get the mentioned warning during 
-the boot
-and IRQs are routed correctly:
-ACPI: PCI Interrupt Link [LNKD] enabled at IRQ 11
-wzab_enc1 0000:00:04.0: PCI INT A -> Link[LNKD] -> GSI 11 (level, high) 
--> IRQ 11
-  mmio_start=f2060000, mmio_end=f2060fff, mmio_len=1000, irq=11
-
--- 
-HTH & Regards,
-Wojtek
-
-
-
-
+Oleg.
 
