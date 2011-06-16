@@ -1,178 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758173Ab1FPOIl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 10:08:41 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52191 "EHLO hera.kernel.org"
+	id S1758182Ab1FPOIz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 10:08:55 -0400
+Received: from mga03.intel.com ([143.182.124.21]:21132 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755253Ab1FPOIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 10:08:38 -0400
-Date: Thu, 16 Jun 2011 14:08:25 GMT
-From: tip-bot for Steven Rostedt <srostedt@redhat.com>
-Message-ID: <tip-0286d2d12d78ea8aaf0722473dd20cb609a99709@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rostedt@goodmis.org, srostedt@redhat.com, jreiser@bitwagon.com,
-        tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, srostedt@redhat.com, jreiser@bitwagon.com,
-        tglx@linutronix.de
-In-Reply-To: <20110421023739.723658553@goodmis.org>
-References: <20110421023739.723658553@goodmis.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] ftrace/recordmcount: Add helper function get_sym_str_and_relp()
-Git-Commit-ID: 0286d2d12d78ea8aaf0722473dd20cb609a99709
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Jun 2011 14:08:25 +0000 (UTC)
+	id S1755253Ab1FPOIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 10:08:53 -0400
+Message-Id: <d08817$d6fmn@azsmga001.ch.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,375,1304319600"; 
+   d="scan'208";a="13844183"
+Date: Thu, 16 Jun 2011 15:08:48 +0100
+To: Paul Rolland <rol@witbe.net>, linux-kernel@vger.kernel.org,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
+Subject: Re: [3.0.0-rc3] GMBUS timed out
+Cc: rol@witbe.net
+References: <20110616154123.259414a3@tux.DEF.witbe.net>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <20110616154123.259414a3@tux.DEF.witbe.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0286d2d12d78ea8aaf0722473dd20cb609a99709
-Gitweb:     http://git.kernel.org/tip/0286d2d12d78ea8aaf0722473dd20cb609a99709
-Author:     Steven Rostedt <srostedt@redhat.com>
-AuthorDate: Wed, 20 Apr 2011 21:13:06 -0400
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Tue, 17 May 2011 10:42:02 -0400
+On Thu, 16 Jun 2011 15:41:23 +0200, Paul Rolland (=?UTF-8?B?44Od44O844Or44O744Ot44Op44Oz?=)  <rol@witbe.net> wrote:
+> Hello,
+> 
+> I've just booted 3.0.0-rc3 on my machine, and I got that message :
+> Jun 16 15:32:07 tux kernel: [drm] GMBUS timed out, falling back to bit banging on pin 5 [i915 gmbus dpb]
+> 
+> I've checked my logs, and I never got that with my previous 2.6.39.1
+> kernel, so that looks like something new to 3.x.
 
-ftrace/recordmcount: Add helper function get_sym_str_and_relp()
+Attempting to use GMBUS when enabled for 3.0. It will have to be
+disabled again until the GMBUS/GPIO adapter aligns better with the i2c
+interface and doesn't cause a deadlock upon booting with the eeprom
+module.
 
-The code to get the symbol, string, and relp pointers in the two functions
-sift_rel_mcount() and nop_mcount() are identical and also non-trivial.
-Moving this duplicate code into a single helper function makes the code
-easier to read and more maintainable.
+In the meantime, if you have the time and inclination, you can help by
+working out under what conditions GMBUS fails. That info message is only
+generated after we write a message over GMBUS and receive no response.
+I've looked into one exchange that suggests that we may timeout if the
+monitor is disconnected. Do you have anything connected to what would be
+the first external output? Does the message go away if you boot with
+that connected/disconnected?
+ 
+> Should I report more details (and if so, which ones) or is that harmless
+> (though I doubt kernel messages about a time out are harmless ;)
 
-Cc: John Reiser <jreiser@bitwagon.com>
-Link: http://lkml.kernel.org/r/20110421023739.723658553@goodmis.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- scripts/recordmcount.h |   67 ++++++++++++++++++++++++++---------------------
- 1 files changed, 37 insertions(+), 30 deletions(-)
+It's harmless in this case. Just a warning that the new hw driven method
+failed and we are now using the old CPU driven method.
+-Chris
 
-diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
-index deb6a51..3c00fab 100644
---- a/scripts/recordmcount.h
-+++ b/scripts/recordmcount.h
-@@ -29,6 +29,7 @@
- #undef has_rel_mcount
- #undef tot_relsize
- #undef get_mcountsym
-+#undef get_sym_str_and_relp
- #undef do_func
- #undef Elf_Addr
- #undef Elf_Ehdr
-@@ -56,6 +57,7 @@
- # define __has_rel_mcount	__has64_rel_mcount
- # define has_rel_mcount		has64_rel_mcount
- # define tot_relsize		tot64_relsize
-+# define get_sym_str_and_relp	get_sym_str_and_relp_64
- # define do_func		do64
- # define get_mcountsym		get_mcountsym_64
- # define is_fake_mcount		is_fake_mcount64
-@@ -86,6 +88,7 @@
- # define __has_rel_mcount	__has32_rel_mcount
- # define has_rel_mcount		has32_rel_mcount
- # define tot_relsize		tot32_relsize
-+# define get_sym_str_and_relp	get_sym_str_and_relp_32
- # define do_func		do32
- # define get_mcountsym		get_mcountsym_32
- # define is_fake_mcount		is_fake_mcount32
-@@ -260,6 +263,29 @@ static unsigned get_mcountsym(Elf_Sym const *const sym0,
- 	return mcountsym;
- }
- 
-+static void get_sym_str_and_relp(Elf_Shdr const *const relhdr,
-+				 Elf_Ehdr const *const ehdr,
-+				 Elf_Sym const **sym0,
-+				 char const **str0,
-+				 Elf_Rel const **relp)
-+{
-+	Elf_Shdr *const shdr0 = (Elf_Shdr *)(_w(ehdr->e_shoff)
-+		+ (void *)ehdr);
-+	unsigned const symsec_sh_link = w(relhdr->sh_link);
-+	Elf_Shdr const *const symsec = &shdr0[symsec_sh_link];
-+	Elf_Shdr const *const strsec = &shdr0[w(symsec->sh_link)];
-+	Elf_Rel const *const rel0 = (Elf_Rel const *)(_w(relhdr->sh_offset)
-+		+ (void *)ehdr);
-+
-+	*sym0 = (Elf_Sym const *)(_w(symsec->sh_offset)
-+				  + (void *)ehdr);
-+
-+	*str0 = (char const *)(_w(strsec->sh_offset)
-+			       + (void *)ehdr);
-+
-+	*relp = rel0;
-+}
-+
- /*
-  * Look at the relocations in order to find the calls to mcount.
-  * Accumulate the section offsets that are found, and their relocation info,
-@@ -276,26 +302,16 @@ static uint_t *sift_rel_mcount(uint_t *mlocp,
- {
- 	uint_t *const mloc0 = mlocp;
- 	Elf_Rel *mrelp = *mrelpp;
--	Elf_Shdr *const shdr0 = (Elf_Shdr *)(_w(ehdr->e_shoff)
--		+ (void *)ehdr);
--	unsigned const symsec_sh_link = w(relhdr->sh_link);
--	Elf_Shdr const *const symsec = &shdr0[symsec_sh_link];
--	Elf_Sym const *const sym0 = (Elf_Sym const *)(_w(symsec->sh_offset)
--		+ (void *)ehdr);
--
--	Elf_Shdr const *const strsec = &shdr0[w(symsec->sh_link)];
--	char const *const str0 = (char const *)(_w(strsec->sh_offset)
--		+ (void *)ehdr);
--
--	Elf_Rel const *const rel0 = (Elf_Rel const *)(_w(relhdr->sh_offset)
--		+ (void *)ehdr);
-+	Elf_Sym const *sym0;
-+	char const *str0;
-+	Elf_Rel const *relp;
- 	unsigned rel_entsize = _w(relhdr->sh_entsize);
- 	unsigned const nrel = _w(relhdr->sh_size) / rel_entsize;
--	Elf_Rel const *relp = rel0;
--
- 	unsigned mcountsym = 0;
- 	unsigned t;
- 
-+	get_sym_str_and_relp(relhdr, ehdr, &sym0, &str0, &relp);
-+
- 	for (t = nrel; t; --t) {
- 		if (!mcountsym)
- 			mcountsym = get_mcountsym(sym0, relp, str0);
-@@ -331,27 +347,18 @@ static void nop_mcount(Elf_Shdr const *const relhdr,
- {
- 	Elf_Shdr *const shdr0 = (Elf_Shdr *)(_w(ehdr->e_shoff)
- 		+ (void *)ehdr);
--	unsigned const symsec_sh_link = w(relhdr->sh_link);
--	Elf_Shdr const *const symsec = &shdr0[symsec_sh_link];
--	Elf_Sym const *const sym0 = (Elf_Sym const *)(_w(symsec->sh_offset)
--		+ (void *)ehdr);
--
--	Elf_Shdr const *const strsec = &shdr0[w(symsec->sh_link)];
--	char const *const str0 = (char const *)(_w(strsec->sh_offset)
--		+ (void *)ehdr);
--
--	Elf_Rel const *const rel0 = (Elf_Rel const *)(_w(relhdr->sh_offset)
--		+ (void *)ehdr);
-+	Elf_Sym const *sym0;
-+	char const *str0;
-+	Elf_Rel const *relp;
-+	Elf_Shdr const *const shdr = &shdr0[w(relhdr->sh_info)];
- 	unsigned rel_entsize = _w(relhdr->sh_entsize);
- 	unsigned const nrel = _w(relhdr->sh_size) / rel_entsize;
--	Elf_Rel const *relp = rel0;
--
--	Elf_Shdr const *const shdr = &shdr0[w(relhdr->sh_info)];
--
- 	unsigned mcountsym = 0;
- 	unsigned t;
- 	int once = 0;
- 
-+	get_sym_str_and_relp(relhdr, ehdr, &sym0, &str0, &relp);
-+
- 	for (t = nrel; t; --t) {
- 		int ret = -1;
- 
+-- 
+Chris Wilson, Intel Open Source Technology Centre
