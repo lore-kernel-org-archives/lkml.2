@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757168Ab1FPHcB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:32:01 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:58004 "EHLO
+	id S1757181Ab1FPHbd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:31:33 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:48440 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752986Ab1FPHBb (ORCPT
+	by vger.kernel.org with ESMTP id S1755999Ab1FPHBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:01:31 -0400
-X-Sasl-enc: sDxXtFrCL8BMhe3ueSwEuvgEAwANh43d8BuxbLtEmbZQ 1308207691
+	Thu, 16 Jun 2011 03:01:33 -0400
+X-Sasl-enc: WbYF0DHnNnJ0LebmRVdA2zRLJxQj2qAKhEF9xvPj8hOh 1308207692
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:36 2011
-Message-Id: <20110616000235.950759607@clark.kroah.org>
+Message-Id: <20110616000236.053358245@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:00:34 -0700
+Date: Wed, 15 Jun 2011 17:00:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [71/89] ALSA: hda: Fix quirk for Dell Inspiron 910
+        Robert Richter <robert.richter@amd.com>
+Subject: [72/89] oprofile: Free potentially owned tasks in case of errors
 In-Reply-To: <20110616000258.GA14529@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,36 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: Robert Richter <robert.richter@amd.com>
 
-commit 0a1896b27b030529ec770aefd790544a1bdb7d5a upstream.
+commit 6ac6519b93065625119a347be1cbcc1b89edb773 upstream.
 
-BugLink: https://launchpad.net/bugs/792712
+After registering the task free notifier we possibly have tasks in our
+dying_tasks list. Free them after unregistering the notifier in case
+of an error.
 
-The original reporter states that sound from the internal speakers is
-inaudible until using the model=auto quirk. This symptom is due to an
-existing quirk mask for 0x102802b* that uses the model=dell quirk. To
-limit the possible regressions, leave the existing quirk mask but add
-a higher priority specific mask for the reporter's PCI SSID.
-
-Reported-and-tested-by: rodni hipp
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/oprofile/buffer_sync.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -13804,6 +13804,7 @@ static struct snd_pci_quirk alc268_cfg_t
- 	SND_PCI_QUIRK(0x1025, 0x015b, "Acer Aspire One",
- 						ALC268_ACER_ASPIRE_ONE),
- 	SND_PCI_QUIRK(0x1028, 0x0253, "Dell OEM", ALC268_DELL),
-+	SND_PCI_QUIRK(0x1028, 0x02b0, "Dell Inspiron 910", ALC268_AUTO),
- 	SND_PCI_QUIRK_MASK(0x1028, 0xfff0, 0x02b0,
- 			"Dell Inspiron Mini9/Vostro A90", ALC268_DELL),
- 	/* almost compatible with toshiba but with optional digital outs;
+--- a/drivers/oprofile/buffer_sync.c
++++ b/drivers/oprofile/buffer_sync.c
+@@ -141,6 +141,13 @@ static struct notifier_block module_load
+ 	.notifier_call = module_load_notify,
+ };
+ 
++static void free_all_tasks(void)
++{
++	/* make sure we don't leak task structs */
++	process_task_mortuary();
++	process_task_mortuary();
++}
++
+ int sync_start(void)
+ {
+ 	int err;
+@@ -174,6 +181,7 @@ out3:
+ 	profile_event_unregister(PROFILE_TASK_EXIT, &task_exit_nb);
+ out2:
+ 	task_handoff_unregister(&task_free_nb);
++	free_all_tasks();
+ out1:
+ 	free_cpumask_var(marked_cpus);
+ 	goto out;
+@@ -192,10 +200,7 @@ void sync_stop(void)
+ 	mutex_unlock(&buffer_mutex);
+ 	flush_cpu_work();
+ 
+-	/* make sure we don't leak task structs */
+-	process_task_mortuary();
+-	process_task_mortuary();
+-
++	free_all_tasks();
+ 	free_cpumask_var(marked_cpus);
+ }
+ 
 
 
