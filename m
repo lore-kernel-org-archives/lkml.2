@@ -1,133 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758273Ab1FPOZb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 10:25:31 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:18611 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757312Ab1FPOZ1 (ORCPT
+	id S1758239Ab1FPOYr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 10:24:47 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40580 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757312Ab1FPOYq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 10:25:27 -0400
-Date: Thu, 16 Jun 2011 10:24:40 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        davej@redhat.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, cpufreq@vger.kernel.org, andre.przywara@amd.com,
-        Mark.Langsdorf@amd.com
-Subject: Re: [PATCH 1/2] [CPUFREQ] powernow-k8: Don't notify of successful
- transition if we failed.
-Message-ID: <20110616142440.GA5576@dumpdata.com>
-References: <1308164520-14145-1-git-send-email-konrad.wilk@oracle.com>
- <1308164520-14145-2-git-send-email-konrad.wilk@oracle.com>
- <20110615221636.GB9725@liondog.tnic>
- <20110615222608.GA14031@dumpdata.com>
+	Thu, 16 Jun 2011 10:24:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:content-type;
+        b=HIK/sbtPtXGpzbhj9kzzV3RuJC+USNufW6vZC0HPjOyoXfhyO0eZlOcxfkdfT9MkEM
+         38ItsKvwmqIKXlfLKZjAxGnbGsyRnQCjSi0QUOWGv/c59ygqstgL6T15CnusfBhYfjxM
+         zB8slKFjM9z4j4cPHzq4BclScgpWA3zc8DRmc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110615222608.GA14031@dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4DFA1234.0078:SCFMA922111,ss=1,fgs=0
+Date: Thu, 16 Jun 2011 10:24:44 -0400
+X-Google-Sender-Auth: Ouu-qr45nkuaSjE56Jk8ImVTnMk
+Message-ID: <BANLkTi=WU6h_0jOVL=_VwJawZd4qVnU-EA@mail.gmail.com>
+Subject: signalfd() question - interaction with threads
+From: Colin Walters <walters@verbum.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 06:26:08PM -0400, Konrad Rzeszutek Wilk wrote:
-> > > @@ -1112,6 +1114,9 @@ static int transition_frequency_pstate(struct powernow_k8_data *data,
-> > >  	}
-> > >  
-> > >  	res = transition_pstate(data, pstate);
-> > > +	if (res)
-> > > +		return res;
-> > 
-> > That's wrong because transition_pstate() returns 0 unconditionally
-> > (at least it does so on 3.0-rc3). But this change accidentally fixes
-> > a different bug because res is used uninitialized, containing stack
-> > garbage otherwise.
-> > 
-> > A proper fix should be to check against data->max_hw_pstate and
-> > check whether the entry is not CPUFREQ_ENTRY_INVALID (look at
-> > fill_powernow_table_pstate() for example).
-> 
-> Aha! I can respin a patch for that tomorrow.
+Hi,
 
-I divided it in two patches - so that the Reported/Tested-by tag is on
-the translate_vid patch with its full glory of explanation. The
-pstate checking is removed.
+So in a bit of spare time I have been trying to make GLib use some
+more modern Linux features, in particular signalfd().  The quick link
+for that is here:
+https://bugzilla.gnome.org/show_bug.cgi?id=652072
 
-Will post the other patch under a different subject.
+But I ran into a problem - I don't necessarily control all of the
+threads in the process, and if any one of them has the signal
+unblocked, it will be handled according to its default disposition
+there instead of where I want - in the signalfd.
 
->From 3ae9a2094d893ab1a500833a48cb29e0f1c81ed8 Mon Sep 17 00:00:00 2001
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Thu, 16 Jun 2011 09:02:57 -0400
-Subject: [PATCH 1/2] [CPUFREQ] powernow-k8: Don't notify of successful
- transition if we failed (vid case).
-
-Before this patch if we failed the vid transition would still try to
-submit the "new" frequencies to cpufreq.
-That is incorrect - also we could submit a non-existing frequency value
-which would cause cpufreq to crash. The ultimate fix is in cpufreq
-to deal with incorrect values, but this patch improves the error
-recovery in the AMD powernowk8 driver.
-
-The failure that was reported was as follow:
-
-powernow-k8: Found 1 AMD Athlon(tm) 64 Processor 3700+ (1 cpu cores) (version 2.20.00)
-powernow-k8: fid 0x2 (1000 MHz), vid 0x12
-powernow-k8: fid 0xa (1800 MHz), vid 0xa
-powernow-k8: fid 0xc (2000 MHz), vid 0x8
-powernow-k8: fid 0xe (2200 MHz), vid 0x8
-Marking TSC unstable due to cpufreq changes
-powernow-k8: fid trans failed, fid 0x2, curr 0x0
-BUG: unable to handle kernel paging request at ffff880807e07b78
-IP: [<ffffffff81479163>] cpufreq_stats_update+0x46/0x5b
-...
-
-And transition fails and data->currfid ends up with 0. Since
-the machine does not support 800Mhz value when the calculation is
-done ('find_khz_freq_from_fid(data->currfid);') it reports the
-new frequency as 800000 which is bogus. This patch fixes
-the issue during target setting.
-
-The patch however does not fix the issue in 'powernowk8_cpu_init'
-where the pol->cur can also be set with the 800000 value:
-
-          pol->cur = find_khz_freq_from_fid(data->currfid);
-  dprintk("policy current frequency %d kHz\n", pol->cur);
-
-  /* min/max the cpu is capable of */
-  if (cpufreq_frequency_table_cpuinfo(pol, data->powernow_table)) {
-
-The fix for that looks to update cpufreq_frequency_table_cpuinfo to
-check pol->cur.... but that would cause an regression in how the
-acpi-cpufreq driver works (it sets cpu->cur after calling
-cpufreq_frequency_table_cpuinfo). Instead the fix will be to let
-cpufreq gracefully handle bogus data (another patch).
-
-CC: Borislav Petkov <bp@alien8.de>
-CC: andre.przywara@amd.com
-CC: Mark.Langsdorf@amd.com
-Reported-by: Tobias Diedrich <ranma+xen@tdiedrich.de>
-Tested-by: Tobias Diedrich <ranma+xen@tdiedrich.de>
-[v1: Rebased on v3.0-rc2, reduced patch to deal with vid case]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/cpufreq/powernow-k8.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-index 83479b6..fe53572 100644
---- a/drivers/cpufreq/powernow-k8.c
-+++ b/drivers/cpufreq/powernow-k8.c
-@@ -1079,6 +1079,8 @@ static int transition_frequency_fidvid(struct powernow_k8_data *data,
- 	}
- 
- 	res = transition_fid_vid(data, fid, vid);
-+	if (res)
-+		return res;
- 	freqs.new = find_khz_freq_from_fid(data->currfid);
- 
- 	for_each_cpu(i, data->available_cores) {
--- 
-1.7.5.4
-
+The signalfd example in the man page explicitly documents that you
+need to sigprocmask(SIG_BLOCK), which is fine if you control all the
+threads in your app, but I don't.  Any chance of a new flag like
+SFD_HANDLE or SFD_ALWAYS which was rougly equivalent to using
+sigaction()?  Or even better as I say in the bug, *always* deliver the
+signal so I can get an event when a child exits even in the case where
+some other code uses sigaction(SIGCHLD)?
