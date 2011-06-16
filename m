@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab1FPCa5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 22:30:57 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:52846 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752594Ab1FPCa4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 22:30:56 -0400
-From: Xiangliang Yu <yuxiangl@marvell.com>
-To: Jack Wang <jack_wang@usish.com>,
-        "'James Bottomley'" <James.Bottomley@HansenPartnership.com>
-CC: "yxlraid@gmail.com" <yxlraid@gmail.com>,
-        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
-        "maciej.trela@intel.com" <maciej.trela@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jacky Feng <jfeng@marvell.com>
-Date: Wed, 15 Jun 2011 19:29:18 -0700
-Subject: RE: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
-Thread-Topic: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
-Thread-Index: AcwrIR/qdpMMo2uOTdi6EtZ/SnmPkgAAZ5KAACgYoPAAAOfC4AABCYdAAABOEGA=
-Message-ID: <F766E4F80769BD478052FB6533FA745D19FAE66CCA@SC-VEXCH4.marvell.com>
-References: <1308064628-11826-1-git-send-email-yxlraid@gmail.com>
- <1308065367.2401.24.camel@mulgrave>
- <F766E4F80769BD478052FB6533FA745D19FAE669AF@SC-VEXCH4.marvell.com>
- <1308117450.2329.31.camel@mulgrave>
- <F766E4F80769BD478052FB6533FA745D19FAE66AAF@SC-VEXCH4.marvell.com>
- <637AF86F1A314F15B816411A580575F0@usish.com.cn>
- <F766E4F80769BD478052FB6533FA745D19FAE66CAE@SC-VEXCH4.marvell.com>
- <51A55E816E3847EF97FE4E849A572717@usish.com.cn>
-In-Reply-To: <51A55E816E3847EF97FE4E849A572717@usish.com.cn>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754740Ab1FPCkM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 22:40:12 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:60716 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752594Ab1FPCkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 22:40:10 -0400
+Message-ID: <4DF96D10.60904@cn.fujitsu.com>
+Date: Thu, 16 Jun 2011 10:40:16 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, josh@joshtriplett.org,
+        Manfred Spraul <manfred@colorfullife.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] rcu,doc: lock-free update site
+References: <4DF7231B.1080708@cn.fujitsu.com> <BLU0-SMTP15CB1FCA05185652974DF796680@phx.gbl>
+In-Reply-To: <BLU0-SMTP15CB1FCA05185652974DF796680@phx.gbl>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-16 10:39:42,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-16 10:39:44,
+	Serialize complete at 2011-06-16 10:39:44
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> [Jack Wang] 
->It's the same, sas_ex_get_linkrate use DISCOVER response as linkrate.
-But the function have problem, actually, the error statement is:
-child->linkrate = min(parent_phy->linkrate, child->max_linkrate); 
-its mean like this:
-child->linkrate = min(child_phy->linkrate, max(parent->max_linkrate,child_phy->linkrate));
-and if parent->max_linkrate(3Gbps) is less than child_phy->linkrate(6Gbps),
-the statement will be change this:
-child->linkrate = child_phy->linkrate, forget the parent linkrate.
+On 06/14/2011 08:50 PM, Mathieu Desnoyers wrote:
+> * Lai Jiangshan (laijs@cn.fujitsu.com) wrote:
+>> Add a document which describes a pattern of using RCU to implement lock-free(lockless)
+>> update site.
+>>
+> [...]
+>> @@ -0,0 +1,143 @@
+>> +Lock-free(lockless) update site
+>> +
+>> +This article describes a pattern of using RCU to implement lock-free(lockless)
+>> +update site. RCU update site is considered call-rare and it is protected
+>> +by a update-site lock generally. But blocking algorithms are undesirable
+>> +in some cases for some reasons, thus, this pattern may help.
+> 
+> Hi Lai,
+> 
+> Yes, using this kind of rcu read-side lock to protect against the
+> cmpxchg ABA problem is well-known (to me at least) ;) I used this
+> technique in the userspace RCU library "lock-free queue" and "lock-free
+> stack" in 2010*. Please feel free to dig through my RCU data containers code
+> to bring in more data structure examples:
+> 
+> http://git.lttng.org/?p=userspace-rcu.git;a=blob;f=urcu/static/rculfqueue.h;h=b627e450cfdd581692b474d89437e3fd47f18463;hb=HEAD
+> 
+> http://git.lttng.org/?p=userspace-rcu.git;a=blob;f=urcu/static/rculfqueue.h;h=b627e450cfdd581692b474d89437e3fd47f18463;hb=HEAD
+> 
+> Thanks!
+> 
+> Mathieu
+
+
+Hi, Mathieu
+
+I will try to make simple update site wait-free, so I wrote a simple guide/document
+at first. I didn't notice your work. Your work is excellent,
+I will add some references. I hope you rewrite/pretty this document also.
+
+The lock-free stack is a good example, but the lock-free queue is not good here I think.
+
+Thanks,
+Lai
+
+
+> 
+> * AFAIK I introduced this technique using RCU read-side C.S. to deal
+>   with cmpxchg ABA at that point, but someone might have thought about
+>   it before me without my knowledge. My litterature survey so far
+>   indicates that using a double-word CAS on a pointer/counter was one of
+>   the usual technique used to protect against cmpxchg ABA so far. Other
+>   techniques imply allocating elements in a limited-size array (so a
+>   simple cmpxchg can update the array index and counter atomically),
+>   Hasard Pointers, or having a full-blown GC which provides similar
+>   guarantees to the RCU grace period with a read-side lock held.
+>   Ref.:
+> 
+>   [1998] Maged Michael, Michael Scott "Simple, fast, and practical non-blocking and blocking concurrent queue algorithms"
+>   [2002] Maged M.Michael "Safe memory reclamation for dynamic lock-free objects using atomic reads and writes"
+>   [2003] Maged M.Michael "Hazard Pointers: Safe memory reclamation for lock-free objects"
+> 
 
