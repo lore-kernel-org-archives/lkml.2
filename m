@@ -1,55 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942Ab1FPPx6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 11:53:58 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:54081 "EHLO relay.sgi.com"
+	id S1757351Ab1FPPyD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 11:54:03 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:57168 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756278Ab1FPPxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756444Ab1FPPxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Jun 2011 11:53:53 -0400
-Message-Id: <20110616155352.620157895@sgi.com>
+Message-Id: <20110616155352.743596162@sgi.com>
 User-Agent: quilt/0.47-1
-Date: Thu, 16 Jun 2011 10:10:33 -0500
+Date: Thu, 16 Jun 2011 10:10:34 -0500
 From: cpw@sgi.com
 To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, x86@kernel.org
-Subject: [patch 1/8 v4] x86, UV: smp_processor_id in a preemptable region
+Cc: mingo@elte.hu, x86@kernel.org, penberg@kernel.org
+Subject: [patch 2/8 v4] x86, UV: inline header file functions
 References: <20110616151032.729980001@gulag1.americas.sgi.com>
-Content-Disposition: inline; filename=tlb_uv_smpcpu
+Content-Disposition: inline; filename=tlb_uv_inlineheaderfuncs
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a call by tunables_write() to smp_processor_id() within a preemptable
-region.
-Call get_cpu()/put_cpu() around the region where the returned cpu
-number is actually used, which makes it non-preemptable.
+Make all the functions in uv_bau.h inline so that it can
+be included in the fake prom (used in simulations).
 
 Diffed against 3.0.0-rc3
 
 Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
 ---
 
-A DEBUG_PREEMPT warning is prevented.
-UV does not support cpu hotplug yet, but this is a step toward that ability.
+If not inlined the unused functions will generate compiler warnings.
 
- arch/x86/platform/uv/tlb_uv.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/uv/uv_bau.h |   28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
-Index: linux/arch/x86/platform/uv/tlb_uv.c
+Index: linux/arch/x86/include/asm/uv/uv_bau.h
 ===================================================================
---- linux.orig/arch/x86/platform/uv/tlb_uv.c
-+++ linux/arch/x86/platform/uv/tlb_uv.c
-@@ -1334,9 +1334,10 @@ static ssize_t tunables_write(struct fil
+--- linux.orig/arch/x86/include/asm/uv/uv_bau.h
++++ linux/arch/x86/include/asm/uv/uv_bau.h
+@@ -526,72 +526,72 @@ struct bau_control {
+ 	struct hub_and_pnode	*thp;
+ };
  
- 	instr[count] = '\0';
+-static unsigned long read_mmr_uv2_status(void)
++static inline unsigned long read_mmr_uv2_status(void)
+ {
+ 	return read_lmmr(UV2H_LB_BAU_SB_ACTIVATION_STATUS_2);
+ }
  
--	bcp = &per_cpu(bau_control, smp_processor_id());
--
-+	cpu = get_cpu();
-+	bcp = &per_cpu(bau_control, cpu);
- 	ret = parse_tunables_write(bcp, instr, count);
-+	put_cpu();
- 	if (ret)
- 		return ret;
+-static void write_mmr_data_broadcast(int pnode, unsigned long mmr_image)
++static inline void write_mmr_data_broadcast(int pnode, unsigned long mmr_image)
+ {
+ 	write_gmmr(pnode, UVH_BAU_DATA_BROADCAST, mmr_image);
+ }
  
+-static void write_mmr_descriptor_base(int pnode, unsigned long mmr_image)
++static inline void write_mmr_descriptor_base(int pnode, unsigned long mmr_image)
+ {
+ 	write_gmmr(pnode, UVH_LB_BAU_SB_DESCRIPTOR_BASE, mmr_image);
+ }
+ 
+-static void write_mmr_activation(unsigned long index)
++static inline void write_mmr_activation(unsigned long index)
+ {
+ 	write_lmmr(UVH_LB_BAU_SB_ACTIVATION_CONTROL, index);
+ }
+ 
+-static void write_gmmr_activation(int pnode, unsigned long mmr_image)
++static inline void write_gmmr_activation(int pnode, unsigned long mmr_image)
+ {
+ 	write_gmmr(pnode, UVH_LB_BAU_SB_ACTIVATION_CONTROL, mmr_image);
+ }
+ 
+-static void write_mmr_payload_first(int pnode, unsigned long mmr_image)
++static inline void write_mmr_payload_first(int pnode, unsigned long mmr_image)
+ {
+ 	write_gmmr(pnode, UVH_LB_BAU_INTD_PAYLOAD_QUEUE_FIRST, mmr_image);
+ }
+ 
+-static void write_mmr_payload_tail(int pnode, unsigned long mmr_image)
++static inline void write_mmr_payload_tail(int pnode, unsigned long mmr_image)
+ {
+ 	write_gmmr(pnode, UVH_LB_BAU_INTD_PAYLOAD_QUEUE_TAIL, mmr_image);
+ }
+ 
+-static void write_mmr_payload_last(int pnode, unsigned long mmr_image)
++static inline void write_mmr_payload_last(int pnode, unsigned long mmr_image)
+ {
+ 	write_gmmr(pnode, UVH_LB_BAU_INTD_PAYLOAD_QUEUE_LAST, mmr_image);
+ }
+ 
+-static void write_mmr_misc_control(int pnode, unsigned long mmr_image)
++static inline void write_mmr_misc_control(int pnode, unsigned long mmr_image)
+ {
+ 	write_gmmr(pnode, UVH_LB_BAU_MISC_CONTROL, mmr_image);
+ }
+ 
+-static unsigned long read_mmr_misc_control(int pnode)
++static inline unsigned long read_mmr_misc_control(int pnode)
+ {
+ 	return read_gmmr(pnode, UVH_LB_BAU_MISC_CONTROL);
+ }
+ 
+-static void write_mmr_sw_ack(unsigned long mr)
++static inline void write_mmr_sw_ack(unsigned long mr)
+ {
+ 	uv_write_local_mmr(UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE_ALIAS, mr);
+ }
+ 
+-static unsigned long read_mmr_sw_ack(void)
++static inline unsigned long read_mmr_sw_ack(void)
+ {
+ 	return read_lmmr(UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE);
+ }
+ 
+-static unsigned long read_gmmr_sw_ack(int pnode)
++static inline unsigned long read_gmmr_sw_ack(int pnode)
+ {
+ 	return read_gmmr(pnode, UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE);
+ }
+ 
+-static void write_mmr_data_config(int pnode, unsigned long mr)
++static inline void write_mmr_data_config(int pnode, unsigned long mr)
+ {
+ 	uv_write_global_mmr64(pnode, UVH_BAU_DATA_CONFIG, mr);
+ }
 
