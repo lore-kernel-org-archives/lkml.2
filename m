@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755729Ab1FPTA3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 15:00:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36254 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754559Ab1FPTA0 convert rfc822-to-8bit (ORCPT
+	id S932174Ab1FPR4F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 13:56:05 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:51565 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758503Ab1FPR4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 15:00:26 -0400
-Subject: Re: [PATCH 1/3] stop_machine: kill __stop_machine()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Tejun Heo <tj@kernel.org>, "x86@kernel.org" <x86@kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1308245872.2682.369.camel@sbsiddha-MOBL3.sc.intel.com>
-References: <1308071218-5912-1-git-send-email-tj@kernel.org>
-	 <1308071218-5912-2-git-send-email-tj@kernel.org>
-	 <1308226372.13240.42.camel@twins>
-	 <1308245872.2682.369.camel@sbsiddha-MOBL3.sc.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 16 Jun 2011 19:55:10 +0200
-Message-ID: <1308246910.13240.238.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 16 Jun 2011 13:56:03 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing the packed attribute
+Date: Thu, 16 Jun 2011 19:55:50 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Alexander Holler <holler@ahsoftware.de>, gregkh@suse.de,
+        Rabin Vincent <rabin@rab.in>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+References: <Pine.LNX.4.44L0.1106161308310.2204-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1106161308310.2204-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106161955.50972.arnd@arndb.de>
+X-Provags-ID: V02:K0:B9sUtfnrYpKR+jU04IJ2XOILk+ZOIJDuAkgK0bf4hrk
+ 6RXURPBHkP7yWyjPl0DAUH7XTUz5IGsB42IbJGX+nOJAhMbaRN
+ INEDXOwwjJ0xYM+TftfuBYC+vXYqgPoWE6Ko14c3cBGBu90YeD
+ obv/JyZV7kDHI5u7bVx7CWF2t/yGZ6oApJXfYN6TkkphCs83n+
+ bwtwxnBcT1ogGwW29oRpg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-16 at 10:37 -0700, Suresh Siddha wrote:
-> On Thu, 2011-06-16 at 05:12 -0700, Peter Zijlstra wrote:
-> > On Tue, 2011-06-14 at 19:06 +0200, Tejun Heo wrote:
-> > Please have a look at: 
-> > 
-> > ---
-> > commit d91309f69b7bdb64aeb30106fde8d18c5dd354b5
-> > Author: Peter Zijlstra <peterz@infradead.org>
-> > Date:   Fri Feb 11 22:07:46 2011 +0100
-> > 
-> >     x86: Fix text_poke_smp_batch() deadlock
-> >     
-> >     Fix this deadlock - we are already holding the mutex:
-> >     
-> ...
-> > diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-> > index 1236085..7038b95 100644
-> > --- a/arch/x86/kernel/alternative.c
-> > +++ b/arch/x86/kernel/alternative.c
-> > @@ -671,7 +671,7 @@ void __kprobes text_poke_smp_batch(struct text_poke_param *params, int n)
-> >  
-> >  	atomic_set(&stop_machine_first, 1);
-> >  	wrote_text = 0;
-> > -	stop_machine(stop_machine_text_poke, (void *)&tpp, NULL);
-> > +	__stop_machine(stop_machine_text_poke, (void *)&tpp, NULL);
-> >  }
-> >  
-> >  #if defined(CONFIG_DYNAMIC_FTRACE) || defined(HAVE_JUMP_LABEL)
-> > 
+On Thursday 16 June 2011, Alan Stern wrote:
 > 
-> Peter, So it looks like we are allowing a new cpu to come online in
-> parallel, while we poke the text? Isn't it a problem? What am I missing?
+> On Thu, 16 Jun 2011, Alexander Holler wrote:
+> 
+> > In commit 139540170d9d9b7ead3caaf540f161756b356d56 the attribute
+> > packed is removed from the structs which are used to access the EHCI-registers.
+> > 
+> > This is done to circumvent a problem with gcc 4.6, which might access members of
+> > packed structs on a byte by byte basis. But using packed, aligned(4) fixes that
+> > too and is imho the better solution. Otherwise (without packed) the compiler would be free
+> > to choose whatever alignment he thinks fits best, which might be e.g. 8-byte on 64-bit machines.
+> 
+> Is that really true?
 
-the caller already did get_online_cpus(), 
+No.
 
-do_optimize_kprobes()
-  get_online_cpus()
-  arch_optimize_kprobes()
-    text_poke_smp_batch()
-  put_online_cpus()
+> I thought the compiler was not allowed to insert 
+> padding if the natural alignment of the data types didn't require any.
 
+It's architecture dependent. The alignment of the structure is the maximum alignment
+of its members, so it gets to be 8 bytes if there is a 64 bit member in the struct
+on most architectures, but 4 bytes on x86.
 
+	Arnd
