@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932832Ab1FPUPE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 16:15:04 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27663 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932726Ab1FPUOt (ORCPT
+	id S1757989Ab1FPTkd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 15:40:33 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:7417 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757775Ab1FPTkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 16:14:49 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, x86@kernel.org, cpufreq@vger.kernel.org,
-        davej@redhat.com, bp@alien8.de, Mark.Langsdorf@amd.com,
-        andre.przywara@amd.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3/3] [CPUFREQ] powernow-k8: Don't try to transition if the pstate is incorrect
-Date: Thu, 16 Jun 2011 15:36:40 -0400
-Message-Id: <1308253000-6289-4-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1308253000-6289-1-git-send-email-konrad.wilk@oracle.com>
-References: <1308253000-6289-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4DFA6422.006A:SCFMA922111,ss=1,fgs=0
+	Thu, 16 Jun 2011 15:40:31 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6379"; a="98001773"
+Message-ID: <4DFA5C2E.40507@codeaurora.org>
+Date: Thu, 16 Jun 2011 12:40:30 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org
+Subject: Re: [RFC] Add Arm cpu topology definition
+References: <BANLkTinRGRUxKB=C_2Y2F93czWScEUo+Jw@mail.gmail.com>
+In-Reply-To: <BANLkTinRGRUxKB=C_2Y2F93czWScEUo+Jw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch augments the pstate transition code to error out
-(instead of returning 0) when an incorrect pstate is provided.
+On 06/16/2011 01:49 AM, Vincent Guittot wrote:
+> +config SCHED_MC
+> +	bool "Multi-core scheduler support"
+> +	depends on SMP && ARM_CPU_TOPOLOGY
+> +	default n
+> +	help
+> +	  Multi-core scheduler support improves the CPU scheduler's decision
+> +	  making when dealing with multi-core CPU chips at a cost of slightly
+> +	  increased overhead in some places. If unsure say N here.
+> +
+> +config SCHED_SMT
+> +	bool "SMT scheduler support"
+> +	depends on SMP && ARM_CPU_TOPOLOGY
+> +	default n
+> +	help
+> +	  Improves the CPU scheduler's decision making when dealing with
+> +	  MultiThreading at a cost of slightly increased overhead in some
+> +	  places. If unsure say N here.
+> +
 
-Suggested-by: Borislav Petkov <bp@alien8.de>
-CC: andre.przywara@amd.com
-CC: Mark.Langsdorf@amd.com
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/cpufreq/powernow-k8.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+The default is already n so you can drop those two lines.
 
-diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-index 287c56f..bce576d 100644
---- a/drivers/cpufreq/powernow-k8.c
-+++ b/drivers/cpufreq/powernow-k8.c
-@@ -1104,7 +1104,8 @@ static int transition_frequency_pstate(struct powernow_k8_data *data,
- 	/* get MSR index for hardware pstate transition */
- 	pstate = index & HW_PSTATE_MASK;
- 	if (pstate > data->max_hw_pstate)
--		return 0;
-+		return -EINVAL;
-+
- 	freqs.old = find_khz_freq_from_pstate(data->powernow_table,
- 			data->currpstate);
- 	freqs.new = find_khz_freq_from_pstate(data->powernow_table, pstate);
+> +		 * This is a multiprocessor system
+> +		 * multiprocessor format & multiprocessor mode field are set
+> +		 */
+> +
+> +		if (mpidr & (0x1 << 24)) {
+> +			/* core performance interdependency */
+> +			cpuid_topo->thread_id = (mpidr & 0x3);
+> +			cpuid_topo->core_id =  ((mpidr >> 8) & 0xF);
+> +			cpuid_topo->socket_id = ((mpidr >> 16) & 0xFF);
+> +		} else {
+> +			/* normal core interdependency */
+> +			cpuid_topo->thread_id = -1;
+> +			cpuid_topo->core_id = (mpidr & 0x3);
+> +			cpuid_topo->socket_id = ((mpidr >> 8) & 0xF);
+> +		}
+> +
+
+The ARM ARM says these fields are IMPLEMENTATION DEFINED meaning that
+different vendors may attribute different meaning to these fields if
+they wish. Does that mean this should be a platform_*() function?
+
 -- 
-1.7.4.1
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
