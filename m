@@ -1,62 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756997Ab1FPIrr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 04:47:47 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:16076 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751822Ab1FPIrq (ORCPT
+	id S1757319Ab1FPItQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 04:49:16 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:37919 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753624Ab1FPItO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 04:47:46 -0400
-X-AuditID: cbfee61b-b7c62ae0000056ed-57-4df9c330d8b1
-Date: Thu, 16 Jun 2011 17:47:44 +0900
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: [PATCH] Samsung SoC: header file revised to prevent declaring
- duplicated.
-In-reply-to: <1308213184-6607-1-git-send-email-myungjoo.ham@samsung.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        kyungmin.park@samsung.com, myungjoo.ham@gmail.com,
-        dg77.kim@samsung.com
-Message-id: <1308214064-12796-1-git-send-email-myungjoo.ham@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-Content-transfer-encoding: 7BIT
-References: <1308213184-6607-1-git-send-email-myungjoo.ham@samsung.com>
-X-OriginalArrivalTime: 16 Jun 2011 08:47:31.0883 (UTC)
- FILETIME=[07C54FB0:01CC2C02]
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 16 Jun 2011 04:49:14 -0400
+MIME-Version: 1.0
+Date: Thu, 16 Jun 2011 10:49:13 +0200
+Message-ID: <BANLkTinRGRUxKB=C_2Y2F93czWScEUo+Jw@mail.gmail.com>
+Subject: [RFC] Add Arm cpu topology definition
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There has been no #ifndef - #define - #endif protection for this header
-file. The patch adds it for Exynos4-ADC support
+The affinity between Arm processors is defined in the MPIDR register.
+We can identify which processors are in the same cluster,
+and which ones have performance interdependency. The cpu topology
+ of an Arm platform can be set thanks to this register and this topology
+is then used by sched_mc and sched_smt.
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
 ---
- arch/arm/plat-samsung/include/plat/devs.h |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ arch/arm/Kconfig                |   26 ++++++++
+ arch/arm/include/asm/topology.h |   33 ++++++++++
+ arch/arm/kernel/Makefile        |    1 +
+ arch/arm/kernel/smp.c           |    6 ++
+ arch/arm/kernel/topology.c      |  133 +++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 199 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/kernel/topology.c
 
-diff --git a/arch/arm/plat-samsung/include/plat/devs.h b/arch/arm/plat-samsung/include/plat/devs.h
-index 4af108f..3c87779 100644
---- a/arch/arm/plat-samsung/include/plat/devs.h
-+++ b/arch/arm/plat-samsung/include/plat/devs.h
-@@ -12,6 +12,9 @@
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
- */
-+#ifndef __PLAT_DEVS_H
-+#define __PLAT_DEVS_H __FILE__
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 9adc278..bacf9af 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -219,6 +219,24 @@ source "kernel/Kconfig.freezer"
+
+ menu "System Type"
+
++config SCHED_MC
++	bool "Multi-core scheduler support"
++	depends on SMP && ARM_CPU_TOPOLOGY
++	default n
++	help
++	  Multi-core scheduler support improves the CPU scheduler's decision
++	  making when dealing with multi-core CPU chips at a cost of slightly
++	  increased overhead in some places. If unsure say N here.
 +
- #include <linux/platform_device.h>
- 
- struct s3c24xx_uart_resources {
-@@ -159,3 +162,5 @@ extern struct platform_device s3c_device_ac97;
-  */
- extern void *s3c_set_platdata(void *pd, size_t pdsize,
- 			      struct platform_device *pdev);
++config SCHED_SMT
++	bool "SMT scheduler support"
++	depends on SMP && ARM_CPU_TOPOLOGY
++	default n
++	help
++	  Improves the CPU scheduler's decision making when dealing with
++	  MultiThreading at a cost of slightly increased overhead in some
++	  places. If unsure say N here.
 +
-+#endif /* __PLAT_DEVS_H */
+ config MMU
+ 	bool "MMU-based Paged Memory Management Support"
+ 	default y
+@@ -1062,6 +1080,14 @@ if !MMU
+ source "arch/arm/Kconfig-nommu"
+ endif
+
++config ARM_CPU_TOPOLOGY
++	bool "Support cpu topology definition"
++	depends on SMP && CPU_V7
++	help
++	  Support Arm cpu topology definition. The MPIDR register defines
++	  affinity between processors which is used to set the cpu
++	  topology of an Arm System.
++
+ config ARM_ERRATA_411920
+ 	bool "ARM errata: Invalidation of the Instruction Cache operation can fail"
+ 	depends on CPU_V6 || CPU_V6K
+diff --git a/arch/arm/include/asm/topology.h b/arch/arm/include/asm/topology.h
+index accbd7c..cb90d0a 100644
+--- a/arch/arm/include/asm/topology.h
++++ b/arch/arm/include/asm/topology.h
+@@ -1,6 +1,39 @@
+ #ifndef _ASM_ARM_TOPOLOGY_H
+ #define _ASM_ARM_TOPOLOGY_H
+
++#ifdef CONFIG_ARM_CPU_TOPOLOGY
++
++#include <linux/cpumask.h>
++
++struct cputopo_arm {
++	int thread_id;
++	int core_id;
++	int socket_id;
++	cpumask_t thread_sibling;
++	cpumask_t core_sibling;
++};
++
++extern struct cputopo_arm cpu_topology[NR_CPUS];
++
++#define topology_physical_package_id(cpu)	(cpu_topology[cpu].socket_id)
++#define topology_core_id(cpu)		(cpu_topology[cpu].core_id)
++#define topology_core_cpumask(cpu)	(&(cpu_topology[cpu].core_sibling))
++#define topology_thread_cpumask(cpu)	(&(cpu_topology[cpu].thread_sibling))
++
++#define mc_capable()	(cpu_topology[0].socket_id != -1)
++#define smt_capable()	(cpu_topology[0].thread_id != -1)
++
++void init_cpu_topology(void);
++void store_cpu_topology(unsigned int cpuid);
++const struct cpumask *cpu_coregroup_mask(unsigned int cpu);
++
++#else
++
++#define init_cpu_topology() {};
++#define store_cpu_topology(cpuid) {};
++
++#endif
++
+ #include <asm-generic/topology.h>
+
+ #endif /* _ASM_ARM_TOPOLOGY_H */
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index a5b31af..816a481 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -61,6 +61,7 @@ obj-$(CONFIG_IWMMXT)		+= iwmmxt.o
+ obj-$(CONFIG_CPU_HAS_PMU)	+= pmu.o
+ obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
+ AFLAGS_iwmmxt.o			:= -Wa,-mcpu=iwmmxt
++obj-$(CONFIG_ARM_CPU_TOPOLOGY)  += topology.o
+
+ ifneq ($(CONFIG_ARCH_EBSA110),y)
+   obj-y		+= io.o
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 344e52b..3e8dc3b 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -31,6 +31,7 @@
+ #include <asm/cacheflush.h>
+ #include <asm/cpu.h>
+ #include <asm/cputype.h>
++#include <asm/topology.h>
+ #include <asm/mmu_context.h>
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+@@ -268,6 +269,9 @@ static void __cpuinit smp_store_cpu_info(unsigned int cpuid)
+ 	struct cpuinfo_arm *cpu_info = &per_cpu(cpu_data, cpuid);
+
+ 	cpu_info->loops_per_jiffy = loops_per_jiffy;
++
++	store_cpu_topology(cpuid);
++
+ }
+
+ /*
+@@ -354,6 +358,8 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
+ {
+ 	unsigned int ncores = num_possible_cpus();
+
++	init_cpu_topology();
++
+ 	smp_store_cpu_info(smp_processor_id());
+
+ 	/*
+diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+new file mode 100644
+index 0000000..d61723c
+--- /dev/null
++++ b/arch/arm/kernel/topology.c
+@@ -0,0 +1,133 @@
++/*
++ * arch/arm/kernel/topology.c
++ *
++ * Copyright (C) 2011  vincent.guittot@linaro.org
++ *
++ * based on arch/sh/kernel/topology.c
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#include <linux/cpu.h>
++#include <linux/cpumask.h>
++#include <linux/init.h>
++#include <linux/percpu.h>
++#include <linux/node.h>
++#include <linux/nodemask.h>
++#include <linux/sched.h>
++
++#include <asm/cacheflush.h>
++#include <asm/topology.h>
++
++#define hard_smp_mpidr() \
++	({ \
++		unsigned int cpunum; \
++		__asm__("mrc p15, 0, %0, c0, c0, 5"	\
++			: "=r" (cpunum)); \
++		cpunum; \
++	})
++
++struct cputopo_arm cpu_topology[NR_CPUS];
++
++const struct cpumask *cpu_coregroup_mask(unsigned int cpu)
++{
++	return &(cpu_topology[cpu].core_sibling);
++}
++
++/*
++ * store_cpu_topology is called at boot when only one cpu is running
++ * and with the mutex cpu_hotplug.lock locked, when several cpus have booted,
++ * which prevents simultaneous write access to cpu_topology array
++ */
++void store_cpu_topology(unsigned int cpuid)
++{
++	struct cputopo_arm *cpuid_topo = &(cpu_topology[cpuid]);
++	unsigned int mpidr;
++	unsigned int cpu;
++
++	/* If the cpu topology has been already set, just return */
++	if (cpuid_topo->core_id != -1)
++		return;
++
++	mpidr = hard_smp_mpidr();
++
++	/* create cpu topology mapping */
++	if (mpidr & (0x3 << 30)) {
++		/*
++		 * This is a multiprocessor system
++		 * multiprocessor format & multiprocessor mode field are set
++		 */
++
++		if (mpidr & (0x1 << 24)) {
++			/* core performance interdependency */
++			cpuid_topo->thread_id = (mpidr & 0x3);
++			cpuid_topo->core_id =  ((mpidr >> 8) & 0xF);
++			cpuid_topo->socket_id = ((mpidr >> 16) & 0xFF);
++		} else {
++			/* normal core interdependency */
++			cpuid_topo->thread_id = -1;
++			cpuid_topo->core_id = (mpidr & 0x3);
++			cpuid_topo->socket_id = ((mpidr >> 8) & 0xF);
++		}
++	} else {
++		/*
++		 * This is an uniprocessor system
++		 * we are in multiprocessor format but uniprocessor system
++		 * or in the old uniprocessor format
++		 */
++
++		cpuid_topo->thread_id = -1;
++		cpuid_topo->core_id = 0;
++		cpuid_topo->socket_id = -1;
++	}
++
++	/* update core and thread sibling masks */
++	for_each_possible_cpu(cpu) {
++		struct cputopo_arm *cpu_topo = &(cpu_topology[cpu]);
++
++		if (cpuid_topo->socket_id == cpu_topo->socket_id) {
++			cpumask_set_cpu(cpuid, &cpu_topo->core_sibling);
++			if (cpu != cpuid)
++				cpumask_set_cpu(cpu,
++					&cpuid_topo->core_sibling);
++
++			if (cpuid_topo->core_id == cpu_topo->core_id) {
++				cpumask_set_cpu(cpuid,
++					&cpu_topo->thread_sibling);
++				if (cpu != cpuid)
++					cpumask_set_cpu(cpu,
++						&cpuid_topo->thread_sibling);
++			}
++		}
++	}
++	smp_wmb();
++
++	printk(KERN_INFO "cpu %u : thread %d cpu %d, socket %d, mpidr %x\n",
++		cpuid, cpu_topology[cpuid].thread_id,
++		cpu_topology[cpuid].core_id,
++		cpu_topology[cpuid].socket_id, mpidr);
++
++}
++
++/*
++ * init_cpu_topology is called at boot when only one cpu is running
++ * which prevent simultaneous write access to cpu_topology array
++ */
++void init_cpu_topology(void)
++{
++	unsigned int cpu;
++
++	/* init core mask */
++	for_each_possible_cpu(cpu) {
++		struct cputopo_arm *cpu_topo = &(cpu_topology[cpu]);
++
++		cpu_topo->thread_id = -1;
++		cpu_topo->core_id =  -1;
++		cpu_topo->socket_id = -1;
++		cpumask_clear(&cpu_topo->core_sibling);
++		cpumask_clear(&cpu_topo->thread_sibling);
++	}
++	smp_wmb();
++}
 -- 
 1.7.4.1
-
