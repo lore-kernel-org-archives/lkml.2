@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757057Ab1FPKYl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 06:24:41 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:32953 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab1FPKYi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 06:24:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=o4lslg9hmREpmVuNZorCTTerBMfCaJLMS0YghxH4NShKAEg4ufYnq8N5u6rmLSOuy9
-         YQnl1hCa5/W1UmXLkxvP+tOffyvaOCDDr0qoe9s5cRazQuO9J1H9I/Lhp2hAFv2S00Q2
-         sbbq+zXU/pU6isxnaQOjBcGR8ylsHe1EqAgLU=
-From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: Re: 3.0-rc2: mei breaks suspend
-Date: Thu, 16 Jun 2011 12:24:32 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.0-rc2-00362-g3c25fa7-dirty; KDE/4.6.4; x86_64; ; )
-Cc: Stefan Seyfried <stefan.seyfried@googlemail.com>
-References: <20110616110256.0890dd37@susi.home.s3e.de>
-In-Reply-To: <20110616110256.0890dd37@susi.home.s3e.de>
+	id S1757636Ab1FPKZf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 06:25:35 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44263 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752175Ab1FPKZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 06:25:34 -0400
+Date: Thu, 16 Jun 2011 12:25:32 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "Gustavo F. Padovan" <padovan@profusion.mobi>
+Cc: Chase Douglas <chase.douglas@canonical.com>, Ed Tomlinson <edt@aei.ca>,
+        Greg KH <gregkh@suse.de>, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Linux 2.6.39.1
+In-Reply-To: <20110613172739.GA2661@joana>
+Message-ID: <alpine.LNX.2.00.1106161224350.22872@pobox.suse.cz>
+References: <20110603003835.GA20381@kroah.com> <201106032236.41294.edt@aei.ca> <4DED20C6.1020701@canonical.com> <201106061926.14661.edt@aei.ca> <4DEF9705.4070502@canonical.com> <20110608180146.GB13036@joana> <alpine.LNX.2.00.1106130010360.22872@pobox.suse.cz>
+ <20110613172739.GA2661@joana>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201106161224.32504.a.miskiewicz@gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 of June 2011, Stefan Seyfried wrote:
-> Hi,
-> 
-> having the "mei" driver loaded, which happened automatically on my
-> ThinkPad X200s, successfully prevents any suspend efforts:
-> 
-> [39736.728116] pci_pm_suspend(): mei_pci_suspend+0x0/0xc0 [mei] returns
-> 9999
+On Mon, 13 Jun 2011, Gustavo F. Padovan wrote:
 
-https://lkml.org/lkml/2011/6/13/148
+> > > > Where did this patch come from? I don't see it in Linus' tree. If this
+> > > > patch is merged, I can test the a new kernel out to see if we should
+> > > > back out the commit from Jiri. However, right now my magic trackpad
+> > > > (which has the same issue as the magic mouse) works fine on plain 2.6.39.1.
+> > > 
+> > > This patch is in my tree. It will be on its way to Linus' tree today.
+> > 
+> > Doesn't seem to be present in Linus' tree as of today. Has there been any 
+> > issue discovered in the meantime?
+> 
+> No, it is on wireless-2.6 right now. Then goes to net-2.6 and finally linus-2.6.
+
+Still doesn't seem to be present in Linus' tree today.
+
+Could you please point me to where it is queued now? I am going to revert 
+the "workaround" I have for magicmouse today (which is buggy), but I want 
+to make sure that the actual fix (i.e. Villo's patch) flows in soon.
+
+Thanks,
 
 -- 
-Arkadiusz Miśkiewicz        PLD/Linux Team
-arekm / maven.pl            http://ftp.pld-linux.org/
+Jiri Kosina
+SUSE Labs
