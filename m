@@ -1,161 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757935Ab1FPNZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 09:25:59 -0400
-Received: from bohort.kerlabs.com ([90.80.97.101]:51464 "EHLO
-	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695Ab1FPNZ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 09:25:57 -0400
-Date: Thu, 16 Jun 2011 15:25:51 +0200
-From: Louis Rilling <Louis.Rilling@kerlabs.com>
-To: Greg Kurz <gkurz@fr.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, containers@lists.osdl.org,
-        akpm@linux-foundation.org, xemul@openvz.org
-Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was
-	Vpid:)
-Message-ID: <20110616132551.GB7230@hawkmoon.kerlabs.com>
-Mail-Followup-To: Greg Kurz <gkurz@fr.ibm.com>,
-	Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-	ebiederm@xmission.com, containers@lists.osdl.org,
-	akpm@linux-foundation.org, xemul@openvz.org
-References: <20110615145527.4016.70157.stgit@bahia.local> <20110615184625.GA15573@redhat.com> <1308222107.8230.49.camel@bahia.local> <20110616123554.GA7230@hawkmoon.kerlabs.com> <1308229251.8230.77.camel@bahia.local>
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_bohort-24901-1308230660-0001-2"
-Content-Disposition: inline
-In-Reply-To: <1308229251.8230.77.camel@bahia.local>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757916Ab1FPN2p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 09:28:45 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:53886 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752138Ab1FPN2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 09:28:42 -0400
+Message-ID: <4DFA0507.3090609@linux.vnet.ibm.com>
+Date: Thu, 16 Jun 2011 08:28:39 -0500
+From: Brian King <brking@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Nishanth Aravamudan <nacc@us.ibm.com>, linuxppc-dev@lists.ozlabs.org,
+        wayneb@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, mbizon@freebox.fr, jgarzik@pobox.com
+Subject: Re: libata/ipr/powerpc: regression between 2.6.39-rc4 and 2.6.39-rc5
+References: <20110615191747.GA6324@us.ibm.com> <4DF90FCA.1040706@linux.vnet.ibm.com>	<20110615233417.GB6324@us.ibm.com> <20110616075114.GH8141@htj.dyndns.org>
+In-Reply-To: <20110616075114.GH8141@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME-formatted message.  If you see this text it means that your
-E-mail software does not support MIME-formatted messages.
+On 06/16/2011 02:51 AM, Tejun Heo wrote:
+> On Wed, Jun 15, 2011 at 04:34:17PM -0700, Nishanth Aravamudan wrote:
+>>> That looks like the right thing to do. For ipr's usage of
+>>> libata, we don't have the concept of a port frozen state, so this flag
+>>> should really never get set. The alternate way to fix this would be to
+>>> only set ATA_PFLAG_FROZEN in ata_port_alloc if ap->ops->error_handler
+>>> is not NULL.
+>>
+>> It seemed like ipr is as you say, but I wasn't sure if it was
+>> appropriate to make the change above in the common libata-scis code or
+>> not. I don't want to break some other device on accident.
+>>
+>> Also, I tried your suggestion, but I don't think that can happen in
+>> ata_port_alloc? ata_port_alloc is allocated ap itself, and it seems like
+>> ap->ops typically gets set only after ata_port_alloc returns?
+> 
+> Maybe we can test error_handler in ata_sas_port_start()?
 
---=_bohort-24901-1308230660-0001-2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On 16/06/11 15:00 +0200, Greg Kurz wrote:
-> On Thu, 2011-06-16 at 14:35 +0200, Louis Rilling wrote:
-> > On 16/06/11 13:01 +0200, Greg Kurz wrote:
-> > > On Wed, 2011-06-15 at 20:46 +0200, Oleg Nesterov wrote:
-> > > > On 06/15, Greg Kurz wrote:
-> > > > >
-> > > > > @@ -176,6 +177,17 @@ static inline void task_state(struct seq_fil=
-e *m, struct pid_namespace *ns,
-> > > > >  		if (tracer)
-> > > > >  			tpid =3D task_pid_nr_ns(tracer, ns);
-> > > > >  	}
-> > > > > +	actpid =3D 0;
-> > > > > +	sighand =3D rcu_dereference(p->sighand);
-> > > > > +	if (sighand) {
-> > > > > +		struct pid_namespace *pid_ns;
-> > > > > +		unsigned long flags;
-> > > > > +		spin_lock_irqsave(&sighand->siglock, flags);
-> > > >=20
-> > > > Well. This is not exactly right. We have lock_task_sighand() for th=
-is.
-> > > >=20
-> > >=20
-> > > I see... ->sighand could change so we need the for(;;) loop in
-> > > __lock_task_sighand() to be sure we have the right pointer, correct ?
-> > > By the way, if we use lock_task_sighand() we'll end up with nested
-> > > rcu_read_lock(): it will work but I don't know how it may affect
-> > > performance...
-> >=20
-> > rcu_read_lock() is very cheap.
-> >=20
->=20
-> Fair enough. In this case, lock_task_sighand() would be the right choice
-> if locking is needed.
->=20
-> > >=20
-> > > > But. Why do you need ->siglock? Why rcu_read_lock() is not enough?
-> > > >=20
-> > >=20
-> > > Because there's a race with
-> > > __exit_signal()->__unhash_process()->detach_pid() that can break
-> > > task_active_pid_ns() and rcu won't help here (unless *perhaps* by
-> > > modifying __exit_signal() but I don't want to mess with such a critic=
-al
-> > > path).
-> >=20
-> > In case of race, the only risk is that task_active_pid_ns() returns NUL=
-L.
-> > Otherwise, RCU guarantees that the pid_ns will stay alive (see below).
-> >=20
-> > >=20
-> > > > Hmm. You don't even need pid_ns afaics, you could simply look at
-> > > > pid->numbers[pid->level].
-> > > >=20
-> > >=20
-> > > True but I will have the same problem: detach_pid() nullifies the pid.
-> >=20
-> > But the pid won't be freed until an RCU grace period expires. See free_=
-pid(). So
-> > the non-determinism here is when /proc/<pid>/status is read at the same=
- as
-> > threaded execve() or task's exit(), in which case a stale pid (execve()=
-) or
-> > no pid (exit after __unhash_process()) can be accessed. This does not l=
-ook like
-> > a big deal...
-> >=20
->=20
-> Ok. You're right, the RCU grace period is just what I need to ensure I
-> won't dereference a stale pointer. So I don't even have to bother with
-> ->siglock and just check pid_alive() before peeking into pid->numbers.
-
-It ends like open-coding an optimized version of task_pid_vnr(). If the
-optimization is really important (I guess this depends on the depth of recu=
-rsive
-pid namespaces), it would be better to re-write task_pid_vnr(). Otherwise, =
-just
-use task_pid_vnr() as it is.
+Good point. Since libsas is converted to the new eh now, we would need to have
+this test.
 
 Thanks,
 
-Louis
+Brian
 
->=20
-> > Thanks,
-> >=20
-> > Louis
-> >=20
->=20
-> Thanks for your help.
->=20
-> --
-> Greg
->=20
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Brian King
+Linux on Power Virtualization
+IBM Linux Technology Center
 
---=20
-Dr Louis Rilling			Kerlabs
-Skype: louis.rilling			Batiment Germanium
-Phone: (+33|0) 6 80 89 08 23		80 avenue des Buttes de Coesmes
-http://www.kerlabs.com/			35700 Rennes
 
---=_bohort-24901-1308230660-0001-2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Transfer-Encoding: 7bit
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAk36BF8ACgkQVKcRuvQ9Q1Tg+wCbB+apLYbIcL6TJUlR4w51RCy5
-rvUAnjn6KWlLfH1d2nCPFlmepkC2xvQx
-=qPPv
------END PGP SIGNATURE-----
-
---=_bohort-24901-1308230660-0001-2--
