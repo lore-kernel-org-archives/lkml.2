@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751467Ab1FPEU6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 00:20:58 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:37063 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731Ab1FPEU5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 00:20:57 -0400
+	id S1752082Ab1FPE4w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 00:56:52 -0400
+Received: from mga03.intel.com ([143.182.124.21]:55665 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751176Ab1FPE4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 00:56:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,373,1304319600"; 
+   d="scan'208";a="13616334"
+Subject: Re: [PATCH] dma/ep93xx_dma.c: local symbols should be static
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, mika.westerberg@iki.fi,
+        dan.j.williams@intel.com
+In-Reply-To: <201106101515.05990.hartleys@visionengravers.com>
+References: <201106101515.05990.hartleys@visionengravers.com>
+Content-Type: text/plain; charset="UTF-8"
 Date: Thu, 16 Jun 2011 09:50:44 +0530
-From: Ankita Garg <ankita@in.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        svaidy@linux.vnet.ibm.com, thomas.abraham@linaro.org
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-Message-ID: <20110616042044.GA28563@in.ibm.com>
-Reply-To: Ankita Garg <ankita@in.ibm.com>
-References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
- <20110613134701.2b23b8d8.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110613134701.2b23b8d8.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <1308198044.10976.195.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 2011-06-10 at 15:15 -0700, H Hartley Sweeten wrote:
+> The symbol 'ep93xx_dma_prep_dma_memcpy' is only used in this driver
+> and should be marked static.
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Mika Westerberg <mika.westerberg@iki.fi>
+> Cc: Dan Williams <dan.j.williams@intel.com>
+> Cc: Vinod Koul <vinod.koul@intel.com>
 
-On Mon, Jun 13, 2011 at 01:47:01PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Fri, 27 May 2011 18:01:28 +0530
-> Ankita Garg <ankita@in.ibm.com> wrote:
+Applied Thanks
 > 
-> > Hi,
-> > 
+> ---
 > 
-> I'm sorry if you've answered already.
-> 
-> Is memory hotplug is too bad and cannot be enhanced for this purpose ?
-> 
-> I wonder
->   - make section-size smaller (IIUC, IBM's system has 16MB section size)
-> 
->   - add per section statistics
-> 
->   - add a kind of balloon driver which does software memory offline
->     (which means making a contiguous chunk of free pages of section_size
->      by page migration) in background with regard to memory usage statistics.
->     If system says "need more memory!", balloon driver can online pages.
-> 
-> can work for your purpose. It can allow you page isolatation and
-> controls in 16MB unit.  If you need whole rework of memory hotplug, I think
-> it's better to rewrite memory hotplug, too.
->
+> diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
+> index 0766c1e..5d7a49b 100644
+> --- a/drivers/dma/ep93xx_dma.c
+> +++ b/drivers/dma/ep93xx_dma.c
+> @@ -902,7 +902,7 @@ static void ep93xx_dma_free_chan_resources(struct dma_chan *chan)
+>   *
+>   * Returns a valid DMA descriptor or %NULL in case of failure.
+>   */
+> -struct dma_async_tx_descriptor *
+> +static struct dma_async_tx_descriptor *
+>  ep93xx_dma_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest,
+>  			   dma_addr_t src, size_t len, unsigned long flags)
+>  {
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Interesting idea, but a few issues -
-
-- Correctly predicting memory pressure is difficult and thereby being
-  able to online the required pages at the right time could be a
-  challenge
-- Memory hotplug is a heavy operation, so the overhead involved may be
-  high
-- Powering off memory is just one of the ways in which memory power could
-  be saved. The platform can also dynamically transition areas of memory
-  into a  content-preserving lower power state if it is not referenced
-  for a pre-defined threshold of time. In such a case, we would need a
-  mechanism to soft offline the pages - i.e, no new allocations to be
-  directed to that memory
 
 -- 
-Regards,
-Ankita Garg (ankita@in.ibm.com)
-Linux Technology Center
-IBM India Systems & Technology Labs,
-Bangalore, India
+~Vinod
+
