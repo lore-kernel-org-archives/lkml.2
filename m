@@ -1,85 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757418Ab1FPT0N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 15:26:13 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:47307 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755281Ab1FPT0K convert rfc822-to-8bit (ORCPT
+	id S932187Ab1FPTfs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 15:35:48 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32173 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757775Ab1FPTfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 15:26:10 -0400
-Message-ID: <4DFA58B4.5030101@ahsoftware.de>
-Date: Thu, 16 Jun 2011 21:25:40 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Alan Stern <stern@rowland.harvard.edu>, gregkh@suse.de,
-        Rabin Vincent <rabin@rab.in>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing
- the packed attribute
-References: <Pine.LNX.4.44L0.1106161308310.2204-100000@iolanthe.rowland.org> <201106161955.50972.arnd@arndb.de>
-In-Reply-To: <201106161955.50972.arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+	Thu, 16 Jun 2011 15:35:46 -0400
+Date: Thu, 16 Jun 2011 12:27:38 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net, randy.dunlap@oracle.com,
+        mhocko@suse.cz, torvalds@linux-foundation.org
+Subject: Re: [PATCH] um: Clean up vm-flags.h
+Message-Id: <20110616122738.697a7c12.randy.dunlap@oracle.com>
+In-Reply-To: <1308250867-12497-1-git-send-email-richard@nod.at>
+References: <1308250867-12497-1-git-send-email-richard@nod.at>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4DFA5941.00B6:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 16.06.2011 19:55, schrieb Arnd Bergmann:
-> On Thursday 16 June 2011, Alan Stern wrote:
->>
->> On Thu, 16 Jun 2011, Alexander Holler wrote:
->>
->>> In commit 139540170d9d9b7ead3caaf540f161756b356d56 the attribute
->>> packed is removed from the structs which are used to access the EHCI-registers.
->>>
->>> This is done to circumvent a problem with gcc 4.6, which might access members of
->>> packed structs on a byte by byte basis. But using packed, aligned(4) fixes that
->>> too and is imho the better solution. Otherwise (without packed) the compiler would be free
->>> to choose whatever alignment he thinks fits best, which might be e.g. 8-byte on 64-bit machines.
->>
->> Is that really true?
->
-> No.
->
->> I thought the compiler was not allowed to insert
->> padding if the natural alignment of the data types didn't require any.
->
-> It's architecture dependent. The alignment of the structure is the maximum alignment
-> of its members, so it gets to be 8 bytes if there is a 64 bit member in the struct
-> on most architectures, but 4 bytes on x86.
+On Thu, 16 Jun 2011 21:01:07 +0200 Richard Weinberger wrote:
 
-Hmm, sorry, but that sentence just says something about the alignment of 
-the structure itself and nothing about the alignment of it's members or 
-do I understand something wrong?
+> There is no need to define VM_{STACK,DATA}_DEFAULT_FLAGS as
+> variable.
+> It's also useless to test for TIF_IA32 as 64bit UML has no
+> IA32 emulation.
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> CC: randy.dunlap@oracle.com
 
-I've had a look at c99 again, and in addition to the two points in c99 I 
-mentioned in the mail before (6.7.2.1 13 and 6.7.2.1. 15), I've only 
-found the following on that topic:
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-6.7.2.1 12  Each non-bit-ﬁeld member of a structure or union object is 
-aligned in an implementationdeﬁned manner appropriate to its type.
+Thanks.
 
-And, under "J.1 Unspecified behaviour":
+> CC: mhocko@suse.cz
+> CC: torvalds@linux-foundation.org
+> ---
+>  arch/um/sys-x86_64/Makefile                 |    2 +-
+>  arch/um/sys-x86_64/mem.c                    |   16 ----------------
+>  arch/um/sys-x86_64/shared/sysdep/vm-flags.h |   26 ++++----------------------
+>  3 files changed, 5 insertions(+), 39 deletions(-)
+>  delete mode 100644 arch/um/sys-x86_64/mem.c
+> 
+> diff --git a/arch/um/sys-x86_64/Makefile b/arch/um/sys-x86_64/Makefile
+> index c1ea9eb..63fe0d2 100644
+> --- a/arch/um/sys-x86_64/Makefile
+> +++ b/arch/um/sys-x86_64/Makefile
+> @@ -4,7 +4,7 @@
+>  # Licensed under the GPL
+>  #
+>  
+> -obj-y = bug.o bugs.o delay.o fault.o ldt.o mem.o ptrace.o ptrace_user.o \
+> +obj-y = bug.o bugs.o delay.o fault.o ldt.o ptrace.o ptrace_user.o \
+>  	setjmp.o signal.o stub.o stub_segv.o syscalls.o syscall_table.o \
+>  	sysrq.o ksyms.o tls.o
+>  
+> diff --git a/arch/um/sys-x86_64/mem.c b/arch/um/sys-x86_64/mem.c
+> deleted file mode 100644
+> index 3f8df8a..0000000
+> --- a/arch/um/sys-x86_64/mem.c
+> +++ /dev/null
+> @@ -1,16 +0,0 @@
+> -/*
+> - * Copyright 2003 PathScale, Inc.
+> - *
+> - * Licensed under the GPL
+> - */
+> -
+> -#include "linux/mm.h"
+> -#include "asm/page.h"
+> -#include "asm/mman.h"
+> -
+> -unsigned long vm_stack_flags = __VM_STACK_FLAGS;
+> -unsigned long vm_stack_flags32 = __VM_STACK_FLAGS;
+> -unsigned long vm_data_default_flags = __VM_DATA_DEFAULT_FLAGS;
+> -unsigned long vm_data_default_flags32 = __VM_DATA_DEFAULT_FLAGS;
+> -unsigned long vm_force_exec32 = PROT_EXEC;
+> -
+> diff --git a/arch/um/sys-x86_64/shared/sysdep/vm-flags.h b/arch/um/sys-x86_64/shared/sysdep/vm-flags.h
+> index 3213edf..3978e55 100644
+> --- a/arch/um/sys-x86_64/shared/sysdep/vm-flags.h
+> +++ b/arch/um/sys-x86_64/shared/sysdep/vm-flags.h
+> @@ -7,27 +7,9 @@
+>  #ifndef __VM_FLAGS_X86_64_H
+>  #define __VM_FLAGS_X86_64_H
+>  
+> -#define __VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | VM_EXEC | \
+> -				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
+> -#define __VM_STACK_FLAGS 	(VM_GROWSDOWN | VM_READ | VM_WRITE | \
+> -				 VM_EXEC | VM_MAYREAD | VM_MAYWRITE | \
+> -				 VM_MAYEXEC)
+> -
+> -extern unsigned long vm_stack_flags, vm_stack_flags32;
+> -extern unsigned long vm_data_default_flags, vm_data_default_flags32;
+> -extern unsigned long vm_force_exec32;
+> -
+> -#ifdef TIF_IA32
+> -#define VM_DATA_DEFAULT_FLAGS \
+> -	(test_thread_flag(TIF_IA32) ? vm_data_default_flags32 : \
+> -	  vm_data_default_flags)
+> -
+> -#define VM_STACK_DEFAULT_FLAGS \
+> -	(test_thread_flag(TIF_IA32) ? vm_stack_flags32 : vm_stack_flags)
+> -#endif
+> -
+> -#define VM_DATA_DEFAULT_FLAGS vm_data_default_flags
+> -
+> -#define VM_STACK_DEFAULT_FLAGS vm_stack_flags
+> +#define VM_DATA_DEFAULT_FLAGS (VM_READ | VM_WRITE | VM_EXEC | \
+> +	VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
+> +#define VM_STACK_DEFAULT_FLAGS (VM_GROWSDOWN | VM_READ | VM_WRITE | \
+> +	VM_EXEC | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
+>  
+>  #endif
+> -- 
 
-Many aspects of the representations of types (6.2.6).
 
-I even haven't found anything which says something about the alignment 
-of a structure itself. But I'm no compiler expert and I look only seldom 
-at c99 and usually try to avoid such aspects as the one we are talking 
-about. ;)
-
-For me that means that I understand that when packed(,aligned(4)) is 
-used, it's pretty sure, that there is no padding inbetween the members 
-of e.g. struct ehci_regs. But without I'm unsure, so I would avoid that.
-
-That aligned(4) is necessary (for ARM) is only a workaround because of 
-the implementation of readl(), at least that is how I understood the 
-discussion. But that is discussed elsewhere and don't want to take part 
-in that discussion (and can't).
-
-Regards,
-
-Alexander
-
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
