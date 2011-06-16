@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758210Ab1FPOTQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 10:19:16 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40441 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758085Ab1FPOTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 10:19:13 -0400
-Date: Thu, 16 Jun 2011 16:19:30 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        christian.dietrich@informatik.uni-erlangen.de
-Subject: Re: [PATCH 01/11] drivers/ide: use printk_ratelimited() instead of
- printk_ratelimit()
-Message-ID: <20110616141930.GA12872@eferding.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>,
-	"David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	christian.dietrich@informatik.uni-erlangen.de
-References: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
- <0a1488254bd51475a90133c0fc41a4d34b533ef4.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
+	id S1758246Ab1FPOU5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 10:20:57 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:54211 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758106Ab1FPOUz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 10:20:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [RFC PATCH 11/11] arm/versatile: Add device tree support
+Date: Thu, 16 Jun 2011 16:20:37 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+References: <20110616042653.29371.2052.stgit@ponder> <20110616044311.29371.49018.stgit@ponder>
+In-Reply-To: <20110616044311.29371.49018.stgit@ponder>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <0a1488254bd51475a90133c0fc41a4d34b533ef4.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106161620.37205.arnd@arndb.de>
+X-Provags-ID: V02:K0:n3F/zXr96s3nYH1L4rp1dpQJO3d6gv7pcoE+APescKE
+ 54Y/TcDS3ITVv1AwQ0t4cl5GVFo3LrFNfAiAn+CTT/Z6mnEx1V
+ tHD8TqLXS3AEpdyu09dZiD/BA9KUw4SheTa3MMLMB18spvtYim
+ sfLfDZCjVNijnm5fhzJh6Br8H9MuMhj9FAB9wrABm89fECVrOe
+ yrEknykrVaqbcfeqnqwFQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 02:06:37PM +0200, Manuel Zerpies wrote:
-> Since printk_ratelimit() shouldn't be used anymore (see comment in
-> include/linux/printk.h), replace it with printk_ratelimited().
-> 
-> Signed-off-by: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
-> ---
->  drivers/ide/ide-atapi.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/ide/ide-atapi.c b/drivers/ide/ide-atapi.c
-> index 6f218e01..1b04f45 100644
-> --- a/drivers/ide/ide-atapi.c
-> +++ b/drivers/ide/ide-atapi.c
-> @@ -8,6 +8,7 @@
->  #include <linux/ide.h>
->  #include <linux/scatterlist.h>
->  #include <linux/gfp.h>
-> +#include <linux/ratelimit.h>
->  
->  #include <scsi/scsi.h>
->  
-> @@ -200,8 +201,7 @@ void ide_prep_sense(ide_drive_t *drive, struct request *rq)
->  	err = blk_rq_map_kern(drive->queue, sense_rq, sense, sense_len,
->  			      GFP_NOIO);
->  	if (unlikely(err)) {
-> -		if (printk_ratelimit())
-> -			printk(KERN_WARNING PFX "%s: failed to map sense "
-> +		printk_ratelimited(KERN_WARNING PFX "%s: failed to map sense "
->  					    "buffer\n", drive->name);
+On Thursday 16 June 2011, Grant Likely wrote:
+> This patch adds a new versatile platform for when using the device
+> tree.  Add platform and amba devices are discovered and registered by
+> parsing the device tree.  Clocks and initial io mappings are still
+> configured statically.
 
-Does the printk fit on one line if you do
+Hi Grant,
 
-	pr_warn_ratelimited(...)
+Two small questions about the device tree contents:
 
-instead?
+> +       i2c@10002000 {
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +               compatible = "arm,versatile-i2c";
+> +               reg = <0x10002000 0x1000>;
+> +
+> +               rtc@68 {
+> +                       compatible = "dallas,ds1338";
+> +                       reg = <0x68>;
+> +               };
+> +       };
+> +
+> +       net@10010000 {
+> +               compatible = "smsc,lan91c111";
+> +               reg = <0x10010000 0x10000>;
+> +               interrupts = <25>;
+> +       };
+> +
+> +       lcd@10008000 {
+> +               compatible = "arm,versatile-lcd";
+> +               reg = <0x10008000 0x1000>;
+> +       };
 
-Thanks.
+Why are these devices on the top level, rather than on the AMBA bus or
+the FPGA? From the documentation, it seems that they are implemented
+in the FPGA, which would also match the address layout.
 
--- 
-Regards/Gruss,
-Boris.
+> +       amba {
+> +               compatible = "arm,amba-bus";
+> +               #address-cells = <1>;
+> +               #size-cells = <1>;
+> +               ranges;
+> +
+> +               vic: intc@10140000 {
+> +                       compatible = "arm,versatile-vic", "arm,vic";
+> +                       interrupt-controller;
+> +                       #interrupt-cells = <1>;
+> +                       reg = <0x10140000 0x1000>;
+> +               };
+> +
+
+Why the empty ranges property? All device registers are based on 0x10000000,
+so I'd expect this to be described like that here.
+
+	Arnd
