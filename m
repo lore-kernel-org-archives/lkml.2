@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758401Ab1FPOqh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 10:46:37 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:59605 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758311Ab1FPOqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 10:46:36 -0400
-Date: Thu, 16 Jun 2011 10:46:26 -0400
-Message-Id: <E1QXDpy-0007Wr-5V@tytso-glaptop>
-To: linux-kernel@vger.kernel.org
-Subject: scheduler / perf stat question about CPU-migrations
-From: "Theodore Ts'o" <tytso@mit.edu>
-Phone: (781) 391-3464
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1758469Ab1FPOs0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 10:48:26 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:53198 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758394Ab1FPOsY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 10:48:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=McFKeH1skLw3m5Ow1DXQnZ+RMvdfhiAhAOAEBSv9HGdYHEpwcql+0GZHdp6FK/4cKV
+         R/9hzOofyMcuKzZxNWtjbGBXt1yx2K+TRTCAW4kMBT9zuIw49NpAzhJiZMegGdG790FP
+         jbP0qMp/y1+tzRaeAgjsciYbNx+2PCb1+a1xA=
+MIME-Version: 1.0
+In-Reply-To: <1308153214.7566.6.camel@jaguar>
+References: <1308153214.7566.6.camel@jaguar>
+Date: Thu, 16 Jun 2011 17:48:21 +0300
+X-Google-Sender-Auth: YPw-X7l7zBy7GcrohHTBklAaUa0
+Message-ID: <BANLkTi=krV7p9gT3E064aVoUCToVyZoL6w@mail.gmail.com>
+Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
+From: Pekka Enberg <penberg@kernel.org>
+To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Cc: Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Prasad Joshi <prasadjoshi124@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can someone tell me how I'm being confused?
+On Wed, Jun 15, 2011 at 6:53 PM, Pekka Enberg <penberg@kernel.org> wrote:
+> - Fast QCOW2 image read-write support beating Qemu in fio benchmarks. See the
+>  following URL for test result details: https://gist.github.com/1026888
 
-I ran the following command as root:
+It turns out we were benchmarking the wrong guest kernel version for
+qemu-kvm which is why it performed so much worse. Here's a summary of
+qemu-kvm beating tools/kvm:
 
-	perf stat schedtool -a 1 -e e2fsck -ft /dev/funarg/kbuild
+https://raw.github.com/gist/1029359/9f9a714ecee64802c08a3455971e410d5029370b/gistfile1.txt
 
-This runs e2fsck under perf, with the cpu affinity nailed to a single
-CPU.  I therefore expected the CPU-migrations field reported by perf to
-be 0.  That was not what I found, though:
+I'd ask for a brown paper bag if I wasn't so busy eating my hat at the moment.
 
-Performance counter stats for 'schedtool -a 1 -e e2fsck -ft /dev/funarg/kbuild':
-
-        1169.715766  task-clock-msecs         #      0.180 CPUs 
-               9212  context-switches         #      0.008 M/sec
-                307  CPU-migrations           #      0.000 M/sec
-               1875  page-faults              #      0.002 M/sec
-         2737168498  cycles                   #   2340.029 M/sec
-         3125632038  instructions             #      1.142 IPC  
-          688556730  branches                 #    588.653 M/sec
-            7263580  branch-misses            #      1.055 %    
-           15222417  cache-references         #     13.014 M/sec
-            1488633  cache-misses             #      1.273 M/sec
-
-        6.481483548  seconds time elapsed
-
-How could this be?  The CPU-migrations event counter only gets
-incremented if a task changes CPU's, as seen in kernel/sched.c:
-
-	if (task_cpu(p) != new_cpu) {
-		p->se.nr_migrations++;
-		perf_sw_event(PERF_COUNT_SW_CPU_MIGRATIONS, 1, 1, NULL, 0);
-	}
-
-So it should be 0, not 307, right?    What am I missing?
-
-						- Ted
+                        Pekka
