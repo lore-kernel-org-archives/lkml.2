@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757675Ab1FPMPQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 08:15:16 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45389 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757535Ab1FPMPK (ORCPT
+	id S1757697Ab1FPMPY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 08:15:24 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:55419 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757681Ab1FPMPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 08:15:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=OJ3rx3jgu7PRRqQx9+C+IVGa8zY2W4SS7V7G/hD/P9GKezpKcYL2Xck3YQF5HHqSj8
-         ni8KaGTasY8vtHgLp1Q2mw8X/oqBoVrlZhnK6f3FTAjCh5VDb4iZjaA9uKqcOAmmOyn7
-         nVk+Qe0tafEaElXwH/0loHmcbaJIfyrDpmdDI=
-Date: Thu, 16 Jun 2011 14:15:05 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: x86@kernel.org, mingo@elte.hu, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, suresh.b.siddha@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] stop_machine: implement
- stop_machine_from_offline_cpu()
-Message-ID: <20110616121505.GB2611@htj.dyndns.org>
-References: <1308071218-5912-1-git-send-email-tj@kernel.org>
- <1308226219.13240.41.camel@twins>
+	Thu, 16 Jun 2011 08:15:19 -0400
+Date: Thu, 16 Jun 2011 14:15:16 +0200
+From: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
+To: Greg Kroah-Hartman <gregkh@suse.de>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: christian.dietrich@informatik.uni-erlangen.de
+Subject: [PATCH 10/11] wusb: use printk_ratelimited() instead of
+ printk_ratelimit()
+Message-ID: <f69548c31f74b77bdc893772ef4012461dff119d.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
+References: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1308226219.13240.41.camel@twins>
+In-Reply-To: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Peter.
+Since printk_ratelimit() shouldn't be used anymore (see comment in
+include/linux/printk.h), replace it with printk_ratelimited()
 
-On Thu, Jun 16, 2011 at 02:10:19PM +0200, Peter Zijlstra wrote:
-> Maybe a silly question, but why does mtrr need all this? Surely mtrr can
-> serialize state by other means than stopping all cpus. A simple mutex
-> around the shared state blocking other cpus from updating the mtrr state
-> while we're copying the state to our newly born cpu should cure things.
+Signed-off-by: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
+---
+ drivers/usb/wusbcore/wa-xfer.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-Hmmm... good question.  I don't know mtrr too well either but the
-stop-machine requirement seems to directly come from intel's
-specification.  I suppose Suresh can fill us in better.
-
-Thanks.
-
+diff --git a/drivers/usb/wusbcore/wa-xfer.c b/drivers/usb/wusbcore/wa-xfer.c
+index 6ccd93a..4193345 100644
+--- a/drivers/usb/wusbcore/wa-xfer.c
++++ b/drivers/usb/wusbcore/wa-xfer.c
+@@ -83,6 +83,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/slab.h>
+ #include <linux/hash.h>
++#include <linux/ratelimit.h>
+ 
+ #include "wa-hc.h"
+ #include "wusbhc.h"
+@@ -1217,16 +1218,14 @@ static int wa_xfer_status_to_errno(u8 status)
+ 	if (status == 0)
+ 		return 0;
+ 	if (status >= ARRAY_SIZE(xlat)) {
+-		if (printk_ratelimit())
+-			printk(KERN_ERR "%s(): BUG? "
++		printk_ratelimited(KERN_ERR "%s(): BUG? "
+ 			       "Unknown WA transfer status 0x%02x\n",
+ 			       __func__, real_status);
+ 		return -EINVAL;
+ 	}
+ 	errno = xlat[status];
+ 	if (unlikely(errno > 0)) {
+-		if (printk_ratelimit())
+-			printk(KERN_ERR "%s(): BUG? "
++		printk_ratelimited(KERN_ERR "%s(): BUG? "
+ 			       "Inconsistent WA status: 0x%02x\n",
+ 			       __func__, real_status);
+ 		errno = -errno;
 -- 
-tejun
+1.7.4.1
+
