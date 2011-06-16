@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756235Ab1FPTHK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 15:07:10 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:33266 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755589Ab1FPTHG (ORCPT
+	id S1756623Ab1FPTJr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 15:09:47 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:59108 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756086Ab1FPTJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 15:07:06 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: mchehab@redhat.com
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Jiri Slaby <jslaby@suse.cz>,
-        Hans Petter Selasky <hselasky@c2i.net>
-Subject: [PATCH] DVB: dvb-net, make the kconfig text helpful
-Date: Thu, 16 Jun 2011 21:06:56 +0200
-Message-Id: <1308251216-8194-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <4DF9DD25.1000103@redhat.com>
-References: <4DF9DD25.1000103@redhat.com>
+	Thu, 16 Jun 2011 15:09:44 -0400
+Date: Thu, 16 Jun 2011 16:10:00 -0300
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Chase Douglas <chase.douglas@canonical.com>, Ed Tomlinson <edt@aei.ca>,
+        Greg KH <gregkh@suse.de>, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Linux 2.6.39.1
+Message-ID: <20110616191000.GB2594@joana>
+Mail-Followup-To: Jiri Kosina <jkosina@suse.cz>,
+	Chase Douglas <chase.douglas@canonical.com>,
+	Ed Tomlinson <edt@aei.ca>, Greg KH <gregkh@suse.de>,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20110603003835.GA20381@kroah.com>
+ <201106032236.41294.edt@aei.ca>
+ <4DED20C6.1020701@canonical.com>
+ <201106061926.14661.edt@aei.ca>
+ <4DEF9705.4070502@canonical.com>
+ <20110608180146.GB13036@joana>
+ <alpine.LNX.2.00.1106130010360.22872@pobox.suse.cz>
+ <20110613172739.GA2661@joana>
+ <alpine.LNX.2.00.1106161224350.22872@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1106161224350.22872@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Telling the user they can disable an option if they want is not the
-much useful. Describe what it is good for instead.
+* Jiri Kosina <jkosina@suse.cz> [2011-06-16 12:25:32 +0200]:
 
-The text was derived from Mauro's email.
+> On Mon, 13 Jun 2011, Gustavo F. Padovan wrote:
+> 
+> > > > > Where did this patch come from? I don't see it in Linus' tree. If this
+> > > > > patch is merged, I can test the a new kernel out to see if we should
+> > > > > back out the commit from Jiri. However, right now my magic trackpad
+> > > > > (which has the same issue as the magic mouse) works fine on plain 2.6.39.1.
+> > > > 
+> > > > This patch is in my tree. It will be on its way to Linus' tree today.
+> > > 
+> > > Doesn't seem to be present in Linus' tree as of today. Has there been any 
+> > > issue discovered in the meantime?
+> > 
+> > No, it is on wireless-2.6 right now. Then goes to net-2.6 and finally linus-2.6.
+> 
+> Still doesn't seem to be present in Linus' tree today.
+> 
+> Could you please point me to where it is queued now? I am going to revert 
+> the "workaround" I have for magicmouse today (which is buggy), but I want 
+> to make sure that the actual fix (i.e. Villo's patch) flows in soon.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Hans Petter Selasky <hselasky@c2i.net>
----
- drivers/media/Kconfig |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+Yes, still on wireless-2.6 . :(
 
-diff --git a/drivers/media/Kconfig b/drivers/media/Kconfig
-index dc61895..279e2b9 100644
---- a/drivers/media/Kconfig
-+++ b/drivers/media/Kconfig
-@@ -89,11 +89,13 @@ config DVB_NET
- 	default (NET && INET)
- 	depends on NET && INET
- 	help
--	  The DVB network support in the DVB core can
--	  optionally be disabled if this
--	  option is set to N.
-+	  This option enables DVB Network Support which is a part of the DVB
-+	  standard. It is used, for example, by automatic firmware updates used
-+	  on Set-Top-Boxes. It can also be used to access the Internet via the
-+	  DVB card, if the network provider supports it.
- 
--	  If unsure say Y.
-+	  You may want to disable the network support on embedded devices. If
-+	  unsure say Y.
- 
- config VIDEO_MEDIA
- 	tristate
--- 
-1.7.5.4
+I'll check if I can make it go fast.
 
-
+	Gustavo
