@@ -1,314 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757720Ab1FPMYn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 08:24:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57626 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756211Ab1FPMYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 08:24:38 -0400
-Message-ID: <4DF9F5E9.8090901@redhat.com>
-Date: Thu, 16 Jun 2011 09:24:09 -0300
-From: Glauber Costa <glommer@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S1757613Ab1FPM02 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 08:26:28 -0400
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:60993 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756211Ab1FPM0Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 08:26:24 -0400
+Message-ID: <4DF9F657.7030605@fr.ibm.com>
+Date: Thu, 16 Jun 2011 14:25:59 +0200
+From: Cedric Le Goater <clg@fr.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH 3/7] KVM-HV: KVM Steal time implementation
-References: <1308007897-17013-1-git-send-email-glommer@redhat.com> <1308007897-17013-4-git-send-email-glommer@redhat.com> <20110614074500.GM491@redhat.com> <4DF8226B.20408@redhat.com> <20110615090951.GQ491@redhat.com> <4DF978F6.3040002@redhat.com> <20110616112723.GS491@redhat.com> <4DF9F2FE.5000304@redhat.com> <20110616122146.GT491@redhat.com>
-In-Reply-To: <20110616122146.GT491@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Greg Kurz <gkurz@fr.ibm.com>
+CC: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, containers@lists.osdl.org,
+        akpm@linux-foundation.org, xemul@openvz.org
+Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was Vpid:)
+References: <20110615145527.4016.70157.stgit@bahia.local>	<20110615190302.GA16440@redhat.com> <1308223158.8230.66.camel@bahia.local>
+In-Reply-To: <1308223158.8230.66.camel@bahia.local>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2011 09:21 AM, Gleb Natapov wrote:
-> On Thu, Jun 16, 2011 at 09:11:42AM -0300, Glauber Costa wrote:
->> On 06/16/2011 08:27 AM, Gleb Natapov wrote:
->>> On Thu, Jun 16, 2011 at 12:31:02AM -0300, Glauber Costa wrote:
->>>> On 06/15/2011 06:09 AM, Gleb Natapov wrote:
->>>>> On Wed, Jun 15, 2011 at 12:09:31AM -0300, Glauber Costa wrote:
->>>>>> On 06/14/2011 04:45 AM, Gleb Natapov wrote:
->>>>>>> On Mon, Jun 13, 2011 at 07:31:33PM -0400, Glauber Costa wrote:
->>>>>>>> To implement steal time, we need the hypervisor to pass the guest information
->>>>>>>> about how much time was spent running other processes outside the VM.
->>>>>>>> This is per-vcpu, and using the kvmclock structure for that is an abuse
->>>>>>>> we decided not to make.
->>>>>>>>
->>>>>>>> In this patchset, I am introducing a new msr, KVM_MSR_STEAL_TIME, that
->>>>>>>> holds the memory area address containing information about steal time
->>>>>>>>
->>>>>>>> This patch contains the hypervisor part for it. I am keeping it separate from
->>>>>>>> the headers to facilitate backports to people who wants to backport the kernel
->>>>>>>> part but not the hypervisor, or the other way around.
->>>>>>>>
->>>>>>>> Signed-off-by: Glauber Costa<glommer@redhat.com>
->>>>>>>> CC: Rik van Riel<riel@redhat.com>
->>>>>>>> CC: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
->>>>>>>> CC: Peter Zijlstra<peterz@infradead.org>
->>>>>>>> CC: Avi Kivity<avi@redhat.com>
->>>>>>>> CC: Anthony Liguori<aliguori@us.ibm.com>
->>>>>>>> CC: Eric B Munson<emunson@mgebm.net>
->>>>>>>> ---
->>>>>>>>   arch/x86/include/asm/kvm_host.h |    8 +++++
->>>>>>>>   arch/x86/include/asm/kvm_para.h |    4 ++
->>>>>>>>   arch/x86/kvm/x86.c              |   60 +++++++++++++++++++++++++++++++++++++--
->>>>>>>>   3 files changed, 69 insertions(+), 3 deletions(-)
->>>>>>>>
->>>>>>>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
->>>>>>>> index fc38eca..5dce014 100644
->>>>>>>> --- a/arch/x86/include/asm/kvm_host.h
->>>>>>>> +++ b/arch/x86/include/asm/kvm_host.h
->>>>>>>> @@ -388,6 +388,14 @@ struct kvm_vcpu_arch {
->>>>>>>>   	unsigned int hw_tsc_khz;
->>>>>>>>   	unsigned int time_offset;
->>>>>>>>   	struct page *time_page;
->>>>>>>> +
->>>>>>>> +	struct {
->>>>>>>> +		u64 msr_val;
->>>>>>>> +		gpa_t stime;
->>>>>>>> +		struct kvm_steal_time steal;
->>>>>>>> +		u64 this_time_out;
->>>>>>>> +	} st;
->>>>>>>> +
->>>>>>>>   	u64 last_guest_tsc;
->>>>>>>>   	u64 last_kernel_ns;
->>>>>>>>   	u64 last_tsc_nsec;
->>>>>>>> diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
->>>>>>>> index ac306c4..0341e61 100644
->>>>>>>> --- a/arch/x86/include/asm/kvm_para.h
->>>>>>>> +++ b/arch/x86/include/asm/kvm_para.h
->>>>>>>> @@ -45,6 +45,10 @@ struct kvm_steal_time {
->>>>>>>>   	__u32 pad[6];
->>>>>>>>   };
->>>>>>>>
->>>>>>>> +#define KVM_STEAL_ALIGNMENT_BITS 5
->>>>>>>> +#define KVM_STEAL_VALID_BITS ((-1ULL<<     (KVM_STEAL_ALIGNMENT_BITS + 1)))
->>>>>>>> +#define KVM_STEAL_RESERVED_MASK (((1<<     KVM_STEAL_ALIGNMENT_BITS) - 1 )<<     1)
->>>>>>>> +
->>>>>>>>   #define KVM_MAX_MMU_OP_BATCH           32
->>>>>>>>
->>>>>>>>   #define KVM_ASYNC_PF_ENABLED			(1<<     0)
->>>>>>>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->>>>>>>> index 6645634..10fe028 100644
->>>>>>>> --- a/arch/x86/kvm/x86.c
->>>>>>>> +++ b/arch/x86/kvm/x86.c
->>>>>>>> @@ -797,12 +797,12 @@ EXPORT_SYMBOL_GPL(kvm_get_dr);
->>>>>>>>    * kvm-specific. Those are put in the beginning of the list.
->>>>>>>>    */
->>>>>>>>
->>>>>>>> -#define KVM_SAVE_MSRS_BEGIN	8
->>>>>>>> +#define KVM_SAVE_MSRS_BEGIN	9
->>>>>>>>   static u32 msrs_to_save[] = {
->>>>>>>>   	MSR_KVM_SYSTEM_TIME, MSR_KVM_WALL_CLOCK,
->>>>>>>>   	MSR_KVM_SYSTEM_TIME_NEW, MSR_KVM_WALL_CLOCK_NEW,
->>>>>>>>   	HV_X64_MSR_GUEST_OS_ID, HV_X64_MSR_HYPERCALL,
->>>>>>>> -	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN,
->>>>>>>> +	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN, MSR_KVM_STEAL_TIME,
->>>>>>>>   	MSR_IA32_SYSENTER_CS, MSR_IA32_SYSENTER_ESP, MSR_IA32_SYSENTER_EIP,
->>>>>>>>   	MSR_STAR,
->>>>>>>>   #ifdef CONFIG_X86_64
->>>>>>>> @@ -1480,6 +1480,34 @@ static void kvmclock_reset(struct kvm_vcpu *vcpu)
->>>>>>>>   	}
->>>>>>>>   }
->>>>>>>>
->>>>>>>> +static void record_steal_time(struct kvm_vcpu *vcpu)
->>>>>>>> +{
->>>>>>>> +	u64 delta;
->>>>>>>> +
->>>>>>>> +	if (vcpu->arch.st.stime&&     vcpu->arch.st.this_time_out) {
->>>>>>>> +
->>>>>>>> +		if (unlikely(kvm_read_guest(vcpu->kvm, vcpu->arch.st.stime,
->>>>>>>> +			&vcpu->arch.st.steal, sizeof(struct kvm_steal_time)))) {
->>>>>>>> +
->>>>>>>> +			vcpu->arch.st.stime = 0;
->>>>>>>> +			return;
->>>>>>>> +		}
->>>>>>>> +
->>>>>>>> +		delta = (get_kernel_ns() - vcpu->arch.st.this_time_out);
->>>>>>>> +
->>>>>>>> +		vcpu->arch.st.steal.steal += delta;
->>>>>>>> +		vcpu->arch.st.steal.version += 2;
->>>>>>>> +
->>>>>>>> +		if (unlikely(kvm_write_guest(vcpu->kvm, vcpu->arch.st.stime,
->>>>>>> Why not use kvm_write_guest_cached() here and introduce kvm_read_guest_cached()
->>>>>>> for the read above?
->>>>>>
->>>>>> Actually, I'd expect most read/writes to benefit from caching, no?
->>>>>> So why don't we just rename kvm_write_guest_cached() to
->>>>>> kvm_write_guest(), and the few places - if any - that need to force
->>>>>> transversing of the gfn mappings, get renamed to
->>>>>> kvm_write_guest_uncached ?
->>>>>>
->>>>> Good idea. I do not see any places where kvm_write_guest_uncached is
->>>>> needed from a brief look. Avi?
->>>>>
->>>>>>>> +			&vcpu->arch.st.steal, sizeof(struct kvm_steal_time)))) {
->>>>>>>> +
->>>>>>>> +			vcpu->arch.st.stime = 0;
->>>>>>>> +			return;
->>>>>>>> +		}
->>>>>>>> +	}
->>>>>>>> +
->>>>>>>> +}
->>>>>>>> +
->>>>>>>>   int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
->>>>>>>>   {
->>>>>>>>   	switch (msr) {
->>>>>>>> @@ -1562,6 +1590,23 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
->>>>>>>>   		if (kvm_pv_enable_async_pf(vcpu, data))
->>>>>>>>   			return 1;
->>>>>>>>   		break;
->>>>>>>> +	case MSR_KVM_STEAL_TIME:
->>>>>>>> +		vcpu->arch.st.msr_val = data;
->>>>>>>> +
->>>>>>>> +		if (!(data&     KVM_MSR_ENABLED)) {
->>>>>>>> +			vcpu->arch.st.stime = 0;
->>>>>>>> +			break;
->>>>>>>> +		}
->>>>>>>> +
->>>>>>>> +		if (data&     KVM_STEAL_RESERVED_MASK)
->>>>>>>> +			return 1;
->>>>>>>> +
->>>>>>>> +		vcpu->arch.st.this_time_out = get_kernel_ns();
->>>>>>>> +		vcpu->arch.st.stime = data&     KVM_STEAL_VALID_BITS;
->>>>>>>> +		record_steal_time(vcpu);
->>>>>>>> +
->>>>>>>> +		break;
->>>>>>>> +
->>>>>>>>   	case MSR_IA32_MCG_CTL:
->>>>>>>>   	case MSR_IA32_MCG_STATUS:
->>>>>>>>   	case MSR_IA32_MC0_CTL ... MSR_IA32_MC0_CTL + 4 * KVM_MAX_MCE_BANKS - 1:
->>>>>>>> @@ -1847,6 +1892,9 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
->>>>>>>>   	case MSR_KVM_ASYNC_PF_EN:
->>>>>>>>   		data = vcpu->arch.apf.msr_val;
->>>>>>>>   		break;
->>>>>>>> +	case MSR_KVM_STEAL_TIME:
->>>>>>>> +		data = vcpu->arch.st.msr_val;
->>>>>>>> +		break;
->>>>>>>>   	case MSR_IA32_P5_MC_ADDR:
->>>>>>>>   	case MSR_IA32_P5_MC_TYPE:
->>>>>>>>   	case MSR_IA32_MCG_CAP:
->>>>>>>> @@ -2158,6 +2206,8 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
->>>>>>>>   			kvm_migrate_timers(vcpu);
->>>>>>>>   		vcpu->cpu = cpu;
->>>>>>>>   	}
->>>>>>>> +
->>>>>>>> +	record_steal_time(vcpu);
->>>>>>>>   }
->>>>>>>>
->>>>>>>>   void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
->>>>>>>> @@ -2165,6 +2215,7 @@ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
->>>>>>>>   	kvm_x86_ops->vcpu_put(vcpu);
->>>>>>>>   	kvm_put_guest_fpu(vcpu);
->>>>>>>>   	kvm_get_msr(vcpu, MSR_IA32_TSC,&vcpu->arch.last_guest_tsc);
->>>>>>>> +	vcpu->arch.st.this_time_out = get_kernel_ns();
->>>>>>>>   }
->>>>>>>>
->>>>>>> Shouldn't we call record_steal_time(vcpu)/vcpu->arch.st.this_time_out = get_kernel_ns();
->>>>>>> just before/after entering/exiting a guest? vcpu_(put|get) are called
->>>>>>> for each vcpu ioctl, not only VCPU_RUN.
->>>>>> Sorry, missed that the first time I've read your e-mail.
->>>>>>
->>>>>> If done like you said, time spent on the hypervisor is accounted as
->>>>>> steal time. I don't think it is.
->>>>> I thought that this is the point of a steal time. Running other
->>>>> tasks/guests is a hypervisor overhead too after all :) Also what about
->>>>> time spend serving host interrupts between put/get? It will not be
->>>>> accounted as steal time, correct?
->>>>
->>>> This is mostly semantics. I like to compare this to a normal
->>>> process: There is a difference between time the OS spent on your
->>>> behalf, doing your system calls (sys), and time spent by other
->>>> processes. Similar thing here.
->>>>
->>> The problem with this approach is that things like doing "info cpus"
->>> in qemu monitor will change guest scheduling behaviour. Do we want it
->>> to be like that?
+On 06/16/2011 01:19 PM, Greg Kurz wrote:
+> On Wed, 2011-06-15 at 21:03 +0200, Oleg Nesterov wrote:
+>> Forgot to ask,
 >>
->> You mean because it is running in a different thread, and will
->> compete for resources with the cpu thread ?
->>
-> No, because it executes GET_REGS ioctl (in vcpu thread). The time
-> it takes to execute it is accounted as time the hypervior spent on behave
-> of a guest. Not a big deal if it is executed rarely. I tend to use "info
-> cpus"/"info register" quite a lot when debugging and would preffer it to
-> not affect guest behaviour.
->
->
->>>> Which put/get are you referring to specifically ? You mean
->>>> vcpu_put() vs vcpu_load() ?
->>>>
->>> Yes.
+>> On 06/15, Greg Kurz wrote:
 >>>
->>>> If they are after vcpu_put(), they will, because at this time your
->>>> process is officially out of the cpu.
->>>>
->>> And if they are between vcpu_load() and vcpu_put() they will be accounted as
->>> a work done on behalf of a guest although they are likely unrelated.
->> I think the best we can do around it here is record steal time /
->> measure time as late as we can. We could in theory subtract irq
->> time, but it sounds too complicated for little gain.
+>>> The need arises in the LXC community when one wants to send a signal from
+>>> the host (aka. init_pid_ns context) to a container process for which one
+>>> only knows the pid inside the container.
 >>
-> Recording steal time/measure time as close as possible to vmentry/vmexit
-> is what I propose :) I agree about little gain part.
+>> I am just curious, why do you need this?
+>>
+> 
+> Because some LXC users run partially isolated containers (AKA.
+> application containers started with the lxc-execute command). Some of
+> the user code runs outside the container and some inside. Since
+> lxc-execute uses CLONE_NEWPID, it's difficult for the external code to
+> relate a pid generated inside the container with a task. There are
+> regular requests on lxc-users@ about this.
 
-Well, I don't like it a priori, due to the reasons I've already stated. 
-If there would be a large noticeable gain, there could be a trade off. 
-But since you agree with the little gain, I'd prefer to keep it this way.
+It's simply not possible. There's no support for it.
 
->>>>
->>>>>>
->>>>>> Steal time is time spent running someone else's job instead of
->>>>>> yours. The name for the time spent in the hypervisor doing something
->>>>>> for *you* is just overhead.
->>>>> OK. That is the question of a definition I guess. If you define it like
->>>>> that the code is correct.
->>>>>
->>>>>>
->>>>>>>
->>>>>>>>   static int is_efer_nx(void)
->>>>>>>> @@ -2477,7 +2528,8 @@ static void do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
->>>>>>>>   			     (1<<     KVM_FEATURE_NOP_IO_DELAY) |
->>>>>>>>   			     (1<<     KVM_FEATURE_CLOCKSOURCE2) |
->>>>>>>>   			     (1<<     KVM_FEATURE_ASYNC_PF) |
->>>>>>>> -			     (1<<     KVM_FEATURE_CLOCKSOURCE_STABLE_BIT);
->>>>>>>> +			     (1<<     KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
->>>>>>>> +			     (1<<     KVM_FEATURE_STEAL_TIME);
->>>>>>>>   		entry->ebx = 0;
->>>>>>>>   		entry->ecx = 0;
->>>>>>>>   		entry->edx = 0;
->>>>>>>> @@ -6200,6 +6252,8 @@ int kvm_arch_vcpu_reset(struct kvm_vcpu *vcpu)
->>>>>>>>
->>>>>>>>   	kvmclock_reset(vcpu);
->>>>>>>>
->>>>>>>> +	vcpu->arch.st.stime = 0;
->>>>>>>> +
->>>>>>>>   	kvm_clear_async_pf_completion_queue(vcpu);
->>>>>>>>   	kvm_async_pf_hash_reset(vcpu);
->>>>>>>>   	vcpu->arch.apf.halted = false;
->>>>>>>> --
->>>>>>>> 1.7.3.4
->>>>>>>>
->>>>>>>> --
->>>>>>>> To unsubscribe from this list: send the line "unsubscribe kvm" in
->>>>>>>> the body of a message to majordomo@vger.kernel.org
->>>>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>>>>
->>>>>>> --
->>>>>>> 			Gleb.
->>>>>
->>>>> --
->>>>> 			Gleb.
->>>
->>> --
->>> 			Gleb.
->
-> --
-> 			Gleb.
+We have a case where a task in a parent pid namespace needs to kill 
+another task in a sub pid namespace only knowing its internal pid.
+the latter has been communicated to the parent task through a file or 
+a unix socket.
 
+This 'ActivePid' information in /proc is not sufficient to identity 
+the task, you also need the list of the tasks which are living in 
+the pid namespace.
+
+
+We could have used the setns syscall and attach a kill command to 
+a pid namespace. But, this is borderline as you might ended up 
+killing all the tasks in the namespace you've attached to. Anyhow, 
+setns doesn't support pid namespaces yet and it feels safer to send 
+the signal for outside.
+
+a new kill syscall could be the solution:
+
+    int pidns_kill(pid_t init_pid, pid_t some_pid);
+
+where 'init_pid' identifies the namespace and 'some_pid' identifies
+a task in this namespace. this is very specific but why not.
+
+Finally, we thought that the 'ActivePid' information was interesting 
+enough to be exposed in /proc and was solving the case we're facing 
+rather easily with some framework (cgroups) in user space.
+
+Best,
+
+C.
