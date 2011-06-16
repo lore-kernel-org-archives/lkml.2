@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756058Ab1FPHBi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:01:38 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:59072 "EHLO
+	id S1757168Ab1FPHcB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:32:01 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:58004 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755978Ab1FPHBa (ORCPT
+	by vger.kernel.org with ESMTP id S1752986Ab1FPHBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:01:30 -0400
-X-Sasl-enc: oxKl5d/ULHis+iv5n8PmBRr/wEbZG7IqTv4cPhbegEEu 1308207689
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:35 2011
-Message-Id: <20110616000235.851568103@clark.kroah.org>
+	Thu, 16 Jun 2011 03:01:31 -0400
+X-Sasl-enc: sDxXtFrCL8BMhe3ueSwEuvgEAwANh43d8BuxbLtEmbZQ 1308207691
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:36 2011
+Message-Id: <20110616000235.950759607@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:00:33 -0700
+Date: Wed, 15 Jun 2011 17:00:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [70/89] ASoC: SAMSUNG: Fix the incorrect referencing of I2SCON
+        Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [71/89] ALSA: hda: Fix quirk for Dell Inspiron 910
 In-Reply-To: <20110616000258.GA14529@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,45 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
- register
 
-From: Sangbeom Kim <sbkim73@samsung.com>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 33195500edf260e8c8809ab9dfc67f50e0ce031f upstream.
+commit 0a1896b27b030529ec770aefd790544a1bdb7d5a upstream.
 
-If DMA active status should be checked, I2SCON register should be referenced.
-In this patch, Fix the incorrect referencing of I2SCON register.
+BugLink: https://launchpad.net/bugs/792712
 
-Reported-by : Lakkyung Jung <lakkyung.jung@samsung.com>
-Signed-off-by: Sangbeom Kim <sbkim73@samsung.com>
-Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
-Acked-by: Liam Girdwood <lrg@ti.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+The original reporter states that sound from the internal speakers is
+inaudible until using the model=auto quirk. This symptom is due to an
+existing quirk mask for 0x102802b* that uses the model=dell quirk. To
+limit the possible regressions, leave the existing quirk mask but add
+a higher priority specific mask for the reporter's PCI SSID.
+
+Reported-and-tested-by: rodni hipp
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/samsung/i2s.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/soc/samsung/i2s.c
-+++ b/sound/soc/samsung/i2s.c
-@@ -191,7 +191,7 @@ static inline bool tx_active(struct i2s_
- 	if (!i2s)
- 		return false;
- 
--	active = readl(i2s->addr + I2SMOD);
-+	active = readl(i2s->addr + I2SCON);
- 
- 	if (is_secondary(i2s))
- 		active &= CON_TXSDMA_ACTIVE;
-@@ -223,7 +223,7 @@ static inline bool rx_active(struct i2s_
- 	if (!i2s)
- 		return false;
- 
--	active = readl(i2s->addr + I2SMOD) & CON_RXDMA_ACTIVE;
-+	active = readl(i2s->addr + I2SCON) & CON_RXDMA_ACTIVE;
- 
- 	return active ? true : false;
- }
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -13804,6 +13804,7 @@ static struct snd_pci_quirk alc268_cfg_t
+ 	SND_PCI_QUIRK(0x1025, 0x015b, "Acer Aspire One",
+ 						ALC268_ACER_ASPIRE_ONE),
+ 	SND_PCI_QUIRK(0x1028, 0x0253, "Dell OEM", ALC268_DELL),
++	SND_PCI_QUIRK(0x1028, 0x02b0, "Dell Inspiron 910", ALC268_AUTO),
+ 	SND_PCI_QUIRK_MASK(0x1028, 0xfff0, 0x02b0,
+ 			"Dell Inspiron Mini9/Vostro A90", ALC268_DELL),
+ 	/* almost compatible with toshiba but with optional digital outs;
 
 
