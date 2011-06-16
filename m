@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab1FPHZP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:25:15 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:58628 "EHLO
+	id S1756720Ab1FPHJr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:09:47 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:59506 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756471Ab1FPHFf (ORCPT
+	by vger.kernel.org with ESMTP id S1756427Ab1FPHFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:05:35 -0400
-X-Sasl-enc: Oc9OdkNJN5xN/hfALzoGDIQx9NIkgiDv/qJtFtZPLFB+ 1308207934
+	Thu, 16 Jun 2011 03:05:37 -0400
+X-Sasl-enc: JT/hKxktuHDwiBEXSCxeOy0MPq0L8+KQPjLr8XCSzqLq 1308207936
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:16:11 2011
-Message-Id: <20110616001611.687715824@clark.kroah.org>
+Message-Id: <20110616001611.789880245@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:15:21 -0700
+Date: Wed, 15 Jun 2011 17:15:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: [24/91] ASoC: Add some missing volume update bit sets for wm_hubs
+        Andrew Barry <abarry@cray.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [25/91] mm/page_alloc.c: prevent unending loop in
 In-Reply-To: <20110616001900.GA25375@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,45 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
 ------------------
- devices
+ __alloc_pages_slowpath()
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Andrew Barry <abarry@cray.com>
 
-commit fb5af53d421d80725172427e9076f6e889603df6 upstream.
+commit cfa54a0fcfc1017c6f122b6f21aaba36daa07f71 upstream.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Liam Girdwood <lrg@ti.com>
+I believe I found a problem in __alloc_pages_slowpath, which allows a
+process to get stuck endlessly looping, even when lots of memory is
+available.
+
+Running an I/O and memory intensive stress-test I see a 0-order page
+allocation with __GFP_IO and __GFP_WAIT, running on a system with very
+little free memory.  Right about the same time that the stress-test gets
+killed by the OOM-killer, the utility trying to allocate memory gets stuck
+in __alloc_pages_slowpath even though most of the systems memory was freed
+by the oom-kill of the stress-test.
+
+The utility ends up looping from the rebalance label down through the
+wait_iff_congested continiously.  Because order=0,
+__alloc_pages_direct_compact skips the call to get_page_from_freelist.
+Because all of the reclaimable memory on the system has already been
+reclaimed, __alloc_pages_direct_reclaim skips the call to
+get_page_from_freelist.  Since there is no __GFP_FS flag, the block with
+__alloc_pages_may_oom is skipped.  The loop hits the wait_iff_congested,
+then jumps back to rebalance without ever trying to
+get_page_from_freelist.  This loop repeats infinitely.
+
+The test case is pretty pathological.  Running a mix of I/O stress-tests
+that do a lot of fork() and consume all of the system memory, I can pretty
+reliably hit this on 600 nodes, in about 12 hours.  32GB/node.
+
+Signed-off-by: Andrew Barry <abarry@cray.com>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: Rik van Riel<riel@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/codecs/wm_hubs.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ mm/page_alloc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm_hubs.c
-+++ b/sound/soc/codecs/wm_hubs.c
-@@ -686,17 +686,21 @@ int wm_hubs_add_analogue_controls(struct
- 	snd_soc_update_bits(codec, WM8993_RIGHT_LINE_INPUT_3_4_VOLUME,
- 			    WM8993_IN2_VU, WM8993_IN2_VU);
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1841,6 +1841,7 @@ restart:
+ 	 */
+ 	alloc_flags = gfp_to_alloc_flags(gfp_mask);
  
-+	snd_soc_update_bits(codec, WM8993_SPEAKER_VOLUME_LEFT,
-+			    WM8993_SPKOUT_VU, WM8993_SPKOUT_VU);
- 	snd_soc_update_bits(codec, WM8993_SPEAKER_VOLUME_RIGHT,
- 			    WM8993_SPKOUT_VU, WM8993_SPKOUT_VU);
++rebalance:
+ 	/* This is the last chance, in general, before the goto nopage. */
+ 	page = get_page_from_freelist(gfp_mask, nodemask, order, zonelist,
+ 			high_zoneidx, alloc_flags & ~ALLOC_NO_WATERMARKS,
+@@ -1848,7 +1849,6 @@ restart:
+ 	if (page)
+ 		goto got_pg;
  
- 	snd_soc_update_bits(codec, WM8993_LEFT_OUTPUT_VOLUME,
--			    WM8993_HPOUT1L_ZC, WM8993_HPOUT1L_ZC);
-+			    WM8993_HPOUT1_VU | WM8993_HPOUT1L_ZC,
-+			    WM8993_HPOUT1_VU | WM8993_HPOUT1L_ZC);
- 	snd_soc_update_bits(codec, WM8993_RIGHT_OUTPUT_VOLUME,
- 			    WM8993_HPOUT1_VU | WM8993_HPOUT1R_ZC,
- 			    WM8993_HPOUT1_VU | WM8993_HPOUT1R_ZC);
- 
- 	snd_soc_update_bits(codec, WM8993_LEFT_OPGA_VOLUME,
--			    WM8993_MIXOUTL_ZC, WM8993_MIXOUTL_ZC);
-+			    WM8993_MIXOUTL_ZC | WM8993_MIXOUT_VU,
-+			    WM8993_MIXOUTL_ZC | WM8993_MIXOUT_VU);
- 	snd_soc_update_bits(codec, WM8993_RIGHT_OPGA_VOLUME,
- 			    WM8993_MIXOUTR_ZC | WM8993_MIXOUT_VU,
- 			    WM8993_MIXOUTR_ZC | WM8993_MIXOUT_VU);
+-rebalance:
+ 	/* Allocate without watermarks if the context allows */
+ 	if (alloc_flags & ALLOC_NO_WATERMARKS) {
+ 		page = __alloc_pages_high_priority(gfp_mask, order,
 
 
