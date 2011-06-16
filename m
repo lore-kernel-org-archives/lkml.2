@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932174Ab1FPR4F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 13:56:05 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:51565 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758503Ab1FPR4D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 13:56:03 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing the packed attribute
-Date: Thu, 16 Jun 2011 19:55:50 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Alexander Holler <holler@ahsoftware.de>, gregkh@suse.de,
-        Rabin Vincent <rabin@rab.in>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <Pine.LNX.4.44L0.1106161308310.2204-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1106161308310.2204-100000@iolanthe.rowland.org>
+	id S932204Ab1FPSBQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 14:01:16 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:37194 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758503Ab1FPSBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 14:01:14 -0400
+Message-ID: <4DFA44D4.2010602@interlog.com>
+Date: Thu, 16 Jun 2011 14:00:52 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Kay Sievers <kay.sievers@vrfy.org>
+CC: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Greg KH <greg@kroah.com>, Nao Nishijima <nao.nishijima.xt@hitachi.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jcm@redhat.com, hare@suse.de, stefanr@s5r6.in-berlin.de,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
+References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp> <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp> <20110615153337.GA10160@kroah.com> <4DF9F11F.705@hitachi.com> <20110616154129.GA31498@kroah.com> <1308239454.2436.34.camel@mulgrave> <20110616161442.GA32113@kroah.com> <1308241506.2436.44.camel@mulgrave> <BANLkTi=qHhzwGfp4v8B1CAmT+gtA=sOgvw@mail.gmail.com> <BANLkTikUNqTxgD_+TTVpcFyRDu_fSesrsg@mail.gmail.com>
+In-Reply-To: <BANLkTikUNqTxgD_+TTVpcFyRDu_fSesrsg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106161955.50972.arnd@arndb.de>
-X-Provags-ID: V02:K0:B9sUtfnrYpKR+jU04IJ2XOILk+ZOIJDuAkgK0bf4hrk
- 6RXURPBHkP7yWyjPl0DAUH7XTUz5IGsB42IbJGX+nOJAhMbaRN
- INEDXOwwjJ0xYM+TftfuBYC+vXYqgPoWE6Ko14c3cBGBu90YeD
- obv/JyZV7kDHI5u7bVx7CWF2t/yGZ6oApJXfYN6TkkphCs83n+
- bwtwxnBcT1ogGwW29oRpg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 June 2011, Alan Stern wrote:
-> 
-> On Thu, 16 Jun 2011, Alexander Holler wrote:
-> 
-> > In commit 139540170d9d9b7ead3caaf540f161756b356d56 the attribute
-> > packed is removed from the structs which are used to access the EHCI-registers.
-> > 
-> > This is done to circumvent a problem with gcc 4.6, which might access members of
-> > packed structs on a byte by byte basis. But using packed, aligned(4) fixes that
-> > too and is imho the better solution. Otherwise (without packed) the compiler would be free
-> > to choose whatever alignment he thinks fits best, which might be e.g. 8-byte on 64-bit machines.
-> 
-> Is that really true?
+On 11-06-16 01:20 PM, Kay Sievers wrote:
+> On Thu, Jun 16, 2011 at 19:09, Kay Sievers<kay.sievers@vrfy.org>  wrote:
+>> On Thu, Jun 16, 2011 at 18:25, James Bottomley
+>> <James.Bottomley@hansenpartnership.com>  wrote:
+>>> On Thu, 2011-06-16 at 09:14 -0700, Greg KH wrote:
+>>>> All userspace naming will be taken care of by the usual udev rules, so
+>>>>> for disks, something like /dev/disk/by-preferred/<fred>  which would be
+>>>>> the usual symbolic link.
+>>>>
+>>>> No, udev can not create such a link after the preferred name is set, as
+>>>> it has no way of knowing that the name was set.
+>>>
+>>> It can if we trigger a uevent.  Note: I'm not advocating this ... I'd be
+>>> equally happy having whatever sets the kernel name create the link (or
+>>> tickle udev to create it).  We definitely require device links, though,
+>>> to get this to work.
+>
+> Guess all that would work now, including mount(8) not canonicalizing.
+> What would happen if we mount:
+>    /dev/disk/by-pretty/foo
+> and some tool later thinks the pretty name should better be 'bar', it
+> writes the name to /sys, we get a uevent, the old link disappears, we
+> get a new link, mount has no device node anymore for the mounted
+> device ...
+>
+> So we basically get a one-shot additional pretty name? Guess, the
+> _single_ name changed anytime later just asks for serious problems. We
+> need to set it very early to be really useful, but how, where is it
+> coming from?
 
-No.
+One obvious candidate for a preferred block device name
+is:
+   - a SATA disk's WWN (NAA 5 64 bit), or
+   - a SCSI disk's logical unit name (e.g. SAS: NAA 5)
 
-> I thought the compiler was not allowed to insert 
-> padding if the natural alignment of the data types didn't require any.
+These names (actually numbers) are meant to be world wide
+unique.
 
-It's architecture dependent. The alignment of the structure is the maximum alignment
-of its members, so it gets to be 8 bytes if there is a 64 bit member in the struct
-on most architectures, but 4 bytes on x86.
+The kernel's device naming (following from how devices are
+discovered) is topological. However at higher levels
+the user is interested in the device identity. So if
+unique device names were used as preferred names and
+preferred names were unique (in a Linux system at any
+given time) then any subsequent path to an existing device
+would be highlighted. [That is because subsequent attempts
+to create its preferred name would fail because it is
+already there.]
 
-	Arnd
+You don't need thousands of dollars of equipment to
+demonstrate this point. An external single disk
+SATA enclosure with a USB and eSATA interface will do.
+
+Doug Gilbert
+
+
