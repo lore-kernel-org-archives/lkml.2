@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757181Ab1FPHbd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:31:33 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:48440 "EHLO
+	id S1757157Ab1FPHbb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:31:31 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:48387 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755999Ab1FPHBd (ORCPT
+	by vger.kernel.org with ESMTP id S1755919Ab1FPHBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:01:33 -0400
-X-Sasl-enc: WbYF0DHnNnJ0LebmRVdA2zRLJxQj2qAKhEF9xvPj8hOh 1308207692
+	Thu, 16 Jun 2011 03:01:34 -0400
+X-Sasl-enc: BaJ37n0eAnzXBixu9Rqp4AOjNA9OjWQUqtHF/KJSJY8d 1308207693
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:36 2011
-Message-Id: <20110616000236.053358245@clark.kroah.org>
+Message-Id: <20110616000236.153229699@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:00:35 -0700
+Date: Wed, 15 Jun 2011 17:00:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Robert Richter <robert.richter@amd.com>
-Subject: [72/89] oprofile: Free potentially owned tasks in case of errors
+        Carl Love <carll@us.ibm.com>, Robert Richter <robert.richter@amd.com>
+Subject: [73/89] oprofile: Fix locking dependency in sync_start()
 In-Reply-To: <20110616000258.GA14529@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,54 +29,152 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Robert Richter <robert.richter@amd.com>
 
-commit 6ac6519b93065625119a347be1cbcc1b89edb773 upstream.
+commit 130c5ce716c9bfd1c2a2ec840a746eb7ff9ce1e6 upstream.
 
-After registering the task free notifier we possibly have tasks in our
-dying_tasks list. Free them after unregistering the notifier in case
-of an error.
+This fixes the A->B/B->A locking dependency, see the warning below.
 
+The function task_exit_notify() is called with (task_exit_notifier)
+.rwsem set and then calls sync_buffer() which locks buffer_mutex. In
+sync_start() the buffer_mutex was set to prevent notifier functions to
+be started before sync_start() is finished. But when registering the
+notifier, (task_exit_notifier).rwsem is locked too, but now in
+different order than in sync_buffer(). In theory this causes a locking
+dependency, what does not occur in practice since task_exit_notify()
+is always called after the notifier is registered which means the lock
+is already released.
+
+However, after checking the notifier functions it turned out the
+buffer_mutex in sync_start() is unnecessary. This is because
+sync_buffer() may be called from the notifiers even if sync_start()
+did not finish yet, the buffers are already allocated but empty. No
+need to protect this with the mutex.
+
+So we fix this theoretical locking dependency by removing buffer_mutex
+in sync_start(). This is similar to the implementation before commit:
+
+ 750d857 oprofile: fix crash when accessing freed task structs
+
+which introduced the locking dependency.
+
+Lockdep warning:
+
+oprofiled/4447 is trying to acquire lock:
+ (buffer_mutex){+.+...}, at: [<ffffffffa0000e55>] sync_buffer+0x31/0x3ec [oprofile]
+
+but task is already holding lock:
+ ((task_exit_notifier).rwsem){++++..}, at: [<ffffffff81058026>] __blocking_notifier_call_chain+0x39/0x67
+
+which lock already depends on the new lock.
+
+the existing dependency chain (in reverse order) is:
+
+-> #1 ((task_exit_notifier).rwsem){++++..}:
+       [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
+       [<ffffffff81463a2b>] down_write+0x44/0x67
+       [<ffffffff810581c0>] blocking_notifier_chain_register+0x52/0x8b
+       [<ffffffff8105a6ac>] profile_event_register+0x2d/0x2f
+       [<ffffffffa00013c1>] sync_start+0x47/0xc6 [oprofile]
+       [<ffffffffa00001bb>] oprofile_setup+0x60/0xa5 [oprofile]
+       [<ffffffffa00014e3>] event_buffer_open+0x59/0x8c [oprofile]
+       [<ffffffff810cd3b9>] __dentry_open+0x1eb/0x308
+       [<ffffffff810cd59d>] nameidata_to_filp+0x60/0x67
+       [<ffffffff810daad6>] do_last+0x5be/0x6b2
+       [<ffffffff810dbc33>] path_openat+0xc7/0x360
+       [<ffffffff810dbfc5>] do_filp_open+0x3d/0x8c
+       [<ffffffff810ccfd2>] do_sys_open+0x110/0x1a9
+       [<ffffffff810cd09e>] sys_open+0x20/0x22
+       [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
+
+-> #0 (buffer_mutex){+.+...}:
+       [<ffffffff81064dfb>] __lock_acquire+0x1085/0x1711
+       [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
+       [<ffffffff814634f0>] mutex_lock_nested+0x63/0x309
+       [<ffffffffa0000e55>] sync_buffer+0x31/0x3ec [oprofile]
+       [<ffffffffa0001226>] task_exit_notify+0x16/0x1a [oprofile]
+       [<ffffffff81467b96>] notifier_call_chain+0x37/0x63
+       [<ffffffff8105803d>] __blocking_notifier_call_chain+0x50/0x67
+       [<ffffffff81058068>] blocking_notifier_call_chain+0x14/0x16
+       [<ffffffff8105a718>] profile_task_exit+0x1a/0x1c
+       [<ffffffff81039e8f>] do_exit+0x2a/0x6fc
+       [<ffffffff8103a5e4>] do_group_exit+0x83/0xae
+       [<ffffffff8103a626>] sys_exit_group+0x17/0x1b
+       [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
+
+other info that might help us debug this:
+
+1 lock held by oprofiled/4447:
+ #0:  ((task_exit_notifier).rwsem){++++..}, at: [<ffffffff81058026>] __blocking_notifier_call_chain+0x39/0x67
+
+stack backtrace:
+Pid: 4447, comm: oprofiled Not tainted 2.6.39-00007-gcf4d8d4 #10
+Call Trace:
+ [<ffffffff81063193>] print_circular_bug+0xae/0xbc
+ [<ffffffff81064dfb>] __lock_acquire+0x1085/0x1711
+ [<ffffffffa0000e55>] ? sync_buffer+0x31/0x3ec [oprofile]
+ [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
+ [<ffffffffa0000e55>] ? sync_buffer+0x31/0x3ec [oprofile]
+ [<ffffffff81062627>] ? mark_lock+0x42f/0x552
+ [<ffffffffa0000e55>] ? sync_buffer+0x31/0x3ec [oprofile]
+ [<ffffffff814634f0>] mutex_lock_nested+0x63/0x309
+ [<ffffffffa0000e55>] ? sync_buffer+0x31/0x3ec [oprofile]
+ [<ffffffffa0000e55>] sync_buffer+0x31/0x3ec [oprofile]
+ [<ffffffff81058026>] ? __blocking_notifier_call_chain+0x39/0x67
+ [<ffffffff81058026>] ? __blocking_notifier_call_chain+0x39/0x67
+ [<ffffffffa0001226>] task_exit_notify+0x16/0x1a [oprofile]
+ [<ffffffff81467b96>] notifier_call_chain+0x37/0x63
+ [<ffffffff8105803d>] __blocking_notifier_call_chain+0x50/0x67
+ [<ffffffff81058068>] blocking_notifier_call_chain+0x14/0x16
+ [<ffffffff8105a718>] profile_task_exit+0x1a/0x1c
+ [<ffffffff81039e8f>] do_exit+0x2a/0x6fc
+ [<ffffffff81465031>] ? retint_swapgs+0xe/0x13
+ [<ffffffff8103a5e4>] do_group_exit+0x83/0xae
+ [<ffffffff8103a626>] sys_exit_group+0x17/0x1b
+ [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
+
+Reported-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Carl Love <carll@us.ibm.com>
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/oprofile/buffer_sync.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ drivers/oprofile/buffer_sync.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
 --- a/drivers/oprofile/buffer_sync.c
 +++ b/drivers/oprofile/buffer_sync.c
-@@ -141,6 +141,13 @@ static struct notifier_block module_load
- 	.notifier_call = module_load_notify,
- };
+@@ -155,8 +155,6 @@ int sync_start(void)
+ 	if (!zalloc_cpumask_var(&marked_cpus, GFP_KERNEL))
+ 		return -ENOMEM;
  
-+static void free_all_tasks(void)
-+{
-+	/* make sure we don't leak task structs */
-+	process_task_mortuary();
-+	process_task_mortuary();
-+}
-+
- int sync_start(void)
+-	mutex_lock(&buffer_mutex);
+-
+ 	err = task_handoff_register(&task_free_nb);
+ 	if (err)
+ 		goto out1;
+@@ -173,7 +171,6 @@ int sync_start(void)
+ 	start_cpu_work();
+ 
+ out:
+-	mutex_unlock(&buffer_mutex);
+ 	return err;
+ out4:
+ 	profile_event_unregister(PROFILE_MUNMAP, &munmap_nb);
+@@ -190,14 +187,13 @@ out1:
+ 
+ void sync_stop(void)
  {
- 	int err;
-@@ -174,6 +181,7 @@ out3:
+-	/* flush buffers */
+-	mutex_lock(&buffer_mutex);
+ 	end_cpu_work();
+ 	unregister_module_notifier(&module_load_nb);
+ 	profile_event_unregister(PROFILE_MUNMAP, &munmap_nb);
  	profile_event_unregister(PROFILE_TASK_EXIT, &task_exit_nb);
- out2:
  	task_handoff_unregister(&task_free_nb);
-+	free_all_tasks();
- out1:
- 	free_cpumask_var(marked_cpus);
- 	goto out;
-@@ -192,10 +200,7 @@ void sync_stop(void)
- 	mutex_unlock(&buffer_mutex);
+-	mutex_unlock(&buffer_mutex);
++	barrier();			/* do all of the above first */
++
  	flush_cpu_work();
  
--	/* make sure we don't leak task structs */
--	process_task_mortuary();
--	process_task_mortuary();
--
-+	free_all_tasks();
- 	free_cpumask_var(marked_cpus);
- }
- 
+ 	free_all_tasks();
 
 
