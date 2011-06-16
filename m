@@ -1,71 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718Ab1FPF7a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 01:59:30 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44822 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753425Ab1FPF72 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 01:59:28 -0400
+	id S1754673Ab1FPF75 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 01:59:57 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:44620 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753420Ab1FPF74 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 01:59:56 -0400
+X-AuditID: b753bd60-a0ac3ba000003bac-59-4df99bd9805e
+X-AuditID: b753bd60-a0ac3ba000003bac-59-4df99bd9805e
+Message-ID: <4DF99BD6.8000705@hitachi.com>
+Date: Thu, 16 Jun 2011 14:59:50 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <CDE289EC-7844-48E1-BB6A-6230ADAF6B7C@suse.de>
-References: <47FAB15C-B113-40FD-9CE0-49566AACC0DF@suse.de> <BANLkTimubRW2Az2MmRbgV+iTB+s6UEF5-w@mail.gmail.com>
- <CDE289EC-7844-48E1-BB6A-6230ADAF6B7C@suse.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 15 Jun 2011 22:59:04 -0700
-Message-ID: <BANLkTikLLfJ6yGNVcZ+o1RFmRoqRVrRSYQ@mail.gmail.com>
-Subject: Re: Oops in VMA code
-To: Alexander Graf <agraf@suse.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 3.0-rc2-tip 20/22] 20: perf: perf interface for uprobes
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6> <20110607130216.28590.5724.sendpatchset@localhost6.localdomain6> <4DF20511.8000206@hitachi.com> <20110613084133.GA27130@linux.vnet.ibm.com> <4DF6FFD1.1080203@hitachi.com> <20110614115652.GA4952@linux.vnet.ibm.com>
+In-Reply-To: <20110614115652.GA4952@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 10:32 PM, Alexander Graf <agraf@suse.de> wrote:
->
-> 0xc000000000190580 <find_vma_prev+44>:  ld      r9,16(r9)
-> 0xc000000000190584 <find_vma_prev+48>:  mr      r26,r11
-> 0xc000000000190588 <find_vma_prev+52>:  cmpdi   cr7,r9,0
-> 0xc00000000019058c <find_vma_prev+56>:  mr      r11,r26
-> 0xc000000000190590 <find_vma_prev+60>:  beq     cr7,0xc0000000001905c4 <find_vma_prev+112>
-> 0xc000000000190594 <find_vma_prev+64>:  addi    r26,r9,-56
-> 0xc000000000190598 <find_vma_prev+68>:  ld      r0,16(r26)
-> 0xc00000000019059c <find_vma_prev+72>:  cmpld   cr7,r31,r0
-> 0xc0000000001905a0 <find_vma_prev+76>:  blt     cr7,0xc000000000190580 <find_vma_prev+44>
+(2011/06/14 20:56), Srikar Dronamraju wrote:
+>>>> I think -u option should have a path of the target binary, as below
+>>>>
+>>>> # perf probe -u /bin/zsh -a zfree
+>>>
+>>> Will --uprobe work as the long name option for -u or do you suggest
+>>> something else?
+>>
+>> Hmm, good question. Maybe we can use -x|--exec to define a uprobe event,
+>> because there is no need to give an executable file for kprobes events.
+>> # so that -x implies user space event on given execfile
+>>
+> 
+> Okay, then lets stick with perf probe -x executable <function-name>
+> then.
 
-That's the inner loop in find_vma_prev(), and yes, it was inlined into
-do_munmap.
+Thanks:-)
 
-And the fault happens in that "ld r0,16(r26)", and it looks like you
-have memory corruption.
+>> However, Maybe we'd better look this more carefully. Here, we have
+>> a problem with listing userspace probes (I mean how perf probe can
+>> list up the probes which is on a user app)
+>>
+>> Currently, it just ignores module name if a probe on a module.
+>>   probe:fuse_do_open   (on fuse_do_open@ksrc/linux-2.6/fs/fuse/file.c with isdir)
+>>
+>> One possible solution is to show the module name right before the
+>> symbol as same as the kernel does.
+>>
+>>   probe:fuse_do_open   (on fuse:fuse_do_open@ksrc/linux-2.6/fs/fuse/file.c with
+>> isdir)
+> 
+> This looks better to me.
 
-r26 has the value 0xc00090026236bbb0, and that "90" byte in the middle
-there looks bogus. It's not a valid pointer any more, but if that "9"
-had been a zero, it would have been.
+OK, this will be good for starting point. If someone complains,
+we can switch to below format.
 
-So it looks like the rbtree has become corrupt, and it _looks_ like
-it's just a couple of bits that are set in what otherwise looks like a
-reasonable pointer. It *could* be a two-bit error that wasn't
-corrected (I assume you have ECC or parity on your RAM or caches), so
-it's theoretically possible that it's hardware, but generally memory
-corruption is due to software bugs, so that's a pretty far-fetched
-thing.
+>> Another way is to show it more verbosely, like below.
+>>
+>>   probe:fuse_do_open   (at fuse_do_open@ksrc/linux-2.6/fs/fuse/file.c with isdir
+>> on fuse)
+>>   probe_zsh:zfree      (at 0x45400 on /bin/zsh)
+>>
+> 
+> But I am okay with changing to this format too.
+> 
 
-At a guess, there's not a lot more to be had from the oops. The
-corruption probably came from some totally unrelated code. Without
-more of a pattern, it's pretty much impossible to even guess.
+Thanks!
 
-It may be that somebody can see something I'm missing, but unless you
-can find an ECC error report in your logs and say "oh, that's it", I
-suspect that you're better off ignoring it, and hoping that it will
-happen again (and again) so that we'd get enough of a pattern to start
-making any educated guesses about what's going on.
-
-That's why I often google oops reports - one report may not give much
-of a pattern, but if google finds lots of them that all look roughly
-similar, you end up possibly seeing what the common issue is.
-
-                   Linus
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
