@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116Ab1FPHYl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:24:41 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:57379 "EHLO
+	id S1756625Ab1FPHKK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:10:10 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:40187 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755754Ab1FPHKG (ORCPT
+	by vger.kernel.org with ESMTP id S1756493Ab1FPHKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:10:06 -0400
-X-Sasl-enc: RjVMhipCT79Y6UFynYJOYnwb6AXO3KT2XjSJTaUm5axN 1308208205
+	Thu, 16 Jun 2011 03:10:07 -0400
+X-Sasl-enc: fUihCRM6Mm845+7nav7kydZvFL07Gt5AA5CTSvvZ2meS 1308208206
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:29:04 2011
-Message-Id: <20110616002904.173045157@clark.kroah.org>
+Message-Id: <20110616002904.284126320@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:28:00 -0700
+Date: Wed, 15 Jun 2011 17:28:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steven Finney <steven.finney@palm.com>, Dave Jones <davej@redhat.com>
-Subject: [04/85] [CPUFREQ] Fix memory leak in cpufreq_stat
+        Eric B Munson <emunson@mgebm.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [05/85] powerpc/oprofile: Handle events that raise an exception without overflowing
 In-Reply-To: <20110616002917.GA3627@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,80 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: steven finney <Steven.Finney@palm.com>
+From: Eric B Munson <emunson@mgebm.net>
 
-commit 98586ed8b8878e10691203687e89a42fa3355300 upstream.
+commit ad5d5292f16c6c1d7d3e257c4c7407594286b97e upstream.
 
-When a CPU is taken offline in an SMP system, cpufreq_remove_dev()
-nulls out the per-cpu policy before cpufreq_stats_free_table() can
-make use of it.  cpufreq_stats_free_table() then skips the
-call to sysfs_remove_group(), leaving about 100 bytes of sysfs-related
-memory unclaimed each time a CPU-removal occurs. Break up
-cpu_stats_free_table into sysfs and table portions, and
-call the sysfs portion early.
+Commit 0837e3242c73566fc1c0196b4ec61779c25ffc93 fixes a situation on POWER7
+where events can roll back if a specualtive event doesn't actually complete.
+This can raise a performance monitor exception.  We need to catch this to ensure
+that we reset the PMC.  In all cases the PMC will be less than 256 cycles from
+overflow.
 
-Signed-off-by: Steven Finney <steven.finney@palm.com>
-Signed-off-by: Dave Jones <davej@redhat.com>
+This patch lifts Anton's fix for the problem in perf and applies it to oprofile
+as well.
+
+Signed-off-by: Eric B Munson <emunson@mgebm.net>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/cpufreq/cpufreq_stats.c |   21 ++++++++++++++++++---
- 1 file changed, 18 insertions(+), 3 deletions(-)
+ arch/powerpc/oprofile/op_model_power4.c |   24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
 
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -164,17 +164,27 @@ static int freq_table_get_index(struct c
- 	return -1;
+--- a/arch/powerpc/oprofile/op_model_power4.c
++++ b/arch/powerpc/oprofile/op_model_power4.c
+@@ -261,6 +261,28 @@ static int get_kernel(unsigned long pc,
+ 	return is_kernel;
  }
  
-+/* should be called late in the CPU removal sequence so that the stats
-+ * memory is still available in case someone tries to use it.
-+ */
- static void cpufreq_stats_free_table(unsigned int cpu)
- {
- 	struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, cpu);
--	struct cpufreq_policy *policy = cpufreq_cpu_get(cpu);
--	if (policy && policy->cpu == cpu)
--		sysfs_remove_group(&policy->kobj, &stats_attr_group);
- 	if (stat) {
- 		kfree(stat->time_in_state);
- 		kfree(stat);
- 	}
- 	per_cpu(cpufreq_stats_table, cpu) = NULL;
++static bool pmc_overflow(unsigned long val)
++{
++	if ((int)val < 0)
++		return true;
++
++	/*
++	 * Events on POWER7 can roll back if a speculative event doesn't
++	 * eventually complete. Unfortunately in some rare cases they will
++	 * raise a performance monitor exception. We need to catch this to
++	 * ensure we reset the PMC. In all cases the PMC will be 256 or less
++	 * cycles from overflow.
++	 *
++	 * We only do this if the first pass fails to find any overflowing
++	 * PMCs because a user might set a period of less than 256 and we
++	 * don't want to mistakenly reset them.
++	 */
++	if (__is_processor(PV_POWER7) && ((0x80000000 - val) <= 256))
++		return true;
++
++	return false;
 +}
 +
-+/* must be called early in the CPU removal sequence (before
-+ * cpufreq_remove_dev) so that policy is still valid.
-+ */
-+static void cpufreq_stats_free_sysfs(unsigned int cpu)
-+{
-+	struct cpufreq_policy *policy = cpufreq_cpu_get(cpu);
-+	if (policy && policy->cpu == cpu)
-+		sysfs_remove_group(&policy->kobj, &stats_attr_group);
- 	if (policy)
- 		cpufreq_cpu_put(policy);
- }
-@@ -315,6 +325,9 @@ static int __cpuinit cpufreq_stat_cpu_ca
- 	case CPU_ONLINE_FROZEN:
- 		cpufreq_update_policy(cpu);
- 		break;
-+	case CPU_DOWN_PREPARE:
-+		cpufreq_stats_free_sysfs(cpu);
-+		break;
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
- 		cpufreq_stats_free_table(cpu);
-@@ -323,9 +336,11 @@ static int __cpuinit cpufreq_stat_cpu_ca
- 	return NOTIFY_OK;
- }
- 
-+/* priority=1 so this will get called before cpufreq_remove_dev */
- static struct notifier_block cpufreq_stat_cpu_notifier __refdata =
+ static void power4_handle_interrupt(struct pt_regs *regs,
+ 				    struct op_counter_config *ctr)
  {
- 	.notifier_call = cpufreq_stat_cpu_callback,
-+	.priority = 1,
- };
+@@ -281,7 +303,7 @@ static void power4_handle_interrupt(stru
  
- static struct notifier_block notifier_policy_block = {
+ 	for (i = 0; i < cur_cpu_spec->num_pmcs; ++i) {
+ 		val = classic_ctr_read(i);
+-		if (val < 0) {
++		if (pmc_overflow(val)) {
+ 			if (oprofile_running && ctr[i].enabled) {
+ 				oprofile_add_ext_sample(pc, regs, i, is_kernel);
+ 				classic_ctr_write(i, reset_value[i]);
 
 
