@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab1FPHCC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:02:02 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:32965 "EHLO
+	id S1755906Ab1FPHCg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:02:36 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:53787 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756161Ab1FPHBz (ORCPT
+	by vger.kernel.org with ESMTP id S1756173Ab1FPHB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:01:55 -0400
-X-Sasl-enc: QtJdbLoTloHwRtcGKzrrAn6tatoJ9DwKxntD69c0EQag 1308207714
+	Thu, 16 Jun 2011 03:01:56 -0400
+X-Sasl-enc: ycnz1kGtbBGtAd2YGsqDiL0Ets3kFO6zrUhBIcbTLhYL 1308207715
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:37 2011
-Message-Id: <20110616000237.482912901@clark.kroah.org>
+Message-Id: <20110616000237.567987743@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:00:50 -0700
+Date: Wed, 15 Jun 2011 17:00:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
         Wey-Yi Guy <wey-yi.w.guy@intel.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [87/89] iwlagn: send tx power command if defer cause by RXON not
+Subject: [88/89] iwlagn: fix channel switch locking
 In-Reply-To: <20110616000258.GA14529@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,38 +28,311 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
- match
 
-From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 43e4e0b94984b45d52048e3ac027cac15c718b65 upstream.
+commit 6f213ff1919fab6f8244ceae55631b5d6ef750a7 upstream.
 
-During channge channel, tx power will not send to uCode, the tx power command
-should send after scan complete. but should also can send after RXON command.
+We use priv->mutex to avoid race conditions between iwl_chswitch_done()
+and iwlagn_mac_channel_switch(), when marking channel switch in
+progress. But iwl_chswitch_done() can be called in atomic context
+from iwl_rx_csa() or with mutex already taken from iwlagn_commit_rxon().
 
-Stable fix identified by Stanislaw Gruszka <sgruszka@redhat.com>.
+These bugs were introduced by:
 
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+commit 79d07325502e73508f917475bc1617b60979dd94
+Author: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Date:   Thu May 6 08:54:11 2010 -0700
+
+    iwlwifi: support channel switch offload in driver
+
+To fix remove mutex from iwl_chswitch_done() and use atomic bitops for
+marking channel switch pending.
+
+Also remove iwl2030_hw_channel_switch() since 2000 series adapters are
+2.4GHz only devices.
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Acked-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- drivers/net/wireless/iwlwifi/iwl-agn-rxon.c |    5 +++++
- 1 file changed, 5 insertions(+)
 
+---
+ drivers/net/wireless/iwlwifi/iwl-2000.c     |   74 ----------------------------
+ drivers/net/wireless/iwlwifi/iwl-5000.c     |    2 
+ drivers/net/wireless/iwlwifi/iwl-6000.c     |    2 
+ drivers/net/wireless/iwlwifi/iwl-agn-rxon.c |    6 +-
+ drivers/net/wireless/iwlwifi/iwl-agn.c      |   19 +++----
+ drivers/net/wireless/iwlwifi/iwl-core.c     |    6 --
+ drivers/net/wireless/iwlwifi/iwl-core.h     |    2 
+ drivers/net/wireless/iwlwifi/iwl-dev.h      |   13 ----
+ drivers/net/wireless/iwlwifi/iwl-rx.c       |   24 ++++-----
+ 9 files changed, 28 insertions(+), 120 deletions(-)
+
+--- a/drivers/net/wireless/iwlwifi/iwl-2000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-2000.c
+@@ -181,79 +181,6 @@ static int iwl2000_hw_set_hw_params(stru
+ 	return 0;
+ }
+ 
+-static int iwl2030_hw_channel_switch(struct iwl_priv *priv,
+-                                    struct ieee80211_channel_switch *ch_switch)
+-{
+-	/*
+-	 * MULTI-FIXME
+-	 * See iwl_mac_channel_switch.
+-	 */
+-	struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
+-	struct iwl6000_channel_switch_cmd cmd;
+-	const struct iwl_channel_info *ch_info;
+-	u32 switch_time_in_usec, ucode_switch_time;
+-	u16 ch;
+-	u32 tsf_low;
+-	u8 switch_count;
+-	u16 beacon_interval = le16_to_cpu(ctx->timing.beacon_interval);
+-	struct ieee80211_vif *vif = ctx->vif;
+-	struct iwl_host_cmd hcmd = {
+-		.id = REPLY_CHANNEL_SWITCH,
+-		.len = sizeof(cmd),
+-		.flags = CMD_SYNC,
+-		.data = &cmd,
+-	};
+-
+-	cmd.band = priv->band == IEEE80211_BAND_2GHZ;
+-	ch = ch_switch->channel->hw_value;
+-	IWL_DEBUG_11H(priv, "channel switch from %u to %u\n",
+-		ctx->active.channel, ch);
+-	cmd.channel = cpu_to_le16(ch);
+-	cmd.rxon_flags = ctx->staging.flags;
+-	cmd.rxon_filter_flags = ctx->staging.filter_flags;
+-	switch_count = ch_switch->count;
+-	tsf_low = ch_switch->timestamp & 0x0ffffffff;
+-	/*
+-	 * calculate the ucode channel switch time
+-	 * adding TSF as one of the factor for when to switch
+-	 */
+-	if ((priv->ucode_beacon_time > tsf_low) && beacon_interval) {
+-		if (switch_count > ((priv->ucode_beacon_time - tsf_low) /
+-		    beacon_interval)) {
+-			switch_count -= (priv->ucode_beacon_time -
+-				tsf_low) / beacon_interval;
+-		} else
+-			switch_count = 0;
+-	}
+-	if (switch_count <= 1)
+-		cmd.switch_time = cpu_to_le32(priv->ucode_beacon_time);
+-	else {
+-		switch_time_in_usec =
+-			vif->bss_conf.beacon_int * switch_count * TIME_UNIT;
+-		ucode_switch_time = iwl_usecs_to_beacons(priv,
+-						switch_time_in_usec,
+-						beacon_interval);
+-		cmd.switch_time = iwl_add_beacon_time(priv,
+-						priv->ucode_beacon_time,
+-						ucode_switch_time,
+-						beacon_interval);
+-	}
+-	IWL_DEBUG_11H(priv, "uCode time for the switch is 0x%x\n",
+-		      cmd.switch_time);
+-	ch_info = iwl_get_channel_info(priv, priv->band, ch);
+-	if (ch_info)
+-		cmd.expect_beacon = is_channel_radar(ch_info);
+-	else {
+-		IWL_ERR(priv, "invalid channel switch from %u to %u\n",
+-			ctx->active.channel, ch);
+-		return -EFAULT;
+-	}
+-	priv->switch_rxon.channel = cmd.channel;
+-	priv->switch_rxon.switch_in_progress = true;
+-
+-	return iwl_send_cmd_sync(priv, &hcmd);
+-}
+-
+ static struct iwl_lib_ops iwl2000_lib = {
+ 	.set_hw_params = iwl2000_hw_set_hw_params,
+ 	.txq_update_byte_cnt_tbl = iwlagn_txq_update_byte_cnt_tbl,
+@@ -277,7 +204,6 @@ static struct iwl_lib_ops iwl2000_lib =
+ 	.alive_notify = iwlagn_alive_notify,
+ 	.send_tx_power = iwlagn_send_tx_power,
+ 	.update_chain_flags = iwl_update_chain_flags,
+-	.set_channel_switch = iwl2030_hw_channel_switch,
+ 	.apm_ops = {
+ 		.init = iwl_apm_init,
+ 		.config = iwl2000_nic_config,
+--- a/drivers/net/wireless/iwlwifi/iwl-5000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-5000.c
+@@ -337,8 +337,6 @@ static int iwl5000_hw_channel_switch(str
+ 			ctx->active.channel, ch);
+ 		return -EFAULT;
+ 	}
+-	priv->switch_rxon.channel = cmd.channel;
+-	priv->switch_rxon.switch_in_progress = true;
+ 
+ 	return iwl_send_cmd_sync(priv, &hcmd);
+ }
+--- a/drivers/net/wireless/iwlwifi/iwl-6000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-6000.c
+@@ -277,8 +277,6 @@ static int iwl6000_hw_channel_switch(str
+ 			ctx->active.channel, ch);
+ 		return -EFAULT;
+ 	}
+-	priv->switch_rxon.channel = cmd.channel;
+-	priv->switch_rxon.switch_in_progress = true;
+ 
+ 	return iwl_send_cmd_sync(priv, &hcmd);
+ }
 --- a/drivers/net/wireless/iwlwifi/iwl-agn-rxon.c
 +++ b/drivers/net/wireless/iwlwifi/iwl-agn-rxon.c
-@@ -218,6 +218,11 @@ int iwlagn_commit_rxon(struct iwl_priv *
- 
- 		memcpy(active, &ctx->staging, sizeof(*active));
- 		iwl_print_rx_config_cmd(priv, ctx);
-+		/*
-+		 * We do not commit tx power settings while channel changing,
-+		 * do it now if after settings changed.
-+		 */
-+		iwl_set_tx_power(priv, priv->tx_power_next, false);
- 		return 0;
+@@ -197,10 +197,10 @@ int iwlagn_commit_rxon(struct iwl_priv *
+ 	 * receive commit_rxon request
+ 	 * abort any previous channel switch if still in process
+ 	 */
+-	if (priv->switch_rxon.switch_in_progress &&
+-	    (priv->switch_rxon.channel != ctx->staging.channel)) {
++	if (test_bit(STATUS_CHANNEL_SWITCH_PENDING, &priv->status) &&
++	    (priv->switch_channel != ctx->staging.channel)) {
+ 		IWL_DEBUG_11H(priv, "abort channel switch on %d\n",
+-		      le16_to_cpu(priv->switch_rxon.channel));
++			      le16_to_cpu(priv->switch_channel));
+ 		iwl_chswitch_done(priv, false);
  	}
+ 
+--- a/drivers/net/wireless/iwlwifi/iwl-agn.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
+@@ -3461,16 +3461,13 @@ void iwlagn_mac_channel_switch(struct ie
+ 		goto out_exit;
+ 
+ 	if (test_bit(STATUS_EXIT_PENDING, &priv->status) ||
+-	    test_bit(STATUS_SCANNING, &priv->status))
++	    test_bit(STATUS_SCANNING, &priv->status) ||
++	    test_bit(STATUS_CHANNEL_SWITCH_PENDING, &priv->status))
+ 		goto out_exit;
+ 
+ 	if (!iwl_is_associated_ctx(ctx))
+ 		goto out_exit;
+ 
+-	/* channel switch in progress */
+-	if (priv->switch_rxon.switch_in_progress == true)
+-		goto out_exit;
+-
+ 	mutex_lock(&priv->mutex);
+ 	if (priv->cfg->ops->lib->set_channel_switch) {
+ 
+@@ -3520,16 +3517,20 @@ void iwlagn_mac_channel_switch(struct ie
+ 			 * at this point, staging_rxon has the
+ 			 * configuration for channel switch
+ 			 */
++			set_bit(STATUS_CHANNEL_SWITCH_PENDING, &priv->status);
++			priv->switch_channel = cpu_to_le16(ch);
+ 			if (priv->cfg->ops->lib->set_channel_switch(priv,
+-								    ch_switch))
+-				priv->switch_rxon.switch_in_progress = false;
++								    ch_switch)) {
++				clear_bit(STATUS_CHANNEL_SWITCH_PENDING,
++					  &priv->status);
++				priv->switch_channel = 0;
++				ieee80211_chswitch_done(ctx->vif, false);
++			}
+ 		}
+ 	}
+ out:
+ 	mutex_unlock(&priv->mutex);
+ out_exit:
+-	if (!priv->switch_rxon.switch_in_progress)
+-		ieee80211_chswitch_done(ctx->vif, false);
+ 	IWL_DEBUG_MAC80211(priv, "leave\n");
+ }
+ 
+--- a/drivers/net/wireless/iwlwifi/iwl-core.c
++++ b/drivers/net/wireless/iwlwifi/iwl-core.c
+@@ -861,12 +861,8 @@ void iwl_chswitch_done(struct iwl_priv *
+ 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
+ 		return;
+ 
+-	if (priv->switch_rxon.switch_in_progress) {
++	if (test_and_clear_bit(STATUS_CHANNEL_SWITCH_PENDING, &priv->status))
+ 		ieee80211_chswitch_done(ctx->vif, is_success);
+-		mutex_lock(&priv->mutex);
+-		priv->switch_rxon.switch_in_progress = false;
+-		mutex_unlock(&priv->mutex);
+-	}
+ }
+ 
+ #ifdef CONFIG_IWLWIFI_DEBUG
+--- a/drivers/net/wireless/iwlwifi/iwl-core.h
++++ b/drivers/net/wireless/iwlwifi/iwl-core.h
+@@ -662,7 +662,7 @@ void iwlcore_free_geos(struct iwl_priv *
+ #define STATUS_SCAN_HW		15
+ #define STATUS_POWER_PMI	16
+ #define STATUS_FW_ERROR		17
+-
++#define STATUS_CHANNEL_SWITCH_PENDING 19
+ 
+ static inline int iwl_is_ready(struct iwl_priv *priv)
+ {
+--- a/drivers/net/wireless/iwlwifi/iwl-dev.h
++++ b/drivers/net/wireless/iwlwifi/iwl-dev.h
+@@ -1037,17 +1037,6 @@ struct traffic_stats {
+ };
+ 
+ /*
+- * iwl_switch_rxon: "channel switch" structure
+- *
+- * @ switch_in_progress: channel switch in progress
+- * @ channel: new channel
+- */
+-struct iwl_switch_rxon {
+-	bool switch_in_progress;
+-	__le16 channel;
+-};
+-
+-/*
+  * schedule the timer to wake up every UCODE_TRACE_PERIOD milliseconds
+  * to perform continuous uCode event logging operation if enabled
+  */
+@@ -1344,7 +1333,7 @@ struct iwl_priv {
+ 
+ 	struct iwl_rxon_context contexts[NUM_IWL_RXON_CTX];
+ 
+-	struct iwl_switch_rxon switch_rxon;
++	__le16 switch_channel;
+ 
+ 	/* 1st responses from initialize and runtime uCode images.
+ 	 * _agn's initialize alive response contains some calibration data. */
+--- a/drivers/net/wireless/iwlwifi/iwl-rx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-rx.c
+@@ -299,19 +299,19 @@ static void iwl_rx_csa(struct iwl_priv *
+ 	struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
+ 	struct iwl_rxon_cmd *rxon = (void *)&ctx->active;
+ 
+-	if (priv->switch_rxon.switch_in_progress) {
+-		if (!le32_to_cpu(csa->status) &&
+-		    (csa->channel == priv->switch_rxon.channel)) {
+-			rxon->channel = csa->channel;
+-			ctx->staging.channel = csa->channel;
+-			IWL_DEBUG_11H(priv, "CSA notif: channel %d\n",
+-			      le16_to_cpu(csa->channel));
+-			iwl_chswitch_done(priv, true);
+-		} else {
+-			IWL_ERR(priv, "CSA notif (fail) : channel %d\n",
++	if (!test_bit(STATUS_CHANNEL_SWITCH_PENDING, &priv->status))
++		return;
++
++	if (!le32_to_cpu(csa->status) && csa->channel == priv->switch_channel) {
++		rxon->channel = csa->channel;
++		ctx->staging.channel = csa->channel;
++		IWL_DEBUG_11H(priv, "CSA notif: channel %d\n",
+ 			      le16_to_cpu(csa->channel));
+-			iwl_chswitch_done(priv, false);
+-		}
++		iwl_chswitch_done(priv, true);
++	} else {
++		IWL_ERR(priv, "CSA notif (fail) : channel %d\n",
++			le16_to_cpu(csa->channel));
++		iwl_chswitch_done(priv, false);
+ 	}
+ }
  
 
 
