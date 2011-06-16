@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805Ab1FPHB0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:01:26 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:56811 "EHLO
+	id S1757203Ab1FPHc7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:32:59 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:44621 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755919Ab1FPHBU (ORCPT
+	by vger.kernel.org with ESMTP id S1752813Ab1FPHBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:01:20 -0400
-X-Sasl-enc: lvgMIkdXEgYTfY7PeZgrJZV0hiRrLR0JFmxwbICUseiH 1308207679
+	Thu, 16 Jun 2011 03:01:23 -0400
+X-Sasl-enc: GgegLdH2FeQcZhElznJndhb+s8YrNpA9rNIsP//KNuH6 1308207681
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:35 2011
-Message-Id: <20110616000235.180694707@clark.kroah.org>
+Message-Id: <20110616000235.278552337@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:00:26 -0700
+Date: Wed, 15 Jun 2011 17:00:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dmitry Torokhov <dtor@vmware.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [63/89] USB: xhci - fix interval calculation for FS isoc endpoints
+        John Johansen <john.johansen@canonical.com>,
+        James Morris <jmorris@namei.org>
+Subject: [64/89] AppArmor: Fix sleep in invalid context from task_setrlimit
 In-Reply-To: <20110616000258.GA14529@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,58 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dtor@vmware.com>
+From: John Johansen <john.johansen@canonical.com>
 
-commit cd3c18ba2fac14b34d03cae111f215009735ea06 upstream.
+commit 1780f2d3839a0d3eb85ee014a708f9e2c8f8ba0e upstream.
 
-Full-speed isoc endpoints specify interval in exponent based form in
-frames, not microframes, so we need to adjust accordingly.
+Affected kernels 2.6.36 - 3.0
 
-NEC xHCI host controllers will return an error code of 0x11 if a full
-speed isochronous endpoint is added with the Interval field set to
-something less than 3 (2^3 = 8 microframes, or one frame).  It is
-impossible for a full speed device to have an interval smaller than one
-frame.
+AppArmor may do a GFP_KERNEL memory allocation with task_lock(tsk->group_leader);
+held when called from security_task_setrlimit.  This will only occur when the
+task's current policy has been replaced, and the task's creds have not been
+updated before entering the LSM security_task_setrlimit() hook.
 
-This was always an issue in the xHCI driver, but commit
-dfa49c4ad120a784ef1ff0717168aa79f55a483a "USB: xhci - fix math in
-xhci_get_endpoint_interval()" removed the clamping of the minimum value
-in the Interval field, which revealed this bug.
+BUG: sleeping function called from invalid context at mm/slub.c:847
+ in_atomic(): 1, irqs_disabled(): 0, pid: 1583, name: cupsd
+ 2 locks held by cupsd/1583:
+  #0:  (tasklist_lock){.+.+.+}, at: [<ffffffff8104dafa>] do_prlimit+0x61/0x189
+  #1:  (&(&p->alloc_lock)->rlock){+.+.+.}, at: [<ffffffff8104db2d>]
+do_prlimit+0x94/0x189
+ Pid: 1583, comm: cupsd Not tainted 3.0.0-rc2-git1 #7
+ Call Trace:
+  [<ffffffff8102ebf2>] __might_sleep+0x10d/0x112
+  [<ffffffff810e6f46>] slab_pre_alloc_hook.isra.49+0x2d/0x33
+  [<ffffffff810e7bc4>] kmem_cache_alloc+0x22/0x132
+  [<ffffffff8105b6e6>] prepare_creds+0x35/0xe4
+  [<ffffffff811c0675>] aa_replace_current_profile+0x35/0xb2
+  [<ffffffff811c4d2d>] aa_current_profile+0x45/0x4c
+  [<ffffffff811c4d4d>] apparmor_task_setrlimit+0x19/0x3a
+  [<ffffffff811beaa5>] security_task_setrlimit+0x11/0x13
+  [<ffffffff8104db6b>] do_prlimit+0xd2/0x189
+  [<ffffffff8104dea9>] sys_setrlimit+0x3b/0x48
+  [<ffffffff814062bb>] system_call_fastpath+0x16/0x1b
 
-This needs to be backported to stable kernels back to 2.6.31.
-
-Reported-by: Matt Evans <matt@ozlabs.org>
-Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: John Johansen <john.johansen@canonical.com>
+Reported-by: Miles Lane <miles.lane@gmail.com>
+Signed-off-by: James Morris <jmorris@namei.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-mem.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ security/apparmor/lsm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -986,9 +986,19 @@ static unsigned int xhci_parse_exponent_
- 	interval = clamp_val(ep->desc.bInterval, 1, 16) - 1;
- 	if (interval != ep->desc.bInterval - 1)
- 		dev_warn(&udev->dev,
--			 "ep %#x - rounding interval to %d microframes\n",
-+			 "ep %#x - rounding interval to %d %sframes\n",
- 			 ep->desc.bEndpointAddress,
--			 1 << interval);
-+			 1 << interval,
-+			 udev->speed == USB_SPEED_FULL ? "" : "micro");
-+
-+	if (udev->speed == USB_SPEED_FULL) {
-+		/*
-+		 * Full speed isoc endpoints specify interval in frames,
-+		 * not microframes. We are using microframes everywhere,
-+		 * so adjust accordingly.
-+		 */
-+		interval += 3;	/* 1 frame = 2^3 uframes */
-+	}
+--- a/security/apparmor/lsm.c
++++ b/security/apparmor/lsm.c
+@@ -612,7 +612,7 @@ static int apparmor_setprocattr(struct t
+ static int apparmor_task_setrlimit(struct task_struct *task,
+ 		unsigned int resource, struct rlimit *new_rlim)
+ {
+-	struct aa_profile *profile = aa_current_profile();
++	struct aa_profile *profile = __aa_current_profile();
+ 	int error = 0;
  
- 	return interval;
- }
+ 	if (!unconfined(profile))
 
 
