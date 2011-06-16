@@ -1,239 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758493Ab1FPXhg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 19:37:36 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:59400 "EHLO e8.ny.us.ibm.com"
+	id S1758768Ab1FPXhu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 19:37:50 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4941 "EHLO MMS3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752521Ab1FPXhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 19:37:33 -0400
-Date: Thu, 16 Jun 2011 16:37:28 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, ak@linux.intel.com,
-        shaohua.li@intel.com, alex.shi@intel.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [GIT PULL] Re: REGRESSION: Performance regressions from
- switching anon_vma->lock to mutex
-Message-ID: <20110616233727.GO2582@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1308097798.17300.142.camel@schen9-DESK>
- <1308134200.15315.32.camel@twins>
- <1308135495.15315.38.camel@twins>
- <BANLkTikt88KnxTy8TuGGVrBVnXvsnL7nMQ@mail.gmail.com>
- <20110615201216.GA4762@elte.hu>
- <35c0ff16-bd58-4b9c-9d9f-d1a4df2ae7b9@email.android.com>
- <20110616070335.GA7661@elte.hu>
- <20110616171644.GK2582@linux.vnet.ibm.com>
- <20110616202550.GA16214@elte.hu>
+	id S1758591Ab1FPXhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 19:37:48 -0400
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+Date: Thu, 16 Jun 2011 16:37:36 -0700
+From: "Henry Ptasinski" <henryp@broadcom.com>
+To: "Greg Dietsche" <gregory.dietsche@cuw.edu>
+cc: "gregkh@suse.de" <gregkh@suse.de>, "Brett Rudley" <brudley@broadcom.com>,
+        "Dowan Kim" <dowan@broadcom.com>,
+        "Roland Vossen" <rvossen@broadcom.com>,
+        "Arend Van Spriel" <arend@broadcom.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Henry Ptasinski" <henryp@broadcom.com>
+Subject: Re: [PATCH] staging: brcm80211: return false if not a broadcom
+ board
+Message-ID: <20110616233736.GA2344@broadcom.com>
+References: <1308176709-14765-1-git-send-email-Gregory.Dietsche@cuw.edu>
+ <20110616013615.GA14700@broadcom.com> <4DF96F22.5070508@cuw.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110616202550.GA16214@elte.hu>
+In-Reply-To: <4DF96F22.5070508@cuw.edu>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-WSS-ID: 61E44B30538266698-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 10:25:50PM +0200, Ingo Molnar wrote:
+On Wed, Jun 15, 2011 at 07:49:06PM -0700, Greg Dietsche wrote:
 > 
-> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 > 
-> > > The funny thing about this workload is that context-switches are 
-> > > really a fastpath here and we are using anonymous IRQ-triggered 
-> > > softirqs embedded in random task contexts as a workaround for 
-> > > that.
-> > 
-> > The other thing that the IRQ-triggered softirqs do is to get the 
-> > callbacks invoked in cases where a CPU-bound user thread is never 
-> > context switching.
+> On 06/15/2011 08:36 PM, Henry Ptasinski wrote:
+> > On Wed, Jun 15, 2011 at 03:25:09PM -0700, Greg Dietsche wrote:
+> >    
+> >> This code looks wrong to me. I think it meant to return false
+> >> if the board's vendor id isn't Broadcom's.
+> >>
+> >> Compile tested only.
+> >>
+> >> Signed-off-by: Greg Dietsche<Gregory.Dietsche@cuw.edu>
+> >> ---
+> >>   drivers/staging/brcm80211/brcmsmac/wlc_bmac.c |    2 +-
+> >>   1 files changed, 1 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c b/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
+> >> index 4534926..ee13238 100644
+> >> --- a/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
+> >> +++ b/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
+> >> @@ -1943,7 +1943,7 @@ static bool wlc_validboardtype(struct wlc_hw_info *wlc_hw)
+> >>   	}
+> >>
+> >>   	if (wlc_hw->sih->boardvendor != PCI_VENDOR_ID_BROADCOM)
+> >> -		return goodboard;
+> >> +		goodboard = false;
+> >>
+> >>   	return goodboard;
+> >>   }
+> >>      
+> > Actually, the original code is correct.
+> >
+> > For boards with the Broadcom ID, this function checks that the boardrev is
+> > sane. Dev boards that aren't properly configured may have invalid info, so this
+> > check is mainly to catch that problem.
+> >
+> > For boards with any other vendor, we don't have any sanity checks that we know
+> > should be done, so the board info is always considered good.
+> >
+> > The device ID is of course always checked.
+> >
+> > - Henry
+> >
+> >    
+> Hi Henry,
+> Thanks for the explanation - I'm still a little confused on this... 
+> probably more because of how the code reads. Let me explain:
 > 
-> Yeah - but this workload didnt have that.
+> The part that threw me off in this code when I originally read it is 
+> that it always returns goodboard. It doesn't actually matter what the 
+> vendor id is. So my first thought was "what did they really mean to code 
+> here...?" That's why I sent the patch. So if the patch isn't necessary, 
+> then great! :) But it seems like we could/should just drop the check for 
+> vendor id?
 
-Ah, understood -- I was thinking about the general case as well as this
-particular workload.
+How's this for a somewhat clearer implementation:
 
-> > Of course, one alternative might be to set_need_resched() to force 
-> > entry into the scheduler as needed.
-> 
-> No need for that: we can just do the callback not in softirq but in 
-> regular syscall context in that case, in the return-to-userspace 
-> notifier. (see TIF_USER_RETURN_NOTIFY and the USER_RETURN_NOTIFIER 
-> facility)
+static bool brcms_c_validboardtype(struct brcms_c_hw_info *wlc_hw)
+{
+        bool goodboard = true;
+        uint boardrev = wlc_hw->boardrev;
 
-Good point, I should add this -- there was a similar RCU hook into
-the trap and syscall paths in DYNIX/ptx.  At first glance, this looks
-x86-specific -- or am I missing something?
+        if (wlc_hw->sih->boardvendor == PCI_VENDOR_ID_BROADCOM) {
+                /* validate boardrev */
+                if (boardrev == 0)
+                        goodboard = false;
+                else if (boardrev > 0xff) {
+                        /* 4 bits each for board type, major, minor, and tiny
+                        version numbers */
+                        uint brt = (boardrev & 0xf000) >> 12;
+                        uint b0 = (boardrev & 0xf00) >> 8;
+                        uint b1 = (boardrev & 0xf0) >> 4;
+                        uint b2 = boardrev & 0xf;
 
-> Abusing a facility like setting need_resched artificially will 
-> generally cause trouble.
+                        if ((brt > 2) || (brt == 0) || (b0 > 9) || (b0 == 0)
+                                || (b1 > 9) || (b2 > 9))
+                                goodboard = false;
+                }
+        }
 
-Yep, from an RCU viewpoint, it would be best to use it only to force a
-quiescent state.
+        return goodboard;
+}
 
-> > > [ I think we'll have to revisit this issue and do it properly:
-> > >   quiescent state is mostly defined by context-switches here, so we
-> > >   could do the RCU callbacks from the task that turns a CPU
-> > >   quiescent, right in the scheduler context-switch path - perhaps
-> > >   with an option for SCHED_FIFO tasks to *not* do GC.
-> > 
-> > I considered this approach for TINY_RCU, but dropped it in favor of 
-> > reducing the interlocking between the scheduler and RCU callbacks. 
-> > Might be worth revisiting, though.  If SCHED_FIFO task omit RCU 
-> > callback invocation, then there will need to be some override for 
-> > CPUs with lots of SCHED_FIFO load, probably similar to RCU's 
-> > current blimit stuff.
-> 
-> I wouldnt complicate it much for SCHED_FIFO: SCHED_FIFO tasks are 
-> special and should never run long.
 
-Agreed, but if someone creates a badly behaved SCHED_FIFO task, RCU
-still needs to make forward progress.  Otherwise, a user task can OOM
-the system.
+If that's agreeable, I'll add it to a series of cleanup patches that I've got
+in progress.
 
-> > >   That could possibly be more cache-efficient than softirq execution,
-> > >   as we'll process a still-hot pool of callbacks instead of doing
-> > >   them only once per timer tick. It will also make the RCU GC
-> > >   behavior HZ independent. ]
-> > 
-> > Well, the callbacks will normally be cache-cold in any case due to 
-> > the grace-period delay, [...]
-> 
-> The workloads that are the most critical in this regard tend to be 
-> context switch intense, so the grace period expiry latency should be 
-> pretty short.
+- Henry
 
-And TINY_RCU does in fact do core RCU processing at context-switch
-time from within rcu_preempt_note_context_switch(), which is called
-from rcu_note_context_switch().  I never tried that in TREE_RCU because
-of the heavier weight of the processing.  But it is easy to test --
-six-line change, see patch below.  (Untested, probably doesn't compile.)
-
-> Or at least significantly shorter than today's HZ frequency, right? 
-> HZ would still provide an upper bound for the latency.
-
-Yes, this should shorten the average grace-period length, at some cost
-in overhead.  (Probably a -lot- less than the RT kthread change, but hey!)
-
-> Btw., the current worst-case grace period latency is in reality more 
-> like two timer ticks: one for the current CPU to expire and another 
-> for the longest "other CPU" expiry, right? Average expiry (for 
-> IRQ-poor workloads) would be 1.5 timer ticks. (if i got my stat 
-> calculations right!)
-
-Yep, typical best-case grace period latency is indeed less than two ticks,
-but it depends on exactly what you are measuring.  It consts another
-tick on the average to get the callbacks invoked (assuming no backlog),
-but you can save a tick for back-to-back grace periods.
-
-But this assumes CONFIG_NO_HZ=n with current RCU -- it takes about six
-scheduler-clock ticks to detect dyntick-idle CPUs.  Certain CPU-hotplug
-races can leave RCU confused about whether or not a given CPU is part
-of the current grace period, in which case RCU also takes about six
-scheduler-clock ticks to get itself unconfused.  If a process spends too
-much time in the kernel without scheduling, RCU will send it a resched
-IPI after about six scheduler-clock ticks.  And of course a very
-long RCU read-side critical section will extend the grace period, as
-it absolutely must.
-
-> > [...] but on the other hand, both tick-independence and the ability 
-> > to shield a given CPU from RCU callback execution might be quite 
-> > useful. [...]
-> 
-> Yeah.
-> 
-> > [...] The tick currently does the following for RCU:
-> > 
-> > 1.	Informs RCU of user-mode execution (rcu_sched and rcu_bh
-> > 	quiescent state).
-> > 
-> > 2.	Informs RCU of non-dyntick idle mode (again, rcu_sched and
-> > 	rcu_bh quiescent state).
-> > 
-> > 3.	Kicks the current CPU's RCU core processing as needed in
-> > 	response to actions from other CPUs.
-> > 
-> > Frederic's work avoiding ticks in long-running user-mode tasks 
-> > might take care of #1, and it should be possible to make use of the 
-> > current dyntick-idle APIs to deal with #2.  Replacing #3 
-> > efficiently will take some thought.
-> 
-> What is the longest delay the scheduler tick can take typically - 40 
-> msecs? That would then be the worst-case grace period latency for 
-> workloads that neither do context switches nor trigger IRQs, right?
-
-40 milliseconds would be 25Hz.  I haven't run that myself, though.
-The lowest-HZ systems I use regularly are 250HZ, for 4-millisecond
-scheduler-tick period.  So that gets you a grace-period latency from
-6 to about 20 milliseconds, depending on what is happening and exactly
-what you are measuring.
-
-> > > In any case the proxy kthread model clearly sucked, no argument 
-> > > about that.
-> > 
-> > Indeed, I lost track of the global nature of real-time scheduling.
-> > :-(
-> 
-> Btw., i think that test was pretty bad: running exim as SCHED_FIFO??
-> 
-> But it does not excuse the kthread model.
-
-"It seemed like a good idea at the time."  ;-)
-
-> > Whatever does the boosting will need to have process context and 
-> > can be subject to delays, so that pretty much needs to be a 
-> > kthread. But it will context-switch quite rarely, so should not be 
-> > a problem.
-> 
-> So user-return notifiers ought to be the ideal platform for that, 
-> right? We don't even have to touch the scheduler: anything that 
-> schedules will eventually return to user-space, at which point the 
-> RCU GC magic can run.
-
-The RCU-bh variant requires some other mechanism, as it must to work
-even if some crazy piece of network infrastructure is hit so hard by a
-DoS attack that it never executes in user mode at all.
-
-> And user-return-notifiers can be triggered from IRQs as well.
-> 
-> That allows us to get rid of softirqs altogether and maybe even speed 
-> the whole thing up and allow it to be isolated better.
-
-I am a bit concerned about how this would work with extreme workloads.
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 405a5fd..f58ce53 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -159,8 +159,14 @@ void rcu_bh_qs(int cpu)
-  */
- void rcu_note_context_switch(int cpu)
- {
-+	unsigned long flags;
-+
- 	rcu_sched_qs(cpu);
- 	rcu_preempt_note_context_switch(cpu);
-+	local_irq_save(flags);
-+	if (rcu_pending(cpu))
-+		invoke_rcu_core();
-+	local_irq_restore(flags);
- }
- EXPORT_SYMBOL_GPL(rcu_note_context_switch);
- 
