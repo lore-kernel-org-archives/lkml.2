@@ -1,70 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757800Ab1FPMQI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 08:16:08 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:55435 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757771Ab1FPMP4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 08:15:56 -0400
-Date: Thu, 16 Jun 2011 14:15:54 +0200
-From: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
-To: Pete Zaitcev <zaitcev@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: christian.dietrich@informatik.uni-erlangen.de
-Subject: [PATCH 11/11] usb/class: use printk_ratelimited() instead of
- printk_ratelimit()
-Message-ID: <3842dc0135657cd0b1ba08436a1c501c19ad0116.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
-References: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757653Ab1FPMPJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 08:15:09 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:47395 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757535Ab1FPMPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 08:15:02 -0400
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH 2/8 v3] x86, UV: inline header file functions
+Cc: mingo@elte.hu, penberg@kernel.org
+Message-Id: <E1QXBUZ-0004g7-T9@eag09.americas.sgi.com>
+From: Cliff Wickman <cpw@sgi.com>
+Date: Thu, 16 Jun 2011 07:16:11 -0500
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since printk_ratelimit() shouldn't be used anymore (see comment in
-include/linux/printk.h), replace it with printk_ratelimited()
+From: Cliff Wickman <cpw@sgi.com>
 
-Signed-off-by: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
+Make all the functions in uv_bau.h inline so that it can
+be included in the fake prom (used in simulations).
+Otherwise they will generate warnings for unused functions.
+
+Diffed against 3.0.0-rc3
+
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
 ---
- drivers/usb/class/usblp.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/uv/uv_bau.h |   28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/usb/class/usblp.c b/drivers/usb/class/usblp.c
-index 9eca405..cb3a932 100644
---- a/drivers/usb/class/usblp.c
-+++ b/drivers/usb/class/usblp.c
-@@ -58,6 +58,7 @@
- #include <linux/mutex.h>
- #undef DEBUG
- #include <linux/usb.h>
-+#include <linux/ratelimit.h>
+Index: linux/arch/x86/include/asm/uv/uv_bau.h
+===================================================================
+--- linux.orig/arch/x86/include/asm/uv/uv_bau.h
++++ linux/arch/x86/include/asm/uv/uv_bau.h
+@@ -526,72 +526,72 @@ struct bau_control {
+ 	struct hub_and_pnode	*thp;
+ };
  
- /*
-  * Version Information
-@@ -348,8 +349,7 @@ static int usblp_check_status(struct usblp *usblp, int err)
- 	mutex_lock(&usblp->mut);
- 	if ((error = usblp_read_status(usblp, usblp->statusbuf)) < 0) {
- 		mutex_unlock(&usblp->mut);
--		if (printk_ratelimit())
--			printk(KERN_ERR
-+		printk_ratelimited(KERN_ERR
- 				"usblp%d: error %d reading printer status\n",
- 				usblp->minor, error);
- 		return 0;
-@@ -653,8 +653,7 @@ static long usblp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+-static unsigned long read_mmr_uv2_status(void)
++static inline unsigned long read_mmr_uv2_status(void)
+ {
+ 	return read_lmmr(UV2H_LB_BAU_SB_ACTIVATION_STATUS_2);
+ }
  
- 		case LPGETSTATUS:
- 			if ((retval = usblp_read_status(usblp, usblp->statusbuf))) {
--				if (printk_ratelimit())
--					printk(KERN_ERR "usblp%d:"
-+				printk_ratelimited(KERN_ERR "usblp%d:"
- 					    "failed reading printer status (%d)\n",
- 					    usblp->minor, retval);
- 				retval = -EIO;
--- 
-1.7.4.1
-
+-static void write_mmr_data_broadcast(int pnode, unsigned long mmr_image)
++static inline void write_mmr_data_broadcast(int pnode, unsigned long mmr_image)
+ {
+ 	write_gmmr(pnode, UVH_BAU_DATA_BROADCAST, mmr_image);
+ }
+ 
+-static void write_mmr_descriptor_base(int pnode, unsigned long mmr_image)
++static inline void write_mmr_descriptor_base(int pnode, unsigned long mmr_image)
+ {
+ 	write_gmmr(pnode, UVH_LB_BAU_SB_DESCRIPTOR_BASE, mmr_image);
+ }
+ 
+-static void write_mmr_activation(unsigned long index)
++static inline void write_mmr_activation(unsigned long index)
+ {
+ 	write_lmmr(UVH_LB_BAU_SB_ACTIVATION_CONTROL, index);
+ }
+ 
+-static void write_gmmr_activation(int pnode, unsigned long mmr_image)
++static inline void write_gmmr_activation(int pnode, unsigned long mmr_image)
+ {
+ 	write_gmmr(pnode, UVH_LB_BAU_SB_ACTIVATION_CONTROL, mmr_image);
+ }
+ 
+-static void write_mmr_payload_first(int pnode, unsigned long mmr_image)
++static inline void write_mmr_payload_first(int pnode, unsigned long mmr_image)
+ {
+ 	write_gmmr(pnode, UVH_LB_BAU_INTD_PAYLOAD_QUEUE_FIRST, mmr_image);
+ }
+ 
+-static void write_mmr_payload_tail(int pnode, unsigned long mmr_image)
++static inline void write_mmr_payload_tail(int pnode, unsigned long mmr_image)
+ {
+ 	write_gmmr(pnode, UVH_LB_BAU_INTD_PAYLOAD_QUEUE_TAIL, mmr_image);
+ }
+ 
+-static void write_mmr_payload_last(int pnode, unsigned long mmr_image)
++static inline void write_mmr_payload_last(int pnode, unsigned long mmr_image)
+ {
+ 	write_gmmr(pnode, UVH_LB_BAU_INTD_PAYLOAD_QUEUE_LAST, mmr_image);
+ }
+ 
+-static void write_mmr_misc_control(int pnode, unsigned long mmr_image)
++static inline void write_mmr_misc_control(int pnode, unsigned long mmr_image)
+ {
+ 	write_gmmr(pnode, UVH_LB_BAU_MISC_CONTROL, mmr_image);
+ }
+ 
+-static unsigned long read_mmr_misc_control(int pnode)
++static inline unsigned long read_mmr_misc_control(int pnode)
+ {
+ 	return read_gmmr(pnode, UVH_LB_BAU_MISC_CONTROL);
+ }
+ 
+-static void write_mmr_sw_ack(unsigned long mr)
++static inline void write_mmr_sw_ack(unsigned long mr)
+ {
+ 	uv_write_local_mmr(UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE_ALIAS, mr);
+ }
+ 
+-static unsigned long read_mmr_sw_ack(void)
++static inline unsigned long read_mmr_sw_ack(void)
+ {
+ 	return read_lmmr(UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE);
+ }
+ 
+-static unsigned long read_gmmr_sw_ack(int pnode)
++static inline unsigned long read_gmmr_sw_ack(int pnode)
+ {
+ 	return read_gmmr(pnode, UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE);
+ }
+ 
+-static void write_mmr_data_config(int pnode, unsigned long mr)
++static inline void write_mmr_data_config(int pnode, unsigned long mr)
+ {
+ 	uv_write_global_mmr64(pnode, UVH_BAU_DATA_CONFIG, mr);
+ }
