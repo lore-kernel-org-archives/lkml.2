@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932876Ab1FPUQP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 16:16:15 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:52175
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	id S932800Ab1FPUQO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 16:16:14 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:42430
+	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1758692Ab1FPUB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758693Ab1FPUB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Jun 2011 16:01:59 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -13,9 +13,9 @@ To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 30/77] Staging: hv: netvsc: Get rid of the dev_type guid from netvsc.c
-Date: Thu, 16 Jun 2011 13:17:03 -0700
-Message-Id: <1308255470-3826-30-git-send-email-kys@microsoft.com>
+Subject: [PATCH 31/77] Staging: hv: netvsc: Initialize the driver name directly
+Date: Thu, 16 Jun 2011 13:17:04 -0700
+Message-Id: <1308255470-3826-31-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1308255470-3826-1-git-send-email-kys@microsoft.com>
 References: <1308255393-3785-1-git-send-email-kys@microsoft.com>
@@ -24,43 +24,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the dev_type guid from netvsc.c, as it is no longer used.
+Initialize the driver name directly in netvsc_drv.c.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/netvsc.c |   10 ----------
- 1 files changed, 0 insertions(+), 10 deletions(-)
+ drivers/staging/hv/netvsc_drv.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
-index 1bd920f..d59b9bd 100644
---- a/drivers/staging/hv/netvsc.c
-+++ b/drivers/staging/hv/netvsc.c
-@@ -35,15 +35,6 @@
- /* Globals */
- static const char *driver_name = "netvsc";
+diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
+index 9075a73..05d8e32 100644
+--- a/drivers/staging/hv/netvsc_drv.c
++++ b/drivers/staging/hv/netvsc_drv.c
+@@ -41,6 +41,8 @@
+ #include "hyperv.h"
+ #include "hyperv_net.h"
  
--/* {F8615163-DF3E-46c5-913F-F2D2F965ED0E} */
--static const struct hv_guid netvsc_device_type = {
--	.data = {
--		0x63, 0x51, 0x61, 0xF8, 0x3E, 0xDF, 0xc5, 0x46,
--		0x91, 0x3F, 0xF2, 0xD2, 0xF9, 0x65, 0xED, 0x0E
--	}
--};
--
--
- static struct netvsc_device *alloc_net_device(struct hv_device *device)
- {
- 	struct netvsc_device *net_device;
-@@ -1009,7 +1000,6 @@ int netvsc_initialize(struct hv_driver *drv)
- {
++static const char *driver_name = "netvsc";
++
+ struct net_device_context {
+ 	/* point back to our device context */
+ 	struct hv_device *device_ctx;
+@@ -439,7 +441,7 @@ static int __init netvsc_drv_init(void)
+ 	/* Callback to client driver to complete the initialization */
+ 	netvsc_initialize(drv);
  
- 	drv->name = driver_name;
--	memcpy(&drv->dev_type, &netvsc_device_type, sizeof(struct hv_guid));
+-	drv->driver.name = drv->name;
++	drv->driver.name = driver_name;
  
- 	return 0;
- }
+ 	/* The driver belongs to vmbus */
+ 	ret = vmbus_child_driver_register(&drv->driver);
 -- 
 1.7.4.1
 
