@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864Ab1FPHEa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:04:30 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:42246 "EHLO
+	id S1756123Ab1FPHBt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:01:49 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:45142 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754929Ab1FPHBn (ORCPT
+	by vger.kernel.org with ESMTP id S1756092Ab1FPHBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:01:43 -0400
-X-Sasl-enc: LIshzJ1DVyUewtMmYo9FVQEcuZQrJK0krSLVY8y+F02J 1308207702
+	Thu, 16 Jun 2011 03:01:45 -0400
+X-Sasl-enc: Zs+V0UCS84fsEP4V1LGvcjBSbvwJQ+0Dvbg7LcMPShuP 1308207704
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:36 2011
-Message-Id: <20110616000236.734683352@clark.kroah.org>
+Message-Id: <20110616000236.821876370@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:00:42 -0700
+Date: Wed, 15 Jun 2011 17:00:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [79/89] mac80211: fix IBSS teardown race
+        Florian Fainelli <ffainelli@freebox.fr>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Maxime Bizon <mbizon@freebox.fr>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [80/89] x86: devicetree: Add missing early_init_dt_setup_initrd_arch
 In-Reply-To: <20110616000258.GA14529@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,54 +30,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
+ stub
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Florian Fainelli <ffainelli@freebox.fr>
 
-commit f3209bea110cade12e2b133da8b8499689cb0e2e upstream.
+commit 977cb76d52e7aa040e18a84b29fe6fd80d79319b upstream.
 
-Ignacy reports that sometimes after leaving an IBSS
-joining a new one didn't work because there still
-were stations on the list. He fixed it by flushing
-stations when attempting to join a new IBSS, but
-this shouldn't be happening in the first case. When
-I looked into it I saw a race condition in teardown
-that could cause stations to be added after flush,
-and thus cause this situation. Ignacy confirms that
-after applying my patch he hasn't seen this happen
-again.
+This patch fixes the following build failure:
 
-Reported-by: Ignacy Gawedzki <i@lri.fr>
-Debugged-by: Ignacy Gawedzki <i@lri.fr>
-Tested-by: Ignacy Gawedzki <i@lri.fr>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+drivers/built-in.o: In function `early_init_dt_check_for_initrd':
+/home/florian/dev/kernel/x86/linux-2.6-x86/drivers/of/fdt.c:571:
+undefined reference to `early_init_dt_setup_initrd_arch'
+make: *** [.tmp_vmlinux1] Error 1
+
+which happens as soon as we enable initrd support on a x86 devicetree
+platform such as Intel CE4100.
+
+Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Maxime Bizon <mbizon@freebox.fr>
+Acked-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Link: http://lkml.kernel.org/r/201106061015.50039.ffainelli@freebox.fr
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/ibss.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/x86/kernel/devicetree.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/net/mac80211/ibss.c
-+++ b/net/mac80211/ibss.c
-@@ -967,6 +967,10 @@ int ieee80211_ibss_leave(struct ieee8021
+--- a/arch/x86/kernel/devicetree.c
++++ b/arch/x86/kernel/devicetree.c
+@@ -13,6 +13,7 @@
+ #include <linux/slab.h>
+ #include <linux/pci.h>
+ #include <linux/of_pci.h>
++#include <linux/initrd.h>
  
- 	mutex_lock(&sdata->u.ibss.mtx);
+ #include <asm/hpet.h>
+ #include <asm/irq_controller.h>
+@@ -98,6 +99,16 @@ void * __init early_init_dt_alloc_memory
+ 	return __alloc_bootmem(size, align, __pa(MAX_DMA_ADDRESS));
+ }
  
-+	sdata->u.ibss.state = IEEE80211_IBSS_MLME_SEARCH;
-+	memset(sdata->u.ibss.bssid, 0, ETH_ALEN);
-+	sdata->u.ibss.ssid_len = 0;
++#ifdef CONFIG_BLK_DEV_INITRD
++void __init early_init_dt_setup_initrd_arch(unsigned long start,
++					    unsigned long end)
++{
++	initrd_start = (unsigned long)__va(start);
++	initrd_end = (unsigned long)__va(end);
++	initrd_below_start_ok = 1;
++}
++#endif
 +
- 	active_ibss = ieee80211_sta_active_ibss(sdata);
- 
- 	if (!active_ibss && !is_zero_ether_addr(ifibss->bssid)) {
-@@ -1000,8 +1004,6 @@ int ieee80211_ibss_leave(struct ieee8021
- 	kfree_skb(skb);
- 
- 	skb_queue_purge(&sdata->skb_queue);
--	memset(sdata->u.ibss.bssid, 0, ETH_ALEN);
--	sdata->u.ibss.ssid_len = 0;
- 
- 	del_timer_sync(&sdata->u.ibss.timer);
- 
+ void __init add_dtb(u64 data)
+ {
+ 	initial_dtb = data + offsetof(struct setup_data, data);
 
 
