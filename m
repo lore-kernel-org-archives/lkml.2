@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756646Ab1FPHGH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:06:07 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:54716 "EHLO
+	id S1756660Ab1FPHGK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:06:10 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:49139 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756597Ab1FPHF6 (ORCPT
+	by vger.kernel.org with ESMTP id S1756615Ab1FPHGC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:05:58 -0400
-X-Sasl-enc: 2VGh1i37TND4eswlcmDKX7NcI8Hc9B37SrDM3ORvI/dG 1308207958
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:16:13 2011
-Message-Id: <20110616001613.251602035@clark.kroah.org>
+	Thu, 16 Jun 2011 03:06:02 -0400
+X-Sasl-enc: 9VyL+R3ErT2By1LuZzH1lBL49q+bngp3cSx8DUX4Aa/d 1308207961
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:16:14 2011
+Message-Id: <20110616001614.466669841@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:15:37 -0700
+Date: Wed, 15 Jun 2011 17:15:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Luca Tettamanti <kronos.it@gmail.com>,
-        Massimo Dal Zotto <dz@debian.org>, Jean Delvare <khali@linux-fr.org>
-Subject: [40/91] i8k: Avoid lahf in 64-bit code
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Subject: [53/91] UBIFS: fix shrinker object count reports
 In-Reply-To: <20110616001900.GA25375@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,39 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luca Tettamanti <kronos.it@gmail.com>
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-commit bc1f419c76a2d6450413ce4349f4e4a07be011d5 upstream.
+commit cf610bf4199770420629d3bc273494bd27ad6c1d upstream.
 
-i8k uses lahf to read the flag register in 64-bit code; early x86-64
-CPUs, however, lack this instruction and we get an invalid opcode
-exception at runtime.
-Use pushf to load the flag register into the stack instead.
+Sometimes VM asks the shrinker to return amount of objects it can shrink,
+and we return the ubifs_clean_zn_cnt in that case. However, it is possible
+that this counter is negative for a short period of time, due to the way
+UBIFS TNC code updates it. And I can observe the following warnings sometimes:
 
-Signed-off-by: Luca Tettamanti <kronos.it@gmail.com>
-Reported-by: Jeff Rickman <jrickman@myamigos.us>
-Tested-by: Jeff Rickman <jrickman@myamigos.us>
-Tested-by: Harry G McGavran Jr <w5pny@arrl.net>
-Cc: Massimo Dal Zotto <dz@debian.org>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+shrink_slab: ubifs_shrinker+0x0/0x2b7 [ubifs] negative objects to delete nr=-8541616642706119788
+
+This patch makes sure UBIFS never returns negative count of objects.
+
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/i8k.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/ubifs/shrinker.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/char/i8k.c
-+++ b/drivers/char/i8k.c
-@@ -138,8 +138,8 @@ static int i8k_smm(struct smm_regs *regs
- 		"movl %%edi,20(%%rax)\n\t"
- 		"popq %%rdx\n\t"
- 		"movl %%edx,0(%%rax)\n\t"
--		"lahf\n\t"
--		"shrl $8,%%eax\n\t"
-+		"pushfq\n\t"
-+		"popq %%rax\n\t"
- 		"andl $1,%%eax\n"
- 		:"=a"(rc)
- 		:    "a"(regs)
+--- a/fs/ubifs/shrinker.c
++++ b/fs/ubifs/shrinker.c
+@@ -283,7 +283,11 @@ int ubifs_shrinker(int nr, gfp_t gfp_mas
+ 	long clean_zn_cnt = atomic_long_read(&ubifs_clean_zn_cnt);
+ 
+ 	if (nr == 0)
+-		return clean_zn_cnt;
++		/*
++		 * Due to the way UBIFS updates the clean znode counter it may
++		 * temporarily be negative.
++		 */
++		return clean_zn_cnt >= 0 ? clean_zn_cnt : 1;
+ 
+ 	if (!clean_zn_cnt) {
+ 		/*
 
 
