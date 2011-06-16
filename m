@@ -1,123 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757872Ab1FPTd0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 15:33:26 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16519 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757771Ab1FPTdY (ORCPT
+	id S1757919Ab1FPTfJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 15:35:09 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:41895 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757775Ab1FPTfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 15:33:24 -0400
-Date: Thu, 16 Jun 2011 12:31:19 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: Sedat Dilek <sedat.dilek@googlemail.com>, linux-geode@lists.infradead.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sedat Dilek <sedat.dilek@gmail.com>
-Subject: [PATCH] gx1fb: Fix section mismatch warnings
-Message-Id: <20110616123119.6ca873fa.randy.dunlap@oracle.com>
-In-Reply-To: <20110106063906.GB15340@linux-sh.org>
-References: <1294018289-3911-1-git-send-email-sedat.dilek@gmail.com>
-	<20110106063906.GB15340@linux-sh.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Thu, 16 Jun 2011 15:35:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:in-reply-to:references
+         :x-mailer:mime-version:content-type:content-transfer-encoding;
+        b=NTFNZOuuQHbyWjQ9rjMD16Hp3jYZdMrbP51dEDl0H4/YO/YaUjJb/gUAg3+u8X3oid
+         BnbZDivTbUgjqPVhMFyaCp0bB6uNr84zFxsEKsUs2jrV5XMAwa6EEvSkSuOio/ms17Zq
+         ZDhPYqIex07ysO4khOzGDi2eTFu6o9+EZYVOg=
+Date: Thu, 16 Jun 2011 22:34:56 +0300
+From: Pekka Paalanen <pq@iki.fi>
+To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>, linux-wireless@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Faking MMIO ops? Fooling a driver
+Message-ID: <20110616223456.5cfdec2b@farn.lan>
+In-Reply-To: <BANLkTi=-wXnXNJY3R+3Q+KSaJhtxHgrhZw@mail.gmail.com>
+References: <BANLkTikXUd8uorD+juMDvFubr3cz+OZnaQ@mail.gmail.com>
+	<BANLkTinUxRGkXeOtBSKi51n3Q_rZEp1gUg@mail.gmail.com>
+	<4DFA4672.5080307@lwfinger.net>
+	<BANLkTi=-wXnXNJY3R+3Q+KSaJhtxHgrhZw@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090205.4DFA5A7A.01B4:SCFSTAT5015188,ss=1,fgs=0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Jan 2011 15:39:07 +0900 Paul Mundt wrote:
+On Thu, 16 Jun 2011 21:19:04 +0200
+Rafał Miłecki <zajec5@gmail.com> wrote:
 
-> The problem seems to be because gx1fb_probe is annotated __init. In the
-> PCI case you want it to be __devinit, and you're also going to want to
-> annotate the remove function as __devexit and wrap it up with a
-> __devexit_p().
-> --
+> W dniu 16 czerwca 2011 20:07 użytkownik Larry Finger
+> <Larry.Finger@lwfinger.net> napisał:
+> > On 06/16/2011 12:20 PM, Rafał Miłecki wrote:
+> >>
+> >> W dniu 16 czerwca 2011 16:44 użytkownik Rafał Miłecki
+> >> <zajec5@gmail.com>  napisał:
+> >>>
+> >>> I analyze MMIO dumps of closed source driver and found such a
+> >>> place: W 2 3855.911536 9 0xb06003fc 0x810 0x0 0
+> >>> R 2 3855.911540 9 0xb06003fe 0x0 0x0 0
+> >>> W 2 3855.911541 9 0xb06003fe 0x0 0x0 0
+> >>>
+> >>> After translation:
+> >>>  phy_read(0x0810) ->  0x0000
+> >>> phy_write(0x0810)<- 0x0000
+> >>>
+> >>> So it's quite obvious, the driver is reading PHY register,
+> >>> masking it and writing masked value. Unfortunately from just
+> >>> looking at such place we can not guess the mask driver uses.
+> >>>
+> >>> I'd like to fake value read from 0xb06003fe to be 0xFFFF.
+> >>> Is there some ready method for doing such a trick?
+> >>>
+> >>> Dump comes from Kernel hacking → Tracers → MMIO and
+> >>> ndiswrapper.
+> >>
+> >> I can see values in MMIO trace struct are filled in
+> >> arch/x86/mm/mmio-mod.c in "pre" and "post". However still no
+> >> idea how to hack the returned value.
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+If you want to do it that way, the idea is to overwrite
+the right CPU register in mmio-mod.c:post(). You would test for
+the address you want to mess with, and then "invert"
+get_ins_reg_val() to overwrite the register with your own value.
 
-Fix a chain of section mismatches in geode driver, beginning with:
+> >> Should I try hacking read[bwl] instead? :|
+> >
+> > Probably. I do not see any way to trace and modify the results
+> > for a particular address without special code.
+> 
+> Did you success with writing some special code? Following patch
+> does not seem to work for me:
+> 
+> 
+> diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+> index e0ffa3d..448e4ff 100644
+> --- a/include/asm-generic/io.h
+> +++ b/include/asm-generic/io.h
+> @@ -23,6 +23,8 @@
+>  #define mmiowb() do {} while (0)
+>  #endif
+> 
+> +static int zajec = 0;
+> +
+>  /*****************************************************************************/
+>  /*
+>   * readX/writeX() are used to access memory mapped devices. On
+> some @@ -40,6 +42,11 @@ static inline u8 __raw_readb(const
+> volatile void __iomem *addr)
+>  #ifndef __raw_readw
+>  static inline u16 __raw_readw(const volatile void __iomem *addr)
+>  {
+> +	if (zajec++ < 10)
+> +		printk(KERN_INFO "[ZAJEC] %d\n", *addr);
+> +	if (*addr == 0xfaafc000)
+> +		printk(KERN_INFO "[ZAJEC] Bingo!\n");
+> +	//0x1381a8d8
+>  	return *(const volatile u16 __force *) addr;
+>  }
+>  #endif
+> 
+> Should I modify different readw? Path include/asm-generic/io.h
+> sounds sane to me, so I modified this one.
 
-WARNING: drivers/video/geode/gx1fb.o(.data+0x70): Section mismatch in reference from the variable gx1fb_driver to the function .init.text:gx1fb_probe()
-The variable gx1fb_driver references
-the function __init gx1fb_probe()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+Are you sure that code is ever used on your arch?
+For instance, it seems that arch/x86/include/asm/io.h
+defines a different __raw_readw.
 
-Making the changes that Paul pointed out resulted in a few more
-changes being needed, so they are all included here.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- drivers/video/geode/gx1fb_core.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+Cheers.
 
---- lnx-30-rc3.orig/drivers/video/geode/gx1fb_core.c
-+++ lnx-30-rc3/drivers/video/geode/gx1fb_core.c
-@@ -29,7 +29,7 @@ static int  crt_option = 1;
- static char panel_option[32] = "";
- 
- /* Modes relevant to the GX1 (taken from modedb.c) */
--static const struct fb_videomode __initdata gx1_modedb[] = {
-+static const struct fb_videomode __devinitdata gx1_modedb[] = {
- 	/* 640x480-60 VESA */
- 	{ NULL, 60, 640, 480, 39682,  48, 16, 33, 10, 96, 2,
- 	  0, FB_VMODE_NONINTERLACED, FB_MODE_IS_VESA },
-@@ -195,7 +195,7 @@ static int gx1fb_blank(int blank_mode, s
- 	return par->vid_ops->blank_display(info, blank_mode);
- }
- 
--static int __init gx1fb_map_video_memory(struct fb_info *info, struct pci_dev *dev)
-+static int __devinit gx1fb_map_video_memory(struct fb_info *info, struct pci_dev *dev)
- {
- 	struct geodefb_par *par = info->par;
- 	unsigned gx_base;
-@@ -268,7 +268,7 @@ static struct fb_ops gx1fb_ops = {
- 	.fb_imageblit	= cfb_imageblit,
- };
- 
--static struct fb_info * __init gx1fb_init_fbinfo(struct device *dev)
-+static struct fb_info * __devinit gx1fb_init_fbinfo(struct device *dev)
- {
- 	struct geodefb_par *par;
- 	struct fb_info *info;
-@@ -318,7 +318,7 @@ static struct fb_info * __init gx1fb_ini
- 	return info;
- }
- 
--static int __init gx1fb_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-+static int __devinit gx1fb_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- {
- 	struct geodefb_par *par;
- 	struct fb_info *info;
-@@ -382,7 +382,7 @@ static int __init gx1fb_probe(struct pci
- 	return ret;
- }
- 
--static void gx1fb_remove(struct pci_dev *pdev)
-+static void __devexit gx1fb_remove(struct pci_dev *pdev)
- {
- 	struct fb_info *info = pci_get_drvdata(pdev);
- 	struct geodefb_par *par = info->par;
-@@ -441,7 +441,7 @@ static struct pci_driver gx1fb_driver = 
- 	.name		= "gx1fb",
- 	.id_table	= gx1fb_id_table,
- 	.probe		= gx1fb_probe,
--	.remove		= gx1fb_remove,
-+	.remove		= __devexit_p(gx1fb_remove),
- };
- 
- static int __init gx1fb_init(void)
-@@ -456,7 +456,7 @@ static int __init gx1fb_init(void)
- 	return pci_register_driver(&gx1fb_driver);
- }
- 
--static void __exit gx1fb_cleanup(void)
-+static void __devexit gx1fb_cleanup(void)
- {
- 	pci_unregister_driver(&gx1fb_driver);
- }
+-- 
+Pekka Paalanen
+http://www.iki.fi/pq/
+
