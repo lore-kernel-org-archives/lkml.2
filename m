@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab1FPHJp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:09:45 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:48209 "EHLO
+	id S1756524Ab1FPHFn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:05:43 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:58202 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756490Ab1FPHFj (ORCPT
+	by vger.kernel.org with ESMTP id S1756496Ab1FPHFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:05:39 -0400
-X-Sasl-enc: 5fbaRlElli3a5IMSOuRJkZ+hfRBqUzJBdxK19W7dT4x5 1308207937
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:16:11 2011
-Message-Id: <20110616001611.887734901@clark.kroah.org>
+	Thu, 16 Jun 2011 03:05:40 -0400
+X-Sasl-enc: qEJrVh8BDi+CVpwt4RStbFMYOtg0flY5mzSZlG1keLjt 1308207939
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:16:12 2011
+Message-Id: <20110616001611.986715711@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:15:23 -0700
+Date: Wed, 15 Jun 2011 17:15:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Seth Forshee <seth.forshee@canonical.com>
-Subject: [26/91] PCI: allow matching of prefetchable resources to
+        Namhyung Kim <namhyung@gmail.com>,
+        Laurent Vivier <Laurent.Vivier@bull.net>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: [27/91] loop: limit max_part module param to DISK_MAX_PARTS
 In-Reply-To: <20110616001900.GA25375@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,84 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
 ------------------
- non-prefetchable windows
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Namhyung Kim <namhyung@gmail.com>
 
-commit 8c8def26bfaa704db67d515da3eb92cf26067548 upstream.
+commit 78f4bb367fd147a0e7e3998ba6e47109999d8814 upstream.
 
-I'm not entirely sure it needs to go into 32, but it's probably the right
-thing to do. Another way of explaining the patch is:
+The 'max_part' parameter controls the number of maximum partition
+a loop block device can have. However if a user specifies very
+large value it would exceed the limitation of device minor number
+and can cause a kernel panic (or, at least, produce invalid
+device nodes in some cases).
 
- - we currently pick the _first_ exactly matching bus resource entry, but
-   the _last_ inexactly matching one. Normally first/last shouldn't
-   matter, but bus resource entries aren't actually all created equal: in
-   a transparent bus, the last resources will be the parent resources,
-   which we should generally try to avoid unless we have no choice. So
-   "first matching" is the thing we should always aim for.
+On my desktop system, following command kills the kernel. On qemu,
+it triggers similar oops but the kernel was alive:
 
- - the patch is a bit bigger than it needs to be, because I simplified the
-   logic at the same time. It used to be a fairly incomprehensible
+$ sudo modprobe loop max_part0000
+ ------------[ cut here ]------------
+ kernel BUG at /media/Linux_Data/project/linux/fs/sysfs/group.c:65!
+ invalid opcode: 0000 [#1] SMP
+ last sysfs file:
+ CPU 0
+ Modules linked in: loop(+)
 
-	if ((res->flags & IORESOURCE_PREFETCH) && !(r->flags & IORESOURCE_PREFETCH))
-		best = r;       /* Approximating prefetchable by non-prefetchable */
+ Pid: 43, comm: insmod Tainted: G        W   2.6.39-qemu+ #155 Bochs Bochs
+ RIP: 0010:[<ffffffff8113ce61>]  [<ffffffff8113ce61>] internal_create_group=
++0x2a/0x170
+ RSP: 0018:ffff880007b3fde8  EFLAGS: 00000246
+ RAX: 00000000ffffffef RBX: ffff880007b3d878 RCX: 00000000000007b4
+ RDX: ffffffff8152da50 RSI: 0000000000000000 RDI: ffff880007b3d878
+ RBP: ffff880007b3fe38 R08: ffff880007b3fde8 R09: 0000000000000000
+ R10: ffff88000783b4a8 R11: ffff880007b3d878 R12: ffffffff8152da50
+ R13: ffff880007b3d868 R14: 0000000000000000 R15: ffff880007b3d800
+ FS:  0000000002137880(0063) GS:ffff880007c00000(0000) knlGS:00000000000000=
+00
+ CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+ CR2: 0000000000422680 CR3: 0000000007b50000 CR4: 00000000000006b0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 0000000000000000 DR7: 0000000000000000
+ Process insmod (pid: 43, threadinfo ffff880007b3e000, task ffff880007afb9c=
+0)
+ Stack:
+  ffff880007b3fe58 ffffffff811e66dd ffff880007b3fe58 ffffffff811e570b
+  0000000000000010 ffff880007b3d800 ffff880007a7b390 ffff880007b3d868
+  0000000000400920 ffff880007b3d800 ffff880007b3fe48 ffffffff8113cfc8
+ Call Trace:
+  [<ffffffff811e66dd>] ? device_add+0x4bc/0x5af
+  [<ffffffff811e570b>] ? dev_set_name+0x3c/0x3e
+  [<ffffffff8113cfc8>] sysfs_create_group+0xe/0x12
+  [<ffffffff810b420e>] blk_trace_init_sysfs+0x14/0x16
+  [<ffffffff8116a090>] blk_register_queue+0x47/0xf7
+  [<ffffffff8116f527>] add_disk+0xdf/0x290
+  [<ffffffffa00060eb>] loop_init+0xeb/0x1b8 [loop]
+  [<ffffffffa0006000>] ? 0xffffffffa0005fff
+  [<ffffffff8100020a>] do_one_initcall+0x7a/0x12e
+  [<ffffffff81096804>] sys_init_module+0x9c/0x1e0
+  [<ffffffff813329bb>] system_call_fastpath+0x16/0x1b
+ Code: c3 55 48 89 e5 41 57 41 56 41 89 f6 41 55 41 54 49 89 d4 53 48 89 fb=
+ 48 83 ec 28 48 85 ff 74 0b 85 f6 75 0b 48 83 7f 30 00 75 14 <0f> 0b eb fe =
+48 83 7f 30 00 b9 ea ff ff ff 0f 84 18 01 00 00 49
+ RIP  [<ffffffff8113ce61>] internal_create_group+0x2a/0x170
+  RSP <ffff880007b3fde8>
+ ---[ end trace a123eb592043acad ]---
 
-   and technically, all the patch did was to make that complex choice be
-   even more complex (it basically added a "&& !best" to say that if we
-   already gound a non-prefetchable window for the prefetchable resource,
-   then we won't override an earlier one with that later one: remember
-   "first matching").
-
- - So instead of that complex one with three separate conditionals in one,
-   I split it up a bit, and am taking advantage of the fact that we
-   already handled the exact case, so if 'res->flags' has the PREFETCH
-   bit, then we already know that 'r->flags' will _not_ have it. So the
-   simplified code drops the redundant test, and does the new '!best' test
-   separately. It also uses 'continue' as a way to ignore the bus
-   resource we know doesn't work (ie a prefetchable bus resource is _not_
-   acceptable for anything but an exact match), so it turns into:
-
-	/* We can't insert a non-prefetch resource inside a prefetchable parent .. */
-	if (r->flags & IORESOURCE_PREFETCH)
-		continue;
-	/* .. but we can put a prefetchable resource inside a non-prefetchable one */
-	if (!best)
-		best = r;
-
-   instead. With the comments, it's now six lines instead of two, but it's
-   conceptually simpler, and I _could_ have written it as two lines:
-
-	if ((res->flags & IORESOURCE_PREFETCH) && !best)
-		best = r;	/* Approximating prefetchable by non-prefetchable */
-
-   but I thought that was too damn subtle.
-
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Seth Forshee <seth.forshee@canonical.com>
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Cc: Laurent Vivier <Laurent.Vivier@bull.net>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- drivers/pci/pci.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/block/loop.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -373,8 +373,12 @@ pci_find_parent_resource(const struct pc
- 			continue;	/* Wrong type */
- 		if (!((res->flags ^ r->flags) & IORESOURCE_PREFETCH))
- 			return r;	/* Exact match */
--		if ((res->flags & IORESOURCE_PREFETCH) && !(r->flags & IORESOURCE_PREFETCH))
--			best = r;	/* Approximating prefetchable by non-prefetchable */
-+		/* We can't insert a non-prefetch resource inside a prefetchable parent .. */
-+		if (r->flags & IORESOURCE_PREFETCH)
-+			continue;
-+		/* .. but we can put a prefetchable resource inside a non-prefetchable one */
-+		if (!best)
-+			best = r;
- 	}
- 	return best;
- }
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1605,6 +1605,9 @@ static int __init loop_init(void)
+ 	if (max_part > 0)
+ 		part_shift = fls(max_part);
+ 
++	if ((1UL << part_shift) > DISK_MAX_PARTS)
++		return -EINVAL;
++
+ 	if (max_loop > 1UL << (MINORBITS - part_shift))
+ 		return -EINVAL;
+ 
 
 
