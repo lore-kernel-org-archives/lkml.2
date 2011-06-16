@@ -1,100 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757453Ab1FPQwH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 12:52:07 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45573 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753831Ab1FPQwE (ORCPT
+	id S1757579Ab1FPQ43 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 12:56:29 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37781 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752486Ab1FPQ42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 12:52:04 -0400
-X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=LNPuZ-ntsc0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=r-BWzVmcDX1c6V8RMDMA:9 a=0LQOZpJ_b5C0SublwokA:7 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] sched: find all lowest run-queues for RT task
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <BANLkTikNYY3zKM+VUF3AbTTD0idZnt3w=Q@mail.gmail.com>
-References: <BANLkTikNYY3zKM+VUF3AbTTD0idZnt3w=Q@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 16 Jun 2011 12:52:02 -0400
-Message-ID: <1308243122.9218.143.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Jun 2011 12:56:28 -0400
+Date: Thu, 16 Jun 2011 10:56:24 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 03/11] dt/irq: add irq_domain_add_simple() helper
+Message-ID: <20110616165624.GG3795@ponder.secretlab.ca>
+References: <20110616042653.29371.2052.stgit@ponder>
+ <20110616044141.29371.76366.stgit@ponder>
+ <4DFA0D83.6070604@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DFA0D83.6070604@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-03 at 22:11 +0800, Hillf Danton wrote:
-> When finding the lowest run-queue for a given RT task, as seen in cases such as
-> select_task_rq_rt() and find_lock_lowest_rq(), RQs with no RT tasks are also
-> eligible for both RR and FIFO RT tasks.
+On Thu, Jun 16, 2011 at 09:04:51AM -0500, Rob Herring wrote:
+> Grant,
 > 
-> Minor change is added, when initializing cpupri, to record non-RT RQs which are
-> upated automatically, due to the cool design and implementation of cpupri, when
-> RT RQs are set and unset. Then they could be included in the selected CPUs by
-> cpupri_find().
+> On 06/15/2011 11:41 PM, Grant Likely wrote:
+> > irq_domain_add_simple() is an easy way to generate an irq translation
+> > domain for simple irq controllers.  It assumes a flat 1:1 mapping from
+> > hardware irq number to an offset of the first linux irq number assigned
+> > to the controller
+> > 
+> > Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> > ---
+> >  include/linux/irq.h    |   11 +++++++++
+> >  kernel/irq/irqdomain.c |   58 +++++++++++++++++++++++++++++++++++++++++++++++-
+> >  2 files changed, 68 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/include/linux/irq.h b/include/linux/irq.h
+> > index a103c01..50830fc 100644
+> > --- a/include/linux/irq.h
+> > +++ b/include/linux/irq.h
+> > @@ -797,6 +797,17 @@ extern unsigned int irq_domain_map(struct irq_domain *domain,
+> >  				   irq_hw_number_t hwirq);
+> >  extern void irq_domain_unmap(struct irq_domain *domain, irq_hw_number_t hw);
+> >  
+> > +struct of_device_id;
+> > +#ifdef CONFIG_OF
+> > +extern void irq_domain_add_simple(struct device_node *controller, int irq_base);
+> > +extern void irq_domain_generate_simple(struct of_device_id *match,
 > 
-> A call for cpupri_set() is also added when a RQ has no RT task to run.
+> match should be const
 
-I just analyzed the code, and only the first part of the patch seems OK.
+yup
 
-
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> ---
->  kernel/sched_cpupri.c |    4 +++-
->  kernel/sched_rt.c     |    4 ++++
->  2 files changed, 7 insertions(+), 1 deletions(-)
 > 
-> diff --git a/kernel/sched_cpupri.c b/kernel/sched_cpupri.c
-> index 2722dc1..d4c0b46 100644
-> --- a/kernel/sched_cpupri.c
-> +++ b/kernel/sched_cpupri.c
-> @@ -181,8 +181,10 @@ int cpupri_init(struct cpupri *cp)
->  			goto cleanup;
->  	}
+> > +					u64 phys_base, unsigned int irq_start);
+> > +#else
 > 
-> -	for_each_possible_cpu(i)
-> +	for_each_possible_cpu(i) {
->  		cp->cpu_to_pri[i] = CPUPRI_INVALID;
-> +		cpupri_set(cp, i, MAX_RT_PRIO);
-> +	}
+> Empty function for irq_domain_add_simple?
 
-This is OK, and I may add it. It's just an initialization, and because
-things like the migration thread run on all CPUs, the first time an RT
-task is run on a CPU and dequeued, it will have the cpupri_set() to
-MX_RT_PRIO anyway. But for clean up sake, it may be good to initialize
-it to a valid mask and not be ZERO.
+Haven't needed it yet.  I'll add it if it comes up.  Honestly, I'm not
+even sure if this patch will survive very long once the IRQ
+controllers start using irq_domains directly.  This is more of an easy
+way to get an irq_domain registration so that DT translations work.
 
-
->  	return 0;
-> 
->  cleanup:
-> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-> index 88725c9..4dd6e45 100644
-> --- a/kernel/sched_rt.c
-> +++ b/kernel/sched_rt.c
-> @@ -1158,6 +1158,10 @@ static struct task_struct
-> *pick_next_task_rt(struct rq *rq)
->  	 * lock again later if there is no need to push
->  	 */
->  	rq->post_schedule = has_pushable_tasks(rq);
-> +
-> +	/* this CPU is no longer RT if no task picked to feed it */
-> +	if (! p)
-> +		cpupri_set(&rq->rd->cpupri, rq->cpu, MAX_RT_PRIO);
-
-Now this is where things are not needed, because when we dequeue the
-last RT task, this is already done by the dequeue code.
-
--- Steve
-
-
->  #endif
-> 
->  	return p;
-
-
+g.
