@@ -1,116 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758643Ab1FPUbh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 16:31:37 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38597 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757724Ab1FPUbd (ORCPT
+	id S1758488Ab1FPUku (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 16:40:50 -0400
+Received: from extranet.aprogsys.com ([91.121.73.63]:40269 "EHLO
+	extranet.aprogsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754720Ab1FPUkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 16:31:33 -0400
-Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device
- structure
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Greg KH <greg@kroah.com>
-Cc: Nao Nishijima <nao.nishijima.xt@hitachi.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, jcm@redhat.com,
-        hare@suse.de, stefanr@s5r6.in-berlin.de, yrl.pp-manager.tt@hitachi.com
-In-Reply-To: <20110616181943.GB1439@kroah.com>
-References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp>
-	 <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp>
-	 <20110615153337.GA10160@kroah.com> <4DF9F11F.705@hitachi.com>
-	 <20110616154129.GA31498@kroah.com> <1308239454.2436.34.camel@mulgrave>
-	 <20110616161442.GA32113@kroah.com> <1308241506.2436.44.camel@mulgrave>
-	 <20110616181943.GB1439@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 Jun 2011 16:31:29 -0400
-Message-ID: <1308256290.2436.143.camel@mulgrave>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Jun 2011 16:40:45 -0400
+X-Greylist: delayed 377 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Jun 2011 16:40:44 EDT
+From: Vincent ETIENNE <ve@vetienne.net>
+To: linux-kernel@vger.kernel.org
+Subject: [btrfs] BUG at fs/btrfs/inode.c:4574! with 3.0.0-rc3-00055-gada9c93
+Date: Thu, 16 Jun 2011 22:34:10 +0200
+Message-ID: <4104372.Sh7o590mSo@jupiter>
+User-Agent: KMail/4.6.0 (Linux/3.0.0-rc3-00055-gada9c93; KDE/4.6.4; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-16 at 11:19 -0700, Greg KH wrote:
-> On Thu, Jun 16, 2011 at 12:25:06PM -0400, James Bottomley wrote:
-> > On Thu, 2011-06-16 at 09:14 -0700, Greg KH wrote:
-> > > > All userspace naming will be taken care of by the usual udev rules, so
-> > > > for disks, something like /dev/disk/by-preferred/<fred> which would be
-> > > > the usual symbolic link.
-> > > 
-> > > No, udev can not create such a link after the preferred name is set, as
-> > > it has no way of knowing that the name was set.
-> > 
-> > It can if we trigger a uevent.  Note: I'm not advocating this ... I'd be
-> > equally happy having whatever sets the kernel name create the link (or
-> > tickle udev to create it).  We definitely require device links, though,
-> > to get this to work.
-> 
-> And no, I don't want to trigger a uevent, Kay pointed out where this
-> will go very wrong very quickly if this is done.
+After a hard power failure (storm ) and a couurpted btrfs partition, next 
+reboot show this
 
-As I said: we just need a by-preferred type of link.
+[   14.468140] kernel BUG at fs/btrfs/inode.c:4574!
+[   14.468161] invalid opcode: 0000 [#1] PREEMPT SMP
+[   14.468203] CPU 4
+[   14.468214] Modules linked in: btrfs crc32c libcrc32c uvcvideo videodev 
+v4l2_compat_ioctl32 firewire_ohci firewire_core crc_itu_t iTCO_wdt radeon ttm 
+drm_kms_helper backlight cfbcopyarea power_supply cfbimgblt cfbfillrect$
+[   14.468404]
+[   14.468416] Pid: 2085, comm: mount Not tainted 3.0.0-rc3-00055-gada9c93 #67 
+System manufacturer System Product Name/P6T DELUXE
+[   14.468471] RIP: 0010:[<ffffffffa0202121>]  [<ffffffffa0202121>] 
+btrfs_add_link+0x161/0x1c0 [btrfs]
+[   14.468523] RSP: 0018:ffff880076fdd7c8  EFLAGS: 00010282
+[   14.468546] RAX: 00000000ffffffef RBX: ffff88007446e770 RCX: 0000000000011ff4
+[   14.468574] RDX: 0000000000011fe4 RSI: 000060ff830038b0 RDI: ffffea00019e0a00
+[   14.468601] RBP: ffff880076fdd838 R08: ffff88007b600000 R09: 0000000000000000
+[   14.468629] R10: ffff880078250730 R11: 0000000000000000 R12: ffff88007446df20
+[   14.468657] R13: ffff880076db1000 R14: 000000000000000b R15: ffff880078e33000
+[   14.468685] FS:  00007f730e116740(0000) GS:ffff88007b600000(0000) 
+knlGS:0000000000000000
+[   14.468717] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   14.468740] CR2: 00007f507c89bf80 CR3: 0000000078380000 CR4: 
+00000000000006e0
+[   14.468768] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 
+0000000000000000
+[   14.468796] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   14.468823] Process mount (pid: 2085, threadinfo ffff880076fdc000, task 
+ffff880078250000)
+[   14.468854] Stack:
+[   14.468866]  ffff880000000001 000000000000548e ffff880076fddfd8 
+000000000000548e
+[   14.468913]  ffff880078fc18c0 abff880077ec2000 0100000000005193 
+0000000000000000
+[   14.468959]  0000000000001000 0000000000000000 0000000000000097 
+ffff880076fddaf0
+[   14.469005] Call Trace:
+[   14.469026]  [<ffffffffa022b201>] add_inode_ref+0x311/0x3d0 [btrfs]
+[   14.469060]  [<ffffffffa022cfab>] replay_one_buffer+0x2cb/0x3c0 [btrfs]
+[   14.469094]  [<ffffffffa0219b34>] ? alloc_extent_buffer+0xc4/0x500 [btrfs]
+[   14.469130]  [<ffffffffa0219a70>] ? try_release_extent_mapping+0x190/0x190 
+[btrfs]
+[   14.469168]  [<ffffffffa021b763>] ? unmap_extent_buffer+0x13/0x40 [btrfs]
+[   14.469203]  [<ffffffffa022bf09>] walk_down_log_tree+0x3a9/0x550 [btrfs]
+[   14.469238]  [<ffffffffa022c1b5>] walk_log_tree+0x105/0x290 [btrfs]
+[   14.469266]  [<ffffffff81505655>] ? _raw_spin_unlock+0x35/0x60
+[   14.469299]  [<ffffffffa022e255>] btrfs_recover_log_trees+0x205/0x2f0 [btrfs]
+[   14.469335]  [<ffffffffa022cce0>] ? fixup_inode_link_counts+0x150/0x150 [btrfs]
+  14.469371]  [<ffffffffa01f438b>] open_ctree+0x145b/0x1800 [btrfs]
+[   14.469399]  [<ffffffff8123ce00>] ? vsnprintf+0x470/0x600
+[   14.469423]  [<ffffffff8118af31>] ? disk_name+0x61/0xc0
+[   14.469450]  [<ffffffffa01ce6fe>] btrfs_mount+0x41e/0x5d0 [btrfs]
+[   14.469478]  [<ffffffff811268a3>] mount_fs+0x43/0x1b0
+[   14.469501]  [<ffffffff810fd720>] ? __alloc_percpu+0x10/0x20
+[   14.469526]  [<ffffffff81140fea>] vfs_kern_mount+0x6a/0xd0
+[   14.469550]  [<ffffffff81142494>] do_kern_mount+0x54/0x110
+[   14.469574]  [<ffffffff81143bb4>] do_mount+0x1a4/0x850
+[   14.469597]  [<ffffffff810f8216>] ? memdup_user+0x46/0x80
+[   14.469620]  [<ffffffff810f82ab>] ? strndup_user+0x5b/0x80
+[   14.469644]  [<ffffffff81144628>] sys_mount+0x98/0xf0
+[   14.469667]  [<ffffffff815065ab>] system_call_fastpath+0x16/0x1b
+[   14.469692] Code: 44 89 f1 4c 89 ee 4c 89 ff 4c 89 1c 24 4c 89 55 a8 4c 89 
+5d a0 e8 d0 aa fe ff 4c 8b 5d a0 4c 8b 55 a8 85 c0 75 b4 e9 2d ff ff ff <0f> 0b 49 
+8b b4 24 50 fc ff ff 48 8d 7d bf 4d 89 d9 b9 11 00 00
+[   14.470158] RIP  [<ffffffffa0202121>] btrfs_add_link+0x161/0x1c0 [btrfs]
+[   14.470198]  RSP <ffff880076fdd7c8>
+[   14.472216] ---[ end trace 471d6a6668c5cb35 ]---
 
-> > > This will ensure that kernel output and udev input are consistent.  It
-> > > > will still require that user space utilities which derive a name for a
-> > > > device will need modifying to print out the preferred name.
-> > > 
-> > > It also doesn't solve the issue of userspace wanting to use such a
-> > > "preferred" name in the command line of tools, as there will not be a
-> > > link back to the "kernel" name directly in /dev/.
-> > 
-> > Right ... most tools use the name they're given (and all variants
-> > including the preferred one have links in /dev), which means they will
-> > show the preferred name by default (if they were given that name as
-> > input).  The only problem is tools that attempt to derive a device name,
-> > which is quite a small subset.
-> 
-> Douglas pointed out that those tools look in /dev/ which would not work
-> properly for this type of thing.
+Have try some older kernel lying on my boot partition
 
-Not all tools try to deduce the name ... most just use what they're
-given.  So some tools need changing, but it's by no means all tools.
+Same with 3.0.0-rc2, 2.6.39, 2.6.39-rc2-00120-g94c8a98
 
-> > > So as userspace tools will still need to be fixed, I don't see how
-> > > adding a kernel file for this is going to help any.  Well, a bit in that
-> > > the kernel log files will look "different", but again, that really isn't
-> > > a problem that userspace couldn't also solve with no kernel changes
-> > > needed.
-> > 
-> > This is true, but I think for the small effort it takes to implement the
-> > feature in-kernel compared with what we'd have to do to the
-> > distributions to get it implemented in userspace (we'd need klogd to do
-> > the conversion for dmesg ... I'm entirely unclear what we need to modify
-> > for /proc/partitions, etc.) the benefit outweighs the cost.
-> > 
-> > Additionally, since renaming is something users seem to want (just look
-> > at net interfaces), if we can make this work, we now have a definitive
-> > answer to point people at.
-> 
-> Renaming is something that we do NOT want to do, as we have learned our
-> lesson of the network device renaming mess.  And as Kay pointed out, we
-> already have an "alias" name there, which no one uses.
+Problem persist until i reboot with 2.6.38-08826-g1788c20 kernel where the 
+partition has been corrected :
 
-Look at this as an opportunity to get it right.  The original proposal
-was for renaming.  By iterating over the actual requirements, we have it
-reduced to simply having the kernel print a preferred name.  I think
-that's a nice achievement which we can point other proponents of
-renaming to as they arise.
+Jun 16 21:29:05 [kernel] [   16.641459] btrfs: unlinked 9 orphans
+Jun 16 21:29:05 [kernel] [   16.641463] btrfs: truncated 15 orphans
 
-> So again, I really don't like this, just fix the userspace tools to map
-> the proper device name that the kernel is using to the userspace name
-> the tool used, and all is fine.  This has been done already today,
-> succesfully, by many of the big "enterprise" monitoring systems that
-> work quite well on Linux, proving that this is not something that the
-> kernel needs to provide to implement properly.
+So it looks like a regression appeared in 2.6.39 and not corrected for the 
+moment ( more accurately between 2.6.38-08826-g1788c20 and 2.6.39-rc2-00120-
+g94c8a98
 
-Well, it's expediency.  Sure we could try to patch the world, but I
-think the simple patch of getting the kernel to print a preferred name
-solves 90% of the problem.  Sure there is a long tail of userspace
-components that needs fixing, but that can be done gradually if we take
-the kernel route.  If we go the userspace route, it will be a long while
-before we even get to 50% coverage.
+As the partition is now correct I will not be able to reproduce the problem 
+and bisect it more ( That's on my home PC so i have to admit that i would 
+prefer not to have to force corruption by doing hard power failure on it... ). 
 
-James
+I hope this few data could be of some help
+
+	Vincent
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
