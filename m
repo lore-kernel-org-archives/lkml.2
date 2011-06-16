@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757634Ab1FPMPG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 08:15:06 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:47385 "EHLO relay.sgi.com"
+	id S1757857Ab1FPMRn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 08:17:43 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:47383 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757063Ab1FPMO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757200Ab1FPMO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Jun 2011 08:14:59 -0400
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 8/8 v3] x86, UV: correct UV2 BAU destination timeout
+Subject: [PATCH 5/8 v3] x86, UV: rename hubmask to pnmask
 Cc: mingo@elte.hu
-Message-Id: <E1QXBUa-0004gn-5r@eag09.americas.sgi.com>
+Message-Id: <E1QXBUa-0004gS-17@eag09.americas.sgi.com>
 From: Cliff Wickman <cpw@sgi.com>
 Date: Thu, 16 Jun 2011 07:16:12 -0500
 Sender: linux-kernel-owner@vger.kernel.org
@@ -18,60 +18,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cliff Wickman <cpw@sgi.com>
 
-Correct the UV2 broacast assist unit's destination timeout period.
-  The period is set in 4 bits of memory-mapped register MISC_CONTROL.
-  The left bit toggles base period between 10us and 80us.
-  The other 3 bits are the multiplier.
-Decimal 15, hex f, gives the maximum: 7 * 80us
+Rename 'hubmask' to 'pnmask' for clarity.
 
-And the activation status register in UV2 should be tested for a destination
-timeout with a 4, not a 2.  The values for Active versus Timeout were reversed.
-
-This patch is critical for TLB shootdown on an Altix UV2 system (i.e. the
-follow-on to the current Altix UV).
+The BAU distribution bit mask is indexed by pnode number, not hub or
+blade number.  This important fact is not clear while the mask is
+called a 'hubmask'.
 
 Diffed against 3.0.0-rc3
+
 Signed-off-by: Cliff Wickman <cpw@sgi.com>
 
 ---
- arch/x86/include/asm/uv/uv_bau.h |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/uv/uv_bau.h |   12 ++++++------
+ arch/x86/platform/uv/tlb_uv.c    |    5 ++---
+ 2 files changed, 8 insertions(+), 9 deletions(-)
 
 Index: linux/arch/x86/include/asm/uv/uv_bau.h
 ===================================================================
 --- linux.orig/arch/x86/include/asm/uv/uv_bau.h
 +++ linux/arch/x86/include/asm/uv/uv_bau.h
-@@ -67,7 +67,7 @@
-  *  we're using 655us, similar to UV1: 65 units of 10us
+@@ -183,7 +183,7 @@
+  * 'base_dest_nasid' field of the header corresponds to the
+  * destination nodeID associated with that specified bit.
   */
- #define UV1_INTD_SOFT_ACK_TIMEOUT_PERIOD (9UL)
--#define UV2_INTD_SOFT_ACK_TIMEOUT_PERIOD (65*10UL)
-+#define UV2_INTD_SOFT_ACK_TIMEOUT_PERIOD (15UL)
+-struct bau_targ_hubmask {
++struct pnmask {
+ 	unsigned long		bits[BITS_TO_LONGS(UV_DISTRIBUTION_SIZE)];
+ };
  
- #define UV_INTD_SOFT_ACK_TIMEOUT_PERIOD	(is_uv1_hub() ?			\
- 		UV1_INTD_SOFT_ACK_TIMEOUT_PERIOD :			\
-@@ -106,12 +106,20 @@
- #define DS_SOURCE_TIMEOUT		3
- /*
-  * bits put together from HRP_LB_BAU_SB_ACTIVATION_STATUS_0/1/2
-- * values 1 and 5 will not occur
-+ * values 1 and 3 will not occur
-+ *        Decoded meaning              ERROR  BUSY    AUX ERR
-+ * -------------------------------     ----   -----   -------
-+ * IDLE                                 0       0        0
-+ * BUSY (active)                        0       1        0
-+ * SW Ack Timeout (destination)         1       0        0
-+ * SW Ack INTD rejected (strong NACK)   1       0        1
-+ * Source Side Time Out Detected        1       1        0
-+ * Destination Side PUT Failed          1       1        1
+@@ -314,7 +314,7 @@ struct bau_msg_header {
+  * Should be 64 bytes
   */
- #define UV2H_DESC_IDLE			0
--#define UV2H_DESC_DEST_TIMEOUT		2
--#define UV2H_DESC_DEST_STRONG_NACK	3
--#define UV2H_DESC_BUSY			4
-+#define UV2H_DESC_BUSY			2
-+#define UV2H_DESC_DEST_TIMEOUT		4
-+#define UV2H_DESC_DEST_STRONG_NACK	5
- #define UV2H_DESC_SOURCE_TIMEOUT	6
- #define UV2H_DESC_DEST_PUT_ERR		7
+ struct bau_desc {
+-	struct bau_targ_hubmask	distribution;
++	struct pnmask			distribution;
+ 	/*
+ 	 * message template, consisting of header and payload:
+ 	 */
+@@ -596,20 +596,20 @@ static inline void write_mmr_data_config
+ 	uv_write_global_mmr64(pnode, UVH_BAU_DATA_CONFIG, mr);
+ }
  
+-static inline int bau_uvhub_isset(int uvhub, struct bau_targ_hubmask *dstp)
++static inline int bau_uvhub_isset(int uvhub, struct pnmask *dstp)
+ {
+ 	return constant_test_bit(uvhub, &dstp->bits[0]);
+ }
+-static inline void bau_uvhub_set(int pnode, struct bau_targ_hubmask *dstp)
++static inline void bau_uvhub_set(int pnode, struct pnmask *dstp)
+ {
+ 	__set_bit(pnode, &dstp->bits[0]);
+ }
+-static inline void bau_uvhubs_clear(struct bau_targ_hubmask *dstp,
++static inline void bau_uvhubs_clear(struct pnmask *dstp,
+ 				    int nbits)
+ {
+ 	bitmap_zero(&dstp->bits[0], nbits);
+ }
+-static inline int bau_uvhub_weight(struct bau_targ_hubmask *dstp)
++static inline int bau_uvhub_weight(struct pnmask *dstp)
+ {
+ 	return bitmap_weight((unsigned long *)&dstp->bits[0],
+ 				UV_DISTRIBUTION_SIZE);
+Index: linux/arch/x86/platform/uv/tlb_uv.c
+===================================================================
+--- linux.orig/arch/x86/platform/uv/tlb_uv.c
++++ linux/arch/x86/platform/uv/tlb_uv.c
+@@ -370,8 +370,7 @@ static void do_reset(void *ptr)
+  * Use IPI to get all target uvhubs to release resources held by
+  * a given sending cpu number.
+  */
+-static void reset_with_ipi(struct bau_targ_hubmask *distribution,
+-						struct bau_control *bcp)
++static void reset_with_ipi(struct pnmask *distribution, struct bau_control *bcp)
+ {
+ 	int pnode;
+ 	int apnode;
+@@ -384,7 +383,7 @@ static void reset_with_ipi(struct bau_ta
+ 	reset_args.sender = sender;
+ 	cpus_clear(mask);
+ 	/* find a single cpu for each uvhub in this distribution mask */
+-	maskbits = sizeof(struct bau_targ_hubmask) * BITSPERBYTE;
++	maskbits = sizeof(struct pnmask) * BITSPERBYTE;
+ 	/* each bit is a pnode relative to the partition base pnode */
+ 	for (pnode = 0; pnode < maskbits; pnode++) {
+ 		int cpu;
