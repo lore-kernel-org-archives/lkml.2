@@ -1,346 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447Ab1FPLs4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 07:48:56 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:60059 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755203Ab1FPLsy (ORCPT
+	id S1756714Ab1FPLtW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 07:49:22 -0400
+Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:41132
+	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756300Ab1FPLtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 07:48:54 -0400
-Date: Thu, 16 Jun 2011 14:48:47 +0300
-From: Amit Kucheria <amit.kucheria@linaro.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org
-Subject: Re: [RFC] Add Arm cpu topology definition
-Message-ID: <20110616114847.GB2444@matterhorn1>
-Mail-Followup-To: Vincent Guittot <vincent.guittot@linaro.org>,
-	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-	linaro-dev@lists.linaro.org
-References: <BANLkTinRGRUxKB=C_2Y2F93czWScEUo+Jw@mail.gmail.com>
+	Thu, 16 Jun 2011 07:49:19 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de p5GBnC7R029206
+From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [2.6.39] drm/i915: blank screen on Lenovo Ideapad U160
+In-Reply-To: <gi4o3q2plu.fsf@karga.hank.lab> (Dirk Gouders's message of "Thu,
+	16 Jun 2011 09:38:05 +0200")
+References: <gi1uzevjl4.fsf@mx10.gouders.net>
+	<alpine.DEB.2.00.1105311406210.5012@localhost6.localdomain6>
+	<gitycau362.fsf@mx10.gouders.net> <giei3eoeic.fsf@mx10.gouders.net>
+	<gi1uyx8m2f.fsf_-_@mx10.gouders.net>
+	<20110615115903.685acba0@jbarnes-desktop>
+	<giips6lr5a.fsf@mx10.gouders.net>
+	<20110615144132.074167f3@jbarnes-desktop>
+	<giei2ulpl1.fsf@mx10.gouders.net>
+	<20110615150737.79cd5de7@jbarnes-desktop>
+	<gi4o3q2plu.fsf@karga.hank.lab>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+Date: Thu, 16 Jun 2011 13:49:11 +0200
+Message-ID: <gizkli0zew.fsf@karga.hank.lab>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <BANLkTinRGRUxKB=C_2Y2F93czWScEUo+Jw@mail.gmail.com>
-X-URL: http://www.verdurent.com/
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
+X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Thu, 16 Jun 2011 13:49:12 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 Jun 16, Vincent Guittot wrote:
-> The affinity between Arm processors is defined in the MPIDR register.
-> We can identify which processors are in the same cluster,
-> and which ones have performance interdependency. The cpu topology
->  of an Arm platform can be set thanks to this register and this topology
-> is then used by sched_mc and sched_smt.
+Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de> writes:
 
-Probably worth adding a note that sched_mc/sched_smt are disabled by default
-and need to be enabled by writing to their respective sysfs files.
+> Jesse Barnes <jbarnes@virtuousgeek.org> writes:
+>
+>> On Thu, 16 Jun 2011 00:03:38 +0200
+>> Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de> wrote:
+>>
+>>> Jesse Barnes <jbarnes@virtuousgeek.org> writes:
+>>> 
+>>> > Oh is this not an LVDS panel?  I'm curious which of the port disables
+>>> > is at fault in your config then.  If you have an eDP panel, it would
+>>> > likely be the PCH_DP_D write.  It could be a side effect of the
+>>> > PANEL_UNLOCK_REGS write as well though, can you try commenting each of
+>>> > those out?
+>>> 
+>>> Yes, you are right.  Commenting out a single line helps:
+>>> 
+>>> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+>>> index 81a9059..ed95cbf 100644
+>>> --- a/drivers/gpu/drm/i915/intel_display.c
+>>> +++ b/drivers/gpu/drm/i915/intel_display.c
+>>> @@ -1356,7 +1356,7 @@ static void intel_disable_pch_ports(struct drm_i915_private *dev_priv,
+>>>         u32 reg, val;
+>>>  
+>>>         val = I915_READ(PCH_PP_CONTROL);
+>>> -       I915_WRITE(PCH_PP_CONTROL, val | PANEL_UNLOCK_REGS);
+>>> +       //I915_WRITE(PCH_PP_CONTROL, val | PANEL_UNLOCK_REGS);
+>>>  
+>>>         disable_pch_dp(dev_priv, pipe, PCH_DP_B);
+>>>         disable_pch_dp(dev_priv, pipe, PCH_DP_C);
+>>
+>> Ok interesting, that means one of the locked regs we're trying to write
+>> later is the real culprit for this issue... those include the LVDS reg
+>> and the panel timing regs.  I'll see if I can figure out which one
+>> might be the problem.
+>
+> Thanks a lot for your help.
+>
+> Perhaps this information is helpful: with the above change, a trace is
+> generated during boot:
+>
+> ------------[ cut here ]------------
+> WARNING: at drivers/gpu/drm/i915/intel_display.c:1020 ironlake_crtc_disable+0x65
+> 4/0x124c()
+> Hardware name: 08946MG
+> PCH LVDS enabled on transcoder A, should be disabled
+> Modules linked in:
+> Pid: 1, comm: swapper Not tainted 3.0.0-rc3-00055-gada9c93-dirty #6
+> Call Trace:
+>  [<ffffffff8103e052>] ? warn_slowpath_common+0x78/0x8c
+>  [<ffffffff8103e107>] ? warn_slowpath_fmt+0x45/0x4a
+>  [<ffffffff812d517a>] ? ironlake_crtc_disable+0x654/0x124c
+>  [<ffffffff812ea90d>] ? intel_panel_set_backlight+0x3e/0x2b7
+>  [<ffffffff812c55a7>] ? intel_crtc_dpms+0x38/0xfd
+>  [<ffffffff812c2d49>] ? intel_crtc_disable+0x1a/0x4f
+>  [<ffffffff8127c93b>] ? drm_helper_disable_unused_functions+0xd0/0xfb
+>  [<ffffffff812dbab9>] ? intel_modeset_init+0x1500/0x15c0
+>  [<ffffffff81297388>] ? i915_driver_load+0xc0d/0x13d9
+>  [<ffffffff812865d8>] ? drm_get_minor+0x22b/0x288
+>  [<ffffffff81288206>] ? drm_get_pci_dev+0x149/0x253
+>  [<ffffffff814d4fc2>] ? _raw_spin_lock_irqsave+0x16/0x34
+>  [<ffffffff812096c5>] ? local_pci_probe+0x49/0x95
+>  [<ffffffff81209aa9>] ? pci_device_probe+0xc4/0xf3
+>  [<ffffffff812fd902>] ? driver_sysfs_add+0x66/0x8d
+>  [<ffffffff812fdb90>] ? driver_probe_device+0xa8/0x138
+>  [<ffffffff812fdc6f>] ? __driver_attach+0x4f/0x6f
+>  [<ffffffff812fdc20>] ? driver_probe_device+0x138/0x138
+>  [<ffffffff812fce89>] ? bus_for_each_dev+0x47/0x72
+>  [<ffffffff812fd515>] ? bus_add_driver+0xae/0x1fe
+>  [<ffffffff817fe14d>] ? drm_core_init+0x121/0x121
+>  [<ffffffff812fe0f4>] ? driver_register+0x8d/0xf5
+>  [<ffffffff817fe14d>] ? drm_core_init+0x121/0x121
+>  [<ffffffff81209cff>] ? __pci_register_driver+0x50/0xbb
+>  [<ffffffff817fe14d>] ? drm_core_init+0x121/0x121
+>  [<ffffffff810002e5>] ? do_one_initcall+0x78/0x12b
+>  [<ffffffff817d9b3f>] ? kernel_init+0xa8/0x126
+>  [<ffffffff814db414>] ? kernel_thread_helper+0x4/0x10
+>  [<ffffffff817d9a97>] ? start_kernel+0x337/0x337
+>  [<ffffffff814db410>] ? gs_change+0xb/0xb
+> ---[ end trace bb2314f7f28ba213 ]---
 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> ---
->  arch/arm/Kconfig                |   26 ++++++++
->  arch/arm/include/asm/topology.h |   33 ++++++++++
->  arch/arm/kernel/Makefile        |    1 +
->  arch/arm/kernel/smp.c           |    6 ++
->  arch/arm/kernel/topology.c      |  133 +++++++++++++++++++++++++++++++++++++++
->  5 files changed, 199 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm/kernel/topology.c
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 9adc278..bacf9af 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -219,6 +219,24 @@ source "kernel/Kconfig.freezer"
-> 
->  menu "System Type"
-> 
-> +config SCHED_MC
-> +	bool "Multi-core scheduler support"
-> +	depends on SMP && ARM_CPU_TOPOLOGY
-> +	default n
-> +	help
-> +	  Multi-core scheduler support improves the CPU scheduler's decision
-> +	  making when dealing with multi-core CPU chips at a cost of slightly
-> +	  increased overhead in some places. If unsure say N here.
-> +
-> +config SCHED_SMT
-> +	bool "SMT scheduler support"
-> +	depends on SMP && ARM_CPU_TOPOLOGY
-> +	default n
-> +	help
-> +	  Improves the CPU scheduler's decision making when dealing with
-> +	  MultiThreading at a cost of slightly increased overhead in some
-> +	  places. If unsure say N here.
-> +
->  config MMU
->  	bool "MMU-based Paged Memory Management Support"
->  	default y
-> @@ -1062,6 +1080,14 @@ if !MMU
->  source "arch/arm/Kconfig-nommu"
->  endif
-> 
-> +config ARM_CPU_TOPOLOGY
-> +	bool "Support cpu topology definition"
-> +	depends on SMP && CPU_V7
-> +	help
-> +	  Support Arm cpu topology definition. The MPIDR register defines
-> +	  affinity between processors which is used to set the cpu
-> +	  topology of an Arm System.
-> +
->  config ARM_ERRATA_411920
->  	bool "ARM errata: Invalidation of the Instruction Cache operation can fail"
->  	depends on CPU_V6 || CPU_V6K
-> diff --git a/arch/arm/include/asm/topology.h b/arch/arm/include/asm/topology.h
-> index accbd7c..cb90d0a 100644
-> --- a/arch/arm/include/asm/topology.h
-> +++ b/arch/arm/include/asm/topology.h
-> @@ -1,6 +1,39 @@
->  #ifndef _ASM_ARM_TOPOLOGY_H
->  #define _ASM_ARM_TOPOLOGY_H
-> 
-> +#ifdef CONFIG_ARM_CPU_TOPOLOGY
-> +
-> +#include <linux/cpumask.h>
-> +
-> +struct cputopo_arm {
-> +	int thread_id;
-> +	int core_id;
-> +	int socket_id;
-> +	cpumask_t thread_sibling;
-> +	cpumask_t core_sibling;
-> +};
-> +
-> +extern struct cputopo_arm cpu_topology[NR_CPUS];
-> +
-> +#define topology_physical_package_id(cpu)	(cpu_topology[cpu].socket_id)
-> +#define topology_core_id(cpu)		(cpu_topology[cpu].core_id)
-> +#define topology_core_cpumask(cpu)	(&(cpu_topology[cpu].core_sibling))
-> +#define topology_thread_cpumask(cpu)	(&(cpu_topology[cpu].thread_sibling))
-> +
-> +#define mc_capable()	(cpu_topology[0].socket_id != -1)
-> +#define smt_capable()	(cpu_topology[0].thread_id != -1)
-> +
-> +void init_cpu_topology(void);
-> +void store_cpu_topology(unsigned int cpuid);
-> +const struct cpumask *cpu_coregroup_mask(unsigned int cpu);
-> +
-> +#else
-> +
-> +#define init_cpu_topology() {};
-> +#define store_cpu_topology(cpuid) {};
-> +
-> +#endif
-> +
->  #include <asm-generic/topology.h>
-> 
->  #endif /* _ASM_ARM_TOPOLOGY_H */
-> diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-> index a5b31af..816a481 100644
-> --- a/arch/arm/kernel/Makefile
-> +++ b/arch/arm/kernel/Makefile
-> @@ -61,6 +61,7 @@ obj-$(CONFIG_IWMMXT)		+= iwmmxt.o
->  obj-$(CONFIG_CPU_HAS_PMU)	+= pmu.o
->  obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
->  AFLAGS_iwmmxt.o			:= -Wa,-mcpu=iwmmxt
-> +obj-$(CONFIG_ARM_CPU_TOPOLOGY)  += topology.o
-> 
->  ifneq ($(CONFIG_ARCH_EBSA110),y)
->    obj-y		+= io.o
-> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-> index 344e52b..3e8dc3b 100644
-> --- a/arch/arm/kernel/smp.c
-> +++ b/arch/arm/kernel/smp.c
-> @@ -31,6 +31,7 @@
->  #include <asm/cacheflush.h>
->  #include <asm/cpu.h>
->  #include <asm/cputype.h>
-> +#include <asm/topology.h>
->  #include <asm/mmu_context.h>
->  #include <asm/pgtable.h>
->  #include <asm/pgalloc.h>
-> @@ -268,6 +269,9 @@ static void __cpuinit smp_store_cpu_info(unsigned int cpuid)
->  	struct cpuinfo_arm *cpu_info = &per_cpu(cpu_data, cpuid);
-> 
->  	cpu_info->loops_per_jiffy = loops_per_jiffy;
-> +
-> +	store_cpu_topology(cpuid);
-> +
->  }
-> 
->  /*
-> @@ -354,6 +358,8 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
->  {
->  	unsigned int ncores = num_possible_cpus();
-> 
-> +	init_cpu_topology();
-> +
->  	smp_store_cpu_info(smp_processor_id());
-> 
->  	/*
-> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
-> new file mode 100644
-> index 0000000..d61723c
-> --- /dev/null
-> +++ b/arch/arm/kernel/topology.c
-> @@ -0,0 +1,133 @@
-> +/*
-> + * arch/arm/kernel/topology.c
-> + *
-> + * Copyright (C) 2011  vincent.guittot@linaro.org
+Some redundant information, but if I change one line at another place
+in the i915 code (whithout the above modification) the result is more
+satisfactory on my machine, because in that case the display even works
+after I close and reopen the lid:
 
-This should be 
+diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
+index 927442a..ebb67ae 100644
+--- a/drivers/gpu/drm/i915/intel_bios.c
++++ b/drivers/gpu/drm/i915/intel_bios.c
+@@ -267,7 +267,7 @@ static int intel_bios_ssc_frequency(struct drm_device *dev,
+        case 4:
+                return alternate ? 100 : 96;
+        default:
+-               return alternate ? 100 : 120;
++               return alternate ? 120 : 100;
+        }
+ }
 
-Copyright (C) 2011 Linaro Limited.
-
-Written by: Vincent Guittot
-
-> + *
-> + * based on arch/sh/kernel/topology.c
-> + *
-> + * This file is subject to the terms and conditions of the GNU General Public
-> + * License.  See the file "COPYING" in the main directory of this archive
-> + * for more details.
-> + */
-> +
-> +#include <linux/cpu.h>
-> +#include <linux/cpumask.h>
-> +#include <linux/init.h>
-> +#include <linux/percpu.h>
-> +#include <linux/node.h>
-> +#include <linux/nodemask.h>
-> +#include <linux/sched.h>
-> +
-> +#include <asm/cacheflush.h>
-> +#include <asm/topology.h>
-> +
-> +#define hard_smp_mpidr() \
-> +	({ \
-> +		unsigned int cpunum; \
-> +		__asm__("mrc p15, 0, %0, c0, c0, 5"	\
-> +			: "=r" (cpunum)); \
-> +		cpunum; \
-> +	})
-> +
-> +struct cputopo_arm cpu_topology[NR_CPUS];
-> +
-> +const struct cpumask *cpu_coregroup_mask(unsigned int cpu)
-> +{
-> +	return &(cpu_topology[cpu].core_sibling);
-> +}
-> +
-> +/*
-> + * store_cpu_topology is called at boot when only one cpu is running
-> + * and with the mutex cpu_hotplug.lock locked, when several cpus have booted,
-> + * which prevents simultaneous write access to cpu_topology array
-> + */
-> +void store_cpu_topology(unsigned int cpuid)
-> +{
-> +	struct cputopo_arm *cpuid_topo = &(cpu_topology[cpuid]);
-> +	unsigned int mpidr;
-> +	unsigned int cpu;
-> +
-> +	/* If the cpu topology has been already set, just return */
-> +	if (cpuid_topo->core_id != -1)
-> +		return;
-> +
-> +	mpidr = hard_smp_mpidr();
-> +
-> +	/* create cpu topology mapping */
-> +	if (mpidr & (0x3 << 30)) {
-
-Use #defines for the MPIDR bit-fields
-
-#define MPIDR_U_BITMASK (0x3 << 30)
-
-BTW, Bit 31 seems to always be 1, do you really want that in the mask?
-
-> +		/*
-> +		 * This is a multiprocessor system
-> +		 * multiprocessor format & multiprocessor mode field are set
-> +		 */
-> +
-> +		if (mpidr & (0x1 << 24)) {
-
-According to
-http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0388f/CIHCHADB.html
-
-bit 24 is SBZ. Where is this redefined for MT?
-
-> +			/* core performance interdependency */
-> +			cpuid_topo->thread_id = (mpidr & 0x3);
-> +			cpuid_topo->core_id =  ((mpidr >> 8) & 0xF);
-> +			cpuid_topo->socket_id = ((mpidr >> 16) & 0xFF);
-
-Define BITMASKs for these bits too.
-
-> +		} else {
-> +			/* normal core interdependency */
-> +			cpuid_topo->thread_id = -1;
-> +			cpuid_topo->core_id = (mpidr & 0x3);
-> +			cpuid_topo->socket_id = ((mpidr >> 8) & 0xF);
-> +		}
-> +	} else {
-> +		/*
-> +		 * This is an uniprocessor system
-> +		 * we are in multiprocessor format but uniprocessor system
-> +		 * or in the old uniprocessor format
-> +		 */
-> +
-> +		cpuid_topo->thread_id = -1;
-> +		cpuid_topo->core_id = 0;
-> +		cpuid_topo->socket_id = -1;
-> +	}
-> +
-> +	/* update core and thread sibling masks */
-> +	for_each_possible_cpu(cpu) {
-> +		struct cputopo_arm *cpu_topo = &(cpu_topology[cpu]);
-> +
-> +		if (cpuid_topo->socket_id == cpu_topo->socket_id) {
-> +			cpumask_set_cpu(cpuid, &cpu_topo->core_sibling);
-> +			if (cpu != cpuid)
-> +				cpumask_set_cpu(cpu,
-> +					&cpuid_topo->core_sibling);
-> +
-> +			if (cpuid_topo->core_id == cpu_topo->core_id) {
-> +				cpumask_set_cpu(cpuid,
-> +					&cpu_topo->thread_sibling);
-> +				if (cpu != cpuid)
-> +					cpumask_set_cpu(cpu,
-> +						&cpuid_topo->thread_sibling);
-> +			}
-> +		}
-> +	}
-> +	smp_wmb();
-> +
-> +	printk(KERN_INFO "cpu %u : thread %d cpu %d, socket %d, mpidr %x\n",
-> +		cpuid, cpu_topology[cpuid].thread_id,
-> +		cpu_topology[cpuid].core_id,
-> +		cpu_topology[cpuid].socket_id, mpidr);
-> +
-> +}
-> +
-> +/*
-> + * init_cpu_topology is called at boot when only one cpu is running
-> + * which prevent simultaneous write access to cpu_topology array
-> + */
-> +void init_cpu_topology(void)
-> +{
-> +	unsigned int cpu;
-> +
-> +	/* init core mask */
-> +	for_each_possible_cpu(cpu) {
-> +		struct cputopo_arm *cpu_topo = &(cpu_topology[cpu]);
-> +
-> +		cpu_topo->thread_id = -1;
-> +		cpu_topo->core_id =  -1;
-> +		cpu_topo->socket_id = -1;
-> +		cpumask_clear(&cpu_topo->core_sibling);
-> +		cpumask_clear(&cpu_topo->thread_sibling);
-> +	}
-> +	smp_wmb();
-> +}
-> -- 
-> 1.7.4.1
-> 
+Dirk
