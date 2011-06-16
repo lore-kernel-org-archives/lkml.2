@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab1FPNUf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 09:20:35 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:34473 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750944Ab1FPNUe (ORCPT
+	id S1755372Ab1FPNZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 09:25:26 -0400
+Received: from webbox687.server-home.net ([195.149.74.151]:53358 "EHLO
+	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751304Ab1FPNZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 09:20:34 -0400
-X-IronPort-AV: E=Sophos;i="4.65,375,1304287200"; 
-   d="scan'208";a="111271083"
-Date: Thu, 16 Jun 2011 15:20:32 +0200
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>, Paul Turner <pjt@google.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: "Cache" sched domains
-Message-ID: <20110616132032.GO5583@const.bordeaux.inria.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
-	linux-kernel@vger.kernel.org,
-	Suresh Siddha <suresh.b.siddha@intel.com>,
-	Venkatesh Pallipadi <venki@google.com>,
-	Srivatsa Vaddagiri <vatsa@in.ibm.com>, Paul Turner <pjt@google.com>,
-	Mike Galbraith <efault@gmx.de>,
-	Andreas Herrmann <andreas.herrmann3@amd.com>,
-	Heiko Carstens <heiko.carstens@de.ibm.com>
-References: <20110616121147.GA4644@const.bordeaux.inria.fr> <1308227242.13240.56.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1308227242.13240.56.camel@twins>
-User-Agent: Mutt/1.5.12-2006-07-14
+	Thu, 16 Jun 2011 09:25:22 -0400
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>
+Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Alexander Stein <alexander.stein@systec-electronic.com>
+Subject: [PATCH] i2c-isch: Add module parameter which actually set the clock divider
+Date: Thu, 16 Jun 2011 15:24:38 +0200
+Message-Id: <1308230678-28861-1-git-send-email-alexander.stein@systec-electronic.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+It was observed the Host Clock Divider was not written by the driver. It
+was still set to (default) 0 which caused garbage on SMBus.
+This driver adds 2 parameters which are used to calculate the divider
+appropriately.
 
-Peter Zijlstra, le Thu 16 Jun 2011 14:27:22 +0200, a écrit :
-> On Thu, 2011-06-16 at 14:11 +0200, Samuel Thibault wrote:
-> > ┌──────────────────────────────────────────────────────────────────┐
-> > │Socket P#1                                                        │
-> > │┌────────────────────────────────────────────────────────────────┐│
-> > ││L3 (16MB)                                                       ││
-> > │└────────────────────────────────────────────────────────────────┘│
-> > │┌────────────────────┐┌────────────────────┐┌────────────────────┐│
-> > ││L2 (3072KB)         ││L2 (3072KB)         ││L2 (3072KB)         ││
-> > │└────────────────────┘└────────────────────┘└────────────────────┘│
-> > │┌─────────┐┌─────────┐┌─────────┐┌─────────┐┌─────────┐┌─────────┐│
-> > ││L1 (32KB)││L1 (32KB)││L1 (32KB)││L1 (32KB)││L1 (32KB)││L1 (32KB)││
-> > │└─────────┘└─────────┘└─────────┘└─────────┘└─────────┘└─────────┘│
-> > │┌─────────┐┌─────────┐┌─────────┐┌─────────┐┌─────────┐┌─────────┐│
-> > ││Core P#0 ││Core P#1 ││Core P#2 ││Core P#3 ││Core P#4 ││Core P#5 ││
-> > ││┌───────┐││┌───────┐││┌───────┐││┌───────┐││┌───────┐││┌───────┐││
-> > │││PU P#0 ││││PU P#4 ││││PU P#8 ││││PU P#12││││PU P#16││││PU P#20│││
-> > ││└───────┘││└───────┘││└───────┘││└───────┘││└───────┘││└───────┘││
-> > │└─────────┘└─────────┘└─────────┘└─────────┘└─────────┘└─────────┘│
-> > └──────────────────────────────────────────────────────────────────┘
-> 
-> Pretty, bonus points for effort there.
+Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+---
+ drivers/i2c/busses/i2c-isch.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-Well, that's all hwloc's credit :)
+diff --git a/drivers/i2c/busses/i2c-isch.c b/drivers/i2c/busses/i2c-isch.c
+index 0682f8f..520bbd5 100644
+--- a/drivers/i2c/busses/i2c-isch.c
++++ b/drivers/i2c/busses/i2c-isch.c
+@@ -40,6 +40,7 @@
+ /* SCH SMBus address offsets */
+ #define SMBHSTCNT	(0 + sch_smba)
+ #define SMBHSTSTS	(1 + sch_smba)
++#define SMBHSTCLK	(2 + sch_smba)
+ #define SMBHSTADD	(4 + sch_smba) /* TSA */
+ #define SMBHSTCMD	(5 + sch_smba)
+ #define SMBHSTDAT0	(6 + sch_smba)
+@@ -58,6 +59,8 @@
+ 
+ static unsigned short sch_smba;
+ static struct i2c_adapter sch_adapter;
++static int smbus_speed = 100; /* SMBus bus speed in Kbps */
++static int backbone_speed = 33000; /* backbone speed in KHz */
+ 
+ /*
+  * Start the i2c transaction -- the i2c_access will prepare the transaction
+@@ -156,6 +159,9 @@ static s32 sch_access(struct i2c_adapter *adap, u16 addr,
+ 		dev_dbg(&sch_adapter.dev, "SMBus busy (%02x)\n", temp);
+ 		return -EAGAIN;
+ 	}
++	dev_dbg(&sch_adapter.dev, "access speed: %d KHz\n", smbus_speed);
++	outb((backbone_speed / 4) / smbus_speed, SMBHSTCLK);
++
+ 	dev_dbg(&sch_adapter.dev, "access size: %d %s\n", size,
+ 		(read_write)?"READ":"WRITE");
+ 	switch (size) {
+@@ -323,3 +329,5 @@ MODULE_LICENSE("GPL");
+ module_init(i2c_sch_init);
+ module_exit(i2c_sch_exit);
+ MODULE_ALIAS("platform:isch_smbus");
++module_param(smbus_speed, int, (S_IRUSR | S_IWUSR));
++module_param(backbone_speed, int, (S_IRUSR | S_IWUSR));
+-- 
+1.7.3.4
 
-> So the current goal is to change sched_domain_topology to not be such a
-> silly hard coded list of domains, but build that thing dynamically based
-> on the system topology and set all the SD_flags correctly.
-
-Ok, great!
-
-> If that is something you're willing to work on, that'd be totally
-> awesome.
-
-I'm afraid I do not have time to spend on this.
-
-Samuel
