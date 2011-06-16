@@ -1,58 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758028Ab1FPNxz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 09:53:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39083 "EHLO mx1.redhat.com"
+	id S1758055Ab1FPNzV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 09:55:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40706 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755781Ab1FPNxw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 09:53:52 -0400
-Date: Thu, 16 Jun 2011 15:51:14 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 4/22]  4: Uprobes: register/unregister
-	probes.
-Message-ID: <20110616135114.GA22131@redhat.com>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6> <20110607125900.28590.16071.sendpatchset@localhost6.localdomain6> <1308159719.2171.57.camel@laptop> <20110616041137.GG4952@linux.vnet.ibm.com> <1308217582.15315.94.camel@twins> <20110616095412.GK4952@linux.vnet.ibm.com>
+	id S1753776Ab1FPNzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 09:55:18 -0400
+Date: Thu, 16 Jun 2011 16:55:11 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] vhost: set dirty log when updating flags of used ring
+Message-ID: <20110616135511.GA17758@redhat.com>
+References: <20110616064556.9137.87807.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110616095412.GK4952@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110616064556.9137.87807.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16, Srikar Dronamraju wrote:
->
-> In which case, shouldnt traversing all the tasks of all siblings of
-> parent of mm->owner should provide us all the the tasks that have linked
-> to mm. Right?
+On Thu, Jun 16, 2011 at 02:45:56PM +0800, Jason Wang wrote:
+> We need to set log when updating flags of used ring, otherwise they may
+> be missed after migration. A helper was introduced to write used_flags
+> back to guest memory and update the log if necessary.
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  drivers/vhost/vhost.c |   26 ++++++++++++++++++++++----
+>  drivers/vhost/vhost.h |    2 ++
+>  2 files changed, 24 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> index 2ab2912..7c46aed 100644
+> --- a/drivers/vhost/vhost.c
+> +++ b/drivers/vhost/vhost.c
+> @@ -573,8 +573,10 @@ static long vhost_set_memory(struct vhost_dev *d, struct vhost_memory __user *m)
+>  static int init_used(struct vhost_virtqueue *vq,
+>  		     struct vring_used __user *used)
+>  {
+> -	int r = put_user(vq->used_flags, &used->flags);
+> +	int r;
+>  
+> +	vq->used = used;
+> +	r = vhost_update_used_flags(vq);
 
-I don't think so.
+So I'm concerned that this will tweak the log if that's enabled even
+though backend wasn't enabled yet so we didn't
+verify that log writes are ok.
 
-Even if the initial mm->ovner never exits (iow, mm->owner is never changed),
-the "deep" CLONE_VM child can be reparented to init if its parent exits.
+The reason we do this write here at all is because
+during migration, remote might have left
+exits masked, in which case we won't
+get an exit.
 
-> Agree that we can bother about this a little later.
+A simple fix is to invoke the handler
+when backend is enabled, that will
+check the ring.
 
-Agreed.
+I actually think that maybe the last_used update should be delayed until
+backend is set too - this will make it possible to stop
+by removing the backend, tweak used index
+then re-start. But let's make it a separate patch.
 
+>  	if (r)
+>  		return r;
+>  	return get_user(vq->last_used_idx, &used->idx);
+> @@ -700,7 +702,6 @@ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
+>  		vq->desc = (void __user *)(unsigned long)a.desc_user_addr;
+>  		vq->avail = (void __user *)(unsigned long)a.avail_user_addr;
+>  		vq->log_addr = a.log_guest_addr;
+> -		vq->used = (void __user *)(unsigned long)a.used_user_addr;
+>  		break;
+>  	case VHOST_SET_VRING_KICK:
+>  		if (copy_from_user(&f, argp, sizeof f)) {
+> @@ -1375,6 +1376,23 @@ void vhost_add_used_and_signal_n(struct vhost_dev *dev,
+>  	vhost_signal(dev, vq);
+>  }
+>  
+> +int vhost_update_used_flags(struct vhost_virtqueue *vq)
+> +{
+> +	if (put_user(vq->used_flags, &vq->used->flags) < 0)
+> +		return -EFAULT;
+> +	if (unlikely(vq->log_used)) {
+> +		/* Make sure the flag is seen before log. */
+> +		smp_wmb();
+> +		/* Log used flag write. */
+> +		log_write(vq->log_base,
+> +			  vq->log_addr + offsetof(struct vring_used, flags),
+> +			  sizeof vq->used->flags);
+> +		if (vq->log_ctx)
+> +			eventfd_signal(vq->log_ctx, 1);
+> +	}
+> +	return 0;
+> +}
+> +
+>  /* OK, now we need to know about added descriptors. */
+>  bool vhost_enable_notify(struct vhost_virtqueue *vq)
+>  {
+> @@ -1384,7 +1402,7 @@ bool vhost_enable_notify(struct vhost_virtqueue *vq)
+>  	if (!(vq->used_flags & VRING_USED_F_NO_NOTIFY))
+>  		return false;
+>  	vq->used_flags &= ~VRING_USED_F_NO_NOTIFY;
+> -	r = put_user(vq->used_flags, &vq->used->flags);
+> +	r = vhost_update_used_flags(vq);
+>  	if (r) {
+>  		vq_err(vq, "Failed to enable notification at %p: %d\n",
+>  		       &vq->used->flags, r);
+> @@ -1411,7 +1429,7 @@ void vhost_disable_notify(struct vhost_virtqueue *vq)
+>  	if (vq->used_flags & VRING_USED_F_NO_NOTIFY)
+>  		return;
+>  	vq->used_flags |= VRING_USED_F_NO_NOTIFY;
+> -	r = put_user(vq->used_flags, &vq->used->flags);
+> +	r = vhost_update_used_flags(vq);
+>  	if (r)
+>  		vq_err(vq, "Failed to enable notification at %p: %d\n",
+>  		       &vq->used->flags, r);
+> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+> index b3363ae..76f4c61 100644
+> --- a/drivers/vhost/vhost.h
+> +++ b/drivers/vhost/vhost.h
+> @@ -155,6 +155,8 @@ bool vhost_enable_notify(struct vhost_virtqueue *);
+>  int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
+>  		    unsigned int log_num, u64 len);
+>  
+> +int vhost_update_used_flags(struct vhost_virtqueue *vq);
+> +
 
-Oh. We should move ->mm from task_struct to signal_struct, but we need to
-change the code like get_task_mm(). And then instead of mm->owner we can
-have mm->processes list. Perhaps. This can be used by zap_threads() too.
+Why declare it here? Make it static, flags is
+an implementation detail and does not need to
+get exported.
 
-Oleg.
-
+>  #define vq_err(vq, fmt, ...) do {                                  \
+>  		pr_debug(pr_fmt(fmt), ##__VA_ARGS__);       \
+>  		if ((vq)->error_ctx)                               \
