@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756837Ab1FPHKf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:10:35 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:37676 "EHLO
+	id S1756914Ab1FPHVh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:21:37 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:59706 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756813Ab1FPHKa (ORCPT
+	by vger.kernel.org with ESMTP id S1756628Ab1FPHKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:10:30 -0400
-X-Sasl-enc: PgvvwuNWLNqBex0pLZObEq/RZEXHcXerRe3IUcWV9Gbe 1308208229
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:29:05 2011
-Message-Id: <20110616002905.872520968@clark.kroah.org>
+	Thu, 16 Jun 2011 03:10:32 -0400
+X-Sasl-enc: 1fcXzP0kJ/JUSArVRYnkiDbGH6PObM0QnZwISO7wI/BG 1308208231
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:29:06 2011
+Message-Id: <20110616002905.962278622@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:28:17 -0700
+Date: Wed, 15 Jun 2011 17:28:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Milton Miller <miltonm@bga.com>, <linuxppc-dev@lists.ozlabs.org>,
-        Andi Kleen <andi@firstfloor.org>, Nick Piggin <npiggin@kernel.dk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Anton Blanchard <anton@samba.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
+        Kasper Pedersen <kkp2010@kasperkp.dk>,
+        john stultz <johnstul@us.ibm.com>, John Kacur <jkacur@redhat.com>,
+        Clark Williams <williams@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [21/85] seqlock: Dont smp_rmb in seqlock reader spin loop
+Subject: [22/85] time: Compensate for rounding on odd-frequency clocksources
 In-Reply-To: <20110616002917.GA3627@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,75 +31,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Milton Miller <miltonm@bga.com>
+From: Kasper Pedersen <kkp2010@kasperkp.dk>
 
-commit 5db1256a5131d3b133946fa02ac9770a784e6eb2 upstream.
+commit a386b5af8edda1c742ce9f77891e112eefffc005 upstream.
 
-Move the smp_rmb after cpu_relax loop in read_seqlock and add
-ACCESS_ONCE to make sure the test and return are consistent.
+When the clocksource is not a multiple of HZ, the clock will be off.  For
+acpi_pm, HZ=1000 the error is 127.111 ppm:
 
-A multi-threaded core in the lab didn't like the update
-from 2.6.35 to 2.6.36, to the point it would hang during
-boot when multiple threads were active.  Bisection showed
-af5ab277ded04bd9bc6b048c5a2f0e7d70ef0867 (clockevents:
-Remove the per cpu tick skew) as the culprit and it is
-supported with stack traces showing xtime_lock waits including
-tick_do_update_jiffies64 and/or update_vsyscall.
+The rounding of cycle_interval ends up generating a false error term in
+ntp_error accumulation since xtime_interval is not exactly 1/HZ.  So, we
+subtract out the error caused by the rounding.
 
-Experimentation showed the combination of cpu_relax and smp_rmb
-was significantly slowing the progress of other threads sharing
-the core, and this patch is effective in avoiding the hang.
+This has been visible since 2.6.32-rc2
+	commit a092ff0f90cae22b2ac8028ecd2c6f6c1a9e4601
+	time: Implement logarithmic time accumulation
+That commit raised NTP_INTERVAL_FREQ and exposed the rounding error.
 
-A theory is the rmb is affecting the whole core while the
-cpu_relax is causing a resource rebalance flush, together they
-cause an interfernce cadance that is unbroken when the seqlock
-reader has interrupts disabled.
+testing tool: http://n1.taur.dk/permanent/testpmt.c
+Also tested with ntpd and a frequency counter.
 
-At first I was confused why the refactor in
-3c22cd5709e8143444a6d08682a87f4c57902df3 (kernel: optimise
-seqlock) didn't affect this patch application, but after some
-study that affected seqcount not seqlock. The new seqcount was
-not factored back into the seqlock.  I defer that the future.
-
-While the removal of the timer interrupt offset created
-contention for the xtime lock while a cpu does the
-additonal work to update the system clock, the seqlock
-implementation with the tight rmb spin loop goes back much
-further, and is just waiting for the right trigger.
-
-Signed-off-by: Milton Miller <miltonm@bga.com>
-Cc: <linuxppc-dev@lists.ozlabs.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Anton Blanchard <anton@samba.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Link: http://lkml.kernel.org/r/%3Cseqlock-rmb%40mdm.bga.com%3E
+Signed-off-by: Kasper Pedersen <kkp2010@kasperkp.dk>
+Acked-by: john stultz <johnstul@us.ibm.com>
+Cc: John Kacur <jkacur@redhat.com>
+Cc: Clark Williams <williams@redhat.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/seqlock.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/time/timekeeping.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/include/linux/seqlock.h
-+++ b/include/linux/seqlock.h
-@@ -88,12 +88,12 @@ static __always_inline unsigned read_seq
- 	unsigned ret;
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -32,6 +32,8 @@ struct timekeeper {
+ 	cycle_t cycle_interval;
+ 	/* Number of clock shifted nano seconds in one NTP interval. */
+ 	u64	xtime_interval;
++	/* shifted nano seconds left over when rounding cycle_interval */
++	s64	xtime_remainder;
+ 	/* Raw nano seconds accumulated per NTP interval. */
+ 	u32	raw_interval;
  
- repeat:
--	ret = sl->sequence;
--	smp_rmb();
-+	ret = ACCESS_ONCE(sl->sequence);
- 	if (unlikely(ret & 1)) {
- 		cpu_relax();
- 		goto repeat;
- 	}
-+	smp_rmb();
+@@ -62,7 +64,7 @@ struct timekeeper timekeeper;
+ static void timekeeper_setup_internals(struct clocksource *clock)
+ {
+ 	cycle_t interval;
+-	u64 tmp;
++	u64 tmp, ntpinterval;
  
- 	return ret;
- }
+ 	timekeeper.clock = clock;
+ 	clock->cycle_last = clock->read(clock);
+@@ -70,6 +72,7 @@ static void timekeeper_setup_internals(s
+ 	/* Do the ns -> cycle conversion first, using original mult */
+ 	tmp = NTP_INTERVAL_LENGTH;
+ 	tmp <<= clock->shift;
++	ntpinterval = tmp;
+ 	tmp += clock->mult/2;
+ 	do_div(tmp, clock->mult);
+ 	if (tmp == 0)
+@@ -80,6 +83,7 @@ static void timekeeper_setup_internals(s
+ 
+ 	/* Go back from cycles -> shifted ns */
+ 	timekeeper.xtime_interval = (u64) interval * clock->mult;
++	timekeeper.xtime_remainder = ntpinterval - timekeeper.xtime_interval;
+ 	timekeeper.raw_interval =
+ 		((u64) interval * clock->mult) >> clock->shift;
+ 
+@@ -771,7 +775,8 @@ static cycle_t logarithmic_accumulation(
+ 
+ 	/* Accumulate error between NTP and clock interval */
+ 	timekeeper.ntp_error += tick_length << shift;
+-	timekeeper.ntp_error -= timekeeper.xtime_interval <<
++	timekeeper.ntp_error -=
++	    (timekeeper.xtime_interval + timekeeper.xtime_remainder) <<
+ 				(timekeeper.ntp_error_shift + shift);
+ 
+ 	return offset;
 
 
