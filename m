@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756466Ab1FPJTv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 05:19:51 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48881 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752459Ab1FPJTt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 05:19:49 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 16 Jun 2011 18:12:51 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Ankita Garg <ankita@in.ibm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        svaidy@linux.vnet.ibm.com, thomas.abraham@linaro.org
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-Message-Id: <20110616181251.caf484b6.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110616042044.GA28563@in.ibm.com>
-References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
-	<20110613134701.2b23b8d8.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110616042044.GA28563@in.ibm.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756097Ab1FPJNq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 05:13:46 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50852 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752477Ab1FPJNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 05:13:43 -0400
+Date: Thu, 16 Jun 2011 09:13:20 GMT
+From: tip-bot for Mathias Krause <minipli@googlemail.com>
+Message-ID: <tip-203db2952bc87f5d610c9ad53a7d02b85897721f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
+        minipli@googlemail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        minipli@googlemail.com, acme@ghostprotocols.net, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1308171818-20370-1-git-send-email-minipli@googlemail.com>
+References: <1308171818-20370-1-git-send-email-minipli@googlemail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] tools/perf: Fix static build of perf tool
+Git-Commit-ID: 203db2952bc87f5d610c9ad53a7d02b85897721f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Jun 2011 09:13:22 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Jun 2011 09:50:44 +0530
-Ankita Garg <ankita@in.ibm.com> wrote:
+Commit-ID:  203db2952bc87f5d610c9ad53a7d02b85897721f
+Gitweb:     http://git.kernel.org/tip/203db2952bc87f5d610c9ad53a7d02b85897721f
+Author:     Mathias Krause <minipli@googlemail.com>
+AuthorDate: Wed, 15 Jun 2011 23:03:38 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 16 Jun 2011 10:17:39 +0200
 
-> Hi,
-> 
-> On Mon, Jun 13, 2011 at 01:47:01PM +0900, KAMEZAWA Hiroyuki wrote:
-> > On Fri, 27 May 2011 18:01:28 +0530
-> > Ankita Garg <ankita@in.ibm.com> wrote:
-> > 
-> > > Hi,
-> > > 
-> > 
-> > I'm sorry if you've answered already.
-> > 
-> > Is memory hotplug is too bad and cannot be enhanced for this purpose ?
-> > 
-> > I wonder
-> >   - make section-size smaller (IIUC, IBM's system has 16MB section size)
-> > 
-> >   - add per section statistics
-> > 
-> >   - add a kind of balloon driver which does software memory offline
-> >     (which means making a contiguous chunk of free pages of section_size
-> >      by page migration) in background with regard to memory usage statistics.
-> >     If system says "need more memory!", balloon driver can online pages.
-> > 
-> > can work for your purpose. It can allow you page isolatation and
-> > controls in 16MB unit.  If you need whole rework of memory hotplug, I think
-> > it's better to rewrite memory hotplug, too.
-> >
-> 
-> Interesting idea, but a few issues -
-> 
-> - Correctly predicting memory pressure is difficult and thereby being
->   able to online the required pages at the right time could be a
->   challenge
+tools/perf: Fix static build of perf tool
 
-But it will be required for your purpose, anyway. Isn't it ?
+To build a statically linked version of the perf tool all needed
+libraries must be added in the correct order to get the symbols
+resolved. Currently this is broken when, e.g. python or newt
+support is enabled -- libpython needs libpthread which is an
+unconditional link dependency of the perf tool; libslang needs
+libm, another unconditional dependency. To solve the problem in
+the long run without the need to keep track of transitive
+library dependencies, simply make the linker look at the EXTLIBS
+multiple times until it has all symbols resolved.
 
-> - Memory hotplug is a heavy operation, so the overhead involved may be
->   high
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Link: http://lkml.kernel.org/r/1308171818-20370-1-git-send-email-minipli@googlemail.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ tools/perf/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-soft-offline of small amount of pages will not very heavy.
-compaction and cma patches use the same kind of logic.
-
-
-> - Powering off memory is just one of the ways in which memory power could
->   be saved. The platform can also dynamically transition areas of memory
->   into a  content-preserving lower power state if it is not referenced
->   for a pre-defined threshold of time. In such a case, we would need a
->   mechanism to soft offline the pages - i.e, no new allocations to be
->   directed to that memory
-> 
-
-Hmm, sounds like a similar idea of CleanCache ?
-
-Reusing section is much easier than adding new one.., I think.
-
-Thanks,
--Kame
-
-
-
-
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 032ba63..940257b 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -633,7 +633,7 @@ prefix_SQ = $(subst ','\'',$(prefix))
+ 
+ SHELL_PATH_SQ = $(subst ','\'',$(SHELL_PATH))
+ 
+-LIBS = -Wl,--whole-archive $(PERFLIBS) -Wl,--no-whole-archive $(EXTLIBS)
++LIBS = -Wl,--whole-archive $(PERFLIBS) -Wl,--no-whole-archive -Wl,--start-group $(EXTLIBS) -Wl,--end-group
+ 
+ ALL_CFLAGS += $(BASIC_CFLAGS)
+ ALL_CFLAGS += $(ARCH_CFLAGS)
