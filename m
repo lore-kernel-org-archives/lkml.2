@@ -1,291 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756009Ab1FPL1j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 07:27:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36046 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755456Ab1FPL1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 07:27:36 -0400
-Date: Thu, 16 Jun 2011 14:27:25 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Glauber Costa <glommer@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH 3/7] KVM-HV: KVM Steal time implementation
-Message-ID: <20110616112723.GS491@redhat.com>
-References: <1308007897-17013-1-git-send-email-glommer@redhat.com>
- <1308007897-17013-4-git-send-email-glommer@redhat.com>
- <20110614074500.GM491@redhat.com>
- <4DF8226B.20408@redhat.com>
- <20110615090951.GQ491@redhat.com>
- <4DF978F6.3040002@redhat.com>
+	id S1756111Ab1FPL2G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 07:28:06 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:50903 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755158Ab1FPL2B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 07:28:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Subject: Re: RFC: IIO: Options for 'event' userspace interface.
+Date: Thu, 16 Jun 2011 13:27:56 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Hennerich, Michael" <Michael.Hennerich@analog.com>,
+        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
+References: <4DF9DBDE.9060907@cam.ac.uk>
+In-Reply-To: <4DF9DBDE.9060907@cam.ac.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DF978F6.3040002@redhat.com>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106161327.57015.arnd@arndb.de>
+X-Provags-ID: V02:K0:iOzWiWXlhDQNRBmTBlgIJyNLMQm1GbEvpca1pVoA8yT
+ 76djQEG5PTYXRlJ39NiHKfuXi/fKjwzmIfZ9xRWCuWvvhKS2oa
+ naAAM5FNXvZZ8VLwjP47MmyPIGWDv3TBHCBCMPCXxAWugOIzEV
+ IYCe2r3hTKWVJB1gXjprJjHsllrQ2x3tsy3l5VooUJwpjKS7tn
+ 7nSsg4i7JuTuTxfnwHfbw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 12:31:02AM -0300, Glauber Costa wrote:
-> On 06/15/2011 06:09 AM, Gleb Natapov wrote:
-> >On Wed, Jun 15, 2011 at 12:09:31AM -0300, Glauber Costa wrote:
-> >>On 06/14/2011 04:45 AM, Gleb Natapov wrote:
-> >>>On Mon, Jun 13, 2011 at 07:31:33PM -0400, Glauber Costa wrote:
-> >>>>To implement steal time, we need the hypervisor to pass the guest information
-> >>>>about how much time was spent running other processes outside the VM.
-> >>>>This is per-vcpu, and using the kvmclock structure for that is an abuse
-> >>>>we decided not to make.
-> >>>>
-> >>>>In this patchset, I am introducing a new msr, KVM_MSR_STEAL_TIME, that
-> >>>>holds the memory area address containing information about steal time
-> >>>>
-> >>>>This patch contains the hypervisor part for it. I am keeping it separate from
-> >>>>the headers to facilitate backports to people who wants to backport the kernel
-> >>>>part but not the hypervisor, or the other way around.
-> >>>>
-> >>>>Signed-off-by: Glauber Costa<glommer@redhat.com>
-> >>>>CC: Rik van Riel<riel@redhat.com>
-> >>>>CC: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
-> >>>>CC: Peter Zijlstra<peterz@infradead.org>
-> >>>>CC: Avi Kivity<avi@redhat.com>
-> >>>>CC: Anthony Liguori<aliguori@us.ibm.com>
-> >>>>CC: Eric B Munson<emunson@mgebm.net>
-> >>>>---
-> >>>>  arch/x86/include/asm/kvm_host.h |    8 +++++
-> >>>>  arch/x86/include/asm/kvm_para.h |    4 ++
-> >>>>  arch/x86/kvm/x86.c              |   60 +++++++++++++++++++++++++++++++++++++--
-> >>>>  3 files changed, 69 insertions(+), 3 deletions(-)
-> >>>>
-> >>>>diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> >>>>index fc38eca..5dce014 100644
-> >>>>--- a/arch/x86/include/asm/kvm_host.h
-> >>>>+++ b/arch/x86/include/asm/kvm_host.h
-> >>>>@@ -388,6 +388,14 @@ struct kvm_vcpu_arch {
-> >>>>  	unsigned int hw_tsc_khz;
-> >>>>  	unsigned int time_offset;
-> >>>>  	struct page *time_page;
-> >>>>+
-> >>>>+	struct {
-> >>>>+		u64 msr_val;
-> >>>>+		gpa_t stime;
-> >>>>+		struct kvm_steal_time steal;
-> >>>>+		u64 this_time_out;
-> >>>>+	} st;
-> >>>>+
-> >>>>  	u64 last_guest_tsc;
-> >>>>  	u64 last_kernel_ns;
-> >>>>  	u64 last_tsc_nsec;
-> >>>>diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-> >>>>index ac306c4..0341e61 100644
-> >>>>--- a/arch/x86/include/asm/kvm_para.h
-> >>>>+++ b/arch/x86/include/asm/kvm_para.h
-> >>>>@@ -45,6 +45,10 @@ struct kvm_steal_time {
-> >>>>  	__u32 pad[6];
-> >>>>  };
-> >>>>
-> >>>>+#define KVM_STEAL_ALIGNMENT_BITS 5
-> >>>>+#define KVM_STEAL_VALID_BITS ((-1ULL<<   (KVM_STEAL_ALIGNMENT_BITS + 1)))
-> >>>>+#define KVM_STEAL_RESERVED_MASK (((1<<   KVM_STEAL_ALIGNMENT_BITS) - 1 )<<   1)
-> >>>>+
-> >>>>  #define KVM_MAX_MMU_OP_BATCH           32
-> >>>>
-> >>>>  #define KVM_ASYNC_PF_ENABLED			(1<<   0)
-> >>>>diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> >>>>index 6645634..10fe028 100644
-> >>>>--- a/arch/x86/kvm/x86.c
-> >>>>+++ b/arch/x86/kvm/x86.c
-> >>>>@@ -797,12 +797,12 @@ EXPORT_SYMBOL_GPL(kvm_get_dr);
-> >>>>   * kvm-specific. Those are put in the beginning of the list.
-> >>>>   */
-> >>>>
-> >>>>-#define KVM_SAVE_MSRS_BEGIN	8
-> >>>>+#define KVM_SAVE_MSRS_BEGIN	9
-> >>>>  static u32 msrs_to_save[] = {
-> >>>>  	MSR_KVM_SYSTEM_TIME, MSR_KVM_WALL_CLOCK,
-> >>>>  	MSR_KVM_SYSTEM_TIME_NEW, MSR_KVM_WALL_CLOCK_NEW,
-> >>>>  	HV_X64_MSR_GUEST_OS_ID, HV_X64_MSR_HYPERCALL,
-> >>>>-	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN,
-> >>>>+	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN, MSR_KVM_STEAL_TIME,
-> >>>>  	MSR_IA32_SYSENTER_CS, MSR_IA32_SYSENTER_ESP, MSR_IA32_SYSENTER_EIP,
-> >>>>  	MSR_STAR,
-> >>>>  #ifdef CONFIG_X86_64
-> >>>>@@ -1480,6 +1480,34 @@ static void kvmclock_reset(struct kvm_vcpu *vcpu)
-> >>>>  	}
-> >>>>  }
-> >>>>
-> >>>>+static void record_steal_time(struct kvm_vcpu *vcpu)
-> >>>>+{
-> >>>>+	u64 delta;
-> >>>>+
-> >>>>+	if (vcpu->arch.st.stime&&   vcpu->arch.st.this_time_out) {
-> >>>>+
-> >>>>+		if (unlikely(kvm_read_guest(vcpu->kvm, vcpu->arch.st.stime,
-> >>>>+			&vcpu->arch.st.steal, sizeof(struct kvm_steal_time)))) {
-> >>>>+
-> >>>>+			vcpu->arch.st.stime = 0;
-> >>>>+			return;
-> >>>>+		}
-> >>>>+
-> >>>>+		delta = (get_kernel_ns() - vcpu->arch.st.this_time_out);
-> >>>>+
-> >>>>+		vcpu->arch.st.steal.steal += delta;
-> >>>>+		vcpu->arch.st.steal.version += 2;
-> >>>>+
-> >>>>+		if (unlikely(kvm_write_guest(vcpu->kvm, vcpu->arch.st.stime,
-> >>>Why not use kvm_write_guest_cached() here and introduce kvm_read_guest_cached()
-> >>>for the read above?
-> >>
-> >>Actually, I'd expect most read/writes to benefit from caching, no?
-> >>So why don't we just rename kvm_write_guest_cached() to
-> >>kvm_write_guest(), and the few places - if any - that need to force
-> >>transversing of the gfn mappings, get renamed to
-> >>kvm_write_guest_uncached ?
-> >>
-> >Good idea. I do not see any places where kvm_write_guest_uncached is
-> >needed from a brief look. Avi?
-> >
-> >>>>+			&vcpu->arch.st.steal, sizeof(struct kvm_steal_time)))) {
-> >>>>+
-> >>>>+			vcpu->arch.st.stime = 0;
-> >>>>+			return;
-> >>>>+		}
-> >>>>+	}
-> >>>>+
-> >>>>+}
-> >>>>+
-> >>>>  int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
-> >>>>  {
-> >>>>  	switch (msr) {
-> >>>>@@ -1562,6 +1590,23 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
-> >>>>  		if (kvm_pv_enable_async_pf(vcpu, data))
-> >>>>  			return 1;
-> >>>>  		break;
-> >>>>+	case MSR_KVM_STEAL_TIME:
-> >>>>+		vcpu->arch.st.msr_val = data;
-> >>>>+
-> >>>>+		if (!(data&   KVM_MSR_ENABLED)) {
-> >>>>+			vcpu->arch.st.stime = 0;
-> >>>>+			break;
-> >>>>+		}
-> >>>>+
-> >>>>+		if (data&   KVM_STEAL_RESERVED_MASK)
-> >>>>+			return 1;
-> >>>>+
-> >>>>+		vcpu->arch.st.this_time_out = get_kernel_ns();
-> >>>>+		vcpu->arch.st.stime = data&   KVM_STEAL_VALID_BITS;
-> >>>>+		record_steal_time(vcpu);
-> >>>>+
-> >>>>+		break;
-> >>>>+
-> >>>>  	case MSR_IA32_MCG_CTL:
-> >>>>  	case MSR_IA32_MCG_STATUS:
-> >>>>  	case MSR_IA32_MC0_CTL ... MSR_IA32_MC0_CTL + 4 * KVM_MAX_MCE_BANKS - 1:
-> >>>>@@ -1847,6 +1892,9 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
-> >>>>  	case MSR_KVM_ASYNC_PF_EN:
-> >>>>  		data = vcpu->arch.apf.msr_val;
-> >>>>  		break;
-> >>>>+	case MSR_KVM_STEAL_TIME:
-> >>>>+		data = vcpu->arch.st.msr_val;
-> >>>>+		break;
-> >>>>  	case MSR_IA32_P5_MC_ADDR:
-> >>>>  	case MSR_IA32_P5_MC_TYPE:
-> >>>>  	case MSR_IA32_MCG_CAP:
-> >>>>@@ -2158,6 +2206,8 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
-> >>>>  			kvm_migrate_timers(vcpu);
-> >>>>  		vcpu->cpu = cpu;
-> >>>>  	}
-> >>>>+
-> >>>>+	record_steal_time(vcpu);
-> >>>>  }
-> >>>>
-> >>>>  void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
-> >>>>@@ -2165,6 +2215,7 @@ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
-> >>>>  	kvm_x86_ops->vcpu_put(vcpu);
-> >>>>  	kvm_put_guest_fpu(vcpu);
-> >>>>  	kvm_get_msr(vcpu, MSR_IA32_TSC,&vcpu->arch.last_guest_tsc);
-> >>>>+	vcpu->arch.st.this_time_out = get_kernel_ns();
-> >>>>  }
-> >>>>
-> >>>Shouldn't we call record_steal_time(vcpu)/vcpu->arch.st.this_time_out = get_kernel_ns();
-> >>>just before/after entering/exiting a guest? vcpu_(put|get) are called
-> >>>for each vcpu ioctl, not only VCPU_RUN.
-> >>Sorry, missed that the first time I've read your e-mail.
-> >>
-> >>If done like you said, time spent on the hypervisor is accounted as
-> >>steal time. I don't think it is.
-> >I thought that this is the point of a steal time. Running other
-> >tasks/guests is a hypervisor overhead too after all :) Also what about
-> >time spend serving host interrupts between put/get? It will not be
-> >accounted as steal time, correct?
-> 
-> This is mostly semantics. I like to compare this to a normal
-> process: There is a difference between time the OS spent on your
-> behalf, doing your system calls (sys), and time spent by other
-> processes. Similar thing here.
-> 
-The problem with this approach is that things like doing "info cpus"
-in qemu monitor will change guest scheduling behaviour. Do we want it
-to be like that?
+On Thursday 16 June 2011, Jonathan Cameron wrote:
 
-> Which put/get are you referring to specifically ? You mean
-> vcpu_put() vs vcpu_load() ?
+> Obvious options (or ones that have been suggested)
 > 
-Yes.
+> * Use out of band signalling on the main data chrdev.  Basically poll with the more
+> unusual types, POLLPRI perhaps.  Then use an IOCTL to read what actually happened.
+> (grep suggests it gets used for something similar in v4l2-subdev.c) (suggested by
+> Arnd Bergmann).
 
-> If they are after vcpu_put(), they will, because at this time your
-> process is officially out of the cpu.
-> 
-And if they are between vcpu_load() and vcpu_put() they will be accounted as
-a work done on behalf of a guest although they are likely unrelated.
+The important change that I'd really like to see is the use of poll() to wait
+for events. Using POLLPRI/ioctl to get IIO events is particularly nice IMHO because
+it lets you represent every IIO device as a single chardev. However, using a
+separate file descriptor (chardev or something else) with POLLIN/read is also
+totally fine. An interesting twist would be an ioctl on the chardev that returns
+a new file descriptor (from anon_inode_getfd()) on which you then do poll/read
+to get the events, instead of having separate character devices.
 
-> 
-> >>
-> >>Steal time is time spent running someone else's job instead of
-> >>yours. The name for the time spent in the hypervisor doing something
-> >>for *you* is just overhead.
-> >OK. That is the question of a definition I guess. If you define it like
-> >that the code is correct.
-> >
-> >>
-> >>>
-> >>>>  static int is_efer_nx(void)
-> >>>>@@ -2477,7 +2528,8 @@ static void do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
-> >>>>  			     (1<<   KVM_FEATURE_NOP_IO_DELAY) |
-> >>>>  			     (1<<   KVM_FEATURE_CLOCKSOURCE2) |
-> >>>>  			     (1<<   KVM_FEATURE_ASYNC_PF) |
-> >>>>-			     (1<<   KVM_FEATURE_CLOCKSOURCE_STABLE_BIT);
-> >>>>+			     (1<<   KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
-> >>>>+			     (1<<   KVM_FEATURE_STEAL_TIME);
-> >>>>  		entry->ebx = 0;
-> >>>>  		entry->ecx = 0;
-> >>>>  		entry->edx = 0;
-> >>>>@@ -6200,6 +6252,8 @@ int kvm_arch_vcpu_reset(struct kvm_vcpu *vcpu)
-> >>>>
-> >>>>  	kvmclock_reset(vcpu);
-> >>>>
-> >>>>+	vcpu->arch.st.stime = 0;
-> >>>>+
-> >>>>  	kvm_clear_async_pf_completion_queue(vcpu);
-> >>>>  	kvm_async_pf_hash_reset(vcpu);
-> >>>>  	vcpu->arch.apf.halted = false;
-> >>>>--
-> >>>>1.7.3.4
-> >>>>
-> >>>>--
-> >>>>To unsubscribe from this list: send the line "unsubscribe kvm" in
-> >>>>the body of a message to majordomo@vger.kernel.org
-> >>>>More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>>
-> >>>--
-> >>>			Gleb.
-> >
-> >--
-> >			Gleb.
+> * Similar system to evdev in input.  This carries a few extra fields, but that probably
+> doesn't matter. We need to know when an event happened reasonably soon after, but not
+> asap.
 
---
-			Gleb.
+I'd suggest that if you do something similar to evdev, then make it use the *exact*
+same user interface with the ioctl command definitions used in evdev.
+
+One disadvantage that I see here is that the evdev interface has a number of flaws
+regarding is 32 bit compatibility code that you cannot solve in a backwards-compatible
+way. Another is its use of variable-length ioctl arguments, which I would recommend
+avoiding in general. Also, Adding evdev extensions for iio into linux/input.h might
+be seen as a layer violation by interface purists.
+
+> * Separate evdev from input and share it across both subsystems.  This seemed like
+> a good idea, but evdev is pretty tightly tied to the input core. Note we would never
+> be sharing input's event codes.  They are too restrictive (with good reason seeing
+> as they are for 'input' devices!)  Basically I expect this could be done, but would
+> need to be done very carefully so as to not have any impact on input users.  Perhaps
+> it is the right answer, but its not trivial. (I've cc'd linux-input to get comments
+> on this option!)
+
+This could be a second step if you decide to use the evdev interface. You start
+by duplicating evdev functionality within IIO at first, and then at a convenient
+time you put the common parts into a library module that is used by both input
+and iio for evdev.
+
+> * Some other event passing methods that I've either forgotten or never knew about
+> in the first place.
+
+For completeness, the list should probably include generic netlink sockets
+(net/netlink/genetlink.c). Some people hate them, others love them. They certainly
+fit the requirements and have some other nice properties, so I'd suggest you read
+some documentation and examples and build your own opinion.
+
+> * Leave things be. Its small and simple. Perhaps it's best we don't try to be clever
+> at all.
+
+I would really hope for the interface to change to allow poll. The least invasive
+option would be to simply add a poll() function to iio_event_chrdev_fileops, which
+allows you to wait for multiple events in a single thread. Anything beyond that
+is an option IMHO.
+
+	Arnd
