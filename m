@@ -1,123 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289Ab1FPA3e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 20:29:34 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:51522 "EHLO
+	id S1757143Ab1FPHNI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:13:08 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:54946 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752783Ab1FPA3d (ORCPT
+	by vger.kernel.org with ESMTP id S1757095Ab1FPHLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 20:29:33 -0400
-X-Sasl-enc: c4OGEKboEf9pR+RIOmvxQAI4uYOzWRx8aGj/dRHRj35I 1308184171
+	Thu, 16 Jun 2011 03:11:38 -0400
+X-Sasl-enc: whlBtVCL/Y4zPR8xBDHGRT2KGBrLJAnsoebCVRx5Fvja 1308208297
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:29:12 2011
+Message-Id: <20110616002911.986105461@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
 Date: Wed, 15 Jun 2011 17:29:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [00/85] 2.6.33.15-longterm review
-Message-ID: <20110616002917.GA3627@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jeff Garzik <jgarzik@pobox.com>
+Subject: [81/85] pata_cm64x: fix boot crash on parisc
+In-Reply-To: <20110616002917.GA3627@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 2.6.33.15 release.
-There are 85 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+2.6.33-longterm review patch.  If anyone has any objections, please let us know.
 
-Responses should be made by Sat, Jun 18, 2011, 00:00:00 UTC.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.33.15-rc1.gz
-and the diffstat can be found below.
+From: James Bottomley <James.Bottomley@suse.de>
 
-thanks,
+commit 9281b16caac1276817b77033c5b8a1f5ca30102c upstream.
 
-greg k-h
+The old IDE cmd64x checks the status of the CNTRL register to see if
+the ports are enabled before probing them.  pata_cmd64x doesn't do
+this, which causes a HPMC on parisc when it tries to poke at the
+secondary port because apparently the BAR isn't wired up (and a
+non-responding piece of memory causes a HPMC).
 
- Makefile                                |    2 +-
- arch/arm/mm/cache-v6.S                  |    1 +
- arch/arm/mm/cache-v7.S                  |    2 +
- arch/powerpc/oprofile/op_model_power4.c |   24 ++++++++++++-
- arch/x86/include/asm/uaccess.h          |    2 +-
- arch/x86/kernel/amd_iommu.c             |   48 +++++++++++++++++++++++--
- arch/x86/kernel/amd_iommu_init.c        |    8 ++--
- arch/x86/kernel/cpu/amd.c               |   16 ++++++---
- arch/x86/lib/copy_user_64.S             |    4 +-
- arch/x86/xen/mmu.c                      |    2 +-
- arch/x86/xen/multicalls.c               |   12 +++---
- block/blk-core.c                        |    2 +
- block/blk.h                             |    3 +-
- drivers/ata/pata_cmd64x.c               |   61 ++++++++++++++++++++++---------
- drivers/block/brd.c                     |   11 ++++--
- drivers/block/loop.c                    |   11 ++++--
- drivers/block/nbd.c                     |    6 +++
- drivers/char/i8k.c                      |    4 +-
- drivers/cpufreq/cpufreq.c               |   20 +++++++++-
- drivers/cpufreq/cpufreq_stats.c         |   22 ++++++++++--
- drivers/cpuidle/governors/menu.c        |    4 ++-
- drivers/gpu/drm/i915/intel_lvds.c       |    8 ++++
- drivers/gpu/drm/radeon/radeon_device.c  |    1 +
- drivers/md/dm-table.c                   |   17 +++++++++
- drivers/md/md.c                         |    2 +-
- drivers/md/raid5.c                      |    8 ++--
- drivers/mtd/mtdconcat.c                 |    4 +-
- drivers/net/wireless/ath/ath9k/rc.c     |    3 +-
- drivers/net/wireless/iwlwifi/iwl-5000.c |    2 +-
- drivers/net/wireless/p54/p54usb.c       |    1 +
- drivers/pci/hotplug/pcihp_slot.c        |   45 +++++++++++++++++++++++
- drivers/pci/quirks.c                    |   10 +++++
- drivers/scsi/bnx2i/bnx2i_hwi.c          |    1 +
- drivers/scsi/bnx2i/bnx2i_iscsi.c        |    3 ++
- drivers/scsi/scsi_scan.c                |   11 +++---
- drivers/scsi/scsi_sysfs.c               |   19 ++++------
- drivers/scsi/ultrastor.c                |    2 +-
- drivers/staging/usbip/usbip_common.c    |    2 +-
- drivers/usb/core/hub.c                  |    6 ++-
- drivers/usb/gadget/at91_udc.c           |    2 +-
- drivers/usb/gadget/f_rndis.c            |    3 +-
- drivers/usb/host/xhci-mem.c             |   18 +++++++--
- drivers/usb/serial/ftdi_sio.c           |    2 +
- drivers/usb/serial/ftdi_sio_ids.h       |    6 +++
- drivers/usb/serial/garmin_gps.c         |   20 +++++++----
- drivers/usb/serial/moto_modem.c         |    1 +
- fs/block_dev.c                          |   27 +++++++++-----
- fs/dcookies.c                           |    3 ++
- fs/ecryptfs/keystore.c                  |   46 +++++++++++-------------
- fs/ext3/namei.c                         |   13 ++++++-
- fs/ext4/mballoc.c                       |    2 +
- fs/fat/file.c                           |    2 +-
- fs/jbd/commit.c                         |    9 ++++-
- fs/jbd/journal.c                        |   16 +++++++--
- fs/partitions/ldm.c                     |    5 +++
- fs/ubifs/journal.c                      |    1 +
- fs/ubifs/sb.c                           |    3 +-
- fs/ubifs/shrinker.c                     |    6 +++-
- fs/ubifs/super.c                        |    1 +
- fs/xfs/linux-2.6/xfs_sync.c             |   16 ++++++--
- fs/xfs/linux-2.6/xfs_sync.h             |    1 +
- fs/xfs/xfs_iget.c                       |    1 +
- include/linux/pci_ids.h                 |    2 +
- include/linux/seqlock.h                 |    4 +-
- kernel/lockdep.c                        |    2 +-
- kernel/time/timekeeping.c               |    9 ++++-
- kernel/trace/ftrace.c                   |   12 ++++---
- lib/locking-selftest.c                  |    2 +-
- mm/hugetlb.c                            |    4 +-
- mm/kmemleak.c                           |    7 +++-
- mm/page_alloc.c                         |    2 +-
- net/atm/atm_sysfs.c                     |   10 +++++
- net/ipv6/netfilter/ip6t_REJECT.c        |    4 ++-
- net/ipv6/netfilter/nf_conntrack_reasm.c |    8 +----
- net/netfilter/xt_DSCP.c                 |    2 +-
- net/sunrpc/xprtsock.c                   |   16 +++++++--
- net/wireless/nl80211.c                  |    2 +-
- sound/pci/hda/patch_realtek.c           |    1 +
- sound/pci/hda/patch_sigmatel.c          |    2 +-
- sound/soc/codecs/wm_hubs.c              |   24 +++++++-----
- 80 files changed, 538 insertions(+), 189 deletions(-)
+Fix this by porting the CNTRL register port detection logic from IDE
+cmd64x.  In addition, following converns from Alan Cox, add a check to
+see if a mobility electronics bridge is the immediate parent and forgo
+the check if it is (prevents problems on hotplug controllers).
+
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Jeff Garzik <jgarzik@pobox.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/ata/pata_cmd64x.c |   42 ++++++++++++++++++++++++++++++++++++++----
+ include/linux/pci_ids.h   |    2 ++
+ 2 files changed, 40 insertions(+), 4 deletions(-)
+
+--- a/drivers/ata/pata_cmd64x.c
++++ b/drivers/ata/pata_cmd64x.c
+@@ -41,6 +41,9 @@
+ enum {
+ 	CFR 		= 0x50,
+ 		CFR_INTR_CH0  = 0x04,
++	CNTRL		= 0x51,
++		CNTRL_CH0     = 0x04,
++		CNTRL_CH1     = 0x08,
+ 	CMDTIM 		= 0x52,
+ 	ARTTIM0 	= 0x53,
+ 	DRWTIM0 	= 0x54,
+@@ -328,9 +331,19 @@ static int cmd64x_init_one(struct pci_de
+ 			.port_ops = &cmd648_port_ops
+ 		}
+ 	};
+-	const struct ata_port_info *ppi[] = { &cmd_info[id->driver_data], NULL };
+-	u8 mrdmode;
++	const struct ata_port_info *ppi[] = {
++		&cmd_info[id->driver_data],
++		&cmd_info[id->driver_data],
++		NULL
++	};
++	u8 mrdmode, reg;
+ 	int rc;
++	struct pci_dev *bridge = pdev->bus->self;
++	/* mobility split bridges don't report enabled ports correctly */
++	int port_ok = !(bridge && bridge->vendor ==
++			PCI_VENDOR_ID_MOBILITY_ELECTRONICS);
++	/* all (with exceptions below) apart from 643 have CNTRL_CH0 bit */
++	int cntrl_ch0_ok = (id->driver_data != 0);
+ 
+ 	rc = pcim_enable_device(pdev);
+ 	if (rc)
+@@ -341,11 +354,18 @@ static int cmd64x_init_one(struct pci_de
+ 
+ 	if (pdev->device == PCI_DEVICE_ID_CMD_646) {
+ 		/* Does UDMA work ? */
+-		if (pdev->revision > 4)
++		if (pdev->revision > 4) {
+ 			ppi[0] = &cmd_info[2];
++			ppi[1] = &cmd_info[2];
++		}
+ 		/* Early rev with other problems ? */
+-		else if (pdev->revision == 1)
++		else if (pdev->revision == 1) {
+ 			ppi[0] = &cmd_info[3];
++			ppi[1] = &cmd_info[3];
++		}
++		/* revs 1,2 have no CNTRL_CH0 */
++		if (pdev->revision < 3)
++			cntrl_ch0_ok = 0;
+ 	}
+ 
+ 	pci_write_config_byte(pdev, PCI_LATENCY_TIMER, 64);
+@@ -354,6 +374,20 @@ static int cmd64x_init_one(struct pci_de
+ 	mrdmode |= 0x02;	/* Memory read line enable */
+ 	pci_write_config_byte(pdev, MRDMODE, mrdmode);
+ 
++	/* check for enabled ports */
++	pci_read_config_byte(pdev, CNTRL, &reg);
++	if (!port_ok)
++		dev_printk(KERN_NOTICE, &pdev->dev, "Mobility Bridge detected, ignoring CNTRL port enable/disable\n");
++	if (port_ok && cntrl_ch0_ok && !(reg & CNTRL_CH0)) {
++		dev_printk(KERN_NOTICE, &pdev->dev, "Primary port is disabled\n");
++		ppi[0] = &ata_dummy_port_info;
++
++	}
++	if (port_ok && !(reg & CNTRL_CH1)) {
++		dev_printk(KERN_NOTICE, &pdev->dev, "Secondary port is disabled\n");
++		ppi[1] = &ata_dummy_port_info;
++	}
++
+ 	/* Force PIO 0 here.. */
+ 
+ 	/* PPC specific fixup copied from old driver */
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -605,6 +605,8 @@
+ #define PCI_DEVICE_ID_MATROX_G550	0x2527
+ #define PCI_DEVICE_ID_MATROX_VIA	0x4536
+ 
++#define PCI_VENDOR_ID_MOBILITY_ELECTRONICS	0x14f2
++
+ #define PCI_VENDOR_ID_CT		0x102c
+ #define PCI_DEVICE_ID_CT_69000		0x00c0
+ #define PCI_DEVICE_ID_CT_65545		0x00d8
+
+
