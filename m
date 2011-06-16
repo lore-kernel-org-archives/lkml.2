@@ -1,99 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752235Ab1FPFem (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 01:34:42 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:40232 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040Ab1FPFel (ORCPT
+	id S1752771Ab1FPF3J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 01:29:09 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:44907 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752447Ab1FPF3H convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 01:34:41 -0400
-Date: Thu, 16 Jun 2011 10:56:39 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 4/22]  4: Uprobes: register/unregister
- probes.
-Message-ID: <20110616052639.GI4952@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
- <20110607125900.28590.16071.sendpatchset@localhost6.localdomain6>
- <1307660606.2497.1770.camel@laptop>
+	Thu, 16 Jun 2011 01:29:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=IbEnh/C5rjtsMSbICN1yVsntKzwGyhfKCLu+uSJUWvq6YAQkHf9RtLCMNDZAdZLhWm
+         12f9+S6GiFW4dtvb+B4S17qaLFaoiAGhijrP3x4GulCuZChXBY1GfhR1gdIYU/B8nsFj
+         tX0yIBRb8Kiw6Fkol6P/nhdXAJYkb+Wt+LNq0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1307660606.2497.1770.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4DF92C80.3030106@codemonkey.ws>
+References: <1308153214.7566.6.camel@jaguar>
+	<4DF8DE26.1070301@redhat.com>
+	<BANLkTi=SHENDBHdtFY_7_qtfqJb_+qKJSw@mail.gmail.com>
+	<BANLkTinMDz-sqaX0cyWEoLXt70dowxofvg@mail.gmail.com>
+	<4DF92C80.3030106@codemonkey.ws>
+Date: Thu, 16 Jun 2011 06:29:05 +0100
+Message-ID: <BANLkTimmnUAywjHbkSoepBdyCHPHy-B3pw@mail.gmail.com>
+Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: Prasad Joshi <prasadjoshi124@gmail.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Avi Kivity <avi@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Anthony Liguori <anthony@codemonkey.ws>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2011-06-10 01:03:26]:
+On Wed, Jun 15, 2011 at 11:04 PM, Anthony Liguori <anthony@codemonkey.ws> wrote:
+> On 06/15/2011 03:13 PM, Prasad Joshi wrote:
+>>
+>> On Wed, Jun 15, 2011 at 6:10 PM, Pekka Enberg<penberg@kernel.org>  wrote:
+>>>
+>>> On Wed, Jun 15, 2011 at 7:30 PM, Avi Kivity<avi@redhat.com>  wrote:
+>>>>
+>>>> On 06/15/2011 06:53 PM, Pekka Enberg wrote:
+>>>>>
+>>>>> - Fast QCOW2 image read-write support beating Qemu in fio benchmarks.
+>>>>> See
+>>>>> the
+>>>>>   following URL for test result details:
+>>>>> https://gist.github.com/1026888
+>>>>
+>>>> This is surprising.  How is qemu invoked?
+>>>
+>>> Prasad will have the details. Please note that the above are with Qemu
+>>> defaults which doesn't use virtio. The results with virtio are little
+>>> better but still in favor of tools/kvm.
+>>>
+>>
+>> The qcow2 image used for testing was copied on to /dev/shm to avoid
+>> the disk delays in performance measurement.
+>>
+>> QEMU was invoked with following parameters
+>>
+>> $ qemu-system-x86_64 -hda<disk image on hard disk>  -hdb
+>> /dev/shm/test.qcow2 -m 1024M
+>
+> Looking more closely at native KVM tools, you would need to use the
+> following invocation to have an apples-to-apples comparison:
+>
+> qemu-system-x86_64 -drive file=/dev/shm/test.qcow2,cache=writeback,if=virtio
 
-> On Tue, 2011-06-07 at 18:29 +0530, Srikar Dronamraju wrote:
-> > +/*
-> > + * There could be threads that have hit the breakpoint and are entering the
-> > + * notifier code and trying to acquire the uprobes_treelock. The thread
-> > + * calling delete_uprobe() that is removing the uprobe from the rb_tree can
-> > + * race with these threads and might acquire the uprobes_treelock compared
-> > + * to some of the breakpoint hit threads. In such a case, the breakpoint hit
-> > + * threads will not find the uprobe. Finding if a "trap" instruction was
-> > + * present at the interrupting address is racy. Hence provide some extra
-> > + * time (by way of synchronize_sched() for breakpoint hit threads to acquire
-> > + * the uprobes_treelock before the uprobe is removed from the rbtree.
-> > + */
-> 
-> 'some' extra time doesn't really sound convincing to me. Either it is
-> sufficient to avoid the race or it is not. It reads to me like: we add a
-> delay so that the race mostly doesn't occur. Not good ;-)
+In addition to this it is important to set identical guest RAM sizes
+(QEMU's -m <ram_mb>) option.
 
-The extra time provided is sufficient to avoid the race. So will modify
-it to mean "sufficient" instead of "some".
+If you are comparing with qemu.git rather than qemu-kvm.git then you
+need to ./configure --enable-io-thread and launch with QEMU's
+-enable-kvm option.
 
-> 
-> > +static void delete_uprobe(struct uprobe *uprobe)
-> > +{
-> > +       unsigned long flags;
-> > +
-> > +       synchronize_sched();
-> > +       spin_lock_irqsave(&uprobes_treelock, flags);
-> > +       rb_erase(&uprobe->rb_node, &uprobes_tree);
-> > +       spin_unlock_irqrestore(&uprobes_treelock, flags);
-> > +       iput(uprobe->inode);
-> > +} 
-> 
-> Also what are the uprobe lifetime rules here? Does it still exist after
-> this returns?
-> 
-> The comment in del_consumer() that says: 'drop creation ref' worries me
-> and makes me thing that is the last reference around and the uprobe will
-> be freed right there, which clearly cannot happen since its not yet
-> removed from the RB-tree.
-> 
-
-When del_consumer() is called in unregister_uprobe() it has atleast two
-(or more if the uprobe is hit) references. One at the creation time and
-the other thro find_uprobe() called in unregister_uprobe before
-del_consumer. So the reference lost in del_consumer is never the last
-reference.  I added a commented this as creation reference so that the
-find_uprobe and the put_uprobe() before return would match.
-
-If the comment is confusing I can delete it or reword it as suggested by
-Steven Rostedt which is  /* Have caller drop the creation ref */
-
-I would prefer to delete the comment.
-
--- 
-Thanks and Regards
-Srikar
+Stefan
