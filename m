@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757053Ab1FPHQN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:16:13 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:34227 "EHLO
+	id S1756687Ab1FPHQL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:16:11 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:59752 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756923Ab1FPHLQ (ORCPT
+	by vger.kernel.org with ESMTP id S1757019Ab1FPHLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Jun 2011 03:11:16 -0400
-X-Sasl-enc: PBxeQgFcf5UFGAp7bmov941k1U4UiAABuWW7ksCOSyBD 1308208274
+X-Sasl-enc: baEJ9EbEI5yXYXLA4Z0ptSJ7qo/WcBP/xek4fDRbs3gK 1308208275
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:29:10 2011
-Message-Id: <20110616002910.362947656@clark.kroah.org>
+Message-Id: <20110616002910.464431040@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:29:01 -0700
+Date: Wed, 15 Jun 2011 17:29:02 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <error27@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [65/85] xen: off by one errors in multicalls.c
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [66/85] x86/amd-iommu: Use only per-device dma_ops
 In-Reply-To: <20110616002917.GA3627@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,72 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit f124c6ae59e193705c9ddac57684d50006d710e6 upstream.
+commit 27c2127a15d340706c0aa84e311188a14468d841 upstream.
 
-b->args[] has MC_ARGS elements, so the comparison here should be
-">=" instead of ">".  Otherwise we read past the end of the array
-one space.
+Unfortunatly there are systems where the AMD IOMMU does not
+cover all devices. This breaks with the current driver as it
+initializes the global dma_ops variable. This patch limits
+the AMD IOMMU to the devices listed in the IVRS table fixing
+DMA for devices not covered by the IOMMU.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/xen/multicalls.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/kernel/amd_iommu.c |   26 ++++++++++++++++++++++++--
+ 1 file changed, 24 insertions(+), 2 deletions(-)
 
---- a/arch/x86/xen/multicalls.c
-+++ b/arch/x86/xen/multicalls.c
-@@ -189,10 +189,10 @@ struct multicall_space __xen_mc_entry(si
- 	unsigned argidx = roundup(b->argidx, sizeof(u64));
+--- a/arch/x86/kernel/amd_iommu.c
++++ b/arch/x86/kernel/amd_iommu.c
+@@ -28,6 +28,7 @@
+ #include <asm/proto.h>
+ #include <asm/iommu.h>
+ #include <asm/gart.h>
++#include <asm/dma.h>
+ #include <asm/amd_iommu_proto.h>
+ #include <asm/amd_iommu_types.h>
+ #include <asm/amd_iommu.h>
+@@ -2228,6 +2229,23 @@ static struct dma_map_ops amd_iommu_dma_
+ 	.dma_supported = amd_iommu_dma_supported,
+ };
  
- 	BUG_ON(preemptible());
--	BUG_ON(b->argidx > MC_ARGS);
-+	BUG_ON(b->argidx >= MC_ARGS);
++static unsigned device_dma_ops_init(void)
++{
++	struct pci_dev *pdev = NULL;
++	unsigned unhandled = 0;
++
++	for_each_pci_dev(pdev) {
++		if (!check_device(&pdev->dev)) {
++			unhandled += 1;
++			continue;
++		}
++
++		pdev->dev.archdata.dma_ops = &amd_iommu_dma_ops;
++	}
++
++	return unhandled;
++}
++
+ /*
+  * The function which clues the AMD IOMMU driver into dma_ops.
+  */
+@@ -2240,7 +2258,7 @@ void __init amd_iommu_init_api(void)
+ int __init amd_iommu_init_dma_ops(void)
+ {
+ 	struct amd_iommu *iommu;
+-	int ret;
++	int ret, unhandled;
  
- 	if (b->mcidx == MC_BATCH ||
--	    (argidx + args) > MC_ARGS) {
-+	    (argidx + args) >= MC_ARGS) {
- 		mc_stats_flush(b->mcidx == MC_BATCH ? FL_SLOTS : FL_ARGS);
- 		xen_mc_flush();
- 		argidx = roundup(b->argidx, sizeof(u64));
-@@ -206,7 +206,7 @@ struct multicall_space __xen_mc_entry(si
- 	ret.args = &b->args[argidx];
- 	b->argidx = argidx + args;
+ 	/*
+ 	 * first allocate a default protection domain for every IOMMU we
+@@ -2266,7 +2284,11 @@ int __init amd_iommu_init_dma_ops(void)
+ 	swiotlb = 0;
  
--	BUG_ON(b->argidx > MC_ARGS);
-+	BUG_ON(b->argidx >= MC_ARGS);
- 	return ret;
- }
+ 	/* Make the driver finally visible to the drivers */
+-	dma_ops = &amd_iommu_dma_ops;
++	unhandled = device_dma_ops_init();
++	if (unhandled && max_pfn > MAX_DMA32_PFN) {
++		/* There are unhandled devices - initialize swiotlb for them */
++		swiotlb = 1;
++	}
  
-@@ -216,7 +216,7 @@ struct multicall_space xen_mc_extend_arg
- 	struct multicall_space ret = { NULL, NULL };
- 
- 	BUG_ON(preemptible());
--	BUG_ON(b->argidx > MC_ARGS);
-+	BUG_ON(b->argidx >= MC_ARGS);
- 
- 	if (b->mcidx == 0)
- 		return ret;
-@@ -224,14 +224,14 @@ struct multicall_space xen_mc_extend_arg
- 	if (b->entries[b->mcidx - 1].op != op)
- 		return ret;
- 
--	if ((b->argidx + size) > MC_ARGS)
-+	if ((b->argidx + size) >= MC_ARGS)
- 		return ret;
- 
- 	ret.mc = &b->entries[b->mcidx - 1];
- 	ret.args = &b->args[b->argidx];
- 	b->argidx += size;
- 
--	BUG_ON(b->argidx > MC_ARGS);
-+	BUG_ON(b->argidx >= MC_ARGS);
- 	return ret;
- }
+ 	amd_iommu_stats_init();
  
 
 
