@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332Ab1FPBaU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 21:30:20 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28942 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035Ab1FPBaS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 21:30:18 -0400
-Date: Wed, 15 Jun 2011 18:29:58 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: akpm@linux-foundation.org, Michal Hocko <mhocko@suse.cz>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: mmotm 2011-06-15-16-56 uploaded (UML build error)
-Message-Id: <20110615182958.d5aad636.randy.dunlap@oracle.com>
-In-Reply-To: <201106160034.p5G0Y4dr028904@imap1.linux-foundation.org>
-References: <201106160034.p5G0Y4dr028904@imap1.linux-foundation.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754274Ab1FPBg3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 21:36:29 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:4607 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752035Ab1FPBg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 21:36:27 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+Date: Wed, 15 Jun 2011 18:36:16 -0700
+From: "Henry Ptasinski" <henryp@broadcom.com>
+To: "Greg Dietsche" <Gregory.Dietsche@cuw.edu>
+cc: "gregkh@suse.de" <gregkh@suse.de>, "Brett Rudley" <brudley@broadcom.com>,
+        "Dowan Kim" <dowan@broadcom.com>,
+        "Roland Vossen" <rvossen@broadcom.com>,
+        "Arend Van Spriel" <arend@broadcom.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Henry Ptasinski" <henryp@broadcom.com>
+Subject: Re: [PATCH] staging: brcm80211: return false if not a broadcom
+ board
+Message-ID: <20110616013615.GA14700@broadcom.com>
+References: <1308176709-14765-1-git-send-email-Gregory.Dietsche@cuw.edu>
+MIME-Version: 1.0
+In-Reply-To: <1308176709-14765-1-git-send-email-Gregory.Dietsche@cuw.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-WSS-ID: 61E7809962O9546291-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4DF95CA1.0104:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jun 2011 16:56:49 -0700 akpm@linux-foundation.org wrote:
-
-> The mm-of-the-moment snapshot 2011-06-15-16-56 has been uploaded to
+On Wed, Jun 15, 2011 at 03:25:09PM -0700, Greg Dietsche wrote:
+> This code looks wrong to me. I think it meant to return false
+> if the board's vendor id isn't Broadcom's.
 > 
->    http://userweb.kernel.org/~akpm/mmotm/
+> Compile tested only.
 > 
-> and will soon be available at
->    git://zen-kernel.org/kernel/mmotm.git
-> or
->    git://git.cmpxchg.org/linux-mmotm.git
+> Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+> ---
+>  drivers/staging/brcm80211/brcmsmac/wlc_bmac.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> It contains the following patches against 3.0-rc3:
+> diff --git a/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c b/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
+> index 4534926..ee13238 100644
+> --- a/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
+> +++ b/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
+> @@ -1943,7 +1943,7 @@ static bool wlc_validboardtype(struct wlc_hw_info *wlc_hw)
+>  	}
+>  
+>  	if (wlc_hw->sih->boardvendor != PCI_VENDOR_ID_BROADCOM)
+> -		return goodboard;
+> +		goodboard = false; 
+>  
+>  	return goodboard;
+>  }
 
+Actually, the original code is correct.
 
-When building UML for x86_64 (defconfig), I get:
+For boards with the Broadcom ID, this function checks that the boardrev is
+sane. Dev boards that aren't properly configured may have invalid info, so this
+check is mainly to catch that problem.
 
-fs/built-in.o: In function `__bprm_mm_init':
-mmotm-2011-0615-1656/fs/exec.c:280: undefined reference to `__build_bug_on_failed'
+For boards with any other vendor, we don't have any sanity checks that we know
+should be done, so the board info is always considered good.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+The device ID is of course always checked.
+
+- Henry
+
