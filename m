@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756396Ab1FPHFU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:05:20 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:42990 "EHLO
+	id S1756419Ab1FPHFY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:05:24 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:34667 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756334Ab1FPHFP (ORCPT
+	by vger.kernel.org with ESMTP id S1756363Ab1FPHFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:05:15 -0400
-X-Sasl-enc: uEWXgvIo1UtWmc1NTec9S9epLmO2K5/lPFzZMMElyMDZ 1308207914
+	Thu, 16 Jun 2011 03:05:17 -0400
+X-Sasl-enc: vnWhDvqX06rVUHx+UdV2ntdOXBTVltL4y5r60mzcQ4Hp 1308207916
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:16:10 2011
-Message-Id: <20110616001610.292839460@clark.kroah.org>
+Message-Id: <20110616001610.388686280@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:15:07 -0700
+Date: Wed, 15 Jun 2011 17:15:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Olsa <jolsa@redhat.com>, Brian Gerst <brgerst@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [10/91] x86, 64-bit: Fix copy_[to/from]_user() checks for the
+        Jan Kara <jack@suse.cz>
+Subject: [11/91] ext3: Fix fs corruption when make_indexed_dir() fails
 In-Reply-To: <20110616001900.GA25375@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,119 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
 ------------------
- userspace address limit
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 26afb7c661080ae3f1f13ddf7f0c58c4f931c22b upstream.
+commit 86c4f6d85595cd7da635dc6985d27bfa43b1ae10 upstream.
 
-As reported in BZ #30352:
+When make_indexed_dir() fails (e.g. because of ENOSPC) after it has allocated
+block for index tree root, we did not properly mark all changed buffers dirty.
+This lead to only some of these buffers being written out and thus effectively
+corrupting the directory.
 
-  https://bugzilla.kernel.org/show_bug.cgi?id=30352
+Fix the issue by marking all changed data dirty even in the error failure case.
 
-there's a kernel bug related to reading the last allowed page on x86_64.
-
-The _copy_to_user() and _copy_from_user() functions use the following
-check for address limit:
-
-  if (buf + size >= limit)
-	fail();
-
-while it should be more permissive:
-
-  if (buf + size > limit)
-	fail();
-
-That's because the size represents the number of bytes being
-read/write from/to buf address AND including the buf address.
-So the copy function will actually never touch the limit
-address even if "buf + size == limit".
-
-Following program fails to use the last page as buffer
-due to the wrong limit check:
-
- #include <sys/mman.h>
- #include <sys/socket.h>
- #include <assert.h>
-
- #define PAGE_SIZE       (4096)
- #define LAST_PAGE       ((void*)(0x7fffffffe000))
-
- int main()
- {
-        int fds[2], err;
-        void * ptr = mmap(LAST_PAGE, PAGE_SIZE, PROT_READ | PROT_WRITE,
-                          MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
-        assert(ptr == LAST_PAGE);
-        err = socketpair(AF_LOCAL, SOCK_STREAM, 0, fds);
-        assert(err == 0);
-        err = send(fds[0], ptr, PAGE_SIZE, 0);
-        perror("send");
-        assert(err == PAGE_SIZE);
-        err = recv(fds[1], ptr, PAGE_SIZE, MSG_WAITALL);
-        perror("recv");
-        assert(err == PAGE_SIZE);
-        return 0;
- }
-
-The other place checking the addr limit is the access_ok() function,
-which is working properly. There's just a misleading comment
-for the __range_not_ok() macro - which this patch fixes as well.
-
-The last page of the user-space address range is a guard page and
-Brian Gerst observed that the guard page itself due to an erratum on K8 cpus
-(#121 Sequential Execution Across Non-Canonical Boundary Causes Processor
-Hang).
-
-However, the test code is using the last valid page before the guard page.
-The bug is that the last byte before the guard page can't be read
-because of the off-by-one error. The guard page is left in place.
-
-This bug would normally not show up because the last page is
-part of the process stack and never accessed via syscalls.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Brian Gerst <brgerst@gmail.com>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1305210630-7136-1-git-send-email-jolsa@redhat.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/uaccess.h |    2 +-
- arch/x86/lib/copy_user_64.S    |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ fs/ext3/namei.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/arch/x86/include/asm/uaccess.h
-+++ b/arch/x86/include/asm/uaccess.h
-@@ -42,7 +42,7 @@
-  * Returns 0 if the range is valid, nonzero otherwise.
-  *
-  * This is equivalent to the following test:
-- * (u33)addr + (u33)size >= (u33)current->addr_limit.seg (u65 for x86_64)
-+ * (u33)addr + (u33)size > (u33)current->addr_limit.seg (u65 for x86_64)
-  *
-  * This needs 33-bit (65-bit for x86_64) arithmetic. We have a carry...
-  */
---- a/arch/x86/lib/copy_user_64.S
-+++ b/arch/x86/lib/copy_user_64.S
-@@ -72,7 +72,7 @@ ENTRY(copy_to_user)
- 	addq %rdx,%rcx
- 	jc bad_to_user
- 	cmpq TI_addr_limit(%rax),%rcx
--	jae bad_to_user
-+	ja bad_to_user
- 	ALTERNATIVE_JUMP X86_FEATURE_REP_GOOD,copy_user_generic_unrolled,copy_user_generic_string
- 	CFI_ENDPROC
- ENDPROC(copy_to_user)
-@@ -85,7 +85,7 @@ ENTRY(copy_from_user)
- 	addq %rdx,%rcx
- 	jc bad_from_user
- 	cmpq TI_addr_limit(%rax),%rcx
--	jae bad_from_user
-+	ja bad_from_user
- 	ALTERNATIVE_JUMP X86_FEATURE_REP_GOOD,copy_user_generic_unrolled,copy_user_generic_string
- 	CFI_ENDPROC
- ENDPROC(copy_from_user)
+--- a/fs/ext3/namei.c
++++ b/fs/ext3/namei.c
+@@ -1425,10 +1425,19 @@ static int make_indexed_dir(handle_t *ha
+ 	frame->at = entries;
+ 	frame->bh = bh;
+ 	bh = bh2;
++	/*
++	 * Mark buffers dirty here so that if do_split() fails we write a
++	 * consistent set of buffers to disk.
++	 */
++	ext3_journal_dirty_metadata(handle, frame->bh);
++	ext3_journal_dirty_metadata(handle, bh);
+ 	de = do_split(handle,dir, &bh, frame, &hinfo, &retval);
+-	dx_release (frames);
+-	if (!(de))
++	if (!de) {
++		ext3_mark_inode_dirty(handle, dir);
++		dx_release(frames);
+ 		return retval;
++	}
++	dx_release(frames);
+ 
+ 	return add_dirent_to_buf(handle, dentry, inode, de, bh);
+ }
 
 
