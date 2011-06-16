@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754940Ab1FPB6g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 21:58:36 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:36259 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753209Ab1FPB6f convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 21:58:35 -0400
-From: Xiangliang Yu <yuxiangl@marvell.com>
-To: Jack Wang <jack_wang@usish.com>,
-        "'James Bottomley'" <James.Bottomley@HansenPartnership.com>
-CC: "yxlraid@gmail.com" <yxlraid@gmail.com>,
-        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
-        "maciej.trela@intel.com" <maciej.trela@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+	id S1754809Ab1FPB5v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 21:57:51 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:46601 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753899Ab1FPB5t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 21:57:49 -0400
+Date: Thu, 16 Jun 2011 02:57:36 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jacky Feng <jfeng@marvell.com>
-Date: Wed, 15 Jun 2011 18:57:05 -0700
-Subject: RE: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
-Thread-Topic: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
-Thread-Index: AcwrIR/qdpMMo2uOTdi6EtZ/SnmPkgAAZ5KAACgYoPAAAOfC4A==
-Message-ID: <F766E4F80769BD478052FB6533FA745D19FAE66CAE@SC-VEXCH4.marvell.com>
-References: <1308064628-11826-1-git-send-email-yxlraid@gmail.com>
- <1308065367.2401.24.camel@mulgrave>
- <F766E4F80769BD478052FB6533FA745D19FAE669AF@SC-VEXCH4.marvell.com>
- <1308117450.2329.31.camel@mulgrave>
- <F766E4F80769BD478052FB6533FA745D19FAE66AAF@SC-VEXCH4.marvell.com>
- <637AF86F1A314F15B816411A580575F0@usish.com.cn>
-In-Reply-To: <637AF86F1A314F15B816411A580575F0@usish.com.cn>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH] ACPI, APEI, Add APEI _OSC support
+Message-ID: <20110616015736.GA32533@srcf.ucam.org>
+References: <1306303538-30524-1-git-send-email-ying.huang@intel.com>
+ <20110614145246.GA17469@srcf.ucam.org>
+ <4DF82CBC.5070400@intel.com>
+ <20110615121703.GA8638@srcf.ucam.org>
+ <4DF950EB.7050400@intel.com>
+ <20110616013812.GA32494@srcf.ucam.org>
+ <4DF962AE.60204@intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DF962AE.60204@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 16, 2011 at 09:55:58AM +0800, Huang Ying wrote:
+> On 06/16/2011 09:38 AM, Matthew Garrett wrote:
+> > I think we probably need to make the HEST decision early, and use that 
+> > to decide how to make the generic call. Our experience has been that 
+> > many firmware vendors only expect _OSC to be called once with any given 
+> > UUID - multiple calls can result in unexpected behaviour.
+> 
+> acpi_bus_osc_support is called via subsys_initcall.  It is a little hard
+> to do all checking before that.  Is it possible to call
+> acpi_bus_osc_support later?
 
->> I get the issue like this:
->> 1. HBA support 3Gbps, level 1 expander support 6Gbps, and level 2 expander
->> support 6Gbps;
->> 2. level 1 is fine, and find that level 2 link rate is 6Gbps in DISCOVER
-command
->> response.
->> 3. LIBSAS think level 2 is 6Gbps by sas_ex_get_linkrate function, and send
->> command to level 2 expander
->> 4. LIBSAS link error.
->> 
->[Jack Wang] 
->What do you mean by "LIBSAS link error", OPEN_REJECT(CONNECTION RATE NOT
->SUPPORTED)? LIBSAS only get the error event through LLDD. 
->According to SAS2r15 7.8.3
-I mean that HBA get link error. Sorry.
+Yeah, this is going to be a problem. We have the HEST available at this 
+point so we ought to be able to parse it, though. I'll take a look 
+tomorrow.
 
->A SAS initiator port shall set the initial CONNECTION RATE field to:
->a) the highest supported connection rate supported by a potential pathway as
-determined during the 
->discover process (e.g., based on the logical link rates of each logical link
-reported in the SMP 
->DISCOVER responses); or
-Sas_ex_get_linkrate function
-
->b) the logical link rate of the logical phy used to transmit the OPEN
-address frame.
-MVSAS get value of linkrate from sas_ex_get_linkrate function(child->linkrate)
-
->If a SAS initiator port selected a connection rate based on discover process
-information but the connection 
->request results in OPEN_REJECT (CONNECTION RATE NOT SUPPORTED), then the
-discover process 
->information is no longer current and the discover process should be run
-again.
-
-Fail again.
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
