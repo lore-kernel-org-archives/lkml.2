@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758358Ab1FPWsY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 18:48:24 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:41809 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753510Ab1FPWsV (ORCPT
+	id S1757133Ab1FPWu6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 18:50:58 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:40967 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755680Ab1FPWuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 18:48:21 -0400
-Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device
- structure
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: dgilbert@interlog.com
-Cc: Greg KH <greg@kroah.com>, Nao Nishijima <nao.nishijima.xt@hitachi.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kay.sievers@vrfy.org, jcm@redhat.com, hare@suse.de,
-        stefanr@s5r6.in-berlin.de, yrl.pp-manager.tt@hitachi.com
-In-Reply-To: <4DFA3E1A.9050207@interlog.com>
-References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp>
-	 <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp>
-	 <20110615153337.GA10160@kroah.com> <4DF9F11F.705@hitachi.com>
-	 <20110616154129.GA31498@kroah.com> <1308239454.2436.34.camel@mulgrave>
-	 <4DFA3E1A.9050207@interlog.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 Jun 2011 18:48:17 -0400
-Message-ID: <1308264497.2436.163.camel@mulgrave>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+	Thu, 16 Jun 2011 18:50:55 -0400
+Message-ID: <4DFA88CC.6050306@codemonkey.ws>
+Date: Thu, 16 Jun 2011 17:50:52 -0500
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Pekka Enberg <penberg@kernel.org>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Prasad Joshi <prasadjoshi124@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>
+Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
+References: <1308153214.7566.6.camel@jaguar> <BANLkTi=krV7p9gT3E064aVoUCToVyZoL6w@mail.gmail.com>
+In-Reply-To: <BANLkTi=krV7p9gT3E064aVoUCToVyZoL6w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-16 at 13:32 -0400, Douglas Gilbert wrote:
-> As James' notes each storage device can only have one
-> "preferred name" at a time. But how can that preferred name
-> be represented in sysfs ? If /sys/block/<kernel_name>
-> suddenly changed to /sys/block/<preferred_name> that would
-> be very disruptive. I would prefer something like
-> /sys/class/block_preferred_name/<preferred_name> was introduced
-> as a symlink to /sys/block/<kernel_name> but that would require
-> that all <preferred_name>s were unique. [Not a bad restriction
-> IMO]. If the <preferred_name> was only placed in the
-> /sys/block/<kernel_name> directory that would be ugly from
-> the user space tool point of view.
+On 06/16/2011 09:48 AM, Pekka Enberg wrote:
+> On Wed, Jun 15, 2011 at 6:53 PM, Pekka Enberg<penberg@kernel.org>  wrote:
+>> - Fast QCOW2 image read-write support beating Qemu in fio benchmarks. See the
+>>   following URL for test result details: https://gist.github.com/1026888
+>
+> It turns out we were benchmarking the wrong guest kernel version for
+> qemu-kvm which is why it performed so much worse. Here's a summary of
+> qemu-kvm beating tools/kvm:
+>
+> https://raw.github.com/gist/1029359/9f9a714ecee64802c08a3455971e410d5029370b/gistfile1.txt
+>
+> I'd ask for a brown paper bag if I wasn't so busy eating my hat at the moment.
 
-Right, so the only proposal for sysfs is the addition of the
-preferred_name file to devices, nothing more.  The entire sysfs tree
-structure would be left intact.  This is what gets us out of the
-problems that a real rename causes.
+np, it happens.
 
-James
+Is that still with QEMU with IDE emulation, cache=writethrough, and 
+128MB of guest memory?
 
+Does your raw driver support multiple parallel requests?  It doesn't 
+look like it does from how I read the code.  At some point, I'd be happy 
+to help ya'll do some benchmarking against QEMU.
+
+It would be very useful to compare as we have some ugly things in QEMU 
+that we've never quite been able to determine how much they affect 
+performance.  Having an alternative implementation to benchmark against 
+would be quite helpful.
+
+Regards,
+
+Anthony Liguori
+
+>
+>                          Pekka
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
