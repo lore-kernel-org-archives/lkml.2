@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab1FPJpd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 05:45:33 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:38489 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756686Ab1FPJp2 (ORCPT
+	id S1757519Ab1FPJqJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 05:46:09 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48591 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757505Ab1FPJqG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 05:45:28 -0400
-From: Felipe Balbi <balbi@ti.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 2/2] init: drop trailing semicolon from module_init/module_exit
-Date: Thu, 16 Jun 2011 12:45:15 +0300
-Message-Id: <1308217515-18529-2-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 1.7.6.rc1
-In-Reply-To: <1308217515-18529-1-git-send-email-balbi@ti.com>
-References: <20110616093720.GL12230@legolas.emea.dhcp.ti.com>
- <1308217515-18529-1-git-send-email-balbi@ti.com>
-Organization: Texas Instruments\n
+	Thu, 16 Jun 2011 05:46:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=rFkU1yithLhYX3424AymmUlBNJee6g+6UomPfPJwE43xDbwxuv7Jyo76mrMeo5my31
+         SsyBOrZF3Dm2O6PLWiBBZwD+0y0YJbXkG/TcItWVX8ti51687LzP5xzN0lfNpchuFoGM
+         nIRtCAIslH2/AmCPbviOORIjMJ2RXGf/7Clw4=
+MIME-Version: 1.0
+In-Reply-To: <954F11FF-339B-48E2-8358-A158DE1E53BC@fsl.cs.sunysb.edu>
+References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu>
+ <4540f7aa16724111bd792a1d577261c2@HUBCAS1.cs.stonybrook.edu> <954F11FF-339B-48E2-8358-A158DE1E53BC@fsl.cs.sunysb.edu>
+From: Michal Suchanek <hramrach@centrum.cz>
+Date: Thu, 16 Jun 2011 11:45:45 +0200
+X-Google-Sender-Auth: nxFVVJCzidWuRQ6qx2n2gQbLi8E
+Message-ID: <BANLkTi=KNL+MiX=R845yz188pTg8hMtRhQ@mail.gmail.com>
+Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
+To: Erez Zadok <ezk@fsl.cs.sunysb.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "viro@ZenIV.linux.org.uk Viro" <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        apw@canonical.com, nbd@openwrt.org, neilb@suse.de,
+        jordipujolp@gmail.com, mszeredi@suse.cz,
+        "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-now that all drivers add ; to the end of module_init()
-and module_exit(), we can safely remove it from the
-definition.
+On 16 June 2011 08:51, Erez Zadok <ezk@fsl.cs.sunysb.edu> wrote:
+> On Jun 8, 2011, at 3:32 PM, Andrew Morton wrote:
 
-Signed-off-by: Felipe Balbi <balbi@ti.com>
----
- include/linux/init.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> Val, Jan, Bharata, and others have spent untold amounts of time trying to develop a VFS-based approach.  In lieu of stackable file system approaches, I was hoping to see those VFS-based approaches get the support needed to get merged, and yet they have not.  It appears that development of the VFS-based approaches has stalled, sadly.  To be fair, I have argued before that adding a lot of code to the VFS "just" to support unioning was a bad idea (see http://lkml.org/lkml/2007/12/13/242).  And I also felt that it was going to be hard to support approaches which required changes (however small) to many individual file systems (e.g., to add native whiteout support). But was I'd have been happy to see a VFS-based approach get merged, if the Powers That Be[™] sanctioned it.
 
-diff --git a/include/linux/init.h b/include/linux/init.h
-index 9146f39..f04e760 100644
---- a/include/linux/init.h
-+++ b/include/linux/init.h
-@@ -263,7 +263,7 @@ void __init parse_early_options(char *cmdline);
-  * builtin) or at module insertion time (if a module).  There can only
-  * be one per module.
-  */
--#define module_init(x)	__initcall(x);
-+#define module_init(x)	__initcall(x)
- 
- /**
-  * module_exit() - driver exit entry point
-@@ -275,7 +275,7 @@ void __init parse_early_options(char *cmdline);
-  * compiled into the kernel, module_exit() has no effect.
-  * There can only be one per module.
-  */
--#define module_exit(x)	__exitcall(x);
-+#define module_exit(x)	__exitcall(x)
- 
- #else /* MODULE */
- 
--- 
-1.7.6.rc1
+Is there any reason why unionmount could not use the xattrs which are
+natively supported by most filesystem already like overlayfs does?
+That would cut on the sheer number of patches required to get it
+working.
 
+Thanks
+
+Michal
