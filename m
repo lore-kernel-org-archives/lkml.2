@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab1FPEm3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 00:42:29 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51617 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752000Ab1FPEmZ (ORCPT
+	id S1753351Ab1FPEmh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 00:42:37 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:65062 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000Ab1FPEmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 00:42:25 -0400
-Subject: [RFC PATCH 06/11] drivers/amba: create devices from device tree
+	Thu, 16 Jun 2011 00:42:36 -0400
+Subject: [RFC PATCH 07/11] dt/platform: allow device name to be overridden
 To: Nicolas Pitre <nicolas.pitre@linaro.org>,
         Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
         devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
 From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 15 Jun 2011 22:42:22 -0600
-Message-ID: <20110616044209.29371.34624.stgit@ponder>
+Date: Wed, 15 Jun 2011 22:42:33 -0600
+Message-ID: <20110616044227.29371.6123.stgit@ponder>
 In-Reply-To: <20110616042653.29371.2052.stgit@ponder>
 References: <20110616042653.29371.2052.stgit@ponder>
 User-Agent: StGit/0.15
@@ -25,150 +25,230 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a function to create amba_devices (i.e. primecell peripherals)
-from device tree nodes. The device tree scanning is done by the
-of_platform_populate() function which can call of_amba_device_create
-based on a match table entry.
+Some platform code has specific requirements on the naming of devices.
+This patch allows callers of of_platform_populate() to provide a
+device name lookup table.
 
-Nodes with a "arm,primecell-periphid" property can override the h/w
-peripheral id value.
-
-Based on the original work by Jeremy Kerr.
-
-Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-[grant.likely: add Jeremy's original s-o-b line, changes from review
-               comments, and moved all code to drivers/of/platform.c]
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- .../devicetree/bindings/arm/primecell.txt          |   21 ++++++
- drivers/of/platform.c                              |   71 ++++++++++++++++++++
- 2 files changed, 92 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/primecell.txt
+ drivers/of/platform.c       |   73 +++++++++++++++++++++++++++++++++++++------
+ include/linux/of_platform.h |   35 ++++++++++++++++++++
+ 2 files changed, 98 insertions(+), 10 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/arm/primecell.txt b/Documentation/devicetree/bindings/arm/primecell.txt
-new file mode 100644
-index 0000000..1d5d7a8
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/primecell.txt
-@@ -0,0 +1,21 @@
-+* ARM Primecell Peripherals
-+
-+ARM, Ltd. Primecell peripherals have a standard id register that can be used to
-+identify the peripheral type, vendor, and revision. This value can be used for
-+driver matching.
-+
-+Required properties:
-+
-+- compatible : should be a specific value for peripheral and "arm,primecell"
-+
-+Optional properties:
-+
-+- arm,primecell-periphid : Value to override the h/w value with
-+
-+Example:
-+
-+serial@fff36000 {
-+	compatible = "arm,pl011", "arm,primecell";
-+	arm,primecell-periphid = <0x00341011>;
-+};
-+
 diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index 1f4a5d3..4192ddc 100644
+index 4192ddc..e75af39 100644
 --- a/drivers/of/platform.c
 +++ b/drivers/of/platform.c
-@@ -13,6 +13,7 @@
+@@ -177,17 +177,20 @@ struct platform_device *of_device_alloc(struct device_node *np,
+ EXPORT_SYMBOL(of_device_alloc);
+ 
+ /**
+- * of_platform_device_create - Alloc, initialize and register an of_device
++ * of_platform_device_create_pdata - Alloc, initialize and register an of_device
+  * @np: pointer to node to create device for
+  * @bus_id: name to assign device
++ * @platform_data: pointer to populate platform_data pointer with
+  * @parent: Linux device model parent device.
+  *
+  * Returns pointer to created platform device, or NULL if a device was not
+  * registered.  Unavailable devices will not get registered.
   */
- #include <linux/errno.h>
- #include <linux/module.h>
-+#include <linux/amba/bus.h>
- #include <linux/device.h>
- #include <linux/dma-mapping.h>
- #include <linux/slab.h>
-@@ -217,6 +218,71 @@ struct platform_device *of_platform_device_create(struct device_node *np,
+-struct platform_device *of_platform_device_create(struct device_node *np,
+-					    const char *bus_id,
+-					    struct device *parent)
++struct platform_device *of_platform_device_create_pdata(
++					struct device_node *np,
++					const char *bus_id,
++					void *platform_data,
++					struct device *parent)
+ {
+ 	struct platform_device *dev;
+ 
+@@ -203,6 +206,7 @@ struct platform_device *of_platform_device_create(struct device_node *np,
+ #endif
+ 	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+ 	dev->dev.bus = &platform_bus_type;
++	dev->dev.platform_data = platform_data;
+ 
+ 	/* We do not fill the DMA ops for platform devices by default.
+ 	 * This is currently the responsibility of the platform code
+@@ -216,6 +220,22 @@ struct platform_device *of_platform_device_create(struct device_node *np,
+ 
+ 	return dev;
  }
++
++/**
++ * of_platform_device_create - Alloc, initialize and register an of_device
++ * @np: pointer to node to create device for
++ * @bus_id: name to assign device
++ * @parent: Linux device model parent device.
++ *
++ * Returns pointer to created platform device, or NULL if a device was not
++ * registered.  Unavailable devices will not get registered.
++ */
++struct platform_device *of_platform_device_create(struct device_node *np,
++					    const char *bus_id,
++					    struct device *parent)
++{
++	return of_platform_device_create_pdata(np, bus_id, NULL, parent);
++}
  EXPORT_SYMBOL(of_platform_device_create);
  
-+#ifdef CONFIG_ARM_AMBA
-+static struct amba_device *of_amba_device_create(struct device_node *node,
-+						 const char *bus_id,
-+						 void *platform_data,
-+						 struct device *parent)
-+{
-+	struct amba_device *dev;
-+	const void *prop;
-+	int i, ret;
-+
-+	pr_debug("Creating amba device %s\n", node->full_name);
-+
-+	if (!of_device_is_available(node))
-+		return NULL;
-+
-+	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
-+	if (!dev)
-+		return NULL;
-+
-+	/* setup generic device info */
-+	dev->dev.coherent_dma_mask = ~0;
-+	dev->dev.of_node = of_node_get(node);
-+	dev->dev.parent = parent;
-+	dev->dev.platform_data = platform_data;
-+	if (bus_id)
-+		dev_set_name(&dev->dev, "%s", bus_id);
-+	else
-+		of_device_make_bus_id(&dev->dev);
-+
-+	/* setup amba-specific device info */
-+	dev->dma_mask = ~0;
-+
-+	/* Allow the HW Peripheral ID to be overridden */
-+	prop = of_get_property(node, "arm,primecell-periphid", NULL);
-+	if (prop)
-+		dev->periphid = of_read_ulong(prop, 1);
-+
-+	/* Decode the IRQs and address ranges */
-+	for (i = 0; i < AMBA_NR_IRQS; i++)
-+		dev->irq[i] = irq_of_parse_and_map(node, i);
-+
-+	ret = of_address_to_resource(node, 0, &dev->res);
-+	if (ret)
-+		goto err_free;
-+
-+	ret = amba_device_register(dev, &iomem_resource);
-+	if (ret)
-+		goto err_free;
-+
-+	return dev;
-+
-+err_free:
-+	kfree(dev);
-+	return NULL;
-+}
-+#else /* CONFIG_ARM_AMBA */
-+static struct amba_device *of_amba_device_create(struct device_node *node,
-+						 const char *bus_id,
-+						 void *platform_data,
-+						 struct device *parent)
-+{
-+	return NULL;
-+}
-+#endif /* CONFIG_ARM_AMBA */
-+
+ #ifdef CONFIG_ARM_AMBA
+@@ -284,6 +304,28 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
+ #endif /* CONFIG_ARM_AMBA */
+ 
  /**
++ * of_devname_lookup() - Given a device node, lookup the preferred Linux name
++ */
++static const struct of_dev_auxdata *of_dev_lookup(const struct of_dev_auxdata *lookup,
++				 struct device_node *np)
++{
++	struct resource res;
++	if (lookup) {
++		for(; lookup->name != NULL; lookup++) {
++			if (!of_device_is_compatible(np, lookup->compatible))
++				continue;
++			if (of_address_to_resource(np, 0, &res))
++				continue;
++			if (res.start != lookup->phys_addr)
++				continue;
++			pr_debug("%s: devname=%s\n", np->full_name, lookup->name);
++			return lookup;
++		}
++	}
++	return NULL;
++}
++
++/**
   * of_platform_bus_create() - Create a device for a node and its children.
   * @bus: device node of the bus to instantiate
-@@ -242,6 +308,11 @@ static int of_platform_bus_create(struct device_node *bus,
+  * @matches: match table for bus nodes
+@@ -295,10 +337,14 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
+  */
+ static int of_platform_bus_create(struct device_node *bus,
+ 				  const struct of_device_id *matches,
++				  const struct of_dev_auxdata *lookup,
+ 				  struct device *parent, bool strict)
+ {
++	const struct of_dev_auxdata *auxdata;
+ 	struct device_node *child;
+ 	struct platform_device *dev;
++	const char *bus_id = NULL;
++	void *platform_data = NULL;
+ 	int rc = 0;
+ 
+ 	/* Make sure it has a compatible property */
+@@ -308,18 +354,24 @@ static int of_platform_bus_create(struct device_node *bus,
  		return 0;
  	}
  
-+	if (of_device_is_compatible(bus, "arm,primecell")) {
-+		of_amba_device_create(bus, NULL, NULL, parent);
-+		return 0;
++	auxdata = of_dev_lookup(lookup, bus);
++	if (auxdata) {
++		bus_id = auxdata->name;
++		platform_data = auxdata->platform_data;
 +	}
 +
- 	dev = of_platform_device_create(bus, NULL, parent);
+ 	if (of_device_is_compatible(bus, "arm,primecell")) {
+-		of_amba_device_create(bus, NULL, NULL, parent);
++		of_amba_device_create(bus, bus_id, platform_data, parent);
+ 		return 0;
+ 	}
+ 
+-	dev = of_platform_device_create(bus, NULL, parent);
++	dev = of_platform_device_create_pdata(bus, bus_id, platform_data, parent);
  	if (!dev || !of_match_node(matches, bus))
  		return 0;
+ 
+ 	for_each_child_of_node(bus, child) {
+ 		pr_debug("   create child: %s\n", child->full_name);
+-		rc = of_platform_bus_create(child, matches, &dev->dev, strict);
++		rc = of_platform_bus_create(child, matches, lookup, &dev->dev, strict);
+ 		if (rc) {
+ 			of_node_put(child);
+ 			break;
+@@ -353,11 +405,11 @@ int of_platform_bus_probe(struct device_node *root,
+ 
+ 	/* Do a self check of bus type, if there's a match, create children */
+ 	if (of_match_node(matches, root)) {
+-		rc = of_platform_bus_create(root, matches, parent, false);
++		rc = of_platform_bus_create(root, matches, NULL, parent, false);
+ 	} else for_each_child_of_node(root, child) {
+ 		if (!of_match_node(matches, child))
+ 			continue;
+-		rc = of_platform_bus_create(child, matches, parent, false);
++		rc = of_platform_bus_create(child, matches, NULL, parent, false);
+ 		if (rc)
+ 			break;
+ 	}
+@@ -387,6 +439,7 @@ EXPORT_SYMBOL(of_platform_bus_probe);
+  */
+ int of_platform_populate(struct device_node *root,
+ 			const struct of_device_id *matches,
++			const struct of_dev_auxdata *lookup,
+ 			struct device *parent)
+ {
+ 	struct device_node *child;
+@@ -397,7 +450,7 @@ int of_platform_populate(struct device_node *root,
+ 		return -EINVAL;
+ 
+ 	for_each_child_of_node(root, child) {
+-		rc = of_platform_bus_create(child, matches, parent, true);
++		rc = of_platform_bus_create(child, matches, lookup, parent, true);
+ 		if (rc)
+ 			break;
+ 	}
+diff --git a/include/linux/of_platform.h b/include/linux/of_platform.h
+index 8390233..5a6f458 100644
+--- a/include/linux/of_platform.h
++++ b/include/linux/of_platform.h
+@@ -20,6 +20,40 @@
+ #include <linux/platform_device.h>
+ 
+ /**
++ * struct of_dev_auxdata - lookup table entry for device names & platform_data
++ * @compatible: compatible value of node to match against node
++ * @phys_addr: Start address of registers to match against node
++ * @name: Name to assign for matching nodes
++ * @platform_data: platform_data to assign for matching nodes
++ *
++ * This lookup table allows the caller of of_platform_populate() to override
++ * the names of devices when creating devices from the device tree.  The table
++ * should be terminated with an empty entry.  It also allows the platform_data
++ * pointer to be set.
++ *
++ * The reason for this functionality is that some Linux infrastructure uses
++ * the device name to look up a specific device, but the Linux-specific names
++ * are not encoded into the device tree, so the kernel needs to provide specific
++ * values.
++ *
++ * Note: Using an auxdata lookup table should be considered a last resort when
++ * converting a platform to use the DT.  Normally the automatically generated
++ * device name will not matter, and drivers should obtain data from the device
++ * node instead of from an anonymouns platform_data pointer.
++ */
++struct of_dev_auxdata {
++	char *compatible;
++	resource_size_t phys_addr;
++	char *name;
++	void *platform_data;
++};
++
++/* Macro to simplify populating a lookup table */
++#define OF_DEV_AUXDATA(_compat,_phys,_name,_pdata) \
++	{ .compatible = _compat, .phys_addr = _phys, .name = _name, \
++	  .platform_data = _pdata }
++
++/**
+  * of_platform_driver - Legacy of-aware driver for platform devices.
+  *
+  * An of_platform_driver driver is attached to a basic platform_device on
+@@ -59,6 +93,7 @@ extern int of_platform_bus_probe(struct device_node *root,
+ 				 struct device *parent);
+ extern int of_platform_populate(struct device_node *root,
+ 				const struct of_device_id *matches,
++				const struct of_dev_auxdata *lookup,
+ 				struct device *parent);
+ #endif /* !CONFIG_SPARC */
+ 
 
