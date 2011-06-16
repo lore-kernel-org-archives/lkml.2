@@ -1,146 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757583Ab1FPUbd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 16:31:33 -0400
-Received: from b.evox.ro ([188.211.232.1]:38586 "EHLO b.evox.ro"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751901Ab1FPUbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 16:31:31 -0400
-X-Greylist: delayed 578 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Jun 2011 16:31:30 EDT
-X-DKIM: Sendmail DKIM Filter v2.8.3 b.evox.ro p5GKLkqF013516
-Subject: Re: tc match MAC destination - nothing matches on protocol 802_3
-From: Doru Petrescu <pdoru@evox.ro>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: ierdnah@gmail.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-In-Reply-To: <20110616085147.4220f1f1@nehalam.ftrdhcpuser.net>
-References: <1308125523.30324.64.camel@ierdnac-hp>
-	 <20110615092907.2b79ee66@s6510.ftrdhcpuser.net>
-	 <1308211012.12982.36365.camel@u.evox.ro>
-	 <20110616085147.4220f1f1@nehalam.ftrdhcpuser.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 Jun 2011 23:21:45 +0300
-Message-ID: <1308255705.12982.40106.camel@u.evox.ro>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1754595Ab1FPUW6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 16:22:58 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:56832 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932314Ab1FPUWy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 16:22:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [PATCH 5/5] kgdbts: unify/generalize gdb breakpoint adjustment
+Date: Thu, 16 Jun 2011 22:21:53 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: Paul Mundt <lethal@linux-sh.org>, Roland McGrath <roland@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        kgdb-bugreport@lists.sourceforge.net,
+        Jason Wessel <jason.wessel@windriver.com>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-sh@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <1302760895-13459-1-git-send-email-vapier@gentoo.org> <BANLkTi=iKW+XsfSBoPJmZWZOvq4RKa_Yjg@mail.gmail.com> <BANLkTim5fBUmyH-Vo+6zSgoZdXxu-Mq6OA@mail.gmail.com>
+In-Reply-To: <BANLkTim5fBUmyH-Vo+6zSgoZdXxu-Mq6OA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201106162221.53360.arnd@arndb.de>
+X-Provags-ID: V02:K0:kmqM0/1dEMcacEqp/7+BAuVVDcef71Fmac499/BzEJU
+ o8xDqYDuzSimgJyK1HRaV4dhPPFWkuardDjMkJBlBn8f2jFWvM
+ wjK+6X3DogmIJcxnO8aqGNm1gXm4bLZw9eZrUwx05ZXXMLXCZt
+ no3AQIp7bqLvRotZm5ohoxTjMtUdp/4D5eR7s7TVbl47bHPfvA
+ tTTx88k+ZoD1kt18hSguw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-16 at 08:51 -0700, Stephen Hemminger wrote:
-> On Thu, 16 Jun 2011 10:56:52 +0300
-> Doru Theodor Petrescu <pdoru.kernel@evox.ro> wrote:
+On Thursday 16 June 2011 22:07:55 Mike Frysinger wrote:
+> On Thu, Jun 16, 2011 at 16:06, Mike Frysinger wrote:
+> > On Thu, Jun 16, 2011 at 11:07, Arnd Bergmann wrote:
+> >> This patch is causing build problems now, because the instruction_pointer_set()
+> >> that is used now is only defined in asm-generic/ptrace.h, which is only
+> >> used on x86, blackfin and sparc. Every other architecture now fails to
+> >> build.
+> >
+> > a fix was already merged over two weeks ago.  so either your tree is
+> > out of date,
+> >
+> > your tree is out of date.
 > 
-> > 
-> > 
-> > I updated my scripts to use the 'tc filter ... match ether src/dst'
-> > syntax. it really makes reading the script easier. thanks for the tip!
-> > 
-> > however the problem persists. I changed the rule to match ANY pachet of
-> > type 802_3 and redirect it to ifb1. but nothing arrives on ifb1.
-> > 
-> > I tried to redirect ARP pachets using 'protocol arp' filter and it works
-> > perfectly as expected.
-> > 
-> > so at this point the problem is no longer 'how to match ethernet header'
-> > but rather 'how to match a pachet of type 802_3'. My feeling is that
-> > there is a bug somewhere in kernel where the 'protocol 802_3' matching
-> > happens.
-> > 
-> > 
-> > I attach part of the script I use to generate the filters and classes. I
-> > removed everything related to HTB and IP pachets because there is no
-> > problem there. in case the formating is lost, you can download it from
-> > here: http://evox.ro/kernel_netdev_tc_protocol_802.3/
-> > 
-> > 
-> > Thx for any help,
-> > Doru Theodor Petrescu
-> > CTO, Evox Solutions SRL
-> > http://evox.ro/
-> > 
-> > 
-> > 
-> > for DEV in bond0.2199 bond1.2199 bond0.3000 bond1.3001 ; do
-> > 
-> > 
-> >    tc qdisc  del dev $DEV root
-> > 
-> >    tc qdisc  add dev $DEV root handle 1: htb default 2
-> >    tc class  add dev $DEV parent 1: classid 1:1 htb rate 930000kbit ceil
-> > 930000kbit quantum 1600
-> >    
-> >    tc filter add dev $DEV parent 1: prio 5 protocol ip u32
-> > # ==> 800:
-> > 
-> >    tc filter add dev $DEV parent 1: prio 1 protocol 0x0806 u32
-> > # ==> 801:      protocol ARP
-> >    tc filter add dev $DEV parent 1: prio 1 handle 801:0:7 protocol
-> > 0x0806 u32  match u32 0 0 flowid 1:3
-> > 
-> >    tc filter add dev $DEV parent 1: prio 2 protocol 802_3 u32
-> > # ==> 802:
-> > 
-> >    tc filter add dev $DEV parent 1: prio 6 protocol ip u32
-> > # ==> 803:
-> > 
-> > 
-> >    tc filter replace dev $DEV parent 1: prio 2 handle 802:0:3  protocol
-> > 802_3 u32 match u16 0 0 at 0 flowid 1:3 action mirred egress mirror dev
-> > ifb1
-> >    tc filter replace dev $DEV parent 1: prio 2 handle 802:0:9  protocol
-> > 802_3 u32 match ether src 01:00:0c:cc:cc:cd flowid 1:3 action mirred
-> > egress mirror dev ifb1
-> >    tc filter replace dev $DEV parent 1: prio 2 handle 802:0:10 protocol
-> > 802_3 u32 match ether dst 01:00:0c:cc:cc:cd flowid 1:3 action mirred
-> > egress mirror dev ifb1
-> > 
-> > done
-> > 
-> > 
-> > # the 802_3 pachet filter:   
-> > # 
-> > # 802:0:3 should match ANY pachet of type 802_3 and mirror it to ifb1
-> > # 802:0:9 and 802:0:10 should match any pachet with src/dst
-> > 01:00:0c:cc:cc:cd and mirror it to ifb1
-> > #
-> > # however NOTHING is going to ifb1    try 'tcpdump -nltve -i ifb1'
-> > # at the same time 'tcpdump -nltve -i bond1.2199 ether host
-> > 0100.0ccc.cccd' will show about one pachet every second
-> > # 
-> > 
-> > 
-> > # at the same time the ARP filter works. you can mirror all ARP trafic
-> > to IFB1 like this:
-> > # tc filter replace dev $DEV parent 1: prio 1 handle 801:0:7 protocol
-> > 0x0806 u32  match u32 0 0 flowid 1:3 action mirred egress mirror dev
-> > ifb1
+> blah, network died before i could finish editing this
 > 
-> I think you want 802_2 to match STP frames. 802_3 is a dummy value
-> for the old Novell IPX encapsulation
+> your tree is out of date or you're seeing a different issue and need
+> to post a full build log
 
+Ok, sorry for the noise. I've only now completed going through the build
+errors of ARM randconfig on -rc1 and obviously need to rebase my fixes.
 
-
-
-well, this is what TCPDUMP will print:
-00:1d:45:d7:19:7a > 01:00:0c:cc:cc:cd, 802.3, length 64: LLC, dsap SNAP
-(0xaa) Individual, ssap SNAP (0xaa) Command, ctrl 0x03: oui Cisco
-(0x00000c), pid Unknown (0x010b): Unnumbered, ui, Flags [Command],
-length 50
-
-
-it thinks it's 802.3 so this is why I used 802_3
-
-
-I just tried your advice and created a filter with protocol 802_2 and
-guess what ... IT WORKS !!!
-
-
-so, don't use 'protocol 802.3' use 'protocol 802.2' in tc filters!
-
-thanks everybody!
-D.
-
-
-
-
+	Arnd
