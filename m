@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab1FPMLp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 08:11:45 -0400
-Received: from webmail2.sistemafieg.org.br ([201.56.58.122]:50456 "EHLO
+	id S1757870Ab1FPMSl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 08:18:41 -0400
+Received: from webmail2.sistemafieg.org.br ([201.56.58.122]:38086 "EHLO
 	webmail2.sistemafieg.org.br" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755849Ab1FPMLm (ORCPT
+	by vger.kernel.org with ESMTP id S1754356Ab1FPMSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 08:11:42 -0400
-X-Greylist: delayed 1709 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Jun 2011 08:11:42 EDT
-Message-ID: <4433.94.46.240.137.1308223759.squirrel@webmail2.sistemafieg.org.br>
-Date: Thu, 16 Jun 2011 08:29:19 -0300 (BRT)
+	Thu, 16 Jun 2011 08:18:40 -0400
+Message-ID: <4430.94.46.240.137.1308223762.squirrel@webmail2.sistemafieg.org.br>
+Date: Thu, 16 Jun 2011 08:29:22 -0300 (BRT)
 Subject: The Google-UK 12th Anniversary Giveaway Promotions ***Confirm the 
      usage of this email account***
 From: Promo Announcer =?iso-8859-1?Q?=A92011?= 
