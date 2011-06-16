@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754759Ab1FPGzf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 02:55:35 -0400
-Received: from sr-smtp.usish.com ([210.5.144.203]:52991 "EHLO
-	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752256Ab1FPGzc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 02:55:32 -0400
-From: "Jack Wang" <jack_wang@usish.com>
-To: "'Xiangliang Yu'" <yuxiangl@marvell.com>,
-        "'James Bottomley'" <James.Bottomley@HansenPartnership.com>
-Cc: <yxlraid@gmail.com>, <lucas.demarchi@profusion.mobi>,
-        <maciej.trela@intel.com>, <dan.j.williams@intel.com>,
-        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "'Jacky Feng'" <jfeng@marvell.com>
-References: <1308064628-11826-1-git-send-email-yxlraid@gmail.com> <1308065367.2401.24.camel@mulgrave> <F766E4F80769BD478052FB6533FA745D19FAE669AF@SC-VEXCH4.marvell.com> <1308117450.2329.31.camel@mulgrave> <F766E4F80769BD478052FB6533FA745D19FAE66AAF@SC-VEXCH4.marvell.com> <637AF86F1A314F15B816411A580575F0@usish.com.cn> <F766E4F80769BD478052FB6533FA745D19FAE66CAE@SC-VEXCH4.marvell.com> <51A55E816E3847EF97FE4E849A572717@usish.com.cn> <F766E4F80769BD478052FB6533FA745D19FAE66CCA@SC-VEXCH4.marvell.com> <C8FBA6A948D643679B01520A89FAC48A@usish.com.cn> <F766E4F80769BD478052FB6533FA745D19FAE66D1E@SC-VEXCH4.marvell.com> <E3CF09ECAD244C00A4C096DB374E140E@usish.com.cn> <F766E4F80769BD478052FB6533FA745D19FAE66D88@SC-VEXCH4.marvell.com>
-Subject: RE: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
-Date: Thu, 16 Jun 2011 14:55:21 +0800
-Message-ID: <4F7167A354D8476AB58FD36CA6321960@usish.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: AcwrIR/qdpMMo2uOTdi6EtZ/SnmPkgAAZ5KAACgYoPAAAOfC4AABCYdAAABOEGAAA867gAAA6NjQAAMaV6AAAIc6oAABFNUQ
-In-Reply-To: <F766E4F80769BD478052FB6533FA745D19FAE66D88@SC-VEXCH4.marvell.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6090
+	id S1754686Ab1FPG5p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 02:57:45 -0400
+Received: from linux-sh.org ([111.68.239.195]:52770 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751220Ab1FPG5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 02:57:43 -0400
+Date: Thu, 16 Jun 2011 15:56:18 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jaya Kumar <jayalk@intworks.biz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] video: don't use flush_scheduled_work() in fb_defio
+Message-ID: <20110616065617.GB25825@linux-sh.org>
+References: <20110615145721.GA8141@htj.dyndns.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110615145721.GA8141@htj.dyndns.org>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > >[Jack Wang]
-> > >I don't think the statement below is error:
-> > >child->linkrate = min(parent_phy->linkrate, child->max_linkrate);
+On Wed, Jun 15, 2011 at 04:57:21PM +0200, Tejun Heo wrote:
+> flush_scheduled_work() in on the way out.  fb_deferred_io_cleanup()
+> can simply sync-cancel info->deferred_work instead of cancel +
+> flush_scheduled_work().  Drop flush_scheduled_work() usage.
 > 
-> The parent_phy is same to child_phy, I don't think it's right.
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Jaya Kumar <jayalk@intworks.biz>
+> ---
+> Compile tested.  I'm planning on marking flush_scheduled_work()
+> deprecated in linux-next so it would be great if this can show up
+> there soonish.  Thank you.
 > 
-[Jack Wang] The parent_phy->linkrate is report from DISCOVER response as
-negotiated link rate(parent phy with child phy), so same is right.
+>  drivers/video/fb_defio.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+I've applied it to my fbdev tree, so it should show up in -next as of
+tomorrow.
 
-> >> Yes, you can test like this.
-> >> >Then expander1's linkrate will set to 3G, and expander2's linkrate
-will
-> set
-> >> >to 6G, that is correct.
-> >> yes
-> >> > But the connection rate will be 3G from hba to
-> >> >expander2.
-> >> How to configure the connection rate?
-> >> Now, MVSAS driver get 6G from sas_ex_get_linkrate function, and set
-> linkrate
-> >> of OPEN address frame to the value. right?
-> >>
-> >> --
-> >[Jack Wang]
-> >Connection rate is auto, link layer will insert deletable primitives to
-do
-> >rate matching (sas2r15 7.14).
-> 
-> >Yes, you should set the linkrate to that value .
-> 
-> OK.MVSAS driver seem right. But, the problem is command fail because of
-link
-> error, that is why I commit this patch. And my patch work fine.
-> You can reproduce the issue and fix it. Thanks!
-[Jack Wang]  I re-consider it , you maybe should compare the HBA linkrate
-with the child phy linkrate and chose a minor.
-
-I
-
+In the future, please also Cc linux-fbdev@vger.kernel.org on these
+things, as they're likely to be overlooked otherwise.
