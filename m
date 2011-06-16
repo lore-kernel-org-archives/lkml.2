@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab1FPHen (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:34:43 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:46104 "EHLO
+	id S1757268Ab1FPHeX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:34:23 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:58223 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755768Ab1FPHBL (ORCPT
+	by vger.kernel.org with ESMTP id S1755876Ab1FPHBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:01:11 -0400
-X-Sasl-enc: Qxjs58ovdd1MyUtCXSjRgqlJEkpoNPMIJw64fBB0XRaJ 1308207670
+	Thu, 16 Jun 2011 03:01:13 -0400
+X-Sasl-enc: IW+XXmI+r2H+Ka12QSUoGKwzIcHG0yJnNEGiyr8QB2sS 1308207672
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:34 2011
-Message-Id: <20110616000234.579789111@clark.kroah.org>
+Message-Id: <20110616000234.690426706@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:00:20 -0700
+Date: Wed, 15 Jun 2011 17:00:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steffen Sledz <sledz@dresearch-fe.de>
-Subject: [57/89] USB: serial: add another 4N-GALAXY.DE PID to ftdi_sio driver
+        Alan Stern <stern@rowland.harvard.edu>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+Subject: [58/89] usb-storage: redo incorrect reads
 In-Reply-To: <20110616000258.GA14529@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,39 +28,190 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Sledz <sledz@dresearch-fe.de>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit a26d31cef06f43a76327c21235e75450869df2b8 upstream.
+commit 21c13a4f7bc185552c4b402b792c3bbb9aa69df0 upstream.
 
-E.g. newer CAN 2.0 A/B <=> USB 2.0 converters report idProduct=f3c2.
+Some USB mass-storage devices have bugs that cause them not to handle
+the first READ(10) command they receive correctly.  The Corsair
+Padlock v2 returns completely bogus data for its first read (possibly
+it returns the data in encrypted form even though the device is
+supposed to be unlocked).  The Feiya SD/SDHC card reader fails to
+complete the first READ(10) command after it is plugged in or after a
+new card is inserted, returning a status code that indicates it thinks
+the command was invalid, which prevents the kernel from retrying the
+read.
 
-Signed-off-by: Steffen Sledz <sledz@dresearch-fe.de>
+Since the first read of a new device or a new medium is for the
+partition sector, the kernel is unable to retrieve the device's
+partition table.  Users have to manually issue an "hdparm -z" or
+"blockdev --rereadpt" command before they can access the device.
+
+This patch (as1470) works around the problem.  It adds a new quirk
+flag, US_FL_INVALID_READ10, indicating that the first READ(10) should
+always be retried immediately, as should any failing READ(10) commands
+(provided the preceding READ(10) command succeeded, to avoid getting
+stuck in a loop).  The patch also adds appropriate unusual_devs
+entries containing the new flag.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Sven Geggus <sven-usbst@geggus.net>
+Tested-by: Paul Hartman <paul.hartman+linux@gmail.com>
+CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    1 +
- 2 files changed, 2 insertions(+)
+ Documentation/kernel-parameters.txt |    2 ++
+ drivers/usb/storage/transport.c     |   29 +++++++++++++++++++++++++++++
+ drivers/usb/storage/unusual_devs.h  |   19 +++++++++++++++++++
+ drivers/usb/storage/usb.c           |   13 ++++++++++++-
+ drivers/usb/storage/usb.h           |    2 ++
+ include/linux/usb_usual.h           |    4 +++-
+ 6 files changed, 67 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -647,6 +647,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, EVER_ECO_PRO_CDS) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_1_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_2_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_3_PID) },
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_0_PID) },
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_1_PID) },
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_2_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -351,6 +351,7 @@
-  */
- #define FTDI_4N_GALAXY_DE_1_PID	0xF3C0
- #define FTDI_4N_GALAXY_DE_2_PID	0xF3C1
-+#define FTDI_4N_GALAXY_DE_3_PID	0xF3C2
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2590,6 +2590,8 @@ bytes respectively. Such letter suffixes
+ 					unlock ejectable media);
+ 				m = MAX_SECTORS_64 (don't transfer more
+ 					than 64 sectors = 32 KB at a time);
++				n = INITIAL_READ10 (force a retry of the
++					initial READ(10) command);
+ 				o = CAPACITY_OK (accept the capacity
+ 					reported by the device);
+ 				r = IGNORE_RESIDUE (the device reports
+--- a/drivers/usb/storage/transport.c
++++ b/drivers/usb/storage/transport.c
+@@ -819,6 +819,35 @@ Retry_Sense:
+ 		}
+ 	}
  
- /*
-  * Linx Technologies product ids
++	/*
++	 * Some devices don't work or return incorrect data the first
++	 * time they get a READ(10) command, or for the first READ(10)
++	 * after a media change.  If the INITIAL_READ10 flag is set,
++	 * keep track of whether READ(10) commands succeed.  If the
++	 * previous one succeeded and this one failed, set the REDO_READ10
++	 * flag to force a retry.
++	 */
++	if (unlikely((us->fflags & US_FL_INITIAL_READ10) &&
++			srb->cmnd[0] == READ_10)) {
++		if (srb->result == SAM_STAT_GOOD) {
++			set_bit(US_FLIDX_READ10_WORKED, &us->dflags);
++		} else if (test_bit(US_FLIDX_READ10_WORKED, &us->dflags)) {
++			clear_bit(US_FLIDX_READ10_WORKED, &us->dflags);
++			set_bit(US_FLIDX_REDO_READ10, &us->dflags);
++		}
++
++		/*
++		 * Next, if the REDO_READ10 flag is set, return a result
++		 * code that will cause the SCSI core to retry the READ(10)
++		 * command immediately.
++		 */
++		if (test_bit(US_FLIDX_REDO_READ10, &us->dflags)) {
++			clear_bit(US_FLIDX_REDO_READ10, &us->dflags);
++			srb->result = DID_IMM_RETRY << 16;
++			srb->sense_buffer[0] = 0;
++		}
++	}
++
+ 	/* Did we transfer less than the minimum amount required? */
+ 	if ((srb->result == SAM_STAT_GOOD || srb->sense_buffer[2] == 0) &&
+ 			scsi_bufflen(srb) - scsi_get_resid(srb) < srb->underflow)
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1114,6 +1114,16 @@ UNUSUAL_DEV( 0x090c, 0x1132, 0x0000, 0xf
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_FIX_CAPACITY ),
+ 
++/* Reported by Paul Hartman <paul.hartman+linux@gmail.com>
++ * This card reader returns "Illegal Request, Logical Block Address
++ * Out of Range" for the first READ(10) after a new card is inserted.
++ */
++UNUSUAL_DEV(  0x090c, 0x6000, 0x0100, 0x0100,
++		"Feiya",
++		"SD/SDHC Card Reader",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_INITIAL_READ10 ),
++
+ /* This Pentax still camera is not conformant
+  * to the USB storage specification: -
+  * - It does not like the INQUIRY command. So we must handle this command
+@@ -1888,6 +1898,15 @@ UNUSUAL_DEV( 0x1908, 0x3335, 0x0200, 0x0
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_NO_READ_DISC_INFO ),
+ 
++/* Reported by Sven Geggus <sven-usbst@geggus.net>
++ * This encrypted pen drive returns bogus data for the initial READ(10).
++ */
++UNUSUAL_DEV(  0x1b1c, 0x1ab5, 0x0200, 0x0200,
++		"Corsair",
++		"Padlock v2",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_INITIAL_READ10 ),
++
+ /* Patch by Richard Schütz <r.schtz@t-online.de>
+  * This external hard drive enclosure uses a JMicron chip which
+  * needs the US_FL_IGNORE_RESIDUE flag to work properly. */
+--- a/drivers/usb/storage/usb.c
++++ b/drivers/usb/storage/usb.c
+@@ -439,7 +439,8 @@ static void adjust_quirks(struct us_data
+ 			US_FL_CAPACITY_HEURISTICS | US_FL_IGNORE_DEVICE |
+ 			US_FL_NOT_LOCKABLE | US_FL_MAX_SECTORS_64 |
+ 			US_FL_CAPACITY_OK | US_FL_IGNORE_RESIDUE |
+-			US_FL_SINGLE_LUN | US_FL_NO_WP_DETECT);
++			US_FL_SINGLE_LUN | US_FL_NO_WP_DETECT |
++			US_FL_INITIAL_READ10);
+ 
+ 	p = quirks;
+ 	while (*p) {
+@@ -483,6 +484,9 @@ static void adjust_quirks(struct us_data
+ 		case 'm':
+ 			f |= US_FL_MAX_SECTORS_64;
+ 			break;
++		case 'n':
++			f |= US_FL_INITIAL_READ10;
++			break;
+ 		case 'o':
+ 			f |= US_FL_CAPACITY_OK;
+ 			break;
+@@ -946,6 +950,13 @@ int usb_stor_probe2(struct us_data *us)
+ 	if (result)
+ 		goto BadDevice;
+ 
++	/*
++	 * If the device returns invalid data for the first READ(10)
++	 * command, indicate the command should be retried.
++	 */
++	if (us->fflags & US_FL_INITIAL_READ10)
++		set_bit(US_FLIDX_REDO_READ10, &us->dflags);
++
+ 	/* Acquire all the other resources and add the host */
+ 	result = usb_stor_acquire_resources(us);
+ 	if (result)
+--- a/drivers/usb/storage/usb.h
++++ b/drivers/usb/storage/usb.h
+@@ -73,6 +73,8 @@ struct us_unusual_dev {
+ #define US_FLIDX_RESETTING	4	/* device reset in progress */
+ #define US_FLIDX_TIMED_OUT	5	/* SCSI midlayer timed out  */
+ #define US_FLIDX_DONT_SCAN	6	/* don't scan (disconnect)  */
++#define US_FLIDX_REDO_READ10	7	/* redo READ(10) command    */
++#define US_FLIDX_READ10_WORKED	8	/* previous READ(10) succeeded */
+ 
+ #define USB_STOR_STRING_LEN 32
+ 
+--- a/include/linux/usb_usual.h
++++ b/include/linux/usb_usual.h
+@@ -62,7 +62,9 @@
+ 	US_FLAG(NO_READ_DISC_INFO,	0x00040000)		\
+ 		/* cannot handle READ_DISC_INFO */		\
+ 	US_FLAG(NO_READ_CAPACITY_16,	0x00080000)		\
+-		/* cannot handle READ_CAPACITY_16 */
++		/* cannot handle READ_CAPACITY_16 */		\
++	US_FLAG(INITIAL_READ10,	0x00100000)			\
++		/* Initial READ(10) (and others) must be retried */
+ 
+ #define US_FLAG(name, value)	US_FL_##name = value ,
+ enum { US_DO_ALL_FLAGS };
 
 
