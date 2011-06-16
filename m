@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab1FPGy0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 02:54:26 -0400
-Received: from linux-sh.org ([111.68.239.195]:57814 "EHLO linux-sh.org"
+	id S1753403Ab1FPGyY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 02:54:24 -0400
+Received: from linux-sh.org ([111.68.239.195]:57811 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752034Ab1FPGyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750731Ab1FPGyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Jun 2011 02:54:22 -0400
-Date: Thu, 16 Jun 2011 15:53:42 +0900
+Date: Thu, 16 Jun 2011 15:53:47 +0900
 From: Paul Mundt <lethal@linux-sh.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] rmobile fixes for 3.0-rc4
-Message-ID: <20110616065338.GA17860@linux-sh.org>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] fbdev fixes for 3.0-rc4
+Message-ID: <20110616065339.GA25825@linux-sh.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -20,25 +20,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is just a pretty straightforward set of fixes. It doesn't yet
+address the console locking / suspend/resume issue as that's still
+pending feedback.
+
 Please pull from:
 
-	master.kernel.org:/pub/scm/linux/kernel/git/lethal/sh-3.x.git rmobile-fixes-for-linus
+	master.kernel.org:/pub/scm/linux/kernel/git/lethal/fbdev-3.x.git fbdev-fixes-for-linus
 
 Which contains:
 
-Kuninori Morimoto (1):
-      ARM: mach-shmobile: mackerel: tidyup usbhs driver settings
+Geert Uytterhoeven (1):
+      fbdev/atyfb: Fix 2 defined-but-not-used warnings
 
-Magnus Damm (3):
-      ARM: mach-shmobile: AG5EVM SDHI1 platform data update
-      ARM: mach-shmobile: Mackerel USB platform data update
-      ARM: mach-shmobile: sh73a0 gic_arch_extn.irq_set_wake() fix
+Guennadi Liakhovetski (1):
+      fbdev: sh_mobile_hdmi: fix regression: statically enable RTPM
 
-Paul Mundt (1):
-      ARM: mach-shmobile: Correct SCIF port types for SH7367.
+Jingoo Han (3):
+      video: s3c-fb: fix misleading kfree in remove function
+      video: s3c-fb: fix virtual resolution checking
+      video: s3c-fb: move enabling channel for window
 
- arch/arm/mach-shmobile/board-ag5evm.c   |    4 +-
- arch/arm/mach-shmobile/board-mackerel.c |  208 ++++++++++++++++++++++---------
- arch/arm/mach-shmobile/intc-sh73a0.c    |    6 +
- arch/arm/mach-shmobile/setup-sh7367.c   |   14 +-
- 4 files changed, 161 insertions(+), 71 deletions(-)
+Wanlong Gao (1):
+      efifb: Fix call to wrong unregister function
+
+ drivers/video/aty/atyfb_base.c |   10 ++++------
+ drivers/video/efifb.c          |    2 +-
+ drivers/video/s3c-fb.c         |   22 ++++++++++------------
+ drivers/video/sh_mobile_hdmi.c |   18 +++++-------------
+ 4 files changed, 20 insertions(+), 32 deletions(-)
