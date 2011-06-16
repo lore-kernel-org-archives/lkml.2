@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165Ab1FPOjL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 10:39:11 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52059 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932067Ab1FPOjJ (ORCPT
+	id S932178Ab1FPOlv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 10:41:51 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:49626 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932136Ab1FPOlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 10:39:09 -0400
-Message-ID: <4DFA1523.2060103@ru.mvista.com>
-Date: Thu, 16 Jun 2011 18:37:23 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	Thu, 16 Jun 2011 10:41:50 -0400
+Date: Thu, 16 Jun 2011 08:41:46 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Ambresh K <ambresh@ti.com>
+Cc: linux kernel <linux-kernel@vger.kernel.org>,
+        Philippe Mazet <p-mazet@ti.com>, Kevin Hilman <khilman@ti.com>,
+        Colin Cross <ccross@android.com>,
+        linux omap <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] OMAP4: GPIO: Fix missing interrupts during device wakeup
+ due to IOPAD.
+Message-ID: <20110616144146.GC2806@ponder.secretlab.ca>
+References: <1308170445-30665-1-git-send-email-ambresh@ti.com>
 MIME-Version: 1.0
-To: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
-CC: Duncan Sands <duncan.sands@free.fr>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        christian.dietrich@informatik.uni-erlangen.de
-Subject: Re: [PATCH 07/11] drivers/usb/atm: use printk_ratelimited() instead
- of printk_ratelimit()
-References: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de> <98558b2a3dbb8b14a3bc90e0a73ca7d61dd10a53.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
-In-Reply-To: <98558b2a3dbb8b14a3bc90e0a73ca7d61dd10a53.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308170445-30665-1-git-send-email-ambresh@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, Jun 15, 2011 at 01:40:45PM -0700, Ambresh K wrote:
+> From: Ambresh K <ambresh@ti.com>
+> 
+> If gpio pins from bank[2-5] are marked as wakeup enable and if the wake is
+> through gpio IO pad wakeup, then that wakeup gpio interrupt is lost.
+> 
+> In the current implementation, GPIO driver stores the context of DATAIN of
+> all the gpio in the bank. During GPIO resuming, it checks DATAIN with wakeup
+> enabled pins of gpio bank. If there is status change, then manually toggle
+> GPIO_LEVELDETECT to generate pseudo interrupt.
+> 
+> Reported-by: Philippe Mazet <p-mazet@ti.com>
+> Tested-by: Philippe Mazet <p-mazet@ti.com>
+> Signed-off-by: Ambresh K <ambresh@ti.com>
 
-Manuel Zerpies wrote:
+Applied, thanks.
 
-> Since printk_ratelimit() shouldn't be used anymore (see comment in
-> include/linux/printk.h), replace it with printk_ratelimited()
+g.
 
-> Signed-off-by: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
 > ---
->  drivers/usb/atm/usbatm.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-
-> diff --git a/drivers/usb/atm/usbatm.c b/drivers/usb/atm/usbatm.c
-> index 989e16e..d3448ca 100644
-> --- a/drivers/usb/atm/usbatm.c
-> +++ b/drivers/usb/atm/usbatm.c
-> @@ -81,6 +81,7 @@
->  #include <linux/timer.h>
->  #include <linux/wait.h>
->  #include <linux/kthread.h>
-> +#include <linux/ratelimit.h>
->  
->  #ifdef VERBOSE_DEBUG
->  static int usbatm_print_packet(const unsigned char *data, int len);
-> @@ -668,8 +669,7 @@ static int usbatm_atm_send(struct atm_vcc *vcc, struct sk_buff *skb)
->  	/* racy disconnection check - fine */
->  	if (!instance || instance->disconnected) {
->  #ifdef DEBUG
-> -		if (printk_ratelimit())
-> -			printk(KERN_DEBUG "%s: %s!\n", __func__, instance ? "disconnected" : "NULL instance");
-> +		printk_ratelimited(KERN_DEBUG "%s: %s!\n", __func__, instance ? "disconnected" : "NULL instance");
->  #endif
-
-    You could use pr_debug_ratelimited() and eliminate #ifdef with that.
-
-WBR, Sergei
-
+>  drivers/gpio/gpio-omap.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
+> index 6c51191..eaf3d78 100644
+> --- a/drivers/gpio/gpio-omap.c
+> +++ b/drivers/gpio/gpio-omap.c
+> @@ -477,8 +477,9 @@ static inline void set_24xx_gpio_triggering(struct gpio_bank *bank, int gpio,
+>  					+ OMAP24XX_GPIO_CLEARWKUENA);
+>  		}
+>  	}
+> -	/* This part needs to be executed always for OMAP34xx */
+> -	if (cpu_is_omap34xx() || (bank->non_wakeup_gpios & gpio_bit)) {
+> +	/* This part needs to be executed always for OMAP{34xx, 44xx} */
+> +	if (cpu_is_omap34xx() || cpu_is_omap44xx() ||
+> +			(bank->non_wakeup_gpios & gpio_bit)) {
+>  		/*
+>  		 * Log the edge gpio and manually trigger the IRQ
+>  		 * after resume if the input level changes
+> -- 
+> 1.7.0.4
+> 
