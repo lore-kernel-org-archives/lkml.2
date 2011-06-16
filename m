@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab1FPO5G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 10:57:06 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49527 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751953Ab1FPO5C (ORCPT
+	id S1756906Ab1FPQ00 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 12:26:26 -0400
+Received: from alerce.vps.bitfolk.com ([212.13.194.134]:44475 "EHLO
+	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755127Ab1FPQ0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 10:57:02 -0400
-Date: Thu, 16 Jun 2011 08:56:59 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 11/11] arm/versatile: Add device tree support
-Message-ID: <20110616145659.GC3795@ponder.secretlab.ca>
-References: <20110616042653.29371.2052.stgit@ponder>
- <20110616044311.29371.49018.stgit@ponder>
- <201106161620.37205.arnd@arndb.de>
+	Thu, 16 Jun 2011 12:26:24 -0400
+Date: Thu, 16 Jun 2011 11:58:42 -0300
+From: Leandro Lucarella <luca@llucax.com.ar>
+To: dri-devel@lists.freedesktop.org, kernel@vger.kernel.org,
+        David Airlie <airlied@linux.ie>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        intel-gfx@lists.freedesktop.org
+Subject: Graphic corruption with i915 (2.6.39.1)
+Message-ID: <20110616145842.GM20487@llucax.com.ar>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <201106161620.37205.arnd@arndb.de>
+Content-Transfer-Encoding: 8bit
+X-Paranoid: Just because you're paranoid, don't mean they're not after you.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 04:20:37PM +0200, Arnd Bergmann wrote:
-> On Thursday 16 June 2011, Grant Likely wrote:
-> > This patch adds a new versatile platform for when using the device
-> > tree.  Add platform and amba devices are discovered and registered by
-> > parsing the device tree.  Clocks and initial io mappings are still
-> > configured statically.
-> 
-> Hi Grant,
-> 
-> Two small questions about the device tree contents:
-> 
-> > +       i2c@10002000 {
-> > +               #address-cells = <1>;
-> > +               #size-cells = <0>;
-> > +               compatible = "arm,versatile-i2c";
-> > +               reg = <0x10002000 0x1000>;
-> > +
-> > +               rtc@68 {
-> > +                       compatible = "dallas,ds1338";
-> > +                       reg = <0x68>;
-> > +               };
-> > +       };
-> > +
-> > +       net@10010000 {
-> > +               compatible = "smsc,lan91c111";
-> > +               reg = <0x10010000 0x10000>;
-> > +               interrupts = <25>;
-> > +       };
-> > +
-> > +       lcd@10008000 {
-> > +               compatible = "arm,versatile-lcd";
-> > +               reg = <0x10008000 0x1000>;
-> > +       };
-> 
-> Why are these devices on the top level, rather than on the AMBA bus or
-> the FPGA? From the documentation, it seems that they are implemented
-> in the FPGA, which would also match the address layout.
+Hi, I've been experiencing sporadic graphic corruption since a few
+stable kernel versions and I always thought "maybe is fixed in the next
+release", so I upgrade, but I usually experience a different problem
+then. This problems are exposed very rarely, maybe I have no problems
+like for a month or so.
 
-Mostly because I 'faked' this device tree based on what is currently
-in the kernel for the Versatile platform.  I need to look at the
-documentation and make it reflect reality, including setting up ranges
-correctly (as you commented on below).
+Now I'm using kernel 2.6.39.1 and I experience one of this problem so
+I though it was time to report it. This is what I got in dmesg:
 
-> 
-> > +       amba {
-> > +               compatible = "arm,amba-bus";
-> > +               #address-cells = <1>;
-> > +               #size-cells = <1>;
-> > +               ranges;
-> > +
-> > +               vic: intc@10140000 {
-> > +                       compatible = "arm,versatile-vic", "arm,vic";
-> > +                       interrupt-controller;
-> > +                       #interrupt-cells = <1>;
-> > +                       reg = <0x10140000 0x1000>;
-> > +               };
-> > +
-> 
-> Why the empty ranges property? All device registers are based on 0x10000000,
-> so I'd expect this to be described like that here.
-> 
-> 	Arnd
+[368693.756008] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
+[368693.756014] render error detected, EIR: 0x00000010
+[368693.756017]   IPEIR: 0x00000000
+[368693.756019]   IPEHR: 0x02000004
+[368693.756020]   INSTDONE: 0xcc8fffff
+[368693.756022]   INSTPS: 0x8001e025
+[368693.756024]   INSTDONE1: 0xbfffffbf
+[368693.756026]   ACTHD: 0x00715128
+[368693.756027] page table error
+[368693.756029]   PGTBL_ER: 0x00000002
+[368693.756038] [drm:i915_wait_request] *ERROR* i915_wait_request returns -11 (awaiting 17700193 at 17700192, next 17700196)
+[368694.258010] [drm:i915_reset] *ERROR* Failed to reset chip.
+
+Here are 2 images of my desktop, without the graphic corruption first
+and with the corruption then: http://imgur.com/a/NX7te
+
+# lspci 
+00:00.0 Host bridge: Intel Corporation 4 Series Chipset DRAM Controller (rev 03)
+00:01.0 PCI bridge: Intel Corporation 4 Series Chipset PCI Express Root Port (rev 03)
+00:02.0 VGA compatible controller: Intel Corporation 4 Series Chipset Integrated Graphics Controller (rev 03)
+00:1b.0 Audio device: Intel Corporation N10/ICH 7 Family High Definition Audio Controller (rev 01)
+00:1c.0 PCI bridge: Intel Corporation N10/ICH 7 Family PCI Express Port 1 (rev 01)
+00:1c.1 PCI bridge: Intel Corporation N10/ICH 7 Family PCI Express Port 2 (rev 01)
+00:1d.0 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller #1 (rev 01)
+00:1d.1 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller #2 (rev 01)
+00:1d.2 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller #3 (rev 01)
+00:1d.3 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller #4 (rev 01)
+00:1d.7 USB Controller: Intel Corporation N10/ICH 7 Family USB2 EHCI Controller (rev 01)
+00:1e.0 PCI bridge: Intel Corporation 82801 PCI Bridge (rev e1)
+00:1f.0 ISA bridge: Intel Corporation 82801GB/GR (ICH7 Family) LPC Interface Bridge (rev 01)
+00:1f.1 IDE interface: Intel Corporation 82801G (ICH7 Family) IDE Controller (rev 01)
+00:1f.2 IDE interface: Intel Corporation N10/ICH7 Family SATA IDE Controller (rev 01)
+00:1f.3 SMBus: Intel Corporation N10/ICH 7 Family SMBus Controller (rev 01)
+03:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 03)
+04:00.0 Multimedia video controller: Brooktree Corporation Bt848 Video Capture (rev 12)
+
+Any ideas on what might be going on and how to fix it are welcome. Please let
+me know if you need any other information.
+
+Thanks in advance.
+
+-- 
+Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
+----------------------------------------------------------------------
+GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
+----------------------------------------------------------------------
+SEÑOR BIELSA: CON TODO RESPETO ¿USTED LO VE JUGAR A RIQUELME?
+	-- Crónica TV
