@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758178Ab1FPTqq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 15:46:46 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:48683 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757970Ab1FPTqm (ORCPT
+	id S932318Ab1FPTti (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 15:49:38 -0400
+Received: from higgs.elka.pw.edu.pl ([194.29.160.5]:56167 "EHLO
+	higgs.elka.pw.edu.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932307Ab1FPTtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 15:46:42 -0400
-Date: Thu, 16 Jun 2011 15:46:42 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Alexander Holler <holler@ahsoftware.de>
-cc: Arnd Bergmann <arnd@arndb.de>, <gregkh@suse.de>,
-        Rabin Vincent <rabin@rab.in>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing
- the packed attribute
-In-Reply-To: <4DFA58B4.5030101@ahsoftware.de>
-Message-ID: <Pine.LNX.4.44L0.1106161541260.1697-100000@iolanthe.rowland.org>
+	Thu, 16 Jun 2011 15:49:36 -0400
+X-Comment: RFC 2476 MSA function at elektron.elka.pw.edu.pl logged sender identity as: wzabolot
+Message-ID: <4DFA5E41.5090803@ise.pw.edu.pl>
+Date: Thu, 16 Jun 2011 21:49:21 +0200
+From: wzab <wzab@ise.pw.edu.pl>
+Reply-To: wzab@ise.pw.edu.pl
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Icedove/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: linux-kernel@vger.kernel.org
+CC: maciej.rutecki@gmail.com
+Subject: Probably solved or worked around: 2.6.37 says WARNING: at arch/x86/kernel/apic/apic.c:1287
+ setup_local_APIC+0x18f/0x263()
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Jun 2011, Alexander Holler wrote:
+I had similar problems as reported in 
+https://bugzilla.kernel.org/show_bug.cgi?id=27642
 
-> >> I thought the compiler was not allowed to insert
-> >> padding if the natural alignment of the data types didn't require any.
-> >
-> > It's architecture dependent. The alignment of the structure is the maximum alignment
-> > of its members, so it gets to be 8 bytes if there is a 64 bit member in the struct
-> > on most architectures, but 4 bytes on x86.
-> 
-> Hmm, sorry, but that sentence just says something about the alignment of 
-> the structure itself and nothing about the alignment of it's members or 
-> do I understand something wrong?
+I was using buildroot buildroot-2011.02 with kernel 2.6.37.2 on virtual 
+machine inside of QEMU
+The warning shown in the subject further lead to incorrect routing of 
+IRQs from PCI devices
+connected withg QEMU's option "-device DEVICE_NAME".
 
-We're talking about padding, not alignment.  Obviously these two
-concepts are related, since fields with differing alignment
-requirements sometimes force the compiler to insert padding.  But they
-aren't the same thing.
+The warning was reported as:
+------------[ cut here ]------------
+WARNING: at arch/x86/kernel/apic/apic.c:1287 setup_local_APIC+0x22a/0x34d()
+Hardware name: Bochs
+Modules linked in:
+Pid: 0, comm: kworker/0:0 Tainted: G        W   2.6.37 #3
+Call Trace:
+  [<c102f318>] ? warn_slowpath_common+0x78/0xb0
+  [<c12ebde5>] ? setup_local_APIC+0x22a/0x34d
+  [<c12ebde5>] ? setup_local_APIC+0x22a/0x34d
+  [<c102f36b>] ? warn_slowpath_null+0x1b/0x20
+  [<c12ebde5>] ? setup_local_APIC+0x22a/0x34d
+  [<c12eb0d8>] ? start_secondary+0xd3/0x1c1
+---[ end trace 4eaa2a86a8e2da23 ]---
 
-The question is whether gcc will insert padding in a structure that 
-doesn't need it.  The kernel depends on peculiarities of gcc in many 
-ways; basing your strategy on what the C99 spec says is not always a 
-good idea.
+And IRQs were routed as follows:
 
-> For me that means that I understand that when packed(,aligned(4)) is 
-> used, it's pretty sure, that there is no padding inbetween the members 
-> of e.g. struct ehci_regs. But without I'm unsure, so I would avoid that.
-> 
-> That aligned(4) is necessary (for ARM) is only a workaround because of 
-> the implementation of readl(), at least that is how I understood the 
-> discussion. But that is discussed elsewhere and don't want to take part 
-> in that discussion (and can't).
+wzab_enc1 0000:00:04.0: PCI->APIC IRQ transform: INT A -> IRQ 35
+  mmio_start=f2060000, mmio_end=f2060fff, mmio_len=1000, irq=35
 
-Hmmm.  I won't say that ((packed,aligned(4))) is wrong.  But it's not 
-clearly necessary either.
+IRQ35 was not available in the emulated system so driver was not able to 
+request it.
 
-Alan Stern
+The problem disappeared, after I have switched on the following options 
+in kernel configuration:
+CONFIG_PM=y
+CONFIG_ACPI=y
+
+I have verified, that this resulted in automatic selection of option
+CONFIG_PCI_IOAPIC=y
+
+After recompilation of kernel, I don't get the mentioned warning during 
+the boot
+and IRQs are routed correctly:
+ACPI: PCI Interrupt Link [LNKD] enabled at IRQ 11
+wzab_enc1 0000:00:04.0: PCI INT A -> Link[LNKD] -> GSI 11 (level, high) 
+-> IRQ 11
+  mmio_start=f2060000, mmio_end=f2060fff, mmio_len=1000, irq=11
+
+-- 
+HTH & Regards,
+Wojtek
+
+
+
+
 
