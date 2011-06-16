@@ -1,76 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297Ab1FPP0K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 11:26:10 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:54358 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755905Ab1FPP0G (ORCPT
+	id S1757208Ab1FPP1q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 11:27:46 -0400
+Received: from bohort.kerlabs.com ([90.80.97.101]:39925 "EHLO
+	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754343Ab1FPP1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 11:26:06 -0400
-X-SpamScore: -8
-X-BigFish: VPS-8(zz1432N98dKzz1202hzz8275bhz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LMW2UL-02-AZU-02
-X-M-MSG: 
-Date: Thu, 16 Jun 2011 17:25:31 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>,
-        "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>
-Subject: Re: [PATCH] oprofile, x86: Fix race in nmi handler while starting
-Message-ID: <20110616152531.GR20052@erda.amd.com>
-References: <1307465249-20055-1-git-send-email-robert.richter@amd.com>
- <20110609071854.GE20544@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 16 Jun 2011 11:27:45 -0400
+Date: Thu, 16 Jun 2011 17:27:33 +0200
+From: Louis Rilling <Louis.Rilling@kerlabs.com>
+To: Greg Kurz <gkurz@fr.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, containers@lists.osdl.org,
+        akpm@linux-foundation.org, xemul@openvz.org
+Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was
+	Vpid:)
+Message-ID: <20110616152733.GB15328@hawkmoon.kerlabs.com>
+Mail-Followup-To: Greg Kurz <gkurz@fr.ibm.com>,
+	Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+	ebiederm@xmission.com, containers@lists.osdl.org,
+	akpm@linux-foundation.org, xemul@openvz.org
+References: <20110615145527.4016.70157.stgit@bahia.local> <20110615184625.GA15573@redhat.com> <1308222107.8230.49.camel@bahia.local> <20110616123554.GA7230@hawkmoon.kerlabs.com> <1308229251.8230.77.camel@bahia.local> <20110616132551.GB7230@hawkmoon.kerlabs.com> <1308236499.8230.89.camel@bahia.local>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_bohort-27127-1308237968-0001-2"
 Content-Disposition: inline
-In-Reply-To: <20110609071854.GE20544@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <1308236499.8230.89.camel@bahia.local>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09.06.11 03:18:54, Ingo Molnar wrote:
-> 
-> * Robert Richter <robert.richter@amd.com> wrote:
-> 
-> > In some rare cases, nmis are generated immediately after the nmi 
-> > handler of the cpu was started. This causes the counter not to be 
-> > enabled. Before enabling the nmi handlers we need to set variable 
-> > ctr_running first and make sure its value is written to memory.
-> > 
-> > Also, the patch makes all existing barriers a memory barrier 
-> > instead of a compiler barrier only.
-> 
-> Could we *PLEASE* just do the obvious and turn oprofile into a perf 
-> user on x86 too, like ARM already does? Two years down the line and 
-> there's zero progress in that area. We want to obsolete the Oprofile 
-> PMU bits on x86, the infrastructure duplication causes non-trivial 
-> problems like this one.
+This is a MIME-formatted message.  If you see this text it means that your
+E-mail software does not support MIME-formatted messages.
 
-Ingo,
+--=_bohort-27127-1308237968-0001-2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I would rather prefer to spend the effort to add full pmu support to
-perf. AMD features missing are still IBS and nb performance counters
-for family 15h. The oprofile kernel driver would become obsolete at
-all with a new daemon using the perf syscall interface. So why
-spending more time with porting this legacy driver to perf in the
-kernel? It will be also hard to implement identical behaviour which
-may raise concerns about backward compatibility of the kernel driver.
+On 16/06/11 17:01 +0200, Greg Kurz wrote:
+> On Thu, 2011-06-16 at 15:25 +0200, Louis Rilling wrote:
+> > > Ok. You're right, the RCU grace period is just what I need to ensure
+> > I
+> > > won't dereference a stale pointer. So I don't even have to bother
+> > with
+> > > ->siglock and just check pid_alive() before peeking into
+> > pid->numbers.
+> >=20
+> > It ends like open-coding an optimized version of task_pid_vnr(). If
+> > the
+> > optimization is really important (I guess this depends on the depth of
+> > recursive
+> > pid namespaces), it would be better to re-write task_pid_vnr().
+> > Otherwise, just
+> > use task_pid_vnr() as it is.
+> >=20
+> > Thanks,
+> >=20
+> > Louis
+> >=20
+> Hmm, sorry Louis but I'm looking for the pid number from the task active
+> pid_ns (AKA. the return value of getpid() if called by this task), so
+> task_pid_vnr() doesn't fit.
 
-I admit, we have had a lot of bug fixes for oprofile in the past, but
-most of them are part of maintaining existing code which we have to do
-for distros anyway. There is almost no or only limited feature
-development for oprofile now.
+Yup, I should have somewhat recalled that _vnr() means "in the caller's pid
+namespace". Sorry for the wrong argument.
 
-Hope this makes sense.
+>=20
+> About the open-coding argument, that's why I used task_pid_nr_ns() and
+> task_active_pid_ns() at first...
 
--Robert
+Sure. I still think that if you end accessing pid->numbers[pid->level].nr, =
+then
+you're close to coding some (optimized) task_active_pid_nr() that could als=
+o be
+used by getpid(), using some task_active_tgid_nr() instead of task_tgid_vnr=
+().
+Anyway, optimization is not a relevant point here AFAICS.
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+Thanks,
 
+Louis
+
+--=20
+Dr Louis Rilling			Kerlabs
+Skype: louis.rilling			Batiment Germanium
+Phone: (+33|0) 6 80 89 08 23		80 avenue des Buttes de Coesmes
+http://www.kerlabs.com/			35700 Rennes
+
+--=_bohort-27127-1308237968-0001-2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Transfer-Encoding: 7bit
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAk36IOUACgkQVKcRuvQ9Q1QipgCeKhrkBcIpPtTwvxVkbxLNr4DQ
+Ut4Anj1AyloYA+R4oRjivRBvcBb+zPv1
+=Ay+q
+-----END PGP SIGNATURE-----
+
+--=_bohort-27127-1308237968-0001-2--
