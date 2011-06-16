@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab1FPBi1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 21:38:27 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:50305 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753538Ab1FPBiZ (ORCPT
+	id S1754432Ab1FPByJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 21:54:09 -0400
+Received: from sr-smtp.usish.com ([210.5.144.203]:47980 "EHLO
+	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752590Ab1FPByH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 21:38:25 -0400
-Date: Thu, 16 Jun 2011 02:38:12 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH] ACPI, APEI, Add APEI _OSC support
-Message-ID: <20110616013812.GA32494@srcf.ucam.org>
-References: <1306303538-30524-1-git-send-email-ying.huang@intel.com>
- <20110614145246.GA17469@srcf.ucam.org>
- <4DF82CBC.5070400@intel.com>
- <20110615121703.GA8638@srcf.ucam.org>
- <4DF950EB.7050400@intel.com>
+	Wed, 15 Jun 2011 21:54:07 -0400
+X-Greylist: delayed 772 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Jun 2011 21:54:06 EDT
+From: "Jack Wang" <jack_wang@usish.com>
+To: "'Xiangliang Yu'" <yuxiangl@marvell.com>,
+        "'James Bottomley'" <James.Bottomley@HansenPartnership.com>
+Cc: <yxlraid@gmail.com>, <lucas.demarchi@profusion.mobi>,
+        <maciej.trela@intel.com>, <dan.j.williams@intel.com>,
+        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "'Jacky Feng'" <jfeng@marvell.com>
+References: <1308064628-11826-1-git-send-email-yxlraid@gmail.com> <1308065367.2401.24.camel@mulgrave> <F766E4F80769BD478052FB6533FA745D19FAE669AF@SC-VEXCH4.marvell.com> <1308117450.2329.31.camel@mulgrave> <F766E4F80769BD478052FB6533FA745D19FAE66AAF@SC-VEXCH4.marvell.com>
+Subject: RE: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
+Date: Thu, 16 Jun 2011 09:41:01 +0800
+Message-ID: <637AF86F1A314F15B816411A580575F0@usish.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DF950EB.7050400@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain;
+	charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <F766E4F80769BD478052FB6533FA745D19FAE66AAF@SC-VEXCH4.marvell.com>
+Thread-Index: AcwrIR/qdpMMo2uOTdi6EtZ/SnmPkgAAZ5KAACgYoPA=
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6090
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 08:40:11AM +0800, Huang Ying wrote:
-> On 06/15/2011 08:17 PM, Matthew Garrett wrote:
-> >> You means the "APEI Support" bit for standard UUID?  Do you know which
-> >> machine uses this bit?  I can write the code, but I have no machine to
-> >> test it.
-> > 
-> > I have access to a Dell system that uses this.
 > 
-> Great! Can you help us to test the code?
+> I get the issue like this:
+> 1. HBA support 3Gbps, level 1 expander support 6Gbps, and level 2 expander
+> support 6Gbps;
+> 2. level 1 is fine, and find that level 2 link rate is 6Gbps in DISCOVER
+command
+> response.
+> 3. LIBSAS think level 2 is 6Gbps by sas_ex_get_linkrate function, and send
+> command to level 2 expander
+> 4. LIBSAS link error.
+> 
+[Jack Wang] 
+What do you mean by "LIBSAS link error", OPEN_REJECT(CONNECTION RATE NOT
+SUPPORTED)? LIBSAS only get the error event through LLDD. 
+According to SAS2r15 7.8.3
 
-Yup, no problem.
+A SAS initiator port shall set the initial CONNECTION RATE field to:
+a) the highest supported connection rate supported by a potential pathway as
+determined during the 
+discover process (e.g., based on the logical link rates of each logical link
+reported in the SMP 
+DISCOVER responses); or
+b) the logical link rate of the logical phy used to transmit the OPEN
+address frame.
+If a SAS initiator port selected a connection rate based on discover process
+information but the connection 
+request results in OPEN_REJECT (CONNECTION RATE NOT SUPPORTED), then the
+discover process 
+information is no longer current and the discover process should be run
+again.
 
-> > Urgh. One machine I've looked at enables APEI if the WHEA _OSC call is 
-> > made, and then clears a flag if any other _OSC call is made. In that 
-> > specific case it doesn't seem to matter (the flag never actually gets 
-> > checked in any of the other codepaths), but it seems that the intention 
-> > is for the generic call to be made and the WHEA one to be made after 
-> > that.
-> 
-> Yes.  The WHEA call should be made after the generic one.  Another
-> situation is as follow:
-> 
-> - Generic _OSC call without "APEI Support" bit is called (in
-> acpi_bus_osc_support).
-> 
-> - After some time, when we think it is good to turn on firmware first
-> mode fully, usually after we checking HEST and initializing
-> corresponding module, we make generic _OSC call with "APEI Support" bit
-> to turn on firmware first mode fully in standard way.
-> 
-> Is it a good idea to make generic _OSC call twice, one without "APEI
-> Support" bit, the other with "APEI Support" bit?
 
-I think we probably need to make the HEST decision early, and use that 
-to decide how to make the generic call. Our experience has been that 
-many firmware vendors only expect _OSC to be called once with any given 
-UUID - multiple calls can result in unexpected behaviour.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
