@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751237Ab1FPEDe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 00:03:34 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52723 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761Ab1FPEDd (ORCPT
+	id S1751580Ab1FPEEq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 00:04:46 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43701 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814Ab1FPEEp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 00:03:33 -0400
+	Thu, 16 Jun 2011 00:04:45 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 16 Jun 2011 12:56:33 +0900
+Date: Thu, 16 Jun 2011 12:57:41 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
@@ -18,8 +18,8 @@ Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "bsingharora@gmail.com" <bsingharora@gmail.com>,
         Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
         "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: [PATCH 6/7] memcg: calc NUMA node's weight for scan.
-Message-Id: <20110616125633.9b9fa703.kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 7/7] memcg: proportional fair vicitm node selection
+Message-Id: <20110616125741.c3d6a802.kamezawa.hiroyu@jp.fujitsu.com>
 In-Reply-To: <20110616124730.d6960b8b.kamezawa.hiroyu@jp.fujitsu.com>
 References: <20110616124730.d6960b8b.kamezawa.hiroyu@jp.fujitsu.com>
 Organization: FUJITSU Co. LTD.
@@ -31,137 +31,280 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From fb8aaa2c5f7fd99dfcb5d2ecb3c1226a58caafea Mon Sep 17 00:00:00 2001
+>From 4fbd49697456c227c86f1d5b46f2cd2169bf1c5b Mon Sep 17 00:00:00 2001
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 16 Jun 2011 10:05:46 +0900
-Subject: [PATCH 6/7] memcg: calc NUMA node's weight for scan.
+Date: Thu, 16 Jun 2011 11:25:23 +0900
+Subject: [PATCH 7/7] memcg: proportional fair node vicitm selection
 
-Now, by commit 889976, numa node scan of memcg is in round-robin.
-As commit log says, "a better algorithm is needed".
+commit 889976 implements a round-robin scan of numa nodes for
+LRU scanning of memcg at hitting limit.
+But, round-robin is not very good.
 
-for implementing some good scheduling, one of required things is
-defining importance of each node at LRU scanning.
+This patch implements a proportionally fair victim selection of nodes
+rather than round-robin. The logic is fair against each node's weight.
 
-This patch defines each node's weight for scan as
+Each node's weight is calculated periodically and we build an node's
+scheduling entity as
 
-swappiness = (memcg's swappiness)? memcg's swappiness : 1
-FILE = inactive_file + (inactive_file_is_low)? active_file : 0
-ANON = inactive_anon + (inactive_anon_is_low)? active_anon : 0
+     total_ticket = 0;
+     for_each_node(node)
+     	node->ticket_start =  total_ticket;
+        node->ticket_end   =  total_ticket + this_node's_weight()
+        total_ticket = node->ticket_end;
 
-weight = (FILE * (200-swappiness) + ANON * swappiness)/200.
+Then, each nodes has some amounts of tickets in proportion to its own weight.
 
-Note: After we have dirty page accounting per memcg, we can make use of
-      dirty page information. (very dirty node should be skipped...)
+At selecting victim, a random number is selected and the node which contains
+the random number in [ticket_start, ticket_end) is selected as vicitm.
+This is a lottery scheduling algorithm.
 
-Following patch will implement a scheduling using this weight.
+For quick search of victim, this patch uses bsearch().
+
+Test result:
+  on 8cpu box with 2 nodes.
+  limit memory to be 300MB and run httpd for 4096files/600MB working set.
+  do (normalized) random access by apache-bench and see scan_stat.
+  The test makes 40960 request. and see scan_stat.
+  (Because a httpd thread just use 10% cpu, the number of threads will
+   not be balanced between nodes. Then, file caches will not be balanced
+   between nodes.)
+
+  [Before patch]
+  [kamezawa@bluextal ~]$ cat /cgroup/memory/test/memory.scan_stat
+  scanned_pages_by_limit 550740
+  freed_pages_by_limit 206473
+  elapsed_ns_by_limit 9485418834
+
+  [After patch]
+  scanned_pages_by_limit 521520
+  freed_pages_by_limit 199330
+  elapsed_ns_by_limit 7904913234
+
+Total number of scan, elapsed time for scan are decreased in this test.
 
 Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/memcontrol.c |   58 ++++++++++++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 50 insertions(+), 8 deletions(-)
+ mm/memcontrol.c |  116 ++++++++++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 92 insertions(+), 24 deletions(-)
 
 Index: mmotm-0615/mm/memcontrol.c
 ===================================================================
 --- mmotm-0615.orig/mm/memcontrol.c
 +++ mmotm-0615/mm/memcontrol.c
-@@ -144,10 +144,12 @@ struct mem_cgroup_per_zone {
+@@ -49,6 +49,8 @@
+ #include <linux/page_cgroup.h>
+ #include <linux/cpu.h>
+ #include <linux/oom.h>
++#include <linux/random.h>
++#include <linux/bsearch.h>
+ #include "internal.h"
  
- struct mem_cgroup_per_node {
- 	struct mem_cgroup_per_zone zoneinfo[MAX_NR_ZONES];
-+	unsigned long weight;
- };
+ #include <asm/uaccess.h>
+@@ -149,7 +151,14 @@ struct mem_cgroup_per_node {
  
  struct mem_cgroup_lru_info {
  	struct mem_cgroup_per_node *nodeinfo[MAX_NUMNODES];
-+	unsigned long total_weight;
+-	unsigned long total_weight;
++	u32 total_weight;
++};
++
++/* a structure for numa victim selection scheduling */
++struct mem_cgroup_numasched {
++	int nid;
++	u32 start;
++	u32 ticket;
  };
  
  /*
-@@ -1617,6 +1619,33 @@ mem_cgroup_select_victim(struct mem_cgro
- 
+@@ -289,10 +298,11 @@ struct mem_cgroup {
+ 	 * reclaimed from.
+ 	 */
+ 	int last_scanned_child;
+-	int last_scanned_node;
  #if MAX_NUMNODES > 1
- 
-+static unsigned long mem_cgroup_numascan_weight(struct mem_cgroup *mem,
-+				int nid, bool inactive_file_low,
-+				bool inactive_anon_low)
-+{
-+	unsigned int swappiness = mem_cgroup_swappiness(mem);
-+	unsigned long file, anon, weight;
-+
-+	/* swappiness == 0 needs some care for avoiding very heavy scanning */
-+	if (!swappiness)
-+		swappiness = 1;
-+
-+	file = mem_cgroup_get_zonestat_node(mem, nid, LRU_INACTIVE_FILE);
-+	if (inactive_file_low)
-+		file += mem_cgroup_get_zonestat_node(mem, nid, LRU_ACTIVE_FILE);
-+
-+	anon = mem_cgroup_get_zonestat_node(mem, nid, LRU_INACTIVE_ANON);
-+	if (inactive_anon_low)
-+		anon += mem_cgroup_get_zonestat_node(mem, nid, LRU_ACTIVE_ANON);
-+
-+	if (!total_swap_pages || !res_counter_margin(&mem->memsw))
-+		weight = file;
-+	else
-+		weight = (file * (200 - swappiness) + anon * swappiness)/200;
-+	mem->info.nodeinfo[nid]->weight = weight;
-+	return weight;
-+}
-+
- /*
-  * Always updating the nodemask is not very good - even if we have an empty
-  * list or the wrong list here, we can start from some node and traverse all
-@@ -1630,6 +1659,7 @@ mem_cgroup_select_victim(struct mem_cgro
- #define NUMASCAN_UPDATE_THRESH	(16384UL) /* 16k events of pagein/pageout */
+ 	nodemask_t	scan_nodes;
+ 	struct mutex	numascan_mutex;
++	struct mem_cgroup_numasched *nsched;
++	int		nr_nsched;
+ #endif
+ 	atomic_t	numascan_update;
+ 	/*
+@@ -1660,8 +1670,10 @@ static unsigned long mem_cgroup_numascan
  static void mem_cgroup_may_update_nodemask(struct mem_cgroup *mem)
  {
-+	bool inactive_file_low, inactive_anon_low;
- 	int nid;
- 	unsigned long long limit;
+ 	bool inactive_file_low, inactive_anon_low;
+-	int nid;
+-	unsigned long long limit;
++	int nid, factor;
++	unsigned long long limit, usage;
++	struct mem_cgroup_numasched *ns;
++
  	/* if no limit, we never reach here */
-@@ -1649,17 +1679,20 @@ static void mem_cgroup_may_update_nodema
- 	/* make a nodemask where this memcg uses memory from */
- 	mem->scan_nodes = node_states[N_HIGH_MEMORY];
+ 	limit = res_counter_read_u64(&mem->res, RES_LIMIT);
+ 	limit /= PAGE_SIZE;
+@@ -1683,13 +1695,41 @@ static void mem_cgroup_may_update_nodema
+ 	inactive_anon_low = mem_cgroup_inactive_anon_is_low(mem);
+ 	mem->info.total_weight = 0;
  
-+	inactive_file_low = mem_cgroup_inactive_file_is_low(mem);
-+	inactive_anon_low = mem_cgroup_inactive_anon_is_low(mem);
-+	mem->info.total_weight = 0;
++	/*
++	 * mem->nsched is an array of nodes with weight. If weight==0,
++	 * the nid will not appear in the array. Each ns entry has
++	 * [start, ticket] pair and the array. This ticket will be used
++	 * for lottery.
++	 */
++	ns = mem->nsched;
++	mem->nr_nsched = 0;
++
++	/*
++	 * We use random32() for lottery. so, we'd like to make
++	 * total_weight smaller than u32. calculate the factor to limit
++	 * total_weight, here.
++	 */
++	usage = res_counter_read_u64(&mem->res, RES_USAGE);
++	factor = 0;
++
++	while ((usage >> factor) > 0x7fffffff)
++		factor++;
 +
  	for_each_node_mask(nid, node_states[N_HIGH_MEMORY]) {
-+		unsigned long weight;
+ 		unsigned long weight;
  
--		if (mem_cgroup_get_zonestat_node(mem, nid, LRU_INACTIVE_FILE) ||
--		    mem_cgroup_get_zonestat_node(mem, nid, LRU_ACTIVE_FILE))
--			continue;
-+		weight = mem_cgroup_numascan_weight(mem, nid,
-+						inactive_file_low,
-+						inactive_anon_low);
-+		if (!weight)
-+			node_clear(nid, mem->scan_nodes);
+ 		weight = mem_cgroup_numascan_weight(mem, nid,
+ 						inactive_file_low,
+ 						inactive_anon_low);
+-		if (!weight)
++		if (weight) {
++			/* we'd like to fit total_weight to u32. */
++			weight = (weight >> factor) + 1;
++			ns->nid = nid;
++			ns->start = mem->info.total_weight;
++			ns->ticket = weight;
++			ns++;
++			mem->nr_nsched++;
++		} else
+ 			node_clear(nid, mem->scan_nodes);
  
--		if (total_swap_pages &&
--		    (mem_cgroup_get_zonestat_node(mem, nid, LRU_INACTIVE_ANON) ||
--		     mem_cgroup_get_zonestat_node(mem, nid, LRU_ACTIVE_ANON)))
--			continue;
--		node_clear(nid, mem->scan_nodes);
-+		mem->info.total_weight += weight;
- 	}
- 	mutex_unlock(&mem->numascan_mutex);
+ 		mem->info.total_weight += weight;
+@@ -1707,34 +1747,58 @@ static void mem_cgroup_may_update_nodema
+  * hit limits, it will see a contention on a node. But freeing from remote
+  * node means more costs for memory reclaim because of memory latency.
+  *
+- * Now, we use round-robin. Better algorithm is welcomed.
++ * Now, we use lottery scheduling based on each node's weight.
+  */
++int node_weight_compare(const void *key, const void *elt)
++{
++	const unsigned long lottery = (unsigned long)key;
++	const struct mem_cgroup_numasched *ns = elt;
++
++	if (lottery < ns->start)
++		return -1;
++	if (lottery >= ns->start + ns->ticket)
++		return 1;
++	return 0;
++}
++
+ int mem_cgroup_select_victim_node(struct mem_cgroup *mem)
+ {
++	unsigned long lottery;
++	struct mem_cgroup_numasched *ns;
+ 	int node;
+ 
+ 	mem_cgroup_may_update_nodemask(mem);
+-	node = mem->last_scanned_node;
++	if (!mutex_trylock(&mem->numascan_mutex))
++		return numa_node_id();
+ 
+-	node = next_node(node, mem->scan_nodes);
+-	if (node == MAX_NUMNODES)
+-		node = first_node(mem->scan_nodes);
+-	/*
+-	 * We call this when we hit limit, not when pages are added to LRU.
+-	 * No LRU may hold pages because all pages are UNEVICTABLE or
+-	 * memcg is too small and all pages are not on LRU. In that case,
+-	 * we use curret node.
+-	 */
+-	if (unlikely(node == MAX_NUMNODES))
+-		node = numa_node_id();
++	lottery = random32()/mem->info.total_weight;
++	ns = bsearch((void *)lottery, mem->nsched, mem->nr_nsched,
++		sizeof(struct mem_cgroup_numasched), node_weight_compare);
+ 
+-	mem->last_scanned_node = node;
++	if (unlikely(ns == NULL))
++		node = numa_node_id();
++	else
++		node = ns->nid;
++	mutex_unlock(&mem->numascan_mutex);
+ 	return node;
  }
-@@ -4295,6 +4328,15 @@ static int mem_control_numa_stat_show(st
- 		seq_printf(m, " N%d=%lu", nid, node_nr);
- 	}
- 	seq_putc(m, '\n');
+ 
+-static void mem_cgroup_numascan_init(struct mem_cgroup *mem)
++static bool mem_cgroup_numascan_init(struct mem_cgroup *mem)
+ {
++	int size;
 +
-+	seq_printf(m, "scan_weight=%lu", mem_cont->info.total_weight);
-+	for_each_node_state(nid, N_HIGH_MEMORY) {
-+		unsigned long weight;
+ 	mutex_init(&mem->numascan_mutex);
 +
-+		weight = mem_cont->info.nodeinfo[nid]->weight;
-+		seq_printf(m, " N%d=%lu", nid, weight);
-+	}
-+	seq_putc(m, '\n');
++	size = sizeof(struct mem_cgroup_numasched) * num_possible_cpus();
++	mem->nsched = kmalloc(size, GFP_KERNEL);
++	if (!mem->nsched)
++		return false;
++	return true;
++}
++
++static void mem_cgroup_numascan_free(struct mem_cgroup *mem)
++{
++	kfree(mem->nsched);
+ }
+ 
+ static bool mem_cgroup_reclaimable(struct mem_cgroup *mem, bool noswap)
+@@ -1759,9 +1823,12 @@ int mem_cgroup_select_victim_node(struct
+ {
  	return 0;
  }
- #endif /* CONFIG_NUMA */
+-static void mem_cgroup_numascan_init(struct mem_cgroup *mem)
++static bool mem_cgroup_numascan_init(struct mem_cgroup *mem)
++{
++	return true;
++}
++static void mem_cgroup_numascan_free(struct mem_cgroup *mem)
+ {
+-	return 0;
+ }
+ 
+ static bool mem_cgroup_reclaimable(struct mem_cgroup *mem, bool noswap)
+@@ -5024,6 +5091,7 @@ static void __mem_cgroup_free(struct mem
+ 
+ 	for_each_node_state(node, N_POSSIBLE)
+ 		free_mem_cgroup_per_zone_info(mem, node);
++	mem_cgroup_numascan_free(mem);
+ 
+ 	free_percpu(mem->stat);
+ 	if (sizeof(struct mem_cgroup) < PAGE_SIZE)
+@@ -5113,6 +5181,8 @@ mem_cgroup_create(struct cgroup_subsys *
+ 	for_each_node_state(node, N_POSSIBLE)
+ 		if (alloc_mem_cgroup_per_zone_info(mem, node))
+ 			goto free_out;
++	if (!mem_cgroup_numascan_init(mem))
++		goto free_out;
+ 
+ 	/* root ? */
+ 	if (cont->parent == NULL) {
+@@ -5149,7 +5219,6 @@ mem_cgroup_create(struct cgroup_subsys *
+ 		res_counter_init(&mem->memsw, NULL);
+ 	}
+ 	mem->last_scanned_child = 0;
+-	mem->last_scanned_node = MAX_NUMNODES;
+ 	INIT_LIST_HEAD(&mem->oom_notify);
+ 
+ 	if (parent)
+@@ -5157,7 +5226,6 @@ mem_cgroup_create(struct cgroup_subsys *
+ 	atomic_set(&mem->refcnt, 1);
+ 	mem->move_charge_at_immigrate = 0;
+ 	mutex_init(&mem->thresholds_lock);
+-	mem_cgroup_numascan_init(mem);
+ 	spin_lock_init(&mem->scanstat.lock);
+ 	return &mem->css;
+ free_out:
 
