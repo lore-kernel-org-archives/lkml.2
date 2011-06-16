@@ -1,57 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757577Ab1FPKLG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 06:11:06 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53548 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755251Ab1FPKLC convert rfc822-to-8bit (ORCPT
+	id S1757623Ab1FPKMF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 06:12:05 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60750 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751715Ab1FPKMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 06:11:02 -0400
-Subject: Re: [PATCH v4 3.0-rc2-tip 4/22]  4: Uprobes: register/unregister
- probes.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110616095412.GK4952@linux.vnet.ibm.com>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
-	 <20110607125900.28590.16071.sendpatchset@localhost6.localdomain6>
-	 <1308159719.2171.57.camel@laptop>
-	 <20110616041137.GG4952@linux.vnet.ibm.com>
-	 <1308217582.15315.94.camel@twins>
-	 <20110616095412.GK4952@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 16 Jun 2011 12:09:56 +0200
-Message-ID: <1308218996.15315.120.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 16 Jun 2011 06:12:03 -0400
+Date: Thu, 16 Jun 2011 11:12:00 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the sound-asoc tree
+Message-ID: <20110616101200.GA5262@opensource.wolfsonmicro.com>
+References: <20110616124055.520eb947.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110616124055.520eb947.sfr@canb.auug.org.au>
+X-Cookie: You will get what you deserve.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-16 at 15:24 +0530, Srikar Dronamraju wrote:
-> 
-> Ahh .. I missed the p->group_leader = p thing.
-> 
-> In which case, shouldnt traversing all the tasks of all siblings of 
-> parent of mm->owner should provide us all the the tasks that have linked
-> to mm. Right?
+On Thu, Jun 16, 2011 at 12:40:55PM +1000, Stephen Rothwell wrote:
 
-Yes, I think so, stopping the hierarchy walk when we find a
-sibling/child with a different mm.
+> Today's linux-next merge of the sound-asoc tree failed badly.  It seems
+> that it has been rebased on top of next-20110615.   You cannot base a
+> tree in linux-next on linux-next itself!
 
-> Agree that we can bother about this a little later. 
+> I have used the version of the sound-asoc tree from next-20110615 for
+> today.
 
-*nod*
+Sorry, pushed the wrong tree to the wrong repository.
