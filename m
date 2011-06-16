@@ -1,111 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab1FPBsT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 21:48:19 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64424 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754557Ab1FPBrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 21:47:52 -0400
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        "Theodore Tso" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 3/3] jbd2,rcu: simpify jbd2_dev_to_name()
-Date: Thu, 16 Jun 2011 09:47:06 +0800
-Message-Id: <2aafd695ef8e4c263e98bdd123a9117dc4ef4a85.1308131437.git.laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <ec67960d0864680d18a43ec5275baba3f6e1dd94.1308131436.git.laijs@cn.fujitsu.com>
-References: <ec67960d0864680d18a43ec5275baba3f6e1dd94.1308131436.git.laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-16 09:47:21,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-16 09:47:28,
-	Serialize complete at 2011-06-16 09:47:28
+	id S1754525Ab1FPBuv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 21:50:51 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:32895 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753538Ab1FPBuu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 21:50:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <1308173849.15315.91.camel@twins>
+References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe>
+ <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com>
+ <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
+ <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
+ <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 15 Jun 2011 18:50:18 -0700
+Message-ID: <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com>
+Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
+ to mutex
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>, Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simpify jbd2_dev_to_name() and use xchg() to make the update side
-wait-free and remove the spinlock.
+On Wed, Jun 15, 2011 at 2:37 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>
+> http://programming.kicks-ass.net/sekrit/39-2.txt.bz2
+> http://programming.kicks-ass.net/sekrit/tip-2.txt.bz2
+>
+> tip+sirq+linus is still slightly faster than .39 here,
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- fs/jbd2/journal.c |   42 +++++++++++++++++++-----------------------
- 1 files changed, 19 insertions(+), 23 deletions(-)
+Hmm. Your profile doesn't show the mutex slowpath at all, so there's a
+big difference to the one Tim quoted parts of.
 
-diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-index c37597a..7d5b6ac 100644
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -2437,7 +2437,6 @@ struct devname_cache {
- };
- #define CACHE_SIZE_BITS 6
- static struct devname_cache __rcu *devcache[1 << CACHE_SIZE_BITS];
--static DEFINE_SPINLOCK(devname_cache_lock);
- 
- void jbd2_dev_to_name(dev_t device, char *devname)
- {
-@@ -2445,6 +2444,7 @@ void jbd2_dev_to_name(dev_t device, char *devname)
- 	struct block_device *bd;
- 	static struct devname_cache *cache;
- 
-+	/* get the name from the cache */
- 	rcu_read_lock();
- 	cache = rcu_dereference(devcache[i]);
- 	if (cache && cache->device == device) {
-@@ -2454,32 +2454,28 @@ void jbd2_dev_to_name(dev_t device, char *devname)
- 	}
- 	rcu_read_unlock();
- 
--	cache = kmalloc(sizeof(struct devname_cache), GFP_KERNEL);
--	if (!cache) {
-+	/* slowly get the name */
-+	bd = bdget(device);
-+	if (bd) {
-+		bdevname(bd, devname);
-+		bdput(bd);
-+	} else {
- 		__bdevname(device, devname);
- 		return;
- 	}
--	bd = bdget(device);
--	spin_lock(&devname_cache_lock);
--	if (devcache[i]) {
--		if (devcache[i]->device == device) {
--			kfree(cache);
--			bdput(bd);
--			memcpy(devname, devcache[i]->devname, BDEVNAME_SIZE);
--			spin_unlock(&devname_cache_lock);
--			return;
--		}
--		kfree_rcu(devcache[i], rcu);
--	}
-+
-+	/* put the name to the cache */
-+	cache = kmalloc(sizeof(struct devname_cache), GFP_KERNEL);
-+	if (!cache)
-+		return;
-+
-+	memcpy(cache->devname, devname, BDEVNAME_SIZE);
- 	cache->device = device;
--	if (bd) {
--		bdevname(bd, cache->devname);
--		bdput(bd);
--	} else
--		__bdevname(device, cache->devname);
--	rcu_assign_pointer(devcache[i], cache);
--	memcpy(devname, cache->devname, BDEVNAME_SIZE);
--	spin_unlock(&devname_cache_lock);
-+	cache = xchg(&devcache[i], cache);
-+
-+	/* free old cache by RCU */
-+	if (cache)
-+		kfree_rcu(cache, rcu);
- }
- EXPORT_SYMBOL(jbd2_dev_to_name);
- 
--- 
-1.7.4.4
+In fact, your profile looks fine. The load clearly spends tons of time
+in page faulting and in timing things (that read_hpet thing is
+disgusting), but with that in mind, the profile doesn't look scary.
+Yes, the 2% spinlock time is bad, but you've clearly not hit the real
+lock contention case. The mutex lock shows up, but _way_ below the
+spinlock, and the slowpath never shows at all. You end up having
+mutex_spin_on_owner at 0.09%, it's not really visible.
 
+Clearly going from your two-socket 12-core thing to Tim's four-socket
+40-core case is a big jump. But maybe it really was about RCU, and
+even the limited softirq patch that moves the grace period stuff etc
+back to softirqs ends up helping.
+
+Tim, have you tried running your bigger load with that patch? You
+could try my patch on top too just to match Peter's tree, but I doubt
+that's the big first-order issue.
+
+                       Linus
