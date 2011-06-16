@@ -1,63 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758550Ab1FPSQb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 14:16:31 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:59722 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757936Ab1FPSQ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 14:16:27 -0400
-Message-ID: <4DFA4864.2030900@ahsoftware.de>
-Date: Thu, 16 Jun 2011 20:16:04 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: gregkh@suse.de, Rabin Vincent <rabin@rab.in>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing
- the packed attribute
-References: <Pine.LNX.4.44L0.1106161308310.2204-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1106161308310.2204-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=US-ASCII; format=flowed
+	id S1758561Ab1FPSRg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 14:17:36 -0400
+Received: from mga11.intel.com ([192.55.52.93]:42707 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755124Ab1FPSRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 14:17:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,376,1304319600"; 
+   d="scan'208";a="17152360"
+Subject: Re: [PATCH 1/3] stop_machine: kill __stop_machine()
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Tejun Heo <tj@kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1308246910.13240.238.camel@twins>
+References: <1308071218-5912-1-git-send-email-tj@kernel.org>
+	 <1308071218-5912-2-git-send-email-tj@kernel.org>
+	 <1308226372.13240.42.camel@twins>
+	 <1308245872.2682.369.camel@sbsiddha-MOBL3.sc.intel.com>
+	 <1308246910.13240.238.camel@twins>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Thu, 16 Jun 2011 11:17:40 -0700
+Message-Id: <1308248260.2682.413.camel@sbsiddha-MOBL3.sc.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 16.06.2011 19:09, schrieb Alan Stern:
-> On Thu, 16 Jun 2011, Alexander Holler wrote:
->
->> In commit 139540170d9d9b7ead3caaf540f161756b356d56 the attribute
->> packed is removed from the structs which are used to access the EHCI-registers.
->>
->> This is done to circumvent a problem with gcc 4.6, which might access members of
->> packed structs on a byte by byte basis. But using packed, aligned(4) fixes that
->> too and is imho the better solution. Otherwise (without packed) the compiler would be free
->> to choose whatever alignment he thinks fits best, which might be e.g. 8-byte on 64-bit machines.
->
-> Is that really true?  I thought the compiler was not allowed to insert
-> padding if the natural alignment of the data types didn't require any.
->
-> Alan Stern
+On Thu, 2011-06-16 at 10:55 -0700, Peter Zijlstra wrote:
+> On Thu, 2011-06-16 at 10:37 -0700, Suresh Siddha wrote:
+> > On Thu, 2011-06-16 at 05:12 -0700, Peter Zijlstra wrote:
+> > > On Tue, 2011-06-14 at 19:06 +0200, Tejun Heo wrote:
+> > > Please have a look at: 
+> > > 
+> > > ---
+> > > commit d91309f69b7bdb64aeb30106fde8d18c5dd354b5
+> > > Author: Peter Zijlstra <peterz@infradead.org>
+> > > Date:   Fri Feb 11 22:07:46 2011 +0100
+> > > 
+> > >     x86: Fix text_poke_smp_batch() deadlock
+> > >     
+> > >     Fix this deadlock - we are already holding the mutex:
+> > >     
+> > ...
+> > > diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+> > > index 1236085..7038b95 100644
+> > > --- a/arch/x86/kernel/alternative.c
+> > > +++ b/arch/x86/kernel/alternative.c
+> > > @@ -671,7 +671,7 @@ void __kprobes text_poke_smp_batch(struct text_poke_param *params, int n)
+> > >  
+> > >  	atomic_set(&stop_machine_first, 1);
+> > >  	wrote_text = 0;
+> > > -	stop_machine(stop_machine_text_poke, (void *)&tpp, NULL);
+> > > +	__stop_machine(stop_machine_text_poke, (void *)&tpp, NULL);
+> > >  }
+> > >  
+> > >  #if defined(CONFIG_DYNAMIC_FTRACE) || defined(HAVE_JUMP_LABEL)
+> > > 
+> > 
+> > Peter, So it looks like we are allowing a new cpu to come online in
+> > parallel, while we poke the text? Isn't it a problem? What am I missing?
+> 
+> the caller already did get_online_cpus(), 
+> 
+> do_optimize_kprobes()
+>   get_online_cpus()
+>   arch_optimize_kprobes()
+>     text_poke_smp_batch()
+>   put_online_cpus()
 
-I wasn't sure and have searched c99 before posting the patch but I 
-haven't found something which states what you are suggesting. Maybe I 
-was too stupid to find it, I've searched for the words "alignment" and 
-"padding".
+So the circular dependency reported is not possible in practice right?
 
-The only statement I've found was
+Above patch is working around a false positive.
 
-"There may be unnamed padding within a structure object, but not at its 
-beginning."
+thanks,
+suresh
 
-in 6.7.2.1 13 and
-
-"There may be unnamed padding at the end of a structure or union."
-
-in 6.7.2.1. 15 in my copy of c99.
-
-Regards,
-
-Alexander
