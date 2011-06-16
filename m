@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130Ab1FPLND (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 07:13:03 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52600 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751612Ab1FPLNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 07:13:01 -0400
-Date: Thu, 16 Jun 2011 13:12:45 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Tony Luck <tony.luck@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        edac-devel <linux-edac@vger.kernel.org>
-Subject: Re: [GIT PULL] RAS: x86 mce cleanup
-Message-ID: <20110616111245.GB26110@elte.hu>
-References: <20110616071726.GA21197@aftab>
+	id S1757607Ab1FPKLm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 06:11:42 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:49487 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754244Ab1FPKLh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 06:11:37 -0400
+From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
+To: Tejun Heo <tj@kernel.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, "Girdwood, Liam" <lrg@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "Lopez Cruz, Misael" <misael.lopez@ti.com>
+Subject: Re: Re: Re: Re: Re: Re: [PATCH v4 11/18] input: Add initial support for TWL6040 vibrator
+Date: Thu, 16 Jun 2011 14:13:59 +0300
+Message-ID: <5476342.2jZLF0UGcI@barack>
+User-Agent: KMail/4.6.0 (Linux/2.6.39-gentoo; KDE/4.6.4; x86_64; ; )
+In-Reply-To: <20110615082301.GN8141@htj.dyndns.org>
+References: <1307706876-4768-1-git-send-email-peter.ujfalusi@ti.com> <20110615081858.GM8141@htj.dyndns.org> <20110615082301.GN8141@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110616071726.GA21197@aftab>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 15 June 2011 10:23:01 Tejun Heo wrote:
+> On Wed, Jun 15, 2011 at 10:18:58AM +0200, Tejun Heo wrote:
+> > No human being can feel 120usec difference and I can't see how using
+> > HIGHPRI is justified here (which is what the code is doing
+> > _accidentally_ by using singlethread_workqueue).
+> 
+> Ooh, one more thing, and even if you insist on using HIGHPRI (please
+> don't), you don't need to create workqueue for each device.  You can
+> just create one for the whole driver in init and destroy it from exit.
+> What matters is the HIGHPRI attribute of the workqueue.  The number of
+> workqueues is completely irrelevant.
 
-* Borislav Petkov <bp@amd64.org> wrote:
+Fair enough.
+I'll move to create_workqueue.
+If we later find issues with this (in a 'live' system), we can figure out a 
+way to fix it.
 
-> Hi guys,
-> 
-> here's the first pull request from Tony and me. Hopefully not the last.
-> 
-> The good thing is, with our different timezones you get 24/7 RAS support :-).
-> 
-> Thanks.
-> 
-> The following changes since commit 3a2289a4a317e0290a8bc7af28c62c9830cb12e5:
-> 
->   Merge branch 'for-linus-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu (2011-06-14 11:28:54 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git for-tip-mce
-> 
-> Hidetoshi Seto (11):
->       x86, mce, severity: Make formatting a bit more readable
->       x86, mce, severity: Cleanup severity table
->       x86, mce, severity: Trivial cleanups
->       x86, mce: Replace MCE_SELF_VECTOR by irq_work
->       x86, mce: Replace MCM_ with MCI_MISC_
->       x86, mce: Introduce mce_gather_info()
->       x86, mce: Check the result of ancient_init()
->       x86, mce: Cleanup mce_create/remove_device
->       x86, mce: Cleanup mce_read()
->       x86, mce: Use prefix mce_chrdev_ to group functions
->       x86, mce: Use prefix mce_sysdev_ to group functions
-> 
-> Tony Luck (1):
->       x86, mce, severity: Fix two severities table signatures
-> 
->  arch/x86/include/asm/entry_arch.h         |    4 -
->  arch/x86/include/asm/hw_irq.h             |    1 -
->  arch/x86/include/asm/irq_vectors.h        |    5 -
->  arch/x86/include/asm/mce.h                |   19 ++-
->  arch/x86/kernel/cpu/mcheck/mce-severity.c |  152 ++++++++++------
->  arch/x86/kernel/cpu/mcheck/mce.c          |  288 ++++++++++++++---------------
->  arch/x86/kernel/cpu/mcheck/mce_amd.c      |   10 +-
->  arch/x86/kernel/entry_64.S                |    5 -
->  arch/x86/kernel/irqinit.c                 |    3 -
->  9 files changed, 251 insertions(+), 236 deletions(-)
+Thank you for your time on this.
+I'll make the changes accordingly.
 
-Pulled into tip:ras/core, thanks guys!
-
-	Ingo
+Regards,
+Péter
