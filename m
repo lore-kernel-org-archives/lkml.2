@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757697Ab1FPMPY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 08:15:24 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:55419 "EHLO
+	id S1757800Ab1FPMQI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 08:16:08 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:55435 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757681Ab1FPMPT (ORCPT
+	by vger.kernel.org with ESMTP id S1757771Ab1FPMP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 08:15:19 -0400
-Date: Thu, 16 Jun 2011 14:15:16 +0200
+	Thu, 16 Jun 2011 08:15:56 -0400
+Date: Thu, 16 Jun 2011 14:15:54 +0200
 From: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>,
+To: Pete Zaitcev <zaitcev@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>,
         linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: christian.dietrich@informatik.uni-erlangen.de
-Subject: [PATCH 10/11] wusb: use printk_ratelimited() instead of
+Subject: [PATCH 11/11] usb/class: use printk_ratelimited() instead of
  printk_ratelimit()
-Message-ID: <f69548c31f74b77bdc893772ef4012461dff119d.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
+Message-ID: <3842dc0135657cd0b1ba08436a1c501c19ad0116.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
 References: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -32,40 +30,41 @@ include/linux/printk.h), replace it with printk_ratelimited()
 
 Signed-off-by: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
 ---
- drivers/usb/wusbcore/wa-xfer.c |    7 +++----
+ drivers/usb/class/usblp.c |    7 +++----
  1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/wusbcore/wa-xfer.c b/drivers/usb/wusbcore/wa-xfer.c
-index 6ccd93a..4193345 100644
---- a/drivers/usb/wusbcore/wa-xfer.c
-+++ b/drivers/usb/wusbcore/wa-xfer.c
-@@ -83,6 +83,7 @@
- #include <linux/spinlock.h>
- #include <linux/slab.h>
- #include <linux/hash.h>
+diff --git a/drivers/usb/class/usblp.c b/drivers/usb/class/usblp.c
+index 9eca405..cb3a932 100644
+--- a/drivers/usb/class/usblp.c
++++ b/drivers/usb/class/usblp.c
+@@ -58,6 +58,7 @@
+ #include <linux/mutex.h>
+ #undef DEBUG
+ #include <linux/usb.h>
 +#include <linux/ratelimit.h>
  
- #include "wa-hc.h"
- #include "wusbhc.h"
-@@ -1217,16 +1218,14 @@ static int wa_xfer_status_to_errno(u8 status)
- 	if (status == 0)
+ /*
+  * Version Information
+@@ -348,8 +349,7 @@ static int usblp_check_status(struct usblp *usblp, int err)
+ 	mutex_lock(&usblp->mut);
+ 	if ((error = usblp_read_status(usblp, usblp->statusbuf)) < 0) {
+ 		mutex_unlock(&usblp->mut);
+-		if (printk_ratelimit())
+-			printk(KERN_ERR
++		printk_ratelimited(KERN_ERR
+ 				"usblp%d: error %d reading printer status\n",
+ 				usblp->minor, error);
  		return 0;
- 	if (status >= ARRAY_SIZE(xlat)) {
--		if (printk_ratelimit())
--			printk(KERN_ERR "%s(): BUG? "
-+		printk_ratelimited(KERN_ERR "%s(): BUG? "
- 			       "Unknown WA transfer status 0x%02x\n",
- 			       __func__, real_status);
- 		return -EINVAL;
- 	}
- 	errno = xlat[status];
- 	if (unlikely(errno > 0)) {
--		if (printk_ratelimit())
--			printk(KERN_ERR "%s(): BUG? "
-+		printk_ratelimited(KERN_ERR "%s(): BUG? "
- 			       "Inconsistent WA status: 0x%02x\n",
- 			       __func__, real_status);
- 		errno = -errno;
+@@ -653,8 +653,7 @@ static long usblp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 
+ 		case LPGETSTATUS:
+ 			if ((retval = usblp_read_status(usblp, usblp->statusbuf))) {
+-				if (printk_ratelimit())
+-					printk(KERN_ERR "usblp%d:"
++				printk_ratelimited(KERN_ERR "usblp%d:"
+ 					    "failed reading printer status (%d)\n",
+ 					    usblp->minor, retval);
+ 				retval = -EIO;
 -- 
 1.7.4.1
 
