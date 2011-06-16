@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab1FPQPm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 12:15:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12790 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754876Ab1FPQPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 12:15:39 -0400
-Date: Thu, 16 Jun 2011 18:12:53 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Greg Kurz <gkurz@fr.ibm.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cedric Le Goater <clg@vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        containers@lists.osdl.org, akpm@linux-foundation.org, xemul@openvz.org
-Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was
-	Vpid:)
-Message-ID: <20110616161252.GA3189@redhat.com>
-References: <20110615145527.4016.70157.stgit@bahia.local> <20110615190302.GA16440@redhat.com> <1308223158.8230.66.camel@bahia.local> <4DF9F657.7030605@fr.ibm.com> <m1y611bysa.fsf@fess.ebiederm.org> <1308238412.8230.95.camel@bahia.local>
+	id S1755236Ab1FPQPV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 12:15:21 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:53347 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754839Ab1FPQPU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 12:15:20 -0400
+X-Sasl-enc: CndObrFUIBP7fz2kWsjBfRWfyY1XYVZLHn4ZmIpU90EF 1308240918
+Date: Thu, 16 Jun 2011 09:14:42 -0700
+From: Greg KH <greg@kroah.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Nao Nishijima <nao.nishijima.xt@hitachi.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, jcm@redhat.com,
+        hare@suse.de, stefanr@s5r6.in-berlin.de, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
+Message-ID: <20110616161442.GA32113@kroah.com>
+References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp>
+ <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp>
+ <20110615153337.GA10160@kroah.com>
+ <4DF9F11F.705@hitachi.com>
+ <20110616154129.GA31498@kroah.com>
+ <1308239454.2436.34.camel@mulgrave>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1308238412.8230.95.camel@bahia.local>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1308239454.2436.34.camel@mulgrave>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16, Greg Kurz wrote:
->
-> @@ -183,12 +183,14 @@ static inline void task_state(struct seq_file *m,
-> struct pid_namespace *ns,
->  		"Pid:\t%d\n"
->  		"PPid:\t%d\n"
->  		"TracerPid:\t%d\n"
-> +		"ActivePid:\t%d\n"
->  		"Uid:\t%d\t%d\t%d\t%d\n"
->  		"Gid:\t%d\t%d\t%d\t%d\n",
->  		get_task_state(p),
->  		task_tgid_nr_ns(p, ns),
->  		pid_nr_ns(pid, ns),
->  		ppid, tpid,
-> +		pid_nr_ns(pid, ns_of_pid(pid)),
+On Thu, Jun 16, 2011 at 11:50:54AM -0400, James Bottomley wrote:
+> > And again, why not just fix the userspace tools?  That is trivial to do
+> > so and again, could have been done by now in the years this has been
+> > discussed.
+> 
+> So I can summarise where I think we are in these discussions:
+> 
+> We provide the ability to give all kernel devices a "preferred name".
+> By default this will be the device name the kernel would have originally
+> assigned.  the dev_printk's will use the preferred name, and it will be
+> modifiable from user space.  All the kernel will do is print out
+> whatever it is ... no guarantees of uniqueness or specific format will
+> be made.  Since we're only providing one preferred_name file, the kernel
+> can only have one preferred name for a device at any given time
+> (although it is modifiable on the fly as many times as the user
+> chooses).
+> 
+> The design is to use this preferred name to implement what Hitachi wants
+> in terms of persistent name, but we don't really care.
+> 
+> All userspace naming will be taken care of by the usual udev rules, so
+> for disks, something like /dev/disk/by-preferred/<fred> which would be
+> the usual symbolic link.
 
-Indeed, I forgot that we already have task_pid() in the arguments.
+No, udev can not create such a link after the preferred name is set, as
+it has no way of knowing that the name was set.
 
-Oleg.
+> This will ensure that kernel output and udev input are consistent.  It
+> will still require that user space utilities which derive a name for a
+> device will need modifying to print out the preferred name.
 
+It also doesn't solve the issue of userspace wanting to use such a
+"preferred" name in the command line of tools, as there will not be a
+link back to the "kernel" name directly in /dev/.
+
+So as userspace tools will still need to be fixed, I don't see how
+adding a kernel file for this is going to help any.  Well, a bit in that
+the kernel log files will look "different", but again, that really isn't
+a problem that userspace couldn't also solve with no kernel changes
+needed.
+
+thanks,
+
+greg k-h
