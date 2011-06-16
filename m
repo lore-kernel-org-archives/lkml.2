@@ -1,108 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab1FPDCM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 23:02:12 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:50862 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752879Ab1FPDCJ (ORCPT
+	id S1754017Ab1FPDH3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 23:07:29 -0400
+Received: from mail01-md.ns.itscom.net ([175.177.155.111]:38019 "EHLO
+	mail01-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752225Ab1FPDH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 23:02:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=kcBgp7NXpNX+3i7xnF50u0Gime89L3k2TdlgM5+h+YfkhJ10pmTsMwrMe+u88gQxAA
-         0DVsk9O2qwSsrNIONzbsWm31GLlIZpLYGl08y0d6PX4xaETuf+r6zBlNIXpxOiiEDIft
-         m2NpMAGAWSJQorxPC7n27DRB4DoB4ZSbJiVcI=
-Date: Thu, 16 Jun 2011 05:02:04 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Sharp <dhsharp@google.com>
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Michael Rubin <mrubin@google.com>, x86@kernel.org,
+	Wed, 15 Jun 2011 23:07:27 -0400
+From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
+To: Erez Zadok <ezk@fsl.cs.sunysb.edu>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Valerie Aurora <val@vaaconsulting.com>,
+        Andrew Morton <akpm@linux-foundation.org>, NeilBrown <neilb@suse.de>,
+        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiaying Zhang <jiayingz@google.com>
-Subject: Re: [PATCH v2] trace: Add x86 irq vector entry/exit tracepoints
-Message-ID: <20110616030200.GC18579@somewhere.redhat.com>
-References: <1304107962-18576-1-git-send-email-vnagarnaik@google.com>
- <1306877298-31713-1-git-send-email-vnagarnaik@google.com>
- <20110531235957.GB5256@somewhere.redhat.com>
- <BANLkTi=YYCXHi5k82Q+sE6+134i97pjjAA@mail.gmail.com>
- <BANLkTinT6ULRWwHAGYFpQSw-ptQiuzrkPtZuKVZHD8b5mh9hpA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTinT6ULRWwHAGYFpQSw-ptQiuzrkPtZuKVZHD8b5mh9hpA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        "apw@canonical.com" <apw@canonical.com>,
+        "nbd@openwrt.org" <nbd@openwrt.org>,
+        "hramrach@centrum.cz" <hramrach@centrum.cz>,
+        "jordipujolp@gmail.com" <jordipujolp@gmail.com>
+In-Reply-To: <B723B526-D658-4D22-A9CE-598444148B07@fsl.cs.sunysb.edu>
+References: <20110609125114.8dff08da.akpm@linux-foundation.org> <BANLkTi=uWDSw96v0Y4W94NZvgD=j=3r3zg@mail.gmail.com> <20110610100143.28037551@lxorguk.ukuu.org.uk> <8739jbjqa7.fsf@tucsk.pomaz.szeredi.hu> <11186.1308148376@jrobl> <803fd88dc28748428861b75afdee3575@HUBCAS1.cs.stonybrook.edu> <B723B526-D658-4D22-A9CE-598444148B07@fsl.cs.sunysb.edu>
+Date: Thu, 16 Jun 2011 12:07:19 +0900
+Message-ID: <18299.1308193639@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry guys I only found your answers today by browsing my email client.
-I guess I posponed my reading but completely forgot :-(
 
-On Wed, Jun 01, 2011 at 04:30:18PM -0700, David Sharp wrote:
-> On Wed, Jun 1, 2011 at 3:38 PM, Vaibhav Nagarnaik <vnagarnaik@google.com> wrote:
-> > On Tue, May 31, 2011 at 5:00 PM, Frederic Weisbecker
-> > <fweisbec@gmail.com> wrote:
-> >>
-> >> IIRC, Thomas suggested in the v1 to turn arch tracepoints into core ones when they
-> >> stand for generic (ie: shared by all archs) event meaning.
-> >>
-> >> I don't know where the discussion went after that, but that still seems to
-> >> me an important direction. Tracing irqs by their vector number should be reserved
-> >> for pure arch meanings. Sharing common tracepoints for generic events amongst archs makes life
-> >> easier for tools. Bonus when the tracepoint can be placed in the generic code.
-> >>
-> >
-> > I agree with you that the tracepoints should be as generic as possible
-> > to have them traced across platforms, but I see these tracepoints as
-> > specific to x86 platform. Since most of these vectors are x86 specific.
-> > The only ones that you pointed out as generic were:
-> 
-> I think what Vaibhav means is that this is "the one trace event for
-> all hard IRQs on the platform". A tracepoint for the cross-platform
-> irq handlers is also useful, but that is not the purpose of this
-> tracepoint.
+Erez Zadok:
+> ...  Asking =
+> overlayfs or other stackable file systems to solve this multi-layer =
+> coherency perfectly is somewhat ridiculous: we don't expect file systems =
+> like ext3 to detect and correctly handle changes to lower devices =97 =
+> i.e., if someone hand-edited direct blocks in /dev/sda1, do we?
 
-If a generic tracepoint can replace one per arch, we all want that instead.
-This is 24 times (24 archs) less maintainance burden.
+I agree with you if we discuss about union-type-mount, which handles a
+block device as its member. As long as the layered-fs handles a
+directory (mounted filesystem) as its member, it is obviously right that
+users expect the modification on the member fs (by-passing a union) is
+available.
 
-So if that doesn't meet your needs, you really need to explain us in detail why.
+Of course I agree it brings complication to us, and I'd suggest three
+level options to support this issue.
+- detect the direct changes and reflect it to union (hardest option)
+- skip the detection, but verify the parent-child relationship or more
+  at least. (this is something like overlayfs is trying to do)
+- skip both of the detection and verification (lowest option)
+  this option depends how user sets up the union and its member. if user
+  hides the members totally by over-mounting an empty dir on the member
+  (or something), then he can specify this option. otherwise, this
+  option is dangerous. also some symlinks may not work.
+  # mkdir /hide
+  # mount -o upper=/rw,lower=/ro none /union
+  # mount -o bind /hide /rw
+  # mount -o bind /hide /ro
 
-I believe it's fine to deduce from a generic timer tracepoint that the arch fired
-a specific interrupt to achieve that.
 
-You might need some low level details, but then tell us why.
-
-> There's not actually much overlap between platforms for
-> IRQs, so each platform needs to do the work of covering all their
-> IRQs, and won't see much benefit from the generic tracepoints.
-
-There is at least 5 overlaps. And everybody will benefit from the generic tracepoints.
-
-> On Tue, May 31, 2011 at 5:00 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > Tracing irqs by their vector number should be reserved for pure arch meanings.
-> 
-> exactly, and this tracepoint is for that "arch meaning".
-
-Ok but there is no point in having an arch tracepoint where the arch code is only
-doing:
-
-arch_foo_irq()
-{
-	generic_foo_irq();
-}
-
-It may do some specific low level things, ack the apic, etc... But that's not what
-is interesting, right? What is interesting is the fact you have an interrupt.
-
-> I'd also add that having these tracepoints here makes it more obvious
-> that we will get all IRQ events, which is what is important to us.
-
-Look at those arch level handlers, it's doesn't seem you can miss anything there.
-
-It can happen in the case of the local apic timer, but then you get a warning
-of spurious LAPIC timer interrupt. They are corner cases, better check these
-rather than tracing every layers to ensure you always get everything.
+J. R. Okajima
