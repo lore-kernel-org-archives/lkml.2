@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344Ab1FPIto (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 04:49:44 -0400
-Received: from studserv5b.stud.uni-hannover.de ([130.75.176.51]:48885 "EHLO
-	studserv5b.stud.uni-hannover.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755722Ab1FPItn (ORCPT
+	id S1757360Ab1FPIui (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 04:50:38 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:59093 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757323Ab1FPIuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 04:49:43 -0400
-Date: Thu, 16 Jun 2011 10:49:40 +0200
-From: Ingo Saitz <Ingo.Saitz@stud.uni-hannover.de>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Ingo Saitz <Ingo.Saitz@stud.uni-hannover.de>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: /proc/$pid/ns/ access of zombies dies with null
- pointer
-Message-ID: <20110616084940.GA12821@studserv2.stud.uni-hannover.de>
-References: <20110615141948.GA2071@studserv2.stud.uni-hannover.de>
- <m1wrgmdb1j.fsf@fess.ebiederm.org>
+	Thu, 16 Jun 2011 04:50:35 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [RFC 0/5 v4] procfs: introduce hidepid=, hidenet=, gid= mount options
+Date: Thu, 16 Jun 2011 10:50:27 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "David S. Miller" <davem@davemloft.net>
+References: <1308163895-5963-1-git-send-email-segoon@openwall.com>
+In-Reply-To: <1308163895-5963-1-git-send-email-segoon@openwall.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1wrgmdb1j.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106161050.27716.arnd@arndb.de>
+X-Provags-ID: V02:K0:hAfc2SfFG8+RY4usN9TaMbxck3+vZezjZpJB28UT0o2
+ OlRdUn5W152DUk6MZHpK5Zjd8w6lQqrbiKNatFaNoGGVZ+hij0
+ vASUMQa7JnqFpYjL8np2CRiLoRoxLb+Q5p5aw/dausqk7NviAu
+ XwoJ1HVIFBM0d5pIQtB2U8aPrG2mI0Vf48eEKZ6YVmps3H9o+t
+ GsgA9pGaVOavmfN3dxceg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 02:44:56PM -0700, Eric W. Biederman wrote:
-> This fixes it for me.  Can you confirm?
+On Wednesday 15 June 2011, Vasiliy Kulikov wrote:
 > 
-> >From 793925334f32e9026c22baee5c3c340f47d4ef7e Mon Sep 17 00:00:00 2001
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
-> Date: Wed, 15 Jun 2011 12:47:04 -0700
-> Subject: [PATCH] proc: Fix Oops on stat of /proc/<zombie pid>/ns/net
+> This patch series adds support of procfs mount options and adds
+> mount options to restrict /proc/<pid>/ directories to owners and
+> /proc/<pid>/net/* to root.  Additional group may be defined via
+> gid=, and this group will be privileged to study others /proc/<pid>/
+> and networking information.
+> 
+> Similar features are implemented for old kernels in -ow patches (for
+> Linux 2.2 and 2.4) and for Linux 2.6 in -grsecurity, but both of them
+> are implemented as configure options, not cofigurable in runtime, with
+> changes of gid of /proc/<pid>/, and without backward-compatible
+> /proc/<pid>/net/* handling.
 
-Yes, I can't trigger the bug with this patch applied anymore.
-Thanks.
+The patches all look good to me implementation-wise.
 
-    Ingo
--- 
-Kennedy's Lemma:
-    If you can parse Perl, you can solve the Halting Problem.
+I have no opinion on whether it's a good idea to include the feature or not.
 
-http://www.perlmonks.org/?node_id=663393
+	Arnd
