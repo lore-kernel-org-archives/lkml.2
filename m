@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab1FPHJr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:09:47 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:59506 "EHLO
+	id S1756684Ab1FPHJp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:09:45 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:48209 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756427Ab1FPHFh (ORCPT
+	by vger.kernel.org with ESMTP id S1756490Ab1FPHFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:05:37 -0400
-X-Sasl-enc: JT/hKxktuHDwiBEXSCxeOy0MPq0L8+KQPjLr8XCSzqLq 1308207936
+	Thu, 16 Jun 2011 03:05:39 -0400
+X-Sasl-enc: 5fbaRlElli3a5IMSOuRJkZ+hfRBqUzJBdxK19W7dT4x5 1308207937
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:16:11 2011
-Message-Id: <20110616001611.789880245@clark.kroah.org>
+Message-Id: <20110616001611.887734901@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:15:22 -0700
+Date: Wed, 15 Jun 2011 17:15:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andrew Barry <abarry@cray.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [25/91] mm/page_alloc.c: prevent unending loop in
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Seth Forshee <seth.forshee@canonical.com>
+Subject: [26/91] PCI: allow matching of prefetchable resources to
 In-Reply-To: <20110616001900.GA25375@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,66 +27,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
 ------------------
- __alloc_pages_slowpath()
+ non-prefetchable windows
 
-From: Andrew Barry <abarry@cray.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit cfa54a0fcfc1017c6f122b6f21aaba36daa07f71 upstream.
+commit 8c8def26bfaa704db67d515da3eb92cf26067548 upstream.
 
-I believe I found a problem in __alloc_pages_slowpath, which allows a
-process to get stuck endlessly looping, even when lots of memory is
-available.
+I'm not entirely sure it needs to go into 32, but it's probably the right
+thing to do. Another way of explaining the patch is:
 
-Running an I/O and memory intensive stress-test I see a 0-order page
-allocation with __GFP_IO and __GFP_WAIT, running on a system with very
-little free memory.  Right about the same time that the stress-test gets
-killed by the OOM-killer, the utility trying to allocate memory gets stuck
-in __alloc_pages_slowpath even though most of the systems memory was freed
-by the oom-kill of the stress-test.
+ - we currently pick the _first_ exactly matching bus resource entry, but
+   the _last_ inexactly matching one. Normally first/last shouldn't
+   matter, but bus resource entries aren't actually all created equal: in
+   a transparent bus, the last resources will be the parent resources,
+   which we should generally try to avoid unless we have no choice. So
+   "first matching" is the thing we should always aim for.
 
-The utility ends up looping from the rebalance label down through the
-wait_iff_congested continiously.  Because order=0,
-__alloc_pages_direct_compact skips the call to get_page_from_freelist.
-Because all of the reclaimable memory on the system has already been
-reclaimed, __alloc_pages_direct_reclaim skips the call to
-get_page_from_freelist.  Since there is no __GFP_FS flag, the block with
-__alloc_pages_may_oom is skipped.  The loop hits the wait_iff_congested,
-then jumps back to rebalance without ever trying to
-get_page_from_freelist.  This loop repeats infinitely.
+ - the patch is a bit bigger than it needs to be, because I simplified the
+   logic at the same time. It used to be a fairly incomprehensible
 
-The test case is pretty pathological.  Running a mix of I/O stress-tests
-that do a lot of fork() and consume all of the system memory, I can pretty
-reliably hit this on 600 nodes, in about 12 hours.  32GB/node.
+	if ((res->flags & IORESOURCE_PREFETCH) && !(r->flags & IORESOURCE_PREFETCH))
+		best = r;       /* Approximating prefetchable by non-prefetchable */
 
-Signed-off-by: Andrew Barry <abarry@cray.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: Rik van Riel<riel@redhat.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+   and technically, all the patch did was to make that complex choice be
+   even more complex (it basically added a "&& !best" to say that if we
+   already gound a non-prefetchable window for the prefetchable resource,
+   then we won't override an earlier one with that later one: remember
+   "first matching").
+
+ - So instead of that complex one with three separate conditionals in one,
+   I split it up a bit, and am taking advantage of the fact that we
+   already handled the exact case, so if 'res->flags' has the PREFETCH
+   bit, then we already know that 'r->flags' will _not_ have it. So the
+   simplified code drops the redundant test, and does the new '!best' test
+   separately. It also uses 'continue' as a way to ignore the bus
+   resource we know doesn't work (ie a prefetchable bus resource is _not_
+   acceptable for anything but an exact match), so it turns into:
+
+	/* We can't insert a non-prefetch resource inside a prefetchable parent .. */
+	if (r->flags & IORESOURCE_PREFETCH)
+		continue;
+	/* .. but we can put a prefetchable resource inside a non-prefetchable one */
+	if (!best)
+		best = r;
+
+   instead. With the comments, it's now six lines instead of two, but it's
+   conceptually simpler, and I _could_ have written it as two lines:
+
+	if ((res->flags & IORESOURCE_PREFETCH) && !best)
+		best = r;	/* Approximating prefetchable by non-prefetchable */
+
+   but I thought that was too damn subtle.
+
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Seth Forshee <seth.forshee@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- mm/page_alloc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1841,6 +1841,7 @@ restart:
- 	 */
- 	alloc_flags = gfp_to_alloc_flags(gfp_mask);
- 
-+rebalance:
- 	/* This is the last chance, in general, before the goto nopage. */
- 	page = get_page_from_freelist(gfp_mask, nodemask, order, zonelist,
- 			high_zoneidx, alloc_flags & ~ALLOC_NO_WATERMARKS,
-@@ -1848,7 +1849,6 @@ restart:
- 	if (page)
- 		goto got_pg;
- 
--rebalance:
- 	/* Allocate without watermarks if the context allows */
- 	if (alloc_flags & ALLOC_NO_WATERMARKS) {
- 		page = __alloc_pages_high_priority(gfp_mask, order,
+---
+ drivers/pci/pci.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -373,8 +373,12 @@ pci_find_parent_resource(const struct pc
+ 			continue;	/* Wrong type */
+ 		if (!((res->flags ^ r->flags) & IORESOURCE_PREFETCH))
+ 			return r;	/* Exact match */
+-		if ((res->flags & IORESOURCE_PREFETCH) && !(r->flags & IORESOURCE_PREFETCH))
+-			best = r;	/* Approximating prefetchable by non-prefetchable */
++		/* We can't insert a non-prefetch resource inside a prefetchable parent .. */
++		if (r->flags & IORESOURCE_PREFETCH)
++			continue;
++		/* .. but we can put a prefetchable resource inside a non-prefetchable one */
++		if (!best)
++			best = r;
+ 	}
+ 	return best;
+ }
 
 
