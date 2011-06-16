@@ -1,272 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217Ab1FPIfV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 04:35:21 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39546 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751822Ab1FPIfR (ORCPT
+	id S1753697Ab1FPI26 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 04:28:58 -0400
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:34913 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752339Ab1FPI2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 04:35:17 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 16 Jun 2011 17:28:19 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org, mgorman@suse.de
-Subject: Re: mmotm 2011-06-15-16-56 uploaded (mm/page_cgroup.c)
-Message-Id: <20110616172819.1e2d325c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110615214917.a7dce8e6.randy.dunlap@oracle.com>
-References: <201106160034.p5G0Y4dr028904@imap1.linux-foundation.org>
-	<20110615214917.a7dce8e6.randy.dunlap@oracle.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Jun 2011 04:28:53 -0400
+Date: Thu, 16 Jun 2011 17:28:48 +0900
+From: Norbert Preining <preining@logic.at>
+To: =?iso-8859-15?B?VPZy9ms=?= Edwin <edwintorok@gmail.com>
+Cc: Dave Jones <davej@redhat.com>, Eric Sandeen <sandeen@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: another ext3 kernel BUG
+Message-ID: <20110616082848.GA1458@gamma.logic.tuwien.ac.at>
+References: <20110614024307.GA3039@gamma.logic.tuwien.ac.at> <20110614032111.GA5392@redhat.com> <4DF6D644.3010109@redhat.com> <20110611021732.GA18768@gamma.logic.tuwien.ac.at> <20110614011904.GA32521@gamma.logic.tuwien.ac.at> <4DF6C541.5050805@redhat.com> <20110616055125.GB23083@gamma.logic.tuwien.ac.at> <4DF9AAA1.5030002@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4DF9AAA1.5030002@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jun 2011 21:49:17 -0700
-Randy Dunlap <randy.dunlap@oracle.com> wrote:
-
-> On Wed, 15 Jun 2011 16:56:49 -0700 akpm@linux-foundation.org wrote:
+On Do, 16 Jun 2011, Török Edwin wrote:
+> e6bc45d65df8599fdbae73be9cec4ceed274db53
 > 
-> > The mm-of-the-moment snapshot 2011-06-15-16-56 has been uploaded to
-> > 
-> >    http://userweb.kernel.org/~akpm/mmotm/
-> > 
-> > and will soon be available at
-> >    git://zen-kernel.org/kernel/mmotm.git
-> > or
-> >    git://git.cmpxchg.org/linux-mmotm.git
-> > 
-> > It contains the following patches against 3.0-rc3:
+> See here for a patch:
+> https://lkml.org/lkml/2011/6/15/341
 > 
-> 
-> (x86_64 build:)
-> 
-> mm/page_cgroup.c: In function 'page_cgroup_init':
-> mm/page_cgroup.c:308: error: implicit declaration of function 'node_start_pfn'
-> mm/page_cgroup.c:309: error: implicit declaration of function 'node_end_pfn'
-> 
-> 
+> Does that help?
 
-Bug fix is here. Added CC to Mel to get review.
-==
->From add3b670119f1c1f762194b432d3997d595bc213 Mon Sep 17 00:00:00 2001
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 16 Jun 2011 17:28:07 +0900
-Subject: [PATCH] Fix node_start/end_pfn() definition for mm/page_cgroup.c
+Well, at least that is gone, but I am not sure. I am hit by
+yet another bug (probably crappy hardware?): 
 
-commit 21a3c96 uses node_start/end_pfn(nid) for detection start/end
-of nodes. But, it's not defined in linux/mmzone.h but defined in
-/arch/???/include/mmzone.h which is included only under
-CONFIG_NEED_MULTIPLE_NODES=y.
+Thee external USB disk disconnects suddenly while saving big stuff
+onto it (unison sync). Then the kernel hangs (that is something
+that should NOT happen!), here is the log.
 
-Then, we see
-mm/page_cgroup.c: In function 'page_cgroup_init':
-mm/page_cgroup.c:308: error: implicit declaration of function 'node_start_pfn'
-mm/page_cgroup.c:309: error: implicit declaration of function 'node_end_pfn'
-
-So, fixing page_cgroup.c is an idea...
-
-But node_start_pfn()/node_end_pfn() is a very generic macro and
-should be implemented in the same manner for all archs.
-(m32r has different implementation...)
-
-This patch removes definitions of node_start/end_pfn() in each archs
-and defines a unified one in linux/mmzone.h. It's not under
-CONFIG_NEED_MULTIPLE_NODES, now.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- arch/alpha/include/asm/mmzone.h   |    1 -
- arch/m32r/include/asm/mmzone.h    |    8 +-------
- arch/parisc/include/asm/mmzone.h  |    7 -------
- arch/powerpc/include/asm/mmzone.h |    7 -------
- arch/sh/include/asm/mmzone.h      |    4 ----
- arch/sparc/include/asm/mmzone.h   |    2 --
- arch/tile/include/asm/mmzone.h    |   11 -----------
- arch/x86/include/asm/mmzone_32.h  |   11 -----------
- arch/x86/include/asm/mmzone_64.h  |    3 ---
- include/linux/mmzone.h            |    3 +++
- 10 files changed, 4 insertions(+), 53 deletions(-)
-
-diff --git a/arch/alpha/include/asm/mmzone.h b/arch/alpha/include/asm/mmzone.h
-index 8af56ce..445dc42 100644
---- a/arch/alpha/include/asm/mmzone.h
-+++ b/arch/alpha/include/asm/mmzone.h
-@@ -56,7 +56,6 @@ PLAT_NODE_DATA_LOCALNR(unsigned long p, int n)
-  * Given a kernel address, find the home node of the underlying memory.
-  */
- #define kvaddr_to_nid(kaddr)	pa_to_nid(__pa(kaddr))
--#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
- 
- /*
-  * Given a kaddr, LOCAL_BASE_ADDR finds the owning node of the memory
-diff --git a/arch/m32r/include/asm/mmzone.h b/arch/m32r/include/asm/mmzone.h
-index 9f3b5ac..115ced3 100644
---- a/arch/m32r/include/asm/mmzone.h
-+++ b/arch/m32r/include/asm/mmzone.h
-@@ -14,12 +14,6 @@ extern struct pglist_data *node_data[];
- #define NODE_DATA(nid)		(node_data[nid])
- 
- #define node_localnr(pfn, nid)	((pfn) - NODE_DATA(nid)->node_start_pfn)
--#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
--#define node_end_pfn(nid)						\
--({									\
--	pg_data_t *__pgdat = NODE_DATA(nid);				\
--	__pgdat->node_start_pfn + __pgdat->node_spanned_pages - 1;	\
--})
- 
- #define pmd_page(pmd)		(pfn_to_page(pmd_val(pmd) >> PAGE_SHIFT))
- /*
-@@ -44,7 +38,7 @@ static __inline__ int pfn_to_nid(unsigned long pfn)
- 	int node;
- 
- 	for (node = 0 ; node < MAX_NUMNODES ; node++)
--		if (pfn >= node_start_pfn(node) && pfn <= node_end_pfn(node))
-+		if (pfn >= node_start_pfn(node) && pfn < node_end_pfn(node))
- 			break;
- 
- 	return node;
-diff --git a/arch/parisc/include/asm/mmzone.h b/arch/parisc/include/asm/mmzone.h
-index 9608d2c..e67eb9c 100644
---- a/arch/parisc/include/asm/mmzone.h
-+++ b/arch/parisc/include/asm/mmzone.h
-@@ -14,13 +14,6 @@ extern struct node_map_data node_data[];
- 
- #define NODE_DATA(nid)          (&node_data[nid].pg_data)
- 
--#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
--#define node_end_pfn(nid)						\
--({									\
--	pg_data_t *__pgdat = NODE_DATA(nid);				\
--	__pgdat->node_start_pfn + __pgdat->node_spanned_pages;		\
--})
--
- /* We have these possible memory map layouts:
-  * Astro: 0-3.75, 67.75-68, 4-64
-  * zx1: 0-1, 257-260, 4-256
-diff --git a/arch/powerpc/include/asm/mmzone.h b/arch/powerpc/include/asm/mmzone.h
-index fd3fd58..7b58917 100644
---- a/arch/powerpc/include/asm/mmzone.h
-+++ b/arch/powerpc/include/asm/mmzone.h
-@@ -38,13 +38,6 @@ u64 memory_hotplug_max(void);
- #define memory_hotplug_max() memblock_end_of_DRAM()
- #endif
- 
--/*
-- * Following are macros that each numa implmentation must define.
-- */
--
--#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
--#define node_end_pfn(nid)	(NODE_DATA(nid)->node_end_pfn)
--
- #else
- #define memory_hotplug_max() memblock_end_of_DRAM()
- #endif /* CONFIG_NEED_MULTIPLE_NODES */
-diff --git a/arch/sh/include/asm/mmzone.h b/arch/sh/include/asm/mmzone.h
-index 8887baf..15a8496 100644
---- a/arch/sh/include/asm/mmzone.h
-+++ b/arch/sh/include/asm/mmzone.h
-@@ -9,10 +9,6 @@
- extern struct pglist_data *node_data[];
- #define NODE_DATA(nid)		(node_data[nid])
- 
--#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
--#define node_end_pfn(nid)	(NODE_DATA(nid)->node_start_pfn + \
--				 NODE_DATA(nid)->node_spanned_pages)
--
- static inline int pfn_to_nid(unsigned long pfn)
- {
- 	int nid;
-diff --git a/arch/sparc/include/asm/mmzone.h b/arch/sparc/include/asm/mmzone.h
-index e8c6487..99d9b9f 100644
---- a/arch/sparc/include/asm/mmzone.h
-+++ b/arch/sparc/include/asm/mmzone.h
-@@ -8,8 +8,6 @@
- extern struct pglist_data *node_data[];
- 
- #define NODE_DATA(nid)		(node_data[nid])
--#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
--#define node_end_pfn(nid)	(NODE_DATA(nid)->node_end_pfn)
- 
- extern int numa_cpu_lookup_table[];
- extern cpumask_t numa_cpumask_lookup_table[];
-diff --git a/arch/tile/include/asm/mmzone.h b/arch/tile/include/asm/mmzone.h
-index c6344c4..9d3dbce 100644
---- a/arch/tile/include/asm/mmzone.h
-+++ b/arch/tile/include/asm/mmzone.h
-@@ -40,17 +40,6 @@ static inline int pfn_to_nid(unsigned long pfn)
- 	return highbits_to_node[__pfn_to_highbits(pfn)];
- }
- 
--/*
-- * Following are macros that each numa implmentation must define.
-- */
--
--#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
--#define node_end_pfn(nid)						\
--({									\
--	pg_data_t *__pgdat = NODE_DATA(nid);				\
--	__pgdat->node_start_pfn + __pgdat->node_spanned_pages;		\
--})
--
- #define kern_addr_valid(kaddr)	virt_addr_valid((void *)kaddr)
- 
- static inline int pfn_valid(int pfn)
-diff --git a/arch/x86/include/asm/mmzone_32.h b/arch/x86/include/asm/mmzone_32.h
-index 5e83a41..224e8c5 100644
---- a/arch/x86/include/asm/mmzone_32.h
-+++ b/arch/x86/include/asm/mmzone_32.h
-@@ -48,17 +48,6 @@ static inline int pfn_to_nid(unsigned long pfn)
- #endif
- }
- 
--/*
-- * Following are macros that each numa implmentation must define.
-- */
--
--#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
--#define node_end_pfn(nid)						\
--({									\
--	pg_data_t *__pgdat = NODE_DATA(nid);				\
--	__pgdat->node_start_pfn + __pgdat->node_spanned_pages;		\
--})
--
- static inline int pfn_valid(int pfn)
- {
- 	int nid = pfn_to_nid(pfn);
-diff --git a/arch/x86/include/asm/mmzone_64.h b/arch/x86/include/asm/mmzone_64.h
-index b3f88d7..129d9aa 100644
---- a/arch/x86/include/asm/mmzone_64.h
-+++ b/arch/x86/include/asm/mmzone_64.h
-@@ -13,8 +13,5 @@ extern struct pglist_data *node_data[];
- 
- #define NODE_DATA(nid)		(node_data[nid])
- 
--#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
--#define node_end_pfn(nid)       (NODE_DATA(nid)->node_start_pfn +	\
--				 NODE_DATA(nid)->node_spanned_pages)
- #endif
- #endif /* _ASM_X86_MMZONE_64_H */
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index c928dac..892862e 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -647,6 +647,9 @@ typedef struct pglist_data {
- #endif
- #define nid_page_nr(nid, pagenr) 	pgdat_page_nr(NODE_DATA(nid),(pagenr))
- 
-+#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
-+#define node_end_pfn(nid)	(node_start_pfn(nid) + node_spanned_pages(nid))
-+
- #include <linux/memory_hotplug.h>
- 
- extern struct mutex zonelists_mutex;
--- 
-1.7.4.1
+It is easy to see:-
+- external disk plugged
+- for some time working
+- suddenly disconnected
+- kernel goes into "I hang myself" mode
 
 
+Jun 16 17:13:44 mithrandir kernel: [  171.640096] usb 2-3: new high speed USB device number 3 using ehci_hcd
+Jun 16 17:13:44 mithrandir kernel: [  171.773558] usb 2-3: New USB device found, idVendor=0411, idProduct=0108
+Jun 16 17:13:44 mithrandir kernel: [  171.773568] usb 2-3: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+Jun 16 17:13:44 mithrandir kernel: [  171.773575] usb 2-3: Product: USB-SATA Bridge
+Jun 16 17:13:44 mithrandir kernel: [  171.773580] usb 2-3: Manufacturer: BUFFALO
+Jun 16 17:13:44 mithrandir kernel: [  171.773586] usb 2-3: SerialNumber: 00000002022EAA7
+Jun 16 17:13:44 mithrandir kernel: [  172.071498] Initializing USB Mass Storage driver...
+Jun 16 17:13:44 mithrandir kernel: [  172.071707] scsi6 : usb-storage 2-3:1.0
+Jun 16 17:13:44 mithrandir kernel: [  172.071827] usbcore: registered new interface driver usb-storage
+Jun 16 17:13:44 mithrandir kernel: [  172.071829] USB Mass Storage support registered.
+Jun 16 17:13:45 mithrandir kernel: [  173.068809] scsi 6:0:0:0: Direct-Access     BUFFALO  External HDD     0000 PQ: 0 ANSI: 3
+Jun 16 17:13:45 mithrandir kernel: [  173.069248] sd 6:0:0:0: Attached scsi generic sg2 type 0
+Jun 16 17:13:53 mithrandir kernel: [  180.691341] sd 6:0:0:0: [sdb] 2930277168 512-byte logical blocks: (1.50 TB/1.36 TiB)
+Jun 16 17:13:53 mithrandir kernel: [  180.692296] sd 6:0:0:0: [sdb] Write Protect is off
+Jun 16 17:13:53 mithrandir kernel: [  180.692306] sd 6:0:0:0: [sdb] Mode Sense: 3b 00 00 00
+Jun 16 17:13:53 mithrandir kernel: [  180.693183] sd 6:0:0:0: [sdb] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+Jun 16 17:13:53 mithrandir kernel: [  180.716119]  sdb: sdb1
+Jun 16 17:13:53 mithrandir kernel: [  180.718780] sd 6:0:0:0: [sdb] Attached SCSI disk
+Jun 16 17:13:53 mithrandir ata_id[4035]: HDIO_GET_IDENTITY failed for '/dev/.tmp-block-8:16'
+Jun 16 17:13:53 mithrandir kernel: [  181.011546] device fsid 70f41f7e-6f28-416e-a263-8c214138822a devid 1 transid 5690 /dev/sdb1
+Jun 16 17:15:47 mithrandir kernel: [  295.086699] usb 2-3: USB disconnect, device number 3
+Jun 16 17:15:47 mithrandir kernel: [  295.090546] sd 6:0:0:0: [sdb] Unhandled error code
+Jun 16 17:15:47 mithrandir kernel: [  295.090550] sd 6:0:0:0: [sdb]  Result: hostbyte=0x01 driverbyte=0x00
+Jun 16 17:15:47 mithrandir kernel: [  295.090553] sd 6:0:0:0: [sdb] CDB: cdb[0]=0x28: 28 00 7d c5 eb 0f 00 00 f0 00
+Jun 16 17:15:47 mithrandir kernel: [  295.090561] end_request: I/O error, dev sdb, sector 2110122767
+Jun 16 17:15:47 mithrandir kernel: [  295.090644] sd 6:0:0:0: [sdb] Unhandled error code
+Jun 16 17:15:47 mithrandir kernel: [  295.090646] sd 6:0:0:0: [sdb]  Result: hostbyte=0x01 driverbyte=0x00
+Jun 16 17:15:47 mithrandir kernel: [  295.090649] sd 6:0:0:0: [sdb] CDB: cdb[0]=0x28: 28 00 7d c5 eb ff 00 00 f0 00
+Jun 16 17:15:47 mithrandir kernel: [  295.090656] end_request: I/O error, dev sdb, sector 2110123007
+Jun 16 17:15:47 mithrandir kernel: [  295.092072] btrfs no csum found for inode 321896 start 164225024
+
+32 of those btrfs no csum found ... messages
+
+Jun 16 17:15:47 mithrandir kernel: [  295.096114] sd 6:0:0:0: [sdb] Synchronizing SCSI cache
+Jun 16 17:15:47 mithrandir kernel: [  295.096146] sd 6:0:0:0: [sdb]  Result: hostbyte=0x01 driverbyte=0x00
+Jun 16 17:15:47 mithrandir kernel: [  295.096336] scsi: killing requests for dead queue
+Jun 16 17:15:47 mithrandir kernel: [  295.096341] btrfs no csum found for inode 321896 start 164360192
+
+about 1000 more of these btrfs no csum found ... messages
+
+Jun 16 17:15:47 mithrandir kernel: [  295.336045] usb 2-3: new high speed USB device number 4 using ehci_hcd
+Jun 16 17:15:47 mithrandir mtp-probe: checking bus 2, device 4: "/sys/devices/pci0000:00/0000:00:1d.7/usb2/2-3"
+Jun 16 17:15:47 mithrandir kernel: [  295.469291] usb 2-3: New USB device found, idVendor=0411, idProduct=0108
+Jun 16 17:15:47 mithrandir kernel: [  295.469294] usb 2-3: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+Jun 16 17:15:47 mithrandir kernel: [  295.469297] usb 2-3: Product: USB-SATA Bridge
+Jun 16 17:15:47 mithrandir kernel: [  295.469298] usb 2-3: Manufacturer: BUFFALO
+Jun 16 17:15:47 mithrandir kernel: [  295.469300] usb 2-3: SerialNumber: 00000002022EAA7
+Jun 16 17:15:47 mithrandir kernel: [  295.469642] scsi7 : usb-storage 2-3:1.0
+Jun 16 17:15:48 mithrandir mtp-probe: bus: 2, device: 4 was not an MTP device
+Jun 16 17:15:48 mithrandir kernel: [  296.468835] scsi 7:0:0:0: Direct-Access     BUFFALO  External HDD     0000 PQ: 0 ANSI: 3
+Jun 16 17:15:48 mithrandir kernel: [  296.469273] sd 7:0:0:0: Attached scsi generic sg2 type 0
+Jun 16 17:15:48 mithrandir kernel: [  296.470286] sd 7:0:0:0: [sdc] 2930277168 512-byte logical blocks: (1.50 TB/1.36 TiB)
+Jun 16 17:15:48 mithrandir kernel: [  296.471147] sd 7:0:0:0: [sdc] Write Protect is off
+Jun 16 17:15:48 mithrandir kernel: [  296.471157] sd 7:0:0:0: [sdc] Mode Sense: 3b 00 00 00
+Jun 16 17:15:48 mithrandir kernel: [  296.472002] sd 7:0:0:0: [sdc] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+Jun 16 17:15:48 mithrandir kernel: [  296.480261]  sdc: sdc1
+Jun 16 17:15:48 mithrandir kernel: [  296.483125] sd 7:0:0:0: [sdc] Attached SCSI disk
+Jun 16 17:15:48 mithrandir ata_id[4160]: HDIO_GET_IDENTITY failed for '/dev/.tmp-block-8:32'
+Jun 16 17:15:49 mithrandir kernel: [  296.601221] lost page write due to I/O error on sdb1
+Jun 16 17:15:49 mithrandir kernel: [  296.601245] lost page write due to I/O error on sdb1
+Jun 16 17:15:49 mithrandir kernel: [  296.601260] lost page write due to I/O error on sdb1
+Jun 16 17:15:49 mithrandir kernel: [  296.601263] btrfs: 1 errors while writing supers
+Jun 16 17:15:49 mithrandir kernel: [  296.601283] ------------[ cut here ]------------
+Jun 16 17:15:49 mithrandir kernel: [  296.601312] kernel BUG at fs/btrfs/disk-io.c:2360!
+Jun 16 17:15:49 mithrandir kernel: [  296.601337] invalid opcode: 0000 [#1] PREEMPT SMP 
+Jun 16 17:15:49 mithrandir kernel: [  296.601369] CPU 0 
+Jun 16 17:15:49 mithrandir kernel: [  296.601381] Modules linked in: usb_storage rfcomm bnep snd_hrtimer binfmt_misc dm_crypt dm_mod isofs btrfs zlib_deflate crc32c libcrc32c vfat fat fuse loop uinput hso snd_hda_codec_realtek btusb bluetooth crc16 snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm arc4 snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi mxm_wmi snd_seq_midi_event snd_seq snd_timer snd_seq_device joydev firewire_ohci firewire_core crc_itu_t snd tpm_infineon sony_laptop iwlagn mac80211 cfg80211 rfkill soundcore snd_page_alloc
+Jun 16 17:15:49 mithrandir kernel: [  296.601724] 
+Jun 16 17:15:49 mithrandir kernel: [  296.601734] Pid: 4169, comm: sync Not tainted 3.0.0-rc3+ #3 Sony Corporation VGN-Z11VN_B/VAIO
+Jun 16 17:15:49 mithrandir kernel: [  296.601781] RIP: 0010:[<ffffffffa023ca5d>]  [<ffffffffa023ca5d>] write_all_supers+0x224/0x237 [btrfs]
+Jun 16 17:15:49 mithrandir kernel: [  296.601840] RSP: 0018:ffff88008e5c3dc8  EFLAGS: 00010296
+Jun 16 17:15:49 mithrandir kernel: [  296.601867] RAX: 000000000000003a RBX: ffff8801202f7970 RCX: 0000000000000002
+Jun 16 17:15:49 mithrandir kernel: [  296.601901] RDX: 000000000000e0e0 RSI: ffff88008e5c2000 RDI: ffff88008e5c2000
+Jun 16 17:15:49 mithrandir kernel: [  296.601935] RBP: ffff88008e5c3e28 R08: 0000000000000002 R09: ffff88010e5c3ced
+Jun 16 17:15:49 mithrandir kernel: [  296.601968] R10: ffff88010e5c3ced R11: 0000000000000000 R12: 0000000000000001
+Jun 16 17:15:49 mithrandir kernel: [  296.602001] R13: ffff8801202f7900 R14: ffff88012c904000 R15: 0000000000000000
+Jun 16 17:15:49 mithrandir kernel: [  296.602035] FS:  00007ffebdb25700(0000) GS:ffff88013fc00000(0000) knlGS:0000000000000000
+Jun 16 17:15:49 mithrandir kernel: [  296.602074] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+Jun 16 17:15:49 mithrandir kernel: [  296.602102] CR2: 00007fecbc7cae02 CR3: 000000008e60d000 CR4: 00000000000006f0
+Jun 16 17:15:49 mithrandir kernel: [  296.602136] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+Jun 16 17:15:49 mithrandir kernel: [  296.602169] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Jun 16 17:15:49 mithrandir kernel: [  296.602203] Process sync (pid: 4169, threadinfo ffff88008e5c2000, task ffff88008e6467b0)
+Jun 16 17:15:49 mithrandir kernel: [  296.602242] Stack:
+Jun 16 17:15:49 mithrandir kernel: [  296.602254]  0000000011e70000 ffff8801202f7970 ffff880111e70e63 0000000000000001
+Jun 16 17:15:49 mithrandir kernel: [  296.602298]  0000000000000000 ffff8801202f7970 ffff88008e5c3e28 ffff88012c904000
+Jun 16 17:15:49 mithrandir kernel: [  296.602342]  ffff8800b51e8738 ffff880106377070 0000000000000000 0000000000000000
+Jun 16 17:15:49 mithrandir kernel: [  296.602386] Call Trace:
+Jun 16 17:15:49 mithrandir kernel: [  296.602409]  [<ffffffffa023ca7e>] write_ctree_super+0xe/0x10 [btrfs]
+Jun 16 17:15:49 mithrandir kernel: [  296.602449]  [<ffffffffa0240b93>] btrfs_commit_transaction+0x54e/0x64e [btrfs]
+Jun 16 17:15:49 mithrandir kernel: [  296.602488]  [<ffffffff81047fb2>] ? remove_wait_queue+0x35/0x35
+Jun 16 17:15:49 mithrandir kernel: [  296.602518]  [<ffffffff810d02a6>] ? __sync_filesystem+0x72/0x72
+Jun 16 17:15:49 mithrandir kernel: [  296.602551]  [<ffffffffa0225bd5>] btrfs_sync_fs+0x62/0x66 [btrfs]
+Jun 16 17:15:49 mithrandir kernel: [  296.602581]  [<ffffffff810d0292>] __sync_filesystem+0x5e/0x72
+Jun 16 17:15:49 mithrandir kernel: [  296.602610]  [<ffffffff810d02b7>] sync_one_sb+0x11/0x13
+Jun 16 17:15:49 mithrandir kernel: [  296.602637]  [<ffffffff810b3c39>] iterate_supers+0x6a/0xbf
+Jun 16 17:15:49 mithrandir kernel: [  296.602665]  [<ffffffff810d033e>] sys_sync+0x3d/0x4f
+Jun 16 17:15:49 mithrandir kernel: [  296.602692]  [<ffffffff8139b5fb>] system_call_fastpath+0x16/0x1b
+Jun 16 17:15:49 mithrandir kernel: [  296.602721] Code: 20 01 00 00 48 8b b8 28 23 00 00 48 83 c7 50 e8 31 d3 15 e1 44 3b 65 bc 7e 13 44 89 e6 48 c7 c7 5c 00 28 a0 31 c0 e8 19 6e 15 e1 <0f> 0b 48 83 c4 38 31 c0 5b 41 5c 41 5d 41 5e 41 5f 5d c3 55 48 
+Jun 16 17:15:49 mithrandir kernel: [  296.602969] RIP  [<ffffffffa023ca5d>] write_all_supers+0x224/0x237 [btrfs]
+Jun 16 17:15:49 mithrandir kernel: [  296.603014]  RSP <ffff88008e5c3dc8>
+Jun 16 17:15:49 mithrandir kernel: [  296.616310] ---[ end trace 63d7613b609d9a58 ]---
+Jun 16 17:15:49 mithrandir kernel: [  296.616361] BUG: unable to handle kernel paging request at 000000000000163e
+Jun 16 17:15:49 mithrandir kernel: [  296.618131] IP: [<ffffffff81118ce2>] journal_start+0x2f/0xc1
+Jun 16 17:15:49 mithrandir kernel: [  296.619909] PGD 0 
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] Oops: 0000 [#2] PREEMPT SMP 
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] CPU 0 
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] Modules linked in: usb_storage rfcomm bnep snd_hrtimer binfmt_misc dm_crypt dm_mod isofs btrfs zlib_deflate crc32c libcrc32c vfat fat fuse loop uinput hso snd_hda_codec_realtek btusb bluetooth crc16 snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm arc4 snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi mxm_wmi snd_seq_midi_event snd_seq snd_timer snd_seq_device joydev firewire_ohci firewire_core crc_itu_t snd tpm_infineon sony_laptop iwlagn mac80211 cfg80211 rfkill soundcore snd_page_alloc
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] 
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] Pid: 4169, comm: sync Tainted: G      D     3.0.0-rc3+ #3 Sony Corporation VGN-Z11VN_B/VAIO
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] RIP: 0010:[<ffffffff81118ce2>]  [<ffffffff81118ce2>] journal_start+0x2f/0xc1
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] RSP: 0018:ffff88008e5c3698  EFLAGS: 00010282
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] RAX: 000000000000163e RBX: ffff8800b51e8738 RCX: 0000000000000003
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] RDX: 0000000000000002 RSI: 000000000000000e RDI: ffff88013b377000
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] RBP: ffff88008e5c36b8 R08: ffffea00015b3168 R09: 000000000000000d
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] R10: ffffffff814182f0 R11: 00000000ffffffff R12: ffff88008e6467b0
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] R13: ffff88013b377000 R14: 000000000000000e R15: 0000000000000040
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] FS:  0000000000000000(0000) GS:ffff88013fc00000(0000) knlGS:0000000000000000
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] CR2: 000000000000163e CR3: 0000000001617000 CR4: 00000000000006f0
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] Process sync (pid: 4169, threadinfo ffff88008e5c2000, task ffff88008e6467b0)
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] Stack:
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  ffffffffffffffe2 ffffea00015b3168 0000000000000000 0000000000000480
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  ffff88008e5c36d8 ffffffff81109a1d ffff8801397ef740 ffff8801397ef740
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  ffff88008e5c3768 ffffffff811044e4 0000000000000246 ffff88008e5c37f8
+Jun 16 17:15:49 mithrandir kernel: [  296.620003] Call Trace:
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff81109a1d>] ext3_journal_start_sb+0x45/0x50
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff811044e4>] ext3_write_begin+0x93/0x1a1
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff81085f9f>] ? get_pageblock_flags_group+0x3c/0x76
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff81081ece>] generic_file_buffered_write+0xf9/0x236
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff81036172>] ? current_fs_time+0x32/0x39
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff81082c87>] __generic_file_aio_write+0x240/0x270
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff81082d13>] generic_file_aio_write+0x5c/0xb5
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff810b120e>] do_sync_write+0xba/0xfa
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff810c7325>] ? vfsmount_lock_local_unlock+0x33/0x3e
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff8109ac87>] ? remove_vma+0x57/0x5f
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff8104e577>] ? timekeeping_get_ns+0x12/0x31
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff81062bc5>] do_acct_process+0x28c/0x2bf
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff810631bc>] acct_process+0x73/0x8f
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff81034f0a>] do_exit+0x244/0x698
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff810334d1>] ? kmsg_dump+0xcb/0xda
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff81004912>] oops_end+0x89/0x8e
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff81004a4c>] die+0x55/0x61
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff81001dfc>] do_trap+0x11c/0x12b
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff8100204d>] do_invalid_op+0x93/0x9c
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffffa023ca5d>] ? write_all_supers+0x224/0x237 [btrfs]
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff8139c195>] invalid_op+0x15/0x20
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffffa023ca5d>] ? write_all_supers+0x224/0x237 [btrfs]
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffffa023ca5d>] ? write_all_supers+0x224/0x237 [btrfs]
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffffa023ca7e>] write_ctree_super+0xe/0x10 [btrfs]
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffffa0240b93>] btrfs_commit_transaction+0x54e/0x64e [btrfs]
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff81047fb2>] ? remove_wait_queue+0x35/0x35
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff810d02a6>] ? __sync_filesystem+0x72/0x72
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffffa0225bd5>] btrfs_sync_fs+0x62/0x66 [btrfs]
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff810d0292>] __sync_filesystem+0x5e/0x72
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff810d02b7>] sync_one_sb+0x11/0x13
+Jun 16 17:15:49 mithrandir kernel: [  296.620003]  [<ffffffff810b3c39>] iterate_supers+0x6a/0xbf
+Jun 16 17:15:49 mithrandir kernel: [  296.713156]  [<ffffffff810d033e>] sys_sync+0x3d/0x4f
+Jun 16 17:15:49 mithrandir kernel: [  296.713561]  [<ffffffff8139b5fb>] system_call_fastpath+0x16/0x1b
+Jun 16 17:15:49 mithrandir kernel: [  296.713561] Code: 41 56 41 89 f6 41 55 49 89 fd 41 54 53 65 4c 8b 24 25 00 b6 00 00 48 85 ff 49 8b 9c 24 f8 04 00 00 74 7e 48 85 db 74 0f 48 8b 03 
+Jun 16 17:15:49 mithrandir kernel: [  296.713561] RIP  [<ffffffff81118ce2>] journal_start+0x2f/0xc1
+Jun 16 17:15:49 mithrandir kernel: [  296.713561]  RSP <ffff88008e5c3698>
+Jun 16 17:15:49 mithrandir kernel: [  296.713561] CR2: 000000000000163e
+Jun 16 17:15:49 mithrandir kernel: [  296.722164] ---[ end trace 63d7613b609d9a59 ]---
+Jun 16 17:15:49 mithrandir kernel: [  296.722167] Fixing recursive fault but reboot is needed!
+
+
+Best wishes
+
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+SLUGGAN (n.)
+A lurid facial bruise which everyone politely omits to mention because
+it's obvious that you had a punch-up with your spouse last night - but
+which into a door. It is useless to volunteer the true explanation
+because nobody will believe it.
+			--- Douglas Adams, The Meaning of Liff
