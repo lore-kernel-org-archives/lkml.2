@@ -1,84 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756906Ab1FPQ00 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 12:26:26 -0400
-Received: from alerce.vps.bitfolk.com ([212.13.194.134]:44475 "EHLO
-	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755127Ab1FPQ0Y (ORCPT
+	id S1755190Ab1FPPDA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 11:03:00 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:32783 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832Ab1FPPC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 12:26:24 -0400
-Date: Thu, 16 Jun 2011 11:58:42 -0300
-From: Leandro Lucarella <luca@llucax.com.ar>
-To: dri-devel@lists.freedesktop.org, kernel@vger.kernel.org,
-        David Airlie <airlied@linux.ie>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        intel-gfx@lists.freedesktop.org
-Subject: Graphic corruption with i915 (2.6.39.1)
-Message-ID: <20110616145842.GM20487@llucax.com.ar>
+	Thu, 16 Jun 2011 11:02:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=rNzLg7XGwkWS88lR7Iitjfrm2S/3eE1VaI20slOtXesSYJ9/I9BKdFVY5DZ/ZGuFVt
+         gjSagECj1/HQLPS0PW5wvZEnpFiE7eANi5E6U+F+rcpL46A7yrgNu9QHR74htG0R95sQ
+         5WGYCxxQmmHPyFlimhlgaRWKM2aFgdTknHgm8=
+Message-ID: <4DFA1AC2.20605@gmail.com>
+Date: Thu, 16 Jun 2011 23:01:22 +0800
+From: Asias He <asias.hejun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Prasad Joshi <prasadjoshi124@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
+References: <1308153214.7566.6.camel@jaguar> <20110616142859.GA18356@redhat.com>
+In-Reply-To: <20110616142859.GA18356@redhat.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Paranoid: Just because you're paranoid, don't mean they're not after you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, I've been experiencing sporadic graphic corruption since a few
-stable kernel versions and I always thought "maybe is fixed in the next
-release", so I upgrade, but I usually experience a different problem
-then. This problems are exposed very rarely, maybe I have no problems
-like for a month or so.
+On 06/16/2011 10:28 PM, Michael S. Tsirkin wrote:
+> On Wed, Jun 15, 2011 at 06:53:34PM +0300, Pekka Enberg wrote:
+>> Hi all,
+>>
+>> We’re proud to announce the second version of the Native Linux KVM tool! We’re
+>> now officially aiming for merging to mainline in 3.1.
+>>
+>> Highlights:
+>>
+>> - Experimental GUI support using SDL and VNC
+>>
+>> - SMP support. tools/kvm/ now has a highly scalable, largely lockless driver
+>>   interface and the individual drivers are using finegrained locks.
+>>
+>> - TAP-based virtio networking
+> 
+> Wanted to ask for a while: would it make sense to use vhost-net?
+> Or maybe use that exclusively?
+> Less hypervisor code to support would help the focus.
+> 
 
-Now I'm using kernel 2.6.39.1 and I experience one of this problem so
-I though it was time to report it. This is what I got in dmesg:
-
-[368693.756008] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
-[368693.756014] render error detected, EIR: 0x00000010
-[368693.756017]   IPEIR: 0x00000000
-[368693.756019]   IPEHR: 0x02000004
-[368693.756020]   INSTDONE: 0xcc8fffff
-[368693.756022]   INSTPS: 0x8001e025
-[368693.756024]   INSTDONE1: 0xbfffffbf
-[368693.756026]   ACTHD: 0x00715128
-[368693.756027] page table error
-[368693.756029]   PGTBL_ER: 0x00000002
-[368693.756038] [drm:i915_wait_request] *ERROR* i915_wait_request returns -11 (awaiting 17700193 at 17700192, next 17700196)
-[368694.258010] [drm:i915_reset] *ERROR* Failed to reset chip.
-
-Here are 2 images of my desktop, without the graphic corruption first
-and with the corruption then: http://imgur.com/a/NX7te
-
-# lspci 
-00:00.0 Host bridge: Intel Corporation 4 Series Chipset DRAM Controller (rev 03)
-00:01.0 PCI bridge: Intel Corporation 4 Series Chipset PCI Express Root Port (rev 03)
-00:02.0 VGA compatible controller: Intel Corporation 4 Series Chipset Integrated Graphics Controller (rev 03)
-00:1b.0 Audio device: Intel Corporation N10/ICH 7 Family High Definition Audio Controller (rev 01)
-00:1c.0 PCI bridge: Intel Corporation N10/ICH 7 Family PCI Express Port 1 (rev 01)
-00:1c.1 PCI bridge: Intel Corporation N10/ICH 7 Family PCI Express Port 2 (rev 01)
-00:1d.0 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller #1 (rev 01)
-00:1d.1 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller #2 (rev 01)
-00:1d.2 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller #3 (rev 01)
-00:1d.3 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller #4 (rev 01)
-00:1d.7 USB Controller: Intel Corporation N10/ICH 7 Family USB2 EHCI Controller (rev 01)
-00:1e.0 PCI bridge: Intel Corporation 82801 PCI Bridge (rev e1)
-00:1f.0 ISA bridge: Intel Corporation 82801GB/GR (ICH7 Family) LPC Interface Bridge (rev 01)
-00:1f.1 IDE interface: Intel Corporation 82801G (ICH7 Family) IDE Controller (rev 01)
-00:1f.2 IDE interface: Intel Corporation N10/ICH7 Family SATA IDE Controller (rev 01)
-00:1f.3 SMBus: Intel Corporation N10/ICH 7 Family SMBus Controller (rev 01)
-03:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 03)
-04:00.0 Multimedia video controller: Brooktree Corporation Bt848 Video Capture (rev 12)
-
-Any ideas on what might be going on and how to fix it are welcome. Please let
-me know if you need any other information.
-
-Thanks in advance.
+Sure. We are planning to use vhost-net. Just out of time right now, we
+are currently working on simple user model network support which allows
+plain user to use network without root privilege.
 
 -- 
-Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
-----------------------------------------------------------------------
-GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
-----------------------------------------------------------------------
-SEÑOR BIELSA: CON TODO RESPETO ¿USTED LO VE JUGAR A RIQUELME?
-	-- Crónica TV
+Best Regards,
+Asias He
