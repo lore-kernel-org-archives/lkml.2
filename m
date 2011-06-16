@@ -1,150 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757615Ab1FPKY5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 06:24:57 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:47170 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752769Ab1FPKYz (ORCPT
+	id S1755126Ab1FPKfp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 06:35:45 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:55613 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753838Ab1FPKfn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 06:24:55 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4DF9DBDE.9060907@cam.ac.uk>
-Date: Thu, 16 Jun 2011 11:33:02 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
+	Thu, 16 Jun 2011 06:35:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=SlC2+Li391ZKHzhC1O3PrTsSo6m8NQaI0o6ZslMmQjnbdWsw81nhZo7RbqKk/uj35I
+         /o5dUAxo/E0JmAfrVMFVjHb/BeRqIdp8MxRW/7hFToC1J/jZSwn0dcdn84/efVEOquJO
+         8IDMLSf8f3TVWjwO7NM/kVRnw1HGCCPK16GU4=
 MIME-Version: 1.0
-To: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        "Hennerich, Michael" <Michael.Hennerich@analog.com>,
-        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: RFC: IIO: Options for 'event' userspace interface.
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <18273.1308192226@jrobl>
+References: <20110609125114.8dff08da.akpm@linux-foundation.org>
+ <BANLkTi=uWDSw96v0Y4W94NZvgD=j=3r3zg@mail.gmail.com> <20110610100143.28037551@lxorguk.ukuu.org.uk>
+ <8739jbjqa7.fsf@tucsk.pomaz.szeredi.hu> <11186.1308148376@jrobl>
+ <87vcw7hz7y.fsf@tucsk.pomaz.szeredi.hu> <15402.1308154495@jrobl>
+ <BANLkTi=hvBBbZPBj5niUV9StSRRjmLtK8w@mail.gmail.com> <18273.1308192226@jrobl>
+From: Michal Suchanek <hramrach@centrum.cz>
+Date: Thu, 16 Jun 2011 12:35:22 +0200
+X-Google-Sender-Auth: 1ZtyV3zealnLyXDPHAQRhz9Q6e0
+Message-ID: <BANLkTimhL5BG9gHOG0Fr9U5fLkE0NJvpng@mail.gmail.com>
+Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Valerie Aurora <val@vaaconsulting.com>,
+        Andrew Morton <akpm@linux-foundation.org>, NeilBrown <neilb@suse.de>,
+        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        apw@canonical.com, nbd@openwrt.org, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+On 16 June 2011 04:43, J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
+>
+> Michal Suchanek:
+>> This is generally not possible in solutions that don't reserve any filename=
+>> s.
+>>
+>> However, it should be possible to create whiteout of a non-existent
+>> entry in a directory while it is locked without affecting userspace.
+>
+> Actually aufs generates a doubly whiteouted unique name dynamically for
+> the target dir. For instance, when rmdir("dirA") aufs does,
+> - lock i_mutex of the parent dir of dirA on the real fs
+> - some verifycations for the parent-child relationship
+> - some tests whether we can do rmdir
+> - create whiteout for dirA
+> - rename dirA to .wh..wh.XXXXXXXX (random value in hex), after making
 
-Cc list is a bit random, so please do send this on to anyone else
-who might be interested!
+Probably swap the two above, you can't make a whiteout in presence of
+the directory, right?
+Anyway, you could just mark dirA as whiteout and remove any whiteouts
+contained in it asynchronously, and only jump through these hoops when
+trying to create a new entry in place of non-empty whiteout, or sync
+on emptying the old whiteout before making a new entry.
 
-One of the remaining large questions that needs to be answered
-for the Industrial I/O (basically ADCs and DACs, including all
-sorts of sensors), is that of how we pass events to user space.
+>  sure the name doesn't exist
+> - unlock the parent dir
+> - return to VFS
+> And then the async workqueue removes the .wh..wh.XXXXXXXX dir with some
+> whiteouts under it.
+>
+> It means the temporary whiteout name is,
+> - always unique
+> - always hidden (from users), even if it remains accidentally
+> So even if an error happens in the async work, it doesn't matter.
 
-IIO Events
+Yes, it can only cause pollution with whiteouts unrelated to any files
+that ever existed which is not too much of an issue unless people want
+to add random stuff to the lower layer and see it in the union when
+they reconstruct it again.
 
-In IIO events are not used for passing normal readings from the
-sensing devices to userspace, but rather for out of band information.
-(Normal data reaches userspace through a low overhead character
-device - typically via either software or hardware buffer.
-The stream format is pseudo fixed, so is described and controlled
-via sysfs rather than adding headers to the data describing what
-is in it).
+>
+> Additionally there is a userspace script called "auchk" which is like
+> fsck for real fs. auchk script checks the logical consistency on the
+> (writable) real fs, and removes the illegal whiteouts, remained
+> pseudo-links, and remained temp files.
+>
+>
+>> As an alternative way to perform atomic renames I would suggest
+>> "fallthrough symlinks". If you want to rename an entry which is
+>
+> Symlink?
+> Is it a different thing from DCACHE_FALLTHRU in UnionMount?
 
-Pretty much all IIO events correspond to thresholds
-on some value derived from one or more raw readings from the
-sensor.  They are provided by the underlying hardware.
-Examples include:
+Yes, the fallthru in unionmount only says "look below here", it cannot
+point to a  different place in the filesystem.
 
-1) Straight crossing a voltage threshold
-2) Moving average crosses a threshold
-3) Motion detectors (lots of ways of doing this).
-4) Thresholds on sum squared or rms values.
-5) Rate of change thresholds.
-Lots more weird variants. 
+> I am afraid a special symlink is fragile or dangerous.
+> Its special meaning is valid in inner union world only, is it? If
 
-Events need timestamps.
-Currently no event carries any 'value'.  There are a few
-corner cases where this might be useful, but are unusual.
+It is only valid when in the upper layer of a union. However, so is
+whiteout, and so are files that were visible in the union but are not
+visible in the top layer if examined separately, outside of the union.
 
-Current interface:
+It must be accepted that the top layer is different from the union,
+otherwise you want a copy, not a union.
 
-1) Single user at a time - for vast majority of IIO users this
-makes sense, but if it costs us little it would be nice to support
-multiple readers.
+> something in outer world gets changed, we may not follow the symlink
+> anymore or follow something different unexpectedly. Is it acceptable?
 
-2) Simple chrdev per device (aggregation across devices doesn't really
-make sense for IIO as you tend to really care which sensor caused
-the event rather than just that it happened.)
+That' the whole idea behind symlinks, and also unions which implicitly
+link the lower layer into the upper to present the result as a single
+directory tree.
 
-The format is:
+Anyway, the motivation behind the "fallthru symlink" is that you need
+not copy-up on seemingly trivial operations like rename, touch, etc.
+which both makes them more efficient and easier to get atomic. As I
+understand it copy-up is the operation that causes the most issues and
+with "fallthru symlinks" you need it only for operations that are
+expected to modify something non-trivially.
 
-struct iio_event_data {
-	int	id;
-	s64	timestamp;
-};
+Obviously, this is not so nice for zero sized files but they should be
+handled the same way for consistency I guess. Also metada that can be
+conveniently recorded on the fallthru entry would make touch fast but
+would hide possible later updates to the lower layer so it might be
+not good solution for all use cases. For throwaway tmpfs, however, any
+optimization counts.
 
-Event codes are built as  below (I've tweaked this a touch from current as there are some
-cases of overlapping fields that shouldn't be there).  I suspect we have assigned to
-many bits to direction and type and not enough to the modifiers for example.
-Fixing that up is probably the topic of another discussion...
+Seriously, the overlayfs documents that it can have opaque directories
+but I don't see what they would be used for. There is no way to turn a
+directory opaque with normal userspace operation afaict.
+It has no explicit fallthrus, at least not documented so to have any
+level of consistency it should always check the lower layer because it
+can grow some new directories when the union is deconstructed, offline
+modified, and reconstructed (which is supported use case according to
+the docs).
 
-/**
-* IIO_EVENT_CODE() - event code creation macro
-* @channel_class: What type of device channel is associated with the event
-* 		(IIO_IN, IIO_ACCEL, IIO_GYRO etc - 256 possible values)
-* @orient_bit:	Does this channel have an associated orientation?
-* @number:	The channel number. (for differential channels this is non trivial)
-*		128 values if no orientation, 8 if oriented
-* @modifier:	Only set if orientation associated with channel. May be compound
-*		orientation (X_OR_Y_OR_Z for example). (16 options - currently 10 used)
-*		Note we can reuse values for different classes.  No accelerometer is going
-*		to be specified as being in the infrared spectrum for example!
-* @type: 	Threshold, magnitude (level interrupt equivalent) or Rate of Change currently.
-* @direction:	Which direction the value must change in to trigger event either, rising, falling.
-**/ 
-#define IIO_EVENT_CODE(channelclass, orient_bit, number,		\
-		       modifier, type, direction)			\
-	(channelclass | (orient_bit << 8) | ((number) << 9) |		\
-	 ((modifier) << 12) | ((type) << 16) | ((direction) << 24))
+Thanks
 
-Possible reasons to change:
-
-1) Currently have 2 chrdevs per IIO device (one for main data flow, one for events).
-2) Lack of adaptablity.
-3) Avoid reinventing the wheel.
-
-Obvious options (or ones that have been suggested)
-
-* Use out of band signalling on the main data chrdev.  Basically poll with the more
-unusual types, POLLPRI perhaps.  Then use an IOCTL to read what actually happened.
-(grep suggests it gets used for something similar in v4l2-subdev.c) (suggested by
-Arnd Bergmann).
-
-* Similar system to evdev in input.  This carries a few extra fields, but that probably
-doesn't matter. We need to know when an event happened reasonably soon after, but not
-asap.
-
-* Separate evdev from input and share it across both subsystems.  This seemed like
-a good idea, but evdev is pretty tightly tied to the input core. Note we would never
-be sharing input's event codes.  They are too restrictive (with good reason seeing
-as they are for 'input' devices!)  Basically I expect this could be done, but would
-need to be done very carefully so as to not have any impact on input users.  Perhaps
-it is the right answer, but its not trivial. (I've cc'd linux-input to get comments
-on this option!)
-
-* Some other event passing methods that I've either forgotten or never knew about
-in the first place.
-
-* Leave things be. Its small and simple. Perhaps it's best we don't try to be clever
-at all.
-
-So how do people thing we should do it?
-
-Lots of examples of current users in staging/iio/
-
-For reference, most work in IIO since merge window has been driving the new abi
-elements introduced into the individual drivers.  Keeps highlighting minor things
-we hadn't thought of before, but nothing critical as of yet!
-
-Thanks,
-
-Jonathan
+Michal
