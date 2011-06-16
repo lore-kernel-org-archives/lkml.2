@@ -1,70 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757669Ab1FPTPB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 15:15:01 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:52934 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756431Ab1FPTPA (ORCPT
+	id S932106Ab1FPTTH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 15:19:07 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37014 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757099Ab1FPTTF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 15:15:00 -0400
-X-Sasl-enc: qaORoHiY+nBiBDgWjqEiBPIr13kfwDJVTF9p1xojydpy 1308251699
-Date: Thu, 16 Jun 2011 12:14:48 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: brudley@broadcom.com, henryp@broadcom.com, rvossen@broadcom.com,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the final tree (staging
- related)
-Message-ID: <20110616191448.GA10255@kroah.com>
-References: <20110609172745.dfd3a298.sfr@canb.auug.org.au>
- <20110609184127.GA2760@kroah.com>
- <20110609192243.GA3980@kroah.com>
- <20110610160548.529797c7.sfr@canb.auug.org.au>
- <20110610160938.cd01c408.sfr@canb.auug.org.au>
- <20110610223423.GB15868@kroah.com>
- <20110615142155.bd538b73.sfr@canb.auug.org.au>
+	Thu, 16 Jun 2011 15:19:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=AbPOncUSly8/2oM4pXBzmlYmhvKocLxu43xkI9mgK5W+jtnOB6TP/jaMFCa+nVFI0d
+         aPAApyxN/hbb10cv4yIkFNQbLZJLZankDNvIcaLsflt/pQozIBuoFWXlmmhYhxbknhlz
+         ul+Nie89vdwzHdb9/XXXrOXvaE2n1XCXTHaHU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110615142155.bd538b73.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4DFA4672.5080307@lwfinger.net>
+References: <BANLkTikXUd8uorD+juMDvFubr3cz+OZnaQ@mail.gmail.com>
+	<BANLkTinUxRGkXeOtBSKi51n3Q_rZEp1gUg@mail.gmail.com>
+	<4DFA4672.5080307@lwfinger.net>
+Date: Thu, 16 Jun 2011 21:19:04 +0200
+Message-ID: <BANLkTi=-wXnXNJY3R+3Q+KSaJhtxHgrhZw@mail.gmail.com>
+Subject: Re: Faking MMIO ops? Fooling a driver
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: linux-wireless@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pekka Paalanen <pq@iki.fi>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 02:21:55PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> On Fri, 10 Jun 2011 15:34:23 -0700 Greg KH <greg@kroah.com> wrote:
-> >
-> > On Fri, Jun 10, 2011 at 04:09:38PM +1000, Stephen Rothwell wrote:
-> > > 
-> > > On Fri, 10 Jun 2011 16:05:48 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > > >
-> > > > No, I still get these:
-> > > > 
-> > > > In file included from drivers/staging/comedi/drivers/addi_apci_035.c:7:0:
-> > > > drivers/staging/comedi/drivers/addi-data/addi_common.c: In function 'i_ADDI_Attach':
-> > > > drivers/staging/comedi/drivers/addi-data/addi_common.c:2765:7: error: implicit declaration of function 'virt_to_bus'
-> > > > 
-> > > > virt_to_bus is only defined for 32 bit powerpc (not 64 bit) (and maybe
-> > > > not at all on some architectures e.g. sparc).
-> > > > 
-> > > > From Documentation/DMA-API-HOWTO.txt:
-> > > > "All drivers should be using these interfaces with no exceptions.  It
-> > > > is planned to completely remove virt_to_bus() and bus_to_virt() as
-> > > > they are entirely deprecated.  Some ports already do not provide these
-> > > > as it is impossible to correctly support them."
-> > > 
-> > > Drivers that use virt_to_bus should Kconfig depend on VIRT_TO_BUS.
-> > 
-> > Ah, I missed that, sorry.  I'll go make that change as well.
-> 
-> Ping?
+W dniu 16 czerwca 2011 20:07 użytkownik Larry Finger
+<Larry.Finger@lwfinger.net> napisał:
+> On 06/16/2011 12:20 PM, Rafał Miłecki wrote:
+>>
+>> W dniu 16 czerwca 2011 16:44 użytkownik Rafał Miłecki
+>> <zajec5@gmail.com>  napisał:
+>>>
+>>> I analyze MMIO dumps of closed source driver and found such a place:
+>>> W 2 3855.911536 9 0xb06003fc 0x810 0x0 0
+>>> R 2 3855.911540 9 0xb06003fe 0x0 0x0 0
+>>> W 2 3855.911541 9 0xb06003fe 0x0 0x0 0
+>>>
+>>> After translation:
+>>>  phy_read(0x0810) ->  0x0000
+>>> phy_write(0x0810)<- 0x0000
+>>>
+>>> So it's quite obvious, the driver is reading PHY register, masking it
+>>> and writing masked value. Unfortunately from just looking at such
+>>> place we can not guess the mask driver uses.
+>>>
+>>> I'd like to fake value read from 0xb06003fe to be 0xFFFF.
+>>> Is there some ready method for doing such a trick?
+>>>
+>>> Dump comes from Kernel hacking → Tracers → MMIO and ndiswrapper.
+>>
+>> I can see values in MMIO trace struct are filled in
+>> arch/x86/mm/mmio-mod.c in "pre" and "post". However still no idea how
+>> to hack the returned value.
+>>
+>> Should I try hacking read[bwl] instead? :|
+>
+> Probably. I do not see any way to trace and modify the results for a
+> particular address without special code.
 
-Sorry, been swamped with other work, I'll get to this soon...
+Did you success with writing some special code? Following patch does
+not seem to work for me:
 
-With a very relative value of soon.
 
-greg k-h
+diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+index e0ffa3d..448e4ff 100644
+--- a/include/asm-generic/io.h
++++ b/include/asm-generic/io.h
+@@ -23,6 +23,8 @@
+ #define mmiowb() do {} while (0)
+ #endif
+
++static int zajec = 0;
++
+ /*****************************************************************************/
+ /*
+  * readX/writeX() are used to access memory mapped devices. On some
+@@ -40,6 +42,11 @@ static inline u8 __raw_readb(const volatile void
+__iomem *addr)
+ #ifndef __raw_readw
+ static inline u16 __raw_readw(const volatile void __iomem *addr)
+ {
++	if (zajec++ < 10)
++		printk(KERN_INFO "[ZAJEC] %d\n", *addr);
++	if (*addr == 0xfaafc000)
++		printk(KERN_INFO "[ZAJEC] Bingo!\n");
++	//0x1381a8d8
+ 	return *(const volatile u16 __force *) addr;
+ }
+ #endif
+
+Should I modify different readw? Path include/asm-generic/io.h sounds
+sane to me, so I modified this one.
+
+
+> FYI, my reference driver for reverse engineering has no instance of a
+> read/modify/write for PHY register 0x810. Is the code in question for a PHY
+> type > 6?
+
+This is for PHY type 7, AKA "HT".
+
+-- 
+Rafał
