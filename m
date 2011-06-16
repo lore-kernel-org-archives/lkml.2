@@ -1,69 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758729Ab1FPVIs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 17:08:48 -0400
-Received: from mga11.intel.com ([192.55.52.93]:27178 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758209Ab1FPVIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 17:08:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,377,1304319600"; 
-   d="scan'208";a="19127483"
-From: Andi Kleen <andi@firstfloor.org>
-To: viro@zeniv.linux.org.uk
-Cc: hch@infradead.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Trond.Myklebust@netapp.com
-Subject: [PATCH 5/5] NFS: Drop unnecessary locking in llseek
-Date: Thu, 16 Jun 2011 14:07:22 -0700
-Message-Id: <1308258442-19804-5-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1308258442-19804-1-git-send-email-andi@firstfloor.org>
-References: <1308258442-19804-1-git-send-email-andi@firstfloor.org>
+	id S1758708Ab1FPVHz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 17:07:55 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:50776 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041Ab1FPVHx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 17:07:53 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Thu, 16 Jun 2011 14:07:49 -0700
+Message-ID: <m162o5bi3e.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19kiv/JB19F0EBWIxnd1pvcQOp8fPhwnE8=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Linus Torvalds <torvalds@linux-foundation.org>,
+	<linux-kernel@vger.kernel.org>
+X-Spam-Relay-Country: 
+Subject: [git pull] proc oops fix
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
 
-This makes NFS follow the standard generic_file_llseek locking scheme.
+Linus please pull.
 
-Cc: Trond.Myklebust@netapp.com
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/linux-2.6-nsfd.git
+
+This prevents a much too easily triggered oops.
+
+Eric
+
+
+
+>From 793925334f32e9026c22baee5c3c340f47d4ef7e Mon Sep 17 00:00:00 2001
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Wed, 15 Jun 2011 12:47:04 -0700
+Subject: [PATCH] proc: Fix Oops on stat of /proc/<zombie pid>/ns/net
+
+Don't call iput with the inode half setup to be a namespace filedescriptor.
+Instead rearrange the code so that we don't initialize ei->ns_ops until
+after I ns_ops->get succeeds, preventing us from invoking ns_ops->put
+when ns_ops->get failed.
+
+Reported-by: Ingo Saitz <Ingo.Saitz@stud.uni-hannover.de>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- fs/nfs/file.c |   11 ++---------
- 1 files changed, 2 insertions(+), 9 deletions(-)
+ fs/proc/namespaces.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/fs/nfs/file.c b/fs/nfs/file.c
-index 6b52b09..371f33f 100644
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -180,8 +180,6 @@ force_reval:
+diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
+index 781dec5..be177f7 100644
+--- a/fs/proc/namespaces.c
++++ b/fs/proc/namespaces.c
+@@ -38,18 +38,21 @@ static struct dentry *proc_ns_instantiate(struct inode *dir,
+ 	struct inode *inode;
+ 	struct proc_inode *ei;
+ 	struct dentry *error = ERR_PTR(-ENOENT);
++	void *ns;
  
- static loff_t nfs_file_llseek(struct file *filp, loff_t offset, int origin)
- {
--	loff_t loff;
--
- 	dprintk("NFS: llseek file(%s/%s, %lld, %d)\n",
- 			filp->f_path.dentry->d_parent->d_name.name,
- 			filp->f_path.dentry->d_name.name,
-@@ -194,14 +192,9 @@ static loff_t nfs_file_llseek(struct file *filp, loff_t offset, int origin)
- 		int retval = nfs_revalidate_file_size(inode, filp);
- 		if (retval < 0)
- 			return (loff_t)retval;
-+	}
+ 	inode = proc_pid_make_inode(dir->i_sb, task);
+ 	if (!inode)
+ 		goto out;
  
--		/* AK: should drop this lock. Unlikely to be needed. */
--		spin_lock(&inode->i_lock);
--		loff = generic_file_llseek(filp, offset, origin);
--		spin_unlock(&inode->i_lock);
--	} else
--		loff = generic_file_llseek(filp, offset, origin);
--	return loff;
-+	return generic_file_llseek(filp, offset, origin);
- }
++	ns = ns_ops->get(task);
++	if (!ns)
++		goto out_iput;
++
+ 	ei = PROC_I(inode);
+ 	inode->i_mode = S_IFREG|S_IRUSR;
+ 	inode->i_fop  = &ns_file_operations;
+ 	ei->ns_ops    = ns_ops;
+-	ei->ns	      = ns_ops->get(task);
+-	if (!ei->ns)
+-		goto out_iput;
++	ei->ns	      = ns;
  
- /*
+ 	dentry->d_op = &pid_dentry_operations;
+ 	d_add(dentry, inode);
 -- 
-1.7.4.4
+1.7.5.1.217.g4e3aa
 
