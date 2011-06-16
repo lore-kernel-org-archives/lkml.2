@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758097Ab1FPOE5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 10:04:57 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:54358 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758082Ab1FPOEz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 10:04:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=N5zSrSAi+//Sw8jlZ1sgpaoXM8rmzDC8HYzwkyP8YiU2KmrTQAJZp8Lq3qnqpWMe7f
-         jLvoq+YfIY6s05QMFOAhQ5WlIrPP/4aJXP4Dqwp47x1F0Ge6kaKdKRBbH+kflxHuNIdN
-         jZBv9nuzsmTCUtU2p/Nu13Yc0nPwcxNBxhw2o=
-Message-ID: <4DFA0D83.6070604@gmail.com>
-Date: Thu, 16 Jun 2011 09:04:51 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1758121Ab1FPOF0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 10:05:26 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52002 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758036Ab1FPOFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 10:05:23 -0400
+Date: Thu, 16 Jun 2011 14:05:08 GMT
+From: tip-bot for Steven Rostedt <srostedt@redhat.com>
+Message-ID: <tip-bde66c3f45d777082a0df01e64870f47ba2a5055@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
+        srostedt@redhat.com, jreiser@bitwagon.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
+        srostedt@redhat.com, jreiser@bitwagon.com, tglx@linutronix.de
+In-Reply-To: <20110421023737.743350547@goodmis.org>
+References: <20110421023737.743350547@goodmis.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] ftrace: Add .kprobe.text section to whitelist for recordmcount.c
+Git-Commit-ID: bde66c3f45d777082a0df01e64870f47ba2a5055
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 03/11] dt/irq: add irq_domain_add_simple() helper
-References: <20110616042653.29371.2052.stgit@ponder> <20110616044141.29371.76366.stgit@ponder>
-In-Reply-To: <20110616044141.29371.76366.stgit@ponder>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Jun 2011 14:05:11 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant,
+Commit-ID:  bde66c3f45d777082a0df01e64870f47ba2a5055
+Gitweb:     http://git.kernel.org/tip/bde66c3f45d777082a0df01e64870f47ba2a5055
+Author:     Steven Rostedt <srostedt@redhat.com>
+AuthorDate: Wed, 6 Apr 2011 14:10:22 -0400
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Tue, 17 May 2011 10:41:36 -0400
 
-On 06/15/2011 11:41 PM, Grant Likely wrote:
-> irq_domain_add_simple() is an easy way to generate an irq translation
-> domain for simple irq controllers.  It assumes a flat 1:1 mapping from
-> hardware irq number to an offset of the first linux irq number assigned
-> to the controller
-> 
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
->  include/linux/irq.h    |   11 +++++++++
->  kernel/irq/irqdomain.c |   58 +++++++++++++++++++++++++++++++++++++++++++++++-
->  2 files changed, 68 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/irq.h b/include/linux/irq.h
-> index a103c01..50830fc 100644
-> --- a/include/linux/irq.h
-> +++ b/include/linux/irq.h
-> @@ -797,6 +797,17 @@ extern unsigned int irq_domain_map(struct irq_domain *domain,
->  				   irq_hw_number_t hwirq);
->  extern void irq_domain_unmap(struct irq_domain *domain, irq_hw_number_t hw);
->  
-> +struct of_device_id;
-> +#ifdef CONFIG_OF
-> +extern void irq_domain_add_simple(struct device_node *controller, int irq_base);
-> +extern void irq_domain_generate_simple(struct of_device_id *match,
+ftrace: Add .kprobe.text section to whitelist for recordmcount.c
 
-match should be const
+The .kprobe.text section is safe to modify mcount to nop and tracing.
+Add it to the whitelist in recordmcount.c and recordmcount.pl.
 
-> +					u64 phys_base, unsigned int irq_start);
-> +#else
+Cc: John Reiser <jreiser@bitwagon.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Link: http://lkml.kernel.org/r/20110421023737.743350547@goodmis.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ scripts/recordmcount.c  |    1 +
+ scripts/recordmcount.pl |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-Empty function for irq_domain_add_simple?
-
-> +static inline void irq_domain_generate_simple(struct of_device_id *match,
-> +					u64 phys_base, unsigned int irq_start) { }
-> +#endif
-> +
-> +
-
-Rob
+diff --git a/scripts/recordmcount.c b/scripts/recordmcount.c
+index 4ebd839..37c5965 100644
+--- a/scripts/recordmcount.c
++++ b/scripts/recordmcount.c
+@@ -211,6 +211,7 @@ is_mcounted_section_name(char const *const txtname)
+ 		strcmp(".sched.text",    txtname) == 0 ||
+ 		strcmp(".spinlock.text", txtname) == 0 ||
+ 		strcmp(".irqentry.text", txtname) == 0 ||
++		strcmp(".kprobes.text", txtname) == 0 ||
+ 		strcmp(".text.unlikely", txtname) == 0;
+ }
+ 
+diff --git a/scripts/recordmcount.pl b/scripts/recordmcount.pl
+index 4be0dee..a871cd4 100755
+--- a/scripts/recordmcount.pl
++++ b/scripts/recordmcount.pl
+@@ -134,6 +134,7 @@ my %text_sections = (
+      ".sched.text" => 1,
+      ".spinlock.text" => 1,
+      ".irqentry.text" => 1,
++     ".kprobes.text" => 1,
+      ".text.unlikely" => 1,
+ );
+ 
