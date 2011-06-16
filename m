@@ -1,143 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754Ab1FPPpV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 11:45:21 -0400
-Received: from smtp.witbe.net ([81.88.96.48]:34768 "EHLO smtp.witbe.net"
+	id S1756162Ab1FPPo5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 11:44:57 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50731 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755705Ab1FPPpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 11:45:18 -0400
-Date: Thu, 16 Jun 2011 17:45:03 +0200
-From: Paul Rolland (=?UTF-8?B?44Od44O844Or44O744Ot44Op44Oz?=) 
-	<rol@witbe.net>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, rol@witbe.net
-Subject: Re: [3.0.0-rc3] GMBUS timed out
-Message-ID: <20110616174503.7e5cdfa2@tux.DEF.witbe.net>
-In-Reply-To: <d08817$d6fmn@azsmga001.ch.intel.com>
-References: <20110616154123.259414a3@tux.DEF.witbe.net>
- <d08817$d6fmn@azsmga001.ch.intel.com>
-Organization: Witbe.net
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-X-Ncc-RegId: fr.witbe
-X-Face: +^rP^g;Vjb!M*"%3$mF6xWU{DwwAx)W=b_<WXQMv}Rk8,fQ)?Wnk0NK/+m,;eWci?+;=I}d^:]I+)D+|r'vxjYjp.?o-8Va|&sD*-GVKn>}?Y)|*X<5cv@M`1P{\:)p9_:$=)(NY2`%AcypV*]z>YIyy5yY"9PUoV5@)*(W:S5e-48Ct7Wu6CkkO[=KB"ox,_2B/FwY&hr/E1H&<9IbOCx6NrBa"}FLA)UIvHg`9%NC\LfYB3ia]
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWsjH1VRjFydFciEg3a1tJxUEM6OCB1zdsDAAACcElEQVQ4jV2Tu3LcMAxFEY7SG/KQNYlY2685Zi1rmF5kQteBNcL/f0JAacfZDUscARePK9itY3Q4Qu5vplJKIFsrvI0t7Ii/8/nmQsERtgJpHAtiGW4ggylOAwhXTxPi0xfIcxDrZIc3qhMGD/kfKdwBExZrAf6l5PeC/Al7cAGfAGD+AgvL5yckcsxegVmG+QZRPgnYXnFUMAC8DLd6QZhAxj6dRo6vT/JNkmZQmPyDtoroMkD2VlaVgHsw2QrCAf1jPM+ou2Ju1j/G8+xINfZT+zGDPDjr7H/xnKewgi6SO4D7zloYoRDafSoogmirP0t9YIOJnN2ibDEKK6zDoSEjTIFXDcYYkwizoO/AjkATm3g+JVsSXPOCZIHwj7uBo2Bi97RMOoflJ4n3b3dvS2kVXDQupjvAk7zvaMEJlu0OJDFy4SsCusRbL95jRynY0LIA/rpyxCMkJ1ie+bWoEy+MG7pzDE3k8Z2C1a5eUdxmi0adGi2mdVjyUr2uvamrW9EeuLTCY84/AUjBj40LtqYbbM23vqolA2mpj5g03gparH45DqBgmsBK2hU0x662+QQLVYJLitxTnHB7yf0es4rraS/xqKW/hF1zPg9lOijpmtIBVrWKOQ6oTSkQjh3YtnarHQc0RrtS1XjtbQnScPrLeNKM6iS+6Qz6e9mVoPvaHHPU6eP5aKu1Ifd2QQvp6EA1bLaP3VREwewXY73xgLppBR2tg4LFg9lXzegHQlusWuxwogLCaswJ+qunQ2cyfuziX6B1p0E26nQazR3Qn2jQarRXVVZT9zP3uB5FV6pNjQG+u03ugbalEsEXqo7/AjAH60VpvOMvAAAAAElFTkSuQmCC
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/0cUAX=0X6D4wGvhIXYC=BfR"; protocol="application/pgp-signature"
+	id S1751981Ab1FPPoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 11:44:54 -0400
+Date: Thu, 16 Jun 2011 17:45:10 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, davej@redhat.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        cpufreq@vger.kernel.org, andre.przywara@amd.com,
+        Mark.Langsdorf@amd.com
+Subject: Re: [PATCH 1/2] [CPUFREQ] powernow-k8: Don't notify of successful
+ transition if we failed.
+Message-ID: <20110616154510.GA13350@eferding.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	linux-kernel@vger.kernel.org, davej@redhat.com, tglx@linutronix.de,
+	mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+	cpufreq@vger.kernel.org, andre.przywara@amd.com,
+	Mark.Langsdorf@amd.com
+References: <1308164520-14145-1-git-send-email-konrad.wilk@oracle.com>
+ <1308164520-14145-2-git-send-email-konrad.wilk@oracle.com>
+ <20110615221636.GB9725@liondog.tnic>
+ <20110615222608.GA14031@dumpdata.com>
+ <20110616142440.GA5576@dumpdata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110616142440.GA5576@dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/0cUAX=0X6D4wGvhIXYC=BfR
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jun 16, 2011 at 10:24:40AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Wed, Jun 15, 2011 at 06:26:08PM -0400, Konrad Rzeszutek Wilk wrote:
+> > > > @@ -1112,6 +1114,9 @@ static int transition_frequency_pstate(struct powernow_k8_data *data,
+> > > >  	}
+> > > >  
+> > > >  	res = transition_pstate(data, pstate);
+> > > > +	if (res)
+> > > > +		return res;
+> > > 
+> > > That's wrong because transition_pstate() returns 0 unconditionally
+> > > (at least it does so on 3.0-rc3). But this change accidentally fixes
+> > > a different bug because res is used uninitialized, containing stack
+> > > garbage otherwise.
+> > > 
+> > > A proper fix should be to check against data->max_hw_pstate and
+> > > check whether the entry is not CPUFREQ_ENTRY_INVALID (look at
+> > > fill_powernow_table_pstate() for example).
+> > 
+> > Aha! I can respin a patch for that tomorrow.
+> 
+> I divided it in two patches - so that the Reported/Tested-by tag is on
+> the translate_vid patch with its full glory of explanation. The
+> pstate checking is removed.
+> 
+> Will post the other patch under a different subject.
+> 
+> From 3ae9a2094d893ab1a500833a48cb29e0f1c81ed8 Mon Sep 17 00:00:00 2001
+> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Date: Thu, 16 Jun 2011 09:02:57 -0400
+> Subject: [PATCH 1/2] [CPUFREQ] powernow-k8: Don't notify of successful
+>  transition if we failed (vid case).
+> 
+> Before this patch if we failed the vid transition would still try to
+> submit the "new" frequencies to cpufreq.
+> That is incorrect - also we could submit a non-existing frequency value
+> which would cause cpufreq to crash. The ultimate fix is in cpufreq
+> to deal with incorrect values, but this patch improves the error
+> recovery in the AMD powernowk8 driver.
+> 
+> The failure that was reported was as follow:
 
-Hi Chris,
+					follows:
+> 
+> powernow-k8: Found 1 AMD Athlon(tm) 64 Processor 3700+ (1 cpu cores) (version 2.20.00)
+> powernow-k8: fid 0x2 (1000 MHz), vid 0x12
+> powernow-k8: fid 0xa (1800 MHz), vid 0xa
+> powernow-k8: fid 0xc (2000 MHz), vid 0x8
+> powernow-k8: fid 0xe (2200 MHz), vid 0x8
+> Marking TSC unstable due to cpufreq changes
+> powernow-k8: fid trans failed, fid 0x2, curr 0x0
+> BUG: unable to handle kernel paging request at ffff880807e07b78
+> IP: [<ffffffff81479163>] cpufreq_stats_update+0x46/0x5b
+> ...
+> 
+> And transition fails and data->currfid ends up with 0. Since
+> the machine does not support 800Mhz value when the calculation is
+> done ('find_khz_freq_from_fid(data->currfid);') it reports the
+> new frequency as 800000 which is bogus. This patch fixes
+> the issue during target setting.
+> 
+> The patch however does not fix the issue in 'powernowk8_cpu_init'
+> where the pol->cur can also be set with the 800000 value:
+> 
+>           pol->cur = find_khz_freq_from_fid(data->currfid);
+>   dprintk("policy current frequency %d kHz\n", pol->cur);
+> 
+>   /* min/max the cpu is capable of */
+>   if (cpufreq_frequency_table_cpuinfo(pol, data->powernow_table)) {
+> 
+> The fix for that looks to update cpufreq_frequency_table_cpuinfo to
+> check pol->cur.... but that would cause an regression in how the
+> acpi-cpufreq driver works (it sets cpu->cur after calling
+> cpufreq_frequency_table_cpuinfo). Instead the fix will be to let
+> cpufreq gracefully handle bogus data (another patch).
+> 
+> CC: Borislav Petkov <bp@alien8.de>
+> CC: andre.przywara@amd.com
+> CC: Mark.Langsdorf@amd.com
+> Reported-by: Tobias Diedrich <ranma+xen@tdiedrich.de>
+> Tested-by: Tobias Diedrich <ranma+xen@tdiedrich.de>
+> [v1: Rebased on v3.0-rc2, reduced patch to deal with vid case]
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  drivers/cpufreq/powernow-k8.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+> index 83479b6..fe53572 100644
+> --- a/drivers/cpufreq/powernow-k8.c
+> +++ b/drivers/cpufreq/powernow-k8.c
+> @@ -1079,6 +1079,8 @@ static int transition_frequency_fidvid(struct powernow_k8_data *data,
+>  	}
+>  
+>  	res = transition_fid_vid(data, fid, vid);
+> +	if (res)
+> +		return res;
 
-On Thu, 16 Jun 2011 15:08:48 +0100
-Chris Wilson <chris@chris-wilson.co.uk> wrote:
+a newline here please.
 
-> Attempting to use GMBUS when enabled for 3.0. It will have to be
-> disabled again until the GMBUS/GPIO adapter aligns better with the i2c
-> interface and doesn't cause a deadlock upon booting with the eeprom
-> module.
-Hey, that sounds promising ;) Glad I don't have that kind of HW...
-=20
-> In the meantime, if you have the time and inclination, you can help by
-> working out under what conditions GMBUS fails. That info message is only
-> generated after we write a message over GMBUS and receive no response.
-It is logged at 15:32:07 on my machine, and at that time, the machine was
-fully up with X/KDE/compiz running.
-It is a laptop and xrandr reports :
-Screen 0: minimum 320 x 200, current 1440 x 900, maximum 8192 x 8192
-LVDS1 connected 1440x900+0+0 (normal left inverted right x axis y axis)
-331mm x 207mm 1440x900       60.1*+
-   1024x768       60.0 =20
-   800x600        60.3     56.2 =20
-   640x480        59.9 =20
-VGA1 disconnected (normal left inverted right x axis y axis)
-   1920x1080@60Hz   60.0 =20
-DP1 disconnected (normal left inverted right x axis y axis)
-
-But I'm used to work with a screen connected to VGA1, and I connect it
-usually once my KDE session is started, and I activate it manually using
-xrandr.
-
-I just tried to repeat the process... but got another bug : activating the
-second screen for the second time (after deactivating it) just resulted in
-garbage on that screen. Primary (LVDS) is still ok, but VGA1 contains some
-black area, and some part of the LVDS1 (though the resolution not being the
-same makes it funny).
-
-No GMBUS message again... Gotta have to reboot...
-
-....
-
-OK, rebooted, step by step :
-1 - Boot : no message,
-2 - Start my KDE session : no message
-3 - Connect the screen on the VGA1 port : no message
-4 - Let KDE Daemon prompt me a screen has been connected, and click
-    Ignore : no message
-5 - Run my second screen activation screen : got the message !
-
-Here is what the script does :
-
-MODE=3D1920x1080@60Hz
-$XRANDR --output LVDS1 --primary
-$XRANDR --newmode $MODE 172.80  1920 2040 2248 2576  1080 1081 1084 1118  -=
-HSync +Vsync
-$XRANDR --addmode VGA1 $MODE
-$XRANDR --output VGA1 --mode $MODE --right-of LVDS1
-$XRANDR --output LVDS1 --primary
-
-> I've looked into one exchange that suggests that we may timeout if the
-> monitor is disconnected. Do you have anything connected to what would be
-> the first external output? Does the message go away if you boot with
-> that connected/disconnected?
-
-Only the LVDS1 connected at the time of the boot, but the message occured
-later.
-
-> > Should I report more details (and if so, which ones) or is that harmless
-> > (though I doubt kernel messages about a time out are harmless ;)
->=20
-> It's harmless in this case. Just a warning that the new hw driven method
-> failed and we are now using the old CPU driven method.
-
-OK, so I guess that me feeling the display is less responsive when
-switching desktop is just a feeling.
-
-Paul
-
---=20
-Paul Rolland                                E-Mail : rol(at)witbe.net
-CTO - Witbe.net SA                          Tel. +33 (0)1 47 67 77 77
-Les Collines de l'Arche                     Fax. +33 (0)1 47 67 77 99
-F-92057 Paris La Defense                    RIPE : PR12-RIPE
-
-LinkedIn : http://www.linkedin.com/in/paulrolland
-Skype    : rollandpaul
-
-"I worry about my child and the Internet all the time, even though she's
-too young to have logged on yet. Here's what I worry about. I worry that 10
-or 15 years from now, she will come to me and say 'Daddy, where were you
-when they took freedom of the press away from the Internet?'"
---Mike Godwin, Electronic Frontier Foundation=20
+>  	freqs.new = find_khz_freq_from_fid(data->currfid);
+>  
+>  	for_each_cpu(i, data->available_cores) {
 
 
+Other than that:
 
---Sig_/0cUAX=0X6D4wGvhIXYC=BfR
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Acked-by: Borislav Petkov <bp@alien8.de>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.14 (GNU/Linux)
-
-iEYEARECAAYFAk36JQIACgkQZP464AVDf+DDiQCfT6tDp89QWIlNQ+g1xp8J1/Wz
-ssEAn08nSuCZK0ThEWLnzD4fZiCisnQX
-=yH86
------END PGP SIGNATURE-----
-
---Sig_/0cUAX=0X6D4wGvhIXYC=BfR--
+-- 
+Regards/Gruss,
+Boris.
