@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757457Ab1FPMOd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 08:14:33 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:40362 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756846Ab1FPMO3 (ORCPT
+	id S1757675Ab1FPMPQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 08:15:16 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45389 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757535Ab1FPMPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 08:14:29 -0400
-Date: Thu, 16 Jun 2011 14:14:27 +0200
-From: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
-To: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>,
-        xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org,
+	Thu, 16 Jun 2011 08:15:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=OJ3rx3jgu7PRRqQx9+C+IVGa8zY2W4SS7V7G/hD/P9GKezpKcYL2Xck3YQF5HHqSj8
+         ni8KaGTasY8vtHgLp1Q2mw8X/oqBoVrlZhnK6f3FTAjCh5VDb4iZjaA9uKqcOAmmOyn7
+         nVk+Qe0tafEaElXwH/0loHmcbaJIfyrDpmdDI=
+Date: Thu, 16 Jun 2011 14:15:05 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: x86@kernel.org, mingo@elte.hu, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, suresh.b.siddha@intel.com,
         linux-kernel@vger.kernel.org
-Cc: christian.dietrich@informatik.uni-erlangen.de
-Subject: [PATCH 09/11] xen/xenbus: use printk_ratelimited() instead of
- printk_ratelimit()
-Message-ID: <d2bc569719b3b1d8271d1f4b2c4080bbc7527e04.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
-References: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
+Subject: Re: [PATCHSET] stop_machine: implement
+ stop_machine_from_offline_cpu()
+Message-ID: <20110616121505.GB2611@htj.dyndns.org>
+References: <1308071218-5912-1-git-send-email-tj@kernel.org>
+ <1308226219.13240.41.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
+In-Reply-To: <1308226219.13240.41.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since printk_ratelimit() shouldn't be used anymore (see comment in
-include/linux/printk.h), replace it with printk_ratelimited()
+Hello, Peter.
 
-Signed-off-by: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
----
- drivers/xen/xenbus/xenbus_xs.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+On Thu, Jun 16, 2011 at 02:10:19PM +0200, Peter Zijlstra wrote:
+> Maybe a silly question, but why does mtrr need all this? Surely mtrr can
+> serialize state by other means than stopping all cpus. A simple mutex
+> around the shared state blocking other cpus from updating the mtrr state
+> while we're copying the state to our newly born cpu should cure things.
 
-diff --git a/drivers/xen/xenbus/xenbus_xs.c b/drivers/xen/xenbus/xenbus_xs.c
-index 5534690..4055858 100644
---- a/drivers/xen/xenbus/xenbus_xs.c
-+++ b/drivers/xen/xenbus/xenbus_xs.c
-@@ -44,6 +44,7 @@
- #include <linux/rwsem.h>
- #include <linux/module.h>
- #include <linux/mutex.h>
-+#include <linux/ratelimit.h>
- #include <xen/xenbus.h>
- #include "xenbus_comms.h"
- 
-@@ -270,8 +271,7 @@ static void *xs_talkv(struct xenbus_transaction t,
- 	}
- 
- 	if (msg.type != type) {
--		if (printk_ratelimit())
--			printk(KERN_WARNING
-+		`printk_ratelimited(KERN_WARNING
- 			       "XENBUS unexpected type [%d], expected [%d]\n",
- 			       msg.type, type);
- 		kfree(ret);
+Hmmm... good question.  I don't know mtrr too well either but the
+stop-machine requirement seems to directly come from intel's
+specification.  I suppose Suresh can fill us in better.
+
+Thanks.
+
 -- 
-1.7.4.1
-
+tejun
