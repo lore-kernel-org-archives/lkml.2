@@ -1,72 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620Ab1FPQTA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 12:19:00 -0400
-Received: from alerce.vps.bitfolk.com ([212.13.194.134]:40059 "EHLO
-	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756506Ab1FPQSz (ORCPT
+	id S1756397Ab1FPQSj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 12:18:39 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:57045 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752594Ab1FPQSg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 12:18:55 -0400
-X-Greylist: delayed 1143 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Jun 2011 12:18:55 EDT
-Date: Thu, 16 Jun 2011 13:18:03 -0300
-From: Leandro Lucarella <luca@llucax.com.ar>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org
-Subject: Re: Graphic corruption with i915 (2.6.39.1)
-Message-ID: <20110616161803.GQ20487@llucax.com.ar>
-References: <20110616145842.GM20487@llucax.com.ar>
- <013811$g9fu7@fmsmga002.fm.intel.com>
+	Thu, 16 Jun 2011 12:18:36 -0400
+Date: Thu, 16 Jun 2011 19:18:30 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Tatyana Brokhman <tlinder@codeaurora.org>
+Cc: greg@kroah.com, linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        balbi@ti.com, ablay@codeaurora.org,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH/RFC 2/5] usb:dummy_hcd: connect/disconnect test support
+Message-ID: <20110616161828.GW12230@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1308231068-24038-2-git-send-email-tlinder@codeaurora.org>
+ <1308231068-24038-3-git-send-email-tlinder@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0k4Rxg87Lb8yV0u3"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <013811$g9fu7@fmsmga002.fm.intel.com>
-X-Paranoid: Just because you're paranoid, don't mean they're not after you.
+In-Reply-To: <1308231068-24038-3-git-send-email-tlinder@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris Wilson, el 16 de junio a las 17:01 me escribiste:
-> On Thu, 16 Jun 2011 11:58:42 -0300, Leandro Lucarella <luca@llucax.com.ar> wrote:
-> > Hi, I've been experiencing sporadic graphic corruption since a few
-> > stable kernel versions and I always thought "maybe is fixed in the next
-> > release", so I upgrade, but I usually experience a different problem
-> > then. This problems are exposed very rarely, maybe I have no problems
-> > like for a month or so.
-> > 
-> > Now I'm using kernel 2.6.39.1 and I experience one of this problem so
-> > I though it was time to report it. This is what I got in dmesg:
-> > 
-> > [368693.756008] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
-> > [368693.756014] render error detected, EIR: 0x00000010
-> > [368693.756017]   IPEIR: 0x00000000
-> > [368693.756019]   IPEHR: 0x02000004
-> > [368693.756020]   INSTDONE: 0xcc8fffff
-> > [368693.756022]   INSTPS: 0x8001e025
-> > [368693.756024]   INSTDONE1: 0xbfffffbf
-> > [368693.756026]   ACTHD: 0x00715128
-> > [368693.756027] page table error
-> > [368693.756029]   PGTBL_ER: 0x00000002
-> > [368693.756038] [drm:i915_wait_request] *ERROR* i915_wait_request returns -11 (awaiting 17700193 at 17700192, next 17700196)
-> > [368694.258010] [drm:i915_reset] *ERROR* Failed to reset chip.
-> 
-> If you look in /sys/kernel/debug/dri/0/i915_error_state we can see what
-> garbage the DDX [xf86-video-intel] fed the gpu.
 
-cannot access /sys/kernel/debug/dri/0/i915_error_state: No such file or directory
+--0k4Rxg87Lb8yV0u3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The debug directory is not present, should I boot or compile with some
-particular option to enable it?
+Hi,
 
--- 
-Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
-----------------------------------------------------------------------
-GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
-----------------------------------------------------------------------
-Refalar: acto de mover el peso de la masa hacia un lugar equivocado pero
-concreto. Todo refalo es, por cierto, una sucesión de pequeñísimos
-movimientos a los que un centímetro es la proporción aumentada de miles
-de porciones de espacio, que, al estar el piso mojado, refala.
-	-- Ricardo Vaporeso
+On Thu, Jun 16, 2011 at 04:31:04PM +0300, Tatyana Brokhman wrote:
+> @@ -1362,6 +1363,43 @@ static struct dummy_ep *find_endpoint (struct dumm=
+y *dum, u8 address)
+>  #define Ep_Request	(USB_TYPE_STANDARD | USB_RECIP_ENDPOINT)
+>  #define Ep_InRequest	(Ep_Request | USB_DIR_IN)
+> =20
+> +/**
+> + * dummy_hcd_conn_disc_work() - performs a disconnect/connect sequence.
+> + * @data: pointer to the sceduled work_struct
+> + */
+> +static void dummy_hcd_conn_disc_work(struct work_struct *data)
+> +{
+> +	struct dummy_hcd *dum_hcd =3D
+> +		container_of(data, struct dummy_hcd, conn_disc_work);
+> +	int ret_val;
+> +
+> +	if (!dum_hcd->dum->driver) {
+> +		dev_err(dummy_dev(dum_hcd),
+> +			"dummy_hcd_conn_disc_work called without connected "
+> +			"device\n");
+> +		return;
+> +	}
+> +
+> +	dev_info(dummy_dev(dum_hcd), "disconnecting device...\n");
+> +	ret_val =3D dummy_pullup(&dum_hcd->dum->gadget, 0);
+> +	if (ret_val) {
+> +		dev_err(dummy_dev(dum_hcd), "dummy_hcd_conn_disc_work:"
+> +					    " couldn't disconnect device:"
+> +					    " ret_val=3D%d\n",
+> +				ret_val);
+> +		return;
+> +	}
+> +
+> +	dev_info(dummy_dev(dum_hcd), "re-connecting device...\n");
+> +	/* We have to let the hub task to update the device disconnect state */
+> +	msleep_interruptible(1000);
+> +	ret_val =3D dummy_pullup(&dum_hcd->dum->gadget, 1);
+> +	if (ret_val)
+> +		dev_err(dummy_dev(dum_hcd), "dummy_hcd_conn_disc_work:"
+> +					    " couldn't re-connect device:"
+> +					    " ret_val=3D%d\n",
+> +				ret_val);
+
+this print is quite ugly. How about something like:
+
+	dev_err(dummy_dev(dum_hcd), "%s: couldn't re-connect --> %d\n",
+		__func__, ret_val);
+
+???
+
+--=20
+balbi
+
+--0k4Rxg87Lb8yV0u3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN+izUAAoJEAv8Txj19kN1qcoH/RuJ+PpHqPIrA9VKr9bhUeVu
+grvbw6NUizV86aeHxTaY9PSmjmYck2t1bQNsTwqzAy3RDlG/XjAo2DMcmClbmOKb
+VgO2tJniLfaq3lr7Lnr4VTG4VI0z+tqclX3OX1BOrnHSYJaiWushSqDxw3M275ot
+a7LltmMyezofFo+P1PKjQvSNmMbMIHhkO64KFZwSFeNC34GHCScO1IyBqi/NDsj2
+Lb/kTj0amRGRnzF4U2Sk83o9dXT6gSuKtRHqyeHPOsNygFNg24DLluWlb6yT8dNM
+8Fr0NQDeatSIjK0bI5B4xn/wkcQwJiUxR+jt+Z4fT9E+Fi5CddTeaRebjQ26+2U=
+=QV9l
+-----END PGP SIGNATURE-----
+
+--0k4Rxg87Lb8yV0u3--
