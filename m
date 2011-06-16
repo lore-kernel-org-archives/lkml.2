@@ -1,47 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932860Ab1FPUPI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 16:15:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27660 "EHLO
+	id S932709Ab1FPUOs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 16:14:48 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27589 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932721Ab1FPUOt (ORCPT
+	with ESMTP id S932461Ab1FPUOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 16:14:49 -0400
+	Thu, 16 Jun 2011 16:14:44 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, x86@kernel.org, cpufreq@vger.kernel.org,
         davej@redhat.com, bp@alien8.de, Mark.Langsdorf@amd.com,
         andre.przywara@amd.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/3] [CPUFREQ]: Don't set stat->last_index to -1 if the pol->cur has incorrect value.
-Date: Thu, 16 Jun 2011 15:36:38 -0400
-Message-Id: <1308253000-6289-2-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 2/3] [CPUFREQ] powernow-k8: Don't notify of successful transition if we failed (vid case).
+Date: Thu, 16 Jun 2011 15:36:39 -0400
+Message-Id: <1308253000-6289-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1308253000-6289-1-git-send-email-konrad.wilk@oracle.com>
 References: <1308253000-6289-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4DFA6422.0080:SCFMA922111,ss=1,fgs=0
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090202.4DFA6423.0108:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the driver submitted an non-existing pol>cur value (say it
-used the default initialized value of zero), when the cpufreq
-stats tries to setup its initial values it incorrectly sets
-stat->last_index to -1 (or 0xfffff...). And cpufreq_stats_update
-tries to update at that index location and fails.
+Before this patch if we failed the vid transition would still try to
+submit the "new" frequencies to cpufreq.
+That is incorrect - also we could submit a non-existing frequency value
+which would cause cpufreq to crash. The ultimate fix is in cpufreq
+to deal with incorrect values, but this patch improves the error
+recovery in the AMD powernowk8 driver.
 
-This can be caused by:
-
-stat->last_index = freq_table_get_index(stat, policy->cur);
-
-not finding the appropiate frequency in the table (b/c the policy->cur
-is wrong) and we end up crashing. The fix however is
-concentrated in the 'cpufreq_stats_update' as the last_index
-(and old_index) are updated there. Which means it can reset
-the last_index to -1 again and on the next iteration cause a crash.
-
-Without this patch, the following crash is observed:
+The failure that was reported was as follows:
 
 powernow-k8: Found 1 AMD Athlon(tm) 64 Processor 3700+ (1 cpu cores) (version 2.20.00)
 powernow-k8: fid 0x2 (1000 MHz), vid 0x12
@@ -52,50 +42,54 @@ Marking TSC unstable due to cpufreq changes
 powernow-k8: fid trans failed, fid 0x2, curr 0x0
 BUG: unable to handle kernel paging request at ffff880807e07b78
 IP: [<ffffffff81479163>] cpufreq_stats_update+0x46/0x5b
-.. snip..
-Pid: 1, comm: swapper Not tainted 3.0.0-rc2 #45 MICRO-STAR INTERNATIONAL CO., LTD MS-7094/MS-7094
-..snip..
-Call Trace:
- [<ffffffff81479248>] cpufreq_stat_notifier_trans+0x48/0x7c
- [<ffffffff81095d68>] notifier_call_chain+0x32/0x5e
- [<ffffffff81095e6b>] __srcu_notifier_call_chain+0x47/0x63
- [<ffffffff81095e96>] srcu_notifier_call_chain+0xf/0x11
- [<ffffffff81477e7a>] cpufreq_notify_transition+0x111/0x134
- [<ffffffff8147b0d4>] powernowk8_target+0x53b/0x617
- [<ffffffff8147723a>] __cpufreq_driver_target+0x2e/0x30
- [<ffffffff8147a127>] cpufreq_governor_dbs+0x339/0x356
- [<ffffffff81477394>] __cpufreq_governor+0xa8/0xe9
- [<ffffffff81477525>] __cpufreq_set_policy+0x132/0x13e
- [<ffffffff8147848d>] cpufreq_add_dev_interface+0x272/0x28c
+...
 
+And transition fails and data->currfid ends up with 0. Since
+the machine does not support 800Mhz value when the calculation is
+done ('find_khz_freq_from_fid(data->currfid);') it reports the
+new frequency as 800000 which is bogus. This patch fixes
+the issue during target setting.
+
+The patch however does not fix the issue in 'powernowk8_cpu_init'
+where the pol->cur can also be set with the 800000 value:
+
+          pol->cur = find_khz_freq_from_fid(data->currfid);
+  dprintk("policy current frequency %d kHz\n", pol->cur);
+
+  /* min/max the cpu is capable of */
+  if (cpufreq_frequency_table_cpuinfo(pol, data->powernow_table)) {
+
+The fix for that looks to update cpufreq_frequency_table_cpuinfo to
+check pol->cur.... but that would cause an regression in how the
+acpi-cpufreq driver works (it sets cpu->cur after calling
+cpufreq_frequency_table_cpuinfo). Instead the fix will be to let
+cpufreq gracefully handle bogus data (another patch).
+
+Acked-by: Borislav Petkov <bp@alien8.de>
+CC: andre.przywara@amd.com
+CC: Mark.Langsdorf@amd.com
 Reported-by: Tobias Diedrich <ranma+xen@tdiedrich.de>
 Tested-by: Tobias Diedrich <ranma+xen@tdiedrich.de>
+[v1: Rebased on v3.0-rc2, reduced patch to deal with vid case]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/cpufreq/cpufreq_stats.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+ drivers/cpufreq/powernow-k8.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-index b60a4c2..32ab381 100644
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -298,11 +298,13 @@ static int cpufreq_stat_notifier_trans(struct notifier_block *nb,
- 	old_index = stat->last_index;
- 	new_index = freq_table_get_index(stat, freq->new);
+diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+index 83479b6..287c56f 100644
+--- a/drivers/cpufreq/powernow-k8.c
++++ b/drivers/cpufreq/powernow-k8.c
+@@ -1079,6 +1079,9 @@ static int transition_frequency_fidvid(struct powernow_k8_data *data,
+ 	}
  
--	cpufreq_stats_update(freq->cpu);
--	if (old_index == new_index)
-+	/* We can't do stat->time_in_state[-1]= .. */
-+	if (old_index == -1 || new_index == -1)
- 		return 0;
- 
--	if (old_index == -1 || new_index == -1)
-+	cpufreq_stats_update(freq->cpu);
+ 	res = transition_fid_vid(data, fid, vid);
++	if (res)
++		return res;
 +
-+	if (old_index == new_index)
- 		return 0;
+ 	freqs.new = find_khz_freq_from_fid(data->currfid);
  
- 	spin_lock(&cpufreq_stats_lock);
+ 	for_each_cpu(i, data->available_cores) {
 -- 
 1.7.4.1
 
