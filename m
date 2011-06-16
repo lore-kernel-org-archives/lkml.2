@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932905Ab1FPUQR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 16:16:17 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:42422
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S932876Ab1FPUQP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 16:16:15 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:52175
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1758690Ab1FPUB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758692Ab1FPUB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Jun 2011 16:01:59 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -13,9 +13,9 @@ To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 29/77] Staging: hv: storvsc: Get rid of the device type guid from storvsc_drv.c
-Date: Thu, 16 Jun 2011 13:17:02 -0700
-Message-Id: <1308255470-3826-29-git-send-email-kys@microsoft.com>
+Subject: [PATCH 30/77] Staging: hv: netvsc: Get rid of the dev_type guid from netvsc.c
+Date: Thu, 16 Jun 2011 13:17:03 -0700
+Message-Id: <1308255470-3826-30-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1308255470-3826-1-git-send-email-kys@microsoft.com>
 References: <1308255393-3785-1-git-send-email-kys@microsoft.com>
@@ -24,43 +24,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the device type guid from storvsc_drv.c as it is no longer used.
+Get rid of the dev_type guid from netvsc.c, as it is no longer used.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/storvsc_drv.c |   10 ----------
+ drivers/staging/hv/netvsc.c |   10 ----------
  1 files changed, 0 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 7d605c9..c908fd8 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -43,14 +43,6 @@ MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
+diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
+index 1bd920f..d59b9bd 100644
+--- a/drivers/staging/hv/netvsc.c
++++ b/drivers/staging/hv/netvsc.c
+@@ -35,15 +35,6 @@
+ /* Globals */
+ static const char *driver_name = "netvsc";
  
- static const char *driver_name = "storvsc";
- 
--/* {ba6163d9-04a1-4d29-b605-72e2ffb1dc7f} */
--static const struct hv_guid stor_vsci_device_type = {
+-/* {F8615163-DF3E-46c5-913F-F2D2F965ED0E} */
+-static const struct hv_guid netvsc_device_type = {
 -	.data = {
--		0xd9, 0x63, 0x61, 0xba, 0xa1, 0x04, 0x29, 0x4d,
--		0xb6, 0x05, 0x72, 0xe2, 0xff, 0xb1, 0xdc, 0x7f
+-		0x63, 0x51, 0x61, 0xF8, 0x3E, 0xDF, 0xc5, 0x46,
+-		0x91, 0x3F, 0xF2, 0xD2, 0xF9, 0x65, 0xED, 0x0E
 -	}
 -};
 -
- struct hv_host_device {
- 	struct hv_device *dev;
- 	struct kmem_cache *request_pool;
-@@ -747,8 +739,6 @@ static int __init storvsc_drv_init(void)
- 	sizeof(struct vstor_packet) + sizeof(u64),
- 	sizeof(u64)));
+-
+ static struct netvsc_device *alloc_net_device(struct hv_device *device)
+ {
+ 	struct netvsc_device *net_device;
+@@ -1009,7 +1000,6 @@ int netvsc_initialize(struct hv_driver *drv)
+ {
  
--	memcpy(&drv->dev_type, &stor_vsci_device_type,
--	       sizeof(struct hv_guid));
+ 	drv->name = driver_name;
+-	memcpy(&drv->dev_type, &netvsc_device_type, sizeof(struct hv_guid));
  
- 	if (max_outstanding_req_per_channel <
- 	    STORVSC_MAX_IO_REQUESTS)
+ 	return 0;
+ }
 -- 
 1.7.4.1
 
