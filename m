@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab1FPRTw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 13:19:52 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:40417 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756317Ab1FPRTu (ORCPT
+	id S1758292Ab1FPRU3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 13:20:29 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:37526 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758111Ab1FPRUX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 13:19:50 -0400
-Date: Thu, 16 Jun 2011 13:19:49 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: Tatyana Brokhman <tlinder@codeaurora.org>, <greg@kroah.com>,
-        <linux-usb@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        <ablay@codeaurora.org>, open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH/RFC 2/5] usb:dummy_hcd: connect/disconnect test support
-In-Reply-To: <Pine.LNX.4.44L0.1106161303540.2204-100000@iolanthe.rowland.org>
-Message-ID: <Pine.LNX.4.44L0.1106161315510.1690-100000@iolanthe.rowland.org>
+	Thu, 16 Jun 2011 13:20:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=vrfy.org; s=google;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=KppDUA570YhgCuT/KBFtO7jCURyO2IqL7xqOkMavIjvx0PuQiF7NSJ4p0uBCcVb6wH
+         KahjUKP5VZBAVYPV7V2v1SOtTL0lUvCoCy6PqvhmyRgabPWzFNQugeruNH4UiesF/mH/
+         o8WPkHWMQTCamgfVydDZcOIHay+xi4nxsyyrk=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <BANLkTi=qHhzwGfp4v8B1CAmT+gtA=sOgvw@mail.gmail.com>
+References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp>
+ <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp> <20110615153337.GA10160@kroah.com>
+ <4DF9F11F.705@hitachi.com> <20110616154129.GA31498@kroah.com>
+ <1308239454.2436.34.camel@mulgrave> <20110616161442.GA32113@kroah.com>
+ <1308241506.2436.44.camel@mulgrave> <BANLkTi=qHhzwGfp4v8B1CAmT+gtA=sOgvw@mail.gmail.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Thu, 16 Jun 2011 19:20:07 +0200
+Message-ID: <BANLkTikUNqTxgD_+TTVpcFyRDu_fSesrsg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Greg KH <greg@kroah.com>, Nao Nishijima <nao.nishijima.xt@hitachi.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jcm@redhat.com, hare@suse.de, stefanr@s5r6.in-berlin.de,
+        yrl.pp-manager.tt@hitachi.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Jun 2011, Alan Stern wrote:
+On Thu, Jun 16, 2011 at 19:09, Kay Sievers <kay.sievers@vrfy.org> wrote:
+> On Thu, Jun 16, 2011 at 18:25, James Bottomley
+> <James.Bottomley@hansenpartnership.com> wrote:
+>> On Thu, 2011-06-16 at 09:14 -0700, Greg KH wrote:
+>> > All userspace naming will be taken care of by the usual udev rules, so
+>>> > for disks, something like /dev/disk/by-preferred/<fred> which would be
+>>> > the usual symbolic link.
+>>>
+>>> No, udev can not create such a link after the preferred name is set, as
+>>> it has no way of knowing that the name was set.
+>>
+>> It can if we trigger a uevent.  Note: I'm not advocating this ... I'd be
+>> equally happy having whatever sets the kernel name create the link (or
+>> tickle udev to create it).  We definitely require device links, though,
+>> to get this to work.
 
-> On Thu, 16 Jun 2011, Felipe Balbi wrote:
-> 
-> > Hi,
-> > 
-> > On Thu, Jun 16, 2011 at 11:06:47AM -0400, Alan Stern wrote:
-> > > On Thu, 16 Jun 2011, Tatyana Brokhman wrote:
-> > > 
-> > > > This implementation adds a new proprietary device control requests (to be
-> > > > handled by the dummy_hcd) that initiates a connect/disconnect sequence.
-> > > > The bRequest value of the new control request is 0x52.
-> > > > It is used by the user-space Unit testing application.
-> > > 
-> > > This is not a bad idea.  On the other hand, it is slightly peculiar -- 
-> > > it you're testing with real UDC hardware, you would do the 
-> > > disconnect/reconnect sequence by hand (unplug and replug the USB 
-> > > cable), not in software.
-> > 
-> > actually, this is quite useful. Specially for the controllers which
-> > _can_ do soft-connect by toggling data pullups. I would rather have
-> > these sort of thing maybe in composite.c, so that we can build tests
-> > with all gadget drivers/controllers, not only dummy_hcd.
-> 
-> It sounds like you don't understand the point of this patch.  It allows
-> the _host_ to control the pullup settings.
+Guess all that would work now, including mount(8) not canonicalizing.
+What would happen if we mount:
+  /dev/disk/by-pretty/foo
+and some tool later thinks the pretty name should better be 'bar', it
+writes the name to /sys, we get a uevent, the old link disappears, we
+get a new link, mount has no device node anymore for the mounted
+device ...
 
-Sorry, the misunderstanding was mine -- I didn't grasp what you were 
-suggesting.
+So we basically get a one-shot additional pretty name? Guess, the
+_single_ name changed anytime later just asks for serious problems. We
+need to set it very early to be really useful, but how, where is it
+coming from?
 
-Yes, something like this could be useful in composite.c.  It could be 
-defined as a vendor-specific request with the device as the recipient.  
-
-One problem with making it special for dummy-hcd is that it would 
-prevent people from testing gadget drivers that want to use the same 
-bRequest value to mean something different.  Putting it in composite.c 
-would force all function drivers to know about it.
-
-Alan Stern
-
+Kay
