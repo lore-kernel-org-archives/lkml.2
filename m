@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009Ab1FPMpN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 08:45:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2729 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753510Ab1FPMpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 08:45:11 -0400
-Date: Thu, 16 Jun 2011 14:42:14 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Greg Kurz <gkurz@fr.ibm.com>
-Cc: akpm@linux-foundation.org, containers@lists.osdl.org,
-        linux-kernel@vger.kernel.org, serge@hallyn.com, daniel.lezcano@free.fr,
-        ebiederm@xmission.com, xemul@openvz.org
-Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was
-	Vpid:)
-Message-ID: <20110616124019.GA19312@redhat.com>
-References: <20110615145527.4016.70157.stgit@bahia.local> <20110615184625.GA15573@redhat.com> <1308222107.8230.49.camel@bahia.local>
+	id S1753360Ab1FPMpA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 08:45:00 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53775 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab1FPMo5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 08:44:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=KAv9BXwKfjytP3udq00/91icGNKnHHtbQHBrhjQGQFjX+ioaK+t9Qhw2BVnVM3lr/+
+         7xn/ulFtvs0bD0ytrTkkgdKFzCtcGNo8JyepGOl5H6UO2tG7WGsXWH5n7QQdSnnD8BzV
+         KZ+gVbwggBMGVpcivCUf9gLbYJgIoRzJXCiDw=
+Date: Thu, 16 Jun 2011 14:44:52 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: x86@kernel.org, mingo@elte.hu, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, suresh.b.siddha@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] stop_machine: kill __stop_machine()
+Message-ID: <20110616124452.GC2611@htj.dyndns.org>
+References: <1308071218-5912-1-git-send-email-tj@kernel.org>
+ <1308071218-5912-2-git-send-email-tj@kernel.org>
+ <1308226372.13240.42.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1308222107.8230.49.camel@bahia.local>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1308226372.13240.42.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16, Greg Kurz wrote:
->
-> On Wed, 2011-06-15 at 20:46 +0200, Oleg Nesterov wrote:
-> > On 06/15, Greg Kurz wrote:
-> > >
-> > > @@ -176,6 +177,17 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
-> > >  		if (tracer)
-> > >  			tpid = task_pid_nr_ns(tracer, ns);
-> > >  	}
-> > > +	actpid = 0;
-> > > +	sighand = rcu_dereference(p->sighand);
-> > > +	if (sighand) {
-> > > +		struct pid_namespace *pid_ns;
-> > > +		unsigned long flags;
-> > > +		spin_lock_irqsave(&sighand->siglock, flags);
-> >
-> > Well. This is not exactly right. We have lock_task_sighand() for this.
-> >
->
-> I see... ->sighand could change so we need the for(;;) loop in
-> __lock_task_sighand() to be sure we have the right pointer, correct ?
+On Thu, Jun 16, 2011 at 02:12:52PM +0200, Peter Zijlstra wrote:
+> On Tue, 2011-06-14 at 19:06 +0200, Tejun Heo wrote:
+> > +++ b/arch/x86/kernel/alternative.c
+> > @@ -719,8 +719,7 @@ void *__kprobes text_poke_smp(void *addr, const void *opcode, size_t len)
+> >         tpp.nparams = 1;
+> >         atomic_set(&stop_machine_first, 1);
+> >         wrote_text = 0;
+> > -       /* Use __stop_machine() because the caller already got online_cpus. */
+> > -       __stop_machine(stop_machine_text_poke, (void *)&tpp, cpu_online_mask);
+> > +       stop_machine(stop_machine_text_poke, (void *)&tpp, cpu_online_mask);
+> >         return addr;
+> >  }
+> 
+> Please have a look at: 
+> 
+> ---
+> commit d91309f69b7bdb64aeb30106fde8d18c5dd354b5
+> Author: Peter Zijlstra <peterz@infradead.org>
+> Date:   Fri Feb 11 22:07:46 2011 +0100
+> 
+>     x86: Fix text_poke_smp_batch() deadlock
+>     
+>     Fix this deadlock - we are already holding the mutex:
 
-Yes,
+Ah, right, I thought cpu_hotplug_begin() sets active_writer and then
+returns with cpu_hotplug.lock released.  Weird locking there.
+Anyways, this one should be dropped then and I don't think it affects
+the rest of the series much.
 
-> By the way, if we use lock_task_sighand() we'll end up with nested
-> rcu_read_lock(): it will work but I don't know how it may affect
-> performance...
+Thanks.
 
-You are kidding ;)
-
-> > But. Why do you need ->siglock? Why rcu_read_lock() is not enough?
-> >
->
-> Because there's a race with
-> __exit_signal()->__unhash_process()->detach_pid() that can break
-> task_active_pid_ns()
-
-Yes,
-
-> and rcu won't help here
-
-Why? free_pid() uses call_rcu() to do put_pid()
-
-> (unless *perhaps* by
-> modifying __exit_signal() but I don't want to mess with such a critical
-> path).
-
-I don't think so...
-
-> > Hmm. You don't even need pid_ns afaics, you could simply look at
-> > pid->numbers[pid->level].
-> >
->
-> True but I will have the same problem: detach_pid() nullifies the pid.
-
-Can't understand. Of course pid can be NULL. So what? Say, ->sighand
-can be NULL as well, they both "disappear" at the same time. This is
-fine, we raced with exit, we should report pid=0.
-
-Oleg.
-
+-- 
+tejun
