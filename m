@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932503Ab1FPUCc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 16:02:32 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:32779
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
+	id S932375Ab1FPUCD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 16:02:03 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:52091
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1758660Ab1FPUB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 16:01:58 -0400
+	id S1758151Ab1FPUB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 16:01:57 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>, stable <stable@kernel.org>
-Subject: [PATCH 03/77] Staging: hv: storvsc: Increase the timeout value in the storvsc driver
-Date: Thu, 16 Jun 2011 13:16:36 -0700
-Message-Id: <1308255470-3826-3-git-send-email-kys@microsoft.com>
+Subject: [PATCH 04/77] Staging: hv: netvsc: Fix a bug in accounting transmit slots
+Date: Thu, 16 Jun 2011 13:16:37 -0700
+Message-Id: <1308255470-3826-4-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1308255470-3826-1-git-send-email-kys@microsoft.com>
 References: <1308255393-3785-1-git-send-email-kys@microsoft.com>
@@ -24,76 +24,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some loaded windows hosts, we have discovered that the host may not
-respond to guest requests within the specified time (one second)
-as evidenced by the guest timing out. Fix this problem by increasing
-the timeout to 5 seconds. 
+The transmit slots were manipulated without proper locking. Fix this bug by 
+making the variable tracking the transmit slots atomic.
 
-It may be useful to apply this patch to the 3.0 kernel as well.
-the 3.0 kernel as well.
+This patch should be ported to prior stable kernels 2.6.32 and later. 
+
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 Cc: stable <stable@kernel.org>
 ---
- drivers/staging/hv/storvsc.c     |    8 ++++----
- drivers/staging/hv/storvsc_drv.c |    2 +-
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/staging/hv/netvsc_drv.c |   16 +++++++++-------
+ 1 files changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/hv/storvsc.c b/drivers/staging/hv/storvsc.c
-index 06cd327..3029786 100644
---- a/drivers/staging/hv/storvsc.c
-+++ b/drivers/staging/hv/storvsc.c
-@@ -135,7 +135,7 @@ static int storvsc_channel_init(struct hv_device *device)
- 	if (ret != 0)
- 		goto cleanup;
+diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
+index 33cab9c..38ca2c2 100644
+--- a/drivers/staging/hv/netvsc_drv.c
++++ b/drivers/staging/hv/netvsc_drv.c
+@@ -21,6 +21,7 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
  
--	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
- 	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
-@@ -163,7 +163,7 @@ static int storvsc_channel_init(struct hv_device *device)
- 	if (ret != 0)
- 		goto cleanup;
+ #include <linux/init.h>
++#include <linux/atomic.h>
+ #include <linux/module.h>
+ #include <linux/highmem.h>
+ #include <linux/device.h>
+@@ -45,7 +46,7 @@
+ struct net_device_context {
+ 	/* point back to our device context */
+ 	struct hv_device *device_ctx;
+-	unsigned long avail;
++	atomic_t avail;
+ 	struct delayed_work dwork;
+ };
  
--	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
- 	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
-@@ -192,7 +192,7 @@ static int storvsc_channel_init(struct hv_device *device)
- 	if (ret != 0)
- 		goto cleanup;
+@@ -118,8 +119,9 @@ static void netvsc_xmit_completion(void *context)
  
--	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
- 	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
-@@ -222,7 +222,7 @@ static int storvsc_channel_init(struct hv_device *device)
- 	if (ret != 0)
- 		goto cleanup;
+ 		dev_kfree_skb_any(skb);
  
--	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
- 	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 2c6d2f2..7effaf3 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -376,7 +376,7 @@ static int storvsc_host_reset(struct hv_device *device)
- 	if (ret != 0)
- 		goto cleanup;
+-		net_device_ctx->avail += num_pages;
+-		if (net_device_ctx->avail >= PACKET_PAGES_HIWATER)
++		atomic_add(num_pages, &net_device_ctx->avail);
++		if (atomic_read(&net_device_ctx->avail) >=
++				PACKET_PAGES_HIWATER)
+  			netif_wake_queue(net);
+ 	}
+ }
+@@ -133,7 +135,7 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
  
--	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
- 	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
+ 	/* Add 1 for skb->data and additional one for RNDIS */
+ 	num_pages = skb_shinfo(skb)->nr_frags + 1 + 1;
+-	if (num_pages > net_device_ctx->avail)
++	if (num_pages > atomic_read(&net_device_ctx->avail))
+ 		return NETDEV_TX_BUSY;
+ 
+ 	/* Allocate a netvsc packet based on # of frags. */
+@@ -185,8 +187,8 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
+ 		net->stats.tx_bytes += skb->len;
+ 		net->stats.tx_packets++;
+ 
+-		net_device_ctx->avail -= num_pages;
+-		if (net_device_ctx->avail < PACKET_PAGES_LOWATER)
++		atomic_sub(num_pages, &net_device_ctx->avail);
++		if (atomic_read(&net_device_ctx->avail) < PACKET_PAGES_LOWATER)
+ 			netif_stop_queue(net);
+ 	} else {
+ 		/* we are shutting down or bus overloaded, just drop packet */
+@@ -345,7 +347,7 @@ static int netvsc_probe(struct hv_device *dev)
+ 
+ 	net_device_ctx = netdev_priv(net);
+ 	net_device_ctx->device_ctx = dev;
+-	net_device_ctx->avail = ring_size;
++	atomic_set(&net_device_ctx->avail, ring_size);
+ 	dev_set_drvdata(&dev->device, net);
+ 	INIT_DELAYED_WORK(&net_device_ctx->dwork, netvsc_send_garp);
+ 
 -- 
 1.7.4.1
 
