@@ -1,44 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756263Ab1FPOxA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 10:53:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8650 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754463Ab1FPOw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 10:52:57 -0400
-Date: Thu, 16 Jun 2011 16:51:10 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Greg Kurz <gkurz@fr.ibm.com>, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, containers@lists.osdl.org,
-        akpm@linux-foundation.org, xemul@openvz.org
-Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was
-	Vpid:)
-Message-ID: <20110616145044.GA25379@redhat.com>
-References: <20110615145527.4016.70157.stgit@bahia.local> <20110615184625.GA15573@redhat.com> <1308222107.8230.49.camel@bahia.local> <20110616123554.GA7230@hawkmoon.kerlabs.com> <1308229251.8230.77.camel@bahia.local> <20110616132551.GB7230@hawkmoon.kerlabs.com>
+	id S1753885Ab1FPO5G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 10:57:06 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:49527 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953Ab1FPO5C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 10:57:02 -0400
+Date: Thu, 16 Jun 2011 08:56:59 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 11/11] arm/versatile: Add device tree support
+Message-ID: <20110616145659.GC3795@ponder.secretlab.ca>
+References: <20110616042653.29371.2052.stgit@ponder>
+ <20110616044311.29371.49018.stgit@ponder>
+ <201106161620.37205.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110616132551.GB7230@hawkmoon.kerlabs.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <201106161620.37205.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16, Louis Rilling wrote:
->
-> On 16/06/11 15:00 +0200, Greg Kurz wrote:
-> > peeking into pid->numbers.
->
-> It ends like open-coding an optimized version of task_pid_vnr(). If the
-> optimization is really important (I guess this depends on the depth of recursive
-> pid namespaces), it would be better to re-write task_pid_vnr().
+On Thu, Jun 16, 2011 at 04:20:37PM +0200, Arnd Bergmann wrote:
+> On Thursday 16 June 2011, Grant Likely wrote:
+> > This patch adds a new versatile platform for when using the device
+> > tree.  Add platform and amba devices are discovered and registered by
+> > parsing the device tree.  Clocks and initial io mappings are still
+> > configured statically.
+> 
+> Hi Grant,
+> 
+> Two small questions about the device tree contents:
+> 
+> > +       i2c@10002000 {
+> > +               #address-cells = <1>;
+> > +               #size-cells = <0>;
+> > +               compatible = "arm,versatile-i2c";
+> > +               reg = <0x10002000 0x1000>;
+> > +
+> > +               rtc@68 {
+> > +                       compatible = "dallas,ds1338";
+> > +                       reg = <0x68>;
+> > +               };
+> > +       };
+> > +
+> > +       net@10010000 {
+> > +               compatible = "smsc,lan91c111";
+> > +               reg = <0x10010000 0x10000>;
+> > +               interrupts = <25>;
+> > +       };
+> > +
+> > +       lcd@10008000 {
+> > +               compatible = "arm,versatile-lcd";
+> > +               reg = <0x10008000 0x1000>;
+> > +       };
+> 
+> Why are these devices on the top level, rather than on the AMBA bus or
+> the FPGA? From the documentation, it seems that they are implemented
+> in the FPGA, which would also match the address layout.
 
-No, task_pid_vnr(p) is different, it should use the caller's namespace.
+Mostly because I 'faked' this device tree based on what is currently
+in the kernel for the Versatile platform.  I need to look at the
+documentation and make it reflect reality, including setting up ranges
+correctly (as you commented on below).
 
-Just in case, I agree there is no need to optimize this code. The simpler
-the better. I mentioned pid->numbers[pid->level] just to point that all
-we need is task_pid() itself, there are no subtle races which need the
-locking.
-
-Oleg.
-
+> 
+> > +       amba {
+> > +               compatible = "arm,amba-bus";
+> > +               #address-cells = <1>;
+> > +               #size-cells = <1>;
+> > +               ranges;
+> > +
+> > +               vic: intc@10140000 {
+> > +                       compatible = "arm,versatile-vic", "arm,vic";
+> > +                       interrupt-controller;
+> > +                       #interrupt-cells = <1>;
+> > +                       reg = <0x10140000 0x1000>;
+> > +               };
+> > +
+> 
+> Why the empty ranges property? All device registers are based on 0x10000000,
+> so I'd expect this to be described like that here.
+> 
+> 	Arnd
