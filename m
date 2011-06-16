@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757653Ab1FPMPJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 08:15:09 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:47395 "EHLO relay.sgi.com"
+	id S1757066Ab1FPMPE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 08:15:04 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:47382 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757535Ab1FPMPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 08:15:02 -0400
+	id S1757219Ab1FPMO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 08:14:59 -0400
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/8 v3] x86, UV: inline header file functions
-Cc: mingo@elte.hu, penberg@kernel.org
-Message-Id: <E1QXBUZ-0004g7-T9@eag09.americas.sgi.com>
+Subject: [PATCH 3/8 v3] x86, UV: allow for non-consecutive sockets
+Cc: mingo@elte.hu
+Message-Id: <E1QXBUZ-0004gE-UY@eag09.americas.sgi.com>
 From: Cliff Wickman <cpw@sgi.com>
 Date: Thu, 16 Jun 2011 07:16:11 -0500
 Sender: linux-kernel-owner@vger.kernel.org
@@ -18,106 +18,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cliff Wickman <cpw@sgi.com>
 
-Make all the functions in uv_bau.h inline so that it can
-be included in the fake prom (used in simulations).
-Otherwise they will generate warnings for unused functions.
+Fix for the theoretical case in which there is a socket 1 on a blade
+with no socket 0.
+Only call make_per_cpu_thp() for present sockets.
+
+We have only seen this fail for internal configurations.
 
 Diffed against 3.0.0-rc3
 
 Signed-off-by: Cliff Wickman <cpw@sgi.com>
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
 ---
- arch/x86/include/asm/uv/uv_bau.h |   28 ++++++++++++++--------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
+ arch/x86/platform/uv/tlb_uv.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux/arch/x86/include/asm/uv/uv_bau.h
+Index: linux/arch/x86/platform/uv/tlb_uv.c
 ===================================================================
---- linux.orig/arch/x86/include/asm/uv/uv_bau.h
-+++ linux/arch/x86/include/asm/uv/uv_bau.h
-@@ -526,72 +526,72 @@ struct bau_control {
- 	struct hub_and_pnode	*thp;
- };
- 
--static unsigned long read_mmr_uv2_status(void)
-+static inline unsigned long read_mmr_uv2_status(void)
- {
- 	return read_lmmr(UV2H_LB_BAU_SB_ACTIVATION_STATUS_2);
- }
- 
--static void write_mmr_data_broadcast(int pnode, unsigned long mmr_image)
-+static inline void write_mmr_data_broadcast(int pnode, unsigned long mmr_image)
- {
- 	write_gmmr(pnode, UVH_BAU_DATA_BROADCAST, mmr_image);
- }
- 
--static void write_mmr_descriptor_base(int pnode, unsigned long mmr_image)
-+static inline void write_mmr_descriptor_base(int pnode, unsigned long mmr_image)
- {
- 	write_gmmr(pnode, UVH_LB_BAU_SB_DESCRIPTOR_BASE, mmr_image);
- }
- 
--static void write_mmr_activation(unsigned long index)
-+static inline void write_mmr_activation(unsigned long index)
- {
- 	write_lmmr(UVH_LB_BAU_SB_ACTIVATION_CONTROL, index);
- }
- 
--static void write_gmmr_activation(int pnode, unsigned long mmr_image)
-+static inline void write_gmmr_activation(int pnode, unsigned long mmr_image)
- {
- 	write_gmmr(pnode, UVH_LB_BAU_SB_ACTIVATION_CONTROL, mmr_image);
- }
- 
--static void write_mmr_payload_first(int pnode, unsigned long mmr_image)
-+static inline void write_mmr_payload_first(int pnode, unsigned long mmr_image)
- {
- 	write_gmmr(pnode, UVH_LB_BAU_INTD_PAYLOAD_QUEUE_FIRST, mmr_image);
- }
- 
--static void write_mmr_payload_tail(int pnode, unsigned long mmr_image)
-+static inline void write_mmr_payload_tail(int pnode, unsigned long mmr_image)
- {
- 	write_gmmr(pnode, UVH_LB_BAU_INTD_PAYLOAD_QUEUE_TAIL, mmr_image);
- }
- 
--static void write_mmr_payload_last(int pnode, unsigned long mmr_image)
-+static inline void write_mmr_payload_last(int pnode, unsigned long mmr_image)
- {
- 	write_gmmr(pnode, UVH_LB_BAU_INTD_PAYLOAD_QUEUE_LAST, mmr_image);
- }
- 
--static void write_mmr_misc_control(int pnode, unsigned long mmr_image)
-+static inline void write_mmr_misc_control(int pnode, unsigned long mmr_image)
- {
- 	write_gmmr(pnode, UVH_LB_BAU_MISC_CONTROL, mmr_image);
- }
- 
--static unsigned long read_mmr_misc_control(int pnode)
-+static inline unsigned long read_mmr_misc_control(int pnode)
- {
- 	return read_gmmr(pnode, UVH_LB_BAU_MISC_CONTROL);
- }
- 
--static void write_mmr_sw_ack(unsigned long mr)
-+static inline void write_mmr_sw_ack(unsigned long mr)
- {
- 	uv_write_local_mmr(UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE_ALIAS, mr);
- }
- 
--static unsigned long read_mmr_sw_ack(void)
-+static inline unsigned long read_mmr_sw_ack(void)
- {
- 	return read_lmmr(UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE);
- }
- 
--static unsigned long read_gmmr_sw_ack(int pnode)
-+static inline unsigned long read_gmmr_sw_ack(int pnode)
- {
- 	return read_gmmr(pnode, UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE);
- }
- 
--static void write_mmr_data_config(int pnode, unsigned long mr)
-+static inline void write_mmr_data_config(int pnode, unsigned long mr)
- {
- 	uv_write_global_mmr64(pnode, UVH_BAU_DATA_CONFIG, mr);
- }
+--- linux.orig/arch/x86/platform/uv/tlb_uv.c
++++ linux/arch/x86/platform/uv/tlb_uv.c
+@@ -1752,10 +1752,10 @@ static int __init summarize_uvhub_socket
+ 				sdp = &bdp->socket[socket];
+ 				if (scan_sock(sdp, bdp, &smaster, &hmaster))
+ 					return 1;
++				make_per_cpu_thp(smaster);
+ 			}
+ 			socket++;
+ 			socket_mask = (socket_mask >> 1);
+-			make_per_cpu_thp(smaster);
+ 		}
+ 	}
+ 	return 0;
