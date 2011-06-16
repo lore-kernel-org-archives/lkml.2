@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345Ab1FPEBo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 00:01:44 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52668 "EHLO
+	id S1751237Ab1FPEDe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 00:03:34 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52723 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761Ab1FPEBn (ORCPT
+	with ESMTP id S1750761Ab1FPEDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 00:01:43 -0400
+	Thu, 16 Jun 2011 00:03:33 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 16 Jun 2011 12:54:43 +0900
+Date: Thu, 16 Jun 2011 12:56:33 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
@@ -18,8 +18,8 @@ Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "bsingharora@gmail.com" <bsingharora@gmail.com>,
         Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
         "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: [PATCH 5/7] Fix not good check of mem_cgroup_local_usage()
-Message-Id: <20110616125443.23584d78.kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 6/7] memcg: calc NUMA node's weight for scan.
+Message-Id: <20110616125633.9b9fa703.kamezawa.hiroyu@jp.fujitsu.com>
 In-Reply-To: <20110616124730.d6960b8b.kamezawa.hiroyu@jp.fujitsu.com>
 References: <20110616124730.d6960b8b.kamezawa.hiroyu@jp.fujitsu.com>
 Organization: FUJITSU Co. LTD.
@@ -31,100 +31,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From fcfc6ee9847b0b2571cd6e9847572d7c70e1e2b2 Mon Sep 17 00:00:00 2001
+>From fb8aaa2c5f7fd99dfcb5d2ecb3c1226a58caafea Mon Sep 17 00:00:00 2001
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 16 Jun 2011 09:23:54 +0900
-Subject: [PATCH 5/7] Fix not good check of mem_cgroup_local_usage()
+Date: Thu, 16 Jun 2011 10:05:46 +0900
+Subject: [PATCH 6/7] memcg: calc NUMA node's weight for scan.
 
-Now, mem_cgroup_local_usage(memcg) is used as hint for scanning memory
-cgroup hierarchy. If it returns true, the memcg has some reclaimable memory.
+Now, by commit 889976, numa node scan of memcg is in round-robin.
+As commit log says, "a better algorithm is needed".
 
-But this function doesn't take care of
-  - unevictable pages
-  - anon pages on swapless system.
+for implementing some good scheduling, one of required things is
+defining importance of each node at LRU scanning.
 
-This patch fixes the function to use LRU information.
-For NUMA, for avoid scanning, numa scan bitmap is used. If it's
-empty, some more precise check will be done.
+This patch defines each node's weight for scan as
+
+swappiness = (memcg's swappiness)? memcg's swappiness : 1
+FILE = inactive_file + (inactive_file_is_low)? active_file : 0
+ANON = inactive_anon + (inactive_anon_is_low)? active_anon : 0
+
+weight = (FILE * (200-swappiness) + ANON * swappiness)/200.
+
+Note: After we have dirty page accounting per memcg, we can make use of
+      dirty page information. (very dirty node should be skipped...)
+
+Following patch will implement a scheduling using this weight.
 
 Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/memcontrol.c |   43 +++++++++++++++++++++++++++++++++----------
- 1 files changed, 33 insertions(+), 10 deletions(-)
+ mm/memcontrol.c |   58 ++++++++++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 50 insertions(+), 8 deletions(-)
 
 Index: mmotm-0615/mm/memcontrol.c
 ===================================================================
 --- mmotm-0615.orig/mm/memcontrol.c
 +++ mmotm-0615/mm/memcontrol.c
-@@ -632,15 +632,6 @@ static long mem_cgroup_read_stat(struct 
- 	return val;
- }
+@@ -144,10 +144,12 @@ struct mem_cgroup_per_zone {
  
--static long mem_cgroup_local_usage(struct mem_cgroup *mem)
--{
--	long ret;
--
--	ret = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_RSS);
--	ret += mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_CACHE);
--	return ret;
--}
--
- static void mem_cgroup_swap_statistics(struct mem_cgroup *mem,
- 					 bool charge)
- {
-@@ -1713,6 +1704,23 @@ static void mem_cgroup_numascan_init(str
- 	mutex_init(&mem->numascan_mutex);
- }
+ struct mem_cgroup_per_node {
+ 	struct mem_cgroup_per_zone zoneinfo[MAX_NR_ZONES];
++	unsigned long weight;
+ };
  
-+static bool mem_cgroup_reclaimable(struct mem_cgroup *mem, bool noswap)
+ struct mem_cgroup_lru_info {
+ 	struct mem_cgroup_per_node *nodeinfo[MAX_NUMNODES];
++	unsigned long total_weight;
+ };
+ 
+ /*
+@@ -1617,6 +1619,33 @@ mem_cgroup_select_victim(struct mem_cgro
+ 
+ #if MAX_NUMNODES > 1
+ 
++static unsigned long mem_cgroup_numascan_weight(struct mem_cgroup *mem,
++				int nid, bool inactive_file_low,
++				bool inactive_anon_low)
 +{
-+	if (!nodes_empty(mem->scan_nodes))
-+		return true;
-+	/* slow path */
-+	if (mem_cgroup_get_local_zonestat(mem, LRU_INACTIVE_FILE))
-+		return true;
-+	if (mem_cgroup_get_local_zonestat(mem, LRU_ACTIVE_FILE))
-+		return true;
-+	if (noswap || !total_swap_pages)
-+		return false;
-+	if (mem_cgroup_get_local_zonestat(mem, LRU_INACTIVE_ANON))
-+		return true;
-+	if (mem_cgroup_get_local_zonestat(mem, LRU_ACTIVE_ANON))
-+		return true;
-+	return false;
++	unsigned int swappiness = mem_cgroup_swappiness(mem);
++	unsigned long file, anon, weight;
++
++	/* swappiness == 0 needs some care for avoiding very heavy scanning */
++	if (!swappiness)
++		swappiness = 1;
++
++	file = mem_cgroup_get_zonestat_node(mem, nid, LRU_INACTIVE_FILE);
++	if (inactive_file_low)
++		file += mem_cgroup_get_zonestat_node(mem, nid, LRU_ACTIVE_FILE);
++
++	anon = mem_cgroup_get_zonestat_node(mem, nid, LRU_INACTIVE_ANON);
++	if (inactive_anon_low)
++		anon += mem_cgroup_get_zonestat_node(mem, nid, LRU_ACTIVE_ANON);
++
++	if (!total_swap_pages || !res_counter_margin(&mem->memsw))
++		weight = file;
++	else
++		weight = (file * (200 - swappiness) + anon * swappiness)/200;
++	mem->info.nodeinfo[nid]->weight = weight;
++	return weight;
 +}
- #else
- int mem_cgroup_select_victim_node(struct mem_cgroup *mem)
++
+ /*
+  * Always updating the nodemask is not very good - even if we have an empty
+  * list or the wrong list here, we can start from some node and traverse all
+@@ -1630,6 +1659,7 @@ mem_cgroup_select_victim(struct mem_cgro
+ #define NUMASCAN_UPDATE_THRESH	(16384UL) /* 16k events of pagein/pageout */
+ static void mem_cgroup_may_update_nodemask(struct mem_cgroup *mem)
  {
-@@ -1722,6 +1730,21 @@ static void mem_cgroup_numascan_init(str
- {
++	bool inactive_file_low, inactive_anon_low;
+ 	int nid;
+ 	unsigned long long limit;
+ 	/* if no limit, we never reach here */
+@@ -1649,17 +1679,20 @@ static void mem_cgroup_may_update_nodema
+ 	/* make a nodemask where this memcg uses memory from */
+ 	mem->scan_nodes = node_states[N_HIGH_MEMORY];
+ 
++	inactive_file_low = mem_cgroup_inactive_file_is_low(mem);
++	inactive_anon_low = mem_cgroup_inactive_anon_is_low(mem);
++	mem->info.total_weight = 0;
++
+ 	for_each_node_mask(nid, node_states[N_HIGH_MEMORY]) {
++		unsigned long weight;
+ 
+-		if (mem_cgroup_get_zonestat_node(mem, nid, LRU_INACTIVE_FILE) ||
+-		    mem_cgroup_get_zonestat_node(mem, nid, LRU_ACTIVE_FILE))
+-			continue;
++		weight = mem_cgroup_numascan_weight(mem, nid,
++						inactive_file_low,
++						inactive_anon_low);
++		if (!weight)
++			node_clear(nid, mem->scan_nodes);
+ 
+-		if (total_swap_pages &&
+-		    (mem_cgroup_get_zonestat_node(mem, nid, LRU_INACTIVE_ANON) ||
+-		     mem_cgroup_get_zonestat_node(mem, nid, LRU_ACTIVE_ANON)))
+-			continue;
+-		node_clear(nid, mem->scan_nodes);
++		mem->info.total_weight += weight;
+ 	}
+ 	mutex_unlock(&mem->numascan_mutex);
+ }
+@@ -4295,6 +4328,15 @@ static int mem_control_numa_stat_show(st
+ 		seq_printf(m, " N%d=%lu", nid, node_nr);
+ 	}
+ 	seq_putc(m, '\n');
++
++	seq_printf(m, "scan_weight=%lu", mem_cont->info.total_weight);
++	for_each_node_state(nid, N_HIGH_MEMORY) {
++		unsigned long weight;
++
++		weight = mem_cont->info.nodeinfo[nid]->weight;
++		seq_printf(m, " N%d=%lu", nid, weight);
++	}
++	seq_putc(m, '\n');
  	return 0;
  }
-+
-+static bool mem_cgroup_reclaimable(struct mem_cgroup *mem, bool noswap)
-+{
-+	if (mem_cgroup_get_zonestat_node(mem, 0, LRU_INACTIVE_FILE))
-+		return true;
-+	if (mem_cgroup_get_zonestat_node(mem, 0, LRU_ACTIVE_FILE))
-+		return true;
-+	if (noswap || !total_swap_pages)
-+		return false;
-+	if (mem_cgroup_get_zonestat_node(mem, 0, LRU_INACTIVE_ANON))
-+		return true;
-+	if (mem_cgroup_get_zonestat_node(mem, 0, LRU_ACTIVE_ANON))
-+		return true;
-+	return false;
-+}
- #endif
- 
- 
-@@ -1811,7 +1834,7 @@ again:
- 
- 	while (visit--) {
- 		victim = mem_cgroup_select_victim(root_mem);
--		if (!mem_cgroup_local_usage(victim)) {
-+		if (!mem_cgroup_reclaimable(victim, noswap)) {
- 			/* this cgroup's local usage == 0 */
- 			css_put(&victim->css);
- 			continue;
+ #endif /* CONFIG_NUMA */
 
