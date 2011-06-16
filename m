@@ -1,149 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756162Ab1FPPo5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 11:44:57 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50731 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751981Ab1FPPoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 11:44:54 -0400
-Date: Thu, 16 Jun 2011 17:45:10 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, davej@redhat.com, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        cpufreq@vger.kernel.org, andre.przywara@amd.com,
-        Mark.Langsdorf@amd.com
-Subject: Re: [PATCH 1/2] [CPUFREQ] powernow-k8: Don't notify of successful
- transition if we failed.
-Message-ID: <20110616154510.GA13350@eferding.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-	linux-kernel@vger.kernel.org, davej@redhat.com, tglx@linutronix.de,
-	mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-	cpufreq@vger.kernel.org, andre.przywara@amd.com,
-	Mark.Langsdorf@amd.com
-References: <1308164520-14145-1-git-send-email-konrad.wilk@oracle.com>
- <1308164520-14145-2-git-send-email-konrad.wilk@oracle.com>
- <20110615221636.GB9725@liondog.tnic>
- <20110615222608.GA14031@dumpdata.com>
- <20110616142440.GA5576@dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110616142440.GA5576@dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756008Ab1FPPu7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 11:50:59 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44432 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751958Ab1FPPu6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 11:50:58 -0400
+Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device
+ structure
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Greg KH <greg@kroah.com>
+Cc: Nao Nishijima <nao.nishijima.xt@hitachi.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, jcm@redhat.com,
+        hare@suse.de, stefanr@s5r6.in-berlin.de, yrl.pp-manager.tt@hitachi.com
+In-Reply-To: <20110616154129.GA31498@kroah.com>
+References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp>
+	 <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp>
+	 <20110615153337.GA10160@kroah.com> <4DF9F11F.705@hitachi.com>
+	 <20110616154129.GA31498@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Jun 2011 11:50:54 -0400
+Message-ID: <1308239454.2436.34.camel@mulgrave>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 10:24:40AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Wed, Jun 15, 2011 at 06:26:08PM -0400, Konrad Rzeszutek Wilk wrote:
-> > > > @@ -1112,6 +1114,9 @@ static int transition_frequency_pstate(struct powernow_k8_data *data,
-> > > >  	}
-> > > >  
-> > > >  	res = transition_pstate(data, pstate);
-> > > > +	if (res)
-> > > > +		return res;
-> > > 
-> > > That's wrong because transition_pstate() returns 0 unconditionally
-> > > (at least it does so on 3.0-rc3). But this change accidentally fixes
-> > > a different bug because res is used uninitialized, containing stack
-> > > garbage otherwise.
-> > > 
-> > > A proper fix should be to check against data->max_hw_pstate and
-> > > check whether the entry is not CPUFREQ_ENTRY_INVALID (look at
-> > > fill_powernow_table_pstate() for example).
+On Thu, 2011-06-16 at 08:41 -0700, Greg KH wrote:
+> On Thu, Jun 16, 2011 at 09:03:43PM +0900, Nao Nishijima wrote:
+> > Hi Greg,
 > > 
-> > Aha! I can respin a patch for that tomorrow.
+> > (2011/06/16 0:33), Greg KH wrote:
+> > > On Wed, Jun 15, 2011 at 05:16:28PM +0900, Nao Nishijima wrote:
+> > >> Allow users to set the preferred name of device via sysfs interface.
+> > >>
+> > >> (Exsample) sda -> foo
+> > >> # echo foo > /sys/block/sda/preferred_name
+> > >>
+> > >> Suggested-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+> > >> Suggested-by: Jon Masters <jcm@redhat.com>
+> > >> Signed-off-by: Nao Nishijima <nao.nishijima.xt@hitachi.com>
+> > > 
+> > > You don't document this new sysfs file (which is required), nor do you
+> > > explain what it is for and how to use it.
+> > > 
+> > > Please do that in this patch, and in a Documentation/ABI/ file for any
+> > > new sysfs file you create.
+> > >
+> > 
+> > I'm afraid that my explanation was not enough.
+> > I will add explanation to this patch and Documentation/ABI file.
+> > 
+> > > I still fail to understand how a "preferred" file will help anyone out
+> > > here at all...
+> > >
+> > 
+> > Let me explain, users cannot identify a device from a device name
+> > because device names may change at each boot up time. If kernel show
+> > preferred names in kernel messages, users can easily identify a device
+> > from kernel messages.
 > 
-> I divided it in two patches - so that the Reported/Tested-by tag is on
-> the translate_vid patch with its full glory of explanation. The
-> pstate checking is removed.
+> I understand your request for the kernel to print out these types of
+> names, but I'm still not sold on this being an issue that is the
+> kernel's to deal with at all.
 > 
-> Will post the other patch under a different subject.
+> Again, how would you handle multiple persistant names for the same
+> device being used at the same time?
 > 
-> From 3ae9a2094d893ab1a500833a48cb29e0f1c81ed8 Mon Sep 17 00:00:00 2001
-> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Date: Thu, 16 Jun 2011 09:02:57 -0400
-> Subject: [PATCH 1/2] [CPUFREQ] powernow-k8: Don't notify of successful
->  transition if we failed (vid case).
-> 
-> Before this patch if we failed the vid transition would still try to
-> submit the "new" frequencies to cpufreq.
-> That is incorrect - also we could submit a non-existing frequency value
-> which would cause cpufreq to crash. The ultimate fix is in cpufreq
-> to deal with incorrect values, but this patch improves the error
-> recovery in the AMD powernowk8 driver.
-> 
-> The failure that was reported was as follow:
+> And again, why not just fix the userspace tools?  That is trivial to do
+> so and again, could have been done by now in the years this has been
+> discussed.
 
-					follows:
-> 
-> powernow-k8: Found 1 AMD Athlon(tm) 64 Processor 3700+ (1 cpu cores) (version 2.20.00)
-> powernow-k8: fid 0x2 (1000 MHz), vid 0x12
-> powernow-k8: fid 0xa (1800 MHz), vid 0xa
-> powernow-k8: fid 0xc (2000 MHz), vid 0x8
-> powernow-k8: fid 0xe (2200 MHz), vid 0x8
-> Marking TSC unstable due to cpufreq changes
-> powernow-k8: fid trans failed, fid 0x2, curr 0x0
-> BUG: unable to handle kernel paging request at ffff880807e07b78
-> IP: [<ffffffff81479163>] cpufreq_stats_update+0x46/0x5b
-> ...
-> 
-> And transition fails and data->currfid ends up with 0. Since
-> the machine does not support 800Mhz value when the calculation is
-> done ('find_khz_freq_from_fid(data->currfid);') it reports the
-> new frequency as 800000 which is bogus. This patch fixes
-> the issue during target setting.
-> 
-> The patch however does not fix the issue in 'powernowk8_cpu_init'
-> where the pol->cur can also be set with the 800000 value:
-> 
->           pol->cur = find_khz_freq_from_fid(data->currfid);
->   dprintk("policy current frequency %d kHz\n", pol->cur);
-> 
->   /* min/max the cpu is capable of */
->   if (cpufreq_frequency_table_cpuinfo(pol, data->powernow_table)) {
-> 
-> The fix for that looks to update cpufreq_frequency_table_cpuinfo to
-> check pol->cur.... but that would cause an regression in how the
-> acpi-cpufreq driver works (it sets cpu->cur after calling
-> cpufreq_frequency_table_cpuinfo). Instead the fix will be to let
-> cpufreq gracefully handle bogus data (another patch).
-> 
-> CC: Borislav Petkov <bp@alien8.de>
-> CC: andre.przywara@amd.com
-> CC: Mark.Langsdorf@amd.com
-> Reported-by: Tobias Diedrich <ranma+xen@tdiedrich.de>
-> Tested-by: Tobias Diedrich <ranma+xen@tdiedrich.de>
-> [v1: Rebased on v3.0-rc2, reduced patch to deal with vid case]
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/cpufreq/powernow-k8.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-> index 83479b6..fe53572 100644
-> --- a/drivers/cpufreq/powernow-k8.c
-> +++ b/drivers/cpufreq/powernow-k8.c
-> @@ -1079,6 +1079,8 @@ static int transition_frequency_fidvid(struct powernow_k8_data *data,
->  	}
->  
->  	res = transition_fid_vid(data, fid, vid);
-> +	if (res)
-> +		return res;
+So I can summarise where I think we are in these discussions:
 
-a newline here please.
+We provide the ability to give all kernel devices a "preferred name".
+By default this will be the device name the kernel would have originally
+assigned.  the dev_printk's will use the preferred name, and it will be
+modifiable from user space.  All the kernel will do is print out
+whatever it is ... no guarantees of uniqueness or specific format will
+be made.  Since we're only providing one preferred_name file, the kernel
+can only have one preferred name for a device at any given time
+(although it is modifiable on the fly as many times as the user
+chooses).
 
->  	freqs.new = find_khz_freq_from_fid(data->currfid);
->  
->  	for_each_cpu(i, data->available_cores) {
+The design is to use this preferred name to implement what Hitachi wants
+in terms of persistent name, but we don't really care.
+
+All userspace naming will be taken care of by the usual udev rules, so
+for disks, something like /dev/disk/by-preferred/<fred> which would be
+the usual symbolic link.
+
+This will ensure that kernel output and udev input are consistent.  It
+will still require that user space utilities which derive a name for a
+device will need modifying to print out the preferred name.
+
+James
 
 
-Other than that:
-
-Acked-by: Borislav Petkov <bp@alien8.de>
-
--- 
-Regards/Gruss,
-Boris.
