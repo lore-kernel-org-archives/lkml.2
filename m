@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925Ab1FPHBU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:01:20 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:57613 "EHLO
+	id S1756903Ab1FPHeG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:34:06 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:45756 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755579Ab1FPHBO (ORCPT
+	by vger.kernel.org with ESMTP id S1752256Ab1FPHBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:01:14 -0400
-X-Sasl-enc: y31nhhK0mrfV4pGHgyKrIN/wNGatr8LNqaA4Zu1oC/5l 1308207673
+	Thu, 16 Jun 2011 03:01:16 -0400
+X-Sasl-enc: T3tKrE2xErVopVKXGOrq00SDKTIvqYCucnLjefX3frOs 1308207675
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:34 2011
-Message-Id: <20110616000234.795921317@clark.kroah.org>
+Message-Id: <20110616000234.881084533@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:00:22 -0700
+Date: Wed, 15 Jun 2011 17:00:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Jim Bos <jim876@xs4all.nl>, Matthew Garrett <mjg@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Tony Luck <tony.luck@intel.com>, Yinghai Lu <yinghai@kernel.org>
-Subject: [59/89] Revert "x86, efi: Retain boot service code until after switching to virtual mode"
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [60/89] xhci: Add defines for hardcoded slot states
 In-Reply-To: <20110616000258.GA14529@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,140 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@suse.de>
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
 
-This reverts commit 0aed459e8487eb6ebdb4efe8cefe1eafbc704b30, which was
-commit 916f676f8dc016103f983c7ec54c18ecdbb6e349 upstream.
+commit e2b0217715c6d10379d94bdfe5560af96eecbb7c upstream.
 
-It breaks some people's machines, so this will all get worked out in the
-3.0 kernel release, it's not quite ready for 2.6.39 just yet.
+This needs to be added to the stable trees back to 2.6.34 to support an
+upcoming bug fix.
 
-Thanks to Maarten Lankhorst <m.b.lankhorst@gmail.com> for reporting the
-issue.
-
-Cc: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Cc: Jim Bos <jim876@xs4all.nl>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/x86/kernel/setup.c        |    7 ------
- arch/x86/platform/efi/efi.c    |   45 -----------------------------------------
- arch/x86/platform/efi/efi_64.c |    5 +---
- include/linux/efi.h            |    1 
- 4 files changed, 3 insertions(+), 55 deletions(-)
 
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -912,13 +912,6 @@ void __init setup_arch(char **cmdline_p)
- 	memblock.current_limit = get_max_mapped();
- 	memblock_x86_fill();
+---
+ drivers/usb/host/xhci-dbg.c |    8 ++++----
+ drivers/usb/host/xhci.h     |    5 +++++
+ 2 files changed, 9 insertions(+), 4 deletions(-)
+
+--- a/drivers/usb/host/xhci-dbg.c
++++ b/drivers/usb/host/xhci-dbg.c
+@@ -437,13 +437,13 @@ char *xhci_get_slot_state(struct xhci_hc
+ 	struct xhci_slot_ctx *slot_ctx = xhci_get_slot_ctx(xhci, ctx);
  
--	/*
--	 * The EFI specification says that boot service code won't be called
--	 * after ExitBootServices(). This is, in fact, a lie.
--	 */
--	if (efi_enabled)
--		efi_reserve_boot_services();
--
- 	/* preallocate 4k for mptable mpc */
- 	early_reserve_e820_mpc_new();
+ 	switch (GET_SLOT_STATE(slot_ctx->dev_state)) {
+-	case 0:
++	case SLOT_STATE_ENABLED:
+ 		return "enabled/disabled";
+-	case 1:
++	case SLOT_STATE_DEFAULT:
+ 		return "default";
+-	case 2:
++	case SLOT_STATE_ADDRESSED:
+ 		return "addressed";
+-	case 3:
++	case SLOT_STATE_CONFIGURED:
+ 		return "configured";
+ 	default:
+ 		return "reserved";
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -560,6 +560,11 @@ struct xhci_slot_ctx {
+ #define SLOT_STATE	(0x1f << 27)
+ #define GET_SLOT_STATE(p)	(((p) & (0x1f << 27)) >> 27)
  
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -315,40 +315,6 @@ static void __init print_efi_memmap(void
- }
- #endif  /*  EFI_DEBUG  */
- 
--void __init efi_reserve_boot_services(void)
--{
--	void *p;
--
--	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
--		efi_memory_desc_t *md = p;
--		unsigned long long start = md->phys_addr;
--		unsigned long long size = md->num_pages << EFI_PAGE_SHIFT;
--
--		if (md->type != EFI_BOOT_SERVICES_CODE &&
--		    md->type != EFI_BOOT_SERVICES_DATA)
--			continue;
--
--		memblock_x86_reserve_range(start, start + size, "EFI Boot");
--	}
--}
--
--static void __init efi_free_boot_services(void)
--{
--	void *p;
--
--	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
--		efi_memory_desc_t *md = p;
--		unsigned long long start = md->phys_addr;
--		unsigned long long size = md->num_pages << EFI_PAGE_SHIFT;
--
--		if (md->type != EFI_BOOT_SERVICES_CODE &&
--		    md->type != EFI_BOOT_SERVICES_DATA)
--			continue;
--
--		free_bootmem_late(start, size);
--	}
--}
--
- void __init efi_init(void)
- {
- 	efi_config_table_t *config_tables;
-@@ -541,9 +507,7 @@ void __init efi_enter_virtual_mode(void)
- 	efi.systab = NULL;
- 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
- 		md = p;
--		if (!(md->attribute & EFI_MEMORY_RUNTIME) &&
--		    md->type != EFI_BOOT_SERVICES_CODE &&
--		    md->type != EFI_BOOT_SERVICES_DATA)
-+		if (!(md->attribute & EFI_MEMORY_RUNTIME))
- 			continue;
- 
- 		size = md->num_pages << EFI_PAGE_SHIFT;
-@@ -594,13 +558,6 @@ void __init efi_enter_virtual_mode(void)
- 	}
- 
- 	/*
--	 * Thankfully, it does seem that no runtime services other than
--	 * SetVirtualAddressMap() will touch boot services code, so we can
--	 * get rid of it all at this point
--	 */
--	efi_free_boot_services();
--
--	/*
- 	 * Now that EFI is in virtual mode, update the function
- 	 * pointers in the runtime service table to the new virtual addresses.
- 	 *
---- a/arch/x86/platform/efi/efi_64.c
-+++ b/arch/x86/platform/efi/efi_64.c
-@@ -64,11 +64,10 @@ static void __init early_runtime_code_ma
- 	if (!(__supported_pte_mask & _PAGE_NX))
- 		return;
- 
--	/* Make EFI service code area executable */
-+	/* Make EFI runtime service code area executable */
- 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
- 		md = p;
--		if (md->type == EFI_RUNTIME_SERVICES_CODE ||
--		    md->type == EFI_BOOT_SERVICES_CODE) {
-+		if (md->type == EFI_RUNTIME_SERVICES_CODE) {
- 			unsigned long end;
- 			end = md->phys_addr + (md->num_pages << EFI_PAGE_SHIFT);
- 			early_mapping_set_exec(md->phys_addr, end, executable);
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -299,7 +299,6 @@ extern void efi_initialize_iomem_resourc
- 		struct resource *data_resource, struct resource *bss_resource);
- extern unsigned long efi_get_time(void);
- extern int efi_set_rtc_mmss(unsigned long nowtime);
--extern void efi_reserve_boot_services(void);
- extern struct efi_memory_map memmap;
++#define SLOT_STATE_DISABLED	0
++#define SLOT_STATE_ENABLED	SLOT_STATE_DISABLED
++#define SLOT_STATE_DEFAULT	1
++#define SLOT_STATE_ADDRESSED	2
++#define SLOT_STATE_CONFIGURED	3
  
  /**
+  * struct xhci_ep_ctx
 
 
