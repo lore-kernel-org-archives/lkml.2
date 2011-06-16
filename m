@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756270Ab1FPHFH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:05:07 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:51486 "EHLO
+	id S1756289Ab1FPHFL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:05:11 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:49571 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756110Ab1FPHFC (ORCPT
+	by vger.kernel.org with ESMTP id S1756116Ab1FPHFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:05:02 -0400
-X-Sasl-enc: gtH5ijkIrfnAmrn3qAcij1bDlB3LQ323FXp+JPAMT2yW 1308207901
+	Thu, 16 Jun 2011 03:05:04 -0400
+X-Sasl-enc: NQtkjKjJG2Lk+W7e+RDCcY/Kh4x+XPIZGdjDEfyu0EQz 1308207903
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:16:09 2011
-Message-Id: <20110616001609.421140118@clark.kroah.org>
+Message-Id: <20110616001609.511375415@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:14:58 -0700
+Date: Wed, 15 Jun 2011 17:14:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [01/91] ftrace: Only update the function code on write to filter files
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>
+Subject: [02/91] kmemleak: Do not return a pointer to an object that kmemleak did not get
 In-Reply-To: <20110616001900.GA25375@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,44 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit 058e297d34a404caaa5ed277de15698d8dc43000 upstream.
+commit 52c3ce4ec5601ee383a14f1485f6bac7b278896e upstream.
 
-If function tracing is enabled, a read of the filter files will
-cause the call to stop_machine to update the function trace sites.
-It should only call stop_machine on write.
+The kmemleak_seq_next() function tries to get an object (and increment
+its use count) before returning it. If it could not get the last object
+during list traversal (because it may have been freed), the function
+should return NULL rather than a pointer to such object that it did not
+get.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Reported-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Acked-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/trace/ftrace.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ mm/kmemleak.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2360,14 +2360,16 @@ ftrace_regex_release(struct inode *inode
- 		ftrace_match_records(parser->buffer, parser->idx, enable);
+--- a/mm/kmemleak.c
++++ b/mm/kmemleak.c
+@@ -1354,9 +1354,12 @@ static void *kmemleak_seq_next(struct se
+ 	++(*pos);
+ 
+ 	list_for_each_continue_rcu(n, &object_list) {
+-		next_obj = list_entry(n, struct kmemleak_object, object_list);
+-		if (get_object(next_obj))
++		struct kmemleak_object *obj =
++			list_entry(n, struct kmemleak_object, object_list);
++		if (get_object(obj)) {
++			next_obj = obj;
+ 			break;
++		}
  	}
  
--	mutex_lock(&ftrace_lock);
--	if (ftrace_start_up && ftrace_enabled)
--		ftrace_run_update_code(FTRACE_ENABLE_CALLS);
--	mutex_unlock(&ftrace_lock);
--
- 	trace_parser_put(parser);
- 	kfree(iter);
- 
-+	if (file->f_mode & FMODE_WRITE) {
-+		mutex_lock(&ftrace_lock);
-+		if (ftrace_start_up && ftrace_enabled)
-+			ftrace_run_update_code(FTRACE_ENABLE_CALLS);
-+		mutex_unlock(&ftrace_lock);
-+	}
-+
- 	mutex_unlock(&ftrace_regex_lock);
- 	return 0;
- }
+ 	put_object(prev_obj);
 
 
