@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757133Ab1FPWu6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 18:50:58 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40967 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755680Ab1FPWuz (ORCPT
+	id S1758495Ab1FPXAh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 19:00:37 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:16081 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756064Ab1FPXAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 18:50:55 -0400
-Message-ID: <4DFA88CC.6050306@codemonkey.ws>
-Date: Thu, 16 Jun 2011 17:50:52 -0500
-From: Anthony Liguori <anthony@codemonkey.ws>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	Thu, 16 Jun 2011 19:00:36 -0400
+Date: Fri, 17 Jun 2011 00:51:59 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Connor Hansen <cmdkhh@gmail.com>
+cc: linux-kernel@vger.kernel.org, Matt Porter <mporter@kernel.crashing.org>,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: rionet: NULL pointer dereference
+In-Reply-To: <BANLkTimwzbB9ZwbG3u=oRNAHSECioEJ3dQ@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1106170050180.8140@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1106162359560.8140@swampdragon.chaosbits.net> <BANLkTimwzbB9ZwbG3u=oRNAHSECioEJ3dQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Prasad Joshi <prasadjoshi124@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>
-Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
-References: <1308153214.7566.6.camel@jaguar> <BANLkTi=krV7p9gT3E064aVoUCToVyZoL6w@mail.gmail.com>
-In-Reply-To: <BANLkTi=krV7p9gT3E064aVoUCToVyZoL6w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1758555876-1308264719=:8140"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2011 09:48 AM, Pekka Enberg wrote:
-> On Wed, Jun 15, 2011 at 6:53 PM, Pekka Enberg<penberg@kernel.org>  wrote:
->> - Fast QCOW2 image read-write support beating Qemu in fio benchmarks. See the
->>   following URL for test result details: https://gist.github.com/1026888
->
-> It turns out we were benchmarking the wrong guest kernel version for
-> qemu-kvm which is why it performed so much worse. Here's a summary of
-> qemu-kvm beating tools/kvm:
->
-> https://raw.github.com/gist/1029359/9f9a714ecee64802c08a3455971e410d5029370b/gistfile1.txt
->
-> I'd ask for a brown paper bag if I wasn't so busy eating my hat at the moment.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-np, it happens.
+--8323328-1758555876-1308264719=:8140
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-Is that still with QEMU with IDE emulation, cache=writethrough, and 
-128MB of guest memory?
+On Thu, 16 Jun 2011, Connor Hansen wrote:
 
-Does your raw driver support multiple parallel requests?  It doesn't 
-look like it does from how I read the code.  At some point, I'd be happy 
-to help ya'll do some benchmarking against QEMU.
+> On Thu, Jun 16, 2011 at 3:06 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+> > Hi
+> >
+> > Just noticed that drivers/net/rionet.c::rionet_remove() can cause a NULL
+> > deref when it calls unregister_netdev().
+> > It initializes local variable 'ndev' to NULL and nothing changes this
+> > before the call to unregister_netdev(ndev) - that functions then calls:
+> > unregister_netdevice > unregister_netdevice_queue > list_move_tail >
+> > __list_del_entry  which dereferences the pointer (which, being NULL, will
+> > end in tears).
+> 
+> unregister_netdevice(struct net_device *dev)
+> {
+>         unregister_netdevice_queue(dev, NULL);
+> }
+> 
+>  so unregister_netdevice_queue is being called with NULL,NULL
+> 
+> void unregister_netdevice_queue(struct net_device *dev, struct list_head *head)
+> {
+>         ASSERT_RTNL();
+> 
+>         if (head) {
+>                 list_move_tail(&dev->unreg_list, head);
+>         } else {
+>                 rollback_registered(dev);
+>                 /* Finish processing unregister after unlock */
+>                 net_set_todo(dev);
+>         }
+> }
+> 
+> if head is null, which it is from the call, then we call
+> rollback_registered, and not list_move_tail()
+> 
+> the else calls rollback_registered(NULL) then net_set_todo(NULL)
+> 
+> both of which dereference null when passed, so yes there is a null
+> dereference, just not in the code branch you thought.
+> 
 
-It would be very useful to compare as we have some ugly things in QEMU 
-that we've never quite been able to determine how much they affect 
-performance.  Having an alternative implementation to benchmark against 
-would be quite helpful.
+Ahh crap, you are right. Too much coffee and too late to be reading kernel 
+code is my only excuse ;-)
+Thanks for taking the time to look and correct me.
 
-Regards,
 
-Anthony Liguori
+In any case, there's still a problem that needs to be fixed.
 
->
->                          Pekka
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
+--8323328-1758555876-1308264719=:8140--
