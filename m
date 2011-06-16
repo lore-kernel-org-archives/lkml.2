@@ -1,119 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757841Ab1FPXD4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 19:03:56 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33507 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752256Ab1FPXDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 19:03:54 -0400
-Date: Fri, 17 Jun 2011 01:02:47 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, ak@linux.intel.com,
-        shaohua.li@intel.com, alex.shi@intel.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [GIT PULL] Re: REGRESSION: Performance regressions from
- switching anon_vma->lock to mutex
-Message-ID: <20110616230247.GB28557@elte.hu>
-References: <1308097798.17300.142.camel@schen9-DESK>
- <1308134200.15315.32.camel@twins>
- <1308135495.15315.38.camel@twins>
- <BANLkTikt88KnxTy8TuGGVrBVnXvsnL7nMQ@mail.gmail.com>
- <20110615201216.GA4762@elte.hu>
- <35c0ff16-bd58-4b9c-9d9f-d1a4df2ae7b9@email.android.com>
- <20110616070335.GA7661@elte.hu>
- <20110616171644.GK2582@linux.vnet.ibm.com>
- <20110616202550.GA16214@elte.hu>
- <20110616210119.GD23624@somewhere.redhat.com>
+	id S1758316Ab1FPXFO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 19:05:14 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:40500 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755628Ab1FPXFL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 19:05:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=vrfy.org; s=google;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=aVQkZibxLCFDwEoD+SSvyyyFIiisGy8VoWLVBwQiFJC8+YPuNvafbzBBYkqW8i3nyH
+         MCZCeVqAHpKZNp9HSYajEo2KLK2jlHlX6/b9Feid1jpoRPCDxwEtrj/sZXP1hZAQrbT9
+         hOwIZhuGx521coIa/M4jZqQmH4Jq1Y9y8VPWM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110616210119.GD23624@somewhere.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1308264321.2436.161.camel@mulgrave>
+References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp>
+ <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp> <20110615153337.GA10160@kroah.com>
+ <4DF9F11F.705@hitachi.com> <20110616154129.GA31498@kroah.com>
+ <1308239454.2436.34.camel@mulgrave> <20110616161442.GA32113@kroah.com>
+ <1308241506.2436.44.camel@mulgrave> <20110616181943.GB1439@kroah.com>
+ <1308256290.2436.143.camel@mulgrave> <BANLkTikfCMR_=5Jp7tLhM_Wr3vxihEL+rA@mail.gmail.com>
+ <1308264321.2436.161.camel@mulgrave>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Fri, 17 Jun 2011 01:04:55 +0200
+Message-ID: <BANLkTinvfmU0dszQyu4U=Pw3_BtrmOUi_g@mail.gmail.com>
+Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Greg KH <greg@kroah.com>, Nao Nishijima <nao.nishijima.xt@hitachi.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jcm@redhat.com, hare@suse.de, stefanr@s5r6.in-berlin.de,
+        yrl.pp-manager.tt@hitachi.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 17, 2011 at 00:45, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+> On Fri, 2011-06-17 at 00:05 +0200, Kay Sievers wrote:
+>> On Thu, Jun 16, 2011 at 22:31, James Bottomley
+>> <James.Bottomley@hansenpartnership.com> wrote:
+>> > On Thu, 2011-06-16 at 11:19 -0700, Greg KH wrote:
+>> >> On Thu, Jun 16, 2011 at 12:25:06PM -0400, James Bottomley wrote:
+>> >> > On Thu, 2011-06-16 at 09:14 -0700, Greg KH wrote:
+>>
+>> >> > > No, udev can not create such a link after the preferred name is set, as
+>> >> > > it has no way of knowing that the name was set.
+>> >> >
+>> >> > It can if we trigger a uevent.  Note: I'm not advocating this ... I'd be
+>> >> > equally happy having whatever sets the kernel name create the link (or
+>> >> > tickle udev to create it).  We definitely require device links, though,
+>> >> > to get this to work.
+>> >>
+>> >> And no, I don't want to trigger a uevent, Kay pointed out where this
+>> >> will go very wrong very quickly if this is done.
+>> >
+>> > As I said: we just need a by-preferred type of link.
+>>
+>> And if the user changes the name, the link and all earlier uses will
+>> be dangling, even /proc/mounts might show non-existing device names.
+>
+> I don't understand this.  If a user decides to call sda "fred" by doing
+> an echo to the preferred named file, then there should be a link
+>
+> /dev/disk/by-preferred/fred -> ../../sda
+>
+> Even if the name later changes to "angela", /dev/disk/by-preferred/fred
+> will be valid if we don't clean it up.
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+Not currently, udev needs to keep track of all symlinks, and removes
+the ones not specified in rules. There is not way for udev to track no
+longer valid names.
 
-> On Thu, Jun 16, 2011 at 10:25:50PM +0200, Ingo Molnar wrote:
-> > 
-> > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> > 
-> > > > The funny thing about this workload is that context-switches are 
-> > > > really a fastpath here and we are using anonymous IRQ-triggered 
-> > > > softirqs embedded in random task contexts as a workaround for 
-> > > > that.
-> > > 
-> > > The other thing that the IRQ-triggered softirqs do is to get the 
-> > > callbacks invoked in cases where a CPU-bound user thread is never 
-> > > context switching.
-> > 
-> > Yeah - but this workload didnt have that.
-> > 
-> > > Of course, one alternative might be to set_need_resched() to force 
-> > > entry into the scheduler as needed.
-> > 
-> > No need for that: we can just do the callback not in softirq but in 
-> > regular syscall context in that case, in the return-to-userspace 
-> > notifier. (see TIF_USER_RETURN_NOTIFY and the USER_RETURN_NOTIFIER 
-> > facility)
-> > 
-> > Abusing a facility like setting need_resched artificially will 
-> > generally cause trouble.
-> 
-> If the task enqueued callbacks in the kernel, thus started a new 
-> grace period, it might return to userspace before every CPUs have 
-> completed that grace period, and you need that full completion to 
-> happen before invoking the callbacks.
-> 
-> I think you need to keep the tick in such case because you can't 
-> count on the other CPUs to handle that completion as they may be 
-> all idle.
-> 
-> So when you resume to userspace and you started a GP, either you 
-> find another CPU to handle the GP completion and callbacks 
-> executions, or you keep the tick until you are done.
+We can not just add stuff to /dev without a udev database entry, it
+would never get removed on device unplug and leave a real mess behind.
 
-We'll have a scheduler tick in any case, which will act as a 
-worst-case RCU tick.
+>> I honestly don't think there will ever be _the_ name for a device.
+>> We've been there, stuff seems not to work that way in the real world.
+>
+> So that's not really the point ... all we do with it in-kernel is use it
+> as the device name for log prints and some basic /proc files (again,
+> mainly as prints); nothing more.
+>
+>> I really like to hear how stuff is supposed to compose _the_ name in a
+>> real world use-case like a multipath setup, in initramfs, in a heavy
+>> hotplug setup, and so on ... And with more details than "udev will set
+>> _the_ name", I really fail to see how that is supposed to happen to be
+>> useful.
+>
+> All that really has to happen is that we get a database of 1:1
+> correspondence between preferred name and actual name (with device
+> links).
+>
+>> I think any solution that assumes the name can change later after it
+>> is possibly already used, is just wishful thinking.
+>
+> The ability to change on the fly isn't part of the original hitachi
+> proposal, but I don't really see why it can't ... it just alters the way
+> the kernel prints out the name, nothing more.
 
-My main point is that we need to check whether this solution improves 
-performance over the current softirq code. I think there's a real 
-chance that it improves things like VFS workloads, because it 
-provides (much!) lower grace period latencies hence provides 
-fundamentally better cache locality.
+And creates a huge problem for everything that uses that name.
 
-If a workload pays the cost of frequent scheduling then it might as 
-well use a beneficial side-effect of that scheduling: high-freq grace 
-periods ...
+>> We need many names, and we need all of them from the very beginning,
+>> and they should not change during device lifetime unless the device
+>> state changes.
+>
+> So that's actually an argument for leaving the links, surely?  We can
+> have many inbound links, but the kernel can only print one name in
+> messages, which would be the preferred name that was currently set.
 
-If it improves performance we can figure out all the loose ends. If 
-it doesnt then the loose ends are not worth worrying about.
+I really question any concept of _the_ name. My take on it: It will
+never work in reality.
 
-Thanks,
+>> >> > > So as userspace tools will still need to be fixed, I don't see how
+>> >> > > adding a kernel file for this is going to help any.  Well, a bit in that
+>> >> > > the kernel log files will look "different", but again, that really isn't
+>> >> > > a problem that userspace couldn't also solve with no kernel changes
+>> >> > > needed.
+>> >> >
+>> >> > This is true, but I think for the small effort it takes to implement the
+>> >> > feature in-kernel compared with what we'd have to do to the
+>> >> > distributions to get it implemented in userspace (we'd need klogd to do
+>> >> > the conversion for dmesg ... I'm entirely unclear what we need to modify
+>> >> > for /proc/partitions, etc.) the benefit outweighs the cost.
+>> >> >
+>> >> > Additionally, since renaming is something users seem to want (just look
+>> >> > at net interfaces), if we can make this work, we now have a definitive
+>> >> > answer to point people at.
+>> >>
+>> >> Renaming is something that we do NOT want to do, as we have learned our
+>> >> lesson of the network device renaming mess.  And as Kay pointed out, we
+>> >> already have an "alias" name there, which no one uses.
+>> >
+>> > Look at this as an opportunity to get it right.  The original proposal
+>> > was for renaming.  By iterating over the actual requirements, we have it
+>> > reduced to simply having the kernel print a preferred name.  I think
+>> > that's a nice achievement which we can point other proponents of
+>> > renaming to as they arise.
+>>
+>> Sure, we absolutely don't want renaming, and we can provide countless
+>> solid technical reasons why we should not allow it to happen. But I'm
+>> also pretty sure, we also don't want just-another-single-name to put
+>> somewhere in the kernel.
+>
+> I understand why we don't want renaming.  However, the technical reason
+> why we want a preferred name is that it's often associated with a name
+> printed somewhere on the box (say a label on the disk enclosure, or
+> ethernet port).  Not being able to use this name to address the device
+> is a usability issue which annoys the enterprise enormously.
+>
+> So if we stop there, regardless of solution (in-kernel or fix all
+> userspace), does everyone see what the actual problem is?
 
-	Ingo
+I don't think that solves the problem, no. We need _smart_ userspace
+with a debug/error message channel from the kernel to userspace that
+pops out _structured_ data. Userspace needs to index the data, and
+merge a lot of userspace information into it.
+
+Adding just another single-name to the kernel just makes the
+much-too-dumb free-text printk() a bit more readable, but still sounds
+not like a solution. Pimping up syslog is not the solution to this
+problem, and it can't be solved in the kernel alone.
+
+>> >> So again, I really don't like this, just fix the userspace tools to map
+>> >> the proper device name that the kernel is using to the userspace name
+>> >> the tool used, and all is fine.  This has been done already today,
+>> >> succesfully, by many of the big "enterprise" monitoring systems that
+>> >> work quite well on Linux, proving that this is not something that the
+>> >> kernel needs to provide to implement properly.
+>> >
+>> > Well, it's expediency.  Sure we could try to patch the world, but I
+>> > think the simple patch of getting the kernel to print a preferred name
+>> > solves 90% of the problem.  Sure there is a long tail of userspace
+>> > components that needs fixing, but that can be done gradually if we take
+>> > the kernel route.  If we go the userspace route, it will be a long while
+>> > before we even get to 50% coverage.
+>>
+>> I need to ask again ask for an explanation why logging all symlinks at
+>> device discovery from udev, does not solve exactly this problem. With
+>> that tag in the syslog message stream, all later kernel names can be
+>> safely associated with _all_ the current device names in question,
+>> until the next tag from udev is found.
+>
+> So if the user has one preferred name, us logging all the names (and we
+> have quite a few for disks) doesn't really help because the user might
+> want to choose a different name.  However, even if we assume they choose
+> one of the current names, they still have to do the mapping manually;
+> even if they have all the information, they can't just cut and paste
+> from dmesg say, they have to cut, edit the buffer to put in the
+> preferred name and then paste ... that's just one annoying step too far
+> for most users.  I agree that all the output tools within reason can be
+> fixed to do this automatically, but fixing cat say, just so
+> cat /proc/partitions works would never be acceptable upstream.
+>
+> The reason for storing this in the kernel is just that it's easier than
+> trying to update all the tools, and it solves 90% of the problem, which
+> makes the solution usable, even if we have to update tools to get to
+> 100%.
+
+I don't think we can even solve 10% of the problems that way. It's
+just a hack that makes stuff a bit more pretty, but doesn't provide
+any reasonable solution to the problem. I doubt we can even make a
+simple use case out of it, what name to put into that field for a
+multipath setup.
+
+Kay
