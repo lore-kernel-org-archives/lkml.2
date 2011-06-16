@@ -1,112 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106Ab1FPTTH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 15:19:07 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37014 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757099Ab1FPTTF convert rfc822-to-8bit (ORCPT
+	id S1757418Ab1FPT0N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 15:26:13 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:47307 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755281Ab1FPT0K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 15:19:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=AbPOncUSly8/2oM4pXBzmlYmhvKocLxu43xkI9mgK5W+jtnOB6TP/jaMFCa+nVFI0d
-         aPAApyxN/hbb10cv4yIkFNQbLZJLZankDNvIcaLsflt/pQozIBuoFWXlmmhYhxbknhlz
-         ul+Nie89vdwzHdb9/XXXrOXvaE2n1XCXTHaHU=
+	Thu, 16 Jun 2011 15:26:10 -0400
+Message-ID: <4DFA58B4.5030101@ahsoftware.de>
+Date: Thu, 16 Jun 2011 21:25:40 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <4DFA4672.5080307@lwfinger.net>
-References: <BANLkTikXUd8uorD+juMDvFubr3cz+OZnaQ@mail.gmail.com>
-	<BANLkTinUxRGkXeOtBSKi51n3Q_rZEp1gUg@mail.gmail.com>
-	<4DFA4672.5080307@lwfinger.net>
-Date: Thu, 16 Jun 2011 21:19:04 +0200
-Message-ID: <BANLkTi=-wXnXNJY3R+3Q+KSaJhtxHgrhZw@mail.gmail.com>
-Subject: Re: Faking MMIO ops? Fooling a driver
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: linux-wireless@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pekka Paalanen <pq@iki.fi>
-Content-Type: text/plain; charset=UTF-8
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Alan Stern <stern@rowland.harvard.edu>, gregkh@suse.de,
+        Rabin Vincent <rabin@rab.in>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing
+ the packed attribute
+References: <Pine.LNX.4.44L0.1106161308310.2204-100000@iolanthe.rowland.org> <201106161955.50972.arnd@arndb.de>
+In-Reply-To: <201106161955.50972.arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 16 czerwca 2011 20:07 użytkownik Larry Finger
-<Larry.Finger@lwfinger.net> napisał:
-> On 06/16/2011 12:20 PM, Rafał Miłecki wrote:
+Am 16.06.2011 19:55, schrieb Arnd Bergmann:
+> On Thursday 16 June 2011, Alan Stern wrote:
 >>
->> W dniu 16 czerwca 2011 16:44 użytkownik Rafał Miłecki
->> <zajec5@gmail.com>  napisał:
->>>
->>> I analyze MMIO dumps of closed source driver and found such a place:
->>> W 2 3855.911536 9 0xb06003fc 0x810 0x0 0
->>> R 2 3855.911540 9 0xb06003fe 0x0 0x0 0
->>> W 2 3855.911541 9 0xb06003fe 0x0 0x0 0
->>>
->>> After translation:
->>>  phy_read(0x0810) ->  0x0000
->>> phy_write(0x0810)<- 0x0000
->>>
->>> So it's quite obvious, the driver is reading PHY register, masking it
->>> and writing masked value. Unfortunately from just looking at such
->>> place we can not guess the mask driver uses.
->>>
->>> I'd like to fake value read from 0xb06003fe to be 0xFFFF.
->>> Is there some ready method for doing such a trick?
->>>
->>> Dump comes from Kernel hacking → Tracers → MMIO and ndiswrapper.
+>> On Thu, 16 Jun 2011, Alexander Holler wrote:
 >>
->> I can see values in MMIO trace struct are filled in
->> arch/x86/mm/mmio-mod.c in "pre" and "post". However still no idea how
->> to hack the returned value.
+>>> In commit 139540170d9d9b7ead3caaf540f161756b356d56 the attribute
+>>> packed is removed from the structs which are used to access the EHCI-registers.
+>>>
+>>> This is done to circumvent a problem with gcc 4.6, which might access members of
+>>> packed structs on a byte by byte basis. But using packed, aligned(4) fixes that
+>>> too and is imho the better solution. Otherwise (without packed) the compiler would be free
+>>> to choose whatever alignment he thinks fits best, which might be e.g. 8-byte on 64-bit machines.
 >>
->> Should I try hacking read[bwl] instead? :|
+>> Is that really true?
 >
-> Probably. I do not see any way to trace and modify the results for a
-> particular address without special code.
+> No.
+>
+>> I thought the compiler was not allowed to insert
+>> padding if the natural alignment of the data types didn't require any.
+>
+> It's architecture dependent. The alignment of the structure is the maximum alignment
+> of its members, so it gets to be 8 bytes if there is a 64 bit member in the struct
+> on most architectures, but 4 bytes on x86.
 
-Did you success with writing some special code? Following patch does
-not seem to work for me:
+Hmm, sorry, but that sentence just says something about the alignment of 
+the structure itself and nothing about the alignment of it's members or 
+do I understand something wrong?
 
+I've had a look at c99 again, and in addition to the two points in c99 I 
+mentioned in the mail before (6.7.2.1 13 and 6.7.2.1. 15), I've only 
+found the following on that topic:
 
-diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-index e0ffa3d..448e4ff 100644
---- a/include/asm-generic/io.h
-+++ b/include/asm-generic/io.h
-@@ -23,6 +23,8 @@
- #define mmiowb() do {} while (0)
- #endif
+6.7.2.1 12  Each non-bit-ﬁeld member of a structure or union object is 
+aligned in an implementationdeﬁned manner appropriate to its type.
 
-+static int zajec = 0;
-+
- /*****************************************************************************/
- /*
-  * readX/writeX() are used to access memory mapped devices. On some
-@@ -40,6 +42,11 @@ static inline u8 __raw_readb(const volatile void
-__iomem *addr)
- #ifndef __raw_readw
- static inline u16 __raw_readw(const volatile void __iomem *addr)
- {
-+	if (zajec++ < 10)
-+		printk(KERN_INFO "[ZAJEC] %d\n", *addr);
-+	if (*addr == 0xfaafc000)
-+		printk(KERN_INFO "[ZAJEC] Bingo!\n");
-+	//0x1381a8d8
- 	return *(const volatile u16 __force *) addr;
- }
- #endif
+And, under "J.1 Unspecified behaviour":
 
-Should I modify different readw? Path include/asm-generic/io.h sounds
-sane to me, so I modified this one.
+Many aspects of the representations of types (6.2.6).
 
+I even haven't found anything which says something about the alignment 
+of a structure itself. But I'm no compiler expert and I look only seldom 
+at c99 and usually try to avoid such aspects as the one we are talking 
+about. ;)
 
-> FYI, my reference driver for reverse engineering has no instance of a
-> read/modify/write for PHY register 0x810. Is the code in question for a PHY
-> type > 6?
+For me that means that I understand that when packed(,aligned(4)) is 
+used, it's pretty sure, that there is no padding inbetween the members 
+of e.g. struct ehci_regs. But without I'm unsure, so I would avoid that.
 
-This is for PHY type 7, AKA "HT".
+That aligned(4) is necessary (for ARM) is only a workaround because of 
+the implementation of readl(), at least that is how I understood the 
+discussion. But that is discussed elsewhere and don't want to take part 
+in that discussion (and can't).
 
--- 
-Rafał
+Regards,
+
+Alexander
+
