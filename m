@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525Ab1FPBuv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 21:50:51 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:32895 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753538Ab1FPBuu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 21:50:50 -0400
+	id S1754706Ab1FPB4D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 21:56:03 -0400
+Received: from mga02.intel.com ([134.134.136.20]:31276 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753803Ab1FPB4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 21:56:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,372,1304319600"; 
+   d="scan'208";a="15370825"
+Message-ID: <4DF962AE.60204@intel.com>
+Date: Thu, 16 Jun 2011 09:55:58 +0800
+From: Huang Ying <ying.huang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110510 Iceowl/1.0b2 Icedove/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <1308173849.15315.91.camel@twins>
-References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe>
- <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com>
- <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
- <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
- <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 15 Jun 2011 18:50:18 -0700
-Message-ID: <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com>
-Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
- to mutex
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Andi Kleen <ak@linux.intel.com>, Shaohua Li <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Len Brown <lenb@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH] ACPI, APEI, Add APEI _OSC support
+References: <1306303538-30524-1-git-send-email-ying.huang@intel.com> <20110614145246.GA17469@srcf.ucam.org> <4DF82CBC.5070400@intel.com> <20110615121703.GA8638@srcf.ucam.org> <4DF950EB.7050400@intel.com> <20110616013812.GA32494@srcf.ucam.org>
+In-Reply-To: <20110616013812.GA32494@srcf.ucam.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 2:37 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->
-> http://programming.kicks-ass.net/sekrit/39-2.txt.bz2
-> http://programming.kicks-ass.net/sekrit/tip-2.txt.bz2
->
-> tip+sirq+linus is still slightly faster than .39 here,
+On 06/16/2011 09:38 AM, Matthew Garrett wrote:
+> On Thu, Jun 16, 2011 at 08:40:11AM +0800, Huang Ying wrote:
+>> On 06/15/2011 08:17 PM, Matthew Garrett wrote:
+>>>> You means the "APEI Support" bit for standard UUID?  Do you know which
+>>>> machine uses this bit?  I can write the code, but I have no machine to
+>>>> test it.
+>>>
+>>> I have access to a Dell system that uses this.
+>>
+>> Great! Can you help us to test the code?
+> 
+> Yup, no problem.
+> 
+>>> Urgh. One machine I've looked at enables APEI if the WHEA _OSC call is 
+>>> made, and then clears a flag if any other _OSC call is made. In that 
+>>> specific case it doesn't seem to matter (the flag never actually gets 
+>>> checked in any of the other codepaths), but it seems that the intention 
+>>> is for the generic call to be made and the WHEA one to be made after 
+>>> that.
+>>
+>> Yes.  The WHEA call should be made after the generic one.  Another
+>> situation is as follow:
+>>
+>> - Generic _OSC call without "APEI Support" bit is called (in
+>> acpi_bus_osc_support).
+>>
+>> - After some time, when we think it is good to turn on firmware first
+>> mode fully, usually after we checking HEST and initializing
+>> corresponding module, we make generic _OSC call with "APEI Support" bit
+>> to turn on firmware first mode fully in standard way.
+>>
+>> Is it a good idea to make generic _OSC call twice, one without "APEI
+>> Support" bit, the other with "APEI Support" bit?
+> 
+> I think we probably need to make the HEST decision early, and use that 
+> to decide how to make the generic call. Our experience has been that 
+> many firmware vendors only expect _OSC to be called once with any given 
+> UUID - multiple calls can result in unexpected behaviour.
 
-Hmm. Your profile doesn't show the mutex slowpath at all, so there's a
-big difference to the one Tim quoted parts of.
+acpi_bus_osc_support is called via subsys_initcall.  It is a little hard
+to do all checking before that.  Is it possible to call
+acpi_bus_osc_support later?
 
-In fact, your profile looks fine. The load clearly spends tons of time
-in page faulting and in timing things (that read_hpet thing is
-disgusting), but with that in mind, the profile doesn't look scary.
-Yes, the 2% spinlock time is bad, but you've clearly not hit the real
-lock contention case. The mutex lock shows up, but _way_ below the
-spinlock, and the slowpath never shows at all. You end up having
-mutex_spin_on_owner at 0.09%, it's not really visible.
-
-Clearly going from your two-socket 12-core thing to Tim's four-socket
-40-core case is a big jump. But maybe it really was about RCU, and
-even the limited softirq patch that moves the grace period stuff etc
-back to softirqs ends up helping.
-
-Tim, have you tried running your bigger load with that patch? You
-could try my patch on top too just to match Peter's tree, but I doubt
-that's the big first-order issue.
-
-                       Linus
+Best Regards,
+Huang Ying
