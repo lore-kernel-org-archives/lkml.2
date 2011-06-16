@@ -1,53 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704Ab1FPIEo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 04:04:44 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:56718 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750829Ab1FPIEh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 04:04:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=BDLtgYWFW2/IDInXM1Qzg1ygiKDsc9Qhj7wO+eZHEftUtO56pGxJxjVay9KkJ22N4f
-         dvsE67chtK49/9bWzR8G3eBJbEBiemKFBVs4Yn0uxlH75n/5gx8nSnGn3+Tka3sEQxdu
-         Pim7DUNp3qljDrJd2hpYATdL40ct8J4DO2EyI=
+	id S1754561Ab1FPII1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 04:08:27 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:33488 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753438Ab1FPIIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 04:08:24 -0400
+Date: Thu, 16 Jun 2011 10:07:58 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Alexander Graf <agraf@suse.de>, Anthony Liguori <anthony@codemonkey.ws>,
+        Prasad Joshi <prasadjoshi124@gmail.com>, Avi Kivity <avi@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
+Message-ID: <20110616080758.GB28449@elte.hu>
+References: <1308153214.7566.6.camel@jaguar>
+ <4DF8DE26.1070301@redhat.com>
+ <BANLkTi=SHENDBHdtFY_7_qtfqJb_+qKJSw@mail.gmail.com>
+ <BANLkTinMDz-sqaX0cyWEoLXt70dowxofvg@mail.gmail.com>
+ <4DF92C80.3030106@codemonkey.ws>
+ <7A30A509-47AA-4E72-ABF3-937005900F9D@suse.de>
+ <BANLkTi=Jm_50m6qyfQPCF0PuwUfuDNwMtg@mail.gmail.com>
+ <20110616072452.GA15366@elte.hu>
+ <BANLkTikkgsZFLq-X0L2mzKucJetGyOmJNQ@mail.gmail.com>
 MIME-Version: 1.0
-Date: Thu, 16 Jun 2011 10:04:36 +0200
-Message-ID: <BANLkTin2w5muF+LV269DV1=L+_j8P6DT_Q@mail.gmail.com>
-Subject: [PATCH] s3c2410_udc: fix custom UDC command handling
-From: Viliam Mateicka <viliam.mateicka@gmail.com>
-To: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTikkgsZFLq-X0L2mzKucJetGyOmJNQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a bug in Samsung's UDC driver, which is completely disabling
-the USB device when a custom UDC command is used.
-Following patch seems to get the right behavior (e.g. enabling pull-up
-instead of disabling then Vcc is applied). Also I'm not in mailing
-list so please CC me.
 
-Greetingz,
-Vilo
+* Pekka Enberg <penberg@kernel.org> wrote:
 
-Signed-off-by: Viliam Mateicka <viliam.mateicka@gmail.com>
+> Hi Ingo,
+> 
+> On Thu, Jun 16, 2011 at 10:24 AM, Ingo Molnar <mingo@elte.hu> wrote:
+> >  - executing AIO in the vcpu thread eats up precious vcpu execution
+> >   time: combined QCOW2 throughput would be limited by a single
+> >   core's performance, and any time spent on QCOW2 processing would
+> >   not be spent running the guest CPU. (In such a model we certainly
+> >   couldnt do more intelligent, CPU-intense storage solutions like on
+> >   the fly compress/decompress of QCOW2 data.)
+> 
+> Most image formats have optional on-the-fly 
+> compression/decompression so we'd need to keep the current I/O 
+> thread scheme anyway.
 
---- drivers/usb/gadget/s3c2410_udc.c.orig       2011-05-19
-06:06:34.000000000 +0200
-+++ drivers/usb/gadget/s3c2410_udc.c    2011-06-16 08:57:19.000000000 +0200
-@@ -1566,7 +1566,7 @@ static void s3c2410_udc_command(enum s3c
-                return;
-        if (udc_info->udc_command) {
--               udc_info->udc_command(S3C2410_UDC_P_DISABLE);
-+               udc_info->udc_command(cmd);
-        } else if (gpio_is_valid(udc_info->pullup_pin)) {
-                int value;
+Yeah - although high-performance setups will probably not use that.
+
+> > I'd only consider KAIO it if it provides some *real* measurable 
+> > performance advantage of at least 10% in some important usecase. 
+> > A few percent probably wouldnt be worth it.
+> 
+> I've only been following AIO kernel development from the sidelines 
+> but I really haven't seen any reports of significant gains over 
+> read()/write() from a thread pool. Are there any such reports?
+
+I've measured such gains myself a couple of years ago, using an 
+Oracle DB and a well-known OLTP benchmark, on a 64-way system.
+
+I also profiled+tuned the kernel-side AIO implementation to be more 
+scalable so i'm reasonably certain that the gains exist, and they 
+were above 10%.
+
+So the kaio gains existed back then but they needed sane userspace 
+(POSIX AIO with signal notification sucks) and needed a well-tuned 
+in-kernel implementation as well. (the current AIO code might have 
+bitrotted)
+
+Also, synchronous read()/write() [and scheduler() :-)] scalability 
+improvements have not stopped in the past few years so the 
+performance picture might have shifted in favor of a thread pool.
+
+Thanks,
+
+	Ingo
