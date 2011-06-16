@@ -1,117 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755705Ab1FPPvx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 11:51:53 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:49585 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752209Ab1FPPvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 11:51:50 -0400
-Date: Thu, 16 Jun 2011 08:51:47 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Doru Theodor Petrescu <pdoru.kernel@evox.ro>
-Cc: ierdnah@gmail.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: tc match MAC destination - nothing matches on protocol 802_3
-Message-ID: <20110616085147.4220f1f1@nehalam.ftrdhcpuser.net>
-In-Reply-To: <1308211012.12982.36365.camel@u.evox.ro>
-References: <1308125523.30324.64.camel@ierdnac-hp>
-	<20110615092907.2b79ee66@s6510.ftrdhcpuser.net>
-	<1308211012.12982.36365.camel@u.evox.ro>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756362Ab1FPPw4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 11:52:56 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63446 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753987Ab1FPPwz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 11:52:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=uSaT9C7DokmoV7O1e4JKPgOV81SDY4DFTOBs/F5zsQi0FlUb7r7nLRwy8rpJsURmuz
+         8dhUwm/qz0dZR7+uQ4/byMjKqCF3i16oJbczAJooyAQhD04g8ckwUwtpKdQKxOcufGLB
+         ujUscK5mbyKzPVjTSKw15asSNi0R6eKNtPORY=
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: linux-kernel@vger.kernel.org
+Cc: Vasiliy Kulikov <segooon@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: [PATCH] taskstats: don't allow duplicate entries in listener mode
+Date: Thu, 16 Jun 2011 19:52:50 +0400
+Message-Id: <1308239570-4504-1-git-send-email-segoon@openwall.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Jun 2011 10:56:52 +0300
-Doru Theodor Petrescu <pdoru.kernel@evox.ro> wrote:
+From: Vasiliy Kulikov <segooon@gmail.com>
 
-> 
-> 
-> I updated my scripts to use the 'tc filter ... match ether src/dst'
-> syntax. it really makes reading the script easier. thanks for the tip!
-> 
-> however the problem persists. I changed the rule to match ANY pachet of
-> type 802_3 and redirect it to ifb1. but nothing arrives on ifb1.
-> 
-> I tried to redirect ARP pachets using 'protocol arp' filter and it works
-> perfectly as expected.
-> 
-> so at this point the problem is no longer 'how to match ethernet header'
-> but rather 'how to match a pachet of type 802_3'. My feeling is that
-> there is a bug somewhere in kernel where the 'protocol 802_3' matching
-> happens.
-> 
-> 
-> I attach part of the script I use to generate the filters and classes. I
-> removed everything related to HTB and IP pachets because there is no
-> problem there. in case the formating is lost, you can download it from
-> here: http://evox.ro/kernel_netdev_tc_protocol_802.3/
-> 
-> 
-> Thx for any help,
-> Doru Theodor Petrescu
-> CTO, Evox Solutions SRL
-> http://evox.ro/
-> 
-> 
-> 
-> for DEV in bond0.2199 bond1.2199 bond0.3000 bond1.3001 ; do
-> 
-> 
->    tc qdisc  del dev $DEV root
-> 
->    tc qdisc  add dev $DEV root handle 1: htb default 2
->    tc class  add dev $DEV parent 1: classid 1:1 htb rate 930000kbit ceil
-> 930000kbit quantum 1600
->    
->    tc filter add dev $DEV parent 1: prio 5 protocol ip u32
-> # ==> 800:
-> 
->    tc filter add dev $DEV parent 1: prio 1 protocol 0x0806 u32
-> # ==> 801:      protocol ARP
->    tc filter add dev $DEV parent 1: prio 1 handle 801:0:7 protocol
-> 0x0806 u32  match u32 0 0 flowid 1:3
-> 
->    tc filter add dev $DEV parent 1: prio 2 protocol 802_3 u32
-> # ==> 802:
-> 
->    tc filter add dev $DEV parent 1: prio 6 protocol ip u32
-> # ==> 803:
-> 
-> 
->    tc filter replace dev $DEV parent 1: prio 2 handle 802:0:3  protocol
-> 802_3 u32 match u16 0 0 at 0 flowid 1:3 action mirred egress mirror dev
-> ifb1
->    tc filter replace dev $DEV parent 1: prio 2 handle 802:0:9  protocol
-> 802_3 u32 match ether src 01:00:0c:cc:cc:cd flowid 1:3 action mirred
-> egress mirror dev ifb1
->    tc filter replace dev $DEV parent 1: prio 2 handle 802:0:10 protocol
-> 802_3 u32 match ether dst 01:00:0c:cc:cc:cd flowid 1:3 action mirred
-> egress mirror dev ifb1
-> 
-> done
-> 
-> 
-> # the 802_3 pachet filter:   
-> # 
-> # 802:0:3 should match ANY pachet of type 802_3 and mirror it to ifb1
-> # 802:0:9 and 802:0:10 should match any pachet with src/dst
-> 01:00:0c:cc:cc:cd and mirror it to ifb1
-> #
-> # however NOTHING is going to ifb1    try 'tcpdump -nltve -i ifb1'
-> # at the same time 'tcpdump -nltve -i bond1.2199 ether host
-> 0100.0ccc.cccd' will show about one pachet every second
-> # 
-> 
-> 
-> # at the same time the ARP filter works. you can mirror all ARP trafic
-> to IFB1 like this:
-> # tc filter replace dev $DEV parent 1: prio 1 handle 801:0:7 protocol
-> 0x0806 u32  match u32 0 0 flowid 1:3 action mirred egress mirror dev
-> ifb1
+Currently a single process may register exit handlers unlimited times.
+It may lead to a bloated listeners chain and very slow process terminations.
+E.g. after 10KK sent TASKSTATS_CMD_ATTR_REGISTER_CPUMASKs ~300 Mb of
+kernel memory is stolen for the handlers chain and "time id" shows 2-7
+seconds instead of normal 0.003.  It makes it possible to exhaust all
+kernel memory and to eat much of CPU time by triggerring numerous exits
+on a single CPU.
 
-I think you want 802_2 to match STP frames. 802_3 is a dummy value
-for the old Novell IPX encapsulation
+The patch limits the number of times a single process may register
+itself on a single CPU to one.
+
+One little issue is kept unfixed - as taskstats_exit() is called before
+exit_files() in do_exit(), the orphaned listener entry (if it was not
+explicitly deregistered) is kept until the next someone's exit() and
+implicit deregistration in send_cpu_listeners().  So, if a process
+registered itself as a listener exits and the next spawned process gets
+the same pid, it would inherit taskstats attributes.
+
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+---
+ kernel/taskstats.c |   15 ++++++++++++---
+ 1 files changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/taskstats.c b/kernel/taskstats.c
+index 9ffea36..fc0f220 100644
+--- a/kernel/taskstats.c
++++ b/kernel/taskstats.c
+@@ -285,16 +285,18 @@ ret:
+ static int add_del_listener(pid_t pid, const struct cpumask *mask, int isadd)
+ {
+ 	struct listener_list *listeners;
+-	struct listener *s, *tmp;
++	struct listener *s, *tmp, *s2;
+ 	unsigned int cpu;
+ 
+ 	if (!cpumask_subset(mask, cpu_possible_mask))
+ 		return -EINVAL;
+ 
++	s = NULL;
+ 	if (isadd == REGISTER) {
+ 		for_each_cpu(cpu, mask) {
+-			s = kmalloc_node(sizeof(struct listener), GFP_KERNEL,
+-					 cpu_to_node(cpu));
++			if (!s)
++				s = kmalloc_node(sizeof(struct listener),
++						 GFP_KERNEL, cpu_to_node(cpu));
+ 			if (!s)
+ 				goto cleanup;
+ 			s->pid = pid;
+@@ -303,9 +305,16 @@ static int add_del_listener(pid_t pid, const struct cpumask *mask, int isadd)
+ 
+ 			listeners = &per_cpu(listener_array, cpu);
+ 			down_write(&listeners->sem);
++			list_for_each_entry_safe(s2, tmp, &listeners->list, list) {
++				if (s2->pid == pid)
++					goto next_cpu;
++			}
+ 			list_add(&s->list, &listeners->list);
++			s = NULL;
++next_cpu:
+ 			up_write(&listeners->sem);
+ 		}
++		kfree(s);
+ 		return 0;
+ 	}
+ 
+-- 
+1.7.0.4
+
