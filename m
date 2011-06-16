@@ -1,110 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932852Ab1FPVER (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 17:04:17 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56669 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753013Ab1FPVEO convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 17:04:14 -0400
+	id S1757881Ab1FPUiF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 16:38:05 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57711 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013Ab1FPUiC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 16:38:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=Wym7z+J4gPulgZXJmOMUPv8FMD30KOC+AP7fUvW6Zo/UI7I8pFEMA76J2eW1laRM4Z
+         wOzv9k9uMewXBDtPnbb+zeAKgeWbn6fIluHZA5WP5IJlHej0nO4C/cGAsVUE4eICzc4e
+         Gai79U56MH2WoBwuF6s/sOmP+np2fyG4eiUvk=
+Message-ID: <4DFA69A6.2090507@suse.cz>
+Date: Thu, 16 Jun 2011 22:37:58 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110531 Thunderbird/5.0b1
 MIME-Version: 1.0
-In-Reply-To: <4DFA6442.9000103@linux.intel.com>
-References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe>
- <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com>
- <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
- <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
- <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
- <87ea4bd7-8b16-4b24-8fcb-d8e9b6f421ec@email.android.com> <4DF92FE1.5010208@linux.intel.com>
- <BANLkTi=Tw6je7zpi4L=pE0JJpZfeEC9Jsg@mail.gmail.com> <4DFA6442.9000103@linux.intel.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 16 Jun 2011 13:37:47 -0700
-Message-ID: <BANLkTin_46==epHKUbWJ55bt3mPaJieV2Q@mail.gmail.com>
-Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
- to mutex
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
+To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch] dma: remove DMA_xxBIT_MASK macros
+References: <20110616090037.GA10326@cr0.redhat.com>
+In-Reply-To: <20110616090037.GA10326@cr0.redhat.com>
+X-Enigmail-Version: 1.2a2pre
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 1:14 PM, Andi Kleen <ak@linux.intel.com> wrote:
->
-> I haven't analyzed it in detail, but I suspect it's some cache line bounce,
-> which
-> can slow things down quite a lot.  Also the total number of invocations
-> is quite high (hundreds of messages per core * 32 cores)
+On 06/16/2011 11:00 AM, Américo Wang wrote:
+> 
+> git grep shows there are no users in tree, so we can
+> remove them safely.
+> 
+> Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+> Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 
-The fact is, glibc is just total crap.
+Oh, my __deprecated hack goes away. Nice :).
 
-I tried to send uli a patch to just add caching. No go. I sent
-*another* patch to at least make glibc use a sane interface (and the
-cache if it needs to fall back on /proc/stat for some legacy reason).
-We'll see what happens.
+Acked-by: Jiri Slaby <jslaby@suse.cz>
 
-Paul Eggbert suggested "caching for one second" - by just calling
-"gettimtofday()" to see how old the cache is. That would work too.
+> ---
+>  Documentation/feature-removal-schedule.txt |    7 -------
+>  include/linux/dma-mapping.h                |   21 ---------------------
+>  2 files changed, 0 insertions(+), 28 deletions(-)
+> 
+> diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+> index 72e2384..8e2d816 100644
+> --- a/Documentation/feature-removal-schedule.txt
+> +++ b/Documentation/feature-removal-schedule.txt
+> @@ -474,13 +474,6 @@ Who:	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+>  
+>  ----------------------------
+>  
+> -What: 	DMA_xxBIT_MASK macros
+> -When:	Jun 2011
+> -Why:	DMA_xxBIT_MASK macros were replaced with DMA_BIT_MASK() macros.
+> -Who:	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> -
+> -----------------------------
+> -
+>  What:	iwlwifi disable_hw_scan module parameters
+>  When:	2.6.40
+>  Why:	Hareware scan is the prefer method for iwlwifi devices for
+> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+> index ba8319a..dc77808 100644
+> --- a/include/linux/dma-mapping.h
+> +++ b/include/linux/dma-mapping.h
+> @@ -54,27 +54,6 @@ struct dma_map_ops {
+>  
+>  #define DMA_BIT_MASK(n)	(((n) == 64) ? ~0ULL : ((1ULL<<(n))-1))
+>  
+> -typedef u64 DMA_nnBIT_MASK __deprecated;
+> -
+> -/*
+> - * NOTE: do not use the below macros in new code and do not add new definitions
+> - * here.
+> - *
+> - * Instead, just open-code DMA_BIT_MASK(n) within your driver
+> - */
+> -#define DMA_64BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(64)
+> -#define DMA_48BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(48)
+> -#define DMA_47BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(47)
+> -#define DMA_40BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(40)
+> -#define DMA_39BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(39)
+> -#define DMA_35BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(35)
+> -#define DMA_32BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(32)
+> -#define DMA_31BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(31)
+> -#define DMA_30BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(30)
+> -#define DMA_29BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(29)
+> -#define DMA_28BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(28)
+> -#define DMA_24BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(24)
+> -
+>  #define DMA_MASK_NONE	0x0ULL
+>  
+>  static inline int valid_dma_direction(int dma_direction)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-The point I'm making is that it really is a glibc problem. Glibc is
-doing stupid expensive things, and not trying to correct for the fact
-that it's expensive.
 
-> I did, but I gave up fully following that code path because it's so
-> convoluted :-/
-
-I do agree that glibc sources are incomprehensible, with multiple
-layers of abstraction (sysdeps, "posix", helper functions etc etc).
-
-In this case it was really trivial to find the culprit with a simple
-
-   git grep /proc/stat
-
-though. The code is crap. It's insane. It's using
-/sys/devices/system/cpu for _SC_NPROCESSORS_CONF, which is at least a
-reasonable interface to use. But it does it in odd ways, and actually
-counts the CPU's by doing a readdir call. And it doesn't cache the
-result, even though that particular result had better be 100% stable -
-it has nothing to do with "online" vs "offline" etc.
-
-But then for _SC_NPROCESSORS_ONLN, it doesn't actually use
-/sys/devices/system/cpu at all, but the /proc/stat interface. Which is
-slow, mostly because it has all the crazy interrupt stuff in it, but
-also because it has lots of legacy stuff.
-
-I wrote a _much_ cleaner routine (loosely based on what we do in
-tools/prof) to just parse /sys/devices/system/cpu/online. I didn't
-even time it, but I can almost guarantee that it's an order of
-magnitude faster than /proc/stat. And if that doesn't work, you can
-fall back on a cached version of the /proc/stat parsing, since if
-those files don't exist, you can forget about CPU hotplug.
-
-> So you mean caching it at startup time? Otherwise the parent would
-> need to do sysconf() at least , which it doesn't do (the exim source doesn't
-> really know anything about libdb internals)
-
-Even if you do it in the children, it will help. At least it would be
-run just _once_ per fork.
-
-But actually looking at glibc just shows that they are simply doing
-stupid things. And I absolutely _refuse_ to add new interfaces to the
-kernel only because glibc is being a moron.
-
-                       Linus
+-- 
+js
+suse labs
