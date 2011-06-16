@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933097Ab1FPVKi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 17:10:38 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43750 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932360Ab1FPVKd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 17:10:33 -0400
+	id S933011Ab1FPVAo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 17:00:44 -0400
+Received: from claw.goop.org ([74.207.240.146]:36997 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932464Ab1FPVAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 17:00:44 -0400
+Message-ID: <4DFA6EF7.9060702@goop.org>
+Date: Thu, 16 Jun 2011 14:00:39 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <1308255972.17300.450.camel@schen9-DESK>
-References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe>
- <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com>
- <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
- <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
- <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
- <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com> <1308255972.17300.450.camel@schen9-DESK>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 16 Jun 2011 13:47:32 -0700
-Message-ID: <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com>
-Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
- to mutex
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Andi Kleen <ak@linux.intel.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
+CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        christian.dietrich@informatik.uni-erlangen.de
+Subject: Re: [PATCH 09/11] xen/xenbus: use printk_ratelimited() instead of
+ printk_ratelimit()
+References: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de> <d2bc569719b3b1d8271d1f4b2c4080bbc7527e04.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
+In-Reply-To: <d2bc569719b3b1d8271d1f4b2c4080bbc7527e04.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 1:26 PM, Tim Chen <tim.c.chen@linux.intel.com> wrote:
+On 06/16/2011 05:14 AM, Manuel Zerpies wrote:
+> Since printk_ratelimit() shouldn't be used anymore (see comment in
+> include/linux/printk.h), replace it with printk_ratelimited()
 >
-> I ran exim with different kernel versions.  Using 2.6.39-vanilla
-> kernel as a baseline, the results are as follow:
+Looks OK to me, but please fix the indentation of the rest of the
+statement to match.
+
+Thanks,
+    J
+
+> Signed-off-by: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
+> ---
+>  drivers/xen/xenbus/xenbus_xs.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 >
->                        Throughput
-> 2.6.39(vanilla)         100.0%
-> 2.6.39+ra-patch         166.7%  (+66.7%)        (note: tmpfs readahead patchset is merged in 3.0-rc2)
-> 3.0-rc2(vanilla)         68.0%  (-32%)
-> 3.0-rc2+linus           115.7%  (+15.7%)
-> 3.0-rc2+linus+softirq    86.2%  (-17.3%)
+> diff --git a/drivers/xen/xenbus/xenbus_xs.c b/drivers/xen/xenbus/xenbus_xs.c
+> index 5534690..4055858 100644
+> --- a/drivers/xen/xenbus/xenbus_xs.c
+> +++ b/drivers/xen/xenbus/xenbus_xs.c
+> @@ -44,6 +44,7 @@
+>  #include <linux/rwsem.h>
+>  #include <linux/module.h>
+>  #include <linux/mutex.h>
+> +#include <linux/ratelimit.h>
+>  #include <xen/xenbus.h>
+>  #include "xenbus_comms.h"
+>  
+> @@ -270,8 +271,7 @@ static void *xs_talkv(struct xenbus_transaction t,
+>  	}
+>  
+>  	if (msg.type != type) {
+> -		if (printk_ratelimit())
+> -			printk(KERN_WARNING
+> +		`printk_ratelimited(KERN_WARNING
+>  			       "XENBUS unexpected type [%d], expected [%d]\n",
+>  			       msg.type, type);
+>  		kfree(ret);
 
-Ok, so batching the semaphore operations makes more of a difference
-than I would have expected.
-
-I guess I'll cook up an improved patch that does it for the vma exit
-case too, and see if that just makes the semaphores be a non-issue.
-
-> I also notice that the run to run variations have increased quite a bit for 3.0-rc2.
-> I'm using 6 runs per kernel.  Perhaps a side effect of converting the anon_vma->lock to mutex?
-
-So the thing about using the mutexes is that heavy contention on a
-spinlock is very stable: it may be *slow*, but it's reliable, nicely
-queued, and has very few surprises.
-
-On a mutex, heavy contention results in very subtle behavior, with the
-adaptive spinning often - but certainly not always - making the mutex
-act as a spinlock, but once you have lots of contention the adaptive
-spinning breaks down. And then you have lots of random interactions
-with the scheduler and 'need_resched' etc.
-
-The only valid answer to lock contention is invariably always just
-"don't do that then". We've been pretty good at getting rid of
-problematic locks, but this one clearly isn't one of the ones we've
-fixed ;)
-
-                        Linus
