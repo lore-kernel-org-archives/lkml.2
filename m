@@ -1,98 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756662Ab1FPQZM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 12:25:12 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40162 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752256Ab1FPQZJ (ORCPT
+	id S1756885Ab1FPQZq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 12:25:46 -0400
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:33045 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756086Ab1FPQZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 12:25:09 -0400
-Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device
- structure
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Greg KH <greg@kroah.com>
-Cc: Nao Nishijima <nao.nishijima.xt@hitachi.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, jcm@redhat.com,
-        hare@suse.de, stefanr@s5r6.in-berlin.de, yrl.pp-manager.tt@hitachi.com
-In-Reply-To: <20110616161442.GA32113@kroah.com>
-References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp>
-	 <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp>
-	 <20110615153337.GA10160@kroah.com> <4DF9F11F.705@hitachi.com>
-	 <20110616154129.GA31498@kroah.com> <1308239454.2436.34.camel@mulgrave>
-	 <20110616161442.GA32113@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 Jun 2011 12:25:06 -0400
-Message-ID: <1308241506.2436.44.camel@mulgrave>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Jun 2011 12:25:42 -0400
+Date: Thu, 16 Jun 2011 19:25:36 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Tatyana Brokhman <tlinder@codeaurora.org>
+Cc: greg@kroah.com, linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        balbi@ti.com, ablay@codeaurora.org,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH/RFC 3/5] usb:g_zero: bulk in/out unittest support
+Message-ID: <20110616162534.GX12230@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1308231068-24038-2-git-send-email-tlinder@codeaurora.org>
+ <1308231068-24038-4-git-send-email-tlinder@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fBT78PV5vI5fyuAn"
+Content-Disposition: inline
+In-Reply-To: <1308231068-24038-4-git-send-email-tlinder@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-16 at 09:14 -0700, Greg KH wrote:
-> On Thu, Jun 16, 2011 at 11:50:54AM -0400, James Bottomley wrote:
-> > > And again, why not just fix the userspace tools?  That is trivial to do
-> > > so and again, could have been done by now in the years this has been
-> > > discussed.
-> > 
-> > So I can summarise where I think we are in these discussions:
-> > 
-> > We provide the ability to give all kernel devices a "preferred name".
-> > By default this will be the device name the kernel would have originally
-> > assigned.  the dev_printk's will use the preferred name, and it will be
-> > modifiable from user space.  All the kernel will do is print out
-> > whatever it is ... no guarantees of uniqueness or specific format will
-> > be made.  Since we're only providing one preferred_name file, the kernel
-> > can only have one preferred name for a device at any given time
-> > (although it is modifiable on the fly as many times as the user
-> > chooses).
-> > 
-> > The design is to use this preferred name to implement what Hitachi wants
-> > in terms of persistent name, but we don't really care.
-> > 
-> > All userspace naming will be taken care of by the usual udev rules, so
-> > for disks, something like /dev/disk/by-preferred/<fred> which would be
-> > the usual symbolic link.
-> 
-> No, udev can not create such a link after the preferred name is set, as
-> it has no way of knowing that the name was set.
 
-It can if we trigger a uevent.  Note: I'm not advocating this ... I'd be
-equally happy having whatever sets the kernel name create the link (or
-tickle udev to create it).  We definitely require device links, though,
-to get this to work.
+--fBT78PV5vI5fyuAn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > This will ensure that kernel output and udev input are consistent.  It
-> > will still require that user space utilities which derive a name for a
-> > device will need modifying to print out the preferred name.
-> 
-> It also doesn't solve the issue of userspace wanting to use such a
-> "preferred" name in the command line of tools, as there will not be a
-> link back to the "kernel" name directly in /dev/.
+Hi,
 
-Right ... most tools use the name they're given (and all variants
-including the preferred one have links in /dev), which means they will
-show the preferred name by default (if they were given that name as
-input).  The only problem is tools that attempt to derive a device name,
-which is quite a small subset.
+On Thu, Jun 16, 2011 at 04:31:05PM +0300, Tatyana Brokhman wrote:
+> This commit adds a new vendor specific request to be handled by the
+> g_zero module in it's sourcesink configuration. The purpose if this
+> request is to update the length of the BULK transfer to a given value.
+> The bRequest value of the new control request is 0x5e.
+> It is used by the user-space Unit testing application for bulk in/out
+> tests.
+>=20
+> Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
+>=20
+> ---
+>  drivers/usb/gadget/f_sourcesink.c |   12 ++++++++++++
+>  1 files changed, 12 insertions(+), 0 deletions(-)
+>=20
+> diff --git a/drivers/usb/gadget/f_sourcesink.c b/drivers/usb/gadget/f_sou=
+rcesink.c
+> index caf2f95..d417b8a 100644
+> --- a/drivers/usb/gadget/f_sourcesink.c
+> +++ b/drivers/usb/gadget/f_sourcesink.c
+> @@ -70,6 +70,7 @@ static unsigned pattern;
+>  module_param(pattern, uint, 0);
+>  MODULE_PARM_DESC(pattern, "0 =3D all zeroes, 1 =3D mod63 ");
+> =20
+> +static struct f_sourcesink	*the_sourcesink;
 
-> So as userspace tools will still need to be fixed, I don't see how
-> adding a kernel file for this is going to help any.  Well, a bit in that
-> the kernel log files will look "different", but again, that really isn't
-> a problem that userspace couldn't also solve with no kernel changes
-> needed.
+this is a big no-no. f_*.c should always be able to be instantiated as
+many times as we need.
 
-This is true, but I think for the small effort it takes to implement the
-feature in-kernel compared with what we'd have to do to the
-distributions to get it implemented in userspace (we'd need klogd to do
-the conversion for dmesg ... I'm entirely unclear what we need to modify
-for /proc/partitions, etc.) the benefit outweighs the cost.
+>  /*----------------------------------------------------------------------=
+---*/
+> =20
+>  static struct usb_interface_descriptor source_sink_intf =3D {
+> @@ -197,6 +198,7 @@ static void
+>  sourcesink_unbind(struct usb_configuration *c, struct usb_function *f)
+>  {
+>  	kfree(func_to_ss(f));
+> +	the_sourcesink =3D NULL;
+>  }
+> =20
+>  /* optionally require specific source/sink data patterns  */
+> @@ -425,6 +427,7 @@ static int __init sourcesink_bind_config(struct usb_c=
+onfiguration *c)
+>  	status =3D usb_add_function(c, &ss->function);
+>  	if (status)
+>  		kfree(ss);
+> +	the_sourcesink =3D ss;
+>  	return status;
+>  }
+> =20
+> @@ -472,6 +475,15 @@ static int sourcesink_setup(struct usb_configuration=
+ *c,
+>  		value =3D w_length;
+>  		break;
+> =20
+> +	case 0x5e:
+> +		/*
+> +		 * Change bulk ep buffer size. buflen is the length of
+> +		 * the BULK transfer (req->length=3Dbuflen). Defined in g_zero.h
+> +		 */
+> +		disable_source_sink(the_sourcesink);
+> +		buflen =3D w_value;
+> +		value =3D enable_source_sink(c->cdev, the_sourcesink);
+> +		break;
+>  	default:
 
-Additionally, since renaming is something users seem to want (just look
-at net interfaces), if we can make this work, we now have a definitive
-answer to point people at.
+I think this request, should be handled by the f_sourcesink interface.
+Meaning you'd need to introduce another f_sourcesink_setup(); to be
+added to the function, rather then the configuration.
 
-James
+Please change that.
 
+--=20
+balbi
 
+--fBT78PV5vI5fyuAn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN+i5+AAoJEAv8Txj19kN1HxwH/0+jG8MFnr9Q0rBR++ULlflX
+RPnl+FLyNeeOFrHYJN+wMrRy+ZjBe7aGvIf1m8s2IeX2dcnhTrTO4bXYqaCM6sng
+VJ1zFtUsoXwEgonvOnpLKckaedaqLmZ3cxjhrkVKQjw6ctH1J77FtSrdX1XU6HAk
+0VXpolWfexoKX2p+bH60hACzQLjDud2gfyZ3RmWBQXytOkJQjoZ74YXCG2M16Nm0
+dgTXVmbJ231/eAQ/YRoEcBj7NXhtOyIRkzE90WQhk0/HnK9BU/j5ugeBRODJvnMg
+/CLWeW3quA/loX279ZvoGvTh4RxuU7CaG0ds9e2RL6/tUYlQRoiOs/a1ZmgHrrY=
+=7sJU
+-----END PGP SIGNATURE-----
+
+--fBT78PV5vI5fyuAn--
