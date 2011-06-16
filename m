@@ -1,65 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432Ab1FPByJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 21:54:09 -0400
-Received: from sr-smtp.usish.com ([210.5.144.203]:47980 "EHLO
-	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590Ab1FPByH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 21:54:07 -0400
-X-Greylist: delayed 772 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Jun 2011 21:54:06 EDT
-From: "Jack Wang" <jack_wang@usish.com>
-To: "'Xiangliang Yu'" <yuxiangl@marvell.com>,
-        "'James Bottomley'" <James.Bottomley@HansenPartnership.com>
-Cc: <yxlraid@gmail.com>, <lucas.demarchi@profusion.mobi>,
-        <maciej.trela@intel.com>, <dan.j.williams@intel.com>,
-        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "'Jacky Feng'" <jfeng@marvell.com>
-References: <1308064628-11826-1-git-send-email-yxlraid@gmail.com> <1308065367.2401.24.camel@mulgrave> <F766E4F80769BD478052FB6533FA745D19FAE669AF@SC-VEXCH4.marvell.com> <1308117450.2329.31.camel@mulgrave> <F766E4F80769BD478052FB6533FA745D19FAE66AAF@SC-VEXCH4.marvell.com>
-Subject: RE: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
-Date: Thu, 16 Jun 2011 09:41:01 +0800
-Message-ID: <637AF86F1A314F15B816411A580575F0@usish.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <F766E4F80769BD478052FB6533FA745D19FAE66AAF@SC-VEXCH4.marvell.com>
-Thread-Index: AcwrIR/qdpMMo2uOTdi6EtZ/SnmPkgAAZ5KAACgYoPA=
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6090
+	id S1754556Ab1FPBrx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 21:47:53 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57823 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752751Ab1FPBrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 21:47:49 -0400
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        "Theodore Tso" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH 1/3] jbd2,rcu: correctly use RCU
+Date: Thu, 16 Jun 2011 09:47:04 +0800
+Message-Id: <ec67960d0864680d18a43ec5275baba3f6e1dd94.1308131436.git.laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-16 09:47:20,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-16 09:47:28,
+	Serialize complete at 2011-06-16 09:47:28
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> I get the issue like this:
-> 1. HBA support 3Gbps, level 1 expander support 6Gbps, and level 2 expander
-> support 6Gbps;
-> 2. level 1 is fine, and find that level 2 link rate is 6Gbps in DISCOVER
-command
-> response.
-> 3. LIBSAS think level 2 is 6Gbps by sas_ex_get_linkrate function, and send
-> command to level 2 expander
-> 4. LIBSAS link error.
-> 
-[Jack Wang] 
-What do you mean by "LIBSAS link error", OPEN_REJECT(CONNECTION RATE NOT
-SUPPORTED)? LIBSAS only get the error event through LLDD. 
-According to SAS2r15 7.8.3
+In read site, we need to use local_ptr = rcu_dereference(),
+and then use this local_ptr to read the content.
 
-A SAS initiator port shall set the initial CONNECTION RATE field to:
-a) the highest supported connection rate supported by a potential pathway as
-determined during the 
-discover process (e.g., based on the logical link rates of each logical link
-reported in the SMP 
-DISCOVER responses); or
-b) the logical link rate of the logical phy used to transmit the OPEN
-address frame.
-If a SAS initiator port selected a connection rate based on discover process
-information but the connection 
-request results in OPEN_REJECT (CONNECTION RATE NOT SUPPORTED), then the
-discover process 
-information is no longer current and the discover process should be run
-again.
+In update site, we should assign/publish the new object/pointer after
+the content of the new object/pointer is fully initialized,
+and we can't not touch the object after the pointer assignment.
+rcu_assign_pointer() is need for the assignement.
 
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ fs/jbd2/journal.c |   25 +++++++++++++------------
+ 1 files changed, 13 insertions(+), 12 deletions(-)
+
+diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+index 9267291..1c45b6a 100644
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -2439,7 +2439,7 @@ struct devname_cache {
+ 	char		devname[BDEVNAME_SIZE];
+ };
+ #define CACHE_SIZE_BITS 6
+-static struct devname_cache *devcache[1 << CACHE_SIZE_BITS];
++static struct devname_cache __rcu *devcache[1 << CACHE_SIZE_BITS];
+ static DEFINE_SPINLOCK(devname_cache_lock);
+ 
+ const char *jbd2_dev_to_name(dev_t device)
+@@ -2447,24 +2447,25 @@ const char *jbd2_dev_to_name(dev_t device)
+ 	int	i = hash_32(device, CACHE_SIZE_BITS);
+ 	char	*ret;
+ 	struct block_device *bd;
+-	static struct devname_cache *new_dev;
++	static struct devname_cache *cache;
+ 
+ 	rcu_read_lock();
+-	if (devcache[i] && devcache[i]->device == device) {
+-		ret = devcache[i]->devname;
++	cache = rcu_dereference(devcache[i]);
++	if (cache && cache->device == device) {
++		ret = cache->devname;
+ 		rcu_read_unlock();
+ 		return ret;
+ 	}
+ 	rcu_read_unlock();
+ 
+-	new_dev = kmalloc(sizeof(struct devname_cache), GFP_KERNEL);
+-	if (!new_dev)
++	cache = kmalloc(sizeof(struct devname_cache), GFP_KERNEL);
++	if (!cache)
+ 		return "NODEV-ALLOCFAILURE"; /* Something non-NULL */
+ 	bd = bdget(device);
+ 	spin_lock(&devname_cache_lock);
+ 	if (devcache[i]) {
+ 		if (devcache[i]->device == device) {
+-			kfree(new_dev);
++			kfree(cache);
+ 			bdput(bd);
+ 			ret = devcache[i]->devname;
+ 			spin_unlock(&devname_cache_lock);
+@@ -2472,14 +2473,14 @@ const char *jbd2_dev_to_name(dev_t device)
+ 		}
+ 		kfree_rcu(devcache[i], rcu);
+ 	}
+-	devcache[i] = new_dev;
+-	devcache[i]->device = device;
++	cache->device = device;
+ 	if (bd) {
+-		bdevname(bd, devcache[i]->devname);
++		bdevname(bd, cache->devname);
+ 		bdput(bd);
+ 	} else
+-		__bdevname(device, devcache[i]->devname);
+-	ret = devcache[i]->devname;
++		__bdevname(device, cache->devname);
++	rcu_assign_pointer(devcache[i], cache);
++	ret = cache->devname;
+ 	spin_unlock(&devname_cache_lock);
+ 	return ret;
+ }
+-- 
+1.7.4.4
 
