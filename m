@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236Ab1FPQPV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 12:15:21 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:53347 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754839Ab1FPQPU (ORCPT
+	id S1755842Ab1FPQQg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 12:16:36 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:37174 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754697Ab1FPQQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 12:15:20 -0400
-X-Sasl-enc: CndObrFUIBP7fz2kWsjBfRWfyY1XYVZLHn4ZmIpU90EF 1308240918
-Date: Thu, 16 Jun 2011 09:14:42 -0700
-From: Greg KH <greg@kroah.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Nao Nishijima <nao.nishijima.xt@hitachi.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, jcm@redhat.com,
-        hare@suse.de, stefanr@s5r6.in-berlin.de, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
-Message-ID: <20110616161442.GA32113@kroah.com>
-References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp>
- <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp>
- <20110615153337.GA10160@kroah.com>
- <4DF9F11F.705@hitachi.com>
- <20110616154129.GA31498@kroah.com>
- <1308239454.2436.34.camel@mulgrave>
+	Thu, 16 Jun 2011 12:16:33 -0400
+Date: Thu, 16 Jun 2011 19:16:28 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Tatyana Brokhman <tlinder@codeaurora.org>, greg@kroah.com,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
+        ablay@codeaurora.org, open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH/RFC 2/5] usb:dummy_hcd: connect/disconnect test support
+Message-ID: <20110616161626.GV12230@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1308231068-24038-3-git-send-email-tlinder@codeaurora.org>
+ <Pine.LNX.4.44L0.1106161101300.2204-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Zqkt5x/gGOIVPcL0"
 Content-Disposition: inline
-In-Reply-To: <1308239454.2436.34.camel@mulgrave>
+In-Reply-To: <Pine.LNX.4.44L0.1106161101300.2204-100000@iolanthe.rowland.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 11:50:54AM -0400, James Bottomley wrote:
-> > And again, why not just fix the userspace tools?  That is trivial to do
-> > so and again, could have been done by now in the years this has been
-> > discussed.
-> 
-> So I can summarise where I think we are in these discussions:
-> 
-> We provide the ability to give all kernel devices a "preferred name".
-> By default this will be the device name the kernel would have originally
-> assigned.  the dev_printk's will use the preferred name, and it will be
-> modifiable from user space.  All the kernel will do is print out
-> whatever it is ... no guarantees of uniqueness or specific format will
-> be made.  Since we're only providing one preferred_name file, the kernel
-> can only have one preferred name for a device at any given time
-> (although it is modifiable on the fly as many times as the user
-> chooses).
-> 
-> The design is to use this preferred name to implement what Hitachi wants
-> in terms of persistent name, but we don't really care.
-> 
-> All userspace naming will be taken care of by the usual udev rules, so
-> for disks, something like /dev/disk/by-preferred/<fred> which would be
-> the usual symbolic link.
 
-No, udev can not create such a link after the preferred name is set, as
-it has no way of knowing that the name was set.
+--Zqkt5x/gGOIVPcL0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> This will ensure that kernel output and udev input are consistent.  It
-> will still require that user space utilities which derive a name for a
-> device will need modifying to print out the preferred name.
+Hi,
 
-It also doesn't solve the issue of userspace wanting to use such a
-"preferred" name in the command line of tools, as there will not be a
-link back to the "kernel" name directly in /dev/.
+On Thu, Jun 16, 2011 at 11:06:47AM -0400, Alan Stern wrote:
+> On Thu, 16 Jun 2011, Tatyana Brokhman wrote:
+>=20
+> > This implementation adds a new proprietary device control requests (to =
+be
+> > handled by the dummy_hcd) that initiates a connect/disconnect sequence.
+> > The bRequest value of the new control request is 0x52.
+> > It is used by the user-space Unit testing application.
+>=20
+> This is not a bad idea.  On the other hand, it is slightly peculiar --=20
+> it you're testing with real UDC hardware, you would do the=20
+> disconnect/reconnect sequence by hand (unplug and replug the USB=20
+> cable), not in software.
 
-So as userspace tools will still need to be fixed, I don't see how
-adding a kernel file for this is going to help any.  Well, a bit in that
-the kernel log files will look "different", but again, that really isn't
-a problem that userspace couldn't also solve with no kernel changes
-needed.
+actually, this is quite useful. Specially for the controllers which
+_can_ do soft-connect by toggling data pullups. I would rather have
+these sort of thing maybe in composite.c, so that we can build tests
+with all gadget drivers/controllers, not only dummy_hcd.
 
-thanks,
+That said, I think now it's not the time to fiddle too much with these
+details right now. So best to keep this in dummy_hcd until we know the
+test tools are actually good.
 
-greg k-h
+--=20
+balbi
+
+--Zqkt5x/gGOIVPcL0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN+ixaAAoJEAv8Txj19kN1K7IH/0pCYQfoJbc72RqLkrn53Gnp
+aBgBdHmsf+4E8MKLfkZUZEmW8RMtV37E4hRGnG21AKiK8T9iY3G8vGqJXZcosZ9+
+wam10gVgDlW14BZ/skzWxIU4HFH7LzVyaJ9YHY96B876do3iXUBsTSbCNDepOto9
+08xNOJmk7d3yOPuFXvp+O3WfEdOuIOFif2Q8zsnJRDoj8TnsZ+C7T24Y/ybql9vn
+HJqW8jsatDMq+HeV4I4b+JglkYnsmwXwbnBLkNWPzJBQeLO9U1QqEI7I/w02RmVI
+Qbm3NPs+emAwRrxTcZgfRby97Nt989HMRPhPYuCK9/f1w4yqc4KmPqTDig50IVE=
+=/aMP
+-----END PGP SIGNATURE-----
+
+--Zqkt5x/gGOIVPcL0--
