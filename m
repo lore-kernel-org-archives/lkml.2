@@ -1,99 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635Ab1FPEGn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 00:06:43 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:43951 "EHLO e3.ny.us.ibm.com"
+	id S1751564Ab1FPET7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 00:19:59 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:60306 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750731Ab1FPEGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 00:06:42 -0400
-Date: Wed, 15 Jun 2011 21:06:39 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, josh@joshtriplett.org,
-        Manfred Spraul <manfred@colorfullife.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rcu,doc: lock-free update site
-Message-ID: <20110616040639.GN2267@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4DF7231B.1080708@cn.fujitsu.com>
- <BLU0-SMTP15CB1FCA05185652974DF796680@phx.gbl>
- <4DF96D10.60904@cn.fujitsu.com>
+	id S1750741Ab1FPET5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 00:19:57 -0400
+Date: Thu, 16 Jun 2011 09:41:37 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 3.0-rc2-tip 4/22]  4: Uprobes: register/unregister
+ probes.
+Message-ID: <20110616041137.GG4952@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+ <20110607125900.28590.16071.sendpatchset@localhost6.localdomain6>
+ <1308159719.2171.57.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4DF96D10.60904@cn.fujitsu.com>
+In-Reply-To: <1308159719.2171.57.camel@laptop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 10:40:16AM +0800, Lai Jiangshan wrote:
-> On 06/14/2011 08:50 PM, Mathieu Desnoyers wrote:
-> > * Lai Jiangshan (laijs@cn.fujitsu.com) wrote:
-> >> Add a document which describes a pattern of using RCU to implement lock-free(lockless)
-> >> update site.
-> >>
-> > [...]
-> >> @@ -0,0 +1,143 @@
-> >> +Lock-free(lockless) update site
-> >> +
-> >> +This article describes a pattern of using RCU to implement lock-free(lockless)
-> >> +update site. RCU update site is considered call-rare and it is protected
-> >> +by a update-site lock generally. But blocking algorithms are undesirable
-> >> +in some cases for some reasons, thus, this pattern may help.
-> > 
-> > Hi Lai,
-> > 
-> > Yes, using this kind of rcu read-side lock to protect against the
-> > cmpxchg ABA problem is well-known (to me at least) ;) I used this
-> > technique in the userspace RCU library "lock-free queue" and "lock-free
-> > stack" in 2010*. Please feel free to dig through my RCU data containers code
-> > to bring in more data structure examples:
-> > 
-> > http://git.lttng.org/?p=userspace-rcu.git;a=blob;f=urcu/static/rculfqueue.h;h=b627e450cfdd581692b474d89437e3fd47f18463;hb=HEAD
-> > 
-> > http://git.lttng.org/?p=userspace-rcu.git;a=blob;f=urcu/static/rculfqueue.h;h=b627e450cfdd581692b474d89437e3fd47f18463;hb=HEAD
-> > 
-> > Thanks!
-> > 
-> > Mathieu
-> 
-> 
-> Hi, Mathieu
-> 
-> I will try to make simple update site wait-free, so I wrote a simple guide/document
-> at first. I didn't notice your work. Your work is excellent,
-> I will add some references. I hope you rewrite/pretty this document also.
-> 
-> The lock-free stack is a good example, but the lock-free queue is not good here I think.
+* Peter Zijlstra <peterz@infradead.org> [2011-06-15 19:41:59]:
 
-I look forward to seeing the update!
+> On Tue, 2011-06-07 at 18:29 +0530, Srikar Dronamraju wrote:
+> > 1. Use mm->owner and walk thro the thread_group of mm->owner, siblings
+> > of mm->owner, siblings of parent of mm->owner.  This should be
+> > good list to traverse. Not sure if this is an exhaustive
+> > enough list that all tasks that have a mm set to this mm_struct are
+> > walked through. 
+> 
+> As per copy_process():
+> 
+> 	/*
+> 	 * Thread groups must share signals as well, and detached threads
+> 	 * can only be started up within the thread group.
+> 	 */
+> 	if ((clone_flags & CLONE_THREAD) && !(clone_flags & CLONE_SIGHAND))
+> 		return ERR_PTR(-EINVAL);
+> 
+> 	/*
+> 	 * Shared signal handlers imply shared VM. By way of the above,
+> 	 * thread groups also imply shared VM. Blocking this case allows
+> 	 * for various simplifications in other code.
+> 	 */
+> 	if ((clone_flags & CLONE_SIGHAND) && !(clone_flags & CLONE_VM))
+> 		return ERR_PTR(-EINVAL);
+> 
+> CLONE_THREAD implies CLONE_VM, but not the other way around, we
+> therefore would be able to CLONE_VM and not be part of the primary
+> owner's thread group.
+> 
+> This is of course all terribly sad..
 
-							Thanx, Paul
+Agree, 
 
-> Thanks,
-> Lai
-> 
-> 
-> > 
-> > * AFAIK I introduced this technique using RCU read-side C.S. to deal
-> >   with cmpxchg ABA at that point, but someone might have thought about
-> >   it before me without my knowledge. My litterature survey so far
-> >   indicates that using a double-word CAS on a pointer/counter was one of
-> >   the usual technique used to protect against cmpxchg ABA so far. Other
-> >   techniques imply allocating elements in a limited-size array (so a
-> >   simple cmpxchg can update the array index and counter atomically),
-> >   Hasard Pointers, or having a full-blown GC which provides similar
-> >   guarantees to the RCU grace period with a read-side lock held.
-> >   Ref.:
-> > 
-> >   [1998] Maged Michael, Michael Scott "Simple, fast, and practical non-blocking and blocking concurrent queue algorithms"
-> >   [2002] Maged M.Michael "Safe memory reclamation for dynamic lock-free objects using atomic reads and writes"
-> >   [2003] Maged M.Michael "Hazard Pointers: Safe memory reclamation for lock-free objects"
-> > 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+If clone(CLONE_VM) were to be done by a thread_group leader, we can walk
+thro the siblings of parent of mm->owner.
+
+However if clone(CLONE_VM) were to be done by non thread_group_leader
+thread, then we dont even seem to add it to the init_task. i.e I dont
+think we can refer to such a thread even when we walk thro
+do_each_thread(g,t) { .. } while_each_thread(g,t);
+
+right?
+
+-- 
+Thanks and Regards
+Srikar
