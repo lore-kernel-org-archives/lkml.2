@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757544Ab1FPJ4X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 05:56:23 -0400
-Received: from mail.codesourcery.com ([38.113.113.100]:41914 "EHLO
-	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757531Ab1FPJ4V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 05:56:21 -0400
-From: Pedro Alves <pedro@codesourcery.com>
-Organization: CodeSourcery
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCHSET ptrace] ptrace: implement PTRACE_SEIZE/INTERRUPT and group stop notification, take#4
-Date: Thu, 16 Jun 2011 10:56:17 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; x86_64; ; )
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, Oleg Nesterov <oleg@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu,
-        bdonlan@gmail.com
-References: <1306710760-16440-1-git-send-email-tj@kernel.org> <201106031125.16071.pedro@codesourcery.com> <20110616083828.GJ8141@htj.dyndns.org>
-In-Reply-To: <20110616083828.GJ8141@htj.dyndns.org>
+	id S1757539Ab1FPJ5i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 05:57:38 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58802 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753909Ab1FPJ5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 05:57:36 -0400
+Date: Thu, 16 Jun 2011 11:57:12 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Pekka Enberg <penberg@kernel.org>, Anthony Liguori <anthony@codemonkey.ws>,
+        Alexander Graf <agraf@suse.de>,
+        Prasad Joshi <prasadjoshi124@gmail.com>, Avi Kivity <avi@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
+Message-ID: <20110616095712.GA10989@elte.hu>
+References: <BANLkTinMDz-sqaX0cyWEoLXt70dowxofvg@mail.gmail.com>
+ <4DF92C80.3030106@codemonkey.ws>
+ <7A30A509-47AA-4E72-ABF3-937005900F9D@suse.de>
+ <4DF93010.1040006@codemonkey.ws>
+ <4DF935C1.4020000@codemonkey.ws>
+ <BANLkTikmUpF_fsZcpiuMzZQZa17U-cPQAw@mail.gmail.com>
+ <BANLkTi=mS43KwRG13ROmZX+HmbrPMVgV=g@mail.gmail.com>
+ <20110616092429.GA5484@infradead.org>
+ <BANLkTinnSW=EEunCu_d51Mapiv=V03ncQw@mail.gmail.com>
+ <20110616094810.GA19965@infradead.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106161056.17798.pedro@codesourcery.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110616094810.GA19965@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
 
-On Thursday 16 June 2011 09:38:28, Tejun Heo wrote:
-> On Fri, Jun 03, 2011 at 11:25:15AM +0100, Pedro Alves wrote:
-> > It'd be _very_ useful for x86 (and others) to have
-> > something like TRAP_BRKPT for int3.  Both for ptracers
-> > and in-process self debuggers.
-> > 
-> > I'd be super happy to be told we have that already
-> > in recent kernels and I missed it.  :-)
+* Christoph Hellwig <hch@infradead.org> wrote:
+
+> > What's the right thing to do here? Is fdatasync() sufficient?
 > 
-> Unfortunately, AFAICS, x86 doesn't have it nor is there a generic
-> mechanism, but this should be solvable without disrupting existing
-> users.
+> Yes.
 
-Hmm, looks like there was an earlier attempt:
+Prasad, Pekka, mind redoing the numbers with fdatasync()?
 
-<http://lkml.indiana.edu/hypermail/linux/kernel/0809.2/1898.html>
+I'd be surprised if they were significantly worse but it has to be 
+done to have apples-to-apples numbers.
 
-Reading that thread, there were some minor revisions, but I didn't
-see any objection.  It seems that patch made it 2.6.28 (the only
-sources I have handy), as I see get_si_code calls in arch/x86/kernel/traps.c,
-and arch/x86/include/asm/traps.h.
+Thanks,
 
-But, I'm running 2.6.38, x86-64, and 
-
-#include <stdio.h>
-#include <string.h>
-#include <signal.h>
-
-static void
-handler (int sig, siginfo_t *info, void *context)
-{
-  printf ("si_code = %x\n", info->si_code);
-}
-
-int
-main (void)
-{
-  struct sigaction action;
-
-  memset (&action, 0, sizeof (action));
-  action.sa_sigaction = handler;
-  action.sa_flags |= SA_SIGINFO;
-  sigaction (SIGTRAP, &action, NULL);
-
-  asm volatile ("int3");
-
-  return 0;
-}
-
-still prints:
-
-$ ./trap 
-si_code = 80
-
-Hmm...  I don't have any other kernel version sources or
-git checkout handy at the moment to check the history
-behind this.
-
--- 
-Pedro Alves
+	Ingo
