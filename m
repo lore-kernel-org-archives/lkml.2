@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357Ab1FPHFP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:05:15 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:46014 "EHLO
+	id S1756882Ab1FPH25 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:28:57 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:36503 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756294Ab1FPHFL (ORCPT
+	by vger.kernel.org with ESMTP id S1756307Ab1FPHFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:05:11 -0400
-X-Sasl-enc: 6fXZFBlnIfKpY2jh1Za+3i8ZhOPhWKGiP3s7UKAzaji0 1308207910
+	Thu, 16 Jun 2011 03:05:12 -0400
+X-Sasl-enc: Ats+TPCgZXk383QrxcZhs9bhdZIGs9MDLJnGpoSmGOk8 1308207911
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:16:10 2011
-Message-Id: <20110616001609.982608957@clark.kroah.org>
+Message-Id: <20110616001610.082521122@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:15:04 -0700
+Date: Wed, 15 Jun 2011 17:15:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>
-Subject: [07/91] block: rescan partitions on invalidated devices on -ENOMEDIA
+        James Bottomley <James.Bottomley@suse.de>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: [08/91] block: add proper state guards to __elv_next_request
 In-Reply-To: <20110616001900.GA25375@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,100 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
 ------------------
- too
 
-From: Tejun Heo <tj@kernel.org>
+From: James Bottomley <James.Bottomley@suse.de>
 
-commit 02e352287a40bd456eb78df705bf888bc3161d3f upstream.
+commit 0a58e077eb600d1efd7e54ad9926a75a39d7f8ae upstream.
 
-__blkdev_get() doesn't rescan partitions if disk->fops->open() fails,
-which leads to ghost partition devices lingering after medimum removal
-is known to both the kernel and userland.  The behavior also creates a
-subtle inconsistency where O_NONBLOCK open, which doesn't fail even if
-there's no medium, clears the ghots partitions, which is exploited to
-work around the problem from userland.
+blk_cleanup_queue() calls elevator_exit() and after this, we can't
+touch the elevator without oopsing.  __elv_next_request() must check
+for this state because in the refcounted queue model, we can still
+call it after blk_cleanup_queue() has been called.
 
-Fix it by updating __blkdev_get() to issue partition rescan after
--ENOMEDIA too.
+This was reported as causing an oops attributable to scsi.
 
-This was reported in the following bz.
-
- https://bugzilla.kernel.org/show_bug.cgi?id=13029
-
-Stable: 2.6.38
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: David Zeuthen <zeuthen@gmail.com>
-Reported-by: Martin Pitt <martin.pitt@ubuntu.com>
-Reported-by: Kay Sievers <kay.sievers@vrfy.org>
-Tested-by: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/block_dev.c |   27 ++++++++++++++++++---------
- 1 file changed, 18 insertions(+), 9 deletions(-)
+ block/blk.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1203,6 +1203,7 @@ static int __blkdev_get(struct block_dev
- 			if (!bdev->bd_part)
- 				goto out_clear;
- 
-+			ret = 0;
- 			if (disk->fops->open) {
- 				ret = disk->fops->open(bdev, mode);
- 				if (ret == -ERESTARTSYS) {
-@@ -1218,9 +1219,18 @@ static int __blkdev_get(struct block_dev
- 					mutex_unlock(&bdev->bd_mutex);
- 					goto restart;
- 				}
--				if (ret)
--					goto out_clear;
- 			}
-+			/*
-+			 * If the device is invalidated, rescan partition
-+			 * if open succeeded or failed with -ENOMEDIUM.
-+			 * The latter is necessary to prevent ghost
-+			 * partitions on a removed medium.
-+			 */
-+			if (bdev->bd_invalidated && (!ret || ret == -ENOMEDIUM))
-+				rescan_partitions(disk, bdev);
-+			if (ret)
-+				goto out_clear;
-+
- 			if (!bdev->bd_openers) {
- 				bd_set_size(bdev,(loff_t)get_capacity(disk)<<9);
- 				bdi = blk_get_backing_dev_info(bdev);
-@@ -1228,8 +1238,6 @@ static int __blkdev_get(struct block_dev
- 					bdi = &default_backing_dev_info;
- 				bdev->bd_inode->i_data.backing_dev_info = bdi;
- 			}
--			if (bdev->bd_invalidated)
--				rescan_partitions(disk, bdev);
- 		} else {
- 			struct block_device *whole;
- 			whole = bdget_disk(disk, 0);
-@@ -1256,13 +1264,14 @@ static int __blkdev_get(struct block_dev
- 		put_disk(disk);
- 		disk = NULL;
- 		if (bdev->bd_contains == bdev) {
--			if (bdev->bd_disk->fops->open) {
-+			ret = 0;
-+			if (bdev->bd_disk->fops->open)
- 				ret = bdev->bd_disk->fops->open(bdev, mode);
--				if (ret)
--					goto out_unlock_bdev;
--			}
--			if (bdev->bd_invalidated)
-+			/* the same as first opener case, read comment there */
-+			if (bdev->bd_invalidated && (!ret || ret == -ENOMEDIUM))
- 				rescan_partitions(bdev->bd_disk, bdev);
-+			if (ret)
-+				goto out_unlock_bdev;
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -62,7 +62,8 @@ static inline struct request *__elv_next
+ 				return rq;
  		}
+ 
+-		if (!q->elevator->ops->elevator_dispatch_fn(q, 0))
++		if (test_bit(QUEUE_FLAG_DEAD, &q->queue_flags) ||
++		    !q->elevator->ops->elevator_dispatch_fn(q, 0))
+ 			return NULL;
  	}
- 	bdev->bd_openers++;
+ }
 
 
