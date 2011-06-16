@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757890Ab1FPMeX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 08:34:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56079 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755692Ab1FPMeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 08:34:22 -0400
-Message-ID: <4DF9F84B.7040007@redhat.com>
-Date: Thu, 16 Jun 2011 08:34:19 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Linux kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kyle McMartin <kyle@redhat.com>
-Subject: Re: SLUB BUG: check_slab called with interrupts enabled
-References: <4DF8C80F.7090403@redhat.com> <alpine.DEB.2.00.1106150959500.768@router.home> <4DF8CCE1.80400@redhat.com> <alpine.DEB.2.00.1106151040020.768@router.home>
-In-Reply-To: <alpine.DEB.2.00.1106151040020.768@router.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757925Ab1FPMgO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 08:36:14 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37360 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756211Ab1FPMgL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 08:36:11 -0400
+Subject: Re: [PATCH v4 3.0-rc2-tip 13/22] 13: uprobes: Handing int3 and
+ singlestep exception.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20110616120442.GA4093@linux.vnet.ibm.com>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+	 <20110607130051.28590.68088.sendpatchset@localhost6.localdomain6>
+	 <1308225141.13240.25.camel@twins>
+	 <20110616120442.GA4093@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 16 Jun 2011 14:35:24 +0200
+Message-ID: <1308227724.13240.58.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2011 11:45 AM, Christoph Lameter wrote:
-> On Wed, 15 Jun 2011, Rik van Riel wrote:
->
->> > There are no additional special slub patches applied right? Because
->> some
->> > of the patches under discussion change the interrupt disable handling a
->> > bit.
->>
->> Just the two attached ones, which don't seem to touch the
->> code path in question...
->
-> I also do not see how these could break something.
+On Thu, 2011-06-16 at 17:34 +0530, Srikar Dronamraju wrote:
+> > > +
+> > > +cleanup_ret:
+> > > +       if (u) {
+> > > +               down_read(&mm->mmap_sem);
+> > > +               if (!set_orig_insn(current, u, probept, true))
+> > 
+> > we try to undo the probe? That doesn't make any sense. I thought you
+> > meant to return to userspace, let it re-take the trap and try again
+> > until you do manage to allocate the user resource.
+> 
+> I meant removing the probe itself
+> https://lkml.org/lkml/2011/4/21/279
+> 
+> We could try reseting and retrying the trap. Just that we might end up
+> looping under memory pressure.
+> 
+> > 
+> > This behaviour makes probes totally unreliable under memory pressure. 
+> 
+> Under memory pressure we could be unreliable. 
 
-After backing them out, I got 18 hours of uptime so far.
+But that is total crap, there's nothing worse than unreliable debug
+tools.
 
-This could just be dumb luck, or it could be some slub vs. kswapd
-interaction.  Or maybe I simply am not triggering the original
-bug any more because kswapd is now doing all the work, but may
-still be able to trigger it under more memory pressure...
 
-Either way, since this could still be dumb luck, I'll let you
-guys know if/when I see a next crash :)
-
--- 
-All rights reversed
