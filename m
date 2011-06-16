@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757726Ab1FPQ5q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 12:57:46 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:54270 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754875Ab1FPQ5p (ORCPT
+	id S1757871Ab1FPQ6c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 12:58:32 -0400
+Received: from alerce.vps.bitfolk.com ([212.13.194.134]:38263 "EHLO
+	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757432Ab1FPQ6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 12:57:45 -0400
-Date: Thu, 16 Jun 2011 10:57:40 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 03/11] dt/irq: add irq_domain_add_simple() helper
-Message-ID: <20110616165740.GH3795@ponder.secretlab.ca>
-References: <20110616042653.29371.2052.stgit@ponder>
- <20110616044141.29371.76366.stgit@ponder>
- <4DFA0D83.6070604@gmail.com>
- <4DFA1160.5020208@gmail.com>
+	Thu, 16 Jun 2011 12:58:31 -0400
+Date: Thu, 16 Jun 2011 13:57:42 -0300
+From: Leandro Lucarella <luca@llucax.com.ar>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org
+Subject: Re: Graphic corruption with i915 (2.6.39.1)
+Message-ID: <20110616165742.GS20487@llucax.com.ar>
+References: <20110616145842.GM20487@llucax.com.ar>
+ <013811$g9fu7@fmsmga002.fm.intel.com>
+ <20110616161803.GQ20487@llucax.com.ar>
+ <aefc95$f0ne9@orsmga001.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DFA1160.5020208@gmail.com>
+In-Reply-To: <aefc95$f0ne9@orsmga001.jf.intel.com>
+X-Paranoid: Just because you're paranoid, don't mean they're not after you.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 09:21:20AM -0500, Rob Herring wrote:
-> Forgot one thing.
-> 
-> On 06/16/2011 09:04 AM, Rob Herring wrote:
-> > Grant,
+Chris Wilson, el 16 de junio a las 17:39 me escribiste:
+> On Thu, 16 Jun 2011 13:18:03 -0300, Leandro Lucarella <luca@llucax.com.ar> wrote:
+> > cannot access /sys/kernel/debug/dri/0/i915_error_state: No such file or directory
 > > 
-> > On 06/15/2011 11:41 PM, Grant Likely wrote:
-> >> irq_domain_add_simple() is an easy way to generate an irq translation
-> >> domain for simple irq controllers.  It assumes a flat 1:1 mapping from
-> >> hardware irq number to an offset of the first linux irq number assigned
-> >> to the controller
-> >>
+> > The debug directory is not present, should I boot or compile with some
+> > particular option to enable it?
 > 
-> The description and headline are a bit out of date since adding
-> irq_domain_generate_simple.
+> You need to compile with CONFIG_DEBUGFS and at runtime
+> "mount -tdebugfs debug /sys/kernel/debug".
+> 
+> The /sys/kernel/debug/dri/0/i915_error_state will only be populated
+> after a hang is detected.
 
-good catch.  Thanks.
+OK, I had CONFIG_DEBUGFS but never mounted it. Unfortunately I rebooted
+since the problem, so now that file says: no error state collected
 
-g.
+I'll get the contents when it happens again.
 
+-- 
+Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
+----------------------------------------------------------------------
+GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
+----------------------------------------------------------------------
+The world's best known word is "okay"
+The second most well-known word is "Coca-Cola"
