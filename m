@@ -1,79 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757613Ab1FPM02 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 08:26:28 -0400
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:60993 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756211Ab1FPM0Y (ORCPT
+	id S1757742Ab1FPM2P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 08:28:15 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46240 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755515Ab1FPM2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 08:26:24 -0400
-Message-ID: <4DF9F657.7030605@fr.ibm.com>
-Date: Thu, 16 Jun 2011 14:25:59 +0200
-From: Cedric Le Goater <clg@fr.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Greg Kurz <gkurz@fr.ibm.com>
-CC: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, containers@lists.osdl.org,
-        akpm@linux-foundation.org, xemul@openvz.org
-Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was Vpid:)
-References: <20110615145527.4016.70157.stgit@bahia.local>	<20110615190302.GA16440@redhat.com> <1308223158.8230.66.camel@bahia.local>
-In-Reply-To: <1308223158.8230.66.camel@bahia.local>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Jun 2011 08:28:14 -0400
+Subject: Re: "Cache" sched domains
+From: Peter Zijlstra <peterz@infradead.org>
+To: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>, Paul Turner <pjt@google.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+In-Reply-To: <20110616121147.GA4644@const.bordeaux.inria.fr>
+References: <20110616121147.GA4644@const.bordeaux.inria.fr>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Jun 2011 14:27:22 +0200
+Message-ID: <1308227242.13240.56.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p5GCSPuI027711
 
-On 06/16/2011 01:19 PM, Greg Kurz wrote:
-> On Wed, 2011-06-15 at 21:03 +0200, Oleg Nesterov wrote:
->> Forgot to ask,
->>
->> On 06/15, Greg Kurz wrote:
->>>
->>> The need arises in the LXC community when one wants to send a signal from
->>> the host (aka. init_pid_ns context) to a container process for which one
->>> only knows the pid inside the container.
->>
->> I am just curious, why do you need this?
->>
+On Thu, 2011-06-16 at 14:11 +0200, Samuel Thibault wrote:
+> Hello,
 > 
-> Because some LXC users run partially isolated containers (AKA.
-> application containers started with the lxc-execute command). Some of
-> the user code runs outside the container and some inside. Since
-> lxc-execute uses CLONE_NEWPID, it's difficult for the external code to
-> relate a pid generated inside the container with a task. There are
-> regular requests on lxc-users@ about this.
+> We have an x86 machine whose sockets look like this in hwloc:
+> 
+> ┌──────────────────────────────────────────────────────────────────┐
+> │Socket P#1                                                        │
+> │┌────────────────────────────────────────────────────────────────┐│
+> ││L3 (16MB)                                                       ││
+> │└────────────────────────────────────────────────────────────────┘│
+> │┌────────────────────┐┌────────────────────┐┌────────────────────┐│
+> ││L2 (3072KB)         ││L2 (3072KB)         ││L2 (3072KB)         ││
+> │└────────────────────┘└────────────────────┘└────────────────────┘│
+> │┌─────────┐┌─────────┐┌─────────┐┌─────────┐┌─────────┐┌─────────┐│
+> ││L1 (32KB)││L1 (32KB)││L1 (32KB)││L1 (32KB)││L1 (32KB)││L1 (32KB)││
+> │└─────────┘└─────────┘└─────────┘└─────────┘└─────────┘└─────────┘│
+> │┌─────────┐┌─────────┐┌─────────┐┌─────────┐┌─────────┐┌─────────┐│
+> ││Core P#0 ││Core P#1 ││Core P#2 ││Core P#3 ││Core P#4 ││Core P#5 ││
+> ││┌───────┐││┌───────┐││┌───────┐││┌───────┐││┌───────┐││┌───────┐││
+> │││PU P#0 ││││PU P#4 ││││PU P#8 ││││PU P#12││││PU P#16││││PU P#20│││
+> ││└───────┘││└───────┘││└───────┘││└───────┘││└───────┘││└───────┘││
+> │└─────────┘└─────────┘└─────────┘└─────────┘└─────────┘└─────────┘│
+> └──────────────────────────────────────────────────────────────────┘
 
-It's simply not possible. There's no support for it.
+Pretty, bonus points for effort there.
 
-We have a case where a task in a parent pid namespace needs to kill 
-another task in a sub pid namespace only knowing its internal pid.
-the latter has been communicated to the parent task through a file or 
-a unix socket.
+> However, Linux does not build sched domains for the pairs of cores
+> which share an L2 cache. On s390, IBM added sched domains for books,
+> that is, sets of cores which share an L2 cache. The support should
+> probably be added in a generic way for all archs thanks to generic cache
+> information.
 
-This 'ActivePid' information in /proc is not sufficient to identity 
-the task, you also need the list of the tasks which are living in 
-the pid namespace.
+Yeah, sched domain generation is currently somewhat crappy.
 
+I think you'll find you'll get that L2 domain when you enable mc/smt
+power savings on !magny-cours due to this particular horror in
+arch/x86/kernel/smpboot.c (possibly loosing another level due to other
+crap and changing scheduler behaviour in ways you might not fancy):
 
-We could have used the setns syscall and attach a kill command to 
-a pid namespace. But, this is borderline as you might ended up 
-killing all the tasks in the namespace you've attached to. Anyhow, 
-setns doesn't support pid namespaces yet and it feels safer to send 
-the signal for outside.
+const struct cpumask *cpu_coregroup_mask(int cpu)
+{
+	struct cpuinfo_x86 *c = &cpu_data(cpu);
+	/*
+	 * For perf, we return last level cache shared map.
+	 * And for power savings, we return cpu_core_map
+	 */
+	if ((sched_mc_power_savings || sched_smt_power_savings) &&
+	    !(cpu_has(c, X86_FEATURE_AMD_DCM)))
+		return cpu_core_mask(cpu);
+	else
+		return cpu_llc_shared_mask(cpu);
+}
 
-a new kill syscall could be the solution:
+I recently started reworking all that sched_domain crud and we're almost
+at the point where we can remove all legacy 'level' crap. That is,
+nothing in the scheduler should (and does, last time I checked) depend
+on sd->level anymore.
 
-    int pidns_kill(pid_t init_pid, pid_t some_pid);
+So the current goal is to change sched_domain_topology to not be such a
+silly hard coded list of domains, but build that thing dynamically based
+on the system topology and set all the SD_flags correctly.
 
-where 'init_pid' identifies the namespace and 'some_pid' identifies
-a task in this namespace. this is very specific but why not.
-
-Finally, we thought that the 'ActivePid' information was interesting 
-enough to be exposed in /proc and was solving the case we're facing 
-rather easily with some framework (cgroups) in user space.
-
-Best,
-
-C.
+If that is something you're willing to work on, that'd be totally
+awesome.
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
