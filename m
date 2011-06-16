@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab1FPCSz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 22:18:55 -0400
-Received: from sr-smtp.usish.com ([210.5.144.203]:41538 "EHLO
-	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594Ab1FPCSy (ORCPT
+	id S1754291Ab1FPCYu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 22:24:50 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51649 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753258Ab1FPCYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 22:18:54 -0400
-From: "Jack Wang" <jack_wang@usish.com>
-To: "'Xiangliang Yu'" <yuxiangl@marvell.com>,
-        "'James Bottomley'" <James.Bottomley@HansenPartnership.com>
-Cc: <yxlraid@gmail.com>, <lucas.demarchi@profusion.mobi>,
-        <maciej.trela@intel.com>, <dan.j.williams@intel.com>,
-        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "'Jacky Feng'" <jfeng@marvell.com>
-References: <1308064628-11826-1-git-send-email-yxlraid@gmail.com> <1308065367.2401.24.camel@mulgrave> <F766E4F80769BD478052FB6533FA745D19FAE669AF@SC-VEXCH4.marvell.com> <1308117450.2329.31.camel@mulgrave> <F766E4F80769BD478052FB6533FA745D19FAE66AAF@SC-VEXCH4.marvell.com> <637AF86F1A314F15B816411A580575F0@usish.com.cn> <F766E4F80769BD478052FB6533FA745D19FAE66CAE@SC-VEXCH4.marvell.com>
-Subject: RE: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
-Date: Thu, 16 Jun 2011 10:18:44 +0800
-Message-ID: <51A55E816E3847EF97FE4E849A572717@usish.com.cn>
+	Wed, 15 Jun 2011 22:24:49 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DF96953.8090002@jp.fujitsu.com>
+Date: Thu, 16 Jun 2011 11:24:19 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+To: segoon@openwall.com
+CC: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        akpm@linux-foundation.org, gregkh@suse.de, davem@davemloft.net,
+        arnd@arndb.de, viro@zeniv.linux.org.uk, rientjes@google.com,
+        wilsons@start.ca, daniel.lezcano@free.fr, ebiederm@xmission.com,
+        serge@hallyn.com
+Subject: Re: [RFC 2/5 v4] procfs: add hidepid= and gid= mount options
+References: <1308163906-6054-1-git-send-email-segoon@openwall.com>
+In-Reply-To: <1308163906-6054-1-git-send-email-segoon@openwall.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: AcwrIR/qdpMMo2uOTdi6EtZ/SnmPkgAAZ5KAACgYoPAAAOfC4AABCYdA
-In-Reply-To: <F766E4F80769BD478052FB6533FA745D19FAE66CAE@SC-VEXCH4.marvell.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6090
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> I get the issue like this:
-> >> 1. HBA support 3Gbps, level 1 expander support 6Gbps, and level 2
-expander
-> >> support 6Gbps;
-> >> 2. level 1 is fine, and find that level 2 link rate is 6Gbps in
-DISCOVER
-> command
-> >> response.
-> >> 3. LIBSAS think level 2 is 6Gbps by sas_ex_get_linkrate function, and
-send
-> >> command to level 2 expander
-> >> 4. LIBSAS link error.
-> >>
-> >[Jack Wang]
-> >What do you mean by "LIBSAS link error", OPEN_REJECT(CONNECTION RATE NOT
-> >SUPPORTED)? LIBSAS only get the error event through LLDD.
-> >According to SAS2r15 7.8.3
-> I mean that HBA get link error. Sorry.
+(2011/06/16 3:51), Vasiliy Kulikov wrote:
+> This patch adds support of mount options to restrict access to
+> /proc/PID/ directories.  The default backward-compatible 'relaxed'
+> behaviour is left untouched.
 > 
-> >A SAS initiator port shall set the initial CONNECTION RATE field to:
-> >a) the highest supported connection rate supported by a potential pathway
-as
-> determined during the
-> >discover process (e.g., based on the logical link rates of each logical
-link
-> reported in the SMP
-> >DISCOVER responses); or
-> Sas_ex_get_linkrate function
+> The first mount option is called "hidepid" and its value defines how much
+> info about processes we want to be available for non-owners:
 > 
-[Jack Wang] 
-It's the same, sas_ex_get_linkrate use DISCOVER response as linkrate.
+> hidepid=0 (default) means the current behaviour - anybody may read all
+> world-readable /proc/PID/* files.
+> 
+> hidepid=1 means users may not access any /proc/<pid>/ directories, but their
+> own.  Sensitive files like cmdline, io, sched*, status, wchan are now
+> protected against other users.  As permission checking done in
+> proc_pid_permission() and files' permissions are left untouched,
+> programs expecting specific files' permissions are not confused.
+> 
+> hidepid=2 means hidepid=1 plus all /proc/PID/ will be invisible to
+> other users.  It doesn't mean that it hides a fact whether a process
+> exists (it can be learned by other means, e.g. by sending signals), but
+> it hides process' euid and egid.  It greatly compicates intruder's task of
+> gathering info about running processes, whether some daemon runs with
+> elevated privileges, whether other user runs some sensitive program,
+> whether other users run any program at all, etc.
+> 
+> gid=XXX defines a group that will be able to gather all processes' info.
 
-> >b) the logical link rate of the logical phy used to transmit the OPEN
-> address frame.
-> MVSAS get value of linkrate from sas_ex_get_linkrate
-> function(child->linkrate)
-> 
-> >If a SAS initiator port selected a connection rate based on discover
-process
-> information but the connection
-> >request results in OPEN_REJECT (CONNECTION RATE NOT SUPPORTED), then the
-> discover process
-> >information is no longer current and the discover process should be run
-> again.
-> 
-> Fail again.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Hmm...
+
+Maybe I missed patch [0/5] or I haven't got it. Anyway I haven't see it.
+Can you please describe your use case? Why do we need two new hidepid mode?
+Moreover, if we use hidepid=[12], it may break some procps tools. What do
+you think about compatibility issue? And, why don't you use just pid namespace?
+
+I'm sorry if you already answered.
 
