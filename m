@@ -1,72 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab1FPLCQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 07:02:16 -0400
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:52287 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737Ab1FPLCO (ORCPT
+	id S1753556Ab1FPLF6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 07:05:58 -0400
+Received: from webbox687.server-home.net ([195.149.74.151]:48362 "EHLO
+	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737Ab1FPLFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 07:02:14 -0400
-Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was
- Vpid:)
-From: Greg Kurz <gkurz@fr.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: akpm@linux-foundation.org, containers@lists.osdl.org,
-        linux-kernel@vger.kernel.org, serge@hallyn.com, daniel.lezcano@free.fr,
-        ebiederm@xmission.com, xemul@openvz.org
-In-Reply-To: <20110615184625.GA15573@redhat.com>
-References: <20110615145527.4016.70157.stgit@bahia.local>
-	 <20110615184625.GA15573@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 Jun 2011 13:01:47 +0200
-Message-ID: <1308222107.8230.49.camel@bahia.local>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Jun 2011 07:05:55 -0400
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: linux-kernel@vger.kernel.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Wim Van Sebroeck <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org,
+        Alexander Stein <alexander.stein@systec-electronic.com>
+Subject: [PATCH 1/2] Add tunnelcreek watchdog to lpc_sch devices
+Date: Thu, 16 Jun 2011 13:05:49 +0200
+Message-Id: <1308222350-21634-1-git-send-email-alexander.stein@systec-electronic.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-15 at 20:46 +0200, Oleg Nesterov wrote:
-> On 06/15, Greg Kurz wrote:
-> >
-> > @@ -176,6 +177,17 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
-> >  		if (tracer)
-> >  			tpid = task_pid_nr_ns(tracer, ns);
-> >  	}
-> > +	actpid = 0;
-> > +	sighand = rcu_dereference(p->sighand);
-> > +	if (sighand) {
-> > +		struct pid_namespace *pid_ns;
-> > +		unsigned long flags;
-> > +		spin_lock_irqsave(&sighand->siglock, flags);
-> 
-> Well. This is not exactly right. We have lock_task_sighand() for this.
-> 
+Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+---
+ drivers/mfd/lpc_sch.c |   49 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 48 insertions(+), 1 deletions(-)
 
-I see... ->sighand could change so we need the for(;;) loop in
-__lock_task_sighand() to be sure we have the right pointer, correct ?
-By the way, if we use lock_task_sighand() we'll end up with nested
-rcu_read_lock(): it will work but I don't know how it may affect
-performance...
-
-> But. Why do you need ->siglock? Why rcu_read_lock() is not enough?
-> 
-
-Because there's a race with
-__exit_signal()->__unhash_process()->detach_pid() that can break
-task_active_pid_ns() and rcu won't help here (unless *perhaps* by
-modifying __exit_signal() but I don't want to mess with such a critical
-path).
-
-> Hmm. You don't even need pid_ns afaics, you could simply look at
-> pid->numbers[pid->level].
-> 
-
-True but I will have the same problem: detach_pid() nullifies the pid.
-
-Thanks for your comments.
-
---
-Greg
+diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/lpc_sch.c
+index ea3f52c..ea1169b 100644
+--- a/drivers/mfd/lpc_sch.c
++++ b/drivers/mfd/lpc_sch.c
+@@ -37,6 +37,9 @@
+ #define GPIOBASE	0x44
+ #define GPIO_IO_SIZE	64
+ 
++#define WDTBASE		0x84
++#define WDT_IO_SIZE	64
++
+ static struct resource smbus_sch_resource = {
+ 		.flags = IORESOURCE_IO,
+ };
+@@ -59,6 +62,18 @@ static struct mfd_cell lpc_sch_cells[] = {
+ 	},
+ };
+ 
++static struct resource wdt_sch_resource = {
++		.flags = IORESOURCE_IO,
++};
++
++static struct mfd_cell tunnelcreek_cells[] = {
++	{
++		.name = "tunnelcreek_wdt",
++		.num_resources = 1,
++		.resources = &wdt_sch_resource,
++	},
++};
++
+ static struct pci_device_id lpc_sch_ids[] = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SCH_LPC) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ITC_LPC) },
+@@ -72,6 +87,7 @@ static int __devinit lpc_sch_probe(struct pci_dev *dev,
+ 	unsigned int base_addr_cfg;
+ 	unsigned short base_addr;
+ 	int i;
++	int ret;
+ 
+ 	pci_read_config_dword(dev, SMBASE, &base_addr_cfg);
+ 	if (!(base_addr_cfg & (1 << 31))) {
+@@ -104,8 +120,39 @@ static int __devinit lpc_sch_probe(struct pci_dev *dev,
+ 	for (i=0; i < ARRAY_SIZE(lpc_sch_cells); i++)
+ 		lpc_sch_cells[i].id = id->device;
+ 
+-	return mfd_add_devices(&dev->dev, 0,
++	ret = mfd_add_devices(&dev->dev, 0,
+ 			lpc_sch_cells, ARRAY_SIZE(lpc_sch_cells), NULL, 0);
++	if (ret)
++		goto out_dev;
++
++	if (id->device == PCI_DEVICE_ID_INTEL_ITC_LPC) {
++		pci_read_config_dword(dev, WDTBASE, &base_addr_cfg);
++		if (!(base_addr_cfg & (1 << 31))) {
++			dev_err(&dev->dev, "Decode of the WDT I/O range disabled\n");
++			ret = -ENODEV;
++			goto out_dev;
++		}
++		base_addr = (unsigned short)base_addr_cfg;
++		if (base_addr == 0) {
++			dev_err(&dev->dev, "I/O space for WDT uninitialized\n");
++			ret = -ENODEV;
++			goto out_dev;
++		}
++
++		wdt_sch_resource.start = base_addr;
++		wdt_sch_resource.end = base_addr + WDT_IO_SIZE - 1;
++
++		for (i = 0; i < ARRAY_SIZE(tunnelcreek_cells); i++)
++			tunnelcreek_cells[i].id = id->device;
++
++		ret = mfd_add_devices(&dev->dev, 0, tunnelcreek_cells,
++			ARRAY_SIZE(tunnelcreek_cells), NULL, 0);
++	}
++
++	return ret;
++out_dev:
++	mfd_remove_devices(&dev->dev);
++	return ret;
+ }
+ 
+ static void __devexit lpc_sch_remove(struct pci_dev *dev)
+-- 
+1.7.3.4
 
