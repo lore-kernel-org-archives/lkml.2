@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab1FPHPO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:15:14 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:57598 "EHLO
+	id S1757100Ab1FPHPJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:15:09 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:46822 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757053Ab1FPHLW (ORCPT
+	by vger.kernel.org with ESMTP id S1756528Ab1FPHLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:11:22 -0400
-X-Sasl-enc: 4dZNo/LzwXJaKWVpTAV3mFX/VWZYtYfhkF57s5dMSNYf 1308208280
+	Thu, 16 Jun 2011 03:11:23 -0400
+X-Sasl-enc: Sbd5X3QKv45Q7rT6ooygynHbnwoVsfyF9MiqbAA1WMTD 1308208281
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:29:10 2011
-Message-Id: <20110616002910.769414206@clark.kroah.org>
+Message-Id: <20110616002910.865346875@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:29:05 -0700
+Date: Wed, 15 Jun 2011 17:29:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Libor Pechacek <lpechacek@suse.cz>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [69/85] USB: core: Tolerate protocol stall during hub and port
+        Steffen Sledz <sledz@dresearch-fe.de>
+Subject: [70/85] USB: serial: add another 4N-GALAXY.DE PID to ftdi_sio driver
 In-Reply-To: <20110616002917.GA3627@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,46 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.33-longterm review patch.  If anyone has any objections, please let us know.
 
 ------------------
- status read
 
-From: Libor Pechacek <lpechacek@suse.cz>
+From: Steffen Sledz <sledz@dresearch-fe.de>
 
-commit 3824c1ddaf744be44b170a335332b9d6afe79254 upstream.
+commit a26d31cef06f43a76327c21235e75450869df2b8 upstream.
 
-Protocol stall should not be fatal while reading port or hub status as it is
-transient state.  Currently hub EP0 STALL during port status read results in
-failed device enumeration.  This has been observed with ST-Ericsson (formerly
-Philips) USB 2.0 Hub (04cc:1521) after connecting keyboard.
+E.g. newer CAN 2.0 A/B <=> USB 2.0 converters report idProduct=f3c2.
 
-Signed-off-by: Libor Pechacek <lpechacek@suse.cz>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Steffen Sledz <sledz@dresearch-fe.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/hub.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -327,7 +327,8 @@ static int get_hub_status(struct usb_dev
- {
- 	int i, status = -ETIMEDOUT;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -647,6 +647,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, EVER_ECO_PRO_CDS) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_1_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_2_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_3_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_0_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_1_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_2_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -331,6 +331,7 @@
+  */
+ #define FTDI_4N_GALAXY_DE_1_PID	0xF3C0
+ #define FTDI_4N_GALAXY_DE_2_PID	0xF3C1
++#define FTDI_4N_GALAXY_DE_3_PID	0xF3C2
  
--	for (i = 0; i < USB_STS_RETRIES && status == -ETIMEDOUT; i++) {
-+	for (i = 0; i < USB_STS_RETRIES &&
-+			(status == -ETIMEDOUT || status == -EPIPE); i++) {
- 		status = usb_control_msg(hdev, usb_rcvctrlpipe(hdev, 0),
- 			USB_REQ_GET_STATUS, USB_DIR_IN | USB_RT_HUB, 0, 0,
- 			data, sizeof(*data), USB_STS_TIMEOUT);
-@@ -343,7 +344,8 @@ static int get_port_status(struct usb_de
- {
- 	int i, status = -ETIMEDOUT;
- 
--	for (i = 0; i < USB_STS_RETRIES && status == -ETIMEDOUT; i++) {
-+	for (i = 0; i < USB_STS_RETRIES &&
-+			(status == -ETIMEDOUT || status == -EPIPE); i++) {
- 		status = usb_control_msg(hdev, usb_rcvctrlpipe(hdev, 0),
- 			USB_REQ_GET_STATUS, USB_DIR_IN | USB_RT_PORT, 0, port1,
- 			data, sizeof(*data), USB_STS_TIMEOUT);
+ /*
+  * Linx Technologies product ids
 
 
