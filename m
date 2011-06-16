@@ -1,51 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756995Ab1FPUaa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 16:30:30 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:46708 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754887Ab1FPUa2 (ORCPT
+	id S1758643Ab1FPUbh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 16:31:37 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38597 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757724Ab1FPUbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 16:30:28 -0400
-Date: Thu, 16 Jun 2011 16:30:27 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Alexander Holler <holler@ahsoftware.de>
-cc: Arnd Bergmann <arnd@arndb.de>, <gregkh@suse.de>,
-        Rabin Vincent <rabin@rab.in>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing
- the packed attribute
-In-Reply-To: <4DFA634D.6000907@ahsoftware.de>
-Message-ID: <Pine.LNX.4.44L0.1106161626160.1697-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 16 Jun 2011 16:31:33 -0400
+Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device
+ structure
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Greg KH <greg@kroah.com>
+Cc: Nao Nishijima <nao.nishijima.xt@hitachi.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, jcm@redhat.com,
+        hare@suse.de, stefanr@s5r6.in-berlin.de, yrl.pp-manager.tt@hitachi.com
+In-Reply-To: <20110616181943.GB1439@kroah.com>
+References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp>
+	 <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp>
+	 <20110615153337.GA10160@kroah.com> <4DF9F11F.705@hitachi.com>
+	 <20110616154129.GA31498@kroah.com> <1308239454.2436.34.camel@mulgrave>
+	 <20110616161442.GA32113@kroah.com> <1308241506.2436.44.camel@mulgrave>
+	 <20110616181943.GB1439@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Jun 2011 16:31:29 -0400
+Message-ID: <1308256290.2436.143.camel@mulgrave>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Jun 2011, Alexander Holler wrote:
-
-> > Hmmm.  I won't say that ((packed,aligned(4))) is wrong.  But it's not
-> > clearly necessary either.
+On Thu, 2011-06-16 at 11:19 -0700, Greg KH wrote:
+> On Thu, Jun 16, 2011 at 12:25:06PM -0400, James Bottomley wrote:
+> > On Thu, 2011-06-16 at 09:14 -0700, Greg KH wrote:
+> > > > All userspace naming will be taken care of by the usual udev rules, so
+> > > > for disks, something like /dev/disk/by-preferred/<fred> which would be
+> > > > the usual symbolic link.
+> > > 
+> > > No, udev can not create such a link after the preferred name is set, as
+> > > it has no way of knowing that the name was set.
+> > 
+> > It can if we trigger a uevent.  Note: I'm not advocating this ... I'd be
+> > equally happy having whatever sets the kernel name create the link (or
+> > tickle udev to create it).  We definitely require device links, though,
+> > to get this to work.
 > 
-> Maybe I should have added a "cosmetic:" in front of the subject of the 
-> patch. ;)
-> 
-> Using packed doesn't seem to be necessary (at least not with those 
-> versions of gcc I'm using here), I've tried both versions (on arm, 
-> without packed and with packed, aligned(4)) and both are working. I've 
-> only posted the patch because I found the usage of packed, aligned(4) 
-> much clearer than without packed. And It might help avoiding such 
-> discussions like this with people like me who aren't that deep involved 
-> in gcc-specific implementation details. ;)
-> 
-> Anyway, feel free to nack that patch. I don't really care and just 
-> thought I should post it (e.g. as an alternative to removing that packed).
+> And no, I don't want to trigger a uevent, Kay pointed out where this
+> will go very wrong very quickly if this is done.
 
-There are other structures that need to avoid padding but aren't marked
-((packed)), such as ehci_qtd and ehci_qh_hw in drivers/usb/host/ehci.h.  
-I don't see why those in ehci_def.h should get special treatment.
+As I said: we just need a by-preferred type of link.
 
-Alan Stern
+> > > This will ensure that kernel output and udev input are consistent.  It
+> > > > will still require that user space utilities which derive a name for a
+> > > > device will need modifying to print out the preferred name.
+> > > 
+> > > It also doesn't solve the issue of userspace wanting to use such a
+> > > "preferred" name in the command line of tools, as there will not be a
+> > > link back to the "kernel" name directly in /dev/.
+> > 
+> > Right ... most tools use the name they're given (and all variants
+> > including the preferred one have links in /dev), which means they will
+> > show the preferred name by default (if they were given that name as
+> > input).  The only problem is tools that attempt to derive a device name,
+> > which is quite a small subset.
+> 
+> Douglas pointed out that those tools look in /dev/ which would not work
+> properly for this type of thing.
+
+Not all tools try to deduce the name ... most just use what they're
+given.  So some tools need changing, but it's by no means all tools.
+
+> > > So as userspace tools will still need to be fixed, I don't see how
+> > > adding a kernel file for this is going to help any.  Well, a bit in that
+> > > the kernel log files will look "different", but again, that really isn't
+> > > a problem that userspace couldn't also solve with no kernel changes
+> > > needed.
+> > 
+> > This is true, but I think for the small effort it takes to implement the
+> > feature in-kernel compared with what we'd have to do to the
+> > distributions to get it implemented in userspace (we'd need klogd to do
+> > the conversion for dmesg ... I'm entirely unclear what we need to modify
+> > for /proc/partitions, etc.) the benefit outweighs the cost.
+> > 
+> > Additionally, since renaming is something users seem to want (just look
+> > at net interfaces), if we can make this work, we now have a definitive
+> > answer to point people at.
+> 
+> Renaming is something that we do NOT want to do, as we have learned our
+> lesson of the network device renaming mess.  And as Kay pointed out, we
+> already have an "alias" name there, which no one uses.
+
+Look at this as an opportunity to get it right.  The original proposal
+was for renaming.  By iterating over the actual requirements, we have it
+reduced to simply having the kernel print a preferred name.  I think
+that's a nice achievement which we can point other proponents of
+renaming to as they arise.
+
+> So again, I really don't like this, just fix the userspace tools to map
+> the proper device name that the kernel is using to the userspace name
+> the tool used, and all is fine.  This has been done already today,
+> succesfully, by many of the big "enterprise" monitoring systems that
+> work quite well on Linux, proving that this is not something that the
+> kernel needs to provide to implement properly.
+
+Well, it's expediency.  Sure we could try to patch the world, but I
+think the simple patch of getting the kernel to print a preferred name
+solves 90% of the problem.  Sure there is a long tail of userspace
+components that needs fixing, but that can be done gradually if we take
+the kernel route.  If we go the userspace route, it will be a long while
+before we even get to 50% coverage.
+
+James
+
 
