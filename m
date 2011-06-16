@@ -1,53 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758066Ab1FPOCm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 10:02:42 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:57172 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722Ab1FPOCk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 10:02:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Salter <msalter@redhat.com>
-Subject: Re: [PATCH] arch/c6x: new architecture port for linux
-Date: Thu, 16 Jun 2011 16:02:33 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <1305144843-5058-1-git-send-email-msalter@redhat.com> <201105211910.26025.arnd@arndb.de> <1308228871.2153.109.camel@deneb.redhat.com>
-In-Reply-To: <1308228871.2153.109.camel@deneb.redhat.com>
+	id S1758051Ab1FPOEM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 10:04:12 -0400
+Received: from hera.kernel.org ([140.211.167.34]:38161 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755253Ab1FPOEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 10:04:09 -0400
+Date: Thu, 16 Jun 2011 14:03:55 GMT
+From: tip-bot for Michal Marek <mmarek@suse.cz>
+Message-ID: <tip-44e6a2069122dbec29d25b8ced3f59f5626a97d7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        rostedt@goodmis.org, mmarek@suse.cz, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, tglx@linutronix.de, mmarek@suse.cz
+In-Reply-To: <20110517133646.GP13293@sepie.suse.cz>
+References: <20110517133646.GP13293@sepie.suse.cz>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] ftrace/kbuild: Add recordmcount files to force full build
+Git-Commit-ID: 44e6a2069122dbec29d25b8ced3f59f5626a97d7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106161602.33485.arnd@arndb.de>
-X-Provags-ID: V02:K0:PwFyOI2J0dgpMt++5tRjcvpg7cC2wMcbWYVQjR/EBJ7
- xjxcrFTx6+QCEnI0qPCGsB8zXbSRfTffJqfZIrgj8vp+cHq26Y
- JuFIwCsq/n9+7HC/+tCODZxuvT1XhSjy2zKGfkvnBwCFN4uKWJ
- HuivioBCFOqgPKkRn7KFI0bWp/GAb2KF8Pz/vhh/Nd/xyCduCF
- G9uxXBIgDJO6ME7329Qng==
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Jun 2011 14:03:56 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 June 2011, Mark Salter wrote:
-> On Sat, 2011-05-21 at 19:10 +0200, Arnd Bergmann wrote:
-> > - Do not use __raw_readl/__raw_writel.
-> > 
-> > - Remove your IO_ADDRESS(), __REG, VULP, __SYSREG and __SYSREGA.
-> >   Replace them with proper use of ioremap().
-> 
-> If not __raw_readl/__raw_writel, what is the best way to access memory
-> mapped device registers on a bus that does the endian conversion in
-> hardware? I still need the endian conversion for devices on PCI bus.
+Commit-ID:  44e6a2069122dbec29d25b8ced3f59f5626a97d7
+Gitweb:     http://git.kernel.org/tip/44e6a2069122dbec29d25b8ced3f59f5626a97d7
+Author:     Michal Marek <mmarek@suse.cz>
+AuthorDate: Tue, 17 May 2011 15:36:46 +0200
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Tue, 17 May 2011 10:41:08 -0400
 
-The best option is to define a bus specific set of accessors that you
-can use in the device drivers for that bus and that have well-defined
-semantics regarding ordering and endianess.
+ftrace/kbuild: Add recordmcount files to force full build
 
-Typically what happens is that at some point some hardware developer
-decides to reuse a piece of logic with the opposite endianess (e.g.
-when the same logic is connected to multiple CPUs), so better define
-the endianess of the bus independent of the CPU and have a separate
-Kconfig option for that.
+Modifications to recordmcount must be performed on all object
+files to stay consistent with what the kernel code may expect.
+Add the recordmcount files to the main dependencies to make sure
+any change to them causes a full recompile.
 
-	Arnd
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+Link: http://lkml.kernel.org/r/20110517133646.GP13293@sepie.suse.cz
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ scripts/Makefile.build |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index d5f925a..7d3f903 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -252,6 +252,8 @@ sub_cmd_record_mcount =					\
+ 	if [ $(@) != "scripts/mod/empty.o" ]; then	\
+ 		$(objtree)/scripts/recordmcount "$(@)";	\
+ 	fi;
++recordmcount_source := $(srctree)/scripts/recordmcount.c \
++		    $(srctree)/scripts/recordmcount.h
+ else
+ sub_cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
+ 	"$(if $(CONFIG_CPU_BIG_ENDIAN),big,little)" \
+@@ -259,6 +261,7 @@ sub_cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH
+ 	"$(OBJDUMP)" "$(OBJCOPY)" "$(CC) $(KBUILD_CFLAGS)" \
+ 	"$(LD)" "$(NM)" "$(RM)" "$(MV)" \
+ 	"$(if $(part-of-module),1,0)" "$(@)";
++recordmcount_source := $(srctree)/scripts/recordmcount.pl
+ endif
+ cmd_record_mcount = 						\
+ 	if [ "$(findstring -pg,$(_c_flags))" = "-pg" ]; then	\
+@@ -279,13 +282,13 @@ define rule_cc_o_c
+ endef
+ 
+ # Built-in and composite module parts
+-$(obj)/%.o: $(src)/%.c FORCE
++$(obj)/%.o: $(src)/%.c $(recordmcount_source) FORCE
+ 	$(call cmd,force_checksrc)
+ 	$(call if_changed_rule,cc_o_c)
+ 
+ # Single-part modules are special since we need to mark them in $(MODVERDIR)
+ 
+-$(single-used-m): $(obj)/%.o: $(src)/%.c FORCE
++$(single-used-m): $(obj)/%.o: $(src)/%.c $(recordmcount_source) FORCE
+ 	$(call cmd,force_checksrc)
+ 	$(call if_changed_rule,cc_o_c)
+ 	@{ echo $(@:.o=.ko); echo $@; } > $(MODVERDIR)/$(@F:.o=.mod)
