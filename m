@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757580Ab1FPKKG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 06:10:06 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:55872 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757534Ab1FPKKE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 06:10:04 -0400
-Date: Thu, 16 Jun 2011 12:09:37 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [-git build bug, PATCH] Re: [BUGFIX][PATCH 2/5] memcg: fix
- init_page_cgroup nid with sparsemem
-Message-ID: <20110616100937.GA12317@elte.hu>
-References: <20110613120054.3336e997.kamezawa.hiroyu@jp.fujitsu.com>
- <20110613120608.d5243bc9.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110613120608.d5243bc9.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1757577Ab1FPKLG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 06:11:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53548 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755251Ab1FPKLC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 06:11:02 -0400
+Subject: Re: [PATCH v4 3.0-rc2-tip 4/22]  4: Uprobes: register/unregister
+ probes.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110616095412.GK4952@linux.vnet.ibm.com>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+	 <20110607125900.28590.16071.sendpatchset@localhost6.localdomain6>
+	 <1308159719.2171.57.camel@laptop>
+	 <20110616041137.GG4952@linux.vnet.ibm.com>
+	 <1308217582.15315.94.camel@twins>
+	 <20110616095412.GK4952@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 16 Jun 2011 12:09:56 +0200
+Message-ID: <1308218996.15315.120.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2011-06-16 at 15:24 +0530, Srikar Dronamraju wrote:
+> 
+> Ahh .. I missed the p->group_leader = p thing.
+> 
+> In which case, shouldnt traversing all the tasks of all siblings of 
+> parent of mm->owner should provide us all the the tasks that have linked
+> to mm. Right?
 
-* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+Yes, I think so, stopping the hierarchy walk when we find a
+sibling/child with a different mm.
 
-> Date: Mon, 13 Jun 2011 10:09:17 +0900
-> Subject: [PATCH 2/5] [BUGFIX] memcg: fix init_page_cgroup nid with sparsemem
+> Agree that we can bother about this a little later. 
 
-This fresh upstream commit commit:
-
-  37573e8c7182: memcg: fix init_page_cgroup nid with sparsemem
-
-is causing widespread build failures on latest -git, on x86:
-
-  mm/page_cgroup.c:308:3: error: implicit declaration of function ‘node_start_pfn’ [-Werror=implicit-function-declaration]
-  mm/page_cgroup.c:309:3: error: implicit declaration of function ‘node_end_pfn’ [-Werror=implicit-function-declaration]
-
-On any config that has CONFIG_CGROUP_MEM_RES_CTLR=y enabled but 
-CONFIG_NUMA disabled.
-
-For now i've worked it around with the patch below, but the real 
-solution would be to make the page_cgroup.c code not depend on NUMA.
-
-Thanks,
-
-	Ingo
-
-diff --git a/init/Kconfig b/init/Kconfig
-index 412c21b..1593be9 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -639,6 +639,7 @@ config RESOURCE_COUNTERS
- config CGROUP_MEM_RES_CTLR
- 	bool "Memory Resource Controller for Control Groups"
- 	depends on RESOURCE_COUNTERS
-+	depends on NUMA
- 	select MM_OWNER
- 	help
- 	  Provides a memory resource controller that manages both anonymous
+*nod*
