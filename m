@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab1FPJ4H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 05:56:07 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62888 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753909Ab1FPJ4E convert rfc822-to-8bit (ORCPT
+	id S1757544Ab1FPJ4X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 05:56:23 -0400
+Received: from mail.codesourcery.com ([38.113.113.100]:41914 "EHLO
+	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757531Ab1FPJ4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 05:56:04 -0400
+	Thu, 16 Jun 2011 05:56:21 -0400
+From: Pedro Alves <pedro@codesourcery.com>
+Organization: CodeSourcery
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCHSET ptrace] ptrace: implement PTRACE_SEIZE/INTERRUPT and group stop notification, take#4
+Date: Thu, 16 Jun 2011 10:56:17 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; x86_64; ; )
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, Oleg Nesterov <oleg@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu,
+        bdonlan@gmail.com
+References: <1306710760-16440-1-git-send-email-tj@kernel.org> <201106031125.16071.pedro@codesourcery.com> <20110616083828.GJ8141@htj.dyndns.org>
+In-Reply-To: <20110616083828.GJ8141@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <20110616094737.GB5583@const.bordeaux.inria.fr>
-References: <BANLkTinRGRUxKB=C_2Y2F93czWScEUo+Jw@mail.gmail.com>
-	<20110616085547.GH4935@const.famille.thibault.fr>
-	<BANLkTinxz1T7uPAS0u=gth3hAh+SFQkTQQ@mail.gmail.com>
-	<20110616094737.GB5583@const.bordeaux.inria.fr>
-Date: Thu, 16 Jun 2011 11:56:03 +0200
-Message-ID: <BANLkTin2F-sJNjrMhTTqrh0J3ej9OVvQxA@mail.gmail.com>
-Subject: Re: [RFC] Add Arm cpu topology definition
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org
-Cc: Patch Tracking <patches@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106161056.17798.pedro@codesourcery.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 June 2011 11:47, Samuel Thibault <samuel.thibault@ens-lyon.org> wrote:
-> Vincent Guittot, le Thu 16 Jun 2011 11:44:30 +0200, a écrit :
->> The output of hwloc-gather-topology is :
->>
->> Machine (phys=0 local=280840KB total=280840KB)
->>   Socket #0 (phys=3)
->>     Core #0 (phys=0)
->>       PU #0 (phys=0)
->>     Core #1 (phys=1)
->>       PU #1 (phys=1)
->> depth 0:        1 Machine (type #1)
->>  depth 1:       1 Socket (type #3)
->>   depth 2:      2 Cores (type #5)
->>    depth 3:     2 PUs (type #6)
->> Topology not from this system
->>
->> let me know if it's what you want
->
-> This looks good for a bicore socket, yes.  Could you send me the tarball
-> it created, so we can include it in the hwloc testsuite?
->
+Hi Tejun,
 
-yes, I will send it to you
+On Thursday 16 June 2011 09:38:28, Tejun Heo wrote:
+> On Fri, Jun 03, 2011 at 11:25:15AM +0100, Pedro Alves wrote:
+> > It'd be _very_ useful for x86 (and others) to have
+> > something like TRAP_BRKPT for int3.  Both for ptracers
+> > and in-process self debuggers.
+> > 
+> > I'd be super happy to be told we have that already
+> > in recent kernels and I missed it.  :-)
+> 
+> Unfortunately, AFAICS, x86 doesn't have it nor is there a generic
+> mechanism, but this should be solvable without disrupting existing
+> users.
 
-> Do you have a example with smt cores?
+Hmm, looks like there was an earlier attempt:
 
-no, I haven't
+<http://lkml.indiana.edu/hypermail/linux/kernel/0809.2/1898.html>
 
->
-> Samuel
->
+Reading that thread, there were some minor revisions, but I didn't
+see any objection.  It seems that patch made it 2.6.28 (the only
+sources I have handy), as I see get_si_code calls in arch/x86/kernel/traps.c,
+and arch/x86/include/asm/traps.h.
+
+But, I'm running 2.6.38, x86-64, and 
+
+#include <stdio.h>
+#include <string.h>
+#include <signal.h>
+
+static void
+handler (int sig, siginfo_t *info, void *context)
+{
+  printf ("si_code = %x\n", info->si_code);
+}
+
+int
+main (void)
+{
+  struct sigaction action;
+
+  memset (&action, 0, sizeof (action));
+  action.sa_sigaction = handler;
+  action.sa_flags |= SA_SIGINFO;
+  sigaction (SIGTRAP, &action, NULL);
+
+  asm volatile ("int3");
+
+  return 0;
+}
+
+still prints:
+
+$ ./trap 
+si_code = 80
+
+Hmm...  I don't have any other kernel version sources or
+git checkout handy at the moment to check the history
+behind this.
+
+-- 
+Pedro Alves
