@@ -1,93 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757176Ab1FPHNf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:13:35 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:40044 "EHLO
+	id S1754289Ab1FPA3e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 20:29:34 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:51522 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757079Ab1FPHLg (ORCPT
+	by vger.kernel.org with ESMTP id S1752783Ab1FPA3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:11:36 -0400
-X-Sasl-enc: GyWWthFNX173u4TCXGyt2FQmr36m7Z9Jo7syRe7AArO5 1308208295
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:29:11 2011
-Message-Id: <20110616002911.876042927@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:29:16 -0700
+	Wed, 15 Jun 2011 20:29:33 -0400
+X-Sasl-enc: c4OGEKboEf9pR+RIOmvxQAI4uYOzWRx8aGj/dRHRj35I 1308184171
+Date: Wed, 15 Jun 2011 17:29:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [80/85] pata_cmd64x: remove unused definitions
-In-Reply-To: <20110616002917.GA3627@kroah.com>
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/85] 2.6.33.15-longterm review
+Message-ID: <20110616002917.GA3627@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-longterm review patch.  If anyone has any objections, please let us know.
+This is the start of the stable review cycle for the 2.6.33.15 release.
+There are 85 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-------------------
+Responses should be made by Sat, Jun 18, 2011, 00:00:00 UTC.
+Anything received after that time might be too late.
 
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.33.15-rc1.gz
+and the diffstat can be found below.
 
-commit c754d9b6e04371fb398cdd2f5e77be895126be20 upstream.
+thanks,
 
-s/ARTIM2/ARTTIM23/ in cmd648_bmdma_stop() while at it
+greg k-h
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/ata/pata_cmd64x.c |   12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
-
---- a/drivers/ata/pata_cmd64x.c
-+++ b/drivers/ata/pata_cmd64x.c
-@@ -41,10 +41,6 @@
- enum {
- 	CFR 		= 0x50,
- 		CFR_INTR_CH0  = 0x04,
--	CNTRL 		= 0x51,
--		CNTRL_DIS_RA0 = 0x40,
--		CNTRL_DIS_RA1 = 0x80,
--		CNTRL_ENA_2ND = 0x08,
- 	CMDTIM 		= 0x52,
- 	ARTTIM0 	= 0x53,
- 	DRWTIM0 	= 0x54,
-@@ -54,9 +50,6 @@ enum {
- 		ARTTIM23_DIS_RA2  = 0x04,
- 		ARTTIM23_DIS_RA3  = 0x08,
- 		ARTTIM23_INTR_CH1 = 0x10,
--	ARTTIM2 	= 0x57,
--	ARTTIM3 	= 0x57,
--	DRWTIM23	= 0x58,
- 	DRWTIM2 	= 0x58,
- 	BRST 		= 0x59,
- 	DRWTIM3 	= 0x5b,
-@@ -64,14 +57,11 @@ enum {
- 	MRDMODE		= 0x71,
- 		MRDMODE_INTR_CH0 = 0x04,
- 		MRDMODE_INTR_CH1 = 0x08,
--		MRDMODE_BLK_CH0  = 0x10,
--		MRDMODE_BLK_CH1	 = 0x20,
- 	BMIDESR0	= 0x72,
- 	UDIDETCR0	= 0x73,
- 	DTPR0		= 0x74,
- 	BMIDECR1	= 0x78,
- 	BMIDECSR	= 0x79,
--	BMIDESR1	= 0x7A,
- 	UDIDETCR1	= 0x7B,
- 	DTPR1		= 0x7C
- };
-@@ -248,7 +238,7 @@ static void cmd648_bmdma_stop(struct ata
- 	struct pci_dev *pdev = to_pci_dev(ap->host->dev);
- 	u8 dma_intr;
- 	int dma_mask = ap->port_no ? ARTTIM23_INTR_CH1 : CFR_INTR_CH0;
--	int dma_reg = ap->port_no ? ARTTIM2 : CFR;
-+	int dma_reg = ap->port_no ? ARTTIM23 : CFR;
- 
- 	ata_bmdma_stop(qc);
- 
-
-
+ Makefile                                |    2 +-
+ arch/arm/mm/cache-v6.S                  |    1 +
+ arch/arm/mm/cache-v7.S                  |    2 +
+ arch/powerpc/oprofile/op_model_power4.c |   24 ++++++++++++-
+ arch/x86/include/asm/uaccess.h          |    2 +-
+ arch/x86/kernel/amd_iommu.c             |   48 +++++++++++++++++++++++--
+ arch/x86/kernel/amd_iommu_init.c        |    8 ++--
+ arch/x86/kernel/cpu/amd.c               |   16 ++++++---
+ arch/x86/lib/copy_user_64.S             |    4 +-
+ arch/x86/xen/mmu.c                      |    2 +-
+ arch/x86/xen/multicalls.c               |   12 +++---
+ block/blk-core.c                        |    2 +
+ block/blk.h                             |    3 +-
+ drivers/ata/pata_cmd64x.c               |   61 ++++++++++++++++++++++---------
+ drivers/block/brd.c                     |   11 ++++--
+ drivers/block/loop.c                    |   11 ++++--
+ drivers/block/nbd.c                     |    6 +++
+ drivers/char/i8k.c                      |    4 +-
+ drivers/cpufreq/cpufreq.c               |   20 +++++++++-
+ drivers/cpufreq/cpufreq_stats.c         |   22 ++++++++++--
+ drivers/cpuidle/governors/menu.c        |    4 ++-
+ drivers/gpu/drm/i915/intel_lvds.c       |    8 ++++
+ drivers/gpu/drm/radeon/radeon_device.c  |    1 +
+ drivers/md/dm-table.c                   |   17 +++++++++
+ drivers/md/md.c                         |    2 +-
+ drivers/md/raid5.c                      |    8 ++--
+ drivers/mtd/mtdconcat.c                 |    4 +-
+ drivers/net/wireless/ath/ath9k/rc.c     |    3 +-
+ drivers/net/wireless/iwlwifi/iwl-5000.c |    2 +-
+ drivers/net/wireless/p54/p54usb.c       |    1 +
+ drivers/pci/hotplug/pcihp_slot.c        |   45 +++++++++++++++++++++++
+ drivers/pci/quirks.c                    |   10 +++++
+ drivers/scsi/bnx2i/bnx2i_hwi.c          |    1 +
+ drivers/scsi/bnx2i/bnx2i_iscsi.c        |    3 ++
+ drivers/scsi/scsi_scan.c                |   11 +++---
+ drivers/scsi/scsi_sysfs.c               |   19 ++++------
+ drivers/scsi/ultrastor.c                |    2 +-
+ drivers/staging/usbip/usbip_common.c    |    2 +-
+ drivers/usb/core/hub.c                  |    6 ++-
+ drivers/usb/gadget/at91_udc.c           |    2 +-
+ drivers/usb/gadget/f_rndis.c            |    3 +-
+ drivers/usb/host/xhci-mem.c             |   18 +++++++--
+ drivers/usb/serial/ftdi_sio.c           |    2 +
+ drivers/usb/serial/ftdi_sio_ids.h       |    6 +++
+ drivers/usb/serial/garmin_gps.c         |   20 +++++++----
+ drivers/usb/serial/moto_modem.c         |    1 +
+ fs/block_dev.c                          |   27 +++++++++-----
+ fs/dcookies.c                           |    3 ++
+ fs/ecryptfs/keystore.c                  |   46 +++++++++++-------------
+ fs/ext3/namei.c                         |   13 ++++++-
+ fs/ext4/mballoc.c                       |    2 +
+ fs/fat/file.c                           |    2 +-
+ fs/jbd/commit.c                         |    9 ++++-
+ fs/jbd/journal.c                        |   16 +++++++--
+ fs/partitions/ldm.c                     |    5 +++
+ fs/ubifs/journal.c                      |    1 +
+ fs/ubifs/sb.c                           |    3 +-
+ fs/ubifs/shrinker.c                     |    6 +++-
+ fs/ubifs/super.c                        |    1 +
+ fs/xfs/linux-2.6/xfs_sync.c             |   16 ++++++--
+ fs/xfs/linux-2.6/xfs_sync.h             |    1 +
+ fs/xfs/xfs_iget.c                       |    1 +
+ include/linux/pci_ids.h                 |    2 +
+ include/linux/seqlock.h                 |    4 +-
+ kernel/lockdep.c                        |    2 +-
+ kernel/time/timekeeping.c               |    9 ++++-
+ kernel/trace/ftrace.c                   |   12 ++++---
+ lib/locking-selftest.c                  |    2 +-
+ mm/hugetlb.c                            |    4 +-
+ mm/kmemleak.c                           |    7 +++-
+ mm/page_alloc.c                         |    2 +-
+ net/atm/atm_sysfs.c                     |   10 +++++
+ net/ipv6/netfilter/ip6t_REJECT.c        |    4 ++-
+ net/ipv6/netfilter/nf_conntrack_reasm.c |    8 +----
+ net/netfilter/xt_DSCP.c                 |    2 +-
+ net/sunrpc/xprtsock.c                   |   16 +++++++--
+ net/wireless/nl80211.c                  |    2 +-
+ sound/pci/hda/patch_realtek.c           |    1 +
+ sound/pci/hda/patch_sigmatel.c          |    2 +-
+ sound/soc/codecs/wm_hubs.c              |   24 +++++++-----
+ 80 files changed, 538 insertions(+), 189 deletions(-)
