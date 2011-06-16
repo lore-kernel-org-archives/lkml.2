@@ -1,117 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664Ab1FPHG3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:06:29 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:38370 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756557Ab1FPHGG (ORCPT
+	id S1753400Ab1FPARv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 20:17:51 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58183 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751573Ab1FPARs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:06:06 -0400
-X-Sasl-enc: GnYuNqiN2gltdLGxMg35MsO1W0B+x84VDRqLCmTlS00T 1308207964
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:16:14 2011
-Message-Id: <20110616001614.671942754@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:15:52 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Namhyung Kim <namhyung@gmail.com>,
-        Laurent Vivier <Laurent.Vivier@bull.net>,
-        Paul Clements <Paul.Clements@steeleye.com>,
-        Jens Axboe <jaxboe@fusionio.com>
-Subject: [55/91] nbd: limit module parameters to a sane value
-In-Reply-To: <20110616001900.GA25375@kroah.com>
+	Wed, 15 Jun 2011 20:17:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <4DF92FE1.5010208@linux.intel.com>
+References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe>
+ <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com>
+ <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
+ <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
+ <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
+ <87ea4bd7-8b16-4b24-8fcb-d8e9b6f421ec@email.android.com> <4DF92FE1.5010208@linux.intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 15 Jun 2011 17:16:57 -0700
+Message-ID: <BANLkTi=Tw6je7zpi4L=pE0JJpZfeEC9Jsg@mail.gmail.com>
+Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
+ to mutex
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+On Wed, Jun 15, 2011 at 3:19 PM, Andi Kleen <ak@linux.intel.com> wrote:
+>
+> Caching doesn't help because the library gets reinitialized in every child
+> (it may already do caching, not fully sure for this; it does it for other
+> sysconfs at least)
 
-------------------
+Why the hell do you continue to make excuses for glibc that are
+*clearly*not*true*?
 
-From: Namhyung Kim <namhyung@gmail.com>
+Stop this insanity, Andi. Do you realize that this kind of crazy
+behavior just makes me convinced that there is no way in hell I should
+*ever* take your sysconfig patch, since all your analysis for it is
+totally worthless?
 
-commit 3b2710824e00d238554c13b5add347e6c701ab1a upstream.
+JUST LOOK AT THE NUMBERS, for chrissake!
 
-The 'max_part' parameter controls the number of maximum partition
-a nbd device can have. However if a user specifies very large
-value it would exceed the limitation of device minor number and
-can cause a kernel oops (or, at least, produce invalid device
-nodes in some cases).
+When format_decode is 7% of the whole workload, and the top 15
+functions of the profile look like this:
 
-In addition, specifying large 'nbds_max' value causes same
-problem for the same reason.
+     6.40%        exim  [kernel.kallsyms]           [k] format_decode
+     5.26%        exim  [kernel.kallsyms]           [k] page_fault
+     5.05%        exim  [kernel.kallsyms]           [k] vsnprintf
+     3.55%        exim  [kernel.kallsyms]           [k] number
+     3.00%        exim  [kernel.kallsyms]           [k] copy_page_c
+     2.88%        exim  [kernel.kallsyms]           [k] read_hpet
+     2.38%        exim  libc-2.13.90.so             [.] __GI_vfprintf
+     1.92%        exim  [kernel.kallsyms]           [k] kstat_irqs
+     1.53%        exim  [kernel.kallsyms]           [k] find_vma
+     1.47%        exim  [kernel.kallsyms]           [k] _raw_spin_lock
+     1.40%        exim  [kernel.kallsyms]           [k] seq_printf
+     1.34%        exim  [kernel.kallsyms]           [k] radix_tree_lookup
+     1.21%        exim  [kernel.kallsyms]           [k]
+page_cache_get_speculative
+     1.20%        exim  [kernel.kallsyms]           [k] clear_page_c
+     1.05%        exim  [kernel.kallsyms]           [k] do_page_fault
 
-On my desktop, following command results to the kernel bug:
+I can pretty much guarantee that it doesn't do just one /proc/stat
+read per fork() just to get the number of CPU's.
 
-$ sudo modprobe nbd max_part=100000
- kernel BUG at /media/Linux_Data/project/linux/fs/sysfs/group.c:65!
- invalid opcode: 0000 [#1] SMP
- last sysfs file: /sys/devices/virtual/block/nbd4/range
- CPU 1
- Modules linked in: nbd(+) bridge stp llc kvm_intel kvm asus_atk0110 sg sr_mod cdrom
+/proc/stat may be slow, but it's not slower than doing real work -
+unless you call it millions of times.
 
- Pid: 2522, comm: modprobe Tainted: G        W   2.6.39-leonard+ #159 System manufacturer System Product Name/P5G41TD-M PRO
- RIP: 0010:[<ffffffff8115aa08>]  [<ffffffff8115aa08>] internal_create_group+0x2f/0x166
- RSP: 0018:ffff8801009f1de8  EFLAGS: 00010246
- RAX: 00000000ffffffef RBX: ffff880103920478 RCX: 00000000000a7bd3
- RDX: ffffffff81a2dbe0 RSI: 0000000000000000 RDI: ffff880103920478
- RBP: ffff8801009f1e38 R08: ffff880103920468 R09: ffff880103920478
- R10: ffff8801009f1de8 R11: ffff88011eccbb68 R12: ffffffff81a2dbe0
- R13: ffff880103920468 R14: 0000000000000000 R15: ffff880103920400
- FS:  00007f3c49de9700(0000) GS:ffff88011f800000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
- CR2: 00007f3b7fe7c000 CR3: 00000000cd58d000 CR4: 00000000000406e0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Process modprobe (pid: 2522, threadinfo ffff8801009f0000, task ffff8801009a93a0)
- Stack:
-  ffff8801009f1e58 ffffffff812e8f6e ffff8801009f1e58 ffffffff812e7a80
-  ffff880000000010 ffff880103920400 ffff8801002fd0c0 ffff880103920468
-  0000000000000011 ffff880103920400 ffff8801009f1e48 ffffffff8115ab6a
- Call Trace:
-  [<ffffffff812e8f6e>] ? device_add+0x4f1/0x5e4
-  [<ffffffff812e7a80>] ? dev_set_name+0x41/0x43
-  [<ffffffff8115ab6a>] sysfs_create_group+0x13/0x15
-  [<ffffffff810b857e>] blk_trace_init_sysfs+0x14/0x16
-  [<ffffffff811ee58b>] blk_register_queue+0x4c/0xfd
-  [<ffffffff811f3bdf>] add_disk+0xe4/0x29c
-  [<ffffffffa007e2ab>] nbd_init+0x2ab/0x30d [nbd]
-  [<ffffffffa007e000>] ? 0xffffffffa007dfff
-  [<ffffffff8100020f>] do_one_initcall+0x7f/0x13e
-  [<ffffffff8107ab0a>] sys_init_module+0xa1/0x1e3
-  [<ffffffff814f3542>] system_call_fastpath+0x16/0x1b
- Code: 41 57 41 56 41 55 41 54 53 48 83 ec 28 0f 1f 44 00 00 48 89 fb 41 89 f6 49 89 d4 48 85 ff 74 0b 85 f6 75 0b 48 83
-  7f 30 00 75 14 <0f> 0b eb fe b9 ea ff ff ff 48 83 7f 30 00 0f 84 09 01 00 00 49
- RIP  [<ffffffff8115aa08>] internal_create_group+0x2f/0x166
-  RSP <ffff8801009f1de8>
- ---[ end trace 753285ffbf72c57c ]---
+And you didn't actually look at glibc sources, did you? Because if you
+had, you would ALSO have seen that you are totally full of sh*t. Glibc
+at no point caches anything.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Laurent Vivier <Laurent.Vivier@bull.net>
-Cc: Paul Clements <Paul.Clements@steeleye.com>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+So repeat after me: stop making excuses and lying about glibc. It's
+crap. End of story.
 
----
- drivers/block/nbd.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+> I don't think glibc is crazy in this. It has no other choice.
 
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -754,6 +754,12 @@ static int __init nbd_init(void)
- 	if (max_part > 0)
- 		part_shift = fls(max_part);
- 
-+	if ((1UL << part_shift) > DISK_MAX_PARTS)
-+		return -EINVAL;
-+
-+	if (nbds_max > 1UL << (MINORBITS - part_shift))
-+		return -EINVAL;
-+
- 	for (i = 0; i < nbds_max; i++) {
- 		struct gendisk *disk = alloc_disk(1 << part_shift);
- 		if (!disk)
+Stop this insanity, Andi. Why do you lie or just make up arguments? WHY?
 
+There is very clearly no caching going on. And since exim doesn't even
+execve, it just forks, it's very clear that it could cache things just
+ONCE, so your argument that caching wouldn't be possible at that level
+is also bogus.
 
+I can certainly agree that /proc/stat isn't wonderful (it used to be
+better), but that's no excuse for just totally making up excuses for
+just plain bad *stupid* behavior in user space. And it certainly
+doesn't excuse just making shit up!
+
+                           Linus
