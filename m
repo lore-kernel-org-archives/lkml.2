@@ -1,150 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757512Ab1FPJyJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 05:54:09 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:64978 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875Ab1FPJyD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 05:54:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=QfAo2yUjslxZ/PNTAns5eyao+6KQRyX6MxttLakGdAhIyWax2i0QnWDHG8EYMq/yj0
-         /6eD8pGPL4eqGXzEsUVLfzThFShtOIw2LUGdPXaYs9r2/9uWjiAx0tpNvn82kRgQlWWV
-         5+0jckmx3y2mA5QpFgnVYJaZnjH0kHeM7/D6k=
+	id S1757554Ab1FPKCV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 06:02:21 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:50174 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756991Ab1FPKCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 06:02:19 -0400
+Date: Thu, 16 Jun 2011 15:24:12 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 3.0-rc2-tip 4/22]  4: Uprobes: register/unregister
+ probes.
+Message-ID: <20110616095412.GK4952@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+ <20110607125900.28590.16071.sendpatchset@localhost6.localdomain6>
+ <1308159719.2171.57.camel@laptop>
+ <20110616041137.GG4952@linux.vnet.ibm.com>
+ <1308217582.15315.94.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <1308139721-4008-1-git-send-email-shawn.guo@linaro.org>
-References: <BANLkTi=-t9HVc6U6QY07su+c3WztsGoq3Q@mail.gmail.com>
-	<1308139721-4008-1-git-send-email-shawn.guo@linaro.org>
-Date: Thu, 16 Jun 2011 11:54:01 +0200
-X-Google-Sender-Auth: HK5hAS_XczSPoDj_a8poASJUPZg
-Message-ID: <BANLkTikSj+9-p3uvDTbSYF1nX3sxvbDwUQ@mail.gmail.com>
-Subject: Re: [PATCH v3] dmaengine: add new dma API for max_segment_number
-From: Per Forlin <per.forlin@linaro.org>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: linux-kernel@vger.kernel.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>, patches@linaro.org,
-        vinod.koul@intel.com, gregkh@suse.de, linux-mmc@vger.kernel.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Dan Williams <dan.j.williams@intel.com>, cjb@laptop.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1308217582.15315.94.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 2:08 PM, Shawn Guo <shawn.guo@linaro.org> wrote:
-> [PATCH v3] dmaengine: add new dma API for max_segment_number
-The subject "dmaengine:" in this case is a bit misleading since the
-patches doesn't touch any code inside drivers/dmaengine.
-For this patch I would prefer subject "dma-mapping:"
+* Peter Zijlstra <peterz@infradead.org> [2011-06-16 11:46:22]:
 
-There is a need for the DMA clients to be able to extract the max seg
-number from the DMA provider/device. I think this patch is a sane way
-of making this information available.
+> On Thu, 2011-06-16 at 09:41 +0530, Srikar Dronamraju wrote:
+> > * Peter Zijlstra <peterz@infradead.org> [2011-06-15 19:41:59]:
+> > 
+> > > On Tue, 2011-06-07 at 18:29 +0530, Srikar Dronamraju wrote:
+> > > > 1. Use mm->owner and walk thro the thread_group of mm->owner, siblings
+> > > > of mm->owner, siblings of parent of mm->owner.  This should be
+> > > > good list to traverse. Not sure if this is an exhaustive
+> > > > enough list that all tasks that have a mm set to this mm_struct are
+> > > > walked through. 
+> > > 
+> > > As per copy_process():
+> > > 
+> > > 	/*
+> > > 	 * Thread groups must share signals as well, and detached threads
+> > > 	 * can only be started up within the thread group.
+> > > 	 */
+> > > 	if ((clone_flags & CLONE_THREAD) && !(clone_flags & CLONE_SIGHAND))
+> > > 		return ERR_PTR(-EINVAL);
+> > > 
+> > > 	/*
+> > > 	 * Shared signal handlers imply shared VM. By way of the above,
+> > > 	 * thread groups also imply shared VM. Blocking this case allows
+> > > 	 * for various simplifications in other code.
+> > > 	 */
+> > > 	if ((clone_flags & CLONE_SIGHAND) && !(clone_flags & CLONE_VM))
+> > > 		return ERR_PTR(-EINVAL);
+> > > 
+> > > CLONE_THREAD implies CLONE_VM, but not the other way around, we
+> > > therefore would be able to CLONE_VM and not be part of the primary
+> > > owner's thread group.
+> > > 
+> > > This is of course all terribly sad..
+> > 
+> > Agree, 
+> > 
+> > If clone(CLONE_VM) were to be done by a thread_group leader, we can walk
+> > thro the siblings of parent of mm->owner.
+> > 
+> > However if clone(CLONE_VM) were to be done by non thread_group_leader
+> > thread, then we dont even seem to add it to the init_task. i.e I dont
+> > think we can refer to such a thread even when we walk thro
+> > do_each_thread(g,t) { .. } while_each_thread(g,t);
+> > 
+> > right?
+> 
+> No, we initialize p->group_leader = p; and only change that for
+> CLONE_THREAD, so a clone without CLONE_THREAD always results in a new
+> thread group leader, which are always added to the init_task list.
+> 
 
-Regards,
-Per
+Ahh .. I missed the p->group_leader = p thing.
 
-> Like dma_set(get)_max_seg_size for max_segment_size, the patch adds
-> max_segment_number into device_dma_parameters and creates the
-> corresponding dmaengine API dma_set(get)_max_seg_number for it.
->
-> Here is the user story that tells the need of the new api.  The
-> mxs-mmc is the mmc host controller for Freescale MXS architecture.
-> There are a pair of  mmc host specific parameters max_seg_size and
-> max_segs that mxs-mmc host driver needs to tell mmc core, so that
-> mmc core can know how big each data segment could be and how many
-> segments could be handled one time in a scatter list by host driver.
->
-> The mxs-mmc driver is one user of dmaengine mxs-dma, and it will call
-> mxs-dma to transfer data in scatter list.  That is to say mxs-mmc has
-> no idea of what max_seg_size and max_segs should be, because they are
-> all mxs-dma capability parameters, and mxs-mmc needs to query them
-> from mxs-dma.
->
-> Right now, there is well defined dma api (dma_get_max_seg_size) for
-> mmc to query max_seg_size from dma driver, but the one for max_segs
-> is missing.  That's why mxs-mmc driver has to hard-code it.
->
-> The mxs-mmc is just one example to demonstrate the need of the new
-> api, and there are other mmc host drivers (mxcmmc on imx-dma is
-> another example) and possibly even other dmaengine users need this
-> new api to know the maximum segments that dma driver can handle per
-> dma call.
->
-> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-> ---
->  include/linux/device.h      |   16 ++++++++++++----
->  include/linux/dma-mapping.h |   15 +++++++++++++++
->  2 files changed, 27 insertions(+), 4 deletions(-)
->
-> diff --git a/include/linux/device.h b/include/linux/device.h
-> index c66111a..f1152c5 100644
-> --- a/include/linux/device.h
-> +++ b/include/linux/device.h
-> @@ -481,12 +481,20 @@ extern int devres_release_group(struct device *dev, void *id);
->  extern void *devm_kzalloc(struct device *dev, size_t size, gfp_t gfp);
->  extern void devm_kfree(struct device *dev, void *p);
->
-> +/*
-> + * device_dma_parameters is a property of DMA provider, and it belongs to the
-> + * 'struct device' that actually provides DMA service, typically the drivers
-> + * under drivers/dma, although in some cases the DMA provider and block device
-> + * uses DMA service happen to be the same 'struct device'.
-> + *
-> + * It's not necessary for every single DMA providers to have this structure,
-> + * because some DMA providers simply do not have these parameters/limitations.
-> + * For those do have, the DMA providers should be responsible for setting the
-> + * parameters up.
-> + */
->  struct device_dma_parameters {
-> -       /*
-> -        * a low level driver may set these to teach IOMMU code about
-> -        * sg limitations.
-> -        */
->        unsigned int max_segment_size;
-> +       unsigned int max_segment_number;
->        unsigned long segment_boundary_mask;
->  };
->
-> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-> index ba8319a..fd314f4 100644
-> --- a/include/linux/dma-mapping.h
-> +++ b/include/linux/dma-mapping.h
-> @@ -131,6 +131,21 @@ static inline unsigned int dma_set_max_seg_size(struct device *dev,
->                return -EIO;
->  }
->
-> +static inline unsigned int dma_get_max_seg_number(struct device *dev)
-> +{
-> +       return dev->dma_parms ? dev->dma_parms->max_segment_number : 1;
-> +}
-> +
-> +static inline unsigned int dma_set_max_seg_number(struct device *dev,
-> +                                                 unsigned int number)
-> +{
-> +       if (dev->dma_parms) {
-> +               dev->dma_parms->max_segment_number = number;
-> +               return 0;
-> +       } else
-> +               return -EIO;
-> +}
-> +
->  static inline unsigned long dma_get_seg_boundary(struct device *dev)
->  {
->        return dev->dma_parms ?
-> --
-> 1.7.4.1
->
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->
+In which case, shouldnt traversing all the tasks of all siblings of 
+parent of mm->owner should provide us all the the tasks that have linked
+to mm. Right?
+
+Agree that we can bother about this a little later.
+
+-- 
+Thanks and Regards
+Srikar
