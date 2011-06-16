@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758469Ab1FPOs0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 10:48:26 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:53198 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758394Ab1FPOsY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 10:48:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=McFKeH1skLw3m5Ow1DXQnZ+RMvdfhiAhAOAEBSv9HGdYHEpwcql+0GZHdp6FK/4cKV
-         R/9hzOofyMcuKzZxNWtjbGBXt1yx2K+TRTCAW4kMBT9zuIw49NpAzhJiZMegGdG790FP
-         jbP0qMp/y1+tzRaeAgjsciYbNx+2PCb1+a1xA=
+	id S1756263Ab1FPOxA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 10:53:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8650 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754463Ab1FPOw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 10:52:57 -0400
+Date: Thu, 16 Jun 2011 16:51:10 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Greg Kurz <gkurz@fr.ibm.com>, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, containers@lists.osdl.org,
+        akpm@linux-foundation.org, xemul@openvz.org
+Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was
+	Vpid:)
+Message-ID: <20110616145044.GA25379@redhat.com>
+References: <20110615145527.4016.70157.stgit@bahia.local> <20110615184625.GA15573@redhat.com> <1308222107.8230.49.camel@bahia.local> <20110616123554.GA7230@hawkmoon.kerlabs.com> <1308229251.8230.77.camel@bahia.local> <20110616132551.GB7230@hawkmoon.kerlabs.com>
 MIME-Version: 1.0
-In-Reply-To: <1308153214.7566.6.camel@jaguar>
-References: <1308153214.7566.6.camel@jaguar>
-Date: Thu, 16 Jun 2011 17:48:21 +0300
-X-Google-Sender-Auth: YPw-X7l7zBy7GcrohHTBklAaUa0
-Message-ID: <BANLkTi=krV7p9gT3E064aVoUCToVyZoL6w@mail.gmail.com>
-Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
-From: Pekka Enberg <penberg@kernel.org>
-To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Cc: Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Prasad Joshi <prasadjoshi124@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110616132551.GB7230@hawkmoon.kerlabs.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 6:53 PM, Pekka Enberg <penberg@kernel.org> wrote:
-> - Fast QCOW2 image read-write support beating Qemu in fio benchmarks. See the
->  following URL for test result details: https://gist.github.com/1026888
+On 06/16, Louis Rilling wrote:
+>
+> On 16/06/11 15:00 +0200, Greg Kurz wrote:
+> > peeking into pid->numbers.
+>
+> It ends like open-coding an optimized version of task_pid_vnr(). If the
+> optimization is really important (I guess this depends on the depth of recursive
+> pid namespaces), it would be better to re-write task_pid_vnr().
 
-It turns out we were benchmarking the wrong guest kernel version for
-qemu-kvm which is why it performed so much worse. Here's a summary of
-qemu-kvm beating tools/kvm:
+No, task_pid_vnr(p) is different, it should use the caller's namespace.
 
-https://raw.github.com/gist/1029359/9f9a714ecee64802c08a3455971e410d5029370b/gistfile1.txt
+Just in case, I agree there is no need to optimize this code. The simpler
+the better. I mentioned pid->numbers[pid->level] just to point that all
+we need is task_pid() itself, there are no subtle races which need the
+locking.
 
-I'd ask for a brown paper bag if I wasn't so busy eating my hat at the moment.
+Oleg.
 
-                        Pekka
