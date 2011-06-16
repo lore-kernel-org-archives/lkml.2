@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab1FPHBm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:01:42 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:49796 "EHLO
+	id S1757031Ab1FPHbM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:31:12 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:58084 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756012Ab1FPHBg (ORCPT
+	by vger.kernel.org with ESMTP id S1755880Ab1FPHBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:01:36 -0400
-X-Sasl-enc: iYGFtqyw4Fidn2EUIynDIPqRrxrLBDUWO3T8PtVGJAsl 1308207695
+	Thu, 16 Jun 2011 03:01:37 -0400
+X-Sasl-enc: d2GORuR/dF/AxEz2haf2KidsvON6u9dymk1YZBgw3NPk 1308207696
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:02:36 2011
-Message-Id: <20110616000236.252350932@clark.kroah.org>
+Message-Id: <20110616000236.356167697@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:00:37 -0700
+Date: Wed, 15 Jun 2011 17:00:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Robert Richter <robert.richter@amd.com>
-Subject: [74/89] oprofile, dcookies: Fix possible circular locking dependency
+        =?ISO-8859-15?q?Marek=20Ol=C5=A1=C3=A1k?= <maraeo@gmail.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [75/89] drm/radeon/kms: do bounds checking for 3D_LOAD_VBPNTR and
 In-Reply-To: <20110616000258.GA14529@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,97 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
+ bump array limit
 
-From: Robert Richter <robert.richter@amd.com>
+From: =?UTF-8?q?Marek=20Ol=C5=A1=C3=A1k?= <maraeo@gmail.com>
 
-commit fe47ae7f53e179d2ef6771024feb000cbb86640f upstream.
+commit a27bb4b209dd6c327fa4e7185f2487f9508a58db upstream.
 
-The lockdep warning below detects a possible A->B/B->A locking
-dependency of mm->mmap_sem and dcookie_mutex. The order in
-sync_buffer() is mm->mmap_sem/dcookie_mutex, while in
-sys_lookup_dcookie() it is vice versa.
+To my knowledge, the limit is 16 on r300.
+(the docs don't say what the limit is)
 
-Fixing it in sys_lookup_dcookie() by unlocking dcookie_mutex before
-copy_to_user().
+The lack of bounds checking can be abused to do all sorts of things
+(from bypassing parts of the CS checker to crashing the kernel).
 
-oprofiled/4432 is trying to acquire lock:
- (&mm->mmap_sem){++++++}, at: [<ffffffff810b444b>] might_fault+0x53/0xa3
+Bugzilla:
+https://bugs.freedesktop.org/show_bug.cgi?id=36745
 
-but task is already holding lock:
- (dcookie_mutex){+.+.+.}, at: [<ffffffff81124d28>] sys_lookup_dcookie+0x45/0x149
-
-which lock already depends on the new lock.
-
-the existing dependency chain (in reverse order) is:
-
--> #1 (dcookie_mutex){+.+.+.}:
-       [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
-       [<ffffffff814634f0>] mutex_lock_nested+0x63/0x309
-       [<ffffffff81124e5c>] get_dcookie+0x30/0x144
-       [<ffffffffa0000fba>] sync_buffer+0x196/0x3ec [oprofile]
-       [<ffffffffa0001226>] task_exit_notify+0x16/0x1a [oprofile]
-       [<ffffffff81467b96>] notifier_call_chain+0x37/0x63
-       [<ffffffff8105803d>] __blocking_notifier_call_chain+0x50/0x67
-       [<ffffffff81058068>] blocking_notifier_call_chain+0x14/0x16
-       [<ffffffff8105a718>] profile_task_exit+0x1a/0x1c
-       [<ffffffff81039e8f>] do_exit+0x2a/0x6fc
-       [<ffffffff8103a5e4>] do_group_exit+0x83/0xae
-       [<ffffffff8103a626>] sys_exit_group+0x17/0x1b
-       [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
-
--> #0 (&mm->mmap_sem){++++++}:
-       [<ffffffff81064dfb>] __lock_acquire+0x1085/0x1711
-       [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
-       [<ffffffff810b4478>] might_fault+0x80/0xa3
-       [<ffffffff81124de7>] sys_lookup_dcookie+0x104/0x149
-       [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
-
-other info that might help us debug this:
-
-1 lock held by oprofiled/4432:
- #0:  (dcookie_mutex){+.+.+.}, at: [<ffffffff81124d28>] sys_lookup_dcookie+0x45/0x149
-
-stack backtrace:
-Pid: 4432, comm: oprofiled Not tainted 2.6.39-00008-ge5a450d #9
-Call Trace:
- [<ffffffff81063193>] print_circular_bug+0xae/0xbc
- [<ffffffff81064dfb>] __lock_acquire+0x1085/0x1711
- [<ffffffff8102ef13>] ? get_parent_ip+0x11/0x42
- [<ffffffff810b444b>] ? might_fault+0x53/0xa3
- [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
- [<ffffffff810b444b>] ? might_fault+0x53/0xa3
- [<ffffffff810d7d54>] ? path_put+0x22/0x27
- [<ffffffff810b4478>] might_fault+0x80/0xa3
- [<ffffffff810b444b>] ? might_fault+0x53/0xa3
- [<ffffffff81124de7>] sys_lookup_dcookie+0x104/0x149
- [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=13809
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Marek Olšák <maraeo@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/dcookies.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/radeon/r100_track.h |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/fs/dcookies.c
-+++ b/fs/dcookies.c
-@@ -178,6 +178,8 @@ SYSCALL_DEFINE(lookup_dcookie)(u64 cooki
- 	/* FIXME: (deleted) ? */
- 	path = d_path(&dcs->path, kbuf, PAGE_SIZE);
- 
-+	mutex_unlock(&dcookie_mutex);
-+
- 	if (IS_ERR(path)) {
- 		err = PTR_ERR(path);
- 		goto out_free;
-@@ -194,6 +196,7 @@ SYSCALL_DEFINE(lookup_dcookie)(u64 cooki
- 
- out_free:
- 	kfree(kbuf);
-+	return err;
- out:
- 	mutex_unlock(&dcookie_mutex);
- 	return err;
+--- a/drivers/gpu/drm/radeon/r100_track.h
++++ b/drivers/gpu/drm/radeon/r100_track.h
+@@ -63,7 +63,7 @@ struct r100_cs_track {
+ 	unsigned			num_arrays;
+ 	unsigned			max_indx;
+ 	unsigned			color_channel_mask;
+-	struct r100_cs_track_array	arrays[11];
++	struct r100_cs_track_array	arrays[16];
+ 	struct r100_cs_track_cb 	cb[R300_MAX_CB];
+ 	struct r100_cs_track_cb 	zb;
+ 	struct r100_cs_track_cb 	aa;
+@@ -146,6 +146,12 @@ static inline int r100_packet3_load_vbpn
+ 	ib = p->ib->ptr;
+ 	track = (struct r100_cs_track *)p->track;
+ 	c = radeon_get_ib_value(p, idx++) & 0x1F;
++	if (c > 16) {
++	    DRM_ERROR("Only 16 vertex buffers are allowed %d\n",
++		      pkt->opcode);
++	    r100_cs_dump_packet(p, pkt);
++	    return -EINVAL;
++	}
+ 	track->num_arrays = c;
+ 	for (i = 0; i < (c - 1); i+=2, idx+=3) {
+ 		r = r100_cs_packet_next_reloc(p, &reloc);
 
 
