@@ -1,91 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755145Ab1FPCtK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 22:49:10 -0400
-Received: from mta11.charter.net ([216.33.127.80]:65467 "EHLO
-	mta11.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754964Ab1FPCtH (ORCPT
+	id S1754088Ab1FPDCM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 23:02:12 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:50862 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752879Ab1FPDCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 22:49:07 -0400
-X-Authority-Analysis: v=1.1 cv=G6Q69DB3AUoJKS2BpLRaz8MQ2NORN7h5HRzrJMPOhRw=
- c=1 sm=1 a=p9YancsnzTcA:10 a=ATN9wnctRWoA:10 a=8nJEP1OIZ-IA:10
- a=xzrYXqw+0zwiO4gHSXHcAg==:17 a=v21-0AKBVq57tRSLXVgA:9
- a=ShJvtIunUxAr5zsxZqsA:7 a=wPNLvfGTeEIA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:117
-Message-ID: <4DF96F22.5070508@cuw.edu>
-Date: Wed, 15 Jun 2011 21:49:06 -0500
-From: Greg Dietsche <gregory.dietsche@cuw.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110505 Icedove/3.0.11
+	Wed, 15 Jun 2011 23:02:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=kcBgp7NXpNX+3i7xnF50u0Gime89L3k2TdlgM5+h+YfkhJ10pmTsMwrMe+u88gQxAA
+         0DVsk9O2qwSsrNIONzbsWm31GLlIZpLYGl08y0d6PX4xaETuf+r6zBlNIXpxOiiEDIft
+         m2NpMAGAWSJQorxPC7n27DRB4DoB4ZSbJiVcI=
+Date: Thu, 16 Jun 2011 05:02:04 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Sharp <dhsharp@google.com>
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michael Rubin <mrubin@google.com>, x86@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiaying Zhang <jiayingz@google.com>
+Subject: Re: [PATCH v2] trace: Add x86 irq vector entry/exit tracepoints
+Message-ID: <20110616030200.GC18579@somewhere.redhat.com>
+References: <1304107962-18576-1-git-send-email-vnagarnaik@google.com>
+ <1306877298-31713-1-git-send-email-vnagarnaik@google.com>
+ <20110531235957.GB5256@somewhere.redhat.com>
+ <BANLkTi=YYCXHi5k82Q+sE6+134i97pjjAA@mail.gmail.com>
+ <BANLkTinT6ULRWwHAGYFpQSw-ptQiuzrkPtZuKVZHD8b5mh9hpA@mail.gmail.com>
 MIME-Version: 1.0
-To: Henry Ptasinski <henryp@broadcom.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>, Brett Rudley <brudley@broadcom.com>,
-        Dowan Kim <dowan@broadcom.com>, Roland Vossen <rvossen@broadcom.com>,
-        Arend Van Spriel <arend@broadcom.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: brcm80211: return false if not a broadcom board
-References: <1308176709-14765-1-git-send-email-Gregory.Dietsche@cuw.edu> <20110616013615.GA14700@broadcom.com>
-In-Reply-To: <20110616013615.GA14700@broadcom.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTinT6ULRWwHAGYFpQSw-ptQiuzrkPtZuKVZHD8b5mh9hpA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sorry guys I only found your answers today by browsing my email client.
+I guess I posponed my reading but completely forgot :-(
 
+On Wed, Jun 01, 2011 at 04:30:18PM -0700, David Sharp wrote:
+> On Wed, Jun 1, 2011 at 3:38 PM, Vaibhav Nagarnaik <vnagarnaik@google.com> wrote:
+> > On Tue, May 31, 2011 at 5:00 PM, Frederic Weisbecker
+> > <fweisbec@gmail.com> wrote:
+> >>
+> >> IIRC, Thomas suggested in the v1 to turn arch tracepoints into core ones when they
+> >> stand for generic (ie: shared by all archs) event meaning.
+> >>
+> >> I don't know where the discussion went after that, but that still seems to
+> >> me an important direction. Tracing irqs by their vector number should be reserved
+> >> for pure arch meanings. Sharing common tracepoints for generic events amongst archs makes life
+> >> easier for tools. Bonus when the tracepoint can be placed in the generic code.
+> >>
+> >
+> > I agree with you that the tracepoints should be as generic as possible
+> > to have them traced across platforms, but I see these tracepoints as
+> > specific to x86 platform. Since most of these vectors are x86 specific.
+> > The only ones that you pointed out as generic were:
+> 
+> I think what Vaibhav means is that this is "the one trace event for
+> all hard IRQs on the platform". A tracepoint for the cross-platform
+> irq handlers is also useful, but that is not the purpose of this
+> tracepoint.
 
-On 06/15/2011 08:36 PM, Henry Ptasinski wrote:
-> On Wed, Jun 15, 2011 at 03:25:09PM -0700, Greg Dietsche wrote:
->    
->> This code looks wrong to me. I think it meant to return false
->> if the board's vendor id isn't Broadcom's.
->>
->> Compile tested only.
->>
->> Signed-off-by: Greg Dietsche<Gregory.Dietsche@cuw.edu>
->> ---
->>   drivers/staging/brcm80211/brcmsmac/wlc_bmac.c |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c b/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
->> index 4534926..ee13238 100644
->> --- a/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
->> +++ b/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
->> @@ -1943,7 +1943,7 @@ static bool wlc_validboardtype(struct wlc_hw_info *wlc_hw)
->>   	}
->>
->>   	if (wlc_hw->sih->boardvendor != PCI_VENDOR_ID_BROADCOM)
->> -		return goodboard;
->> +		goodboard = false;
->>
->>   	return goodboard;
->>   }
->>      
-> Actually, the original code is correct.
->
-> For boards with the Broadcom ID, this function checks that the boardrev is
-> sane. Dev boards that aren't properly configured may have invalid info, so this
-> check is mainly to catch that problem.
->
-> For boards with any other vendor, we don't have any sanity checks that we know
-> should be done, so the board info is always considered good.
->
-> The device ID is of course always checked.
->
-> - Henry
->
->    
-Hi Henry,
-Thanks for the explanation - I'm still a little confused on this... 
-probably more because of how the code reads. Let me explain:
+If a generic tracepoint can replace one per arch, we all want that instead.
+This is 24 times (24 archs) less maintainance burden.
 
-The part that threw me off in this code when I originally read it is 
-that it always returns goodboard. It doesn't actually matter what the 
-vendor id is. So my first thought was "what did they really mean to code 
-here...?" That's why I sent the patch. So if the patch isn't necessary, 
-then great! :) But it seems like we could/should just drop the check for 
-vendor id?
+So if that doesn't meet your needs, you really need to explain us in detail why.
 
-thanks,
-Greg
+I believe it's fine to deduce from a generic timer tracepoint that the arch fired
+a specific interrupt to achieve that.
 
+You might need some low level details, but then tell us why.
+
+> There's not actually much overlap between platforms for
+> IRQs, so each platform needs to do the work of covering all their
+> IRQs, and won't see much benefit from the generic tracepoints.
+
+There is at least 5 overlaps. And everybody will benefit from the generic tracepoints.
+
+> On Tue, May 31, 2011 at 5:00 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > Tracing irqs by their vector number should be reserved for pure arch meanings.
+> 
+> exactly, and this tracepoint is for that "arch meaning".
+
+Ok but there is no point in having an arch tracepoint where the arch code is only
+doing:
+
+arch_foo_irq()
+{
+	generic_foo_irq();
+}
+
+It may do some specific low level things, ack the apic, etc... But that's not what
+is interesting, right? What is interesting is the fact you have an interrupt.
+
+> I'd also add that having these tracepoints here makes it more obvious
+> that we will get all IRQ events, which is what is important to us.
+
+Look at those arch level handlers, it's doesn't seem you can miss anything there.
+
+It can happen in the case of the local apic timer, but then you get a warning
+of spurious LAPIC timer interrupt. They are corner cases, better check these
+rather than tracing every layers to ensure you always get everything.
