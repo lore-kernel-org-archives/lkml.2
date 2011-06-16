@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758347Ab1FPO2z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 10:28:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54022 "EHLO mx1.redhat.com"
+	id S932085Ab1FPOaJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 10:30:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52932 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758257Ab1FPO2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 10:28:53 -0400
-Message-ID: <4DFA1325.70002@redhat.com>
-Date: Thu, 16 Jun 2011 16:28:53 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1758252Ab1FPOaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 10:30:08 -0400
+Date: Thu, 16 Jun 2011 17:28:59 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Prasad Joshi <prasadjoshi124@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>
+Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
+Message-ID: <20110616142859.GA18356@redhat.com>
+References: <1308153214.7566.6.camel@jaguar>
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: Ondrej Zary <linux@rainbow-software.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Joerg Heckenbach <joerg@heckenbach-aw.de>,
-        Dwaine Garden <dwainegarden@rogers.com>, linux-media@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usbvision: remove (broken) image format conversion
-References: <201104252323.20420.linux@rainbow-software.org> <201104262240.40497.linux@rainbow-software.org> <4DBFD919.3090409@redhat.com> <201105031837.13881.linux@rainbow-software.org> <4DF35BF4.4050002@redhat.com>
-In-Reply-To: <4DF35BF4.4050002@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1308153214.7566.6.camel@jaguar>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jun 15, 2011 at 06:53:34PM +0300, Pekka Enberg wrote:
+> Hi all,
+> 
+> We’re proud to announce the second version of the Native Linux KVM tool! We’re
+> now officially aiming for merging to mainline in 3.1.
+> 
+> Highlights:
+> 
+> - Experimental GUI support using SDL and VNC
+> 
+> - SMP support. tools/kvm/ now has a highly scalable, largely lockless driver
+>   interface and the individual drivers are using finegrained locks.
+> 
+> - TAP-based virtio networking
 
-On 06/11/2011 02:13 PM, Mauro Carvalho Chehab wrote:
-> Hi Hans de G.,
->
-> Em 26-04-2011 08:54, Hans de Goede escreveu:
->> If you could give it a shot that would be great. I've some hardware to
->> test this with (although I've never actually tested that hardware), so
->> I can hopefully pick things up if you cannot finish things before you
->> need to return the hardware.
->
-> As Ondrej couldn't work on that while he was with the hardware, could you
-> please try to address this issue?
+Wanted to ask for a while: would it make sense to use vhost-net?
+Or maybe use that exclusively?
+Less hypervisor code to support would help the focus.
 
-I've put it on my to do list, not sure when I'll get around to it though.
-
-Regards,
-
-Hans
+-- 
+MST
