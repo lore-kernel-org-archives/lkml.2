@@ -1,182 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758110Ab1FPOFM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 10:05:12 -0400
-Received: from hera.kernel.org ([140.211.167.34]:51970 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758087Ab1FPOE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 10:04:56 -0400
-Date: Thu, 16 Jun 2011 14:04:44 GMT
-From: tip-bot for Steven Rostedt <srostedt@redhat.com>
-Message-ID: <tip-d7e8623ae9cf93a9b517336085a86cabb014ea77@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rostedt@goodmis.org, srostedt@redhat.com, jreiser@bitwagon.com,
-        tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, srostedt@redhat.com, jreiser@bitwagon.com,
-        tglx@linutronix.de
-In-Reply-To: <20110421023737.523968644@goodmis.org>
-References: <20110421023737.523968644@goodmis.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] ftrace/trivial: Clean up record mcount to use Linux switch style
-Git-Commit-ID: d7e8623ae9cf93a9b517336085a86cabb014ea77
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1758097Ab1FPOE5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 10:04:57 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:54358 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758082Ab1FPOEz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 10:04:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=N5zSrSAi+//Sw8jlZ1sgpaoXM8rmzDC8HYzwkyP8YiU2KmrTQAJZp8Lq3qnqpWMe7f
+         jLvoq+YfIY6s05QMFOAhQ5WlIrPP/4aJXP4Dqwp47x1F0Ge6kaKdKRBbH+kflxHuNIdN
+         jZBv9nuzsmTCUtU2p/Nu13Yc0nPwcxNBxhw2o=
+Message-ID: <4DFA0D83.6070604@gmail.com>
+Date: Thu, 16 Jun 2011 09:04:51 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Jun 2011 14:04:45 +0000 (UTC)
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 03/11] dt/irq: add irq_domain_add_simple() helper
+References: <20110616042653.29371.2052.stgit@ponder> <20110616044141.29371.76366.stgit@ponder>
+In-Reply-To: <20110616044141.29371.76366.stgit@ponder>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d7e8623ae9cf93a9b517336085a86cabb014ea77
-Gitweb:     http://git.kernel.org/tip/d7e8623ae9cf93a9b517336085a86cabb014ea77
-Author:     Steven Rostedt <srostedt@redhat.com>
-AuthorDate: Wed, 6 Apr 2011 13:32:24 -0400
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Tue, 17 May 2011 10:41:33 -0400
+Grant,
 
-ftrace/trivial: Clean up record mcount to use Linux switch style
+On 06/15/2011 11:41 PM, Grant Likely wrote:
+> irq_domain_add_simple() is an easy way to generate an irq translation
+> domain for simple irq controllers.  It assumes a flat 1:1 mapping from
+> hardware irq number to an offset of the first linux irq number assigned
+> to the controller
+> 
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> ---
+>  include/linux/irq.h    |   11 +++++++++
+>  kernel/irq/irqdomain.c |   58 +++++++++++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 68 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/irq.h b/include/linux/irq.h
+> index a103c01..50830fc 100644
+> --- a/include/linux/irq.h
+> +++ b/include/linux/irq.h
+> @@ -797,6 +797,17 @@ extern unsigned int irq_domain_map(struct irq_domain *domain,
+>  				   irq_hw_number_t hwirq);
+>  extern void irq_domain_unmap(struct irq_domain *domain, irq_hw_number_t hw);
+>  
+> +struct of_device_id;
+> +#ifdef CONFIG_OF
+> +extern void irq_domain_add_simple(struct device_node *controller, int irq_base);
+> +extern void irq_domain_generate_simple(struct of_device_id *match,
 
-The Linux style for switch statements is:
+match should be const
 
-	switch (var) {
-	case x:
-		[...]
-		break;
-	}
+> +					u64 phys_base, unsigned int irq_start);
+> +#else
 
-Not:
-	switch (var) {
-	case x: {
-		[...]
-	} break;
+Empty function for irq_domain_add_simple?
 
-Cc: John Reiser <jreiser@bitwagon.com>
-Link: http://lkml.kernel.org/r/20110421023737.523968644@goodmis.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- scripts/recordmcount.c |   43 ++++++++++++++++++++++---------------------
- 1 files changed, 22 insertions(+), 21 deletions(-)
+> +static inline void irq_domain_generate_simple(struct of_device_id *match,
+> +					u64 phys_base, unsigned int irq_start) { }
+> +#endif
+> +
+> +
 
-diff --git a/scripts/recordmcount.c b/scripts/recordmcount.c
-index 37afe0e..4ebd839 100644
---- a/scripts/recordmcount.c
-+++ b/scripts/recordmcount.c
-@@ -264,27 +264,27 @@ do_file(char const *const fname)
- 	w8 = w8nat;
- 	switch (ehdr->e_ident[EI_DATA]) {
- 		static unsigned int const endian = 1;
--	default: {
-+	default:
- 		fprintf(stderr, "unrecognized ELF data encoding %d: %s\n",
- 			ehdr->e_ident[EI_DATA], fname);
- 		fail_file();
--	} break;
--	case ELFDATA2LSB: {
-+		break;
-+	case ELFDATA2LSB:
- 		if (*(unsigned char const *)&endian != 1) {
- 			/* main() is big endian, file.o is little endian. */
- 			w = w4rev;
- 			w2 = w2rev;
- 			w8 = w8rev;
- 		}
--	} break;
--	case ELFDATA2MSB: {
-+		break;
-+	case ELFDATA2MSB:
- 		if (*(unsigned char const *)&endian != 0) {
- 			/* main() is little endian, file.o is big endian. */
- 			w = w4rev;
- 			w2 = w2rev;
- 			w8 = w8rev;
- 		}
--	} break;
-+		break;
- 	}  /* end switch */
- 	if (memcmp(ELFMAG, ehdr->e_ident, SELFMAG) != 0
- 	||  w2(ehdr->e_type) != ET_REL
-@@ -295,11 +295,11 @@ do_file(char const *const fname)
- 
- 	gpfx = 0;
- 	switch (w2(ehdr->e_machine)) {
--	default: {
-+	default:
- 		fprintf(stderr, "unrecognized e_machine %d %s\n",
- 			w2(ehdr->e_machine), fname);
- 		fail_file();
--	} break;
-+		break;
- 	case EM_386:	 reltype = R_386_32;                   break;
- 	case EM_ARM:	 reltype = R_ARM_ABS32;
- 			 altmcount = "__gnu_mcount_nc";
-@@ -315,12 +315,12 @@ do_file(char const *const fname)
- 	}  /* end switch */
- 
- 	switch (ehdr->e_ident[EI_CLASS]) {
--	default: {
-+	default:
- 		fprintf(stderr, "unrecognized ELF class %d %s\n",
- 			ehdr->e_ident[EI_CLASS], fname);
- 		fail_file();
--	} break;
--	case ELFCLASS32: {
-+		break;
-+	case ELFCLASS32:
- 		if (w2(ehdr->e_ehsize) != sizeof(Elf32_Ehdr)
- 		||  w2(ehdr->e_shentsize) != sizeof(Elf32_Shdr)) {
- 			fprintf(stderr,
-@@ -334,7 +334,7 @@ do_file(char const *const fname)
- 			is_fake_mcount32 = MIPS32_is_fake_mcount;
- 		}
- 		do32(ehdr, fname, reltype);
--	} break;
-+		break;
- 	case ELFCLASS64: {
- 		Elf64_Ehdr *const ghdr = (Elf64_Ehdr *)ehdr;
- 		if (w2(ghdr->e_ehsize) != sizeof(Elf64_Ehdr)
-@@ -352,7 +352,8 @@ do_file(char const *const fname)
- 			is_fake_mcount64 = MIPS64_is_fake_mcount;
- 		}
- 		do64(ghdr, fname, reltype);
--	} break;
-+		break;
-+	}
- 	}  /* end switch */
- 
- 	cleanup();
-@@ -386,23 +387,23 @@ main(int argc, char const *argv[])
- 			continue;
- 
- 		switch (sjval) {
--		default: {
-+		default:
- 			fprintf(stderr, "internal error: %s\n", argv[0]);
- 			exit(1);
--		} break;
--		case SJ_SETJMP: {  /* normal sequence */
-+			break;
-+		case SJ_SETJMP:    /* normal sequence */
- 			/* Avoid problems if early cleanup() */
- 			fd_map = -1;
- 			ehdr_curr = NULL;
- 			mmap_failed = 1;
- 			do_file(argv[0]);
--		} break;
--		case SJ_FAIL: {  /* error in do_file or below */
-+			break;
-+		case SJ_FAIL:    /* error in do_file or below */
- 			++n_error;
--		} break;
--		case SJ_SUCCEED: {  /* premature success */
-+			break;
-+		case SJ_SUCCEED:    /* premature success */
- 			/* do nothing */
--		} break;
-+			break;
- 		}  /* end switch */
- 	}
- 	return !!n_error;
+Rob
