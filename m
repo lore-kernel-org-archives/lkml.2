@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab1FPBrz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 21:47:55 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58909 "EHLO song.cn.fujitsu.com"
+	id S1754896Ab1FPBsT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 21:48:19 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64424 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754056Ab1FPBrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 21:47:49 -0400
+	id S1754557Ab1FPBrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 21:47:52 -0400
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
         "Theodore Tso" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 2/3] jbd2,tracing,rcu: jbd2_dev_to_name() is not protect by RCU
-Date: Thu, 16 Jun 2011 09:47:05 +0800
-Message-Id: <4f75c511d209281967ff8eaa97a75d38d5346903.1308131436.git.laijs@cn.fujitsu.com>
+Subject: [PATCH 3/3] jbd2,rcu: simpify jbd2_dev_to_name()
+Date: Thu, 16 Jun 2011 09:47:06 +0800
+Message-Id: <2aafd695ef8e4c263e98bdd123a9117dc4ef4a85.1308131437.git.laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <ec67960d0864680d18a43ec5275baba3f6e1dd94.1308131436.git.laijs@cn.fujitsu.com>
 References: <ec67960d0864680d18a43ec5275baba3f6e1dd94.1308131436.git.laijs@cn.fujitsu.com>
@@ -27,208 +27,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TP_printk() is not inside the RCU critical section, so the return value
-of jbd2_dev_to_name() may be invalid. This fix pass a devname argument to
-store the result name to void this problem.
-
-And ftrace_print_bdevname() is introduced to wrap
-trace_seq_reserve() and jbd2_dev_to_name().
+Simpify jbd2_dev_to_name() and use xchg() to make the update side
+wait-free and remove the spinlock.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- fs/jbd2/journal.c            |   27 ++++++++++++---------------
- include/linux/ftrace_event.h |   10 ++++++++++
- include/linux/jbd2.h         |    6 +++---
- include/trace/events/jbd2.h  |   15 ++++++++-------
- 4 files changed, 33 insertions(+), 25 deletions(-)
+ fs/jbd2/journal.c |   42 +++++++++++++++++++-----------------------
+ 1 files changed, 19 insertions(+), 23 deletions(-)
 
 diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-index 1c45b6a..c37597a 100644
+index c37597a..7d5b6ac 100644
 --- a/fs/jbd2/journal.c
 +++ b/fs/jbd2/journal.c
-@@ -2427,11 +2427,8 @@ static void __exit journal_exit(void)
-  * jbd2_dev_to_name is a utility function used by the jbd2 and ext4 
-  * tracing infrastructure to map a dev_t to a device name.
-  *
-- * The caller should use rcu_read_lock() in order to make sure the
-- * device name stays valid until its done with it.  We use
-- * rcu_read_lock() as well to make sure we're safe in case the caller
-- * gets sloppy, and because rcu_read_lock() is cheap and can be safely
-- * nested.
-+ * We use caches to cache the results and use rcu_read_lock()
-+ * to protect the caches.
-  */
- struct devname_cache {
- 	struct rcu_head	rcu;
-@@ -2442,34 +2439,35 @@ struct devname_cache {
+@@ -2437,7 +2437,6 @@ struct devname_cache {
+ };
+ #define CACHE_SIZE_BITS 6
  static struct devname_cache __rcu *devcache[1 << CACHE_SIZE_BITS];
- static DEFINE_SPINLOCK(devname_cache_lock);
+-static DEFINE_SPINLOCK(devname_cache_lock);
  
--const char *jbd2_dev_to_name(dev_t device)
-+void jbd2_dev_to_name(dev_t device, char *devname)
+ void jbd2_dev_to_name(dev_t device, char *devname)
  {
- 	int	i = hash_32(device, CACHE_SIZE_BITS);
--	char	*ret;
+@@ -2445,6 +2444,7 @@ void jbd2_dev_to_name(dev_t device, char *devname)
  	struct block_device *bd;
  	static struct devname_cache *cache;
  
++	/* get the name from the cache */
  	rcu_read_lock();
  	cache = rcu_dereference(devcache[i]);
  	if (cache && cache->device == device) {
--		ret = cache->devname;
-+		memcpy(devname, cache->devname, BDEVNAME_SIZE);
- 		rcu_read_unlock();
--		return ret;
-+		return;
+@@ -2454,32 +2454,28 @@ void jbd2_dev_to_name(dev_t device, char *devname)
  	}
  	rcu_read_unlock();
  
- 	cache = kmalloc(sizeof(struct devname_cache), GFP_KERNEL);
--	if (!cache)
--		return "NODEV-ALLOCFAILURE"; /* Something non-NULL */
-+	if (!cache) {
-+		__bdevname(device, devname);
-+		return;
-+	}
- 	bd = bdget(device);
- 	spin_lock(&devname_cache_lock);
- 	if (devcache[i]) {
- 		if (devcache[i]->device == device) {
- 			kfree(cache);
- 			bdput(bd);
--			ret = devcache[i]->devname;
-+			memcpy(devname, devcache[i]->devname, BDEVNAME_SIZE);
- 			spin_unlock(&devname_cache_lock);
--			return ret;
-+			return;
- 		}
- 		kfree_rcu(devcache[i], rcu);
+-	cache = kmalloc(sizeof(struct devname_cache), GFP_KERNEL);
+-	if (!cache) {
++	/* slowly get the name */
++	bd = bdget(device);
++	if (bd) {
++		bdevname(bd, devname);
++		bdput(bd);
++	} else {
+ 		__bdevname(device, devname);
+ 		return;
  	}
-@@ -2480,9 +2478,8 @@ const char *jbd2_dev_to_name(dev_t device)
- 	} else
- 		__bdevname(device, cache->devname);
- 	rcu_assign_pointer(devcache[i], cache);
--	ret = cache->devname;
-+	memcpy(devname, cache->devname, BDEVNAME_SIZE);
- 	spin_unlock(&devname_cache_lock);
--	return ret;
+-	bd = bdget(device);
+-	spin_lock(&devname_cache_lock);
+-	if (devcache[i]) {
+-		if (devcache[i]->device == device) {
+-			kfree(cache);
+-			bdput(bd);
+-			memcpy(devname, devcache[i]->devname, BDEVNAME_SIZE);
+-			spin_unlock(&devname_cache_lock);
+-			return;
+-		}
+-		kfree_rcu(devcache[i], rcu);
+-	}
++
++	/* put the name to the cache */
++	cache = kmalloc(sizeof(struct devname_cache), GFP_KERNEL);
++	if (!cache)
++		return;
++
++	memcpy(cache->devname, devname, BDEVNAME_SIZE);
+ 	cache->device = device;
+-	if (bd) {
+-		bdevname(bd, cache->devname);
+-		bdput(bd);
+-	} else
+-		__bdevname(device, cache->devname);
+-	rcu_assign_pointer(devcache[i], cache);
+-	memcpy(devname, cache->devname, BDEVNAME_SIZE);
+-	spin_unlock(&devname_cache_lock);
++	cache = xchg(&devcache[i], cache);
++
++	/* free old cache by RCU */
++	if (cache)
++		kfree_rcu(cache, rcu);
  }
  EXPORT_SYMBOL(jbd2_dev_to_name);
- 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 59d3ef1..2959ead 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -6,6 +6,7 @@
- #include <linux/percpu.h>
- #include <linux/hardirq.h>
- #include <linux/perf_event.h>
-+#include <linux/jbd2.h>
- 
- struct trace_array;
- struct tracer;
-@@ -28,6 +29,15 @@ const char *ftrace_print_flags_seq(struct trace_seq *p, const char *delim,
- const char *ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
- 				     const struct trace_print_flags *symbol_array);
- 
-+static inline const char *ftrace_print_bdevname(struct trace_seq *p, dev_t device)
-+{
-+	char *bdevname = trace_seq_reserve(p, BDEVNAME_SIZE);
-+
-+	jbd2_dev_to_name(device, bdevname);
-+
-+	return bdevname;
-+}
-+
- #if BITS_PER_LONG == 32
- const char *ftrace_print_symbols_seq_u64(struct trace_seq *p,
- 					 unsigned long long val,
-diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
-index 4ecb7b1..964f375 100644
---- a/include/linux/jbd2.h
-+++ b/include/linux/jbd2.h
-@@ -1331,11 +1331,11 @@ extern int jbd_blocks_per_page(struct inode *inode);
- #define BUFFER_TRACE2(bh, bh2, info)	do {} while (0)
- #define JBUFFER_TRACE(jh, info)	do {} while (0)
- 
--/* 
-- * jbd2_dev_to_name is a utility function used by the jbd2 and ext4 
-+/*
-+ * jbd2_dev_to_name is a utility function used by the jbd2 and ext4
-  * tracing infrastructure to map a dev_t to a device name.
-  */
--extern const char *jbd2_dev_to_name(dev_t device);
-+extern void jbd2_dev_to_name(dev_t device, char *bdevname);
- 
- #endif	/* __KERNEL__ */
- 
-diff --git a/include/trace/events/jbd2.h b/include/trace/events/jbd2.h
-index bf16545..a9c8b44 100644
---- a/include/trace/events/jbd2.h
-+++ b/include/trace/events/jbd2.h
-@@ -27,7 +27,7 @@ TRACE_EVENT(jbd2_checkpoint,
- 	),
- 
- 	TP_printk("dev %s result %d",
--		  jbd2_dev_to_name(__entry->dev), __entry->result)
-+		  ftrace_print_bdevname(p, __entry->dev), __entry->result)
- );
- 
- DECLARE_EVENT_CLASS(jbd2_commit,
-@@ -49,7 +49,7 @@ DECLARE_EVENT_CLASS(jbd2_commit,
- 	),
- 
- 	TP_printk("dev %s transaction %d sync %d",
--		  jbd2_dev_to_name(__entry->dev), __entry->transaction,
-+		  ftrace_print_bdevname(p, __entry->dev), __entry->transaction,
- 		  __entry->sync_commit)
- );
- 
-@@ -101,7 +101,7 @@ TRACE_EVENT(jbd2_end_commit,
- 	),
- 
- 	TP_printk("dev %s transaction %d sync %d head %d",
--		  jbd2_dev_to_name(__entry->dev), __entry->transaction,
-+		  ftrace_print_bdevname(p, __entry->dev), __entry->transaction,
- 		  __entry->sync_commit, __entry->head)
- );
- 
-@@ -121,7 +121,8 @@ TRACE_EVENT(jbd2_submit_inode_data,
- 	),
- 
- 	TP_printk("dev %s ino %lu",
--		  jbd2_dev_to_name(__entry->dev), (unsigned long) __entry->ino)
-+		  ftrace_print_bdevname(p, __entry->dev),
-+		  (unsigned long) __entry->ino)
- );
- 
- TRACE_EVENT(jbd2_run_stats,
-@@ -158,7 +159,7 @@ TRACE_EVENT(jbd2_run_stats,
- 
- 	TP_printk("dev %s tid %lu wait %u running %u locked %u flushing %u "
- 		  "logging %u handle_count %u blocks %u blocks_logged %u",
--		  jbd2_dev_to_name(__entry->dev), __entry->tid,
-+		  ftrace_print_bdevname(p, __entry->dev), __entry->tid,
- 		  jiffies_to_msecs(__entry->wait),
- 		  jiffies_to_msecs(__entry->running),
- 		  jiffies_to_msecs(__entry->locked),
-@@ -194,7 +195,7 @@ TRACE_EVENT(jbd2_checkpoint_stats,
- 
- 	TP_printk("dev %s tid %lu chp_time %u forced_to_close %u "
- 		  "written %u dropped %u",
--		  jbd2_dev_to_name(__entry->dev), __entry->tid,
-+		  ftrace_print_bdevname(p, __entry->dev), __entry->tid,
- 		  jiffies_to_msecs(__entry->chp_time),
- 		  __entry->forced_to_close, __entry->written, __entry->dropped)
- );
-@@ -223,7 +224,7 @@ TRACE_EVENT(jbd2_cleanup_journal_tail,
- 	),
- 
- 	TP_printk("dev %s from %u to %u offset %lu freed %lu",
--		  jbd2_dev_to_name(__entry->dev), __entry->tail_sequence,
-+		  ftrace_print_bdevname(p, __entry->dev), __entry->tail_sequence,
- 		  __entry->first_tid, __entry->block_nr, __entry->freed)
- );
  
 -- 
 1.7.4.4
