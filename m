@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758762Ab1FPXlN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 19:41:13 -0400
-Received: from mail07-md.ns.itscom.net ([175.177.155.117]:57172 "EHLO
-	mail07-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756792Ab1FPXlM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 19:41:12 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
-To: Erez Zadok <ezk@fsl.cs.sunysb.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "viro@ZenIV.linux.org.uk Viro" <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "nbd@openwrt.org" <nbd@openwrt.org>, "neilb@suse.de" <neilb@suse.de>,
-        "hramrach@centrum.cz" <hramrach@centrum.cz>,
-        "jordipujolp@gmail.com" <jordipujolp@gmail.com>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>
-In-Reply-To: <BF42D8D9-B947-448A-8818-BCA786E75325@fsl.cs.sunysb.edu>
-References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu> <4540f7aa16724111bd792a1d577261c2@HUBCAS1.cs.stonybrook.edu> <954F11FF-339B-48E2-8358-A158DE1E53BC@fsl.cs.sunysb.edu> <b624059d70d546d4a4ecb940613235ab@HUBCAS2.cs.stonybrook.edu> <BF42D8D9-B947-448A-8818-BCA786E75325@fsl.cs.sunysb.edu>
-Date: Fri, 17 Jun 2011 08:41:03 +0900
-Message-ID: <15841.1308267663@jrobl>
+	id S1758781Ab1FPXoJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 19:44:09 -0400
+Received: from mail.perches.com ([173.55.12.10]:3054 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757062Ab1FPXoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 19:44:07 -0400
+Subject: Re: [PATCH 09/11] xen/xenbus: use printk_ratelimited() instead of
+ printk_ratelimit()
+From: Joe Perches <joe@perches.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        christian.dietrich@informatik.uni-erlangen.de
+In-Reply-To: <4DFA6EF7.9060702@goop.org>
+References: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
+	 <d2bc569719b3b1d8271d1f4b2c4080bbc7527e04.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
+	 <4DFA6EF7.9060702@goop.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Jun 2011 16:44:05 -0700
+Message-ID: <1308267845.12072.15.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2011-06-16 at 14:00 -0700, Jeremy Fitzhardinge wrote:
+> On 06/16/2011 05:14 AM, Manuel Zerpies wrote:
+> > Since printk_ratelimit() shouldn't be used anymore (see comment in
+> > include/linux/printk.h), replace it with printk_ratelimited()
+> Looks OK to me, but please fix the indentation of the rest of the
+> statement to match.
+[]
+> > diff --git a/drivers/xen/xenbus/xenbus_xs.c b/drivers/xen/xenbus/xenbus_xs.c
+[]
+> > @@ -270,8 +271,7 @@ static void *xs_talkv(struct xenbus_transaction t,
+> >  	}
+> >  
+> >  	if (msg.type != type) {
+> > -		if (printk_ratelimit())
+> > -			printk(KERN_WARNING
+> > +		`printk_ratelimited(KERN_WARNING
 
-Erez Zadok:
-> My point is that Overlayfs has ENOUGH useful features NOW to be merged. =
-> What stops it from going in?! More freeping creaturisms? Why do we need =
-	:::
-
-As I wrote before, I have no objection about merging overlayfs or
-UnionMount. My point is they have unioning feature but don't have some
-of essential filesystem features. I don't think it is a trade-off or
-something.
-As you and other people wrote, many years passed in unioning. The very
-basic features are already achieved in very early stage. The point is
-how normal filesystem features are designed and implemented.
-I am discussing about the design and feature of unioning, but don't stop
-merging overlayfs.
-
-
-> We cannot ask Overlayfs to support all of the features that other =
-> solutions have, b/c it may take a very long time to get those in when =
-
-Agreed, particularly union-specifc extra features.
-Actually I am not asking overlayfs to support all features aufs has. You
-may think what I am doing as a design review.
+Appears that it's not compile tested?
+A stray "`" got put before printk_ratelimited()
 
 
-> The vast majority of unioning users want 2 layers, one readonly, one =
-> read-write. Those who really want 3+ layers can use stack Overlayfs =
-> multiple times: yes it'd be less efficient, but so what? First we want =
-
-I don't think consuming stack space is efficiency issue.
-
-
-> We all have to accept a solution that's pretty good NOW but less than =
-> perfect.  Otherwise we'll continue to have these debates and discussions =
-> for years on end.
-
-If you think merging overlayfs means the end of discussion, then I won't
-agree. It may be a beginning.
-
-
-J. R. Okajima
