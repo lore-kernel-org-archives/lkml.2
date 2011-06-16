@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932649Ab1FPUHz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 16:07:55 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:52274
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	id S932556Ab1FPUEi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 16:04:38 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:32973
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932322Ab1FPUCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 16:02:01 -0400
+	id S932351Ab1FPUCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 16:02:04 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 64/77] Staging: hv: netvsc: Cleanup error return values in netvsc_init_recv_buf()
-Date: Thu, 16 Jun 2011 13:17:37 -0700
-Message-Id: <1308255470-3826-64-git-send-email-kys@microsoft.com>
+Subject: [PATCH 65/77] Staging: hv: netvsc: Cleanup error returns in netvsc_connect_vsp()
+Date: Thu, 16 Jun 2011 13:17:38 -0700
+Message-Id: <1308255470-3826-65-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1308255470-3826-1-git-send-email-kys@microsoft.com>
 References: <1308255393-3785-1-git-send-email-kys@microsoft.com>
@@ -30,14 +30,14 @@ Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/netvsc.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/staging/hv/netvsc.c |   10 ++++------
+ 1 files changed, 4 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
-index 14c2203..b640e08 100644
+index b640e08..1bca667 100644
 --- a/drivers/staging/hv/netvsc.c
 +++ b/drivers/staging/hv/netvsc.c
-@@ -207,7 +207,7 @@ static int netvsc_init_recv_buf(struct hv_device *device)
+@@ -323,7 +323,7 @@ static int netvsc_connect_vsp(struct hv_device *device)
  	if (!net_device) {
  		dev_err(&device->device, "unable to get net device..."
  			   "device being destroyed?");
@@ -45,43 +45,35 @@ index 14c2203..b640e08 100644
 +		return -ENODEV;
  	}
  
- 	net_device->recv_buf =
-@@ -216,7 +216,7 @@ static int netvsc_init_recv_buf(struct hv_device *device)
- 	if (!net_device->recv_buf) {
- 		dev_err(&device->device, "unable to allocate receive "
- 			"buffer of size %d", net_device->recv_buf_size);
--		ret = -1;
-+		ret = -ENOMEM;
- 		goto cleanup;
- 	}
+ 	init_packet = &net_device->channel_init_pkt;
+@@ -354,13 +354,13 @@ static int netvsc_connect_vsp(struct hv_device *device)
  
-@@ -269,7 +269,7 @@ static int netvsc_init_recv_buf(struct hv_device *device)
- 			   "initialzation with NetVsp - status %d",
- 			   init_packet->msg.v1_msg.
- 			   send_recv_buf_complete.status);
+ 	if (init_packet->msg.init_msg.init_complete.status !=
+ 	    NVSP_STAT_SUCCESS) {
 -		ret = -1;
 +		ret = -EINVAL;
  		goto cleanup;
  	}
  
-@@ -281,7 +281,7 @@ static int netvsc_init_recv_buf(struct hv_device *device)
- 	net_device->recv_section = kmalloc(net_device->recv_section_cnt
- 		* sizeof(struct nvsp_1_receive_buffer_section), GFP_KERNEL);
- 	if (net_device->recv_section == NULL) {
+ 	if (init_packet->msg.init_msg.init_complete.
+ 	    negotiated_protocol_ver != NVSP_PROTOCOL_VERSION_1) {
 -		ret = -1;
-+		ret = -EINVAL;
++		ret = -EPROTO;
  		goto cleanup;
  	}
- 
-@@ -297,7 +297,7 @@ static int netvsc_init_recv_buf(struct hv_device *device)
- 	 */
- 	if (net_device->recv_section_cnt != 1 ||
- 	    net_device->recv_section->offset != 0) {
+ 	/* Send the ndis version */
+@@ -381,10 +381,8 @@ static int netvsc_connect_vsp(struct hv_device *device)
+ 				sizeof(struct nvsp_message),
+ 				(unsigned long)init_packet,
+ 				VM_PKT_DATA_INBAND, 0);
+-	if (ret != 0) {
 -		ret = -1;
-+		ret = -EINVAL;
++	if (ret != 0)
  		goto cleanup;
- 	}
+-	}
  
+ 	/* Post the big receive buffer to NetVSP */
+ 	ret = netvsc_init_recv_buf(device);
 -- 
 1.7.4.1
 
