@@ -1,68 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865Ab1FPQ2v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 12:28:51 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:40767 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756506Ab1FPQ2s (ORCPT
+	id S1757095Ab1FPQps (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 12:45:48 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34075 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756326Ab1FPQpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 12:28:48 -0400
-Date: Thu, 16 Jun 2011 19:28:40 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Tatyana Brokhman <tlinder@codeaurora.org>
-Cc: greg@kroah.com, linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        balbi@ti.com, ablay@codeaurora.org, Amit Blay <ablay@qualcomm.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH/RFC 5/5] usb: Add support for streams alloc/dealloc to
- devio.c
-Message-ID: <20110616162839.GY12230@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1308231068-24038-2-git-send-email-tlinder@codeaurora.org>
- <1308231068-24038-6-git-send-email-tlinder@codeaurora.org>
+	Thu, 16 Jun 2011 12:45:45 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 10/29] gma500: 2D acceleration tidying
+To: greg@kroah.com, linux-kernel@vger.kernel.org
+Date: Thu, 16 Jun 2011 17:34:13 +0100
+Message-ID: <20110616160912.6039.80850.stgit@localhost.localdomain>
+In-Reply-To: <20110616160104.6039.44019.stgit@localhost.localdomain>
+References: <20110616160104.6039.44019.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="iDgFKLa5Kp4Ejml3"
-Content-Disposition: inline
-In-Reply-To: <1308231068-24038-6-git-send-email-tlinder@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Alan Cox <alan@linux.intel.com>
 
---iDgFKLa5Kp4Ejml3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+We have a FIXME to do the power management for which the framework now
+exists, and we also need to deal with an erratum. Some operations exactly 8
+pixels wide or high fail. The work around is to do two smaller ones (see
+the Intel released X driver bits) but for console quite frankly if it's
+8bits wide and/or high its not worth it so fall back.
 
-On Thu, Jun 16, 2011 at 04:31:07PM +0300, Tatyana Brokhman wrote:
-> Allow user space applications such as LIBUSB, to request
-> streams alloc/dealloc from HCD that implements XHCI.
->=20
-> Signed-off-by: Amit Blay <ablay@qualcomm.com>
-> Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-other than what Alan said, this needs major splitting. This patch is too
-big. First we need to discuss the ABI details with the guys at
-libusb-devel, then we implement.
+ drivers/staging/gma500/psb_2d.c |   19 +++++++++++++------
+ 1 files changed, 13 insertions(+), 6 deletions(-)
 
---=20
-balbi
+diff --git a/drivers/staging/gma500/psb_2d.c b/drivers/staging/gma500/psb_2d.c
+index c3d7085..494bad5 100644
+--- a/drivers/staging/gma500/psb_2d.c
++++ b/drivers/staging/gma500/psb_2d.c
+@@ -183,10 +183,14 @@ static void psbfb_fillrect_accel(struct fb_info *info,
+ 		cfb_fillrect(info, r);
+ 		return;
+ 	}
+-
++	if (!gma_power_begin(dev, false)) {
++		cfb_fillrect(info, r);
++		return;
++	}
+ 	psb_accel_2d_fillrect(dev_priv,
+ 			      offset, stride, format,
+ 			      r->dx, r->dy, r->width, r->height, r->color);
++	gma_power_end(dev);
+ }
+ 
+ void psbfb_fillrect(struct fb_info *info,
+@@ -198,9 +202,7 @@ void psbfb_fillrect(struct fb_info *info,
+ 	if (1 || (info->flags & FBINFO_HWACCEL_DISABLED))
+ 		return cfb_fillrect(info, rect);
+ 
+-	/*psb_check_power_state(dev, PSB_DEVICE_SGX); */
+ 	psbfb_fillrect_accel(info, rect);
+-	/* Drop power again here on MRST FIXMEAC */
+ }
+ 
+ static u32 psb_accel_2d_copy_direction(int xdir, int ydir)
+@@ -331,10 +333,15 @@ static void psbfb_copyarea_accel(struct fb_info *info,
+ 		return;
+ 	}
+ 
++	if (!gma_power_begin(dev, false)) {
++		cfb_copyarea(info, a);
++		return;
++	}
+ 	psb_accel_2d_copy(dev_priv,
+ 			  offset, stride, src_format,
+ 			  offset, stride, dst_format,
+ 			  a->sx, a->sy, a->dx, a->dy, a->width, a->height);
++	gma_power_end(dev);
+ }
+ 
+ void psbfb_copyarea(struct fb_info *info,
+@@ -343,12 +350,12 @@ void psbfb_copyarea(struct fb_info *info,
+ 	if (unlikely(info->state != FBINFO_STATE_RUNNING))
+ 		return;
+ 
+-	if (info->flags & FBINFO_HWACCEL_DISABLED)
++        /* Avoid the 8 pixel erratum */
++	if (region->width == 8 || region->height == 8 ||
++	        (info->flags & FBINFO_HWACCEL_DISABLED))
+ 		return cfb_copyarea(info, region);
+ 
+-	/* psb_check_power_state(dev, PSB_DEVICE_SGX); */
+ 	psbfb_copyarea_accel(info, region);
+-	/* Need to power back off here for MRST FIXMEAC */
+ }
+ 
+ void psbfb_imageblit(struct fb_info *info, const struct fb_image *image)
 
---iDgFKLa5Kp4Ejml3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN+i83AAoJEAv8Txj19kN1lYwH+wSsGk19fP/wu+XSFui1dsEp
-fNJYLQ7Uqzt1Cyh3DMXF++MDFFaUUx7DPb54m8+BvX+hMf3swXhqNUOBYXCq5MxX
-+hqXkIgVgeR1dxI47L1BnbloCsS82AXij+WBrtMwNYqzT9tbGclZ+A0yOoFkrAH5
-X5QkZY01advbrkq47UZHeEqv7iuPKW7NV42XEsM5ta1WytCxINF8fQ2glsmJcTF/
-ZCF39MFEWNi7jkqR0ceVwxZsgQ7W5EA+pUPF56JJr/nGf+sc/wqy9NmWU+kdAOQ6
-vWWPA4tJJLibRXfunxVmvHCrSBw+NEuatmFGOtgeNgzh7cbIUbiwM+3bI8oBPQ0=
-=Mvi1
------END PGP SIGNATURE-----
-
---iDgFKLa5Kp4Ejml3--
