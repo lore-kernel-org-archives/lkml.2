@@ -1,37 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab1FPGgk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 02:36:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20007 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752034Ab1FPGgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 02:36:38 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20110615144823.GA2806@opensource.wolfsonmicro.com>
-References: <20110615144823.GA2806@opensource.wolfsonmicro.com> <1306921767-31115-1-git-send-email-broonie@opensource.wolfsonmicro.com> <5194.1308074912@redhat.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, grant@secretlab.ca
-Subject: Re: [PATCH] FRV: Hook up gpiolib support
-Date: Thu, 16 Jun 2011 07:36:31 +0100
-Message-ID: <19624.1308206191@redhat.com>
+	id S1753097Ab1FPGiU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 02:38:20 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:53505 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751049Ab1FPGiQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 02:38:16 -0400
+From: Xiangliang Yu <yuxiangl@marvell.com>
+To: Jack Wang <jack_wang@usish.com>,
+        "'James Bottomley'" <James.Bottomley@HansenPartnership.com>
+CC: "yxlraid@gmail.com" <yxlraid@gmail.com>,
+        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
+        "maciej.trela@intel.com" <maciej.trela@intel.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jacky Feng <jfeng@marvell.com>
+Date: Wed, 15 Jun 2011 23:37:41 -0700
+Subject: RE: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
+Thread-Topic: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
+Thread-Index: AcwrIR/qdpMMo2uOTdi6EtZ/SnmPkgAAZ5KAACgYoPAAAOfC4AABCYdAAABOEGAAA867gAAA6NjQAAMaV6AAAIc6oA==
+Message-ID: <F766E4F80769BD478052FB6533FA745D19FAE66D88@SC-VEXCH4.marvell.com>
+References: <1308064628-11826-1-git-send-email-yxlraid@gmail.com>
+ <1308065367.2401.24.camel@mulgrave>
+ <F766E4F80769BD478052FB6533FA745D19FAE669AF@SC-VEXCH4.marvell.com>
+ <1308117450.2329.31.camel@mulgrave>
+ <F766E4F80769BD478052FB6533FA745D19FAE66AAF@SC-VEXCH4.marvell.com>
+ <637AF86F1A314F15B816411A580575F0@usish.com.cn>
+ <F766E4F80769BD478052FB6533FA745D19FAE66CAE@SC-VEXCH4.marvell.com>
+ <51A55E816E3847EF97FE4E849A572717@usish.com.cn>
+ <F766E4F80769BD478052FB6533FA745D19FAE66CCA@SC-VEXCH4.marvell.com>
+ <C8FBA6A948D643679B01520A89FAC48A@usish.com.cn>
+ <F766E4F80769BD478052FB6533FA745D19FAE66D1E@SC-VEXCH4.marvell.com>
+ <E3CF09ECAD244C00A4C096DB374E140E@usish.com.cn>
+In-Reply-To: <E3CF09ECAD244C00A4C096DB374E140E@usish.com.cn>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+> >[Jack Wang]
+> >I don't think the statement below is error:
+> >child->linkrate = min(parent_phy->linkrate, child->max_linkrate);
 
-> Could you be more specific about the issue you see here?
+The parent_phy is same to child_phy, I don't think it's right.
 
-I was specific:
+>> Yes, you can test like this.
+>> >Then expander1's linkrate will set to 3G, and expander2's linkrate will
+set
+>> >to 6G, that is correct.
+>> yes
+>> > But the connection rate will be 3G from hba to
+>> >expander2.
+>> How to configure the connection rate?
+>> Now, MVSAS driver get 6G from sas_ex_get_linkrate function, and set
+linkrate
+>> of OPEN address frame to the value. right?
+>> 
+>> --
+>[Jack Wang] 
+>Connection rate is auto, link layer will insert deletable primitives to do
+>rate matching (sas2r15 7.14).
 
-	Take gpio_get_value() for instance, it requires __gpio_get_value() -
-	which is defined by the asm-generic header - but is used by
-	gpio_get_value_cansleep() in the asm-generic header.
+>Yes, you should set the linkrate to that value .
 
-gpio_get_value() is defined in the arch header.
+OK.MVSAS driver seem right. But, the problem is command fail because of link error, that is why I commit this patch. And my patch work fine.
+You can reproduce the issue and fix it. Thanks!
 
-David
