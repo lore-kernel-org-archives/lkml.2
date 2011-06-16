@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923Ab1FPEbx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 00:31:53 -0400
-Received: from sr-smtp.usish.com ([210.5.144.203]:43830 "EHLO
-	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731Ab1FPEbw (ORCPT
+	id S1751943Ab1FPEdM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 00:33:12 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42323 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751049Ab1FPEdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 00:31:52 -0400
-From: "Jack Wang" <jack_wang@usish.com>
-To: "'Xiangliang Yu'" <yuxiangl@marvell.com>,
-        "'James Bottomley'" <James.Bottomley@HansenPartnership.com>
-Cc: <yxlraid@gmail.com>, <lucas.demarchi@profusion.mobi>,
-        <maciej.trela@intel.com>, <dan.j.williams@intel.com>,
-        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "'Jacky Feng'" <jfeng@marvell.com>
-References: <1308064628-11826-1-git-send-email-yxlraid@gmail.com> <1308065367.2401.24.camel@mulgrave> <F766E4F80769BD478052FB6533FA745D19FAE669AF@SC-VEXCH4.marvell.com> <1308117450.2329.31.camel@mulgrave> <F766E4F80769BD478052FB6533FA745D19FAE66AAF@SC-VEXCH4.marvell.com> <637AF86F1A314F15B816411A580575F0@usish.com.cn> <F766E4F80769BD478052FB6533FA745D19FAE66CAE@SC-VEXCH4.marvell.com> <51A55E816E3847EF97FE4E849A572717@usish.com.cn> <F766E4F80769BD478052FB6533FA745D19FAE66CCA@SC-VEXCH4.marvell.com>
-Subject: RE: [PATCH] [SCSI] LIBSAS: fix libsas link error issue
-Date: Thu, 16 Jun 2011 12:31:34 +0800
-Message-ID: <C8FBA6A948D643679B01520A89FAC48A@usish.com.cn>
+	Thu, 16 Jun 2011 00:33:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: AcwrIR/qdpMMo2uOTdi6EtZ/SnmPkgAAZ5KAACgYoPAAAOfC4AABCYdAAABOEGAAA867gA==
-In-Reply-To: <F766E4F80769BD478052FB6533FA745D19FAE66CCA@SC-VEXCH4.marvell.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6090
+In-Reply-To: <47FAB15C-B113-40FD-9CE0-49566AACC0DF@suse.de>
+References: <47FAB15C-B113-40FD-9CE0-49566AACC0DF@suse.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 15 Jun 2011 21:32:45 -0700
+Message-ID: <BANLkTimubRW2Az2MmRbgV+iTB+s6UEF5-w@mail.gmail.com>
+Subject: Re: Oops in VMA code
+To: Alexander Graf <agraf@suse.de>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > [Jack Wang]
-> >It's the same, sas_ex_get_linkrate use DISCOVER response as linkrate.
-> But the function have problem, actually, the error statement is:
-> child->linkrate = min(parent_phy->linkrate, child->max_linkrate);
-> its mean like this:
-> child->linkrate = min(child_phy->linkrate,
-> max(parent->max_linkrate,child_phy->linkrate));
-> and if parent->max_linkrate(3Gbps) is less than
-child_phy->linkrate(6Gbps),
-> the statement will be change this:
-> child->linkrate = child_phy->linkrate, forget the parent linkrate.
-[Jack Wang] 
-I don't think the statement below is error:
-child->linkrate = min(parent_phy->linkrate, child->max_linkrate);
+On Wed, Jun 15, 2011 at 2:59 PM, Alexander Graf <agraf@suse.de> wrote:
+> Hi memory management experts,
+>
+> I just had this crash while compiling code on my PPC G5. I was running my PPC KVM tree, which was pretty much 06e86849cf4019945a106913adb9ff0abcc01770 plus a few unrelated KVM patches. User space is 64-bit.
+>
+> Is this a known issue or did I hit something completely unexpected?
 
-parent_phy->linkrate is came from sas_set_ex_phy which will set the linkrate
-to negotiated logical linkrate. For your eg: you topo like this:
-hba(3G)---expander1(6G)---expander2(6G):
+It doesn't look at all familiar to me, nor does google really seem to
+find anything half-way related.
 
-Then expander1's linkrate will set to 3G, and expander2's linkrate will set
-to 6G, that is correct. But the connection rate will be 3G from hba to
-expander2.
+In fact, the only thing that that oops makes me think is that we
+should get rid of that find_vma_prev() function these days (the vma
+list is doubly linked since commit 297c5eee3724, and the whole "look
+up prev" thing is some silly old stuff).
 
+But that's an entirely unrelated issue.
+
+Also, your disassembly and your gdb line lookup is apparently from
+some other kernel, because the addresses don't match. The actual
+running kernel actually says
+
+  NIP [c000000000190598] .do_munmap+0x138/0x3f0
+
+so it's do_munmap, not find_vma_prev(). Although gdb claiming
+find_vma_prev() might be from some inlining issue, of course.
+Regardless, it's useless for debugging - it's the do_munap()
+disassembly we'd want (but I'm no longer all that fluent in ppc
+assembly anyway, so ir probably wouldn't help).
+
+                           Linus
