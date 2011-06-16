@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932687Ab1FPVdc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 17:33:32 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44039 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758321Ab1FPVdb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 17:33:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com>
-References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe>
- <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com>
- <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
- <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
- <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
- <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com> <1308255972.17300.450.camel@schen9-DESK>
- <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com> <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
- <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 16 Jun 2011 14:26:41 -0700
-Message-ID: <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
-Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
- to mutex
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Andi Kleen <ak@linux.intel.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933141Ab1FPVlZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 17:41:25 -0400
+Received: from claw.goop.org ([74.207.240.146]:53926 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933117Ab1FPVlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 17:41:15 -0400
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH RFC 0/7] x86: convert ticketlocks to C and remove duplicate code
+Date: Thu, 16 Jun 2011 14:40:47 -0700
+Message-Id: <cover.1308259496.git.jeremy.fitzhardinge@citrix.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 2:06 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Jun 16, 2011 at 2:05 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> This patch is UNTESTED!
->
-> It was also UNATTACHED!
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-Hmm. And it doesn't work. We deadlock when we free the anon_vma
-because the *freeing* path wants to take the anon_vma lock. See that
-horrid code in anon_vma_free().
+Hi all,
 
-So now we now hold the root over the whole series of frees, and get an
-instant deadlock.
+I'm proposing this series for 3[.0].1.
 
-We also can happen to free the root anon_vma before we release the
-lock in it, which is another slight problem ;)
+This is a repost of a series to clean up the x86 ticket lock
+code by converting it to a mostly C implementation and removing
+lots of duplicate code relating to the ticket size.
 
-So the unlink_anon_vmas() case is actually much more complicated than
-the clone case.
+The last time I posted this series, the only significant comments
+were from Nick Piggin, specifically relating to:
 
-In other words, just forget that second patch. I'll have to think about it.
+ 1. A wrongly placed barrier on unlock (which may have allowed the
+    compiler to move things out of the locked region.  I went
+    belt-and-suspenders by having two barriers to prevent motion
+    into or out of the locked region.
 
-                              Linus
+ 2. With NR_CPUS < 256 the ticket size is 8 bits.  The compiler doesn't
+    use the same trick as the hand-coded asm to directly compare the high
+    and low bytes in the word, but does a bit of extra shuffling around.
+    However, the Intel optimisation guide and several x86 experts have
+    opined that its best to avoid the high-byte operations anyway, since
+    they will cause a partial word stall, and the gcc-generated code should
+    be better.
+
+    Overall the compiler-generated code is very similar to the hand-coded
+    versions, with the partial byte operations being the only significant
+    difference. (Curiously, gcc does generate a high-byte compare for me
+    in trylock, so it can if it wants to.)
+
+I've been running with this code in place for several months on 4 core
+systems without any problems.
+
+I couldn't measure a consistent performance difference between the two
+implemenations; there seemed to be +/- ~1% +/-, which is the level of
+variation I see from simply recompiling the kernel with slightly
+different code alignment.
+
+Overall, I think the large reduction in code size is a big win.
+
+Thanks,
+	J
+
+Jeremy Fitzhardinge (7):
+  x86/ticketlock: clean up types and accessors
+  x86/ticketlock: convert spin loop to C
+  x86/ticketlock: Use C for __ticket_spin_unlock
+  x86/ticketlock: make large and small ticket versions of spin_lock the
+    same
+  x86/ticketlock: make __ticket_spin_lock common
+  x86/ticketlock: make __ticket_spin_trylock common
+  x86/ticketlock: prevent memory accesses from reordered out of lock
+    region
+
+ arch/x86/include/asm/spinlock.h       |  147 ++++++++++++---------------------
+ arch/x86/include/asm/spinlock_types.h |   22 +++++-
+ 2 files changed, 74 insertions(+), 95 deletions(-)
+
+-- 
+1.7.5.4
+
