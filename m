@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110Ab1FPHLn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:11:43 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:49579 "EHLO
+	id S1757183Ab1FPHNx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:13:53 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:32996 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757061Ab1FPHLd (ORCPT
+	by vger.kernel.org with ESMTP id S1757063Ab1FPHLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Jun 2011 03:11:33 -0400
-X-Sasl-enc: nLNdvpjxGzvk6EdSq/pB2FTGKTcPi9ihUnKcfuLmf1Tk 1308208291
+X-Sasl-enc: lYPU+4kaCfH9yXLaVJpAgrUDne4NpAx30tAm6pnEE3hC 1308208292
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:29:11 2011
-Message-Id: <20110616002911.578747392@clark.kroah.org>
+Message-Id: <20110616002911.682941603@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:29:13 -0700
+Date: Wed, 15 Jun 2011 17:29:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Namhyung Kim <namhyung@gmail.com>,
-        NeilBrown <neilb@suse.de>
-Subject: [77/85] md/raid5: fix FUA request handling in ops_run_io()
+        Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [78/85] pata_cmd64x: fix PIO setup
 In-Reply-To: <20110616002917.GA3627@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,55 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Namhyung Kim <namhyung@gmail.com>
+From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
 
-commit b062962edb086011e94ec4d9eb3f6a6d814f2a8f upstream.
+commit a2bd62207af4be8f5fe815ff90cc309056407829 upstream.
 
-Commit e9c7469bb4f5 ("md: implment REQ_FLUSH/FUA support")
-introduced R5_WantFUA flag and set rw to WRITE_FUA in that case.
-However remaining code still checks whether rw is exactly same
-as WRITE or not, so FUAed-write ends up with being treated as
-READ. Fix it.
+Fix incorrect handling of recovery clocks value == 16 resulting
+in overclocked recovery timings & potentially underclocked active
+timings.
 
-This bug has been present since 2.6.37 and the fix is suitable for any
--stable kernel since then.  It is not clear why this has not caused
-more problems.
-
-Cc: Tejun Heo <tj@kernel.org>
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/raid5.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/ata/pata_cmd64x.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -446,7 +446,7 @@ static void ops_run_io(struct stripe_hea
- 		bi = &sh->dev[i].req;
+--- a/drivers/ata/pata_cmd64x.c
++++ b/drivers/ata/pata_cmd64x.c
+@@ -2,6 +2,7 @@
+  * pata_cmd64x.c 	- CMD64x PATA for new ATA layer
+  *			  (C) 2005 Red Hat Inc
+  *			  Alan Cox <alan@lxorguk.ukuu.org.uk>
++ *			  (C) 2009-2010 Bartlomiej Zolnierkiewicz
+  *
+  * Based upon
+  * linux/drivers/ide/pci/cmd64x.c		Version 1.30	Sept 10, 2002
+@@ -147,7 +148,9 @@ static void cmd64x_set_timing(struct ata
+ 	/* Now convert the clocks into values we can actually stuff into
+ 	   the chip */
  
- 		bi->bi_rw = rw;
--		if (rw == WRITE)
-+		if (rw & WRITE)
- 			bi->bi_end_io = raid5_end_write_request;
- 		else
- 			bi->bi_end_io = raid5_end_read_request;
-@@ -480,13 +480,13 @@ static void ops_run_io(struct stripe_hea
- 			bi->bi_io_vec[0].bv_offset = 0;
- 			bi->bi_size = STRIPE_SIZE;
- 			bi->bi_next = NULL;
--			if (rw == WRITE &&
-+			if ((rw & WRITE) &&
- 			    test_bit(R5_ReWrite, &sh->dev[i].flags))
- 				atomic_add(STRIPE_SECTORS,
- 					&rdev->corrected_errors);
- 			generic_make_request(bi);
- 		} else {
--			if (rw == WRITE)
-+			if (rw & WRITE)
- 				set_bit(STRIPE_DEGRADED, &sh->state);
- 			pr_debug("skip op %ld on disc %d for sector %llu\n",
- 				bi->bi_rw, i, (unsigned long long)sh->sector);
+-	if (t.recover > 1)
++	if (t.recover == 16)
++		t.recover = 0;
++	else if (t.recover > 1)
+ 		t.recover--;
+ 	else
+ 		t.recover = 15;
 
 
