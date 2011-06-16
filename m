@@ -1,54 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758781Ab1FPXoJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 19:44:09 -0400
-Received: from mail.perches.com ([173.55.12.10]:3054 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757062Ab1FPXoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 19:44:07 -0400
-Subject: Re: [PATCH 09/11] xen/xenbus: use printk_ratelimited() instead of
- printk_ratelimit()
-From: Joe Perches <joe@perches.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        christian.dietrich@informatik.uni-erlangen.de
-In-Reply-To: <4DFA6EF7.9060702@goop.org>
-References: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
-	 <d2bc569719b3b1d8271d1f4b2c4080bbc7527e04.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
-	 <4DFA6EF7.9060702@goop.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 Jun 2011 16:44:05 -0700
-Message-ID: <1308267845.12072.15.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1758786Ab1FPXpp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 19:45:45 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36093 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756118Ab1FPXpl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 19:45:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=QFDSj+NyST6ztnDLjg+wS+JOkaqhGNQDB5pAyERiy7Q7Irgt+PFdkhgvWXHbQHGnnQ
+         Fh1LKLLIz89lcArK5gker6Buc2clG9CLxSN6BXbwRry0l+MyfWU/WCs4jy4AyoZjxxZs
+         E7cw0MFZ7YCg0R3IqEzb+aOmpHKDGDgv3Okks=
+MIME-Version: 1.0
+In-Reply-To: <20110616233736.GA2344@broadcom.com>
+References: <1308176709-14765-1-git-send-email-Gregory.Dietsche@cuw.edu>
+ <20110616013615.GA14700@broadcom.com> <4DF96F22.5070508@cuw.edu> <20110616233736.GA2344@broadcom.com>
+From: Julian Calaby <julian.calaby@gmail.com>
+Date: Fri, 17 Jun 2011 09:45:21 +1000
+Message-ID: <BANLkTi=tLWXn7mMf-6pf-3gM6x8zX=WNtw@mail.gmail.com>
+Subject: Re: [PATCH] staging: brcm80211: return false if not a broadcom board
+To: Henry Ptasinski <henryp@broadcom.com>
+Cc: Greg Dietsche <gregory.dietsche@cuw.edu>,
+        "gregkh@suse.de" <gregkh@suse.de>, Brett Rudley <brudley@broadcom.com>,
+        Dowan Kim <dowan@broadcom.com>, Roland Vossen <rvossen@broadcom.com>,
+        Arend Van Spriel <arend@broadcom.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-16 at 14:00 -0700, Jeremy Fitzhardinge wrote:
-> On 06/16/2011 05:14 AM, Manuel Zerpies wrote:
-> > Since printk_ratelimit() shouldn't be used anymore (see comment in
-> > include/linux/printk.h), replace it with printk_ratelimited()
-> Looks OK to me, but please fix the indentation of the rest of the
-> statement to match.
-[]
-> > diff --git a/drivers/xen/xenbus/xenbus_xs.c b/drivers/xen/xenbus/xenbus_xs.c
-[]
-> > @@ -270,8 +271,7 @@ static void *xs_talkv(struct xenbus_transaction t,
-> >  	}
-> >  
-> >  	if (msg.type != type) {
-> > -		if (printk_ratelimit())
-> > -			printk(KERN_WARNING
-> > +		`printk_ratelimited(KERN_WARNING
+Henry,
 
-Appears that it's not compile tested?
-A stray "`" got put before printk_ratelimited()
+On Fri, Jun 17, 2011 at 09:37, Henry Ptasinski <henryp@broadcom.com> wrote:
+> How's this for a somewhat clearer implementation:
+>
+> static bool brcms_c_validboardtype(struct brcms_c_hw_info *wlc_hw)
+> {
+>        bool goodboard = true;
+>        uint boardrev = wlc_hw->boardrev;
+>
+>        if (wlc_hw->sih->boardvendor == PCI_VENDOR_ID_BROADCOM) {
 
+You could reduce indentation by having this be:
 
+if (wlc_hw->sih->boardvendor != PCI_VENDOR_ID_BROADCOM)
+    return true;
+
+>                /* validate boardrev */
+>                if (boardrev == 0)
+>                        goodboard = false;
+
+and remove the goodboard variable by having this return false immediately.
+
+>                else if (boardrev > 0xff) {
+
+You could also drop the else and have this as
+
+if (boardrev <= 0xff)
+    return true;
+
+>                        /* 4 bits each for board type, major, minor, and tiny
+>                        version numbers */
+>                        uint brt = (boardrev & 0xf000) >> 12;
+>                        uint b0 = (boardrev & 0xf00) >> 8;
+>                        uint b1 = (boardrev & 0xf0) >> 4;
+>                        uint b2 = boardrev & 0xf;
+>
+>                        if ((brt > 2) || (brt == 0) || (b0 > 9) || (b0 == 0)
+>                                || (b1 > 9) || (b2 > 9))
+>                                goodboard = false;
+
+and return false here too.
+
+>                }
+>        }
+>
+>        return goodboard;
+
+then just return true here.
+
+> }
+
+Thanks,
+
+-- 
+Julian Calaby
+
+Email: julian.calaby@gmail.com
+Profile: http://www.google.com/profiles/julian.calaby/
+.Plan: http://sites.google.com/site/juliancalaby/
