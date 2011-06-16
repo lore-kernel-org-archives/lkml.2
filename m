@@ -1,131 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab1FPTfs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 15:35:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:32173 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757775Ab1FPTfq (ORCPT
+	id S1757744Ab1FPTbA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 15:31:00 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41076 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901Ab1FPTa6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 15:35:46 -0400
-Date: Thu, 16 Jun 2011 12:27:38 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net, randy.dunlap@oracle.com,
-        mhocko@suse.cz, torvalds@linux-foundation.org
-Subject: Re: [PATCH] um: Clean up vm-flags.h
-Message-Id: <20110616122738.697a7c12.randy.dunlap@oracle.com>
-In-Reply-To: <1308250867-12497-1-git-send-email-richard@nod.at>
-References: <1308250867-12497-1-git-send-email-richard@nod.at>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4DFA5941.00B6:SCFMA922111,ss=1,fgs=0
+	Thu, 16 Jun 2011 15:30:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=C2fjI8VjJmR22sKJwKAYi6Uur14cKa5BV6pIZcWj9eET93VVrEnxeXWiEvgC36Ql8y
+         xxtCPQZPW1y1cqJSgYVnlB24RPXSuRTCC26Grv9Ngby7hjrf9geo1XVMSz2BWpF5D001
+         2GzlzufjTucfZuly6ipK1ZRSDUD3FNFVjp4lM=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTin+gp2Cnxj8kHbHRmuoEgyDR8YeaQ@mail.gmail.com>
+References: <alpine.DEB.2.00.1105282010370.16617@ayla.of.borg>
+	<BANLkTimebx56-Wb5JPWxYVnND9gG8OVdsQ@mail.gmail.com>
+	<BANLkTin+gp2Cnxj8kHbHRmuoEgyDR8YeaQ@mail.gmail.com>
+Date: Thu, 16 Jun 2011 21:30:56 +0200
+X-Google-Sender-Auth: 1P2Qge3Vx-MlbFZkdIy5hJ9qmPY
+Message-ID: <BANLkTik5-H1fc2rk3QrwvQiF=7fELmE2CA@mail.gmail.com>
+Subject: Re: m68k: Convert to genirq (WIP)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Linux/m68k" <linux-m68k@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Jun 2011 21:01:07 +0200 Richard Weinberger wrote:
+On Wed, Jun 15, 2011 at 21:44, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Sat, Jun 4, 2011 at 19:56, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>> On Sat, May 28, 2011 at 20:32, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>>> Now sparc32 has beaten me, I pushed out my work in progress of converting m68k
+>>> to use the generic hardirq framework:
+>>>
+>>> git://git.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git m68k-genirq
+>>> http://git.kernel.org/?p=linux/kernel/git/geert/linux-m68k.git;a=shortlog;h=refs/heads/m68k-genirq
+>>
+>>> Next on my list is Amiga, which will cover autovectored and chained interrupts.
+>>
+>> I rebased to 3.0-rc1 and added (not in that order):
+>>  [10] m68k/irq: Add m68k_setup_irq_controller()
+>>  [11] m68k/irq: Adding missing "irq" offset in m68k_setup_irq_controller()
+>>  [12] m68k/irq: Fix auto and user chips and handlers
+>>  [13] m68k/amiga: Refactor amiints.c
+>>  [14] m68k/amiga: Convert Amiga to genirq
+>>  [15] m68k/amiga: Optimize interrupts using chain handlers
+>>
+>> It works on Amiga now, too. It can still use some optimizations in the
+>> irq_{enable,disable,ack,mask,mask_ack,unmask} area, as my BogoMIPS
+>> rating dropped by ca 2.5% and is now under 16, for a 25 MHz 68040.
+>
+> Seems like everything (Atari/ARAnyM and Amiga) still works when using
+> handle_simple_irq instead of handle_level_irq.
+> As a bonus, BogoMIPS is above 16 again.
 
-> There is no need to define VM_{STACK,DATA}_DEFAULT_FLAGS as
-> variable.
-> It's also useless to test for TIF_IA32 as 64bit UML has no
-> IA32 emulation.
-> 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> CC: randy.dunlap@oracle.com
+With handle_simple_irq(), we no longer need to define irq_{,un}mask() methods
+in our irq_chips. Hence the "old" m68k platform interrupt code seems to be much
+closer to genirq than I thought...
 
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+Does this make sense?
 
-Thanks.
+Gr{oetje,eeting}s,
 
-> CC: mhocko@suse.cz
-> CC: torvalds@linux-foundation.org
-> ---
->  arch/um/sys-x86_64/Makefile                 |    2 +-
->  arch/um/sys-x86_64/mem.c                    |   16 ----------------
->  arch/um/sys-x86_64/shared/sysdep/vm-flags.h |   26 ++++----------------------
->  3 files changed, 5 insertions(+), 39 deletions(-)
->  delete mode 100644 arch/um/sys-x86_64/mem.c
-> 
-> diff --git a/arch/um/sys-x86_64/Makefile b/arch/um/sys-x86_64/Makefile
-> index c1ea9eb..63fe0d2 100644
-> --- a/arch/um/sys-x86_64/Makefile
-> +++ b/arch/um/sys-x86_64/Makefile
-> @@ -4,7 +4,7 @@
->  # Licensed under the GPL
->  #
->  
-> -obj-y = bug.o bugs.o delay.o fault.o ldt.o mem.o ptrace.o ptrace_user.o \
-> +obj-y = bug.o bugs.o delay.o fault.o ldt.o ptrace.o ptrace_user.o \
->  	setjmp.o signal.o stub.o stub_segv.o syscalls.o syscall_table.o \
->  	sysrq.o ksyms.o tls.o
->  
-> diff --git a/arch/um/sys-x86_64/mem.c b/arch/um/sys-x86_64/mem.c
-> deleted file mode 100644
-> index 3f8df8a..0000000
-> --- a/arch/um/sys-x86_64/mem.c
-> +++ /dev/null
-> @@ -1,16 +0,0 @@
-> -/*
-> - * Copyright 2003 PathScale, Inc.
-> - *
-> - * Licensed under the GPL
-> - */
-> -
-> -#include "linux/mm.h"
-> -#include "asm/page.h"
-> -#include "asm/mman.h"
-> -
-> -unsigned long vm_stack_flags = __VM_STACK_FLAGS;
-> -unsigned long vm_stack_flags32 = __VM_STACK_FLAGS;
-> -unsigned long vm_data_default_flags = __VM_DATA_DEFAULT_FLAGS;
-> -unsigned long vm_data_default_flags32 = __VM_DATA_DEFAULT_FLAGS;
-> -unsigned long vm_force_exec32 = PROT_EXEC;
-> -
-> diff --git a/arch/um/sys-x86_64/shared/sysdep/vm-flags.h b/arch/um/sys-x86_64/shared/sysdep/vm-flags.h
-> index 3213edf..3978e55 100644
-> --- a/arch/um/sys-x86_64/shared/sysdep/vm-flags.h
-> +++ b/arch/um/sys-x86_64/shared/sysdep/vm-flags.h
-> @@ -7,27 +7,9 @@
->  #ifndef __VM_FLAGS_X86_64_H
->  #define __VM_FLAGS_X86_64_H
->  
-> -#define __VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | VM_EXEC | \
-> -				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
-> -#define __VM_STACK_FLAGS 	(VM_GROWSDOWN | VM_READ | VM_WRITE | \
-> -				 VM_EXEC | VM_MAYREAD | VM_MAYWRITE | \
-> -				 VM_MAYEXEC)
-> -
-> -extern unsigned long vm_stack_flags, vm_stack_flags32;
-> -extern unsigned long vm_data_default_flags, vm_data_default_flags32;
-> -extern unsigned long vm_force_exec32;
-> -
-> -#ifdef TIF_IA32
-> -#define VM_DATA_DEFAULT_FLAGS \
-> -	(test_thread_flag(TIF_IA32) ? vm_data_default_flags32 : \
-> -	  vm_data_default_flags)
-> -
-> -#define VM_STACK_DEFAULT_FLAGS \
-> -	(test_thread_flag(TIF_IA32) ? vm_stack_flags32 : vm_stack_flags)
-> -#endif
-> -
-> -#define VM_DATA_DEFAULT_FLAGS vm_data_default_flags
-> -
-> -#define VM_STACK_DEFAULT_FLAGS vm_stack_flags
-> +#define VM_DATA_DEFAULT_FLAGS (VM_READ | VM_WRITE | VM_EXEC | \
-> +	VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
-> +#define VM_STACK_DEFAULT_FLAGS (VM_GROWSDOWN | VM_READ | VM_WRITE | \
-> +	VM_EXEC | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
->  
->  #endif
-> -- 
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
