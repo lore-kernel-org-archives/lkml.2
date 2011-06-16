@@ -1,64 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758156Ab1FPOHj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 10:07:39 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52154 "EHLO hera.kernel.org"
+	id S1758136Ab1FPOIJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 10:08:09 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52175 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755253Ab1FPOHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 10:07:37 -0400
-Date: Thu, 16 Jun 2011 14:07:31 GMT
+	id S1758037Ab1FPOIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 10:08:04 -0400
+Date: Thu, 16 Jun 2011 14:07:57 GMT
 From: tip-bot for Steven Rostedt <srostedt@redhat.com>
-Message-ID: <tip-406a733db0052fed66d17008430b6047ecea7b92@git.kernel.org>
+Message-ID: <tip-f6d4f08194d77c86fe3af6e2e4b9184347014926@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rostedt@goodmis.org, srostedt@redhat.com, tglx@linutronix.de
+        rostedt@goodmis.org, srostedt@redhat.com, jreiser@bitwagon.com,
+        tglx@linutronix.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, srostedt@redhat.com, tglx@linutronix.de
-In-Reply-To: <20110421023739.243651696@goodmis.org>
-References: <20110421023739.243651696@goodmis.org>
+        rostedt@goodmis.org, srostedt@redhat.com, jreiser@bitwagon.com,
+        tglx@linutronix.de
+In-Reply-To: <20110421023739.488093407@goodmis.org>
+References: <20110421023739.488093407@goodmis.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] ftrace/x86: Do not trace .discard.text section
-Git-Commit-ID: 406a733db0052fed66d17008430b6047ecea7b92
+Subject: [tip:perf/core] ftrace/recordmcount: Remove duplicate code to find mcount symbol
+Git-Commit-ID: f6d4f08194d77c86fe3af6e2e4b9184347014926
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Jun 2011 14:07:32 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Jun 2011 14:07:57 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  406a733db0052fed66d17008430b6047ecea7b92
-Gitweb:     http://git.kernel.org/tip/406a733db0052fed66d17008430b6047ecea7b92
+Commit-ID:  f6d4f08194d77c86fe3af6e2e4b9184347014926
+Gitweb:     http://git.kernel.org/tip/f6d4f08194d77c86fe3af6e2e4b9184347014926
 Author:     Steven Rostedt <srostedt@redhat.com>
-AuthorDate: Wed, 13 Apr 2011 16:43:29 -0400
+AuthorDate: Wed, 20 Apr 2011 20:47:34 -0400
 Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Tue, 17 May 2011 10:41:55 -0400
+CommitDate: Tue, 17 May 2011 10:41:59 -0400
 
-ftrace/x86: Do not trace .discard.text section
+ftrace/recordmcount: Remove duplicate code to find mcount symbol
 
-The section called .discard.text has tracing attached to it and is
-currently ignored by ftrace. But it does include a call to the mcount
-stub. Adding a notrace to the code keeps gcc from adding the useless
-mcount caller to it.
+The code in sift_rel_mcount() and nop_mcount() to get the mcount symbol
+number is identical. Replace the two locations with a call to a function
+that does the work.
 
-Link: http://lkml.kernel.org/r/20110421023739.243651696@goodmis.org
+Cc: John Reiser <jreiser@bitwagon.com>
+Link: http://lkml.kernel.org/r/20110421023739.488093407@goodmis.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/include/asm/setup.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ scripts/recordmcount.h |   51 +++++++++++++++++++++++++----------------------
+ 1 files changed, 27 insertions(+), 24 deletions(-)
 
-diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
-index db8aa19..647d8a0 100644
---- a/arch/x86/include/asm/setup.h
-+++ b/arch/x86/include/asm/setup.h
-@@ -88,7 +88,7 @@ void *extend_brk(size_t size, size_t align);
-  * executable.)
-  */
- #define RESERVE_BRK(name,sz)						\
--	static void __section(.discard.text) __used			\
-+	static void __section(.discard.text) __used notrace		\
- 	__brk_reservation_fn_##name##__(void) {				\
- 		asm volatile (						\
- 			".pushsection .brk_reservation,\"aw\",@nobits;" \
+diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
+index 22033d5..deb6a51 100644
+--- a/scripts/recordmcount.h
++++ b/scripts/recordmcount.h
+@@ -28,6 +28,7 @@
+ #undef __has_rel_mcount
+ #undef has_rel_mcount
+ #undef tot_relsize
++#undef get_mcountsym
+ #undef do_func
+ #undef Elf_Addr
+ #undef Elf_Ehdr
+@@ -56,6 +57,7 @@
+ # define has_rel_mcount		has64_rel_mcount
+ # define tot_relsize		tot64_relsize
+ # define do_func		do64
++# define get_mcountsym		get_mcountsym_64
+ # define is_fake_mcount		is_fake_mcount64
+ # define fn_is_fake_mcount	fn_is_fake_mcount64
+ # define MIPS_is_fake_mcount	MIPS64_is_fake_mcount
+@@ -85,6 +87,7 @@
+ # define has_rel_mcount		has32_rel_mcount
+ # define tot_relsize		tot32_relsize
+ # define do_func		do32
++# define get_mcountsym		get_mcountsym_32
+ # define is_fake_mcount		is_fake_mcount32
+ # define fn_is_fake_mcount	fn_is_fake_mcount32
+ # define MIPS_is_fake_mcount	MIPS32_is_fake_mcount
+@@ -237,6 +240,26 @@ static void append_func(Elf_Ehdr *const ehdr,
+ 	uwrite(fd_map, ehdr, sizeof(*ehdr));
+ }
+ 
++static unsigned get_mcountsym(Elf_Sym const *const sym0,
++			      Elf_Rel const *relp,
++			      char const *const str0)
++{
++	unsigned mcountsym = 0;
++
++	Elf_Sym const *const symp =
++		&sym0[Elf_r_sym(relp)];
++	char const *symname = &str0[w(symp->st_name)];
++	char const *mcount = gpfx == '_' ? "_mcount" : "mcount";
++
++	if (symname[0] == '.')
++		++symname;  /* ppc64 hack */
++	if (strcmp(mcount, symname) == 0 ||
++	    (altmcount && strcmp(altmcount, symname) == 0))
++		mcountsym = Elf_r_sym(relp);
++
++	return mcountsym;
++}
++
+ /*
+  * Look at the relocations in order to find the calls to mcount.
+  * Accumulate the section offsets that are found, and their relocation info,
+@@ -274,18 +297,8 @@ static uint_t *sift_rel_mcount(uint_t *mlocp,
+ 	unsigned t;
+ 
+ 	for (t = nrel; t; --t) {
+-		if (!mcountsym) {
+-			Elf_Sym const *const symp =
+-				&sym0[Elf_r_sym(relp)];
+-			char const *symname = &str0[w(symp->st_name)];
+-			char const *mcount = gpfx == '_' ? "_mcount" : "mcount";
+-
+-			if (symname[0] == '.')
+-				++symname;  /* ppc64 hack */
+-			if (strcmp(mcount, symname) == 0 ||
+-			    (altmcount && strcmp(altmcount, symname) == 0))
+-				mcountsym = Elf_r_sym(relp);
+-		}
++		if (!mcountsym)
++			mcountsym = get_mcountsym(sym0, relp, str0);
+ 
+ 		if (mcountsym == Elf_r_sym(relp) && !is_fake_mcount(relp)) {
+ 			uint_t const addend = _w(_w(relp->r_offset) - recval);
+@@ -342,18 +355,8 @@ static void nop_mcount(Elf_Shdr const *const relhdr,
+ 	for (t = nrel; t; --t) {
+ 		int ret = -1;
+ 
+-		if (!mcountsym) {
+-			Elf_Sym const *const symp =
+-				&sym0[Elf_r_sym(relp)];
+-			char const *symname = &str0[w(symp->st_name)];
+-			char const *mcount = gpfx == '_' ? "_mcount" : "mcount";
+-
+-			if (symname[0] == '.')
+-				++symname;  /* ppc64 hack */
+-			if (strcmp(mcount, symname) == 0 ||
+-			    (altmcount && strcmp(altmcount, symname) == 0))
+-				mcountsym = Elf_r_sym(relp);
+-		}
++		if (!mcountsym)
++			mcountsym = get_mcountsym(sym0, relp, str0);
+ 
+ 		if (mcountsym == Elf_r_sym(relp) && !is_fake_mcount(relp)) {
+ 			if (make_nop)
