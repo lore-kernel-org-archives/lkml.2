@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab1FPClH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jun 2011 22:41:07 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:60810 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752594Ab1FPClF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jun 2011 22:41:05 -0400
-Date: Thu, 16 Jun 2011 12:40:55 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the sound-asoc tree
-Message-Id: <20110616124055.520eb947.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__16_Jun_2011_12_40_55_+1000_VDGwzUN6.yx45y2."
+	id S1754832Ab1FPCoA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jun 2011 22:44:00 -0400
+Received: from mail08-md.ns.itscom.net ([175.177.155.118]:48842 "EHLO
+	mail08-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753399Ab1FPCn5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jun 2011 22:43:57 -0400
+From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
+To: Michal Suchanek <hramrach@centrum.cz>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Valerie Aurora <val@vaaconsulting.com>,
+        Andrew Morton <akpm@linux-foundation.org>, NeilBrown <neilb@suse.de>,
+        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        apw@canonical.com, nbd@openwrt.org, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu
+In-Reply-To: <BANLkTi=hvBBbZPBj5niUV9StSRRjmLtK8w@mail.gmail.com>
+References: <20110609125114.8dff08da.akpm@linux-foundation.org> <BANLkTi=uWDSw96v0Y4W94NZvgD=j=3r3zg@mail.gmail.com> <20110610100143.28037551@lxorguk.ukuu.org.uk> <8739jbjqa7.fsf@tucsk.pomaz.szeredi.hu> <11186.1308148376@jrobl> <87vcw7hz7y.fsf@tucsk.pomaz.szeredi.hu> <15402.1308154495@jrobl> <BANLkTi=hvBBbZPBj5niUV9StSRRjmLtK8w@mail.gmail.com>
+Date: Thu, 16 Jun 2011 11:43:46 +0900
+Message-ID: <18273.1308192226@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__16_Jun_2011_12_40_55_+1000_VDGwzUN6.yx45y2.
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+Michal Suchanek:
+> This is generally not possible in solutions that don't reserve any filename=
+> s.
+>
+> However, it should be possible to create whiteout of a non-existent
+> entry in a directory while it is locked without affecting userspace.
 
-Today's linux-next merge of the sound-asoc tree failed badly.  It seems
-that it has been rebased on top of next-20110615.   You cannot base a
-tree in linux-next on linux-next itself!
+Actually aufs generates a doubly whiteouted unique name dynamically for
+the target dir. For instance, when rmdir("dirA") aufs does,
+- lock i_mutex of the parent dir of dirA on the real fs
+- some verifycations for the parent-child relationship
+- some tests whether we can do rmdir
+- create whiteout for dirA
+- rename dirA to .wh..wh.XXXXXXXX (random value in hex), after making
+  sure the name doesn't exist
+- unlock the parent dir
+- return to VFS
+And then the async workqueue removes the .wh..wh.XXXXXXXX dir with some
+whiteouts under it.
 
-I have used the version of the sound-asoc tree from next-20110615 for
-today.
+It means the temporary whiteout name is,
+- always unique
+- always hidden (from users), even if it remains accidentally
+So even if an error happens in the async work, it doesn't matter.
+
+Additionally there is a userspace script called "auchk" which is like
+fsck for real fs. auchk script checks the logical consistency on the
+(writable) real fs, and removes the illegal whiteouts, remained
+pseudo-links, and remained temp files.
 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+> As an alternative way to perform atomic renames I would suggest
+> "fallthrough symlinks". If you want to rename an entry which is
 
---Signature=_Thu__16_Jun_2011_12_40_55_+1000_VDGwzUN6.yx45y2.
-Content-Type: application/pgp-signature
+Symlink?
+Is it a different thing from DCACHE_FALLTHRU in UnionMount?
+I am afraid a special symlink is fragile or dangerous.
+Its special meaning is valid in inner union world only, is it? If
+something in outer world gets changed, we may not follow the symlink
+anymore or follow something different unexpectedly. Is it acceptable?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJN+W03AAoJEDMEi1NhKgbsuFYH/1q6xNqrgCmEwbdx1gUi9dVa
-kSca289uwdG6OjpRfK7X+GN2vUYoG0rBeTbajmBH0lrfjkx7AdVc0KDVcnupbj8g
-/9IfLPYSTLwYaDj0RBD3WQgJ6oUSFAYdF0MF2XY1PeowVvjoSBlP0ydr1oV87ZjI
-+kLGEnhqo931OwR3kNc1HpYtA8oB3G4pZX1FQIjNW9a9v1PoWEA/nxM6RD06z72F
-NpVx4uOsw7HP7dvB8LtlfUpDXmgXmgTvjUwSk6aizTDlHyrDJFT1eTpIPYWnXCcS
-p+vCEwJRirlnASenoEPZJ0Oc4eut+7XgKnrEkB/Y0y988HdUmzM6Q6b6zPsUqqU=
-=YmQO
------END PGP SIGNATURE-----
-
---Signature=_Thu__16_Jun_2011_12_40_55_+1000_VDGwzUN6.yx45y2.--
+J. R. Okajima
