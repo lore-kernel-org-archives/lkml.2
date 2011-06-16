@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758546Ab1FPRzj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 13:55:39 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56140 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752823Ab1FPRzi convert rfc822-to-8bit (ORCPT
+	id S1755729Ab1FPTA3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 15:00:29 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36254 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754559Ab1FPTA0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 13:55:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Kc8STXE4ZUDpeU4C7d0uFuNdV37bF3o/LlauO5/HcGgPw+24qhHByPHcMyxB+kNp7a
-         bbgjDG5mop4ir5Xt4kpac8/MGVnrQKq3U99D9S6q6J2R4OAL2B1U99S7xFeIMygm+IIt
-         HjMTm4RZT8FJ8x2fL0KIerL/k8OykFpBvl65Y=
-MIME-Version: 1.0
-In-Reply-To: <20110615145527.4016.70157.stgit@bahia.local>
-References: <20110615145527.4016.70157.stgit@bahia.local>
-From: Bryan Donlan <bdonlan@gmail.com>
-Date: Thu, 16 Jun 2011 13:54:57 -0400
-Message-ID: <BANLkTimSC_OSrbekhM=wd2Gie4np3Q4F5A@mail.gmail.com>
-Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was Vpid:)
-To: Greg Kurz <gkurz@fr.ibm.com>
-Cc: akpm@linux-foundation.org, containers@lists.osdl.org,
-        linux-kernel@vger.kernel.org, serge@hallyn.com, daniel.lezcano@free.fr,
-        ebiederm@xmission.com, oleg@redhat.com, xemul@openvz.org,
-        Cedric Le Goater <clg@fr.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 16 Jun 2011 15:00:26 -0400
+Subject: Re: [PATCH 1/3] stop_machine: kill __stop_machine()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Tejun Heo <tj@kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1308245872.2682.369.camel@sbsiddha-MOBL3.sc.intel.com>
+References: <1308071218-5912-1-git-send-email-tj@kernel.org>
+	 <1308071218-5912-2-git-send-email-tj@kernel.org>
+	 <1308226372.13240.42.camel@twins>
+	 <1308245872.2682.369.camel@sbsiddha-MOBL3.sc.intel.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Thu, 16 Jun 2011 19:55:10 +0200
+Message-ID: <1308246910.13240.238.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 10:55, Greg Kurz <gkurz@fr.ibm.com> wrote:
-> Since pid namespaces were introduced, there's a recurring demand: how one
-> can correlate a pid from a child pid ns with a pid from a parent pid ns ?
-> The need arises in the LXC community when one wants to send a signal from
-> the host (aka. init_pid_ns context) to a container process for which one
-> only knows the pid inside the container.
->
-> In the future, this should be achievable thanks to Eric Biederman's setns()
-> syscall but there's still some work to be done to support pid namespaces:
->
-> https://lkml.org/lkml/2011/5/21/162
->
-> As stated by Serge Hallyn in:
->
-> http://sourceforge.net/mailarchive/message.php?msg_id=27424447
->
-> "There is nothing that gives you a 100% guaranteed correct race-free
-> correspondence right now.  You can look under /proc/<pid>/root/proc/ to
-> see the pids valid in the container, and you can relate output of
-> lxc-ps --forest to ps --forest output.  But nothing under /proc that I
-> know of tells you "this task is the same as that task".  You can't
-> even look at /proc/<pid> inode numbers since they are different
-> filesystems for each proc mount."
->
-> This patch adds a single line to /proc/self/status. Provided one has kept
-> track of its container tasks (with a cgroup like liblxc does for example),
-> he may correlate global pids and container pids. This is still racy but
-> definitely easier than what we have today.
+On Thu, 2011-06-16 at 10:37 -0700, Suresh Siddha wrote:
+> On Thu, 2011-06-16 at 05:12 -0700, Peter Zijlstra wrote:
+> > On Tue, 2011-06-14 at 19:06 +0200, Tejun Heo wrote:
+> > Please have a look at: 
+> > 
+> > ---
+> > commit d91309f69b7bdb64aeb30106fde8d18c5dd354b5
+> > Author: Peter Zijlstra <peterz@infradead.org>
+> > Date:   Fri Feb 11 22:07:46 2011 +0100
+> > 
+> >     x86: Fix text_poke_smp_batch() deadlock
+> >     
+> >     Fix this deadlock - we are already holding the mutex:
+> >     
+> ...
+> > diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+> > index 1236085..7038b95 100644
+> > --- a/arch/x86/kernel/alternative.c
+> > +++ b/arch/x86/kernel/alternative.c
+> > @@ -671,7 +671,7 @@ void __kprobes text_poke_smp_batch(struct text_poke_param *params, int n)
+> >  
+> >  	atomic_set(&stop_machine_first, 1);
+> >  	wrote_text = 0;
+> > -	stop_machine(stop_machine_text_poke, (void *)&tpp, NULL);
+> > +	__stop_machine(stop_machine_text_poke, (void *)&tpp, NULL);
+> >  }
+> >  
+> >  #if defined(CONFIG_DYNAMIC_FTRACE) || defined(HAVE_JUMP_LABEL)
+> > 
+> 
+> Peter, So it looks like we are allowing a new cpu to come online in
+> parallel, while we poke the text? Isn't it a problem? What am I missing?
 
-Although getting the in-namespace PID is a useful thing, wouldn't a
-truly race-free API be preferable? Any access by PID has the race
-condition in which the target process could die, and its PID get
-recycled between retrieving the PID and doing something with it.
-Perhaps a file-descriptor API would be better, such as something like
-this:
+the caller already did get_online_cpus(), 
 
-int openpid(int id, int flags);
-int rt_sigqueueinfo_fd(int process_fd, int sig, siginfo_t *info);
-int sigqueue_fd(int process_fd, int sig, const union sigval value); //
-glibc wrapper
+do_optimize_kprobes()
+  get_online_cpus()
+  arch_optimize_kprobes()
+    text_poke_smp_batch()
+  put_online_cpus()
 
-The opened process FD could be passed across a unix domain socket to a
-process outside the namespace, which could then send signals without
-knowing the in-namespace PID. This same API can be easily extended to
-cover other syscalls which may require PIDs as well.
+
