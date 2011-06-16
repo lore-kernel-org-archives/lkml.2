@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758196Ab1FPW2w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 18:28:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19984 "EHLO mx1.redhat.com"
+	id S1757542Ab1FPW2q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 18:28:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18816 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756689Ab1FPW2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 18:28:36 -0400
+	id S1757215Ab1FPW2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 18:28:43 -0400
 From: Glauber Costa <glommer@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
@@ -13,24 +13,26 @@ Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
         Anthony Liguori <aliguori@us.ibm.com>,
         Eric B Munson <emunson@mgebm.net>
-Subject: [PATCH v2 5/7] KVM-GST: KVM Steal time accounting
-Date: Thu, 16 Jun 2011 18:20:54 -0400
-Message-Id: <1308262856-5779-6-git-send-email-glommer@redhat.com>
+Subject: [PATCH v2 6/7] KVM-GST: adjust scheduler cpu power
+Date: Thu, 16 Jun 2011 18:20:55 -0400
+Message-Id: <1308262856-5779-7-git-send-email-glommer@redhat.com>
 In-Reply-To: <1308262856-5779-1-git-send-email-glommer@redhat.com>
 References: <1308262856-5779-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch accounts steal time time in kernel/sched.
-I kept it from last proposal, because I still see advantages
-in it: Doing it here will give us easier access from scheduler
-variables such as the cpu rq. The next patch shows an example of
-usage for it.
+This is a first proposal for using steal time information
+to influence the scheduler. There are a lot of optimizations
+and fine grained adjustments to be done, but it is working reasonably
+so far for me (mostly)
 
-Since functions like account_idle_time() can be called from
-multiple places, not only account_process_tick(), steal time
-grabbing is repeated in each account function separatedely.
+With this patch (and some host pinnings to demonstrate the situation),
+two vcpus with very different steal time (Say 80 % vs 1 %) will not get
+an even distribution of processes. This is a situation that can naturally
+arise, specially in overcommited scenarios. Previosly, the guest scheduler
+would wrongly think that all cpus have the same ability to run processes,
+lowering the overall throughput.
 
 Signed-off-by: Glauber Costa <glommer@redhat.com>
 CC: Rik van Riel <riel@redhat.com>
@@ -40,108 +42,125 @@ CC: Avi Kivity <avi@redhat.com>
 CC: Anthony Liguori <aliguori@us.ibm.com>
 CC: Eric B Munson <emunson@mgebm.net>
 ---
- kernel/sched.c |   53 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 53 insertions(+), 0 deletions(-)
+ arch/x86/Kconfig        |   12 ++++++++++++
+ kernel/sched.c          |   36 +++++++++++++++++++++++++++---------
+ kernel/sched_features.h |    4 ++--
+ 3 files changed, 41 insertions(+), 11 deletions(-)
 
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index da34972..b26f312 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -512,6 +512,18 @@ menuconfig PARAVIRT_GUEST
+ 
+ if PARAVIRT_GUEST
+ 
++config PARAVIRT_TIME_ACCOUNTING
++	bool "Paravirtual steal time accounting"
++	select PARAVIRT
++	default n
++	---help---
++	  Select this option to enable fine granularity task steal time 
++	  accounting. Time spent executing other tasks in parallel with
++	  the current vCPU is discounted from the vCPU power. To account for
++	  that, there can be a small performance impact.
++
++	  If in doubt, say N here.
++
+ source "arch/x86/xen/Kconfig"
+ 
+ config KVM_CLOCK
 diff --git a/kernel/sched.c b/kernel/sched.c
-index 3f2e502..fa983c6 100644
+index fa983c6..8513898 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -75,6 +75,7 @@
- #include <asm/tlb.h>
- #include <asm/irq_regs.h>
- #include <asm/mutex.h>
-+#include <asm/paravirt.h>
- 
- #include "sched_cpupri.h"
- #include "workqueue_sched.h"
-@@ -528,6 +529,7 @@ struct rq {
- #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+@@ -530,6 +530,9 @@ struct rq {
  	u64 prev_irq_time;
  #endif
-+	u64 prev_steal_time;
+ 	u64 prev_steal_time;
++#ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
++	u64 prev_steal_time_acc;
++#endif
  
  	/* calc_load related fields */
  	unsigned long calc_load_update;
-@@ -3705,6 +3707,49 @@ unsigned long long thread_group_sched_runtime(struct task_struct *p)
+@@ -1955,10 +1958,13 @@ void account_system_vtime(struct task_struct *curr)
+ }
+ EXPORT_SYMBOL_GPL(account_system_vtime);
+ 
++#endif /* CONFIG_IRQ_TIME_ACCOUNTING */
++
+ static void update_rq_clock_task(struct rq *rq, s64 delta)
+ {
+-	s64 irq_delta;
++	s64 irq_delta = 0, steal = 0;
+ 
++#ifdef CONFIG_IRQ_TIME_ACCOUNTING
+ 	irq_delta = irq_time_read(cpu_of(rq)) - rq->prev_irq_time;
+ 
+ 	/*
+@@ -1981,12 +1987,29 @@ static void update_rq_clock_task(struct rq *rq, s64 delta)
+ 
+ 	rq->prev_irq_time += irq_delta;
+ 	delta -= irq_delta;
++#endif
++#ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
++	if (static_branch((&paravirt_steal_rq_enabled))) {
++
++		steal = paravirt_steal_clock(cpu_of(rq));
++		steal -= rq->prev_steal_time_acc;
++
++		rq->prev_steal_time_acc += steal;
++
++		if (steal > delta)
++			steal = delta;
++
++		delta -= steal;
++	}
++#endif
++
+ 	rq->clock_task += delta;
+ 
+-	if (irq_delta && sched_feat(NONIRQ_POWER))
+-		sched_rt_avg_update(rq, irq_delta);
++	if ((irq_delta + steal) && sched_feat(NONTASK_POWER))
++		sched_rt_avg_update(rq, irq_delta + steal);
  }
  
++#ifdef CONFIG_IRQ_TIME_ACCOUNTING
+ static int irqtime_account_hi_update(void)
+ {
+ 	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
+@@ -2021,12 +2044,7 @@ static int irqtime_account_si_update(void)
+ 
+ #define sched_clock_irqtime	(0)
+ 
+-static void update_rq_clock_task(struct rq *rq, s64 delta)
+-{
+-	rq->clock_task += delta;
+-}
+-
+-#endif /* CONFIG_IRQ_TIME_ACCOUNTING */
++#endif
+ 
+ #include "sched_idletask.c"
+ #include "sched_fair.c"
+diff --git a/kernel/sched_features.h b/kernel/sched_features.h
+index be40f73..ca3b025 100644
+--- a/kernel/sched_features.h
++++ b/kernel/sched_features.h
+@@ -61,9 +61,9 @@ SCHED_FEAT(LB_BIAS, 1)
+ SCHED_FEAT(OWNER_SPIN, 1)
+ 
  /*
-+ * We have to at flush steal time information every time something else
-+ * is accounted. Since the accounting functions are all visible to the rest
-+ * of the kernel, it gets tricky to do them in one place. This helper function
-+ * helps us.
-+ *
-+ * When the system is idle, the concept of steal time does not apply. We just
-+ * tell the underlying hypervisor that we grabbed the data, but skip steal time
-+ * accounting
-+ */
-+static inline bool touch_steal_time(int is_idle)
-+{
-+	u64 steal, st = 0;
-+
-+	if (static_branch(&paravirt_steal_enabled)) {
-+
-+		steal = paravirt_steal_clock(smp_processor_id());
-+
-+		steal -= this_rq()->prev_steal_time;
-+		if (is_idle) {
-+			this_rq()->prev_steal_time += steal;
-+			return false;
-+		}
-+
-+		while (steal >= TICK_NSEC) {
-+			/*
-+			 * Inline assembly required to prevent the compiler
-+			 * optimising this loop into a divmod call.
-+			 * See __iter_div_u64_rem() for another example of this.
-+			 */
-+			asm("" : "+rm" (steal));
-+
-+			steal -= TICK_NSEC;
-+			this_rq()->prev_steal_time += TICK_NSEC;
-+			st++;
-+		}
-+
-+		account_steal_time(st);
-+		return !!st;
-+	}
-+	return false;
-+}
-+
-+/*
-  * Account user cpu time to a process.
-  * @p: the process that the cpu time gets accounted to
-  * @cputime: the cpu time spent in user space since the last update
-@@ -3716,6 +3761,9 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
- 	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
- 	cputime64_t tmp;
+- * Decrement CPU power based on irq activity
++ * Decrement CPU power based on time not spent running tasks
+  */
+-SCHED_FEAT(NONIRQ_POWER, 1)
++SCHED_FEAT(NONTASK_POWER, 1)
  
-+	if (touch_steal_time(0))
-+		return;
-+
- 	/* Add user time to process. */
- 	p->utime = cputime_add(p->utime, cputime);
- 	p->utimescaled = cputime_add(p->utimescaled, cputime_scaled);
-@@ -3802,6 +3850,9 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
- 	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
- 	cputime64_t *target_cputime64;
- 
-+	if (touch_steal_time(0))
-+		return;
-+
- 	if ((p->flags & PF_VCPU) && (irq_count() - hardirq_offset == 0)) {
- 		account_guest_time(p, cputime, cputime_scaled);
- 		return;
-@@ -3839,6 +3890,8 @@ void account_idle_time(cputime_t cputime)
- 	cputime64_t cputime64 = cputime_to_cputime64(cputime);
- 	struct rq *rq = this_rq();
- 
-+	touch_steal_time(1);
-+
- 	if (atomic_read(&rq->nr_iowait) > 0)
- 		cpustat->iowait = cputime64_add(cpustat->iowait, cputime64);
- 	else
+ /*
+  * Queue remote wakeups on the target CPU and process them
 -- 
 1.7.3.4
 
