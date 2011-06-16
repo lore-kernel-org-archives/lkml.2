@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab1FPLfq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 07:35:46 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57097 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755954Ab1FPLfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 07:35:43 -0400
-Message-ID: <4DF9EA45.3020101@ru.mvista.com>
-Date: Thu, 16 Jun 2011 15:34:29 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1756098Ab1FPLkX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 07:40:23 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58720 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751519Ab1FPLkU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 07:40:20 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [RFC 0/5 v4] procfs: introduce hidepid=, hidenet=, gid= mount options
+Date: Thu, 16 Jun 2011 13:40:15 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "David S. Miller" <davem@davemloft.net>
+References: <1308163895-5963-1-git-send-email-segoon@openwall.com> <201106161050.27716.arnd@arndb.de> <20110616085842.GB3215@albatros>
+In-Reply-To: <20110616085842.GB3215@albatros>
 MIME-Version: 1.0
-To: Denis Kuzmenko <list@solonet.org.ua>
-CC: Sergei Shtylyov <sshtylyov@mvista.com>, Ben Dooks <ben-linux@fluff.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm mach-s3c2440 mach-mini2440: New LCD-W35i support
-References: <4DF7C50A.7060602@solonet.org.ua>
-In-Reply-To: <4DF7C50A.7060602@solonet.org.ua>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [140.211.167.34]); Thu, 16 Jun 2011 11:35:42 +0000 (UTC)
+Message-Id: <201106161340.16117.arnd@arndb.de>
+X-Provags-ID: V02:K0:k9CbF0WsN+YbK1ZE+eeCvgrJAoBBi/QjApIqo9xJ/4H
+ jX4W0ir6iMS9IIwzRPrUzWgfE6MtdvIOXCnSRjQd7ktR/z1vkN
+ YlWMbUcfUAHKaQBn6EOzYLX+2cnVJ6aWPfE6UDyOVPDJopCHlL
+ H3qkMjP0xAcxechg5zlPlpIPdC8Myvy3d4RI0AAuMBPzCu9F0q
+ yoSTvSgusvloaTJlKE91g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Thursday 16 June 2011, Vasiliy Kulikov wrote:
+> > I have no opinion on whether it's a good idea to include the feature or not.
+> 
+> Why not?  Have you some specific complains where it can be perhaps too
+> strong/insufficient/non-configurable?
 
-On 15-06-2011 0:31, Denis Kuzmenko wrote:
+No, not at all. I just haven't had the need for this myself, and I'm not
+enough of a security person to judge whether the vulnerability addressed
+by the patch is a relevant one. E.g. if all the sensitive information
+you are hiding in procfs is still available through netlink, your patch
+is pointless. Similarly if there is no recorded case of an attack that
+relies on any of the information in procfs.
 
->> Need an empty line here...
->> Your patch is line wrapped. Seems easy to fix though...
-
-> Thank you. Is the patch below okay?
-
-    Not yet. :-)
-
-> From: Denis Kuzmenko <dart@solonet.org.ua>
-
-> LCD-W35i support for Mini2440 development board
-
-    Your signoff needs to be here. Sorry -- didn't notice the first time.
-
-> --- linux-2.6.39.1/arch/arm/mach-s3c2440/mach-mini2440.c 2011-06-03
-> 03:34:20.000000000 +0300
-> +++ linux-2.6.39.1-dart/arch/arm/mach-s3c2440/mach-mini2440.c 2011-06-13
-> 23:37:38.785984118 +0300
-> @@ -167,6 +167,20 @@ static struct s3c2410fb_display mini2440
-> .lcdcon5 = (S3C2410_LCDCON5_FRM565 |
-> S3C2410_LCDCON5_HWSWP),
-> },
-> + /* LCD-W35i 3.5" display (LQ035Q1DG06)*/
-> + [3] = {
-> + _LCD_DECLARE(
-> + 7, /* clock */
-> + 320, 68, 66, 4, /* xres, margin_right, margin_left, hsync */
-> + 240, 4, 4, 9, /* yres, margin_top, margin_bottom, vsync */
-> + 60), /* refresh rate */
-> + .lcdcon5 = (S3C2410_LCDCON5_FRM565 |
-> + S3C2410_LCDCON5_INVVDEN |
-> + S3C2410_LCDCON5_INVVFRAME |
-> + S3C2410_LCDCON5_INVVLINE |
-> + S3C2410_LCDCON5_INVVCLK |
-> + S3C2410_LCDCON5_HWSWP),
-> + },
-> };
-
-    The patch has all tabs converted to spaces. Didn't notice it the first 
-time as well... :-/
-
-WBR, Sergei
+	Arnd
