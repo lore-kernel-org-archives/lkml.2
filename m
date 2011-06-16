@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310Ab1FPHoL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:44:11 -0400
-Received: from fep12.mx.upcmail.net ([62.179.121.32]:42974 "EHLO
-	fep12.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752919Ab1FPHoG (ORCPT
+	id S1754951Ab1FPHqz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:46:55 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37320 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752247Ab1FPHqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:44:06 -0400
-X-SourceIP: 178.83.226.131
-Message-ID: <4DF9B440.9070500@odi.ch>
-Date: Thu, 16 Jun 2011 09:44:00 +0200
-From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Thunderbird/3.1.10
+	Thu, 16 Jun 2011 03:46:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=CJvF9MczzAQbKlK9JZj7KaS+xjWZ99DIVz1cujKDj8MEQdMfQAJ+/WzOKuuqbgqhWi
+         nzRxf0jrSSw4oRd4YxLKArXe9psBYZ+ZzkFgVRGR5+/Ro4pCadHAFw04th5hkOCV9pd4
+         3X9B6cAeGtFRLvnjuhev68ApfalFEyv8dYsBA=
+Date: Thu, 16 Jun 2011 09:46:48 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Mark Wu <dwu@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH 1/1] [virt] virtio-blk: Use ida to allocate disk index
+Message-ID: <20110616074648.GF8141@htj.dyndns.org>
+References: <1306913069-23637-1-git-send-email-dwu@redhat.com>
+ <87mxi1xfz0.fsf@rustcorp.com.au>
+ <4DEF744D.9040702@redhat.com>
+ <87mxhrgba6.fsf@rustcorp.com.au>
+ <20110609091433.GB11773@htj.dyndns.org>
+ <4DF0A374.6090504@redhat.com>
+ <87mxhjzogo.fsf@rustcorp.com.au>
+ <20110615070638.GI8141@htj.dyndns.org>
+ <87hb7qzlm9.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.39.1 input regression
-References: <4DF85C5F.4080307@odi.ch> <20110615150326.GA7128@suse.de>
-In-Reply-To: <20110615150326.GA7128@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Cloudmark-Analysis: v=1.1 cv=tMVj8KYobzzX0EiRnC7vY2isLrCxFvdg4RrHWPZXwJ0= c=1 sm=0 a=GuWncwZLQJwA:10 a=eIhxMilvRf8A:10 a=8nJEP1OIZ-IA:10 a=VwQbUJbxAAAA:8 a=m3MDCCSdBgwMK93jqCYA:9 a=wPNLvfGTeEIA:10 a=LI9Vle30uBYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87hb7qzlm9.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-
-On 15.06.2011 17:03, Greg KH wrote:
-> On Wed, Jun 15, 2011 at 09:16:47AM +0200, Ortwin Glück wrote:
->> Hi Greg,
->>
->> This patch in 2.6.39.1 breaks magicmouse support for me completely.
->> a5ccaac64c17ce3cc1878a6d479a6f1b16092c24
->> HID: magicmouse: ignore 'ivalid report id' while switching modes
->>
->> The device will no longer work at all:
->> magicmouse 0005:05AC:030D.0005: input,hidraw2: BLUETOOTH HID v0.84 Mouse
->> [gandalf mouse] on 7C:6D:62:9F:DB:2D
->> magicmouse 0005:05AC:030D.0005: unable to request touch data (2)
->>
->> Fine in previous kernels.
+On Thu, Jun 16, 2011 at 09:35:34AM +0930, Rusty Russell wrote:
+> On Wed, 15 Jun 2011 09:06:38 +0200, Tejun Heo <tj@kernel.org> wrote:
+> > It's inherited from idr which was designed to have separate
+> > prepare/allocation stages so that allocation can happen inside an
+> > outer spinlock.  It doesn't have too much to do with optimization.
+> > It's mostly to be able to use sleepable context for memory allocation
+> > while allowing atomic id[ra] allocation.
 > 
-> This has been discussed already, and it should be fixed in Linus's tree
-> right now, right?
+> It might have made sense for a few callers, but as a general mechanism
+> it stinks.  It's a lot of dancing to avoid GFP_ATOMIC allocations; we'd
+> be better making idr_get_new() take a gfp_t, and have an idr_pre_alloc()
+> for those who care.
 > 
-> If so, can someone please send stable@kernel.org the proper fix for
-> this?
+> *Sure* there's a chance of racing and we will need to do an atomic
+> allocation.  But can anyone justify the current complexity for all
+> callers?
+
+Sure, I'm not arguing for the current interface.
+
+> > > + * ida_simple_get - get a new id.
+> > > + * @ida: the (initialized) ida.
+> > > + * @min_id: the minimum id (inclusive)
+> > > + * @max_id: the maximum id (inclusive)
+> > > + *
+> > > + * Allocates an id in the range min_id <= id <= max_id, or returns -ENOSPC.
+> > > + * On allocation failure, returns -ENOMEM.  This function can sleep.
+> > > + *
+> > > + * Use ida_simple_remove() to get rid of an id.
+> > > + */
+> > > +int ida_simple_get(struct ida *ida, int min_id, int max_id)
+> > 
+> > Hmmm... new interface different from existing id[ra] style, but yeah
+> > something like the above would have made more sense from the
+> > beginning.  The only thing is that isn't (begin <= range < end) more
+> > conventional form to express ranges?
 > 
-> thanks,
-> 
-> greg k-h
+> Yes, but how to express an unlimited range then?  I could used unsigned
+> and 0x80000000, but that seemed crude.
 
-If it's in Linus' tree then I can't find it. To me this issue just looks
-like a silly typo anyway:
+So, why not do this properly then?  ie. ida_get(ida, begin, end, gfp).
 
--	if (ret != sizeof(feature)) {
-+	if (ret != -EIO) {
- 		hid_err(hdev, "unable to request touch data (%d)\n", ret);
- 		goto err_stop_hw;
- 	}
+As for the end of range, shouldn't 0 mean the default max range?  Only
+some users care about the upper limit anyway.  We can also make it
+unsigned just in case and cap the value.
 
-Should this not be (ret == -EIO)?
+Thanks.
 
-Ortwin
+-- 
+tejun
