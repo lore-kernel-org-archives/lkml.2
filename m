@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756336Ab1FPLlX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 07:41:23 -0400
-Received: from higgs.elka.pw.edu.pl ([194.29.160.5]:51775 "EHLO
-	higgs.elka.pw.edu.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755241Ab1FPLlU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 07:41:20 -0400
-X-Comment: RFC 2476 MSA function at elektron.elka.pw.edu.pl logged sender identity as: wzabolot
-Message-ID: <4DF9EBD0.5020403@ise.pw.edu.pl>
-Date: Thu, 16 Jun 2011 13:41:04 +0200
-From: =?UTF-8?B?V29qY2llY2ggWmFib8WCb3RueQ==?= <wzab@ise.pw.edu.pl>
-Reply-To: wzab@ise.pw.edu.pl
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Icedove/3.1.10
+	id S1756468Ab1FPLmK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 07:42:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37795 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755909Ab1FPLmG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 07:42:06 -0400
+Date: Thu, 16 Jun 2011 13:41:56 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Ying Han <yinghan@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 4/8] memcg: rework soft limit reclaim
+Message-ID: <20110616114156.GE9840@tiehlicka.suse.cz>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+ <1306909519-7286-5-git-send-email-hannes@cmpxchg.org>
+ <BANLkTim5TSWpBfeF2dugGZwQmNC-Cf+GCNctraq8FtziJxsd2g@mail.gmail.com>
+ <BANLkTimuRks4+h=Kjt2Lzc-s-XsAHCH9vg@mail.gmail.com>
+ <20110609150026.GD3994@tiehlicka.suse.cz>
+ <BANLkTimbEnEHuxBDzKrEjPY7Y5F_aSoOdXkmjaOY+3xLBLzLdA@mail.gmail.com>
 MIME-Version: 1.0
-To: Martin <marogge@onlinehome.de>
-CC: "vger.kernel.org, " <linux-kernel@vger.kernel.org>
-Subject: Re: Kernel panic on HT machine - maybe i915 related?
-References: <201106152224.34487.marogge@onlinehome.de>
-In-Reply-To: <201106152224.34487.marogge@onlinehome.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTimbEnEHuxBDzKrEjPY7Y5F_aSoOdXkmjaOY+3xLBLzLdA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 15.06.2011 22:24, Martin wrote:
-> Same here, although my panics look different from yours. In both cases I had a
-> lot of hardware interrupts on the stack trace but no kmemcheck. I only
-> remembered to take a photo with my mobile phone the second time. The stack
-> trace contains handle_*irq*, tg3, ata_bmdma, __ata_sff, i915, drm_vblank_put,
-> intel_thermal, try_preempt, resched*, drm_vblank_put, do_invalid_op, oops_end,
-> do_bounds, panic. The EIP is drm_vblank_put+0x13/0x50.
->
-Probably you have not enabled kmemcheck in the kernel configuration?
-> Could this be an i915 issue with 2.6.39.1? At home I have two other machines
-> on i915 but with different chipsets that run fine with the same kernel.
->
+On Wed 15-06-11 15:48:25, Ying Han wrote:
+> On Thu, Jun 9, 2011 at 8:00 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> > On Thu 02-06-11 22:25:29, Ying Han wrote:
+[...]
+> > yes, this makes sense but I am not sure about the right(tm) value of the
+> > MEMCG_SOFTLIMIT_RECLAIM_PRIORITY. 2 sounds too low. You would do quite a
+> > lot of loops
+> > (DEFAULT_PRIORITY-MEMCG_SOFTLIMIT_RECLAIM_PRIORITY) * zones * memcg_count
+> > without any progress (assuming that all of them are under soft limit
+> > which doesn't sound like a totally artificial configuration) until you
+> > allow reclaiming from groups that are under soft limit. Then, when you
+> > finally get to reclaiming, you scan rather aggressively.
+> 
+> Fair enough, something smarter is definitely needed :)
+> 
+> >
+> > Maybe something like 3/4 of DEFAULT_PRIORITY? You would get 3 times
+> > over all (unbalanced) zones and all cgroups that are above the limit
+> > (scanning max{1/4096+1/2048+1/1024, 3*SWAP_CLUSTER_MAX} of the LRUs for
+> > each cgroup) which could be enough to collect the low hanging fruit.
+> 
+> Hmm, that sounds more reasonable than the initial proposal.
+> 
+> For the same worst case where all the memcgs are blow their soft
+> limit, we need to scan 3 times of total memcgs before actually doing
 
-The i915 driver with 82865G chipset works strange for quite a long time (since 2.6.37???)
-The machine which causes problem uses this chipset.
-Another one which works good with 2.6.39.1 (I write this message on it) uses: Intel Corporation Mobile 945GM/GMS, 943/940GML Express Integrated Graphics Controller (rev 03)
-
->> As crash occurs only with HT on and doesn't happen on another machine
->> with 2 cores, it seems that maybe the problem is associated with
->> incorrect allocation of resources or locking for HT enabled CPU...
-> I do not observe the issue with the regular non-SMP 2.6.38.7 distro kernel, so
-> it might be HT related. Truth be told I need to investigate further since my
-> 2.6.39.1 kernel is patched. In the meantime, if someone recognizes the issue
-> please come forward.
->
-In my last message
-( https://groups.google.com/group/kernelarchive/browse_thread/thread/adaeb363d2eadf24/559b1fd44876e4a6 )
-I've reported some problems even with HT switched off,
-but maybe it is associated with problems related to using both kmemcheck and perf, as reported e.g. here: https://lkml.org/lkml/2011/4/26/83
+it is not scanning what we do. We just walk through all existing memcgs.
+I think that the real issue here is how much we scan when we start
+doing something useful. Maybe even DEFAULT_PRIORITY-3 is too much as
+well. dunno.
 -- 
-Regards,
-Wojtek
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
