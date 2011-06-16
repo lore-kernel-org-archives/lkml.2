@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542Ab1FPW2q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 18:28:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18816 "EHLO mx1.redhat.com"
+	id S1757779Ab1FPW3f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 18:29:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28330 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757215Ab1FPW2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 18:28:43 -0400
+	id S1756556Ab1FPW2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 18:28:34 -0400
 From: Glauber Costa <glommer@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
@@ -13,26 +13,18 @@ Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
         Anthony Liguori <aliguori@us.ibm.com>,
         Eric B Munson <emunson@mgebm.net>
-Subject: [PATCH v2 6/7] KVM-GST: adjust scheduler cpu power
-Date: Thu, 16 Jun 2011 18:20:55 -0400
-Message-Id: <1308262856-5779-7-git-send-email-glommer@redhat.com>
+Subject: [PATCH v2 7/7] KVM-GST: KVM Steal time registration
+Date: Thu, 16 Jun 2011 18:20:56 -0400
+Message-Id: <1308262856-5779-8-git-send-email-glommer@redhat.com>
 In-Reply-To: <1308262856-5779-1-git-send-email-glommer@redhat.com>
 References: <1308262856-5779-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a first proposal for using steal time information
-to influence the scheduler. There are a lot of optimizations
-and fine grained adjustments to be done, but it is working reasonably
-so far for me (mostly)
-
-With this patch (and some host pinnings to demonstrate the situation),
-two vcpus with very different steal time (Say 80 % vs 1 %) will not get
-an even distribution of processes. This is a situation that can naturally
-arise, specially in overcommited scenarios. Previosly, the guest scheduler
-would wrongly think that all cpus have the same ability to run processes,
-lowering the overall throughput.
+Register steal time within KVM. Everytime we sample the steal time
+information, we update a local variable that tells what was the
+last time read. We then account the difference.
 
 Signed-off-by: Glauber Costa <glommer@redhat.com>
 CC: Rik van Riel <riel@redhat.com>
@@ -42,125 +34,189 @@ CC: Avi Kivity <avi@redhat.com>
 CC: Anthony Liguori <aliguori@us.ibm.com>
 CC: Eric B Munson <emunson@mgebm.net>
 ---
- arch/x86/Kconfig        |   12 ++++++++++++
- kernel/sched.c          |   36 +++++++++++++++++++++++++++---------
- kernel/sched_features.h |    4 ++--
- 3 files changed, 41 insertions(+), 11 deletions(-)
+ Documentation/kernel-parameters.txt |    4 ++
+ arch/x86/include/asm/kvm_para.h     |    1 +
+ arch/x86/kernel/kvm.c               |   73 +++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/kvmclock.c          |    2 +
+ 4 files changed, 80 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index da34972..b26f312 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -512,6 +512,18 @@ menuconfig PARAVIRT_GUEST
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index fd248a31..a722574 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1737,6 +1737,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	no-kvmapf	[X86,KVM] Disable paravirtualized asynchronous page
+ 			fault handling.
  
- if PARAVIRT_GUEST
- 
-+config PARAVIRT_TIME_ACCOUNTING
-+	bool "Paravirtual steal time accounting"
-+	select PARAVIRT
-+	default n
-+	---help---
-+	  Select this option to enable fine granularity task steal time 
-+	  accounting. Time spent executing other tasks in parallel with
-+	  the current vCPU is discounted from the vCPU power. To account for
-+	  that, there can be a small performance impact.
++	no-steal-acc    [X86,KVM] Disable paravirtualized steal time accounting.
++			steal time is computed, but won't influence scheduler
++			behaviour
 +
-+	  If in doubt, say N here.
-+
- source "arch/x86/xen/Kconfig"
+ 	nolapic		[X86-32,APIC] Do not enable or use the local APIC.
  
- config KVM_CLOCK
-diff --git a/kernel/sched.c b/kernel/sched.c
-index fa983c6..8513898 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -530,6 +530,9 @@ struct rq {
- 	u64 prev_irq_time;
+ 	nolapic_timer	[X86-32,APIC] Do not use the local APIC timer.
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index 0341e61..2a8f2a5 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -94,6 +94,7 @@ struct kvm_vcpu_pv_apf_data {
+ 
+ extern void kvmclock_init(void);
+ extern int kvm_register_clock(char *txt);
++extern void kvm_disable_steal_time(void);
+ 
+ 
+ /* This instruction is vmcall.  On non-VT architectures, it will generate a
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index 33c07b0..58331c2 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -51,6 +51,15 @@ static int parse_no_kvmapf(char *arg)
+ 
+ early_param("no-kvmapf", parse_no_kvmapf);
+ 
++static int steal_acc = 1;
++static int parse_no_stealacc(char *arg)
++{
++        steal_acc = 0;
++        return 0;
++}
++
++early_param("no-steal-acc", parse_no_stealacc);
++
+ struct kvm_para_state {
+ 	u8 mmu_queue[MMU_QUEUE_SIZE];
+ 	int mmu_queue_len;
+@@ -58,6 +67,8 @@ struct kvm_para_state {
+ 
+ static DEFINE_PER_CPU(struct kvm_para_state, para_state);
+ static DEFINE_PER_CPU(struct kvm_vcpu_pv_apf_data, apf_reason) __aligned(64);
++static DEFINE_PER_CPU(struct kvm_steal_time, steal_time) __aligned(64);
++static int has_steal_clock = 0;
+ 
+ static struct kvm_para_state *kvm_para_state(void)
+ {
+@@ -441,6 +452,21 @@ static void __init paravirt_ops_setup(void)
  #endif
- 	u64 prev_steal_time;
-+#ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
-+	u64 prev_steal_time_acc;
-+#endif
- 
- 	/* calc_load related fields */
- 	unsigned long calc_load_update;
-@@ -1955,10 +1958,13 @@ void account_system_vtime(struct task_struct *curr)
  }
- EXPORT_SYMBOL_GPL(account_system_vtime);
  
-+#endif /* CONFIG_IRQ_TIME_ACCOUNTING */
++static void kvm_register_steal_time(void)
++{
++	int cpu = smp_processor_id();
++	struct kvm_steal_time *st = &per_cpu(steal_time, cpu);
 +
- static void update_rq_clock_task(struct rq *rq, s64 delta)
++	if (!has_steal_clock)
++		return;
++
++	memset(st, 0, sizeof(*st));
++
++	wrmsrl(MSR_KVM_STEAL_TIME, (__pa(st) | KVM_MSR_ENABLED));
++	printk(KERN_INFO "kvm-stealtime: cpu %d, msr %lx\n",
++		cpu, __pa(st));
++}
++
+ void __cpuinit kvm_guest_cpu_init(void)
  {
--	s64 irq_delta;
-+	s64 irq_delta = 0, steal = 0;
+ 	if (!kvm_para_available())
+@@ -457,6 +483,9 @@ void __cpuinit kvm_guest_cpu_init(void)
+ 		printk(KERN_INFO"KVM setup async PF for cpu %d\n",
+ 		       smp_processor_id());
+ 	}
++
++	if (has_steal_clock)
++		kvm_register_steal_time();
+ }
  
-+#ifdef CONFIG_IRQ_TIME_ACCOUNTING
- 	irq_delta = irq_time_read(cpu_of(rq)) - rq->prev_irq_time;
+ static void kvm_pv_disable_apf(void *unused)
+@@ -483,6 +512,31 @@ static struct notifier_block kvm_pv_reboot_nb = {
+ 	.notifier_call = kvm_pv_reboot_notify,
+ };
  
- 	/*
-@@ -1981,12 +1987,29 @@ static void update_rq_clock_task(struct rq *rq, s64 delta)
++static u64 kvm_steal_clock(int cpu)
++{
++	u64 steal;
++	struct kvm_steal_time *src;
++	int version;
++
++	src = &per_cpu(steal_time, cpu);
++	do {
++		version = src->version;
++		rmb();
++		steal = src->steal;
++		rmb();
++	} while ((version & 1) || (version != src->version));
++
++	return steal;
++}
++
++void kvm_disable_steal_time(void)
++{
++	if (!has_steal_clock)
++		return;
++
++	wrmsr(MSR_KVM_STEAL_TIME, 0, 0);
++}
++
+ #ifdef CONFIG_SMP
+ static void __init kvm_smp_prepare_boot_cpu(void)
+ {
+@@ -500,6 +554,7 @@ static void __cpuinit kvm_guest_cpu_online(void *dummy)
  
- 	rq->prev_irq_time += irq_delta;
- 	delta -= irq_delta;
-+#endif
-+#ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
-+	if (static_branch((&paravirt_steal_rq_enabled))) {
-+
-+		steal = paravirt_steal_clock(cpu_of(rq));
-+		steal -= rq->prev_steal_time_acc;
-+
-+		rq->prev_steal_time_acc += steal;
-+
-+		if (steal > delta)
-+			steal = delta;
-+
-+		delta -= steal;
+ static void kvm_guest_cpu_offline(void *dummy)
+ {
++	kvm_disable_steal_time();
+ 	kvm_pv_disable_apf(NULL);
+ 	apf_task_wake_all();
+ }
+@@ -548,6 +603,11 @@ void __init kvm_guest_init(void)
+ 	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF))
+ 		x86_init.irqs.trap_init = kvm_apf_trap_init;
+ 
++	if (kvm_para_has_feature(KVM_FEATURE_STEAL_TIME)) {
++		has_steal_clock = 1;
++		pv_time_ops.steal_clock = kvm_steal_clock;
 +	}
-+#endif
 +
- 	rq->clock_task += delta;
- 
--	if (irq_delta && sched_feat(NONIRQ_POWER))
--		sched_rt_avg_update(rq, irq_delta);
-+	if ((irq_delta + steal) && sched_feat(NONTASK_POWER))
-+		sched_rt_avg_update(rq, irq_delta + steal);
+ #ifdef CONFIG_SMP
+ 	smp_ops.smp_prepare_boot_cpu = kvm_smp_prepare_boot_cpu;
+ 	register_cpu_notifier(&kvm_cpu_notifier);
+@@ -555,3 +615,16 @@ void __init kvm_guest_init(void)
+ 	kvm_guest_cpu_init();
+ #endif
+ }
++
++static __init int activate_jump_labels(void)
++{
++	if (has_steal_clock) {
++		jump_label_inc(&paravirt_steal_enabled);
++		if (steal_acc)
++			jump_label_inc(&paravirt_steal_rq_enabled);
++	}
++
++	return 0;
++}
++arch_initcall(activate_jump_labels);
++
+diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
+index 6389a6b..c1a0188 100644
+--- a/arch/x86/kernel/kvmclock.c
++++ b/arch/x86/kernel/kvmclock.c
+@@ -160,6 +160,7 @@ static void __cpuinit kvm_setup_secondary_clock(void)
+ static void kvm_crash_shutdown(struct pt_regs *regs)
+ {
+ 	native_write_msr(msr_kvm_system_time, 0, 0);
++	kvm_disable_steal_time();
+ 	native_machine_crash_shutdown(regs);
+ }
+ #endif
+@@ -167,6 +168,7 @@ static void kvm_crash_shutdown(struct pt_regs *regs)
+ static void kvm_shutdown(void)
+ {
+ 	native_write_msr(msr_kvm_system_time, 0, 0);
++	kvm_disable_steal_time();
+ 	native_machine_shutdown();
  }
  
-+#ifdef CONFIG_IRQ_TIME_ACCOUNTING
- static int irqtime_account_hi_update(void)
- {
- 	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
-@@ -2021,12 +2044,7 @@ static int irqtime_account_si_update(void)
- 
- #define sched_clock_irqtime	(0)
- 
--static void update_rq_clock_task(struct rq *rq, s64 delta)
--{
--	rq->clock_task += delta;
--}
--
--#endif /* CONFIG_IRQ_TIME_ACCOUNTING */
-+#endif
- 
- #include "sched_idletask.c"
- #include "sched_fair.c"
-diff --git a/kernel/sched_features.h b/kernel/sched_features.h
-index be40f73..ca3b025 100644
---- a/kernel/sched_features.h
-+++ b/kernel/sched_features.h
-@@ -61,9 +61,9 @@ SCHED_FEAT(LB_BIAS, 1)
- SCHED_FEAT(OWNER_SPIN, 1)
- 
- /*
-- * Decrement CPU power based on irq activity
-+ * Decrement CPU power based on time not spent running tasks
-  */
--SCHED_FEAT(NONIRQ_POWER, 1)
-+SCHED_FEAT(NONTASK_POWER, 1)
- 
- /*
-  * Queue remote wakeups on the target CPU and process them
 -- 
 1.7.3.4
 
