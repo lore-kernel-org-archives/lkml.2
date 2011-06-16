@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756468Ab1FPLmK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 07:42:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37795 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755909Ab1FPLmG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 07:42:06 -0400
-Date: Thu, 16 Jun 2011 13:41:56 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Ying Han <yinghan@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 4/8] memcg: rework soft limit reclaim
-Message-ID: <20110616114156.GE9840@tiehlicka.suse.cz>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
- <1306909519-7286-5-git-send-email-hannes@cmpxchg.org>
- <BANLkTim5TSWpBfeF2dugGZwQmNC-Cf+GCNctraq8FtziJxsd2g@mail.gmail.com>
- <BANLkTimuRks4+h=Kjt2Lzc-s-XsAHCH9vg@mail.gmail.com>
- <20110609150026.GD3994@tiehlicka.suse.cz>
- <BANLkTimbEnEHuxBDzKrEjPY7Y5F_aSoOdXkmjaOY+3xLBLzLdA@mail.gmail.com>
+	id S1756571Ab1FPLmT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 07:42:19 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55907 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756488Ab1FPLmP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 07:42:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=M+aRTxkkNOkF6GZUOm1gI1iC1VTXCgqtJuIxBqXOEFK90BqVGdw/4AWHMguQRhf5OV
+         H1NFEou3b4DWwkHKtB5i5de2pg7A78CTpxezGMcILb/wik/58YCoybjkiK8wB9dBNjkt
+         2i8ZLrRl3LsPF8w9k9zvo87Yvsee51OST7TcA=
+Message-ID: <4DF9EC15.6050101@gmail.com>
+Date: Thu, 16 Jun 2011 14:42:13 +0300
+From: Dmitry Kasatkin <dmitry.s.kasatkin@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimbEnEHuxBDzKrEjPY7Y5F_aSoOdXkmjaOY+3xLBLzLdA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: James Morris <jmorris@namei.org>
+CC: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zohar@linux.vnet.ibm.com
+Subject: Re: [RFC v1 1/5] crypto: GnuPG based MPI lib
+References: <cover.1307522457.git.dmitry.kasatkin@intel.com> <de6d48b4ace4f23545aa220f4a06bb189ae703e9.1307522457.git.dmitry.kasatkin@intel.com> <alpine.LRH.2.00.1106160936590.8929@tundra.namei.org>
+In-Reply-To: <alpine.LRH.2.00.1106160936590.8929@tundra.namei.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 15-06-11 15:48:25, Ying Han wrote:
-> On Thu, Jun 9, 2011 at 8:00 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> > On Thu 02-06-11 22:25:29, Ying Han wrote:
-[...]
-> > yes, this makes sense but I am not sure about the right(tm) value of the
-> > MEMCG_SOFTLIMIT_RECLAIM_PRIORITY. 2 sounds too low. You would do quite a
-> > lot of loops
-> > (DEFAULT_PRIORITY-MEMCG_SOFTLIMIT_RECLAIM_PRIORITY) * zones * memcg_count
-> > without any progress (assuming that all of them are under soft limit
-> > which doesn't sound like a totally artificial configuration) until you
-> > allow reclaiming from groups that are under soft limit. Then, when you
-> > finally get to reclaiming, you scan rather aggressively.
+On 16/06/11 02:38, James Morris wrote:
+> On Wed, 8 Jun 2011, Dmitry Kasatkin wrote:
 > 
-> Fair enough, something smarter is definitely needed :)
+>> From: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
+>>
+>> Adds the multi-precision-integer maths library which was originally taken
+>> from GnuPG and ported to the kernel by (among others) David Howells.
+>> This version is taken from Fedora kernel 2.6.32-71.14.1.el6.
 > 
-> >
-> > Maybe something like 3/4 of DEFAULT_PRIORITY? You would get 3 times
-> > over all (unbalanced) zones and all cgroups that are above the limit
-> > (scanning max{1/4096+1/2048+1/1024, 3*SWAP_CLUSTER_MAX} of the LRUs for
-> > each cgroup) which could be enough to collect the low hanging fruit.
+> FYI, any future postings should be cc'd to the linux-crypto list.
 > 
-> Hmm, that sounds more reasonable than the initial proposal.
-> 
-> For the same worst case where all the memcgs are blow their soft
-> limit, we need to scan 3 times of total memcgs before actually doing
 
-it is not scanning what we do. We just walk through all existing memcgs.
-I think that the real issue here is how much we scan when we start
-doing something useful. Maybe even DEFAULT_PRIORITY-3 is too much as
-well. dunno.
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Of course.. I missed it.
+
