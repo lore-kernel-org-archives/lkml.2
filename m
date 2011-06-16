@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932434Ab1FPUE0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 16:04:26 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:42511
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S932672Ab1FPUJZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 16:09:25 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:52266
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932355Ab1FPUCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 16:02:04 -0400
+	id S932309Ab1FPUCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 16:02:01 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 59/77] Staging: hv: storvsc: Cleanup returned error code in storvsc_host_reset()
-Date: Thu, 16 Jun 2011 13:17:32 -0700
-Message-Id: <1308255470-3826-59-git-send-email-kys@microsoft.com>
+Subject: [PATCH 60/77] Staging: hv: storvsc: Cleanup error code returned in storvsc_probe()
+Date: Thu, 16 Jun 2011 13:17:33 -0700
+Message-Id: <1308255470-3826-60-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1308255470-3826-1-git-send-email-kys@microsoft.com>
 References: <1308255393-3785-1-git-send-email-kys@microsoft.com>
@@ -30,22 +30,31 @@ Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/storvsc_drv.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 1028689..03ca79e 100644
+index 03ca79e..97ef81d 100644
 --- a/drivers/staging/hv/storvsc_drv.c
 +++ b/drivers/staging/hv/storvsc_drv.c
-@@ -348,7 +348,7 @@ static int storvsc_host_reset(struct hv_device *device)
- 
- 	stor_device = get_stor_device(device);
- 	if (!stor_device)
+@@ -684,7 +684,7 @@ static int storvsc_probe(struct hv_device *device)
+ 	if (ret != 0) {
+ 		kmem_cache_destroy(host_dev->request_pool);
+ 		scsi_host_put(host);
 -		return -1;
 +		return -ENODEV;
+ 	}
  
- 	request = &stor_device->reset_request;
- 	vstor_packet = &request->vstor_packet;
+ 	host_dev->path = device_info.path_id;
+@@ -705,7 +705,7 @@ static int storvsc_probe(struct hv_device *device)
+ 
+ 		kmem_cache_destroy(host_dev->request_pool);
+ 		scsi_host_put(host);
+-		return -1;
++		return -ENODEV;
+ 	}
+ 
+ 	scsi_scan_host(host);
 -- 
 1.7.4.1
 
