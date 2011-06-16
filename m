@@ -1,79 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756708Ab1FPHRx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:17:53 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:35457 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754144Ab1FPHRs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:17:48 -0400
-Date: Thu, 16 Jun 2011 09:17:26 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Tony Luck <tony.luck@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        edac-devel <linux-edac@vger.kernel.org>
-Subject: [GIT PULL] RAS: x86 mce cleanup
-Message-ID: <20110616071726.GA21197@aftab>
+	id S1756771Ab1FPHZR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:25:17 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:60130 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756727Ab1FPHZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 03:25:13 -0400
+Date: Thu, 16 Jun 2011 09:24:52 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Alexander Graf <agraf@suse.de>, Anthony Liguori <anthony@codemonkey.ws>,
+        Prasad Joshi <prasadjoshi124@gmail.com>, Avi Kivity <avi@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
+Message-ID: <20110616072452.GA15366@elte.hu>
+References: <1308153214.7566.6.camel@jaguar>
+ <4DF8DE26.1070301@redhat.com>
+ <BANLkTi=SHENDBHdtFY_7_qtfqJb_+qKJSw@mail.gmail.com>
+ <BANLkTinMDz-sqaX0cyWEoLXt70dowxofvg@mail.gmail.com>
+ <4DF92C80.3030106@codemonkey.ws>
+ <7A30A509-47AA-4E72-ABF3-937005900F9D@suse.de>
+ <BANLkTi=Jm_50m6qyfQPCF0PuwUfuDNwMtg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <BANLkTi=Jm_50m6qyfQPCF0PuwUfuDNwMtg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
 
-here's the first pull request from Tony and me. Hopefully not the last.
+* Pekka Enberg <penberg@kernel.org> wrote:
 
-The good thing is, with our different timezones you get 24/7 RAS support :-).
+> On Thu, Jun 16, 2011 at 1:07 AM, Alexander Graf <agraf@suse.de> wrote:
+> >> qemu-system-x86_64 -drive file=/dev/shm/test.qcow2,cache=writeback,if=virtio
+> >
+> > Wouldn't this still be using threaded AIO mode? I thought KVM tools used native AIO?
+> 
+> We don't use AIO at all. It's just normal read()/write() with a 
+> thread pool. I actually looked at AIO but didn't really see why 
+> we'd want to use it.
 
-Thanks.
+We could certainly try kernel AIO, it would allow us to do all the 
+virtio-blk logic from the vcpu thread, without single threading it - 
+turning the QCOW2 logic into an AIO driven state machine in essence.
 
-The following changes since commit 3a2289a4a317e0290a8bc7af28c62c9830cb12e5:
+Advantages:
 
-  Merge branch 'for-linus-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu (2011-06-14 11:28:54 -0700)
+ - we wouldnt do context-switching between the vcpu thread and the 
+   helper threads
 
-are available in the git repository at:
+ - it would potentially provide tighter caching and potentially would 
+   allow higher scalability.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git for-tip-mce
+Disadvantages:
 
-Hidetoshi Seto (11):
-      x86, mce, severity: Make formatting a bit more readable
-      x86, mce, severity: Cleanup severity table
-      x86, mce, severity: Trivial cleanups
-      x86, mce: Replace MCE_SELF_VECTOR by irq_work
-      x86, mce: Replace MCM_ with MCI_MISC_
-      x86, mce: Introduce mce_gather_info()
-      x86, mce: Check the result of ancient_init()
-      x86, mce: Cleanup mce_create/remove_device
-      x86, mce: Cleanup mce_read()
-      x86, mce: Use prefix mce_chrdev_ to group functions
-      x86, mce: Use prefix mce_sysdev_ to group functions
+ - the kaio codepaths are actually *more* complex than the regular 
+   read()/write() IO codepaths - they keep track of an 'IO context', 
+   so part of the efficiency advantages are spent on AIO tracking.
 
-Tony Luck (1):
-      x86, mce, severity: Fix two severities table signatures
+ - executing AIO in the vcpu thread eats up precious vcpu execution 
+   time: combined QCOW2 throughput would be limited by a single 
+   core's performance, and any time spent on QCOW2 processing would 
+   not be spent running the guest CPU. (In such a model we certainly 
+   couldnt do more intelligent, CPU-intense storage solutions like on 
+   the fly compress/decompress of QCOW2 data.)
 
- arch/x86/include/asm/entry_arch.h         |    4 -
- arch/x86/include/asm/hw_irq.h             |    1 -
- arch/x86/include/asm/irq_vectors.h        |    5 -
- arch/x86/include/asm/mce.h                |   19 ++-
- arch/x86/kernel/cpu/mcheck/mce-severity.c |  152 ++++++++++------
- arch/x86/kernel/cpu/mcheck/mce.c          |  288 ++++++++++++++---------------
- arch/x86/kernel/cpu/mcheck/mce_amd.c      |   10 +-
- arch/x86/kernel/entry_64.S                |    5 -
- arch/x86/kernel/irqinit.c                 |    3 -
- 9 files changed, 251 insertions(+), 236 deletions(-)
+ - state machines are also fragile in the sense that any 
+   unintentional blocking of the vcpu context will kill the 
+   performance and latencies of *all* processing in certain 
+   circumstances. So we generally strive to keep the vcpu demux path 
+   obvious, simple and atomic.
 
--- 
-Regards/Gruss,
-Boris.
+ - more advanced security models go out the window as well: we 
+   couldnt isolate drivers from each other if all of them execute in 
+   the same vcpu context ...
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+ - state machines are also notoriously difficult to develop,
+   debug and maintain.
+
+So careful performance, scalability, IO delay and maintainability 
+measurements have to accompany such a model switch, because the 
+disadvantages are numerous.
+
+I'd only consider KAIO it if it provides some *real* measurable 
+performance advantage of at least 10% in some important usecase.
+A few percent probably wouldnt be worth it.
+
+Thanks,
+
+	Ingo
