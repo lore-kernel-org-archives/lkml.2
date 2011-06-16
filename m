@@ -1,111 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757019Ab1FPQkK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 12:40:10 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:43161 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756690Ab1FPQkH (ORCPT
+	id S1757054Ab1FPQkj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 12:40:39 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:35624 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751479Ab1FPQkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 12:40:07 -0400
-Date: Thu, 16 Jun 2011 10:40:04 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] dw_spi: rework message processing
-Message-ID: <20110616164004.GF3795@ponder.secretlab.ca>
-References: <1308158588-17249-1-git-send-email-dirk.brandewie@gmail.com>
- <1308158588-17249-4-git-send-email-dirk.brandewie@gmail.com>
- <20110616131425.GD31534@ponder.secretlab.ca>
- <4DFA2965.1000708@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DFA2965.1000708@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 16 Jun 2011 12:40:37 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=sHEQRaAOdeJoFkUWm7/i9t+5qiGIU943+D1u7BEkBmWDlBPUkyUoaP6Ob9qvOCUrmEJKnk28rEArHXntYbDioegchLUlYyXuecI2OOILHclMq5w+Rr0eLA0MV17ZeHZH;
+Date: Thu, 16 Jun 2011 09:40:30 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+Cc: linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [2.6.39] drm/i915: blank screen on Lenovo Ideapad U160
+Message-ID: <20110616094030.15714852@jbarnes-desktop>
+In-Reply-To: <gizkli0zew.fsf@karga.hank.lab>
+References: <gi1uzevjl4.fsf@mx10.gouders.net>
+	<alpine.DEB.2.00.1105311406210.5012@localhost6.localdomain6>
+	<gitycau362.fsf@mx10.gouders.net>
+	<giei3eoeic.fsf@mx10.gouders.net>
+	<gi1uyx8m2f.fsf_-_@mx10.gouders.net>
+	<20110615115903.685acba0@jbarnes-desktop>
+	<giips6lr5a.fsf@mx10.gouders.net>
+	<20110615144132.074167f3@jbarnes-desktop>
+	<giei2ulpl1.fsf@mx10.gouders.net>
+	<20110615150737.79cd5de7@jbarnes-desktop>
+	<gi4o3q2plu.fsf@karga.hank.lab>
+	<gizkli0zew.fsf@karga.hank.lab>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 09:03:49AM -0700, Dirk Brandewie wrote:
-> On 06/16/2011 06:14 AM, Grant Likely wrote:
-> >On Wed, Jun 15, 2011 at 10:23:06AM -0700, dirk.brandewie@gmail.com wrote:
-> >>From: Dirk Brandewie<dirk.brandewie@gmail.com>
-> >>
-> >>NOTE: patch created git format-patch --break-rewrites=/50%
-> >>
-> >>This patch reworks the message pump worker thread function to run
-> >>until all messages queued to the driver have been handled. The
-> >>function to handle individual spi_transfers is now a synchronus
-> >>function the tasklet to handle spi_transfers has been removed. Work
-> >>for the worker thread is only queued in host controller transfer
-> >>function.
-> >>
-> >>Psuedo code for new thread function:
-> >>   message = get_message()
-> >>   while (message){
-> >>     for_each_transfer_in_msg(message){
-> >>       transfer_setup(transfer)
-> >>       do_transfer()
-> >>     }
-> >>     complete_message()
-> >>     message = get_message()
-> >>   }
-> >>
-> >>Changes that fell out of the message thread changes:
-> >>Non-DMA transfers that are larger than the size of the controller FIFO
-> >>are handled as interrupt driven transfers.
-> >>
-> >>Common FIFO handling functions shared PIO and interrupt transfers.
-> >>
-> >>Simplified queue stop/start funcitons.
-> >>
-> >>Cleanup fixes:
-> >>Changed exported all exported function names to have dw_spi_ prefix
-> >>
-> >>Removed support for registering chip select control function. Setting
-> >>the slave chip select is handled by setting the SER (Slave enable
-> >>register)
-> >
-> >What about for implementations that use a GPIO for the SPI chip
-> >select?  It is very common for board designs to use GPIOs for
-> >multiplexing the SPI bus.
-> 
-> OK I can put that back. I took it out for the following reason.
-> 
-> The Slave Enable Register (SER) must be set for the IP block to
-> start the transfer.  The bit in SER directly control a separate chip
-> select pin while there is an active transfer.  This gives four chip
-> selects in the direct mapping case and up to fifteen if the slave
-> chip selects are muxed together.
-> 
-> >
-> >>
-> >>Removed code that looked at the cs_change hint in the
-> >>spi_transfer. Software has no contorl over whether the slave chip
-> >>select is de-asserted at the end of the transfer.  Once the TX FIFO
-> >>goes empty the slave chip select is dropped.
-> >
-> >This sounds wrong.  cs_change is *not* merely a hint.  It must be respected.
-> >If the driver has no direct control over the CS line, then it is
-> >incumbent on the driver to guaranteed that the cs deassert condition
-> >does not occur.  This will probably mean chaining up all the transfers
-> >in a message so that the TX FIFO remains full.  If cs_change is
-> >requested, then the FIFO must be allowed to empty before kicking of
-> >the next group of transfers.
-> >
-> 
-> I agree it is wrong that the driver can not directly control the chip select :-)
-> 
-> I could probably manage to get the PIO and interrupt case to honor
-> this but would add a fair bit of complexity, I have no idea how to
-> make the DMA case work I am open to suggestions :-).  The current
-> driver has this issue I just made it explicit maybe we should add a
-> warning message in the driver to let client driver writers aware of
-> the Silicon behaviour.
+On Thu, 16 Jun 2011 13:49:11 +0200
+Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de> wrote:
 
-Use scatter/gather DMA or a bounce buffer to chain up contiguous
-transfers into a single DMA operation.  "Best effort" is not okay in
-this situation, the behaviour is required even if it does add
-complexity.
+> Some redundant information, but if I change one line at another place
+> in the i915 code (whithout the above modification) the result is more
+> satisfactory on my machine, because in that case the display even works
+> after I close and reopen the lid:
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
+> index 927442a..ebb67ae 100644
+> --- a/drivers/gpu/drm/i915/intel_bios.c
+> +++ b/drivers/gpu/drm/i915/intel_bios.c
+> @@ -267,7 +267,7 @@ static int intel_bios_ssc_frequency(struct drm_device *dev,
+>         case 4:
+>                 return alternate ? 100 : 96;
+>         default:
+> -               return alternate ? 100 : 120;
+> +               return alternate ? 120 : 100;
+>         }
+>  }
 
-g.
+Does your machine also work if you set the lvds_use_ssc param to 0?
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
