@@ -1,31 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362Ab1FPPw4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 11:52:56 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63446 "EHLO
+	id S1756527Ab1FPP4M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 11:56:12 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48316 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753987Ab1FPPwz (ORCPT
+	with ESMTP id S1754820Ab1FPP4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 11:52:55 -0400
+	Thu, 16 Jun 2011 11:56:04 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=uSaT9C7DokmoV7O1e4JKPgOV81SDY4DFTOBs/F5zsQi0FlUb7r7nLRwy8rpJsURmuz
-         8dhUwm/qz0dZR7+uQ4/byMjKqCF3i16oJbczAJooyAQhD04g8ckwUwtpKdQKxOcufGLB
-         ujUscK5mbyKzPVjTSKw15asSNi0R6eKNtPORY=
+        b=EkoFadcASN6Q3nPhI9JIARCfqBvoNylnusYHoO6uKF+fN+yp1r25T767MZzWbwZvkC
+         WawGt6gryBKJxk4QFNLmcdNz55mJIJSmYwU9A5mRlpC2S+qpCindDaET/JQ6yeugsTZO
+         U7w59LTmJKwBx2zzSagwJzD8qg5Cj/veU1sHY=
 From: Vasiliy Kulikov <segoon@openwall.com>
 To: linux-kernel@vger.kernel.org
 Cc: Vasiliy Kulikov <segooon@gmail.com>,
         Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: [PATCH] taskstats: don't allow duplicate entries in listener mode
-Date: Thu, 16 Jun 2011 19:52:50 +0400
-Message-Id: <1308239570-4504-1-git-send-email-segoon@openwall.com>
+Subject: [PATCH v2] taskstats: don't allow duplicate entries in listener mode
+Date: Thu, 16 Jun 2011 19:55:59 +0400
+Message-Id: <1308239759-4797-1-git-send-email-segoon@openwall.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-From: Vasiliy Kulikov <segooon@gmail.com>
 
 Currently a single process may register exit handlers unlimited times.
 It may lead to a bloated listeners chain and very slow process terminations.
@@ -47,6 +45,8 @@ the same pid, it would inherit taskstats attributes.
 
 Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
 ---
+ v2 - removed wrong "From" line.
+
  kernel/taskstats.c |   15 ++++++++++++---
  1 files changed, 12 insertions(+), 3 deletions(-)
 
