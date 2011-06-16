@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756577Ab1FPPJu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 11:09:50 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:47211 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756126Ab1FPPJr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 11:09:47 -0400
-Date: Thu, 16 Jun 2011 11:09:47 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tatyana Brokhman <tlinder@codeaurora.org>
-cc: greg@kroah.com, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, <balbi@ti.com>,
-        <ablay@codeaurora.org>, open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH/RFC 4/5] usb:dummy_hcd: Disable single-request fifo in
- dummy hcd
-In-Reply-To: <1308231068-24038-5-git-send-email-tlinder@codeaurora.org>
-Message-ID: <Pine.LNX.4.44L0.1106161107190.2204-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756942Ab1FPPx6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 11:53:58 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:54081 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756278Ab1FPPxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 11:53:53 -0400
+Message-Id: <20110616155352.620157895@sgi.com>
+User-Agent: quilt/0.47-1
+Date: Thu, 16 Jun 2011 10:10:33 -0500
+From: cpw@sgi.com
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, x86@kernel.org
+Subject: [patch 1/8 v4] x86, UV: smp_processor_id in a preemptable region
+References: <20110616151032.729980001@gulag1.americas.sgi.com>
+Content-Disposition: inline; filename=tlb_uv_smpcpu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Jun 2011, Tatyana Brokhman wrote:
+Fix a call by tunables_write() to smp_processor_id() within a preemptable
+region.
+Call get_cpu()/put_cpu() around the region where the returned cpu
+number is actually used, which makes it non-preemptable.
 
-> This is not the actual behavior of the udc, thus it's removed.
+Diffed against 3.0.0-rc3
 
-I don't understand.  What UDC are you talking about?  This _is_ the 
-actual behavior of the net2280 (depending on which endpoint you're 
-looking at and how the device is configured).
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+---
 
-> This patch is needed for several of UAS test to pass.
+A DEBUG_PREEMPT warning is prevented.
+UV does not support cpu hotplug yet, but this is a step toward that ability.
 
-Then the tests are broken.  NAK.
+ arch/x86/platform/uv/tlb_uv.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Alan Stern
+Index: linux/arch/x86/platform/uv/tlb_uv.c
+===================================================================
+--- linux.orig/arch/x86/platform/uv/tlb_uv.c
++++ linux/arch/x86/platform/uv/tlb_uv.c
+@@ -1334,9 +1334,10 @@ static ssize_t tunables_write(struct fil
+ 
+ 	instr[count] = '\0';
+ 
+-	bcp = &per_cpu(bau_control, smp_processor_id());
+-
++	cpu = get_cpu();
++	bcp = &per_cpu(bau_control, cpu);
+ 	ret = parse_tunables_write(bcp, instr, count);
++	put_cpu();
+ 	if (ret)
+ 		return ret;
+ 
 
