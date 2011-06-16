@@ -1,88 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757429Ab1FPPcg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 11:32:36 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:45693 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756968Ab1FPPce (ORCPT
+	id S1757401Ab1FPPds (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 11:33:48 -0400
+Received: from mtagate4.uk.ibm.com ([194.196.100.164]:43318 "EHLO
+	mtagate4.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755213Ab1FPPdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 11:32:34 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Ben Hutchings <ben@decadent.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 2/2] x86, microcode, AMD: Fix section header size check
-Date: Thu, 16 Jun 2011 17:32:07 +0200
-Message-Id: <1308238327-27965-3-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.4.rc2
-In-Reply-To: <1308238327-27965-1-git-send-email-bp@amd64.org>
-References: <1308238327-27965-1-git-send-email-bp@amd64.org>
+	Thu, 16 Jun 2011 11:33:47 -0400
+Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was
+ Vpid:)
+From: Greg Kurz <gkurz@fr.ibm.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Cedric Le Goater <clg@vnet.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org, containers@lists.osdl.org,
+        akpm@linux-foundation.org, xemul@openvz.org
+In-Reply-To: <m1y611bysa.fsf@fess.ebiederm.org>
+References: <20110615145527.4016.70157.stgit@bahia.local>
+	 <20110615190302.GA16440@redhat.com>	<1308223158.8230.66.camel@bahia.local>
+	 <4DF9F657.7030605@fr.ibm.com>  <m1y611bysa.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Jun 2011 17:33:32 +0200
+Message-ID: <1308238412.8230.95.camel@bahia.local>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+On Thu, 2011-06-16 at 08:07 -0700, Eric W. Biederman wrote:
+> > Finally, we thought that the 'ActivePid' information was interesting 
+> > enough to be exposed in /proc and was solving the case we're facing 
+> > rather easily with some framework (cgroups) in user space.
+> 
+> The pid number by which a process knows itself doesn't seem
+> unreasonable.  I'm not totally 
+> 
+> After having a second look at the code in proc we already have
+> a reference to the struct pid we want to print.  So simply
+> printing
+> pid->numbers[pid->level].nr
+> seems reasonable, and race free.
+> 
+> Alternatively that could be written.
+> pid_nr_ns(pid, ns_of_pid(pid));
+> 
+> Eric
 
-The ucode size check has to take the section header size into account
-too when sanity checking the section length. Shorten and clarify define
-names, while at it.
+So we end up with the following, since pid is valid:
 
-Caught-by: Ben Hutchings <ben@decadent.org.uk>
-Link: http://lkml.kernel.org/r/1302752223.5282.674.camel@localhost
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/microcode_amd.c |   15 ++++++++-------
- 1 files changed, 8 insertions(+), 7 deletions(-)
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index 5e4f776..b7316cc 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -183,12 +183,14 @@ static inline void task_state(struct seq_file *m,
+struct pid_namespace *ns,
+ 		"Pid:\t%d\n"
+ 		"PPid:\t%d\n"
+ 		"TracerPid:\t%d\n"
++		"ActivePid:\t%d\n"
+ 		"Uid:\t%d\t%d\t%d\t%d\n"
+ 		"Gid:\t%d\t%d\t%d\t%d\n",
+ 		get_task_state(p),
+ 		task_tgid_nr_ns(p, ns),
+ 		pid_nr_ns(pid, ns),
+ 		ppid, tpid,
++		pid_nr_ns(pid, ns_of_pid(pid)),
+ 		cred->uid, cred->euid, cred->suid, cred->fsuid,
+ 		cred->gid, cred->egid, cred->sgid, cred->fsgid);
 
-diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
-index d30d67c..591be0e 100644
---- a/arch/x86/kernel/microcode_amd.c
-+++ b/arch/x86/kernel/microcode_amd.c
-@@ -66,8 +66,8 @@ struct microcode_amd {
- 	unsigned int			mpb[0];
- };
- 
--#define UCODE_CONTAINER_SECTION_HDR	8
--#define UCODE_CONTAINER_HEADER_SIZE	12
-+#define SECTION_HDR_SIZE	8
-+#define CONTAINER_HDR_SZ	12
- 
- static struct equiv_cpu_entry *equiv_cpu_table;
- 
-@@ -177,7 +177,7 @@ static unsigned int verify_ucode_size(int cpu, const u8 *buf, unsigned int size)
- 
- 	actual_size = *(u32 *)(buf + 4);
- 
--	if (actual_size > size || actual_size > max_size) {
-+	if (actual_size + SECTION_HDR_SIZE > size || actual_size > max_size) {
- 		pr_err("section size mismatch\n");
- 		return 0;
- 	}
-@@ -204,8 +204,8 @@ get_next_ucode(int cpu, const u8 *buf, unsigned int size, unsigned int *mc_size)
- 	if (!mc)
- 		goto out;
- 
--	get_ucode_data(mc, buf + UCODE_CONTAINER_SECTION_HDR, actual_size);
--	*mc_size = actual_size + UCODE_CONTAINER_SECTION_HDR;
-+	get_ucode_data(mc, buf + SECTION_HDR_SIZE, actual_size);
-+	*mc_size = actual_size + SECTION_HDR_SIZE;
- 
- out:
- 	return mc;
-@@ -229,9 +229,10 @@ static int install_equiv_cpu_table(const u8 *buf)
- 		return -ENOMEM;
- 	}
- 
--	get_ucode_data(equiv_cpu_table, buf + UCODE_CONTAINER_HEADER_SIZE, size);
-+	get_ucode_data(equiv_cpu_table, buf + CONTAINER_HDR_SZ, size);
- 
--	return size + UCODE_CONTAINER_HEADER_SIZE; /* add header length */
-+	/* add header length */
-+	return size + CONTAINER_HDR_SZ;
- }
- 
- static void free_equiv_cpu_table(void)
 -- 
-1.7.4.rc2
+Gregory Kurz                                     gkurz@fr.ibm.com
+Software Engineer @ IBM/Meiosys                  http://www.ibm.com
+Tel +33 (0)534 638 479                           Fax +33 (0)561 400 420
+
+"Anarchy is about taking complete responsibility for yourself."
+        Alan Moore.
 
