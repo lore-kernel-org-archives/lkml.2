@@ -1,67 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757925Ab1FPMgO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 08:36:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37360 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756211Ab1FPMgL convert rfc822-to-8bit (ORCPT
+	id S1757910Ab1FPMgH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 08:36:07 -0400
+Received: from bohort.kerlabs.com ([90.80.97.101]:37488 "EHLO
+	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756211Ab1FPMgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 08:36:11 -0400
-Subject: Re: [PATCH v4 3.0-rc2-tip 13/22] 13: uprobes: Handing int3 and
- singlestep exception.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110616120442.GA4093@linux.vnet.ibm.com>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
-	 <20110607130051.28590.68088.sendpatchset@localhost6.localdomain6>
-	 <1308225141.13240.25.camel@twins>
-	 <20110616120442.GA4093@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 16 Jun 2011 14:35:24 +0200
-Message-ID: <1308227724.13240.58.camel@twins>
+	Thu, 16 Jun 2011 08:36:04 -0400
+Date: Thu, 16 Jun 2011 14:35:55 +0200
+From: Louis Rilling <Louis.Rilling@kerlabs.com>
+To: Greg Kurz <gkurz@fr.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, containers@lists.osdl.org,
+        akpm@linux-foundation.org, xemul@openvz.org
+Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was
+	Vpid:)
+Message-ID: <20110616123554.GA7230@hawkmoon.kerlabs.com>
+Mail-Followup-To: Greg Kurz <gkurz@fr.ibm.com>,
+	Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+	ebiederm@xmission.com, containers@lists.osdl.org,
+	akpm@linux-foundation.org, xemul@openvz.org
+References: <20110615145527.4016.70157.stgit@bahia.local> <20110615184625.GA15573@redhat.com> <1308222107.8230.49.camel@bahia.local>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_bohort-23791-1308227667-0001-2"
+Content-Disposition: inline
+In-Reply-To: <1308222107.8230.49.camel@bahia.local>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-16 at 17:34 +0530, Srikar Dronamraju wrote:
-> > > +
-> > > +cleanup_ret:
-> > > +       if (u) {
-> > > +               down_read(&mm->mmap_sem);
-> > > +               if (!set_orig_insn(current, u, probept, true))
-> > 
-> > we try to undo the probe? That doesn't make any sense. I thought you
-> > meant to return to userspace, let it re-take the trap and try again
-> > until you do manage to allocate the user resource.
-> 
-> I meant removing the probe itself
-> https://lkml.org/lkml/2011/4/21/279
-> 
-> We could try reseting and retrying the trap. Just that we might end up
-> looping under memory pressure.
-> 
-> > 
-> > This behaviour makes probes totally unreliable under memory pressure. 
-> 
-> Under memory pressure we could be unreliable. 
+This is a MIME-formatted message.  If you see this text it means that your
+E-mail software does not support MIME-formatted messages.
 
-But that is total crap, there's nothing worse than unreliable debug
-tools.
+--=_bohort-23791-1308227667-0001-2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On 16/06/11 13:01 +0200, Greg Kurz wrote:
+> On Wed, 2011-06-15 at 20:46 +0200, Oleg Nesterov wrote:
+> > On 06/15, Greg Kurz wrote:
+> > >
+> > > @@ -176,6 +177,17 @@ static inline void task_state(struct seq_file *m=
+, struct pid_namespace *ns,
+> > >  		if (tracer)
+> > >  			tpid =3D task_pid_nr_ns(tracer, ns);
+> > >  	}
+> > > +	actpid =3D 0;
+> > > +	sighand =3D rcu_dereference(p->sighand);
+> > > +	if (sighand) {
+> > > +		struct pid_namespace *pid_ns;
+> > > +		unsigned long flags;
+> > > +		spin_lock_irqsave(&sighand->siglock, flags);
+> >=20
+> > Well. This is not exactly right. We have lock_task_sighand() for this.
+> >=20
+>=20
+> I see... ->sighand could change so we need the for(;;) loop in
+> __lock_task_sighand() to be sure we have the right pointer, correct ?
+> By the way, if we use lock_task_sighand() we'll end up with nested
+> rcu_read_lock(): it will work but I don't know how it may affect
+> performance...
 
+rcu_read_lock() is very cheap.
+
+>=20
+> > But. Why do you need ->siglock? Why rcu_read_lock() is not enough?
+> >=20
+>=20
+> Because there's a race with
+> __exit_signal()->__unhash_process()->detach_pid() that can break
+> task_active_pid_ns() and rcu won't help here (unless *perhaps* by
+> modifying __exit_signal() but I don't want to mess with such a critical
+> path).
+
+In case of race, the only risk is that task_active_pid_ns() returns NULL.
+Otherwise, RCU guarantees that the pid_ns will stay alive (see below).
+
+>=20
+> > Hmm. You don't even need pid_ns afaics, you could simply look at
+> > pid->numbers[pid->level].
+> >=20
+>=20
+> True but I will have the same problem: detach_pid() nullifies the pid.
+
+But the pid won't be freed until an RCU grace period expires. See free_pid(=
+). So
+the non-determinism here is when /proc/<pid>/status is read at the same as
+threaded execve() or task's exit(), in which case a stale pid (execve()) or
+no pid (exit after __unhash_process()) can be accessed. This does not look =
+like
+a big deal...
+
+Thanks,
+
+Louis
+
+>=20
+> Thanks for your comments.
+>=20
+> --
+> Greg
+>=20
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/containers
+
+--=20
+Dr Louis Rilling			Kerlabs
+Skype: louis.rilling			Batiment Germanium
+Phone: (+33|0) 6 80 89 08 23		80 avenue des Buttes de Coesmes
+http://www.kerlabs.com/			35700 Rennes
+
+--=_bohort-23791-1308227667-0001-2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Transfer-Encoding: 7bit
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAk35+KoACgkQVKcRuvQ9Q1QJOwCfV4wz61ec6uOjRYtDGDfQHB3b
+EEIAoMjwn6rtvDkgNsNBd3a4BgY9nfUl
+=KK+P
+-----END PGP SIGNATURE-----
+
+--=_bohort-23791-1308227667-0001-2--
