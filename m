@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758239Ab1FPOYr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 10:24:47 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40580 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757312Ab1FPOYq (ORCPT
+	id S1758291Ab1FPOZv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 10:25:51 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:35984
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758220Ab1FPOZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 10:24:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:content-type;
-        b=HIK/sbtPtXGpzbhj9kzzV3RuJC+USNufW6vZC0HPjOyoXfhyO0eZlOcxfkdfT9MkEM
-         38ItsKvwmqIKXlfLKZjAxGnbGsyRnQCjSi0QUOWGv/c59ygqstgL6T15CnusfBhYfjxM
-         zB8slKFjM9z4j4cPHzq4BclScgpWA3zc8DRmc=
+	Thu, 16 Jun 2011 10:25:49 -0400
+Date: Thu, 16 Jun 2011 10:25:45 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [media] DocBook: Use base64 for gif/png files
+Message-ID: <20110616142545.GA5785@infradead.org>
+References: <4DFA0FF7.1030400@redhat.com>
 MIME-Version: 1.0
-Date: Thu, 16 Jun 2011 10:24:44 -0400
-X-Google-Sender-Auth: Ouu-qr45nkuaSjE56Jk8ImVTnMk
-Message-ID: <BANLkTi=WU6h_0jOVL=_VwJawZd4qVnU-EA@mail.gmail.com>
-Subject: signalfd() question - interaction with threads
-From: Colin Walters <walters@verbum.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DFA0FF7.1030400@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jun 16, 2011 at 11:15:19AM -0300, Mauro Carvalho Chehab wrote:
+> The patch utility doesn't work with non-binary files. This causes some
+> tools to break, like generating tarball targets and the scripts that
+> generate diff patches at http://www.kernel.org/pub/linux/kernel/v2.6/.
+> 
+> So, let's convert all binaries to ascii using base64, and add a
+> logic at Makefile to convert them back into binaries at runtime.
 
-So in a bit of spare time I have been trying to make GLib use some
-more modern Linux features, in particular signalfd().  The quick link
-for that is here:
-https://bugzilla.gnome.org/show_bug.cgi?id=652072
+Given that all the gifs are not just relatively trivial, but also things
+that looks like they originated or at least should as vector graphics
+I'd recommend to replace them by SVG files.  These also have the benefit
+of actually beeing practically patchable.
 
-But I ran into a problem - I don't necessarily control all of the
-threads in the process, and if any one of them has the signal
-unblocked, it will be handled according to its default disposition
-there instead of where I want - in the signalfd.
-
-The signalfd example in the man page explicitly documents that you
-need to sigprocmask(SIG_BLOCK), which is fine if you control all the
-threads in your app, but I don't.  Any chance of a new flag like
-SFD_HANDLE or SFD_ALWAYS which was rougly equivalent to using
-sigaction()?  Or even better as I say in the bug, *always* deliver the
-signal so I can get an event when a child exits even in the case where
-some other code uses sigaction(SIGCHLD)?
