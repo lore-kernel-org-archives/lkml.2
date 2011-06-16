@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab1FPOfZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 10:35:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51071 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754731Ab1FPOfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 10:35:22 -0400
-Message-ID: <4DFA1460.2090507@redhat.com>
-Date: Thu, 16 Jun 2011 11:34:08 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S932122Ab1FPOgR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 10:36:17 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54907 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932068Ab1FPOgO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 10:36:14 -0400
+Message-ID: <4DFA1474.7030206@ru.mvista.com>
+Date: Thu, 16 Jun 2011 18:34:28 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [media] DocBook: Use base64 for gif/png files
-References: <4DFA0FF7.1030400@redhat.com> <20110616142545.GA5785@infradead.org>
-In-Reply-To: <20110616142545.GA5785@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
+CC: Greg Kroah-Hartman <gregkh@suse.de>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        christian.dietrich@informatik.uni-erlangen.de
+Subject: Re: [PATCH 10/11] wusb: use printk_ratelimited() instead of printk_ratelimit()
+References: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de> <f69548c31f74b77bdc893772ef4012461dff119d.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
+In-Reply-To: <f69548c31f74b77bdc893772ef4012461dff119d.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 16-06-2011 11:25, Christoph Hellwig escreveu:
-> On Thu, Jun 16, 2011 at 11:15:19AM -0300, Mauro Carvalho Chehab wrote:
->> The patch utility doesn't work with non-binary files. This causes some
->> tools to break, like generating tarball targets and the scripts that
->> generate diff patches at http://www.kernel.org/pub/linux/kernel/v2.6/.
->>
->> So, let's convert all binaries to ascii using base64, and add a
->> logic at Makefile to convert them back into binaries at runtime.
-> 
-> Given that all the gifs are not just relatively trivial, but also things
-> that looks like they originated or at least should as vector graphics
-> I'd recommend to replace them by SVG files.  These also have the benefit
-> of actually beeing practically patchable.
+Hello.
 
-This is a good idea, but it would require to re-draw everything, as we don't
-have those files vectorized (I might have one or two svg files on an older
-tree, as I had to re-generate some graphics that used to be just pdf).
+Manuel Zerpies wrote:
 
-One of the reasons why SVG was not used in the past is that there used to have a 
-target to generate pdf files, and I think that the DocBook tools available on 
-that time weren't capable of working with svg. Not sure if xmlto currently
-supports it, but, as we've removed the pdf generation for the media API, 
-changing them to svg is ok.
+> Since printk_ratelimit() shouldn't be used anymore (see comment in
+> include/linux/printk.h), replace it with printk_ratelimited()
 
-Mauro.
+> Signed-off-by: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
+> ---
+>  drivers/usb/wusbcore/wa-xfer.c |    7 +++----
+>  1 files changed, 3 insertions(+), 4 deletions(-)
+
+> diff --git a/drivers/usb/wusbcore/wa-xfer.c b/drivers/usb/wusbcore/wa-xfer.c
+> index 6ccd93a..4193345 100644
+> --- a/drivers/usb/wusbcore/wa-xfer.c
+> +++ b/drivers/usb/wusbcore/wa-xfer.c
+> @@ -83,6 +83,7 @@
+>  #include <linux/spinlock.h>
+>  #include <linux/slab.h>
+>  #include <linux/hash.h>
+> +#include <linux/ratelimit.h>
+>  
+>  #include "wa-hc.h"
+>  #include "wusbhc.h"
+> @@ -1217,16 +1218,14 @@ static int wa_xfer_status_to_errno(u8 status)
+>  	if (status == 0)
+>  		return 0;
+>  	if (status >= ARRAY_SIZE(xlat)) {
+> -		if (printk_ratelimit())
+> -			printk(KERN_ERR "%s(): BUG? "
+> +		printk_ratelimited(KERN_ERR "%s(): BUG? "
+>  			       "Unknown WA transfer status 0x%02x\n",
+>  			       __func__, real_status);
+>  		return -EINVAL;
+>  	}
+>  	errno = xlat[status];
+>  	if (unlikely(errno > 0)) {
+> -		if (printk_ratelimit())
+> -			printk(KERN_ERR "%s(): BUG? "
+> +		printk_ratelimited(KERN_ERR "%s(): BUG? "
+>  			       "Inconsistent WA status: 0x%02x\n",
+>  			       __func__, real_status);
+>  		errno = -errno;
+
+    Why not pr_err_ratelimited()?
+
+WBR, Sergei
