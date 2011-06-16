@@ -1,88 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab1FPF75 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 01:59:57 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:44620 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420Ab1FPF74 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 01:59:56 -0400
-X-AuditID: b753bd60-a0ac3ba000003bac-59-4df99bd9805e
-X-AuditID: b753bd60-a0ac3ba000003bac-59-4df99bd9805e
-Message-ID: <4DF99BD6.8000705@hitachi.com>
-Date: Thu, 16 Jun 2011 14:59:50 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 20/22] 20: perf: perf interface for uprobes
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6> <20110607130216.28590.5724.sendpatchset@localhost6.localdomain6> <4DF20511.8000206@hitachi.com> <20110613084133.GA27130@linux.vnet.ibm.com> <4DF6FFD1.1080203@hitachi.com> <20110614115652.GA4952@linux.vnet.ibm.com>
-In-Reply-To: <20110614115652.GA4952@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753859Ab1FPGDG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 02:03:06 -0400
+Received: from gate.crashing.org ([63.228.1.57]:52278 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753420Ab1FPGDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 02:03:04 -0400
+Subject: Re: Oops in VMA code
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Alexander Graf <agraf@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>
+In-Reply-To: <CDE289EC-7844-48E1-BB6A-6230ADAF6B7C@suse.de>
+References: <47FAB15C-B113-40FD-9CE0-49566AACC0DF@suse.de>
+	 <BANLkTimubRW2Az2MmRbgV+iTB+s6UEF5-w@mail.gmail.com>
+	 <CDE289EC-7844-48E1-BB6A-6230ADAF6B7C@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Jun 2011 16:02:51 +1000
+Message-ID: <1308204171.2516.65.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/14 20:56), Srikar Dronamraju wrote:
->>>> I think -u option should have a path of the target binary, as below
->>>>
->>>> # perf probe -u /bin/zsh -a zfree
->>>
->>> Will --uprobe work as the long name option for -u or do you suggest
->>> something else?
->>
->> Hmm, good question. Maybe we can use -x|--exec to define a uprobe event,
->> because there is no need to give an executable file for kprobes events.
->> # so that -x implies user space event on given execfile
->>
-> 
-> Okay, then lets stick with perf probe -x executable <function-name>
-> then.
+On Thu, 2011-06-16 at 07:32 +0200, Alexander Graf wrote:
+> On 16.06.2011, at 06:32, Linus Torvalds wrote:
 
-Thanks:-)
+> Thanks a lot for looking at it either way :).
 
->> However, Maybe we'd better look this more carefully. Here, we have
->> a problem with listing userspace probes (I mean how perf probe can
->> list up the probes which is on a user app)
->>
->> Currently, it just ignores module name if a probe on a module.
->>   probe:fuse_do_open   (on fuse_do_open@ksrc/linux-2.6/fs/fuse/file.c with isdir)
->>
->> One possible solution is to show the module name right before the
->> symbol as same as the kernel does.
->>
->>   probe:fuse_do_open   (on fuse:fuse_do_open@ksrc/linux-2.6/fs/fuse/file.c with
->> isdir)
-> 
-> This looks better to me.
+Yeah thanks ;-) Let me see what I can dig out.
 
-OK, this will be good for starting point. If someone complains,
-we can switch to below format.
+First it's a load from what looks like a valid pointer to the linear
+mapping that had one byte corrupted (or more but it looks reasonably
+"clean"). It's not a one bit error, there's at least 2 bad bits (the
+09):
 
->> Another way is to show it more verbosely, like below.
->>
->>   probe:fuse_do_open   (at fuse_do_open@ksrc/linux-2.6/fs/fuse/file.c with isdir
->> on fuse)
->>   probe_zsh:zfree      (at 0x45400 on /bin/zsh)
->>
-> 
-> But I am okay with changing to this format too.
-> 
+DAR: c00090026236bbc0
 
-Thanks!
+Alex, how much RAM do you have ? If that was just a one byte corruption,
+the above would imply you have something valid between 9 and 10G. From
+the look of other registers, it seems that it could be a genuine pointer
+with just that stay "09" byte that landed onto it.
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+> The latter is the one I'm executing, while the former still has all
+> the symbols. But you're right. It looks like this is simply an inlined
+> function - which is why it got stripped away. Here's the disassembly
+> of the whole do_unmap function. I hope it's of use despite your fading
+> PPC asm skills :). Host compiler is gcc 4.3.4 from SLES11SP1.
+
+ .../...
+
+Ok, so let's see what we can dig from here. It -looks- like:
+
+if (!mm) goto out :
+
+> 0xc000000000190554 <find_vma_prev>:	cmpdi   cr7,r3,0
+> 0xc000000000190558 <find_vma_prev+4>:	beq     cr7,0xc0000000001907f0 <remove_vma_list+836>
+
+rb_node = mm->mm_rb.rb_node; (rb_node in r9):
+
+> 0xc00000000019055c <find_vma_prev+8>:	ld      r9,8(r3)
+
+vma = mm->mmap (vma in r28)
+
+> 0xc000000000190560 <find_vma_prev+12>:	ld      r28,0(r3)
+> 0xc000000000190564 <find_vma_prev+16>:	li      r11,0
+> 0xc000000000190568 <find_vma_prev+20>:	li      r26,0
+
+while(rb_node)...
+
+> 0xc00000000019056c <find_vma_prev+24>:	cmpdi   cr7,r9,0
+> 0xc000000000190570 <find_vma_prev+28>:	bne     cr7,0xc000000000190594 <find_vma_prev+64>
+> 0xc000000000190574 <find_vma_prev+32>:	b       0xc0000000001905d0 <do_munmap+368>
+> 0xc000000000190578 <find_vma_prev+36>:	nop
+> 0xc00000000019057c <find_vma_prev+40>:	nop
+> 0xc000000000190580 <find_vma_prev+44>:	ld      r9,16(r9)
+> 0xc000000000190584 <find_vma_prev+48>:	mr      r26,r11
+> 0xc000000000190588 <find_vma_prev+52>:	cmpdi   cr7,r9,0
+> 0xc00000000019058c <find_vma_prev+56>:	mr      r11,r26
+> 0xc000000000190590 <find_vma_prev+60>:	beq     cr7,0xc0000000001905c4 <find_vma_prev+112>
+
+vma_tmp = rb_entry(rb_node, struct vm_area_struct, vm_rb);
+
+> 0xc000000000190594 <find_vma_prev+64>:	addi    r26,r9,-56
+
+if (vma_tmp->vm_end)
+
+> 0xc000000000190598 <find_vma_prev+68>:	ld      r0,16(r26)
+
+Here we go. So here vma_tmp is crap, which we got out of the rb_tree,
+so it's either corruption or use after free I'd say. It could also be a
+completely unrelated memory corruption of course....
+
+If you had xmon we could have dug a little bit more to see what's
+before/after etc... but like this it doesn't ring any special bell to
+me.
+
+Cheers,
+Ben.
+
+
