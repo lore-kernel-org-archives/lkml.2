@@ -1,80 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757576Ab1FPPyK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 11:54:10 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:40539 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756702Ab1FPPxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 11:53:54 -0400
-Message-Id: <20110616155353.597956401@sgi.com>
-User-Agent: quilt/0.47-1
-Date: Thu, 16 Jun 2011 10:10:40 -0500
-From: cpw@sgi.com
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, x86@kernel.org
-Subject: [patch 8/8 v4] x86, UV: correct UV2 BAU destination timeout
-References: <20110616151032.729980001@gulag1.americas.sgi.com>
-Content-Disposition: inline; filename=tlb_uv_uv2timeout
+	id S1756315Ab1FPPO7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 11:14:59 -0400
+Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:19855 "HELO
+	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755448Ab1FPPO5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 11:14:57 -0400
+Message-ID: <4DFA1D07.1050705@draigBrady.com>
+Date: Thu, 16 Jun 2011 16:11:03 +0100
+From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
+Subject: Re: scheduler / perf stat question about CPU-migrations
+References: <E1QXDpy-0007Wr-5V@tytso-glaptop> <20110616150347.GB23624@somewhere.redhat.com>
+In-Reply-To: <20110616150347.GB23624@somewhere.redhat.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct the UV2 broacast assist unit's destination timeout period.
-And the activation status register in UV2 should be tested for a destination
-timeout with a 4, not a 2.  The values for Active versus Timeout were reversed.
+On 16/06/11 16:03, Frederic Weisbecker wrote:
+> On Thu, Jun 16, 2011 at 10:46:26AM -0400, Theodore Ts'o wrote:
+>> Can someone tell me how I'm being confused?
+>>
+>> I ran the following command as root:
+>>
+>> 	perf stat schedtool -a 1 -e e2fsck -ft /dev/funarg/kbuild
+> 
+> A theory is that schedtool does:
+> 
+> if (!fork()) {
+> 	set affinity there
+> 	launch e2fsck
+> }
 
-This patch is critical for TLB shootdown on an Altix UV2 system (i.e. the
-follow-on to the current Altix UV).
+Well `taskset` and `chrt` from util-linux don't fork at least,
+so you could try those instead.
 
-Diffed against 3.0.0-rc3
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
----
+I also suggest protecting the command with --
+in case perf is not stopping at the first unrecognized option.
 
- Destination timeout period:
-  The period is set in 4 bits of memory-mapped register MISC_CONTROL.
-  The left bit toggles base period between 10us and 80us.
-  The other 3 bits are the multiplier.
- Decimal 15, hex f, gives the maximum: 7 * 80us
-
- arch/x86/include/asm/uv/uv_bau.h |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
-
-Index: linux/arch/x86/include/asm/uv/uv_bau.h
-===================================================================
---- linux.orig/arch/x86/include/asm/uv/uv_bau.h
-+++ linux/arch/x86/include/asm/uv/uv_bau.h
-@@ -67,7 +67,7 @@
-  *  we're using 655us, similar to UV1: 65 units of 10us
-  */
- #define UV1_INTD_SOFT_ACK_TIMEOUT_PERIOD (9UL)
--#define UV2_INTD_SOFT_ACK_TIMEOUT_PERIOD (65*10UL)
-+#define UV2_INTD_SOFT_ACK_TIMEOUT_PERIOD (15UL)
- 
- #define UV_INTD_SOFT_ACK_TIMEOUT_PERIOD	(is_uv1_hub() ?			\
- 		UV1_INTD_SOFT_ACK_TIMEOUT_PERIOD :			\
-@@ -106,12 +106,20 @@
- #define DS_SOURCE_TIMEOUT		3
- /*
-  * bits put together from HRP_LB_BAU_SB_ACTIVATION_STATUS_0/1/2
-- * values 1 and 5 will not occur
-+ * values 1 and 3 will not occur
-+ *        Decoded meaning              ERROR  BUSY    AUX ERR
-+ * -------------------------------     ----   -----   -------
-+ * IDLE                                 0       0        0
-+ * BUSY (active)                        0       1        0
-+ * SW Ack Timeout (destination)         1       0        0
-+ * SW Ack INTD rejected (strong NACK)   1       0        1
-+ * Source Side Time Out Detected        1       1        0
-+ * Destination Side PUT Failed          1       1        1
-  */
- #define UV2H_DESC_IDLE			0
--#define UV2H_DESC_DEST_TIMEOUT		2
--#define UV2H_DESC_DEST_STRONG_NACK	3
--#define UV2H_DESC_BUSY			4
-+#define UV2H_DESC_BUSY			2
-+#define UV2H_DESC_DEST_TIMEOUT		4
-+#define UV2H_DESC_DEST_STRONG_NACK	5
- #define UV2H_DESC_SOURCE_TIMEOUT	6
- #define UV2H_DESC_DEST_PUT_ERR		7
- 
-
+cheers,
+Pádraig.
