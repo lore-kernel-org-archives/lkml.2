@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab1FPOgR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 10:36:17 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:54907 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932068Ab1FPOgO (ORCPT
+	id S1758458Ab1FPOtt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 10:49:49 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:40170 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758393Ab1FPOts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 10:36:14 -0400
-Message-ID: <4DFA1474.7030206@ru.mvista.com>
-Date: Thu, 16 Jun 2011 18:34:28 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	Thu, 16 Jun 2011 10:49:48 -0400
+X-Sasl-enc: 8NAWP5B9RFGtbNGe8sKhcKhvvxF61d6Y3/N+gv+xnj+U 1308235787
+Date: Thu, 16 Jun 2011 07:34:59 -0700
+From: Greg KH <greg@kroah.com>
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
+        Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [stable] [PATCH v2] pch_phub: Don't oops if dmi_get_system_info
+ returns NULL
+Message-ID: <20110616143459.GA28928@kroah.com>
+References: <1306910669-19348-1-git-send-email-alexander.stein@systec-electronic.com>
+ <1308207924-14181-1-git-send-email-alexander.stein@systec-electronic.com>
 MIME-Version: 1.0
-To: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
-CC: Greg Kroah-Hartman <gregkh@suse.de>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        christian.dietrich@informatik.uni-erlangen.de
-Subject: Re: [PATCH 10/11] wusb: use printk_ratelimited() instead of printk_ratelimit()
-References: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de> <f69548c31f74b77bdc893772ef4012461dff119d.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
-In-Reply-To: <f69548c31f74b77bdc893772ef4012461dff119d.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308207924-14181-1-git-send-email-alexander.stein@systec-electronic.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-Manuel Zerpies wrote:
-
-> Since printk_ratelimit() shouldn't be used anymore (see comment in
-> include/linux/printk.h), replace it with printk_ratelimited()
-
-> Signed-off-by: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
+On Thu, Jun 16, 2011 at 09:05:24AM +0200, Alexander Stein wrote:
+> If dmi_get_system_info() returns NULL, pch_phub_probe() will
+> dereferencea a zero pointer.
+> 
+> This oops was observed on an Atom based board which has no BIOS, but
+> a bootloder which doesn't privde DMI data.
+> 
+> Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
 > ---
->  drivers/usb/wusbcore/wa-xfer.c |    7 +++----
->  1 files changed, 3 insertions(+), 4 deletions(-)
+> Changes in v2:
+> * Adjust summary
+> * Commit message is more verbose
+> 
+>  drivers/misc/pch_phub.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
 
-> diff --git a/drivers/usb/wusbcore/wa-xfer.c b/drivers/usb/wusbcore/wa-xfer.c
-> index 6ccd93a..4193345 100644
-> --- a/drivers/usb/wusbcore/wa-xfer.c
-> +++ b/drivers/usb/wusbcore/wa-xfer.c
-> @@ -83,6 +83,7 @@
->  #include <linux/spinlock.h>
->  #include <linux/slab.h>
->  #include <linux/hash.h>
-> +#include <linux/ratelimit.h>
->  
->  #include "wa-hc.h"
->  #include "wusbhc.h"
-> @@ -1217,16 +1218,14 @@ static int wa_xfer_status_to_errno(u8 status)
->  	if (status == 0)
->  		return 0;
->  	if (status >= ARRAY_SIZE(xlat)) {
-> -		if (printk_ratelimit())
-> -			printk(KERN_ERR "%s(): BUG? "
-> +		printk_ratelimited(KERN_ERR "%s(): BUG? "
->  			       "Unknown WA transfer status 0x%02x\n",
->  			       __func__, real_status);
->  		return -EINVAL;
->  	}
->  	errno = xlat[status];
->  	if (unlikely(errno > 0)) {
-> -		if (printk_ratelimit())
-> -			printk(KERN_ERR "%s(): BUG? "
-> +		printk_ratelimited(KERN_ERR "%s(): BUG? "
->  			       "Inconsistent WA status: 0x%02x\n",
->  			       __func__, real_status);
->  		errno = -errno;
+<formletter>
 
-    Why not pr_err_ratelimited()?
+This is not the correct way to submit patches for inclusion in the
+stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+for how to do this properly.
 
-WBR, Sergei
+</formletter>
