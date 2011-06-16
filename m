@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756612Ab1FPHGA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 03:06:00 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:56258 "EHLO
+	id S1756639Ab1FPHIZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 03:08:25 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:43566 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756542Ab1FPHFv (ORCPT
+	by vger.kernel.org with ESMTP id S1755060Ab1FPHFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 03:05:51 -0400
-X-Sasl-enc: sM3T173ymcfVJIOW9ONLme0Rzsw2UqJT3d54uaWq9pit 1308207950
+	Thu, 16 Jun 2011 03:05:53 -0400
+X-Sasl-enc: TjYTWe++12hPzYs4EemvlkWk65lyPJIMGaa8xwtI/4wz 1308207952
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Jun 15 17:16:12 2011
-Message-Id: <20110616001612.775845441@clark.kroah.org>
+Message-Id: <20110616001612.861458045@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 15 Jun 2011 17:15:32 -0700
+Date: Wed, 15 Jun 2011 17:15:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Dmitry Torokhov <dtor@vmware.com>
-Subject: [35/91] xhci: Fix full speed bInterval encoding.
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [36/91] OHCI: fix regression caused by nVidia shutdown workaround
 In-Reply-To: <20110616001900.GA25375@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,63 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit b513d44751bfb609a3c20463f764c8ce822d63e9 upstream.
+commit 2b7aaf503d56216b847c8265421d2a7d9b42df3e upstream.
 
-Dmitry's patch
+This patch (as1463) fixes a regression caused by commit
+3df7169e73fc1d71a39cffeacc969f6840cdf52b (OHCI: work around for nVidia
+shutdown problem).
 
-dfa49c4ad120a784ef1ff0717168aa79f55a483a USB: xhci - fix math in xhci_get_endpoint_interval()
+The original problem encountered by people using NVIDIA chipsets was
+that USB devices were not turning off when the system shut down.  For
+example, the LED on an optical mouse would remain on, draining a
+laptop's battery.  The problem was caused by a bug in the chipset; an
+OHCI controller in the Reset state would continue to drive a bus reset
+signal even after system shutdown.  The workaround was to put the
+controllers into the Suspend state instead.
 
-introduced a bug.  The USB 2.0 spec says that full speed isochronous endpoints'
-bInterval must be decoded as an exponent to a power of two (e.g. interval =
-2^(bInterval - 1)).  Full speed interrupt endpoints, on the other hand, don't
-use exponents, and the interval in frames is encoded straight into bInterval.
+It turns out that later NVIDIA chipsets do not suffer from this bug.
+Instead some have the opposite bug: If a system is shut down while an
+OHCI controller is in the Suspend state, USB devices remain powered!
+On other systems, shutting down with a Suspended controller causes the
+system to reboot immediately.  Thus, working around the original bug
+on some machines exposes other bugs on other machines.
 
-Dmitry's patch was supposed to fix up the full speed isochronous to parse
-bInterval as an exponent, but instead it changed the *interrupt* endpoint
-bInterval decoding.  The isochronous endpoint encoding was the same.
+The best solution seems to be to limit the workaround to OHCI
+controllers with a low-numbered PCI product ID.  I don't know exactly
+at what point NVIDIA changed their chipsets; the value used here is a
+guess.  So far it was worked out okay for all the people who have
+tested it.
 
-This caused full speed devices with interrupt endpoints (including mice, hubs,
-and USB to ethernet devices) to fail under NEC 0.96 xHCI host controllers:
+This fixes Bugzilla #35032.
 
-[  100.909818] xhci_hcd 0000:06:00.0: add ep 0x83, slot id 1, new drop flags = 0x0, new add flags = 0x99, new slot info = 0x38100000
-[  100.909821] xhci_hcd 0000:06:00.0: xhci_check_bandwidth called for udev ffff88011f0ea000
-...
-[  100.910187] xhci_hcd 0000:06:00.0: ERROR: unexpected command completion code 0x11.
-[  100.910190] xhci_hcd 0000:06:00.0: xhci_reset_bandwidth called for udev ffff88011f0ea000
-
-When the interrupt endpoint was added and a Configure Endpoint command was
-issued to the host, the host controller would return a very odd error message
-(0x11 means "Slot Not Enabled", which isn't true because the slot was enabled).
-Probably the host controller was getting very confused with the bad encoding.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Dmitry Torokhov <dtor@vmware.com>
-Reported-by: Thomas Lindroth <thomas.lindroth@gmail.com>
-Tested-by: Thomas Lindroth <thomas.lindroth@gmail.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Andre "Osku" Schmidt <andre.osku.schmidt@googlemail.com>
+Tested-by: Yury Siamashka <yurand2@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-mem.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/host/ohci-pci.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -511,12 +511,12 @@ static inline unsigned int xhci_get_endp
- 		break;
+--- a/drivers/usb/host/ohci-pci.c
++++ b/drivers/usb/host/ohci-pci.c
+@@ -207,10 +207,18 @@ static int ohci_quirk_amd700(struct usb_
+  */
+ static int ohci_quirk_nvidia_shutdown(struct usb_hcd *hcd)
+ {
++	struct pci_dev *pdev = to_pci_dev(hcd->self.controller);
+ 	struct ohci_hcd	*ohci = hcd_to_ohci(hcd);
  
- 	case USB_SPEED_FULL:
--		if (usb_endpoint_xfer_int(&ep->desc)) {
-+		if (usb_endpoint_xfer_isoc(&ep->desc)) {
- 			interval = xhci_parse_exponent_interval(udev, ep);
- 			break;
- 		}
- 		/*
--		 * Fall through for isochronous endpoint interval decoding
-+		 * Fall through for interrupt endpoint interval decoding
- 		 * since it uses the same rules as low speed interrupt
- 		 * endpoints.
- 		 */
+-	ohci->flags |= OHCI_QUIRK_SHUTDOWN;
+-	ohci_dbg(ohci, "enabled nVidia shutdown quirk\n");
++	/* Evidently nVidia fixed their later hardware; this is a guess at
++	 * the changeover point.
++	 */
++#define PCI_DEVICE_ID_NVIDIA_NFORCE_MCP51_USB		0x026d
++
++	if (pdev->device < PCI_DEVICE_ID_NVIDIA_NFORCE_MCP51_USB) {
++		ohci->flags |= OHCI_QUIRK_SHUTDOWN;
++		ohci_dbg(ohci, "enabled nVidia shutdown quirk\n");
++	}
+ 
+ 	return 0;
+ }
 
 
