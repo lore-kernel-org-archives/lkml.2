@@ -1,124 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759355Ab1FQWbg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 18:31:36 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:37896 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756406Ab1FQWbd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 18:31:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=Hk3Nk7D+ZCLVAPaAU3gWk/mNJ8BGknAkAz1LiQz6wneT8IFEAoRMBNXukijDrNBHNN
-         wByJqh9l7dxwq2lA8NOSe6w+8HUWLhYKgwFcOqwuVG84xCnKTFYCpUX9xhcxfGAYKaYV
-         zjIFgUIoq0AYJ5DzDffItPDdG2Cci0kDmghh0=
+	id S1759369Ab1FQWi4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 18:38:56 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:34652 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756760Ab1FQWiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 18:38:55 -0400
+Date: Fri, 17 Jun 2011 23:38:16 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: [drm pull] single intel fix for SNB irqs
+Message-ID: <alpine.DEB.2.00.1106172336350.22625@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Date: Sat, 18 Jun 2011 00:31:32 +0200
-Message-ID: <BANLkTi=o06eHLtFvmmz7c4TEjahy=EOrJQ@mail.gmail.com>
-Subject: Lock up when faking MMIO read[bwl] on some machines [WAS: Faking MMIO
- ops? Fooling a driver]
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-wireless@vger.kernel.org, Pekka Paalanen <pq@iki.fi>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Content-Type: multipart/mixed; boundary=bcaec544e9e69906a004a5eff2b1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bcaec544e9e69906a004a5eff2b1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
 
-I use attached patch to fake result of read[bwl] performed by closed
-source driver (ndiswrapper+bcmwl and wl).
+Hi Linus
 
-1) It works great on my Sony VAIO with Intel(R) Core(TM)2 Duo CPU P8400
-2) It locks up Macbook Pro 8,1 with some 8-cores Intel
+This is a workaround for lost IRQs on the SNB platform that causes 
+stalls in rendering, by all reports it actually seems to work, so 
+until the hw guys explain things better, we'll go with it.
 
-Do you have any idea why it causes the lockup? Function causing
-problem is "set_ins_reg_val". I've created it as copy of
-get_ins_reg_val, it just sets values in struct pt_regs, instead of
-reading them).
+Dave.
 
---=20
-Rafa=C5=82
 
---bcaec544e9e69906a004a5eff2b1
-Content-Type: application/octet-stream; name="mmio.debugging.patch"
-Content-Disposition: attachment; filename="mmio.debugging.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gp1plyq31
+The following changes since commit 95d17b7168eacf1f97f2d1d087ebe7a648c30051:
 
-ZGlmZiAtLWdpdCBhL2FyY2gveDg2L21tL21taW8tbW9kLmMgYi9hcmNoL3g4Ni9tbS9tbWlvLW1v
-ZC5jCmluZGV4IDNhZGZmN2QuLmY4NTEzYmIgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L21tL21taW8t
-bW9kLmMKKysrIGIvYXJjaC94ODYvbW0vbW1pby1tb2QuYwpAQCAtMjA2LDYgKzIwNiwxMiBAQCBz
-dGF0aWMgdm9pZCBwcmUoc3RydWN0IGttbWlvX3Byb2JlICpwLCBzdHJ1Y3QgcHRfcmVncyAqcmVn
-cywKIAlwdXRfY3B1X3ZhcihwZl9yZWFzb24pOwogfQogCisjZGVmaW5lIE1NSU9fQkFTRQkJCTB4
-ZmFhZmMwMDAKKyNkZWZpbmUgQjQzX01NSU9fUEhZX0NPTlRST0wJCTB4M0ZDCisjZGVmaW5lIEI0
-M19NTUlPX1BIWV9EQVRBCQkweDNGRQorCitzdGF0aWMgdTE2IGJyb2FkY29tX3BoeV9hZGRyOwor
-CiBzdGF0aWMgdm9pZCBwb3N0KHN0cnVjdCBrbW1pb19wcm9iZSAqcCwgdW5zaWduZWQgbG9uZyBj
-b25kaXRpb24sCiAJCQkJCQkJc3RydWN0IHB0X3JlZ3MgKnJlZ3MpCiB7CkBAIC0yMTksNiArMjI1
-LDE4IEBAIHN0YXRpYyB2b2lkIHBvc3Qoc3RydWN0IGttbWlvX3Byb2JlICpwLCB1bnNpZ25lZCBs
-b25nIGNvbmRpdGlvbiwKIAkJQlVHKCk7CiAJfQogCisJaWYgKG15X3JlYXNvbi0+dHlwZSA9PSBS
-RUdfUkVBRCAmJiBteV90cmFjZS0+cGh5cyA9PSBNTUlPX0JBU0UgKyBCNDNfTU1JT19QSFlfREFU
-QSkgeworCQlwcl9pbmZvKCJaQUpFQzogcmVhZCBQSFkgMHglWFxuIiwgYnJvYWRjb21fcGh5X2Fk
-ZHIpOworCQlzd2l0Y2ggKGJyb2FkY29tX3BoeV9hZGRyKXsKKwkJY2FzZSAweDIwOgorCQljYXNl
-IDB4MjI6CisJCWNhc2UgMHgyNzoKKwkJCXByX2luZm8oIlpBSkVDOiBvdmVyd3JpdGluZyAweCVY
-IHdpdGggMHhGRkZGXG4iLCBicm9hZGNvbV9waHlfYWRkcik7CisJCQlzZXRfaW5zX3JlZ192YWwo
-bXlfcmVhc29uLT5pcCwgcmVncywgMHhGRkZGKTsKKwkJCWJyZWFrOworCQl9CisJfQorCiAJc3dp
-dGNoIChteV9yZWFzb24tPnR5cGUpIHsKIAljYXNlIFJFR19SRUFEOgogCQlteV90cmFjZS0+dmFs
-dWUgPSBnZXRfaW5zX3JlZ192YWwobXlfcmVhc29uLT5pcCwgcmVncyk7CkBAIC0yMjcsNiArMjQ1
-LDExIEBAIHN0YXRpYyB2b2lkIHBvc3Qoc3RydWN0IGttbWlvX3Byb2JlICpwLCB1bnNpZ25lZCBs
-b25nIGNvbmRpdGlvbiwKIAkJYnJlYWs7CiAJfQogCisJaWYgKG15X3JlYXNvbi0+dHlwZSA9PSBS
-RUdfV1JJVEUgJiYgbXlfdHJhY2UtPnBoeXMgPT0gTU1JT19CQVNFICsgQjQzX01NSU9fUEhZX0NP
-TlRST0wpIHsKKwkJYnJvYWRjb21fcGh5X2FkZHIgPSBteV90cmFjZS0+dmFsdWU7CisJCS8vcHJf
-aW5mbygiWkFKRUM6IHNldHRpbmcgUEhZIGFkZHIgdG8gMHglWFxuIiwgYnJvYWRjb21fcGh5X2Fk
-ZHIpOworCX0KKwogCW1taW9fdHJhY2VfcncobXlfdHJhY2UpOwogCXB1dF9jcHVfdmFyKGNwdV90
-cmFjZSk7CiAJcHV0X2NwdV92YXIocGZfcmVhc29uKTsKZGlmZiAtLWdpdCBhL2FyY2gveDg2L21t
-L3BmX2luLmMgYi9hcmNoL3g4Ni9tbS9wZl9pbi5jCmluZGV4IDlmMDYxNGQuLjg2NDQ5ZWQgMTAw
-NjQ0Ci0tLSBhL2FyY2gveDg2L21tL3BmX2luLmMKKysrIGIvYXJjaC94ODYvbW0vcGZfaW4uYwpA
-QCAtNDYxLDYgKzQ2MSw5OSBAQCBlcnI6CiAJcmV0dXJuIDA7CiB9CiAKK3N0YXRpYyB2b2lkIHNl
-dF9yZWdfdzMyKGludCBubywgc3RydWN0IHB0X3JlZ3MgKnJlZ3MsIHUzMiB2YWwpCit7CisJc3dp
-dGNoIChubykgeworCWNhc2UgYXJnX0FYOgorCQlyZWdzLT5heCA9IHZhbDsKKwkJYnJlYWs7CisJ
-Y2FzZSBhcmdfQlg6CisJCXJlZ3MtPmJ4ID0gdmFsOworCQlicmVhazsKKwljYXNlIGFyZ19DWDoK
-KwkJcmVncy0+Y3ggPSB2YWw7CisJCWJyZWFrOworCWNhc2UgYXJnX0RYOgorCQlyZWdzLT5keCA9
-IHZhbDsKKwkJYnJlYWs7CisJY2FzZSBhcmdfU1A6CisJCXJlZ3MtPnNwID0gdmFsOworCQlicmVh
-azsKKwljYXNlIGFyZ19CUDoKKwkJcmVncy0+YnAgPSB2YWw7CisJCWJyZWFrOworCWNhc2UgYXJn
-X1NJOgorCQlyZWdzLT5zaSA9IHZhbDsKKwkJYnJlYWs7CisJY2FzZSBhcmdfREk6CisJCXJlZ3Mt
-PmRpID0gdmFsOworCQlicmVhazsKKyNpZmRlZiBfX2FtZDY0X18KKwljYXNlIGFyZ19SODoKKwkJ
-cmVncy0+cjggPSB2YWw7CisJCWJyZWFrOworCWNhc2UgYXJnX1I5OgorCQlyZWdzLT5yOSA9IHZh
-bDsKKwkJYnJlYWs7CisJY2FzZSBhcmdfUjEwOgorCQlyZWdzLT5yMTAgPSB2YWw7CisJCWJyZWFr
-OworCWNhc2UgYXJnX1IxMToKKwkJcmVncy0+cjExID0gdmFsOworCQlicmVhazsKKwljYXNlIGFy
-Z19SMTI6CisJCXJlZ3MtPnIxMiA9IHZhbDsKKwkJYnJlYWs7CisJY2FzZSBhcmdfUjEzOgorCQly
-ZWdzLT5yMTMgPSB2YWw7CisJCWJyZWFrOworCWNhc2UgYXJnX1IxNDoKKwkJcmVncy0+cjE0ID0g
-dmFsOworCQlicmVhazsKKwljYXNlIGFyZ19SMTU6CisJCXJlZ3MtPnIxNSA9IHZhbDsKKwkJYnJl
-YWs7CisjZW5kaWYKKwlkZWZhdWx0OgorCQlwcmludGsoS0VSTl9FUlIgIm1taW90cmFjZTogRXJy
-b3IgcmVnIG5vIyAlZFxuIiwgbm8pOworCX0KK30KKwordm9pZCBzZXRfaW5zX3JlZ192YWwodW5z
-aWduZWQgbG9uZyBpbnNfYWRkciwgc3RydWN0IHB0X3JlZ3MgKnJlZ3MsIHUzMiB2YWwpCit7CisJ
-dW5zaWduZWQgaW50IG9wY29kZTsKKwlpbnQgcmVnOworCXVuc2lnbmVkIGNoYXIgKnA7CisJc3Ry
-dWN0IHByZWZpeF9iaXRzIHByZjsKKwlpbnQgaTsKKworCXAgPSAodW5zaWduZWQgY2hhciAqKWlu
-c19hZGRyOworCXAgKz0gc2tpcF9wcmVmaXgocCwgJnByZik7CisJcCArPSBnZXRfb3Bjb2RlKHAs
-ICZvcGNvZGUpOworCWZvciAoaSA9IDA7IGkgPCBBUlJBWV9TSVpFKHJlZ19yb3ApOyBpKyspCisJ
-CWlmIChyZWdfcm9wW2ldID09IG9wY29kZSkKKwkJCWdvdG8gZG9fd29yazsKKworCWZvciAoaSA9
-IDA7IGkgPCBBUlJBWV9TSVpFKHJlZ193b3ApOyBpKyspCisJCWlmIChyZWdfd29wW2ldID09IG9w
-Y29kZSkKKwkJCWdvdG8gZG9fd29yazsKKworCXByaW50ayhLRVJOX0VSUiAibW1pb3RyYWNlOiBO
-b3QgYSByZWdpc3RlciBpbnN0cnVjdGlvbiwgb3Bjb2RlICIKKwkJCQkJCQkiMHglMDJ4XG4iLCBv
-cGNvZGUpOworCXJldHVybjsKKworZG9fd29yazoKKwkvKiBmb3IgU1RPUywgc291cmNlIHJlZ2lz
-dGVyIGlzIGZpeGVkICovCisJaWYgKG9wY29kZSA9PSAweEFBIHx8IG9wY29kZSA9PSAweEFCKSB7
-CisJCXJlZyA9IGFyZ19BWDsKKwl9IGVsc2UgeworCQl1bnNpZ25lZCBjaGFyIG1vZF9ybSA9ICpw
-OworCQlyZWcgPSAoKG1vZF9ybSA+PiAzKSAmIDB4NykgfCAocHJmLnJleHIgPDwgMyk7CisJfQor
-CisJc2V0X3JlZ193MzIocmVnLCByZWdzLCB2YWwpOworfQorCiB1bnNpZ25lZCBsb25nIGdldF9p
-bnNfaW1tX3ZhbCh1bnNpZ25lZCBsb25nIGluc19hZGRyKQogewogCXVuc2lnbmVkIGludCBvcGNv
-ZGU7CmRpZmYgLS1naXQgYS9hcmNoL3g4Ni9tbS9wZl9pbi5oIGIvYXJjaC94ODYvbW0vcGZfaW4u
-aAppbmRleCBlMDUzNDFhLi45MGI0M2ZmIDEwMDY0NAotLS0gYS9hcmNoL3g4Ni9tbS9wZl9pbi5o
-CisrKyBiL2FyY2gveDg2L21tL3BmX2luLmgKQEAgLTM0LDYgKzM0LDcgQEAgZW51bSByZWFzb25f
-dHlwZSB7CiBlbnVtIHJlYXNvbl90eXBlIGdldF9pbnNfdHlwZSh1bnNpZ25lZCBsb25nIGluc19h
-ZGRyKTsKIHVuc2lnbmVkIGludCBnZXRfaW5zX21lbV93aWR0aCh1bnNpZ25lZCBsb25nIGluc19h
-ZGRyKTsKIHVuc2lnbmVkIGxvbmcgZ2V0X2luc19yZWdfdmFsKHVuc2lnbmVkIGxvbmcgaW5zX2Fk
-ZHIsIHN0cnVjdCBwdF9yZWdzICpyZWdzKTsKK3ZvaWQgc2V0X2luc19yZWdfdmFsKHVuc2lnbmVk
-IGxvbmcgaW5zX2FkZHIsIHN0cnVjdCBwdF9yZWdzICpyZWdzLCB1MzIgdmFsKTsKIHVuc2lnbmVk
-IGxvbmcgZ2V0X2luc19pbW1fdmFsKHVuc2lnbmVkIGxvbmcgaW5zX2FkZHIpOwogCiAjZW5kaWYg
-LyogX19QRl9IXyAqLwo=
---bcaec544e9e69906a004a5eff2b1--
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6 (2011-06-17 10:37:57 -0700)
+
+are available in the git repository at:
+
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+
+Daniel J Blueman (1):
+      drm/i915: Fix gen6 (SNB) missed BLT ring interrupts.
+
+ drivers/gpu/drm/i915/i915_irq.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
