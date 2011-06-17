@@ -1,118 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758225Ab1FQKDP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 06:03:15 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:42621 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754523Ab1FQKDN (ORCPT
+	id S1758389Ab1FQKF2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 06:05:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38715 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752220Ab1FQKFZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 06:03:13 -0400
-Date: Fri, 17 Jun 2011 15:33:00 +0530
-From: Ankita Garg <ankita@in.ibm.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        svaidy@linux.vnet.ibm.com, thomas.abraham@linaro.org
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-Message-ID: <20110617100300.GA24954@in.ibm.com>
-Reply-To: Ankita Garg <ankita@in.ibm.com>
-References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
- <20110613134701.2b23b8d8.kamezawa.hiroyu@jp.fujitsu.com>
- <20110616042044.GA28563@in.ibm.com>
- <1308240240.11430.115.camel@nimitz>
+	Fri, 17 Jun 2011 06:05:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=rG4pvWah4utOnym+I9pWwyZbxSXQ9B1QWDHti8/js/VEr+TUg/ZoEM+Zgwz1J53kqS
+         kmA9eb/uTt9Y3+M9Ek5osCFMB2xF6F22+szs4dph+/ZDrocgRmCkyemwb2M5BS44+ASA
+         DN0pbnXbM/3Se3yqU4dKipfLLhqiVW4+0KAVg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308240240.11430.115.camel@nimitz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1308245069.9218.148.camel@gandalf.stny.rr.com>
+References: <BANLkTimG_oBX1bDTEVfZ81_uqXOahqR1ww@mail.gmail.com>
+	<1308230239.9218.137.camel@gandalf.stny.rr.com>
+	<BANLkTinO85w4G9nFjio4HtOcrS0u-Ezz1Q@mail.gmail.com>
+	<1308245069.9218.148.camel@gandalf.stny.rr.com>
+Date: Fri, 17 Jun 2011 11:05:24 +0100
+Message-ID: <BANLkTikCQkFXRg8w0dFBvod46YoxNydLPQ@mail.gmail.com>
+Subject: Re: [PATCH] ring_buffer: Ensure that buffer page data is aligned.
+From: Will Newton <will.newton@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, fweisbec@gmail.com,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Jun 16, 2011 at 09:04:00AM -0700, Dave Hansen wrote:
-> On Thu, 2011-06-16 at 09:50 +0530, Ankita Garg wrote:
-> > - Correctly predicting memory pressure is difficult and thereby being
-> >   able to online the required pages at the right time could be a
-> >   challenge
-> 
-> For the sake of this discussion, let's forget about this.  There are
-> certainly a lot of scenarios where turning memory on/off is necessary
-> and useful _without_ knowing what kind of load the system is under.  "We
-> just shut down our huge database, and now have 99% of RAM free" is a
-> fine, dumb, metric.  We don't have to have magical pony memory pressure
-> detection as a prerequisite.
+On Thu, Jun 16, 2011 at 6:24 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Thu, 2011-06-16 at 14:32 +0100, Will Newton wrote:
+>> On Thu, Jun 16, 2011 at 2:17 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>> > On Thu, 2011-06-16 at 14:03 +0100, Will Newton wrote:
+>> >> Explicitly align the start of the buffer page data array to the
+>> >> required arch alignment. This is required for architectures that
+>> >> require 8 byte alignment but do not have a 8 byte local_t.
+>> >
+>> > What arch does that? A 32bit arch that forces 8 byte alignment?
+>>
+>> Yes, it's likely for all 64bit arches will be aligned correctly.
 >
+> What arch is this exactly. Is it because 64bit variables must be aligned
+> on 8byte boundaries?
 
-I agree, but when using memory hotplug for managing memory power, it
-would be important to correctly predict pressure so that performance is
-not affected too much. Also, especially since memory would be offlined
-only when memory is mostly idle. While in the case of CPU, a user space
-daemon can automatically online/offline cpus based on load, but in the
-case of memory, I guess a kernel thread that maintains global statistics
-might have to be used.
+Yes, it's a 32bit system with 64bit alignment required for 64bit
+variables. I'm not sure whether there are other architectures in the
+tree that have this characteristic but it's relatively common in cores
+with DSP heritage.
 
-> > - Memory hotplug is a heavy operation, so the overhead involved may be
-> >   high
-> 
-> I'm curious.  Why do you say this?  Could you elaborate a bit on _how_
-> memory hotplug is different from what you're doing here?  On powerpc, at
-> least, we can do memory hotplug in areas as small as 16MB.  That's _way_
-> smaller than what you're talking about here, and I would assume that
-> smaller here means less overhead.
-> 
+http://imgtec.com/meta/meta-technology.asp
 
-To save any power, the entire memory unit (like a bank for PASR) will
-have to be turned off (and hence offlined). The overhead in memory
-hotplug is to migrate/free pages belonging to the sections and
-creating/deleting the various memory management structures. Instead, if
-we could have a framework like you mentiond below that could target
-allocations away from certain areas of memory, the migration step will
-not be needed. Further, the hardware would just turn off the memory and
-the OS would retain all the memory management structures.
+>>
+>> >>
+>> >> Signed-off-by: Will Newton <will.newton@imgtec.com>
+>> >> ---
+>> >>  kernel/trace/ring_buffer.c |    4 +++-
+>> >>  1 files changed, 3 insertions(+), 1 deletions(-)
+>> >>
+>> >> I don't believe that any currently in-tree architecture is affected by
+>> >> this, but it can be an issue on 32bit architectures that require an
+>> >> 8 byte aligment but only have a 32bit local_t. I think it's potentially
+>> >> cleaner to make the alignment explicit anyway.
+>> >>
+>> >> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+>> >> index 0ef7b4b..36d5699 100644
+>> >> --- a/kernel/trace/ring_buffer.c
+>> >> +++ b/kernel/trace/ring_buffer.c
+>> >> @@ -215,6 +215,8 @@ EXPORT_SYMBOL_GPL(tracing_is_on);
+>> >>  # define RB_ARCH_ALIGNMENT           8U
+>> >>  #endif
+>> >>
+>> >> +#define RB_ALIGN_DATA                __aligned(RB_ARCH_ALIGNMENT)
+>> >> +
+>> >
+>> > Note, the code above this is:
+>> >
+>> > #define RB_EVNT_HDR_SIZE (offsetof(struct ring_buffer_event, array))
+>> > #define RB_ALIGNMENT            4U
+>> > #define RB_MAX_SMALL_DATA       (RB_ALIGNMENT * RINGBUF_TYPE_DATA_TYPE_LEN_MAX)
+>> > #define RB_EVNT_MIN_SIZE        8U      /* two 32bit words */
+>> >
+>> > #if !defined(CONFIG_64BIT) || defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+>> > # define RB_FORCE_8BYTE_ALIGNMENT       0
+>> > # define RB_ARCH_ALIGNMENT              RB_ALIGNMENT
+>> > #else
+>> > # define RB_FORCE_8BYTE_ALIGNMENT       1
+>> > # define RB_ARCH_ALIGNMENT              8U
+>> > #endif
+>> >
+>> >
+>> > Which means that when CONFIG_64BIT is not set, RB_ARCH_ALIGNMENT is 4.
+>> > This means that this patch is really a nop and doesn't do anything for
+>> > your arch.
+>>
+>> I have modified that conditional in my local tree so the patch is not
+>> a nop there. Obviously it doesn't make any sense to merge that change
+>> yet. I thought this part of the patch was a reasonable cleanup to make
+>> the code a bit more self documenting though.
+>
+> Unfortunately, if anything it confuses the code more. If I were
+> reviewing it and saw that we are aligning something that is already
+> aligned with the same value, I would question that code.
 
-We intend to use memory regions to group the memory together into units
-that can be independently power managed. We propose to achieve this by
-re-ordering zones within the zonelist, such that zones from regions that
-are the target for evacuation would be at the tail of the zonelist and
-thus will not be prefered for allocations.
+It does however make the conditional more flexible as you could change
+it to #if defined (CONFIG_WHATEVER) and it will still work, rather
+than the 64bit assumption leaking throughout the code.
 
-> > - Powering off memory is just one of the ways in which memory power could
-> >   be saved. The platform can also dynamically transition areas of memory
-> >   into a  content-preserving lower power state if it is not referenced
-> >   for a pre-defined threshold of time. In such a case, we would need a
-> >   mechanism to soft offline the pages - i.e, no new allocations to be
-> >   directed to that memory
-> 
-> OK...  That's fine, but I think you're avoiding the question a bit.  You
-> need to demonstrate that this 'regions' thing is necessary to do this,
-> and that we can not get by just modifying what we have now.  For
-> instance:
-> 
-> 1. Have something like khugepaged try to find region-sized chunks of
->    memory to free.
-> 2. Modify the buddy allocator to be "picky" about when it lets you get 
->    access to these regions.
+> Now if/when your arch is merged, we can add this with the other changes
+> you have, which will make reviewing the code not as confusing.
 
-Managing pages belonging to multiple regions on the same buddy list
-might make the buddy allocator more complex. But thanks for suggesting
-the different approaches, will looking into these and get back to you.
-
-> 3. Try to bunch up 'like allocations' like ZONE_MOVABLE does.
-> 
-> (2) could easily mean that we take the MAX_ORDER-1 buddy pages and treat
-> them differently.  If the page being freed is going (or trying to go) in
-> to a low power state, insert freed pages on to the tail, or on a special
-> list.  When satisfying allocations, we'd make some bit of effort to
-> return pages which are powered on.
-> 
-
--- 
-Regards,
-Ankita Garg (ankita@in.ibm.com)
-Linux Technology Center
-IBM India Systems & Technology Labs,
-Bangalore, India
+Sure, no problem.
