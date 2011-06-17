@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932305Ab1FQOq0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 10:46:26 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:39841 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759152Ab1FQOqY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 10:46:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=o2jlY6mtsprvYJKvm7BgdU7+AsRgUwmJnlV2jkIuaN3bjar0tp9X2AShCgbQRKHL3p
-         r0JgcUAL6SMhjMLiZb+Y+qfL5l9i+Yz5nRdtz///URsADwQPz7Pgne8hn+BhWrNVtZ68
-         407FVN4nXa2ItixYDhgpJglLInzkDlshkqlIE=
+	id S932366Ab1FQOs4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 10:48:56 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:35716 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932238Ab1FQOsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 10:48:54 -0400
+From: Arnaud Giersch <arnaud.giersch@free.fr>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] coredump: call vfs_getattr() to get inode attributes
+Date: Fri, 17 Jun 2011 16:48:43 +0200
+Message-ID: <87ei2ssed0.fsf@free.fr>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <BANLkTin8b2suL1675DKvHbeXuCzeCFJeOg@mail.gmail.com>
-References: <BANLkTin8b2suL1675DKvHbeXuCzeCFJeOg@mail.gmail.com>
-From: Paul Hartman <paul.hartman@gmail.com>
-Date: Fri, 17 Jun 2011 09:46:04 -0500
-Message-ID: <BANLkTin-iYMvbuq=DGo8JZa_vYUMsd24jQ@mail.gmail.com>
-Subject: Re: New Gentoo install on Intel Z68/i7-2600K system hangs after
- VFS:Mounted root...
-To: Mark Knecht <markknecht@gmail.com>
-Cc: Linux Kernel List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 10:11 PM, Mark Knecht <markknecht@gmail.com> wrote:
->   I've got a Windows friend who's trying to make the jump to Gentoo
-> Linux. He's purchased a new motherboard & processor which I believe
-> are part of the new 'Sandy Bridge' family:
->
-> http://www.newegg.com/Product/Product.aspx?Item=N82E16813131730
-> http://www.newegg.com/Product/Product.aspx?Item=N82E16819115070
->
-> I've installed Gentoo. The kernel is 2.6.38-gentoo-r6. The install
-> seemed to go fine. This is my first install from scratch after the
-> switch to OpenRC.
->
->   When the machine boots it makes it through mounting sda3 on root,
-> which looks OK to me, but then just hangs with no other messages. I've
-> posted a photo of what the screen looks like when it stops:
->
-> http://www.flickr.com/photos/29328985@N03/5841311388/
+From: Arnaud Giersch <arnaud.giersch@free.fr>
 
-Hi Mark,
+In do_coredump(), call vfs_getattr() to get inode attributes, and do not
+get them directly from the fields of the inode struct.
 
-Have you tried booting with acpi=off ?
+Without this patch, when dumping core on an NFSv4 mount, and the i_uid
+field is not correctly filled at open time, the uid check fails, and an
+empty core dump is produced.
 
-Also, since it's a new build, have you done a memory test to be sure
-it is stable? Getting the RAM timings/voltages right is usually one of
-the biggest hurdles in building a new machine in my experiences.
+This apparently only happens when there was no "core" file before the
+dump.  If a "core" file owned by the current user is already present, it
+is correctly filled.
+
+The reason is that decode_attr_owner() in fs/nfs/nfs4xdr.c is not
+allowed to call the idmapper when it receives may_sleep = 0 (see commit
+80e52aced138bb41b045a8595a87510f27d8d8c5, and some explanations in
+http://article.gmane.org/gmane.linux.nfs/33391).
+
+Signed-off-by: Arnaud Giersch <arnaud.giersch@free.fr>
+---
+ fs/exec.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index 97e0d52..8a73425 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -2147,7 +2147,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+ 			goto close_fail;
+  		}
+ 	} else {
+-		struct inode *inode;
++		struct kstat stat;
+ 
+ 		if (cprm.limit < binfmt->min_coredump)
+ 			goto fail_unlock;
+@@ -2158,8 +2158,10 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+ 		if (IS_ERR(cprm.file))
+ 			goto fail_unlock;
+ 
+-		inode = cprm.file->f_path.dentry->d_inode;
+-		if (inode->i_nlink > 1)
++		if (vfs_getattr(cprm.file->f_path.mnt, cprm.file->f_path.dentry,
++				&stat))
++			goto close_fail;
++		if (stat.nlink > 1)
+ 			goto close_fail;
+ 		if (d_unhashed(cprm.file->f_path.dentry))
+ 			goto close_fail;
+@@ -2167,13 +2169,13 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+ 		 * AK: actually i see no reason to not allow this for named
+ 		 * pipes etc, but keep the previous behaviour for now.
+ 		 */
+-		if (!S_ISREG(inode->i_mode))
++		if (!S_ISREG(stat.mode))
+ 			goto close_fail;
+ 		/*
+ 		 * Dont allow local users get cute and trick others to coredump
+ 		 * into their pre-created files.
+ 		 */
+-		if (inode->i_uid != current_fsuid())
++		if (stat.uid != current_fsuid())
+ 			goto close_fail;
+ 		if (!cprm.file->f_op || !cprm.file->f_op->write)
+ 			goto close_fail;
