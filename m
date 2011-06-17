@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab1FQFX0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 01:23:26 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58061 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638Ab1FQFXX (ORCPT
+	id S1757164Ab1FQF05 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 01:26:57 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:39641 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756576Ab1FQF0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 01:23:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=hzSxmPJ6UQ8FD163eEEqne/oVDG3vF9Ti/B1NNdywePVsJIdp0cZEpoOq8T7mu/rSh
-         oZr5LrLsE7CJodynYsSDKnbn1q+PyXBU7TXdbJPKPjgVIkB2ybjlhPe2JI7cpN45toZK
-         EmObqxqvpqW+Nx5jjs3asE3dnlc5EMRH8UoJ8=
-Subject: Re: another ext3 kernel BUG
-From: Ross Lagerwall <rosslagerwall@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 17 Jun 2011 07:23:13 +0200
-Message-ID: <1308288193.17587.3.camel@hobo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 17 Jun 2011 01:26:46 -0400
+X-Sasl-enc: WWqdrAmrqJPsPcC7vTWP8B9T52hjRUQ9Dbot5z9XXgWA 1308288405
+Date: Thu, 16 Jun 2011 22:25:23 -0700
+From: Greg KH <greg@kroah.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Nao Nishijima <nao.nishijima.xt@hitachi.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, jcm@redhat.com,
+        hare@suse.de, stefanr@s5r6.in-berlin.de, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
+Message-ID: <20110617052523.GB741@kroah.com>
+References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp>
+ <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp>
+ <20110615153337.GA10160@kroah.com>
+ <4DF9F11F.705@hitachi.com>
+ <20110616154129.GA31498@kroah.com>
+ <1308239454.2436.34.camel@mulgrave>
+ <20110616161442.GA32113@kroah.com>
+ <1308241506.2436.44.camel@mulgrave>
+ <20110616181943.GB1439@kroah.com>
+ <1308256290.2436.143.camel@mulgrave>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308256290.2436.143.camel@mulgrave>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> See here for a patch:
-> https://lkml.org/lkml/2011/6/15/341
+On Thu, Jun 16, 2011 at 04:31:29PM -0400, James Bottomley wrote:
+> > So again, I really don't like this, just fix the userspace tools to map
+> > the proper device name that the kernel is using to the userspace name
+> > the tool used, and all is fine.  This has been done already today,
+> > succesfully, by many of the big "enterprise" monitoring systems that
+> > work quite well on Linux, proving that this is not something that the
+> > kernel needs to provide to implement properly.
 > 
-> Does that help?
+> Well, it's expediency.  Sure we could try to patch the world, but I
+> think the simple patch of getting the kernel to print a preferred name
+> solves 90% of the problem.  Sure there is a long tail of userspace
+> components that needs fixing, but that can be done gradually if we take
+> the kernel route.  If we go the userspace route, it will be a long while
+> before we even get to 50% coverage.
 
-I came across this bug while running ./configure on Octave 3.4.1.
+I do not think that just because some people feel it is easier to change
+the kernel than change userspace tools, that we are somehow forced to
+accept their changes.
 
-The patch does appear to fix the problem although I can't say whether
-what it is doing is correct or not.
+As for "expediency", it has been a full year since the last time this
+was proposed.  All userspace tools that would need to be changed to
+implement this in userspace have had updates released for them in that
+year, and the changes needed to make to them could have been done
+already.
 
-There is also a bug report at:
-https://bugzilla.kernel.org/show_bug.cgi?id=37602
+So any argument about "quickness" here which requires a kernel change
+instead of fixing userspace programs is totally false, sorry.
 
-Cheers
-Ross
-
+greg k-h
