@@ -1,66 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759571Ab1FQXjE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 19:39:04 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42610 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754455Ab1FQXi7 (ORCPT
+	id S1759575Ab1FQXti (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 19:49:38 -0400
+Received: from nm20-vm1.bullet.mail.sp2.yahoo.com ([98.139.91.219]:21380 "HELO
+	nm20-vm1.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754290Ab1FQXth (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 19:38:59 -0400
-Date: Fri, 17 Jun 2011 16:38:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 1/12] radix_tree: exceptional entries and indices
-Message-Id: <20110617163854.49225203.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LSU.2.00.1106140341070.29206@sister.anvils>
-References: <alpine.LSU.2.00.1106140327550.29206@sister.anvils>
-	<alpine.LSU.2.00.1106140341070.29206@sister.anvils>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 17 Jun 2011 19:49:37 -0400
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 685220.30142.bm@omp1016.mail.sp2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
+  b=T4GEgKhwlBeh++2VG8bUkB/N1U2GQ2AQdGax/b80g1TBZ1Nd5whdM5co52K4+rAE4W3YnlsvoXQ5o0WE1VdEkrIVeM42MoL6L3sRWZjXaA0pDHGu2W9bNUdNr2h8Rk8m2AGi2aSBpnhZzbubX3XfZVNEQ3fZN9abXDTbobTPqc0=;
+Message-ID: <101059.37171.qm@web112601.mail.gq1.yahoo.com>
+X-Mailer: YahooMailWebService/0.8.111.304355
+Date: Fri, 17 Jun 2011 16:49:36 -0700 (PDT)
+From: "lucian_ignat2005@yahoo.com" <lucian_ignat2005@yahoo.com>
+Subject: Curs Engleza fara profesor
+To: "llaika@yahoo.com" <llaika@yahoo.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Jun 2011 03:42:27 -0700 (PDT)
-Hugh Dickins <hughd@google.com> wrote:
 
-> The radix_tree is used by several subsystems for different purposes.
-> A major use is to store the struct page pointers of a file's pagecache
-> for memory management.  But what if mm wanted to store something other
-> than page pointers there too?
-> 
-> The low bit of a radix_tree entry is already used to denote an indirect
-> pointer, for internal use, and the unlikely radix_tree_deref_retry() case.
-> Define the next bit as denoting an exceptional entry, and supply inline
-> functions radix_tree_exception() to return non-0 in either unlikely case,
-> and radix_tree_exceptional_entry() to return non-0 in the second case.
-> 
-> If a subsystem already uses radix_tree with that bit set, no problem:
-> it does not affect internal workings at all, but is defined for the
-> convenience of those storing well-aligned pointers in the radix_tree.
-> 
-> The radix_tree_gang_lookups have an implicit assumption that the caller
-> can deduce the offset of each entry returned e.g. by the page->index of
-> a struct page.  But that may not be feasible for some kinds of item to
-> be stored there.
-> 
-> radix_tree_gang_lookup_slot() allow for an optional indices argument,
-> output array in which to return those offsets.  The same could be added
-> to other radix_tree_gang_lookups, but for now keep it to the only one
-> for which we need it.
+Invata sa vorbesti,sa scrii si sa citesti in limba engleza in doar 20 de zile, 50 minute pe zi.
 
-Yes, the RADIX_TREE_INDIRECT_PTR hack is internal-use-only, and doesn't
-operate on (and hence doesn't corrupt) client-provided items.
+Daca esti in cautarea unei metode de invatare a limbii engleze in mod rapid, usor si eficient, acest site este solutia potrivita pentru cerintele tale.
+Poti invata limba engleza folosind cursurile noastre complete si usor de inteles pentru toate varstele.
 
-This patch uses bit 1 and uses it against client items, so for
-practical purpoese it can only be used when the client is storing
-addresses.  And it needs new APIs to access that flag.
+Viziteaza: http://engleza.smarket.ro
 
-All a bit ugly.  Why not just add another tag for this?  Or reuse an
-existing tag if the current tags aren't all used for these types of
-pages?
-
+Livrare in toata tara in 48 ore prin Fan Curier.
 
