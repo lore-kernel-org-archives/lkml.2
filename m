@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751066Ab1FQEDl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 00:03:41 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:47840 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772Ab1FQEDk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 00:03:40 -0400
-Date: Fri, 17 Jun 2011 00:03:28 -0400 (EDT)
-Message-Id: <20110617.000328.159880820812256016.davem@davemloft.net>
-To: manuel.f.zerpies@ww.stud.uni-erlangen.de
-Cc: andy.grover@oracle.com, rds-devel@oss.oracle.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        christian.dietrich@informatik.uni-erlangen.de
-Subject: Re: [PATCH 04/11] net/rds: use prink_ratelimited() instead of
- printk_ratelimit()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <639d68afea7b4b37a5b8b228f3b15f4f81a61ed8.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
-References: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
-	<639d68afea7b4b37a5b8b228f3b15f4f81a61ed8.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	id S1751854Ab1FQEYm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 00:24:42 -0400
+Received: from gate.crashing.org ([63.228.1.57]:40387 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751444Ab1FQEYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 00:24:40 -0400
+Subject: Re: [PATCH] perf_events: Enable idle state tracing for pseries
+ (ppc64)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: deepthi@linux.vnet.ibm.com
+Cc: linuxppc-dev@ozlabs.org, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110601123554.GA12492@deepthi.in.ibm.com>
+References: <20110601123554.GA12492@deepthi.in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Jun 2011 14:24:19 +1000
+Message-ID: <1308284659.32158.4.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 16 Jun 2011 21:03:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
-Date: Thu, 16 Jun 2011 14:09:57 +0200
-
-> Since printk_ratelimit() shouldn't be used anymore (see comment in
-> include/linux/printk.h), replace it with printk_ratelimited()
+On Wed, 2011-06-01 at 18:05 +0530, Deepthi Dharwar wrote:
+> Hi,
 > 
-> Signed-off-by: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
+> Please find below a patch, which has perf_events added for pseries (ppc64)
+> platform in order to emit the trace required for perf timechart. 
+> It essentially enables perf timechart for pseries platfrom to analyse
+> power savings events like cpuidle states.
 
-Applied.
+Unless I'm mistaken, you added traces to dedicated CPU idle sleep but
+not shared processor. Any reason ?
+
+Also I don't really know that tracing stuff but what's the point of
+having start/end _and trace_cpu_idle if you're going to always start &
+end around a single occurence of trace_cpu_idle ?
+
+Wouldn't there be a way to start/end and then trace the snooze and
+subsequent cede within the same start/end section or that makes no
+sense ?
+
+Also would there be any interest in doing the tracing more generically
+in idle.c ?
+
+Cheers,
+Ben.
+
