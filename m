@@ -1,122 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759508Ab1FQXYU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 19:24:20 -0400
-Received: from astoria.ccjclearline.com ([64.235.106.9]:41637 "EHLO
-	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757478Ab1FQXYR (ORCPT
+	id S1759517Ab1FQXcJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 19:32:09 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:43564 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754290Ab1FQXcG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 19:24:17 -0400
-Date: Fri, 17 Jun 2011 19:24:13 -0400 (EDT)
-From: "Robert P. J. Day" <rpjday@crashcourse.ca>
-X-X-Sender: rpjday@localhost6.localdomain6
-To: Hugh Dickins <hughd@google.com>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: should CONFIG_TMPFS_POSIX_ACL be so easily deselectable?
-In-Reply-To: <alpine.LSU.2.00.1106171534530.20805@sister.anvils>
-Message-ID: <alpine.DEB.2.02.1106171909260.8043@localhost6.localdomain6>
-References: <alpine.DEB.2.02.1106171756470.4381@localhost6.localdomain6> <alpine.LSU.2.00.1106171534530.20805@sister.anvils>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 17 Jun 2011 19:32:06 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Linux Containers <containers@lists.osdl.org>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, netdev@vger.kernel.org,
+        David Lamparter <equinox@diac24.net>, <linux-kernel@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+References: <20110521093936.GA3015@p183> <m11uzsxdty.fsf@fess.ebiederm.org>
+	<20110521223054.GA3198@p183> <m1vcx3r3o5.fsf@fess.ebiederm.org>
+	<20110523014303.GA2351982@jupiter.n2.diac24.net>
+	<20110523014751.GB2351982@jupiter.n2.diac24.net>
+Date: Fri, 17 Jun 2011 16:31:57 -0700
+In-Reply-To: <20110523014751.GB2351982@jupiter.n2.diac24.net> (David
+	Lamparter's message of "Mon, 23 May 2011 03:47:51 +0200")
+Message-ID: <m1wrgkavbm.fsf_-_@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - crashcourse.ca
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX184tRKzBBRn7MR8ZPVnL2+padBmUHn4RV4=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0001]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Linux Containers <containers@lists.osdl.org>
+X-Spam-Relay-Country: 
+Subject: [PATCH 1/2] proc: Generalize proc inode allocation
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Jun 2011, Hugh Dickins wrote:
 
-> On Fri, 17 Jun 2011, Robert P. J. Day wrote:
-> >
-> >   long story short:  in updating to a slightly newer hand-rolled
-> > kernel (2.6.39-rc7 -> 3.0.0-rc3) on my ubuntu system, i somehow (no
-> > idea how) managed to deselect CONFIG_TMPFS_POSIX_ACL without realizing
-> > it.  the consequences of this were that sound suddenly disappeared
-> > under the new kernel, for a fairly obvious reason -- ALSA needs ACLs
-> > under /dev to give R/W access to the user to the device files under
-> > /dev/snd/.
-> >
-> >   as i said, i have no idea how i managed to do this but i eventually
-> > tracked it down, re-selected that option, rebuilt and i have sound
-> > again.  but i noticed that in fs/Kconfig, that option is independently
-> > selectable from TMPFS, so it's (as i learned) deviously easy to
-> > deselect, with annoying consequences.
-> >
-> >   more to the point, given the apparent necessity of ACLs under /dev
-> > for proper sound operation, the help info for that option seems a bit
-> > misleading:
-> >
-> > config TMPFS_POSIX_ACL
-> >         bool "Tmpfs POSIX Access Control Lists"
-> >         depends on TMPFS
-> >         select TMPFS_XATTR
-> >         select GENERIC_ACL
-> >         help
-> >           ... snip ...
-> >           If you don't know what Access Control Lists are, say N.
-> >
-> >   yeah, i think that help line might not want to dismiss tmpfs ACLs
-> > quite so quickly.  thoughts?
-> >
-> > rday
-> >
-> > p.s.  i do notice a fairly recent change to that config file related
-> > to this:
->
-> Yes, we were originally losing the oldconfig value of
-> TMPFS_POSIX_ACL.
->
-> It would be easy to ack a patch from you which changes that wording
-> "If you don't know what Access Control Lists are, say N" to
-> something more informative about what the sound userspace wants.
+Generalize the proc inode allocation so that it can be
+used without having to having to create a proc_dir_entry.
 
-  agreed -- something as simple as "if you don't know, say Y"?  :-)
-or would it be better to actually take a line or two to explain the
-consequences of that option?  (by the way, this option affects more
-than just sound.)
+This will allow namespace file descriptors to remain light
+weight entitities but still have the same inode number
+when the backing namespace is the same.
 
-> It would be harder to justify having SOUND select TMPFS, or changing
-> the TMPFS_POSIX_ACL default to Y.  It's been N forever, and that is
-> how we prefer to add features.
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+---
 
-  normally, i'd agree with you, except for the observation that, by
-far, the default config files across all architectures select that
-option.  there are 48 config files that select it, and only 3 that
-don't.  sometimes, that's a compelling argument that maybe it *should*
-be default yes.  but for now, i'll just whip up a more informative
-help sentence or two.
+Baring problems in review I plan to merge these patches
+via my linux-2.6-nsfd tree.
 
-rday
+ fs/proc/generic.c       |   26 +++++++++++++-------------
+ include/linux/proc_fs.h |   10 ++++++++++
+ 2 files changed, 23 insertions(+), 13 deletions(-)
 
-p.s.  as i mentioned, that option would appear to affect more than
-just sound.  as in:
-
-$ getfacl /dev/kvm
-getfacl: Removing leading '/' from absolute path names
-# file: dev/kvm
-# owner: root
-# group: kvm
-user::rw-
-user:rpjday:rw-
-group::rw-
-mask::rw-
-other::---
-
-so wouldn't KVM suddenly start behaving badly as well?
-
+diff --git a/fs/proc/generic.c b/fs/proc/generic.c
+index f1637f1..65416a1 100644
+--- a/fs/proc/generic.c
++++ b/fs/proc/generic.c
+@@ -350,14 +350,14 @@ static DEFINE_SPINLOCK(proc_inum_lock); /* protects the above */
+  * Return an inode number between PROC_DYNAMIC_FIRST and
+  * 0xffffffff, or zero on failure.
+  */
+-static unsigned int get_inode_number(void)
++int proc_alloc_inum(unsigned int *inum)
+ {
+ 	unsigned int i;
+ 	int error;
+ 
+ retry:
+-	if (ida_pre_get(&proc_inum_ida, GFP_KERNEL) == 0)
+-		return 0;
++	if (!ida_pre_get(&proc_inum_ida, GFP_KERNEL))
++		return -ENOMEM;
+ 
+ 	spin_lock(&proc_inum_lock);
+ 	error = ida_get_new(&proc_inum_ida, &i);
+@@ -365,18 +365,19 @@ retry:
+ 	if (error == -EAGAIN)
+ 		goto retry;
+ 	else if (error)
+-		return 0;
++		return error;
+ 
+ 	if (i > UINT_MAX - PROC_DYNAMIC_FIRST) {
+ 		spin_lock(&proc_inum_lock);
+ 		ida_remove(&proc_inum_ida, i);
+ 		spin_unlock(&proc_inum_lock);
+-		return 0;
++		return -ENOSPC;
+ 	}
+-	return PROC_DYNAMIC_FIRST + i;
++	*inum = PROC_DYNAMIC_FIRST + i;
++	return 0;
+ }
+ 
+-static void release_inode_number(unsigned int inum)
++void proc_free_inum(unsigned int inum)
+ {
+ 	spin_lock(&proc_inum_lock);
+ 	ida_remove(&proc_inum_ida, inum - PROC_DYNAMIC_FIRST);
+@@ -554,13 +555,12 @@ static const struct inode_operations proc_dir_inode_operations = {
+ 
+ static int proc_register(struct proc_dir_entry * dir, struct proc_dir_entry * dp)
+ {
+-	unsigned int i;
+ 	struct proc_dir_entry *tmp;
++	int ret;
+ 	
+-	i = get_inode_number();
+-	if (i == 0)
+-		return -EAGAIN;
+-	dp->low_ino = i;
++	ret = proc_alloc_inum(&dp->low_ino);
++	if (ret)
++		return ret;
+ 
+ 	if (S_ISDIR(dp->mode)) {
+ 		if (dp->proc_iops == NULL) {
+@@ -766,7 +766,7 @@ EXPORT_SYMBOL(proc_create_data);
+ 
+ static void free_proc_entry(struct proc_dir_entry *de)
+ {
+-	release_inode_number(de->low_ino);
++	proc_free_inum(de->low_ino);
+ 
+ 	if (S_ISLNK(de->mode))
+ 		kfree(de->data);
+diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
+index e7576cf..3067b44 100644
+--- a/include/linux/proc_fs.h
++++ b/include/linux/proc_fs.h
+@@ -175,6 +175,8 @@ extern struct proc_dir_entry *proc_net_mkdir(struct net *net, const char *name,
+ 
+ extern struct file *proc_ns_fget(int fd);
+ 
++extern int proc_alloc_inum(unsigned int *pino);
++extern void proc_free_inum(unsigned int inum);
+ #else
+ 
+ #define proc_net_fops_create(net, name, mode, fops)  ({ (void)(mode), NULL; })
+@@ -229,6 +231,14 @@ static inline struct file *proc_ns_fget(int fd)
+ 	return ERR_PTR(-EINVAL);
+ }
+ 
++static inline int proc_alloc_inum(unsigned int *inum)
++{
++	*inum = 1;
++	return 0;
++}
++static inline void proc_free_inum(unsigned int inum)
++{
++}
+ #endif /* CONFIG_PROC_FS */
+ 
+ #if !defined(CONFIG_PROC_KCORE)
 -- 
+1.7.5.1.217.g4e3aa
 
-========================================================================
-Robert P. J. Day                                 Ottawa, Ontario, CANADA
-                        http://crashcourse.ca
-
-Twitter:                                       http://twitter.com/rpjday
-LinkedIn:                               http://ca.linkedin.com/in/rpjday
-========================================================================
