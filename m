@@ -1,129 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536Ab1FQNkj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 09:40:39 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:58451 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755414Ab1FQNki (ORCPT
+	id S1758302Ab1FQNlW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 09:41:22 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:61059 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756103Ab1FQNlU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 09:40:38 -0400
-Date: Fri, 17 Jun 2011 08:40:25 -0500
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
-To: Darren Hart <dvhart@linux.intel.com>, peterz@infradead.org
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, eric.dumazet@gmail.com,
-        david@rgmadvisors.com, linux-kernel@vger.kernel.org,
-        zvonler@rgmadvisors.com, hughd@google.com, tglx@linutronix.de,
-        mingo@elte.hu
-Subject: Re: Change in functionality of futex() system call.
-Message-ID: <20110617134025.GA2085@BohrerMBP.rgmadvisors.com>
-References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>
- <1307373819.3098.40.camel@edumazet-laptop>
- <1307376672.2322.167.camel@twins>
- <1307376989.2322.171.camel@twins>
- <4DF2099B.7030600@jp.fujitsu.com>
- <20110615185047.GA2171@BohrerMBP.rgmadvisors.com>
- <4DF8FFF6.4060000@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DF8FFF6.4060000@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 17 Jun 2011 09:41:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=sY9cdHcfdHZM8fL8jxTtsCXwfDaDopMds7dw5A78CFpFLZYd2+egrX8U6lZrhjLYmj
+         ReObuYR+wc+ezr8Ar04Epv6cOGrYr5WYu+5JclGagJPL6doN5a4zj90T0XWk7kfgbkAB
+         QmvSSg310Ww5nhFL/3mWCWJm33GsCFc5wsxk4=
+Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Stefan Hajnoczi <stefanha@gmail.com>
+Cc: Anthony Liguori <anthony@codemonkey.ws>, Pekka Enberg <penberg@kernel.org>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Prasad Joshi <prasadjoshi124@gmail.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>
+In-Reply-To: <BANLkTimVG4GVoar6RHYRpdiDngCC+9rHTg@mail.gmail.com>
+References: <1308153214.7566.6.camel@jaguar>
+	 <BANLkTi=krV7p9gT3E064aVoUCToVyZoL6w@mail.gmail.com>
+	 <4DFA88CC.6050306@codemonkey.ws> <1308272586.29421.5.camel@lappy>
+	 <BANLkTimVG4GVoar6RHYRpdiDngCC+9rHTg@mail.gmail.com>
+Content-Type: text/plain; charset="us-ascii"
+Date: Fri, 17 Jun 2011 09:41:13 -0400
+Message-ID: <1308318073.8711.7.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 11:54:46AM -0700, Darren Hart wrote:
-> 
-> 
-> On 06/15/2011 11:50 AM, Shawn Bohrer wrote:
-> > On Fri, Jun 10, 2011 at 09:10:03PM +0900, KOSAKI Motohiro wrote:
-> >>>> Urgh,. maybe something like the below but with more conditionals that
-> >>>> enable the extra logic only for FUTEX_WAIT..
-> >>>>
-> >>>> The idea is to try a RO gup() when the RW gup() fails so as not to slow
-> >>>> down the common path of writable anonymous maps and bail when we used
-> >>>> the RO path on anonymous memory.
-> >>>>
-> >>>> ---
-> >>>> diff --git a/kernel/futex.c b/kernel/futex.c
-> >>>> index fe28dc2..11f2ad1 100644
-> >>>> --- a/kernel/futex.c
-> >>>> +++ b/kernel/futex.c
-> >>>> @@ -234,7 +234,7 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
-> >>>>  	unsigned long address = (unsigned long)uaddr;
-> >>>>  	struct mm_struct *mm = current->mm;
-> >>>>  	struct page *page, *page_head;
-> >>>> -	int err;
-> >>>> +	int err, ro = 0;
-> >>>>  
-> >>>>  	/*
-> >>>>  	 * The futex address must be "naturally" aligned.
-> >>>> @@ -262,6 +262,10 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
-> >>>>  
-> >>>>  again:
-> >>>>  	err = get_user_pages_fast(address, 1, 1, &page);
-> >>>> +	if (err == -EFAULT) {
-> >>>> +		err = get_user_pages_fast(address, 1, 0, &page);
-> >>>> +		ro = 1;
-> >>>> +	}
-> >>>>  	if (err < 0)
-> >>>>  		return err;
-> >>>>  
-> >>>> @@ -316,6 +320,11 @@ again:
-> >>>>  	 * the object not the particular process.
-> >>>>  	 */
-> >>>>  	if (PageAnon(page_head)) {
-> >>>> +		if (ro) {
-> >>>> +			err = -EFAULT;
-> >>>> +			goto out;
-> >>>> +		}
-> >>>> +
-> >>>>  		key->both.offset |= FUT_OFF_MMSHARED; /* ref taken on mm */
-> >>>>  		key->private.mm = mm;
-> >>>>  		key->private.address = address;
-> >>>> @@ -327,9 +336,10 @@ again:
-> >>>>  
-> >>>>  	get_futex_key_refs(key);
-> >>>>  
+On Fri, 2011-06-17 at 06:00 +0100, Stefan Hajnoczi wrote:
+> On Fri, Jun 17, 2011 at 2:03 AM, Sasha Levin <levinsasha928@gmail.com> wrote:
+> > On Thu, 2011-06-16 at 17:50 -0500, Anthony Liguori wrote:
+> >> On 06/16/2011 09:48 AM, Pekka Enberg wrote:
+> >> > On Wed, Jun 15, 2011 at 6:53 PM, Pekka Enberg<penberg@kernel.org>  wrote:
+> >> >> - Fast QCOW2 image read-write support beating Qemu in fio benchmarks. See the
+> >> >>   following URL for test result details: https://gist.github.com/1026888
+> >> >
+> >> > It turns out we were benchmarking the wrong guest kernel version for
+> >> > qemu-kvm which is why it performed so much worse. Here's a summary of
+> >> > qemu-kvm beating tools/kvm:
+> >> >
+> >> > https://raw.github.com/gist/1029359/9f9a714ecee64802c08a3455971e410d5029370b/gistfile1.txt
+> >> >
+> >> > I'd ask for a brown paper bag if I wasn't so busy eating my hat at the moment.
 > >>
-> >> Need err=0 here. (note: get_user_pages_fast() return 1) Other than that looks
-> >> good to me and this patch passed my test.
-> >> 	Reviewed-and-tested-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> >> np, it happens.
 > >>
-> >>>> +out:
-> >>>>  	unlock_page(page_head);
-> >>>>  	put_page(page_head);
-> >>>> -	return 0;
-> >>>> +	return err;
-> >>>>  }
-> >>>>  
-> >>>>  static inline void put_futex_key(union futex_key *key)
-> >>>>
-> > 
-> > I've reviewed and tested Peter's change with KOSAKI's addition against
-> > 2.6.32.41 and this passes our tests using FUTEX_WAIT with read only
-> > shared mappings.
-> > 
-> > Reviewed-and-tested-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+> >> Is that still with QEMU with IDE emulation, cache=writethrough, and
+> >> 128MB of guest memory?
+> >>
+> >> Does your raw driver support multiple parallel requests?  It doesn't
+> >> look like it does from how I read the code.  At some point, I'd be happy
+> >> to help ya'll do some benchmarking against QEMU.
+> >>
+> >
+> > Each virtio-blk device can process requests regardless of other
+> > virtio-blk devices, which means that we can do parallel requests for
+> > devices.
+> >
+> > Within each device, we support parallel requests in the sense that we do
+> > vectored IO for each head (which may contain multiple blocks) in the
+> > vring, we don't do multiple heads because when I've tried adding AIO
+> > I've noticed that at most there are 2-3 possible heads - and since it
+> > points to the same device it doesn't really help running them in
+> > parallel.
 > 
+> One thing that QEMU does but I'm a little suspicious of is request
+> merging.  virtio-blk will submit those 2-3 heads using
+> bdrv_aio_multiwrite() if they become available in the same virtqueue
+> notify.  The requests will be merged if possible.
 > 
-> Would someone care to roll this all together and send a patch with
-> commit log clearly documenting the issues and which are addressed with
-> the patch?
+> My feeling is that we should already have merged requests coming
+> through virtio-blk and there should be no need to do any merging -
+> which could be a workaround for a poor virtio-blk vring configuration
+> that prevented the guest from sending large requests.  However, this
+> feature did yield performance improvements with qcow2 image files when
+> it was introduced, so that would be interesting to look at.
+> 
+> Are you enabling indirect descriptors on the virtio-blk vring?  That
+> should allow more requests to be made available because you don't run
+> out of vring descriptors so easily.
 
-Since it doesn't appear that anyone is jumping on this opportunity I
-can do it.
+No, but we're usually not getting close to running out of vring
+descriptors either.
 
-Peter, is it alright if I add your signed off by on the previous
-patch?
+-- 
 
---
-Shawn
-
-
----------------------------------------------------------------
-This email, along with any attachments, is confidential. If you 
-believe you received this message in error, please contact the 
-sender immediately and delete all copies of the message.  
-Thank you.
+Sasha.
 
