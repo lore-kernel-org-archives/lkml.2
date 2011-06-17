@@ -1,50 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759453Ab1FQP0s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 11:26:48 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:52052 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759433Ab1FQP0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 11:26:44 -0400
-Message-ID: <4DFB722A.7040304@free.fr>
-Date: Fri, 17 Jun 2011 17:26:34 +0200
-From: f6bvp <f6bvp@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110501 Mandriva/3.1.10-0.1mdv2010.2 (2010.2) Thunderbird/3.1.10
+	id S932542Ab1FQP3S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 11:29:18 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:43484 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932492Ab1FQP3Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 11:29:16 -0400
+Date: Fri, 17 Jun 2011 20:58:45 +0530
+From: Ankita Garg <ankita@in.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        svaidy@linux.vnet.ibm.com, thomas.abraham@linaro.org
+Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
+ Power Management
+Message-ID: <20110617152845.GA13574@in.ibm.com>
+Reply-To: Ankita Garg <ankita@in.ibm.com>
+References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
+ <20110613134701.2b23b8d8.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110616042044.GA28563@in.ibm.com>
+ <20110616181251.caf484b6.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Ralf Baechle <ralf@linux-mips.org>
-CC: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Linux Netdev List <netdev@vger.kernel.org>, linux-hams@vger.kernel.org
-Subject: Re: [AX25] inconsistent lock state
-References: <4B2CD772.1030106@upmc.fr> <20100115203654.GA3084@del.dom.local> <4DFA662D.5030302@free.fr> <201106171536.15660.arnd@arndb.de> <20110617135147.GA3470@linux-mips.org>
-In-Reply-To: <20110617135147.GA3470@linux-mips.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110616181251.caf484b6.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ralf,
+Hi,
 
-I wanted to check FPAC ROSE application behaviour when Ethernet link was 
-shutdown.
-To do this I removed the ethernet connector !
-I agree this was a very agressive action.
+On Thu, Jun 16, 2011 at 06:12:51PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Thu, 16 Jun 2011 09:50:44 +0530
+> Ankita Garg <ankita@in.ibm.com> wrote:
+> 
+> > Hi,
+> > 
+> > On Mon, Jun 13, 2011 at 01:47:01PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > On Fri, 27 May 2011 18:01:28 +0530
+> > > Ankita Garg <ankita@in.ibm.com> wrote:
+> > > 
+> > > > Hi,
+> > > > 
+> > > 
+> > > I'm sorry if you've answered already.
+> > > 
+> > > Is memory hotplug is too bad and cannot be enhanced for this purpose ?
+> > > 
+> > > I wonder
+> > >   - make section-size smaller (IIUC, IBM's system has 16MB section size)
+> > > 
+> > >   - add per section statistics
+> > > 
+> > >   - add a kind of balloon driver which does software memory offline
+> > >     (which means making a contiguous chunk of free pages of section_size
+> > >      by page migration) in background with regard to memory usage statistics.
+> > >     If system says "need more memory!", balloon driver can online pages.
+> > > 
+> > > can work for your purpose. It can allow you page isolatation and
+> > > controls in 16MB unit.  If you need whole rework of memory hotplug, I think
+> > > it's better to rewrite memory hotplug, too.
+> > >
+> > 
+> > Interesting idea, but a few issues -
+> > 
+> > - Correctly predicting memory pressure is difficult and thereby being
+> >   able to online the required pages at the right time could be a
+> >   challenge
+> 
+> But it will be required for your purpose, anyway. Isn't it ?
+> 
+> > - Memory hotplug is a heavy operation, so the overhead involved may be
+> >   high
+> 
+> soft-offline of small amount of pages will not very heavy.
+> compaction and cma patches use the same kind of logic.
+> 
+> 
+> > - Powering off memory is just one of the ways in which memory power could
+> >   be saved. The platform can also dynamically transition areas of memory
+> >   into a  content-preserving lower power state if it is not referenced
+> >   for a pre-defined threshold of time. In such a case, we would need a
+> >   mechanism to soft offline the pages - i.e, no new allocations to be
+> >   directed to that memory
+> > 
+> 
+> Hmm, sounds like a similar idea of CleanCache ?
+> 
+> Reusing section is much easier than adding new one.., I think.
+> 
 
-73s de Bernard, f6bvp
+But sections do not define the granualarity at which memory operations
+are done right ? i.e, allocations/deallocations or reclaim cannot be
+directed to a section or a group of sections ?
 
-Le 17/06/2011 15:51, Ralf Baechle a écrit :
-> On Fri, Jun 17, 2011 at 03:36:15PM +0200, Arnd Bergmann wrote:
->
-> (Removed Jarek from cc; his email bounces.)
->
->> The message hints that disc_data_lock is aquired with softirqs disabled,
->> but does not itself disable softirqs, which can in rare circumstances
->> lead to a deadlock.
->>
->> Does this fix it?
-> If so, drivers/net/hamradio.c, function sp_get() would probably need the
-> equivalent fix.  Same for drivers/net/ppp_async.c:ap_get() and sp_get() in
-> drivers/net/ppp_synctty.c.
->
->    Ralf
-
+-- 
+Regards,
+Ankita Garg (ankita@in.ibm.com)
+Linux Technology Center
+IBM India Systems & Technology Labs,
+Bangalore, India
