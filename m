@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759482Ab1FQQXF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 12:23:05 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:45878 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750742Ab1FQQXC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 12:23:02 -0400
-X-Sasl-enc: p26xreuVH2OFA3sNiKPdqiy0otxeoUdDTpUZXhjuxkJC 1308327781
-Date: Fri, 17 Jun 2011 09:22:47 -0700
-From: Greg KH <greg@kroah.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Nao Nishijima <nao.nishijima.xt@hitachi.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jcm@redhat.com, hare@suse.de, stefanr@s5r6.in-berlin.de,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
-Message-ID: <20110617162247.GA16261@kroah.com>
-References: <20110616181943.GB1439@kroah.com>
- <1308256290.2436.143.camel@mulgrave>
- <BANLkTikfCMR_=5Jp7tLhM_Wr3vxihEL+rA@mail.gmail.com>
- <1308264321.2436.161.camel@mulgrave>
- <BANLkTinvfmU0dszQyu4U=Pw3_BtrmOUi_g@mail.gmail.com>
- <1308320844.2586.14.camel@mulgrave>
- <BANLkTikMa6vO4m3tk1O2mtj76k6s66f2gQ@mail.gmail.com>
- <1308322193.2586.30.camel@mulgrave>
- <BANLkTinywFK3yAxN51O7RDYyqeNRHBRThA@mail.gmail.com>
- <BANLkTinMzyQWZvxiRw4tvZBwW5xsxvMz-Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTinMzyQWZvxiRw4tvZBwW5xsxvMz-Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758718Ab1FQQ5C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 12:57:02 -0400
+Received: from smtp.ispras.ru ([83.149.198.202]:56031 "EHLO smtp.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754720Ab1FQQ47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 12:56:59 -0400
+X-Greylist: delayed 1926 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Jun 2011 12:56:58 EDT
+From: Pavel Shved <shved@ispras.ru>
+Cc: Pavel Shved <shved@ispras.ru>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: [PATCH] farsync: add module_put to error path in fst_open()
+Date: Fri, 17 Jun 2011 20:25:10 +0400
+Message-Id: <1308327913-23220-1-git-send-email-shved@ispras.ru>
+X-Mailer: git-send-email 1.7.0.2
+To: Kevin Curtis <kevin.curtis@farsite.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 06:12:14PM +0200, Kay Sievers wrote:
-> On Fri, Jun 17, 2011 at 17:39, Kay Sievers <kay.sievers@vrfy.org> wrote:
-> > On Fri, Jun 17, 2011 at 16:49, James Bottomley
-> 
-> >> So this is subsystem specific.  For the case of a SCSI enclosure, I can
-> >> answer that it's actually burned into the enclosure firmware.  When you
-> >> build an enclosure with labels, the label names are stored in a
-> >> diagnostic page.  We can actually interrogate the enclosure directly or
-> >> use the ses driver to get these names mapped to current devices.
-> >
-> > To me this sounds like a nice name on top of the current bunch of
-> > names, not like a 'preferred' name.
-> >
-> > I still don't like to introduce any new facility to the kernel that
-> > can handle only one single name. Reality the last years has taught us
-> > a very different story, and we've walked a long way to get where we
-> > are. I really don't believe single names will ever work, it's just a
-> > nice theory.
-> 
-> I might need to clarify this a bit.
-> 
-> I have no problem in general to add a 'alias' to every disk, and use
-> that when stuff is logged. Just the same way the netifs have an alias.
-> Sure, it might be useful for some use cases. And if that helps to
-> solve any real problem, we should just do it.
-> 
-> I just want to make clear, that I don't think that it is anywhere near
-> to a solution for the problems which are described here. And that
-> nobody should see this as an excuse not to get their stuff together
-> and work on the problem, which is that we don't have machine-readable
-> error and debug from the kernel and a smart syslog.
-> 
-> If we had that, I'm very sure nobody would even ask for a 'pretty
-> name' in the kernel, and I think that is a good indication that we are
-> not on the right track here.
+The fst_open() function, after a successful try_module_get() may return
+an error code if hdlc_open() returns it.  However, it does not put the
+module on this error path.
 
-And I totally agree here, which is why I don't want to accept this
-change to the driver core to add this, as it's not the correct solution.
+This patch adds the necessary module_put() call.
 
-thanks,
+Found by Linux Driver Verification project (linuxtesting.org).
 
-greg k-h
+Signed-off-by: Pavel Shved <shved@ispras.ru>
+---
+ drivers/net/wan/farsync.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/wan/farsync.c b/drivers/net/wan/farsync.c
+index e050bd6..777d1a4 100644
+--- a/drivers/net/wan/farsync.c
++++ b/drivers/net/wan/farsync.c
+@@ -2203,8 +2203,10 @@ fst_open(struct net_device *dev)
+ 
+ 	if (port->mode != FST_RAW) {
+ 		err = hdlc_open(dev);
+-		if (err)
++		if (err) {
++			module_put(THIS_MODULE);
+ 			return err;
++		}
+ 	}
+ 
+ 	fst_openport(port);
+-- 
+1.7.0.2
+
