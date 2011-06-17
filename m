@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245Ab1FQOmx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 10:42:53 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:52057
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	id S932277Ab1FQOnA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 10:43:00 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:33650
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1759217Ab1FQOms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 10:42:48 -0400
+	id S932253Ab1FQOm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 10:42:57 -0400
 From: Haiyang Zhang <haiyangz@microsoft.com>
 To: haiyangz@microsoft.com, hjanssen@microsoft.com, kys@microsoft.com,
         v-abkane@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, virtualization@lists.osdl.org
-Subject: [PATCH 4/5] staging: hv: convert dev_<loglevel> to netdev_<loglevel> in netvsc
-Date: Fri, 17 Jun 2011 07:58:07 -0700
-Message-Id: <1308322688-9796-4-git-send-email-haiyangz@microsoft.com>
+Cc: stable <stable@kernel.org>
+Subject: [PATCH 5/5] staging: hv: fix a kernel warning in netvsc_linkstatus_callback()
+Date: Fri, 17 Jun 2011 07:58:08 -0700
+Message-Id: <1308322688-9796-5-git-send-email-haiyangz@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1308322688-9796-1-git-send-email-haiyangz@microsoft.com>
 References: <1308322688-9796-1-git-send-email-haiyangz@microsoft.com>
@@ -21,440 +22,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/staging/hv/netvsc.c       |   71 +++++++++++++++++++++---------------
- drivers/staging/hv/rndis_filter.c |   17 +++++----
- 2 files changed, 51 insertions(+), 37 deletions(-)
+netif_notify_peers() is not allowed in netvsc_linkstatus_callback() on some
+distros, because netvsc_linkstatus_callback() is within IRQ context. So we
+move the first call to netif_notify_peers() into queued work as well, but with
+zero delay.
 
-diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
-index 68ed3b4..551537a 100644
---- a/drivers/staging/hv/netvsc.c
-+++ b/drivers/staging/hv/netvsc.c
-@@ -27,6 +27,7 @@
- #include <linux/delay.h>
- #include <linux/io.h>
- #include <linux/slab.h>
-+#include <linux/netdevice.h>
- 
- #include "hyperv_net.h"
- 
-@@ -130,6 +131,7 @@ static int netvsc_destroy_recv_buf(struct netvsc_device *net_device)
- {
- 	struct nvsp_message *revoke_packet;
- 	int ret = 0;
-+	struct net_device *ndev = dev_get_drvdata(&net_device->dev->device);
- 
- 	/*
- 	 * If we got a section count, it means we received a
-@@ -157,7 +159,7 @@ static int netvsc_destroy_recv_buf(struct netvsc_device *net_device)
- 		 * have a leak rather than continue and a bugchk
- 		 */
- 		if (ret != 0) {
--			dev_err(&net_device->dev->device, "unable to send "
-+			netdev_err(ndev, "unable to send "
- 				"revoke receive buffer to netvsp\n");
- 			return ret;
- 		}
-@@ -172,7 +174,7 @@ static int netvsc_destroy_recv_buf(struct netvsc_device *net_device)
- 		 * rather than continue and a bugchk
- 		 */
- 		if (ret != 0) {
--			dev_err(&net_device->dev->device,
-+			netdev_err(ndev,
- 				   "unable to teardown receive buffer's gpadl\n");
- 			return -ret;
- 		}
-@@ -201,10 +203,11 @@ static int netvsc_init_recv_buf(struct hv_device *device)
- 	int t;
- 	struct netvsc_device *net_device;
- 	struct nvsp_message *init_packet;
-+	struct net_device *ndev = dev_get_drvdata(&device->device);
- 
- 	net_device = get_outbound_net_device(device);
- 	if (!net_device) {
--		dev_err(&device->device, "unable to get net device..."
-+		netdev_err(ndev, "unable to get net device..."
- 			   "device being destroyed?\n");
- 		return -ENODEV;
- 	}
-@@ -213,7 +216,7 @@ static int netvsc_init_recv_buf(struct hv_device *device)
- 		(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO,
- 				get_order(net_device->recv_buf_size));
- 	if (!net_device->recv_buf) {
--		dev_err(&device->device, "unable to allocate receive "
-+		netdev_err(ndev, "unable to allocate receive "
- 			"buffer of size %d\n", net_device->recv_buf_size);
- 		ret = -ENOMEM;
- 		goto cleanup;
-@@ -228,7 +231,7 @@ static int netvsc_init_recv_buf(struct hv_device *device)
- 				    net_device->recv_buf_size,
- 				    &net_device->recv_buf_gpadl_handle);
- 	if (ret != 0) {
--		dev_err(&device->device,
-+		netdev_err(ndev,
- 			"unable to establish receive buffer's gpadl\n");
- 		goto cleanup;
- 	}
-@@ -252,7 +255,7 @@ static int netvsc_init_recv_buf(struct hv_device *device)
- 			       VM_PKT_DATA_INBAND,
- 			       VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
- 	if (ret != 0) {
--		dev_err(&device->device,
-+		netdev_err(ndev,
- 			"unable to send receive buffer's gpadl to netvsp\n");
- 		goto cleanup;
- 	}
-@@ -264,7 +267,7 @@ static int netvsc_init_recv_buf(struct hv_device *device)
- 	/* Check the response */
- 	if (init_packet->msg.v1_msg.
- 	    send_recv_buf_complete.status != NVSP_STAT_SUCCESS) {
--		dev_err(&device->device, "Unable to complete receive buffer "
-+		netdev_err(ndev, "Unable to complete receive buffer "
- 			   "initialzation with NetVsp - status %d\n",
- 			   init_packet->msg.v1_msg.
- 			   send_recv_buf_complete.status);
-@@ -317,10 +320,11 @@ static int netvsc_connect_vsp(struct hv_device *device)
- 	struct netvsc_device *net_device;
- 	struct nvsp_message *init_packet;
- 	int ndis_version;
-+	struct net_device *ndev = dev_get_drvdata(&device->device);
- 
- 	net_device = get_outbound_net_device(device);
- 	if (!net_device) {
--		dev_err(&device->device, "unable to get net device..."
-+		netdev_err(ndev, "unable to get net device..."
- 			   "device being destroyed?\n");
- 		return -ENODEV;
- 	}
-@@ -403,17 +407,18 @@ int netvsc_device_remove(struct hv_device *device)
- {
- 	struct netvsc_device *net_device;
- 	struct hv_netvsc_packet *netvsc_packet, *pos;
-+	struct net_device *ndev = dev_get_drvdata(&device->device);
- 
- 	/* Stop outbound traffic ie sends and receives completions */
- 	net_device = release_outbound_net_device(device);
- 	if (!net_device) {
--		dev_err(&device->device, "No net device present!!\n");
-+		netdev_err(ndev, "No net device present!!\n");
- 		return -ENODEV;
- 	}
- 
- 	/* Wait for all send completions */
- 	while (atomic_read(&net_device->num_outstanding_sends)) {
--		dev_err(&device->device,
-+		dev_info(&device->device,
- 			"waiting for %d requests to complete...\n",
- 			atomic_read(&net_device->num_outstanding_sends));
- 		udelay(100);
-@@ -447,10 +452,11 @@ static void netvsc_send_completion(struct hv_device *device,
- 	struct netvsc_device *net_device;
- 	struct nvsp_message *nvsp_packet;
- 	struct hv_netvsc_packet *nvsc_packet;
-+	struct net_device *ndev = dev_get_drvdata(&device->device);
- 
- 	net_device = get_inbound_net_device(device);
- 	if (!net_device) {
--		dev_err(&device->device, "unable to get net device..."
-+		netdev_err(ndev, "unable to get net device..."
- 			   "device being destroyed?\n");
- 		return;
- 	}
-@@ -479,7 +485,7 @@ static void netvsc_send_completion(struct hv_device *device,
- 
- 		atomic_dec(&net_device->num_outstanding_sends);
+This should also be back-ported to stable kernels 2.6.32 and later.
+
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Cc: stable <stable@kernel.org>
+---
+ drivers/staging/hv/netvsc_drv.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
+index c9ed19a..2299b88 100644
+--- a/drivers/staging/hv/netvsc_drv.c
++++ b/drivers/staging/hv/netvsc_drv.c
+@@ -216,8 +216,8 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
+ 	if (status == 1) {
+ 		netif_carrier_on(net);
+ 		netif_wake_queue(net);
+-		netif_notify_peers(net);
+ 		ndev_ctx = netdev_priv(net);
++		schedule_delayed_work(&ndev_ctx->dwork, 0);
+ 		schedule_delayed_work(&ndev_ctx->dwork, msecs_to_jiffies(20));
  	} else {
--		dev_err(&device->device, "Unknown send completion packet type- "
-+		netdev_err(ndev, "Unknown send completion packet type- "
- 			   "%d received!!\n", nvsp_packet->hdr.msg_type);
- 	}
- 
-@@ -491,12 +497,12 @@ int netvsc_send(struct hv_device *device,
- {
- 	struct netvsc_device *net_device;
- 	int ret = 0;
--
- 	struct nvsp_message sendMessage;
-+	struct net_device *ndev = dev_get_drvdata(&device->device);
- 
- 	net_device = get_outbound_net_device(device);
- 	if (!net_device) {
--		dev_err(&device->device, "net device (%p) shutting down..."
-+		netdev_err(ndev, "net device (%p) shutting down..."
- 			   "ignoring outbound packets\n", net_device);
- 		return -ENODEV;
- 	}
-@@ -532,7 +538,7 @@ int netvsc_send(struct hv_device *device,
- 	}
- 
- 	if (ret != 0)
--		dev_err(&device->device, "Unable to send packet %p ret %d\n",
-+		netdev_err(ndev, "Unable to send packet %p ret %d\n",
- 			   packet, ret);
- 
- 	atomic_inc(&net_device->num_outstanding_sends);
-@@ -546,6 +552,7 @@ static void netvsc_send_recv_completion(struct hv_device *device,
- 	struct nvsp_message recvcompMessage;
- 	int retries = 0;
- 	int ret;
-+	struct net_device *ndev = dev_get_drvdata(&device->device);
- 
- 	recvcompMessage.hdr.msg_type =
- 				NVSP_MSG1_TYPE_SEND_RNDIS_PKT_COMPLETE;
-@@ -565,19 +572,19 @@ retry_send_cmplt:
- 	} else if (ret == -EAGAIN) {
- 		/* no more room...wait a bit and attempt to retry 3 times */
- 		retries++;
--		dev_err(&device->device, "unable to send receive completion pkt"
-+		netdev_err(ndev, "unable to send receive completion pkt"
- 			" (tid %llx)...retrying %d\n", transaction_id, retries);
- 
- 		if (retries < 4) {
- 			udelay(100);
- 			goto retry_send_cmplt;
- 		} else {
--			dev_err(&device->device, "unable to send receive "
-+			netdev_err(ndev, "unable to send receive "
- 				"completion pkt (tid %llx)...give up retrying\n",
- 				transaction_id);
- 		}
- 	} else {
--		dev_err(&device->device, "unable to send receive "
-+		netdev_err(ndev, "unable to send receive "
- 			"completion pkt - %llx\n", transaction_id);
- 	}
- }
-@@ -591,6 +598,7 @@ static void netvsc_receive_completion(void *context)
- 	u64 transaction_id = 0;
- 	bool fsend_receive_comp = false;
- 	unsigned long flags;
-+	struct net_device *ndev = dev_get_drvdata(&device->device);
- 
- 	/*
- 	 * Even though it seems logical to do a GetOutboundNetDevice() here to
-@@ -599,7 +607,7 @@ static void netvsc_receive_completion(void *context)
- 	 */
- 	net_device = get_inbound_net_device(device);
- 	if (!net_device) {
--		dev_err(&device->device, "unable to get net device..."
-+		netdev_err(ndev, "unable to get net device..."
- 			   "device being destroyed?\n");
- 		return;
- 	}
-@@ -646,12 +654,13 @@ static void netvsc_receive(struct hv_device *device,
- 	int i, j;
- 	int count = 0, bytes_remain = 0;
- 	unsigned long flags;
-+	struct net_device *ndev = dev_get_drvdata(&device->device);
- 
- 	LIST_HEAD(listHead);
- 
- 	net_device = get_inbound_net_device(device);
- 	if (!net_device) {
--		dev_err(&device->device, "unable to get net device..."
-+		netdev_err(ndev, "unable to get net device..."
- 			   "device being destroyed?\n");
- 		return;
- 	}
-@@ -661,7 +670,7 @@ static void netvsc_receive(struct hv_device *device,
- 	 * packet
- 	 */
- 	if (packet->type != VM_PKT_DATA_USING_XFER_PAGES) {
--		dev_err(&device->device, "Unknown packet type received - %d\n",
-+		netdev_err(ndev, "Unknown packet type received - %d\n",
- 			   packet->type);
- 		put_net_device(device);
- 		return;
-@@ -673,7 +682,7 @@ static void netvsc_receive(struct hv_device *device,
- 	/* Make sure this is a valid nvsp packet */
- 	if (nvsp_packet->hdr.msg_type !=
- 	    NVSP_MSG1_TYPE_SEND_RNDIS_PKT) {
--		dev_err(&device->device, "Unknown nvsp packet type received-"
-+		netdev_err(ndev, "Unknown nvsp packet type received-"
- 			" %d\n", nvsp_packet->hdr.msg_type);
- 		put_net_device(device);
- 		return;
-@@ -682,7 +691,7 @@ static void netvsc_receive(struct hv_device *device,
- 	vmxferpage_packet = (struct vmtransfer_page_packet_header *)packet;
- 
- 	if (vmxferpage_packet->xfer_pageset_id != NETVSC_RECEIVE_BUFFER_ID) {
--		dev_err(&device->device, "Invalid xfer page set id - "
-+		netdev_err(ndev, "Invalid xfer page set id - "
- 			   "expecting %x got %x\n", NETVSC_RECEIVE_BUFFER_ID,
- 			   vmxferpage_packet->xfer_pageset_id);
- 		put_net_device(device);
-@@ -709,7 +718,7 @@ static void netvsc_receive(struct hv_device *device,
- 	 * some of the xfer page packet ranges...
- 	 */
- 	if (count < 2) {
--		dev_err(&device->device, "Got only %d netvsc pkt...needed "
-+		netdev_err(ndev, "Got only %d netvsc pkt...needed "
- 			"%d pkts. Dropping this xfer page packet completely!\n",
- 			count, vmxferpage_packet->range_cnt + 1);
- 
-@@ -737,7 +746,7 @@ static void netvsc_receive(struct hv_device *device,
- 	xferpage_packet->count = count - 1;
- 
- 	if (xferpage_packet->count != vmxferpage_packet->range_cnt) {
--		dev_err(&device->device, "Needed %d netvsc pkts to satisy "
-+		netdev_err(ndev, "Needed %d netvsc pkts to satisy "
- 			"this xfer page...got %d\n",
- 			vmxferpage_packet->range_cnt, xferpage_packet->count);
- 	}
-@@ -827,6 +836,7 @@ static void netvsc_channel_cb(void *context)
- 	struct vmpacket_descriptor *desc;
- 	unsigned char *buffer;
- 	int bufferlen = NETVSC_PACKET_SIZE;
-+	struct net_device *ndev = dev_get_drvdata(&device->device);
- 
- 	packet = kzalloc(NETVSC_PACKET_SIZE * sizeof(unsigned char),
- 			 GFP_ATOMIC);
-@@ -836,7 +846,7 @@ static void netvsc_channel_cb(void *context)
- 
- 	net_device = get_inbound_net_device(device);
- 	if (!net_device) {
--		dev_err(&device->device, "net device (%p) shutting down..."
-+		netdev_err(ndev, "net device (%p) shutting down..."
- 			   "ignoring inbound packets\n", net_device);
- 		goto out;
- 	}
-@@ -857,7 +867,7 @@ static void netvsc_channel_cb(void *context)
- 					break;
- 
- 				default:
--					dev_err(&device->device,
-+					netdev_err(ndev,
- 						   "unhandled packet type %d, "
- 						   "tid %llx len %d\n",
- 						   desc->type, request_id,
-@@ -886,7 +896,7 @@ static void netvsc_channel_cb(void *context)
- 			buffer = kmalloc(bytes_recvd, GFP_ATOMIC);
- 			if (buffer == NULL) {
- 				/* Try again next time around */
--				dev_err(&device->device,
-+				netdev_err(ndev,
- 					   "unable to allocate buffer of size "
- 					   "(%d)!!\n", bytes_recvd);
- 				break;
-@@ -914,6 +924,7 @@ int netvsc_device_add(struct hv_device *device, void *additional_info)
- 	((struct netvsc_device_info *)additional_info)->ring_size;
- 	struct netvsc_device *net_device;
- 	struct hv_netvsc_packet *packet, *pos;
-+	struct net_device *ndev = dev_get_drvdata(&device->device);
- 
- 	net_device = alloc_net_device(device);
- 	if (!net_device) {
-@@ -945,7 +956,7 @@ int netvsc_device_add(struct hv_device *device, void *additional_info)
- 			 netvsc_channel_cb, device);
- 
- 	if (ret != 0) {
--		dev_err(&device->device, "unable to open channel: %d\n", ret);
-+		netdev_err(ndev, "unable to open channel: %d\n", ret);
- 		goto cleanup;
- 	}
- 
-@@ -955,7 +966,7 @@ int netvsc_device_add(struct hv_device *device, void *additional_info)
- 	/* Connect with the NetVsp */
- 	ret = netvsc_connect_vsp(device);
- 	if (ret != 0) {
--		dev_err(&device->device,
-+		netdev_err(ndev,
- 			"unable to connect to NetVSP - %d\n", ret);
- 		goto close;
- 	}
-diff --git a/drivers/staging/hv/rndis_filter.c b/drivers/staging/hv/rndis_filter.c
-index 8416bf2..20e673d 100644
---- a/drivers/staging/hv/rndis_filter.c
-+++ b/drivers/staging/hv/rndis_filter.c
-@@ -249,6 +249,7 @@ static void rndis_filter_receive_response(struct rndis_device *dev,
- 	struct rndis_request *request = NULL;
- 	bool found = false;
- 	unsigned long flags;
-+	struct net_device *ndev = dev_get_drvdata(&dev->net_dev->dev->device);
- 
- 	spin_lock_irqsave(&dev->request_lock, flags);
- 	list_for_each_entry(request, &dev->req_list, list_ent) {
-@@ -269,7 +270,7 @@ static void rndis_filter_receive_response(struct rndis_device *dev,
- 			memcpy(&request->response_msg, resp,
- 			       resp->msg_len);
- 		} else {
--			dev_err(&dev->net_dev->dev->device,
-+			netdev_err(ndev,
- 				"rndis response buffer overflow "
- 				"detected (size %u max %zu)\n",
- 				resp->msg_len,
-@@ -289,7 +290,7 @@ static void rndis_filter_receive_response(struct rndis_device *dev,
- 
- 		complete(&request->wait_event);
- 	} else {
--		dev_err(&dev->net_dev->dev->device,
-+		netdev_err(ndev,
- 			"no rndis request found for this response "
- 			"(id 0x%x res type 0x%x)\n",
- 			resp->msg.init_complete.req_id,
-@@ -349,20 +350,21 @@ int rndis_filter_receive(struct hv_device *dev,
- 	struct rndis_device *rndis_dev;
- 	struct rndis_message rndis_msg;
- 	struct rndis_message *rndis_hdr;
-+	struct net_device *ndev = dev_get_drvdata(&dev->device);
- 
- 	if (!net_dev)
- 		return -EINVAL;
- 
- 	/* Make sure the rndis device state is initialized */
- 	if (!net_dev->extension) {
--		dev_err(&dev->device, "got rndis message but no rndis device - "
-+		netdev_err(ndev, "got rndis message but no rndis device - "
- 			  "dropping this message!\n");
- 		return -ENODEV;
- 	}
- 
- 	rndis_dev = (struct rndis_device *)net_dev->extension;
- 	if (rndis_dev->state == RNDIS_DEV_UNINITIALIZED) {
--		dev_err(&dev->device, "got rndis message but rndis device "
-+		netdev_err(ndev, "got rndis message but rndis device "
- 			   "uninitialized...dropping this message!\n");
- 		return -ENODEV;
- 	}
-@@ -376,7 +378,7 @@ int rndis_filter_receive(struct hv_device *dev,
- 	/* Make sure we got a valid rndis message */
- 	if ((rndis_hdr->ndis_msg_type != REMOTE_NDIS_PACKET_MSG) &&
- 	    (rndis_hdr->msg_len > sizeof(struct rndis_message))) {
--		dev_err(&dev->device, "incoming rndis message buffer overflow "
-+		netdev_err(ndev, "incoming rndis message buffer overflow "
- 			   "detected (got %u, max %zu)..marking it an error!\n",
- 			   rndis_hdr->msg_len,
- 			   sizeof(struct rndis_message));
-@@ -409,7 +411,7 @@ int rndis_filter_receive(struct hv_device *dev,
- 		rndis_filter_receive_indicate_status(rndis_dev, &rndis_msg);
- 		break;
- 	default:
--		dev_err(&dev->device,
-+		netdev_err(ndev,
- 			"unhandled rndis message (type %u len %u)\n",
- 			   rndis_msg.ndis_msg_type,
- 			   rndis_msg.msg_len);
-@@ -505,6 +507,7 @@ static int rndis_filter_set_packet_filter(struct rndis_device *dev,
- 	struct rndis_set_complete *set_complete;
- 	u32 status;
- 	int ret, t;
-+	struct net_device *ndev = dev_get_drvdata(&dev->net_dev->dev->device);
- 
- 	request = get_rndis_request(dev, REMOTE_NDIS_SET_MSG,
- 			RNDIS_MESSAGE_SIZE(struct rndis_set_request) +
-@@ -530,7 +533,7 @@ static int rndis_filter_set_packet_filter(struct rndis_device *dev,
- 	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
- 
- 	if (t == 0) {
--		dev_err(&dev->net_dev->dev->device,
-+		netdev_err(ndev,
- 			"timeout before we got a set response...\n");
- 		/*
- 		 * We can't deallocate the request since we may still receive a
+ 		netif_carrier_off(net);
 -- 
 1.6.3.2
 
