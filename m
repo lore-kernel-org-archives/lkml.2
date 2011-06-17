@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918Ab1FQDZX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 23:25:23 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:50954 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754495Ab1FQDZV (ORCPT
+	id S1756193Ab1FQDdP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 23:33:15 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:38518 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755399Ab1FQDdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 23:25:21 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.11 with qID p5H3PDc1002242, This message is released by code: ctaloc0852
-From: hayeswang <hayeswang@realtek.com>
-To: "'Francois Romieu'" <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <1308109531-31698-1-git-send-email-hayeswang@realtek.com> <20110616225904.GA2064@electric-eye.fr.zoreil.com>
-Subject: RE: [PATCH v2] net/r8169: update the new parser for the new firmware
-Date: Fri, 17 Jun 2011 11:25:13 +0800
-X-BOX-Message-Id: p5H3PDc1002242
-Message-ID: <8AC7DE11560749B895F99EBA7D42AA49@realtek.com.tw>
+	Thu, 16 Jun 2011 23:33:14 -0400
+X-AuditID: b753bd60-a46b0ba0000019f4-0a-4dfacaf7c33e
+X-AuditID: b753bd60-a46b0ba0000019f4-0a-4dfacaf7c33e
+Message-ID: <4DFACAF1.3010300@hitachi.com>
+Date: Fri, 17 Jun 2011 12:33:05 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+To: Greg KH <greg@kroah.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Nao Nishijima <nao.nishijima.xt@hitachi.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kay.sievers@vrfy.org, jcm@redhat.com, hare@suse.de,
+        stefanr@s5r6.in-berlin.de, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
+References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp> <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp> <20110615153337.GA10160@kroah.com> <4DF9F11F.705@hitachi.com> <20110616154129.GA31498@kroah.com> <1308239454.2436.34.camel@mulgrave> <20110616161442.GA32113@kroah.com>
+In-Reply-To: <20110616161442.GA32113@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: AcwsesBWumQUV7s4TU2vIP4LPXzw9wAHk9wg
-In-Reply-To: <20110616225904.GA2064@electric-eye.fr.zoreil.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-
-> -----Original Message-----
-> From: Francois Romieu [mailto:romieu@fr.zoreil.com] 
-> Sent: Friday, June 17, 2011 6:59 AM
-> To: Hayeswang
-> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v2] net/r8169: update the new parser for 
-> the new firmware
+(2011/06/17 1:14), Greg KH wrote:
+> On Thu, Jun 16, 2011 at 11:50:54AM -0400, James Bottomley wrote:
+>>> And again, why not just fix the userspace tools?  That is trivial to do
+>>> so and again, could have been done by now in the years this has been
+>>> discussed.
+>>
+>> So I can summarise where I think we are in these discussions:
+>>
+>> We provide the ability to give all kernel devices a "preferred name".
+>> By default this will be the device name the kernel would have originally
+>> assigned.  the dev_printk's will use the preferred name, and it will be
+>> modifiable from user space.  All the kernel will do is print out
+>> whatever it is ... no guarantees of uniqueness or specific format will
+>> be made.  Since we're only providing one preferred_name file, the kernel
+>> can only have one preferred name for a device at any given time
+>> (although it is modifiable on the fly as many times as the user
+>> chooses).
+>>
+>> The design is to use this preferred name to implement what Hitachi wants
+>> in terms of persistent name, but we don't really care.
+>>
+>> All userspace naming will be taken care of by the usual udev rules, so
+>> for disks, something like /dev/disk/by-preferred/<fred> which would be
+>> the usual symbolic link.
 > 
-> Hayes Wang <hayeswang@realtek.com> :
-> > Update the parser for the new firmware which is embedded 
-> some information.
+> No, udev can not create such a link after the preferred name is set, as
+> it has no way of knowing that the name was set.
 > 
-> I have modified several things :
-> - s/u32/__le32/ in fw_info
-> - fix unsigned (size_t) comparisons
-> - more size checks before dereferencing fw_info
+>> This will ensure that kernel output and udev input are consistent.  It
+>> will still require that user space utilities which derive a name for a
+>> device will need modifying to print out the preferred name.
 > 
+> It also doesn't solve the issue of userspace wanting to use such a
+> "preferred" name in the command line of tools, as there will not be a
+> link back to the "kernel" name directly in /dev/.
 
-Thanks. They are fine.
+Right, this series just add a preferred name interface, and changes
+a part of kernel messages.
 
-> The new firmware format should be the same. The old 
-> r8168d-1.fw firmware proved usable when prefixed with :
-> 
-> 0000000: 0000 0000 3031 0000 0000 0000 0000 0000  ....01..........
-> 0000010: 0000 0000 0000 0000 0000 0000 0000 0000  ................
-> 0000020: 0000 0000 3000 0000 7501 0000 a000 0000  ....0...u.......
-> 
-> I realized after testing that netif_err could be abused with 
-> non-string fw_info.version. :o/
-> 
+> So as userspace tools will still need to be fixed, I don't see how
+> adding a kernel file for this is going to help any.  Well, a bit in that
+> the kernel log files will look "different", but again, that really isn't
+> a problem that userspace couldn't also solve with no kernel changes
+> needed.
 
-Excuse me. I don't understand what you want to express. Do you mean the
-situation of the old paser with the new firmware for checking the firmware? For
-the normal situation, the old paser would not use the new firmware. And I put
-zero in front of the new firmware to prevent the old paser from running it. That
-is all I do.
+hmm, He didnt say "this can solve all problems". I think
+preferred name is just a starting point to solve these problems.
+Actually, he decided to fix those user space tools to accept
+persistent symbolic links, and to show it in outputs.
 
-If you don't mean that, I could promise the new firmware I release would contain
-the valid string unless someone modifies it.
+It's not complete, but a good starting point, isn't it?
 
-> Comments ?
-> 
- 
-Best Regards,
-Hayes
+Thank you,
 
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
