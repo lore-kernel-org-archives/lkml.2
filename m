@@ -1,89 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758745Ab1FQSCR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 14:02:17 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42611 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755133Ab1FQSCO (ORCPT
+	id S1755768Ab1FQSGi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 14:06:38 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38789 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090Ab1FQSGf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 14:02:14 -0400
+	Fri, 17 Jun 2011 14:06:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=G6TkC12WZ3ot1AHpJKMPU6HTy72i91tIEk44DrBu3h2+H+AD+m7PBlOPNE9dylj0S0
+         cr0fbfRRDE+MpO9ivcQsN6hhYfcSa1+CmRGf+xe+lDjo4QadtdNFHThyV1V/EFINrqV9
+         iHOaam+rwB5Cp+pqSIibI+bXQ5iu0taTI4/C0=
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1106171040460.7018@sister.anvils>
-References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe>
- <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com>
- <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
- <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
- <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
- <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com> <1308255972.17300.450.camel@schen9-DESK>
- <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com> <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
- <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com> <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
- <BANLkTinUBTYWxrF5TCuDSQuFUAyivXJXjQ@mail.gmail.com> <1308310080.2355.19.camel@twins>
- <BANLkTim2bmPfeRT1tS7hx2Z85QHjPHwU3Q@mail.gmail.com> <alpine.LSU.2.00.1106171040460.7018@sister.anvils>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 17 Jun 2011 11:01:08 -0700
-Message-ID: <BANLkTim3vo0vpovV=5sU=GLxkotheB=Ryg@mail.gmail.com>
-Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
- to mutex
-To: Hugh Dickins <hughd@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <4DFB93C1.9000901@fb.com>
+References: <20110615163115.773d072e.akpm@linux-foundation.org>
+ <1308187784-3815-1-git-send-email-asharma@fb.com> <BANLkTi=f2N+dO2nBLobM73jCg0U0QSqxNQ@mail.gmail.com>
+ <4DFB8AAF.1040002@fb.com> <BANLkTindmEA7NsaRjuukh1-oRCtVWpeuCA@mail.gmail.com>
+ <4DFB93C1.9000901@fb.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Fri, 17 Jun 2011 14:06:14 -0400
+Message-ID: <BANLkTim5zEo=Rn2sqUExL-8n=p4inLEpuQ@mail.gmail.com>
+Subject: Re: [PATCH] atomic: cleanup asm-generic atomic*.h inclusion
+To: Arun Sharma <asharma@fb.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        David Miller <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 10:41 AM, Hugh Dickins <hughd@google.com> wrote:
+On Fri, Jun 17, 2011 at 13:49, Arun Sharma wrote:
+> On 6/17/11 10:28 AM, Mike Frysinger wrote:
+>> On Fri, Jun 17, 2011 at 13:11, Arun Sharma wrote:
+>>> On 6/16/11 11:36 PM, Mike Frysinger wrote:
+>>>>
+>>>> i'm not sure this doesnt break things.  what tree exactly should i
+>>>> apply this patch to to verify things ?
+>>>
+>>> I tested 3.0-rc2 + patch 1 + patch 2 + this patch.
+>>
+>> not sure what those patches are, so i picked at random:
+>> Subject: [PATCH 2/3] atomic: move atomic_add_unless to generic code
+>> Date: Tue,  7 Jun 2011 17:07:18 -0700
+>> Message-Id:<1307491639-9864-2-git-send-email-asharma@fb.com>
+>>
+>> Subject: [PATCH 1/3] atomic: use<linux/atomic.h>
+>> Date:   Mon,  6 Jun 2011 10:27:29 -0700
+>> Message-Id:<1307381251-15729-1-git-send-email-asharma@fb.com>
 >
-> Applying load with those two patches applied (combined patch shown at
-> the bottom, in case you can tell me I misunderstood what to apply,
-> and have got the wrong combination on), lockdep very soon protested.
+> Yes - these are the right patches.
+>
+>>
+>> but even after just these two, things fail because
+>> include/asm-generic/atomic.h provides atomic_add_unless() already.
+>> i'm guessing your patch 2/3 should have fixed that somehow since it
+>> adds the func to linux/atomic.h.
+>
+> Thanks for catching this. I missed it because I tested only on i386 and
+> x86_64. Looks like only 4 archs are affected:
+>
+> $ grep -r asm-generic.atomic.h *
+> blackfin/include/asm/atomic.h:# include <asm-generic/atomic.h>
+> microblaze/include/asm/atomic.h:#include <asm-generic/atomic.h>
+> mn10300/include/asm/atomic.h:#include <asm-generic/atomic.h>
+> score/include/asm/atomic.h:#include <asm-generic/atomic.h>
+>
+> I believe the correct fix is:
+>
+> --- a/include/asm-generic/atomic.h
+> +++ b/include/asm-generic/atomic.h
+> @@ -129,17 +129,6 @@ static inline void atomic_dec(atomic_t *v)
+>
+>  #define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o),
+> (n))
+>
+> -static inline int atomic_add_unless(atomic_t *v, int a, int u)
+> -{
+> -  int c, old;
+> -  c = atomic_read(v);
+> -  while (c != u && (old = atomic_cmpxchg(v, c, c + a)) != c)
+> -    c = old;
+> -  return c != u;
+> -}
+> -
+> -#define atomic_inc_not_zero(v) atomic_add_unless((v), 1, 0)
+> -
+>  static inline void atomic_clear_mask(unsigned long mask, unsigned long
+> *addr)
+>  {
+>        unsigned long flags;
+>
+> Could you help test this? I'll resend the patch series once I get
+> confirmation.
 
-Combined patch looks good, it's just the one without the NULL ptr tests removed.
+fixes one thing while breaking another.  linux/atomic.h includes
+asm/atomic.h which includes asm-generic/atomic.h which includes
+asm-generic/atomic-long.h which needs atomic_add_unless(), but that
+isnt provided until after the asm/atomic.h include in linux/atomic.h.
 
-And yup, that makes sense. Since we now hold the anon_vma lock over an
-allocation, the memory allocation might want to start to free things.
+but linux/atomic.h needs asm/atomic.h before atomic_add_unless()
+because it relies on the new __atomic_add_unless().
 
-> I've not given it _any_ thought, and won't be able to come back to
-> it for a couple of hours: chucked over the wall for your delectation.
-
-It's a mis-feature of "page_referenced()": we can call it without
-holding any page locks ("is_locked=0"), and that function will then do
-a try_lock() on the page, and just consider it referenced if it
-failed.
-
-HOWEVER, the code to then do the same thing for the anon_vma lock
-doesn't do the same trylock model, because it used to be a spinlock:
-so there was "no need" (since you can never do a non-atomic allocation
-from within a spinlock).
-
-So this is arguably a bug in memory reclaim, but sicne the
-mutex->spinlock conversion had been pretty mindless, nobody noticed
-until the mutex region grew.
-
-So I do think that "page_referenced_anon()" should do a trylock, and
-return "referenced" if the trylock fails. Comments?
-
-That said, we have a few other mutexes that are just not allowed to be
-held over an allocation. page_referenced_file() has that
-mapping->i_mmap_mutex lock, for example. So maybe the rule just has to
-be "you cannot hold anon_vma lock over an allocation". Which would be
-sad: one of the whole _points_ of turning it from a spinlock to a
-mutex would be that it relaxes the locking rules a lot (and not just
-the preemptibility)
-
-                      Linus
+having linux/atomic.h and asm-generic/atomic.h just strikes me as
+wrong.  the point of asm-generic is to unify things, but now we have
+two places to unify things without 0 indication as to which is for
+which ?  i'm wondering if we shouldnt convert all arches to
+asm-generic/atomic.h and then add your new logic there and just skip
+this whole linux/atomic.h mess.
+-mike
