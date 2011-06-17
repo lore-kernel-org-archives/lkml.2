@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757698Ab1FQQsg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 12:48:36 -0400
-Received: from smtp.microsoft.com ([131.107.115.214]:16593 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757045Ab1FQQsf convert rfc822-to-8bit (ORCPT
+	id S1758269Ab1FQQta (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 12:49:30 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37935 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757363Ab1FQQt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 12:48:35 -0400
-X-Greylist: delayed 306 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Jun 2011 12:48:35 EDT
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Nicolas Kaiser <nikai@nikai.net>
-CC: Hank Janssen <hjanssen@microsoft.com>, KY Srinivasan <kys@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: [PATCH 1/5] staging: hv: fix some white spaces in netvsc driver
-Thread-Topic: [PATCH 1/5] staging: hv: fix some white spaces in netvsc driver
-Thread-Index: AQHMLP/uDdLRlnLWHEWp07cb9gfSSpTCK4UA//+VCcA=
-Date: Fri, 17 Jun 2011 16:43:27 +0000
-Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC09612D20@TK5EX14MBXC227.redmond.corp.microsoft.com>
-References: <1308322688-9796-1-git-send-email-haiyangz@microsoft.com>
- <20110617180324.1eeb2ea0@absol.kitzblitz>
-In-Reply-To: <20110617180324.1eeb2ea0@absol.kitzblitz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.37]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 17 Jun 2011 12:49:28 -0400
 MIME-Version: 1.0
+In-Reply-To: <1308310080.2355.19.camel@twins>
+References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe>
+ <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com>
+ <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
+ <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
+ <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
+ <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com> <1308255972.17300.450.camel@schen9-DESK>
+ <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com> <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
+ <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com> <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
+ <BANLkTinUBTYWxrF5TCuDSQuFUAyivXJXjQ@mail.gmail.com> <1308310080.2355.19.camel@twins>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 17 Jun 2011 09:46:00 -0700
+Message-ID: <BANLkTin3onK+43LxODfbu-sdm-pFut0TKw@mail.gmail.com>
+Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
+ to mutex
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Nicolas Kaiser [mailto:nikai@nikai.net]
-> Sent: Friday, June 17, 2011 12:03 PM
-> To: Haiyang Zhang
-> Cc: Hank Janssen; KY Srinivasan; Abhishek Kane (Mindtree Consulting
-> PVT LTD); gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org
-> Subject: Re: [PATCH 1/5] staging: hv: fix some white spaces in netvsc
-> driver
-> 
-> * Haiyang Zhang <haiyangz@microsoft.com>:
-> > diff --git a/drivers/staging/hv/netvsc.c
-> b/drivers/staging/hv/netvsc.c
-> > index 0ae35e7..b6e1fb9 100644
-> > --- a/drivers/staging/hv/netvsc.c
-> > +++ b/drivers/staging/hv/netvsc.c
-> > @@ -525,10 +525,10 @@ int netvsc_send(struct hv_device *device,
-> >  						  (unsigned long)packet);
-> >  	} else {
-> >  		ret = vmbus_sendpacket(device->channel, &sendMessage,
-> > -				       sizeof(struct nvsp_message),
-> > -				       (unsigned long)packet,
-> > -				       VM_PKT_DATA_INBAND,
-> > -
-> VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
-> > +				sizeof(struct nvsp_message),
-> > +				(unsigned long)packet,
-> > +				VM_PKT_DATA_INBAND,
-> > +				VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
-> 
-> Why? The arguments were nicely aligned.
+On Fri, Jun 17, 2011 at 4:28 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>
+> Something like so? Compiles and runs the benchmark in question.
 
-Because the last line went beyond 80 chars, and triggered checkpatch warning.
+Oh, and can you do this with a commit log and sign-off, and I'll put
+it in my "anon_vma-locking" branch that I have. I'm not going to
+actually merge that branch into mainline until I've seen a few more
+acks or more testing by Tim.
 
-Thanks,
--Haiyang
+But if Tim's numbers hold up (-32% to +15% performance by just the
+first one, and +15% isn't actually an improvement since tmpfs
+read-ahead should have gotten us to +66%), I think we have to do this
+just to avoid the performance regression.
+
+                                     Linus
