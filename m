@@ -1,172 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab1FQBPW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 21:15:22 -0400
-Received: from mga14.intel.com ([143.182.124.37]:41278 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751519Ab1FQBPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 21:15:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,378,1304319600"; 
-   d="scan'208";a="14224728"
-Date: Fri, 17 Jun 2011 09:22:20 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "Du, Alek" <alek.du@intel.com>
-Subject: Re: [PATCH 3/5] dw_spi: rework message processing
-Message-ID: <20110617092220.41532d97@feng-i7>
-In-Reply-To: <4DFA3D30.2070909@gmail.com>
-References: <1308158588-17249-1-git-send-email-dirk.brandewie@gmail.com>
-	<1308158588-17249-4-git-send-email-dirk.brandewie@gmail.com>
-	<20110616220003.7ac89d56@feng-i7>
-	<4DFA3D30.2070909@gmail.com>
-Organization: intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+	id S1756889Ab1FQBXz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 21:23:55 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36284 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123Ab1FQBXy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 21:23:54 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DFAAC6B.6060306@jp.fujitsu.com>
+Date: Fri, 17 Jun 2011 10:22:51 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Hu Tao <hutao@cn.fujitsu.com>
+CC: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.co>
+Subject: Re: [patch 00/15] CFS Bandwidth Control V6
+References: <20110503092846.022272244@google.com> <20110614065807.GA19111@localhost.localdomain> <4DF70DED.2030803@jp.fujitsu.com> <20110615083749.GA14200@localhost.localdomain> <4DF954E5.9060704@jp.fujitsu.com> <20110616094508.GA1961@localhost.localdomain>
+In-Reply-To: <20110616094508.GA1961@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Jun 2011 01:28:16 +0800
-Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
+(2011/06/16 18:45), Hu Tao wrote:
+> On Thu, Jun 16, 2011 at 09:57:09AM +0900, Hidetoshi Seto wrote:
+>> (2011/06/15 17:37), Hu Tao wrote:
+>>> On Tue, Jun 14, 2011 at 04:29:49PM +0900, Hidetoshi Seto wrote:
+>>>> (2011/06/14 15:58), Hu Tao wrote:
+>>>>> Hi,
+>>>>>
+>>>>> I've run several tests including hackbench, unixbench, massive-intr
+>>>>> and kernel building. CPU is Intel(R) Xeon(R) CPU X3430  @ 2.40GHz,
+>>>>> 4 cores, and 4G memory.
+>>>>>
+>>>>> Most of the time the results differ few, but there are problems:
+>>>>>
+>>>>> 1. unixbench: execl throughout has about 5% drop.
+>>>>> 2. unixbench: process creation has about 5% drop.
+>>>>> 3. massive-intr: when running 200 processes for 5mins, the number
+>>>>>    of loops each process runs differ more than before cfs-bandwidth-v6.
+>>>>>
+>>>>> The results are attached.
+>>>>
+>>>> I know the score of unixbench is not so stable that the problem might
+>>>> be noises ... but the result of massive-intr is interesting.
+>>>> Could you give a try to find which piece (xx/15) in the series cause
+>>>> the problems?
+>>>
+>>> After more tests, I found massive-intr data is not stable, too. Results
+>>> are attached. The third number in file name means which patchs are
+>>> applied, 0 means no patch applied. plot.sh is easy to generate png
+>>> files.
+>>
+>> (Though I don't know what the 16th patch of this series is, anyway)
 
-> On 06/16/2011 07:00 AM, Feng Tang wrote:
-> > Hi Dirk,
-> >
-> > IMHO, the patch is too big, it contains too many changes to the
-> > original drivers, and we can't see clearly what you've changed to
-> > each logical code part or section, If possible, could you separate
-> > this patch to several small ones in a logical way.
-> >
-> > First, I have some questions, what devices have you tested with
-> > this patch? high speed, low speed? Do you have any performance data
-> > to show the benefit of this change? Current dw_spi driver has been
-> > tested with many devices, so to not break them or cause obvious
-> > regression, we have to be cautious.
+I see.  It will be replaced by Paul's update.
+
+> the 16th patch is this: https://lkml.org/lkml/2011/5/23/503
 > 
-> See Thread with grant for list of environments where it has been
-> tested. The boot time of the platforms it is being used on decreased
-> 2-5 seconds with no regressions reported.  It has been in use/under
-> test for ~3 months in various Meego and Android builds.  It clears
-> all the bugs reported against the driver that I am aware of.  If you
-> can give me pointers to teams/projects that are using v2.6.37+
-> kernels I would be more that happy to provide them with patches for
-> their kernel to ensure we get the most comprehensive test possible.
-
-I was not asking about the environments, but the actual devices connect.
-to and work with the dw_spi controller, here is a quote from one of
-my previous email of devices listing:
-
-----------------------------------------------------------------------------
-I don't know all the devices and users, but here is what I know: I've tested
-Max3110 spi-uart (in-tree), Option GTM501L high-speed 3G modem (out of tree),
-ektf1236 spi touch screen (out of tree). Alek Du (Cced) should have tested
-current dw_spi driver with some spi bluetooth device and modem device. Also
-the original author fordw_spi_mmio.c Jean-Hugues Deschense should have some
-experience too. 
------------------------------------------------------------------------------
-Meego or Android doesn't mean much for a device driver, as all these OSes are
-using the same Linux kernel.
-
-Is "2-5 seconds boot time cuts" the only performance data you got? The current
-driver has 2 phases, first is the original one from me, the second is the 
-optimization by Alek Du which introduce the batch operation for TX/RX FIFO, 
-Alek mentioned the boot time cut too, so I guess the boot time gain is tested
-against the original driver, not the current mainstream driver, right?
-
-For the kernel version you mentioned, my thought is the kernel version diff
-between 2.6.35 and 2.6.37 doesn't mean much to a simple dw_spi device driver's
-performance? some users of dw_spi driver are still using 2.6.35 kernel with
-all new optimizations back ported, I have no power to force them upgrade the
-kernel, but if the dw_spi driver is the same, then the performance data is
-mostly trustable.
-
+>> I see that the results of 15, 15-1 and 15-2 are very different and that
+>> 15-2 is similar to without-patch.
+>>
+>> One concern is whether this unstable of data is really caused by the
+>> nature of your test (hardware, massive-intr itself and something running
+>> in background etc.) or by a hidden piece in the bandwidth patch set.
+>> Did you see "not stable" data when none of patches is applied?
 > 
-> >
-> > Here are some general comments according to the commit logs:
-> > 1. I think the threaded irq handling is a good idea. And let driver
-> > chose to use poll or interrupt is good, some other spi controller
-> > driver has used that way for a long time
-> > 2. Why you remove the cs_change code, in some case, the controller
-> > is only be used by one device, we don't need do the config for
-> > every single spi_transfer
+> Yes. 
 > 
-> There is no guarantee that all the transfers in a given spi_message
-> have the same values for  speed_hz, bits_per_word, cs_change and
-> delay_usecs atleast nothing I could find put that restriction in
-> place. Since we need to deal with possible changes (although
-> unlikely) it gets rid some state we need to maintain and makes the
-> code path common for all transfers.
+> But for a five-runs the result seems 'stable'(before patches and after
+> patches). I've also run the tests in single mode. results are attached.
 
-right, if you look at the driver, cs_change is only judge condition
-for judge, speed_hz, bits_per_word's change are counted in too. Otherwise
-the driver should fail years ago.
+(It will be appreciated greatly if you could provide not only raw results
+but also your current observation/speculation.)
 
-> 
-> > 3. Why do you remove the chip select control code, dw_spi
-> > controller hw has some problem in chip select controller by SER,
-> > and thus many devices has to use external GPIO has their chip
-> > select, this is real world usages!
-> 
-> Which devices/platforms are you referring to?  I was unable to find
-> any platforms or client drivers using this functionality. If they are
-> not public please respond internally.  In any case it is mute since I
-> already agreed to put is back in in my response to Grant.
+Well, (to wrap it up,) do you still see the following problem?
 
-Some intel platforms used/are using that, I got requests to help them
-on it. Also some community guys are using that (though I don't know the
-detail),  as this piece of code is introduced by Shore George once made
-some change according to their specific change, see commit 052dc7c4
+>>>>> 3. massive-intr: when running 200 processes for 5mins, the number
+>>>>>    of loops each process runs differ more than before cfs-bandwidth-v6.
 
-> 
-> > 4. I saw you enable both TX/RX interrupt when doing interrupt
-> > transfer, spi devices' TX/RX are born to be simutaneous, when one
-> > word is sent over TX line, a RX word will be received from RX line,
-> > so both the orignal interrupt transfer handling written by me and
-> > the later optimization from Alek Du only enable TX interrupt, which
-> > will only generate half of IRQs comparing to enble both TX/RX, this
-> > is huge when the data rate is several Mb per second
-> 
-> I the current driver the txfltr register is set to 0 (FIFO empty) in
-> the interrupt transfer case which will drop chip select every FIFO
-> length bytes.
-> 
-> In my transfer setup the RX FIFO interrupt is set to a value lower
-> than the TX threshold which will keep both interrupts from firing at
-> the same time.
-> 
-> The TX interrupt will drive the transfer until there are less than
-> tx_threshold bytes left to transfer then by the RX interrupt to drive
-> the remainder of the transfer without dropping chip select.
+I think that 5 samples are not enough to draw a conclusion, and that at the
+moment it is inconsiderable.  How do you think?
 
-What I set is half-empty for TX interrupt, so the FIFO will get filled
-long before it's drained. I don't have any HW protocol analyzer or
-logical analyzer, so I can't totally guarantee it won't happen
+Even though pointed problems are gone, I have to say thank you for taking
+your time to test this CFS bandwidth patch set.
+I'd appreciate it if you could continue your test, possibly against V7.
+(I'm waiting, Paul?)
 
-> 
-> > 5. Why do you change the logic of filling TX FIFO, the logic comes
-> > from use case that the dw_spi driver is dealing with several high
-> > speed devices.
-> >
-> 
-> The version of the driver that I started with did not have the
-> current fifo handling code.  I finished my changes before they showed
-> up in the AC tree or the upstream kernel.  I picked up most to the
-> fifo handling logic from the current driver with the exception of the
-> rxtx_gap calculation which was not needed with the way I am
-> maintaining the state and the addition of a check to avoid the
-> register read in tx_max/rx_max if all bytes have been sent/received.
-> This avoids some overhead in the interrupt case.
 
-If there is no performance again, I would hold on any change.
+Thanks,
+H.Seto
 
-> 
-> > Thanks,
-> > Feng
-> >
