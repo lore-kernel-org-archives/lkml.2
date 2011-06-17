@@ -1,46 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758839Ab1FQJ0C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 05:26:02 -0400
-Received: from bar.sig21.net ([80.81.252.164]:58813 "EHLO bar.sig21.net"
+	id S1758795Ab1FQJN2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 05:13:28 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:46422 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757358Ab1FQJ0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 05:26:00 -0400
-X-Greylist: delayed 1294 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Jun 2011 05:26:00 EDT
-Date: Fri, 17 Jun 2011 11:04:24 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: missing compat-ioctl for CDROM_DRIVE_STATUS + FDGETPRM
-Message-ID: <20110617090424.GA19345@sig21.net>
+	id S1757900Ab1FQJNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 05:13:25 -0400
+Date: Fri, 17 Jun 2011 14:35:04 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v4 3.0-rc2-tip 7/22]  7: uprobes: mmap and fork hooks.
+Message-ID: <20110617090504.GN4952@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+ <20110607125931.28590.12362.sendpatchset@localhost6.localdomain6>
+ <1308161486.2171.61.camel@laptop>
+ <20110616032645.GF4952@linux.vnet.ibm.com>
+ <1308225626.13240.34.camel@twins>
+ <20110616130012.GL4952@linux.vnet.ibm.com>
+ <1308248588.13240.267.camel@twins>
+ <20110617045000.GM4952@linux.vnet.ibm.com>
+ <1308297836.13240.380.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-21-Score: -3.8 (---)
-X-Spam-21-Report: No, score=-3.8 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.649,BAYES_00=-2.599 autolearn=no
+In-Reply-To: <1308297836.13240.380.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+* Peter Zijlstra <peterz@infradead.org> [2011-06-17 10:03:56]:
 
-running even a simple "qemu-img create -f qcow2 some.img 1G" causes
-the following in dmesg on a Linux host with linux-2.6.39.1 x86_64 kernel
-and 32bit userspace:
+> On Fri, 2011-06-17 at 10:20 +0530, Srikar Dronamraju wrote:
+> > > 
+> > > void __unregister_uprobe(...)
+> > > {
+> > >   uprobe = find_uprobe(); // ref++
+> > >   if (delete_consumer(...)); // includes tree removal on last consumer
+> > >                              // implies we own the last ref
+> > >      return; // consumers
+> > > 
+> > >   vma_prio_tree_foreach() {
+> > >      // create list
+> > >   }
+> > > 
+> > >   list_for_each_entry_safe() {
+> > >     // remove from list
+> > >     remove_breakpoint(); // unconditional, if it wasn't there
+> > >                          // its a nop anyway, can't get any new
+> > >                          // new probes on account of holding
+> > >                          // uprobes_mutex and mmap() doesn't see
+> > >                          // it due to tree removal.
+> > >   }
+> > > }
+> > > 
+> > 
+> > This would have a bigger race.
+> > A breakpoint might be hit by which time the node is removed and we
+> > have no way to find out the uprobe. So we deliver an extra TRAP to the
+> > app.
+> 
+> Gah indeed. Back to the drawing board for me.
+> 
+> > > int mmap_uprobe(...)
+> > > {
+> > >   spin_lock(&uprobes_treelock);
+> > >   for_each_probe_in_inode() {
+> > >     // create list;
 
-ioctl32(qemu-img:5296): Unknown cmd fd(3) cmd(00005326){t:'S';sz:0} arg(7fffffff) on some.img
-ioctl32(qemu-img:5296): Unknown cmd fd(3) cmd(801c0204){t:02;sz:28} arg(fff77350) on some.img
+Here again if we have multiple mmaps for the same inode occuring on two
+process contexts (I mean two different mm's), we have to manage how we
+add the same uprobe to more than one list. Atleast my current
+uprobe->pending_list wouldnt work.
 
-(The same happens when starting a qemu or kvm vm.)
+> > >   }
+> > >   spin_unlock(..);
+> > > 
+> > >   list_for_each_entry_safe() {
+> > >     // remove from list
+> > >     ret = install_breakpoint();
+> > >     if (ret)
+> > >       goto fail;
+> > >     if (!uprobe_still_there()) // takes treelock
+> > >       remove_breakpoint();
+> > >   }
+> > > 
+> > >   return 0;
+> > > 
+> > > fail:
+> > >   list_for_each_entry_safe() {
+> > >     // destroy list
+> > >   }
+> > >   return ret;
+> > > }
+> > > 
+> > 
+> > 
+> > register_uprobe will race with mmap_uprobe's first pass.
+> > So we might end up with a vma that doesnot have a breakpoint inserted
+> > but inserted in all other vma that map to the same inode.
+> 
+> I'm not seeing this though, if mmap_uprobe() is before register_uprobe()
+> inserts the probe in the tree, the vma is already in the rmap and
+> register_uprobe() will find it in its vma walk. If its after,
+> mmap_uprobe() will find it and install, if a concurrent
+> register_uprobe()'s vma walk also finds it, it will -EEXISTS and ignore
+> the error.
+> 
 
-ioctl 00005326 seems to be CDROM_DRIVE_STATUS,
-ioctl 801c0204 is FDGETPRM.  Both are used in
-qemu/block/raw-posix.c in cdrom_probe_device()
-and floppy_probe_device() respectively.
+You are right here. 
 
-FWIW, I'm using qemu/kvm from Debian unstable
-(qemu-0.14.0+dfsg-5.1, qemu-kvm-0.14.1+dfsg-1)
+What happens if the register_uprobe comes first and walks around the
+vmas, Between mmap comes in does the insertion including the second pass
+and returns.  register_uprobe now finds that it cannot insert breakpoint
+on one of the vmas and hence has to roll-back. The vma on which
+mmap_uprobe inserted will not be in the list of vmas from which we try
+to remove the breakpoint.
 
 
-Johannes
+How about something like this:
+
+/* Change from previous time:
+ * - add a atomic counter to inode (this is optional)
+ * - trylock first.
+ *   - take down_write instead of down_read if we drop mmap_sem
+ *   - no releasing mmap_sem second time since we take a down_write.
+ */
+
+int mmap_uprobe(struct vm_area_struct *vma)
+{
+	struct list_head tmp_list;
+	struct uprobe *uprobe, *u;
+	struct mm_struct *mm;
+	struct inode *inode;
+	unsigned long start, pgoff;
+	int ret = 0;
+
+	if (!valid_vma(vma))
+		return ret;     /* Bail-out */
+
+	inode = vma->vm_file->f_mapping->host;
+	if (!atomic_read(&inode->uprobes_count))
+		return ret;
+
+	INIT_LIST_HEAD(&tmp_list);
+
+	mm = vma->vm_mm;
+	start = vma->vm_start;
+	pgoff = vma->vm_pgoff;
+	__iget(inode);
+
+	if (!mutex_trylock(uprobes_mutex)) {
+
+		/*
+		 * Unable to get uprobes_mutex; Probably contending with
+		 * someother thread. Drop mmap_sem; acquire uprobes_mutex
+		 * and mmap_sem and then verify vma.
+		 */
+
+		up_write(&mm->mmap_sem);
+		mutex_lock&(uprobes_mutex);
+		down_write(&mm->mmap_sem);
+		vma = find_vma(mm, start);
+		/* Not the same vma */
+		if (!vma || vma->vm_start != start ||
+				vma->vm_pgoff != pgoff || !valid_vma(vma) ||
+				inode->i_mapping != vma->vm_file->f_mapping)
+			goto mmap_out;
+	}
+
+	add_to_temp_list(vma, inode, &tmp_list);
+	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+		loff_t vaddr;
+
+		list_del(&uprobe->pending_list);
+		if (ret)
+			continue;
+
+		vaddr = vma->vm_start + uprobe->offset;
+		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
+		if (vaddr < vma->vm_start || vaddr >= vma->vm_end)
+			/* Not in this vma */
+			continue;
+		if (vaddr > TASK_SIZE)
+			/*
+			 * We cannot have a virtual address that is
+			 * greater than TASK_SIZE
+			 */
+			continue;
+		ret = install_breakpoint(mm, uprobe, vaddr);
+
+		if (ret && (ret == -ESRCH || ret == -EEXIST))
+			ret = 0;
+        }
+
+mmap_out:
+	mutex_unlock(&uprobes_mutex);
+	iput(inode);
+	return ret;
+}
+
+-- 
+Thanks and Regards
+Srikar
