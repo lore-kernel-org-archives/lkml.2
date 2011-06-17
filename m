@@ -1,74 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758410Ab1FQMWs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 08:22:48 -0400
-Received: from exchange.solarflare.com ([216.237.3.220]:19099 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757520Ab1FQMWr (ORCPT
+	id S1758602Ab1FQM2h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 08:28:37 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:55503 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755627Ab1FQM2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 08:22:47 -0400
-Subject: Re: [PATCH v2] net/r8169: update the new parser for the new
- firmware
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: hayeswang <hayeswang@realtek.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110617063948.GA2146@electric-eye.fr.zoreil.com>
-References: <1308109531-31698-1-git-send-email-hayeswang@realtek.com>
-	 <20110616225904.GA2064@electric-eye.fr.zoreil.com>
-	 <8AC7DE11560749B895F99EBA7D42AA49@realtek.com.tw>
-	 <20110617063948.GA2146@electric-eye.fr.zoreil.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare
-Date: Fri, 17 Jun 2011 13:22:44 +0100
-Message-ID: <1308313364.11457.63.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 17 Jun 2011 12:22:47.0319 (UTC) FILETIME=[44623270:01CC2CE9]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18204.005
-X-TM-AS-Result: No--18.451200-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Fri, 17 Jun 2011 08:28:36 -0400
+X-AuditID: b753bd60-a1eacba0000019f4-31-4dfb4871f69d
+X-AuditID: b753bd60-a1eacba0000019f4-31-4dfb4871f69d
+Message-ID: <4DFB486F.9080100@hitachi.com>
+Date: Fri, 17 Jun 2011 21:28:31 +0900
+From: Nao Nishijima <nao.nishijima.xt@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Hannes Reinecke <hare@suse.de>
+Cc: Kay Sievers <kay.sievers@vrfy.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Greg KH <greg@kroah.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jcm@redhat.com,
+        stefanr@s5r6.in-berlin.de, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
+References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp> <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp> <20110615153337.GA10160@kroah.com> <4DF9F11F.705@hitachi.com> <20110616154129.GA31498@kroah.com> <1308239454.2436.34.camel@mulgrave> <20110616161442.GA32113@kroah.com> <1308241506.2436.44.camel@mulgrave> <BANLkTi=qHhzwGfp4v8B1CAmT+gtA=sOgvw@mail.gmail.com> <BANLkTikUNqTxgD_+TTVpcFyRDu_fSesrsg@mail.gmail.com> <4DFAF3D2.5030506@suse.de>
+In-Reply-To: <4DFAF3D2.5030506@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-17 at 08:39 +0200, Francois Romieu wrote:
-> hayeswang <hayeswang@realtek.com> :
-> > Francois Romieu :
-> [...]
-> > > The new firmware format should be the same. The old 
-> > > r8168d-1.fw firmware proved usable when prefixed with :
-> > > 
-> > > 0000000: 0000 0000 3031 0000 0000 0000 0000 0000  ....01..........
-> > > 0000010: 0000 0000 0000 0000 0000 0000 0000 0000  ................
-> > > 0000020: 0000 0000 3000 0000 7501 0000 a000 0000  ....0...u.......
-> > > 
-> > > I realized after testing that netif_err could be abused with 
-> > > non-string fw_info.version. :o/
-> > > 
-> > 
-> > Excuse me. I don't understand what you want to express. Do you mean the
-> > situation of the old paser with the new firmware for checking the firmware?
-> 
-> No. The code does a printk with a %s specifier on fw_info.version while there
-> is no evidence that fw_info.version is 0 terminated.
+Hi Hannes,
 
-I thought the idea of embedding a version here was to be able to report
-in in get_drvinfo, not to print it on load.
+Thank you for looking at it.
 
-Ben.
+(2011/06/17 15:27), Hannes Reinecke wrote:
+> On 06/16/2011 07:20 PM, Kay Sievers wrote:
+>> On Thu, Jun 16, 2011 at 19:09, Kay Sievers<kay.sievers@vrfy.org>  wrote:
+>>> On Thu, Jun 16, 2011 at 18:25, James Bottomley
+>>> <James.Bottomley@hansenpartnership.com>  wrote:
+>>>> On Thu, 2011-06-16 at 09:14 -0700, Greg KH wrote:
+>>>>> All userspace naming will be taken care of by the usual udev rules, so
+>>>>>> for disks, something like /dev/disk/by-preferred/<fred>  which
+>>>>>> would be
+>>>>>> the usual symbolic link.
+>>>>>
+>>>>> No, udev can not create such a link after the preferred name is
+>>>>> set, as
+>>>>> it has no way of knowing that the name was set.
+>>>>
+>>>> It can if we trigger a uevent.  Note: I'm not advocating this ...
+>>>> I'd be
+>>>> equally happy having whatever sets the kernel name create the link (or
+>>>> tickle udev to create it).  We definitely require device links, though,
+>>>> to get this to work.
+>>
+>> Guess all that would work now, including mount(8) not canonicalizing.
+>> What would happen if we mount:
+>>    /dev/disk/by-pretty/foo
+>> and some tool later thinks the pretty name should better be 'bar', it
+>> writes the name to /sys, we get a uevent, the old link disappears, we
+>> get a new link, mount has no device node anymore for the mounted
+>> device ...
+>>
+>> So we basically get a one-shot additional pretty name? Guess, the
+>> _single_ name changed anytime later just asks for serious problems. We
+>> need to set it very early to be really useful, but how, where is it
+>> coming from?
+>>
+> Well, certain storage arrays are able to print out the user-defined name
+> for the LUNs:
+> 
+> # sg_vpd -p 0xc8 /dev/sdc
+> Extended device identification (RDAC) VPD Page:
+>   Volume Unique Identifier: 60080e50001bf1f0000005004ddb05a4
+>     Creation Number: 1280, Timestamp: Tue May 24 03:11:00 2011
+>   Volume User Label: mas-1
+>   Storage Array Unique Identifier: 60080e50001bf1f0000000004d418973
+>   Storage Array User Label: LSI-SAS-DIF
+>   Logical Unit Number: 0000000000000000
+> 
+> where the 'Volume User Label' is the name the administrator has given to
+> the LUN on the storage array.
+> 
+> So for these kind of things it would be useful.
+> 
+> However, a single pretty name is quite a limitation.
+> And I also fail to see why this can't be handled in userspace.
+> 
 
-> > For the normal situation, the old paser would not use the new firmware.
-> > And I put zero in front of the new firmware to prevent the old paser from
-> > running it. That is all I do.
-> 
-> It is fine.
-> 
+I know that there are several names for one device.
+Preferred name does not eliminate those names, but just add another
+pretty name. Usually those machine-generated names are too long and
+not familiar with users. preferred name will provide a human-readable
+name and reduce the operation cost.
+
+Thanks,
 
 -- 
-Ben Hutchings, Senior Software Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+Nao NISHIJIMA
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., YOKOHAMA Research  Laboratory
+Email： nao.nishijima.xt@hitachi.com
