@@ -1,138 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782Ab1FQJmu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 05:42:50 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52083 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752251Ab1FQJmr convert rfc822-to-8bit (ORCPT
+	id S1758868Ab1FQJqW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 05:46:22 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57630 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758453Ab1FQJqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 05:42:47 -0400
-Subject: Re: [PATCH v4 3.0-rc2-tip 7/22]  7: uprobes: mmap and fork hooks.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110617090504.GN4952@linux.vnet.ibm.com>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
-	 <20110607125931.28590.12362.sendpatchset@localhost6.localdomain6>
-	 <1308161486.2171.61.camel@laptop>
-	 <20110616032645.GF4952@linux.vnet.ibm.com>
-	 <1308225626.13240.34.camel@twins>
-	 <20110616130012.GL4952@linux.vnet.ibm.com>
-	 <1308248588.13240.267.camel@twins>
-	 <20110617045000.GM4952@linux.vnet.ibm.com>
-	 <1308297836.13240.380.camel@twins>
-	 <20110617090504.GN4952@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 17 Jun 2011 11:41:05 +0200
-Message-ID: <1308303665.2355.11.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 17 Jun 2011 05:46:20 -0400
+Date: Fri, 17 Jun 2011 10:41:25 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Petr Tesarik <ptesarik@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of
+	arbitrary physical addresses
+Message-ID: <20110617094125.GE32629@n2100.arm.linux.org.uk>
+References: <201106171038.25988.ptesarik@suse.cz> <20110617093032.GA19235@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110617093032.GA19235@elte.hu>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-17 at 14:35 +0530, Srikar Dronamraju wrote:
-
-> > > > int mmap_uprobe(...)
-> > > > {
-> > > >   spin_lock(&uprobes_treelock);
-> > > >   for_each_probe_in_inode() {
-> > > >     // create list;
+On Fri, Jun 17, 2011 at 11:30:32AM +0200, Ingo Molnar wrote:
+> I'm aware of these current /dev/mem uses:
 > 
-> Here again if we have multiple mmaps for the same inode occuring on two
-> process contexts (I mean two different mm's), we have to manage how we
-> add the same uprobe to more than one list. Atleast my current
-> uprobe->pending_list wouldnt work.
-
-Sure, wasn't concerned about that particular problem.
-
-> > > >   }
-> > > >   spin_unlock(..);
-> > > > 
-> > > >   list_for_each_entry_safe() {
-> > > >     // remove from list
-> > > >     ret = install_breakpoint();
-> > > >     if (ret)
-> > > >       goto fail;
-> > > >     if (!uprobe_still_there()) // takes treelock
-> > > >       remove_breakpoint();
-> > > >   }
-> > > > 
-> > > >   return 0;
-> > > > 
-> > > > fail:
-> > > >   list_for_each_entry_safe() {
-> > > >     // destroy list
-> > > >   }
-> > > >   return ret;
-> > > > }
-> > > > 
-> > > 
-> > > 
-> > > register_uprobe will race with mmap_uprobe's first pass.
-> > > So we might end up with a vma that doesnot have a breakpoint inserted
-> > > but inserted in all other vma that map to the same inode.
-> > 
-> > I'm not seeing this though, if mmap_uprobe() is before register_uprobe()
-> > inserts the probe in the tree, the vma is already in the rmap and
-> > register_uprobe() will find it in its vma walk. If its after,
-> > mmap_uprobe() will find it and install, if a concurrent
-> > register_uprobe()'s vma walk also finds it, it will -EEXISTS and ignore
-> > the error.
-> > 
+>  - Xorg maps below 4G non-RAM addresses and the video BIOS
 > 
-> You are right here. 
+>  - It used to have some debugging role but these days kexec and kgdb 
+>    has largely taken over that role - partly due to the 4G limit.
 > 
-> What happens if the register_uprobe comes first and walks around the
-> vmas, Between mmap comes in does the insertion including the second pass
-> and returns.  register_uprobe now finds that it cannot insert breakpoint
-> on one of the vmas and hence has to roll-back. The vma on which
-> mmap_uprobe inserted will not be in the list of vmas from which we try
-> to remove the breakpoint.
-
-Yes it will, remember __register_uprobe() will call
-__unregister_uprobe() on fail, which does a new vma-rmap walk which will
-then see the newly added mmap.
-
-> How about something like this:
-
-> 	if (!mutex_trylock(uprobes_mutex)) {
+>  - there's some really horrible out-of-tree drivers that do mmap()s
+>    via /dev/mem, those should be fixed if they want to move beyond 
+>    4G: their char device should be mmap()able.
 > 
-> 		/*
-> 		 * Unable to get uprobes_mutex; Probably contending with
-> 		 * someother thread. Drop mmap_sem; acquire uprobes_mutex
-> 		 * and mmap_sem and then verify vma.
-> 		 */
-> 
-> 		up_write(&mm->mmap_sem);
-> 		mutex_lock&(uprobes_mutex);
-> 		down_write(&mm->mmap_sem);
-> 		vma = find_vma(mm, start);
-> 		/* Not the same vma */
-> 		if (!vma || vma->vm_start != start ||
-> 				vma->vm_pgoff != pgoff || !valid_vma(vma) ||
-> 				inode->i_mapping != vma->vm_file->f_mapping)
-> 			goto mmap_out;
-> 	}
+>  - all distro kernel's i'm aware of use CONFIG_STRICT_DEVMEM=y, which
+>    restricts /dev/mem to non-RAM pages of physical memory.
+>    [ With the sad inclusion of the first 1MB, which Xorg needs. ]
 
-Only if we have to, I really don't like dropping mmap_sem in the middle
-of mmap. I'm fairly sure we can come up with some ordering scheme that
-ought to make mmap_uprobe() work without the uprobes_mutex.
+There's another use case for /dev/mem:
 
-On thing I was thinking of to fix that initial problem of spurious traps
-was to leave the uprobe in the tree but skip all probes without
-consumers in mmap_uprobe().
-
+ - debugging via devmem2 on embedded platforms, where you want to be able
+   to boot a kernel, and then peek and poke at MMIO registers either to
+   verify register values or test things out.
