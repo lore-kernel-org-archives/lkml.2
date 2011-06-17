@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758436Ab1FQNpe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 09:45:34 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:37986 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754768Ab1FQNpd (ORCPT
+	id S932175Ab1FQNvV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 09:51:21 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:50522 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752378Ab1FQNvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 09:45:33 -0400
-Message-ID: <4DFB5A75.2060206@codemonkey.ws>
-Date: Fri, 17 Jun 2011 08:45:25 -0500
-From: Anthony Liguori <anthony@codemonkey.ws>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	Fri, 17 Jun 2011 09:51:20 -0400
+Date: Fri, 17 Jun 2011 15:50:56 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Prasad Joshi <prasadjoshi124@gmail.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>
-Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
-References: <1308153214.7566.6.camel@jaguar>	 <BANLkTi=krV7p9gT3E064aVoUCToVyZoL6w@mail.gmail.com>	 <4DFA88CC.6050306@codemonkey.ws> <1308272586.29421.5.camel@lappy>
-In-Reply-To: <1308272586.29421.5.camel@lappy>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH] MAINTAINERS: Add x86 RAS people
+Message-ID: <20110617135056.GE18054@aftab>
+References: <1308067734-6156-1-git-send-email-bp@amd64.org>
+ <20110617132757.GA9659@localhost.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110617132757.GA9659@localhost.ucw.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2011 08:03 PM, Sasha Levin wrote:
-> On Thu, 2011-06-16 at 17:50 -0500, Anthony Liguori wrote:
-> Each virtio-blk device can process requests regardless of other
-> virtio-blk devices, which means that we can do parallel requests for
-> devices.
->
-> Within each device, we support parallel requests in the sense that we do
-> vectored IO for each head (which may contain multiple blocks) in the
-> vring, we don't do multiple heads because when I've tried adding AIO
+On Fri, Jun 17, 2011 at 09:27:58AM -0400, Pavel Machek wrote:
+> On Tue 2011-06-14 18:08:54, Borislav Petkov wrote:
+> > Announce the new RAS infrastructure maintainers. The file patterns below
+> > will change after we start the restructuring.
+> > 
+> > Signed-off-by: Borislav Petkov <bp@amd64.org>
+> > Signed-off-by: Tony Luck <tony.luck@intel.com>
+> >  
+> > +X86 RAS INFRASTRUCTURE
+> > +M:	Tony Luck <tony.luck@intel.com>
+> 
+> this would be great place to explain "ras"...
 
-A scatter/gather list isn't multiple requests, it's just one.  So you 
-handle one request at a time ATM.  There's nothing with that, but 
-there's no use in saying "we support it in the sense..." :-)
+Wikipedia has a basic overview: http://en.wikipedia.org/wiki/Reliability,_Availability_and_Serviceability
 
-> I've noticed that at most there are 2-3 possible heads - and since it
-> points to the same device it doesn't really help running them in
-> parallel.
+Our idea is to make error collection and reporting much more easy to
+configure and much easily manageable now that reliability features are
+much more important on x86. You want to be able to enforce policies
+from userspace like, for example, counting errors per hw device (DRAM
+ECC errors per DIMM, for example) and undertake actions when thresholds
+are reached, implement a much better unified error injection scheme for
+testing system reliability, etc.
 
-Sure it does.  If you use the host page cache (and you do), then if you 
-have two requests, A and B, and request A requires a disk access and 
-request B can be satisfied from the page cache, then being able to 
-submit both requests means that you can return B almost immediately 
-instead of stalling out to finish A before starting B.
+Another important issue is saving oops information to persistent storage
+so that it can be evaluated after reboot. While this is easy to do on
+servers with their nvram, we still have no solution for general purpose
+laptops. hpa had a project with oopses represented with a 2d barcode but
+I still haven't had a chance to look into that.
 
-Not to mention that modern disks work better with multiple in flight 
-requests because they have their own cache and reordering algorithms in 
-the drives cache.  With RAID and higher end storage devices, a single 
-device may map to multiple spindles.  The only way to have them all spin 
-at once is to submit parallel requests.
+So things like that, I'm pretty sure I'm leaving something out but you
+should be getting the idea...
 
-Regards,
+-- 
+Regards/Gruss,
+Boris.
 
-Anthony Liguori
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
