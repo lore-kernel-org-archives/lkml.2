@@ -1,62 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758289Ab1FQMMR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 08:12:17 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:62135 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757868Ab1FQMMO (ORCPT
+	id S1758360Ab1FQMSu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 08:18:50 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47198 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758059Ab1FQMSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 08:12:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=Irx+LbjgkBvJe1Fb43tonFy1g4CPb8JnVHx70eVkVJHBgtNZQf/APDtb4PoDUiRGiA
-         F++g+ZGVaa8gju+rZa+UGTb9rEEME4RdkUqZq8CmGsBAw7NEawQijvJjh36S16rfqH0p
-         2K+UzV3s1PiG46VawCSwK0IT7thi3G+0FAOPg=
+	Fri, 17 Jun 2011 08:18:48 -0400
+Date: Fri, 17 Jun 2011 13:18:45 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org, grant@secretlab.ca, ralf@linux-mips.org
+Subject: Re: [PATCH] FRV: Hook up gpiolib support
+Message-ID: <20110617121845.GA18493@opensource.wolfsonmicro.com>
+References: <20110616102209.GC5262@opensource.wolfsonmicro.com>
+ <20110615144823.GA2806@opensource.wolfsonmicro.com>
+ <1306921767-31115-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <5194.1308074912@redhat.com>
+ <19624.1308206191@redhat.com>
+ <28714.1308307859@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTin9NXs1M9ud9Kqtp9cKGzY6AKnMpQ@mail.gmail.com>
-References: <BANLkTin9NXs1M9ud9Kqtp9cKGzY6AKnMpQ@mail.gmail.com>
-Date: Fri, 17 Jun 2011 08:12:12 -0400
-Message-ID: <BANLkTinqxc868E2H1LxeFbsAsdHg2dLNjA@mail.gmail.com>
-Subject: Re: Please help us resolve the shutdown problem that is affecting our computers
-From: Diego Viola <diego.viola@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <28714.1308307859@redhat.com>
+X-Cookie: Caution: Keep out of reach of children.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any idea please?
+On Fri, Jun 17, 2011 at 11:50:59AM +0100, David Howells wrote:
+> Okay:
 
-On Fri, Jun 17, 2011 at 1:00 AM, Diego Viola <diego.viola@gmail.com> wrote:
-> Hello,
->
-> We are currently experiencing an issue that affects the shutdown process.
->
-> The problem occurs when we shutdown our machines, the system would
-> lock/hang during the shutdown process with a message similar to:
-> "Disabling IRQ #19.".
->
-> I send this email to the mailing list, hoping to get the attention of
-> a knowledgeable maintainer in order to fix this issue, which is
-> affecting not only me but many people. I already have started a thread
-> in bugzilla, but we haven't received many responses from developers.
->
-> The link to the bug report is:
->
-> https://bugzilla.kernel.org/show_bug.cgi?id=33872
->
-> We are able to reproduce the issue and the problem goes away on my
-> machine if I unload the 'e1000e' module before shutdown. This
-> workaround has worked for other people also, but I don't consider it
-> to be a real fix. There's also other people who have different
-> hardware and don't have this 'e1000e' module loaded at all and yet
-> they also experience shutdown hangs. How can this be explained?
->
-> Please help us to resolve this issue. We would happily assist in order
-> to test proposed patches, etc. We just want to get this problem fixed.
->
-> Thanks,
-> Diego Viola
->
+Thanks, this is a lot more constructive.  I'm now wondering how anyone
+has managed to use this header (which isn't exactly new or only used on
+obscure architectures) without noticing and fixing this.
+
+It's unlikely that I'm going to have the bandwidth to work on the cross
+tree issues that sorting this would create in the immediate future, my
+interest here is in stopping people bugging me about architectures that
+don't keep up with the standard GPIO interface but it'd be good if
+someone could do so.
