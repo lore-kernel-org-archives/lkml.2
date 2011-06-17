@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933152Ab1FQVB0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 17:01:26 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:54526 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932437Ab1FQVBX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 17:01:23 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Alexander Stein <alexander.stein@systec-electronic.com>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 2/2] Add watchdog driver for Intel TunnelCreek
-In-Reply-To: Your message of "Thu, 16 Jun 2011 13:05:50 +0200."
-             <1308222350-21634-2-git-send-email-alexander.stein@systec-electronic.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1308222350-21634-1-git-send-email-alexander.stein@systec-electronic.com>
-            <1308222350-21634-2-git-send-email-alexander.stein@systec-electronic.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1308344475_3369P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 17 Jun 2011 17:01:15 -0400
-Message-ID: <36169.1308344475@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Info: (0) 
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020205.4DFBC09D.007F,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
+	id S933144Ab1FQVHr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 17:07:47 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:56837 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932677Ab1FQVHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 17:07:46 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Arun Sharma <asharma@fb.com>
+Subject: [PATCH] asm-generic/atomic.h: simplify inc/dec test helpers
+Date: Fri, 17 Jun 2011 17:08:15 -0400
+Message-Id: <1308344895-8011-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1308344475_3369P
-Content-Type: text/plain; charset=us-ascii
+We already declared inc/dec helpers, so we don't need to call the
+atomic_{add,sub}_return funcs directly.
 
-On Thu, 16 Jun 2011 13:05:50 +0200, Alexander Stein said:
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+Note: this shouldn't conflict with Arun's changes
+
+ include/asm-generic/atomic.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/asm-generic/atomic.h b/include/asm-generic/atomic.h
+index e994197..5f62e28 100644
+--- a/include/asm-generic/atomic.h
++++ b/include/asm-generic/atomic.h
+@@ -117,8 +117,8 @@ static inline void atomic_dec(atomic_t *v)
+ #define atomic_inc_return(v)		atomic_add_return(1, (v))
  
-> +config INTEL_TUNNELCREEK_WATCHDOG
-> +	tristate "Intel TunnelCreek watchdog"
-> +	depends on WATCHDOG && PCI && X86
-> +	select MFD_CORE
-> +	select LPC_SCH
-> +	---help---
-> +	  Hardware driver for the watchdog timer built into the Intel
-> +	  Tunnel Creek processor.
-
-Please add part names here so we don't have to guess/remember what the now-retired
-code name for a processor was.  Just because the guy who wrote the driver knows what
-the development name was doesn't mean that the poor guy saying 'make oldconfig' knows
-whether this is a driver he cares about.
-
-http://www.engadget.com/2010/09/15/intel-retires-tunnel-creek-codename-debuts-e600-series-atom-sys/
-
-
---==_Exmh_1308344475_3369P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFN+8CbcC3lWbTT17ARAg5kAKD5cWwGqbg7uGRk/ySJYh3yrqvaIQCeNvEU
-ALbVxzfZpvWg/MgRLYR2x2g=
-=8rO4
------END PGP SIGNATURE-----
-
---==_Exmh_1308344475_3369P--
+ #define atomic_sub_and_test(i, v)	(atomic_sub_return((i), (v)) == 0)
+-#define atomic_dec_and_test(v)		(atomic_sub_return(1, (v)) == 0)
+-#define atomic_inc_and_test(v)		(atomic_add_return(1, (v)) == 0)
++#define atomic_dec_and_test(v)		(atomic_dec_return(v) == 0)
++#define atomic_inc_and_test(v)		(atomic_inc_return(v) == 0)
+ 
+ #define atomic_xchg(ptr, v)		(xchg(&(ptr)->counter, (v)))
+ #define atomic_cmpxchg(v, old, new)	(cmpxchg(&((v)->counter), (old), (new)))
+-- 
+1.7.5.3
 
