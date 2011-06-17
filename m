@@ -1,40 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757906Ab1FQIXG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 04:23:06 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52935 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755887Ab1FQIXD (ORCPT
+	id S1758081Ab1FQIaS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 04:30:18 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51020 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757644Ab1FQIaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 04:23:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=AehsLYDM2JbMphFepJQOxv0CMVldXTm4IxmaXVumxv/UT+3zVSFCCCHT9cE5c46gtA
-         MmauJrCrje1Uvh4UZKxayD3REzQdxOlIYThhr/q3njlW6+D8Dj3rAq3UUbQdOx2xlcK/
-         cxChJn4bgdx10hCdJ+kwC5DGOSz9IPG1Kakek=
-MIME-Version: 1.0
-In-Reply-To: <1307971582-13532-2-git-send-email-lars@metafoo.de>
-References: <1307971582-13532-1-git-send-email-lars@metafoo.de> <1307971582-13532-2-git-send-email-lars@metafoo.de>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Fri, 17 Jun 2011 04:22:42 -0400
-Message-ID: <BANLkTikVL=DP8jL-J9SoZY6HzX6CQ+X0XA@mail.gmail.com>
-Subject: Re: [PATCH 2/3 v2] ASoC: Blackfin: Add bf5xx-adau1701 machine driver
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
-        device-drivers-devel@blackfin.uclinux.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Fri, 17 Jun 2011 04:30:12 -0400
+From: Chris Forbes <chrisf@ijw.co.nz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Chris Forbes <chrisf@ijw.co.nz>
+Subject: [PATCH] mm: hugetlb: fix coding style issues
+Date: Fri, 17 Jun 2011 20:29:59 +1200
+Message-Id: <1308299399-825-1-git-send-email-chrisf@ijw.co.nz>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 09:26, Lars-Peter Clausen wrote:
-> +static int bfin_eval_adau1701_probe(struct platform_device *pdev)
+Fixed coding style issues flagged by checkpatch.pl
 
-__devinit
+Signed-off-by: Chris Forbes <chrisf@ijw.co.nz>
+---
+ mm/hugetlb.c |   31 +++++++++++++++----------------
+ 1 files changed, 15 insertions(+), 16 deletions(-)
 
-seems all of the Blackfin machine drivers could use this fix ...
--mike
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index bfcf153..ab8bd93e 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -24,7 +24,7 @@
+ 
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+-#include <asm/io.h>
++#include <linux/io.h>
+ 
+ #include <linux/hugetlb.h>
+ #include <linux/node.h>
+@@ -62,10 +62,10 @@ static DEFINE_SPINLOCK(hugetlb_lock);
+  * must either hold the mmap_sem for write, or the mmap_sem for read and
+  * the hugetlb_instantiation mutex:
+  *
+- * 	down_write(&mm->mmap_sem);
++ *	down_write(&mm->mmap_sem);
+  * or
+- * 	down_read(&mm->mmap_sem);
+- * 	mutex_lock(&hugetlb_instantiation_mutex);
++ *	down_read(&mm->mmap_sem);
++ *	mutex_lock(&hugetlb_instantiation_mutex);
+  */
+ struct file_region {
+ 	struct list_head link;
+@@ -503,9 +503,10 @@ static void update_and_free_page(struct hstate *h, struct page *page)
+ 	h->nr_huge_pages--;
+ 	h->nr_huge_pages_node[page_to_nid(page)]--;
+ 	for (i = 0; i < pages_per_huge_page(h); i++) {
+-		page[i].flags &= ~(1 << PG_locked | 1 << PG_error | 1 << PG_referenced |
+-				1 << PG_dirty | 1 << PG_active | 1 << PG_reserved |
+-				1 << PG_private | 1<< PG_writeback);
++		page[i].flags &= ~(1 << PG_locked | 1 << PG_error |
++				1 << PG_referenced | 1 << PG_dirty |
++				1 << PG_active | 1 << PG_reserved |
++				1 << PG_private | 1 << PG_writeback);
+ 	}
+ 	set_compound_page_dtor(page, NULL);
+ 	set_page_refcounted(page);
+@@ -591,7 +592,6 @@ int PageHuge(struct page *page)
+ 
+ 	return dtor == free_huge_page;
+ }
+-
+ EXPORT_SYMBOL_GPL(PageHuge);
+ 
+ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
+@@ -2124,9 +2124,8 @@ static void set_huge_ptep_writable(struct vm_area_struct *vma,
+ 	pte_t entry;
+ 
+ 	entry = pte_mkwrite(pte_mkdirty(huge_ptep_get(ptep)));
+-	if (huge_ptep_set_access_flags(vma, address, ptep, entry, 1)) {
++	if (huge_ptep_set_access_flags(vma, address, ptep, entry, 1))
+ 		update_mmu_cache(vma, address, ptep);
+-	}
+ }
+ 
+ 
+@@ -2181,9 +2180,9 @@ static int is_hugetlb_entry_migration(pte_t pte)
+ 	if (huge_pte_none(pte) || pte_present(pte))
+ 		return 0;
+ 	swp = pte_to_swp_entry(pte);
+-	if (non_swap_entry(swp) && is_migration_entry(swp)) {
++	if (non_swap_entry(swp) && is_migration_entry(swp))
+ 		return 1;
+-	} else
++	else
+ 		return 0;
+ }
+ 
+@@ -2194,9 +2193,9 @@ static int is_hugetlb_entry_hwpoisoned(pte_t pte)
+ 	if (huge_pte_none(pte) || pte_present(pte))
+ 		return 0;
+ 	swp = pte_to_swp_entry(pte);
+-	if (non_swap_entry(swp) && is_hwpoison_entry(swp)) {
++	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
+ 		return 1;
+-	} else
++	else
+ 		return 0;
+ }
+ 
+@@ -2559,7 +2558,7 @@ retry:
+ 		 * So we need to block hugepage fault by PG_hwpoison bit check.
+ 		 */
+ 		if (unlikely(PageHWPoison(page))) {
+-			ret = VM_FAULT_HWPOISON | 
++			ret = VM_FAULT_HWPOISON |
+ 			      VM_FAULT_SET_HINDEX(h - hstates);
+ 			goto backout_unlocked;
+ 		}
+@@ -2627,7 +2626,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			migration_entry_wait(mm, (pmd_t *)ptep, address);
+ 			return 0;
+ 		} else if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
+-			return VM_FAULT_HWPOISON_LARGE | 
++			return VM_FAULT_HWPOISON_LARGE |
+ 			       VM_FAULT_SET_HINDEX(h - hstates);
+ 	}
+ 
+-- 
+1.7.4.1
+
