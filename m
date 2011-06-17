@@ -1,58 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759279Ab1FQWZx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 18:25:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62828 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755449Ab1FQWZw convert rfc822-to-8bit (ORCPT
+	id S1759305Ab1FQW1n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 18:27:43 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:18866 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755449Ab1FQW1j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 18:25:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,383,1304319600"; 
-   d="scan'208";a="19646209"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@amd64.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 17 Jun 2011 15:25:51 -0700
-Subject: RE: [PATCH 4/8] x86, mce: rename bootparam parser
-Thread-Topic: [PATCH 4/8] x86, mce: rename bootparam parser
-Thread-Index: AcwtBRxvCeswgRFNRH+butTteNCuiwAN4mCA
-Message-ID: <987664A83D2D224EAE907B061CE93D5301E8E3054B@orsmsx505.amr.corp.intel.com>
-References: <4DFB1242.90404@jp.fujitsu.com>
- <4DFB13E2.4080909@jp.fujitsu.com> <20110617154143.GC20010@aftab>
-In-Reply-To: <20110617154143.GC20010@aftab>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 17 Jun 2011 18:27:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ynkGSZPHwZWkxkfv6Yzo5+2GcOe40r4ah7TYB/STsC0awOLaZabFA7IGCCEHrhm6Tn
+         ANmeZ98/yg/GtiRJW7Ew==
 MIME-Version: 1.0
+In-Reply-To: <20110616125443.23584d78.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110616124730.d6960b8b.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110616125443.23584d78.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Fri, 17 Jun 2011 15:27:36 -0700
+Message-ID: <BANLkTi=4o-xY46OtsvNCxVKUT-qJBXRMMFZCe-m7eMV-_mesXw@mail.gmail.com>
+Subject: Re: [PATCH 5/7] Fix not good check of mem_cgroup_local_usage()
+From: Ying Han <yinghan@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> and leave this like this. "nomce" is the same as "mce=off" and frankly,
-> I'd like to remove this redundancy, thus no need to do the code
-> relocation. In addition, I don't think there are lots of systems running
-> with "nomce" so I really think we should drop it.
+On Wed, Jun 15, 2011 at 8:54 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> From fcfc6ee9847b0b2571cd6e9847572d7c70e1e2b2 Mon Sep 17 00:00:00 2001
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Date: Thu, 16 Jun 2011 09:23:54 +0900
+> Subject: [PATCH 5/7] Fix not good check of mem_cgroup_local_usage()
 >
-> So Ingo, hpa, what is the proper way to remove early setup params? Maybe
-> through Documentation/feature-removal-schedule.txt?
+> Now, mem_cgroup_local_usage(memcg) is used as hint for scanning memory
+> cgroup hierarchy. If it returns true, the memcg has some reclaimable memory.
+>
+> But this function doesn't take care of
+>  - unevictable pages
+>  - anon pages on swapless system.
+>
+> This patch fixes the function to use LRU information.
+> For NUMA, for avoid scanning, numa scan bitmap is used. If it's
+> empty, some more precise check will be done.
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/memcontrol.c |   43 +++++++++++++++++++++++++++++++++----------
+>  1 files changed, 33 insertions(+), 10 deletions(-)
+>
+> Index: mmotm-0615/mm/memcontrol.c
+> ===================================================================
+> --- mmotm-0615.orig/mm/memcontrol.c
+> +++ mmotm-0615/mm/memcontrol.c
+> @@ -632,15 +632,6 @@ static long mem_cgroup_read_stat(struct
+>        return val;
+>  }
+>
+> -static long mem_cgroup_local_usage(struct mem_cgroup *mem)
+> -{
+> -       long ret;
+> -
+> -       ret = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_RSS);
+> -       ret += mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_CACHE);
+> -       return ret;
+> -}
+> -
+>  static void mem_cgroup_swap_statistics(struct mem_cgroup *mem,
+>                                         bool charge)
+>  {
+> @@ -1713,6 +1704,23 @@ static void mem_cgroup_numascan_init(str
+>        mutex_init(&mem->numascan_mutex);
+>  }
+>
+> +static bool mem_cgroup_reclaimable(struct mem_cgroup *mem, bool noswap)
+> +{
+> +       if (!nodes_empty(mem->scan_nodes))
+> +               return true;
+> +       /* slow path */
+> +       if (mem_cgroup_get_local_zonestat(mem, LRU_INACTIVE_FILE))
+> +               return true;
+> +       if (mem_cgroup_get_local_zonestat(mem, LRU_ACTIVE_FILE))
+> +               return true;
 
-Though it seems odd to me that anyone would want to turn mce off,
-the fact that we have two ways to do so would indicate that people
-do (or at least did) want to do this.
+Wondering if we can simplify this like:
 
-It seems like we'd need a long "deprecated" period (till all the
-major OSVs turn out a new release) to remove this without surprises.
-If the "nomce" option just disappears, then people using it will
-not realize that their boot time argument was ignored (until they
-see a reported error).
+if (mem_cgroup_nr_file_lru_pages(mem))
+   return true;
 
--Tony
 
+> +       if (noswap || !total_swap_pages)
+> +               return false;
+> +       if (mem_cgroup_get_local_zonestat(mem, LRU_INACTIVE_ANON))
+> +               return true;
+> +       if (mem_cgroup_get_local_zonestat(mem, LRU_ACTIVE_ANON))
+> +               return true;
+
+the same:
+if (mem_cgroup_nr_anon_lru_pages(mem))
+   return true;
+
+> +       return false;
+> +}
+
+The two functions above are part of memory.numa_stat patch which is in
+mmotm i believe. Just feel the functionality a bit duplicate except
+the noswap parameter and scan_nodes.
+
+--Ying
+
+>  #else
+>  int mem_cgroup_select_victim_node(struct mem_cgroup *mem)
+>  {
+> @@ -1722,6 +1730,21 @@ static void mem_cgroup_numascan_init(str
+>  {
+>        return 0;
+>  }
+> +
+> +static bool mem_cgroup_reclaimable(struct mem_cgroup *mem, bool noswap)
+> +{
+> +       if (mem_cgroup_get_zonestat_node(mem, 0, LRU_INACTIVE_FILE))
+> +               return true;
+> +       if (mem_cgroup_get_zonestat_node(mem, 0, LRU_ACTIVE_FILE))
+> +               return true;
+> +       if (noswap || !total_swap_pages)
+> +               return false;
+> +       if (mem_cgroup_get_zonestat_node(mem, 0, LRU_INACTIVE_ANON))
+> +               return true;
+> +       if (mem_cgroup_get_zonestat_node(mem, 0, LRU_ACTIVE_ANON))
+> +               return true;
+> +       return false;
+> +}
+>  #endif
+>
+>
+> @@ -1811,7 +1834,7 @@ again:
+>
+>        while (visit--) {
+>                victim = mem_cgroup_select_victim(root_mem);
+> -               if (!mem_cgroup_local_usage(victim)) {
+> +               if (!mem_cgroup_reclaimable(victim, noswap)) {
+>                        /* this cgroup's local usage == 0 */
+>                        css_put(&victim->css);
+>                        continue;
+>
+>
