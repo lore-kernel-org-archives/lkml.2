@@ -1,110 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932968Ab1FQTlz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 15:41:55 -0400
-Received: from mga01.intel.com ([192.55.52.88]:50590 "EHLO mga01.intel.com"
+	id S932982Ab1FQTvU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 15:51:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31155 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752339Ab1FQTlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 15:41:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,382,1304319600"; 
-   d="scan'208";a="19582494"
-Date: Fri, 17 Jun 2011 12:40:29 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: REGRESSION: Performance regressions from switching
- anon_vma->lock to mutex
-Message-ID: <20110617194029.GA28954@tassilo.jf.intel.com>
-References: <1308173849.15315.91.camel@twins>
- <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com>
- <1308255972.17300.450.camel@schen9-DESK>
- <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com>
- <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
- <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com>
- <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
- <BANLkTinUBTYWxrF5TCuDSQuFUAyivXJXjQ@mail.gmail.com>
- <1308310080.2355.19.camel@twins>
- <BANLkTin3onK+43LxODfbu-sdm-pFut0TKw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTin3onK+43LxODfbu-sdm-pFut0TKw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756211Ab1FQTvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 15:51:18 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: borislav.petkov@amd.com, davej@redhat.com, mark.langsdorf@amd.com,
+        cpufreq@vger.kernel.org, andreas.herrmann3@amd.com,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH V2 1/6] x86: Add AMD HW_PSTATE cpu feature bit and MSRs
+Date: Fri, 17 Jun 2011 15:50:52 -0400
+Message-Id: <1308340257-10117-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 2001:470:1f07:1371:8a9f:faff:fefa:2632
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 09:46:00AM -0700, Linus Torvalds wrote:
-> On Fri, Jun 17, 2011 at 4:28 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> >
-> > Something like so? Compiles and runs the benchmark in question.
-> 
-> Oh, and can you do this with a commit log and sign-off, and I'll put
-> it in my "anon_vma-locking" branch that I have. I'm not going to
-> actually merge that branch into mainline until I've seen a few more
-> acks or more testing by Tim.
-> 
-> But if Tim's numbers hold up (-32% to +15% performance by just the
-> first one, and +15% isn't actually an improvement since tmpfs
-> read-ahead should have gotten us to +66%), I think we have to do this
-> just to avoid the performance regression.
+AMD CPUs that support hardware P-state setting expose this via cpuid. Add
+the bit to the generic code so the ACPI cpufreq driver can make use of it,
+and also add the related MSRs.
 
-You could also add the mutex "optimize caching protocol" 
-patch I posted earlier to that branch.
-
-It didn't actually improve Tim's throughput number, but it made the CPU 
-consumption of the mutex go down. 
-
--Andi
-
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 ---
->From 34d4c1e579b3dfbc9a01967185835f5829bd52f0 Mon Sep 17 00:00:00 2001
-From: Andi Kleen <ak@linux.intel.com>
-Date: Tue, 14 Jun 2011 16:27:54 -0700
-Subject: [PATCH] mutex: while spinning read count before attempting cmpxchg
+ arch/x86/include/asm/cpufeature.h |    1 +
+ arch/x86/include/asm/msr-index.h  |    2 ++
+ arch/x86/kernel/cpu/scattered.c   |    1 +
+ 3 files changed, 4 insertions(+), 0 deletions(-)
 
-Under heavy contention it's better to read first before trying
-to do an atomic operation on the interconnect.
-
-This gives a few percent improvement for the mutex CPU time
-under heavy contention and likely saves some power too.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
-diff --git a/kernel/mutex.c b/kernel/mutex.c
-index d607ed5..1abffa9 100644
---- a/kernel/mutex.c
-+++ b/kernel/mutex.c
-@@ -170,7 +170,8 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		if (owner && !mutex_spin_on_owner(lock, owner))
- 			break;
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 71cc380..312f455 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -174,6 +174,7 @@
+ #define X86_FEATURE_PLN		(7*32+ 5) /* Intel Power Limit Notification */
+ #define X86_FEATURE_PTS		(7*32+ 6) /* Intel Package Thermal Status */
+ #define X86_FEATURE_DTS		(7*32+ 7) /* Digital Thermal Sensor */
++#define X86_FEATURE_HW_PSTATE	(7*32+ 8) /* AMD frequency scaling */
  
--		if (atomic_cmpxchg(&lock->count, 1, 0) == 1) {
-+		if (atomic_read(&lock->count) == 1 && 
-+		    atomic_cmpxchg(&lock->count, 1, 0) == 1) {
- 			lock_acquired(&lock->dep_map, ip);
- 			mutex_set_owner(lock);
- 			preempt_enable();
-
-
-
+ /* Virtualization flags: Linux defined, word 8 */
+ #define X86_FEATURE_TPR_SHADOW  (8*32+ 0) /* Intel TPR Shadow */
+diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+index 485b4f1..1772978 100644
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -234,6 +234,8 @@
+ 
+ #define MSR_IA32_PERF_STATUS		0x00000198
+ #define MSR_IA32_PERF_CTL		0x00000199
++#define MSR_AMD_PERF_STATUS		0xc0010063
++#define MSR_AMD_PERF_CTL		0xc0010062
+ 
+ #define MSR_IA32_MPERF			0x000000e7
+ #define MSR_IA32_APERF			0x000000e8
+diff --git a/arch/x86/kernel/cpu/scattered.c b/arch/x86/kernel/cpu/scattered.c
+index c7f64e6..4adffc4 100644
+--- a/arch/x86/kernel/cpu/scattered.c
++++ b/arch/x86/kernel/cpu/scattered.c
+@@ -39,6 +39,7 @@ void __cpuinit init_scattered_cpuid_features(struct cpuinfo_x86 *c)
+ 		{ X86_FEATURE_APERFMPERF,	CR_ECX, 0, 0x00000006, 0 },
+ 		{ X86_FEATURE_EPB,		CR_ECX, 3, 0x00000006, 0 },
+ 		{ X86_FEATURE_XSAVEOPT,		CR_EAX,	0, 0x0000000d, 1 },
++		{ X86_FEATURE_HW_PSTATE,	CR_EDX, 7, 0x80000007, 0 },
+ 		{ X86_FEATURE_CPB,		CR_EDX, 9, 0x80000007, 0 },
+ 		{ X86_FEATURE_NPT,		CR_EDX, 0, 0x8000000a, 0 },
+ 		{ X86_FEATURE_LBRV,		CR_EDX, 1, 0x8000000a, 0 },
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.7.5.2
+
