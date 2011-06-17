@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759038Ab1FQNct (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 09:32:49 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:60585 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756555Ab1FQNcq (ORCPT
+	id S1757155Ab1FQNcm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 09:32:42 -0400
+Received: from smtprelay05.ispgateway.de ([80.67.31.97]:45681 "EHLO
+	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753987Ab1FQNcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 09:32:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=OaNQn8COqiXCNS/WHzbqy9Jv8tPSlm2QWmsDY82O/ZqR59z5kH5cmapzzooWc5OIps
-         WbtGVSRtYZ1bC5Wx98jdOEYpJGcrcJWiKf9VdwseKCB4wb4cxoux3VO5N1UKqh/1edqZ
-         6seU5/hIpVMwk5yVUTw10Po0fuieDNhtkDedI=
-Date: Fri, 17 Jun 2011 15:32:35 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
-        paulus@samba.org, tglx@linutronix.de
-Subject: Re: [PATCH 3/6] perf: add reference time event
-Message-ID: <20110617133230.GC25197@somewhere.redhat.com>
-References: <1307490806-24548-1-git-send-email-dsahern@gmail.com>
- <1307490946-24673-1-git-send-email-dsahern@gmail.com>
+	Fri, 17 Jun 2011 09:32:41 -0400
+Message-ID: <4DFB582E.7070909@ladisch.de>
+Date: Fri, 17 Jun 2011 15:35:42 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307490946-24673-1-git-send-email-dsahern@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+CC: Randy Dunlap <randy.dunlap@oracle.com>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: non-printable characters in /proc/interrupts
+References: <201106101040.20282.toralf.foerster@gmx.de> <20110610091132.90531e0e.randy.dunlap@oracle.com> <201106110038.43139.toralf.foerster@gmx.de>
+In-Reply-To: <201106110038.43139.toralf.foerster@gmx.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 05:55:46PM -0600, David Ahern wrote:
-> For initial perf_clock to time-of-day correlation.
+Toralf Förster wrote:
+> Randy Dunlap wrote at 18:11:32
+> > On Fri, 10 Jun 2011 10:40:19 +0200 Toralf Förster wrote:
+> > > I've wondering about this entry at my ThinkPad T400 (kernel 2.6.39.1):
+> > > ...
+> > >  44:     484163      55698   PCI-MSI-edge      ahci
+> > >  45:        750       1809   PCI-MSI-edge      eth0
+> > >  46:         94        213   PCI-MSI-edge      hda_intel
+> > >  47:      44399      70713   PCI-MSI-edge      l▒��@�E�
+> > >  48:      71969     102457   PCI-MSI-edge      iwlagn
+> > 
+> > Is there any other info (like dmesg or boot log) that tells what
+> > device/driver uses interrupt 47 ?
 > 
-> Signed-off-by: David Ahern <dsahern@gmail.com>
-> ---
->  tools/perf/util/event.c   |    1 +
->  tools/perf/util/event.h   |    8 ++++++++
->  tools/perf/util/session.c |    4 ++++
->  tools/perf/util/session.h |    3 ++-
->  4 files changed, 15 insertions(+), 1 deletions(-)
-> 
-> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-> index 3c1b8a6..1a89a04 100644
-> --- a/tools/perf/util/event.c
-> +++ b/tools/perf/util/event.c
-> @@ -24,6 +24,7 @@ static const char *perf_event__names[] = {
->  	[PERF_RECORD_HEADER_TRACING_DATA]	= "TRACING_DATA",
->  	[PERF_RECORD_HEADER_BUILD_ID]		= "BUILD_ID",
->  	[PERF_RECORD_FINISHED_ROUND]		= "FINISHED_ROUND",
-> +	[PERF_RECORD_REFTIME]			= "REF_TIME",
->  };
->  
->  const char *perf_event__name(unsigned int id)
-> diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-> index 1d7f664..f481f90 100644
-> --- a/tools/perf/util/event.h
-> +++ b/tools/perf/util/event.h
-> @@ -98,6 +98,7 @@ enum perf_user_event_type { /* above any possible kernel type */
->  	PERF_RECORD_HEADER_TRACING_DATA		= 66,
->  	PERF_RECORD_HEADER_BUILD_ID		= 67,
->  	PERF_RECORD_FINISHED_ROUND		= 68,
-> +	PERF_RECORD_REFTIME			= 69,
+> I attached the dmesg output
 
-We would like to avoid adding more custom events like these. They were very convenient
-but they steal the kernel event type space. They are deemed for removal in the long term.
+> ahci 0000:00:1f.2: irq 44 for MSI/MSI-X
+> e1000e 0000:00:19.0: irq 45 for MSI/MSI-X
+> iwlagn 0000:03:00.0: irq 46 for MSI/MSI-X
+> HDA Intel 0000:00:1b.0: irq 47 for MSI/MSI-X
+> i915 0000:00:02.0: irq 48 for MSI/MSI-X
 
-Another idea to achieve what you want would be to create a new perf event header feature,
-like HEADER_TRACE_INFO or HEADER_BUILD_ID are. Then use that to create a space in the perf
-file to save that couple of clocks initial values.
+These interrupt numbers do not match; I'd guess that you rebooted and
+that the drivers were initialized in a different order.
+
+Anyway, it looks as if the i915 driver is the culprit.
+
+A quick look into the DRM code shows that it uses dev->devname as
+interrupt name, but that field might get freed by drm_setversion().
+(Or I might be wrong; I don't have this hardware.)
+
+
+Regards,
+Clemens
