@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933136Ab1FQVBB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 17:01:01 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:57204 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932437Ab1FQVA5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 17:00:57 -0400
-Date: Fri, 17 Jun 2011 14:00:39 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, patches@linaro.org
-Subject: Re: [PATCH rcu/urgent] Banishing kthreads
-Message-ID: <20110617210039.GK2258@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110617000019.GA15881@linux.vnet.ibm.com>
- <BLU0-SMTP59C2BC46DCAC5743FE5229966D0@phx.gbl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BLU0-SMTP59C2BC46DCAC5743FE5229966D0@phx.gbl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933152Ab1FQVB0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 17:01:26 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:54526 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932437Ab1FQVBX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 17:01:23 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH 2/2] Add watchdog driver for Intel TunnelCreek
+In-Reply-To: Your message of "Thu, 16 Jun 2011 13:05:50 +0200."
+             <1308222350-21634-2-git-send-email-alexander.stein@systec-electronic.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1308222350-21634-1-git-send-email-alexander.stein@systec-electronic.com>
+            <1308222350-21634-2-git-send-email-alexander.stein@systec-electronic.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1308344475_3369P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 17 Jun 2011 17:01:15 -0400
+Message-ID: <36169.1308344475@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Info: (0) 
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020205.4DFBC09D.007F,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 04:35:23PM -0400, Mathieu Desnoyers wrote:
-> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> > This patchset banishes RCU kthreads from non-RCU_BOOST kernel threads.
-> > The two patches are as follows:
-> > 
-> > 1.	Minimal patch that #ifdefs out the kthread code.
-> > 
-> > 2.	Code-movement patch that puts the code #ifdefed out above
-> > 	under existing #ifdefs in kernel/rcutree_plugin.h.
-> 
-> Hi Paul,
-> 
-> I'm wondering about the impact of this change: so I guess that before
-> the change, it was OK to go on a waitqueue (might_sleep()) within a
-> call_rcu callback, but since the execution now moves to a softirq
-> handler in non-RCU_BOOST kernels, it's not allowed anymore. I might be
-> missing something though: was sleeping within call_rcu handlers already
-> prohibited ? (never had to sleep in those, so I never had to check if it
-> was allowed)
+--==_Exmh_1308344475_3369P
+Content-Type: text/plain; charset=us-ascii
 
-The callbacks are still executed in BH context, so any attempt to
-sleep should get a warning message.  Also, it switched to kthread quite
-recently, so there hasn't been time for anyone to get used to it.  ;-)
+On Thu, 16 Jun 2011 13:05:50 +0200, Alexander Stein said:
+ 
+> +config INTEL_TUNNELCREEK_WATCHDOG
+> +	tristate "Intel TunnelCreek watchdog"
+> +	depends on WATCHDOG && PCI && X86
+> +	select MFD_CORE
+> +	select LPC_SCH
+> +	---help---
+> +	  Hardware driver for the watchdog timer built into the Intel
+> +	  Tunnel Creek processor.
 
-							Thanx, Paul
+Please add part names here so we don't have to guess/remember what the now-retired
+code name for a processor was.  Just because the guy who wrote the driver knows what
+the development name was doesn't mean that the poor guy saying 'make oldconfig' knows
+whether this is a driver he cares about.
+
+http://www.engadget.com/2010/09/15/intel-retires-tunnel-creek-codename-debuts-e600-series-atom-sys/
+
+
+--==_Exmh_1308344475_3369P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFN+8CbcC3lWbTT17ARAg5kAKD5cWwGqbg7uGRk/ySJYh3yrqvaIQCeNvEU
+ALbVxzfZpvWg/MgRLYR2x2g=
+=8rO4
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1308344475_3369P--
+
