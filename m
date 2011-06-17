@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932880Ab1FQTKv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 15:10:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33251 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932429Ab1FQTKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 15:10:51 -0400
-Date: Fri, 17 Jun 2011 21:08:37 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Pedro Alves <pedro@codesourcery.com>
-Cc: Tejun Heo <tj@kernel.org>, Denys Vlasenko <vda.linux@googlemail.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu,
-        bdonlan@gmail.com
-Subject: Re: [PATCHSET ptrace] ptrace: implement PTRACE_SEIZE/INTERRUPT and
-	group stop notification, take#4
-Message-ID: <20110617190837.GA18917@redhat.com>
-References: <1306710760-16440-1-git-send-email-tj@kernel.org> <201106031125.16071.pedro@codesourcery.com> <20110616083828.GJ8141@htj.dyndns.org> <201106161056.17798.pedro@codesourcery.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201106161056.17798.pedro@codesourcery.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932923Ab1FQTXF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 15:23:05 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:49299 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758445Ab1FQTXC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 15:23:02 -0400
+Date: Fri, 17 Jun 2011 15:19:03 -0400 (EDT)
+Message-Id: <20110617.151903.1203335395245647912.davem@davemloft.net>
+To: joe@perches.com
+Cc: acme@ghostprotocols.net, jcliburn@gmail.com, chris.snook@gmail.com,
+        jie.yang@atheros.com, sathya.perla@emulex.com,
+        subbu.seetharaman@emulex.com, ajit.khaparde@emulex.com,
+        rmody@brocade.com, ddutt@brocade.com, sjur.brandeland@stericsson.com,
+        divy@chelsio.com, leitao@linux.vnet.ibm.com, amit.salecha@qlogic.com,
+        ron.mercer@qlogic.com, linux-driver@qlogic.com,
+        anirban.chakraborty@qlogic.com, jdmason@kudzu.us,
+        linux-net-drivers@solarflare.com, shodgson@solarflare.com,
+        bhutchings@solarflare.com, venza@brownhat.org, dave@thedillows.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next V2] drivers/net: Remove casts of void *
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <3bea9d0803a4ebfee2bb0f6e42defbf76126dc86.1308287030.git.joe@perches.com>
+References: <3bea9d0803a4ebfee2bb0f6e42defbf76126dc86.1308287030.git.joe@perches.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 17 Jun 2011 12:19:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16, Pedro Alves wrote:
->
-> On Thursday 16 June 2011 09:38:28, Tejun Heo wrote:
-> > On Fri, Jun 03, 2011 at 11:25:15AM +0100, Pedro Alves wrote:
-> > > It'd be _very_ useful for x86 (and others) to have
-> > > something like TRAP_BRKPT for int3.  Both for ptracers
-> > > and in-process self debuggers.
-> > >
-> > > I'd be super happy to be told we have that already
-> > > in recent kernels and I missed it.  :-)
-> >
-> > Unfortunately, AFAICS, x86 doesn't have it nor is there a generic
-> > mechanism, but this should be solvable without disrupting existing
-> > users.
->
-> Hmm, looks like there was an earlier attempt:
->
-> <http://lkml.indiana.edu/hypermail/linux/kernel/0809.2/1898.html>
->
-> Reading that thread, there were some minor revisions, but I didn't
-> see any objection.  It seems that patch made it 2.6.28 (the only
-> sources I have handy), as I see get_si_code calls in arch/x86/kernel/traps.c,
-> and arch/x86/include/asm/traps.h.
+From: Joe Perches <joe@perches.com>
+Date: Thu, 16 Jun 2011 22:08:06 -0700
 
-Yes, this works (I think). But this handles the X86_EFLAGS_TF case, for
-example PTRACE_SINGLESTEP.
+> Unnecessary casts of void * clutter the code.
+> 
+> These are the remainder casts after several specific
+> patches to remove netdev_priv and dev_priv.
+> 
+> Done via coccinelle script (and a little editing):
+> 
+> $ cat cast_void_pointer.cocci
+> @@
+> type T;
+> T *pt;
+> void *pv;
+> @@
+> 
+> - pt = (T *)pv;
+> + pt = pv;
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> Acked-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+> Acked-By: Chris Snook <chris.snook@gmail.com>
+> Acked-by: Jon Mason <jdmason@kudzu.us>
 
-> But, I'm running 2.6.38, x86-64, and
->
-> #include <stdio.h>
-> #include <string.h>
-> #include <signal.h>
->
-> static void
-> handler (int sig, siginfo_t *info, void *context)
-> {
->   printf ("si_code = %x\n", info->si_code);
-> }
->
-> int
-> main (void)
-> {
->   struct sigaction action;
->
->   memset (&action, 0, sizeof (action));
->   action.sa_sigaction = handler;
->   action.sa_flags |= SA_SIGINFO;
->   sigaction (SIGTRAP, &action, NULL);
->
->   asm volatile ("int3");
->
->   return 0;
-> }
->
-> still prints:
->
-> $ ./trap
-> si_code = 80
-
-Yes. do_int3() simply calls force_sig(SIGTRAP). Trivial to change, I think.
-
-Oleg.
-
+Applied, thanks.
