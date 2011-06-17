@@ -1,170 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759339Ab1FQOwc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 10:52:32 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43064 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759316Ab1FQOuz (ORCPT
+	id S1759331Ab1FQO4J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 10:56:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:50948 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759185Ab1FQO4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 10:50:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=S3DRHRq7U2EBkHHcTz/E06tZSVF0UOMLEoeBU45M029bmcbI9bCSMBmkjCb1mAMJM5
-         yMLuzZ5Wf+++Fi14TEz5g9PIgB69NsWh8+52UrpSeytLkTkjnsyGOyeJTCBkJmHkQi6N
-         NDlcFXMKmZFO4v70qHLubCMtXoN4br622LQQI=
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org, oleg@redhat.com
-Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        hch@infradead.org, Tejun Heo <tj@kernel.org>,
-        John Johansen <john.johansen@canonical.com>,
-        Stephen Smalley <sds@tycho.nsa.gov>
-Subject: [PATCH 7/7] ptrace: s/tracehook_tracer_task()/ptrace_parent()/
-Date: Fri, 17 Jun 2011 16:50:40 +0200
-Message-Id: <1308322240-8247-8-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1308322240-8247-1-git-send-email-tj@kernel.org>
-References: <1308322240-8247-1-git-send-email-tj@kernel.org>
+	Fri, 17 Jun 2011 10:56:04 -0400
+X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=Caq5pGLvaXcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=VGp4NY58Zt-YAluqZtIA:9 a=nS1I7W6YQEzvWM5CnI0A:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] sched: update cpupri for runqueue when its priority
+ changes
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <BANLkTik8PpdwGgLOE7rAauXqGYdnT53GpQ@mail.gmail.com>
+References: <BANLkTint_00+oHVGpgV4n4E2A9W5O8nJxA@mail.gmail.com>
+	 <1308275405.9218.156.camel@gandalf.stny.rr.com>
+	 <BANLkTik8PpdwGgLOE7rAauXqGYdnT53GpQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 17 Jun 2011 10:56:03 -0400
+Message-ID: <1308322563.9218.184.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tracehook.h is on the way out.  Rename tracehook_tracer_task() to
-ptrace_parent() and move it from tracehook.h to ptrace.h.
+On Fri, 2011-06-17 at 20:59 +0800, Hillf Danton wrote:
+> On Fri, Jun 17, 2011 at 9:50 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > On Sun, 2011-06-05 at 17:54 +0800, Hillf Danton wrote:
+> >> When the priority of runqueue changes, lower or higer, the info of cpupri
+> >> should be updated, in cases such as pick_next_task_rt() and switched_to_rt().
+> >
+> > Why?
+> >
+> > We do the calculation on queuing and dequeuing the task, we only care
+> > about the highest priority task that is on the queue, not what is
+> > actually running.
+> >
+> 
+> It is to capture the changes in CPU priority caused by re-queued task and
+> throttled RQ.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: John Johansen <john.johansen@canonical.com>
-Cc: Stephen Smalley <sds@tycho.nsa.gov>
----
- fs/proc/array.c            |    2 +-
- fs/proc/base.c             |    2 +-
- include/linux/ptrace.h     |   18 ++++++++++++++++++
- include/linux/tracehook.h  |   18 ------------------
- security/apparmor/domain.c |    2 +-
- security/selinux/hooks.c   |    4 ++--
- 6 files changed, 23 insertions(+), 23 deletions(-)
+OK, I talked a little with Peter about this. We don't throttle an rq, we
+throttle a group. A group consists of tasks, not rqs. When a group is
+throttled, we do not migrate tasks, so the cpupri is not a issue here.
 
-diff --git a/fs/proc/array.c b/fs/proc/array.c
-index 9b45ee8..3a1dafd 100644
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -172,7 +172,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
- 		task_tgid_nr_ns(rcu_dereference(p->real_parent), ns) : 0;
- 	tpid = 0;
- 	if (pid_alive(p)) {
--		struct task_struct *tracer = tracehook_tracer_task(p);
-+		struct task_struct *tracer = ptrace_parent(p);
- 		if (tracer)
- 			tpid = task_pid_nr_ns(tracer, ns);
- 	}
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 14def99..c883dad 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -216,7 +216,7 @@ static struct mm_struct *__check_mem_permission(struct task_struct *task)
- 	if (task_is_stopped_or_traced(task)) {
- 		int match;
- 		rcu_read_lock();
--		match = (tracehook_tracer_task(task) == current);
-+		match = (ptrace_parent(task) == current);
- 		rcu_read_unlock();
- 		if (match && ptrace_may_access(task, PTRACE_MODE_ATTACH))
- 			return mm;
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index b546fd6..bb157bd 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -151,6 +151,24 @@ int generic_ptrace_pokedata(struct task_struct *tsk, unsigned long addr,
- 			    unsigned long data);
- 
- /**
-+ * ptrace_parent - return the task that is tracing the given task
-+ * @task: task to consider
-+ *
-+ * Returns %NULL if no one is tracing @task, or the &struct task_struct
-+ * pointer to its tracer.
-+ *
-+ * Must called under rcu_read_lock().  The pointer returned might be kept
-+ * live only by RCU.  During exec, this may be called with task_lock() held
-+ * on @task, still held from when check_unsafe_exec() was called.
-+ */
-+static inline struct task_struct *ptrace_parent(struct task_struct *task)
-+{
-+	if (unlikely(task->ptrace))
-+		return rcu_dereference(task->parent);
-+	return NULL;
-+}
-+
-+/**
-  * ptrace_event_enabled - test whether a ptrace event is enabled
-  * @task: ptracee of interest
-  * @event: %PTRACE_EVENT_* to test
-diff --git a/include/linux/tracehook.h b/include/linux/tracehook.h
-index fea0d4b..a71a292 100644
---- a/include/linux/tracehook.h
-+++ b/include/linux/tracehook.h
-@@ -130,24 +130,6 @@ static inline void tracehook_report_syscall_exit(struct pt_regs *regs, int step)
- }
- 
- /**
-- * tracehook_tracer_task - return the task that is tracing the given task
-- * @tsk:		task to consider
-- *
-- * Returns NULL if no one is tracing @task, or the &struct task_struct
-- * pointer to its tracer.
-- *
-- * Must called under rcu_read_lock().  The pointer returned might be kept
-- * live only by RCU.  During exec, this may be called with task_lock()
-- * held on @task, still held from when tracehook_unsafe_exec() was called.
-- */
--static inline struct task_struct *tracehook_tracer_task(struct task_struct *tsk)
--{
--	if (tsk->ptrace & PT_PTRACED)
--		return rcu_dereference(tsk->parent);
--	return NULL;
--}
--
--/**
-  * tracehook_signal_handler - signal handler setup is complete
-  * @sig:		number of signal being delivered
-  * @info:		siginfo_t of signal being delivered
-diff --git a/security/apparmor/domain.c b/security/apparmor/domain.c
-index c825c6e..7312bf9 100644
---- a/security/apparmor/domain.c
-+++ b/security/apparmor/domain.c
-@@ -67,7 +67,7 @@ static int may_change_ptraced_domain(struct task_struct *task,
- 	int error = 0;
- 
- 	rcu_read_lock();
--	tracer = tracehook_tracer_task(task);
-+	tracer = ptrace_parent(task);
- 	if (tracer) {
- 		/* released below */
- 		cred = get_task_cred(tracer);
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index a0d3845..fc07d18 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -2048,7 +2048,7 @@ static int selinux_bprm_set_creds(struct linux_binprm *bprm)
- 			u32 ptsid = 0;
- 
- 			rcu_read_lock();
--			tracer = tracehook_tracer_task(current);
-+			tracer = ptrace_parent(current);
- 			if (likely(tracer != NULL)) {
- 				sec = __task_cred(tracer)->security;
- 				ptsid = sec->sid;
-@@ -5314,7 +5314,7 @@ static int selinux_setprocattr(struct task_struct *p,
- 		   Otherwise, leave SID unchanged and fail. */
- 		ptsid = 0;
- 		task_lock(p);
--		tracer = tracehook_tracer_task(p);
-+		tracer = ptrace_parent(p);
- 		if (tracer)
- 			ptsid = task_sid(tracer);
- 		task_unlock(p);
--- 
-1.7.5.4
+For non throttled groups, tasks are enqueued and when they are, the
+cpupri is updated. We *only* care about tasks that are enqueued.
+
+Thus, lets look again at your patch:
+
+
+> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+> index 08e9374..9508168 100644
+> --- a/kernel/sched_rt.c
+> +++ b/kernel/sched_rt.c
+> @@ -1158,6 +1158,8 @@ static struct task_struct
+> *pick_next_task_rt(struct rq *rq)
+>          * lock again later if there is no need to push
+>          */
+>         rq->post_schedule = has_pushable_tasks(rq);
+> +
+> +       cpupri_set(&rq->rd->cpupri, rq->cpu, p == NULL ? MAX_RT_PRIO : p->prio);
+
+In pick_next_task_rt(), p is the highes prio that is queued. Thus,
+cpupri is already set to p->prio. If p is NULL, then there is no rt
+tasks queued on this rq, and cpupri is set to MAX_RT_PRIO. Your patch
+here does not change anything.
+
+>  #endif
+> 
+>         return p;
+> @@ -1673,6 +1675,8 @@ static void switched_to_rt(struct rq *rq, struct
+> task_struct *p)
+>  {
+>         int check_resched = 1;
+> 
+> +       if (!p->on_rq)
+> +               return;
+>         /*
+>          * If we are already running, then there's nothing
+>          * that needs to be done. But if we are not running
+> @@ -1680,7 +1684,7 @@ static void switched_to_rt(struct rq *rq, struct
+> task_struct *p)
+>          * If that current running task is also an RT task
+>          * then see if we can move to another run queue.
+>          */
+> -       if (p->on_rq && rq->curr != p) {
+> +       if (rq->curr != p) {
+>  #ifdef CONFIG_SMP
+>                 if (rq->rt.overloaded && push_rt_task(rq) &&
+>                     /* Don't resched if we changed runqueues */
+> @@ -1690,6 +1694,11 @@ static void switched_to_rt(struct rq *rq,
+> struct task_struct *p)
+>                 if (check_resched && p->prio < rq->curr->prio)
+>                         resched_task(rq->curr);
+>         }
+> +       else {
+> +#ifdef CONFIG_SMP
+> +               cpupri_set(&rq->rd->cpupri, rq->cpu, p->prio);
+> +#endif
+
+switched_to_rt() is called from sched.c's check_class_changed(), which
+is always called after enqueuing the task if p->on_rq was set. Thus, if
+this is running and is the highest priority task, cpupri would have this
+bit set too. Again, your patch does nothing but add more overhead.
+
+-- Steve
+
+
+> +       }
+>  }
+> 
+>  /*
 
