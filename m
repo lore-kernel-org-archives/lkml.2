@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756950Ab1FQRoZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 13:44:25 -0400
-Received: from gabe.freedesktop.org ([131.252.210.177]:36635 "EHLO
-	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752317Ab1FQRoX (ORCPT
+	id S1758722Ab1FQRv4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 13:51:56 -0400
+Received: from eastrmfepo202.cox.net ([68.230.241.217]:40527 "EHLO
+	eastrmfepo202.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757362Ab1FQRvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 13:44:23 -0400
-From: Eric Anholt <eric@anholt.net>
-To: Daniel J Blueman <daniel.blueman@gmail.com>,
-        Dave Airlie <airlied@redhat.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Ben Widawsky <ben@bwidawsk.net>,
-        Kenneth Graunke <kenneth@whitecape.org>, Yi Sun <yi.sun@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Mengmeng Meng <mengmeng.meng@intel.com>,
-        Robert Hooker <sarvatt@ubuntu.com>,
-        Daniel J Blueman <daniel.blueman@gmail.com>
-Subject: Re: [PATCH 3.0-rc3, v2] i915: Fix gen6 (SNB) GPU stalling
-In-Reply-To: <1308328920-2068-1-git-send-email-daniel.blueman@gmail.com>
-References: <1308328920-2068-1-git-send-email-daniel.blueman@gmail.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Fri, 17 Jun 2011 10:44:19 -0700
-Message-ID: <87zklgnyj0.fsf@eliezer.anholt.net>
+	Fri, 17 Jun 2011 13:51:52 -0400
+X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Jun 2011 13:51:52 EDT
+X-CT-Score: 0.00
+X-CT-RefID: str=0001.0A020204.4DFB92BF.0098,ss=1,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=DkLg0PgY2o4lZqvIebXfT14XCAMsRf7aiPsXd65v5So=
+ c=1 sm=1 a=G8Uczd0VNMoA:10 a=MFaiWV4wLcgA:10 a=IkcTkHD0fZMA:10
+ a=WWcFsZ7poJjr6By/2MWIqQ==:17 a=aSRvjw2BAAAA:8 a=_TNlKyP60OWzplfkD1AA:9
+ a=u6-phO5bza6BdAapZg0A:7 a=QEXdDO2ut3YA:10 a=AftSZysTkwPWg8vt:21
+ a=t9_9Z_7spajoR3uc:21 a=WWcFsZ7poJjr6By/2MWIqQ==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20110617134535.Y3M6O.809984.imail@eastrmwml33>
+Date: Fri, 17 Jun 2011 10:45:34 -0700
+From: BBC/AWARD <bbcccccc1@cox.net>
+Reply-To: bbc002@qatar.io
+Subject: BBC BONAFIDE WINNER $
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Your e-mail has just won you 1,000,000.GBP from the BBC AWARD on our 2011 
 
-On Sat, 18 Jun 2011 00:42:00 +0800, Daniel J Blueman <daniel.blueman@gmail.=
-com> wrote:
-> Workaround Sandy Bridge GPU stalls by allowing the blitter command stream=
-er
-> to write interrupt state to the Hardware Status Page when a MI_USER_INTER=
-RUPT
-> command is decoded.
->=20
-> v1->v2: Moved to prior interrupt handler installation and RMW flags as per
-> feedback.
+Award Programme .which took place 15-06 2011 The draw no. 09 25 29 32 37 38 BONUS 28
 
-We shouldn't be RMWing.  We're the driver, we're supposed to know what
-we want.  I'm backing that bit out, will do another round of testing,
-and send it off.
+brought out your e-mail id from a Data Base of Internet Email Users 
 
---=-=-=
-Content-Type: application/pgp-signature
+and qualified you a winner of the stated winning amount. 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+send us the follow details for confirmation
 
-iEYEARECAAYFAk37knMACgkQHUdvYGzw6vcnQQCeNlKC6Ddu+BN9TJgxjv7oApYl
-RvMAnRk3lKn4qCSjjkUf//mjbZDoGES3
-=SOg4
------END PGP SIGNATURE-----
---=-=-=--
+1.Full Names 
+
+2. Address 
+
+3. Country/State 
+
+4. phone 
+
+5. Sex: 
+
+6. Age 
+
+7. Occupation 
+
+8. Email 
+
+please ensure your check your winning details on our  site given below 
+
+
+http://www.bbc.co.uk/lottery
