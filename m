@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757490Ab1FQJ4e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 05:56:34 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60348 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752220Ab1FQJ4b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 05:56:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=URo9yoLpit4afXJAjsxE+BHudY0ny1MxIAvHZnRVE7oyHB2oisgO3ogRl68XX/P30m
-         24dM/Z77nly0S/1tK92lzxaWGwUTkwI5IUyFBPwR0sb3f0abfJzr3lxi1CZzI4PniTpJ
-         DRfZa36eDsO0T7Sex/IOZqj2NMiuR8TiUlGgg=
-Date: Fri, 17 Jun 2011 13:56:25 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, kernel-hardening@lists.openwall.com
-Subject: Re: How to temporary change 'current' (task)
-Message-ID: <20110617095625.GA7627@albatros>
-References: <20110617083651.GA5625@albatros>
- <1308302957.2355.5.camel@twins>
+	id S1758003Ab1FQKB6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 06:01:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49803 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753306Ab1FQKB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 06:01:57 -0400
+Date: Fri, 17 Jun 2011 12:01:55 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nico@fluxnic.net>
+Subject: Re: [PATCH][Trivial] ARM: remove duplicate include from
+ arch/arm/mach-dove/common.c
+In-Reply-To: <alpine.LNX.2.00.1106162348320.8140@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1106171201210.22872@pobox.suse.cz>
+References: <alpine.LNX.2.00.1105261130190.17400@swampdragon.chaosbits.net> <20110526144804.GA31651@lunn.ch> <alpine.LNX.2.00.1106162348320.8140@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308302957.2355.5.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 11:29 +0200, Peter Zijlstra wrote:
-> On Fri, 2011-06-17 at 12:36 +0400, Vasiliy Kulikov wrote:
-> > I wonder whether there is a simple way to temporary switch 'current' to
-> > another task and then switch it back with minimum side effects? 
-> 
-> No.
+On Thu, 16 Jun 2011, Jesper Juhl wrote:
 
-After a moment's thought, it would also break some synchronization that
-relies on some structures are accesses only from the current task.
-
-> >  I need
-> > it to call "reversed" ptrace_may_access() with swapped current and
-> > target task.  Introducing ptrace_task_may_access_me() would produce too
-> > much noise in LSM (it also needs reversed security_ptrace_access_check()),
-> > which is too loud for my needs.
+> > Jesper Juhl pointed out there is a redundant include of
+> > linux/serial_8250.h. However it turns out both are redundant.
+> > This patch removes them both.
 > > 
-> > Specifically, I need it to filter taskstats and proc connector requests
-> > for a restriction of getting other processes' information:
+> > Only compile tested.
 > > 
-> > http://permalink.gmane.org/gmane.linux.kernel/1155354
-> > 
-> > As the check is handled in the context of the ptrace target process,
-> > ptrace_may_access() doesn't fit my needs.
+> > Reported-by:  Jesper Juhl <jj@chaosbits.net>
+> > Signed-off-by: Andrew Lunn <andrew@lunn.ch>
 > 
-> looking at __ptrace_may_access() it doesn't look too hard to make it
-> take two task arguments and use __task_cred() twice instead of
-> current_cred().
+> Seems you are right.
 > 
-> It of course needs extending security_ptrace_access_check() as well, but
-> that comes with the territory.
+> Reviewed-by: Jesper Juhl <jj@chaosbits.net>
 
-Well, yes, but it implies pushing explicit ptrace actor into LSM
-modules.  OK, it should be not as noisy as I initially thought - almost
-all current LSMs already use "current" as an explicit argument in
-theirs internal functions.
+I don't seem to be able to find the patch anywhere during a quick search 
+of the archives. Could you please bounce it to me (in case it hasn't been 
+already applied elsewhere)?
 
-Thank you,
+Thanks,
 
 -- 
-Vasiliy
+Jiri Kosina
+SUSE Labs
