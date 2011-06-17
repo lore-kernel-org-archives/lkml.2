@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932994Ab1FQT5w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 15:57:52 -0400
-Received: from outappmail004.snc4.facebook.com ([66.220.144.158]:47285 "EHLO
+	id S1422655Ab1FQT54 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 15:57:56 -0400
+Received: from outmail013.snc4.facebook.com ([66.220.144.145]:55908 "EHLO
 	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932962Ab1FQT5o (ORCPT
+	with ESMTP id S933041Ab1FQT5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 15:57:44 -0400
+	Fri, 17 Jun 2011 15:57:46 -0400
 From: Arun Sharma <asharma@fb.com>
 To: linux-kernel@vger.kernel.org
-Cc: Arun Sharma <asharma@fb.com>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+Cc: Arun Sharma <asharma@fb.com>, Eric Dumazet <eric.dumazet@gmail.com>,
         Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@osdl.org>, Mike Frysinger <vapier.adi@gmail.com>
-Subject: [PATCH 2/4] atomic: move atomic_add_unless to generic code
-Date: Fri, 17 Jun 2011 12:57:08 -0700
-Message-Id: <1308340630-16008-2-git-send-email-asharma@fb.com>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Frysinger <vapier.adi@gmail.com>
+Subject: [PATCH 3/4] atomic: cleanup asm-generic atomic*.h inclusion
+Date: Fri, 17 Jun 2011 12:57:09 -0700
+Message-Id: <1308340630-16008-3-git-send-email-asharma@fb.com>
 X-Mailer: git-send-email 1.7.4
 In-Reply-To: <1308340630-16008-1-git-send-email-asharma@fb.com>
 References: <1308340630-16008-1-git-send-email-asharma@fb.com>
@@ -23,811 +23,341 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is in preparation for more generic atomic
-primitives based on __atomic_add_unless.
+After changing all consumers of atomics to include
+<linux/atomic.h>, we ran into some compile time errors
+due to this dependency chain:
+
+linux/atomic.h
+  -> asm/atomic.h
+    -> asm-generic/atomic-long.h
+
+where atomic-long.h could use funcs defined later in
+linux/atomic.h without a prototype. This patches moves
+the code that includes asm-generic/atomic*.h to
+linux/atomic.h.
+
+Archs that need <asm-generic/atomic64.h> need to select
+CONFIG_GENERIC_ATOMIC64 from now on (some of them used
+to include it unconditionally).
+
+Compile tested on i386 and x86_64 with allnoconfig.
 
 Signed-off-by: Arun Sharma <asharma@fb.com>
-Signed-off-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-Reviewed-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: David Miller <davem@davemloft.net>
-Cc: Andrew Morton <akpm@osdl.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mike Frysinger <vapier.adi@gmail.com>
-LKML-Reference: <20110531105019.GF24172@elte.hu>
 ---
- arch/alpha/include/asm/atomic.h    |   10 +++---
- arch/arm/include/asm/atomic.h      |    4 +-
- arch/avr32/include/asm/atomic.h    |   57 ++++++++++++++++--------------------
- arch/blackfin/include/asm/atomic.h |    4 +-
- arch/cris/include/asm/atomic.h     |    4 +-
- arch/frv/include/asm/atomic.h      |    4 +-
- arch/h8300/include/asm/atomic.h    |    4 +-
- arch/ia64/include/asm/atomic.h     |    4 +-
- arch/m32r/include/asm/atomic.h     |    8 ++--
- arch/m68k/include/asm/atomic.h     |    4 +-
- arch/mips/include/asm/atomic.h     |   10 +++---
- arch/mn10300/include/asm/atomic.h  |    4 +-
- arch/parisc/include/asm/atomic.h   |   10 +++---
- arch/powerpc/include/asm/atomic.h  |   14 ++++----
- arch/s390/include/asm/atomic.h     |    4 +-
- arch/sh/include/asm/atomic.h       |    8 ++--
- arch/sparc/include/asm/atomic_32.h |    2 +-
- arch/sparc/include/asm/atomic_64.h |    4 +-
- arch/tile/include/asm/atomic_32.h  |   10 +++---
- arch/tile/include/asm/atomic_64.h  |    4 +-
- arch/x86/include/asm/atomic.h      |    8 ++--
- arch/x86/include/asm/atomic64_32.h |    2 +-
- arch/x86/include/asm/atomic64_64.h |    2 +-
- arch/xtensa/include/asm/atomic.h   |    8 ++--
- include/asm-generic/atomic.h       |    4 +-
- include/linux/atomic.h             |   14 +++++++++
- 26 files changed, 109 insertions(+), 102 deletions(-)
+ arch/alpha/include/asm/atomic.h    |    1 -
+ arch/arm/include/asm/atomic.h      |    5 +----
+ arch/avr32/include/asm/atomic.h    |    2 --
+ arch/blackfin/include/asm/atomic.h |    3 ---
+ arch/cris/include/asm/atomic.h     |    1 -
+ arch/frv/include/asm/atomic.h      |    1 -
+ arch/h8300/include/asm/atomic.h    |    1 -
+ arch/ia64/include/asm/atomic.h     |    1 -
+ arch/m32r/include/asm/atomic.h     |    1 -
+ arch/m68k/include/asm/atomic.h     |    2 --
+ arch/mips/include/asm/atomic.h     |    6 ------
+ arch/mn10300/include/asm/atomic.h  |    2 --
+ arch/parisc/include/asm/atomic.h   |    5 -----
+ arch/powerpc/include/asm/atomic.h  |    4 ----
+ arch/s390/include/asm/atomic.h     |    2 --
+ arch/sh/include/asm/atomic.h       |    3 ---
+ arch/sparc/include/asm/atomic_32.h |    1 -
+ arch/sparc/include/asm/atomic_64.h |    1 -
+ arch/tile/include/asm/atomic.h     |    5 -----
+ arch/x86/include/asm/atomic.h      |    1 -
+ arch/xtensa/include/asm/atomic.h   |    1 -
+ include/asm-generic/atomic.h       |    2 --
+ include/linux/atomic.h             |    4 ++++
+ 23 files changed, 5 insertions(+), 50 deletions(-)
 
 diff --git a/arch/alpha/include/asm/atomic.h b/arch/alpha/include/asm/atomic.h
-index 88b7491..3d67049 100644
+index 3d67049..640f909 100644
 --- a/arch/alpha/include/asm/atomic.h
 +++ b/arch/alpha/include/asm/atomic.h
-@@ -176,15 +176,15 @@ static __inline__ long atomic64_sub_return(long i, atomic64_t * v)
- #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
+@@ -255,5 +255,4 @@ static __inline__ int atomic64_add_unless(atomic64_t *v, long a, long u)
+ #define smp_mb__before_atomic_inc()	smp_mb()
+ #define smp_mb__after_atomic_inc()	smp_mb()
  
- /**
-- * atomic_add_unless - add unless the number is a given value
-+ * __atomic_add_unless - add unless the number is a given value
-  * @v: pointer of type atomic_t
-  * @a: the amount to add to v...
-  * @u: ...unless v is equal to u.
-  *
-  * Atomically adds @a to @v, so long as it was not @u.
-- * Returns non-zero if @v was not @u, and zero otherwise.
-+ * Returns the old value of @v.
-  */
--static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
-+static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	int c, old;
- 	c = atomic_read(v);
-@@ -196,7 +196,7 @@ static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
- 			break;
- 		c = old;
- 	}
--	return c != (u);
-+	return c;
- }
- 
- 
-@@ -207,7 +207,7 @@ static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
-  * @u: ...unless v is equal to u.
-  *
-  * Atomically adds @a to @v, so long as it was not @u.
-- * Returns non-zero if @v was not @u, and zero otherwise.
-+ * Returns the old value of @v.
-  */
- static __inline__ int atomic64_add_unless(atomic64_t *v, long a, long u)
- {
+-#include <asm-generic/atomic-long.h>
+ #endif /* _ALPHA_ATOMIC_H */
 diff --git a/arch/arm/include/asm/atomic.h b/arch/arm/include/asm/atomic.h
-index 4d501f1..3757e91 100644
+index 3757e91..86976d0 100644
 --- a/arch/arm/include/asm/atomic.h
 +++ b/arch/arm/include/asm/atomic.h
-@@ -208,14 +208,14 @@ static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
+@@ -459,9 +459,6 @@ static inline int atomic64_add_unless(atomic64_t *v, u64 a, u64 u)
+ #define atomic64_dec_and_test(v)	(atomic64_dec_return((v)) == 0)
+ #define atomic64_inc_not_zero(v)	atomic64_add_unless((v), 1LL, 0LL)
  
- #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
- 
--static inline int atomic_add_unless(atomic_t *v, int a, int u)
-+static inline int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	int c, old;
- 
- 	c = atomic_read(v);
- 	while (c != u && (old = atomic_cmpxchg((v), c, c + a)) != c)
- 		c = old;
--	return c != u;
-+	return c;
- }
- 
- #define atomic_inc(v)		atomic_add(1, v)
+-#else /* !CONFIG_GENERIC_ATOMIC64 */
+-#include <asm-generic/atomic64.h>
+-#endif
+-#include <asm-generic/atomic-long.h>
++#endif /* !CONFIG_GENERIC_ATOMIC64 */
+ #endif
+ #endif
 diff --git a/arch/avr32/include/asm/atomic.h b/arch/avr32/include/asm/atomic.h
-index f229c38..dc6c3a4 100644
+index dc6c3a4..e0ac263 100644
 --- a/arch/avr32/include/asm/atomic.h
 +++ b/arch/avr32/include/asm/atomic.h
-@@ -78,70 +78,63 @@ static inline int atomic_add_return(int i, atomic_t *v)
- /*
-  * atomic_sub_unless - sub unless the number is a given value
-  * @v: pointer of type atomic_t
-- * @a: the amount to add to v...
-+ * @a: the amount to subtract from v...
-  * @u: ...unless v is equal to u.
-  *
-- * If the atomic value v is not equal to u, this function subtracts a
-- * from v, and returns non zero. If v is equal to u then it returns
-- * zero. This is done as an atomic operation.
-+ * Atomically subtract @a from @v, so long as it was not @u.
-+ * Returns the old value of @v.
- */
--static inline int atomic_sub_unless(atomic_t *v, int a, int u)
-+static inline void atomic_sub_unless(atomic_t *v, int a, int u)
- {
--	int tmp, result = 0;
-+	int tmp;
+@@ -188,6 +188,4 @@ static inline int atomic_sub_if_positive(int i, atomic_t *v)
+ #define smp_mb__before_atomic_inc()	barrier()
+ #define smp_mb__after_atomic_inc()	barrier()
  
- 	asm volatile(
- 		"/* atomic_sub_unless */\n"
- 		"1:	ssrf	5\n"
--		"	ld.w	%0, %3\n"
--		"	cp.w	%0, %5\n"
-+		"	ld.w	%0, %2\n"
-+		"	cp.w	%0, %4\n"
- 		"	breq	1f\n"
--		"	sub	%0, %4\n"
--		"	stcond	%2, %0\n"
-+		"	sub	%0, %3\n"
-+		"	stcond	%1, %0\n"
- 		"	brne	1b\n"
--		"	mov	%1, 1\n"
- 		"1:"
--		: "=&r"(tmp), "=&r"(result), "=o"(v->counter)
--		: "m"(v->counter), "rKs21"(a), "rKs21"(u), "1"(result)
-+		: "=&r"(tmp), "=o"(v->counter)
-+		: "m"(v->counter), "rKs21"(a), "rKs21"(u)
- 		: "cc", "memory");
+-#include <asm-generic/atomic-long.h>
 -
--	return result;
- }
- 
- /*
-- * atomic_add_unless - add unless the number is a given value
-+ * __atomic_add_unless - add unless the number is a given value
-  * @v: pointer of type atomic_t
-  * @a: the amount to add to v...
-  * @u: ...unless v is equal to u.
-  *
-- * If the atomic value v is not equal to u, this function adds a to v,
-- * and returns non zero. If v is equal to u then it returns zero. This
-- * is done as an atomic operation.
-+ * Atomically adds @a to @v, so long as it was not @u.
-+ * Returns the old value of @v.
- */
--static inline int atomic_add_unless(atomic_t *v, int a, int u)
-+static inline int __atomic_add_unless(atomic_t *v, int a, int u)
- {
--	int tmp, result;
-+	int tmp, old = atomic_read(v);
- 
- 	if (__builtin_constant_p(a) && (a >= -1048575) && (a <= 1048576))
--		result = atomic_sub_unless(v, -a, u);
-+		atomic_sub_unless(v, -a, u);
- 	else {
--		result = 0;
- 		asm volatile(
--			"/* atomic_add_unless */\n"
-+			"/* __atomic_add_unless */\n"
- 			"1:	ssrf	5\n"
--			"	ld.w	%0, %3\n"
--			"	cp.w	%0, %5\n"
-+			"	ld.w	%0, %2\n"
-+			"	cp.w	%0, %4\n"
- 			"	breq	1f\n"
--			"	add	%0, %4\n"
--			"	stcond	%2, %0\n"
-+			"	add	%0, %3\n"
-+			"	stcond	%1, %0\n"
- 			"	brne	1b\n"
--			"	mov	%1, 1\n"
- 			"1:"
--			: "=&r"(tmp), "=&r"(result), "=o"(v->counter)
--			: "m"(v->counter), "r"(a), "ir"(u), "1"(result)
-+			: "=&r"(tmp), "=o"(v->counter)
-+			: "m"(v->counter), "r"(a), "ir"(u)
- 			: "cc", "memory");
- 	}
- 
--	return result;
-+	return old;
- }
- 
- /*
+ #endif /*  __ASM_AVR32_ATOMIC_H */
 diff --git a/arch/blackfin/include/asm/atomic.h b/arch/blackfin/include/asm/atomic.h
-index 1fcc2a8..2cfce26 100644
+index 2cfce26..c1c5e7e 100644
 --- a/arch/blackfin/include/asm/atomic.h
 +++ b/arch/blackfin/include/asm/atomic.h
-@@ -94,13 +94,13 @@ static inline int atomic_test_mask(int mask, atomic_t *v)
- #define atomic_cmpxchg(v, o, n) ((int)cmpxchg(&((v)->counter), (o), (n)))
- #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
+@@ -116,10 +116,7 @@ static inline int atomic_test_mask(int mask, atomic_t *v)
+ #define atomic_sub_and_test(i,v) (atomic_sub_return((i), (v)) == 0)
+ #define atomic_dec_and_test(v) (atomic_sub_return(1, (v)) == 0)
  
--#define atomic_add_unless(v, a, u)				\
-+#define __atomic_add_unless(v, a, u)				\
- ({								\
- 	int c, old;						\
- 	c = atomic_read(v);					\
- 	while (c != (u) && (old = atomic_cmpxchg((v), c, c + (a))) != c) \
- 		c = old;					\
--	c != (u);						\
-+	c;							\
- })
+-#include <asm-generic/atomic-long.h>
  
- /*
+ #endif
+ 
+-#include <asm-generic/atomic64.h>
+-
+ #endif
 diff --git a/arch/cris/include/asm/atomic.h b/arch/cris/include/asm/atomic.h
-index ce9f67e..7e90532 100644
+index 7e90532..bbf0938 100644
 --- a/arch/cris/include/asm/atomic.h
 +++ b/arch/cris/include/asm/atomic.h
-@@ -138,7 +138,7 @@ static inline int atomic_cmpxchg(atomic_t *v, int old, int new)
+@@ -157,5 +157,4 @@ static inline int __atomic_add_unless(atomic_t *v, int a, int u)
+ #define smp_mb__before_atomic_inc()    barrier()
+ #define smp_mb__after_atomic_inc()     barrier()
  
- #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
- 
--static inline int atomic_add_unless(atomic_t *v, int a, int u)
-+static inline int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	int ret;
- 	unsigned long flags;
-@@ -148,7 +148,7 @@ static inline int atomic_add_unless(atomic_t *v, int a, int u)
- 	if (ret != u)
- 		v->counter += a;
- 	cris_atomic_restore(v, flags);
--	return ret != u;
-+	return ret;
- }
- 
- /* Atomic operations are already serializing */
+-#include <asm-generic/atomic-long.h>
+ #endif
 diff --git a/arch/frv/include/asm/atomic.h b/arch/frv/include/asm/atomic.h
-index b07b75f..a51dcdf 100644
+index a51dcdf..0d8a7d6 100644
 --- a/arch/frv/include/asm/atomic.h
 +++ b/arch/frv/include/asm/atomic.h
-@@ -241,7 +241,7 @@ extern uint32_t __xchg_32(uint32_t i, volatile void *v);
- #define atomic64_cmpxchg(v, old, new)	(__cmpxchg_64(old, new, &(v)->counter))
- #define atomic64_xchg(v, new)		(__xchg_64(new, &(v)->counter))
- 
--static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
-+static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	int c, old;
- 	c = atomic_read(v);
-@@ -253,7 +253,7 @@ static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
- 			break;
- 		c = old;
- 	}
--	return c != (u);
-+	return c;
+@@ -257,5 +257,4 @@ static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
  }
  
  
+-#include <asm-generic/atomic-long.h>
+ #endif /* _ASM_ATOMIC_H */
 diff --git a/arch/h8300/include/asm/atomic.h b/arch/h8300/include/asm/atomic.h
-index b641714..e6d1663 100644
+index e6d1663..f5a38c1 100644
 --- a/arch/h8300/include/asm/atomic.h
 +++ b/arch/h8300/include/asm/atomic.h
-@@ -104,7 +104,7 @@ static inline int atomic_cmpxchg(atomic_t *v, int old, int new)
+@@ -145,5 +145,4 @@ static __inline__ void atomic_set_mask(unsigned long mask, unsigned long *v)
+ #define smp_mb__before_atomic_inc()    barrier()
+ #define smp_mb__after_atomic_inc() barrier()
  
- #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
- 
--static inline int atomic_add_unless(atomic_t *v, int a, int u)
-+static inline int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	int ret;
- 	unsigned long flags;
-@@ -114,7 +114,7 @@ static inline int atomic_add_unless(atomic_t *v, int a, int u)
- 	if (ret != u)
- 		v->counter += a;
- 	local_irq_restore(flags);
--	return ret != u;
-+	return ret;
- }
- 
- static __inline__ void atomic_clear_mask(unsigned long mask, unsigned long *v)
+-#include <asm-generic/atomic-long.h>
+ #endif /* __ARCH_H8300_ATOMIC __ */
 diff --git a/arch/ia64/include/asm/atomic.h b/arch/ia64/include/asm/atomic.h
-index fdb8870..22aca21 100644
+index 22aca21..3fad89e 100644
 --- a/arch/ia64/include/asm/atomic.h
 +++ b/arch/ia64/include/asm/atomic.h
-@@ -90,7 +90,7 @@ ia64_atomic64_sub (__s64 i, atomic64_t *v)
- 	(cmpxchg(&((v)->counter), old, new))
- #define atomic64_xchg(v, new) (xchg(&((v)->counter), new))
+@@ -215,5 +215,4 @@ atomic64_add_negative (__s64 i, atomic64_t *v)
+ #define smp_mb__before_atomic_inc()	barrier()
+ #define smp_mb__after_atomic_inc()	barrier()
  
--static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
-+static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	int c, old;
- 	c = atomic_read(v);
-@@ -102,7 +102,7 @@ static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
- 			break;
- 		c = old;
- 	}
--	return c != (u);
-+	return c;
- }
- 
- 
+-#include <asm-generic/atomic-long.h>
+ #endif /* _ASM_IA64_ATOMIC_H */
 diff --git a/arch/m32r/include/asm/atomic.h b/arch/m32r/include/asm/atomic.h
-index d64d894..c839426 100644
+index c839426..1e7f29f 100644
 --- a/arch/m32r/include/asm/atomic.h
 +++ b/arch/m32r/include/asm/atomic.h
-@@ -239,15 +239,15 @@ static __inline__ int atomic_dec_return(atomic_t *v)
- #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
+@@ -313,5 +313,4 @@ static __inline__ void atomic_set_mask(unsigned long  mask, atomic_t *addr)
+ #define smp_mb__before_atomic_inc()	barrier()
+ #define smp_mb__after_atomic_inc()	barrier()
  
- /**
-- * atomic_add_unless - add unless the number is a given value
-+ * __atomic_add_unless - add unless the number is a given value
-  * @v: pointer of type atomic_t
-  * @a: the amount to add to v...
-  * @u: ...unless v is equal to u.
-  *
-  * Atomically adds @a to @v, so long as it was not @u.
-- * Returns non-zero if @v was not @u, and zero otherwise.
-+ * Returns the old value of @v.
-  */
--static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
-+static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	int c, old;
- 	c = atomic_read(v);
-@@ -259,7 +259,7 @@ static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
- 			break;
- 		c = old;
- 	}
--	return c != (u);
-+	return c;
- }
- 
- 
+-#include <asm-generic/atomic-long.h>
+ #endif	/* _ASM_M32R_ATOMIC_H */
 diff --git a/arch/m68k/include/asm/atomic.h b/arch/m68k/include/asm/atomic.h
-index 7dc8873..017a15e 100644
+index 017a15e..63c245f 100644
 --- a/arch/m68k/include/asm/atomic.h
 +++ b/arch/m68k/include/asm/atomic.h
-@@ -183,7 +183,7 @@ static inline void atomic_set_mask(unsigned long mask, unsigned long *v)
- 	__asm__ __volatile__("orl %1,%0" : "+m" (*v) : "id" (mask));
- }
+@@ -205,6 +205,4 @@ static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
+ #define smp_mb__before_atomic_inc()	barrier()
+ #define smp_mb__after_atomic_inc()	barrier()
  
--static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
-+static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	int c, old;
- 	c = atomic_read(v);
-@@ -195,7 +195,7 @@ static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
- 			break;
- 		c = old;
- 	}
--	return c != (u);
-+	return c;
- }
- 
- 
+-#include <asm-generic/atomic-long.h>
+-#include <asm-generic/atomic64.h>
+ #endif /* __ARCH_M68K_ATOMIC __ */
 diff --git a/arch/mips/include/asm/atomic.h b/arch/mips/include/asm/atomic.h
-index 833a402..31cb23d 100644
+index 31cb23d..1d93f81 100644
 --- a/arch/mips/include/asm/atomic.h
 +++ b/arch/mips/include/asm/atomic.h
-@@ -303,15 +303,15 @@ static __inline__ int atomic_sub_if_positive(int i, atomic_t * v)
- #define atomic_xchg(v, new) (xchg(&((v)->counter), (new)))
- 
- /**
-- * atomic_add_unless - add unless the number is a given value
-+ * __atomic_add_unless - add unless the number is a given value
-  * @v: pointer of type atomic_t
-  * @a: the amount to add to v...
-  * @u: ...unless v is equal to u.
-  *
-  * Atomically adds @a to @v, so long as it was not @u.
-- * Returns non-zero if @v was not @u, and zero otherwise.
-+ * Returns the old value of @v.
+@@ -765,10 +765,6 @@ static __inline__ int atomic64_add_unless(atomic64_t *v, long a, long u)
   */
--static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
-+static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	int c, old;
- 	c = atomic_read(v);
-@@ -323,7 +323,7 @@ static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
- 			break;
- 		c = old;
- 	}
--	return c != (u);
-+	return c;
- }
+ #define atomic64_add_negative(i, v) (atomic64_add_return(i, (v)) < 0)
  
- #define atomic_dec_return(v) atomic_sub_return(1, (v))
-@@ -679,7 +679,7 @@ static __inline__ long atomic64_sub_if_positive(long i, atomic64_t * v)
-  * @u: ...unless v is equal to u.
-  *
-  * Atomically adds @a to @v, so long as it was not @u.
-- * Returns non-zero if @v was not @u, and zero otherwise.
-+ * Returns the old value of @v.
-  */
- static __inline__ int atomic64_add_unless(atomic64_t *v, long a, long u)
- {
+-#else /* !CONFIG_64BIT */
+-
+-#include <asm-generic/atomic64.h>
+-
+ #endif /* CONFIG_64BIT */
+ 
+ /*
+@@ -780,6 +776,4 @@ static __inline__ int atomic64_add_unless(atomic64_t *v, long a, long u)
+ #define smp_mb__before_atomic_inc()	smp_mb__before_llsc()
+ #define smp_mb__after_atomic_inc()	smp_llsc_mb()
+ 
+-#include <asm-generic/atomic-long.h>
+-
+ #endif /* _ASM_ATOMIC_H */
 diff --git a/arch/mn10300/include/asm/atomic.h b/arch/mn10300/include/asm/atomic.h
-index 041b9d6..a2e6759 100644
+index a2e6759..b9a8f84 100644
 --- a/arch/mn10300/include/asm/atomic.h
 +++ b/arch/mn10300/include/asm/atomic.h
-@@ -260,13 +260,13 @@ static inline void atomic_dec(atomic_t *v)
- #define atomic_dec_and_test(v)		(atomic_sub_return(1, (v)) == 0)
- #define atomic_inc_and_test(v)		(atomic_add_return(1, (v)) == 0)
+@@ -343,8 +343,6 @@ static inline void atomic_set_mask(unsigned long mask, unsigned long *addr)
+ #define smp_mb__before_atomic_inc()	barrier()
+ #define smp_mb__after_atomic_inc()	barrier()
  
--#define atomic_add_unless(v, a, u)				\
-+#define __atomic_add_unless(v, a, u)				\
- ({								\
- 	int c, old;						\
- 	c = atomic_read(v);					\
- 	while (c != (u) && (old = atomic_cmpxchg((v), c, c + (a))) != c) \
- 		c = old;					\
--	c != (u);						\
-+	c;							\
- })
- 
- 
+-#include <asm-generic/atomic-long.h>
+-
+ #endif /* __KERNEL__ */
+ #endif /* CONFIG_SMP */
+ #endif /* _ASM_ATOMIC_H */
 diff --git a/arch/parisc/include/asm/atomic.h b/arch/parisc/include/asm/atomic.h
-index 1924889..1914f17 100644
+index 1914f17..b1dc71f 100644
 --- a/arch/parisc/include/asm/atomic.h
 +++ b/arch/parisc/include/asm/atomic.h
-@@ -197,15 +197,15 @@ static __inline__ int atomic_read(const atomic_t *v)
- #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
+@@ -335,12 +335,7 @@ static __inline__ int atomic64_add_unless(atomic64_t *v, long a, long u)
  
- /**
-- * atomic_add_unless - add unless the number is a given value
-+ * __atomic_add_unless - add unless the number is a given value
-  * @v: pointer of type atomic_t
-  * @a: the amount to add to v...
-  * @u: ...unless v is equal to u.
-  *
-  * Atomically adds @a to @v, so long as it was not @u.
-- * Returns non-zero if @v was not @u, and zero otherwise.
-+ * Returns the old value of @v.
-  */
--static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
-+static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	int c, old;
- 	c = atomic_read(v);
-@@ -217,7 +217,7 @@ static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
- 			break;
- 		c = old;
- 	}
--	return c != (u);
-+	return c;
- }
+ #define atomic64_inc_not_zero(v) atomic64_add_unless((v), 1, 0)
  
+-#else /* CONFIG_64BIT */
+-
+-#include <asm-generic/atomic64.h>
+-
+ #endif /* !CONFIG_64BIT */
  
-@@ -316,7 +316,7 @@ atomic64_read(const atomic64_t *v)
-  * @u: ...unless v is equal to u.
-  *
-  * Atomically adds @a to @v, so long as it was not @u.
-- * Returns non-zero if @v was not @u, and zero otherwise.
-+ * Returns the old value of @v.
-  */
- static __inline__ int atomic64_add_unless(atomic64_t *v, long a, long u)
- {
+-#include <asm-generic/atomic-long.h>
+ 
+ #endif /* _ASM_PARISC_ATOMIC_H_ */
 diff --git a/arch/powerpc/include/asm/atomic.h b/arch/powerpc/include/asm/atomic.h
-index b2bcbee..952e161 100644
+index 952e161..e2a4c26 100644
 --- a/arch/powerpc/include/asm/atomic.h
 +++ b/arch/powerpc/include/asm/atomic.h
-@@ -181,21 +181,21 @@ static __inline__ int atomic_dec_return(atomic_t *v)
- #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
+@@ -469,11 +469,7 @@ static __inline__ int atomic64_add_unless(atomic64_t *v, long a, long u)
  
- /**
-- * atomic_add_unless - add unless the number is a given value
-+ * __atomic_add_unless - add unless the number is a given value
-  * @v: pointer of type atomic_t
-  * @a: the amount to add to v...
-  * @u: ...unless v is equal to u.
-  *
-  * Atomically adds @a to @v, so long as it was not @u.
-- * Returns non-zero if @v was not @u, and zero otherwise.
-+ * Returns the old value of @v.
-  */
--static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
-+static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	int t;
+ #define atomic64_inc_not_zero(v) atomic64_add_unless((v), 1, 0)
  
- 	__asm__ __volatile__ (
- 	PPC_RELEASE_BARRIER
--"1:	lwarx	%0,0,%1		# atomic_add_unless\n\
-+"1:	lwarx	%0,0,%1		# __atomic_add_unless\n\
- 	cmpw	0,%0,%3 \n\
- 	beq-	2f \n\
- 	add	%0,%2,%0 \n"
-@@ -209,7 +209,7 @@ static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
- 	: "r" (&v->counter), "r" (a), "r" (u)
- 	: "cc", "memory");
+-#else  /* __powerpc64__ */
+-#include <asm-generic/atomic64.h>
+-
+ #endif /* __powerpc64__ */
  
--	return t != u;
-+	return t;
- }
- 
- 
-@@ -443,7 +443,7 @@ static __inline__ long atomic64_dec_if_positive(atomic64_t *v)
-  * @u: ...unless v is equal to u.
-  *
-  * Atomically adds @a to @v, so long as it was not @u.
-- * Returns non-zero if @v was not @u, and zero otherwise.
-+ * Returns the old value of @v.
-  */
- static __inline__ int atomic64_add_unless(atomic64_t *v, long a, long u)
- {
-@@ -451,7 +451,7 @@ static __inline__ int atomic64_add_unless(atomic64_t *v, long a, long u)
- 
- 	__asm__ __volatile__ (
- 	PPC_RELEASE_BARRIER
--"1:	ldarx	%0,0,%1		# atomic_add_unless\n\
-+"1:	ldarx	%0,0,%1		# __atomic_add_unless\n\
- 	cmpd	0,%0,%3 \n\
- 	beq-	2f \n\
- 	add	%0,%2,%0 \n"
+-#include <asm-generic/atomic-long.h>
+ #endif /* __KERNEL__ */
+ #endif /* _ASM_POWERPC_ATOMIC_H_ */
 diff --git a/arch/s390/include/asm/atomic.h b/arch/s390/include/asm/atomic.h
-index 29d7563..7b0b0a7 100644
+index 7b0b0a7..8517d2a 100644
 --- a/arch/s390/include/asm/atomic.h
 +++ b/arch/s390/include/asm/atomic.h
-@@ -93,7 +93,7 @@ static inline int atomic_cmpxchg(atomic_t *v, int old, int new)
- 	return old;
- }
+@@ -331,6 +331,4 @@ static inline long long atomic64_dec_if_positive(atomic64_t *v)
+ #define smp_mb__before_atomic_inc()	smp_mb()
+ #define smp_mb__after_atomic_inc()	smp_mb()
  
--static inline int atomic_add_unless(atomic_t *v, int a, int u)
-+static inline int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	int c, old;
- 	c = atomic_read(v);
-@@ -105,7 +105,7 @@ static inline int atomic_add_unless(atomic_t *v, int a, int u)
- 			break;
- 		c = old;
- 	}
--	return c != u;
-+	return c;
- }
- 
- 
+-#include <asm-generic/atomic-long.h>
+-
+ #endif /* __ARCH_S390_ATOMIC__  */
 diff --git a/arch/sh/include/asm/atomic.h b/arch/sh/include/asm/atomic.h
-index 8ddb263..2177596 100644
+index 2177596..63a27db 100644
 --- a/arch/sh/include/asm/atomic.h
 +++ b/arch/sh/include/asm/atomic.h
-@@ -38,15 +38,15 @@
- #define atomic_cmpxchg(v, o, n)		(cmpxchg(&((v)->counter), (o), (n)))
+@@ -67,7 +67,4 @@ static inline int __atomic_add_unless(atomic_t *v, int a, int u)
+ #define smp_mb__before_atomic_inc()	smp_mb()
+ #define smp_mb__after_atomic_inc()	smp_mb()
  
- /**
-- * atomic_add_unless - add unless the number is a given value
-+ * __atomic_add_unless - add unless the number is a given value
-  * @v: pointer of type atomic_t
-  * @a: the amount to add to v...
-  * @u: ...unless v is equal to u.
-  *
-  * Atomically adds @a to @v, so long as it was not @u.
-- * Returns non-zero if @v was not @u, and zero otherwise.
-+ * Returns the old value of @v.
-  */
--static inline int atomic_add_unless(atomic_t *v, int a, int u)
-+static inline int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	int c, old;
- 	c = atomic_read(v);
-@@ -59,7 +59,7 @@ static inline int atomic_add_unless(atomic_t *v, int a, int u)
- 		c = old;
- 	}
- 
--	return c != (u);
-+	return c;
- }
- 
- #define smp_mb__before_atomic_dec()	smp_mb()
+-#include <asm-generic/atomic-long.h>
+-#include <asm-generic/atomic64.h>
+-
+ #endif /* __ASM_SH_ATOMIC_H */
 diff --git a/arch/sparc/include/asm/atomic_32.h b/arch/sparc/include/asm/atomic_32.h
-index 7646f2c..bdce95e 100644
+index bdce95e..5c3c8b6 100644
 --- a/arch/sparc/include/asm/atomic_32.h
 +++ b/arch/sparc/include/asm/atomic_32.h
-@@ -22,7 +22,7 @@
- extern int __atomic_add_return(int, atomic_t *);
- extern int atomic_cmpxchg(atomic_t *, int, int);
- #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
--extern int atomic_add_unless(atomic_t *, int, int);
-+extern int __atomic_add_unless(atomic_t *, int, int);
- extern void atomic_set(atomic_t *, int);
+@@ -160,5 +160,4 @@ static inline int __atomic24_sub(int i, atomic24_t *v)
  
- #define atomic_read(v)          (*(volatile int *)&(v)->counter)
+ #endif /* !(__KERNEL__) */
+ 
+-#include <asm-generic/atomic-long.h>
+ #endif /* !(__ARCH_SPARC_ATOMIC__) */
 diff --git a/arch/sparc/include/asm/atomic_64.h b/arch/sparc/include/asm/atomic_64.h
-index 337139e..1fc3d0a 100644
+index 1fc3d0a..9f421df 100644
 --- a/arch/sparc/include/asm/atomic_64.h
 +++ b/arch/sparc/include/asm/atomic_64.h
-@@ -70,7 +70,7 @@ extern long atomic64_sub_ret(long, atomic64_t *);
- #define atomic_cmpxchg(v, o, n) (cmpxchg(&((v)->counter), (o), (n)))
- #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
+@@ -113,5 +113,4 @@ static inline long atomic64_add_unless(atomic64_t *v, long a, long u)
+ #define smp_mb__before_atomic_inc()	barrier()
+ #define smp_mb__after_atomic_inc()	barrier()
  
--static inline int atomic_add_unless(atomic_t *v, int a, int u)
-+static inline int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	int c, old;
- 	c = atomic_read(v);
-@@ -82,7 +82,7 @@ static inline int atomic_add_unless(atomic_t *v, int a, int u)
- 			break;
- 		c = old;
- 	}
--	return c != (u);
-+	return c;
- }
+-#include <asm-generic/atomic-long.h>
+ #endif /* !(__ARCH_SPARC64_ATOMIC__) */
+diff --git a/arch/tile/include/asm/atomic.h b/arch/tile/include/asm/atomic.h
+index e327271..921dbeb 100644
+--- a/arch/tile/include/asm/atomic.h
++++ b/arch/tile/include/asm/atomic.h
+@@ -177,9 +177,4 @@ extern unsigned long __cmpxchg_called_with_bad_pointer(void);
+ #include <asm/atomic_64.h>
+ #endif
  
- 
-diff --git a/arch/tile/include/asm/atomic_32.h b/arch/tile/include/asm/atomic_32.h
-index 246feed..c03349e 100644
---- a/arch/tile/include/asm/atomic_32.h
-+++ b/arch/tile/include/asm/atomic_32.h
-@@ -81,18 +81,18 @@ static inline int atomic_add_return(int i, atomic_t *v)
- }
- 
- /**
-- * atomic_add_unless - add unless the number is already a given value
-+ * __atomic_add_unless - add unless the number is already a given value
-  * @v: pointer of type atomic_t
-  * @a: the amount to add to v...
-  * @u: ...unless v is equal to u.
-  *
-  * Atomically adds @a to @v, so long as @v was not already @u.
-- * Returns non-zero if @v was not @u, and zero otherwise.
-+ * Returns the old value of @v.
-  */
--static inline int atomic_add_unless(atomic_t *v, int a, int u)
-+static inline int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	smp_mb();  /* barrier for proper semantics */
--	return _atomic_xchg_add_unless(v, a, u) != u;
-+	return _atomic_xchg_add_unless(v, a, u);
- }
- 
- /**
-@@ -199,7 +199,7 @@ static inline u64 atomic64_add_return(u64 i, atomic64_t *v)
-  * @u: ...unless v is equal to u.
-  *
-  * Atomically adds @a to @v, so long as @v was not already @u.
-- * Returns non-zero if @v was not @u, and zero otherwise.
-+ * Returns the old value of @v.
-  */
- static inline u64 atomic64_add_unless(atomic64_t *v, u64 a, u64 u)
- {
-diff --git a/arch/tile/include/asm/atomic_64.h b/arch/tile/include/asm/atomic_64.h
-index a48dda3..27fe667 100644
---- a/arch/tile/include/asm/atomic_64.h
-+++ b/arch/tile/include/asm/atomic_64.h
-@@ -64,7 +64,7 @@ static inline int atomic_add_return(int i, atomic_t *v)
- 	return val;
- }
- 
--static inline int atomic_add_unless(atomic_t *v, int a, int u)
-+static inline int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	int guess, oldval = v->counter;
- 	do {
-@@ -73,7 +73,7 @@ static inline int atomic_add_unless(atomic_t *v, int a, int u)
- 		guess = oldval;
- 		oldval = atomic_cmpxchg(v, guess, guess + a);
- 	} while (guess != oldval);
--	return oldval != u;
-+	return oldval;
- }
- 
- /* Now the true 64-bit operations. */
+-/* Provide the appropriate atomic_long_t definitions. */
+-#ifndef __ASSEMBLY__
+-#include <asm-generic/atomic-long.h>
+-#endif
+-
+ #endif /* _ASM_TILE_ATOMIC_H */
 diff --git a/arch/x86/include/asm/atomic.h b/arch/x86/include/asm/atomic.h
-index 897969b..5fe9cb3 100644
+index 5fe9cb3..10572e3 100644
 --- a/arch/x86/include/asm/atomic.h
 +++ b/arch/x86/include/asm/atomic.h
-@@ -221,15 +221,15 @@ static inline int atomic_xchg(atomic_t *v, int new)
- }
+@@ -318,5 +318,4 @@ static inline void atomic_or_long(unsigned long *v1, unsigned long v2)
+ # include "atomic64_64.h"
+ #endif
  
- /**
-- * atomic_add_unless - add unless the number is already a given value
-+ * __atomic_add_unless - add unless the number is already a given value
-  * @v: pointer of type atomic_t
-  * @a: the amount to add to v...
-  * @u: ...unless v is equal to u.
-  *
-  * Atomically adds @a to @v, so long as @v was not already @u.
-- * Returns non-zero if @v was not @u, and zero otherwise.
-+ * Returns the old value of @v.
-  */
--static inline int atomic_add_unless(atomic_t *v, int a, int u)
-+static inline int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	int c, old;
- 	c = atomic_read(v);
-@@ -241,7 +241,7 @@ static inline int atomic_add_unless(atomic_t *v, int a, int u)
- 			break;
- 		c = old;
- 	}
--	return c != (u);
-+	return c;
- }
- 
- 
-diff --git a/arch/x86/include/asm/atomic64_32.h b/arch/x86/include/asm/atomic64_32.h
-index 2a934aa..24098aa 100644
---- a/arch/x86/include/asm/atomic64_32.h
-+++ b/arch/x86/include/asm/atomic64_32.h
-@@ -263,7 +263,7 @@ static inline int atomic64_add_negative(long long i, atomic64_t *v)
-  * @u: ...unless v is equal to u.
-  *
-  * Atomically adds @a to @v, so long as it was not @u.
-- * Returns non-zero if @v was not @u, and zero otherwise.
-+ * Returns the old value of @v.
-  */
- static inline int atomic64_add_unless(atomic64_t *v, long long a, long long u)
- {
-diff --git a/arch/x86/include/asm/atomic64_64.h b/arch/x86/include/asm/atomic64_64.h
-index 49fd1ea..017594d 100644
---- a/arch/x86/include/asm/atomic64_64.h
-+++ b/arch/x86/include/asm/atomic64_64.h
-@@ -202,7 +202,7 @@ static inline long atomic64_xchg(atomic64_t *v, long new)
-  * @u: ...unless v is equal to u.
-  *
-  * Atomically adds @a to @v, so long as it was not @u.
-- * Returns non-zero if @v was not @u, and zero otherwise.
-+ * Returns the old value of @v.
-  */
- static inline int atomic64_add_unless(atomic64_t *v, long a, long u)
- {
+-#include <asm-generic/atomic-long.h>
+ #endif /* _ASM_X86_ATOMIC_H */
 diff --git a/arch/xtensa/include/asm/atomic.h b/arch/xtensa/include/asm/atomic.h
-index 7cca2fb..e464212 100644
+index e464212..23592ef 100644
 --- a/arch/xtensa/include/asm/atomic.h
 +++ b/arch/xtensa/include/asm/atomic.h
-@@ -225,15 +225,15 @@ static inline int atomic_sub_return(int i, atomic_t * v)
- #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
+@@ -291,7 +291,6 @@ static inline void atomic_set_mask(unsigned int mask, atomic_t *v)
+ #define smp_mb__before_atomic_inc()	barrier()
+ #define smp_mb__after_atomic_inc()	barrier()
  
- /**
-- * atomic_add_unless - add unless the number is a given value
-+ * __atomic_add_unless - add unless the number is a given value
-  * @v: pointer of type atomic_t
-  * @a: the amount to add to v...
-  * @u: ...unless v is equal to u.
-  *
-  * Atomically adds @a to @v, so long as it was not @u.
-- * Returns non-zero if @v was not @u, and zero otherwise.
-+ * Returns the old value of @v.
-  */
--static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
-+static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	int c, old;
- 	c = atomic_read(v);
-@@ -245,7 +245,7 @@ static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
- 			break;
- 		c = old;
- 	}
--	return c != (u);
-+	return c;
- }
+-#include <asm-generic/atomic-long.h>
+ #endif /* __KERNEL__ */
  
- 
+ #endif /* _XTENSA_ATOMIC_H */
 diff --git a/include/asm-generic/atomic.h b/include/asm-generic/atomic.h
-index 7f84414..bd18bfd 100644
+index bd18bfd..a8fad94 100644
 --- a/include/asm-generic/atomic.h
 +++ b/include/asm-generic/atomic.h
-@@ -129,13 +129,13 @@ static inline void atomic_dec(atomic_t *v)
+@@ -154,7 +154,5 @@ static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
+ #define smp_mb__before_atomic_inc()	barrier()
+ #define smp_mb__after_atomic_inc()	barrier()
  
- #define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
- 
--static inline int atomic_add_unless(atomic_t *v, int a, int u)
-+static inline int __atomic_add_unless(atomic_t *v, int a, int u)
- {
-   int c, old;
-   c = atomic_read(v);
-   while (c != u && (old = atomic_cmpxchg(v, c, c + a)) != c)
-     c = old;
--  return c != u;
-+  return c;
- }
- 
- static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
+-#include <asm-generic/atomic-long.h>
+-
+ #endif /* __KERNEL__ */
+ #endif /* __ASM_GENERIC_ATOMIC_H */
 diff --git a/include/linux/atomic.h b/include/linux/atomic.h
-index ed0eb23..fc31190 100644
+index fc31190..f2e6529 100644
 --- a/include/linux/atomic.h
 +++ b/include/linux/atomic.h
-@@ -3,6 +3,20 @@
- #include <asm/atomic.h>
+@@ -70,4 +70,8 @@ static inline void atomic_or(int i, atomic_t *v)
+ }
+ #endif /* #ifndef CONFIG_ARCH_HAS_ATOMIC_OR */
  
- /**
-+ * atomic_add_unless - add unless the number is already a given value
-+ * @v: pointer of type atomic_t
-+ * @a: the amount to add to v...
-+ * @u: ...unless v is equal to u.
-+ *
-+ * Atomically adds @a to @v, so long as @v was not already @u.
-+ * Returns non-zero if @v was not @u, and zero otherwise.
-+ */
-+static inline int atomic_add_unless(atomic_t *v, int a, int u)
-+{
-+	return __atomic_add_unless(v, a, u) != u;
-+}
-+
-+/**
-  * atomic_inc_not_zero - increment unless the number is zero
-  * @v: pointer of type atomic_t
-  *
++#include <asm-generic/atomic-long.h>
++#ifdef CONFIG_GENERIC_ATOMIC64
++#include <asm-generic/atomic64.h>
++#endif
+ #endif /* _LINUX_ATOMIC_H */
 -- 
 1.7.4
 
