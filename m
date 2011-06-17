@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759342Ab1FQO5h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 10:57:37 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:56409 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757946Ab1FQO5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 10:57:35 -0400
-Date: Fri, 17 Jun 2011 07:57:23 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, akpm@linux-foundation.org,
-        benh@kernel.crashing.org, fweisbec@gmail.com, ak@linux.intel.com,
-        tim.c.chen@linux.intel.com
-Subject: [GIT PULL rcu/urgent] Banishing kthreads
-Message-ID: <20110617145723.GA3261@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932378Ab1FQPFB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 11:05:01 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:33878
+	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932075Ab1FQPE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 11:04:59 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: haiyangz@microsoft.com, hjanssen@microsoft.com, kys@microsoft.com,
+        v-abkane@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org
+Subject: [PATCH 1/5] staging: hv: fix some white spaces in netvsc driver
+Date: Fri, 17 Jun 2011 07:58:04 -0700
+Message-Id: <1308322688-9796-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo,
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/staging/hv/netvsc.c     |    8 ++++----
+ drivers/staging/hv/netvsc_drv.c |    2 +-
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-This pull request banishes RCU kthreads in the RCU_BOOST=n case,
-in response to popular demand.  There are two commits in this
-series:
+diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
+index 0ae35e7..b6e1fb9 100644
+--- a/drivers/staging/hv/netvsc.c
++++ b/drivers/staging/hv/netvsc.c
+@@ -525,10 +525,10 @@ int netvsc_send(struct hv_device *device,
+ 						  (unsigned long)packet);
+ 	} else {
+ 		ret = vmbus_sendpacket(device->channel, &sendMessage,
+-				       sizeof(struct nvsp_message),
+-				       (unsigned long)packet,
+-				       VM_PKT_DATA_INBAND,
+-				       VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
++				sizeof(struct nvsp_message),
++				(unsigned long)packet,
++				VM_PKT_DATA_INBAND,
++				VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
+ 
+ 	}
+ 
+diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
+index b339acc..8380fe9 100644
+--- a/drivers/staging/hv/netvsc_drv.c
++++ b/drivers/staging/hv/netvsc_drv.c
+@@ -122,7 +122,7 @@ static void netvsc_xmit_completion(void *context)
+ 		atomic_add(num_pages, &net_device_ctx->avail);
+ 		if (atomic_read(&net_device_ctx->avail) >=
+ 				PACKET_PAGES_HIWATER)
+- 			netif_wake_queue(net);
++			netif_wake_queue(net);
+ 	}
+ }
+ 
+-- 
+1.6.3.2
 
-1.	Minimal patch that #ifdefs out the kthread code.
-
-2.	Code-movement patch that puts the code #ifdefed out above
-	under existing #ifdefs in kernel/rcutree_plugin.h.
-
-These changes are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/urgent
-
-  							Thanx, Paul
-
------------------->
-
-Paul E. McKenney (1):
-      rcu: Simplify curing of load woes
-
-Shaohua Li (1):
-      rcu: Use softirq to address performance regression
-
- Documentation/filesystems/proc.txt  |    1 +
- include/linux/interrupt.h           |    1 +
- include/trace/events/irq.h          |    3 +-
- kernel/rcutree.c                    |   88 ++++++++++++++++-------------------
- kernel/rcutree.h                    |    1 +
- kernel/rcutree_plugin.h             |   20 ++++----
- kernel/softirq.c                    |    2 +-
- tools/perf/util/trace-event-parse.c |    1 +
- 8 files changed, 57 insertions(+), 60 deletions(-)
