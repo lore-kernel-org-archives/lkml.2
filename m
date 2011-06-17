@@ -1,110 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933160Ab1FQVKU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 17:10:20 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:56587 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933123Ab1FQVKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 17:10:18 -0400
+	id S1757250Ab1FQVQw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 17:16:52 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57726 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab1FQVQt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 17:16:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=U9C548jZiIWnrfNPjIRZ2ldGdiBPnmO50/R/k6szwMM4jAJ7pfedAiXXe5CygXO/DX
+         0SHYI2Fp6128HSwkFD/sndz+7nzwiSNVZEkWWc6V8J/So5o9tWfmhyKfoeAbHaSN5DA8
+         JqxfXJB9fm5ACJoe9iiKU3vLwZposda+S20Lg=
+MIME-Version: 1.0
+In-Reply-To: <1308345046-13293-1-git-send-email-vapier@gentoo.org>
+References: <1308345046-13293-1-git-send-email-vapier@gentoo.org>
 From: Mike Frysinger <vapier@gentoo.org>
+Date: Fri, 17 Jun 2011 17:16:28 -0400
+X-Google-Sender-Auth: 7R1FOCnuUh89loXKaP9Fw4lGRA4
+Message-ID: <BANLkTimqW53BHCGkr0+2ryFduOvLCzPMFA@mail.gmail.com>
+Subject: Re: [PATCH] asm-generic/atomic.h: allow SMP peeps to leverage this
 To: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Arun Sharma <asharma@fb.com>
-Subject: [PATCH] asm-generic/atomic.h: allow SMP peeps to leverage this
-Date: Fri, 17 Jun 2011 17:10:46 -0400
-Message-Id: <1308345046-13293-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.5.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only a few core funcs need to be implemented for SMP systems, so allow
-the arches to override them while getting the rest for free.
+On Fri, Jun 17, 2011 at 17:10, Mike Frysinger wrote:
+> +/* Force people to define core atomics */
+> +# if !defined(atomic_add_return) || !defined(atomic_sub_return) || \
+> +     !defined(atomic_clear_mask) || !defined(atomic_set_mask) || \
+> +     !defined(atomic_test_mask)
 
-At least, this is enough to allow the Blackfin SMP port use things.
-
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
-Note: this shouldn't conflict with Arun's changes
-
- include/asm-generic/atomic.h |   15 ++++++++++++++-
- 1 files changed, 14 insertions(+), 1 deletions(-)
-
-diff --git a/include/asm-generic/atomic.h b/include/asm-generic/atomic.h
-index 5f62e28..2267e4b 100644
---- a/include/asm-generic/atomic.h
-+++ b/include/asm-generic/atomic.h
-@@ -14,7 +14,12 @@
- #define __ASM_GENERIC_ATOMIC_H
- 
- #ifdef CONFIG_SMP
--#error not SMP safe
-+/* Force people to define core atomics */
-+# if !defined(atomic_add_return) || !defined(atomic_sub_return) || \
-+     !defined(atomic_clear_mask) || !defined(atomic_set_mask) || \
-+     !defined(atomic_test_mask)
-+#  error "SMP requires a little arch-specific magic"
-+# endif
- #endif
- 
- /*
-@@ -32,7 +37,9 @@
-  *
-  * Atomically reads the value of @v.
-  */
-+#ifndef atomic_read
- #define atomic_read(v)	(*(volatile int *)&(v)->counter)
-+#endif
- 
- /**
-  * atomic_set - set atomic variable
-@@ -53,6 +60,7 @@
-  *
-  * Atomically adds @i to @v and returns the result
-  */
-+#ifndef atomic_add_return
- static inline int atomic_add_return(int i, atomic_t *v)
- {
- 	unsigned long flags;
-@@ -66,6 +74,7 @@ static inline int atomic_add_return(int i, atomic_t *v)
- 
- 	return temp;
- }
-+#endif
- 
- /**
-  * atomic_sub_return - subtract integer from atomic variable
-@@ -74,6 +83,7 @@ static inline int atomic_add_return(int i, atomic_t *v)
-  *
-  * Atomically subtracts @i from @v and returns the result
-  */
-+#ifndef atomic_sub_return
- static inline int atomic_sub_return(int i, atomic_t *v)
- {
- 	unsigned long flags;
-@@ -87,6 +97,7 @@ static inline int atomic_sub_return(int i, atomic_t *v)
- 
- 	return temp;
- }
-+#endif
- 
- static inline int atomic_add_negative(int i, atomic_t *v)
- {
-@@ -140,6 +151,7 @@ static inline int atomic_add_unless(atomic_t *v, int a, int u)
- 
- #define atomic_inc_not_zero(v) atomic_add_unless((v), 1, 0)
- 
-+#ifndef atomic_clear_mask
- static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
- {
- 	unsigned long flags;
-@@ -149,6 +161,7 @@ static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
- 	*addr &= mask;
- 	raw_local_irq_restore(flags);
- }
-+#endif
- 
- /* Assume that atomic operations are already serializing */
- #define smp_mb__before_atomic_dec()	barrier()
--- 
-1.7.5.3
-
+hmm, pause on this.  these mask funcs are not as standardized as i'd
+hope.  i'll send another patch fixing that and then redoing this on
+top of it.
+-mike
