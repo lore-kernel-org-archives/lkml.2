@@ -1,49 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757586Ab1FQONA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 10:13:00 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:57364 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754185Ab1FQOM7 (ORCPT
+	id S1758873Ab1FQONY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 10:13:24 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41206 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756962Ab1FQONV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 10:12:59 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=kTiTBkKag4zcFD7P4ivZcnFnhhegX76TlgjxG1DuyZ08v9mrO3jHx+Nv9WN9NFp/foEwnEIR8+e8XOBugxViqnld0kybEe/h+zOOMTo+uqPUuJ9CKrx4OL8R+p7SqJoC;
-Date: Fri, 17 Jun 2011 07:12:47 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "Sun, Yi" <yi.sun@intel.com>
-Cc: Daniel J Blueman <daniel.blueman@gmail.com>, Eric Anholt <eric@anholt.net>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@redhat.com>,
-        "Meng, Mengmeng" <mengmeng.meng@intel.com>
-Subject: Re: [Intel-gfx] [PATCH 3.0-rc3] i915: Fix gen6 (SNB) GPU stalling
-Message-ID: <20110617071247.2f293938@jbarnes-desktop>
-In-Reply-To: <6E3BC7F7C9A4BF4286DD4C043110F30B568EC644CB@shsmsx502.ccr.corp.intel.com>
-References: <1308070307-2630-1-git-send-email-daniel.blueman@gmail.com>
-	<6E3BC7F7C9A4BF4286DD4C043110F30B568EC644CB@shsmsx502.ccr.corp.intel.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=gb2312
-Content-Transfer-Encoding: 8bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Fri, 17 Jun 2011 10:13:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=FKRV91R0GTCMKXLUmm7HzwW3xoFmzgptnp3Zihu/OzCiFWTFdwybxbaGGXs+0sPKua
+         D9uqpahhKrQMc2W5eK5Id6pvW92asUn0go3yE6ce28wjrmm471ahkgQ628ZrvfTMVzWA
+         K6E6LGrnJfkSZNk+NWgv8QxXVmXUVjQs0Jw3c=
+Message-ID: <4DFB60FF.1080500@gmail.com>
+Date: Fri, 17 Jun 2011 08:13:19 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
+        paulus@samba.org, tglx@linutronix.de, johnstul@us.ibm.com,
+        rostedt@goodmis.org
+Subject: Re: [PATCH 1/6] trace: add tracepoints to timekeeping code - xtime
+ changes
+References: <1307490806-24548-1-git-send-email-dsahern@gmail.com> <1307490903-24600-1-git-send-email-dsahern@gmail.com> <20110617132322.GB25197@somewhere.redhat.com>
+In-Reply-To: <20110617132322.GB25197@somewhere.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Jun 2011 15:52:58 +0800
-"Sun, Yi" <yi.sun@intel.com> wrote:
 
-> All,
-> Thank for Mengmeng¡¯s testing work, now the status is as following:
+
+On 06/17/2011 07:23 AM, Frederic Weisbecker wrote:
+> On Tue, Jun 07, 2011 at 05:55:03PM -0600, David Ahern wrote:
+>> Trace points in timekeeping.c where xtime is modified by a user
+>> or ntp.
+>>
+>> Signed-off-by: David Ahern <dsahern@gmail.com>
+>> ---
+>>  include/trace/events/timekeeping.h |   43 ++++++++++++++++++++++++++++++++++++
+>>  kernel/time/timekeeping.c          |    8 ++++++
+>>  2 files changed, 51 insertions(+), 0 deletions(-)
+>>  create mode 100644 include/trace/events/timekeeping.h
+>>
+>> diff --git a/include/trace/events/timekeeping.h b/include/trace/events/timekeeping.h
+>> new file mode 100644
+>> index 0000000..3d5d083
+>> --- /dev/null
+>> +++ b/include/trace/events/timekeeping.h
+>> @@ -0,0 +1,43 @@
+>> +#undef TRACE_SYSTEM
+>> +#define TRACE_SYSTEM timekeeping
+>> +
+>> +#if !defined(_TRACE_TIMEKEEP_H) || defined(TRACE_HEADER_MULTI_READ)
+>> +#define _TRACE_TIMEKEEP_H
+>> +
+>> +#include <linux/tracepoint.h>
+>> +#include <linux/time.h>
+>> +
+>> +DECLARE_EVENT_CLASS(tod_template,
+>> +
+>> +	TP_PROTO(const struct timespec *tv),
+>> +
+>> +	TP_ARGS(tv),
+>> +
+>> +	TP_STRUCT__entry(
+>> +		__field( __kernel_time_t,	tv_sec)
+>> +		__field( long,			tv_nsec)
+>> +	),
+>> +
+>> +	TP_fast_assign(
+>> +		__entry->tv_sec  = tv->tv_sec;
+>> +		__entry->tv_nsec = tv->tv_nsec;
+>> +	),
+>> +
+>> +	TP_printk("tv_sec=%ld tv_nsec=%ld", __entry->tv_sec, __entry->tv_nsec)
+>> +);
+>> +
+>> +DEFINE_EVENT(tod_template, settimeofday,
+>> +	TP_PROTO(const struct timespec *tv),
+>> +	TP_ARGS(tv));
+>> +
+>> +DEFINE_EVENT(tod_template, timekeeping_inject_offset,
+>> +	TP_PROTO(const struct timespec *tv),
+>> +	TP_ARGS(tv));
+>> +
+>> +DEFINE_EVENT(tod_template, timekeeping_inject_sleeptime,
+>> +	TP_PROTO(const struct timespec *tv),
+>> +	TP_ARGS(tv));
 > 
-> The bug33394(performance regression: screen stuttered when running the demo of 3D games with compiz enabled without GPU semaphores) is fixed. The two issue(stutter and hangcheck) is gone, now.
-> The issue described as bug 36407 isn¡¯t able to be reproduced.
-> The bug 36653 is still there.
+> Does the fact it's any of the three way of updating xtime make any
+> difference from the user point of view?
 
-Thanks for testing, looks like this is an important fix (36652 is what
-I think you mean on the last one?).
+This use case only cares that xtime is updated.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+> 
+> If not can we rather factorize that in a single settimeofday tracepoint?
+> Or update_time_of_day if we don't want to confuse the user with the
+> syscall.
+
+Peter and Thomas expressed interest in timekeeping tracepoints. How the
+update happens might be wanted. If desired I can consolidate xtime = *tv
+into a single update function and put the trace point there.
+
+David
