@@ -1,117 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758389Ab1FQKF2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 06:05:28 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38715 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752220Ab1FQKFZ convert rfc822-to-8bit (ORCPT
+	id S1758619Ab1FQJCY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 05:02:24 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41899 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752309Ab1FQJCW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 06:05:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=rG4pvWah4utOnym+I9pWwyZbxSXQ9B1QWDHti8/js/VEr+TUg/ZoEM+Zgwz1J53kqS
-         kmA9eb/uTt9Y3+M9Ek5osCFMB2xF6F22+szs4dph+/ZDrocgRmCkyemwb2M5BS44+ASA
-         DN0pbnXbM/3Se3yqU4dKipfLLhqiVW4+0KAVg=
+	Fri, 17 Jun 2011 05:02:22 -0400
+From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
+To: "Girdwood, Liam" <lrg@ti.com>
+CC: Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: Re: [PATCH v4 00/18] MFD/ASoC/Input: TWL4030/TWL60X0 changes
+Date: Fri, 17 Jun 2011 13:06:19 +0300
+Message-ID: <5715729.tcDIHNc8b8@barack>
+User-Agent: KMail/4.6.0 (Linux/2.6.39-gentoo; KDE/4.6.4; x86_64; ; )
+In-Reply-To: <1307706876-4768-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1307706876-4768-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <1308245069.9218.148.camel@gandalf.stny.rr.com>
-References: <BANLkTimG_oBX1bDTEVfZ81_uqXOahqR1ww@mail.gmail.com>
-	<1308230239.9218.137.camel@gandalf.stny.rr.com>
-	<BANLkTinO85w4G9nFjio4HtOcrS0u-Ezz1Q@mail.gmail.com>
-	<1308245069.9218.148.camel@gandalf.stny.rr.com>
-Date: Fri, 17 Jun 2011 11:05:24 +0100
-Message-ID: <BANLkTikCQkFXRg8w0dFBvod46YoxNydLPQ@mail.gmail.com>
-Subject: Re: [PATCH] ring_buffer: Ensure that buffer page data is aligned.
-From: Will Newton <will.newton@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>, fweisbec@gmail.com,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 6:24 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Thu, 2011-06-16 at 14:32 +0100, Will Newton wrote:
->> On Thu, Jun 16, 2011 at 2:17 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> > On Thu, 2011-06-16 at 14:03 +0100, Will Newton wrote:
->> >> Explicitly align the start of the buffer page data array to the
->> >> required arch alignment. This is required for architectures that
->> >> require 8 byte alignment but do not have a 8 byte local_t.
->> >
->> > What arch does that? A 32bit arch that forces 8 byte alignment?
->>
->> Yes, it's likely for all 64bit arches will be aligned correctly.
->
-> What arch is this exactly. Is it because 64bit variables must be aligned
-> on 8byte boundaries?
+Hello Tony, Samuel, Mark, Liam.
 
-Yes, it's a 32bit system with 64bit alignment required for 64bit
-variables. I'm not sure whether there are other architectures in the
-tree that have this characteristic but it's relatively common in cores
-with DSP heritage.
+Did you got time to check the patches for your areas?
+I want to send the updated series with the change in the vibra driver 
+(addressing comments from Dmitry, and Tejun), but I want to address your 
+comments as well at the same time if any (or add you Ack).
 
-http://imgtec.com/meta/meta-technology.asp
+Thank you,
+Péter
 
->>
->> >>
->> >> Signed-off-by: Will Newton <will.newton@imgtec.com>
->> >> ---
->> >>  kernel/trace/ring_buffer.c |    4 +++-
->> >>  1 files changed, 3 insertions(+), 1 deletions(-)
->> >>
->> >> I don't believe that any currently in-tree architecture is affected by
->> >> this, but it can be an issue on 32bit architectures that require an
->> >> 8 byte aligment but only have a 32bit local_t. I think it's potentially
->> >> cleaner to make the alignment explicit anyway.
->> >>
->> >> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
->> >> index 0ef7b4b..36d5699 100644
->> >> --- a/kernel/trace/ring_buffer.c
->> >> +++ b/kernel/trace/ring_buffer.c
->> >> @@ -215,6 +215,8 @@ EXPORT_SYMBOL_GPL(tracing_is_on);
->> >>  # define RB_ARCH_ALIGNMENT           8U
->> >>  #endif
->> >>
->> >> +#define RB_ALIGN_DATA                __aligned(RB_ARCH_ALIGNMENT)
->> >> +
->> >
->> > Note, the code above this is:
->> >
->> > #define RB_EVNT_HDR_SIZE (offsetof(struct ring_buffer_event, array))
->> > #define RB_ALIGNMENT            4U
->> > #define RB_MAX_SMALL_DATA       (RB_ALIGNMENT * RINGBUF_TYPE_DATA_TYPE_LEN_MAX)
->> > #define RB_EVNT_MIN_SIZE        8U      /* two 32bit words */
->> >
->> > #if !defined(CONFIG_64BIT) || defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
->> > # define RB_FORCE_8BYTE_ALIGNMENT       0
->> > # define RB_ARCH_ALIGNMENT              RB_ALIGNMENT
->> > #else
->> > # define RB_FORCE_8BYTE_ALIGNMENT       1
->> > # define RB_ARCH_ALIGNMENT              8U
->> > #endif
->> >
->> >
->> > Which means that when CONFIG_64BIT is not set, RB_ARCH_ALIGNMENT is 4.
->> > This means that this patch is really a nop and doesn't do anything for
->> > your arch.
->>
->> I have modified that conditional in my local tree so the patch is not
->> a nop there. Obviously it doesn't make any sense to merge that change
->> yet. I thought this part of the patch was a reasonable cleanup to make
->> the code a bit more self documenting though.
->
-> Unfortunately, if anything it confuses the code more. If I were
-> reviewing it and saw that we are aligning something that is already
-> aligned with the same value, I would question that code.
 
-It does however make the conditional more flexible as you could change
-it to #if defined (CONFIG_WHATEVER) and it will still work, rather
-than the 64bit assumption leaking throughout the code.
+On Friday 10 June 2011 13:54:18 Ujfalusi, Peter wrote:
+> Hello,
+> 
+> Changes since v3:
+> - patches generated with git format-patch -M to handle renames better
+> - Included depending updates for twl6040 soc codec driver:
+>  - HS ramp configuration, new ABE dais, updated sample rate constraints
+> - Configure the twl6040 codec on SDP4430 board
+> 
+> Updated intro message from the v3 series:
+> The series will do five major things, and they are in one series, because
+> they pretty much depending on each other, so it is easier to handle them
+> together.
+> 
+> 1. Move the common pmic related configurations out from the board files.
+> New twl-common.c/h file has been created for this purpose.
+> OMAP3 board files received two patches (pdata, and regualtor changes), OMAP4
+> board files has been changed with one patch.
+> 
+> 2. Rename the twl4030-codec MFD driver to twl4030-audio
+> Since the ASoC multicomponent introduction (2.6.37) the twl4030-codec MFD
+> dirver had been using twl4030-audio to register (twl4030-codec is the ASoC
+> codec driver). The documentation refers to this part of twl as audio block,
+> so it is better to rename the driver as well to avoid confusion.
+> 
+> 3. Introduction of MFD driver for twl6040.
+> The TWL6040 audio IC has codec and vibra functionality.
+> Convert the existing ASoC codec driver to use the new MFD driver's
+> interface.
+> 
+> 4. Vibrator driver for TWL6040 (Input/ForceFeedback driver)
+> The driver itself, and support for the vibrators in SDP4430 board.
+> 
+> 5. Updates for twl6040 ASoC codec driver
+> HS ramp configuration, new ABE dais, updated sample rate constraints,
+> SDP4430 configuration.
+> 
+> Regards,
+> Peter
 
-> Now if/when your arch is merged, we can add this with the other changes
-> you have, which will make reviewing the code not as confusing.
-
-Sure, no problem.
