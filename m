@@ -1,45 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759202Ab1FQOfh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 10:35:37 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:59961 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759152Ab1FQOfc (ORCPT
+	id S1759164Ab1FQOkN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 10:40:13 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:51898 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754589Ab1FQOkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 10:35:32 -0400
-Date: Fri, 17 Jun 2011 10:35:32 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: ablay@codeaurora.org
-cc: Greg KH <greg@kroah.com>, Felipe Balbi <balbi@ti.com>,
-        Tatyana Brokhman <tlinder@codeaurora.org>, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH/RFC 5/5] usb: Add support for streams alloc/dealloc to 
-     devio.c
-In-Reply-To: <8196aa784ab3686cb19581131df0be16.squirrel@www.codeaurora.org>
-Message-ID: <Pine.LNX.4.44L0.1106171033320.2143-100000@iolanthe.rowland.org>
+	Fri, 17 Jun 2011 10:40:10 -0400
+Date: Fri, 17 Jun 2011 16:39:48 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH 2/8] x86, mce: remove redundant mce_available() checks
+Message-ID: <20110617143947.GH18054@aftab>
+References: <4DFB1242.90404@jp.fujitsu.com>
+ <4DFB1359.9000204@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DFB1359.9000204@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Jun 2011 ablay@codeaurora.org wrote:
+On Fri, Jun 17, 2011 at 04:42:01AM -0400, Hidetoshi Seto wrote:
+> I noticed that there is no need to check mce_available() on runtime.
+> In fact we don't support asymmetric configuration such as mixture of
+> varied processors which some are MCE capable while others are not.
 
-> My name is Amit Blay, I'm working with Tatyana Brokhman, I originally
-> created this patch. I want to make sure I understand the solution:
+simplify the above sentence please.
+
 > 
-> We will create a new IOCTL, i.e., USBDEVFS_SUBMITURB_SS. This IOCTL will
-> pass new URB structure, usbdevfs_urb_ss, which will hold the "legacy" URB
-> and in addition the stream_id. libusb will be able to use the new ABI
-> whenever SuperSpeed streams are required.
+> Finally only 2 checks in init code path are enough for now.
 > 
-> Is this correct?
+> When !mce_available():
+>   - in mcheck_cpu_init():
+>     - mce timer is not initialized
+				   ... in __mcheck_cpu_init_timer()
+>     - cmci is not enabled
+>   - and later in mce_init_device():
+>     - sysfs files are not created
+>     - hotplug notifier is not registered
+> So we don't need checks at all in these functions which is never
 
-This probably should be USBDEVFS_SUBMITURB_STREAM, since it is necesary
-only for URBs that use bulk streaming rather than for all SuperSpeed
-URBs.
+s/which is/because they are/
 
-Alan Stern
+> called when !mce_available().
+> 
+> For safety I also add a warning which is given when bad unsupported
+> asymmetric configuration is detected.
+> 
+> Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+> ---
+>  arch/x86/include/asm/mce.h             |    2 -
+>  arch/x86/kernel/cpu/mcheck/mce.c       |   34 ++++++++++---------------------
+>  arch/x86/kernel/cpu/mcheck/mce_intel.c |    2 +-
+>  3 files changed, 12 insertions(+), 26 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+> index 716b48a..77825dd 100644
+> --- a/arch/x86/include/asm/mce.h
+> +++ b/arch/x86/include/asm/mce.h
+> @@ -180,8 +180,6 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c);
+>  static inline void mce_amd_feature_init(struct cpuinfo_x86 *c) { }
+>  #endif
+>  
+> -int mce_available(struct cpuinfo_x86 *c);
+> -
+>  DECLARE_PER_CPU(unsigned, mce_exception_count);
+>  DECLARE_PER_CPU(unsigned, mce_poll_count);
+>  
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index 42fc8d2..205b334 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -449,7 +449,7 @@ static int mce_ring_add(unsigned long pfn)
+>  	return 0;
+>  }
+>  
+> -int mce_available(struct cpuinfo_x86 *c)
+> +static int mce_available(struct cpuinfo_x86 *c)
+>  {
+>  	if (mce_disabled)
+>  		return 0;
+> @@ -1121,10 +1121,7 @@ static void mce_start_timer(unsigned long data)
+>  
+>  	WARN_ON(smp_processor_id() != data);
+>  
+> -	if (mce_available(__this_cpu_ptr(&cpu_info))) {
+> -		machine_check_poll(MCP_TIMESTAMP,
+> -				&__get_cpu_var(mce_poll_banks));
+> -	}
+> +	machine_check_poll(MCP_TIMESTAMP, &__get_cpu_var(mce_poll_banks));
+>  
+>  	/*
+>  	 * Alert userspace if needed.  If we logged an MCE, reduce the
+> @@ -1146,8 +1143,7 @@ static void mce_timer_delete_all(void)
+>  	int cpu;
+>  
+>  	for_each_online_cpu(cpu) {
+> -		if (mce_available(&per_cpu(cpu_info, cpu)))
+> -			del_timer_sync(&per_cpu(mce_timer, cpu));
+> +		del_timer_sync(&per_cpu(mce_timer, cpu));
+>  	}
 
+no need for the parentheses but this should be part of the first patch
+anyway.
+
+>  }
+>  
+> @@ -1418,8 +1414,15 @@ void __cpuinit mcheck_cpu_init(struct cpuinfo_x86 *c)
+>  	if (__mcheck_cpu_ancient_init(c))
+>  		return;
+>  
+> -	if (!mce_available(c))
+> +	if (!mce_available(c)) {
+> +		/*
+> +		 * Asymmetric configurations are not supported today.
+> +		 * If mce_banks is allocated there must be a cpu passed here.
+> +		 */
+> +		WARN_ON(!mce_disabled && mce_banks);
+> +		mce_disabled = 1;
+>  		return;
+> +	}
+
+I don't think this will ever happen so why complicate the code
+needlessly? This can only be executed if at least one of the cores on
+the system has CPUID(1)_EDX, bits 7 and 14 cleared and that's just
+silly.
+
+Besides, mcheck_init_device() already confirms we don't support
+MCE-asymmetric configs:
+
+        if (!mce_available(&boot_cpu_data))
+                return -EIO;
+
+>  	if (__mcheck_cpu_cap_init() < 0 || __mcheck_cpu_apply_quirks(c) < 0) {
+>  		mce_disabled = 1;
+> @@ -1761,8 +1764,6 @@ static struct syscore_ops mce_syscore_ops = {
+>  
+>  static void mce_cpu_restart(void *data)
+>  {
+> -	if (!mce_available(__this_cpu_ptr(&cpu_info)))
+> -		return;
+>  	__mcheck_cpu_init_generic();
+>  	__mcheck_cpu_init_timer();
+>  }
+> @@ -1777,15 +1778,11 @@ static void mce_restart(void)
+>  /* Toggle features for corrected errors */
+>  static void mce_disable_cmci(void *data)
+>  {
+> -	if (!mce_available(__this_cpu_ptr(&cpu_info)))
+> -		return;
+>  	cmci_clear();
+>  }
+>  
+>  static void mce_enable_ce(void *all)
+>  {
+> -	if (!mce_available(__this_cpu_ptr(&cpu_info)))
+> -		return;
+>  	cmci_reenable();
+>  	cmci_recheck();
+>  	if (all)
+> @@ -1946,9 +1943,6 @@ static __cpuinit int mce_sysdev_create(unsigned int cpu)
+>  	int err;
+>  	int i, j;
+>  
+> -	if (!mce_available(&boot_cpu_data))
+> -		return -EIO;
+> -
+>  	memset(&sysdev->kobj, 0, sizeof(struct kobject));
+>  	sysdev->id  = cpu;
+>  	sysdev->cls = &mce_sysdev_class;
+> @@ -2006,9 +2000,6 @@ static void __cpuinit mce_disable_cpu(void *h)
+>  	unsigned long action = *(unsigned long *)h;
+>  	int i;
+>  
+> -	if (!mce_available(__this_cpu_ptr(&cpu_info)))
+> -		return;
+> -
+>  	if (!(action & CPU_TASKS_FROZEN))
+>  		cmci_clear();
+>  	for (i = 0; i < banks; i++) {
+> @@ -2024,9 +2015,6 @@ static void __cpuinit mce_reenable_cpu(void *h)
+>  	unsigned long action = *(unsigned long *)h;
+>  	int i;
+>  
+> -	if (!mce_available(__this_cpu_ptr(&cpu_info)))
+> -		return;
+> -
+>  	if (!(action & CPU_TASKS_FROZEN))
+>  		cmci_reenable();
+>  	for (i = 0; i < banks; i++) {
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+> index 8694ef5..393516c 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+> @@ -130,7 +130,7 @@ void cmci_recheck(void)
+>  	unsigned long flags;
+>  	int banks;
+>  
+> -	if (!mce_available(__this_cpu_ptr(&cpu_info)) || !cmci_supported(&banks))
+> +	if (!cmci_supported(&banks))
+>  		return;
+>  	local_irq_save(flags);
+>  	machine_check_poll(MCP_TIMESTAMP, &__get_cpu_var(mce_banks_owned));
+> -- 
+> 1.7.1
+> 
+> 
+> 
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
