@@ -1,57 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab1FQA5P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 20:57:15 -0400
-Received: from mga01.intel.com ([192.55.52.88]:16167 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753192Ab1FQA5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 20:57:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,378,1304319600"; 
-   d="scan'208";a="17278091"
-Message-ID: <4DFAA665.8070305@intel.com>
-Date: Fri, 17 Jun 2011 08:57:09 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110510 Iceowl/1.0b2 Icedove/3.1.10
+	id S1756630Ab1FQBIN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 21:08:13 -0400
+Received: from 173-164-233-81-SFBA.hfc.comcastbusiness.net ([173.164.233.81]:43305
+	"EHLO email.techspecs.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755260Ab1FQBIK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 21:08:10 -0400
+X-Greylist: delayed 529 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Jun 2011 21:08:10 EDT
+Message-ID: <53e44025a84a55558f4fb1dea8642ab6.squirrel@mail.techspecs.com>
+Date: Thu, 16 Jun 2011 17:59:19 -0700
+Subject: PROBLEM: AMD Zacate E350 shows only 2.6GB memory when 8GB installed
+From: chrish@techspecs.com
+To: linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH] ACPI, APEI, Add APEI _OSC support
-References: <1306303538-30524-1-git-send-email-ying.huang@intel.com> <20110614145246.GA17469@srcf.ucam.org> <4DF82CBC.5070400@intel.com> <20110615121703.GA8638@srcf.ucam.org> <4DF950EB.7050400@intel.com> <20110616013812.GA32494@srcf.ucam.org> <4DF962AE.60204@intel.com> <20110616015736.GA32533@srcf.ucam.org>
-In-Reply-To: <20110616015736.GA32533@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2011 09:57 AM, Matthew Garrett wrote:
-> On Thu, Jun 16, 2011 at 09:55:58AM +0800, Huang Ying wrote:
->> On 06/16/2011 09:38 AM, Matthew Garrett wrote:
->>> I think we probably need to make the HEST decision early, and use that 
->>> to decide how to make the generic call. Our experience has been that 
->>> many firmware vendors only expect _OSC to be called once with any given 
->>> UUID - multiple calls can result in unexpected behaviour.
->>
->> acpi_bus_osc_support is called via subsys_initcall.  It is a little hard
->> to do all checking before that.  Is it possible to call
->> acpi_bus_osc_support later?
-> 
-> Yeah, this is going to be a problem. We have the HEST available at this 
-> point so we ought to be able to parse it, though. I'll take a look 
-> tomorrow.
+Hi,
 
-We can check the HEST table before _OSC evaluating.  But it is much
-harder to check software part, because we have implemented GHES support
-(Generic Hardware Error Source, the handler of firmware first mode
-hardware error notification) as device driver and module.
+   I tried this on Fedora 14 and OpenSuse 11.4 and both exhibit the same
+behavior. 8GB is installed but only 2698476 shows available for use
+using "top" or "free". dmidecode shows 2 4GB DIMMs and the BIOS reports
+8GB of memory. Memtest reports and tests 8GB of memory. I Googled the
+issue and it seems there are others that also report the same. What to
+do? Thank you.
 
-So I think we can do that in 2 steps.  At first, we just enable WHEA
-UUID, because that is easier to do.  Then we find a way to implement
-"APEI bit" in generic _OSC call.  Do you think that is a good idea?
+Best,
+  Chris
 
-Best Regards,
-Huang Ying
+
