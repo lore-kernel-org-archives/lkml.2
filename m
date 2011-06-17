@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757250Ab1FQVQw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 17:16:52 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57726 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab1FQVQt convert rfc822-to-8bit (ORCPT
+	id S1756627Ab1FQVTL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 17:19:11 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:60372 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256Ab1FQVTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 17:16:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=U9C548jZiIWnrfNPjIRZ2ldGdiBPnmO50/R/k6szwMM4jAJ7pfedAiXXe5CygXO/DX
-         0SHYI2Fp6128HSwkFD/sndz+7nzwiSNVZEkWWc6V8J/So5o9tWfmhyKfoeAbHaSN5DA8
-         JqxfXJB9fm5ACJoe9iiKU3vLwZposda+S20Lg=
+	Fri, 17 Jun 2011 17:19:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 1/5] VFS: Do (nearly) lockless generic_file_llseek
+Date: Fri, 17 Jun 2011 23:18:38 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: viro@zeniv.linux.org.uk, hch@infradead.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+References: <1308258442-19804-1-git-send-email-andi@firstfloor.org> <201106171440.14224.arnd@arndb.de> <20110617174239.GG16236@one.firstfloor.org>
+In-Reply-To: <20110617174239.GG16236@one.firstfloor.org>
 MIME-Version: 1.0
-In-Reply-To: <1308345046-13293-1-git-send-email-vapier@gentoo.org>
-References: <1308345046-13293-1-git-send-email-vapier@gentoo.org>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Fri, 17 Jun 2011 17:16:28 -0400
-X-Google-Sender-Auth: 7R1FOCnuUh89loXKaP9Fw4lGRA4
-Message-ID: <BANLkTimqW53BHCGkr0+2ryFduOvLCzPMFA@mail.gmail.com>
-Subject: Re: [PATCH] asm-generic/atomic.h: allow SMP peeps to leverage this
-To: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Arun Sharma <asharma@fb.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106172318.38338.arnd@arndb.de>
+X-Provags-ID: V02:K0:Fl3WpBBQHCJ7svVkp3XmjA/jWlb9juMZejYNpOvQ+Ta
+ aDF5t+s+lqTO33TJlFtRbsnqCUDKDEhdQ21lG/BafHDJM/NS1x
+ ptkae/7pLVToaioY2nqQGStlyPlS8lOfBFRl4M1A/JtbFSD1tN
+ WKLLqefHUpgcmKf1gmKRhLW1fGYF7nMsGq2b3wjTcXGZ6Kp0GC
+ F83xbkKgqsTGJ5lAwN98A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 17:10, Mike Frysinger wrote:
-> +/* Force people to define core atomics */
-> +# if !defined(atomic_add_return) || !defined(atomic_sub_return) || \
-> +     !defined(atomic_clear_mask) || !defined(atomic_set_mask) || \
-> +     !defined(atomic_test_mask)
+On Friday 17 June 2011 19:42:39 Andi Kleen wrote:
+> On Fri, Jun 17, 2011 at 02:40:14PM +0200, Arnd Bergmann wrote:
+> > On Thursday 16 June 2011 23:07:18 Andi Kleen wrote:
+> > > So still need a lock, but can use a cheap local one.
+> > > 
+> > > This patch implements this new scheme in generic_file_llseek.
+> > > I dropped generic_file_llseek_unlocked and changed all callers.
+> > 
+> > What about default_llseek? If you change generic_file_llseek, you should
+> > probably change that, too.
+> 
+> That's used by a lot of drivers, and since I cannot audit them
+> all I chose to be conservative. not sure it's ever performance
+> critical anyways?
 
-hmm, pause on this.  these mask funcs are not as standardized as i'd
-hope.  i'll send another patch fixing that and then redoing this on
-top of it.
--mike
+Probably not. Note that all uses of default_llseek were introduced
+in the conversion from an implicit default_llseek when they did not
+set the operation before the BKL conversion. There were also patches
+floating around to merge generic_file_llseek and default_llseek.
+
+There was not a single case of a driver that relied on the BKL to
+lock against default_llseek before I changed it to i_mutex.
+
+	Arnd
