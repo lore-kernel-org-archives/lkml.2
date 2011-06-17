@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759560Ab1FQSJB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 14:09:01 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:59504 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759548Ab1FQSI6 (ORCPT
+	id S932208Ab1FQSO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 14:14:27 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41530 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932066Ab1FQSOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 14:08:58 -0400
-X-Sasl-enc: Byp5qAx8Br0E+0zBEdEuh2DSUvsTTBiW/y21fuqy8NNr 1308334136
-Message-ID: <4DFB98EE.9000609@ladisch.de>
-Date: Fri, 17 Jun 2011 20:11:58 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Mike Frysinger <vapier@gentoo.org>
-CC: Lars-Peter Clausen <lars@metafoo.de>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH] firmware: Make firmware drivers generally available
-References: <20110617103218.GA29723@opensource.wolfsonmicro.com> <1308310831-27861-1-git-send-email-lars@metafoo.de> <4DFB53B3.8070806@ladisch.de> <BANLkTimWfT_LSLX36oLcSSYNqi4buBiJUQ@mail.gmail.com>
-In-Reply-To: <BANLkTimWfT_LSLX36oLcSSYNqi4buBiJUQ@mail.gmail.com>
-Content-Type: text/plain; charset=us-ascii
+	Fri, 17 Jun 2011 14:14:25 -0400
+Subject: Re: REGRESSION: Performance regressions from switching
+ anon_vma->lock to mutex
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+In-Reply-To: <BANLkTim3vo0vpovV=5sU=GLxkotheB=Ryg@mail.gmail.com>
+References: <1308097798.17300.142.camel@schen9-DESK>
+	 <1308101214.15392.151.camel@sli10-conroe> <1308138750.15315.62.camel@twins>
+	 <20110615161827.GA11769@tassilo.jf.intel.com>
+	 <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
+	 <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
+	 <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
+	 <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com>
+	 <1308255972.17300.450.camel@schen9-DESK>
+	 <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com>
+	 <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
+	 <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com>
+	 <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
+	 <BANLkTinUBTYWxrF5TCuDSQuFUAyivXJXjQ@mail.gmail.com>
+	 <1308310080.2355.19.camel@twins>
+	 <BANLkTim2bmPfeRT1tS7hx2Z85QHjPHwU3Q@mail.gmail.com>
+	 <alpine.LSU.2.00.1106171040460.7018@sister.anvils>
+	 <BANLkTim3vo0vpovV=5sU=GLxkotheB=Ryg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Jun 2011 20:18:08 +0200
+Message-ID: <1308334688.12801.19.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Frysinger wrote:
-> On Fri, Jun 17, 2011 at 09:16, Clemens Ladisch wrote:
-> > It looks as if sigma.c doesn't actually belong into drivers/firmware.
-> > That directory is for code that lets the kernel access the firmware
-> > of the platform that the kernel itself runs on.
-> 
-> -EMISSINGBETTERSUGGESTION
+On Fri, 2011-06-17 at 11:01 -0700, Linus Torvalds wrote:
 
-I *knew* somebody would ask.  :)
+> So I do think that "page_referenced_anon()" should do a trylock, and
+> return "referenced" if the trylock fails. Comments?
 
-"drivers/firmware" is the obvious name for both, but that makes
-it ambiguous.  I'd suggest to split the two subsystems into
-"drivers/host-firmware" and "drivers/device-firmware".
+The only problem I can immediately see with that is when a single
+process' anon memory is dominant, then such an allocation will never
+succeed in freeing these pages because the one lock will pin pretty much
+all anon. Then again, there's always a few file pages to drop.
+
+That said, its rather unlikely, and iirc people were working on removing
+direct reclaim, or at least rely less on it.
 
 
-Regards,
-Clemens
+
