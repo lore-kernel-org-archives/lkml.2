@@ -1,352 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759580Ab1FQXd0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 19:33:26 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:43684 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754290Ab1FQXdX (ORCPT
+	id S1759571Ab1FQXjE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 19:39:04 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42610 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754455Ab1FQXi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 19:33:23 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linux Containers <containers@lists.osdl.org>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>, netdev@vger.kernel.org,
-        David Lamparter <equinox@diac24.net>, <linux-kernel@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-References: <20110521093936.GA3015@p183> <m11uzsxdty.fsf@fess.ebiederm.org>
-	<20110521223054.GA3198@p183> <m1vcx3r3o5.fsf@fess.ebiederm.org>
-	<20110523014303.GA2351982@jupiter.n2.diac24.net>
-	<20110523014751.GB2351982@jupiter.n2.diac24.net>
-	<m1wrgkavbm.fsf_-_@fess.ebiederm.org>
-Date: Fri, 17 Jun 2011 16:33:19 -0700
-In-Reply-To: <m1wrgkavbm.fsf_-_@fess.ebiederm.org> (Eric W. Biederman's
-	message of "Fri, 17 Jun 2011 16:31:57 -0700")
-Message-ID: <m1mxhgav9c.fsf_-_@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18GGeB4O1600kul/aVlrJmMM39Ihm1DwjE=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Linux Containers <containers@lists.osdl.org>
-X-Spam-Relay-Country: 
-Subject: [PATCH 2/2] proc: Usable inode numbers for the namespace file descriptors.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Fri, 17 Jun 2011 19:38:59 -0400
+Date: Fri, 17 Jun 2011 16:38:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 1/12] radix_tree: exceptional entries and indices
+Message-Id: <20110617163854.49225203.akpm@linux-foundation.org>
+In-Reply-To: <alpine.LSU.2.00.1106140341070.29206@sister.anvils>
+References: <alpine.LSU.2.00.1106140327550.29206@sister.anvils>
+	<alpine.LSU.2.00.1106140341070.29206@sister.anvils>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 14 Jun 2011 03:42:27 -0700 (PDT)
+Hugh Dickins <hughd@google.com> wrote:
 
-Assign a unique proc inode to each namespace, yielding an
-identifier that userspace can use for identifying a namespace.
+> The radix_tree is used by several subsystems for different purposes.
+> A major use is to store the struct page pointers of a file's pagecache
+> for memory management.  But what if mm wanted to store something other
+> than page pointers there too?
+> 
+> The low bit of a radix_tree entry is already used to denote an indirect
+> pointer, for internal use, and the unlikely radix_tree_deref_retry() case.
+> Define the next bit as denoting an exceptional entry, and supply inline
+> functions radix_tree_exception() to return non-0 in either unlikely case,
+> and radix_tree_exceptional_entry() to return non-0 in the second case.
+> 
+> If a subsystem already uses radix_tree with that bit set, no problem:
+> it does not affect internal workings at all, but is defined for the
+> convenience of those storing well-aligned pointers in the radix_tree.
+> 
+> The radix_tree_gang_lookups have an implicit assumption that the caller
+> can deduce the offset of each entry returned e.g. by the page->index of
+> a struct page.  But that may not be feasible for some kinds of item to
+> be stored there.
+> 
+> radix_tree_gang_lookup_slot() allow for an optional indices argument,
+> output array in which to return those offsets.  The same could be added
+> to other radix_tree_gang_lookups, but for now keep it to the only one
+> for which we need it.
 
-This has been a long requested feature and only blocked because
-a naive implementation would put the id in a global space and
-would ultimately require having a namespace for the names of
-namespaces, making migration and certain virtualization tricks
-impossible.
+Yes, the RADIX_TREE_INDIRECT_PTR hack is internal-use-only, and doesn't
+operate on (and hence doesn't corrupt) client-provided items.
 
-We still don't have per superblock inode numbers for proc, which
-appears necessary for application unaware checkpoint/restart and
-migrations (if the application is using namespace filedescriptors)
-but that is now allowd by the design if it becomes important.
+This patch uses bit 1 and uses it against client items, so for
+practical purpoese it can only be used when the client is storing
+addresses.  And it needs new APIs to access that flag.
 
-I have preallocated the ipc and uts initial proc inode numbers so
-their structures can be statically initialized.
+All a bit ugly.  Why not just add another tag for this?  Or reuse an
+existing tag if the current tags aren't all used for these types of
+pages?
 
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
----
- fs/proc/namespaces.c          |    1 +
- include/linux/ipc_namespace.h |    2 ++
- include/linux/proc_fs.h       |    4 ++++
- include/linux/utsname.h       |    1 +
- include/net/net_namespace.h   |    2 ++
- init/version.c                |    2 ++
- ipc/msgutil.c                 |    2 ++
- ipc/namespace.c               |   16 ++++++++++++++++
- kernel/utsname.c              |   17 ++++++++++++++++-
- net/core/net_namespace.c      |   24 ++++++++++++++++++++++++
- 10 files changed, 70 insertions(+), 1 deletions(-)
-
-diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
-index be177f7..ddc2bb4 100644
---- a/fs/proc/namespaces.c
-+++ b/fs/proc/namespaces.c
-@@ -54,6 +54,7 @@ static struct dentry *proc_ns_instantiate(struct inode *dir,
- 	ei->ns_ops    = ns_ops;
- 	ei->ns	      = ns;
- 
-+	inode->i_ino = ns_ops->inum(ei->ns);
- 	dentry->d_op = &pid_dentry_operations;
- 	d_add(dentry, inode);
- 	/* Close the race of the process dying before we return the dentry */
-diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
-index a6d1655..22a4dc4 100644
---- a/include/linux/ipc_namespace.h
-+++ b/include/linux/ipc_namespace.h
-@@ -60,6 +60,8 @@ struct ipc_namespace {
- 
- 	/* user_ns which owns the ipc ns */
- 	struct user_namespace *user_ns;
-+
-+	unsigned int	proc_inum;
- };
- 
- extern struct ipc_namespace init_ipc_ns;
-diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
-index 3067b44..1aee7f0 100644
---- a/include/linux/proc_fs.h
-+++ b/include/linux/proc_fs.h
-@@ -29,8 +29,11 @@ struct mm_struct;
- 
- enum {
- 	PROC_ROOT_INO = 1,
-+	PROC_IPC_INIT_INO = 2,
-+	PROC_UTS_INIT_INO = 3,
- };
- 
-+
- /*
-  * This is not completely implemented yet. The idea is to
-  * create an in-memory tree (like the actual /proc filesystem
-@@ -257,6 +260,7 @@ struct proc_ns_operations {
- 	void *(*get)(struct task_struct *task);
- 	void (*put)(void *ns);
- 	int (*install)(struct nsproxy *nsproxy, void *ns);
-+	unsigned int (*inum)(void *ns);
- };
- extern const struct proc_ns_operations netns_operations;
- extern const struct proc_ns_operations utsns_operations;
-diff --git a/include/linux/utsname.h b/include/linux/utsname.h
-index 4e5b021..03db764 100644
---- a/include/linux/utsname.h
-+++ b/include/linux/utsname.h
-@@ -44,6 +44,7 @@ struct uts_namespace {
- 	struct kref kref;
- 	struct new_utsname name;
- 	struct user_namespace *user_ns;
-+	unsigned int proc_inum;
- };
- extern struct uts_namespace init_uts_ns;
- 
-diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
-index 2bf9ed9..4b85be2 100644
---- a/include/net/net_namespace.h
-+++ b/include/net/net_namespace.h
-@@ -49,6 +49,8 @@ struct net {
- 	struct list_head	cleanup_list;	/* namespaces on death row */
- 	struct list_head	exit_list;	/* Use only net_mutex */
- 
-+	unsigned int		proc_inum;
-+
- 	struct proc_dir_entry 	*proc_net;
- 	struct proc_dir_entry 	*proc_net_stat;
- 
-diff --git a/init/version.c b/init/version.c
-index 86fe0cc..58170f1 100644
---- a/init/version.c
-+++ b/init/version.c
-@@ -12,6 +12,7 @@
- #include <linux/utsname.h>
- #include <generated/utsrelease.h>
- #include <linux/version.h>
-+#include <linux/proc_fs.h>
- 
- #ifndef CONFIG_KALLSYMS
- #define version(a) Version_ ## a
-@@ -34,6 +35,7 @@ struct uts_namespace init_uts_ns = {
- 		.domainname	= UTS_DOMAINNAME,
- 	},
- 	.user_ns = &init_user_ns,
-+	.proc_inum = PROC_UTS_INIT_INO,
- };
- EXPORT_SYMBOL_GPL(init_uts_ns);
- 
-diff --git a/ipc/msgutil.c b/ipc/msgutil.c
-index 8b5ce5d..f7da485 100644
---- a/ipc/msgutil.c
-+++ b/ipc/msgutil.c
-@@ -14,6 +14,7 @@
- #include <linux/slab.h>
- #include <linux/ipc.h>
- #include <linux/ipc_namespace.h>
-+#include <linux/proc_fs.h>
- #include <asm/uaccess.h>
- 
- #include "util.h"
-@@ -33,6 +34,7 @@ struct ipc_namespace init_ipc_ns = {
- 	.mq_msgsize_max  = DFLT_MSGSIZEMAX,
- #endif
- 	.user_ns = &init_user_ns,
-+	.proc_inum = PROC_IPC_INIT_INO,
- };
- 
- atomic_t nr_ipc_ns = ATOMIC_INIT(1);
-diff --git a/ipc/namespace.c b/ipc/namespace.c
-index ce0a647..cd7f733 100644
---- a/ipc/namespace.c
-+++ b/ipc/namespace.c
-@@ -26,9 +26,16 @@ static struct ipc_namespace *create_ipc_ns(struct task_struct *tsk,
- 	if (ns == NULL)
- 		return ERR_PTR(-ENOMEM);
- 
-+	err = proc_alloc_inum(&ns->proc_inum);
-+	if (err) {
-+		kfree(ns);
-+		return ERR_PTR(err);
-+	}
-+
- 	atomic_set(&ns->count, 1);
- 	err = mq_init_ns(ns);
- 	if (err) {
-+		proc_free_inum(ns->proc_inum);
- 		kfree(ns);
- 		return ERR_PTR(err);
- 	}
-@@ -113,6 +120,7 @@ static void free_ipc_ns(struct ipc_namespace *ns)
- 	 */
- 	ipcns_notify(IPCNS_REMOVED);
- 	put_user_ns(ns->user_ns);
-+	proc_free_inum(ns->proc_inum);
- 	kfree(ns);
- }
- 
-@@ -170,10 +178,18 @@ static int ipcns_install(struct nsproxy *nsproxy, void *ns)
- 	return 0;
- }
- 
-+static unsigned int ipcns_inum(void *vp)
-+{
-+	struct ipc_namespace *ns = vp;
-+
-+	return ns->proc_inum;
-+}
-+
- const struct proc_ns_operations ipcns_operations = {
- 	.name		= "ipc",
- 	.type		= CLONE_NEWIPC,
- 	.get		= ipcns_get,
- 	.put		= ipcns_put,
- 	.install	= ipcns_install,
-+	.inum		= ipcns_inum,
- };
-diff --git a/kernel/utsname.c b/kernel/utsname.c
-index bff131b..3ab6a08 100644
---- a/kernel/utsname.c
-+++ b/kernel/utsname.c
-@@ -36,11 +36,18 @@ static struct uts_namespace *clone_uts_ns(struct task_struct *tsk,
- 					  struct uts_namespace *old_ns)
- {
- 	struct uts_namespace *ns;
-+	int err;
- 
- 	ns = create_uts_ns();
- 	if (!ns)
- 		return ERR_PTR(-ENOMEM);
- 
-+	err = proc_alloc_inum(&ns->proc_inum);
-+	if (err) {
-+		kfree(ns);
-+		return ERR_PTR(err);
-+	}
-+
- 	down_read(&uts_sem);
- 	memcpy(&ns->name, &old_ns->name, sizeof(ns->name));
- 	ns->user_ns = get_user_ns(task_cred_xxx(tsk, user)->user_ns);
-@@ -78,6 +85,7 @@ void free_uts_ns(struct kref *kref)
- 
- 	ns = container_of(kref, struct uts_namespace, kref);
- 	put_user_ns(ns->user_ns);
-+	proc_free_inum(ns->proc_inum);
- 	kfree(ns);
- }
- 
-@@ -110,11 +118,18 @@ static int utsns_install(struct nsproxy *nsproxy, void *ns)
- 	return 0;
- }
- 
-+static unsigned int utsns_inum(void *vp)
-+{
-+	struct uts_namespace *ns = vp;
-+
-+	return ns->proc_inum;
-+}
-+
- const struct proc_ns_operations utsns_operations = {
- 	.name		= "uts",
- 	.type		= CLONE_NEWUTS,
- 	.get		= utsns_get,
- 	.put		= utsns_put,
- 	.install	= utsns_install,
-+	.inum		= utsns_inum,
- };
--
-diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-index e41e511..6199ec2 100644
---- a/net/core/net_namespace.c
-+++ b/net/core/net_namespace.c
-@@ -358,6 +358,21 @@ struct net *get_net_ns_by_pid(pid_t pid)
- }
- EXPORT_SYMBOL_GPL(get_net_ns_by_pid);
- 
-+static __net_init int net_ns_net_init(struct net *net)
-+{
-+	return proc_alloc_inum(&net->proc_inum);
-+}
-+
-+static __net_exit void net_ns_net_exit(struct net *net)
-+{
-+	proc_free_inum(net->proc_inum);
-+}
-+
-+static struct pernet_operations __net_initdata net_ns_ops = {
-+	.init = net_ns_net_init,
-+	.exit = net_ns_net_exit,		
-+};
-+
- static int __init net_ns_init(void)
- {
- 	struct net_generic *ng;
-@@ -389,6 +404,8 @@ static int __init net_ns_init(void)
- 
- 	mutex_unlock(&net_mutex);
- 
-+	register_pernet_subsys(&net_ns_ops);
-+
- 	return 0;
- }
- 
-@@ -616,11 +633,18 @@ static int netns_install(struct nsproxy *nsproxy, void *ns)
- 	return 0;
- }
- 
-+static unsigned int netns_inum(void *ns)
-+{
-+	struct net *net = ns;
-+	return net->proc_inum;
-+}
-+
- const struct proc_ns_operations netns_operations = {
- 	.name		= "net",
- 	.type		= CLONE_NEWNET,
- 	.get		= netns_get,
- 	.put		= netns_put,
- 	.install	= netns_install,
-+	.inum		= netns_inum,
- };
- #endif
--- 
-1.7.5.1.217.g4e3aa
 
