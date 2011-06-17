@@ -1,156 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933091Ab1FQULp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 16:11:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28806 "EHLO mx1.redhat.com"
+	id S1759568Ab1FQUT2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 16:19:28 -0400
+Received: from mga02.intel.com ([134.134.136.20]:17165 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756437Ab1FQULn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 16:11:43 -0400
-Date: Fri, 17 Jun 2011 16:11:11 -0400
-From: Dave Jones <davej@redhat.com>
+	id S1756437Ab1FQUT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 16:19:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,383,1304319600"; 
+   d="scan'208";a="14888225"
+Subject: Re: REGRESSION: Performance regressions from switching
+ anon_vma->lock to mutex
+From: Tim Chen <tim.c.chen@linux.intel.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Another cpufreq pull request for 3.0
-Message-ID: <20110617201111.GA3496@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Andi Kleen <ak@linux.intel.com>, Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+In-Reply-To: <BANLkTimStT22tA2YkeuYBzarnnWTnMjiKQ@mail.gmail.com>
+References: <1308097798.17300.142.camel@schen9-DESK>
+	 <1308101214.15392.151.camel@sli10-conroe> <1308138750.15315.62.camel@twins>
+	 <20110615161827.GA11769@tassilo.jf.intel.com>
+	 <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
+	 <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
+	 <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
+	 <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com>
+	 <1308255972.17300.450.camel@schen9-DESK>
+	 <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com>
+	 <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
+	 <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com>
+	 <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
+	 <BANLkTinUBTYWxrF5TCuDSQuFUAyivXJXjQ@mail.gmail.com>
+	 <1308310080.2355.19.camel@twins>
+	 <BANLkTim2bmPfeRT1tS7hx2Z85QHjPHwU3Q@mail.gmail.com>
+	 <alpine.LSU.2.00.1106171040460.7018@sister.anvils>
+	 <BANLkTim3vo0vpovV=5sU=GLxkotheB=Ryg@mail.gmail.com>
+	 <1308334688.12801.19.camel@laptop> <1308335557.12801.24.camel@laptop>
+	 <BANLkTimStT22tA2YkeuYBzarnnWTnMjiKQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Jun 2011 13:19:49 -0700
+Message-ID: <1308341989.17300.511.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull from ..
-master.kernel.org:/pub/scm/linux/kernel/git/davej/cpufreq.git/ fixes
+On Fri, 2011-06-17 at 11:39 -0700, Linus Torvalds wrote:
 
- drivers/cpufreq/cpufreq_stats.c |    8 +++++---
- drivers/cpufreq/powernow-k8.c   |    6 +++++-
- 2 files changed, 10 insertions(+), 4 deletions(-)
+> Having gone over it a bit more, I actually think I prefer to just
+> special-case the allocation instead.
+> 
+> We already have to drop the anon_vma lock for the "out of memory"
+> case, and a slight re-organization of clone_anon_vma() makes it easy
+> to just first try a NOIO allocation with the lock still held, and then
+> if that fails do the "drop lock, retry, and hard-fail" case.
+> 
+> IOW, something like the attached (on top of the patches already posted
+> except for your memory reclaim thing)
+> 
 
-commit fbb5b89eabea5ae7d621b7861863159560d8faa4
-Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date:   Thu Jun 16 15:36:40 2011 -0400
+Linus,
 
-    [CPUFREQ] powernow-k8: Don't try to transition if the pstate is incorrect
-    
-    This patch augments the pstate transition code to error out
-    (instead of returning 0) when an incorrect pstate is provided.
-    
-    Suggested-by: Borislav Petkov <bp@alien8.de>
-    CC: andre.przywara@amd.com
-    CC: Mark.Langsdorf@amd.com
-    Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-    Signed-off-by: Dave Jones <davej@redhat.com>
+I've applied this patch, plus the other two patches on batching anon_vma
+clone and anon_vma unlink.  This improved throughput further.  I now see
+average throughput at 140.2% vs 2.6.39-vanilla over 10 runs.  The mutex
+lock has also gone down to 3.7% of cpu in my profile.  Certainly a great
+deal of improvements.
 
-commit a9d3d2068064b7a6395871a49616d3784f802d50
-Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date:   Thu Jun 16 15:36:39 2011 -0400
+To summarize,
 
-    [CPUFREQ] powernow-k8: Don't notify of successful transition if we failed (vid case).
-    
-    Before this patch if we failed the vid transition would still try to
-    submit the "new" frequencies to cpufreq.
-    That is incorrect - also we could submit a non-existing frequency value
-    which would cause cpufreq to crash. The ultimate fix is in cpufreq
-    to deal with incorrect values, but this patch improves the error
-    recovery in the AMD powernowk8 driver.
-    
-    The failure that was reported was as follows:
-    
-    powernow-k8: Found 1 AMD Athlon(tm) 64 Processor 3700+ (1 cpu cores) (version 2.20.00)
-    powernow-k8: fid 0x2 (1000 MHz), vid 0x12
-    powernow-k8: fid 0xa (1800 MHz), vid 0xa
-    powernow-k8: fid 0xc (2000 MHz), vid 0x8
-    powernow-k8: fid 0xe (2200 MHz), vid 0x8
-    Marking TSC unstable due to cpufreq changes
-    powernow-k8: fid trans failed, fid 0x2, curr 0x0
-    BUG: unable to handle kernel paging request at ffff880807e07b78
-    IP: [<ffffffff81479163>] cpufreq_stats_update+0x46/0x5b
-    ...
-    
-    And transition fails and data->currfid ends up with 0. Since
-    the machine does not support 800Mhz value when the calculation is
-    done ('find_khz_freq_from_fid(data->currfid);') it reports the
-    new frequency as 800000 which is bogus. This patch fixes
-    the issue during target setting.
-    
-    The patch however does not fix the issue in 'powernowk8_cpu_init'
-    where the pol->cur can also be set with the 800000 value:
-    
-              pol->cur = find_khz_freq_from_fid(data->currfid);
-      dprintk("policy current frequency %d kHz\n", pol->cur);
-    
-      /* min/max the cpu is capable of */
-      if (cpufreq_frequency_table_cpuinfo(pol, data->powernow_table)) {
-    
-    The fix for that looks to update cpufreq_frequency_table_cpuinfo to
-    check pol->cur.... but that would cause an regression in how the
-    acpi-cpufreq driver works (it sets cpu->cur after calling
-    cpufreq_frequency_table_cpuinfo). Instead the fix will be to let
-    cpufreq gracefully handle bogus data (another patch).
-    
-    Acked-by: Borislav Petkov <bp@alien8.de>
-    CC: andre.przywara@amd.com
-    CC: Mark.Langsdorf@amd.com
-    Reported-by: Tobias Diedrich <ranma+xen@tdiedrich.de>
-    Tested-by: Tobias Diedrich <ranma+xen@tdiedrich.de>
-    [v1: Rebased on v3.0-rc2, reduced patch to deal with vid case]
-    Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-    Signed-off-by: Dave Jones <davej@redhat.com>
+                        Throughput
+2.6.39(vanilla)         100.0%
+2.6.39+ra-patch         166.7%  (+66.7%)        
+3.0-rc2(vanilla)         68.0%  (-32%)
+3.0-rc2+linus (v1)      115.7%  (+15.7%)   (anon_vma clone v1)
+3.0-rc2+linus+softirq    86.2%  (-17.3%)
+3.0-rc2+linus (v2)      104.9%  (+4.9%)    (anon_vma clone v2)
+3.0-rc2+linus (v3)      140.3%  (+40.3%)   (anon_vma clone v2 + unlink + chain_alloc_tweak)
 
-commit 46a310b80bc2c9ccc019649c9da91194cbc10944
-Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date:   Thu Jun 16 15:36:38 2011 -0400
 
-    [CPUFREQ] Don't set stat->last_index to -1 if the pol->cur has incorrect value.
-    
-    If the driver submitted an non-existing pol>cur value (say it
-    used the default initialized value of zero), when the cpufreq
-    stats tries to setup its initial values it incorrectly sets
-    stat->last_index to -1 (or 0xfffff...). And cpufreq_stats_update
-    tries to update at that index location and fails.
-    
-    This can be caused by:
-    
-    stat->last_index = freq_table_get_index(stat, policy->cur);
-    
-    not finding the appropiate frequency in the table (b/c the policy->cur
-    is wrong) and we end up crashing. The fix however is
-    concentrated in the 'cpufreq_stats_update' as the last_index
-    (and old_index) are updated there. Which means it can reset
-    the last_index to -1 again and on the next iteration cause a crash.
-    
-    Without this patch, the following crash is observed:
-    
-    powernow-k8: Found 1 AMD Athlon(tm) 64 Processor 3700+ (1 cpu cores) (version 2.20.00)
-    powernow-k8: fid 0x2 (1000 MHz), vid 0x12
-    powernow-k8: fid 0xa (1800 MHz), vid 0xa
-    powernow-k8: fid 0xc (2000 MHz), vid 0x8
-    powernow-k8: fid 0xe (2200 MHz), vid 0x8
-    Marking TSC unstable due to cpufreq changes
-    powernow-k8: fid trans failed, fid 0x2, curr 0x0
-    BUG: unable to handle kernel paging request at ffff880807e07b78
-    IP: [<ffffffff81479163>] cpufreq_stats_update+0x46/0x5b
-    .. snip..
-    Pid: 1, comm: swapper Not tainted 3.0.0-rc2 #45 MICRO-STAR INTERNATIONAL CO., LTD MS-7094/MS-7094
-    ..snip..
-    Call Trace:
-     [<ffffffff81479248>] cpufreq_stat_notifier_trans+0x48/0x7c
-     [<ffffffff81095d68>] notifier_call_chain+0x32/0x5e
-     [<ffffffff81095e6b>] __srcu_notifier_call_chain+0x47/0x63
-     [<ffffffff81095e96>] srcu_notifier_call_chain+0xf/0x11
-     [<ffffffff81477e7a>] cpufreq_notify_transition+0x111/0x134
-     [<ffffffff8147b0d4>] powernowk8_target+0x53b/0x617
-     [<ffffffff8147723a>] __cpufreq_driver_target+0x2e/0x30
-     [<ffffffff8147a127>] cpufreq_governor_dbs+0x339/0x356
-     [<ffffffff81477394>] __cpufreq_governor+0xa8/0xe9
-     [<ffffffff81477525>] __cpufreq_set_policy+0x132/0x13e
-     [<ffffffff8147848d>] cpufreq_add_dev_interface+0x272/0x28c
-    
-    Reported-by: Tobias Diedrich <ranma+xen@tdiedrich.de>
-    Tested-by: Tobias Diedrich <ranma+xen@tdiedrich.de>
-    Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-    Signed-off-by: Dave Jones <davej@redhat.com>
+                        (Max-Min)/avg  	Standard Dev
+2.6.39(vanilla)         3%		 1.1%
+2.6.39+ra-patch         3%               1.2%       
+3.0-rc2(vanilla)        20%              7.3%
+3.0-rc2+linus           36%             12.2%
+3.0-rc2+linus+softirq   40%             15.2%
+3.0-rc2+linus (v2)      53%             14.8%
+3.0-rc2+linus (v3)      27%              8.1%
+
+Thanks.
+
+Tim
+
+
+------------Profile attached--------------
+
+Profile from latest run 3.0-rc2+linus (v3):
+
+-      5.44%          exim  [kernel.kallsyms]             [k] _raw_spin_lock_irqsave
+   - _raw_spin_lock_irqsave                                                                       
+      + 87.81% cpupri_set                                                                         
+      + 5.67% release_pages                                                                       
+      + 1.71% pagevec_lru_move_fn                                                                 
+      + 1.31% try_to_wake_up                                                                      
+      + 0.85% get_page_from_freelist                                                              
++      4.15%          exim  [kernel.kallsyms]             [k] page_fault                          
+-      3.76%          exim  [kernel.kallsyms]             [k] __mutex_lock_common.clone.5         
+   - __mutex_lock_common.clone.5                                                                  
+      - 99.97% __mutex_lock_slowpath                                                              
+         - mutex_lock                                                                             
+            + 55.46% lock_anon_vma_root.clone.13                                                  
+            + 41.94% anon_vma_lock.clone.10                                                       
+            + 1.14% dup_mm                                                                        
+            + 1.02% unlink_file_vma                                                               
++      2.44%          exim  [kernel.kallsyms]             [k] unmap_vmas                          
++      2.06%          exim  [kernel.kallsyms]             [k] do_raw_spin_lock                    
++      1.91%          exim  [kernel.kallsyms]             [k] page_cache_get_speculative          
++      1.89%          exim  [kernel.kallsyms]             [k] copy_page_c                           
+
+
+
