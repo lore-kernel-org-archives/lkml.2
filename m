@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932112Ab1FQI6z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 04:58:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46717 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758001Ab1FQI5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 04:57:18 -0400
-From: Petr Tesarik <ptesarik@suse.cz>
-Organization: SUSE LINUX, s.r.o.
-To: Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH 06/10] sh: change valid_phys_addr_range's @addr param to phys_addr_t
-Date: Fri, 17 Jun 2011 10:46:24 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc2-0.0.5.bd76874-default; KDE/4.6.0; i686; ; )
-References: <201106171038.25988.ptesarik@suse.cz>
-In-Reply-To: <201106171038.25988.ptesarik@suse.cz>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1758250Ab1FQIrZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 04:47:25 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41077 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758010Ab1FQIrW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 04:47:22 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DFB1476.40804@jp.fujitsu.com>
+Date: Fri, 17 Jun 2011 17:46:46 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: linux-kernel@vger.kernel.org
+CC: "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@amd64.org>
+Subject: [PATCH 6/8] x86, mce: introduce mce_memory_failure_process()
+References: <4DFB1242.90404@jp.fujitsu.com>
+In-Reply-To: <4DFB1242.90404@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106171046.24949.ptesarik@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No other changes are needed, the function will work just fine with
-a potentially larger data type.
+And relocate related functions to near by mce_ring* routines.
 
-
-Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
+Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 ---
- arch/sh/include/asm/io.h |    2 +-
- arch/sh/mm/mmap.c        |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c |   26 +++++++++++++++++---------
+ 1 files changed, 17 insertions(+), 9 deletions(-)
 
-diff --git a/arch/sh/include/asm/io.h b/arch/sh/include/asm/io.h
-index 28c5aa5..e6d5add 100644
---- a/arch/sh/include/asm/io.h
-+++ b/arch/sh/include/asm/io.h
-@@ -383,7 +383,7 @@ static inline int iounmap_fixed(void __iomem *addr) { return -EINVAL; }
- #define xlate_dev_kmem_ptr(p)	p
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 0424299..a118496 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -395,6 +395,8 @@ static inline void mce_gather_info(struct mce *m, struct pt_regs *regs)
+ }
  
- #define ARCH_HAS_VALID_PHYS_ADDR_RANGE
--int valid_phys_addr_range(unsigned long addr, size_t size);
-+int valid_phys_addr_range(phys_addr_t addr, size_t size);
- int valid_mmap_phys_addr_range(unsigned long pfn, size_t size);
+ /*
++ * mce_ring, mce_memory_failure: Support for Memory errors
++ *
+  * Simple lockless ring to communicate PFNs from the exception handler with the
+  * process context work function. This is vastly simplified because there's
+  * only a single reader and a single writer.
+@@ -449,6 +451,20 @@ static int mce_ring_add(unsigned long pfn)
+ 	return 0;
+ }
  
- #endif /* __KERNEL__ */
-diff --git a/arch/sh/mm/mmap.c b/arch/sh/mm/mmap.c
-index afeb710..80bf494 100644
---- a/arch/sh/mm/mmap.c
-+++ b/arch/sh/mm/mmap.c
-@@ -238,7 +238,7 @@ bottomup:
-  * You really shouldn't be using read() or write() on /dev/mem.  This
-  * might go away in the future.
-  */
--int valid_phys_addr_range(unsigned long addr, size_t count)
-+int valid_phys_addr_range(phys_addr_t addr, size_t count)
++/* dummy to break dependency. actual code is in mm/memory-failure.c */
++void __attribute__((weak)) memory_failure(unsigned long pfn, int vector)
++{
++	pr_err("Action optional memory failure at %lx ignored\n", pfn);
++}
++
++static inline void mce_memory_failure_process(void)
++{
++	unsigned long pfn;
++
++	while (mce_ring_get(&pfn))
++		memory_failure(pfn, MCE_VECTOR);
++}
++
+ static int mce_available(struct cpuinfo_x86 *c)
  {
- 	if (addr < __MEMORY_START)
- 		return 0;
+ 	if (mce_disabled)
+@@ -1049,12 +1065,6 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(do_machine_check);
+ 
+-/* dummy to break dependency. actual code is in mm/memory-failure.c */
+-void __attribute__((weak)) memory_failure(unsigned long pfn, int vector)
+-{
+-	printk(KERN_ERR "Action optional memory failure at %lx ignored\n", pfn);
+-}
+-
+ /*
+  * Called after mce notification in process context. This code
+  * is allowed to sleep. Call the high level VM handler to process
+@@ -1068,10 +1078,8 @@ void __attribute__((weak)) memory_failure(unsigned long pfn, int vector)
+  */
+ void mce_notify_process(void)
+ {
+-	unsigned long pfn;
+ 	mce_notify_irq();
+-	while (mce_ring_get(&pfn))
+-		memory_failure(pfn, MCE_VECTOR);
++	mce_memory_failure_process();
+ }
+ 
+ static void mce_process_work(struct work_struct *dummy)
 -- 
-1.7.3.4
+1.7.1
+
+
