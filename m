@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758161Ab1FQIi1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 04:38:27 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44402 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752326Ab1FQIiY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 04:38:24 -0400
-From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-To: Vladimir Pantelic <vladoman@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Fri, 17 Jun 2011 14:08:18 +0530
-Subject: RE: [PATCH v2] omap v4l2: fix wrong resizer calculation
-Thread-Topic: [PATCH v2] omap v4l2: fix wrong resizer calculation
-Thread-Index: AcwsyWymEs8CVcH6RgGK0c6LskBDGgAAEANQ
-Message-ID: <19F8576C6E063C45BE387C64729E739404E3072785@dbde02.ent.ti.com>
-References: <4DFB11A4.1040202@gmail.com>
-In-Reply-To: <4DFB11A4.1040202@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932157Ab1FQI65 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 04:58:57 -0400
+Received: from cantor.suse.de ([195.135.220.2]:56146 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758017Ab1FQI5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 04:57:18 -0400
+Subject: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary physical addresses
+From: Petr Tesarik <ptesarik@suse.cz>
+Organization: SUSE LINUX, s.r.o.
+Date: Fri, 17 Jun 2011 10:38:25 +0200
 MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106171038.25988.ptesarik@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch series enhances /dev/mem, so that read and write is possible
+at any address. The patchset includes actual implementation for x86.
 
-> -----Original Message-----
-> From: Vladimir Pantelic [mailto:vladoman@gmail.com]
-> Sent: Friday, June 17, 2011 2:05 PM
-> To: Kernel development list; linux-omap@vger.kernel.org; Hiremath, Vaibhav
-> Subject: [PATCH v2] omap v4l2: fix wrong resizer calculation
-> 
-> changes since v1:
-> 	reworded the commit message as requested
-[Hiremath, Vaibhav] Inline patch please, never submit patch as attachment to the list. 
+Petr Tesarik (10):
+  Return EOF on out-of-bounds read from /dev/mem
+  (un)xlate_dev_mem_ptr: use phys_addr_t for the @phys parameter
+  x86: translate highmem /dev/mem pointers
+  ia64: change xlate_dev_mem_ptr's argument to phys_addr_t
+  valid_phys_addr_range: use phys_addr_t for the @addr parameter
+  sh: change valid_phys_addr_range's @addr param to phys_addr_t
+  arm: change valid_phys_addr_range's @addr param to phys_addr_t
+  ia64: change valid_phys_addr_range's @addr param to phys_addr_t
+  x86: provide arch-specific valid_phys_addr_range()
+  Allow reading/writing all memory through /dev/mem
 
-Anyway, I have already applied this patch to my repository.
+ arch/arm/include/asm/io.h       |    2 +-
+ arch/arm/mm/mmap.c              |    2 +-
+ arch/ia64/include/asm/io.h      |    2 +-
+ arch/ia64/include/asm/uaccess.h |    2 +-
+ arch/ia64/kernel/efi.c          |    2 +-
+ arch/sh/include/asm/io.h        |    2 +-
+ arch/sh/mm/mmap.c               |    2 +-
+ arch/x86/include/asm/io.h       |   15 +++++++++++++--
+ arch/x86/mm/ioremap.c           |   24 ++++++++++++++++++------
+ drivers/char/mem.c              |   14 ++++++++++----
+ 10 files changed, 48 insertions(+), 19 deletions(-)
 
-Thanks,
-Vaibhav
+-- 
+1.7.3.4
+
