@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759244Ab1FQO6r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 10:58:47 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:55541 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754007Ab1FQO6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 10:58:45 -0400
-Date: Fri, 17 Jun 2011 07:58:38 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, akpm@linux-foundation.org,
-        benh@kernel.crashing.org, fweisbec@gmail.com, ak@linux.intel.com,
-        tim.c.chen@linux.intel.com
-Subject: Re: [GIT PULL rcu/urgent] Banishing kthreads
-Message-ID: <20110617145838.GA3312@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110617145723.GA3261@linux.vnet.ibm.com>
+	id S932329Ab1FQPD5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 11:03:57 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:39315 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932202Ab1FQPDx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 11:03:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110617145723.GA3261@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 17 Jun 2011 09:03:33 -0600
+X-Google-Sender-Auth: B3NqjOhQRaxw8dJMSxtnmBCLe0Q
+Message-ID: <BANLkTim87mTQKxkPOpHcowcAR4PSxyEKqw@mail.gmail.com>
+Subject: [GIT PULL] gpio fixes
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 07:57:23AM -0700, Paul E. McKenney wrote:
-> Hello, Ingo,
-> 
-> This pull request banishes RCU kthreads in the RCU_BOOST=n case,
-> in response to popular demand.  There are two commits in this
-> series:
-> 
-> 1.	Minimal patch that #ifdefs out the kthread code.
-> 
-> 2.	Code-movement patch that puts the code #ifdefed out above
-> 	under existing #ifdefs in kernel/rcutree_plugin.h.
-> 
-> These changes are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/urgent
+The following changes since commit 2c53b436a30867eb6b47dd7bab23ba638d1fb0d2:
 
-This time with the correct request-pull info.  :-/
+  Linux 3.0-rc3 (2011-06-13 15:29:59 -0700)
 
- 							Thanx, Paul
+are available in the git repository at:
+  git://git.secretlab.ca/git/linux-2.6 gpio/merge
+
+Ambresh K (1):
+      gpio/omap4: Fix missing interrupts during device wakeup due to IOPAD.
+
+Randy Dunlap (2):
+      gpio: include linux/gpio.h where needed
+      gpio: add GPIOF_ values regardless on kconfig settings
+
+ arch/arm/mach-pxa/spitz_pm.c    |    1 +
+ drivers/gpio/gpio-omap.c        |    5 +++--
+ drivers/pcmcia/pxa2xx_vpac270.c |    1 +
+ include/asm-generic/gpio.h      |   10 ----------
+ include/linux/gpio.h            |   11 +++++++++++
+ 5 files changed, 16 insertions(+), 12 deletions(-)
 
 
-------------------->
-
-Paul E. McKenney (2):
-      rcu: use softirq instead of kthreads except when RCU_BOOST=y
-      rcu: Move RCU_BOOST #ifdefs to header file
-
- kernel/rcutree.c        |  382 ++-----------------------------------------
- kernel/rcutree.h        |   13 ++-
- kernel/rcutree_plugin.h |  419 +++++++++++++++++++++++++++++++++++++++++++++--
- kernel/rcutree_trace.c  |   32 +++-
- 4 files changed, 456 insertions(+), 390 deletions(-)
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
