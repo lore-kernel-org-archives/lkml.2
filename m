@@ -1,91 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756334Ab1FQAjG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 20:39:06 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:38557 "EHLO gir.skynet.ie"
+	id S1757222Ab1FQApo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 20:45:44 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:36172 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753140Ab1FQAjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 20:39:02 -0400
-Date: Fri, 17 Jun 2011 01:38:23 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm-fixes
-Message-ID: <alpine.DEB.2.00.1106170133410.18960@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753376Ab1FQApm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 20:45:42 -0400
+Date: Thu, 16 Jun 2011 17:45:37 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andi Kleen <ak@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, shaohua.li@intel.com,
+        alex.shi@intel.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [GIT PULL] Re: REGRESSION: Performance regressions from
+ switching anon_vma->lock to mutex
+Message-ID: <20110617004536.GP2582@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <BANLkTikt88KnxTy8TuGGVrBVnXvsnL7nMQ@mail.gmail.com>
+ <20110615201216.GA4762@elte.hu>
+ <35c0ff16-bd58-4b9c-9d9f-d1a4df2ae7b9@email.android.com>
+ <20110616070335.GA7661@elte.hu>
+ <20110616171644.GK2582@linux.vnet.ibm.com>
+ <20110616202550.GA16214@elte.hu>
+ <1308262883.2516.71.camel@pasglop>
+ <20110616223837.GA18431@elte.hu>
+ <4DFA8802.6010300@linux.intel.com>
+ <20110616225803.GA28557@elte.hu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110616225803.GA28557@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 17, 2011 at 12:58:03AM +0200, Ingo Molnar wrote:
+> 
+> * Andi Kleen <ak@linux.intel.com> wrote:
+> 
+> > > There's a crazy solution for that: the idle thread could process 
+> > > RCU callbacks carefully, as if it was running user-space code.
+> > 
+> > In Ben's kernel NFS server case the system may not be idle.
+> 
+> An always-100%-busy NFS server is very unlikely, but even in the 
+> hypothetical case a kernel NFS server is really performing system 
+> calls from a kernel thread in essence. If it doesn't do it explicitly 
+> then its main loop can easily include a "check RCU callbacks" call.
 
-Hi,
+As long as they make sure to call it in a clean environment: no locks
+held and so on.  But I am a bit worried about the possibility of someone
+forgetting to put one of these where it is needed -- it would work just
+fine for most workloads, but could fail only for rare workloads.
 
-Slightly larger than I'd like, but Alex is still bringing up some variants 
-of the llano hardware platform with different output configurations, so 
-displaying something is nicer than just black screening. I've done some 
-testing on pre-llano systems and haven't seen any problems with it, so I'm 
-happy to push it.
+That said, invoking RCU core/callback processing from the scheduler
+context certainly sounds like an interesting way to speed up grace
+periods.
 
-Otherwise there is one i915 revert, the GMBUS code was causing some 
-problems with the core i2c and needs a rework, one regression fix for UMS 
-drivers since I split the pci/platform/usb code out, a couple of minor radeon 
-fixes, and one radeon fix for a bug with some floating i2c lines on 
-certain family of motherboards.
-
-Dave.
-
-The following changes since commit 21c5977a836e399fc710ff2c5367845ed5c2527f:
-
-  alpha: fix several security issues (2011-06-15 20:04:02 -0700)
-
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
-
-Alex Deucher (13):
-      drm/radeon/kms: signed fix for evergreen thermal
-      drm/radeon/kms: be more pedantic about the g5 quirk (v2)
-      drm/radeon/kms: clear wb memory by default
-      drm/radeon/kms: fix num crtcs for Cedar and Caicos
-      drm/radeon/kms: rework atombios_get_encoder_mode()
-      drm/radeon/kms: add missing external encoder action
-      drm/radeon/kms: add support for load detection on dp bridges
-      drm/radeon/kms: fix support for DDC on dp bridges
-      drm/radeon/kms: issue blank/unblank commands for ext encoders
-      drm/radeon/kms: fix handling of DP to LVDS bridges
-      drm/radeon/kms/atom: AdjustPixelClock fixes for DP bridges
-      drm/radeon/kms: set DP link config properly for DP bridges
-      drm/radeon/kms: use helper functions for fence read/write
-
-Christian Dietrich (1):
-      drivers/gpu/drm: use printk_ratelimited instead of printk_ratelimit
-
-Dave Airlie (2):
-      drm: make debug levels match in edid failure code.
-      drm/radeon: workaround a hw bug on some radeon chipsets with all-0 EDIDs.
-
-Jean Delvare (1):
-      Revert "drm/i915: Enable GMBUS for post-gen2 chipsets"
-
-Wolfram Sang (1):
-      drm: populate irq_by_busid-member for pci
-
- drivers/gpu/drm/drm_edid.c                 |   19 ++++-
- drivers/gpu/drm/drm_ioc32.c                |    9 +-
- drivers/gpu/drm/drm_pci.c                  |    3 +-
- drivers/gpu/drm/i915/intel_i2c.c           |    3 +-
- drivers/gpu/drm/radeon/atombios.h          |    1 +
- drivers/gpu/drm/radeon/atombios_crtc.c     |    7 ++
- drivers/gpu/drm/radeon/evergreen.c         |    3 +-
- drivers/gpu/drm/radeon/radeon_asic.c       |   31 +++++---
- drivers/gpu/drm/radeon/radeon_combios.c    |    9 ++-
- drivers/gpu/drm/radeon/radeon_connectors.c |   58 ++++++++++++--
- drivers/gpu/drm/radeon/radeon_device.c     |    2 +
- drivers/gpu/drm/radeon/radeon_encoders.c   |  112 +++++++++++++++++++++-------
- drivers/gpu/drm/radeon/radeon_fence.c      |   51 +++++++++----
- drivers/gpu/drm/radeon/radeon_mode.h       |    2 +
- include/drm/drm_crtc.h                     |    2 +
- 15 files changed, 237 insertions(+), 75 deletions(-)
+							Thanx, Paul
