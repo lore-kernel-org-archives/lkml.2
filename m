@@ -1,155 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757493Ab1FQQnN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 12:43:13 -0400
-Received: from ext190.halfdog.net ([88.116.147.190]:53706 "EHLO
-	mail.halfdog.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753590Ab1FQQnJ (ORCPT
+	id S1759482Ab1FQQXF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 12:23:05 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:45878 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750742Ab1FQQXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 12:43:09 -0400
-X-Greylist: delayed 1461 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Jun 2011 12:43:08 EDT
-Message-ID: <4DFB7E1C.3010509@halfdog.net>
-Date: Fri, 17 Jun 2011 16:17:32 +0000
-From: halfdog <me@halfdog.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:2.0pre) Gecko/20110408 Firefox/4.0pre SeaMonkey/2.1b3
+	Fri, 17 Jun 2011 12:23:02 -0400
+X-Sasl-enc: p26xreuVH2OFA3sNiKPdqiy0otxeoUdDTpUZXhjuxkJC 1308327781
+Date: Fri, 17 Jun 2011 09:22:47 -0700
+From: Greg KH <greg@kroah.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Nao Nishijima <nao.nishijima.xt@hitachi.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jcm@redhat.com, hare@suse.de, stefanr@s5r6.in-berlin.de,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
+Message-ID: <20110617162247.GA16261@kroah.com>
+References: <20110616181943.GB1439@kroah.com>
+ <1308256290.2436.143.camel@mulgrave>
+ <BANLkTikfCMR_=5Jp7tLhM_Wr3vxihEL+rA@mail.gmail.com>
+ <1308264321.2436.161.camel@mulgrave>
+ <BANLkTinvfmU0dszQyu4U=Pw3_BtrmOUi_g@mail.gmail.com>
+ <1308320844.2586.14.camel@mulgrave>
+ <BANLkTikMa6vO4m3tk1O2mtj76k6s66f2gQ@mail.gmail.com>
+ <1308322193.2586.30.camel@mulgrave>
+ <BANLkTinywFK3yAxN51O7RDYyqeNRHBRThA@mail.gmail.com>
+ <BANLkTinMzyQWZvxiRw4tvZBwW5xsxvMz-Q@mail.gmail.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Possible ext2/3/4 filesysystem iov_length integer overflow and strange
- behavior on large writes
-X-Enigmail-Version: 1.2a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTinMzyQWZvxiRw4tvZBwW5xsxvMz-Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Fri, Jun 17, 2011 at 06:12:14PM +0200, Kay Sievers wrote:
+> On Fri, Jun 17, 2011 at 17:39, Kay Sievers <kay.sievers@vrfy.org> wrote:
+> > On Fri, Jun 17, 2011 at 16:49, James Bottomley
+> 
+> >> So this is subsystem specific.  For the case of a SCSI enclosure, I can
+> >> answer that it's actually burned into the enclosure firmware.  When you
+> >> build an enclosure with labels, the label names are stored in a
+> >> diagnostic page.  We can actually interrogate the enclosure directly or
+> >> use the ses driver to get these names mapped to current devices.
+> >
+> > To me this sounds like a nice name on top of the current bunch of
+> > names, not like a 'preferred' name.
+> >
+> > I still don't like to introduce any new facility to the kernel that
+> > can handle only one single name. Reality the last years has taught us
+> > a very different story, and we've walked a long way to get where we
+> > are. I really don't believe single names will ever work, it's just a
+> > nice theory.
+> 
+> I might need to clarify this a bit.
+> 
+> I have no problem in general to add a 'alias' to every disk, and use
+> that when stuff is logged. Just the same way the netifs have an alias.
+> Sure, it might be useful for some use cases. And if that helps to
+> solve any real problem, we should just do it.
+> 
+> I just want to make clear, that I don't think that it is anywhere near
+> to a solution for the problems which are described here. And that
+> nobody should see this as an excuse not to get their stuff together
+> and work on the problem, which is that we don't have machine-readable
+> error and debug from the kernel and a smart syslog.
+> 
+> If we had that, I'm very sure nobody would even ask for a 'pretty
+> name' in the kernel, and I think that is a good indication that we are
+> not on the right track here.
 
-If I understand it correctly, there might be multiple iov_length
-interger overflows on 32bit arch in ext2, ext3, ext4, e.g.
+And I totally agree here, which is why I don't want to accept this
+change to the driver core to add this, as it's not the correct solution.
 
-fs/ext4/file.c:
+thanks,
 
-static ssize_t
-ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
-                unsigned long nr_segs, loff_t pos)
-{
-...
-        /*
-         * If we have encountered a bitmap-format file, the size limit
-         * is smaller than s_maxbytes, which is for extent-mapped files.
-         */
-        if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))) {
-                struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-                size_t length = iov_length(iov, nr_segs);  << length
-might be any value with more than 4GB data
-
-                if ((pos > sbi->s_bitmap_maxbytes ||
-                    (pos == sbi->s_bitmap_maxbytes && length > 0)))
-                        return -EFBIG;
-
-                if (pos + length > sbi->s_bitmap_maxbytes) {
-                        nr_segs = iov_shorten((struct iovec *)iov, nr_segs,
-                                              sbi->s_bitmap_maxbytes - pos);
-                }
-...
-
-
-Can someone confirm or refute that? I wrote a small test program, but
-failed to inflict damage on the kernel or filesystem, so I might have
-missed something. From source grep, also other filesystems might have
-the same problem.
-
-
-Apart from that, large iov writes seem to be uninteruptible. Sending a
-kill signal to the process in writev terminates it after finishing the
-syscall.
-
-./LargeWritevTest --File x --IovecNum 257 --BufferSize 16777216
-- --LastSize 10
-pkill -KILL LargeWritevTest
-
-[24306.588390] INFO: task LargeWritevTest:1390 blocked for more than 120
-seconds.
-[24306.589984] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
-disables this message.
-[24306.590512] WritevTest      D 00000086     0  1390   1380 0x00000004
-[24306.590571]  c8a91db0 00000082 c1040b73 00000086 00000000 c86a1940
-c86a1bcc c183a8c0
-[24309.657798]  8dcb7199 000014fc c86a1bc8 c183a8c0 c183a8c0 cac068c0
-c86a1940 c87e0ca0
-[24309.657871]  cac03640 c8605ae8 000581ca 00000380 00000000 00000001
-c8a91d90 c103351c
-[24309.657908] Call Trace:
-[24309.658226]  [<c1040b73>] ? entity_tick+0x73/0x130
-[24309.658284]  [<c103351c>] ? kmap_atomic_prot+0x4c/0x100
-[24309.658331]  [<c10e7dc0>] ? prep_new_page+0x110/0x1a0
-[24309.658439]  [<c15087e6>] __mutex_lock_slowpath+0xd6/0x140
-[24309.658526]  [<c1508355>] mutex_lock+0x25/0x40
-[24309.658547]  [<c10e3c1b>] generic_file_aio_write+0x4b/0xd0
-[24309.658587]  [<c11a9a84>] ext4_file_write+0x54/0x2a0
-[24309.658608]  [<c10e8809>] ? __alloc_pages_nodemask+0xf9/0x710
-[24309.658627]  [<c10e8809>] ? __alloc_pages_nodemask+0xf9/0x710
-[24309.658805]  [<c11a9a30>] ? ext4_file_write+0x0/0x2a0
-[24309.660607]  [<c1127676>] do_sync_readv_writev+0xa6/0xe0
-
-
-Since writev would allow 1024 segments a 1GB, one might be able to
-consume 1TB (all) disk space on a machine and the process cannot be
-stopped. On 32 bit architecture, the write stops after 2GB, but I'm not
-sure why. Would terrabyte writes be possible on 64-bit systems?
-
-On 32-bit, forking and calling write on different files has to be used
-instead. Since processes cannot be terminated, reboot does not unmount
-cleanly, so that might increase likelihood of disk corruption.
-
-For testing I used
-http://www.halfdog.net/Security/2011/ExtFilesystemIovecHandling/LargeWritevTest.c
-on an ext4 filesystem, but failed to understand the various outcomes.
-Especially un-comprehensible was the oscillation between disk-full and
-disk-free when writing with O_DIRECT to a disk with not enough free
-space. The behavior change also unexpected, when aligning the memory
-buffers to page-size or ext blocksize, or doing unaligned IO.
-
-
-7G free:
-./LargeWritevTest --File x --IovecNum 256 --BufferSize 16777216
-./LargeWritevTest --File x --IovecNum 257 --BufferSize 16777216
-- --LastSize 10tou
-./LargeWritevTest --File y --IovecNum 512 --BufferSize 16777216
-- --LastSize 16777215
-Write result 2147479552 (is 2^31-4096)
-
-./LargeWritevTest --File x --IovecNum 257 --BufferSize 16777216
-- --LastSize 10 --Align 65536
-Write result 16740352 (fast)
-
-3.9G free:
-./LargeWritevTest --File x --IovecNum 257 --BufferSize 16777216
-- --LastSize 10 --Align 65536 --Direct
-./LargeWritevTest --File x --IovecNum 256 --BufferSize 16777216 --Align
-65536 --Direct
-Write result -14 (immediate)
-
-./LargeWritevTest --File x --IovecNum 257 --BufferSize 16777216
-- --LastSize 10 --Direct
-./LargeWritevTest --File x --IovecNum 256 --BufferSize 16777216 --Direct
-Write result -22 (immediate)
-
-Less than 2GB:
-./LargeWritevTest --File z --IovecNum 257 --BufferSize 16777216
-- --LastSize 10 --Align 4096 --Direct
-Oscillates between disk empty/full?
-
-
-- -- 
-http://www.halfdog.net/
-PGP: 156A AE98 B91F 0114 FE88  2BD8 C459 9386 feed a bee
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.6 (GNU/Linux)
-
-iD8DBQFN+34jxFmThv7tq+4RAh5gAJ45kycXTOk4zD9R+J9jkEXQbeoJvACeI3oT
-KmEeBGVbF4ZDh3zaUN88mfg=
-=WFDh
------END PGP SIGNATURE-----
+greg k-h
