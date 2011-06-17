@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932208Ab1FQSO1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 14:14:27 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41530 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932066Ab1FQSOZ (ORCPT
+	id S932483Ab1FQSUM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 14:20:12 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:64580 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932405Ab1FQSUJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 14:14:25 -0400
-Subject: Re: REGRESSION: Performance regressions from switching
- anon_vma->lock to mutex
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Andi Kleen <ak@linux.intel.com>, Shaohua Li <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-In-Reply-To: <BANLkTim3vo0vpovV=5sU=GLxkotheB=Ryg@mail.gmail.com>
-References: <1308097798.17300.142.camel@schen9-DESK>
-	 <1308101214.15392.151.camel@sli10-conroe> <1308138750.15315.62.camel@twins>
-	 <20110615161827.GA11769@tassilo.jf.intel.com>
-	 <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
-	 <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
-	 <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
-	 <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com>
-	 <1308255972.17300.450.camel@schen9-DESK>
-	 <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com>
-	 <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
-	 <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com>
-	 <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
-	 <BANLkTinUBTYWxrF5TCuDSQuFUAyivXJXjQ@mail.gmail.com>
-	 <1308310080.2355.19.camel@twins>
-	 <BANLkTim2bmPfeRT1tS7hx2Z85QHjPHwU3Q@mail.gmail.com>
-	 <alpine.LSU.2.00.1106171040460.7018@sister.anvils>
-	 <BANLkTim3vo0vpovV=5sU=GLxkotheB=Ryg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 17 Jun 2011 20:18:08 +0200
-Message-ID: <1308334688.12801.19.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 17 Jun 2011 14:20:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ighUL2727UjDIibFUqCJcwMRs0s6YR4xlBIharZLceofsdCdnewxEmHYLPXBN3M3Cl
+         KV7hGqb0GPXe1mDNcA3PilBCLxxwaD5/QPebgFWTPgQ6gJu4w8jRFNnU1BccimsNWvPR
+         6rHjXNNd8De1OAE2h6Zpxb53xlvOGLAC2Hsek=
+MIME-Version: 1.0
+In-Reply-To: <87zklgnyj0.fsf@eliezer.anholt.net>
+References: <1308328920-2068-1-git-send-email-daniel.blueman@gmail.com>
+	<87zklgnyj0.fsf@eliezer.anholt.net>
+Date: Sat, 18 Jun 2011 02:20:08 +0800
+Message-ID: <BANLkTimKKcW3yfDBF2ahYag+kKvdMaA7Mw@mail.gmail.com>
+Subject: Re: [PATCH 3.0-rc3, v2] i915: Fix gen6 (SNB) GPU stalling
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: Eric Anholt <eric@anholt.net>
+Cc: Dave Airlie <airlied@redhat.com>, Chris Wilson <chris@chris-wilson.co.uk>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Ben Widawsky <ben@bwidawsk.net>,
+        Kenneth Graunke <kenneth@whitecape.org>, Yi Sun <yi.sun@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Mengmeng Meng <mengmeng.meng@intel.com>,
+        Robert Hooker <sarvatt@ubuntu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-17 at 11:01 -0700, Linus Torvalds wrote:
+On 18 June 2011 01:44, Eric Anholt <eric@anholt.net> wrote:
+> On Sat, 18 Jun 2011 00:42:00 +0800, Daniel J Blueman <daniel.blueman@gmail.com> wrote:
+>> Workaround Sandy Bridge GPU stalls by allowing the blitter command streamer
+>> to write interrupt state to the Hardware Status Page when a MI_USER_INTERRUPT
+>> command is decoded.
+>>
+>> v1->v2: Moved to prior interrupt handler installation and RMW flags as per
+>> feedback.
+>
+> We shouldn't be RMWing.  We're the driver, we're supposed to know what
+> we want.  I'm backing that bit out, will do another round of testing,
+> and send it off.
 
-> So I do think that "page_referenced_anon()" should do a trylock, and
-> return "referenced" if the trylock fails. Comments?
+I still prefer directly setting the mask due to my earlier reasons.
+Unmasking in the IRQ preinstall tests good here, so I'll send a v3
+patch in the morning.
 
-The only problem I can immediately see with that is when a single
-process' anon memory is dominant, then such an allocation will never
-succeed in freeing these pages because the one lock will pin pretty much
-all anon. Then again, there's always a few file pages to drop.
-
-That said, its rather unlikely, and iirc people were working on removing
-direct reclaim, or at least rely less on it.
-
-
-
+Thanks,
+  Daniel
+-- 
+Daniel J Blueman
