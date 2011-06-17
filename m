@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758690Ab1FQAtv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 20:49:51 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62054 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757950Ab1FQAtr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 20:49:47 -0400
-Date: Thu, 16 Jun 2011 18:49:44 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com
-Subject: Re: [PATCH] spi-topcliff-pch: Support new device ML7223 IOH
-Message-ID: <20110617004944.GA10160@ponder.secretlab.ca>
-References: <1308270865-18878-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+	id S1756086Ab1FQA5P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 20:57:15 -0400
+Received: from mga01.intel.com ([192.55.52.88]:16167 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753192Ab1FQA5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 20:57:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,378,1304319600"; 
+   d="scan'208";a="17278091"
+Message-ID: <4DFAA665.8070305@intel.com>
+Date: Fri, 17 Jun 2011 08:57:09 +0800
+From: Huang Ying <ying.huang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110510 Iceowl/1.0b2 Icedove/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308270865-18878-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH] ACPI, APEI, Add APEI _OSC support
+References: <1306303538-30524-1-git-send-email-ying.huang@intel.com> <20110614145246.GA17469@srcf.ucam.org> <4DF82CBC.5070400@intel.com> <20110615121703.GA8638@srcf.ucam.org> <4DF950EB.7050400@intel.com> <20110616013812.GA32494@srcf.ucam.org> <4DF962AE.60204@intel.com> <20110616015736.GA32533@srcf.ucam.org>
+In-Reply-To: <20110616015736.GA32533@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 09:34:25AM +0900, Tomoya MORINAGA wrote:
-> Support new device OKI SEMICONDUCTOR ML7223 IOH(Input/Output Hub).
-> The ML7223 IOH is for MP(Media Phone) use.
-> The ML7223 is companion chip for Intel Atom E6xx series.
-> The ML7223 is completely compatible for Intel EG20T PCH.
+On 06/16/2011 09:57 AM, Matthew Garrett wrote:
+> On Thu, Jun 16, 2011 at 09:55:58AM +0800, Huang Ying wrote:
+>> On 06/16/2011 09:38 AM, Matthew Garrett wrote:
+>>> I think we probably need to make the HEST decision early, and use that 
+>>> to decide how to make the generic call. Our experience has been that 
+>>> many firmware vendors only expect _OSC to be called once with any given 
+>>> UUID - multiple calls can result in unexpected behaviour.
+>>
+>> acpi_bus_osc_support is called via subsys_initcall.  It is a little hard
+>> to do all checking before that.  Is it possible to call
+>> acpi_bus_osc_support later?
 > 
-> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+> Yeah, this is going to be a problem. We have the HEST available at this 
+> point so we ought to be able to parse it, though. I'll take a look 
+> tomorrow.
 
-Applied, thanks.
+We can check the HEST table before _OSC evaluating.  But it is much
+harder to check software part, because we have implemented GHES support
+(Generic Hardware Error Source, the handler of firmware first mode
+hardware error notification) as device driver and module.
 
-g.
+So I think we can do that in 2 steps.  At first, we just enable WHEA
+UUID, because that is easier to do.  Then we find a way to implement
+"APEI bit" in generic _OSC call.  Do you think that is a good idea?
 
-> ---
->  drivers/spi/spi-topcliff-pch.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
-> index 1b8030b..5b574cf 100644
-> --- a/drivers/spi/spi-topcliff-pch.c
-> +++ b/drivers/spi/spi-topcliff-pch.c
-> @@ -95,11 +95,13 @@
->  /* Definition for ML7213 by OKI SEMICONDUCTOR */
->  #define PCI_VENDOR_ID_ROHM		0x10DB
->  #define PCI_DEVICE_ID_ML7213_SPI	0x802c
-> +#define PCI_DEVICE_ID_ML7223_SPI	0x800F
->  
->  /*
->   * Set the number of SPI instance max
->   * Intel EG20T PCH :		1ch
->   * OKI SEMICONDUCTOR ML7213 IOH :	2ch
-> + * OKI SEMICONDUCTOR ML7223 IOH :	1ch
->  */
->  #define PCH_SPI_MAX_DEV			2
->  
-> @@ -212,6 +214,7 @@ struct pch_pd_dev_save {
->  static struct pci_device_id pch_spi_pcidev_id[] = {
->  	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_GE_SPI),    1, },
->  	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ML7213_SPI), 2, },
-> +	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ML7223_SPI), 1, },
->  	{ }
->  };
->  
-> @@ -1711,4 +1714,4 @@ MODULE_PARM_DESC(use_dma,
->  		 "to use DMA for data transfers pass 1 else 0; default 1");
->  
->  MODULE_LICENSE("GPL");
-> -MODULE_DESCRIPTION("Intel EG20T PCH/OKI SEMICONDUCTOR ML7213 IOH SPI Driver");
-> +MODULE_DESCRIPTION("Intel EG20T PCH / OKI SEMICONDUCTOR ML7xxx IOH SPI Driver");
-> -- 
-> 1.7.4
-> 
+Best Regards,
+Huang Ying
