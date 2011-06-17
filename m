@@ -1,80 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758355Ab1FQQ5A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 12:57:00 -0400
-Received: from smtp.ispras.ru ([83.149.198.202]:56037 "EHLO smtp.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757406Ab1FQQ47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 12:56:59 -0400
-From: Pavel Shved <shved@ispras.ru>
-Cc: Pavel Shved <shved@ispras.ru>, linux-kernel@vger.kernel.org,
-        ldv-project@ispras.ru
-Subject: [PATCH] synclink_gt: add module_put on error path in hdlcdev_open()
-Date: Fri, 17 Jun 2011 20:25:13 +0400
-Message-Id: <1308327913-23220-4-git-send-email-shved@ispras.ru>
-X-Mailer: git-send-email 1.7.0.2
-In-Reply-To: <1308327913-23220-1-git-send-email-shved@ispras.ru>
-References: <1308327913-23220-1-git-send-email-shved@ispras.ru>
-To: Greg Kroah-Hartman <gregkh@suse.de>
+	id S1756313Ab1FQQdH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 12:33:07 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:54786 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755401Ab1FQQdF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 12:33:05 -0400
+Date: Fri, 17 Jun 2011 18:32:41 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@amd64.org>
+Subject: Re: [PATCH 5/8] x86, mce: introduce mce_sysdev_init()
+Message-ID: <20110617163241.GE20010@aftab>
+References: <4DFB1242.90404@jp.fujitsu.com>
+ <4DFB1438.3030504@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DFB1438.3030504@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hdlcdev_open() calls try_module_get, and does not put the module when
-other functions subsequently called fail.
+On Fri, Jun 17, 2011 at 04:45:44AM -0400, Hidetoshi Seto wrote:
+> As a one of mce_sysdev_ family, coordinate a single function that
+> initializes sysfs hierarchy here.
+> 
+> Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce.c |   65 ++++++++++++++++++++-----------------
+>  1 files changed, 35 insertions(+), 30 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index ad0e9fb..0424299 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -1953,6 +1953,39 @@ static __cpuinit void mce_sysdev_remove(unsigned int cpu)
+>  	cpumask_clear_cpu(cpu, mce_sysdev_initialized);
+>  }
+>  
+> +static __init int mce_sysdev_init(void)
+> +{
+> +	int err, i;
+> +
+> +	zalloc_cpumask_var(&mce_sysdev_initialized, GFP_KERNEL);
+> +
+> +	/* init attributes for each mce_banks */
+> +	for (i = 0; i < banks; i++) {
+> +		struct mce_bank *b = &mce_banks[i];
+> +		struct sysdev_attribute *a = &b->attr;
+> +
+> +		sysfs_attr_init(&a->attr);
+> +		a->attr.name	= b->attrname;
+> +		snprintf(b->attrname, ATTR_LEN, "bank%d", i);
+> +
+> +		a->attr.mode	= 0644;
+> +		a->show		= show_bank;
+> +		a->store	= set_bank;
+> +	}
+> +
+> +	err = sysdev_class_register(&mce_sysdev_class);
+> +	if (err)
+> +		return err;
+> +
+> +	for_each_online_cpu(i) {
+> +		err = mce_sysdev_create(i);
+> +		if (err)
+> +			return err;
+> +	}
 
-The patch adds an exit point in hdlcdev_open() that calls module_put()
-after such errors.
+Yeah, let's handle the error case here and unwind to a sane state:
 
-Found by Linux Driver Verification project (linuxtesting.org).
+	if (err)
+		goto sysdev_unwind;
+...
 
-Signed-off-by: Pavel Shved <shved@ispras.ru>
----
- drivers/tty/synclink_gt.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+sysdev_unwind:
+	while (--i > 0)
+		mce_sysdev_remove(i);
 
-diff --git a/drivers/tty/synclink_gt.c b/drivers/tty/synclink_gt.c
-index 18b48cd..e1e89a0 100644
---- a/drivers/tty/synclink_gt.c
-+++ b/drivers/tty/synclink_gt.c
-@@ -1542,14 +1542,15 @@ static int hdlcdev_open(struct net_device *dev)
- 
- 	/* generic HDLC layer open processing */
- 	if ((rc = hdlc_open(dev)))
--		return rc;
-+		goto do_put;
- 
- 	/* arbitrate between network and tty opens */
- 	spin_lock_irqsave(&info->netlock, flags);
- 	if (info->port.count != 0 || info->netcount != 0) {
- 		DBGINFO(("%s hdlc_open busy\n", dev->name));
- 		spin_unlock_irqrestore(&info->netlock, flags);
--		return -EBUSY;
-+		rc = -EBUSY;
-+		goto do_put;
- 	}
- 	info->netcount=1;
- 	spin_unlock_irqrestore(&info->netlock, flags);
-@@ -1559,7 +1560,7 @@ static int hdlcdev_open(struct net_device *dev)
- 		spin_lock_irqsave(&info->netlock, flags);
- 		info->netcount=0;
- 		spin_unlock_irqrestore(&info->netlock, flags);
--		return rc;
-+		goto do_put;
- 	}
- 
- 	/* assert DTR and RTS, apply hardware settings */
-@@ -1579,6 +1580,10 @@ static int hdlcdev_open(struct net_device *dev)
- 	else
- 		netif_carrier_off(dev);
- 	return 0;
-+
-+do_put:
-+	module_put(THIS_MODULE);
-+	return rc;
- }
- 
- /**
+
+> +
+> +	return err;
+> +}
+> +
+>  /* Make sure there are no machine checks on offlined CPUs. */
+>  static void __cpuinit mce_disable_cpu(void *h)
+>  {
+> @@ -2025,46 +2058,18 @@ static struct notifier_block mce_cpu_notifier __cpuinitdata = {
+>  	.notifier_call = mce_cpu_callback,
+>  };
+>  
+> -static __init void mce_init_banks(void)
+> -{
+> -	int i;
+> -
+> -	for (i = 0; i < banks; i++) {
+> -		struct mce_bank *b = &mce_banks[i];
+> -		struct sysdev_attribute *a = &b->attr;
+> -
+> -		sysfs_attr_init(&a->attr);
+> -		a->attr.name	= b->attrname;
+> -		snprintf(b->attrname, ATTR_LEN, "bank%d", i);
+> -
+> -		a->attr.mode	= 0644;
+> -		a->show		= show_bank;
+> -		a->store	= set_bank;
+> -	}
+> -}
+> -
+>  static __init int mcheck_init_device(void)
+>  {
+>  	int err;
+> -	int i = 0;
+>  
+>  	if (!mce_available(&boot_cpu_data))
+>  		return -EIO;
+>  
+> -	zalloc_cpumask_var(&mce_sysdev_initialized, GFP_KERNEL);
+> -
+> -	mce_init_banks();
+> -
+> -	err = sysdev_class_register(&mce_sysdev_class);
+> +	/* register sysfs interface */
+> +	err = mce_sysdev_init();
+>  	if (err)
+>  		return err;
+>  
+> -	for_each_online_cpu(i) {
+> -		err = mce_sysdev_create(i);
+> -		if (err)
+> -			return err;
+> -	}
+> -
+>  	register_syscore_ops(&mce_syscore_ops);
+>  	register_hotcpu_notifier(&mce_cpu_notifier);
+>  
+> -- 
+> 1.7.1
+
+Thanks.
+
 -- 
-1.7.0.2
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
