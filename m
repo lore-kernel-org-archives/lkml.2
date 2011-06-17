@@ -1,105 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932803Ab1FQTH3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 15:07:29 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61772 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757435Ab1FQTHZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 15:07:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=GORU8i0a767u6/vRSGQrcpHJlmyF3uMrYeDHA6iZVbrZ9H/YXBDTtWtX3n/18nVtV7
-         x9DMCAwtCTSyg/BAjXCqyY0SleWK8yj+A33qgmUbGlA4Eg7ZiiTKbEF2/MfXRxamoPYi
-         JEH7iNQJxAcaBwgqT6YdXfrhbIFVs12/DWhJc=
+	id S932841Ab1FQTIc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 15:08:32 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:51390 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756286Ab1FQTIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 15:08:30 -0400
+Date: Fri, 17 Jun 2011 21:07:05 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, shaohua.li@intel.com,
+        alex.shi@intel.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: REGRESSION: Performance regressions from switching
+ anon_vma->lock to mutex
+Message-ID: <20110617190705.GA26824@elte.hu>
+References: <1308097798.17300.142.camel@schen9-DESK>
+ <20110615003600.GA9602@tassilo.jf.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <4DFBA001.4010500@fb.com>
-References: <20110615163115.773d072e.akpm@linux-foundation.org>
- <1308187784-3815-1-git-send-email-asharma@fb.com> <BANLkTi=f2N+dO2nBLobM73jCg0U0QSqxNQ@mail.gmail.com>
- <4DFB8AAF.1040002@fb.com> <BANLkTindmEA7NsaRjuukh1-oRCtVWpeuCA@mail.gmail.com>
- <4DFB93C1.9000901@fb.com> <BANLkTim5zEo=Rn2sqUExL-8n=p4inLEpuQ@mail.gmail.com>
- <4DFBA001.4010500@fb.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Fri, 17 Jun 2011 15:07:04 -0400
-Message-ID: <BANLkTinQhBfAJd5-ZaPXbiV778c9fvXeWg@mail.gmail.com>
-Subject: Re: [PATCH] atomic: cleanup asm-generic atomic*.h inclusion
-To: Arun Sharma <asharma@fb.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110615003600.GA9602@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 14:42, Arun Sharma wrote:
-> On 6/17/11 11:06 AM, Mike Frysinger wrote:
->> fixes one thing while breaking another.  linux/atomic.h includes
->> asm/atomic.h which includes asm-generic/atomic.h which includes
->> asm-generic/atomic-long.h which needs atomic_add_unless(), but that
->> isnt provided until after the asm/atomic.h include in linux/atomic.h.
->>
->> but linux/atomic.h needs asm/atomic.h before atomic_add_unless()
->> because it relies on the new __atomic_add_unless().
->
-> Right. I think we need to get rid of that include as well:
 
-ok, then we get to your proposed asm-generic/atomic.h change not being
-correct.  instead of deleting atomic_add_unless(), it probably should
-redo it to __atomic_add_unless().  people using asm-generic/atomic.h
-are not defining __atomic_add_unless() themselves.
+* Andi Kleen <ak@linux.intel.com> wrote:
 
-  CC      arch/blackfin/kernel/asm-offsets.s
-In file included from include/linux/spinlock.h:387,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:57,
-                 from arch/blackfin/kernel/asm-offsets.c:10:
-include/linux/atomic.h: In function ‘atomic_add_unless’:
-include/linux/atomic.h:17: error: implicit declaration of function
-‘__atomic_add_unless’
-make[1]: *** [arch/blackfin/kernel/asm-offsets.s] Error 1
+> > On 2.6.39, the contention of anon_vma->lock occupies 3.25% of cpu.
+> > However, after the switch of the lock to mutex on 3.0-rc2, the mutex
+> > acquisition jumps to 18.6% of cpu.  This seems to be the main cause of
+> > the 52% throughput regression.
+> > 
+> This patch makes the mutex in Tim's workload take a bit less CPU time
+> (4% down) but it doesn't really fix the regression. When spinning for a 
+> value it's always better to read it first before attempting to write it.
+> This saves expensive operations on the interconnect.
+> 
+> So it's not really a fix for this, but may be a slight improvement for 
+> other workloads.
+> 
+> -Andi
+> 
+> >From 34d4c1e579b3dfbc9a01967185835f5829bd52f0 Mon Sep 17 00:00:00 2001
+> From: Andi Kleen <ak@linux.intel.com>
+> Date: Tue, 14 Jun 2011 16:27:54 -0700
+> Subject: [PATCH] mutex: while spinning read count before attempting cmpxchg
+> 
+> Under heavy contention it's better to read first before trying to 
+> do an atomic operation on the interconnect.
+> 
+> This gives a few percent improvement for the mutex CPU time under 
+> heavy contention and likely saves some power too.
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  kernel/mutex.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/mutex.c b/kernel/mutex.c
+> index d607ed5..1abffa9 100644
+> --- a/kernel/mutex.c
+> +++ b/kernel/mutex.c
+> @@ -170,7 +170,8 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+>  		if (owner && !mutex_spin_on_owner(lock, owner))
+>  			break;
+>  
+> -		if (atomic_cmpxchg(&lock->count, 1, 0) == 1) {
+> +		if (atomic_read(&lock->count) == 1 && 
+> +		    atomic_cmpxchg(&lock->count, 1, 0) == 1) {
+>  			lock_acquired(&lock->dep_map, ip);
+>  			mutex_set_owner(lock);
+>  			preempt_enable();
 
->> having linux/atomic.h and asm-generic/atomic.h just strikes me as
->> wrong.  the point of asm-generic is to unify things, but now we have
->> two places to unify things without 0 indication as to which is for
->> which ?  i'm wondering if we shouldnt convert all arches to
->> asm-generic/atomic.h and then add your new logic there and just skip
->> this whole linux/atomic.h mess.
->
-> I believe the logic is:
->
-> <asm-generic/atomic.h> shared code for simple archs that don't want to
-> define their own primitives. Only used by 4 archs.
 
-i think the 4 is only really because asm-generic/atomic.h is so new.
-those arches are also new and started with it, or did work to convert
-over.  i imagine a lot of the existing arches could convert over to
-it.
+What is *sorely* missing from your changelog (again) is the 
+explanation of *why* it improves performance in the contended case: 
+because the cacheline is brought into shared-read MESI state which 
+the CMPXCHG might not dirty if the CMPXCHG fails in the contended 
+case.
 
-> <linux/atomic.h> a header file that's usable in machine independent kernel
-> code.
+Firstly, this reduces the cost of hard bounces somewhat because the 
+owner CPU still has the cacheline in read-shared state, which it can 
+invalidate from the other CPU's cache on unlock in a bit cheaper way 
+if it were forced to bounce the cacheline back.
 
-if that's the direction we want to take things, then this needs to be
-documented at the top of both files.  i also see quite a lot of
-primitives in asm-generic/atomic.h that would be better placed using
-your definitions in linux/atomic.h.
+Secondly, in the contended case more that 2 CPUs are looping on the 
+same cacheline and bringing it in shared and doing the cmpxchg loop 
+will not bounce the cacheline around (if CMPXCHG is smart enough to 
+not dirty the cacheline even in the failed case - this is CPU model 
+dependent) - it will spread to all interested CPUs in read-shared 
+state. This is most likely the dominant factor in Tim's tests.
 
-i would refine your asm-generic/atomic.h definition as "simple C
-definitions useful for UP systems only"
+Had you considered and described all that then you'd inevitably have 
+been led to consider the much more important issue that is missing 
+from your patch: the analysis of what happens to the cacheline under 
+*light* contention, which is by far the most important case ...
 
-> My guess is that if <linux/atomic.h> existed in 2006, people would've added
-> shared code over there.
+In the lightly contended case it's ultimately bad to bring in the 
+cacheline as read-shared first, because the cmpxchg will have to go 
+out to the MESI interconnect *again*: this time to flush the 
+cacheline from the previous owner CPU's cache.
 
-i'd propose that the guy adding linux/atomic.h was lazy and punked out
-rather than doing real work
+So i don't think we want your patch, without some really good 
+supporting facts and analysis that show that the lightly contended 
+case does not suffer.
 
-> Also, the code in <asm-generic/atomic.h> is not truly generic:
+Thanks,
 
-sure it is.  it'll work on any arch in a UP setup.  it (currently)
-does not support SMP by design.
--mike
+	Ingo
