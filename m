@@ -1,87 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366Ab1FQOs4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 10:48:56 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:35716 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932238Ab1FQOsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 10:48:54 -0400
-From: Arnaud Giersch <arnaud.giersch@free.fr>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] coredump: call vfs_getattr() to get inode attributes
-Date: Fri, 17 Jun 2011 16:48:43 +0200
-Message-ID: <87ei2ssed0.fsf@free.fr>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1759259Ab1FQOun (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 10:50:43 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:41914 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932505Ab1FQOt7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 10:49:59 -0400
+Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device
+ structure
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Greg KH <greg@kroah.com>, Nao Nishijima <nao.nishijima.xt@hitachi.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jcm@redhat.com, hare@suse.de, stefanr@s5r6.in-berlin.de,
+        yrl.pp-manager.tt@hitachi.com
+In-Reply-To: <BANLkTikMa6vO4m3tk1O2mtj76k6s66f2gQ@mail.gmail.com>
+References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp>
+	 <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp>
+	 <20110615153337.GA10160@kroah.com> <4DF9F11F.705@hitachi.com>
+	 <20110616154129.GA31498@kroah.com> <1308239454.2436.34.camel@mulgrave>
+	 <20110616161442.GA32113@kroah.com> <1308241506.2436.44.camel@mulgrave>
+	 <20110616181943.GB1439@kroah.com> <1308256290.2436.143.camel@mulgrave>
+	 <BANLkTikfCMR_=5Jp7tLhM_Wr3vxihEL+rA@mail.gmail.com>
+	 <1308264321.2436.161.camel@mulgrave>
+	 <BANLkTinvfmU0dszQyu4U=Pw3_BtrmOUi_g@mail.gmail.com>
+	 <1308320844.2586.14.camel@mulgrave>
+	 <BANLkTikMa6vO4m3tk1O2mtj76k6s66f2gQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Jun 2011 10:49:53 -0400
+Message-ID: <1308322193.2586.30.camel@mulgrave>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaud Giersch <arnaud.giersch@free.fr>
+On Fri, 2011-06-17 at 16:40 +0200, Kay Sievers wrote:
+> On Fri, Jun 17, 2011 at 16:27, James Bottomley
+> <James.Bottomley@hansenpartnership.com> wrote:
+> > On Fri, 2011-06-17 at 01:04 +0200, Kay Sievers wrote:
+> >> >> We need many names, and we need all of them from the very
+> >> beginning,
+> >> >> and they should not change during device lifetime unless the device
+> >> >> state changes.
+> >> >
+> >> > So that's actually an argument for leaving the links, surely?  We
+> >> can
+> >> > have many inbound links, but the kernel can only print one name in
+> >> > messages, which would be the preferred name that was currently set.
+> >>
+> >> I really question any concept of _the_ name. My take on it: It will
+> >> never work in reality.
+> >
+> > OK, so lets take the common example: a desktop with three disks and an
+> > enclosure with three slots and labels "fred", "jim", and "betty".
+> >
+> > The desired outcome is that whenever the user manipulates those devices
+> > he uses a name related to the label, so whenever dmesg flags a problem,
+> > it says sd betty:  device offline or something.  Whenever he mounts, he
+> > mounts by /dev/disk/by-preferred/betty (or whatever the current udev
+> > vernacular is).  Whenever smartmon says there's an over temp problem. it
+> > says that fred has it;  cat /proc/partitions shows how fred, jim and
+> > betty are partitioned and so on.
+> >
+> > To do this, we set the preferred name at start of day via a machine
+> > specific customisation.  For an enclosure, there's a standard way of
+> > mapping the name to the device, so we'd just use that, but it's not
+> > impossible to imagine systems with stranger entities that require per
+> > motherboard customisations.
+> >
+> > Once the name is set in boot up, we, in fact, never alter it.
+> >
+> > With the kernel patch proposed and a corresponding update to udev
+> > actually makes all the above happen.  There have to be tweaks to the
+> > startup scripts, like smartd needs a file configuration that lists the
+> > disk by preferred path so that the output is correct.
+> >
+> > Obviously, I chose the commands above so there is no need to modify any
+> > of them.  There will be utilities (like overly smart san managers) that
+> > do derive the name and will need updating, but they're not among the
+> > standard workstation admin tools.
+> 
+> Ok, the still remaining questions:
+> 
+> Why isn't logging all symlink names during device discovery solving
+> all the problems we discuss without any change to the kernel? It's
+> just a single udev rule that can be added to ages old systems today. I
+> think that solves exactly the same problem and works with many names
+> at the same time.
 
-In do_coredump(), call vfs_getattr() to get inode attributes, and do not
-get them directly from the fields of the inode struct.
+It could ... but that doesn't solve the prink problem or
+the /proc/partitions one.  The idea is to allow naive users to identify
+their device physically when the system logs something about it.  Having
+to describe a manual mapping procedure is very complex for them.
 
-Without this patch, when dumping core on an NFSv4 mount, and the i_uid
-field is not correctly filled at open time, the uid check fails, and an
-empty core dump is produced.
+> Where is "fred", "jim", and "betty" stored on bootup?
 
-This apparently only happens when there was no "core" file before the
-dump.  If a "core" file owned by the current user is already present, it
-is correctly filled.
+So this is subsystem specific.  For the case of a SCSI enclosure, I can
+answer that it's actually burned into the enclosure firmware.  When you
+build an enclosure with labels, the label names are stored in a
+diagnostic page.  We can actually interrogate the enclosure directly or
+use the ses driver to get these names mapped to current devices.
 
-The reason is that decode_attr_owner() in fs/nfs/nfs4xdr.c is not
-allowed to call the idmapper when it receives may_sleep = 0 (see commit
-80e52aced138bb41b045a8595a87510f27d8d8c5, and some explanations in
-http://article.gmane.org/gmane.linux.nfs/33391).
+> What are the keys to match the pretty names to the disks?
+> 
+> The pretty name is a one-shot setting only? If not how is a change
+> handled for already used devices?
 
-Signed-off-by: Arnaud Giersch <arnaud.giersch@free.fr>
----
- fs/exec.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
+obviously, one device will be root, and it will already be used
+as /dev/root, but the proposal isn't to change any name, it's merely to
+set "fred" as the preferred name for /dev/root, which is also /dev/sdc
+and /dev/disk/by-id/naa-566dce3ddf etc ...
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 97e0d52..8a73425 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -2147,7 +2147,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- 			goto close_fail;
-  		}
- 	} else {
--		struct inode *inode;
-+		struct kstat stat;
- 
- 		if (cprm.limit < binfmt->min_coredump)
- 			goto fail_unlock;
-@@ -2158,8 +2158,10 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- 		if (IS_ERR(cprm.file))
- 			goto fail_unlock;
- 
--		inode = cprm.file->f_path.dentry->d_inode;
--		if (inode->i_nlink > 1)
-+		if (vfs_getattr(cprm.file->f_path.mnt, cprm.file->f_path.dentry,
-+				&stat))
-+			goto close_fail;
-+		if (stat.nlink > 1)
- 			goto close_fail;
- 		if (d_unhashed(cprm.file->f_path.dentry))
- 			goto close_fail;
-@@ -2167,13 +2169,13 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- 		 * AK: actually i see no reason to not allow this for named
- 		 * pipes etc, but keep the previous behaviour for now.
- 		 */
--		if (!S_ISREG(inode->i_mode))
-+		if (!S_ISREG(stat.mode))
- 			goto close_fail;
- 		/*
- 		 * Dont allow local users get cute and trick others to coredump
- 		 * into their pre-created files.
- 		 */
--		if (inode->i_uid != current_fsuid())
-+		if (stat.uid != current_fsuid())
- 			goto close_fail;
- 		if (!cprm.file->f_op || !cprm.file->f_op->write)
- 			goto close_fail;
+> How will this information be available in the initramfs, where
+> mutltiple disks might need to be mounted already? Initramfs images are
+> generic and not created per host.
+
+That's initramfs specific.  However, if, in deference to your new
+location, we look at dracut, it has a modules directory for plugin
+extensions.  The scripts which do the mapping can be inserted there as
+an additional rpm.
+
+> How are multipath setups handled where the exact same disk is behind
+> multiple kernel devices? What to put into these names in this case?
+
+I'm not sure I understand the question.  a md setup of RAID-1 on fred
+and betty would assemble using /dev/disk/by-preferred/fred
+and /dev/disk/by-preferred/betty.  Whether the user want's to
+call /dev/md0 something pretty is up to them ... it's not a physically
+labelled entity, so I'd tend just to leave it with its default name as
+the preferred name.
+
+James
+
+
