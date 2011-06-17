@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755682Ab1FQDNv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 23:13:51 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:51724 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754886Ab1FQDNs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 23:13:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=XF00Ru7ZMm7ZxsRv3xWtj0JSrQ5VFwFUg/cJex3C2JsBSw3Jsz8DqTNxaWut9M6+DA
-         MNKjgpBUjPAzQPTJ1lWE6KJ9ZjZuK+2l3RWg9jJkvQ73LE8wzZdPkfLgh9kjGiblxWlC
-         Oye4KVzspUTeS16zqzu0Ray0BdDud3iWPevBk=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTinM_=bAjD59=GiKtTvjLtoOs7KCFA@mail.gmail.com>
-References: <BANLkTinM_=bAjD59=GiKtTvjLtoOs7KCFA@mail.gmail.com>
-Date: Thu, 16 Jun 2011 20:13:47 -0700
-Message-ID: <BANLkTim=HFbgYPa-2VJWL+e4mEKqkU503A@mail.gmail.com>
-Subject: Re: X32 project status update
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: GCC Development <gcc@gcc.gnu.org>,
-        GNU C Library <libc-alpha@sourceware.org>,
-        LKML <linux-kernel@vger.kernel.org>, x32-abi@googlegroups.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755840Ab1FQDPY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 23:15:24 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:43119 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755028Ab1FQDPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 23:15:20 -0400
+Date: Fri, 17 Jun 2011 13:15:15 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ryan Mallon <rmallon@gmail.com>,
+        H Hartley Sweeten <hartleys@visionengravers.com>
+Subject: linux-next: manual merge of the gpio tree with the trivial tree
+Message-Id: <20110617131515.f6e6c5a9.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Grant,
 
-This is the x32 project status update:
+Today's linux-next merge of the gpio tree got a conflict in
+drivers/gpio/gpio-ep93xx.c between commit 1c5454eed85a ("Change Ryan
+Mallon's email address across the kernel") from the trivial tree and
+commit 1e4c88420e0d ("gpio/ep93xx: convert to platform_driver and use
+basic_mmio_gpio library") from the gpio tree.
 
-https://sites.google.com/site/x32abi/
-
-With the latest x32 kernel, glibc, gcc and gdb, everything
-works, including core dump and vDSO.
-
-I'd like to see x32 kernel system call numbers be finalized
-so that people don't have to recompile everything if the final
-x32 kernel system call numbers are different from the current
-one.
-
-I started to prepare merging GCC x32 branch with trunk followed
-by glibc and gdb patches.  I have sent 7 middle-end patches so
-far. I got feedbacks on 3 of them.  I checked in one patch.  I
-provided one update and I am investigating the 3rd feedback.
-I have more middle-end patches.
-
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
 -- 
-H.J.
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/gpio/gpio-ep93xx.c
+index 1a0f852,3bfd341..0000000
+--- a/drivers/gpio/gpio-ep93xx.c
++++ b/drivers/gpio/gpio-ep93xx.c
+@@@ -1,9 -1,8 +1,8 @@@
+  /*
+-  * linux/arch/arm/mach-ep93xx/gpio.c
+-  *
+   * Generic EP93xx GPIO handling
+   *
+ - * Copyright (c) 2008 Ryan Mallon <ryan@bluewatersys.com>
+ + * Copyright (c) 2008 Ryan Mallon
++  * Copyright (c) 2011 H Hartley Sweeten <hsweeten@visionengravers.com>
+   *
+   * Based on code originally from:
+   *  linux/arch/arm/mach-ep93xx/core.c
