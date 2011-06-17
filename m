@@ -1,17 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab1FQR6u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 13:58:50 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43475 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932100Ab1FQR6s (ORCPT
+	id S1758745Ab1FQSCR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 14:02:17 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42611 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755133Ab1FQSCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 13:58:48 -0400
-Subject: Re: REGRESSION: Performance regressions from switching
- anon_vma->lock to mutex
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+	Fri, 17 Jun 2011 14:02:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LSU.2.00.1106171040460.7018@sister.anvils>
+References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe>
+ <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com>
+ <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
+ <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
+ <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
+ <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com> <1308255972.17300.450.camel@schen9-DESK>
+ <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com> <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
+ <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com> <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
+ <BANLkTinUBTYWxrF5TCuDSQuFUAyivXJXjQ@mail.gmail.com> <1308310080.2355.19.camel@twins>
+ <BANLkTim2bmPfeRT1tS7hx2Z85QHjPHwU3Q@mail.gmail.com> <alpine.LSU.2.00.1106171040460.7018@sister.anvils>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 17 Jun 2011 11:01:08 -0700
+Message-ID: <BANLkTim3vo0vpovV=5sU=GLxkotheB=Ryg@mail.gmail.com>
+Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
+ to mutex
 To: Hugh Dickins <hughd@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
         Shaohua Li <shaohua.li@intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -28,48 +42,48 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "Rafael J. Wysocki" <rjw@sisk.pl>
-In-Reply-To: <alpine.LSU.2.00.1106171040460.7018@sister.anvils>
-References: <1308097798.17300.142.camel@schen9-DESK>
-	 <1308101214.15392.151.camel@sli10-conroe> <1308138750.15315.62.camel@twins>
-	 <20110615161827.GA11769@tassilo.jf.intel.com>
-	 <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
-	 <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
-	 <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
-	 <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com>
-	 <1308255972.17300.450.camel@schen9-DESK>
-	 <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com>
-	 <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
-	 <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com>
-	 <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
-	 <BANLkTinUBTYWxrF5TCuDSQuFUAyivXJXjQ@mail.gmail.com>
-	 <1308310080.2355.19.camel@twins>
-	 <BANLkTim2bmPfeRT1tS7hx2Z85QHjPHwU3Q@mail.gmail.com>
-	 <alpine.LSU.2.00.1106171040460.7018@sister.anvils>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 17 Jun 2011 19:55:19 +0200
-Message-ID: <1308333319.12801.15.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-17 at 10:41 -0700, Hugh Dickins wrote:
-> > The only thing I don't love about the batching is that we now do hold
-> > the lock over some situations where we _could_ have allowed
-> > concurrency (notably some avc allocations), but I think it's a good
-> > trade-off. And walking the list twice at unlink_anon_vmas() should be
-> > basically free.
-> 
+On Fri, Jun 17, 2011 at 10:41 AM, Hugh Dickins <hughd@google.com> wrote:
+>
 > Applying load with those two patches applied (combined patch shown at
 > the bottom, in case you can tell me I misunderstood what to apply,
 > and have got the wrong combination on), lockdep very soon protested.
 
-Gah, of course. Its exactly the case Linus mentioned not loving. We can
-get reclaim recursion due to the avc allocation, we hold anon_vma->mutex
-while doing a (blocking) allocation, and reclaim can end up trying to
-obtain said lock trying to free some memory.
+Combined patch looks good, it's just the one without the NULL ptr tests removed.
 
-Bugger. /me goes investigate
+And yup, that makes sense. Since we now hold the anon_vma lock over an
+allocation, the memory allocation might want to start to free things.
 
+> I've not given it _any_ thought, and won't be able to come back to
+> it for a couple of hours: chucked over the wall for your delectation.
+
+It's a mis-feature of "page_referenced()": we can call it without
+holding any page locks ("is_locked=0"), and that function will then do
+a try_lock() on the page, and just consider it referenced if it
+failed.
+
+HOWEVER, the code to then do the same thing for the anon_vma lock
+doesn't do the same trylock model, because it used to be a spinlock:
+so there was "no need" (since you can never do a non-atomic allocation
+from within a spinlock).
+
+So this is arguably a bug in memory reclaim, but sicne the
+mutex->spinlock conversion had been pretty mindless, nobody noticed
+until the mutex region grew.
+
+So I do think that "page_referenced_anon()" should do a trylock, and
+return "referenced" if the trylock fails. Comments?
+
+That said, we have a few other mutexes that are just not allowed to be
+held over an allocation. page_referenced_file() has that
+mapping->i_mmap_mutex lock, for example. So maybe the rule just has to
+be "you cannot hold anon_vma lock over an allocation". Which would be
+sad: one of the whole _points_ of turning it from a spinlock to a
+mutex would be that it relaxes the locking rules a lot (and not just
+the preemptibility)
+
+                      Linus
