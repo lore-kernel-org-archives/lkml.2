@@ -1,36 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528Ab1FQDgH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 23:36:07 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47489 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756428Ab1FQDgE (ORCPT
+	id S1756281Ab1FQDfs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 23:35:48 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:55192 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756082Ab1FQDfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 23:36:04 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DFACB8A.2020008@jp.fujitsu.com>
-Date: Fri, 17 Jun 2011 12:35:38 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: hch@infradead.org
-CC: david@fromorbit.com, linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 0/12] Per superblock cache reclaim
-References: <1306998067-27659-1-git-send-email-david@fromorbit.com> <20110616113321.GA22422@infradead.org>
-In-Reply-To: <20110616113321.GA22422@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 16 Jun 2011 23:35:46 -0400
+Date: Thu, 16 Jun 2011 23:35:42 -0400 (EDT)
+Message-Id: <20110616.233542.1974667912524600949.davem@davemloft.net>
+To: joe@perches.com
+Cc: linux-kernel@vger.kernel.org, sebastian.belden@googlemail.com,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] gianfar: Use pr_<level>, netdev_<level> and
+ netif_<level>
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1f8bdbed8f110b214daaff8350ae9bde68c9cc12.1308076047.git.joe@perches.com>
+References: <1f8bdbed8f110b214daaff8350ae9bde68c9cc12.1308076047.git.joe@perches.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 16 Jun 2011 20:35:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/16 20:33), Christoph Hellwig wrote:
-> Can we get some comments from the MM folks for patches 1-3?  Those look
-> like some pretty urgent fixes for really dumb shrinker behaviour.
+From: Joe Perches <joe@perches.com>
+Date: Tue, 14 Jun 2011 11:57:47 -0700
 
-Yeah, I'm reviewing today. I'm sorry delayed it. So, generically they are
-pretty good to me. thanks Dave. So, I have a few minor comments and I'll post
-it when my review is finished. (Maybe some hour later).
+> Use the current logging styles.
+> 
+> Add #define DEBUG to get same output for <foo>_dbg messages.
+> Convert a few bare printks to pr_err.
+> 
+> Fix a likely copy/paste defect where a test was done with RX values:
+>         if (num_rx_qs > MAX_RX_QS) {
+> but TX limits were emitted:
+>         printk(KERN_ERR "num_rx_qs(=%d) greater than MAX_RX_QS(=%d)\n",
+>                               num_tx_qs, MAX_TX_QS);
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-
+Applied, thanks Joe.
