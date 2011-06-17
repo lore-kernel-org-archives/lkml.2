@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759139Ab1FQO1b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 10:27:31 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58905 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757905Ab1FQO12 (ORCPT
+	id S1759159Ab1FQO2t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 10:28:49 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59744 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758350Ab1FQO2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 10:27:28 -0400
-Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device
- structure
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Greg KH <greg@kroah.com>, Nao Nishijima <nao.nishijima.xt@hitachi.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jcm@redhat.com, hare@suse.de, stefanr@s5r6.in-berlin.de,
-        yrl.pp-manager.tt@hitachi.com
-In-Reply-To: <BANLkTinvfmU0dszQyu4U=Pw3_BtrmOUi_g@mail.gmail.com>
-References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp>
-	 <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp>
-	 <20110615153337.GA10160@kroah.com> <4DF9F11F.705@hitachi.com>
-	 <20110616154129.GA31498@kroah.com> <1308239454.2436.34.camel@mulgrave>
-	 <20110616161442.GA32113@kroah.com> <1308241506.2436.44.camel@mulgrave>
-	 <20110616181943.GB1439@kroah.com> <1308256290.2436.143.camel@mulgrave>
-	 <BANLkTikfCMR_=5Jp7tLhM_Wr3vxihEL+rA@mail.gmail.com>
-	 <1308264321.2436.161.camel@mulgrave>
-	 <BANLkTinvfmU0dszQyu4U=Pw3_BtrmOUi_g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 17 Jun 2011 10:27:24 -0400
-Message-ID: <1308320844.2586.14.camel@mulgrave>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+	Fri, 17 Jun 2011 10:28:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=cKzjbdnOsFe6hFpLEuNxdlAdrSKWnc4eS+MlrwiP1GqtS3SY+0GrPrMdpjSz71m/8x
+         nqo3D+W/BjPbwh/u9ySRWZHaaNvnEY1kq0zMRWqps9lgkEddNIpeOQ8XVSZU/ttgwx5N
+         2TGclKevx8InzCjpsxWL3q7SbGw80m8Y8WUX0=
+Message-ID: <4DFB649C.8030303@gmail.com>
+Date: Fri, 17 Jun 2011 08:28:44 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
+        paulus@samba.org, tglx@linutronix.de
+Subject: Re: [PATCH 3/6] perf: add reference time event
+References: <1307490806-24548-1-git-send-email-dsahern@gmail.com> <1307490946-24673-1-git-send-email-dsahern@gmail.com> <20110617133230.GC25197@somewhere.redhat.com> <4DFB5F0B.4020903@gmail.com> <20110617141707.GE25197@somewhere.redhat.com>
+In-Reply-To: <20110617141707.GE25197@somewhere.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-17 at 01:04 +0200, Kay Sievers wrote:
-> >> We need many names, and we need all of them from the very
-> beginning,
-> >> and they should not change during device lifetime unless the device
-> >> state changes.
-> >
-> > So that's actually an argument for leaving the links, surely?  We
-> can
-> > have many inbound links, but the kernel can only print one name in
-> > messages, which would be the preferred name that was currently set.
+On 06/17/2011 08:17 AM, Frederic Weisbecker wrote:
+>>> We would like to avoid adding more custom events like these. They were very convenient
+>>> but they steal the kernel event type space. They are deemed for removal in the long term.
+>>>
+>>> Another idea to achieve what you want would be to create a new perf event header feature,
+>>> like HEADER_TRACE_INFO or HEADER_BUILD_ID are. Then use that to create a space in the perf
+>>> file to save that couple of clocks initial values.
+>>
+>> you mean like this:
+>> https://lkml.org/lkml/2010/12/7/813
+>>
+>> David
 > 
-> I really question any concept of _the_ name. My take on it: It will
-> never work in reality. 
+> Exactly, why did you change?
 
-OK, so lets take the common example: a desktop with three disks and an
-enclosure with three slots and labels "fred", "jim", and "betty".
+As I recall suggestions on adding new clock events and using those for
+periodic samples. Once we have the initial correlation (the point of
+this patch) and updates to xtime (the new tracepoints) periodic events
+should not be needed.
 
-The desired outcome is that whenever the user manipulates those devices
-he uses a name related to the label, so whenever dmesg flags a problem,
-it says sd betty:  device offline or something.  Whenever he mounts, he
-mounts by /dev/disk/by-preferred/betty (or whatever the current udev
-vernacular is).  Whenever smartmon says there's an over temp problem. it
-says that fred has it;  cat /proc/partitions shows how fred, jim and
-betty are partitioned and so on.
+I'll go back to this option -- and address comments from that round as well.
 
-To do this, we set the preferred name at start of day via a machine
-specific customisation.  For an enclosure, there's a standard way of
-mapping the name to the device, so we'd just use that, but it's not
-impossible to imagine systems with stranger entities that require per
-motherboard customisations.
-
-Once the name is set in boot up, we, in fact, never alter it.
-
-With the kernel patch proposed and a corresponding update to udev
-actually makes all the above happen.  There have to be tweaks to the
-startup scripts, like smartd needs a file configuration that lists the
-disk by preferred path so that the output is correct.
-
-Obviously, I chose the commands above so there is no need to modify any
-of them.  There will be utilities (like overly smart san managers) that
-do derive the name and will need updating, but they're not among the
-standard workstation admin tools.
-
-James
-
-
+David
