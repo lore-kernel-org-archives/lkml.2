@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab1FQD0N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 23:26:13 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:50625 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754495Ab1FQD0L (ORCPT
+	id S1755918Ab1FQDZX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 23:25:23 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:50954 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754495Ab1FQDZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 23:26:11 -0400
-Date: Thu, 16 Jun 2011 23:23:44 -0400 (EDT)
-Message-Id: <20110616.232344.2285390268187937319.davem@davemloft.net>
-To: joe@perches.com
-Cc: netdev@vger.kernel.org, kaber@trash.net, sage@newdream.net,
-        samuel@sortiz.org, paul.moore@hp.com, vladislav.yasevich@hp.com,
-        sri@us.ibm.com, linux-kernel@vger.kernel.org,
-        ceph-devel@vger.kernel.org, linux-decnet-user@lists.sourceforge.net,
-        linux-sctp@vger.kernel.org
-Subject: Re: [PATCH net-next 1/2] net: Remove casts of void *
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <d010144f11f9165670ac0c9e3559bf5e3191ff28.1308017857.git.joe@perches.com>
-References: <cover.1308017857.git.joe@perches.com>
-	<d010144f11f9165670ac0c9e3559bf5e3191ff28.1308017857.git.joe@perches.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 16 Jun 2011 23:25:21 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.11 with qID p5H3PDc1002242, This message is released by code: ctaloc0852
+From: hayeswang <hayeswang@realtek.com>
+To: "'Francois Romieu'" <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <1308109531-31698-1-git-send-email-hayeswang@realtek.com> <20110616225904.GA2064@electric-eye.fr.zoreil.com>
+Subject: RE: [PATCH v2] net/r8169: update the new parser for the new firmware
+Date: Fri, 17 Jun 2011 11:25:13 +0800
+X-BOX-Message-Id: p5H3PDc1002242
+Message-ID: <8AC7DE11560749B895F99EBA7D42AA49@realtek.com.tw>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 16 Jun 2011 20:23:47 -0700 (PDT)
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: AcwsesBWumQUV7s4TU2vIP4LPXzw9wAHk9wg
+In-Reply-To: <20110616225904.GA2064@electric-eye.fr.zoreil.com>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Mon, 13 Jun 2011 19:21:26 -0700
+ 
 
-> Unnecessary casts of void * clutter the code.
+> -----Original Message-----
+> From: Francois Romieu [mailto:romieu@fr.zoreil.com] 
+> Sent: Friday, June 17, 2011 6:59 AM
+> To: Hayeswang
+> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH v2] net/r8169: update the new parser for 
+> the new firmware
 > 
-> These are the remainder casts after several specific
-> patches to remove netdev_priv and dev_priv.
+> Hayes Wang <hayeswang@realtek.com> :
+> > Update the parser for the new firmware which is embedded 
+> some information.
 > 
-> Done via coccinelle script:
+> I have modified several things :
+> - s/u32/__le32/ in fw_info
+> - fix unsigned (size_t) comparisons
+> - more size checks before dereferencing fw_info
 > 
-> $ cat cast_void_pointer.cocci
-> @@
-> type T;
-> T *pt;
-> void *pv;
-> @@
-> 
-> - pt = (T *)pv;
-> + pt = pv;
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
 
-Applied.
+Thanks. They are fine.
+
+> The new firmware format should be the same. The old 
+> r8168d-1.fw firmware proved usable when prefixed with :
+> 
+> 0000000: 0000 0000 3031 0000 0000 0000 0000 0000  ....01..........
+> 0000010: 0000 0000 0000 0000 0000 0000 0000 0000  ................
+> 0000020: 0000 0000 3000 0000 7501 0000 a000 0000  ....0...u.......
+> 
+> I realized after testing that netif_err could be abused with 
+> non-string fw_info.version. :o/
+> 
+
+Excuse me. I don't understand what you want to express. Do you mean the
+situation of the old paser with the new firmware for checking the firmware? For
+the normal situation, the old paser would not use the new firmware. And I put
+zero in front of the new firmware to prevent the old paser from running it. That
+is all I do.
+
+If you don't mean that, I could promise the new firmware I release would contain
+the valid string unless someone modifies it.
+
+> Comments ?
+> 
+ 
+Best Regards,
+Hayes
+
