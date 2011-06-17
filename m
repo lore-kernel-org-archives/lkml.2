@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758473Ab1FQSIm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 14:08:42 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:54579 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756380Ab1FQSIl (ORCPT
+	id S1759530Ab1FQSJy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 14:09:54 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:55418 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353Ab1FQSJx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 14:08:41 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6380"; a="98410119"
-From: David Brown <davidb@codeaurora.org>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Joerg Roedel <Joerg.Roedel@amd.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, David Woodhouse <dwmw2@infradead.org>,
-        <iommu@lists.linux-foundation.org>, <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v2 2/4] msm: iommu: move to drivers/iommu/
-References: <1307742947-32118-1-git-send-email-ohad@wizery.com>
-	<1307742947-32118-3-git-send-email-ohad@wizery.com>
-Date: Fri, 17 Jun 2011 11:08:40 -0700
-In-Reply-To: <1307742947-32118-3-git-send-email-ohad@wizery.com> (Ohad
-	Ben-Cohen's message of "Sat, 11 Jun 2011 00:55:45 +0300")
-Message-ID: <8yatyboqqjb.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Fri, 17 Jun 2011 14:09:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20110617124035.GA19693@parisc-linux.org>
+References: <BANLkTi=-t9HVc6U6QY07su+c3WztsGoq3Q@mail.gmail.com>
+	<1308227453-2034-1-git-send-email-shawn.guo@linaro.org>
+	<20110617124035.GA19693@parisc-linux.org>
+Date: Fri, 17 Jun 2011 20:09:44 +0200
+Message-ID: <BANLkTimeS227gz5Bb1f1cN812gOQ5fFnQA@mail.gmail.com>
+Subject: Re: [PATCH v3 RESEND] dma-mapping: add new API for max_segment_number
+From: Per Forlin <per.forlin@linaro.org>
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        vinod.koul@intel.com, gregkh@suse.de,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Dan Williams <dan.j.williams@intel.com>, cjb@laptop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10 2011, Ohad Ben-Cohen wrote:
-
-> This should ease finding similarities with different platforms,
-> with the intention of solving problems once in a generic framework
-> which everyone can use.
+On 17 June 2011 14:40, Matthew Wilcox <matthew@wil.cx> wrote:
+> On Thu, Jun 16, 2011 at 08:30:53PM +0800, Shawn Guo wrote:
+>> Here is the user story that tells the need of the new api.  The
+>> mxs-mmc is the mmc host controller for Freescale MXS architecture.
+>> There are a pair of  mmc host specific parameters max_seg_size and
+>> max_segs that mxs-mmc host driver needs to tell mmc core, so that
+>> mmc core can know how big each data segment could be and how many
+>> segments could be handled one time in a scatter list by host driver.
+>>
+>> The mxs-mmc driver is one user of dmaengine mxs-dma, and it will call
+>> mxs-dma to transfer data in scatter list.  That is to say mxs-mmc has
+>> no idea of what max_seg_size and max_segs should be, because they are
+>> all mxs-dma capability parameters, and mxs-mmc needs to query them
+>> from mxs-dma.
 >
-> Compile-tested for MSM8X60.
+> This approach would make sense if mxs-mmc were generic, but it's tied to
+> mxs-dma, so it can just as well call mxs-dma to find out how many segments
+> it supports.
 >
-> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+mxs-dma use the generic dmaengine.h. The patch is not only intended
+for mxs-mmc. MMCI and other mmc host drivers need a way to query
+max_seg_number.
+It would be possible to store this number within drivers/dmaengine but
+this would not work for omap_hsmmc that doesn't use drivers/dmaengine
 
-Acked-by: David Brown <davidb@codeaurora.org>
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Regards,
+Per
