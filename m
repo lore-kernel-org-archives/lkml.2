@@ -1,64 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759336Ab1FQPl4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 11:41:56 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:60121 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932081Ab1FQPlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 11:41:53 -0400
-Message-ID: <4DFB75A4.8070405@interlog.com>
-Date: Fri, 17 Jun 2011 11:41:24 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	id S1759378Ab1FQPmK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 11:42:10 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:60318 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759299Ab1FQPmF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 11:42:05 -0400
+Date: Fri, 17 Jun 2011 17:41:43 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH 4/8] x86, mce: rename bootparam parser
+Message-ID: <20110617154143.GC20010@aftab>
+References: <4DFB1242.90404@jp.fujitsu.com>
+ <4DFB13E2.4080909@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Nao Nishijima <nao.nishijima.xt@hitachi.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kay.sievers@vrfy.org, jcm@redhat.com, hare@suse.de,
-        stefanr@s5r6.in-berlin.de, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
-References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp> <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp> <20110615153337.GA10160@kroah.com> <4DF9F11F.705@hitachi.com> <20110616154129.GA31498@kroah.com> <1308239454.2436.34.camel@mulgrave> <20110616161442.GA32113@kroah.com> <1308241506.2436.44.camel@mulgrave> <20110616181943.GB1439@kroah.com> <1308256290.2436.143.camel@mulgrave> <20110617052523.GB741@kroah.com>
-In-Reply-To: <20110617052523.GB741@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DFB13E2.4080909@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-06-17 01:25 AM, Greg KH wrote:
-> On Thu, Jun 16, 2011 at 04:31:29PM -0400, James Bottomley wrote:
->>> So again, I really don't like this, just fix the userspace tools to map
->>> the proper device name that the kernel is using to the userspace name
->>> the tool used, and all is fine.  This has been done already today,
->>> succesfully, by many of the big "enterprise" monitoring systems that
->>> work quite well on Linux, proving that this is not something that the
->>> kernel needs to provide to implement properly.
->>
->> Well, it's expediency.  Sure we could try to patch the world, but I
->> think the simple patch of getting the kernel to print a preferred name
->> solves 90% of the problem.  Sure there is a long tail of userspace
->> components that needs fixing, but that can be done gradually if we take
->> the kernel route.  If we go the userspace route, it will be a long while
->> before we even get to 50% coverage.
->
-> I do not think that just because some people feel it is easier to change
-> the kernel than change userspace tools, that we are somehow forced to
-> accept their changes.
->
-> As for "expediency", it has been a full year since the last time this
-> was proposed.  All userspace tools that would need to be changed to
-> implement this in userspace have had updates released for them in that
-> year, and the changes needed to make to them could have been done
-> already.
+On Fri, Jun 17, 2011 at 04:44:18AM -0400, Hidetoshi Seto wrote:
+> Rename them with comprehensible prefix mcheck_setup.
 
-Could you elaborate taking one user space tool as an
-example and tell us what changes you think should be
-made?
+The relocation is causing unneeded churn for no apparent reason.
 
-Are you talking about low level tools such as hdparm,
-smartmontools and mine or tools further up the "food
-chain"?
+> (at least it looks better than current misleading name)
+> And relocate to put together setup codes.
+> 
+> 	Before:			After:
+> 	 mcheck_enable		 mcheck_setup
 
-Doug Gilbert
+Nah, let's call it mcheck_parse_boot_param...
+
+> 	 mcheck_disable		 mcheck_setup_old
+
+and leave this like this. "nomce" is the same as "mce=off" and frankly,
+I'd like to remove this redundancy, thus no need to do the code
+relocation. In addition, I don't think there are lots of systems running
+with "nomce" so I really think we should drop it.
+
+So Ingo, hpa, what is the proper way to remove early setup params? Maybe
+through Documentation/feature-removal-schedule.txt?
+
+> 
+> Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce.c |   91 +++++++++++++++++++-------------------
+>  1 files changed, 45 insertions(+), 46 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index c3dad64..ad0e9fb 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -1662,50 +1662,6 @@ static struct miscdevice mce_chrdev_device = {
+>  	&mce_chrdev_ops,
+>  };
+>  
+> -/*
+> - * mce=off Disables machine check
+> - * mce=no_cmci Disables CMCI
+> - * mce=dont_log_ce Clears corrected events silently, no log created for CEs.
+> - * mce=ignore_ce Disables polling and CMCI, corrected events are not cleared.
+> - * mce=TOLERANCELEVEL[,monarchtimeout] (number, see above)
+> - *	monarchtimeout is how long to wait for other CPUs on machine
+> - *	check, or 0 to not wait
+> - * mce=bootlog Log MCEs from before booting. Disabled by default on AMD.
+
+Please remove "Disabled by default on AMD." while you're at it, since
+this is not true anymore.
+
+> - * mce=nobootlog Don't log MCEs from before booting.
+> - */
+> -static int __init mcheck_enable(char *str)
+> -{
+> -	if (*str == 0) {
+> -		enable_p5_mce();
+> -		return 1;
+> -	}
+> -	if (*str == '=')
+> -		str++;
+> -	if (!strcmp(str, "off"))
+> -		mce_disabled = 1;
+> -	else if (!strcmp(str, "no_cmci"))
+> -		mce_cmci_disabled = 1;
+> -	else if (!strcmp(str, "dont_log_ce"))
+> -		mce_dont_log_ce = 1;
+> -	else if (!strcmp(str, "ignore_ce"))
+> -		mce_ignore_ce = 1;
+> -	else if (!strcmp(str, "bootlog") || !strcmp(str, "nobootlog"))
+> -		mce_bootlog = (str[0] == 'b');
+> -	else if (isdigit(str[0])) {
+> -		get_option(&str, &tolerant);
+> -		if (*str == ',') {
+> -			++str;
+> -			get_option(&str, &monarch_timeout);
+> -		}
+> -	} else {
+> -		printk(KERN_INFO "mce argument %s ignored. Please use /sys\n",
+> -		       str);
+> -		return 0;
+> -	}
+> -	return 1;
+> -}
+> -__setup("mce", mcheck_enable);
+> -
+>  int __init mcheck_init(void)
+>  {
+>  	mcheck_intel_therm_init();
+> @@ -2120,14 +2076,57 @@ static __init int mcheck_init_device(void)
+>  device_initcall(mcheck_init_device);
+>  
+>  /*
+> + * mce=off Disables machine check
+> + * mce=no_cmci Disables CMCI
+> + * mce=dont_log_ce Clears corrected events silently, no log created for CEs.
+> + * mce=ignore_ce Disables polling and CMCI, corrected events are not cleared.
+> + * mce=TOLERANCELEVEL[,monarchtimeout] (number, see above)
+> + *	monarchtimeout is how long to wait for other CPUs on machine
+> + *	check, or 0 to not wait
+> + * mce=bootlog Log MCEs from before booting. Disabled by default on AMD.
+> + * mce=nobootlog Don't log MCEs from before booting.
+> + */
+> +static int __init mcheck_setup(char *str)
+> +{
+> +	if (*str == 0) {
+> +		enable_p5_mce();
+> +		return 1;
+> +	}
+> +	if (*str == '=')
+> +		str++;
+> +	if (!strcmp(str, "off"))
+> +		mce_disabled = 1;
+> +	else if (!strcmp(str, "no_cmci"))
+> +		mce_cmci_disabled = 1;
+> +	else if (!strcmp(str, "dont_log_ce"))
+> +		mce_dont_log_ce = 1;
+> +	else if (!strcmp(str, "ignore_ce"))
+> +		mce_ignore_ce = 1;
+> +	else if (!strcmp(str, "bootlog") || !strcmp(str, "nobootlog"))
+> +		mce_bootlog = (str[0] == 'b');
+> +	else if (isdigit(str[0])) {
+> +		get_option(&str, &tolerant);
+> +		if (*str == ',') {
+> +			++str;
+> +			get_option(&str, &monarch_timeout);
+> +		}
+> +	} else {
+> +		pr_info("mce argument %s ignored. Please use /sys\n", str);
+> +		return 0;
+> +	}
+> +	return 1;
+> +}
+> +__setup("mce", mcheck_setup);
+> +
+> +/*
+>   * Old style boot options parsing. Only for compatibility.
+>   */
+> -static int __init mcheck_disable(char *str)
+> +static int __init mcheck_setup_old(char *str)
+>  {
+>  	mce_disabled = 1;
+>  	return 1;
+>  }
+> -__setup("nomce", mcheck_disable);
+> +__setup("nomce", mcheck_setup_old);
+>  
+>  #ifdef CONFIG_DEBUG_FS
+>  struct dentry *mce_get_debugfs_dir(void)
+> -- 
+> 1.7.1
+> 
+> 
+> 
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
