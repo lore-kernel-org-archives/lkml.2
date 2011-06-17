@@ -1,80 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab1FQHUR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 03:20:17 -0400
-Received: from 8.27.mail-out.ovh.net ([188.165.39.131]:38860 "HELO
-	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with SMTP id S1757142Ab1FQHUP (ORCPT
+	id S1755184Ab1FQDK4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 23:10:56 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:51449 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754836Ab1FQDKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 03:20:15 -0400
-X-Greylist: delayed 4399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Jun 2011 03:20:15 EDT
-Date: Fri, 17 Jun 2011 05:06:12 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Patrice Vilchez <patrice.vilchez@atmel.com>,
-        Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH] atmel_serial: keep the platform_device unchanged
-Message-ID: <20110617030612.GK4581@game.jcrosoft.org>
-References: <1302724038-26236-1-git-send-email-plagnioj@jcrosoft.com>
- <1307522703.10626.9.camel@hcegtvedt.norway.atmel.com>
- <20110608134730.GA17584@game.jcrosoft.org>
- <1307541740.10626.15.camel@hcegtvedt.norway.atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307541740.10626.15.camel@hcegtvedt.norway.atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 14404763409296305150
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Thu, 16 Jun 2011 23:10:54 -0400
+Date: Thu, 16 Jun 2011 23:10:18 -0400 (EDT)
+Message-Id: <20110616.231018.84570655636629416.davem@davemloft.net>
+To: shemminger@vyatta.com
+Cc: gthelen@google.com, shemminger@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sky2: avoid using uninitialized variable
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110614000230.4166a1ae@s6510.ftrdhcpuser.net>
+References: <20110613181212.571f8e76@s6510.ftrdhcpuser.net>
+	<BANLkTi=jw5=9LcwxnXW6xNkF4RbFhHaB55Au=oDhn1yYWf53dA@mail.gmail.com>
+	<20110614000230.4166a1ae@s6510.ftrdhcpuser.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 16 Jun 2011 20:10:19 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16:02 Wed 08 Jun     , Hans-Christian Egtvedt wrote:
-> On Wed, 2011-06-08 at 15:47 +0200, Jean-Christophe PLAGNIOL-VILLARD
-> wrote:
-> > On 10:45 Wed 08 Jun     , Hans-Christian Egtvedt wrote:
-> > > On Wed, 2011-04-13 at 21:47 +0200, Jean-Christophe PLAGNIOL-VILLARD
-> > > wrote:
-> 
-> <snipp>
-> 
-> > > > diff --git a/arch/avr32/mach-at32ap/at32ap700x.c b/arch/avr32/mach-at32ap/at32ap700x.c
-> > > > index bfc9d07..aa677e2 100644
-> > > > --- a/arch/avr32/mach-at32ap/at32ap700x.c
-> > > > +++ b/arch/avr32/mach-at32ap/at32ap700x.c
-> > > > @@ -1014,6 +1014,7 @@ static struct platform_device *__initdata at32_usarts[4];
-> > > >  void __init at32_map_usart(unsigned int hw_id, unsigned int line, int flags)
-> > > >  {
-> > > >  	struct platform_device *pdev;
-> > > > +	struct atmel_uart_data *pdata;
-> > > >  
-> > > >  	switch (hw_id) {
-> > > >  	case 0:
-> > > > @@ -1042,7 +1043,8 @@ void __init at32_map_usart(unsigned int hw_id, unsigned int line, int flags)
-> > > >  		data->regs = (void __iomem *)pdev->resource[0].start;
-> > > >  	}
-> > > >  
-> > > > -	pdev->id = line;
-> > > 
-> > > AVR32 needs this to be present to work independent of which USART
-> > > peripheral the user chooses to use for console.
-> > > 
-> > > > +	pdata = pdev->dev.platform_data;
-> > > > +	pdata->num = portnr;
-> > here supposed to be
-> > 	pdata->num = line;
-> 
-> I know, but that doesn't fix the problem about not able to find a
-> console, the platform data id must also be 0 (if console is on ttyS0)
-> AFAICT.
-will test this weekend on avr32
+From: Stephen Hemminger <shemminger@vyatta.com>
+Date: Tue, 14 Jun 2011 00:02:30 -0400
 
-Best Regards,
-J.
+> In my experience if phy reads once successfully, it is going
+> to read every time. If there is a problem it only happens on
+> the first access (powered off, bad timing, etc).
+
+It also happens when the PHY can't get a response for a certain
+register, for whatever reason, before internal hw timeouts trigger.
+
+Please, check all MII accesses.  That's what I do in every driver
+I've written.
+
