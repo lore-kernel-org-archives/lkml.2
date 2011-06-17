@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758586Ab1FQNhT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 09:37:19 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:33498
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755414Ab1FQNhI (ORCPT
+	id S932211Ab1FQNh3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 09:37:29 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:37342
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756951Ab1FQNhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 09:37:08 -0400
+	Fri, 17 Jun 2011 09:37:12 -0400
 X-SpamScore: 1
 X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h61h)
 X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LMXSHP-01-0NZ-02
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LMXSHO-02-52P-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -19,9 +19,9 @@ To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 CC: <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
         Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 1/5] perf, core: Introduce attrs to count in either host or guest mode
-Date: Fri, 17 Jun 2011 15:37:30 +0200
-Message-ID: <1308317854-27398-2-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 2/5] perf, amd: Use GO/HO bits in perf-ctr
+Date: Fri, 17 Jun 2011 15:37:31 +0200
+Message-ID: <1308317854-27398-3-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1308317854-27398-1-git-send-email-joerg.roedel@amd.com>
 References: <1308317854-27398-1-git-send-email-joerg.roedel@amd.com>
@@ -32,35 +32,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The two new attributes exclude_guest and exclude_host can
-bes used by user-space to tell the kernel to setup
-performance counter to either only count while the CPU is in
-guest or in host mode.
-An additional check is also introduced to make sure
-user-space does not try to exclude guest and host mode from
-counting.
+The AMD perf-counters support counting in guest or host-mode
+only. Make use of that feature when user-space specified
+guest/host-mode only counting.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- include/linux/perf_event.h |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/perf_event.h    |    3 +++
+ arch/x86/kernel/cpu/perf_event_amd.c |   13 +++++++++++++
+ 2 files changed, 16 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index e0786e3..9a27b5d 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -219,7 +219,10 @@ struct perf_event_attr {
- 				mmap_data      :  1, /* non-exec mmap data    */
- 				sample_id_all  :  1, /* sample_type all events */
+diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+index d9d4dae..34047c2 100644
+--- a/arch/x86/include/asm/perf_event.h
++++ b/arch/x86/include/asm/perf_event.h
+@@ -29,6 +29,9 @@
+ #define ARCH_PERFMON_EVENTSEL_INV			(1ULL << 23)
+ #define ARCH_PERFMON_EVENTSEL_CMASK			0xFF000000ULL
  
--				__reserved_1   : 45;
-+				exclude_host   :  1, /* don't count in host   */
-+				exclude_guest  :  1, /* don't count in guest  */
++#define AMD_PERFMON_EVENTSEL_GUESTONLY			(1ULL << 40)
++#define AMD_PERFMON_EVENTSEL_HOSTONLY			(1ULL << 41)
 +
-+				__reserved_1   : 43;
+ #define AMD64_EVENTSEL_EVENT	\
+ 	(ARCH_PERFMON_EVENTSEL_EVENT | (0x0FULL << 32))
+ #define INTEL_ARCH_EVENT_MASK	\
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index fe29c1d..66809e7 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -118,6 +118,19 @@ static int amd_pmu_hw_config(struct perf_event *event)
+ 	if (ret)
+ 		return ret;
  
- 	union {
- 		__u32		wakeup_events;	  /* wakeup every n events */
++	if (event->attr.exclude_host && event->attr.exclude_guest)
++		/*
++		 * When HO == GO == 1 the hardware treats that as GO == HO == 0
++		 * and will count in both modes. We don't want to count in that
++		 * case so we emulate no-counting by setting US = OS = 0.
++		 */
++		event->hw.config &= ~(ARCH_PERFMON_EVENTSEL_USR |
++				      ARCH_PERFMON_EVENTSEL_OS);
++	else if (event->attr.exclude_host)
++		event->hw.config |= AMD_PERFMON_EVENTSEL_GUESTONLY;
++	else if (event->attr.exclude_guest)
++		event->hw.config |= AMD_PERFMON_EVENTSEL_HOSTONLY;
++
+ 	if (event->attr.type != PERF_TYPE_RAW)
+ 		return 0;
+ 
 -- 
 1.7.4.1
 
