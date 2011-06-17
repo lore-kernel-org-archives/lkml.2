@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758939Ab1FQNNh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 09:13:37 -0400
-Received: from smtprelay04.ispgateway.de ([80.67.18.16]:45744 "EHLO
-	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743Ab1FQNNf (ORCPT
+	id S1758953Ab1FQNSS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 09:18:18 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:40917
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758854Ab1FQNSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 09:13:35 -0400
-Message-ID: <4DFB53B3.8070806@ladisch.de>
-Date: Fri, 17 Jun 2011 15:16:35 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Fri, 17 Jun 2011 09:18:16 -0400
+X-SpamScore: -18
+X-BigFish: VPS-18(zz1432N98dKzz1202hzz15d4Rz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LMXRM1-02-3U1-02
+X-M-MSG: 
+Date: Fri, 17 Jun 2011 15:18:36 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        David Brown <davidb@codeaurora.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 4/4] x86/ia64: intel-iommu: move to drivers/iommu/
+Message-ID: <20110617131836.GE6689@amd.com>
+References: <1307742947-32118-1-git-send-email-ohad@wizery.com>
+ <1307742947-32118-5-git-send-email-ohad@wizery.com>
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Mike Frysinger <vapier@gentoo.org>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH] firmware: Make firmware drivers generally available
-References: <20110617103218.GA29723@opensource.wolfsonmicro.com> <1308310831-27861-1-git-send-email-lars@metafoo.de>
-In-Reply-To: <1308310831-27861-1-git-send-email-lars@metafoo.de>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1307742947-32118-5-git-send-email-ohad@wizery.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lars-Peter Clausen wrote:
-> Currently only x86, ia64 and blackfin architectures include
-> drivers/firmware/Kconfig, as a result firmware drivers are only available on
-> these platforms. This has not been a problem historically, because all of the
-> firmware drivers were architecture specific.
+On Fri, Jun 10, 2011 at 05:55:47PM -0400, Ohad Ben-Cohen wrote:
+> This should ease finding similarities with different platforms,
+> with the intention of solving problems once in a generic framework
+> which everyone can use.
 > 
-> But this has changed with the addition of the SigmaStudio firmware loader
-> (commit e359dc24 "sigma-firmware: loader for Analog Devices' SigmaStudio"),
-> which is used to parse and load firmware files for Analog Devices' SigmaDSP
-> processors.
+> Note: to move intel-iommu.c, the declaration of pci_find_upstream_pcie_bridge()
+> has to move from drivers/pci/pci.h to include/linux/pci.h. This is handled
+> in this patch, too.
 
-It looks as if sigma.c doesn't actually belong into drivers/firmware.
-That directory is for code that lets the kernel access the firmware
-of the platform that the kernel itself runs on.
+David, does this look good to you? Can you send an ACK if so?
 
-The request_firmware() stuff is usually part of the actual driver that
-needs it.
+	Joerg
 
+-- 
+AMD Operating System Research Center
 
-Regards,
-Clemens
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
