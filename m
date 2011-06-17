@@ -1,154 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759195Ab1FQOer (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 10:34:47 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:50886 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759172Ab1FQOeq (ORCPT
+	id S1759202Ab1FQOfh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 10:35:37 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:59961 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759152Ab1FQOfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 10:34:46 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
-	h=Received:Message-ID:Date:From:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=YZKSrxLAMKkC7iILnIO5VM2XUAuWJoHuaIUabuX7DaYcKoQBD+y3d+yKT1dJgm8gIvYCLBNE7TIQh8ZxlnBQ1rVmaR1WW2w9GuaQCKO2ZmC1bWQXoeb7anVcqYgHEFp2;
-Message-ID: <4DFB65F7.1060703@tao.ma>
-Date: Fri, 17 Jun 2011 22:34:31 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Fri, 17 Jun 2011 10:35:32 -0400
+Date: Fri, 17 Jun 2011 10:35:32 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: ablay@codeaurora.org
+cc: Greg KH <greg@kroah.com>, Felipe Balbi <balbi@ti.com>,
+        Tatyana Brokhman <tlinder@codeaurora.org>, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH/RFC 5/5] usb: Add support for streams alloc/dealloc to 
+     devio.c
+In-Reply-To: <8196aa784ab3686cb19581131df0be16.squirrel@www.codeaurora.org>
+Message-ID: <Pine.LNX.4.44L0.1106171033320.2143-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: CFQ: async queue blocks the whole system
-References: <20110609141451.GD29913@redhat.com> <4DF0DD0F.8090407@tao.ma> <20110609153738.GF29913@redhat.com> <4DF0EA55.10209@tao.ma> <20110609182706.GG29913@redhat.com> <4DF1B035.7080009@tao.ma> <20110610091427.GB4183@redhat.com> <4DF1EB45.1070706@tao.ma> <20110610154414.GA31853@redhat.com> <4DFAC453.70806@tao.ma> <20110617125015.GA8169@redhat.com>
-In-Reply-To: <20110617125015.GA8169@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 114.254.74.68 authed with tm@tao.ma}
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2011 08:50 PM, Vivek Goyal wrote:
-> On Fri, Jun 17, 2011 at 11:04:51AM +0800, Tao Ma wrote:
->> Hi Vivek,
->> On 06/10/2011 11:44 PM, Vivek Goyal wrote:
->>> On Fri, Jun 10, 2011 at 06:00:37PM +0800, Tao Ma wrote:
->>>> On 06/10/2011 05:14 PM, Vivek Goyal wrote:
->>>>> On Fri, Jun 10, 2011 at 01:48:37PM +0800, Tao Ma wrote:
->>>>>
->>>>> [..]
->>>>>>>> btw, reverting the patch doesn't work. I can still get the livelock.
->>>>>
->>>>> What test exactly you are running. I am primarily interested in whether
->>>>> you still get the hung task timeout warning where a writer is waiting on
->>>>> get_request_wait() for more than 120 secods or not.
->>>>>
->>>>> Livelock might be a different problem and for which Christoph provided
->>>>> a patch for XFS.
->>>>>
->>>>>>>
->>>>>>> Can you give following patch a try and see if it helps. On my system this
->>>>>>> does allow CFQ to dispatch some writes once in a while.
->>>>>> Sorry, this patch doesn't work in my test.
->>>>>
->>>>> Can you give me backtrace of say 15 seconds each with and without patch.
->>>>> I think now we must be dispatching some writes, that's a different thing
->>>>> that writer still sleeps more than 120 seconds because there are  way
->>>>> too many readers.
->>>>>
->>>>> May be we need to look into show workload tree scheduling takes place and
->>>>> tweak that logic a bit.
->>>> OK, our test cases can be downloaded for free. ;)
->>>> svn co http://code.taobao.org/svn/dirbench/trunk/meta_test/press/set_vs_get
->>>> Modify run.sh to be fit for your need. Normally within 10 mins, you will
->>>> get the livelock. We have a SAS disk with 15000 RPMs.
->>>>
->>>> btw, you have to mount the volume on /test since the test program are
->>>> not that clever. :)
->>>
->>> Thanks for the test program. System keeps on working, that's a different
->>> thing that writes might not make lot of progress. 
->>>
->>> What do you mean by livelock in your case. How do you define that?
->>>
->>> Couple of times I did see hung_task warning with your test. And I also
->>> saw that we have most of the time starved WRITES but one in a while we
->>> will dispatch some writes.
->>>
->>> Having said that I will still admit that current logic can completely
->>> starve async writes if there are sufficient number of readers. I can
->>> reproduce this simply by launching lots of readers and bunch of writers
->>> using fio.
->>>
->>> So I have written another patch, where I don't allow preemption of 
->>> async queue if it waiting for sync requests to drain and has not
->>> dispatched any request after having been scheduled.
->>>
->>> This atleast makes sure that writes are not starved. But that does not
->>> mean that whole bunch of async writes are dispatched. In presence of
->>> lots of read activity, expect 1 write to be dispatched every few seconds.
->>>
->>> Please give this patch a try and if it still does not work, please upload
->>> some bltraces while test is running.
->>>
->>> You can also run iostat on disk and should be able to see that with
->>> the patch you are dispatching writes more often than before.
->> I am testing your patch heavily these days.
->> With this patch, the workload is better to survive. But in some our test
->> machines we can still find the hung task. After we tune slice_idle to 0,
->> it is OK now. So do you think this tuning is valid?
-> 
-> By slice_idle=0 you turn off the idling and that's the core of the CFQ.
-> So practically you have more deadline like behavior.
-Sure, but as our original test without this patch doesn't survive even
-in slice_idle = 0, so I guess this patch does improve somehow in our
-test. ;)
-> 
->>
->> btw do you think the patch is the final version? We have some plans of
->> carrying it in our product system to see whether it works.
-> 
-> If this patch is helping, I will do some testing with single reader and
-> multiple writers and see how badly does it impact reader in that case.
-> If it is not too bad, may be it is reasonable to include this patch.
-cool, btw you can add my Reported-and-Tested-by.
+On Fri, 17 Jun 2011 ablay@codeaurora.org wrote:
 
-Thanks
-Tao
+> My name is Amit Blay, I'm working with Tatyana Brokhman, I originally
+> created this patch. I want to make sure I understand the solution:
 > 
-> Thanks
-> Vivek
+> We will create a new IOCTL, i.e., USBDEVFS_SUBMITURB_SS. This IOCTL will
+> pass new URB structure, usbdevfs_urb_ss, which will hold the "legacy" URB
+> and in addition the stream_id. libusb will be able to use the new ABI
+> whenever SuperSpeed streams are required.
 > 
->>
->> Regards,
->> Tao
->>>
->>> Thanks
->>> Vivek
->>>
->>> ---
->>>  block/cfq-iosched.c |    9 ++++++++-
->>>  1 file changed, 8 insertions(+), 1 deletion(-)
->>>
->>> Index: linux-2.6/block/cfq-iosched.c
->>> ===================================================================
->>> --- linux-2.6.orig/block/cfq-iosched.c	2011-06-10 09:13:01.000000000 -0400
->>> +++ linux-2.6/block/cfq-iosched.c	2011-06-10 10:02:31.850831735 -0400
->>> @@ -3315,8 +3315,15 @@ cfq_should_preempt(struct cfq_data *cfqd
->>>  	 * if the new request is sync, but the currently running queue is
->>>  	 * not, let the sync request have priority.
->>>  	 */
->>> -	if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq))
->>> +	if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq)) {
->>> +		/*
->>> +		 * Allow atleast one dispatch otherwise this can repeat
->>> +		 * and writes can be starved completely
->>> +		 */
->>> +		if (!cfqq->slice_dispatch)
->>> +			return false;
->>>  		return true;
->>> +	}
->>>  
->>>  	if (new_cfqq->cfqg != cfqq->cfqg)
->>>  		return false;
->>>
+> Is this correct?
+
+This probably should be USBDEVFS_SUBMITURB_STREAM, since it is necesary
+only for URBs that use bulk streaming rather than for all SuperSpeed
+URBs.
+
+Alan Stern
 
