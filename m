@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758127Ab1FQIiD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 04:38:03 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47830 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755887Ab1FQIh5 (ORCPT
+	id S1758161Ab1FQIi1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 04:38:27 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44402 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326Ab1FQIiY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 04:37:57 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DFB1242.90404@jp.fujitsu.com>
-Date: Fri, 17 Jun 2011 17:37:22 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Fri, 17 Jun 2011 04:38:24 -0400
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: Vladimir Pantelic <vladoman@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Fri, 17 Jun 2011 14:08:18 +0530
+Subject: RE: [PATCH v2] omap v4l2: fix wrong resizer calculation
+Thread-Topic: [PATCH v2] omap v4l2: fix wrong resizer calculation
+Thread-Index: AcwsyWymEs8CVcH6RgGK0c6LskBDGgAAEANQ
+Message-ID: <19F8576C6E063C45BE387C64729E739404E3072785@dbde02.ent.ti.com>
+References: <4DFB11A4.1040202@gmail.com>
+In-Reply-To: <4DFB11A4.1040202@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@amd64.org>
-Subject: [PATCH 0/8] x86, mce: misc fix/cleanups, cont
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set contains small patches, newly invented through the
-recent discussion about error recovery etc.
-Not drastic, but small improvements.
 
-(This set is based on today's tip/ras/core branch.)
+> -----Original Message-----
+> From: Vladimir Pantelic [mailto:vladoman@gmail.com]
+> Sent: Friday, June 17, 2011 2:05 PM
+> To: Kernel development list; linux-omap@vger.kernel.org; Hiremath, Vaibhav
+> Subject: [PATCH v2] omap v4l2: fix wrong resizer calculation
+> 
+> changes since v1:
+> 	reworded the commit message as requested
+[Hiremath, Vaibhav] Inline patch please, never submit patch as attachment to the list. 
+
+Anyway, I have already applied this patch to my repository.
 
 Thanks,
-H.Seto
-
- arch/x86/include/asm/mce.h             |    2 -
- arch/x86/kernel/cpu/mcheck/mce.c       |  340 ++++++++++++++++----------------
- arch/x86/kernel/cpu/mcheck/mce_intel.c |    2 +-
- 3 files changed, 173 insertions(+), 171 deletions(-)
-
-Hidetoshi Seto (8):
-      x86, mce: stop calling del_timer_sync() from interrupt
-      x86, mce: remove redundant mce_available() checks
-      x86, mce: introduce mce_timer_add()
-      x86, mce: rename bootparam parser
-      x86, mce: introduce mce_sysdev_init()
-      x86, mce: introduce mce_memory_failure_process()
-      x86, mce: rework use of TIF_MCE_NOTIFY
-      x86, mce, edac: call edac_mce_parse() once per a record
-
+Vaibhav
