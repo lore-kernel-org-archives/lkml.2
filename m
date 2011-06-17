@@ -1,45 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281Ab1FQDfs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 23:35:48 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:55192 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756082Ab1FQDfq (ORCPT
+	id S1756651Ab1FQDo6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 23:44:58 -0400
+Received: from vm4.telegraphics.com.au ([98.124.60.149]:59326 "EHLO
+	vps4.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756214Ab1FQDo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 23:35:46 -0400
-Date: Thu, 16 Jun 2011 23:35:42 -0400 (EDT)
-Message-Id: <20110616.233542.1974667912524600949.davem@davemloft.net>
-To: joe@perches.com
-Cc: linux-kernel@vger.kernel.org, sebastian.belden@googlemail.com,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] gianfar: Use pr_<level>, netdev_<level> and
- netif_<level>
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1f8bdbed8f110b214daaff8350ae9bde68c9cc12.1308076047.git.joe@perches.com>
-References: <1f8bdbed8f110b214daaff8350ae9bde68c9cc12.1308076047.git.joe@perches.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 16 Jun 2011 20:35:43 -0700 (PDT)
+	Thu, 16 Jun 2011 23:44:57 -0400
+Date: Fri, 17 Jun 2011 13:45:24 +1000 (EST)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: Linux/m68k <linux-m68k@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Re: m68k: Convert to genirq (WIP)
+In-Reply-To: <BANLkTik5-H1fc2rk3QrwvQiF=7fELmE2CA@mail.gmail.com>
+Message-ID: <alpine.OSX.2.00.1106171337170.191@ibook.intranet>
+References: <alpine.DEB.2.00.1105282010370.16617@ayla.of.borg> <BANLkTimebx56-Wb5JPWxYVnND9gG8OVdsQ@mail.gmail.com> <BANLkTin+gp2Cnxj8kHbHRmuoEgyDR8YeaQ@mail.gmail.com> <BANLkTik5-H1fc2rk3QrwvQiF=7fELmE2CA@mail.gmail.com>
+User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="0-915750856-1308282324=:191"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Tue, 14 Jun 2011 11:57:47 -0700
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> Use the current logging styles.
-> 
-> Add #define DEBUG to get same output for <foo>_dbg messages.
-> Convert a few bare printks to pr_err.
-> 
-> Fix a likely copy/paste defect where a test was done with RX values:
->         if (num_rx_qs > MAX_RX_QS) {
-> but TX limits were emitted:
->         printk(KERN_ERR "num_rx_qs(=%d) greater than MAX_RX_QS(=%d)\n",
->                               num_tx_qs, MAX_TX_QS);
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+--0-915750856-1308282324=:191
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-Applied, thanks Joe.
+
+On Thu, 16 Jun 2011, Geert Uytterhoeven wrote:
+
+> On Wed, Jun 15, 2011 at 21:44, Geert Uytterhoeven <geert@linux-m68k.org> =
+wrote:
+> > On Sat, Jun 4, 2011 at 19:56, Geert Uytterhoeven <geert@linux-m68k.org>=
+ wrote:
+> >> On Sat, May 28, 2011 at 20:32, Geert Uytterhoeven <geert@linux-m68k.or=
+g> wrote:
+> >>
+> >> It works on Amiga now, too. It can still use some optimizations in=20
+> >> the irq_{enable,disable,ack,mask,mask_ack,unmask} area, as my=20
+> >> BogoMIPS rating dropped by ca 2.5% and is now under 16, for a 25 MHz=
+=20
+> >> 68040.
+> >
+> > Seems like everything (Atari/ARAnyM and Amiga) still works when using=
+=20
+> > handle_simple_irq instead of handle_level_irq. As a bonus, BogoMIPS is=
+=20
+> > above 16 again.
+
+Your bogomips benchmark would be the best-case penalty, right?
+
+Have you tried say, sending a ping flood to measure throughput and=20
+latency?
+
+>=20
+> With handle_simple_irq(), we no longer need to define irq_{,un}mask()=20
+> methods in our irq_chips. Hence the "old" m68k platform interrupt code=20
+> seems to be much closer to genirq than I thought...
+>=20
+> Does this make sense?
+
+If the simple irq model gets us closer to the goal and doesn't kill=20
+performance then it makes sense to me.
+
+Finn
+
+>=20
+> Gr{oetje,eeting}s,
+>=20
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 Geert
+>=20
+--0-915750856-1308282324=:191--
