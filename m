@@ -1,134 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759352Ab1FQPed (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 11:34:33 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45627 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759316Ab1FQPeb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 11:34:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=TzLR3qWiSaBHnfuwr+/7IWbyc0r9tFdfaPCsosnur1PsUQuzN/CukhhbMwN4ial+dl
-         S8Fsix5e0CAkGXinx4quEfEH6nRPof+ZDJAkrYxDUSieGyXDvLHBkDqQm8O/tygCiUw9
-         GOIr7Ebgr/VZegP7h0eP3zWmKMlTib6ABdtmo=
-Date: Fri, 17 Jun 2011 19:34:24 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        apparmor@lists.ubuntu.com,
-        "selinux@tycho.nsa.gov Stephen Smalley" <sds@tycho.nsa.gov>,
-        James Morris <jmorris@namei.org>, Eric Paris <eparis@parisplace.org>,
-        John Johansen <john.johansen@canonical.com>,
-        kernel-hardening@lists.openwall.com
-Subject: Re: [RFC v1] security: introduce ptrace_task_access_check()
-Message-ID: <20110617153424.GA22220@albatros>
-References: <20110617152912.GA21885@albatros>
+	id S932653Ab1FQPgw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 11:36:52 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45330 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757749Ab1FQPgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 11:36:51 -0400
+Date: Fri, 17 Jun 2011 17:36:44 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "John W. Linville" <linville@tuxdriver.com>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+Subject: [GIT] HID
+Message-ID: <alpine.LNX.2.00.1106171548380.22872@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110617152912.GA21885@albatros>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 19:29 +0400, Vasiliy Kulikov wrote:
-> diff --git a/security/commoncap.c b/security/commoncap.c
-> index a93b3b7..aa76791 100644
-> --- a/security/commoncap.c
-> +++ b/security/commoncap.c
-> @@ -155,6 +155,26 @@ out:
->  	return ret;
->  }
->  
-> +int cap_ptrace_task_access_check(struct task_struct *task, struct task_struct *child,
-> +	unsigned int mode)
-> +{
-> +	int ret = 0;
-> +	const struct cred *cred, *child_cred;
-> +
-> +	rcu_read_lock();
-> +	cred = __task_cred(task);
-> +	child_cred = __task_cred(child);
-> +	if (cred->user->user_ns == child_cred->user->user_ns &&
-> +	    cap_issubset(child_cred->cap_permitted, cred->cap_permitted))
-> +		goto out;
-> +	if (ns_task_capable(task, child_cred->user->user_ns, CAP_SYS_PTRACE))
-> +		goto out;
-> +	ret = -EPERM;
-> +out:
-> +	rcu_read_unlock();
-> +	return ret;
-> +}
-> +
+Linus,
 
-Actually cap_ptrace_access_check() may just call
-cap_ptrace_task_access_check().
+please pull from 'for-linus' branch from
 
->  /**
->   * cap_ptrace_traceme - Determine whether another process may trace the current
->   * @parent: The task proposed to be the tracer
+  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
 
-> diff --git a/security/smack/smack_access.c b/security/smack/smack_access.c
-> index 9637e10..f6582a7 100644
-> --- a/security/smack/smack_access.c
-> +++ b/security/smack/smack_access.c
-> @@ -200,6 +200,49 @@ out_audit:
->  	return rc;
->  }
->  
-> +int smk_taskacc(struct task_struct *task, char *obj_label, u32 mode, struct smk_audit_info *a)
-> +{
-> +	struct task_smack *tsp = task_cred_xxx(task, security);
-> +	char *subject_label = smk_of_task(tsp);
-> +	int may;
-> +	int rc;
-> +
-> +	/*
-> +	 * Check the global rule list
-> +	 */
-> +	rc = smk_access(subject_label, obj_label, mode, NULL);
-> +	if (rc == 0) {
-> +		/*
-> +		 * If there is an entry in the task's rule list
-> +		 * it can further restrict access.
-> +		 */
-> +		may = smk_access_entry(subject_label, obj_label, &tsp->smk_rules);
-> +		if (may < 0)
-> +			goto out_audit;
-> +		if ((mode & may) == mode)
-> +			goto out_audit;
-> +		rc = -EACCES;
-> +	}
-> +
-> +	/*
-> +	 * Return if a specific label has been designated as the
-> +	 * only one that gets privilege and current does not
-> +	 * have that label.
-> +	 */
-> +	if (smack_onlycap != NULL && smack_onlycap != subject_label)
-> +		goto out_audit;
-> +
-> +	if (task_capable(task, CAP_MAC_OVERRIDE))
-> +		rc = 0;
-> +
-> +out_audit:
-> +#ifdef CONFIG_AUDIT
-> +	if (a)
-> +		smack_log(subject_label, obj_label, mode, rc, a);
-> +#endif
-> +	return rc;
-> +}
-> +
+to receive the fixes for the HID layer listed below.
 
-And smk_curacc() is a variant of smk_taskacc().
+It's mostly fixes for particular concrete devices, plus a revert 
+(regression fix) for a magicmouse device.
 
->  /**
->   * smk_curacc - determine if current has a specific access to an object
->   * @obj_label: a pointer to the object's Smack label
+I am mentioning this explicitly as the revert is not enough -- for full 
+fix, there is a patch by Ville Tervo fixing 1.1 CSR dongles. It has been 
+queued for quite a few days in wireless-2.6.git already, and John tells 
+that this will be going upstream today.
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Thanks!
+
+Austin Zhang (1):
+      HID: hid-multitouch: add support for Chunghwa multi-touch panel
+
+Benjamin Tissoires (1):
+      HID: hid-multitouch: fix broken eGalax
+
+Dan Carpenter (1):
+      HID: hiddev: fix use after free in hiddev_release
+
+Jimmy Hon (1):
+      HID: add quirk for HyperPen 10000U
+
+Jiri Kosina (2):
+      HID: hiddev: fix potential use-after-free
+      Revert "HID: magicmouse: ignore 'ivalid report id' while switching modes"
+
+Joe Perches (1):
+      HID: MAINTAINERS: Update USB HID/HIDBP DRIVERS pattern
+
+ MAINTAINERS                     |    2 +-
+ drivers/hid/Kconfig             |    1 +
+ drivers/hid/hid-core.c          |    1 +
+ drivers/hid/hid-ids.h           |    4 ++
+ drivers/hid/hid-magicmouse.c    |   10 +-----
+ drivers/hid/hid-multitouch.c    |   62 +++++++++++++++++++++++++++-----------
+ drivers/hid/usbhid/hid-quirks.c |    1 +
+ drivers/hid/usbhid/hiddev.c     |    8 ++++-
+ 8 files changed, 59 insertions(+), 30 deletions(-)
