@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388Ab1FQRtM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 13:49:12 -0400
-Received: from outappmail001.snc4.facebook.com ([66.220.144.155]:36845 "EHLO
-	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755133Ab1FQRtJ (ORCPT
+	id S932181Ab1FQR6u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 13:58:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43475 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932100Ab1FQR6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 13:49:09 -0400
-Message-ID: <4DFB93C1.9000901@fb.com>
-Date: Fri, 17 Jun 2011 10:49:53 -0700
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Mike Frysinger <vapier.adi@gmail.com>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [PATCH] atomic: cleanup asm-generic atomic*.h inclusion
-References: <20110615163115.773d072e.akpm@linux-foundation.org> <1308187784-3815-1-git-send-email-asharma@fb.com> <BANLkTi=f2N+dO2nBLobM73jCg0U0QSqxNQ@mail.gmail.com> <4DFB8AAF.1040002@fb.com> <BANLkTindmEA7NsaRjuukh1-oRCtVWpeuCA@mail.gmail.com>
-In-Reply-To: <BANLkTindmEA7NsaRjuukh1-oRCtVWpeuCA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Fri, 17 Jun 2011 13:58:48 -0400
+Subject: Re: REGRESSION: Performance regressions from switching
+ anon_vma->lock to mutex
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Hugh Dickins <hughd@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+In-Reply-To: <alpine.LSU.2.00.1106171040460.7018@sister.anvils>
+References: <1308097798.17300.142.camel@schen9-DESK>
+	 <1308101214.15392.151.camel@sli10-conroe> <1308138750.15315.62.camel@twins>
+	 <20110615161827.GA11769@tassilo.jf.intel.com>
+	 <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
+	 <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
+	 <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
+	 <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com>
+	 <1308255972.17300.450.camel@schen9-DESK>
+	 <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com>
+	 <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
+	 <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com>
+	 <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
+	 <BANLkTinUBTYWxrF5TCuDSQuFUAyivXJXjQ@mail.gmail.com>
+	 <1308310080.2355.19.camel@twins>
+	 <BANLkTim2bmPfeRT1tS7hx2Z85QHjPHwU3Q@mail.gmail.com>
+	 <alpine.LSU.2.00.1106171040460.7018@sister.anvils>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Jun 2011 19:55:19 +0200
+Message-ID: <1308333319.12801.15.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/17/11 10:28 AM, Mike Frysinger wrote:
-> On Fri, Jun 17, 2011 at 13:11, Arun Sharma wrote:
->> On 6/16/11 11:36 PM, Mike Frysinger wrote:
->>> i'm not sure this doesnt break things.  what tree exactly should i
->>> apply this patch to to verify things ?
->>
->> I tested 3.0-rc2 + patch 1 + patch 2 + this patch.
->
-> not sure what those patches are, so i picked at random:
-> Subject: [PATCH 2/3] atomic: move atomic_add_unless to generic code
-> Date: Tue,  7 Jun 2011 17:07:18 -0700
-> Message-Id:<1307491639-9864-2-git-send-email-asharma@fb.com>
->
-> Subject: [PATCH 1/3] atomic: use<linux/atomic.h>
-> Date:	Mon,  6 Jun 2011 10:27:29 -0700
-> Message-Id:<1307381251-15729-1-git-send-email-asharma@fb.com>
+On Fri, 2011-06-17 at 10:41 -0700, Hugh Dickins wrote:
+> > The only thing I don't love about the batching is that we now do hold
+> > the lock over some situations where we _could_ have allowed
+> > concurrency (notably some avc allocations), but I think it's a good
+> > trade-off. And walking the list twice at unlink_anon_vmas() should be
+> > basically free.
+> 
+> Applying load with those two patches applied (combined patch shown at
+> the bottom, in case you can tell me I misunderstood what to apply,
+> and have got the wrong combination on), lockdep very soon protested.
 
-Yes - these are the right patches.
+Gah, of course. Its exactly the case Linus mentioned not loving. We can
+get reclaim recursion due to the avc allocation, we hold anon_vma->mutex
+while doing a (blocking) allocation, and reclaim can end up trying to
+obtain said lock trying to free some memory.
 
->
-> but even after just these two, things fail because
-> include/asm-generic/atomic.h provides atomic_add_unless() already.
-> i'm guessing your patch 2/3 should have fixed that somehow since it
-> adds the func to linux/atomic.h.
+Bugger. /me goes investigate
 
-Thanks for catching this. I missed it because I tested only on i386 and 
-x86_64. Looks like only 4 archs are affected:
-
-$ grep -r asm-generic.atomic.h *
-blackfin/include/asm/atomic.h:# include <asm-generic/atomic.h>
-microblaze/include/asm/atomic.h:#include <asm-generic/atomic.h>
-mn10300/include/asm/atomic.h:#include <asm-generic/atomic.h>
-score/include/asm/atomic.h:#include <asm-generic/atomic.h>
-
-I believe the correct fix is:
-
---- a/include/asm-generic/atomic.h
-+++ b/include/asm-generic/atomic.h
-@@ -129,17 +129,6 @@ static inline void atomic_dec(atomic_t *v)
-
-  #define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), 
-(o), (n))
-
--static inline int atomic_add_unless(atomic_t *v, int a, int u)
--{
--  int c, old;
--  c = atomic_read(v);
--  while (c != u && (old = atomic_cmpxchg(v, c, c + a)) != c)
--    c = old;
--  return c != u;
--}
--
--#define atomic_inc_not_zero(v) atomic_add_unless((v), 1, 0)
--
-  static inline void atomic_clear_mask(unsigned long mask, unsigned long 
-*addr)
-  {
-         unsigned long flags;
-
-Could you help test this? I'll resend the patch series once I get 
-confirmation.
-
-  -Arun
