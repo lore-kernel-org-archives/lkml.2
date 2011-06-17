@@ -1,219 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758795Ab1FQJN2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 05:13:28 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:46422 "EHLO e3.ny.us.ibm.com"
+	id S932191Ab1FQJON (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 05:14:13 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:45812 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757900Ab1FQJNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 05:13:25 -0400
-Date: Fri, 17 Jun 2011 14:35:04 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 7/22]  7: uprobes: mmap and fork hooks.
-Message-ID: <20110617090504.GN4952@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
- <20110607125931.28590.12362.sendpatchset@localhost6.localdomain6>
- <1308161486.2171.61.camel@laptop>
- <20110616032645.GF4952@linux.vnet.ibm.com>
- <1308225626.13240.34.camel@twins>
- <20110616130012.GL4952@linux.vnet.ibm.com>
- <1308248588.13240.267.camel@twins>
- <20110617045000.GM4952@linux.vnet.ibm.com>
- <1308297836.13240.380.camel@twins>
+	id S1757358Ab1FQJOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 05:14:09 -0400
+Date: Fri, 17 Jun 2011 11:13:19 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: REGRESSION: Performance regressions from switching
+ anon_vma->lock to mutex
+Message-ID: <20110617091319.GA11719@elte.hu>
+References: <1308169937.15315.88.camel@twins>
+ <4DF91CB9.5080504@linux.intel.com>
+ <1308172336.17300.177.camel@schen9-DESK>
+ <1308173849.15315.91.camel@twins>
+ <87ea4bd7-8b16-4b24-8fcb-d8e9b6f421ec@email.android.com>
+ <4DF92FE1.5010208@linux.intel.com>
+ <BANLkTi=Tw6je7zpi4L=pE0JJpZfeEC9Jsg@mail.gmail.com>
+ <4DFA6442.9000103@linux.intel.com>
+ <BANLkTin_46==epHKUbWJ55bt3mPaJieV2Q@mail.gmail.com>
+ <4DFA9EA4.4010904@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1308297836.13240.380.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4DFA9EA4.4010904@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2011-06-17 10:03:56]:
 
-> On Fri, 2011-06-17 at 10:20 +0530, Srikar Dronamraju wrote:
-> > > 
-> > > void __unregister_uprobe(...)
-> > > {
-> > >   uprobe = find_uprobe(); // ref++
-> > >   if (delete_consumer(...)); // includes tree removal on last consumer
-> > >                              // implies we own the last ref
-> > >      return; // consumers
-> > > 
-> > >   vma_prio_tree_foreach() {
-> > >      // create list
-> > >   }
-> > > 
-> > >   list_for_each_entry_safe() {
-> > >     // remove from list
-> > >     remove_breakpoint(); // unconditional, if it wasn't there
-> > >                          // its a nop anyway, can't get any new
-> > >                          // new probes on account of holding
-> > >                          // uprobes_mutex and mmap() doesn't see
-> > >                          // it due to tree removal.
-> > >   }
-> > > }
-> > > 
-> > 
-> > This would have a bigger race.
-> > A breakpoint might be hit by which time the node is removed and we
-> > have no way to find out the uprobe. So we deliver an extra TRAP to the
-> > app.
+* Andi Kleen <ak@linux.intel.com> wrote:
+
+> > I tried to send uli a patch to just add caching. No go. I sent 
+> > *another* patch to at least make glibc use a sane interface (and 
+> > the cache if it needs to fall back on /proc/stat for some legacy 
+> > reason). We'll see what happens.
 > 
-> Gah indeed. Back to the drawing board for me.
+> FWIW a rerun with this modified LD_PRELOAD that does caching seems 
+> to have the same performance as the version that does 
+> sched_getaffinity.
 > 
-> > > int mmap_uprobe(...)
-> > > {
-> > >   spin_lock(&uprobes_treelock);
-> > >   for_each_probe_in_inode() {
-> > >     // create list;
+> So you're right. Caching indeed helps and my assumption that the 
+> child would only do it once was incorrect.
 
-Here again if we have multiple mmaps for the same inode occuring on two
-process contexts (I mean two different mm's), we have to manage how we
-add the same uprobe to more than one list. Atleast my current
-uprobe->pending_list wouldnt work.
+You should have known that your assumption was wrong not just from a 
+quick look at the strace output or a quick look at the glibc sources, 
+but also because i pointed out the caching angle to you in the 
+sysconf() discussion:
 
-> > >   }
-> > >   spin_unlock(..);
-> > > 
-> > >   list_for_each_entry_safe() {
-> > >     // remove from list
-> > >     ret = install_breakpoint();
-> > >     if (ret)
-> > >       goto fail;
-> > >     if (!uprobe_still_there()) // takes treelock
-> > >       remove_breakpoint();
-> > >   }
-> > > 
-> > >   return 0;
-> > > 
-> > > fail:
-> > >   list_for_each_entry_safe() {
-> > >     // destroy list
-> > >   }
-> > >   return ret;
-> > > }
-> > > 
-> > 
-> > 
-> > register_uprobe will race with mmap_uprobe's first pass.
-> > So we might end up with a vma that doesnot have a breakpoint inserted
-> > but inserted in all other vma that map to the same inode.
-> 
-> I'm not seeing this though, if mmap_uprobe() is before register_uprobe()
-> inserts the probe in the tree, the vma is already in the rmap and
-> register_uprobe() will find it in its vma walk. If its after,
-> mmap_uprobe() will find it and install, if a concurrent
-> register_uprobe()'s vma walk also finds it, it will -EEXISTS and ignore
-> the error.
-> 
+  http://lkml.org/lkml/2011/5/14/9
 
-You are right here. 
+repeatedly:
 
-What happens if the register_uprobe comes first and walks around the
-vmas, Between mmap comes in does the insertion including the second pass
-and returns.  register_uprobe now finds that it cannot insert breakpoint
-on one of the vmas and hence has to roll-back. The vma on which
-mmap_uprobe inserted will not be in the list of vmas from which we try
-to remove the breakpoint.
+  http://lkml.org/lkml/2011/5/17/149
 
+and Denys Vlasenko pointed out the caching angle as well:
 
-How about something like this:
+  http://lkml.org/lkml/2011/5/17/183
 
-/* Change from previous time:
- * - add a atomic counter to inode (this is optional)
- * - trylock first.
- *   - take down_write instead of down_read if we drop mmap_sem
- *   - no releasing mmap_sem second time since we take a down_write.
- */
+But you kept pushing for your new syscall for upstream integration, 
+ignoring all contrary evidence and ignoring all contrary feedback, 
+without even *once* checking where and how it would integrate into 
+glibc ...
 
-int mmap_uprobe(struct vm_area_struct *vma)
-{
-	struct list_head tmp_list;
-	struct uprobe *uprobe, *u;
-	struct mm_struct *mm;
-	struct inode *inode;
-	unsigned long start, pgoff;
-	int ret = 0;
+Thanks,
 
-	if (!valid_vma(vma))
-		return ret;     /* Bail-out */
-
-	inode = vma->vm_file->f_mapping->host;
-	if (!atomic_read(&inode->uprobes_count))
-		return ret;
-
-	INIT_LIST_HEAD(&tmp_list);
-
-	mm = vma->vm_mm;
-	start = vma->vm_start;
-	pgoff = vma->vm_pgoff;
-	__iget(inode);
-
-	if (!mutex_trylock(uprobes_mutex)) {
-
-		/*
-		 * Unable to get uprobes_mutex; Probably contending with
-		 * someother thread. Drop mmap_sem; acquire uprobes_mutex
-		 * and mmap_sem and then verify vma.
-		 */
-
-		up_write(&mm->mmap_sem);
-		mutex_lock&(uprobes_mutex);
-		down_write(&mm->mmap_sem);
-		vma = find_vma(mm, start);
-		/* Not the same vma */
-		if (!vma || vma->vm_start != start ||
-				vma->vm_pgoff != pgoff || !valid_vma(vma) ||
-				inode->i_mapping != vma->vm_file->f_mapping)
-			goto mmap_out;
-	}
-
-	add_to_temp_list(vma, inode, &tmp_list);
-	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
-		loff_t vaddr;
-
-		list_del(&uprobe->pending_list);
-		if (ret)
-			continue;
-
-		vaddr = vma->vm_start + uprobe->offset;
-		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
-		if (vaddr < vma->vm_start || vaddr >= vma->vm_end)
-			/* Not in this vma */
-			continue;
-		if (vaddr > TASK_SIZE)
-			/*
-			 * We cannot have a virtual address that is
-			 * greater than TASK_SIZE
-			 */
-			continue;
-		ret = install_breakpoint(mm, uprobe, vaddr);
-
-		if (ret && (ret == -ESRCH || ret == -EEXIST))
-			ret = 0;
-        }
-
-mmap_out:
-	mutex_unlock(&uprobes_mutex);
-	iput(inode);
-	return ret;
-}
-
--- 
-Thanks and Regards
-Srikar
+	Ingo
