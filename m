@@ -1,106 +1,523 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758798Ab1FQWBZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 18:01:25 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:1354 "EHLO MMS3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758427Ab1FQWBS convert rfc822-to-8bit (ORCPT
+	id S1758637Ab1FQWE0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 18:04:26 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:5561 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757775Ab1FQWEZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 18:01:18 -0400
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-Date: Fri, 17 Jun 2011 15:01:08 -0700
-From: "Henry Ptasinski" <henryp@broadcom.com>
-To: "Julian Calaby" <julian.calaby@gmail.com>
-cc: "Greg Dietsche" <gregory.dietsche@cuw.edu>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "Brett Rudley" <brudley@broadcom.com>,
-        "Dowan Kim" <dowan@broadcom.com>,
-        "Roland Vossen" <rvossen@broadcom.com>,
-        "Arend Van Spriel" <arend@broadcom.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Henry Ptasinski" <henryp@broadcom.com>
-Subject: Re: [PATCH] staging: brcm80211: return false if not a broadcom
- board
-Message-ID: <20110617220108.GH3801@broadcom.com>
-References: <1308176709-14765-1-git-send-email-Gregory.Dietsche@cuw.edu>
- <20110616013615.GA14700@broadcom.com> <4DF96F22.5070508@cuw.edu>
- <20110616233736.GA2344@broadcom.com>
- <BANLkTi=tLWXn7mMf-6pf-3gM6x8zX=WNtw@mail.gmail.com>
+	Fri, 17 Jun 2011 18:04:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=sEHpy4ZNRlC2VKokpknZEZuyc2BPPKHID6JVC8hfMRtMQul0W6W31Vegh7Xn86ZoHn
+         LPQQCDViCrUfo18/gy9Q==
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=tLWXn7mMf-6pf-3gM6x8zX=WNtw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-WSS-ID: 61E51014538660321-01-01
-Content-Type: text/plain;
- charset=iso-8859-1
-Content-Disposition: inline
+In-Reply-To: <20110616125314.4f78b1e0.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110616124730.d6960b8b.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110616125314.4f78b1e0.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Fri, 17 Jun 2011 15:04:18 -0700
+Message-ID: <BANLkTimYEr9k3Sk5JoaRrrQH4mGoTmL1Wf5gadYVGDuNpxofHw@mail.gmail.com>
+Subject: Re: [PATCH 3/7] memcg: add memory.scan_stat
+From: Ying Han <yinghan@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Andrew Bresticker <abrestic@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 04:45:21PM -0700, Julian Calaby wrote:
-> Henry,
-> 
-> On Fri, Jun 17, 2011 at 09:37, Henry Ptasinski <henryp@broadcom.com> wrote:
-> > How's this for a somewhat clearer implementation:
-> >
-> > static bool brcms_c_validboardtype(struct brcms_c_hw_info *wlc_hw)
-> > {
-> >        bool goodboard = true;
-> >        uint boardrev = wlc_hw->boardrev;
-> >
-> >        if (wlc_hw->sih->boardvendor == PCI_VENDOR_ID_BROADCOM) {
-> 
-> You could reduce indentation by having this be:
-> 
-> if (wlc_hw->sih->boardvendor != PCI_VENDOR_ID_BROADCOM)
->     return true;
-> 
-> >                /* validate boardrev */
-> >                if (boardrev == 0)
-> >                        goodboard = false;
-> 
-> and remove the goodboard variable by having this return false immediately.
-> 
-> >                else if (boardrev > 0xff) {
-> 
-> You could also drop the else and have this as
-> 
-> if (boardrev <= 0xff)
->     return true;
-> 
-> >                        /* 4 bits each for board type, major, minor, and tiny
-> >                        version numbers */
-> >                        uint brt = (boardrev & 0xf000) >> 12;
-> >                        uint b0 = (boardrev & 0xf00) >> 8;
-> >                        uint b1 = (boardrev & 0xf0) >> 4;
-> >                        uint b2 = boardrev & 0xf;
-> >
-> >                        if ((brt > 2) || (brt == 0) || (b0 > 9) || (b0 == 0)
-> >                                || (b1 > 9) || (b2 > 9))
-> >                                goodboard = false;
-> 
-> and return false here too.
-> 
-> >                }
-> >        }
-> >
-> >        return goodboard;
-> 
-> then just return true here.
-> 
-> > }
-> 
-> Thanks,
-> 
-> -- 
-> Julian Calaby
+On Wed, Jun 15, 2011 at 8:53 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> From e08990dd9ada13cf236bec1ef44b207436434b8e Mon Sep 17 00:00:00 2001
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Date: Wed, 15 Jun 2011 14:11:01 +0900
+> Subject: [PATCH 3/7] memcg: add memory.scan_stat
+>
+> commit log of commit 0ae5e89 " memcg: count the soft_limit reclaim in..."
+> says it adds scanning stats to memory.stat file. But it doesn't because
+> we considered we needed to make a concensus for such new APIs.
+>
+> This patch is a trial to add memory.scan_stat. This shows
+>  - the number of scanned pages
+>  - the number of recleimed pages
+>  - the number of elaplsed time (including sleep/pause time)
+>  for both of direct/soft reclaim and shrinking caused by changing limit
+>  or force_empty.
+>
+> The biggest difference with oringinal Ying's one is that this file
+> can be reset by some write, as
+>
+>  # echo 0 ...../memory.scan_stat
+>
+> [kamezawa@bluextal ~]$ cat /cgroup/memory/A/memory.scan_stat
+> scanned_pages_by_limit 358470
+> freed_pages_by_limit 180795
+> elapsed_ns_by_limit 21629927
+> scanned_pages_by_system 0
+> freed_pages_by_system 0
+> elapsed_ns_by_system 0
+> scanned_pages_by_shrink 76646
+> freed_pages_by_shrink 38355
+> elappsed_ns_by_shrink 31990670
+> total_scanned_pages_by_limit 358470
+> total_freed_pages_by_limit 180795
+> total_elapsed_ns_by_hierarchical 216299275
+> total_scanned_pages_by_system 0
+> total_freed_pages_by_system 0
+> total_elapsed_ns_by_system 0
+> total_scanned_pages_by_shrink 76646
+> total_freed_pages_by_shrink 38355
+> total_elapsed_ns_by_shrink 31990670
+>
+> total_xxxx is for hierarchy management.
+>
+> This will be useful for further memcg developments and need to be
+> developped before we do some complicated rework on LRU/softlimit
+> management.
 
-Yea, it's a lot flatter with those changes.  Look for it in a patch set
-relatively soon ...
+Agreed. Actually we are also looking into adding a per-memcg API for
+adding visibility of
+page reclaim path. It would be helpful for us to settle w/ the API first.
 
-- Henry
+I am not a fan of names, but how about
+"/dev/cgroup/memory/memory.reclaim_stat" ?
+
+>
+> Now, scan/free/elapsed_by_system is incomplete but future works of
+> Johannes at el. will fill remaining information and then, we can
+> look into problems of isolation between memcgs.
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  Documentation/cgroups/memory.txt |   33 +++++++++
+>  include/linux/memcontrol.h       |   16 ++++
+>  include/linux/swap.h             |    6 -
+>  mm/memcontrol.c                  |  135 +++++++++++++++++++++++++++++++++++++--
+>  mm/vmscan.c                      |   27 ++++++-
+>  5 files changed, 199 insertions(+), 18 deletions(-)
+>
+> Index: mmotm-0615/Documentation/cgroups/memory.txt
+> ===================================================================
+> --- mmotm-0615.orig/Documentation/cgroups/memory.txt
+> +++ mmotm-0615/Documentation/cgroups/memory.txt
+> @@ -380,7 +380,7 @@ will be charged as a new owner of it.
+>
+>  5.2 stat file
+>
+> -memory.stat file includes following statistics
+> +5.2.1 memory.stat file includes following statistics
+>
+>  # per-memory cgroup local status
+>  cache          - # of bytes of page cache memory.
+> @@ -438,6 +438,37 @@ Note:
+>         file_mapped is accounted only when the memory cgroup is owner of page
+>         cache.)
+>
+> +5.2.2 memory.scan_stat
+> +
+> +memory.scan_stat includes statistics information for memory scanning and
+> +freeing, reclaiming. The statistics shows memory scanning information since
+> +memory cgroup creation and can be reset to 0 by writing 0 as
+> +
+> + #echo 0 > ../memory.scan_stat
+> +
+> +This file contains following statistics.
+> +
+> +scanned_pages_by_limit - # of scanned pages at hitting limit.
+> +freed_pages_by_limit   - # of freed pages at hitting limit.
+
+How those stats different from Johannes's patch? I feel we should keep
+them into this API instead of memory.stat
+"pgscan_direct_limit"
+"pgreclaim_direct_limit"
+
+> +elapsed_ns_by_limit    - nano sec of elappsed time at LRU scan at
+> +                                  hitting limit.(this includes sleep time.)
 
 
+> +
+> +scanned_pages_by_system        - # of scanned pages by the kernel.
+> +                         (Now, this value means global memory reclaim
+> +                           caused by system memory shortage with a hint
+> +                          of softlimit. "No soft limit" case will be
+> +                          supported in future.)
+> +freed_pages_by_system  - # of freed pages by the kernel.
+
+The same for the following which I assume the same meaning with:
+"pgscan_direct_hierarchy"
+"pgreclaim_direct_hierarchy"
+
+> +elapsed_ns_by_system   - nano sec of elappsed time by kernel.
+> +
+> +scanned_pages_by_shrink        - # of scanned pages by shrinking.
+> +                                 (i.e. changes of limit, force_empty, etc.)
+> +freed_pages_by_shrink  - # of freed pages by shirkining.
+
+So those stats are not included in the ones above?
+
+--Ying
+
+> +elappsed_ns_by_shrink  - nano sec of elappsed time at shrinking.
+> +
+> +total_xxx includes the statistics of children scanning caused by the cgroup.
+> +
+> +
+>  5.3 swappiness
+>
+>  Similar to /proc/sys/vm/swappiness, but affecting a hierarchy of groups only.
+> Index: mmotm-0615/include/linux/memcontrol.h
+> ===================================================================
+> --- mmotm-0615.orig/include/linux/memcontrol.h
+> +++ mmotm-0615/include/linux/memcontrol.h
+> @@ -120,6 +120,22 @@ struct zone_reclaim_stat*
+>  mem_cgroup_get_reclaim_stat_from_page(struct page *page);
+>  extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
+>                                        struct task_struct *p);
+> +struct memcg_scanrecord {
+> +       struct mem_cgroup *mem; /* scanend memory cgroup */
+> +       struct mem_cgroup *root; /* scan target hierarchy root */
+> +       int context;            /* scanning context (see memcontrol.c) */
+> +       unsigned long nr_scanned; /* the number of scanned pages */
+> +       unsigned long nr_freed; /* the number of freed pages */
+> +       unsigned long elappsed; /* nsec of time elapsed while scanning */
+> +};
+> +
+> +extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
+> +                                                 gfp_t gfp_mask, bool noswap,
+> +                                                 struct memcg_scanrecord *rec);
+> +extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+> +                                               gfp_t gfp_mask, bool noswap,
+> +                                               struct zone *zone,
+> +                                               struct memcg_scanrecord *rec);
+>
+>  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+>  extern int do_swap_account;
+> Index: mmotm-0615/include/linux/swap.h
+> ===================================================================
+> --- mmotm-0615.orig/include/linux/swap.h
+> +++ mmotm-0615/include/linux/swap.h
+> @@ -253,12 +253,6 @@ static inline void lru_cache_add_file(st
+>  /* linux/mm/vmscan.c */
+>  extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+>                                        gfp_t gfp_mask, nodemask_t *mask);
+> -extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
+> -                                                 gfp_t gfp_mask, bool noswap);
+> -extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+> -                                               gfp_t gfp_mask, bool noswap,
+> -                                               struct zone *zone,
+> -                                               unsigned long *nr_scanned);
+>  extern int __isolate_lru_page(struct page *page, int mode, int file);
+>  extern unsigned long shrink_all_memory(unsigned long nr_pages);
+>  extern int vm_swappiness;
+> Index: mmotm-0615/mm/memcontrol.c
+> ===================================================================
+> --- mmotm-0615.orig/mm/memcontrol.c
+> +++ mmotm-0615/mm/memcontrol.c
+> @@ -203,6 +203,57 @@ struct mem_cgroup_eventfd_list {
+>  static void mem_cgroup_threshold(struct mem_cgroup *mem);
+>  static void mem_cgroup_oom_notify(struct mem_cgroup *mem);
+>
+> +enum {
+> +       SCAN_BY_LIMIT,
+> +       FREED_BY_LIMIT,
+> +       ELAPSED_BY_LIMIT,
+> +
+> +       SCAN_BY_SYSTEM,
+> +       FREED_BY_SYSTEM,
+> +       ELAPSED_BY_SYSTEM,
+> +
+> +       SCAN_BY_SHRINK,
+> +       FREED_BY_SHRINK,
+> +       ELAPSED_BY_SHRINK,
+> +       NR_SCANSTATS,
+> +};
+> +#define __FREED                (1)
+> +#define        __ELAPSED       (2)
+> +
+> +struct scanstat {
+> +       spinlock_t      lock;
+> +       unsigned long   stats[NR_SCANSTATS];    /* local statistics */
+> +       unsigned long   totalstats[NR_SCANSTATS];   /* hierarchical */
+> +};
+> +
+> +const char *scanstat_string[NR_SCANSTATS] = {
+> +       "scanned_pages_by_limit",
+> +       "freed_pages_by_limit",
+> +       "elapsed_ns_by_limit",
+> +
+> +       "scanned_pages_by_system",
+> +       "freed_pages_by_system",
+> +       "elapsed_ns_by_system",
+> +
+> +       "scanned_pages_by_shrink",
+> +       "freed_pages_by_shrink",
+> +       "elappsed_ns_by_shrink",
+> +};
+> +
+> +const char *total_scanstat_string[NR_SCANSTATS] = {
+> +       "total_scanned_pages_by_limit",
+> +       "total_freed_pages_by_limit",
+> +       "total_elapsed_ns_by_hierarchical",
+> +
+> +       "total_scanned_pages_by_system",
+> +       "total_freed_pages_by_system",
+> +       "total_elapsed_ns_by_system",
+> +
+> +       "total_scanned_pages_by_shrink",
+> +       "total_freed_pages_by_shrink",
+> +       "total_elapsed_ns_by_shrink",
+> +};
+> +
+>  /*
+>  * The memory controller data structure. The memory controller controls both
+>  * page cache and RSS per cgroup. We would eventually like to provide
+> @@ -264,7 +315,8 @@ struct mem_cgroup {
+>
+>        /* For oom notifier event fd */
+>        struct list_head oom_notify;
+> -
+> +       /* For recording LRU-scan statistics */
+> +       struct scanstat scanstat;
+>        /*
+>         * Should we move charges of a task when a task is moved into this
+>         * mem_cgroup ? And what type of charges should we move ?
+> @@ -1634,6 +1686,28 @@ int mem_cgroup_select_victim_node(struct
+>  }
+>  #endif
+>
+> +
+> +
+> +static void mem_cgroup_record_scanstat(struct memcg_scanrecord *rec)
+> +{
+> +       struct mem_cgroup *mem;
+> +       int context = rec->context;
+> +
+> +       mem = rec->mem;
+> +       spin_lock(&mem->scanstat.lock);
+> +       mem->scanstat.stats[context] += rec->nr_scanned;
+> +       mem->scanstat.stats[context + __FREED] += rec->nr_freed;
+> +       mem->scanstat.stats[context + __ELAPSED] += rec->elappsed;
+> +       spin_unlock(&mem->scanstat.lock);
+> +
+> +       mem = rec->root;
+> +       spin_lock(&mem->scanstat.lock);
+> +       mem->scanstat.totalstats[context] += rec->nr_scanned;
+> +       mem->scanstat.totalstats[context + __FREED] += rec->nr_freed;
+> +       mem->scanstat.totalstats[context + __ELAPSED] += rec->elappsed;
+> +       spin_unlock(&mem->scanstat.lock);
+> +}
+> +
+>  /*
+>  * Scan the hierarchy if needed to reclaim memory. We remember the last child
+>  * we reclaimed from, so that we don't end up penalizing one child extensively
+> @@ -1659,8 +1733,8 @@ static int mem_cgroup_hierarchical_recla
+>        bool shrink = reclaim_options & MEM_CGROUP_RECLAIM_SHRINK;
+>        bool check_soft = reclaim_options & MEM_CGROUP_RECLAIM_SOFT;
+>        unsigned long excess;
+> -       unsigned long nr_scanned;
+>        int visit;
+> +       struct memcg_scanrecord rec;
+>
+>        excess = res_counter_soft_limit_excess(&root_mem->res) >> PAGE_SHIFT;
+>
+> @@ -1668,6 +1742,15 @@ static int mem_cgroup_hierarchical_recla
+>        if (!check_soft && root_mem->memsw_is_minimum)
+>                noswap = true;
+>
+> +       if (shrink)
+> +               rec.context = SCAN_BY_SHRINK;
+> +       else if (check_soft)
+> +               rec.context = SCAN_BY_SYSTEM;
+> +       else
+> +               rec.context = SCAN_BY_LIMIT;
+> +
+> +       rec.root = root_mem;
+> +
+>  again:
+>        if (!shrink) {
+>                visit = 0;
+> @@ -1695,14 +1778,19 @@ again:
+>                        css_put(&victim->css);
+>                        continue;
+>                }
+> +               rec.mem = victim;
+> +               rec.nr_scanned = 0;
+> +               rec.nr_freed = 0;
+> +               rec.elappsed = 0;
+>                /* we use swappiness of local cgroup */
+>                if (check_soft) {
+>                        ret = mem_cgroup_shrink_node_zone(victim, gfp_mask,
+> -                               noswap, zone, &nr_scanned);
+> -                       *total_scanned += nr_scanned;
+> +                               noswap, zone, &rec);
+> +                       *total_scanned += rec.nr_scanned;
+>                } else
+>                        ret = try_to_free_mem_cgroup_pages(victim, gfp_mask,
+> -                                               noswap);
+> +                                               noswap, &rec);
+> +               mem_cgroup_record_scanstat(&rec);
+>                css_put(&victim->css);
+>
+>                total += ret;
+> @@ -3757,7 +3845,8 @@ try_to_free:
+>                        ret = -EINTR;
+>                        goto out;
+>                }
+> -               progress = try_to_free_mem_cgroup_pages(mem, GFP_KERNEL, false);
+> +               progress = try_to_free_mem_cgroup_pages(mem,
+> +                               GFP_KERNEL, false, NULL);
+>                if (!progress) {
+>                        nr_retries--;
+>                        /* maybe some writeback is necessary */
+> @@ -4599,6 +4688,34 @@ static int mem_control_numa_stat_open(st
+>  }
+>  #endif /* CONFIG_NUMA */
+>
+> +static int mem_cgroup_scan_stat_read(struct cgroup *cgrp,
+> +                               struct cftype *cft,
+> +                               struct cgroup_map_cb *cb)
+> +{
+> +       struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
+> +       int i;
+> +
+> +       for (i = 0; i < NR_SCANSTATS; i++)
+> +               cb->fill(cb, scanstat_string[i], mem->scanstat.stats[i]);
+> +       for (i = 0; i < NR_SCANSTATS; i++)
+> +               cb->fill(cb, total_scanstat_string[i],
+> +                       mem->scanstat.totalstats[i]);
+> +       return 0;
+> +}
+> +
+> +static int mem_cgroup_reset_scan_stat(struct cgroup *cgrp,
+> +                               unsigned int event)
+> +{
+> +       struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
+> +
+> +       spin_lock(&mem->scanstat.lock);
+> +       memset(&mem->scanstat.stats, 0, sizeof(mem->scanstat.stats));
+> +       memset(&mem->scanstat.totalstats, 0, sizeof(mem->scanstat.totalstats));
+> +       spin_unlock(&mem->scanstat.lock);
+> +       return 0;
+> +}
+> +
+> +
+>  static struct cftype mem_cgroup_files[] = {
+>        {
+>                .name = "usage_in_bytes",
+> @@ -4669,6 +4786,11 @@ static struct cftype mem_cgroup_files[]
+>                .mode = S_IRUGO,
+>        },
+>  #endif
+> +       {
+> +               .name = "scan_stat",
+> +               .read_map = mem_cgroup_scan_stat_read,
+> +               .trigger = mem_cgroup_reset_scan_stat,
+> +       },
+>  };
+>
+>  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+> @@ -4932,6 +5054,7 @@ mem_cgroup_create(struct cgroup_subsys *
+>        atomic_set(&mem->refcnt, 1);
+>        mem->move_charge_at_immigrate = 0;
+>        mutex_init(&mem->thresholds_lock);
+> +       spin_lock_init(&mem->scanstat.lock);
+>        return &mem->css;
+>  free_out:
+>        __mem_cgroup_free(mem);
+> Index: mmotm-0615/mm/vmscan.c
+> ===================================================================
+> --- mmotm-0615.orig/mm/vmscan.c
+> +++ mmotm-0615/mm/vmscan.c
+> @@ -2199,9 +2199,9 @@ unsigned long try_to_free_pages(struct z
+>  #ifdef CONFIG_CGROUP_MEM_RES_CTLR
+>
+>  unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+> -                                               gfp_t gfp_mask, bool noswap,
+> -                                               struct zone *zone,
+> -                                               unsigned long *nr_scanned)
+> +                                       gfp_t gfp_mask, bool noswap,
+> +                                       struct zone *zone,
+> +                                       struct memcg_scanrecord *rec)
+>  {
+>        struct scan_control sc = {
+>                .nr_scanned = 0,
+> @@ -2213,6 +2213,7 @@ unsigned long mem_cgroup_shrink_node_zon
+>                .order = 0,
+>                .mem_cgroup = mem,
+>        };
+> +       unsigned long start, end;
+>
+>        sc.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
+>                        (GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK);
+> @@ -2221,6 +2222,7 @@ unsigned long mem_cgroup_shrink_node_zon
+>                                                      sc.may_writepage,
+>                                                      sc.gfp_mask);
+>
+> +       start = sched_clock();
+>        /*
+>         * NOTE: Although we can get the priority field, using it
+>         * here is not a good idea, since it limits the pages we can scan.
+> @@ -2229,19 +2231,27 @@ unsigned long mem_cgroup_shrink_node_zon
+>         * the priority and make it zero.
+>         */
+>        shrink_zone(0, zone, &sc);
+> +       end = sched_clock();
+> +
+> +       if (rec) {
+> +               rec->nr_scanned += sc.nr_scanned;
+> +               rec->nr_freed += sc.nr_reclaimed;
+> +               rec->elappsed += end - start;
+> +       }
+>
+>        trace_mm_vmscan_memcg_softlimit_reclaim_end(sc.nr_reclaimed);
+>
+> -       *nr_scanned = sc.nr_scanned;
+>        return sc.nr_reclaimed;
+>  }
+>
+>  unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
+>                                           gfp_t gfp_mask,
+> -                                          bool noswap)
+> +                                          bool noswap,
+> +                                          struct memcg_scanrecord *rec)
+>  {
+>        struct zonelist *zonelist;
+>        unsigned long nr_reclaimed;
+> +       unsigned long start, end;
+>        int nid;
+>        struct scan_control sc = {
+>                .may_writepage = !laptop_mode,
+> @@ -2259,6 +2269,7 @@ unsigned long try_to_free_mem_cgroup_pag
+>                .gfp_mask = sc.gfp_mask,
+>        };
+>
+> +       start = sched_clock();
+>        /*
+>         * Unlike direct reclaim via alloc_pages(), memcg's reclaim doesn't
+>         * take care of from where we get pages. So the node where we start the
+> @@ -2273,6 +2284,12 @@ unsigned long try_to_free_mem_cgroup_pag
+>                                            sc.gfp_mask);
+>
+>        nr_reclaimed = do_try_to_free_pages(zonelist, &sc, &shrink);
+> +       end = sched_clock();
+> +       if (rec) {
+> +               rec->nr_scanned += sc.nr_scanned;
+> +               rec->nr_freed += sc.nr_reclaimed;
+> +               rec->elappsed += end - start;
+> +       }
+>
+>        trace_mm_vmscan_memcg_reclaim_end(nr_reclaimed);
+>
+>
+>
