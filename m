@@ -1,101 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab1FQF0t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 01:26:49 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:47271 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751560Ab1FQF0o (ORCPT
+	id S1755060Ab1FQFX0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 01:23:26 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:58061 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab1FQFXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 01:26:44 -0400
-X-Sasl-enc: kmlOD3BAkxaxzmV5MBHUKP1gRljY65WQ3bLbhc081t7e 1308288403
-Date: Thu, 16 Jun 2011 22:22:30 -0700
-From: Greg KH <greg@kroah.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Nao Nishijima <nao.nishijima.xt@hitachi.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kay.sievers@vrfy.org, jcm@redhat.com, hare@suse.de,
-        stefanr@s5r6.in-berlin.de, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
-Message-ID: <20110617052230.GA741@kroah.com>
-References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp>
- <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp>
- <20110615153337.GA10160@kroah.com>
- <4DF9F11F.705@hitachi.com>
- <20110616154129.GA31498@kroah.com>
- <1308239454.2436.34.camel@mulgrave>
- <20110616161442.GA32113@kroah.com>
- <4DFACAF1.3010300@hitachi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DFACAF1.3010300@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 17 Jun 2011 01:23:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=hzSxmPJ6UQ8FD163eEEqne/oVDG3vF9Ti/B1NNdywePVsJIdp0cZEpoOq8T7mu/rSh
+         oZr5LrLsE7CJodynYsSDKnbn1q+PyXBU7TXdbJPKPjgVIkB2ybjlhPe2JI7cpN45toZK
+         EmObqxqvpqW+Nx5jjs3asE3dnlc5EMRH8UoJ8=
+Subject: Re: another ext3 kernel BUG
+From: Ross Lagerwall <rosslagerwall@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Jun 2011 07:23:13 +0200
+Message-ID: <1308288193.17587.3.camel@hobo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 12:33:05PM +0900, Masami Hiramatsu wrote:
-> (2011/06/17 1:14), Greg KH wrote:
-> > On Thu, Jun 16, 2011 at 11:50:54AM -0400, James Bottomley wrote:
-> >>> And again, why not just fix the userspace tools?  That is trivial to do
-> >>> so and again, could have been done by now in the years this has been
-> >>> discussed.
-> >>
-> >> So I can summarise where I think we are in these discussions:
-> >>
-> >> We provide the ability to give all kernel devices a "preferred name".
-> >> By default this will be the device name the kernel would have originally
-> >> assigned.  the dev_printk's will use the preferred name, and it will be
-> >> modifiable from user space.  All the kernel will do is print out
-> >> whatever it is ... no guarantees of uniqueness or specific format will
-> >> be made.  Since we're only providing one preferred_name file, the kernel
-> >> can only have one preferred name for a device at any given time
-> >> (although it is modifiable on the fly as many times as the user
-> >> chooses).
-> >>
-> >> The design is to use this preferred name to implement what Hitachi wants
-> >> in terms of persistent name, but we don't really care.
-> >>
-> >> All userspace naming will be taken care of by the usual udev rules, so
-> >> for disks, something like /dev/disk/by-preferred/<fred> which would be
-> >> the usual symbolic link.
-> > 
-> > No, udev can not create such a link after the preferred name is set, as
-> > it has no way of knowing that the name was set.
-> > 
-> >> This will ensure that kernel output and udev input are consistent.  It
-> >> will still require that user space utilities which derive a name for a
-> >> device will need modifying to print out the preferred name.
-> > 
-> > It also doesn't solve the issue of userspace wanting to use such a
-> > "preferred" name in the command line of tools, as there will not be a
-> > link back to the "kernel" name directly in /dev/.
+> See here for a patch:
+> https://lkml.org/lkml/2011/6/15/341
 > 
-> Right, this series just add a preferred name interface, and changes
-> a part of kernel messages.
+> Does that help?
 
-So, just a tiny part of what you want to do in the end?
+I came across this bug while running ./configure on Octave 3.4.1.
 
-> > So as userspace tools will still need to be fixed, I don't see how
-> > adding a kernel file for this is going to help any.  Well, a bit in that
-> > the kernel log files will look "different", but again, that really isn't
-> > a problem that userspace couldn't also solve with no kernel changes
-> > needed.
-> 
-> hmm, He didnt say "this can solve all problems". I think
-> preferred name is just a starting point to solve these problems.
-> Actually, he decided to fix those user space tools to accept
-> persistent symbolic links, and to show it in outputs.
-> 
-> It's not complete, but a good starting point, isn't it?
+The patch does appear to fix the problem although I can't say whether
+what it is doing is correct or not.
 
-A starting point for what?  What is your "end goal" here to accomplish?
+There is also a bug report at:
+https://bugzilla.kernel.org/show_bug.cgi?id=37602
 
-As this does not seem to me to really solve what you see as your "real"
-problem, perhaps you can explain what your next steps are going to be
-after this?
+Cheers
+Ross
 
-thanks,
-
-greg k-h
