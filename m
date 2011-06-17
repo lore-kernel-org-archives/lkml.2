@@ -1,50 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932747Ab1FQSys (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 14:54:48 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:58142 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932702Ab1FQSyq convert rfc822-to-8bit (ORCPT
+	id S932773Ab1FQTCr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 15:02:47 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:49866 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932083Ab1FQTCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 14:54:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=l8qjCh/RR/Id5+GezE3x1/Fy7Tv5fJEbweKbn4+j98PI8Gj+/i2h7dTZfXTQ9S5iyi
-         Ura2WU5O4jrx+RwOSUtKZZFmhuTPGLZ9XJvYn3XD02qBMEHDUCQM4eUDvzPUP1IDYzJv
-         3JFIwi+IjwSk3qu1l+6ozqf1rvCiLsFb7OCA0=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTi=NYq7wFqGFuiM_QUtpEZDS5pAuUQ@mail.gmail.com>
-References: <BANLkTin8b2suL1675DKvHbeXuCzeCFJeOg@mail.gmail.com>
- <BANLkTin-iYMvbuq=DGo8JZa_vYUMsd24jQ@mail.gmail.com> <BANLkTi=NYq7wFqGFuiM_QUtpEZDS5pAuUQ@mail.gmail.com>
-From: Paul Hartman <paul.hartman@gmail.com>
-Date: Fri, 17 Jun 2011 13:54:26 -0500
-Message-ID: <BANLkTikiszrsC7n-31yUXpMEKHTbWamabw@mail.gmail.com>
-Subject: Re: New Gentoo install on Intel Z68/i7-2600K system hangs after
- VFS:Mounted root...
-To: Mark Knecht <markknecht@gmail.com>
-Cc: Linux Kernel List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 17 Jun 2011 15:02:43 -0400
+Date: Fri, 17 Jun 2011 15:01:35 -0400 (EDT)
+Message-Id: <20110617.150135.1664074829629603538.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless-2.6 2011-06-17
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110617173613.GC6820@tuxdriver.com>
+References: <20110617173613.GC6820@tuxdriver.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 17 Jun 2011 12:01:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 1:29 PM, Mark Knecht <markknecht@gmail.com> wrote:
->   We ran memtest86 for an hour. Completed a couple of passes with no
-> errors. Will run more later but no obvious memory problems seen.
->
->   I installed 2.6.39-gentoo-r1. No change from 2.6.38-gentoo-r6.
-> Stops at the same place.
->
->   I tried 2.6.39-gentoo-r1 with no kernel options, and with all
-> combinations of nousb and acpi=off. All 4 attempts quit at the same
-> place.
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Fri, 17 Jun 2011 13:36:14 -0400
 
-Check out this forum post, this person's bootup seems to stop in the
-same place as yours. He was able to fix it by booting off a liveCD and
-manually creating device nodes. Maybe it's nothing, but probably worth
-looking at just in case it might help.
+> Here is a batch of fixes intended for 3.0.  Included are a regression
+> for mwl8k which caused CCMP encryption to fail on that device, and an
+> mwifiex fix for a null pointer dereference.  Also included is a batch
+> of Bluetooth fixes from Gustavo, including a regression fix for BT 1.1
+> devices, a fix for shutdown of SCO devices, a fix for an information
+> leak, and a silly error-checking fix that I thought was worth including
+> to prevent misinterpreting bad data as device command options.
+> 
+> Please let me know if there are problems!
 
-https://www.linuxquestions.org/questions/gentoo-87/booting-stops-after-kernel-starts-883031/
+Pulled, thanks John.
