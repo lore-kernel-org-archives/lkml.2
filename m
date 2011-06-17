@@ -1,52 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759245Ab1FQRKr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 13:10:47 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64969 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752356Ab1FQRKo convert rfc822-to-8bit (ORCPT
+	id S1758890Ab1FQRK3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 13:10:29 -0400
+Received: from outmail009.snc4.facebook.com ([66.220.144.141]:39310 "EHLO
+	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751112Ab1FQRKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 13:10:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Qydw/Fs8Pf+coqP0mN5x33y040arY02AEYQbqfKMlw6UIcp7T1A+Q57oPQKKNDHOIg
-         hKL+O3u25HFLUiDRj3ySJYaaZ7tZ4e0F8XXnq2F0A5mISmSYOui+OXNKpOkmyLlZrDTW
-         5V/PyEvsM5iUFzwdEwEFEKx1FDxPbLIR7wG3w=
+	Fri, 17 Jun 2011 13:10:25 -0400
+Message-ID: <4DFB8AAF.1040002@fb.com>
+Date: Fri, 17 Jun 2011 10:11:11 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <1308298294.13535.3.camel@phoenix>
-References: <1308298176.13535.1.camel@phoenix>
-	<1308298294.13535.3.camel@phoenix>
-Date: Fri, 17 Jun 2011 10:10:42 -0700
-Message-ID: <BANLkTi=MiT1PrcJMdAfegTg74BQYNHC2fw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mtd: onenand/samsung.c: fix build error
-From: Brian Norris <computersforpeace@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Mike Frysinger <vapier.adi@gmail.com>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        David Miller <davem@davemloft.net>
+Subject: Re: [PATCH] atomic: cleanup asm-generic atomic*.h inclusion
+References: <20110615163115.773d072e.akpm@linux-foundation.org> <1308187784-3815-1-git-send-email-asharma@fb.com> <BANLkTi=f2N+dO2nBLobM73jCg0U0QSqxNQ@mail.gmail.com>
+In-Reply-To: <BANLkTi=f2N+dO2nBLobM73jCg0U0QSqxNQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 6/16/11 11:36 PM, Mike Frysinger wrote:
+>
+> i'm not sure this doesnt break things.  what tree exactly should i
+> apply this patch to to verify things ?
 
-On Fri, Jun 17, 2011 at 1:11 AM, Axel Lin <axel.lin@gmail.com> wrote:
-> -       err = mtd_device_parse_register(&info->mtd, NULL, 0,
-> +       err = mtd_device_parse_register(onenand->mtd, NULL, 0,
->                        pdata ? pdata->parts : NULL,
->                        pdata ? pdata->nr_parts : 0);
+I tested 3.0-rc2 + patch 1 + patch 2 + this patch.
 
-Wouldn't it be just the same (and shorter) to use "mtd" instead of
-onenand->mtd? Like:
+  -Arun
 
-       err = mtd_device_parse_register(mtd, NULL, 0,
-                     pdata ? pdata->parts : NULL,
-                     pdata ? pdata->nr_parts : 0);
-
-Brian
