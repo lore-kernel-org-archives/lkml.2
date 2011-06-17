@@ -1,109 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755645Ab1FQE6I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 00:58:08 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:57897 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751098Ab1FQE6E (ORCPT
+	id S1756276Ab1FQFAR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 01:00:17 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:58651 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566Ab1FQFAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 00:58:04 -0400
-Date: Fri, 17 Jun 2011 10:20:00 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 7/22]  7: uprobes: mmap and fork hooks.
-Message-ID: <20110617045000.GM4952@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
- <20110607125931.28590.12362.sendpatchset@localhost6.localdomain6>
- <1308161486.2171.61.camel@laptop>
- <20110616032645.GF4952@linux.vnet.ibm.com>
- <1308225626.13240.34.camel@twins>
- <20110616130012.GL4952@linux.vnet.ibm.com>
- <1308248588.13240.267.camel@twins>
+	Fri, 17 Jun 2011 01:00:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=DfMz4CUMMuPKD4VOciU73lRqUzLzDxtnQhFd/Gej9cjUhowMwYoicenpu+RlX9HcPg
+         sLU8/hCHQhDct3XXm9fMVw5XK7MoI7LIYELcEorewjK8+nlYGBcMyEDMoh1pPrD0ClZz
+         PcVAKhexEJshzEJPbKUmrNb6BkRXW0yFOGVN8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1308248588.13240.267.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Fri, 17 Jun 2011 01:00:14 -0400
+Message-ID: <BANLkTin9NXs1M9ud9Kqtp9cKGzY6AKnMpQ@mail.gmail.com>
+Subject: Please help us resolve the shutdown problem that is affecting our computers
+From: Diego Viola <diego.viola@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> void __unregister_uprobe(...)
-> {
->   uprobe = find_uprobe(); // ref++
->   if (delete_consumer(...)); // includes tree removal on last consumer
->                              // implies we own the last ref
->      return; // consumers
-> 
->   vma_prio_tree_foreach() {
->      // create list
->   }
-> 
->   list_for_each_entry_safe() {
->     // remove from list
->     remove_breakpoint(); // unconditional, if it wasn't there
->                          // its a nop anyway, can't get any new
->                          // new probes on account of holding
->                          // uprobes_mutex and mmap() doesn't see
->                          // it due to tree removal.
->   }
-> }
-> 
+Hello,
 
-This would have a bigger race.
-A breakpoint might be hit by which time the node is removed and we
-have no way to find out the uprobe. So we deliver an extra TRAP to the
-app.
+We are currently experiencing an issue that affects the shutdown process.
 
+The problem occurs when we shutdown our machines, the system would
+lock/hang during the shutdown process with a message similar to:
+"Disabling IRQ #19.".
 
+I send this email to the mailing list, hoping to get the attention of
+a knowledgeable maintainer in order to fix this issue, which is
+affecting not only me but many people. I already have started a thread
+in bugzilla, but we haven't received many responses from developers.
 
-> int mmap_uprobe(...)
-> {
->   spin_lock(&uprobes_treelock);
->   for_each_probe_in_inode() {
->     // create list;
->   }
->   spin_unlock(..);
-> 
->   list_for_each_entry_safe() {
->     // remove from list
->     ret = install_breakpoint();
->     if (ret)
->       goto fail;
->     if (!uprobe_still_there()) // takes treelock
->       remove_breakpoint();
->   }
-> 
->   return 0;
-> 
-> fail:
->   list_for_each_entry_safe() {
->     // destroy list
->   }
->   return ret;
-> }
-> 
+The link to the bug report is:
 
+https://bugzilla.kernel.org/show_bug.cgi?id=33872
 
-register_uprobe will race with mmap_uprobe's first pass.
-So we might end up with a vma that doesnot have a breakpoint inserted
-but inserted in all other vma that map to the same inode.
+We are able to reproduce the issue and the problem goes away on my
+machine if I unload the 'e1000e' module before shutdown. This
+workaround has worked for other people also, but I don't consider it
+to be a real fix. There's also other people who have different
+hardware and don't have this 'e1000e' module loaded at all and yet
+they also experience shutdown hangs. How can this be explained?
 
--- 
-Thanks and Regards
-Srikar
+Please help us to resolve this issue. We would happily assist in order
+to test proposed patches, etc. We just want to get this problem fixed.
+
+Thanks,
+Diego Viola
