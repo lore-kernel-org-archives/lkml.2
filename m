@@ -1,61 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758075Ab1FQBt3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 21:49:29 -0400
-Received: from mail05-md.ns.itscom.net ([175.177.155.115]:33092 "EHLO
-	mail05-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757950Ab1FQBt1 (ORCPT
+	id S1758203Ab1FQBuK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 21:50:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:54640 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757667Ab1FQBuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 21:49:27 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
-To: Erez Zadok <ezk@fsl.cs.sunysb.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "viro@ZenIV.linux.org.uk Viro" <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "nbd@openwrt.org" <nbd@openwrt.org>, "neilb@suse.de" <neilb@suse.de>,
-        "hramrach@centrum.cz" <hramrach@centrum.cz>,
-        "jordipujolp@gmail.com" <jordipujolp@gmail.com>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>
-In-Reply-To: <BF19F4F8-9E0F-4983-87C1-BB1B0A11D011@fsl.cs.sunysb.edu>
-References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu> <4540f7aa16724111bd792a1d577261c2@HUBCAS1.cs.stonybrook.edu> <954F11FF-339B-48E2-8358-A158DE1E53BC@fsl.cs.sunysb.edu> <b624059d70d546d4a4ecb940613235ab@HUBCAS2.cs.stonybrook.edu> <BF42D8D9-B947-448A-8818-BCA786E75325@fsl.cs.sunysb.edu> <ab75a25c918145569b721dea9aea5506@HUBCAS2.cs.stonybrook.edu> <BF19F4F8-9E0F-4983-87C1-BB1B0A11D011@fsl.cs.sunysb.edu>
-Date: Fri, 17 Jun 2011 10:49:20 +0900
-Message-ID: <16748.1308275360@jrobl>
+	Thu, 16 Jun 2011 21:50:08 -0400
+X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=Caq5pGLvaXcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=D5TY0NKFzBz_0gWAOggA:9 a=VxmldUxG-kBFLGVDwT8A:7 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] sched: update cpupri for runqueue when its priority
+ changes
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <BANLkTint_00+oHVGpgV4n4E2A9W5O8nJxA@mail.gmail.com>
+References: <BANLkTint_00+oHVGpgV4n4E2A9W5O8nJxA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 16 Jun 2011 21:50:05 -0400
+Message-ID: <1308275405.9218.156.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2011-06-05 at 17:54 +0800, Hillf Danton wrote:
+> When the priority of runqueue changes, lower or higer, the info of cpupri
+> should be updated, in cases such as pick_next_task_rt() and switched_to_rt().
 
-Erez Zadok:
-> OK. Then I believe you and I are in agreement:
->
-> - Overlayfs has useful features to be merged now; no objections here.
-> - Other features can be added later on.
+Why?
 
-Yes, that is what I wrote.
+We do the calculation on queuing and dequeuing the task, we only care
+about the highest priority task that is on the queue, not what is
+actually running.
+
+-- Steve
+
+> 
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> ---
+>  kernel/sched_rt.c |   11 ++++++++++-
+>  1 files changed, 10 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+> index 08e9374..9508168 100644
+> --- a/kernel/sched_rt.c
+> +++ b/kernel/sched_rt.c
+> @@ -1158,6 +1158,8 @@ static struct task_struct
+> *pick_next_task_rt(struct rq *rq)
+>  	 * lock again later if there is no need to push
+>  	 */
+>  	rq->post_schedule = has_pushable_tasks(rq);
+> +
+> +	cpupri_set(&rq->rd->cpupri, rq->cpu, p == NULL ? MAX_RT_PRIO : p->prio);
+>  #endif
+> 
+>  	return p;
+> @@ -1673,6 +1675,8 @@ static void switched_to_rt(struct rq *rq, struct
+> task_struct *p)
+>  {
+>  	int check_resched = 1;
+> 
+> +	if (!p->on_rq)
+> +		return;
+>  	/*
+>  	 * If we are already running, then there's nothing
+>  	 * that needs to be done. But if we are not running
+> @@ -1680,7 +1684,7 @@ static void switched_to_rt(struct rq *rq, struct
+> task_struct *p)
+>  	 * If that current running task is also an RT task
+>  	 * then see if we can move to another run queue.
+>  	 */
+> -	if (p->on_rq && rq->curr != p) {
+> +	if (rq->curr != p) {
+>  #ifdef CONFIG_SMP
+>  		if (rq->rt.overloaded && push_rt_task(rq) &&
+>  		    /* Don't resched if we changed runqueues */
+> @@ -1690,6 +1694,11 @@ static void switched_to_rt(struct rq *rq,
+> struct task_struct *p)
+>  		if (check_resched && p->prio < rq->curr->prio)
+>  			resched_task(rq->curr);
+>  	}
+> +	else {
+> +#ifdef CONFIG_SMP
+> +		cpupri_set(&rq->rd->cpupri, rq->cpu, p->prio);
+> +#endif
+> +	}
+>  }
+> 
+>  /*
 
 
-> If, however, you feel that Overlayfs has some fundamental design flaws =
-> that prevent important future features from being added easily after a =
-> merge, then please outline such design flaws.
-
-I have made some suggestions and pointed out several issues actually.
-If my English is enough poor to make you misunderstood, then please
-point out with quoting.
-
-But Erez, don't you remember that you requested me to promise not to
-submit aufs for inclusion into mainline until unionfs gets accepted and
-I agreed? Do you really think I am bothering overlayfs?
-
-Here is a suggestion about your patch for ovl_show_options().
-It is better to call d_path() or something instead of copying and
-holding the paths, since overlayfs already has mnt and dentry. And with
-d_path(), show_options will be able to follow even if the upper/lower
-mount is moved.
-
-
-J. R. Okajima
