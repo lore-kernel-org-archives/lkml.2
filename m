@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757766Ab1FQLm3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 07:42:29 -0400
-Received: from mail.virtall.com ([178.63.195.102]:58254 "EHLO mail.virtall.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755524Ab1FQLm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 07:42:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=wpkg.org; h=message-id:date
-	:from:mime-version:to:subject:content-type
-	:content-transfer-encoding; q=dns; s=default; b=gUQXuPGtuE09WHeh
-	eAL+cUoobSCng6u/ZmSwUyRcWnBVNnq2MgSd8IkWI/Xw/weZmmxP6upKyBPFpdD7
-	OadmcbfTnjdV5+AGd6VIrWLyg50Zg5jWiS+m1wG7aYaIPGqmWtymduHLOFSLWQQN
-	v6EuXOrMhRjTWr+aswbeKnFt3Ww=
-Message-ID: <4DFB3DA1.7060603@wpkg.org>
-Date: Fri, 17 Jun 2011 13:42:25 +0200
-From: Tomasz Chmielewski <mangoo@wpkg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1757721Ab1FQLnj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 07:43:39 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53333 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757012Ab1FQLng (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 07:43:36 -0400
+Message-ID: <4DFB3DA8.7080502@ru.mvista.com>
+Date: Fri, 17 Jun 2011 15:42:32 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: change kernel logging (console=ttyS0) without reboot?
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Denis Kuzmenko <list@solonet.org.ua>
+CC: Sergei Shtylyov <sshtylyov@mvista.com>, Ben Dooks <ben-linux@fluff.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm mach-s3c2440 mach-mini2440: New LCD-W35i support
+References: <4DF7C50A.7060602@solonet.org.ua> <4DF9EA45.3020101@ru.mvista.com> <4DFA4CD9.9070601@solonet.org.ua>
+In-Reply-To: <4DFA4CD9.9070601@solonet.org.ua>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generally, most production systems don't like to be restarted unnecessarily.
+Hello.
 
-I was wondering if it's possible to change kernel logging without a restart?
+On 16-06-2011 22:35, Denis Kuzmenko wrote:
 
-Say, I connected a serial cable to the server, but kernel was not booted 
-with anything like console=ttyS0,19200 in its command line. So anything 
-produced by the kernel will not show up on ttyS0.
+>> Hello.
 
+>> Your signoff needs to be here. Sorry -- didn't notice the first time.
+>> The patch has all tabs converted to spaces. Didn't notice it the first
+>> time as well... :-/
 
-Can I still somehow make the kernel to log to ttyS0, without restarting 
-it (I can make syslog do it, but let's assume the syslog crashed and I'm 
-mostly interested in catching a kernel oops/panic etc.)?
+> Thanks for comments. How about this one?
 
+    Seems fine now. :-)
 
+> From: Denis Kuzmenko <dart@solonet.org.ua>
+> Date: 2011-06-16 21:30:00 +0300
 
--- 
-Tomasz Chmielewski
-http://wpkg.org
+> LCD-W35i support for Mini2440 development board
+
+> Signed-off-by: Denis Kuzmenko <dart@solonet.org.ua>
+
+WBR, Sergei
