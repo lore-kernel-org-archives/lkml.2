@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758754Ab1FQMkf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 08:40:35 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:61806 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751603Ab1FQMke (ORCPT
+	id S1758900Ab1FQMkp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 08:40:45 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:52554 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756985Ab1FQMki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 08:40:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 1/5] VFS: Do (nearly) lockless generic_file_llseek
-Date: Fri, 17 Jun 2011 14:40:14 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: viro@zeniv.linux.org.uk, hch@infradead.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-References: <1308258442-19804-1-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1308258442-19804-1-git-send-email-andi@firstfloor.org>
+	Fri, 17 Jun 2011 08:40:38 -0400
+Date: Fri, 17 Jun 2011 06:40:35 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        vinod.koul@intel.com, gregkh@suse.de,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Dan Williams <dan.j.williams@intel.com>, cjb@laptop.org,
+        Per Forlin <per.forlin@linaro.org>
+Subject: Re: [PATCH v3 RESEND] dma-mapping: add new API for
+	max_segment_number
+Message-ID: <20110617124035.GA19693@parisc-linux.org>
+References: <BANLkTi=-t9HVc6U6QY07su+c3WztsGoq3Q@mail.gmail.com> <1308227453-2034-1-git-send-email-shawn.guo@linaro.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106171440.14224.arnd@arndb.de>
-X-Provags-ID: V02:K0:ficGNllrxeVJDnSS0I6DKKioPhV9czcygdfUHLqTmRb
- m+e06T3J+vZL5GRVpWG/OOdHtYidUmvONQ8Luqs9/EByWK0kn/
- zJSazSladnkBPimt4dH1YNZfuJ1QiYvCo1a+aS1w/wK8nrwfEy
- mLcul0SRqugj8Zc96aGp8IJhlihdL0Ll7aqKxGkXtzJTSEZo9u
- 8CEXsCWjayfHMH0JVlqCQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308227453-2034-1-git-send-email-shawn.guo@linaro.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 June 2011 23:07:18 Andi Kleen wrote:
-> So still need a lock, but can use a cheap local one.
+On Thu, Jun 16, 2011 at 08:30:53PM +0800, Shawn Guo wrote:
+> Here is the user story that tells the need of the new api.  The
+> mxs-mmc is the mmc host controller for Freescale MXS architecture.
+> There are a pair of  mmc host specific parameters max_seg_size and
+> max_segs that mxs-mmc host driver needs to tell mmc core, so that
+> mmc core can know how big each data segment could be and how many
+> segments could be handled one time in a scatter list by host driver.
 > 
-> This patch implements this new scheme in generic_file_llseek.
-> I dropped generic_file_llseek_unlocked and changed all callers.
+> The mxs-mmc driver is one user of dmaengine mxs-dma, and it will call
+> mxs-dma to transfer data in scatter list.  That is to say mxs-mmc has
+> no idea of what max_seg_size and max_segs should be, because they are
+> all mxs-dma capability parameters, and mxs-mmc needs to query them
+> from mxs-dma.
 
-What about default_llseek? If you change generic_file_llseek, you should
-probably change that, too.
+This approach would make sense if mxs-mmc were generic, but it's tied to
+mxs-dma, so it can just as well call mxs-dma to find out how many segments
+it supports.
 
-	Arnd
+> Right now, there is well defined dma api (dma_get_max_seg_size) for
+> mmc to query max_seg_size from dma driver, but the one for max_segs
+> is missing.  That's why mxs-mmc driver has to hard-code it.
+> 
+> The mxs-mmc is just one example to demonstrate the need of the new
+> api, and there are other mmc host drivers (mxcmmc on imx-dma is
+> another example) and possibly even other dmaengine users need this
+> new api to know the maximum segments that dma driver can handle per
+> dma call.
+
+Again, mxcmmc can just call imx-dma directly.
+
+-- 
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
