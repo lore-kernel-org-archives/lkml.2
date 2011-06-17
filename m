@@ -1,179 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932716Ab1FQSqG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 14:46:06 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:56315 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757115Ab1FQSqC (ORCPT
+	id S932758Ab1FQTGD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 15:06:03 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:41382 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758223Ab1FQTGA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 14:46:02 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1/hKEwNMo/hpMmMBU0hb2gWOIShJtRJFkn7Dc9yBL
-	Mqi1HvMm/bfraD
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-To: lethal@linux-sh.org, linux-fbdev@vger.kernel.org
-Cc: francis.moro@gmail.com, torvalds@linux-foundation.org,
-        bonbons@linux-vserver.org, linux-kernel@vger.kernel.org,
-        Herton Ronaldo Krzesinski <herton@mandriva.com.br>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        stable@kernel.org
-Subject: [PATCH] fb: avoid possible deadlock caused by fb_set_suspend
-Date: Fri, 17 Jun 2011 19:02:39 +0000
-Message-Id: <1308337359-3480-1-git-send-email-FlorianSchandinat@gmx.de>
-X-Mailer: git-send-email 1.6.3.2
-In-Reply-To: <4DF7B0B4.4060002@gmx.de>
-References: <4DF7B0B4.4060002@gmx.de>
-X-Y-GMX-Trusted: 0
+	Fri, 17 Jun 2011 15:06:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=pWNDSH6v71owYLn/nh67FXFs3XouXN21d/Gh6EPH3oo92bxoK9TsKw/FQQA850FmQk
+         B1JRts40SwPda/Htxbux8a4K+ktiHtBjm7J7t9691kBNglqofIWBZ+IprQKu8xAzP4o7
+         r+XiYA9Z6IOx82+JAWxjYKAYscdEzJ2JMARLI=
+MIME-Version: 1.0
+In-Reply-To: <1308334963.17300.489.camel@schen9-DESK>
+References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe>
+ <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com>
+ <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
+ <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
+ <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
+ <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com> <1308255972.17300.450.camel@schen9-DESK>
+ <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com> <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
+ <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com> <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
+ <BANLkTinUBTYWxrF5TCuDSQuFUAyivXJXjQ@mail.gmail.com> <1308334963.17300.489.camel@schen9-DESK>
+From: Ray Lee <ray-lk@madrabbit.org>
+Date: Fri, 17 Jun 2011 12:05:29 -0700
+X-Google-Sender-Auth: Me1Wr1Ji-dArKZEzpLs_lA2c0no
+Message-ID: <BANLkTimNQm+Cq3nrHpWpBXTvDyDcreLPeg@mail.gmail.com>
+Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
+ to mutex
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andi Kleen <ak@linux.intel.com>, Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Herton Ronaldo Krzesinski <herton@mandriva.com.br>
+On Fri, Jun 17, 2011 at 11:22 AM, Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> For this patch, I've run it 10 times and got an average throughput of
+> 104.9% compared with 2.6.39 vanilla baseline.  Wide variations are seen
+> run to run and the difference between max and min throughput is 52% of
+> average value.
 
-A lock ordering issue can cause deadlocks: in framebuffer/console code,
-all needed struct fb_info locks are taken before acquire_console_sem(),
-in places which need to take console semaphore.
+If the variations are that drastic, it's useful to include the
+standard deviation of the mean for each kernel as well. I know it's
+only 10 runs, but it's often useful to know if a slow but reliable
+process is being replaced by a sometimes faster but more erratic one,
+for example.
 
-But fb_set_suspend is always called with console semaphore held, and
-inside it we call lock_fb_info which gets the fb_info lock, inverse
-locking order of what the rest of the code does. This causes a real
-deadlock issue, when we write to state fb sysfs attribute (which calls
-fb_set_suspend) while a framebuffer is being unregistered by
-remove_conflicting_framebuffers, as can be shown by following show
-blocked state trace on a test program which loads i915 and runs another
-forked processes writing to state attribute:
+Just a thought.
 
-Test process with semaphore held and trying to get fb_info lock:
-..
-fb-test2      D 0000000000000000     0   237    228 0x00000000
- ffff8800774f3d68 0000000000000082 00000000000135c0 00000000000135c0
- ffff880000000000 ffff8800774f3fd8 ffff8800774f3fd8 ffff880076ee4530
- 00000000000135c0 ffff8800774f3fd8 ffff8800774f2000 00000000000135c0
-Call Trace:
- [<ffffffff8141287a>] __mutex_lock_slowpath+0x11a/0x1e0
- [<ffffffff814142f2>] ? _raw_spin_lock_irq+0x22/0x40
- [<ffffffff814123d3>] mutex_lock+0x23/0x50
- [<ffffffff8125dfc5>] lock_fb_info+0x25/0x60
- [<ffffffff8125e3f0>] fb_set_suspend+0x20/0x80
- [<ffffffff81263e2f>] store_fbstate+0x4f/0x70
- [<ffffffff812e7f70>] dev_attr_store+0x20/0x30
- [<ffffffff811c46b4>] sysfs_write_file+0xd4/0x160
- [<ffffffff81155a26>] vfs_write+0xc6/0x190
- [<ffffffff81155d51>] sys_write+0x51/0x90
- [<ffffffff8100c012>] system_call_fastpath+0x16/0x1b
-..
-modprobe process stalled because has the fb_info lock (got inside
-unregister_framebuffer) but waiting for the semaphore held by the
-test process which is waiting to get the fb_info lock:
-..
-modprobe      D 0000000000000000     0   230    218 0x00000000
- ffff880077a4d618 0000000000000082 0000000000000001 0000000000000001
- ffff880000000000 ffff880077a4dfd8 ffff880077a4dfd8 ffff8800775a2e20
- 00000000000135c0 ffff880077a4dfd8 ffff880077a4c000 00000000000135c0
-Call Trace:
- [<ffffffff81411fe5>] schedule_timeout+0x215/0x310
- [<ffffffff81058051>] ? get_parent_ip+0x11/0x50
- [<ffffffff814130dd>] __down+0x6d/0xb0
- [<ffffffff81089f71>] down+0x41/0x50
- [<ffffffff810629ac>] acquire_console_sem+0x2c/0x50
- [<ffffffff812ca53d>] unbind_con_driver+0xad/0x2d0
- [<ffffffff8126f5f7>] fbcon_event_notify+0x457/0x890
- [<ffffffff814144ff>] ? _raw_spin_unlock_irqrestore+0x1f/0x50
- [<ffffffff81058051>] ? get_parent_ip+0x11/0x50
- [<ffffffff8141836d>] notifier_call_chain+0x4d/0x70
- [<ffffffff8108a3b8>] __blocking_notifier_call_chain+0x58/0x80
- [<ffffffff8108a3f6>] blocking_notifier_call_chain+0x16/0x20
- [<ffffffff8125dabb>] fb_notifier_call_chain+0x1b/0x20
- [<ffffffff8125e6ac>] unregister_framebuffer+0x7c/0x130
- [<ffffffff8125e8b3>] remove_conflicting_framebuffers+0x153/0x180
- [<ffffffff8125eef3>] register_framebuffer+0x93/0x2c0
- [<ffffffffa0331112>] drm_fb_helper_single_fb_probe+0x252/0x2f0 [drm_kms_helper]
- [<ffffffffa03314a3>] drm_fb_helper_initial_config+0x2f3/0x6d0 [drm_kms_helper]
- [<ffffffffa03318dd>] ? drm_fb_helper_single_add_all_connectors+0x5d/0x1c0 [drm_kms_helper]
- [<ffffffffa037b588>] intel_fbdev_init+0xa8/0x160 [i915]
- [<ffffffffa0343d74>] i915_driver_load+0x854/0x12b0 [i915]
- [<ffffffffa02f0e7e>] drm_get_pci_dev+0x19e/0x360 [drm]
- [<ffffffff8141821d>] ? sub_preempt_count+0x9d/0xd0
- [<ffffffffa0386f91>] i915_pci_probe+0x15/0x17 [i915]
- [<ffffffff8124481f>] local_pci_probe+0x5f/0xd0
- [<ffffffff81244f89>] pci_device_probe+0x119/0x120
- [<ffffffff812eccaa>] ? driver_sysfs_add+0x7a/0xb0
- [<ffffffff812ed003>] driver_probe_device+0xa3/0x290
- [<ffffffff812ed1f0>] ? __driver_attach+0x0/0xb0
- [<ffffffff812ed29b>] __driver_attach+0xab/0xb0
- [<ffffffff812ed1f0>] ? __driver_attach+0x0/0xb0
- [<ffffffff812ebd3e>] bus_for_each_dev+0x5e/0x90
- [<ffffffff812ecc2e>] driver_attach+0x1e/0x20
- [<ffffffff812ec6f2>] bus_add_driver+0xe2/0x320
- [<ffffffffa03aa000>] ? i915_init+0x0/0x96 [i915]
- [<ffffffff812ed536>] driver_register+0x76/0x140
- [<ffffffffa03aa000>] ? i915_init+0x0/0x96 [i915]
- [<ffffffff81245216>] __pci_register_driver+0x56/0xd0
- [<ffffffffa02f1264>] drm_pci_init+0xe4/0xf0 [drm]
- [<ffffffffa03aa000>] ? i915_init+0x0/0x96 [i915]
- [<ffffffffa02e84a8>] drm_init+0x58/0x70 [drm]
- [<ffffffffa03aa094>] i915_init+0x94/0x96 [i915]
- [<ffffffff81002194>] do_one_initcall+0x44/0x190
- [<ffffffff810a066b>] sys_init_module+0xcb/0x210
- [<ffffffff8100c012>] system_call_fastpath+0x16/0x1b
-..
-
-fb-test2 which reproduces above is available on kernel.org bug #26232.
-To solve this issue, avoid calling lock_fb_info inside fb_set_suspend,
-and move it out to where needed (callers of fb_set_suspend must call
-lock_fb_info before if needed). So far, the only place which needs to
-call lock_fb_info is store_fbstate, all other places which calls
-fb_set_suspend are suspend/resume hooks that should not need the lock as
-they should be run only when processes are already frozen in
-suspend/resume.
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=26232
-Signed-off-by: Herton Ronaldo Krzesinski <herton@mandriva.com.br>
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: stable@kernel.org
----
- drivers/video/fbmem.c   |    3 ---
- drivers/video/fbsysfs.c |    3 +++
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
-index 5aac00e..ad93629 100644
---- a/drivers/video/fbmem.c
-+++ b/drivers/video/fbmem.c
-@@ -1738,8 +1738,6 @@ void fb_set_suspend(struct fb_info *info, int state)
- {
- 	struct fb_event event;
- 
--	if (!lock_fb_info(info))
--		return;
- 	event.info = info;
- 	if (state) {
- 		fb_notifier_call_chain(FB_EVENT_SUSPEND, &event);
-@@ -1748,7 +1746,6 @@ void fb_set_suspend(struct fb_info *info, int state)
- 		info->state = FBINFO_STATE_RUNNING;
- 		fb_notifier_call_chain(FB_EVENT_RESUME, &event);
- 	}
--	unlock_fb_info(info);
- }
- 
- /**
-diff --git a/drivers/video/fbsysfs.c b/drivers/video/fbsysfs.c
-index 04251ce..67afa9c 100644
---- a/drivers/video/fbsysfs.c
-+++ b/drivers/video/fbsysfs.c
-@@ -399,9 +399,12 @@ static ssize_t store_fbstate(struct device *device,
- 
- 	state = simple_strtoul(buf, &last, 0);
- 
-+	if (!lock_fb_info(fb_info))
-+		return -ENODEV;
- 	console_lock();
- 	fb_set_suspend(fb_info, (int)state);
- 	console_unlock();
-+	unlock_fb_info(fb_info);
- 
- 	return count;
- }
--- 
-1.6.3.2
-
+~r.
