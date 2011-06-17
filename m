@@ -1,74 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932758Ab1FQTGD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 15:06:03 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:41382 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758223Ab1FQTGA convert rfc822-to-8bit (ORCPT
+	id S932803Ab1FQTH3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 15:07:29 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61772 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757435Ab1FQTHZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 15:06:00 -0400
+	Fri, 17 Jun 2011 15:07:25 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=pWNDSH6v71owYLn/nh67FXFs3XouXN21d/Gh6EPH3oo92bxoK9TsKw/FQQA850FmQk
-         B1JRts40SwPda/Htxbux8a4K+ktiHtBjm7J7t9691kBNglqofIWBZ+IprQKu8xAzP4o7
-         r+XiYA9Z6IOx82+JAWxjYKAYscdEzJ2JMARLI=
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=GORU8i0a767u6/vRSGQrcpHJlmyF3uMrYeDHA6iZVbrZ9H/YXBDTtWtX3n/18nVtV7
+         x9DMCAwtCTSyg/BAjXCqyY0SleWK8yj+A33qgmUbGlA4Eg7ZiiTKbEF2/MfXRxamoPYi
+         JEH7iNQJxAcaBwgqT6YdXfrhbIFVs12/DWhJc=
 MIME-Version: 1.0
-In-Reply-To: <1308334963.17300.489.camel@schen9-DESK>
-References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe>
- <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com>
- <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
- <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
- <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
- <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com> <1308255972.17300.450.camel@schen9-DESK>
- <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com> <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
- <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com> <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
- <BANLkTinUBTYWxrF5TCuDSQuFUAyivXJXjQ@mail.gmail.com> <1308334963.17300.489.camel@schen9-DESK>
-From: Ray Lee <ray-lk@madrabbit.org>
-Date: Fri, 17 Jun 2011 12:05:29 -0700
-X-Google-Sender-Auth: Me1Wr1Ji-dArKZEzpLs_lA2c0no
-Message-ID: <BANLkTimNQm+Cq3nrHpWpBXTvDyDcreLPeg@mail.gmail.com>
-Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
- to mutex
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andi Kleen <ak@linux.intel.com>, Shaohua Li <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
+In-Reply-To: <4DFBA001.4010500@fb.com>
+References: <20110615163115.773d072e.akpm@linux-foundation.org>
+ <1308187784-3815-1-git-send-email-asharma@fb.com> <BANLkTi=f2N+dO2nBLobM73jCg0U0QSqxNQ@mail.gmail.com>
+ <4DFB8AAF.1040002@fb.com> <BANLkTindmEA7NsaRjuukh1-oRCtVWpeuCA@mail.gmail.com>
+ <4DFB93C1.9000901@fb.com> <BANLkTim5zEo=Rn2sqUExL-8n=p4inLEpuQ@mail.gmail.com>
+ <4DFBA001.4010500@fb.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Fri, 17 Jun 2011 15:07:04 -0400
+Message-ID: <BANLkTinQhBfAJd5-ZaPXbiV778c9fvXeWg@mail.gmail.com>
+Subject: Re: [PATCH] atomic: cleanup asm-generic atomic*.h inclusion
+To: Arun Sharma <asharma@fb.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        David Miller <davem@davemloft.net>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 11:22 AM, Tim Chen <tim.c.chen@linux.intel.com> wrote:
-> For this patch, I've run it 10 times and got an average throughput of
-> 104.9% compared with 2.6.39 vanilla baseline.  Wide variations are seen
-> run to run and the difference between max and min throughput is 52% of
-> average value.
+On Fri, Jun 17, 2011 at 14:42, Arun Sharma wrote:
+> On 6/17/11 11:06 AM, Mike Frysinger wrote:
+>> fixes one thing while breaking another.  linux/atomic.h includes
+>> asm/atomic.h which includes asm-generic/atomic.h which includes
+>> asm-generic/atomic-long.h which needs atomic_add_unless(), but that
+>> isnt provided until after the asm/atomic.h include in linux/atomic.h.
+>>
+>> but linux/atomic.h needs asm/atomic.h before atomic_add_unless()
+>> because it relies on the new __atomic_add_unless().
+>
+> Right. I think we need to get rid of that include as well:
 
-If the variations are that drastic, it's useful to include the
-standard deviation of the mean for each kernel as well. I know it's
-only 10 runs, but it's often useful to know if a slow but reliable
-process is being replaced by a sometimes faster but more erratic one,
-for example.
+ok, then we get to your proposed asm-generic/atomic.h change not being
+correct.  instead of deleting atomic_add_unless(), it probably should
+redo it to __atomic_add_unless().  people using asm-generic/atomic.h
+are not defining __atomic_add_unless() themselves.
 
-Just a thought.
+  CC      arch/blackfin/kernel/asm-offsets.s
+In file included from include/linux/spinlock.h:387,
+                 from include/linux/seqlock.h:29,
+                 from include/linux/time.h:8,
+                 from include/linux/timex.h:56,
+                 from include/linux/sched.h:57,
+                 from arch/blackfin/kernel/asm-offsets.c:10:
+include/linux/atomic.h: In function ‘atomic_add_unless’:
+include/linux/atomic.h:17: error: implicit declaration of function
+‘__atomic_add_unless’
+make[1]: *** [arch/blackfin/kernel/asm-offsets.s] Error 1
 
-~r.
+>> having linux/atomic.h and asm-generic/atomic.h just strikes me as
+>> wrong.  the point of asm-generic is to unify things, but now we have
+>> two places to unify things without 0 indication as to which is for
+>> which ?  i'm wondering if we shouldnt convert all arches to
+>> asm-generic/atomic.h and then add your new logic there and just skip
+>> this whole linux/atomic.h mess.
+>
+> I believe the logic is:
+>
+> <asm-generic/atomic.h> shared code for simple archs that don't want to
+> define their own primitives. Only used by 4 archs.
+
+i think the 4 is only really because asm-generic/atomic.h is so new.
+those arches are also new and started with it, or did work to convert
+over.  i imagine a lot of the existing arches could convert over to
+it.
+
+> <linux/atomic.h> a header file that's usable in machine independent kernel
+> code.
+
+if that's the direction we want to take things, then this needs to be
+documented at the top of both files.  i also see quite a lot of
+primitives in asm-generic/atomic.h that would be better placed using
+your definitions in linux/atomic.h.
+
+i would refine your asm-generic/atomic.h definition as "simple C
+definitions useful for UP systems only"
+
+> My guess is that if <linux/atomic.h> existed in 2006, people would've added
+> shared code over there.
+
+i'd propose that the guy adding linux/atomic.h was lazy and punked out
+rather than doing real work
+
+> Also, the code in <asm-generic/atomic.h> is not truly generic:
+
+sure it is.  it'll work on any arch in a UP setup.  it (currently)
+does not support SMP by design.
+-mike
