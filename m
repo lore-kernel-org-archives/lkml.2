@@ -1,68 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932710Ab1FQSsv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 14:48:51 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52871 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932429Ab1FQSst (ORCPT
+	id S1759531Ab1FQSlZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 14:41:25 -0400
+Received: from outcampmail001.snc4.facebook.com ([66.220.144.159]:65423 "EHLO
+	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752353Ab1FQSlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 14:48:49 -0400
+	Fri, 17 Jun 2011 14:41:24 -0400
+Message-ID: <4DFBA001.4010500@fb.com>
+Date: Fri, 17 Jun 2011 11:42:09 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimStT22tA2YkeuYBzarnnWTnMjiKQ@mail.gmail.com>
-References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe>
- <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com>
- <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
- <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
- <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
- <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com> <1308255972.17300.450.camel@schen9-DESK>
- <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com> <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
- <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com> <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
- <BANLkTinUBTYWxrF5TCuDSQuFUAyivXJXjQ@mail.gmail.com> <1308310080.2355.19.camel@twins>
- <BANLkTim2bmPfeRT1tS7hx2Z85QHjPHwU3Q@mail.gmail.com> <alpine.LSU.2.00.1106171040460.7018@sister.anvils>
- <BANLkTim3vo0vpovV=5sU=GLxkotheB=Ryg@mail.gmail.com> <1308334688.12801.19.camel@laptop>
- <1308335557.12801.24.camel@laptop> <BANLkTimStT22tA2YkeuYBzarnnWTnMjiKQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 17 Jun 2011 11:41:55 -0700
-Message-ID: <BANLkTinu=m-Ox9zEwguzth+2H_=MBGvS+Q@mail.gmail.com>
-Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
- to mutex
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Hugh Dickins <hughd@google.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Andi Kleen <ak@linux.intel.com>, Shaohua Li <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mike Frysinger <vapier.adi@gmail.com>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        David Miller <davem@davemloft.net>
+Subject: Re: [PATCH] atomic: cleanup asm-generic atomic*.h inclusion
+References: <20110615163115.773d072e.akpm@linux-foundation.org> <1308187784-3815-1-git-send-email-asharma@fb.com> <BANLkTi=f2N+dO2nBLobM73jCg0U0QSqxNQ@mail.gmail.com> <4DFB8AAF.1040002@fb.com> <BANLkTindmEA7NsaRjuukh1-oRCtVWpeuCA@mail.gmail.com> <4DFB93C1.9000901@fb.com> <BANLkTim5zEo=Rn2sqUExL-8n=p4inLEpuQ@mail.gmail.com>
+In-Reply-To: <BANLkTim5zEo=Rn2sqUExL-8n=p4inLEpuQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 11:39 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+On 6/17/11 11:06 AM, Mike Frysinger wrote:
+
+> fixes one thing while breaking another.  linux/atomic.h includes
+> asm/atomic.h which includes asm-generic/atomic.h which includes
+> asm-generic/atomic-long.h which needs atomic_add_unless(), but that
+> isnt provided until after the asm/atomic.h include in linux/atomic.h.
 >
-> Having gone over it a bit more, I actually think I prefer to just
-> special-case the allocation instead.
+> but linux/atomic.h needs asm/atomic.h before atomic_add_unless()
+> because it relies on the new __atomic_add_unless().
+>
 
-Just to explain my thinking: the thing I disliked most about doing an
-allocation while holding the lock wasn't that I thought we would
-deadlock on page reclaim. I don't claim that kind of far-sight.
+Right. I think we need to get rid of that include as well:
 
-No, the thing I disliked was that if we're low on memory and actually
-have to wait, I disliked having the lack of concurrency. I'm ok with
-holding the mutex over a few more CPU cycles, but anything longer
-might actually hurt throughput. So the patch I just sent out should
-fix both the page reclaim deadlock, and avoid any problems with delays
-due to holding the critical lock over an expensive allocation.
+--- a/include/asm-generic/atomic.h
++++ b/include/asm-generic/atomic.h
+@@ -156,7 +145,5 @@ static inline void atomic_clear_mask(unsigned long 
+mask, unsigned long *addr)
+  #define smp_mb__before_atomic_inc()    barrier()
+  #define smp_mb__after_atomic_inc()     barrier()
 
-                         Linus
+-#include <asm-generic/atomic-long.h>
+-
+  #endif /* __KERNEL__ */
+  #endif /* __ASM_GENERIC_ATOMIC_H */
+
+since <linux/atomic.h> includes it directly now.
+
+> having linux/atomic.h and asm-generic/atomic.h just strikes me as
+> wrong.  the point of asm-generic is to unify things, but now we have
+> two places to unify things without 0 indication as to which is for
+> which ?  i'm wondering if we shouldnt convert all arches to
+> asm-generic/atomic.h and then add your new logic there and just skip
+> this whole linux/atomic.h mess.
+
+I believe the logic is:
+
+<asm-generic/atomic.h> shared code for simple archs that don't want to 
+define their own primitives. Only used by 4 archs.
+
+<linux/atomic.h> a header file that's usable in machine independent 
+kernel code.
+
+<linux/atomic.h> seems to be relatively recent, introduced by:
+
+commit 3f9d35b9514da6757ca98831372518f9eeb71b33
+Author: Eric Dumazet <eric.dumazet@gmail.com>
+Date:   Thu Nov 11 14:05:08 2010 -0800
+
+     atomic: add atomic_inc_not_zero_hint()
+
+<asm-generic/atomic.h> came from:
+
+commit d3cb487149bd706aa6aeb02042332a450978dc1c
+Author: Christoph Lameter <clameter@engr.sgi.com>
+Date:   Fri Jan 6 00:11:20 2006 -0800
+
+     [PATCH] atomic_long_t & include/asm-generic/atomic.h V2
+
+My guess is that if <linux/atomic.h> existed in 2006, people would've 
+added shared code over there. Also, the code in <asm-generic/atomic.h> 
+is not truly generic:
+
+smp_mb__before_atomic_dec() for eg is implemented differently for some 
+archs.
+
+  -Arun
