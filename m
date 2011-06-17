@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab1FQDTs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 23:19:48 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:45343 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755064Ab1FQDTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 23:19:45 -0400
-Date: Fri, 17 Jun 2011 13:19:37 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        fujita.tomonori@lab.ntt.co.jp, linux-arch@vger.kernel.org
-Subject: Re: [PATCH net-next] net: remove mm.h inclusion from netdevice.h
-Message-Id: <20110617131937.63c71cb6.sfr@canb.auug.org.au>
-In-Reply-To: <20110616210134.GA18026@p183.telecom.by>
-References: <20110616210134.GA18026@p183.telecom.by>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1756119Ab1FQD0N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 23:26:13 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:50625 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754495Ab1FQD0L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 23:26:11 -0400
+Date: Thu, 16 Jun 2011 23:23:44 -0400 (EDT)
+Message-Id: <20110616.232344.2285390268187937319.davem@davemloft.net>
+To: joe@perches.com
+Cc: netdev@vger.kernel.org, kaber@trash.net, sage@newdream.net,
+        samuel@sortiz.org, paul.moore@hp.com, vladislav.yasevich@hp.com,
+        sri@us.ibm.com, linux-kernel@vger.kernel.org,
+        ceph-devel@vger.kernel.org, linux-decnet-user@lists.sourceforge.net,
+        linux-sctp@vger.kernel.org
+Subject: Re: [PATCH net-next 1/2] net: Remove casts of void *
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <d010144f11f9165670ac0c9e3559bf5e3191ff28.1308017857.git.joe@perches.com>
+References: <cover.1308017857.git.joe@perches.com>
+	<d010144f11f9165670ac0c9e3559bf5e3191ff28.1308017857.git.joe@perches.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__17_Jun_2011_13_19_37_+1000_1v=4LmR4gIeb+V=b"
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 16 Jun 2011 20:23:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__17_Jun_2011_13_19_37_+1000_1v=4LmR4gIeb+V=b
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Joe Perches <joe@perches.com>
+Date: Mon, 13 Jun 2011 19:21:26 -0700
 
-Hi Alexy,
+> Unnecessary casts of void * clutter the code.
+> 
+> These are the remainder casts after several specific
+> patches to remove netdev_priv and dev_priv.
+> 
+> Done via coccinelle script:
+> 
+> $ cat cast_void_pointer.cocci
+> @@
+> type T;
+> T *pt;
+> void *pv;
+> @@
+> 
+> - pt = (T *)pv;
+> + pt = pv;
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-On Fri, 17 Jun 2011 00:01:34 +0300 Alexey Dobriyan <adobriyan@gmail.com> wr=
-ote:
->
-> Remove linux/mm.h inclusion from netdevice.h -- it's unused (I've checked=
- manually).
-
-Have you tried building this with STAGING enabled?  The fallout for
-STAGING from the removal of linux/interrupt.h is still not sorted out.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__17_Jun_2011_13_19_37_+1000_1v=4LmR4gIeb+V=b
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN+sfJAAoJEDMEi1NhKgbs+AgH/jYsT2sY6W6QmlkD8CAleZP5
-EM2YDrgZHNG8sePYbubGvJsIsnRihoWiL+eK97fud7ED2CBHysYu4Dn3du0amj6o
-33MAT8WiKW211OvhAV1TthlPiRhwDRmi6eXMWh5fzYdhbIWE/8N0+VUYFyoqyEDc
-1cvKjSckXY+iIYKnpTyBvpPf/f6YCuE/7RdYRGaNhCyC77VlJ1izgbE9TI+Eo91K
-0uGxKOM+6WPrDlEmZpGxqPnPlRWFwuVRxCeksRJM2oYNjS+vkeZO5SywnDJi8e0l
-acn5GfS97TQfbJ8H6XnVvG5LDt51+ilAYaK6bDOr1bHZrVZmVTbxatq3DMrTq0c=
-=09qq
------END PGP SIGNATURE-----
-
---Signature=_Fri__17_Jun_2011_13_19_37_+1000_1v=4LmR4gIeb+V=b--
+Applied.
