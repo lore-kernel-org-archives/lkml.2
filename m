@@ -1,104 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758602Ab1FQM2h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 08:28:37 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:55503 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755627Ab1FQM2g (ORCPT
+	id S1758780Ab1FQMjk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 08:39:40 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:34989
+	"EHLO CH1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758523Ab1FQMji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 08:28:36 -0400
-X-AuditID: b753bd60-a1eacba0000019f4-31-4dfb4871f69d
-X-AuditID: b753bd60-a1eacba0000019f4-31-4dfb4871f69d
-Message-ID: <4DFB486F.9080100@hitachi.com>
-Date: Fri, 17 Jun 2011 21:28:31 +0900
-From: Nao Nishijima <nao.nishijima.xt@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Fri, 17 Jun 2011 08:39:38 -0400
+X-SpamScore: -8
+X-BigFish: VPS-8(zz1432N98dKzz1202hzz8275bhz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LMXPR1-01-1Q8-02
+X-M-MSG: 
+Date: Fri, 17 Jun 2011 14:37:36 +0200
+From: Borislav Petkov <borislav.petkov@amd.com>
+To: <chrish@techspecs.com>
+CC: Borislav Petkov <bp@alien8.de>, <linux-kernel@vger.kernel.org>,
+        Clemens Ladisch <clemens@ladisch.de>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: PROBLEM: AMD Zacate E350 shows only 2.6GB memory when 8GB
+ installed
+Message-ID: <20110617123736.GA18054@aftab>
+References: <53e44025a84a55558f4fb1dea8642ab6.squirrel@mail.techspecs.com>
+ <4DFAF9A3.6090802@ladisch.de>
+ <20110617090303.GB939@liondog.tnic>
 MIME-Version: 1.0
-To: Hannes Reinecke <hare@suse.de>
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Greg KH <greg@kroah.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jcm@redhat.com,
-        stefanr@s5r6.in-berlin.de, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
-References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp> <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp> <20110615153337.GA10160@kroah.com> <4DF9F11F.705@hitachi.com> <20110616154129.GA31498@kroah.com> <1308239454.2436.34.camel@mulgrave> <20110616161442.GA32113@kroah.com> <1308241506.2436.44.camel@mulgrave> <BANLkTi=qHhzwGfp4v8B1CAmT+gtA=sOgvw@mail.gmail.com> <BANLkTikUNqTxgD_+TTVpcFyRDu_fSesrsg@mail.gmail.com> <4DFAF3D2.5030506@suse.de>
-In-Reply-To: <4DFAF3D2.5030506@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110617090303.GB939@liondog.tnic>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hannes,
+On Fri, Jun 17, 2011 at 05:03:03AM -0400, Borislav Petkov wrote:
+> On Fri, Jun 17, 2011 at 08:52:19AM +0200, Clemens Ladisch wrote:
+> > chrish@techspecs.com wrote:
+> > >    I tried this on Fedora 14 and OpenSuse 11.4 and both exhibit the same
+> > > behavior. 8GB is installed but only 2698476 shows available for use
+> > > using "top" or "free".
+> > 
+> > /proc/iomem?
+> > dmesg?
+> 
+> Also, do you have the latest BIOS? If not, can you update it? Also, can
+> you try the latest upstream kernel to verify the problem still exists?
 
-Thank you for looking at it.
+Something else you could try is update your Fedora 14 kernel since the
+latest version supposedly contains a fix which is relevant to your
+issue:
 
-(2011/06/17 15:27), Hannes Reinecke wrote:
-> On 06/16/2011 07:20 PM, Kay Sievers wrote:
->> On Thu, Jun 16, 2011 at 19:09, Kay Sievers<kay.sievers@vrfy.org>  wrote:
->>> On Thu, Jun 16, 2011 at 18:25, James Bottomley
->>> <James.Bottomley@hansenpartnership.com>  wrote:
->>>> On Thu, 2011-06-16 at 09:14 -0700, Greg KH wrote:
->>>>> All userspace naming will be taken care of by the usual udev rules, so
->>>>>> for disks, something like /dev/disk/by-preferred/<fred>  which
->>>>>> would be
->>>>>> the usual symbolic link.
->>>>>
->>>>> No, udev can not create such a link after the preferred name is
->>>>> set, as
->>>>> it has no way of knowing that the name was set.
->>>>
->>>> It can if we trigger a uevent.  Note: I'm not advocating this ...
->>>> I'd be
->>>> equally happy having whatever sets the kernel name create the link (or
->>>> tickle udev to create it).  We definitely require device links, though,
->>>> to get this to work.
->>
->> Guess all that would work now, including mount(8) not canonicalizing.
->> What would happen if we mount:
->>    /dev/disk/by-pretty/foo
->> and some tool later thinks the pretty name should better be 'bar', it
->> writes the name to /sys, we get a uevent, the old link disappears, we
->> get a new link, mount has no device node anymore for the mounted
->> device ...
->>
->> So we basically get a one-shot additional pretty name? Guess, the
->> _single_ name changed anytime later just asks for serious problems. We
->> need to set it very early to be really useful, but how, where is it
->> coming from?
->>
-> Well, certain storage arrays are able to print out the user-defined name
-> for the LUNs:
-> 
-> # sg_vpd -p 0xc8 /dev/sdc
-> Extended device identification (RDAC) VPD Page:
->   Volume Unique Identifier: 60080e50001bf1f0000005004ddb05a4
->     Creation Number: 1280, Timestamp: Tue May 24 03:11:00 2011
->   Volume User Label: mas-1
->   Storage Array Unique Identifier: 60080e50001bf1f0000000004d418973
->   Storage Array User Label: LSI-SAS-DIF
->   Logical Unit Number: 0000000000000000
-> 
-> where the 'Volume User Label' is the name the administrator has given to
-> the LUN on the storage array.
-> 
-> So for these kind of things it would be useful.
-> 
-> However, a single pretty name is quite a limitation.
-> And I also fail to see why this can't be handled in userspace.
-> 
+commit 3fdbf004c1706480a7c7fac3c9d836fa6df20d7d
+Author: Andreas Herrmann <andreas.herrmann3@amd.com>
+Date:   Thu Sep 30 14:32:35 2010 +0200
 
-I know that there are several names for one device.
-Preferred name does not eliminate those names, but just add another
-pretty name. Usually those machine-generated names are too long and
-not familiar with users. preferred name will provide a human-readable
-name and reduce the operation cost.
-
-Thanks,
+    x86, mtrr: Assume SYS_CFG[Tom2ForceMemTypeWB] exists on all future AMD CPUs
 
 -- 
-Nao NISHIJIMA
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., YOKOHAMA Research  Laboratory
-Email： nao.nishijima.xt@hitachi.com
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
+
