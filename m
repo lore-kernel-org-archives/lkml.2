@@ -1,152 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757981Ab1FQLxm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 07:53:42 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:59087 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757852Ab1FQLxk (ORCPT
+	id S1758076Ab1FQLzm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 07:55:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55471 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757511Ab1FQLzk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 07:53:40 -0400
-X-AuditID: b753bd60-a327cba0000050a4-29-4dfb4040596d
-X-AuditID: b753bd60-a327cba0000050a4-29-4dfb4040596d
-Message-ID: <4DFB403E.9020009@hitachi.com>
-Date: Fri, 17 Jun 2011 20:53:34 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Greg KH <greg@kroah.com>, Nao Nishijima <nao.nishijima.xt@hitachi.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jcm@redhat.com, hare@suse.de, stefanr@s5r6.in-berlin.de,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
-References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp> <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp> <20110615153337.GA10160@kroah.com> <4DF9F11F.705@hitachi.com> <20110616154129.GA31498@kroah.com> <1308239454.2436.34.camel@mulgrave> <20110616161442.GA32113@kroah.com> <1308241506.2436.44.camel@mulgrave> <20110616181943.GB1439@kroah.com> <1308256290.2436.143.camel@mulgrave> <BANLkTikfCMR_=5Jp7tLhM_Wr3vxihEL+rA@mail.gmail.com> <1308264321.2436.161.camel@mulgrave> <BANLkTinvfmU0dszQyu4U=Pw3_BtrmOUi_g@mail.gmail.com>
-In-Reply-To: <BANLkTinvfmU0dszQyu4U=Pw3_BtrmOUi_g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 17 Jun 2011 07:55:40 -0400
+Subject: Re: REGRESSION: Performance regressions from switching
+ anon_vma->lock to mutex
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+In-Reply-To: <1308310080.2355.19.camel@twins>
+References: <1308097798.17300.142.camel@schen9-DESK>
+	 <1308101214.15392.151.camel@sli10-conroe> <1308138750.15315.62.camel@twins>
+	 <20110615161827.GA11769@tassilo.jf.intel.com>
+	 <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
+	 <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
+	 <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
+	 <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com>
+	 <1308255972.17300.450.camel@schen9-DESK>
+	 <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com>
+	 <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
+	 <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com>
+	 <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
+	 <BANLkTinUBTYWxrF5TCuDSQuFUAyivXJXjQ@mail.gmail.com>
+	 <1308310080.2355.19.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 17 Jun 2011 13:54:23 +0200
+Message-ID: <1308311663.2355.39.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/17 8:04), Kay Sievers wrote:
-[...]
->>>>>>> So as userspace tools will still need to be fixed, I don't see how
->>>>>>> adding a kernel file for this is going to help any.  Well, a bit in that
->>>>>>> the kernel log files will look "different", but again, that really isn't
->>>>>>> a problem that userspace couldn't also solve with no kernel changes
->>>>>>> needed.
->>>>>>
->>>>>> This is true, but I think for the small effort it takes to implement the
->>>>>> feature in-kernel compared with what we'd have to do to the
->>>>>> distributions to get it implemented in userspace (we'd need klogd to do
->>>>>> the conversion for dmesg ... I'm entirely unclear what we need to modify
->>>>>> for /proc/partitions, etc.) the benefit outweighs the cost.
->>>>>>
->>>>>> Additionally, since renaming is something users seem to want (just look
->>>>>> at net interfaces), if we can make this work, we now have a definitive
->>>>>> answer to point people at.
->>>>>
->>>>> Renaming is something that we do NOT want to do, as we have learned our
->>>>> lesson of the network device renaming mess.  And as Kay pointed out, we
->>>>> already have an "alias" name there, which no one uses.
->>>>
->>>> Look at this as an opportunity to get it right.  The original proposal
->>>> was for renaming.  By iterating over the actual requirements, we have it
->>>> reduced to simply having the kernel print a preferred name.  I think
->>>> that's a nice achievement which we can point other proponents of
->>>> renaming to as they arise.
->>>
->>> Sure, we absolutely don't want renaming, and we can provide countless
->>> solid technical reasons why we should not allow it to happen. But I'm
->>> also pretty sure, we also don't want just-another-single-name to put
->>> somewhere in the kernel.
->>
->> I understand why we don't want renaming.  However, the technical reason
->> why we want a preferred name is that it's often associated with a name
->> printed somewhere on the box (say a label on the disk enclosure, or
->> ethernet port).  Not being able to use this name to address the device
->> is a usability issue which annoys the enterprise enormously.
->>
->> So if we stop there, regardless of solution (in-kernel or fix all
->> userspace), does everyone see what the actual problem is?
-> 
-> I don't think that solves the problem, no. We need _smart_ userspace
-> with a debug/error message channel from the kernel to userspace that
-> pops out _structured_ data. Userspace needs to index the data, and
-> merge a lot of userspace information into it.
+On Fri, 2011-06-17 at 13:28 +0200, Peter Zijlstra wrote:
+> +static int anon_vma_unlink(struct anon_vma_chain *anon_vma_chain,
+> struct anon_vma *anon_vma)
+>  {
+>         list_del(&anon_vma_chain->same_anon_vma);
+>  
+>         /* We must garbage collect the anon_vma if it's empty */
+> +       if (list_empty(&anon_vma->head))
+> +               return 1;
+>  
+> +       return 0;
+>  } 
 
-If that is possible, I think it's so helpful. But most of driver
-developers doesn't like that... They may tend to continue using
-printk() debug/error notification. (actually I hope them to
-use some notification API, like traceevent...)
+Is of course a little pathetic, so lets kill it..
 
-Maybe, some kind of errors, like AER/MCE, easily move on to
-such smarter system. But I doubt other device-specific errors
-can do that too. There are so much specific kind of errors...
+---
+Index: linux-2.6/mm/rmap.c
+===================================================================
+--- linux-2.6.orig/mm/rmap.c
++++ linux-2.6/mm/rmap.c
+@@ -324,36 +324,42 @@ int anon_vma_fork(struct vm_area_struct
+ 	return -ENOMEM;
+ }
+ 
+-static void anon_vma_unlink(struct anon_vma_chain *anon_vma_chain)
+-{
+-	struct anon_vma *anon_vma = anon_vma_chain->anon_vma;
+-	int empty;
+-
+-	/* If anon_vma_fork fails, we can get an empty anon_vma_chain. */
+-	if (!anon_vma)
+-		return;
+-
+-	anon_vma_lock(anon_vma);
+-	list_del(&anon_vma_chain->same_anon_vma);
+-
+-	/* We must garbage collect the anon_vma if it's empty */
+-	empty = list_empty(&anon_vma->head);
+-	anon_vma_unlock(anon_vma);
+-
+-	if (empty)
+-		put_anon_vma(anon_vma);
+-}
+-
+ void unlink_anon_vmas(struct vm_area_struct *vma)
+ {
+ 	struct anon_vma_chain *avc, *next;
++	struct anon_vma *root = NULL;
+ 
+ 	/*
+ 	 * Unlink each anon_vma chained to the VMA.  This list is ordered
+ 	 * from newest to oldest, ensuring the root anon_vma gets freed last.
+ 	 */
+ 	list_for_each_entry_safe(avc, next, &vma->anon_vma_chain, same_vma) {
+-		anon_vma_unlink(avc);
++		struct anon_vma *anon_vma = avc->anon_vma;
++
++		/* If anon_vma_fork fails, we can get an empty anon_vma_chain. */
++		if (anon_vma) {
++			root = lock_anon_vma_root(root, anon_vma);
++			list_del(&avc->same_anon_vma);
++			/* Leave empty anon_vmas on the list. */
++			if (list_empty(&anon_vma->head))
++				continue;
++		}
++		list_del(&avc->same_vma);
++		anon_vma_chain_free(avc);
++	}
++	unlock_anon_vma_root(root);
++
++	/*
++	 * Iterate the list once more, it now only contains empty and unlinked
++	 * anon_vmas, destroy them. Could not do before due to __put_anon_vma()
++	 * needing to acquire the anon_vma->root->mutex.
++	 */
++	list_for_each_entry_safe(avc, next, &vma->anon_vma_chain, same_vma) {
++		struct anon_vma *anon_vma = avc->anon_vma;
++
++		if (anon_vma)
++			put_anon_vma(anon_vma);
++
+ 		list_del(&avc->same_vma);
+ 		anon_vma_chain_free(avc);
+ 	}
 
-> Adding just another single-name to the kernel just makes the
-> much-too-dumb free-text printk() a bit more readable, but still sounds
-> not like a solution. Pimping up syslog is not the solution to this
-> problem, and it can't be solved in the kernel alone.
-
-I agree with you that the _smart_ error notifier can solve our
-problem too. However, we can't jump into it directly.
-And just making printk() readable helps us A LOT!
-
-
->>>>> So again, I really don't like this, just fix the userspace tools to map
->>>>> the proper device name that the kernel is using to the userspace name
->>>>> the tool used, and all is fine.  This has been done already today,
->>>>> succesfully, by many of the big "enterprise" monitoring systems that
->>>>> work quite well on Linux, proving that this is not something that the
->>>>> kernel needs to provide to implement properly.
->>>>
->>>> Well, it's expediency.  Sure we could try to patch the world, but I
->>>> think the simple patch of getting the kernel to print a preferred name
->>>> solves 90% of the problem.  Sure there is a long tail of userspace
->>>> components that needs fixing, but that can be done gradually if we take
->>>> the kernel route.  If we go the userspace route, it will be a long while
->>>> before we even get to 50% coverage.
->>>
->>> I need to ask again ask for an explanation why logging all symlinks at
->>> device discovery from udev, does not solve exactly this problem. With
->>> that tag in the syslog message stream, all later kernel names can be
->>> safely associated with _all_ the current device names in question,
->>> until the next tag from udev is found.
->>
->> So if the user has one preferred name, us logging all the names (and we
->> have quite a few for disks) doesn't really help because the user might
->> want to choose a different name.  However, even if we assume they choose
->> one of the current names, they still have to do the mapping manually;
->> even if they have all the information, they can't just cut and paste
->> from dmesg say, they have to cut, edit the buffer to put in the
->> preferred name and then paste ... that's just one annoying step too far
->> for most users.  I agree that all the output tools within reason can be
->> fixed to do this automatically, but fixing cat say, just so
->> cat /proc/partitions works would never be acceptable upstream.
->>
->> The reason for storing this in the kernel is just that it's easier than
->> trying to update all the tools, and it solves 90% of the problem, which
->> makes the solution usable, even if we have to update tools to get to
->> 100%.
-> 
-> I don't think we can even solve 10% of the problems that way. It's
-> just a hack that makes stuff a bit more pretty, but doesn't provide
-> any reasonable solution to the problem. I doubt we can even make a
-> simple use case out of it, what name to put into that field for a
-> multipath setup.
-
-Good point! we have to consider multipath case in document.
-Perhaps, we need a special naming rule in that case. I think
-it can be solved if udev script is enough smart :-)
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
