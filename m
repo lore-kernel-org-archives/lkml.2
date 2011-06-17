@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757367Ab1FQHXY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 03:23:24 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:55415 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756913Ab1FQHXV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 03:23:21 -0400
-From: Chris Forbes <chrisf@ijw.co.nz>
-To: jmorris@namei.org
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Forbes <chrisf@ijw.co.nz>
-Subject: [PATCH] security: inode: fixed coding style issue
-Date: Fri, 17 Jun 2011 19:22:21 +1200
-Message-Id: <1308295341-27566-1-git-send-email-chrisf@ijw.co.nz>
-X-Mailer: git-send-email 1.7.4.1
+	id S1757346Ab1FQHaF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 03:30:05 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:52362 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757162Ab1FQHaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 03:30:00 -0400
+Date: Fri, 17 Jun 2011 17:29:51 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: sedat.dilek@gmail.com
+Cc: Sedat Dilek <sedat.dilek@googlemail.com>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for June 17
+Message-Id: <20110617172951.58e53adc.sfr@canb.auug.org.au>
+In-Reply-To: <BANLkTinyJ5ZLPw=TfA=fNThQGreYrjxq=g@mail.gmail.com>
+References: <20110617162440.5c4c39c2.sfr@canb.auug.org.au>
+	<BANLkTinyJ5ZLPw=TfA=fNThQGreYrjxq=g@mail.gmail.com>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__17_Jun_2011_17_29_51_+1000_ZSfSneU3VBlph9Jh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a few coding style issues.
+--Signature=_Fri__17_Jun_2011_17_29_51_+1000_ZSfSneU3VBlph9Jh
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Chris Forbes <chrisf@ijw.co.nz>
----
- security/inode.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+Hi Sedat,
 
-diff --git a/security/inode.c b/security/inode.c
-index c4df2fb..961f280 100644
---- a/security/inode.c
-+++ b/security/inode.c
-@@ -75,7 +75,8 @@ static struct inode *get_inode(struct super_block *sb, int mode, dev_t dev)
- 			inode->i_op = &simple_dir_inode_operations;
- 			inode->i_fop = &simple_dir_operations;
- 
--			/* directory inodes start off with i_nlink == 2 (for "." entry) */
-+			/* directory inodes start off with i_nlink == 2
-+			 * (for "." entry) */
- 			inc_nlink(inode);
- 			break;
- 		}
-@@ -126,7 +127,7 @@ static inline int positive(struct dentry *dentry)
- 
- static int fill_super(struct super_block *sb, void *data, int silent)
- {
--	static struct tree_descr files[] = {{""}};
-+	static struct tree_descr files[] = { {""} };
- 
- 	return simple_fill_super(sb, SECURITYFS_MAGIC, files);
- }
-@@ -212,7 +213,7 @@ struct dentry *securityfs_create_file(const char *name, mode_t mode,
- 	struct dentry *dentry = NULL;
- 	int error;
- 
--	pr_debug("securityfs: creating file '%s'\n",name);
-+	pr_debug("securityfs: creating file '%s'\n", name);
- 
- 	error = simple_pin_fs(&fs_type, &mount, &mount_count);
- 	if (error) {
--- 
-1.7.4.1
+On Fri, 17 Jun 2011 09:18:19 +0200 Sedat Dilek <sedat.dilek@googlemail.com>=
+ wrote:
+>
+> On Fri, Jun 17, 2011 at 8:24 AM, Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+> >
+> > I managed to delete the merge.log file, sorry (the summary below is
+> > accurate, though).
+> >
+>=20
+> Shit happens :-).
+> Can I have the commit-id of Linus-tree (IIRC that's listed in the
+> merge.log file)?
 
+That's listed in Next/SHA1s:
+
+Name		SHA1
+----		----
+origin		8b97b21e0f4f59801d05a5c536417f04ecfb5603
+.
+.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__17_Jun_2011_17_29_51_+1000_ZSfSneU3VBlph9Jh
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN+wJvAAoJEDMEi1NhKgbs63YH/1VjB7Gy2qwqY3ctQFsN8LnX
+dVWKWNT+tCW6ngdoKF6atD18LenEvv9JjR+NXf/rJFXkpuvXYA7AGw0x4+eRzGdB
+B3/MYLC0/ItuHVh0S4Cz79W47WRVKKB/fHOkVUc+6raFO35LTK+nSE0nlaHaRpVg
+ZqFtWoN1l6VZ7v5hXuApGRjzTrvQ3Mzx66y/nEV9I9okuZ+N+K29/Ikb9SXZTIsT
+v+ab1VRVODLBOMYz91se9JlxpMf+oWEOoQAQWSCowz84ZcHUND3WcLlVUDX2Z83c
+rAhf9WdlcamruudAS+FKFjQngWs3YaNUIgR/WcPIik+5dnbCYUw1faN/yKjaz94=
+=PRbU
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__17_Jun_2011_17_29_51_+1000_ZSfSneU3VBlph9Jh--
