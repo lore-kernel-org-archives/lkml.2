@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756627Ab1FQVTL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 17:19:11 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:60372 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752256Ab1FQVTK (ORCPT
+	id S1758426Ab1FQVYf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 17:24:35 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:55471 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755379Ab1FQVYe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 17:19:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 1/5] VFS: Do (nearly) lockless generic_file_llseek
-Date: Fri, 17 Jun 2011 23:18:38 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: viro@zeniv.linux.org.uk, hch@infradead.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-References: <1308258442-19804-1-git-send-email-andi@firstfloor.org> <201106171440.14224.arnd@arndb.de> <20110617174239.GG16236@one.firstfloor.org>
-In-Reply-To: <20110617174239.GG16236@one.firstfloor.org>
+	Fri, 17 Jun 2011 17:24:34 -0400
+Date: Fri, 17 Jun 2011 23:24:51 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH] MAINTAINERS: Add x86 RAS people
+Message-ID: <20110617212450.GA2577@elf.ucw.cz>
+References: <1308067734-6156-1-git-send-email-bp@amd64.org>
+ <20110617132757.GA9659@localhost.ucw.cz>
+ <20110617135056.GE18054@aftab>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106172318.38338.arnd@arndb.de>
-X-Provags-ID: V02:K0:Fl3WpBBQHCJ7svVkp3XmjA/jWlb9juMZejYNpOvQ+Ta
- aDF5t+s+lqTO33TJlFtRbsnqCUDKDEhdQ21lG/BafHDJM/NS1x
- ptkae/7pLVToaioY2nqQGStlyPlS8lOfBFRl4M1A/JtbFSD1tN
- WKLLqefHUpgcmKf1gmKRhLW1fGYF7nMsGq2b3wjTcXGZ6Kp0GC
- F83xbkKgqsTGJ5lAwN98A==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110617135056.GE18054@aftab>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 17 June 2011 19:42:39 Andi Kleen wrote:
-> On Fri, Jun 17, 2011 at 02:40:14PM +0200, Arnd Bergmann wrote:
-> > On Thursday 16 June 2011 23:07:18 Andi Kleen wrote:
-> > > So still need a lock, but can use a cheap local one.
+On Fri 2011-06-17 15:50:56, Borislav Petkov wrote:
+> On Fri, Jun 17, 2011 at 09:27:58AM -0400, Pavel Machek wrote:
+> > On Tue 2011-06-14 18:08:54, Borislav Petkov wrote:
+> > > Announce the new RAS infrastructure maintainers. The file patterns below
+> > > will change after we start the restructuring.
 > > > 
-> > > This patch implements this new scheme in generic_file_llseek.
-> > > I dropped generic_file_llseek_unlocked and changed all callers.
+> > > Signed-off-by: Borislav Petkov <bp@amd64.org>
+> > > Signed-off-by: Tony Luck <tony.luck@intel.com>
+> > >  
+> > > +X86 RAS INFRASTRUCTURE
+> > > +M:	Tony Luck <tony.luck@intel.com>
 > > 
-> > What about default_llseek? If you change generic_file_llseek, you should
-> > probably change that, too.
+> > this would be great place to explain "ras"...
 > 
-> That's used by a lot of drivers, and since I cannot audit them
-> all I chose to be conservative. not sure it's ever performance
-> critical anyways?
+> Wikipedia has a basic overview: http://en.wikipedia.org/wiki/Reliability,_Availability_and_Serviceability
+>
 
-Probably not. Note that all uses of default_llseek were introduced
-in the conversion from an implicit default_llseek when they did not
-set the operation before the BKL conversion. There were also patches
-floating around to merge generic_file_llseek and default_llseek.
+This is what I was looking for. Can we modify MAINTAINERS to say
 
-There was not a single case of a driver that relied on the BKL to
-lock against default_llseek before I changed it to i_mutex.
+X86 RELIABILITY AVAILABILITY AND SERVICEABILITY (RAS) INFRASTRUCTURE
+M:	Tony Luck <tony.luck@intel.com>
 
-	Arnd
+?
+ 
+> Our idea is to make error collection and reporting much more easy to
+> configure and much easily manageable now that reliability features are
+...
+> So things like that, I'm pretty sure I'm leaving something out but you
+> should be getting the idea...
+
+Actually I got the idea when I saw "mcelog" in file paths, but... :-)
+
+									pavel
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
