@@ -1,59 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932157Ab1FQI65 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 04:58:57 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56146 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758017Ab1FQI5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 04:57:18 -0400
-Subject: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary physical addresses
-From: Petr Tesarik <ptesarik@suse.cz>
-Organization: SUSE LINUX, s.r.o.
-Date: Fri, 17 Jun 2011 10:38:25 +0200
+	id S1758278Ab1FQIlP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 04:41:15 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53256 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752298Ab1FQIlM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 04:41:12 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DFB1304.10604@jp.fujitsu.com>
+Date: Fri, 17 Jun 2011 17:40:36 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain;
-  charset="us-ascii"
+To: linux-kernel@vger.kernel.org
+CC: "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@amd64.org>
+Subject: [PATCH 1/8] x86, mce: stop calling del_timer_sync() from interrupt
+References: <4DFB1242.90404@jp.fujitsu.com>
+In-Reply-To: <4DFB1242.90404@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106171038.25988.ptesarik@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series enhances /dev/mem, so that read and write is possible
-at any address. The patchset includes actual implementation for x86.
+Function del_timer_sync() has WARN_ON(in_irq()) in it because
+calling it from interrupt context can cause deadlock if it
+interrupts the target timer running.
 
-Petr Tesarik (10):
-  Return EOF on out-of-bounds read from /dev/mem
-  (un)xlate_dev_mem_ptr: use phys_addr_t for the @phys parameter
-  x86: translate highmem /dev/mem pointers
-  ia64: change xlate_dev_mem_ptr's argument to phys_addr_t
-  valid_phys_addr_range: use phys_addr_t for the @addr parameter
-  sh: change valid_phys_addr_range's @addr param to phys_addr_t
-  arm: change valid_phys_addr_range's @addr param to phys_addr_t
-  ia64: change valid_phys_addr_range's @addr param to phys_addr_t
-  x86: provide arch-specific valid_phys_addr_range()
-  Allow reading/writing all memory through /dev/mem
+In MCE code, del_timer_sync() is used with on_each_cpu() in
+some parts for sysfs files:
+  bank*, check_interval, cmci_disabled and ignore_ce.
 
- arch/arm/include/asm/io.h       |    2 +-
- arch/arm/mm/mmap.c              |    2 +-
- arch/ia64/include/asm/io.h      |    2 +-
- arch/ia64/include/asm/uaccess.h |    2 +-
- arch/ia64/kernel/efi.c          |    2 +-
- arch/sh/include/asm/io.h        |    2 +-
- arch/sh/mm/mmap.c               |    2 +-
- arch/x86/include/asm/io.h       |   15 +++++++++++++--
- arch/x86/mm/ioremap.c           |   24 ++++++++++++++++++------
- drivers/char/mem.c              |   14 ++++++++++----
- 10 files changed, 48 insertions(+), 19 deletions(-)
+However use of on_each_cpu() results in calling the function
+passed as the argument in the interrupt context.  It means you
+can see a flood of warnings from del_timer_sync() by a simple
+file access, for example:
 
+  echo 300 > /sys/devices/system/machinecheck/machinecheck0/check_interval
+
+Fortunately these MCE specific files are rare-used and AFAIK
+only few MCE geeks experience this warning on write.
+
+To remove the warning (for my happy hacking), move timer deletion
+outside of the interrupt context ;-)
+
+v2: update patch description
+
+Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c |   22 ++++++++++++++++------
+ 1 files changed, 16 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 08363b0..42fc8d2 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1140,6 +1140,17 @@ static void mce_start_timer(unsigned long data)
+ 	add_timer_on(t, smp_processor_id());
+ }
+ 
++/* Must not be called from interrupt where del_timer_sync() can deadlock */
++static void mce_timer_delete_all(void)
++{
++	int cpu;
++
++	for_each_online_cpu(cpu) {
++		if (mce_available(&per_cpu(cpu_info, cpu)))
++			del_timer_sync(&per_cpu(mce_timer, cpu));
++	}
++}
++
+ static void mce_do_trigger(struct work_struct *work)
+ {
+ 	call_usermodehelper(mce_helper, mce_helper_argv, NULL, UMH_NO_WAIT);
+@@ -1750,7 +1761,6 @@ static struct syscore_ops mce_syscore_ops = {
+ 
+ static void mce_cpu_restart(void *data)
+ {
+-	del_timer_sync(&__get_cpu_var(mce_timer));
+ 	if (!mce_available(__this_cpu_ptr(&cpu_info)))
+ 		return;
+ 	__mcheck_cpu_init_generic();
+@@ -1760,16 +1770,15 @@ static void mce_cpu_restart(void *data)
+ /* Reinit MCEs after user configuration changes */
+ static void mce_restart(void)
+ {
++	mce_timer_delete_all();
+ 	on_each_cpu(mce_cpu_restart, NULL, 1);
+ }
+ 
+ /* Toggle features for corrected errors */
+-static void mce_disable_ce(void *all)
++static void mce_disable_cmci(void *data)
+ {
+ 	if (!mce_available(__this_cpu_ptr(&cpu_info)))
+ 		return;
+-	if (all)
+-		del_timer_sync(&__get_cpu_var(mce_timer));
+ 	cmci_clear();
+ }
+ 
+@@ -1852,7 +1861,8 @@ static ssize_t set_ignore_ce(struct sys_device *s,
+ 	if (mce_ignore_ce ^ !!new) {
+ 		if (new) {
+ 			/* disable ce features */
+-			on_each_cpu(mce_disable_ce, (void *)1, 1);
++			mce_timer_delete_all();
++			on_each_cpu(mce_disable_cmci, NULL, 1);
+ 			mce_ignore_ce = 1;
+ 		} else {
+ 			/* enable ce features */
+@@ -1875,7 +1885,7 @@ static ssize_t set_cmci_disabled(struct sys_device *s,
+ 	if (mce_cmci_disabled ^ !!new) {
+ 		if (new) {
+ 			/* disable cmci */
+-			on_each_cpu(mce_disable_ce, NULL, 1);
++			on_each_cpu(mce_disable_cmci, NULL, 1);
+ 			mce_cmci_disabled = 1;
+ 		} else {
+ 			/* enable cmci */
 -- 
-1.7.3.4
+1.7.1
+
 
