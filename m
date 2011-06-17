@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933083Ab1FQUCH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 16:02:07 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54795 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933048Ab1FQUCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 16:02:04 -0400
-Message-ID: <4DFBB2D5.2060003@cn.fujitsu.com>
-Date: Sat, 18 Jun 2011 04:02:29 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S933095Ab1FQUF7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 16:05:59 -0400
+Received: from mga02.intel.com ([134.134.136.20]:28564 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932949Ab1FQUF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 16:05:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,382,1304319600"; 
+   d="scan'208";a="16355933"
+Date: Fri, 17 Jun 2011 13:04:34 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] mm, memory-failure: Fix spinlock vs mutex order
+Message-ID: <20110617200434.GC28954@tassilo.jf.intel.com>
+References: <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com>
+ <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
+ <BANLkTinUBTYWxrF5TCuDSQuFUAyivXJXjQ@mail.gmail.com>
+ <1308310080.2355.19.camel@twins>
+ <BANLkTim2bmPfeRT1tS7hx2Z85QHjPHwU3Q@mail.gmail.com>
+ <alpine.LSU.2.00.1106171040460.7018@sister.anvils>
+ <BANLkTim3vo0vpovV=5sU=GLxkotheB=Ryg@mail.gmail.com>
+ <1308334688.12801.19.camel@laptop>
+ <1308335557.12801.24.camel@laptop>
+ <1308340385.12801.101.camel@laptop>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Jason Baron <jbaron@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] jump_label: fix  jump_label update
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-18 04:00:06,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-18 04:01:42,
-	Serialize complete at 2011-06-18 04:01:42
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308340385.12801.101.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The key of module is out of __stop___jump_table, it causes the events
-of modules does not work
+> I thought about maybe using rcu, but then thought the thing is probably
+> wanting to exclude new tasks as it wants to kill all mm users.
 
-This bug is introduced by commit: 7cbc5b8d4a775a43875a09e29c49a2a8195b5b2d
+Probably both would work.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- kernel/jump_label.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+Looks good to me.  hwpoison patches are usually directly merged by Andrew 
+these days.
 
-diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-index fa27e75..dcad2fb 100644
---- a/kernel/jump_label.c
-+++ b/kernel/jump_label.c
-@@ -375,11 +375,15 @@ int jump_label_text_reserved(void *start, void *end)
- 
- static void jump_label_update(struct jump_label_key *key, int enable)
- {
--	struct jump_entry *entry = key->entries;
-+	struct jump_entry *entry = key->entries, *stop = __stop___jump_table;
-+	struct module *mod = __module_address((jump_label_t)key);
-+
-+	if (mod)
-+		stop = mod->jump_entries + mod->num_jump_entries;
- 
- 	/* if there are no users, entry can be NULL */
- 	if (entry)
--		__jump_label_update(key, entry, __stop___jump_table, enable);
-+		__jump_label_update(key, entry, stop, enable);
- 
- #ifdef CONFIG_MODULES
- 	__jump_label_mod_update(key, enable);
--- 
-1.7.5.4
+Acked-by: Andi Kleen <ak@linux.intel.com>
+
+-Andi
+
