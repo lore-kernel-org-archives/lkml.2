@@ -1,157 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759305Ab1FQW1n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 18:27:43 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:18866 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755449Ab1FQW1j convert rfc822-to-8bit (ORCPT
+	id S1759355Ab1FQWbg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 18:31:36 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:37896 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756406Ab1FQWbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 18:27:39 -0400
+	Fri, 17 Jun 2011 18:31:33 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ynkGSZPHwZWkxkfv6Yzo5+2GcOe40r4ah7TYB/STsC0awOLaZabFA7IGCCEHrhm6Tn
-         ANmeZ98/yg/GtiRJW7Ew==
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=Hk3Nk7D+ZCLVAPaAU3gWk/mNJ8BGknAkAz1LiQz6wneT8IFEAoRMBNXukijDrNBHNN
+         wByJqh9l7dxwq2lA8NOSe6w+8HUWLhYKgwFcOqwuVG84xCnKTFYCpUX9xhcxfGAYKaYV
+         zjIFgUIoq0AYJ5DzDffItPDdG2Cci0kDmghh0=
 MIME-Version: 1.0
-In-Reply-To: <20110616125443.23584d78.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110616124730.d6960b8b.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110616125443.23584d78.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Fri, 17 Jun 2011 15:27:36 -0700
-Message-ID: <BANLkTi=4o-xY46OtsvNCxVKUT-qJBXRMMFZCe-m7eMV-_mesXw@mail.gmail.com>
-Subject: Re: [PATCH 5/7] Fix not good check of mem_cgroup_local_usage()
-From: Ying Han <yinghan@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Date: Sat, 18 Jun 2011 00:31:32 +0200
+Message-ID: <BANLkTi=o06eHLtFvmmz7c4TEjahy=EOrJQ@mail.gmail.com>
+Subject: Lock up when faking MMIO read[bwl] on some machines [WAS: Faking MMIO
+ ops? Fooling a driver]
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-wireless@vger.kernel.org, Pekka Paalanen <pq@iki.fi>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Content-Type: multipart/mixed; boundary=bcaec544e9e69906a004a5eff2b1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 8:54 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> From fcfc6ee9847b0b2571cd6e9847572d7c70e1e2b2 Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Thu, 16 Jun 2011 09:23:54 +0900
-> Subject: [PATCH 5/7] Fix not good check of mem_cgroup_local_usage()
->
-> Now, mem_cgroup_local_usage(memcg) is used as hint for scanning memory
-> cgroup hierarchy. If it returns true, the memcg has some reclaimable memory.
->
-> But this function doesn't take care of
->  - unevictable pages
->  - anon pages on swapless system.
->
-> This patch fixes the function to use LRU information.
-> For NUMA, for avoid scanning, numa scan bitmap is used. If it's
-> empty, some more precise check will be done.
->
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/memcontrol.c |   43 +++++++++++++++++++++++++++++++++----------
->  1 files changed, 33 insertions(+), 10 deletions(-)
->
-> Index: mmotm-0615/mm/memcontrol.c
-> ===================================================================
-> --- mmotm-0615.orig/mm/memcontrol.c
-> +++ mmotm-0615/mm/memcontrol.c
-> @@ -632,15 +632,6 @@ static long mem_cgroup_read_stat(struct
->        return val;
->  }
->
-> -static long mem_cgroup_local_usage(struct mem_cgroup *mem)
-> -{
-> -       long ret;
-> -
-> -       ret = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_RSS);
-> -       ret += mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_CACHE);
-> -       return ret;
-> -}
-> -
->  static void mem_cgroup_swap_statistics(struct mem_cgroup *mem,
->                                         bool charge)
->  {
-> @@ -1713,6 +1704,23 @@ static void mem_cgroup_numascan_init(str
->        mutex_init(&mem->numascan_mutex);
->  }
->
-> +static bool mem_cgroup_reclaimable(struct mem_cgroup *mem, bool noswap)
-> +{
-> +       if (!nodes_empty(mem->scan_nodes))
-> +               return true;
-> +       /* slow path */
-> +       if (mem_cgroup_get_local_zonestat(mem, LRU_INACTIVE_FILE))
-> +               return true;
-> +       if (mem_cgroup_get_local_zonestat(mem, LRU_ACTIVE_FILE))
-> +               return true;
+--bcaec544e9e69906a004a5eff2b1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Wondering if we can simplify this like:
+I use attached patch to fake result of read[bwl] performed by closed
+source driver (ndiswrapper+bcmwl and wl).
 
-if (mem_cgroup_nr_file_lru_pages(mem))
-   return true;
+1) It works great on my Sony VAIO with Intel(R) Core(TM)2 Duo CPU P8400
+2) It locks up Macbook Pro 8,1 with some 8-cores Intel
 
+Do you have any idea why it causes the lockup? Function causing
+problem is "set_ins_reg_val". I've created it as copy of
+get_ins_reg_val, it just sets values in struct pt_regs, instead of
+reading them).
 
-> +       if (noswap || !total_swap_pages)
-> +               return false;
-> +       if (mem_cgroup_get_local_zonestat(mem, LRU_INACTIVE_ANON))
-> +               return true;
-> +       if (mem_cgroup_get_local_zonestat(mem, LRU_ACTIVE_ANON))
-> +               return true;
+--=20
+Rafa=C5=82
 
-the same:
-if (mem_cgroup_nr_anon_lru_pages(mem))
-   return true;
+--bcaec544e9e69906a004a5eff2b1
+Content-Type: application/octet-stream; name="mmio.debugging.patch"
+Content-Disposition: attachment; filename="mmio.debugging.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gp1plyq31
 
-> +       return false;
-> +}
-
-The two functions above are part of memory.numa_stat patch which is in
-mmotm i believe. Just feel the functionality a bit duplicate except
-the noswap parameter and scan_nodes.
-
---Ying
-
->  #else
->  int mem_cgroup_select_victim_node(struct mem_cgroup *mem)
->  {
-> @@ -1722,6 +1730,21 @@ static void mem_cgroup_numascan_init(str
->  {
->        return 0;
->  }
-> +
-> +static bool mem_cgroup_reclaimable(struct mem_cgroup *mem, bool noswap)
-> +{
-> +       if (mem_cgroup_get_zonestat_node(mem, 0, LRU_INACTIVE_FILE))
-> +               return true;
-> +       if (mem_cgroup_get_zonestat_node(mem, 0, LRU_ACTIVE_FILE))
-> +               return true;
-> +       if (noswap || !total_swap_pages)
-> +               return false;
-> +       if (mem_cgroup_get_zonestat_node(mem, 0, LRU_INACTIVE_ANON))
-> +               return true;
-> +       if (mem_cgroup_get_zonestat_node(mem, 0, LRU_ACTIVE_ANON))
-> +               return true;
-> +       return false;
-> +}
->  #endif
->
->
-> @@ -1811,7 +1834,7 @@ again:
->
->        while (visit--) {
->                victim = mem_cgroup_select_victim(root_mem);
-> -               if (!mem_cgroup_local_usage(victim)) {
-> +               if (!mem_cgroup_reclaimable(victim, noswap)) {
->                        /* this cgroup's local usage == 0 */
->                        css_put(&victim->css);
->                        continue;
->
->
+ZGlmZiAtLWdpdCBhL2FyY2gveDg2L21tL21taW8tbW9kLmMgYi9hcmNoL3g4Ni9tbS9tbWlvLW1v
+ZC5jCmluZGV4IDNhZGZmN2QuLmY4NTEzYmIgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L21tL21taW8t
+bW9kLmMKKysrIGIvYXJjaC94ODYvbW0vbW1pby1tb2QuYwpAQCAtMjA2LDYgKzIwNiwxMiBAQCBz
+dGF0aWMgdm9pZCBwcmUoc3RydWN0IGttbWlvX3Byb2JlICpwLCBzdHJ1Y3QgcHRfcmVncyAqcmVn
+cywKIAlwdXRfY3B1X3ZhcihwZl9yZWFzb24pOwogfQogCisjZGVmaW5lIE1NSU9fQkFTRQkJCTB4
+ZmFhZmMwMDAKKyNkZWZpbmUgQjQzX01NSU9fUEhZX0NPTlRST0wJCTB4M0ZDCisjZGVmaW5lIEI0
+M19NTUlPX1BIWV9EQVRBCQkweDNGRQorCitzdGF0aWMgdTE2IGJyb2FkY29tX3BoeV9hZGRyOwor
+CiBzdGF0aWMgdm9pZCBwb3N0KHN0cnVjdCBrbW1pb19wcm9iZSAqcCwgdW5zaWduZWQgbG9uZyBj
+b25kaXRpb24sCiAJCQkJCQkJc3RydWN0IHB0X3JlZ3MgKnJlZ3MpCiB7CkBAIC0yMTksNiArMjI1
+LDE4IEBAIHN0YXRpYyB2b2lkIHBvc3Qoc3RydWN0IGttbWlvX3Byb2JlICpwLCB1bnNpZ25lZCBs
+b25nIGNvbmRpdGlvbiwKIAkJQlVHKCk7CiAJfQogCisJaWYgKG15X3JlYXNvbi0+dHlwZSA9PSBS
+RUdfUkVBRCAmJiBteV90cmFjZS0+cGh5cyA9PSBNTUlPX0JBU0UgKyBCNDNfTU1JT19QSFlfREFU
+QSkgeworCQlwcl9pbmZvKCJaQUpFQzogcmVhZCBQSFkgMHglWFxuIiwgYnJvYWRjb21fcGh5X2Fk
+ZHIpOworCQlzd2l0Y2ggKGJyb2FkY29tX3BoeV9hZGRyKXsKKwkJY2FzZSAweDIwOgorCQljYXNl
+IDB4MjI6CisJCWNhc2UgMHgyNzoKKwkJCXByX2luZm8oIlpBSkVDOiBvdmVyd3JpdGluZyAweCVY
+IHdpdGggMHhGRkZGXG4iLCBicm9hZGNvbV9waHlfYWRkcik7CisJCQlzZXRfaW5zX3JlZ192YWwo
+bXlfcmVhc29uLT5pcCwgcmVncywgMHhGRkZGKTsKKwkJCWJyZWFrOworCQl9CisJfQorCiAJc3dp
+dGNoIChteV9yZWFzb24tPnR5cGUpIHsKIAljYXNlIFJFR19SRUFEOgogCQlteV90cmFjZS0+dmFs
+dWUgPSBnZXRfaW5zX3JlZ192YWwobXlfcmVhc29uLT5pcCwgcmVncyk7CkBAIC0yMjcsNiArMjQ1
+LDExIEBAIHN0YXRpYyB2b2lkIHBvc3Qoc3RydWN0IGttbWlvX3Byb2JlICpwLCB1bnNpZ25lZCBs
+b25nIGNvbmRpdGlvbiwKIAkJYnJlYWs7CiAJfQogCisJaWYgKG15X3JlYXNvbi0+dHlwZSA9PSBS
+RUdfV1JJVEUgJiYgbXlfdHJhY2UtPnBoeXMgPT0gTU1JT19CQVNFICsgQjQzX01NSU9fUEhZX0NP
+TlRST0wpIHsKKwkJYnJvYWRjb21fcGh5X2FkZHIgPSBteV90cmFjZS0+dmFsdWU7CisJCS8vcHJf
+aW5mbygiWkFKRUM6IHNldHRpbmcgUEhZIGFkZHIgdG8gMHglWFxuIiwgYnJvYWRjb21fcGh5X2Fk
+ZHIpOworCX0KKwogCW1taW9fdHJhY2VfcncobXlfdHJhY2UpOwogCXB1dF9jcHVfdmFyKGNwdV90
+cmFjZSk7CiAJcHV0X2NwdV92YXIocGZfcmVhc29uKTsKZGlmZiAtLWdpdCBhL2FyY2gveDg2L21t
+L3BmX2luLmMgYi9hcmNoL3g4Ni9tbS9wZl9pbi5jCmluZGV4IDlmMDYxNGQuLjg2NDQ5ZWQgMTAw
+NjQ0Ci0tLSBhL2FyY2gveDg2L21tL3BmX2luLmMKKysrIGIvYXJjaC94ODYvbW0vcGZfaW4uYwpA
+QCAtNDYxLDYgKzQ2MSw5OSBAQCBlcnI6CiAJcmV0dXJuIDA7CiB9CiAKK3N0YXRpYyB2b2lkIHNl
+dF9yZWdfdzMyKGludCBubywgc3RydWN0IHB0X3JlZ3MgKnJlZ3MsIHUzMiB2YWwpCit7CisJc3dp
+dGNoIChubykgeworCWNhc2UgYXJnX0FYOgorCQlyZWdzLT5heCA9IHZhbDsKKwkJYnJlYWs7CisJ
+Y2FzZSBhcmdfQlg6CisJCXJlZ3MtPmJ4ID0gdmFsOworCQlicmVhazsKKwljYXNlIGFyZ19DWDoK
+KwkJcmVncy0+Y3ggPSB2YWw7CisJCWJyZWFrOworCWNhc2UgYXJnX0RYOgorCQlyZWdzLT5keCA9
+IHZhbDsKKwkJYnJlYWs7CisJY2FzZSBhcmdfU1A6CisJCXJlZ3MtPnNwID0gdmFsOworCQlicmVh
+azsKKwljYXNlIGFyZ19CUDoKKwkJcmVncy0+YnAgPSB2YWw7CisJCWJyZWFrOworCWNhc2UgYXJn
+X1NJOgorCQlyZWdzLT5zaSA9IHZhbDsKKwkJYnJlYWs7CisJY2FzZSBhcmdfREk6CisJCXJlZ3Mt
+PmRpID0gdmFsOworCQlicmVhazsKKyNpZmRlZiBfX2FtZDY0X18KKwljYXNlIGFyZ19SODoKKwkJ
+cmVncy0+cjggPSB2YWw7CisJCWJyZWFrOworCWNhc2UgYXJnX1I5OgorCQlyZWdzLT5yOSA9IHZh
+bDsKKwkJYnJlYWs7CisJY2FzZSBhcmdfUjEwOgorCQlyZWdzLT5yMTAgPSB2YWw7CisJCWJyZWFr
+OworCWNhc2UgYXJnX1IxMToKKwkJcmVncy0+cjExID0gdmFsOworCQlicmVhazsKKwljYXNlIGFy
+Z19SMTI6CisJCXJlZ3MtPnIxMiA9IHZhbDsKKwkJYnJlYWs7CisJY2FzZSBhcmdfUjEzOgorCQly
+ZWdzLT5yMTMgPSB2YWw7CisJCWJyZWFrOworCWNhc2UgYXJnX1IxNDoKKwkJcmVncy0+cjE0ID0g
+dmFsOworCQlicmVhazsKKwljYXNlIGFyZ19SMTU6CisJCXJlZ3MtPnIxNSA9IHZhbDsKKwkJYnJl
+YWs7CisjZW5kaWYKKwlkZWZhdWx0OgorCQlwcmludGsoS0VSTl9FUlIgIm1taW90cmFjZTogRXJy
+b3IgcmVnIG5vIyAlZFxuIiwgbm8pOworCX0KK30KKwordm9pZCBzZXRfaW5zX3JlZ192YWwodW5z
+aWduZWQgbG9uZyBpbnNfYWRkciwgc3RydWN0IHB0X3JlZ3MgKnJlZ3MsIHUzMiB2YWwpCit7CisJ
+dW5zaWduZWQgaW50IG9wY29kZTsKKwlpbnQgcmVnOworCXVuc2lnbmVkIGNoYXIgKnA7CisJc3Ry
+dWN0IHByZWZpeF9iaXRzIHByZjsKKwlpbnQgaTsKKworCXAgPSAodW5zaWduZWQgY2hhciAqKWlu
+c19hZGRyOworCXAgKz0gc2tpcF9wcmVmaXgocCwgJnByZik7CisJcCArPSBnZXRfb3Bjb2RlKHAs
+ICZvcGNvZGUpOworCWZvciAoaSA9IDA7IGkgPCBBUlJBWV9TSVpFKHJlZ19yb3ApOyBpKyspCisJ
+CWlmIChyZWdfcm9wW2ldID09IG9wY29kZSkKKwkJCWdvdG8gZG9fd29yazsKKworCWZvciAoaSA9
+IDA7IGkgPCBBUlJBWV9TSVpFKHJlZ193b3ApOyBpKyspCisJCWlmIChyZWdfd29wW2ldID09IG9w
+Y29kZSkKKwkJCWdvdG8gZG9fd29yazsKKworCXByaW50ayhLRVJOX0VSUiAibW1pb3RyYWNlOiBO
+b3QgYSByZWdpc3RlciBpbnN0cnVjdGlvbiwgb3Bjb2RlICIKKwkJCQkJCQkiMHglMDJ4XG4iLCBv
+cGNvZGUpOworCXJldHVybjsKKworZG9fd29yazoKKwkvKiBmb3IgU1RPUywgc291cmNlIHJlZ2lz
+dGVyIGlzIGZpeGVkICovCisJaWYgKG9wY29kZSA9PSAweEFBIHx8IG9wY29kZSA9PSAweEFCKSB7
+CisJCXJlZyA9IGFyZ19BWDsKKwl9IGVsc2UgeworCQl1bnNpZ25lZCBjaGFyIG1vZF9ybSA9ICpw
+OworCQlyZWcgPSAoKG1vZF9ybSA+PiAzKSAmIDB4NykgfCAocHJmLnJleHIgPDwgMyk7CisJfQor
+CisJc2V0X3JlZ193MzIocmVnLCByZWdzLCB2YWwpOworfQorCiB1bnNpZ25lZCBsb25nIGdldF9p
+bnNfaW1tX3ZhbCh1bnNpZ25lZCBsb25nIGluc19hZGRyKQogewogCXVuc2lnbmVkIGludCBvcGNv
+ZGU7CmRpZmYgLS1naXQgYS9hcmNoL3g4Ni9tbS9wZl9pbi5oIGIvYXJjaC94ODYvbW0vcGZfaW4u
+aAppbmRleCBlMDUzNDFhLi45MGI0M2ZmIDEwMDY0NAotLS0gYS9hcmNoL3g4Ni9tbS9wZl9pbi5o
+CisrKyBiL2FyY2gveDg2L21tL3BmX2luLmgKQEAgLTM0LDYgKzM0LDcgQEAgZW51bSByZWFzb25f
+dHlwZSB7CiBlbnVtIHJlYXNvbl90eXBlIGdldF9pbnNfdHlwZSh1bnNpZ25lZCBsb25nIGluc19h
+ZGRyKTsKIHVuc2lnbmVkIGludCBnZXRfaW5zX21lbV93aWR0aCh1bnNpZ25lZCBsb25nIGluc19h
+ZGRyKTsKIHVuc2lnbmVkIGxvbmcgZ2V0X2luc19yZWdfdmFsKHVuc2lnbmVkIGxvbmcgaW5zX2Fk
+ZHIsIHN0cnVjdCBwdF9yZWdzICpyZWdzKTsKK3ZvaWQgc2V0X2luc19yZWdfdmFsKHVuc2lnbmVk
+IGxvbmcgaW5zX2FkZHIsIHN0cnVjdCBwdF9yZWdzICpyZWdzLCB1MzIgdmFsKTsKIHVuc2lnbmVk
+IGxvbmcgZ2V0X2luc19pbW1fdmFsKHVuc2lnbmVkIGxvbmcgaW5zX2FkZHIpOwogCiAjZW5kaWYg
+LyogX19QRl9IXyAqLwo=
+--bcaec544e9e69906a004a5eff2b1--
