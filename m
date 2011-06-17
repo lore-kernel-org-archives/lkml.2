@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758858Ab1FQJhz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 05:37:55 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:34767 "EHLO e6.ny.us.ibm.com"
+	id S1758862Ab1FQJaz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 05:30:55 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:50771 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752425Ab1FQJhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 05:37:53 -0400
-Date: Fri, 17 Jun 2011 14:59:51 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 4/22]  4: Uprobes: register/unregister
- probes.
-Message-ID: <20110617092951.GA16985@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
- <20110607125900.28590.16071.sendpatchset@localhost6.localdomain6>
- <1308159719.2171.57.camel@laptop>
- <20110616041137.GG4952@linux.vnet.ibm.com>
- <1308217582.15315.94.camel@twins>
- <20110616095412.GK4952@linux.vnet.ibm.com>
- <20110616135114.GA22131@redhat.com>
+	id S1758833Ab1FQJaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 05:30:52 -0400
+Date: Fri, 17 Jun 2011 11:30:32 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Petr Tesarik <ptesarik@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
+ physical addresses
+Message-ID: <20110617093032.GA19235@elte.hu>
+References: <201106171038.25988.ptesarik@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110616135114.GA22131@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201106171038.25988.ptesarik@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2011-06-16 15:51:14]:
 
-> On 06/16, Srikar Dronamraju wrote:
-> >
-> > In which case, shouldnt traversing all the tasks of all siblings of
-> > parent of mm->owner should provide us all the the tasks that have linked
-> > to mm. Right?
-> 
-> I don't think so.
-> 
-> Even if the initial mm->ovner never exits (iow, mm->owner is never changed),
-> the "deep" CLONE_VM child can be reparented to init if its parent exits.
-> 
+* Petr Tesarik <ptesarik@suse.cz> wrote:
 
-oh right.
+> This patch series enhances /dev/mem, so that read and write is 
+> possible at any address. The patchset includes actual 
+> implementation for x86.
 
-> > Agree that we can bother about this a little later.
-> 
-> Agreed.
-> 
-> 
-> Oh. We should move ->mm from task_struct to signal_struct, but we need to
-> change the code like get_task_mm(). And then instead of mm->owner we can
-> have mm->processes list. Perhaps. This can be used by zap_threads() too.
-> 
+This series lacks a description of why this is desired.
 
-Okay.. thats a nice idea.
+My strong opinion is that it's not desired at all: /dev/mem never 
+worked beyond 4G addresses so by today it has become largely obsolete 
+and is on the way out really.
 
--- 
-Thanks and Regards
-Srikar
+I'm aware of these current /dev/mem uses:
+
+ - Xorg maps below 4G non-RAM addresses and the video BIOS
+
+ - It used to have some debugging role but these days kexec and kgdb 
+   has largely taken over that role - partly due to the 4G limit.
+
+ - there's some really horrible out-of-tree drivers that do mmap()s
+   via /dev/mem, those should be fixed if they want to move beyond 
+   4G: their char device should be mmap()able.
+
+ - all distro kernel's i'm aware of use CONFIG_STRICT_DEVMEM=y, which
+   restricts /dev/mem to non-RAM pages of physical memory.
+   [ With the sad inclusion of the first 1MB, which Xorg needs. ]
+
+Are you aware of any legitimate usecases?
+
+Frankly, i dont think we ever *want* to 'fix' /dev/mem to support 
+addresses beyond 4G and grow messy userspace (and kernelspace) that 
+somehow relies on that. Thank goodness that we never supported it ...
+
+Thanks,
+
+	Ingo
