@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756951Ab1FQQmg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 12:42:36 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51152 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754120Ab1FQQmf (ORCPT
+	id S1757698Ab1FQQsg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 12:48:36 -0400
+Received: from smtp.microsoft.com ([131.107.115.214]:16593 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757045Ab1FQQsf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 12:42:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=pFhdTJfQIPAOPYPgSB7j8Vo+i9FcbELyFXHHCdxviuorSmydKcHy3KY46UNJozQAkt
-         qOjAdbSl31SszfV51avot2Q/wNrDRiephvHzoRBSG1lmRgTQoFghgRV3EKDxGWD6dVmW
-         5JbKUpSY6Htm6Bz6vXH6cFggR+LKn+Epyedto=
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Eric Anholt <eric@anholt.net>, Dave Airlie <airlied@redhat.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Ben Widawsky <ben@bwidawsk.net>,
-        Kenneth Graunke <kenneth@whitecape.org>, Yi Sun <yi.sun@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Mengmeng Meng <mengmeng.meng@intel.com>,
-        Robert Hooker <sarvatt@ubuntu.com>,
-        Daniel J Blueman <daniel.blueman@gmail.com>
-Subject: [PATCH 3.0-rc3, v2] i915: Fix gen6 (SNB) GPU stalling
-Date: Sat, 18 Jun 2011 00:42:00 +0800
-Message-Id: <1308328920-2068-1-git-send-email-daniel.blueman@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 17 Jun 2011 12:48:35 -0400
+X-Greylist: delayed 306 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Jun 2011 12:48:35 EDT
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Nicolas Kaiser <nikai@nikai.net>
+CC: Hank Janssen <hjanssen@microsoft.com>, KY Srinivasan <kys@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: [PATCH 1/5] staging: hv: fix some white spaces in netvsc driver
+Thread-Topic: [PATCH 1/5] staging: hv: fix some white spaces in netvsc driver
+Thread-Index: AQHMLP/uDdLRlnLWHEWp07cb9gfSSpTCK4UA//+VCcA=
+Date: Fri, 17 Jun 2011 16:43:27 +0000
+Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC09612D20@TK5EX14MBXC227.redmond.corp.microsoft.com>
+References: <1308322688-9796-1-git-send-email-haiyangz@microsoft.com>
+ <20110617180324.1eeb2ea0@absol.kitzblitz>
+In-Reply-To: <20110617180324.1eeb2ea0@absol.kitzblitz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Workaround Sandy Bridge GPU stalls by allowing the blitter command streamer
-to write interrupt state to the Hardware Status Page when a MI_USER_INTERRUPT
-command is decoded.
+> -----Original Message-----
+> From: Nicolas Kaiser [mailto:nikai@nikai.net]
+> Sent: Friday, June 17, 2011 12:03 PM
+> To: Haiyang Zhang
+> Cc: Hank Janssen; KY Srinivasan; Abhishek Kane (Mindtree Consulting
+> PVT LTD); gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> Subject: Re: [PATCH 1/5] staging: hv: fix some white spaces in netvsc
+> driver
+> 
+> * Haiyang Zhang <haiyangz@microsoft.com>:
+> > diff --git a/drivers/staging/hv/netvsc.c
+> b/drivers/staging/hv/netvsc.c
+> > index 0ae35e7..b6e1fb9 100644
+> > --- a/drivers/staging/hv/netvsc.c
+> > +++ b/drivers/staging/hv/netvsc.c
+> > @@ -525,10 +525,10 @@ int netvsc_send(struct hv_device *device,
+> >  						  (unsigned long)packet);
+> >  	} else {
+> >  		ret = vmbus_sendpacket(device->channel, &sendMessage,
+> > -				       sizeof(struct nvsp_message),
+> > -				       (unsigned long)packet,
+> > -				       VM_PKT_DATA_INBAND,
+> > -
+> VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
+> > +				sizeof(struct nvsp_message),
+> > +				(unsigned long)packet,
+> > +				VM_PKT_DATA_INBAND,
+> > +				VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
+> 
+> Why? The arguments were nicely aligned.
 
-v1->v2: Moved to prior interrupt handler installation and RMW flags as per
-feedback.
+Because the last line went beyond 80 chars, and triggered checkpatch warning.
 
-Eric, if you're happy, please sign-off and send to Dave for inclusion in -rc4
-if possible. Further changes may be needed for -stable.
-
-Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
----
- drivers/gpu/drm/i915/i915_irq.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
-index b9fafe3..b7f11a5 100644
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -1741,6 +1741,13 @@ void ironlake_irq_preinstall(struct drm_device *dev)
- 
- 	I915_WRITE(HWSTAM, 0xeffe);
- 
-+	if (IS_GEN6(dev))
-+		/* workaround stalls observed on Sandy Bridge GPUs by
-+		   allowing the blitter command streamer to generate a
-+		   write to the Hardware Status Page for MI_USER_INTERRUPT */
-+		I915_WRITE(GEN6_BLITTER_HWSTAM, I915_READ(GEN6_BLITTER_HWSTAM)
-+			& ~GEN6_BLITTER_USER_INTERRUPT);
-+
- 	/* XXX hotplug from PCH */
- 
- 	I915_WRITE(DEIMR, 0xffffffff);
--- 
-1.7.4.1
-
+Thanks,
+-Haiyang
