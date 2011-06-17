@@ -1,60 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758845Ab1FQMrO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 08:47:14 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:52100 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757823Ab1FQMrK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 08:47:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Larry Bassel <lbassel@codeaurora.org>
-Subject: Re: [Linaro-mm-sig] [PATCH 08/10] mm: cma: Contiguous Memory Allocator added
-Date: Fri, 17 Jun 2011 14:45:09 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Zach Pfeffer'" <zach.pfeffer@linaro.org>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Daniel Stone'" <daniels@collabora.com>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Mel Gorman'" <mel@csn.ul.ie>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com> <201106160006.07742.arnd@arndb.de> <20110616170133.GC28032@labbmf-linux.qualcomm.com>
-In-Reply-To: <20110616170133.GC28032@labbmf-linux.qualcomm.com>
+	id S932092Ab1FQMuW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 08:50:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47412 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758039Ab1FQMuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 08:50:20 -0400
+Date: Fri, 17 Jun 2011 08:50:15 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tao Ma <tm@tao.ma>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: CFQ: async queue blocks the whole system
+Message-ID: <20110617125015.GA8169@redhat.com>
+References: <20110609141451.GD29913@redhat.com>
+ <4DF0DD0F.8090407@tao.ma>
+ <20110609153738.GF29913@redhat.com>
+ <4DF0EA55.10209@tao.ma>
+ <20110609182706.GG29913@redhat.com>
+ <4DF1B035.7080009@tao.ma>
+ <20110610091427.GB4183@redhat.com>
+ <4DF1EB45.1070706@tao.ma>
+ <20110610154414.GA31853@redhat.com>
+ <4DFAC453.70806@tao.ma>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106171445.09567.arnd@arndb.de>
-X-Provags-ID: V02:K0:LXZnuzQGmoKMgZ2TtFL0PCGciF2RjdiPvN8d6wowUQd
- 0yZ+u5BTzQzROWbTQulFy3CNQ2WxhDiPOEM1ppzhdS7t0IftLa
- KtZr1HlJQc9y164OaW8BCcPKqmlfllWWh/CFSYSMa1RzWg7hWe
- kRf85/6WguZCDJC1DqScjI7vJE7pv+5tRKwjt7R+Fxi9D3Y3yc
- XtmLevoqzF1p3QOqyp77g==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DFAC453.70806@tao.ma>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 June 2011 19:01:33 Larry Bassel wrote:
-> > Can you describe how the memory areas differ specifically?
-> > Is there one that is always faster but very small, or are there
-> > just specific circumstances under which some memory is faster than
-> > another?
-> 
-> One is always faster, but very small (generally 2-10% the size
-> of "normal" memory).
-> 
+On Fri, Jun 17, 2011 at 11:04:51AM +0800, Tao Ma wrote:
+> Hi Vivek,
+> On 06/10/2011 11:44 PM, Vivek Goyal wrote:
+> > On Fri, Jun 10, 2011 at 06:00:37PM +0800, Tao Ma wrote:
+> >> On 06/10/2011 05:14 PM, Vivek Goyal wrote:
+> >>> On Fri, Jun 10, 2011 at 01:48:37PM +0800, Tao Ma wrote:
+> >>>
+> >>> [..]
+> >>>>>> btw, reverting the patch doesn't work. I can still get the livelock.
+> >>>
+> >>> What test exactly you are running. I am primarily interested in whether
+> >>> you still get the hung task timeout warning where a writer is waiting on
+> >>> get_request_wait() for more than 120 secods or not.
+> >>>
+> >>> Livelock might be a different problem and for which Christoph provided
+> >>> a patch for XFS.
+> >>>
+> >>>>>
+> >>>>> Can you give following patch a try and see if it helps. On my system this
+> >>>>> does allow CFQ to dispatch some writes once in a while.
+> >>>> Sorry, this patch doesn't work in my test.
+> >>>
+> >>> Can you give me backtrace of say 15 seconds each with and without patch.
+> >>> I think now we must be dispatching some writes, that's a different thing
+> >>> that writer still sleeps more than 120 seconds because there are  way
+> >>> too many readers.
+> >>>
+> >>> May be we need to look into show workload tree scheduling takes place and
+> >>> tweak that logic a bit.
+> >> OK, our test cases can be downloaded for free. ;)
+> >> svn co http://code.taobao.org/svn/dirbench/trunk/meta_test/press/set_vs_get
+> >> Modify run.sh to be fit for your need. Normally within 10 mins, you will
+> >> get the livelock. We have a SAS disk with 15000 RPMs.
+> >>
+> >> btw, you have to mount the volume on /test since the test program are
+> >> not that clever. :)
+> > 
+> > Thanks for the test program. System keeps on working, that's a different
+> > thing that writes might not make lot of progress. 
+> > 
+> > What do you mean by livelock in your case. How do you define that?
+> > 
+> > Couple of times I did see hung_task warning with your test. And I also
+> > saw that we have most of the time starved WRITES but one in a while we
+> > will dispatch some writes.
+> > 
+> > Having said that I will still admit that current logic can completely
+> > starve async writes if there are sufficient number of readers. I can
+> > reproduce this simply by launching lots of readers and bunch of writers
+> > using fio.
+> > 
+> > So I have written another patch, where I don't allow preemption of 
+> > async queue if it waiting for sync requests to drain and has not
+> > dispatched any request after having been scheduled.
+> > 
+> > This atleast makes sure that writes are not starved. But that does not
+> > mean that whole bunch of async writes are dispatched. In presence of
+> > lots of read activity, expect 1 write to be dispatched every few seconds.
+> > 
+> > Please give this patch a try and if it still does not work, please upload
+> > some bltraces while test is running.
+> > 
+> > You can also run iostat on disk and should be able to see that with
+> > the patch you are dispatching writes more often than before.
+> I am testing your patch heavily these days.
+> With this patch, the workload is better to survive. But in some our test
+> machines we can still find the hung task. After we tune slice_idle to 0,
+> it is OK now. So do you think this tuning is valid?
 
-Ok, that sounds like the "SRAM" regions that we are handling on some
-ARM platforms using the various interfaces. It should probably
-remain outside of the regular allocator, but we can try to generalize
-the SRAM support further. There are many possible uses for it.
+By slice_idle=0 you turn off the idling and that's the core of the CFQ.
+So practically you have more deadline like behavior.
 
-	Arnd
+> 
+> btw do you think the patch is the final version? We have some plans of
+> carrying it in our product system to see whether it works.
+
+If this patch is helping, I will do some testing with single reader and
+multiple writers and see how badly does it impact reader in that case.
+If it is not too bad, may be it is reasonable to include this patch.
+
+Thanks
+Vivek
+
+> 
+> Regards,
+> Tao
+> > 
+> > Thanks
+> > Vivek
+> > 
+> > ---
+> >  block/cfq-iosched.c |    9 ++++++++-
+> >  1 file changed, 8 insertions(+), 1 deletion(-)
+> > 
+> > Index: linux-2.6/block/cfq-iosched.c
+> > ===================================================================
+> > --- linux-2.6.orig/block/cfq-iosched.c	2011-06-10 09:13:01.000000000 -0400
+> > +++ linux-2.6/block/cfq-iosched.c	2011-06-10 10:02:31.850831735 -0400
+> > @@ -3315,8 +3315,15 @@ cfq_should_preempt(struct cfq_data *cfqd
+> >  	 * if the new request is sync, but the currently running queue is
+> >  	 * not, let the sync request have priority.
+> >  	 */
+> > -	if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq))
+> > +	if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq)) {
+> > +		/*
+> > +		 * Allow atleast one dispatch otherwise this can repeat
+> > +		 * and writes can be starved completely
+> > +		 */
+> > +		if (!cfqq->slice_dispatch)
+> > +			return false;
+> >  		return true;
+> > +	}
+> >  
+> >  	if (new_cfqq->cfqg != cfqq->cfqg)
+> >  		return false;
+> > 
