@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758927Ab1FQNMg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 09:12:36 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:60583 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758568Ab1FQNMf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 09:12:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=vf4HaVriRFzUrp7DDu/edAL5hdqmeqwsKA+ly5BtuYyQNd56VAjWYvYqAMTWm1P7tB
-         aJ7Rlt8lXZCzcSd11JKp+FCk8+qd1+Xhgyo6cIJpnucac9xxZ1iEq1zadcxc/qBSKgQs
-         lOVw8H82QWqh/8azvXeBu47OaIQW1G7MVBi3s=
+	id S1758944Ab1FQNOr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 09:14:47 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38147 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758854Ab1FQNOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 09:14:45 -0400
+Date: Fri, 17 Jun 2011 15:14:43 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nico@fluxnic.net>
+Subject: Re: [PATCH][Trivial] ARM: remove duplicate include from
+ arch/arm/mach-dove/common.c
+In-Reply-To: <alpine.LNX.2.00.1106162348320.8140@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1106171514291.22872@pobox.suse.cz>
+References: <alpine.LNX.2.00.1105261130190.17400@swampdragon.chaosbits.net> <20110526144804.GA31651@lunn.ch> <alpine.LNX.2.00.1106162348320.8140@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110617140740.23a8b227@lxorguk.ukuu.org.uk>
-References: <BANLkTin9NXs1M9ud9Kqtp9cKGzY6AKnMpQ@mail.gmail.com>
-	<BANLkTinqxc868E2H1LxeFbsAsdHg2dLNjA@mail.gmail.com>
-	<20110617140740.23a8b227@lxorguk.ukuu.org.uk>
-Date: Fri, 17 Jun 2011 09:12:33 -0400
-Message-ID: <BANLkTikv6dTzXAGKK3gQ_oOimi0vQoGpdQ@mail.gmail.com>
-Subject: Re: Please help us resolve the shutdown problem that is affecting our computers
-From: Diego Viola <diego.viola@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ok thanks, and sorry for the mistake.
+On Thu, 16 Jun 2011, Jesper Juhl wrote:
 
-On Fri, Jun 17, 2011 at 9:07 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Fri, 17 Jun 2011 08:12:12 -0400
-> Diego Viola <diego.viola@gmail.com> wrote:
->
->> Any idea please?
->
-> I think you are under the mistaken impression this is a support list -
-> it's not. It's also not a list that deals with networking much but with
-> co-ordinating kernel patches and merges.
->
-> As it says in the driver source
->
-> Contacts:
-> e1000-devel Mailing List <e1000-devel@lists.sourceforge.net>
->
-> Although if isn't a recent kernel you may be better off going via your
-> vendor (particularly for things like SLES, Centos, RHEL etc which deviate
-> a lot from the mainstream)
->
-> Alan
->
+> On Thu, 26 May 2011, Andrew Lunn wrote:
+> 
+> > Jesper Juhl pointed out there is a redundant include of
+> > linux/serial_8250.h. However it turns out both are redundant.
+> > This patch removes them both.
+> > 
+> > Only compile tested.
+> > 
+> > Reported-by:  Jesper Juhl <jj@chaosbits.net>
+> > Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+> 
+> Seems you are right.
+> 
+> Reviewed-by: Jesper Juhl <jj@chaosbits.net>
+
+Doesn't seem to be in linux-next as of today. I have picked it up.
+
+-- 
+Jiri Kosina
+SUSE Labs
