@@ -1,66 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757164Ab1FQF05 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 01:26:57 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:39641 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756576Ab1FQF0q (ORCPT
+	id S1756223Ab1FQFZw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 01:25:52 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:35876 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754820Ab1FQFZu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 01:26:46 -0400
-X-Sasl-enc: WWqdrAmrqJPsPcC7vTWP8B9T52hjRUQ9Dbot5z9XXgWA 1308288405
-Date: Thu, 16 Jun 2011 22:25:23 -0700
-From: Greg KH <greg@kroah.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Nao Nishijima <nao.nishijima.xt@hitachi.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, jcm@redhat.com,
-        hare@suse.de, stefanr@s5r6.in-berlin.de, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
-Message-ID: <20110617052523.GB741@kroah.com>
-References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp>
- <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp>
- <20110615153337.GA10160@kroah.com>
- <4DF9F11F.705@hitachi.com>
- <20110616154129.GA31498@kroah.com>
- <1308239454.2436.34.camel@mulgrave>
- <20110616161442.GA32113@kroah.com>
- <1308241506.2436.44.camel@mulgrave>
- <20110616181943.GB1439@kroah.com>
- <1308256290.2436.143.camel@mulgrave>
+	Fri, 17 Jun 2011 01:25:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=of6QMxjlFyqk7/xPBrXWR97yAbh6O8Tg6zpmEoNJV54aujAoZ5NAi5YojMJ+e+7U3e
+         lqn7wF6R/scs54bJAjs2pLqrTv3eT/fZOsKOzFWLY+dCewf9S1VwwZWlVbgrv0S0pnAg
+         7KdxfNc7DXQTRlg2XgWc6DOBI7UGTRhioXRjA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308256290.2436.143.camel@mulgrave>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <3bea9d0803a4ebfee2bb0f6e42defbf76126dc86.1308287030.git.joe@perches.com>
+References: <3bea9d0803a4ebfee2bb0f6e42defbf76126dc86.1308287030.git.joe@perches.com>
+Date: Fri, 17 Jun 2011 07:25:48 +0200
+X-Google-Sender-Auth: IdsEJwVqHSHSzgTo09Dsna6G-VU
+Message-ID: <BANLkTikGtUEYfU=8ZLGLiTdmOd3dE1+btQ@mail.gmail.com>
+Subject: Re: [PATCH net-next V2] drivers/net: Remove casts of void *
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Joe Perches <joe@perches.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jay Cliburn <jcliburn@gmail.com>, Chris Snook <chris.snook@gmail.com>,
+        Jie Yang <jie.yang@atheros.com>,
+        Sathya Perla <sathya.perla@emulex.com>,
+        Subbu Seetharaman <subbu.seetharaman@emulex.com>,
+        Ajit Khaparde <ajit.khaparde@emulex.com>,
+        Rasesh Mody <rmody@brocade.com>, Debashis Dutt <ddutt@brocade.com>,
+        Sjur Braendeland <sjur.brandeland@stericsson.com>,
+        Divy Le Ray <divy@chelsio.com>,
+        Breno Leitao <leitao@linux.vnet.ibm.com>,
+        Amit Kumar Salecha <amit.salecha@qlogic.com>,
+        Ron Mercer <ron.mercer@qlogic.com>, linux-driver@qlogic.com,
+        Anirban Chakraborty <anirban.chakraborty@qlogic.com>,
+        Jon Mason <jdmason@kudzu.us>,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        Steve Hodgson <shodgson@solarflare.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Daniele Venzano <venza@brownhat.org>,
+        David Dillow <dave@thedillows.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 04:31:29PM -0400, James Bottomley wrote:
-> > So again, I really don't like this, just fix the userspace tools to map
-> > the proper device name that the kernel is using to the userspace name
-> > the tool used, and all is fine.  This has been done already today,
-> > succesfully, by many of the big "enterprise" monitoring systems that
-> > work quite well on Linux, proving that this is not something that the
-> > kernel needs to provide to implement properly.
-> 
-> Well, it's expediency.  Sure we could try to patch the world, but I
-> think the simple patch of getting the kernel to print a preferred name
-> solves 90% of the problem.  Sure there is a long tail of userspace
-> components that needs fixing, but that can be done gradually if we take
-> the kernel route.  If we go the userspace route, it will be a long while
-> before we even get to 50% coverage.
+On Fri, Jun 17, 2011 at 07:08, Joe Perches <joe@perches.com> wrote:
+> Unnecessary casts of void * clutter the code.
+>
+> These are the remainder casts after several specific
+> patches to remove netdev_priv and dev_priv.
+>
+> Done via coccinelle script (and a little editing):
+>
+> $ cat cast_void_pointer.cocci
+> @@
+> type T;
+> T *pt;
+> void *pv;
+> @@
+>
+> - pt = (T *)pv;
+> + pt = pv;
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> Acked-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+> Acked-By: Chris Snook <chris.snook@gmail.com>
+> Acked-by: Jon Mason <jdmason@kudzu.us>
+>
+> ---
+>
+> v2: Update to Geert's request
 
-I do not think that just because some people feel it is easier to change
-the kernel than change userspace tools, that we are somehow forced to
-accept their changes.
+[For a2065]
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-As for "expediency", it has been a full year since the last time this
-was proposed.  All userspace tools that would need to be changed to
-implement this in userspace have had updates released for them in that
-year, and the changes needed to make to them could have been done
-already.
+Gr{oetje,eeting}s,
 
-So any argument about "quickness" here which requires a kernel change
-instead of fixing userspace programs is totally false, sorry.
+                        Geert
 
-greg k-h
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
