@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758892Ab1FQJpy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 05:45:54 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41907 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753575Ab1FQJpw (ORCPT
+	id S1757144Ab1FQJve (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 05:51:34 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48410 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752214Ab1FQJvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 05:45:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=BZmywykfrYveL4XeHvtKIAMeCvmJzJoHRz1JlgKk6m25GdVgEHNbEabL1N9ppU96TP
-         3VvCNO/VBz0vS5eMgBjUQY75YDmHEjPzS3NJ3xthDa+ABbNx9TofyPS0DRlrtRNz1sPC
-         Ejr3Il71eodQ6eOtc7hYtgFQCnnbHOL3xSbAg=
-Date: Fri, 17 Jun 2011 11:45:47 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] genirq: don't use flush_scheduled_work() in IRQ affinity
- notifiers
-Message-ID: <20110617094547.GF2611@htj.dyndns.org>
-References: <20110615142917.GY8141@htj.dyndns.org>
- <1308266886.2925.27.camel@bwh-desktop>
+	Fri, 17 Jun 2011 05:51:31 -0400
+Date: Fri, 17 Jun 2011 10:51:28 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: =?iso-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
+Cc: "Girdwood, Liam" <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: Re: Re: [PATCH v4 00/18] MFD/ASoC/Input: TWL4030/TWL60X0 changes
+Message-ID: <20110617095127.GA11754@opensource.wolfsonmicro.com>
+References: <1307706876-4768-1-git-send-email-peter.ujfalusi@ti.com>
+ <5715729.tcDIHNc8b8@barack>
+ <20110617093940.GA7851@opensource.wolfsonmicro.com>
+ <2635016.l6G4dBmY8j@barack>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1308266886.2925.27.camel@bwh-desktop>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <2635016.l6G4dBmY8j@barack>
+X-Cookie: There was a phone call for you.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Jun 17, 2011 at 01:53:51PM +0300, Péter Ujfalusi wrote:
+> Hello Mark,
 
-On Fri, Jun 17, 2011 at 12:28:06AM +0100, Ben Hutchings wrote:
-> This facility is enabled on all configurations with NET && SMP &&
-> GENERIC_HARDIRQS, but at the moment is only useful for some net drivers
-> (currently only one).  So I don't think it should be creating a task at
-> boot time.  Does alloc_workqueue() still create any tasks immediately?
+> > I reviewed the first posting, did you do anything new?
 
-Nope, no need to worry about it.  The only added overhead is the
-memory occupied by workqueue itself (which includes small percpu area
-but one systemwide one isn't gonna hurt anyone and we've been
-decreasing the number of workqueues significantly).  It just serves as
-a flush domain.
+> Yes I have added patches to the series for the codec part:
+> 13-18
 
--- 
-tejun
+Oh, gah.  I'll dig them out of my mail folders - I wasn't reading the
+individual patches due to the repeated reposting.
