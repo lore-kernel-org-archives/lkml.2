@@ -1,136 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759568Ab1FQUT2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 16:19:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:17165 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756437Ab1FQUT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 16:19:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,383,1304319600"; 
-   d="scan'208";a="14888225"
-Subject: Re: REGRESSION: Performance regressions from switching
- anon_vma->lock to mutex
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>,
-        Andi Kleen <ak@linux.intel.com>, Shaohua Li <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-In-Reply-To: <BANLkTimStT22tA2YkeuYBzarnnWTnMjiKQ@mail.gmail.com>
-References: <1308097798.17300.142.camel@schen9-DESK>
-	 <1308101214.15392.151.camel@sli10-conroe> <1308138750.15315.62.camel@twins>
-	 <20110615161827.GA11769@tassilo.jf.intel.com>
-	 <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
-	 <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
-	 <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
-	 <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com>
-	 <1308255972.17300.450.camel@schen9-DESK>
-	 <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com>
-	 <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
-	 <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com>
-	 <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
-	 <BANLkTinUBTYWxrF5TCuDSQuFUAyivXJXjQ@mail.gmail.com>
-	 <1308310080.2355.19.camel@twins>
-	 <BANLkTim2bmPfeRT1tS7hx2Z85QHjPHwU3Q@mail.gmail.com>
-	 <alpine.LSU.2.00.1106171040460.7018@sister.anvils>
-	 <BANLkTim3vo0vpovV=5sU=GLxkotheB=Ryg@mail.gmail.com>
-	 <1308334688.12801.19.camel@laptop> <1308335557.12801.24.camel@laptop>
-	 <BANLkTimStT22tA2YkeuYBzarnnWTnMjiKQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 17 Jun 2011 13:19:49 -0700
-Message-ID: <1308341989.17300.511.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S932599Ab1FQUf2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 16:35:28 -0400
+Received: from blu0-omc1-s27.blu0.hotmail.com ([65.55.116.38]:25555 "EHLO
+	blu0-omc1-s27.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932162Ab1FQUf1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 16:35:27 -0400
+X-Originating-IP: [184.145.208.36]
+X-Originating-Email: [pdumas9@sympatico.ca]
+Message-ID: <BLU0-SMTP412269A37AB67397C52933966D0@phx.gbl>
+Date: Fri, 17 Jun 2011 16:35:23 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com, patches@linaro.org
+Subject: Re: [PATCH rcu/urgent] Banishing kthreads
+References: <20110617000019.GA15881@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20110617000019.GA15881@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 16:31:45 up 436 days,  6:21,  3 users,  load average: 0.09, 0.09,
+	0.08
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 17 Jun 2011 20:35:26.0010 (UTC) FILETIME=[16BC81A0:01CC2D2E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-17 at 11:39 -0700, Linus Torvalds wrote:
-
-> Having gone over it a bit more, I actually think I prefer to just
-> special-case the allocation instead.
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> This patchset banishes RCU kthreads from non-RCU_BOOST kernel threads.
+> The two patches are as follows:
 > 
-> We already have to drop the anon_vma lock for the "out of memory"
-> case, and a slight re-organization of clone_anon_vma() makes it easy
-> to just first try a NOIO allocation with the lock still held, and then
-> if that fails do the "drop lock, retry, and hard-fail" case.
+> 1.	Minimal patch that #ifdefs out the kthread code.
 > 
-> IOW, something like the attached (on top of the patches already posted
-> except for your memory reclaim thing)
-> 
+> 2.	Code-movement patch that puts the code #ifdefed out above
+> 	under existing #ifdefs in kernel/rcutree_plugin.h.
 
-Linus,
+Hi Paul,
 
-I've applied this patch, plus the other two patches on batching anon_vma
-clone and anon_vma unlink.  This improved throughput further.  I now see
-average throughput at 140.2% vs 2.6.39-vanilla over 10 runs.  The mutex
-lock has also gone down to 3.7% of cpu in my profile.  Certainly a great
-deal of improvements.
+I'm wondering about the impact of this change: so I guess that before
+the change, it was OK to go on a waitqueue (might_sleep()) within a
+call_rcu callback, but since the execution now moves to a softirq
+handler in non-RCU_BOOST kernels, it's not allowed anymore. I might be
+missing something though: was sleeping within call_rcu handlers already
+prohibited ? (never had to sleep in those, so I never had to check if it
+was allowed)
 
-To summarize,
+Thanks,
 
-                        Throughput
-2.6.39(vanilla)         100.0%
-2.6.39+ra-patch         166.7%  (+66.7%)        
-3.0-rc2(vanilla)         68.0%  (-32%)
-3.0-rc2+linus (v1)      115.7%  (+15.7%)   (anon_vma clone v1)
-3.0-rc2+linus+softirq    86.2%  (-17.3%)
-3.0-rc2+linus (v2)      104.9%  (+4.9%)    (anon_vma clone v2)
-3.0-rc2+linus (v3)      140.3%  (+40.3%)   (anon_vma clone v2 + unlink + chain_alloc_tweak)
+Mathieu
 
-
-                        (Max-Min)/avg  	Standard Dev
-2.6.39(vanilla)         3%		 1.1%
-2.6.39+ra-patch         3%               1.2%       
-3.0-rc2(vanilla)        20%              7.3%
-3.0-rc2+linus           36%             12.2%
-3.0-rc2+linus+softirq   40%             15.2%
-3.0-rc2+linus (v2)      53%             14.8%
-3.0-rc2+linus (v3)      27%              8.1%
-
-Thanks.
-
-Tim
-
-
-------------Profile attached--------------
-
-Profile from latest run 3.0-rc2+linus (v3):
-
--      5.44%          exim  [kernel.kallsyms]             [k] _raw_spin_lock_irqsave
-   - _raw_spin_lock_irqsave                                                                       
-      + 87.81% cpupri_set                                                                         
-      + 5.67% release_pages                                                                       
-      + 1.71% pagevec_lru_move_fn                                                                 
-      + 1.31% try_to_wake_up                                                                      
-      + 0.85% get_page_from_freelist                                                              
-+      4.15%          exim  [kernel.kallsyms]             [k] page_fault                          
--      3.76%          exim  [kernel.kallsyms]             [k] __mutex_lock_common.clone.5         
-   - __mutex_lock_common.clone.5                                                                  
-      - 99.97% __mutex_lock_slowpath                                                              
-         - mutex_lock                                                                             
-            + 55.46% lock_anon_vma_root.clone.13                                                  
-            + 41.94% anon_vma_lock.clone.10                                                       
-            + 1.14% dup_mm                                                                        
-            + 1.02% unlink_file_vma                                                               
-+      2.44%          exim  [kernel.kallsyms]             [k] unmap_vmas                          
-+      2.06%          exim  [kernel.kallsyms]             [k] do_raw_spin_lock                    
-+      1.91%          exim  [kernel.kallsyms]             [k] page_cache_get_speculative          
-+      1.89%          exim  [kernel.kallsyms]             [k] copy_page_c                           
-
-
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
