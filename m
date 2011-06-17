@@ -1,63 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932826Ab1FQPbl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 11:31:41 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:48378 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932419Ab1FQPbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 11:31:40 -0400
-Message-ID: <4DFB7352.1040706@free.fr>
-Date: Fri, 17 Jun 2011 17:31:30 +0200
-From: f6bvp <f6bvp@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110501 Mandriva/3.1.10-0.1mdv2010.2 (2010.2) Thunderbird/3.1.10
+	id S1759352Ab1FQPed (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 11:34:33 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45627 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759316Ab1FQPeb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 11:34:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=TzLR3qWiSaBHnfuwr+/7IWbyc0r9tFdfaPCsosnur1PsUQuzN/CukhhbMwN4ial+dl
+         S8Fsix5e0CAkGXinx4quEfEH6nRPof+ZDJAkrYxDUSieGyXDvLHBkDqQm8O/tygCiUw9
+         GOIr7Ebgr/VZegP7h0eP3zWmKMlTib6ABdtmo=
+Date: Fri, 17 Jun 2011 19:34:24 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        apparmor@lists.ubuntu.com,
+        "selinux@tycho.nsa.gov Stephen Smalley" <sds@tycho.nsa.gov>,
+        James Morris <jmorris@namei.org>, Eric Paris <eparis@parisplace.org>,
+        John Johansen <john.johansen@canonical.com>,
+        kernel-hardening@lists.openwall.com
+Subject: Re: [RFC v1] security: introduce ptrace_task_access_check()
+Message-ID: <20110617153424.GA22220@albatros>
+References: <20110617152912.GA21885@albatros>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Ralf Baechle <ralf@linux-mips.org>, linux-kernel@vger.kernel.org,
-        Linux Netdev List <netdev@vger.kernel.org>, linux-hams@vger.kernel.org
-Subject: Re: [AX25] inconsistent lock state
-References: <4B2CD772.1030106@upmc.fr> <201106171536.15660.arnd@arndb.de> <20110617135147.GA3470@linux-mips.org> <201106171611.10655.arnd@arndb.de>
-In-Reply-To: <201106171611.10655.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110617152912.GA21885@albatros>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Fri, Jun 17, 2011 at 19:29 +0400, Vasiliy Kulikov wrote:
+> diff --git a/security/commoncap.c b/security/commoncap.c
+> index a93b3b7..aa76791 100644
+> --- a/security/commoncap.c
+> +++ b/security/commoncap.c
+> @@ -155,6 +155,26 @@ out:
+>  	return ret;
+>  }
+>  
+> +int cap_ptrace_task_access_check(struct task_struct *task, struct task_struct *child,
+> +	unsigned int mode)
+> +{
+> +	int ret = 0;
+> +	const struct cred *cred, *child_cred;
+> +
+> +	rcu_read_lock();
+> +	cred = __task_cred(task);
+> +	child_cred = __task_cred(child);
+> +	if (cred->user->user_ns == child_cred->user->user_ns &&
+> +	    cap_issubset(child_cred->cap_permitted, cred->cap_permitted))
+> +		goto out;
+> +	if (ns_task_capable(task, child_cred->user->user_ns, CAP_SYS_PTRACE))
+> +		goto out;
+> +	ret = -EPERM;
+> +out:
+> +	rcu_read_unlock();
+> +	return ret;
+> +}
+> +
 
-I will apply your patch with write_lock_bh only following your
-remark about recursive call.
+Actually cap_ptrace_access_check() may just call
+cap_ptrace_task_access_check().
 
-I agree that the error message did not appear systematically
-when doing what I did i.e. unpluging the ethernet cable from
-the computer interface.
+>  /**
+>   * cap_ptrace_traceme - Determine whether another process may trace the current
+>   * @parent: The task proposed to be the tracer
 
-However, I will perform the same a few times and see what happens.
+> diff --git a/security/smack/smack_access.c b/security/smack/smack_access.c
+> index 9637e10..f6582a7 100644
+> --- a/security/smack/smack_access.c
+> +++ b/security/smack/smack_access.c
+> @@ -200,6 +200,49 @@ out_audit:
+>  	return rc;
+>  }
+>  
+> +int smk_taskacc(struct task_struct *task, char *obj_label, u32 mode, struct smk_audit_info *a)
+> +{
+> +	struct task_smack *tsp = task_cred_xxx(task, security);
+> +	char *subject_label = smk_of_task(tsp);
+> +	int may;
+> +	int rc;
+> +
+> +	/*
+> +	 * Check the global rule list
+> +	 */
+> +	rc = smk_access(subject_label, obj_label, mode, NULL);
+> +	if (rc == 0) {
+> +		/*
+> +		 * If there is an entry in the task's rule list
+> +		 * it can further restrict access.
+> +		 */
+> +		may = smk_access_entry(subject_label, obj_label, &tsp->smk_rules);
+> +		if (may < 0)
+> +			goto out_audit;
+> +		if ((mode & may) == mode)
+> +			goto out_audit;
+> +		rc = -EACCES;
+> +	}
+> +
+> +	/*
+> +	 * Return if a specific label has been designated as the
+> +	 * only one that gets privilege and current does not
+> +	 * have that label.
+> +	 */
+> +	if (smack_onlycap != NULL && smack_onlycap != subject_label)
+> +		goto out_audit;
+> +
+> +	if (task_capable(task, CAP_MAC_OVERRIDE))
+> +		rc = 0;
+> +
+> +out_audit:
+> +#ifdef CONFIG_AUDIT
+> +	if (a)
+> +		smack_log(subject_label, obj_label, mode, rc, a);
+> +#endif
+> +	return rc;
+> +}
+> +
 
-Many thanks.
+And smk_curacc() is a variant of smk_taskacc().
 
-Bernard
+>  /**
+>   * smk_curacc - determine if current has a specific access to an object
+>   * @obj_label: a pointer to the object's Smack label
 
-
-Le 17/06/2011 16:11, Arnd Bergmann a écrit :
-> On Friday 17 June 2011 15:51:48 Ralf Baechle wrote:
->> On Fri, Jun 17, 2011 at 03:36:15PM +0200, Arnd Bergmann wrote:
->>
->> (Removed Jarek from cc; his email bounces.)
->>
->>> The message hints that disc_data_lock is aquired with softirqs disabled,
->>> but does not itself disable softirqs, which can in rare circumstances
->>> lead to a deadlock.
->>>
->>> Does this fix it?
->> If so, drivers/net/hamradio.c, function sp_get() would probably need the
->> equivalent fix.  Same for drivers/net/ppp_async.c:ap_get() and sp_get() in
->> drivers/net/ppp_synctty.c.
-> It seems that ppp_synctty.c is ok, it uses write_lock_irq() already,
-> sixpack.c looks like it has the same bug as mkiss. I also realized
-> after sending out the patch that only the write_lock needs to be
-> changed to write_lock_bh, while read_lock can leave softirqs enabled
-> because it can be called recursively.
->
-> 	Arnd
-
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
