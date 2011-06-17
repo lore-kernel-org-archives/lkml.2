@@ -1,529 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759536Ab1FQRMH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 13:12:07 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52547 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112Ab1FQRMC (ORCPT
+	id S1759012Ab1FQRMa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 13:12:30 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:58269 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758753Ab1FQRM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 13:12:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=stc0DcZRhDkXb3Yokhs1C1iuEuUJahiO1+OLZIfpoooG3TJOFAz9nfRGMC0Ce6+Lv9
-         Obzi4Mi4CgslrzFzYTozGW0O5TTgjU3PHQpZrsyr1TNSKM2s0qPVl3AIUI+xEDXO36/y
-         E/0omS2aoQUaF4mXm98ZEjKOHpFDSUQJTXJWY=
-Date: Fri, 17 Jun 2011 21:11:54 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        apparmor@lists.ubuntu.com,
-        "selinux@tycho.nsa.gov Stephen Smalley" <sds@tycho.nsa.gov>,
-        James Morris <jmorris@namei.org>, Eric Paris <eparis@parisplace.org>,
-        John Johansen <john.johansen@canonical.com>,
-        kernel-hardening@lists.openwall.com
-Subject: [RFC v2] security: intoduce ptrace_task_may_access_current
-Message-ID: <20110617171152.GA1389@albatros>
+	Fri, 17 Jun 2011 13:12:28 -0400
+Date: Fri, 17 Jun 2011 11:12:26 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Micha Nelissen <micha@neli.hopto.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        "Venkatesh Pallipadi (Venki)" <venki@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH] Add support for multiple MSI on x86
+Message-ID: <20110617171226.GB19693@parisc-linux.org>
+References: <4D583E31.4070507@neli.hopto.org> <alpine.LFD.2.00.1102142106560.26192@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1102142106560.26192@localhost6.localdomain6>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds ptrace_task_may_access_current() function.  It behaves
-like ptrace_may_access(), but checks whether a specific task may ptrace
-current.  The patch adds some new *capable*() functions with additional
-task argument (instead of default current task_struct).  It also changes
-security_ops->ptrace_access_check() by adding new argument and fixing
-related LSM handlers in SELinux, AppArmor and SMACK.
 
-v2 - renamed ptrace_access_check() back, added missing functions in
-     headers, introduced actual ptrace_task_may_access_current().
+Sorry, I missed this the first time through ... I've just been poked about it.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
----
- include/linux/capability.h    |    2 ++
- include/linux/ptrace.h        |    3 ++-
- include/linux/security.h      |   31 +++++++++++++++++++++++++++----
- kernel/capability.c           |   35 +++++++++++++++++++++++++----------
- kernel/ptrace.c               |   30 +++++++++++++++++++++++-------
- security/apparmor/lsm.c       |    8 ++++----
- security/commoncap.c          |    7 ++++---
- security/security.c           |   17 ++++++++++++++---
- security/selinux/hooks.c      |   11 +++++------
- security/smack/smack.h        |    1 +
- security/smack/smack_access.c |   25 +++++++++++++++++++++----
- security/smack/smack_lsm.c    |    7 ++++---
- 12 files changed, 132 insertions(+), 45 deletions(-)
+On Mon, Feb 14, 2011 at 09:55:33PM +0100, Thomas Gleixner wrote:
+> On Sun, 13 Feb 2011, Micha Nelissen wrote:
+> > +static int __assign_irq_vector_block(int irq, unsigned count, const struct cpumask *mask)
+> > +{
+> > +	static int current_vector = FIRST_EXTERNAL_VECTOR;
+> 
+> static ? What the hell is this for ?
 
----
-diff --git a/include/linux/capability.h b/include/linux/capability.h
-index c421123..cc0bcfe 100644
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -544,7 +544,9 @@ extern bool has_ns_capability(struct task_struct *t,
- 			      struct user_namespace *ns, int cap);
- extern bool has_capability_noaudit(struct task_struct *t, int cap);
- extern bool capable(int cap);
-+extern bool task_capable(struct task_struct *task, int cap);
- extern bool ns_capable(struct user_namespace *ns, int cap);
-+extern bool ns_task_capable(struct task_struct *t, struct user_namespace *ns, int cap);
- extern bool task_ns_capable(struct task_struct *t, int cap);
- extern bool nsown_capable(int cap);
- 
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 9178d5c..bb59e43 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -116,9 +116,10 @@ extern void exit_ptrace(struct task_struct *tracer);
- #define PTRACE_MODE_READ   1
- #define PTRACE_MODE_ATTACH 2
- /* Returns 0 on success, -errno on denial. */
--extern int __ptrace_may_access(struct task_struct *task, unsigned int mode);
-+extern int __ptrace_may_access(struct task_struct *who, struct task_struct *task, unsigned int mode);
- /* Returns true on success, false on denial. */
- extern bool ptrace_may_access(struct task_struct *task, unsigned int mode);
-+extern bool ptrace_task_may_access_current(struct task_struct *task, unsigned int mode);
- 
- static inline int ptrace_reparented(struct task_struct *child)
- {
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 8ce59ef..fb79dd5 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -56,7 +56,8 @@ struct user_namespace;
- extern int cap_capable(struct task_struct *tsk, const struct cred *cred,
- 		       struct user_namespace *ns, int cap, int audit);
- extern int cap_settime(const struct timespec *ts, const struct timezone *tz);
--extern int cap_ptrace_access_check(struct task_struct *child, unsigned int mode);
-+extern int cap_ptrace_access_check(struct task_struct *task, struct task_struct *child,
-+	unsigned int mode);
- extern int cap_ptrace_traceme(struct task_struct *parent);
- extern int cap_capget(struct task_struct *target, kernel_cap_t *effective, kernel_cap_t *inheritable, kernel_cap_t *permitted);
- extern int cap_capset(struct cred *new, const struct cred *old,
-@@ -1375,7 +1376,9 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
- struct security_operations {
- 	char name[SECURITY_NAME_MAX + 1];
- 
--	int (*ptrace_access_check) (struct task_struct *child, unsigned int mode);
-+	int (*ptrace_access_check) (struct task_struct *task,
-+					 struct task_struct *child,
-+					 unsigned int mode);
- 	int (*ptrace_traceme) (struct task_struct *parent);
- 	int (*capget) (struct task_struct *target,
- 		       kernel_cap_t *effective,
-@@ -1657,6 +1660,8 @@ extern int security_module_enable(struct security_operations *ops);
- extern int register_security(struct security_operations *ops);
- 
- /* Security operations */
-+int security_ptrace_task_access_check(struct task_struct *task,
-+		 struct task_struct *child, unsigned int mode);
- int security_ptrace_access_check(struct task_struct *child, unsigned int mode);
- int security_ptrace_traceme(struct task_struct *parent);
- int security_capget(struct task_struct *target,
-@@ -1667,6 +1672,10 @@ int security_capset(struct cred *new, const struct cred *old,
- 		    const kernel_cap_t *effective,
- 		    const kernel_cap_t *inheritable,
- 		    const kernel_cap_t *permitted);
-+int security_task_capable(struct task_struct *task,
-+			struct user_namespace *ns,
-+			const struct cred *cred,
-+			int cap);
- int security_capable(struct user_namespace *ns, const struct cred *cred,
- 			int cap);
- int security_real_capable(struct task_struct *tsk, struct user_namespace *ns,
-@@ -1837,10 +1846,16 @@ static inline int security_init(void)
- 	return 0;
- }
- 
-+static inline int security_ptrace_task_access_check(struct task_struct *task,
-+		 struct task_struct *child, unsigned int mode)
-+{
-+	return cap_ptrace_access_check(task, child, mode);
-+}
-+
- static inline int security_ptrace_access_check(struct task_struct *child,
- 					     unsigned int mode)
- {
--	return cap_ptrace_access_check(child, mode);
-+	return cap_ptrace_access_check(current, child, mode);
- }
- 
- static inline int security_ptrace_traceme(struct task_struct *parent)
-@@ -1865,10 +1880,18 @@ static inline int security_capset(struct cred *new,
- 	return cap_capset(new, old, effective, inheritable, permitted);
- }
- 
-+static inline int security_task_capable(struct task_struct *task,
-+					struct user_namespace *ns,
-+					const struct cred *cred,
-+					int cap)
-+{
-+	return cap_capable(task, cred, ns, cap, SECURITY_CAP_AUDIT);
-+}
-+
- static inline int security_capable(struct user_namespace *ns,
- 				   const struct cred *cred, int cap)
- {
--	return cap_capable(current, cred, ns, cap, SECURITY_CAP_AUDIT);
-+	return security_task_capable(current, ns, cred, cap);
- }
- 
- static inline int security_real_capable(struct task_struct *tsk, struct user_namespace *ns, int cap)
-diff --git a/kernel/capability.c b/kernel/capability.c
-index 283c529..bc9b07f 100644
---- a/kernel/capability.c
-+++ b/kernel/capability.c
-@@ -356,6 +356,30 @@ bool capable(int cap)
- }
- EXPORT_SYMBOL(capable);
- 
-+bool task_capable(struct task_struct *task, int cap)
-+{
-+	return ns_task_capable(task, &init_user_ns, cap);
-+}
-+EXPORT_SYMBOL(task_capable);
-+
-+bool ns_task_capable(struct task_struct *task, struct user_namespace *ns, int cap)
-+{
-+	if (unlikely(!cap_valid(cap))) {
-+		printk(KERN_CRIT "capable() called with invalid cap=%u\n", cap);
-+		BUG();
-+	}
-+
-+	rcu_read_lock();
-+	if (security_task_capable(task, ns, __task_cred(task), cap) == 0) {
-+		rcu_read_unlock();
-+		current->flags |= PF_SUPERPRIV;
-+		return true;
-+	}
-+	rcu_read_unlock();
-+	return false;
-+}
-+EXPORT_SYMBOL(ns_task_capable);
-+
- /**
-  * ns_capable - Determine if the current task has a superior capability in effect
-  * @ns:  The usernamespace we want the capability in
-@@ -369,16 +393,7 @@ EXPORT_SYMBOL(capable);
-  */
- bool ns_capable(struct user_namespace *ns, int cap)
- {
--	if (unlikely(!cap_valid(cap))) {
--		printk(KERN_CRIT "capable() called with invalid cap=%u\n", cap);
--		BUG();
--	}
--
--	if (security_capable(ns, current_cred(), cap) == 0) {
--		current->flags |= PF_SUPERPRIV;
--		return true;
--	}
--	return false;
-+	return ns_task_capable(current, ns, cap);
- }
- EXPORT_SYMBOL(ns_capable);
- 
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 2df1157..df8fe32 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -132,9 +132,9 @@ int ptrace_check_attach(struct task_struct *child, int kill)
- 	return ret;
- }
- 
--int __ptrace_may_access(struct task_struct *task, unsigned int mode)
-+int __ptrace_may_access(struct task_struct *who, struct task_struct *task, unsigned int mode)
- {
--	const struct cred *cred = current_cred(), *tcred;
-+	const struct cred *cred, *tcred;
- 
- 	/* May we inspect the given task?
- 	 * This check is used both for attaching with ptrace
-@@ -149,6 +149,7 @@ int __ptrace_may_access(struct task_struct *task, unsigned int mode)
- 	if (task == current)
- 		return 0;
- 	rcu_read_lock();
-+	cred = __task_cred(who);
- 	tcred = __task_cred(task);
- 	if (cred->user->user_ns == tcred->user->user_ns &&
- 	    (cred->uid == tcred->euid &&
-@@ -158,7 +159,7 @@ int __ptrace_may_access(struct task_struct *task, unsigned int mode)
- 	     cred->gid == tcred->sgid &&
- 	     cred->gid == tcred->gid))
- 		goto ok;
--	if (ns_capable(tcred->user->user_ns, CAP_SYS_PTRACE))
-+	if (ns_task_capable(who, tcred->user->user_ns, CAP_SYS_PTRACE))
- 		goto ok;
- 	rcu_read_unlock();
- 	return -EPERM;
-@@ -167,17 +168,32 @@ ok:
- 	smp_rmb();
- 	if (task->mm)
- 		dumpable = get_dumpable(task->mm);
--	if (!dumpable && !task_ns_capable(task, CAP_SYS_PTRACE))
-+	if (!dumpable &&
-+	    !ns_task_capable(who, task_cred_xxx(task, user)->user_ns,
-+		 CAP_SYS_PTRACE))
- 		return -EPERM;
- 
--	return security_ptrace_access_check(task, mode);
-+	return security_ptrace_task_access_check(who, task, mode);
- }
- 
- bool ptrace_may_access(struct task_struct *task, unsigned int mode)
- {
- 	int err;
- 	task_lock(task);
--	err = __ptrace_may_access(task, mode);
-+	err = __ptrace_may_access(current, task, mode);
-+	task_unlock(task);
-+	return !err;
-+}
-+
-+/*
-+ * Generic task_may_access_task cannot be implemented because we have to
-+ * hold task_locks of both tasks.  It would lead to a deadlock.
-+ */
-+bool ptrace_task_may_access_current(struct task_struct *task, unsigned int mode)
-+{
-+	int err;
-+	task_lock(task);
-+	err = __ptrace_may_access(task, current, mode);
- 	task_unlock(task);
- 	return !err;
- }
-@@ -205,7 +221,7 @@ static int ptrace_attach(struct task_struct *task)
- 		goto out;
- 
- 	task_lock(task);
--	retval = __ptrace_may_access(task, PTRACE_MODE_ATTACH);
-+	retval = __ptrace_may_access(current, task, PTRACE_MODE_ATTACH);
- 	task_unlock(task);
- 	if (retval)
- 		goto unlock_creds;
-diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
-index ec1bcec..dc3a4aa 100644
---- a/security/apparmor/lsm.c
-+++ b/security/apparmor/lsm.c
-@@ -93,14 +93,14 @@ static void apparmor_cred_transfer(struct cred *new, const struct cred *old)
- 	aa_dup_task_context(new_cxt, old_cxt);
- }
- 
--static int apparmor_ptrace_access_check(struct task_struct *child,
--					unsigned int mode)
-+static int apparmor_ptrace_access_check(struct task_struct *task,
-+			    struct task_struct *child, unsigned int mode)
- {
--	int error = cap_ptrace_access_check(child, mode);
-+	int error = cap_ptrace_access_check(task, child, mode);
- 	if (error)
- 		return error;
- 
--	return aa_ptrace(current, child, mode);
-+	return aa_ptrace(task, child, mode);
- }
- 
- static int apparmor_ptrace_traceme(struct task_struct *parent)
-diff --git a/security/commoncap.c b/security/commoncap.c
-index a93b3b7..31ca991 100644
---- a/security/commoncap.c
-+++ b/security/commoncap.c
-@@ -136,18 +136,19 @@ int cap_settime(const struct timespec *ts, const struct timezone *tz)
-  * Determine whether a process may access another, returning 0 if permission
-  * granted, -ve if denied.
-  */
--int cap_ptrace_access_check(struct task_struct *child, unsigned int mode)
-+int cap_ptrace_access_check(struct task_struct *task, struct task_struct *child,
-+	unsigned int mode)
- {
- 	int ret = 0;
- 	const struct cred *cred, *child_cred;
- 
- 	rcu_read_lock();
--	cred = current_cred();
-+	cred = __task_cred(task);
- 	child_cred = __task_cred(child);
- 	if (cred->user->user_ns == child_cred->user->user_ns &&
- 	    cap_issubset(child_cred->cap_permitted, cred->cap_permitted))
- 		goto out;
--	if (ns_capable(child_cred->user->user_ns, CAP_SYS_PTRACE))
-+	if (ns_task_capable(task, child_cred->user->user_ns, CAP_SYS_PTRACE))
- 		goto out;
- 	ret = -EPERM;
- out:
-diff --git a/security/security.c b/security/security.c
-index 4ba6d4c..0760e81 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -127,9 +127,15 @@ int __init register_security(struct security_operations *ops)
- 
- /* Security operations */
- 
-+int security_ptrace_task_access_check(struct task_struct *task,
-+		 struct task_struct *child, unsigned int mode)
-+{
-+	return security_ops->ptrace_access_check(task, child, mode);
-+}
-+
- int security_ptrace_access_check(struct task_struct *child, unsigned int mode)
- {
--	return security_ops->ptrace_access_check(child, mode);
-+	return security_ops->ptrace_access_check(current, child, mode);
- }
- 
- int security_ptrace_traceme(struct task_struct *parent)
-@@ -154,11 +160,16 @@ int security_capset(struct cred *new, const struct cred *old,
- 				    effective, inheritable, permitted);
- }
- 
-+int security_task_capable(struct task_struct *task, struct user_namespace *ns,
-+	const struct cred *cred, int cap)
-+{
-+	return security_ops->capable(task, cred, ns, cap, SECURITY_CAP_AUDIT);
-+}
-+
- int security_capable(struct user_namespace *ns, const struct cred *cred,
- 		     int cap)
- {
--	return security_ops->capable(current, cred, ns, cap,
--				     SECURITY_CAP_AUDIT);
-+	return security_task_capable(current, ns, cred, cap);
- }
- 
- int security_real_capable(struct task_struct *tsk, struct user_namespace *ns,
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 20219ef..0130255 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -1804,23 +1804,22 @@ static inline u32 open_file_to_av(struct file *file)
- }
- 
- /* Hook functions begin here. */
--
--static int selinux_ptrace_access_check(struct task_struct *child,
--				     unsigned int mode)
-+static int selinux_ptrace_access_check(struct task_struct *task,
-+		struct task_struct *child, unsigned int mode)
- {
- 	int rc;
- 
--	rc = cap_ptrace_access_check(child, mode);
-+	rc = cap_ptrace_access_check(task, child, mode);
- 	if (rc)
- 		return rc;
- 
- 	if (mode == PTRACE_MODE_READ) {
--		u32 sid = current_sid();
-+		u32 sid = task_sid(task);
- 		u32 csid = task_sid(child);
- 		return avc_has_perm(sid, csid, SECCLASS_FILE, FILE__READ, NULL);
- 	}
- 
--	return current_has_perm(child, PROCESS__PTRACE);
-+	return task_has_perm(task, child, PROCESS__PTRACE);
- }
- 
- static int selinux_ptrace_traceme(struct task_struct *parent)
-diff --git a/security/smack/smack.h b/security/smack/smack.h
-index 2b6c6a5..4d9fb0f 100644
---- a/security/smack/smack.h
-+++ b/security/smack/smack.h
-@@ -199,6 +199,7 @@ struct inode_smack *new_inode_smack(char *);
-  */
- int smk_access_entry(char *, char *, struct list_head *);
- int smk_access(char *, char *, int, struct smk_audit_info *);
-+int smk_taskacc(struct task_struct *, char *, u32, struct smk_audit_info *);
- int smk_curacc(char *, u32, struct smk_audit_info *);
- int smack_to_cipso(const char *, struct smack_cipso *);
- void smack_from_cipso(u32, char *, char *);
-diff --git a/security/smack/smack_access.c b/security/smack/smack_access.c
-index 9637e10..766dccd 100644
---- a/security/smack/smack_access.c
-+++ b/security/smack/smack_access.c
-@@ -201,7 +201,8 @@ out_audit:
- }
- 
- /**
-- * smk_curacc - determine if current has a specific access to an object
-+ * smk_curacc - determine if subject has a specific access to an object
-+ * @task: a pointer to the subject's task struct
-  * @obj_label: a pointer to the object's Smack label
-  * @mode: the access requested, in "MAY" format
-  * @a : common audit data
-@@ -211,9 +212,9 @@ out_audit:
-  * non zero otherwise. It allows that current may have the capability
-  * to override the rules.
-  */
--int smk_curacc(char *obj_label, u32 mode, struct smk_audit_info *a)
-+int smk_taskacc(struct task_struct *task, char *obj_label, u32 mode, struct smk_audit_info *a)
- {
--	struct task_smack *tsp = current_security();
-+	struct task_smack *tsp = task_cred_xxx(task, security);
- 	char *sp = smk_of_task(tsp);
- 	int may;
- 	int rc;
-@@ -243,7 +244,7 @@ int smk_curacc(char *obj_label, u32 mode, struct smk_audit_info *a)
- 	if (smack_onlycap != NULL && smack_onlycap != sp)
- 		goto out_audit;
- 
--	if (capable(CAP_MAC_OVERRIDE))
-+	if (task_capable(task, CAP_MAC_OVERRIDE))
- 		rc = 0;
- 
- out_audit:
-@@ -254,6 +255,22 @@ out_audit:
- 	return rc;
- }
- 
-+/**
-+ * smk_curacc - determine if current has a specific access to an object
-+ * @obj_label: a pointer to the object's Smack label
-+ * @mode: the access requested, in "MAY" format
-+ * @a : common audit data
-+ *
-+ * This function checks the current subject label/object label pair
-+ * in the access rule list and returns 0 if the access is permitted,
-+ * non zero otherwise. It allows that current may have the capability
-+ * to override the rules.
-+ */
-+int smk_curacc(char *obj_label, u32 mode, struct smk_audit_info *a)
-+{
-+	return smk_taskacc(current, obj_label, mode, a);
-+}
-+
- #ifdef CONFIG_AUDIT
- /**
-  * smack_str_from_perm : helper to transalate an int to a
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index 9831a39..ee1c5cb 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -149,13 +149,14 @@ static int smk_copy_rules(struct list_head *nhead, struct list_head *ohead,
-  *
-  * Do the capability checks, and require read and write.
-  */
--static int smack_ptrace_access_check(struct task_struct *ctp, unsigned int mode)
-+static int smack_ptrace_access_check(struct task_struct *task,
-+			struct task_struct *ctp, unsigned int mode)
- {
- 	int rc;
- 	struct smk_audit_info ad;
- 	char *tsp;
- 
--	rc = cap_ptrace_access_check(ctp, mode);
-+	rc = cap_ptrace_access_check(task, ctp, mode);
- 	if (rc != 0)
- 		return rc;
- 
-@@ -163,7 +164,7 @@ static int smack_ptrace_access_check(struct task_struct *ctp, unsigned int mode)
- 	smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_TASK);
- 	smk_ad_setfield_u_tsk(&ad, ctp);
- 
--	rc = smk_curacc(tsp, MAY_READWRITE, &ad);
-+	rc = smk_taskacc(task, tsp, MAY_READWRITE, &ad);
- 	return rc;
- }
- 
----
+You should probably have taken a look at __assign_irq_vector before
+jumping in with the 'wth's.  It's heavily based on that.
+
+> > +	unsigned int old_vector;
+> > +	unsigned i, cpu;
+> > +	int err;
+> > +	struct irq_cfg *cfg;
+> > +	cpumask_var_t tmp_mask;
+> > +
+> > +	BUG_ON(irq + count > NR_IRQS);
+> 
+> Why BUG if you can bail out with an error code ?
+> 
+> > +	BUG_ON(count & (count - 1));
+> 
+> Ditto
+
+These should both have been taken care of by the caller.  So they are
+genuine bugs if they happen.
+
+> > +	for (i = 0; i < count; i++) {
+> > +		cfg = irq_cfg(irq + i);
+> > +		if (cfg->move_in_progress)
+> > +			return -EBUSY;
+> > +	}
+> 
+> What's this check for and why do we return EBUSY ? 
+
+Ask the author of __assign_irq_vector
+
+> > +	if (!alloc_cpumask_var(&tmp_mask, GFP_ATOMIC))
+> > +		return -ENOMEM;
+> 
+> No way. We went great length to make this code do GFP_KERNEL
+> allocations.
+
+No.  No, you didn't.  Fix __assign_irq_vector, and we can talk.
+
+> > +	cfg = irq_cfg(irq);
+> > +	old_vector = cfg->vector;
+> > +	if (old_vector) {
+> > +		err = 0;
+> > +		cpumask_and(tmp_mask, mask, cpu_online_mask);
+> > +		cpumask_and(tmp_mask, cfg->domain, tmp_mask);
+> > +		if (!cpumask_empty(tmp_mask))
+> > +			goto out;
+> > +	}
+> > +
+> > +	/* Only try and allocate irqs on cpus that are present */
+> > +	err = -ENOSPC;
+> > +	for_each_cpu_and(cpu, mask, cpu_online_mask) {
+> 
+> No, we don't want to iterate over the world and some more with
+> vector_lock held and interrupts disabled
+
+... see __assign_irq_vector again.
+
+> > +		int new_cpu;
+> > +		int vector;
+> > +
+> > +		apic->vector_allocation_domain(cpu, tmp_mask);
+> > +
+> > +		vector = current_vector & ~(count - 1);
+> > +next:
+> > +		vector > += count;
+> > +		if (vector > + count >= first_system_vector) {
+> > +			vector = FIRST_EXTERNAL_VECTOR & ~(count - 1);
+> > +			if (vector < FIRST_EXTERNAL_VECTOR)
+> > +				vector > += count;
+> > +		}
+> > +		if (unlikely((current_vector & ~(count - 1)) == vector))
+> > +			continue;
+> > +
+> > +		for (i = 0; i < count; i> +> +)
+> > +			if (test_bit(vector > + i, used_vectors))
+> > +				goto next;
+> > +
+> > +		for_each_cpu_and(new_cpu, tmp_mask, cpu_online_mask) {
+> > +			for (i = 0; i < count; i> +> +) {
+> > +				if (per_cpu(vector_irq, new_cpu)[vector > + i] != -1)
+> > +					goto next;
+> > +			}
+> > +		}
+> 
+> Yikes, loop in a loop ??? With interrupts disabled? Imagine what that
+> means on a machine with 1k cores.
+
+It's a very short inner loop.  MSI is limited to 32 interrupts.
+
+> > +		/* Found one! */
+> > +		current_vector = vector > + count - 1;
+> > +		for (i = 0; i < count; i> +> +) {
+> > +			cfg = irq_cfg(irq > + i);
+> > +			if (old_vector) {
+> > +				cfg->move_in_progress = 1;
+> > +				cpumask_copy(cfg->old_domain, cfg->domain);
+> > +			}
+> > +			for_each_cpu_and(new_cpu, tmp_mask, cpu_online_mask)
+> > +				per_cpu(vector_irq, new_cpu)[vector + i] = irq + i;
+> 
+> And some more .....
+> 
+> > +			cfg->vector = vector > + i;
+> > +			cpumask_copy(cfg->domain, tmp_mask);
+> > +		}
+> > +		err = 0;
+> > +		break;
+> > +	}
+> > +out:
+> > +	free_cpumask_var(tmp_mask);
+> > +	return err;
+> > +}
+> > +
+> 
+> > +/* Assumes that count is a power of two and aligns to that power of two */
+> 
+> If it assumes that, it'd better check it
+
+Um ... see the BUG_ON above that you complained about ...
+
+> @@ -3121,7 +3272,7 @@ void destroy_irq(unsigned int irq)
+>   */
+>  #ifdef CONFIG_PCI_MSI
+>  static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+> -			   struct msi_msg *msg, u8 hpet_id)
+> +			   unsigned count, struct msi_msg *msg, u8 hpet_id)
+>  {
+>  	struct irq_cfg *cfg;
+>  	int err;
+> @@ -3131,7 +3282,10 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+>  		return -ENXIO;
+>  
+>  	cfg = irq_cfg(irq);
+> -	err = assign_irq_vector(irq, cfg, apic->target_cpus());
+> +	if (count == 1)
+> +		err = assign_irq_vector(irq, cfg, apic->target_cpus());
+> +	else
+> +		err = assign_irq_vector_block(irq, count, apic->target_cpus());
+> 
+> WTF? We have already changed the function to take a count argument,
+> why don't we propagate that all the way through instead of having 
+> 
+>     if (bla == 1)
+>         assign_irq_vector();
+>     else
+> 	assign_irq_vector_block();
+> 
+> all over the place ?
+
+assign_irq_vector() has a different allocation scheme from
+assign_irq_vector_block().  Merging the two functions seems hard ... but
+maybe we can have separate __assign_irq_block() and __assign_irq_vector()
+and have assign_irq_vector() call the appropriate one?
+
+-- 
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
