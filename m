@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759530Ab1FQSJy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 14:09:54 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:55418 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353Ab1FQSJx convert rfc822-to-8bit (ORCPT
+	id S1759560Ab1FQSJB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 14:09:01 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:59504 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759548Ab1FQSI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 14:09:53 -0400
+	Fri, 17 Jun 2011 14:08:58 -0400
+X-Sasl-enc: Byp5qAx8Br0E+0zBEdEuh2DSUvsTTBiW/y21fuqy8NNr 1308334136
+Message-ID: <4DFB98EE.9000609@ladisch.de>
+Date: Fri, 17 Jun 2011 20:11:58 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-In-Reply-To: <20110617124035.GA19693@parisc-linux.org>
-References: <BANLkTi=-t9HVc6U6QY07su+c3WztsGoq3Q@mail.gmail.com>
-	<1308227453-2034-1-git-send-email-shawn.guo@linaro.org>
-	<20110617124035.GA19693@parisc-linux.org>
-Date: Fri, 17 Jun 2011 20:09:44 +0200
-Message-ID: <BANLkTimeS227gz5Bb1f1cN812gOQ5fFnQA@mail.gmail.com>
-Subject: Re: [PATCH v3 RESEND] dma-mapping: add new API for max_segment_number
-From: Per Forlin <per.forlin@linaro.org>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        vinod.koul@intel.com, gregkh@suse.de,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Dan Williams <dan.j.williams@intel.com>, cjb@laptop.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Mike Frysinger <vapier@gentoo.org>
+CC: Lars-Peter Clausen <lars@metafoo.de>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH] firmware: Make firmware drivers generally available
+References: <20110617103218.GA29723@opensource.wolfsonmicro.com> <1308310831-27861-1-git-send-email-lars@metafoo.de> <4DFB53B3.8070806@ladisch.de> <BANLkTimWfT_LSLX36oLcSSYNqi4buBiJUQ@mail.gmail.com>
+In-Reply-To: <BANLkTimWfT_LSLX36oLcSSYNqi4buBiJUQ@mail.gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 June 2011 14:40, Matthew Wilcox <matthew@wil.cx> wrote:
-> On Thu, Jun 16, 2011 at 08:30:53PM +0800, Shawn Guo wrote:
->> Here is the user story that tells the need of the new api.  The
->> mxs-mmc is the mmc host controller for Freescale MXS architecture.
->> There are a pair of  mmc host specific parameters max_seg_size and
->> max_segs that mxs-mmc host driver needs to tell mmc core, so that
->> mmc core can know how big each data segment could be and how many
->> segments could be handled one time in a scatter list by host driver.
->>
->> The mxs-mmc driver is one user of dmaengine mxs-dma, and it will call
->> mxs-dma to transfer data in scatter list.  That is to say mxs-mmc has
->> no idea of what max_seg_size and max_segs should be, because they are
->> all mxs-dma capability parameters, and mxs-mmc needs to query them
->> from mxs-dma.
->
-> This approach would make sense if mxs-mmc were generic, but it's tied to
-> mxs-dma, so it can just as well call mxs-dma to find out how many segments
-> it supports.
->
-mxs-dma use the generic dmaengine.h. The patch is not only intended
-for mxs-mmc. MMCI and other mmc host drivers need a way to query
-max_seg_number.
-It would be possible to store this number within drivers/dmaengine but
-this would not work for omap_hsmmc that doesn't use drivers/dmaengine
+Mike Frysinger wrote:
+> On Fri, Jun 17, 2011 at 09:16, Clemens Ladisch wrote:
+> > It looks as if sigma.c doesn't actually belong into drivers/firmware.
+> > That directory is for code that lets the kernel access the firmware
+> > of the platform that the kernel itself runs on.
+> 
+> -EMISSINGBETTERSUGGESTION
+
+I *knew* somebody would ask.  :)
+
+"drivers/firmware" is the obvious name for both, but that makes
+it ambiguous.  I'd suggest to split the two subsystems into
+"drivers/host-firmware" and "drivers/device-firmware".
+
 
 Regards,
-Per
+Clemens
