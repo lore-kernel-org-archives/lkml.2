@@ -1,157 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756313Ab1FQQdH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 12:33:07 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:54786 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755401Ab1FQQdF (ORCPT
+	id S1758456Ab1FQQtm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 12:49:42 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58448 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758071Ab1FQQtk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 12:33:05 -0400
-Date: Fri, 17 Jun 2011 18:32:41 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@amd64.org>
-Subject: Re: [PATCH 5/8] x86, mce: introduce mce_sysdev_init()
-Message-ID: <20110617163241.GE20010@aftab>
-References: <4DFB1242.90404@jp.fujitsu.com>
- <4DFB1438.3030504@jp.fujitsu.com>
+	Fri, 17 Jun 2011 12:49:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DFB1438.3030504@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1308310080.2355.19.camel@twins>
+References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe>
+ <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com>
+ <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
+ <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
+ <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
+ <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com> <1308255972.17300.450.camel@schen9-DESK>
+ <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com> <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
+ <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com> <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
+ <BANLkTinUBTYWxrF5TCuDSQuFUAyivXJXjQ@mail.gmail.com> <1308310080.2355.19.camel@twins>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 17 Jun 2011 09:36:48 -0700
+Message-ID: <BANLkTim2bmPfeRT1tS7hx2Z85QHjPHwU3Q@mail.gmail.com>
+Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
+ to mutex
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 04:45:44AM -0400, Hidetoshi Seto wrote:
-> As a one of mce_sysdev_ family, coordinate a single function that
-> initializes sysfs hierarchy here.
-> 
-> Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce.c |   65 ++++++++++++++++++++-----------------
->  1 files changed, 35 insertions(+), 30 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index ad0e9fb..0424299 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -1953,6 +1953,39 @@ static __cpuinit void mce_sysdev_remove(unsigned int cpu)
->  	cpumask_clear_cpu(cpu, mce_sysdev_initialized);
->  }
->  
-> +static __init int mce_sysdev_init(void)
-> +{
-> +	int err, i;
-> +
-> +	zalloc_cpumask_var(&mce_sysdev_initialized, GFP_KERNEL);
-> +
-> +	/* init attributes for each mce_banks */
-> +	for (i = 0; i < banks; i++) {
-> +		struct mce_bank *b = &mce_banks[i];
-> +		struct sysdev_attribute *a = &b->attr;
-> +
-> +		sysfs_attr_init(&a->attr);
-> +		a->attr.name	= b->attrname;
-> +		snprintf(b->attrname, ATTR_LEN, "bank%d", i);
-> +
-> +		a->attr.mode	= 0644;
-> +		a->show		= show_bank;
-> +		a->store	= set_bank;
-> +	}
-> +
-> +	err = sysdev_class_register(&mce_sysdev_class);
-> +	if (err)
-> +		return err;
-> +
-> +	for_each_online_cpu(i) {
-> +		err = mce_sysdev_create(i);
-> +		if (err)
-> +			return err;
-> +	}
+On Fri, Jun 17, 2011 at 4:28 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>
+> Something like so? Compiles and runs the benchmark in question.
 
-Yeah, let's handle the error case here and unwind to a sane state:
+Yup.
 
-	if (err)
-		goto sysdev_unwind;
-...
+Except I really think that test for a NULL anon_vma should go away.
 
-sysdev_unwind:
-	while (--i > 0)
-		mce_sysdev_remove(i);
+If an avc entry has a NULL anon_vma, something is seriously wrong. The
+comment about anon_vma_fork failure is definitely just bogus: the
+anon_vma is allocated before the avc entry, so there's no way a avc
+can have a NULL anon_vma from there.
 
+But yes, your patch is cleaner than the one I was playing around with
+(your "remove if not list empty" is prettier than what I was toying
+with - having a separate flag in the avc)
 
-> +
-> +	return err;
-> +}
-> +
->  /* Make sure there are no machine checks on offlined CPUs. */
->  static void __cpuinit mce_disable_cpu(void *h)
->  {
-> @@ -2025,46 +2058,18 @@ static struct notifier_block mce_cpu_notifier __cpuinitdata = {
->  	.notifier_call = mce_cpu_callback,
->  };
->  
-> -static __init void mce_init_banks(void)
-> -{
-> -	int i;
-> -
-> -	for (i = 0; i < banks; i++) {
-> -		struct mce_bank *b = &mce_banks[i];
-> -		struct sysdev_attribute *a = &b->attr;
-> -
-> -		sysfs_attr_init(&a->attr);
-> -		a->attr.name	= b->attrname;
-> -		snprintf(b->attrname, ATTR_LEN, "bank%d", i);
-> -
-> -		a->attr.mode	= 0644;
-> -		a->show		= show_bank;
-> -		a->store	= set_bank;
-> -	}
-> -}
-> -
->  static __init int mcheck_init_device(void)
->  {
->  	int err;
-> -	int i = 0;
->  
->  	if (!mce_available(&boot_cpu_data))
->  		return -EIO;
->  
-> -	zalloc_cpumask_var(&mce_sysdev_initialized, GFP_KERNEL);
-> -
-> -	mce_init_banks();
-> -
-> -	err = sysdev_class_register(&mce_sysdev_class);
-> +	/* register sysfs interface */
-> +	err = mce_sysdev_init();
->  	if (err)
->  		return err;
->  
-> -	for_each_online_cpu(i) {
-> -		err = mce_sysdev_create(i);
-> -		if (err)
-> -			return err;
-> -	}
-> -
->  	register_syscore_ops(&mce_syscore_ops);
->  	register_hotcpu_notifier(&mce_cpu_notifier);
->  
-> -- 
-> 1.7.1
+Tim, can you test Peter's (second - the cleaned up one) patch on top
+of mine, and see if that helps things further?
 
-Thanks.
+The only thing I don't love about the batching is that we now do hold
+the lock over some situations where we _could_ have allowed
+concurrency (notably some avc allocations), but I think it's a good
+trade-off. And walking the list twice at unlink_anon_vmas() should be
+basically free.
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+                       Linus
