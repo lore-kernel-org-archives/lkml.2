@@ -1,77 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932648Ab1FQSmQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 14:42:16 -0400
-Received: from gabe.freedesktop.org ([131.252.210.177]:47586 "EHLO
-	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932141Ab1FQSmN (ORCPT
+	id S932525Ab1FQS27 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 14:28:59 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53143 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755220Ab1FQS26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 14:42:13 -0400
-X-Greylist: delayed 590 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Jun 2011 14:42:13 EDT
-From: Eric Anholt <eric@anholt.net>
-To: linux-kernel@vger.kernel.org
-Cc: Dave Airlie <airlied@redhat.com>,
-        Daniel J Blueman <daniel.blueman@gmail.com>, stable@kernel.org,
-        Eric Anholt <eric@anholt.net>
-Subject: [PATCH] drm/i915: Fix gen6 (SNB) missed BLT ring interrupts.
-Date: Fri, 17 Jun 2011 11:32:19 -0700
-Message-Id: <1308335539-13952-1-git-send-email-eric@anholt.net>
-X-Mailer: git-send-email 1.7.5.3
+	Fri, 17 Jun 2011 14:28:58 -0400
+Subject: Re: REGRESSION: Performance regressions from switching
+ anon_vma->lock to mutex
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+In-Reply-To: <1308334688.12801.19.camel@laptop>
+References: <1308097798.17300.142.camel@schen9-DESK>
+	 <1308101214.15392.151.camel@sli10-conroe> <1308138750.15315.62.camel@twins>
+	 <20110615161827.GA11769@tassilo.jf.intel.com>
+	 <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
+	 <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
+	 <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
+	 <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com>
+	 <1308255972.17300.450.camel@schen9-DESK>
+	 <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com>
+	 <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
+	 <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com>
+	 <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
+	 <BANLkTinUBTYWxrF5TCuDSQuFUAyivXJXjQ@mail.gmail.com>
+	 <1308310080.2355.19.camel@twins>
+	 <BANLkTim2bmPfeRT1tS7hx2Z85QHjPHwU3Q@mail.gmail.com>
+	 <alpine.LSU.2.00.1106171040460.7018@sister.anvils>
+	 <BANLkTim3vo0vpovV=5sU=GLxkotheB=Ryg@mail.gmail.com>
+	 <1308334688.12801.19.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Jun 2011 20:32:37 +0200
+Message-ID: <1308335557.12801.24.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel J Blueman <daniel.blueman@gmail.com>
+On Fri, 2011-06-17 at 20:18 +0200, Peter Zijlstra wrote:
+> On Fri, 2011-06-17 at 11:01 -0700, Linus Torvalds wrote:
+> 
+> > So I do think that "page_referenced_anon()" should do a trylock, and
+> > return "referenced" if the trylock fails. Comments?
+> 
+> The only problem I can immediately see with that is when a single
+> process' anon memory is dominant, then such an allocation will never
+> succeed in freeing these pages because the one lock will pin pretty much
+> all anon. Then again, there's always a few file pages to drop.
+> 
+> That said, its rather unlikely, and iirc people were working on removing
+> direct reclaim, or at least rely less on it.
+> 
+> 
 
-The failure appeared in dmesg as:
+something like so I guess, completely untested etc..
 
-[drm:i915_hangcheck_ring_idle] *ERROR* Hangcheck timer elapsed... blt
-ring idle [waiting on 35064155, at 35064155], missed IRQ?
+Also, there's a page_lock_anon_vma() user in split_huge_page(), which is
+used in mm/swap_state.c:add_to_swap(), which is also in the reclaim
+path, not quite sure what to do there.
 
-This works around that problem on by making the blitter command
-streamer write interrupt state to the Hardware Status Page when a
-MI_USER_INTERRUPT command is decoded, which appears to force the seqno
-out to memory before the interrupt happens.
+Aside from the THP thing there's a user in memory-failure.c, which looks
+to be broken as it is because its calling things under tasklist_lock
+which isn't preemptible, but it looks like we can simply swap the
+tasklist_lock vs page_lock_anon_vma.
 
-v1->v2: Moved to prior interrupt handler installation and RMW flags as
-per feedback.
-v2->v3: Removed RMW of flags (by anholt)
-
-Cc: stable@kernel.org
-Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
-Signed-off-by: Eric Anholt <eric@anholt.net>
-Tested-by: Chris Wilson <chris@chris-wilson.co.uk> [v1]
-Tested-by: Eric Anholt <eric@anholt.net> [v1,v3]
-	   (incidence of the bug with a testcase went from avg 2/1000 to
-	   0/12651 in the latest test run (plus more for v1))
-Tested-by: Kenneth Graunke <kenneth@whitecape.org> [v1]
-Tested-by: Robert Hooker <robert.hooker@canonical.com> [v1]
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=33394
 ---
- drivers/gpu/drm/i915/i915_irq.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ kernel/Makefile |    1 +
+ mm/rmap.c       |   39 +++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 38 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
-index b79619a..0263717 100644
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -1740,6 +1740,16 @@ void ironlake_irq_preinstall(struct drm_device *dev)
- 		INIT_WORK(&dev_priv->rps_work, gen6_pm_rps_work);
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 2d64cfc..f6d05de 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -101,6 +101,7 @@ obj-$(CONFIG_RING_BUFFER) += trace/
+ obj-$(CONFIG_TRACEPOINTS) += trace/
+ obj-$(CONFIG_SMP) += sched_cpupri.o
+ obj-$(CONFIG_IRQ_WORK) += irq_work.o
++obj-m += test.o
  
- 	I915_WRITE(HWSTAM, 0xeffe);
-+	if (IS_GEN6(dev)) {
-+		/* Workaround stalls observed on Sandy Bridge GPUs by
-+		 * making the blitter command streamer generate a
-+		 * write to the Hardware Status Page for
-+		 * MI_USER_INTERRUPT.  This appears to serialize the
-+		 * previous seqno write out before the interrupt
-+		 * happens.
-+		 */
-+		I915_WRITE(GEN6_BLITTER_HWSTAM, ~GEN6_BLITTER_USER_INTERRUPT);
+ obj-$(CONFIG_PERF_EVENTS) += events/
+ 
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 0eb463e..40cd399 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -400,6 +400,41 @@ out:
+ 	return anon_vma;
+ }
+ 
++struct anon_vma *page_trylock_anon_vma(struct page *page)
++{
++	struct anon_vma *anon_vma = NULL;
++	struct anon_vma *root_anon_vma;
++	unsigned long anon_mapping;
++
++	rcu_read_lock();
++	anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
++	if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)
++		goto out;
++	if (!page_mapped(page))
++		goto out;
++
++	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
++	root_anon_vma = ACCESS_ONCE(anon_vma->root);
++	if (!mutex_trylock(&root_anon_vma->mutex)) {
++		anon_vma = NULL;
++		goto out;
 +	}
++
++	/*
++	 * If the page is still mapped, then this anon_vma is still
++	 * its anon_vma, and holding the mutex ensures that it will
++	 * not go away, see anon_vma_free().
++	 */
++	if (!page_mapped(page)) {
++		mutex_unlock(&root_anon_vma->mutex);
++		anon_vma = NULL;
++	}
++
++out:
++	rcu_read_unlock();
++	return anon_vma;
++}
++
+ /*
+  * Similar to page_get_anon_vma() except it locks the anon_vma.
+  *
+@@ -694,7 +729,7 @@ static int page_referenced_anon(struct page *page,
+ 	struct anon_vma_chain *avc;
+ 	int referenced = 0;
  
- 	/* XXX hotplug from PCH */
+-	anon_vma = page_lock_anon_vma(page);
++	anon_vma = page_trylock_anon_vma(page);
+ 	if (!anon_vma)
+ 		return referenced;
  
--- 
-1.7.5.3
+@@ -1396,7 +1431,7 @@ static int try_to_unmap_anon(struct page *page, enum ttu_flags flags)
+ 	struct anon_vma_chain *avc;
+ 	int ret = SWAP_AGAIN;
+ 
+-	anon_vma = page_lock_anon_vma(page);
++	anon_vma = page_trylock_anon_vma(page);
+ 	if (!anon_vma)
+ 		return ret;
+ 
+
 
