@@ -1,186 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758163Ab1FQQso (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 12:48:44 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:55920 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757808Ab1FQQsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 12:48:39 -0400
-Date: Fri, 17 Jun 2011 09:48:11 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andi Kleen <ak@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, shaohua.li@intel.com,
-        alex.shi@intel.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [GIT PULL] Re: REGRESSION: Performance regressions from
- switching anon_vma->lock to mutex
-Message-ID: <20110617164811.GD2258@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <35c0ff16-bd58-4b9c-9d9f-d1a4df2ae7b9@email.android.com>
- <20110616070335.GA7661@elte.hu>
- <20110616171644.GK2582@linux.vnet.ibm.com>
- <20110616202550.GA16214@elte.hu>
- <1308262883.2516.71.camel@pasglop>
- <20110616223837.GA18431@elte.hu>
- <4DFA8802.6010300@linux.intel.com>
- <20110616225803.GA28557@elte.hu>
- <20110617004536.GP2582@linux.vnet.ibm.com>
- <20110617094333.GB19235@elte.hu>
+	id S1757987Ab1FQQ7U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 12:59:20 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:36560 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712Ab1FQQ7S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 12:59:18 -0400
+Message-ID: <4DFB87A8.8040008@oracle.com>
+Date: Fri, 17 Jun 2011 09:58:16 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110617094333.GB19235@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Mel Gorman <mgorman@suse.de>, dave@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org, mingo@elte.hu
+Subject: Re: [BUGFIX][PATCH][-rc3] Define a consolidated definition of node_start/end_pfn
+ for build error in page_cgroup.c (Was Re: mmotm 2011-06-15-16-56 uploaded
+ (mm/page_cgroup.c)
+References: <201106160034.p5G0Y4dr028904@imap1.linux-foundation.org>	<20110615214917.a7dce8e6.randy.dunlap@oracle.com>	<20110616172819.1e2d325c.kamezawa.hiroyu@jp.fujitsu.com>	<20110616103559.GA5244@suse.de> <20110617094628.aecf5ee1.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110617094628.aecf5ee1.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090208.4DFB87B4.00A7:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 11:43:33AM +0200, Ingo Molnar wrote:
+On 06/16/11 17:46, KAMEZAWA Hiroyuki wrote:
+> On Thu, 16 Jun 2011 11:35:59 +0100
+> Mel Gorman <mgorman@suse.de> wrote:
 > 
-> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+>> A caller that does node_end_pfn(nid++) will get a nasty surprise
+>> due to side-effects. I know architectures currently get this wrong
+>> including x86_64 but we might as well fix it up now. The definition
+>> in arch/x86/include/asm/mmzone_32.h is immune to side-effects and
+>> might be a better choice despite the use of a temporary variable.
+>>
 > 
-> > On Fri, Jun 17, 2011 at 12:58:03AM +0200, Ingo Molnar wrote:
-> > > 
-> > > * Andi Kleen <ak@linux.intel.com> wrote:
-> > > 
-> > > > > There's a crazy solution for that: the idle thread could process 
-> > > > > RCU callbacks carefully, as if it was running user-space code.
-> > > > 
-> > > > In Ben's kernel NFS server case the system may not be idle.
-> > > 
-> > > An always-100%-busy NFS server is very unlikely, but even in the 
-> > > hypothetical case a kernel NFS server is really performing system 
-> > > calls from a kernel thread in essence. If it doesn't do it explicitly 
-> > > then its main loop can easily include a "check RCU callbacks" call.
-> > 
-> > As long as they make sure to call it in a clean environment: no 
-> > locks held and so on.  But I am a bit worried about the possibility 
-> > of someone forgetting to put one of these where it is needed -- it 
-> > would work just fine for most workloads, but could fail only for 
-> > rare workloads.
+> Ok, here is a fixed one. Thank you for comments/review.
+> ==
+> From 507cc95c5ba2351bff16c5421255d1395a3b555b Mon Sep 17 00:00:00 2001
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Date: Thu, 16 Jun 2011 17:28:07 +0900
+> Subject: [PATCH] Fix node_start/end_pfn() definition for mm/page_cgroup.c
 > 
-> Yeah, some sort of worst-case-tick mechanism would guarantee that we 
-> wont remain without RCU GC.
-
-Agreed!
-
-> > That said, invoking RCU core/callback processing from the scheduler 
-> > context certainly sounds like an interesting way to speed up grace 
-> > periods.
+> commit 21a3c96 uses node_start/end_pfn(nid) for detection start/end
+> of nodes. But, it's not defined in linux/mmzone.h but defined in
+> /arch/???/include/mmzone.h which is included only under
+> CONFIG_NEED_MULTIPLE_NODES=y.
 > 
-> It also moves whatever priority logic is needed closer to the 
-> scheduler that has to touch those data structures anyway.
+> Then, we see
+> mm/page_cgroup.c: In function 'page_cgroup_init':
+> mm/page_cgroup.c:308: error: implicit declaration of function 'node_start_pfn'
+> mm/page_cgroup.c:309: error: implicit declaration of function 'node_end_pfn'
 > 
-> RCU, at least partially, is a scheduler driven garbage collector even 
-> today: beyond context switch quiescent states the main practical role 
-> of the per CPU timer tick itself is scheduling. So having it close to 
-> when we do context-switches anyway looks pretty natural - worth 
-> trying.
+> So, fixiing page_cgroup.c is an idea...
 > 
-> It might not work out in practice, but at first sight it would 
-> simplify a few things i think.
+> But node_start_pfn()/node_end_pfn() is a very generic macro and
+> should be implemented in the same manner for all archs.
+> (m32r has different implementation...)
+> 
+> This patch removes definitions of node_start/end_pfn() in each archs
+> and defines a unified one in linux/mmzone.h. It's not under
+> CONFIG_NEED_MULTIPLE_NODES, now.
+> 
+> A result of macro expansion is here (mm/page_cgroup.c)
+> 
+> for !NUMA
+>  start_pfn = ((&contig_page_data)->node_start_pfn);
+>   end_pfn = ({ pg_data_t *__pgdat = (&contig_page_data); __pgdat->node_start_pfn + __pgdat->node_spanned_pages;});
+> 
+> for NUMA (x86-64)
+>   start_pfn = ((node_data[nid])->node_start_pfn);
+>   end_pfn = ({ pg_data_t *__pgdat = (node_data[nid]); __pgdat->node_start_pfn + __pgdat->node_spanned_pages;});
+> 
+> 
+> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Reported-by: Ingo Molnar <mingo@elte.hu>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-OK, please see below for a patch that not only builds, but actually
-passes minimal testing.  ;-)
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-Possible expectations and outcomes:
+Thanks.
 
-1.	Reduced grace-period latencies on !NO_HZ systems and
-	on NO_HZ systems where each CPU goes non-idle frequently.
-	(My unscientific testing shows little or no benefit, but
-	then again, I was running rcutorture, which specializes
-	in long read-side critical sections.  And I was running
-	NO_HZ, which is less likely to show benefit.)
+> 
+> Changelog:
+>  - fixed to avoid using "nid" twice in node_end_pfn() macro.
+> ---
+>  arch/alpha/include/asm/mmzone.h   |    1 -
+>  arch/m32r/include/asm/mmzone.h    |    8 +-------
+>  arch/parisc/include/asm/mmzone.h  |    7 -------
+>  arch/powerpc/include/asm/mmzone.h |    7 -------
+>  arch/sh/include/asm/mmzone.h      |    4 ----
+>  arch/sparc/include/asm/mmzone.h   |    2 --
+>  arch/tile/include/asm/mmzone.h    |   11 -----------
+>  arch/x86/include/asm/mmzone_32.h  |   11 -----------
+>  arch/x86/include/asm/mmzone_64.h  |    3 ---
+>  include/linux/mmzone.h            |    7 +++++++
+>  10 files changed, 8 insertions(+), 53 deletions(-)
+> 
+> diff --git a/arch/alpha/include/asm/mmzone.h b/arch/alpha/include/asm/mmzone.h
+> index 8af56ce..445dc42 100644
+> --- a/arch/alpha/include/asm/mmzone.h
+> +++ b/arch/alpha/include/asm/mmzone.h
+> @@ -56,7 +56,6 @@ PLAT_NODE_DATA_LOCALNR(unsigned long p, int n)
+>   * Given a kernel address, find the home node of the underlying memory.
+>   */
+>  #define kvaddr_to_nid(kaddr)	pa_to_nid(__pa(kaddr))
+> -#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
+>  
+>  /*
+>   * Given a kaddr, LOCAL_BASE_ADDR finds the owning node of the memory
+> diff --git a/arch/m32r/include/asm/mmzone.h b/arch/m32r/include/asm/mmzone.h
+> index 9f3b5ac..115ced3 100644
+> --- a/arch/m32r/include/asm/mmzone.h
+> +++ b/arch/m32r/include/asm/mmzone.h
+> @@ -14,12 +14,6 @@ extern struct pglist_data *node_data[];
+>  #define NODE_DATA(nid)		(node_data[nid])
+>  
+>  #define node_localnr(pfn, nid)	((pfn) - NODE_DATA(nid)->node_start_pfn)
+> -#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
+> -#define node_end_pfn(nid)						\
+> -({									\
+> -	pg_data_t *__pgdat = NODE_DATA(nid);				\
+> -	__pgdat->node_start_pfn + __pgdat->node_spanned_pages - 1;	\
+> -})
+>  
+>  #define pmd_page(pmd)		(pfn_to_page(pmd_val(pmd) >> PAGE_SHIFT))
+>  /*
+> @@ -44,7 +38,7 @@ static __inline__ int pfn_to_nid(unsigned long pfn)
+>  	int node;
+>  
+>  	for (node = 0 ; node < MAX_NUMNODES ; node++)
+> -		if (pfn >= node_start_pfn(node) && pfn <= node_end_pfn(node))
+> +		if (pfn >= node_start_pfn(node) && pfn < node_end_pfn(node))
+>  			break;
+>  
+>  	return node;
+> diff --git a/arch/parisc/include/asm/mmzone.h b/arch/parisc/include/asm/mmzone.h
+> index 9608d2c..e67eb9c 100644
+> --- a/arch/parisc/include/asm/mmzone.h
+> +++ b/arch/parisc/include/asm/mmzone.h
+> @@ -14,13 +14,6 @@ extern struct node_map_data node_data[];
+>  
+>  #define NODE_DATA(nid)          (&node_data[nid].pg_data)
+>  
+> -#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
+> -#define node_end_pfn(nid)						\
+> -({									\
+> -	pg_data_t *__pgdat = NODE_DATA(nid);				\
+> -	__pgdat->node_start_pfn + __pgdat->node_spanned_pages;		\
+> -})
+> -
+>  /* We have these possible memory map layouts:
+>   * Astro: 0-3.75, 67.75-68, 4-64
+>   * zx1: 0-1, 257-260, 4-256
+> diff --git a/arch/powerpc/include/asm/mmzone.h b/arch/powerpc/include/asm/mmzone.h
+> index fd3fd58..7b58917 100644
+> --- a/arch/powerpc/include/asm/mmzone.h
+> +++ b/arch/powerpc/include/asm/mmzone.h
+> @@ -38,13 +38,6 @@ u64 memory_hotplug_max(void);
+>  #define memory_hotplug_max() memblock_end_of_DRAM()
+>  #endif
+>  
+> -/*
+> - * Following are macros that each numa implmentation must define.
+> - */
+> -
+> -#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
+> -#define node_end_pfn(nid)	(NODE_DATA(nid)->node_end_pfn)
+> -
+>  #else
+>  #define memory_hotplug_max() memblock_end_of_DRAM()
+>  #endif /* CONFIG_NEED_MULTIPLE_NODES */
+> diff --git a/arch/sh/include/asm/mmzone.h b/arch/sh/include/asm/mmzone.h
+> index 8887baf..15a8496 100644
+> --- a/arch/sh/include/asm/mmzone.h
+> +++ b/arch/sh/include/asm/mmzone.h
+> @@ -9,10 +9,6 @@
+>  extern struct pglist_data *node_data[];
+>  #define NODE_DATA(nid)		(node_data[nid])
+>  
+> -#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
+> -#define node_end_pfn(nid)	(NODE_DATA(nid)->node_start_pfn + \
+> -				 NODE_DATA(nid)->node_spanned_pages)
+> -
+>  static inline int pfn_to_nid(unsigned long pfn)
+>  {
+>  	int nid;
+> diff --git a/arch/sparc/include/asm/mmzone.h b/arch/sparc/include/asm/mmzone.h
+> index e8c6487..99d9b9f 100644
+> --- a/arch/sparc/include/asm/mmzone.h
+> +++ b/arch/sparc/include/asm/mmzone.h
+> @@ -8,8 +8,6 @@
+>  extern struct pglist_data *node_data[];
+>  
+>  #define NODE_DATA(nid)		(node_data[nid])
+> -#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
+> -#define node_end_pfn(nid)	(NODE_DATA(nid)->node_end_pfn)
+>  
+>  extern int numa_cpu_lookup_table[];
+>  extern cpumask_t numa_cpumask_lookup_table[];
+> diff --git a/arch/tile/include/asm/mmzone.h b/arch/tile/include/asm/mmzone.h
+> index c6344c4..9d3dbce 100644
+> --- a/arch/tile/include/asm/mmzone.h
+> +++ b/arch/tile/include/asm/mmzone.h
+> @@ -40,17 +40,6 @@ static inline int pfn_to_nid(unsigned long pfn)
+>  	return highbits_to_node[__pfn_to_highbits(pfn)];
+>  }
+>  
+> -/*
+> - * Following are macros that each numa implmentation must define.
+> - */
+> -
+> -#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
+> -#define node_end_pfn(nid)						\
+> -({									\
+> -	pg_data_t *__pgdat = NODE_DATA(nid);				\
+> -	__pgdat->node_start_pfn + __pgdat->node_spanned_pages;		\
+> -})
+> -
+>  #define kern_addr_valid(kaddr)	virt_addr_valid((void *)kaddr)
+>  
+>  static inline int pfn_valid(int pfn)
+> diff --git a/arch/x86/include/asm/mmzone_32.h b/arch/x86/include/asm/mmzone_32.h
+> index 5e83a41..224e8c5 100644
+> --- a/arch/x86/include/asm/mmzone_32.h
+> +++ b/arch/x86/include/asm/mmzone_32.h
+> @@ -48,17 +48,6 @@ static inline int pfn_to_nid(unsigned long pfn)
+>  #endif
+>  }
+>  
+> -/*
+> - * Following are macros that each numa implmentation must define.
+> - */
+> -
+> -#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
+> -#define node_end_pfn(nid)						\
+> -({									\
+> -	pg_data_t *__pgdat = NODE_DATA(nid);				\
+> -	__pgdat->node_start_pfn + __pgdat->node_spanned_pages;		\
+> -})
+> -
+>  static inline int pfn_valid(int pfn)
+>  {
+>  	int nid = pfn_to_nid(pfn);
+> diff --git a/arch/x86/include/asm/mmzone_64.h b/arch/x86/include/asm/mmzone_64.h
+> index b3f88d7..129d9aa 100644
+> --- a/arch/x86/include/asm/mmzone_64.h
+> +++ b/arch/x86/include/asm/mmzone_64.h
+> @@ -13,8 +13,5 @@ extern struct pglist_data *node_data[];
+>  
+>  #define NODE_DATA(nid)		(node_data[nid])
+>  
+> -#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
+> -#define node_end_pfn(nid)       (NODE_DATA(nid)->node_start_pfn +	\
+> -				 NODE_DATA(nid)->node_spanned_pages)
+>  #endif
+>  #endif /* _ASM_X86_MMZONE_64_H */
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index c928dac..9f7c3eb 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -647,6 +647,13 @@ typedef struct pglist_data {
+>  #endif
+>  #define nid_page_nr(nid, pagenr) 	pgdat_page_nr(NODE_DATA(nid),(pagenr))
+>  
+> +#define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
+> +
+> +#define node_end_pfn(nid) ({\
+> +	pg_data_t *__pgdat = NODE_DATA(nid);\
+> +	__pgdat->node_start_pfn + __pgdat->node_spanned_pages;\
+> +})
+> +
+>  #include <linux/memory_hotplug.h>
+>  
+>  extern struct mutex zonelists_mutex;
 
-	I would not expect direct call to have any benefit over
-	softirq invocation -- sub-microsecond softirq overhead
-	won't matter to multi-millisecond
 
-2.	Better cache locality.  I am a bit skeptical, but there is
-	some chance that this might reduce cache misses on task_struct.
-	Direct call might well do better than softirq here.
-
-3.	Easier conversion to user-space operation.  I was figuring
-	on using POSIX signals for scheduler_tick() and for softirq,
-	so wasn't worried about it, but might well be simpler.
-
-Anything else?
-
-On eliminating softirq, I must admit that I am a bit worried about
-invoking the RCU core code from scheduler_tick(), but there are some
-changes that I could make that would reduce force_quiescent_state()
-worst-case latency.  At the expense of lengthening grace periods,
-unfortunately, but the reduction will be needed for RT on larger systems
-anyway, so might as well try it.
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-rcu: Experimental change driving RCU core from scheduler
-
-This change causes RCU's context-switch code to check to see if the RCU
-core needs anything from the current CPU, and, if so, invoke the RCU
-core code.  One possible improvement from this experiment is reduced
-grace-period latency on systems that either have NO_HZ=n or that have
-all CPUs frequently going non-idle.  The invocation of the RCU core code
-is currently via softirq, though a plausible next step in the experiment
-might be to instead use a direct function call.
-
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 405a5fd..6b7a43a 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -87,6 +87,10 @@ static struct rcu_state *rcu_state;
- int rcu_scheduler_active __read_mostly;
- EXPORT_SYMBOL_GPL(rcu_scheduler_active);
- 
-+static void force_quiescent_state(struct rcu_state *rsp, int relaxed);
-+static int rcu_pending(int cpu);
-+static void rcu_process_callbacks(struct softirq_action *unused);
-+
- #ifdef CONFIG_RCU_BOOST
- 
- /*
-@@ -159,8 +163,14 @@ void rcu_bh_qs(int cpu)
-  */
- void rcu_note_context_switch(int cpu)
- {
-+	unsigned long flags;
-+
- 	rcu_sched_qs(cpu);
- 	rcu_preempt_note_context_switch(cpu);
-+	local_irq_save(flags);
-+	if (rcu_pending(cpu))
-+		invoke_rcu_core();
-+	local_irq_restore(flags);
- }
- EXPORT_SYMBOL_GPL(rcu_note_context_switch);
- 
-@@ -182,9 +192,6 @@ module_param(qlowmark, int, 0);
- int rcu_cpu_stall_suppress __read_mostly;
- module_param(rcu_cpu_stall_suppress, int, 0644);
- 
--static void force_quiescent_state(struct rcu_state *rsp, int relaxed);
--static int rcu_pending(int cpu);
--
- /*
-  * Return the number of RCU-sched batches processed thus far for debug & stats.
-  */
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
