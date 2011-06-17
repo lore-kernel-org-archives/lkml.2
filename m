@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab1FQRa0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 13:30:26 -0400
-Received: from 173-164-233-81-SFBA.hfc.comcastbusiness.net ([173.164.233.81]:39656
-	"EHLO email.techspecs.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754779Ab1FQRaV (ORCPT
+	id S1755545Ab1FQRbW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 13:31:22 -0400
+Received: from mail.southpole.se ([193.12.106.18]:48787 "EHLO
+	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752317Ab1FQRbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 13:30:21 -0400
-Message-ID: <8580d88821b047c208fa769799eb9626.squirrel@mail.techspecs.com>
-In-Reply-To: <53e44025a84a55558f4fb1dea8642ab6.squirrel@mail.techspecs.com>
-References: <53e44025a84a55558f4fb1dea8642ab6.squirrel@mail.techspecs.com>
-Date: Fri, 17 Jun 2011 10:30:19 -0700
-Subject: Re: PROBLEM: AMD Zacate E350 shows only 2.6GB memory when 8GB
- installed
-From: chrish@techspecs.com
+	Fri, 17 Jun 2011 13:31:21 -0400
+Subject: Re: [PATCH 1/1] Apply transparent_union attribute to union semun
+From: Jonas Bonn <jonas@southpole.se>
 To: linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.21
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Cc: linux@openrisc.net
+In-Reply-To: <1306448865-3142-1-git-send-email-jonas@southpole.se>
+References: <1306448865-3142-1-git-send-email-jonas@southpole.se>
+Content-Type: text/plain; charset="UTF-8"
+Organization: South Pole Consulting AB
+Date: Fri, 17 Jun 2011 19:31:17 +0200
+Message-ID: <1308331877.2653.65.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+X-Assp-Client-SSL: yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you to those who gave suggestions about the issue I saw. Updating
-the kernel to 2.6.39, for me, fixed the problem.
 
-Best,
-  Chris
+Hi,
+I never got any feedback on this patch... is this an acceptable solution
+for upstream?  ...or is the usage of this GCC extension discouraged?
+/Jonas
 
-
-> Hi,
->
->    I tried this on Fedora 14 and OpenSuse 11.4 and both exhibit the same
-> behavior. 8GB is installed but only 2698476 shows available for use
-> using "top" or "free". dmidecode shows 2 4GB DIMMs and the BIOS reports
-> 8GB of memory. Memtest reports and tests 8GB of memory. I Googled the
-> issue and it seems there are others that also report the same. What to
-> do? Thank you.
->
-> Best,
->   Chris
->
->
+On Fri, 2011-05-27 at 00:27 +0200, jonas@southpole.se wrote:
+> From: Jonas Bonn <jonas@southpole.se>
+> 
+> The syscall handler for semctl is written under the assumption that the
+> toolchain will pass "small" unions as function parameters directly instead
+> of by reference.  The union semun is "small" and thus fits this description.
+> 
+> Since it is assumed that the union will be passed directly and not by
+> reference, it is safe to access the union members without going via
+> get_user.
+> 
+> The OpenRISC architecture, however, passes all unions by reference, thus
+> breaking the above assumption.
+> 
+> The technically correct fix here is to mark the union as being transparent
+> so that the ABI of the union's first element determines the parameter
+> passing method and thus make explicit what's already implied in the function
+> definition.
+> 
+> Signed-off-by: Jonas Bonn <jonas@southpole.se>
+> ---
+>  include/linux/sem.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/sem.h b/include/linux/sem.h
+> index f2961af..6985c7d 100644
+> --- a/include/linux/sem.h
+> +++ b/include/linux/sem.h
+> @@ -48,7 +48,7 @@ union semun {
+>  	unsigned short __user *array;	/* array for GETALL & SETALL */
+>  	struct seminfo __user *__buf;	/* buffer for IPC_INFO */
+>  	void __user *__pad;
+> -};
+> +} __attribute__ ((transparent_union));
+>  
+>  struct  seminfo {
+>  	int semmap;
 
 
