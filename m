@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932374Ab1FQOv2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 10:51:28 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:28576 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759245Ab1FQOuX (ORCPT
+	id S1759307Ab1FQOxt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 10:53:49 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37456 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759297Ab1FQOup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 10:50:23 -0400
-Subject: Re: [PATCH v2] net/r8169: update the new parser for the new
- firmware
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: hayeswang <hayeswang@realtek.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110617125300.GA2193@electric-eye.fr.zoreil.com>
-References: <1308109531-31698-1-git-send-email-hayeswang@realtek.com>
-	 <20110616225904.GA2064@electric-eye.fr.zoreil.com>
-	 <8AC7DE11560749B895F99EBA7D42AA49@realtek.com.tw>
-	 <20110617063948.GA2146@electric-eye.fr.zoreil.com>
-	 <1308313364.11457.63.camel@localhost>
-	 <20110617125300.GA2193@electric-eye.fr.zoreil.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Fri, 17 Jun 2011 15:50:19 +0100
-Message-ID: <1308322219.2831.1.camel@bwh-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 17 Jun 2011 14:50:23.0137 (UTC) FILETIME=[E2DCC910:01CC2CFD]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18204.005
-X-TM-AS-Result: No--17.464000-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Fri, 17 Jun 2011 10:50:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=Ts1v43ORt8LkzALvejqB0Ayknf3YafPjER5sf7j7jxMaNlu3Y57i0DSw+w/6g/Rfh6
+         SzALpAhEEKH+CUeFTci+UAptpH+sXvDSi7mgsd7w6HoWpaJhbsF7NwwjXjLrRxwrKu04
+         7mylYbhDeWWUrlrSLsCa3D8OQSgW0rTTuw/IU=
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org, oleg@redhat.com
+Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        hch@infradead.org
+Subject: [PATCHSET] ptrace: kill most tracehooks
+Date: Fri, 17 Jun 2011 16:50:33 +0200
+Message-Id: <1308322240-8247-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-17 at 14:53 +0200, Francois Romieu wrote:
-> Ben Hutchings <bhutchings@solarflare.com> :
-> [...]
-> > I thought the idea of embedding a version here was to be able to report
-> > in in get_drvinfo, not to print it on load.
-> 
-> Reporting the version for the new firmware format through ethtool is
-> currently hacked on.
-> 
-> Do you want the load time version / format messages removed ?
->
-> I think they can be of some use - at least temporarily - but I won't mind
-> removing them now.
+Hello,
 
-I don't care one way or the other.  But it's more important to report
-the version through get_drvinfo.
+At this point, tracehooks aren't useful to mainline kernel and mostly
+just add an extra layer of obfuscation.  Although they have comments,
+without actual in-kernel users, it is difficult to tell what are their
+assumptions and they're actually trying to achieve.  To mainline
+kernel, they just aren't worth keeping around.
 
-Ben.
+This patchset kills most tracehooks which aren't used from arch codes.
+The remaining ones will be dealt with with future changes.
 
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+ 0001-ptrace-kill-task_ptrace.patch
+ 0002-ptrace-introduce-ptrace_event_enabled-and-simplify-p.patch
+ 0003-ptrace-move-SIGTRAP-on-exec-2-logic-to-ptrace_event.patch
+ 0004-ptrace-kill-trivial-tracehooks.patch
+ 0005-ptrace-kill-clone-exec-tracehooks.patch
+ 0006-ptrace-kill-detah-tracehooks.patch
+ 0007-ptrace-s-tracehook_tracer_task-ptrace_parent.patch
 
+Most conversions are straightforward.  The only tricky one is 0006
+which reimplements the decision logic.
+
+This patch is on top of Oleg's ptrace branch[1] - 544b2c91a9 (ptrace:
+implement PTRACE_LISTEN), and available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-tracehook
+
+diffstat follows.
+
+ arch/s390/kernel/traps.c   |    4 
+ fs/exec.c                  |    9 -
+ fs/proc/array.c            |    2 
+ fs/proc/base.c             |    2 
+ include/linux/ptrace.h     |   71 ++++++---
+ include/linux/tracehook.h  |  333 ---------------------------------------------
+ kernel/exit.c              |   43 +++--
+ kernel/fork.c              |   43 ++++-
+ kernel/signal.c            |   22 +-
+ mm/nommu.c                 |    3 
+ mm/oom_kill.c              |    3 
+ security/apparmor/domain.c |    2 
+ security/selinux/hooks.c   |    4 
+ 13 files changed, 136 insertions(+), 405 deletions(-)
+
+--
+tejun
+
+[1] git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc.git ptrace
