@@ -1,175 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758362Ab1FQInq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 04:43:46 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53342 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152Ab1FQInn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 04:43:43 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DFB139D.8060401@jp.fujitsu.com>
-Date: Fri, 17 Jun 2011 17:43:09 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1758645Ab1FQI5W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 04:57:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46710 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757324Ab1FQI5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 04:57:17 -0400
+From: Petr Tesarik <ptesarik@suse.cz>
+Organization: SUSE LINUX, s.r.o.
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 01/10] Return EOF on out-of-bounds read from /dev/mem
+Date: Fri, 17 Jun 2011 10:43:56 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc2-0.0.5.bd76874-default; KDE/4.6.0; i686; ; )
+References: <201106171038.25988.ptesarik@suse.cz>
+In-Reply-To: <201106171038.25988.ptesarik@suse.cz>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@amd64.org>
-Subject: [PATCH 3/8] x86, mce: introduce mce_timer_add()
-References: <4DFB1242.90404@jp.fujitsu.com>
-In-Reply-To: <4DFB1242.90404@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201106171043.57138.ptesarik@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is too redundant to call setup_timer() every time when the timer is
-going to be added.
+The off parameter (type loff_t) may specify an offset that cannot
+be represented by a long. Currently, /dev/mem wraps around, which
+may to cause applications to read/write incorrect regions of memory
+by accident.
 
-This patch breaks __mcheck_cpu_init_timer() down, put setup part to init
-code path and construct mce_timer_add() from the rests. Since there is no
-strong reason to keep interval only when it back from hotplug event, this
-patch also helps to kill duplicated code in hotplug notifier.
+Follow the usual file semantics here and return 0 when reading or
+-EFBIG when writing beyond the accessible range.
 
-As the sideline this patch includes rename of mce_start_timer() to
-mce_timer_run(), to group related functions with mce_timer_ prefix.
-
-Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
 ---
- arch/x86/kernel/cpu/mcheck/mce.c |   54 ++++++++++++++++++-------------------
- 1 files changed, 26 insertions(+), 28 deletions(-)
+ drivers/char/mem.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 205b334..c3dad64 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1114,7 +1114,7 @@ static int check_interval = 5 * 60; /* 5 minutes */
- static DEFINE_PER_CPU(int, mce_next_interval); /* in jiffies */
- static DEFINE_PER_CPU(struct timer_list, mce_timer);
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index 8fc04b4..f5cbd4e 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -97,6 +97,9 @@ static ssize_t read_mem(struct file *file, char __user *buf,
+ 	ssize_t read, sz;
+ 	char *ptr;
  
--static void mce_start_timer(unsigned long data)
-+static void mce_timer_run(unsigned long data)
- {
- 	struct timer_list *t = &per_cpu(mce_timer, data);
- 	int *n;
-@@ -1147,6 +1147,21 @@ static void mce_timer_delete_all(void)
- 	}
- }
- 
-+static void mce_timer_add(unsigned long cpu)
-+{
-+	struct timer_list *t = &per_cpu(mce_timer, cpu);
-+	int *n = &per_cpu(mce_next_interval, cpu);
++	if (p != *ppos)
++		return 0;
 +
-+	if (mce_ignore_ce || !check_interval)
-+		return;
+ 	if (!valid_phys_addr_range(p, count))
+ 		return -EFAULT;
+ 	read = 0;
+@@ -155,6 +158,9 @@ static ssize_t write_mem(struct file *file, const char __user *buf,
+ 	unsigned long copied;
+ 	void *ptr;
+ 
++	if (p != *ppos)
++		return -EFBIG;
 +
-+	/* reset next interval */
-+	*n = check_interval * HZ;
-+
-+	t->expires = round_jiffies(jiffies + *n);
-+	add_timer_on(t, cpu);
-+}
-+
- static void mce_do_trigger(struct work_struct *work)
- {
- 	call_usermodehelper(mce_helper, mce_helper_argv, NULL, UMH_NO_WAIT);
-@@ -1374,23 +1389,6 @@ static void __mcheck_cpu_init_vendor(struct cpuinfo_x86 *c)
- 	}
- }
+ 	if (!valid_phys_addr_range(p, count))
+ 		return -EFAULT;
  
--static void __mcheck_cpu_init_timer(void)
--{
--	struct timer_list *t = &__get_cpu_var(mce_timer);
--	int *n = &__get_cpu_var(mce_next_interval);
--
--	setup_timer(t, mce_start_timer, smp_processor_id());
--
--	if (mce_ignore_ce)
--		return;
--
--	*n = check_interval * HZ;
--	if (!*n)
--		return;
--	t->expires = round_jiffies(jiffies + *n);
--	add_timer_on(t, smp_processor_id());
--}
--
- /* Handle unconfigured int18 (should never happen) */
- static void unexpected_machine_check(struct pt_regs *regs, long error_code)
- {
-@@ -1408,6 +1406,8 @@ void (*machine_check_vector)(struct pt_regs *, long error_code) =
-  */
- void __cpuinit mcheck_cpu_init(struct cpuinfo_x86 *c)
- {
-+	int cpu = smp_processor_id();
-+
- 	if (mce_disabled)
- 		return;
- 
-@@ -1433,9 +1433,12 @@ void __cpuinit mcheck_cpu_init(struct cpuinfo_x86 *c)
- 
- 	__mcheck_cpu_init_generic();
- 	__mcheck_cpu_init_vendor(c);
--	__mcheck_cpu_init_timer();
-+
-+	setup_timer(&__get_cpu_var(mce_timer), mce_timer_run, cpu);
- 	INIT_WORK(&__get_cpu_var(mce_work), mce_process_work);
- 	init_irq_work(&__get_cpu_var(mce_irq_work), &mce_irq_work_cb);
-+
-+	mce_timer_add(cpu);
- }
- 
- /*
-@@ -1765,7 +1768,7 @@ static struct syscore_ops mce_syscore_ops = {
- static void mce_cpu_restart(void *data)
- {
- 	__mcheck_cpu_init_generic();
--	__mcheck_cpu_init_timer();
-+	mce_timer_add(smp_processor_id());
- }
- 
- /* Reinit MCEs after user configuration changes */
-@@ -1786,7 +1789,7 @@ static void mce_enable_ce(void *all)
- 	cmci_reenable();
- 	cmci_recheck();
- 	if (all)
--		__mcheck_cpu_init_timer();
-+		mce_timer_add(smp_processor_id());
- }
- 
- static struct sysdev_class mce_sysdev_class = {
-@@ -2030,7 +2033,6 @@ static int __cpuinit
- mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
- {
- 	unsigned int cpu = (unsigned long)hcpu;
--	struct timer_list *t = &per_cpu(mce_timer, cpu);
- 
- 	switch (action) {
- 	case CPU_ONLINE:
-@@ -2047,16 +2049,12 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 		break;
- 	case CPU_DOWN_PREPARE:
- 	case CPU_DOWN_PREPARE_FROZEN:
--		del_timer_sync(t);
-+		del_timer_sync(&per_cpu(mce_timer, cpu));
- 		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
- 		break;
- 	case CPU_DOWN_FAILED:
- 	case CPU_DOWN_FAILED_FROZEN:
--		if (!mce_ignore_ce && check_interval) {
--			t->expires = round_jiffies(jiffies +
--					   __get_cpu_var(mce_next_interval));
--			add_timer_on(t, cpu);
--		}
-+		mce_timer_add(cpu);
- 		smp_call_function_single(cpu, mce_reenable_cpu, &action, 1);
- 		break;
- 	case CPU_POST_DEAD:
 -- 
-1.7.1
-
-
+1.7.3.4
