@@ -1,57 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757695Ab1FQAWO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Jun 2011 20:22:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6176 "EHLO mx1.redhat.com"
+	id S1754281Ab1FQAYJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Jun 2011 20:24:09 -0400
+Received: from mga09.intel.com ([134.134.136.24]:50776 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752416Ab1FQAWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Jun 2011 20:22:13 -0400
-Message-ID: <4DFA9E32.1080700@redhat.com>
-Date: Thu, 16 Jun 2011 20:22:10 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1751695Ab1FQAYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Jun 2011 20:24:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,378,1304319600"; 
+   d="c'?scan'208";a="15979238"
+Message-ID: <4DFA9EA4.4010904@linux.intel.com>
+Date: Thu, 16 Jun 2011 17:24:04 -0700
+From: Andi Kleen <ak@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Linux kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kyle McMartin <kyle@redhat.com>
-Subject: Re: SLUB BUG: check_slab called with interrupts enabled
-References: <4DF8C80F.7090403@redhat.com> <alpine.DEB.2.00.1106150959500.768@router.home> <4DF8CCE1.80400@redhat.com> <alpine.DEB.2.00.1106151040020.768@router.home> <4DF9F84B.7040007@redhat.com> <alpine.DEB.2.00.1106161056450.3738@router.home>
-In-Reply-To: <alpine.DEB.2.00.1106161056450.3738@router.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
+ to mutex
+References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe> <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com> <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK> <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com> <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins> <87ea4bd7-8b16-4b24-8fcb-d8e9b6f421ec@email.android.com> <4DF92FE1.5010208@linux.intel.com> <BANLkTi=Tw6je7zpi4L=pE0JJpZfeEC9Jsg@mail.gmail.com> <4DFA6442.9000103@linux.intel.com> <BANLkTin_46==epHKUbWJ55bt3mPaJieV2Q@mail.gmail.com>
+In-Reply-To: <BANLkTin_46==epHKUbWJ55bt3mPaJieV2Q@mail.gmail.com>
+Content-Type: multipart/mixed;
+ boundary="------------030601030204070203060001"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2011 11:57 AM, Christoph Lameter wrote:
-> On Thu, 16 Jun 2011, Rik van Riel wrote:
+This is a multi-part message in MIME format.
+--------------030601030204070203060001
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+
+
+> The fact is, glibc is just total crap.
 >
->> After backing them out, I got 18 hours of uptime so far.
->>
->> This could just be dumb luck, or it could be some slub vs. kswapd
->> interaction.  Or maybe I simply am not triggering the original
->> bug any more because kswapd is now doing all the work, but may
->> still be able to trigger it under more memory pressure...
+> I tried to send uli a patch to just add caching. No go. I sent
+> *another* patch to at least make glibc use a sane interface (and the
+> cache if it needs to fall back on /proc/stat for some legacy reason).
+> We'll see what happens.
+
+FWIW a rerun with this modified LD_PRELOAD that does caching seems
+to have the same performance as the version that does sched_getaffinity.
+
+So you're right. Caching indeed helps and my assumption that the child
+would only do it once was incorrect.
+
+The only problem I see with it is that it doesn't handle CPU hotplug,
+but Paul's suggestion would fix that too.
+
+> Paul Eggbert suggested "caching for one second" - by just calling
+> "gettimtofday()" to see how old the cache is. That would work too.
 >
-> Could be some memory issue or stack corruption. This is a machine with ECC
-> ram right?
 
-Yes it is, 12GB of ECC memory.
+Maybe we need a "standard LD_PRELOAD library to improve glibc" @)
 
-Running that much without ECC is probably a bad idea :)
+-Andi
 
->> Either way, since this could still be dumb luck, I'll let you
->> guys know if/when I see a next crash :)
->
-> OK.
 
-30 hours uptime already.
+--------------030601030204070203060001
+Content-Type: text/plain;
+ name="sysconf-caching.c"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="sysconf-caching.c"
 
-Just a little beyond the "dumb luck" threshold.
+// gcc -fPIC -shared sysconf-caching.c -ldl  -o sysconf-caching.so
+#define _GNU_SOURCE 1
+#include <dlfcn.h>
+#include <sched.h>
+#include <unistd.h>
 
-However, I suspect the bug may still be there and
-the fact that kswapd is doing more work may simply
-be hiding it.
+static long int (*real_sysconf)(int name);
 
--- 
-All rights reversed
+long int sysconf(int name)
+{
+	if (!real_sysconf) 
+		real_sysconf = dlsym(RTLD_NEXT, "sysconf");
+
+	if (name == _SC_NPROCESSORS_ONLN) {
+		static int cache = -1; 
+
+		if (cache == -1)
+			cache = real_sysconf( _SC_NPROCESSORS_ONLN);
+		return cache;
+	}
+
+	return real_sysconf(name);
+}
+
+
+--------------030601030204070203060001--
