@@ -1,38 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932140Ab1FQN2c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 09:28:32 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:53203 "EHLO duck.linux-mips.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759095Ab1FQN23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759102Ab1FQN23 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 17 Jun 2011 09:28:29 -0400
-Date: Fri, 17 Jun 2011 14:28:20 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: f6bvp <f6bvp@free.fr>
-Cc: linux-kernel@vger.kernel.org, Jarek Poplawski <jarkao2@gmail.com>,
-        Linux Netdev List <netdev@vger.kernel.org>, linux-hams@vger.kernel.org
-Subject: Re: [AX25] inconsistent lock state
-Message-ID: <20110617132820.GA24458@linux-mips.org>
-References: <4B2CD772.1030106@upmc.fr>
- <4B2D1025.1020106@gmail.com>
- <4B2E6729.1090102@free.fr>
- <4B507FAA.8010007@free.fr>
- <20100115203654.GA3084@del.dom.local>
- <4DFA662D.5030302@free.fr>
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:55040 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759083Ab1FQN2Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 09:28:24 -0400
+Date: Fri, 17 Jun 2011 14:28:21 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH v5 16/18] ASoC: twl6040: set default
+	constraints.
+Message-ID: <20110617132820.GC4951@sirena.org.uk>
+References: <1307983070-2257-1-git-send-email-peter.ujfalusi@ti.com> <1307983070-2257-17-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DFA662D.5030302@free.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1307983070-2257-17-git-send-email-peter.ujfalusi@ti.com>
+X-Cookie: A friend in need is a pest indeed.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 10:23:09PM +0200, f6bvp wrote:
+On Mon, Jun 13, 2011 at 07:37:48PM +0300, Peter Ujfalusi wrote:
+> From: Liam Girdwood <lrg@ti.com>
+> 
+> Set default sysclk constraints to high performance mode.
+> 
+> Signed-off-by: Liam Girdwood <lrg@ti.com>
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-> When unpluging ethernet connector a few seconds I observed the
-> following kernel message :
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Can you describe your setup and what you did to trigger this?
-
-  Ralf
