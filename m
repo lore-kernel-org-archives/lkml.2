@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759425Ab1FQP6Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 11:58:25 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64449 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754120Ab1FQP6W (ORCPT
+	id S1759456Ab1FQQGB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 12:06:01 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:37556 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759397Ab1FQQF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 11:58:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=GZMWp76o+mG4hS5dueWKRBVV6XU2WkdWizy0JeKyTSo2BZPZ7I9qCW7vxNeqFZyODM
-         MV1Lk/zGyiUEmr9NP4uRkMYT786UdkkAM3S1dLoJuscusDtK8t0ab+wM2dTbDfLYWBi7
-         PUHQ03u6p/jBXcwbtK4S76Dp+/Cp0x6wCE4QY=
-Date: Fri, 17 Jun 2011 19:58:15 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        apparmor@lists.ubuntu.com,
-        "selinux@tycho.nsa.gov Stephen Smalley" <sds@tycho.nsa.gov>,
-        James Morris <jmorris@namei.org>, Eric Paris <eparis@parisplace.org>,
-        John Johansen <john.johansen@canonical.com>,
-        kernel-hardening@lists.openwall.com
-Subject: Re: [RFC v1] security: introduce ptrace_task_access_check()
-Message-ID: <20110617155815.GA22756@albatros>
-References: <20110617152912.GA21885@albatros>
- <4DFB7605.9000909@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DFB7605.9000909@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 17 Jun 2011 12:05:59 -0400
+Date: Fri, 17 Jun 2011 18:03:24 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: hjanssen@microsoft.com, kys@microsoft.com, v-abkane@microsoft.com,
+        gregkh@suse.de, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org
+Subject: Re: [PATCH 1/5] staging: hv: fix some white spaces in netvsc driver
+Message-ID: <20110617180324.1eeb2ea0@absol.kitzblitz>
+In-Reply-To: <1308322688-9796-1-git-send-email-haiyangz@microsoft.com>
+References: <1308322688-9796-1-git-send-email-haiyangz@microsoft.com>
+Organization: -
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwAQMAAABtzGvEAAAAAXNSR0IArs4c6QAAAAZQTFRF
+ AJnV/f/88sgWwwAAAKNJREFUGNM10LENwyAQheFHKCgZgTVSRHI2gy5reROTDSiREvnyHhdXnwXS+
+ T+ACJgBYTiGSmDDOTdR7XDeTi9ksxEcoKFcTOCJLO7kC5SWFjPZCR69nI9+x5u6OJM1RN5UYUiNKa
+ ZRpHHUoqh1v8hKEZ1FSGCrYOvgVmxd9DIXcSJwLTycm7bj0e4wkJGB48w/FckAwUKl/OGDZAcqItk
+ BU+wHXLqKsjYyPeMAAAAASUVORK5CYII=
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 11:43 -0400, Eric Paris wrote:
-> No need to rename the function
+* Haiyang Zhang <haiyangz@microsoft.com>:
+> diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
+> index 0ae35e7..b6e1fb9 100644
+> --- a/drivers/staging/hv/netvsc.c
+> +++ b/drivers/staging/hv/netvsc.c
+> @@ -525,10 +525,10 @@ int netvsc_send(struct hv_device *device,
+>  						  (unsigned long)packet);
+>  	} else {
+>  		ret = vmbus_sendpacket(device->channel, &sendMessage,
+> -				       sizeof(struct nvsp_message),
+> -				       (unsigned long)packet,
+> -				       VM_PKT_DATA_INBAND,
+> -				       VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
+> +				sizeof(struct nvsp_message),
+> +				(unsigned long)packet,
+> +				VM_PKT_DATA_INBAND,
+> +				VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
 
-The rename would cause renames in procfs, kernel/ptrace.c and similar
-places.
+Why? The arguments were nicely aligned.
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Best regards,
+Nicolas Kaiser
