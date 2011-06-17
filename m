@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757721Ab1FQLnj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 07:43:39 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53333 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757012Ab1FQLng (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 07:43:36 -0400
-Message-ID: <4DFB3DA8.7080502@ru.mvista.com>
-Date: Fri, 17 Jun 2011 15:42:32 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Denis Kuzmenko <list@solonet.org.ua>
-CC: Sergei Shtylyov <sshtylyov@mvista.com>, Ben Dooks <ben-linux@fluff.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm mach-s3c2440 mach-mini2440: New LCD-W35i support
-References: <4DF7C50A.7060602@solonet.org.ua> <4DF9EA45.3020101@ru.mvista.com> <4DFA4CD9.9070601@solonet.org.ua>
-In-Reply-To: <4DFA4CD9.9070601@solonet.org.ua>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757876Ab1FQLuT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 07:50:19 -0400
+Received: from lo.gmane.org ([80.91.229.12]:56864 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757658Ab1FQLuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 07:50:16 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Stefan Seyfried <stefan.seyfried@googlemail.com>
+Subject: Re: [3.0-rc3] tree RCU boost vs hang notifier...
+Date: Fri, 17 Jun 2011 11:44:02 +0000 (UTC)
+Message-ID: <pan.2011.06.17.11.44.00@message-id.slipkonture.de>
+References: <BANLkTin2osfkSiu8maGmJAnzv4O5ODK0dw@mail.gmail.com>
+	<20110614045150.GA2264@linux.vnet.ibm.com>
+	<BANLkTinvygi9aSkFcnOs2CHCmExD2ixJuQ@mail.gmail.com>
+	<20110614124048.GB2264@linux.vnet.ibm.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 155.56.40.13
+User-Agent: Pan/0.134 (Wait for Me; GIT cb32159 master)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue, 14 Jun 2011 05:40:48 -0700, Paul E. McKenney wrote:
 
-On 16-06-2011 22:35, Denis Kuzmenko wrote:
+> On Tue, Jun 14, 2011 at 01:46:04PM +0800, Daniel J Blueman wrote:
+>> Tested-by: Daniel J Blueman <daniel.blueman@gmail.com>
+> 
+> Thank you very much for testing this!
 
->> Hello.
+Hi Paul,
 
->> Your signoff needs to be here. Sorry -- didn't notice the first time.
->> The patch has all tabs converted to spaces. Didn't notice it the first
->> time as well... :-/
+Will this also fix the constant system load of 1.0 or is this a different 
+issue? (If it was, I'd need to report it properly ;)
 
-> Thanks for comments. How about this one?
+Best regards,
 
-    Seems fine now. :-)
+	Stefan
 
-> From: Denis Kuzmenko <dart@solonet.org.ua>
-> Date: 2011-06-16 21:30:00 +0300
-
-> LCD-W35i support for Mini2440 development board
-
-> Signed-off-by: Denis Kuzmenko <dart@solonet.org.ua>
-
-WBR, Sergei
