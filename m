@@ -1,121 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290Ab1FQG0K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 02:26:10 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:22273 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab1FQG0G convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 02:26:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=HOTrSpBOd5hlpHa/tYx76WXHjfvPa0ntlZZ6mVmvbp0VzliJHcjmyZfq4lFaCwEgN8
-         QTvJIy/RqOvh7Qb/gG6Q==
+	id S1754304Ab1FQG1e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 02:27:34 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50961 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751743Ab1FQG1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 02:27:33 -0400
+Message-ID: <4DFAF3D2.5030506@suse.de>
+Date: Fri, 17 Jun 2011 08:27:30 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-In-Reply-To: <4DFAAC6B.6060306@jp.fujitsu.com>
-References: <20110503092846.022272244@google.com> <20110614065807.GA19111@localhost.localdomain>
- <4DF70DED.2030803@jp.fujitsu.com> <20110615083749.GA14200@localhost.localdomain>
- <4DF954E5.9060704@jp.fujitsu.com> <20110616094508.GA1961@localhost.localdomain>
- <4DFAAC6B.6060306@jp.fujitsu.com>
-From: Paul Turner <pjt@google.com>
-Date: Thu, 16 Jun 2011 23:25:12 -0700
-Message-ID: <BANLkTikDYdxed6=C6Lfht3WZM-=HSqDDKA@mail.gmail.com>
-Subject: Re: [patch 00/15] CFS Bandwidth Control V6
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: Hu Tao <hutao@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.co>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Greg KH <greg@kroah.com>, Nao Nishijima <nao.nishijima.xt@hitachi.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jcm@redhat.com, stefanr@s5r6.in-berlin.de,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
+References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp> <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp> <20110615153337.GA10160@kroah.com> <4DF9F11F.705@hitachi.com> <20110616154129.GA31498@kroah.com> <1308239454.2436.34.camel@mulgrave> <20110616161442.GA32113@kroah.com> <1308241506.2436.44.camel@mulgrave> <BANLkTi=qHhzwGfp4v8B1CAmT+gtA=sOgvw@mail.gmail.com> <BANLkTikUNqTxgD_+TTVpcFyRDu_fSesrsg@mail.gmail.com>
+In-Reply-To: <BANLkTikUNqTxgD_+TTVpcFyRDu_fSesrsg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 6:22 PM, Hidetoshi Seto
-<seto.hidetoshi@jp.fujitsu.com> wrote:
-> (2011/06/16 18:45), Hu Tao wrote:
->> On Thu, Jun 16, 2011 at 09:57:09AM +0900, Hidetoshi Seto wrote:
->>> (2011/06/15 17:37), Hu Tao wrote:
->>>> On Tue, Jun 14, 2011 at 04:29:49PM +0900, Hidetoshi Seto wrote:
->>>>> (2011/06/14 15:58), Hu Tao wrote:
->>>>>> Hi,
->>>>>>
->>>>>> I've run several tests including hackbench, unixbench, massive-intr
->>>>>> and kernel building. CPU is Intel(R) Xeon(R) CPU X3430 †@ 2.40GHz,
->>>>>> 4 cores, and 4G memory.
->>>>>>
->>>>>> Most of the time the results differ few, but there are problems:
->>>>>>
->>>>>> 1. unixbench: execl throughout has about 5% drop.
->>>>>> 2. unixbench: process creation has about 5% drop.
->>>>>> 3. massive-intr: when running 200 processes for 5mins, the number
->>>>>> † †of loops each process runs differ more than before cfs-bandwidth-v6.
->>>>>>
->>>>>> The results are attached.
->>>>>
->>>>> I know the score of unixbench is not so stable that the problem might
->>>>> be noises ... but the result of massive-intr is interesting.
->>>>> Could you give a try to find which piece (xx/15) in the series cause
->>>>> the problems?
+On 06/16/2011 07:20 PM, Kay Sievers wrote:
+> On Thu, Jun 16, 2011 at 19:09, Kay Sievers<kay.sievers@vrfy.org>  wrote:
+>> On Thu, Jun 16, 2011 at 18:25, James Bottomley
+>> <James.Bottomley@hansenpartnership.com>  wrote:
+>>> On Thu, 2011-06-16 at 09:14 -0700, Greg KH wrote:
+>>>> All userspace naming will be taken care of by the usual udev rules, so
+>>>>> for disks, something like /dev/disk/by-preferred/<fred>  which would be
+>>>>> the usual symbolic link.
 >>>>
->>>> After more tests, I found massive-intr data is not stable, too. Results
->>>> are attached. The third number in file name means which patchs are
->>>> applied, 0 means no patch applied. plot.sh is easy to generate png
->>>> files.
+>>>> No, udev can not create such a link after the preferred name is set, as
+>>>> it has no way of knowing that the name was set.
 >>>
->>> (Though I don't know what the 16th patch of this series is, anyway)
+>>> It can if we trigger a uevent.  Note: I'm not advocating this ... I'd be
+>>> equally happy having whatever sets the kernel name create the link (or
+>>> tickle udev to create it).  We definitely require device links, though,
+>>> to get this to work.
 >
-> I see. †It will be replaced by Paul's update.
+> Guess all that would work now, including mount(8) not canonicalizing.
+> What would happen if we mount:
+>    /dev/disk/by-pretty/foo
+> and some tool later thinks the pretty name should better be 'bar', it
+> writes the name to /sys, we get a uevent, the old link disappears, we
+> get a new link, mount has no device node anymore for the mounted
+> device ...
 >
->> the 16th patch is this: https://lkml.org/lkml/2011/5/23/503
->>
->>> I see that the results of 15, 15-1 and 15-2 are very different and that
->>> 15-2 is similar to without-patch.
->>>
->>> One concern is whether this unstable of data is really caused by the
->>> nature of your test (hardware, massive-intr itself and something running
->>> in background etc.) or by a hidden piece in the bandwidth patch set.
->>> Did you see "not stable" data when none of patches is applied?
->>
->> Yes.
->>
->> But for a five-runs the result seems 'stable'(before patches and after
->> patches). I've also run the tests in single mode. results are attached.
+> So we basically get a one-shot additional pretty name? Guess, the
+> _single_ name changed anytime later just asks for serious problems. We
+> need to set it very early to be really useful, but how, where is it
+> coming from?
 >
-> (It will be appreciated greatly if you could provide not only raw results
-> but also your current observation/speculation.)
->
-> Well, (to wrap it up,) do you still see the following problem?
->
->>>>>> 3. massive-intr: when running 200 processes for 5mins, the number
->>>>>> † †of loops each process runs differ more than before cfs-bandwidth-v6.
->
-> I think that 5 samples are not enough to draw a conclusion, and that at the
-> moment it is inconsiderable. †How do you think?
->
-> Even though pointed problems are gone, I have to say thank you for taking
-> your time to test this CFS bandwidth patch set.
-> I'd appreciate it if you could continue your test, possibly against V7.
-> (I'm waiting, Paul?)
+Well, certain storage arrays are able to print out the user-defined 
+name for the LUNs:
 
-It should be out in a few hours, as I was preparing everything today I
-realized an latent error existed in the quota expiration path;
-specifically that on a wake-up from a sufficiently long sleep we will
-see expired quota and have to wait for the timer to recharge bandwidth
-before we're actually allowed to run.  Currently munging the results
-of fixing that and making sure everything else is correct in the wake
-of those changes.
+# sg_vpd -p 0xc8 /dev/sdc
+Extended device identification (RDAC) VPD Page:
+   Volume Unique Identifier: 60080e50001bf1f0000005004ddb05a4
+     Creation Number: 1280, Timestamp: Tue May 24 03:11:00 2011
+   Volume User Label: mas-1
+   Storage Array Unique Identifier: 60080e50001bf1f0000000004d418973
+   Storage Array User Label: LSI-SAS-DIF
+   Logical Unit Number: 0000000000000000
 
->
->
-> Thanks,
-> H.Seto
->
->
+where the 'Volume User Label' is the name the administrator has 
+given to the LUN on the storage array.
+
+So for these kind of things it would be useful.
+
+However, a single pretty name is quite a limitation.
+And I also fail to see why this can't be handled in userspace.
+
+Cheers,
+
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 N√ºrnberg
+GF: J. Hawn, J. Guild, F. Imend√∂rffer, HRB 16746 (AG N√ºrnberg)
