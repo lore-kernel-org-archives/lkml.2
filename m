@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756897Ab1FQRmp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 13:42:45 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:44562 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752355Ab1FQRmn (ORCPT
+	id S1756950Ab1FQRoZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 13:44:25 -0400
+Received: from gabe.freedesktop.org ([131.252.210.177]:36635 "EHLO
+	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752317Ab1FQRoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 13:42:43 -0400
-Date: Fri, 17 Jun 2011 19:42:39 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Andi Kleen <andi@firstfloor.org>, viro@zeniv.linux.org.uk,
-        hch@infradead.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/5] VFS: Do (nearly) lockless generic_file_llseek
-Message-ID: <20110617174239.GG16236@one.firstfloor.org>
-References: <1308258442-19804-1-git-send-email-andi@firstfloor.org> <201106171440.14224.arnd@arndb.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201106171440.14224.arnd@arndb.de>
-User-Agent: Mutt/1.4.2.2i
+	Fri, 17 Jun 2011 13:44:23 -0400
+From: Eric Anholt <eric@anholt.net>
+To: Daniel J Blueman <daniel.blueman@gmail.com>,
+        Dave Airlie <airlied@redhat.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Ben Widawsky <ben@bwidawsk.net>,
+        Kenneth Graunke <kenneth@whitecape.org>, Yi Sun <yi.sun@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Mengmeng Meng <mengmeng.meng@intel.com>,
+        Robert Hooker <sarvatt@ubuntu.com>,
+        Daniel J Blueman <daniel.blueman@gmail.com>
+Subject: Re: [PATCH 3.0-rc3, v2] i915: Fix gen6 (SNB) GPU stalling
+In-Reply-To: <1308328920-2068-1-git-send-email-daniel.blueman@gmail.com>
+References: <1308328920-2068-1-git-send-email-daniel.blueman@gmail.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Fri, 17 Jun 2011 10:44:19 -0700
+Message-ID: <87zklgnyj0.fsf@eliezer.anholt.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 02:40:14PM +0200, Arnd Bergmann wrote:
-> On Thursday 16 June 2011 23:07:18 Andi Kleen wrote:
-> > So still need a lock, but can use a cheap local one.
-> > 
-> > This patch implements this new scheme in generic_file_llseek.
-> > I dropped generic_file_llseek_unlocked and changed all callers.
-> 
-> What about default_llseek? If you change generic_file_llseek, you should
-> probably change that, too.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-That's used by a lot of drivers, and since I cannot audit them
-all I chose to be conservative. not sure it's ever performance
-critical anyways?
+On Sat, 18 Jun 2011 00:42:00 +0800, Daniel J Blueman <daniel.blueman@gmail.=
+com> wrote:
+> Workaround Sandy Bridge GPU stalls by allowing the blitter command stream=
+er
+> to write interrupt state to the Hardware Status Page when a MI_USER_INTER=
+RUPT
+> command is decoded.
+>=20
+> v1->v2: Moved to prior interrupt handler installation and RMW flags as per
+> feedback.
 
--Andi
+We shouldn't be RMWing.  We're the driver, we're supposed to know what
+we want.  I'm backing that bit out, will do another round of testing,
+and send it off.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk37knMACgkQHUdvYGzw6vcnQQCeNlKC6Ddu+BN9TJgxjv7oApYl
+RvMAnRk3lKn4qCSjjkUf//mjbZDoGES3
+=SOg4
+-----END PGP SIGNATURE-----
+--=-=-=--
