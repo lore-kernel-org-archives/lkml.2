@@ -1,56 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932661Ab1FQSd5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 14:33:57 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:60721 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932432Ab1FQSdy (ORCPT
+	id S932676Ab1FQSj6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 14:39:58 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38648 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932418Ab1FQSj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 14:33:54 -0400
-Subject: Re: [RFC][PATCH] alarmtimers: Handle late rtc module loading
-From: John Stultz <john.stultz@linaro.org>
-To: Meelis Roos <mroos@ut.ee>
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <alpine.SOC.1.00.1106171112460.29700@math.ut.ee>
-References: <1308274479-25259-1-git-send-email-john.stultz@linaro.org>
-	 <alpine.SOC.1.00.1106171112460.29700@math.ut.ee>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 17 Jun 2011 11:33:36 -0700
-Message-ID: <1308335616.3606.4.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 17 Jun 2011 14:39:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <1308335557.12801.24.camel@laptop>
+References: <1308097798.17300.142.camel@schen9-DESK> <1308101214.15392.151.camel@sli10-conroe>
+ <1308138750.15315.62.camel@twins> <20110615161827.GA11769@tassilo.jf.intel.com>
+ <1308156337.2171.23.camel@laptop> <1308163398.17300.147.camel@schen9-DESK>
+ <1308169937.15315.88.camel@twins> <4DF91CB9.5080504@linux.intel.com>
+ <1308172336.17300.177.camel@schen9-DESK> <1308173849.15315.91.camel@twins>
+ <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com> <1308255972.17300.450.camel@schen9-DESK>
+ <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com> <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com>
+ <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com> <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com>
+ <BANLkTinUBTYWxrF5TCuDSQuFUAyivXJXjQ@mail.gmail.com> <1308310080.2355.19.camel@twins>
+ <BANLkTim2bmPfeRT1tS7hx2Z85QHjPHwU3Q@mail.gmail.com> <alpine.LSU.2.00.1106171040460.7018@sister.anvils>
+ <BANLkTim3vo0vpovV=5sU=GLxkotheB=Ryg@mail.gmail.com> <1308334688.12801.19.camel@laptop>
+ <1308335557.12801.24.camel@laptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 17 Jun 2011 11:39:04 -0700
+Message-ID: <BANLkTimStT22tA2YkeuYBzarnnWTnMjiKQ@mail.gmail.com>
+Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
+ to mutex
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Hugh Dickins <hughd@google.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: multipart/mixed; boundary=000e0cdfd88e63a01704a5ecb463
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-17 at 12:43 +0300, Meelis Roos wrote:
-> > Meelis: Could you give this patch a shot to make sure it resolves
-> > the issues you've seen on x86 and sparc?
-> 
-> Worked on sparc64 (Netra X1) on all 3 boots, on top of 
-> 3.0.0-rc3-00202-geb96c92.
-> 
-> One the PC, I get the following about RTC in dmesg:
-> 
-> [    0.319145] drivers/rtc/hctosys.c: unable to open rtc device (rtc0)
-> [    3.614132] rtc_cmos 00:03: RTC can wake from S4
-> [    3.614480] rtc_cmos 00:03: rtc core: registered rtc_cmos as rtc0
-> [    3.614582] rtc0: alarms up to one year, y3k, 114 bytes nvram
+--000e0cdfd88e63a01704a5ecb463
+Content-Type: text/plain; charset=ISO-8859-1
 
-I'll double check, but I suspect that "unable to open rtc device"
-message isn't new. The issue is that the rtc_cmos driver is built as a
-module, and the hctosys functionality is running before the module is
-loaded.
+On Fri, Jun 17, 2011 at 11:32 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> something like so I guess, completely untested etc..
 
-Hmmm. This maybe points to the need for some sort of callback system for
-when RTC devices are registered. Since most existing code is just hoping
-its available by late_init.
+Having gone over it a bit more, I actually think I prefer to just
+special-case the allocation instead.
 
-Thanks so much for the testing!
+We already have to drop the anon_vma lock for the "out of memory"
+case, and a slight re-organization of clone_anon_vma() makes it easy
+to just first try a NOIO allocation with the lock still held, and then
+if that fails do the "drop lock, retry, and hard-fail" case.
 
-thanks
--john
+IOW, something like the attached (on top of the patches already posted
+except for your memory reclaim thing)
 
+Hugh, does this fix the lockdep issue?
 
+                        Linus
+
+--000e0cdfd88e63a01704a5ecb463
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gp1hdgxs0
+
+IG1tL3JtYXAuYyB8ICAgMjAgKysrKysrKysrKysrLS0tLS0tLS0KIDEgZmlsZXMgY2hhbmdlZCwg
+MTIgaW5zZXJ0aW9ucygrKSwgOCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9tbS9ybWFwLmMg
+Yi9tbS9ybWFwLmMKaW5kZXggNjg3NTZhNzdlZjg3Li4yN2RmZDNiODJiMGYgMTAwNjQ0Ci0tLSBh
+L21tL3JtYXAuYworKysgYi9tbS9ybWFwLmMKQEAgLTExMiw5ICsxMTIsOSBAQCBzdGF0aWMgaW5s
+aW5lIHZvaWQgYW5vbl92bWFfZnJlZShzdHJ1Y3QgYW5vbl92bWEgKmFub25fdm1hKQogCWttZW1f
+Y2FjaGVfZnJlZShhbm9uX3ZtYV9jYWNoZXAsIGFub25fdm1hKTsKIH0KIAotc3RhdGljIGlubGlu
+ZSBzdHJ1Y3QgYW5vbl92bWFfY2hhaW4gKmFub25fdm1hX2NoYWluX2FsbG9jKHZvaWQpCitzdGF0
+aWMgaW5saW5lIHN0cnVjdCBhbm9uX3ZtYV9jaGFpbiAqYW5vbl92bWFfY2hhaW5fYWxsb2MoZ2Zw
+X3QgZ2ZwKQogewotCXJldHVybiBrbWVtX2NhY2hlX2FsbG9jKGFub25fdm1hX2NoYWluX2NhY2hl
+cCwgR0ZQX0tFUk5FTCk7CisJcmV0dXJuIGttZW1fY2FjaGVfYWxsb2MoYW5vbl92bWFfY2hhaW5f
+Y2FjaGVwLCBnZnApOwogfQogCiBzdGF0aWMgdm9pZCBhbm9uX3ZtYV9jaGFpbl9mcmVlKHN0cnVj
+dCBhbm9uX3ZtYV9jaGFpbiAqYW5vbl92bWFfY2hhaW4pCkBAIC0xNTksNyArMTU5LDcgQEAgaW50
+IGFub25fdm1hX3ByZXBhcmUoc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2bWEpCiAJCXN0cnVjdCBt
+bV9zdHJ1Y3QgKm1tID0gdm1hLT52bV9tbTsKIAkJc3RydWN0IGFub25fdm1hICphbGxvY2F0ZWQ7
+CiAKLQkJYXZjID0gYW5vbl92bWFfY2hhaW5fYWxsb2MoKTsKKwkJYXZjID0gYW5vbl92bWFfY2hh
+aW5fYWxsb2MoR0ZQX0tFUk5FTCk7CiAJCWlmICghYXZjKQogCQkJZ290byBvdXRfZW5vbWVtOwog
+CkBAIC0yNTMsOSArMjUzLDE0IEBAIGludCBhbm9uX3ZtYV9jbG9uZShzdHJ1Y3Qgdm1fYXJlYV9z
+dHJ1Y3QgKmRzdCwgc3RydWN0IHZtX2FyZWFfc3RydWN0ICpzcmMpCiAJbGlzdF9mb3JfZWFjaF9l
+bnRyeV9yZXZlcnNlKHBhdmMsICZzcmMtPmFub25fdm1hX2NoYWluLCBzYW1lX3ZtYSkgewogCQlz
+dHJ1Y3QgYW5vbl92bWEgKmFub25fdm1hOwogCi0JCWF2YyA9IGFub25fdm1hX2NoYWluX2FsbG9j
+KCk7Ci0JCWlmICghYXZjKQotCQkJZ290byBlbm9tZW1fZmFpbHVyZTsKKwkJYXZjID0gYW5vbl92
+bWFfY2hhaW5fYWxsb2MoR0ZQX05PV0FJVCB8IF9fR0ZQX05PV0FSTik7CisJCWlmICh1bmxpa2Vs
+eSghYXZjKSkgeworCQkJdW5sb2NrX2Fub25fdm1hX3Jvb3Qocm9vdCk7CisJCQlyb290ID0gTlVM
+TDsKKwkJCWF2YyA9IGFub25fdm1hX2NoYWluX2FsbG9jKEdGUF9LRVJORUwpOworCQkJaWYgKCFh
+dmMpCisJCQkJZ290byBlbm9tZW1fZmFpbHVyZTsKKwkJfQogCQlhbm9uX3ZtYSA9IHBhdmMtPmFu
+b25fdm1hOwogCQlyb290ID0gbG9ja19hbm9uX3ZtYV9yb290KHJvb3QsIGFub25fdm1hKTsKIAkJ
+YW5vbl92bWFfY2hhaW5fbGluayhkc3QsIGF2YywgYW5vbl92bWEpOwpAQCAtMjY0LDcgKzI2OSw2
+IEBAIGludCBhbm9uX3ZtYV9jbG9uZShzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKmRzdCwgc3RydWN0
+IHZtX2FyZWFfc3RydWN0ICpzcmMpCiAJcmV0dXJuIDA7CiAKICBlbm9tZW1fZmFpbHVyZToKLQl1
+bmxvY2tfYW5vbl92bWFfcm9vdChyb290KTsKIAl1bmxpbmtfYW5vbl92bWFzKGRzdCk7CiAJcmV0
+dXJuIC1FTk9NRU07CiB9CkBAIC0yOTQsNyArMjk4LDcgQEAgaW50IGFub25fdm1hX2Zvcmsoc3Ry
+dWN0IHZtX2FyZWFfc3RydWN0ICp2bWEsIHN0cnVjdCB2bV9hcmVhX3N0cnVjdCAqcHZtYSkKIAlh
+bm9uX3ZtYSA9IGFub25fdm1hX2FsbG9jKCk7CiAJaWYgKCFhbm9uX3ZtYSkKIAkJZ290byBvdXRf
+ZXJyb3I7Ci0JYXZjID0gYW5vbl92bWFfY2hhaW5fYWxsb2MoKTsKKwlhdmMgPSBhbm9uX3ZtYV9j
+aGFpbl9hbGxvYyhHRlBfS0VSTkVMKTsKIAlpZiAoIWF2YykKIAkJZ290byBvdXRfZXJyb3JfZnJl
+ZV9hbm9uX3ZtYTsKIAo=
+--000e0cdfd88e63a01704a5ecb463--
