@@ -1,111 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478Ab1FROYK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 10:24:10 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64150 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753253Ab1FROYD (ORCPT
+	id S1755174Ab1FROfr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 10:35:47 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:60353 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752774Ab1FROfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 10:24:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=AurGRGQOzGqqy68V9Nfm4vaiIJyDehBQnhSW0b5BUIb8cJxIdRrN6MIPrNiJ6/kD08
-         fgKJEsTfn/Zn+zU3YjJUb28bYeZfpYAHO5eYkzKeyhSqu56OPUPIqAuVXglxXa9FDLRl
-         qhuU89ycbzfahO+Dhy+/n5ALrNnPs8rY6id2Y=
-Date: Sat, 18 Jun 2011 16:23:58 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>
-Subject: Re: [PATCH 1/4] rcu: Detect uses of rcu read side in extended
- quiescent states
-Message-ID: <20110618142353.GA9266@somewhere>
-References: <1307663247-5397-1-git-send-email-fweisbec@gmail.com>
- <1307663247-5397-2-git-send-email-fweisbec@gmail.com>
- <20110610002350.GO2285@linux.vnet.ibm.com>
- <20110610005041.GI25771@somewhere.redhat.com>
- <20110617231902.GM2258@linux.vnet.ibm.com>
+	Sat, 18 Jun 2011 10:35:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Paul Bolle <pebolle@tiscali.nl>
+Subject: Re: [Bug 37682] New: Kernel mis-detects size/position of partition created with Seagate DiscWizard (OnTrack Disk Manager)
+Date: Sat, 18 Jun 2011 16:34:53 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: markk@clara.co.uk, Andrew Morton <akpm@linux-foundation.org>,
+        bugme-daemon@bugzilla.kernel.org, linux-kernel@vger.kernel.org
+References: <bug-37682-10286@https.bugzilla.kernel.org/> <c6813b0914dd61da40fc2db868ea5b11.squirrel@ssl-webmail-vh.clara.net> <1308393501.23584.27.camel@x61.thuisdomein>
+In-Reply-To: <1308393501.23584.27.camel@x61.thuisdomein>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110617231902.GM2258@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106181634.53503.arnd@arndb.de>
+X-Provags-ID: V02:K0:voI/p2/Ag5Ya5XhUYAwmvgNdTsXZAmzTpXk6WERcL5q
+ TY2VnsdMp0ZureMIzjEaG71V6nIowaoiIfqIwG2dKJX/IsFU8u
+ 0NAbuQwgprTRVsjjlxVmZniy878RfrpXYx105BvEkDv5aCcJ8y
+ QzUmRDfNELwzQ22nYGFz9ucKUUXS+6XkEAcJV0L5mBHORoCPAJ
+ k9/ik+bMuRjOFaUCpk6nQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 04:19:03PM -0700, Paul E. McKenney wrote:
-> On Fri, Jun 10, 2011 at 02:50:43AM +0200, Frederic Weisbecker wrote:
-> > On Thu, Jun 09, 2011 at 05:23:50PM -0700, Paul E. McKenney wrote:
-> > > On Fri, Jun 10, 2011 at 01:47:24AM +0200, Frederic Weisbecker wrote:
-> > > > Detect uses of rcu that are not supposed to happen when we
-> > > > are in an extended quiescent state.
-> > > > 
-> > > > This can happen for example if we use rcu between the time we
-> > > > stop the tick and the time we restart it. Or inside an irq that
-> > > > didn't use rcu_irq_enter,exit() or other possible kind of rcu API
-> > > > misuse.
-> > > > 
-> > > > v2: Rebase against latest rcu changes, handle tiny RCU as well
-> > > 
-> > > Good idea on checking for RCU read-side critical sections happening
-> > > in dyntick-idle periods!
-> > > 
-> > > But wouldn't it be better to put the checks in rcu_read_lock() and
-> > > friends?  The problem I see with putting them in rcu_dereference_check()
-> > > is that someone can legitimately do something like the following
-> > > while in dyntick-idle mode:
-> > > 
-> > > 	spin_lock(&mylock);
-> > > 	/* do a bunch of stuff */
-> > > 	p = rcu_dereference_check(myrcuptr, lockdep_is_held(&mylock));
-> > > 
-> > > The logic below would complain about this usage, despite the fact
-> > > that it is perfectly safe because the update-side lock is held.
-> > > 
-> > > Make sense, or am I missing something?
-> > > 
-> > > 						Thanx, Paul
-> > 
-> > I'm an idiot. I put my check in rcu_dereference_check() on purpose because
-> > it's always called from places that check one of the rcu locks are held,
-> > but I forgot that's also used for custom conditions with the _check()
-> > things.
-> > 
-> > That said, putting the check in rcu_read_lock() and alike  would only work
-> > with rcu_read_lock() itself. Few users of rcu_read_lock_sched() actually
-> > call it explicitely but rely on irq disabled or preempt disabled. And I can't put the
-> > checks there as it's fine to disabled irqs in dyntick idle.
-> > 
-> > What about the below? (untested yet)
-> > 
-> > And I would print the state of dynticks-idle mode in the final lockdep warning.
+On Saturday 18 June 2011 12:38:21 Paul Bolle wrote:
+> Perhaps this means one is expected to use dmsetup(8) for this. I have
+> never configured device-mapper at that level by hand. man 8 dmsetup is
+> over 300 lines of (new for me) information. Without a disk like yours at
+> hand, it's hard to say whether device-mapper allows to do stuff like
+> this (ie, remapping an entire drive by 63 sectors) by hand.
 > 
-> Printing the dynticks-idle mode would be quite good!
-> 
-> However, it is possible to have an RCU read-side critical section that does
-> not have an rcu_dereference() or an rcu_read_lock_held().  So I do believe
-> that we really do need rcu_read_lock() and friends to do this checking.
+> Of course, for your particular drive it might be easier to just dd the
+> actual partition (so skipping 63 sectors) into new file (a 20G image) on
+> another drive. That image should be loop mountable. If that's correct
+> you could then do with the drive as you please. Given its age, it may be
+> wise to, say, shred(1) its corresponding device and drop the drive at
+> your local recycling site.
 
-Right, then we need to check everything: rcu_read_lock() and friends in case
-we have no rcu_read_lock_held() check made (ie: no rcu_dereference_check()),
-but also rcu_read_lock_held()/rcu_read_lock_sched_held()/... because preempt_disable(),
-local_irq_disable(), local_bh_disable() can't be checked so for rcu sched and rcu bh
-we can only check the ...held() things.
+You can also create a "correct" partition table to replace the old
+one and directly point to the FAT partition:
 
-> 
-> That might seem to leave open the possibility of a stray rcu_dereference()
-> being executed from dyntick-idle mode, but the existing PROVE_RCU
-> checking will catch that, right?
-> 
-> So I believe that the simplest approach with the best coverage is to
-> put the checks into RCU's read-side critical-section-entry primitives.
-> 
-> Make sense, or am I confused?
+# fdisk -c -u -C2435 -H255 -S 63 /dev/sdX
 
-If we also check the rcu_read_...._held() things then yeah that works.
-But checking only rcu_read_..._lock() things in not sufficient like I said
-above.
+Command (m for help): p
+
+Disk /dev/sdX: 0 MB, 0 bytes
+255 heads, 63 sectors/track, 2434 cylinders, total 0 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0x00000000
+
+  Device Boot      Start         End      Blocks   Id  System
+/dev/sdX   *           9    16434494     8217243   54  OnTrackDM6
+
+Command (m for help): d
+Selected partition 1
+
+Command (m for help): n
+Command action
+   e   extended
+   p   primary partition (1-4)
+p
+Partition number (1-4): 1
+First sector (1-39118274, default 1): ?
+First sector (1-39118274, default 1): 126
+Last sector, +sectors or +size{K,M,G} (126-39118274, default 39118274): +39102147
+
+Command (m for help): t
+Selected partition 1
+Hex code (type L to list codes): c
+Changed system type of partition 1 to c (W95 FAT32 (LBA))
+
+Command (m for help): a
+Partition number (1-4): 1
+
+Command (m for help): p
+
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0x00000000
+
+  Device Boot      Start         End      Blocks   Id  System
+/dev/sdX   *         126    39102273    19551074    c  W95 FAT32 (LBA)
+
+
+Command (m for help): w
+The partition table has been altered!
+
+
+WARNING: If you have created or modified any DOS 6.x
+partitions, please see the fdisk manual page for additional
+information.
+Syncing disks.
