@@ -1,164 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab1FRUmE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 16:42:04 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:38949 "EHLO ogre.sisk.pl"
+	id S1752650Ab1FRUnz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 16:43:55 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38956 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752151Ab1FRUl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 16:41:59 -0400
+	id S1752226Ab1FRUnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jun 2011 16:43:53 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH 2/2] PM: fix async resume following suspend failure
-Date: Sat, 18 Jun 2011 22:42:27 +0200
+To: Michal Kubecek <mkubecek@suse.cz>
+Subject: Re: [linux-pm] [PATCH 3.0-rc3] PM: free memory bitmaps if opening /dev/snapshot fails
+Date: Sat, 18 Jun 2011 22:44:36 +0200
 User-Agent: KMail/1.13.6 (Linux/3.0.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1106181521090.32242-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1106181521090.32242-100000@netrider.rowland.org>
+Cc: linux-pm@lists.linux-foundation.org, LKML <linux-kernel@vger.kernel.org>
+References: <20110617175231.A80284030A@alaris.suse.cz>
+In-Reply-To: <20110617175231.A80284030A@alaris.suse.cz>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106182242.27814.rjw@sisk.pl>
+Message-Id: <201106182244.36876.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, June 18, 2011, Alan Stern wrote:
-> On Sat, 18 Jun 2011, Rafael J. Wysocki wrote:
+On Friday, June 17, 2011, Michal Kubecek wrote:
+> From: Michal Kubecek <mkubecek@suse.cz>
 > 
-> > > @@ -596,7 +597,7 @@ void dpm_resume(pm_message_t state)
-> > >  
-> > >  	list_for_each_entry(dev, &dpm_suspended_list, power.entry) {
-> > >  		INIT_COMPLETION(dev->power.completion);
-> > > -		if (is_async(dev)) {
-> > > +		if (is_async(dev) && dev->power.is_suspended) {
-> > 
-> > If we check dev->power.is_suspended here, we won't complete the
-> > device's power.completion, which is necessary if the device is someone's
-> > parent.  Moreover, I think we should clear the device's is_prepared
-> > flage at this point.
+> When opening /dev/snapshot device, snapshot_open() creates memory
+> bitmaps which are freed in snapshot_release(). But if any of the
+> callbacks called by pm_notifier_call_chain() returns NOTIFY_BAD, open()
+> fails, snapshot_release() is never called and bitmaps are not freed.
+> Next attempt to open /dev/snapshot then triggers BUG_ON() check in
+> create_basic_memory_bitmaps(). This happens e.g. when vmwatchdog module
+> is active on s390x.
 > 
-> Yes.  I was trying to avoid starting up unnecessary threads, but 
-> clearly that is less important than being correct.
-> 
-> > > @@ -881,6 +882,7 @@ static int __device_suspend(struct devic
-> > >  	}
-> > >  
-> > >   End:
-> > > +	dev->power.is_suspended = !error;
-> > >  	device_unlock(dev);
-> > >  	complete_all(&dev->power.completion);
-> > 
-> > This change doesn't seem to be correct too, because error is 0 if
-> > async_error is true, but the device won't be suspended in that case
-> > too.
-> 
-> Okay; I should have been more careful.  Thanks for fixing this up.
+> Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
 
-No problem. :-)
+Thanks, I'm going to push your patch for 3.0 + stable.
 
-Appended is what I'm going to push to Linus.
-
-Thanks,
 Rafael
 
----
-From: Alan Stern <stern@rowland.harvard.edu>
-Subject: PM: Fix async resume following suspend failure
 
-The PM core doesn't handle suspend failures correctly when it comes to
-asynchronously suspended devices.  These devices are moved onto the
-dpm_suspended_list as soon as the corresponding async thread is
-started up, and they remain on the list even if they fail to suspend
-or the sleep transition is cancelled before they get suspended.  As a
-result, when the PM core unwinds the transition, it tries to resume
-the devices even though they were never suspended.
+> --- 
+> 
+> diff --git a/kernel/power/user.c b/kernel/power/user.c
+> index 7d02d33..42ddbc6 100644
+> --- a/kernel/power/user.c
+> +++ b/kernel/power/user.c
+> @@ -113,8 +113,10 @@ static int snapshot_open(struct inode *inode, struct file *filp)
+>  		if (error)
+>  			pm_notifier_call_chain(PM_POST_RESTORE);
+>  	}
+> -	if (error)
+> +	if (error) {
+> +		free_basic_memory_bitmaps();
+>  		atomic_inc(&snapshot_device_available);
+> +	}
+>  	data->frozen = 0;
+>  	data->ready = 0;
+>  	data->platform_support = 0;
+> _______________________________________________
+> linux-pm mailing list
+> linux-pm@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/linux-pm
+> 
+> 
 
-This patch (as1474) fixes the problem by adding a new "is_suspended"
-flag to dev_pm_info.  Devices are resumed only if the flag is set.
-
-[rjw:
- * Moved the dev->power.is_suspended check into device_resume(),
-   because we need to complete dev->power.completion and clear
-   dev->power.is_prepared too for devices whose
-   dev->power.is_suspended flags are unset.
- * Fixed __device_suspend() to avoid setting dev->power.is_suspended
-   if async_error is different from zero.]
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: stable@kernel.org
----
- drivers/base/power/main.c |   14 ++++++++++++--
- include/linux/pm.h        |    1 +
- 2 files changed, 13 insertions(+), 2 deletions(-)
-
-Index: linux-2.6/include/linux/pm.h
-===================================================================
---- linux-2.6.orig/include/linux/pm.h
-+++ linux-2.6/include/linux/pm.h
-@@ -426,6 +426,7 @@ struct dev_pm_info {
- 	unsigned int		can_wakeup:1;
- 	unsigned int		async_suspend:1;
- 	bool			is_prepared:1;	/* Owned by the PM core */
-+	bool			is_suspended:1;	/* Ditto */
- 	spinlock_t		lock;
- #ifdef CONFIG_PM_SLEEP
- 	struct list_head	entry;
-Index: linux-2.6/drivers/base/power/main.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/main.c
-+++ linux-2.6/drivers/base/power/main.c
-@@ -58,6 +58,7 @@ static int async_error;
- void device_pm_init(struct device *dev)
- {
- 	dev->power.is_prepared = false;
-+	dev->power.is_suspended = false;
- 	init_completion(&dev->power.completion);
- 	complete_all(&dev->power.completion);
- 	dev->power.wakeup = NULL;
-@@ -517,6 +518,9 @@ static int device_resume(struct device *
- 	 */
- 	dev->power.is_prepared = false;
- 
-+	if (!dev->power.is_suspended)
-+		goto Unlock;
-+
- 	if (dev->pwr_domain) {
- 		pm_dev_dbg(dev, state, "power domain ");
- 		error = pm_op(dev, &dev->pwr_domain->ops, state);
-@@ -552,6 +556,9 @@ static int device_resume(struct device *
- 	}
- 
-  End:
-+	dev->power.is_suspended = false;
-+
-+ Unlock:
- 	device_unlock(dev);
- 	complete_all(&dev->power.completion);
- 
-@@ -839,11 +846,11 @@ static int __device_suspend(struct devic
- 	device_lock(dev);
- 
- 	if (async_error)
--		goto End;
-+		goto Unlock;
- 
- 	if (pm_wakeup_pending()) {
- 		async_error = -EBUSY;
--		goto End;
-+		goto Unlock;
- 	}
- 
- 	if (dev->pwr_domain) {
-@@ -881,6 +888,9 @@ static int __device_suspend(struct devic
- 	}
- 
-  End:
-+	dev->power.is_suspended = !error;
-+
-+ Unlock:
- 	device_unlock(dev);
- 	complete_all(&dev->power.completion);
- 
