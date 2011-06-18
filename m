@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150Ab1FRSba (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 14:31:30 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60410 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752026Ab1FRSb3 (ORCPT
+	id S1752170Ab1FRSl3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 14:41:29 -0400
+Received: from ulysses.noc.ntua.gr ([147.102.222.230]:65220 "EHLO
+	ulysses.noc.ntua.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752025Ab1FRSl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 14:31:29 -0400
-Date: Sat, 18 Jun 2011 19:33:40 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Nemo Publius <nemo@self-evident.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: Does Linux select() violate POSIX?
-Message-ID: <20110618193340.53811cbe@lxorguk.ukuu.org.uk>
-In-Reply-To: <BANLkTi=Vis=aZ5vn7E0A2LGVPOcmjd+r-g@mail.gmail.com>
-References: <BANLkTik9HzR_oJ7FocQ=o+zNoK22tUTjBg@mail.gmail.com>
-	<1308418985.3539.58.camel@edumazet-laptop>
-	<BANLkTi=Vis=aZ5vn7E0A2LGVPOcmjd+r-g@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 18 Jun 2011 14:41:27 -0400
+Message-ID: <4DFCF13F.50401@cslab.ece.ntua.gr>
+Date: Sat, 18 Jun 2011 21:41:03 +0300
+From: Vasileios Karakasis <bkk@cslab.ece.ntua.gr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9pre) Gecko/20100217 Lightning/1.0b1 Shredder/3.0.3pre
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-numa@vger.kernel.org
+Subject: Re: [BUG] Invalid return address of mmap() followed by mbind() in
+ multithreaded context
+References: <4DFB710D.7000902@cslab.ece.ntua.gr> <20110618181232.GI16236@one.firstfloor.org>
+In-Reply-To: <20110618181232.GI16236@one.firstfloor.org>
+X-Enigmail-Version: 1.0.1
+OpenPGP: id=17A67A9C;
+	url=http://www.cslab.ece.ntua.gr/~bkk/files/bkk.pub
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig1CC55EF867D4A735A093B854"
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (ulysses.noc.ntua.gr [147.102.222.230]); Sat, 18 Jun 2011 21:41:17 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > We dont care, since every sane application using select() should also
-> > use socket in non blocking mode.
-> 
-> This is simply not true for any POSIX-compliant operating system.
-> Which in this case happens to include every Unix ever written since
-> the beginning of time, apart from Linux.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig1CC55EF867D4A735A093B854
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Actually no - there are lots of device cases where instantaneously it is
-true that a read would not block but the condition then changes again.
+That's right, but what I want to demonstrate is that the address
+returned by mmap() is invalid and the dereference crashes the program,
+while it shouldn't. I could equally omit this statement, in which case
+mbind() would fail with EFAULT.
 
-An obvious simple example beyond that is a socket with two readers.
+On 06/18/2011 09:12 PM, Andi Kleen wrote:
+>>     for (i =3D 0; i < NR_ITER; i++) {
+>>         addr =3D mmap(0, PAGE_SIZE, PROT_READ | PROT_WRITE,
+>>                     MAP_ANONYMOUS | MAP_PRIVATE, 0, 0);
+>>         if (addr =3D=3D (void *) -1) {
+>>             assert(0 && "mmap failed");
+>>         }
+>>         *addr =3D 0;
+>>
+>>         err =3D mbind(addr, PAGE_SIZE, MPOL_BIND, &node, sizeof(node),=
+ 0);
+>=20
+> mbind() can be only done before the first touch. you're not actually te=
+sting=20
+> numa policy.
+>=20
+> -andi
 
-> Put another way...  The whole point of the POSIX spec is to allow me
-> to write portable code.  If every random Unix implementation makes up
-> its own mind about what is "sane" and violates the spec in arbitrary
-> and unpredictable ways, what is the point of having a spec?
+--=20
+V.K.
 
-Linux follows Posix generally, but nobody writes portable code that does
-blocking reads on a poll/select interface because there are a bazillion
-ways it can then block - events read by other tasks, discards due to
-memory exhaustion, events that are cleared the other end, etc.
 
-> > Between time select()/poll() says 'OK you can go', and time you enter
-> > kernel, conditions might have changed. For example, maybe kernel memory
-> > is not available and a send() would _block_, even if socket queue is
-> > empty.
-> 
-> Sounds like a kernel bug.
+--------------enig1CC55EF867D4A735A093B854
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-It's a design decision and a huge performance win. It's one of the areas
-where POSIX read in its strictest form cripples your performance.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Alan
+iEYEARECAAYFAk388U0ACgkQHUHhfRemepxHwwCg8nBwl3ZuVdCmwEecizOdDuOM
+680An3lRmAFNS5Ek8ZQjBSPb5YUcqNwA
+=CacT
+-----END PGP SIGNATURE-----
+
+--------------enig1CC55EF867D4A735A093B854--
