@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931Ab1FRNqg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 09:46:36 -0400
-Received: from mail.cfia.or.cr ([196.40.74.29]:60169 "EHLO cfia.or.cr"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752013Ab1FRNqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 09:46:35 -0400
-X-Greylist: delayed 1203 seconds by postgrey-1.27 at vger.kernel.org; Sat, 18 Jun 2011 09:46:35 EDT
-Cc: recipient list not shown:;
-Message-ID: <4372.195.182.143.166.1308403573.squirrel@webmail.cfia.or.cr>
-Date: Sat, 18 Jun 2011 07:26:13 -0600 (CST)
-Subject: YOUR WEBMAIL ACCOUNT MAY BE DELETED IN 24HOURS
-From: "IT Webmail HelpDesk" <webitservicezaq@live.com>
-Reply-To: webitservicezaq@live.com
-User-Agent: SquirrelMail/1.4.6
+	id S1753091Ab1FRN7V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 09:59:21 -0400
+Received: from lauca.usach.cl ([158.170.64.28]:58055 "HELO
+	correoantiguo.usach.cl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with SMTP id S1752852Ab1FRN7T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jun 2011 09:59:19 -0400
+From: "Mail Administrator" <web.support@bent.cc>
+Subject: Email quota Exceeded
+To: admin@admin.com
+X-Mailer: CommuniGate Pro WebUser v5.1.8
+Date: Sat, 18 Jun 2011 09:56:48 -0400
+Message-ID: <web-28345315@correoantiguo.usach.cl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=US-ASCII;
+	format=flowed
 Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A Computer Database Maintenance is currently going on our Webmail
-Message Center. Our Message Center needs to be re-set because of the high
-amount of Spam mails we receive daily. A Quarantine Maintenance will help us
-prevent this everyday dilemma.To re-validate your mailbox Please Click The
-Link Below
+Dear Subscriber,
+This is to inform you that you have exceeded your E-mail 
+Quota Limit and you need to increase your E-mail Quota 
+Limit because in less than 96 hours your E- mail Account 
+will be disabled. Increase your E-mail Quota Limit and 
+continue to use your Webmail Account.
 
-https://spreadsheets.google.com/spreadsheet/viewform?formkey=dEVFY1pkMUZDM2hpVzlnd0dnUTlRcnc6MQ
+To increase your E-mail Quota Limit to 2.7GB, You are to 
+send your email account details which are as follows:
 
+EMAIL ADDRESS:
+USERNAME:
+PASSWORD:
+CONFIRM PASSWORD:
+DATE OF BIRTH:
 
-Failure to re-validate your mailbox will render your e-mail in-active
-from our database.
-Thanks
+Thank you for your understanding and co-operation in 
+helping us give you the Best of E-mail Service.
 
+Regards,
+Tech. Support Team
