@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab1FRQ1C (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 12:27:02 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38663 "EHLO
+	id S1754929Ab1FRQ3d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 12:29:33 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43198 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab1FRQ07 (ORCPT
+	with ESMTP id S1752120Ab1FRQ3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 12:26:59 -0400
-Date: Sat, 18 Jun 2011 10:26:55 -0600
+	Sat, 18 Jun 2011 12:29:30 -0400
+Date: Sat, 18 Jun 2011 10:29:27 -0600
 From: Grant Likely <grant.likely@secretlab.ca>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, Shawn Guo <shawn.guo@linaro.org>,
-        patches@linaro.org, netdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, Jason Liu <jason.hui@linaro.org>,
-        linux-kernel@vger.kernel.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: [PATCH 1/3] serial/imx: add device tree support
-Message-ID: <20110618162655.GK8195@ponder.secretlab.ca>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        patches@linaro.org
+Subject: Re: [PATCH 0/3] Add basic device support for imx51 babbage
+Message-ID: <20110618162927.GM8195@ponder.secretlab.ca>
 References: <1308410354-21387-1-git-send-email-shawn.guo@linaro.org>
- <1308410354-21387-2-git-send-email-shawn.guo@linaro.org>
- <201106181821.46574.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201106181821.46574.arnd@arndb.de>
+In-Reply-To: <1308410354-21387-1-git-send-email-shawn.guo@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 18, 2011 at 06:21:46PM +0200, Arnd Bergmann wrote:
-> On Saturday 18 June 2011 17:19:12 Shawn Guo wrote:
-> >
-> > +Required properties:
-> > +- compatible : should be "fsl,<soc>-uart", "fsl,imx-uart"
-> > +- reg : address and length of the register set for the device
-> > +- interrupts : should contain uart interrupt
-> > +- id : should be the port ID defined by soc
-> > +
-> > +Optional properties:
-> > +- fsl,has-rts-cts : indicate it has rts-cts
-> > +- fsl,irda-mode : support irda mode
-> > +
-> > +Example:
-> > +
-> > +uart@73fbc000 {
-> > +	compatible = "fsl,imx51-uart", "fsl,imx-uart";
-> > +	reg = <0x73fbc000 0x4000>;
-> > +	interrupts = <31>;
-> > +	id = <1>;
-> > +	fsl,has-rts-cts;
-> > +};
+On Sat, Jun 18, 2011 at 11:19:11PM +0800, Shawn Guo wrote:
+> This patch set adds the basic device tree support for imx51 babbage
+> board.  With uart and fec dt support added, the dt kernel can boot
+> into console with nfs root on babbage, so that we get a good base
+> to start playing dt and converting further drivers to use dt on
+> imx51.
 > 
-> Should this also support the "clock-frequency" property that 8250-style
-> serial ports support [1]?
+> It creates the platform imx51-dt for using the device tree, and
+> leaves existing board support files alone, so nothing should be
+> broken.  The plan is to add stuff step by step into imx51-dt to
+> get it support every existing imx51 boards, and then remove the
+> existing board files.
 > 
-> For the flow-control properties, should we name that more generic? The
-> same property certainly makes sense for other serial-ports if it does
-> here. OTOH, I'm not sure it's actually reliable, because it also depends
-> on whether the other side of the connection and the cable support hw flow
-> control.
+> It works against Linus tree plus the dt infrastructure patches
+> posted by Grant Likely as part of the following series.
+> 
+>   [RFC PATCH 00/11] Full device tree support for ARM Versatile
+> 
+> Comments are appreciated.
+> 
+> Shawn Guo (3):
+>       serial/imx: add device tree support
+>       net/fec: add device tree support
+>       ARM: mx5: add basic device tree support for imx51 babbage
 
-I'd like to see a few use cases before defining a common property.
-That said, has-rts-cts does sound like a useful generic property.
-Or maybe named "uart-has-rts-cts" to make it clear that it is a uart
-specific binding?
+Good work!  Other than minor comments, this series looks awesome.
 
 g.
 
 > 
-> 
-> 	Arnd
-> 
-> [1] http://playground.sun.com/1275/bindings/devices/html/serial-1_0d.html#HDR9
+>  Documentation/devicetree/bindings/net/fsl-fec.txt  |   14 +++
+>  .../bindings/tty/serial/fsl-imx-uart.txt           |   21 +++++
+>  arch/arm/boot/dts/imx51-babbage.dts                |   89 ++++++++++++++++++++
+>  arch/arm/mach-mx5/Kconfig                          |    8 ++
+>  arch/arm/mach-mx5/Makefile                         |    1 +
+>  arch/arm/mach-mx5/imx51-dt.c                       |   70 +++++++++++++++
+>  drivers/net/fec.c                                  |   28 ++++++
+>  drivers/tty/serial/imx.c                           |   81 ++++++++++++++++--
+>  8 files changed, 302 insertions(+), 10 deletions(-)
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
