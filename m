@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756082Ab1FRPLi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 11:11:38 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:43992 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753297Ab1FRPLg (ORCPT
+	id S1755744Ab1FRPMd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 11:12:33 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:37350 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752663Ab1FRPMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 11:11:36 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=RGPRgDLKBkjzL1I9GvWl7gs8Am0sRWs+tW9FrP3dwX6puJUtoaYlaakdDnzfuXuk6+M0zwWJI7n8UNejKgxRraJbpwEH7FBbI7wtfEpslLFqJapQlEig6mUjwfN65ddl;
-Date: Sat, 18 Jun 2011 08:11:34 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: "Robert P. J. Day" <rpjday@crashcourse.ca>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, hughd@google.com,
-        Andrew Morton <akpm@osdl.org>
-Subject: Re: [PATCH v2] TMPFS: Expand "help" to explain value of
- TMPFS_POSIX_ACL
-Message-Id: <20110618081134.fbafed0f.rdunlap@xenotime.net>
-In-Reply-To: <alpine.DEB.2.02.1106181108210.3831@localhost6.localdomain6>
-References: <alpine.DEB.2.02.1106181108210.3831@localhost6.localdomain6>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Sat, 18 Jun 2011 11:12:31 -0400
+Date: Sat, 18 Jun 2011 16:12:27 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        dg77.kim@samsung.com, kyungmin.park@samsung.com,
+        myungjoo.ham@gmail.com
+Subject: Re: [PATCH 1/2] Exynos4 NURI: configure regulators and PMIC
+Message-ID: <20110618151227.GB25163@sirena.org.uk>
+References: <1308215372-17420-1-git-send-email-myungjoo.ham@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308215372-17420-1-git-send-email-myungjoo.ham@samsung.com>
+X-Cookie: BOFH excuse
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 18 Jun 2011 11:10:20 -0400 (EDT) Robert P. J. Day wrote:
+On Thu, Jun 16, 2011 at 06:09:31PM +0900, MyungJoo Ham wrote:
 
-> 
-> Expand the fs/Kconfig "help" info to clarify why it's a bad idea to
-> deselect the TMPFS_POSIX_ACL config variable.
-> 
-> Signed-off-by: Robert P. J. Day <rpjday@crashcourse.ca>
+>  static struct regulator_init_data emmc_fixed_voltage_init_data = {
+>  	.constraints		= {
+> +		.min_uV		= 2800000,
+> +		.max_uV		= 2800000,
+>  		.name		= "VMEM_VDD_2.8V",
+>  		.valid_ops_mask	= REGULATOR_CHANGE_STATUS,
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+Since the regualtor can't change voltage specifying the voltage here
+isn't going to achieve anything - to get the voltage reported through
+get_voltage() you need to put the voltage in the platform data for the
+fixed regulator.
 
+> +static struct regulator_consumer_supply nuri_max8997_ldo1_consumer[] = {
+> +	REGULATOR_SUPPLY("vadc", NULL), /* Used by CPU's ADC drv */
+> +};
 
-> ---
-> 
-> diff --git a/fs/Kconfig b/fs/Kconfig
-> index 19891aa..4217543 100644
-> --- a/fs/Kconfig
-> +++ b/fs/Kconfig
-> @@ -127,14 +127,20 @@ config TMPFS_POSIX_ACL
->  	select TMPFS_XATTR
->  	select GENERIC_ACL
->  	help
-> -	  POSIX Access Control Lists (ACLs) support permissions for users and
-> -	  groups beyond the owner/group/world scheme.
-> +	  POSIX Access Control Lists (ACLs) support additional access rights
-> +	  for users and groups beyond the standard owner/group/world scheme,
-> +	  and this option selects support for ACLs specifically for tmpfs
-> +	  filesystems.
+In the ADC regulator patch you called the supply vdd (though the chip
+normally calls it vadc so that's the better name)...
+
+Extra ' too.
+
+> +static struct regulator_consumer_supply nuri_max8997_ldo8_consumer[] = {
+> +	REGULATOR_SUPPLY("vusb_d", NULL), /* Used by CPU */
+> +	REGULATOR_SUPPLY("vdac", NULL), /* Used by CPU */
+> +};
+
+Another VADC?  For a different supply?
+
+> +		.state_mem	= {
+> +			.enabled	= 0,
+
+No need to initialize to zero.
+
+> +static struct regulator_init_data nuri_max8997_ldo10_data = {
+> +	.constraints	= {
+
+You should be able to use __initdata for a lot of this by the way.
+
+> +#define NURI_PMIC_GPIO		EXYNOS4_GPX0(7)
+> +static void __init nuri_pmic_init(void)
+> +{
+> +	int gpio;
 > +
-> +	  If you've selected TMPFS, you almost certainly want this option
-> +	  as well since a number of user space features (e.g., ALSA sound)
-> +	  require POSIX ACL support under /dev to work properly.  In other
-> +	  words, if you're not sure and you have no *compelling* reason to
-> +	  deselect this feature, say Y.
-> 
->  	  To learn more about Access Control Lists, visit the POSIX ACLs for
->  	  Linux website <http://acl.bestbits.at/>.
-> 
-> -	  If you don't know what Access Control Lists are, say N.
-> -
->  config TMPFS_XATTR
->  	bool "Tmpfs extended attributes"
->  	depends on TMPFS
-> 
-> -- 
-> 
-> ========================================================================
-> Robert P. J. Day                                 Ottawa, Ontario, CANADA
->                         http://crashcourse.ca
-> 
-> Twitter:                                       http://twitter.com/rpjday
-> LinkedIn:                               http://ca.linkedin.com/in/rpjday
-> ========================================================================
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> +	nuri_max8997_pdata.irq_base = irq_get_next_irq(IRQ_GPIO_END);
+> +	gpio = NURI_PMIC_GPIO;
+> +	gpio_request(gpio, "AP_PMIC_IRQ");
+> +	s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(0xf));
+> +	s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
+> +}
 
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+I'm not sure both the #define and the variable make sense here...
