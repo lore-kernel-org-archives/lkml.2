@@ -1,100 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab1FRA2X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 20:28:23 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:14715 "EHLO
+	id S1755124Ab1FRA27 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 20:28:59 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:37967 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937Ab1FRA2W (ORCPT
+	with ESMTP id S1751139Ab1FRA26 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 20:28:22 -0400
+	Fri, 17 Jun 2011 20:28:58 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=CydOji7yfSfthqXhzPKF0RuY3x8GuLYCV8n/RAiqTdQ6xtg7qfzX/oEifRfcjnT5xb
-         6Y3m1hHrh9NBoh0xwdsg==
-Date: Fri, 17 Jun 2011 17:28:15 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: "Robert P. J. Day" <rpjday@crashcourse.ca>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: should CONFIG_TMPFS_POSIX_ACL be so easily deselectable?
-In-Reply-To: <alpine.DEB.2.02.1106171909260.8043@localhost6.localdomain6>
-Message-ID: <alpine.LSU.2.00.1106171713570.1345@sister.anvils>
-References: <alpine.DEB.2.02.1106171756470.4381@localhost6.localdomain6> <alpine.LSU.2.00.1106171534530.20805@sister.anvils> <alpine.DEB.2.02.1106171909260.8043@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=GhyB7OFtmQWxokkV80Z/gRDz4y/8t0tsI5Mt/O4liHZZywL4rkDvL+/77civO1icRt
+         4w9+e0tM3KcZlfqor7kQ==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4DFB1AB6.4020104@jp.fujitsu.com>
+References: <20110503092846.022272244@google.com> <20110614065807.GA19111@localhost.localdomain>
+ <4DF70DED.2030803@jp.fujitsu.com> <20110615083749.GA14200@localhost.localdomain>
+ <4DF954E5.9060704@jp.fujitsu.com> <20110616094508.GA1961@localhost.localdomain>
+ <4DFAAC6B.6060306@jp.fujitsu.com> <BANLkTikDYdxed6=C6Lfht3WZM-=HSqDDKA@mail.gmail.com>
+ <4DFB1AB6.4020104@jp.fujitsu.com>
+From: Paul Turner <pjt@google.com>
+Date: Fri, 17 Jun 2011 17:28:24 -0700
+Message-ID: <BANLkTimt1dYMHtPtb0H8UGSiiJjUpE3deQ@mail.gmail.com>
+Subject: Re: [patch 00/15] CFS Bandwidth Control V6
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: Hu Tao <hutao@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.co>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Jun 2011, Robert P. J. Day wrote:
-> On Fri, 17 Jun 2011, Hugh Dickins wrote:
-> > On Fri, 17 Jun 2011, Robert P. J. Day wrote:
-> > >
-> > > p.s.  i do notice a fairly recent change to that config file related
-> > > to this:
-> >
-> > Yes, we were originally losing the oldconfig value of
-> > TMPFS_POSIX_ACL.
-> >
-> > It would be easy to ack a patch from you which changes that wording
-> > "If you don't know what Access Control Lists are, say N" to
-> > something more informative about what the sound userspace wants.
-> 
->   agreed -- something as simple as "if you don't know, say Y"?  :-)
-> or would it be better to actually take a line or two to explain the
-> consequences of that option?
+On Fri, Jun 17, 2011 at 2:13 AM, Hidetoshi Seto
+<seto.hidetoshi@jp.fujitsu.com> wrote:
+> (2011/06/17 15:25), Paul Turner wrote:
+>> It should be out in a few hours, as I was preparing everything today I
+>> realized an latent error existed in the quota expiration path;
+>> specifically that on a wake-up from a sufficiently long sleep we will
+>> see expired quota and have to wait for the timer to recharge bandwidth
+>> before we're actually allowed to run.  Currently munging the results
+>> of fixing that and making sure everything else is correct in the wake
+>> of those changes.
+>
+> Thanks!
+> I'll check it some time early next week.
 
-I think both.  I've often thought "default N", "if unsure say Y"
-Kconfig options contradictory, but I can see the point in this case.
-Example or examples of the pain of saying N can be helpful.
+So it's been a long session of hunting races and implementing the
+cleanups above.
 
-> (by the way, this option affects more than just sound.)
+Unfortunately as my finger hovered over the send button I realized one
+hurdle remains  -- there's a narrow race in the period timer shutdown
+path:
 
-Of course.
+- Our period timer can decide that we're going idle as a result of no activity
+- Right after it makes this decision a task sneaks in and runs on
+another cpu.  We can see the timer has chosen to go idle (it's
+possible to  synchronize on that state around the bandwidth lock) but
+there's no good way to kick the period timer into an about-face since
+it's already active.
+- The timing is sufficiently rare and short that we could do something
+awful like spin until the timer is complete, but I think it's probably
+better to put a kick in one of our already existing re-occuring paths
+such as update_shares.
 
-> 
-> > It would be harder to justify having SOUND select TMPFS, or changing
-> > the TMPFS_POSIX_ACL default to Y.  It's been N forever, and that is
-> > how we prefer to add features.
-> 
->   normally, i'd agree with you, except for the observation that, by
-> far, the default config files across all architectures select that
-> option.  there are 48 config files that select it, and only 3 that
-> don't.  sometimes, that's a compelling argument that maybe it *should*
-> be default yes.  but for now, i'll just whip up a more informative
-> help sentence or two.
+I'll fix this after some sleep, I'm out of steam for now.
 
-I don't think architecture defconfig files necessarily correlate with
-Kconfig defaults.  You could argue that they should do so (so far as
-arch-independent options are concerned), but I think the reality is
-that arch defconfigs are produced separately, at the whim of various
-people with different agendas.  I may be wrong (if unsure, say Y!).
 
-> 
-> rday
-> 
-> p.s.  as i mentioned, that option would appear to affect more than
-> just sound.  as in:
-> 
-> $ getfacl /dev/kvm
-> getfacl: Removing leading '/' from absolute path names
-> # file: dev/kvm
-> # owner: root
-> # group: kvm
-> user::rw-
-> user:rpjday:rw-
-> group::rw-
-> mask::rw-
-> other::---
-> 
-> so wouldn't KVM suddenly start behaving badly as well?
-
-Dunno.  But certainly TMPFS_POSIX_ACLs are for whatever uses
-tmpfs POSIX ACLs are being put to, not specific to sound - but
-sound happens to be the case that wasted your time and Linus's.
-
-Hugh
+>
+>
+> Thanks,
+> H.Seto
+>
+>
