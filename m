@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013Ab1FRIgH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 04:36:07 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56131 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753061Ab1FRIgE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 04:36:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=k0Jy480rwSDB/GdHgzDAmsiAOlzfU9/1fRWx6igIEaTU7VrX6IHYU5rHIqhlOW5A87
-         99wsKQVaq2gSmSOK2VWplQtLDuDte87ozyg0TP9qWNg7Cf9kwGg+mcFNIqYjAf4rqgSJ
-         DFrWT9pPPg6qUP1ln7dpEyVHDrPnbiau7uYh4=
-Date: Sat, 18 Jun 2011 10:35:59 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: oleg@redhat.com, jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu,
-        bdonlan@gmail.com, pedro@codesourcery.com
-Subject: Re: [PATCH 2/5] ptrace: implement PTRACE_SEIZE
-Message-ID: <20110618083559.GK2611@htj.dyndns.org>
-References: <1308043218-23619-1-git-send-email-tj@kernel.org>
- <1308043218-23619-3-git-send-email-tj@kernel.org>
- <201106180955.37531.vda.linux@googlemail.com>
- <201106180959.38847.vda.linux@googlemail.com>
+	id S1754186Ab1FRIia (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 04:38:30 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:51545 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753139Ab1FRIi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jun 2011 04:38:26 -0400
+Date: Sat, 18 Jun 2011 10:38:20 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@amd64.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 4/8] x86, mce: rename bootparam parser
+Message-ID: <20110618083820.GA27319@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@amd64.org>,
+	Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	"H. Peter Anvin" <hpa@zytor.com>
+References: <4DFB1242.90404@jp.fujitsu.com>
+ <4DFB13E2.4080909@jp.fujitsu.com>
+ <20110617154143.GC20010@aftab>
+ <987664A83D2D224EAE907B061CE93D5301E8E3054B@orsmsx505.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <201106180959.38847.vda.linux@googlemail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <987664A83D2D224EAE907B061CE93D5301E8E3054B@orsmsx505.amr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Jun 17, 2011 at 03:25:51PM -0700, Luck, Tony wrote:
+> > and leave this like this. "nomce" is the same as "mce=off" and frankly,
+> > I'd like to remove this redundancy, thus no need to do the code
+> > relocation. In addition, I don't think there are lots of systems running
+> > with "nomce" so I really think we should drop it.
+> >
+> > So Ingo, hpa, what is the proper way to remove early setup params? Maybe
+> > through Documentation/feature-removal-schedule.txt?
+> 
+> Though it seems odd to me that anyone would want to turn mce off,
+> the fact that we have two ways to do so would indicate that people
+> do (or at least did) want to do this.
 
-On Sat, Jun 18, 2011 at 09:59:38AM +0200, Denys Vlasenko wrote:
-> ...unless we plan to introduce PTRACE_O_TRACESTOP (with value 0x00000080)
-> which enables PTRACE_INTERRUPT and stop notifications independently
-> of PTRACE_SEIZE. Which would be very useful for e.g. strace.
+Yeah, the only usecase I could think of for this is people doing their
+own userspace DRAM ECC evaluation like google. But they'd still need to
+have an #MC handler... or they could parse syslog for the output from
+the default unexpected_machine_check().. hm.
 
-I know you're a big fan of those option flags but I don't really see
-the added value in making these behaviors optional rather than keeping
-things backward compatible - ie. introducing new event needed to be
-gated somehow so the O flags but SEIZE itself serves as a big gate
-anyway so I don't see much point in introducing multiple selectable
-behaviors.  It's not like PTRACE_O_TRACESTOP is gonna make anything
-drastically easier or reduce significant amount of overhead.
+> It seems like we'd need a long "deprecated" period (till all the
+> major OSVs turn out a new release) to remove this without surprises.
+> If the "nomce" option just disappears, then people using it will
+> not realize that their boot time argument was ignored (until they
+> see a reported error).
 
-Thanks.
+Yeah, we could do a grace period with a warning:
+
+/*
+ * Old style boot options parsing. Only for compatibility.
+ */
+static int __init mcheck_disable(char *str)
+{
+	pr_err("\"nomce\" boot param is deprecated. Please use \"mce=off\"\n");
+
+	mce_disabled = 1;
+	return 1;
+}
+__setup("nomce", mcheck_disable);
+
+and then kill it.
 
 -- 
-tejun
+Regards/Gruss,
+    Boris.
