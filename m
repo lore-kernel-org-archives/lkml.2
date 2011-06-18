@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600Ab1FRIav (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 04:30:51 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:39178 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753065Ab1FRIaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 04:30:39 -0400
-Date: Sat, 18 Jun 2011 18:30:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Michael Ellerman <michael@ellerman.id.au>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Linux-Next <linux-next@vger.kernel.org>
-Subject: Re: Build regressions/improvements in v3.0-rc3
-Message-Id: <20110618183029.822f4d82.sfr@canb.auug.org.au>
-In-Reply-To: <BANLkTikBDVR=S5J-=Kjq1QW3OU64WzHYRg@mail.gmail.com>
-References: <alpine.DEB.2.00.1106151111200.18110@ayla.of.borg>
-	<BANLkTikBDVR=S5J-=Kjq1QW3OU64WzHYRg@mail.gmail.com>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sat__18_Jun_2011_18_30_29_+1000_fpSBzABPWJTUAyT7"
+	id S1753390Ab1FRIak (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 04:30:40 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:35041 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752773Ab1FRIah (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jun 2011 04:30:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ocO5i3NbiD5y9225Nn3ErCQrU/e7yCIHllNVQmH9E4kgCT+Na+PsiBklN3myIBA7x2
+         DkUNnTxl0/dMNMFM8y1aEndf4VGfrNzc0K8KpQpmRM1+Dv+ZcBQZD+Xj5baUtTagAji5
+         4hpGvGy5q+FbglMMo4L4eknFcfNu821BGDgcI=
+Date: Sat, 18 Jun 2011 10:30:32 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: oleg@redhat.com, jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu,
+        bdonlan@gmail.com, pedro@codesourcery.com
+Subject: Re: [PATCH 2/5] ptrace: implement PTRACE_SEIZE
+Message-ID: <20110618083032.GJ2611@htj.dyndns.org>
+References: <1308043218-23619-1-git-send-email-tj@kernel.org>
+ <1308043218-23619-3-git-send-email-tj@kernel.org>
+ <201106180955.37531.vda.linux@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201106180955.37531.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__18_Jun_2011_18_30_29_+1000_fpSBzABPWJTUAyT7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-Hi Geert,
+On Sat, Jun 18, 2011 at 09:55:37AM +0200, Denys Vlasenko wrote:
+> On Tuesday 14 June 2011 11:20, Tejun Heo wrote:
+>    #define PTRACE_EVENT_FORK    1
+>    #define PTRACE_EVENT_VFORK   2
+>    #define PTRACE_EVENT_CLONE   3
+> >  #define PTRACE_EVENT_EXEC	4
+> >  #define PTRACE_EVENT_VFORK_DONE	5
+> >  #define PTRACE_EVENT_EXIT	6
+> > +#define PTRACE_EVENT_STOP	7
+> 
+> Er... these constants were corresponding exactly to
+> bit positions in ptrace options which enable them:
+> 
+> #define PTRACE_O_TRACESYSGOOD   0x00000001
+> #define PTRACE_O_TRACEFORK      0x00000002
+> #define PTRACE_O_TRACEVFORK     0x00000004
+> #define PTRACE_O_TRACECLONE     0x00000008
+> #define PTRACE_O_TRACEEXEC      0x00000010
+> #define PTRACE_O_TRACEVFORKDONE 0x00000020
+> #define PTRACE_O_TRACEEXIT      0x00000040
+> 
+> For example, PTRACE_O_TRACEEXEC is 4th bit, PTRACE_EVENT_EXEC is 4.
+> 
+> If we'd define PTRACE_EVENT_STOP as 7, any future added
+> PTRACE_O_foo bit with value 0x00000080 will be unable
+> to follow this convention.
 
-On Wed, 15 Jun 2011 11:19:48 +0200 Geert Uytterhoeven <geert@linux-m68k.org=
-> wrote:
->
-> Would it be possible to build with `make -k', so it continues in case
-> of an error, and
-> tries to build as much as possible?
-> Yes, I know this may increase build time considerably, but in an ideal
-> world, there
-> are no compile errors and everything is built anyway ;-)
+I'm not sure how this will actually play out but currently planning on
+adding more implicitly enabled events on SEIZE.
 
-Done (I think - it required very simple changes to a Python script and I
-only do "monkey see, monkey do" Python programming :-))
+> I propose to define PTRACE_EVENT_STOP as 64 instead, leaving 64 low
+> PTRACE_EVENT_foo constants for possible future PTRACE_O_foo bits.
+> 
+> [32 should be enough too, but I feel paranoid today :)]
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+But this might not be a bad idea.  Given that we also support 32bit
+archs, going over 32 wouldn't help much tho.
 
---Signature=_Sat__18_Jun_2011_18_30_29_+1000_fpSBzABPWJTUAyT7
-Content-Type: application/pgp-signature
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN/GIlAAoJEDMEi1NhKgbsOM4IAKMzG0Wk4Jes83BIZsOTzQj/
-NJjIGuU+Xy7pQoQ7oR2ftUxSnG681Lilad7o2rNMmEMr7AcetGkztqivT5TK1cg+
-whxq7TdvzcquUz+MAAQ1hmtv6wTQAibQUAA9VnWHLMujHwCLQL3XnoOSy8JcxoB1
-jl2OrnVT4l2w2Ka/eUPlms0+O+DNR7DbuY+I9gL8rHZRiQZFGcjRXPzPNcommWa1
-jyLZ2kyIX3AFI2mbL6FlPsfytGelfM1klTB4F8Q6wvawWZNIiLTDs+tugtQofRiK
-ADTL2nLckUZIREErDr0+FTb4+Zz82NOI/S1MkSFVXskEOhq/KAlDGGeHOhknlus=
-=OVLi
------END PGP SIGNATURE-----
-
---Signature=_Sat__18_Jun_2011_18_30_29_+1000_fpSBzABPWJTUAyT7--
+-- 
+tejun
