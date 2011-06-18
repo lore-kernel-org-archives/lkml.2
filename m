@@ -1,82 +1,435 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755124Ab1FRA27 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 20:28:59 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:37967 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab1FRA26 convert rfc822-to-8bit (ORCPT
+	id S1755421Ab1FRAvj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 20:51:39 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:44802 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937Ab1FRAvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 20:28:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=GhyB7OFtmQWxokkV80Z/gRDz4y/8t0tsI5Mt/O4liHZZywL4rkDvL+/77civO1icRt
-         4w9+e0tM3KcZlfqor7kQ==
+	Fri, 17 Jun 2011 20:51:37 -0400
+Message-ID: <4DFBF50D.2020705@bx.jp.nec.com>
+Date: Fri, 17 Jun 2011 20:45:01 -0400
+From: Keiichi KII <k-keiichi@bx.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <4DFB1AB6.4020104@jp.fujitsu.com>
-References: <20110503092846.022272244@google.com> <20110614065807.GA19111@localhost.localdomain>
- <4DF70DED.2030803@jp.fujitsu.com> <20110615083749.GA14200@localhost.localdomain>
- <4DF954E5.9060704@jp.fujitsu.com> <20110616094508.GA1961@localhost.localdomain>
- <4DFAAC6B.6060306@jp.fujitsu.com> <BANLkTikDYdxed6=C6Lfht3WZM-=HSqDDKA@mail.gmail.com>
- <4DFB1AB6.4020104@jp.fujitsu.com>
-From: Paul Turner <pjt@google.com>
-Date: Fri, 17 Jun 2011 17:28:24 -0700
-Message-ID: <BANLkTimt1dYMHtPtb0H8UGSiiJjUpE3deQ@mail.gmail.com>
-Subject: Re: [patch 00/15] CFS Bandwidth Control V6
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: Hu Tao <hutao@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.co>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: greg@kroah.com
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] updated Documentation/ja_JP/SubmittingPatches
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 2:13 AM, Hidetoshi Seto
-<seto.hidetoshi@jp.fujitsu.com> wrote:
-> (2011/06/17 15:25), Paul Turner wrote:
->> It should be out in a few hours, as I was preparing everything today I
->> realized an latent error existed in the quota expiration path;
->> specifically that on a wake-up from a sufficiently long sleep we will
->> see expired quota and have to wait for the timer to recharge bandwidth
->> before we're actually allowed to run.  Currently munging the results
->> of fixing that and making sure everything else is correct in the wake
->> of those changes.
->
-> Thanks!
-> I'll check it some time early next week.
+From: Keiichi Kii <k-keiichi@bx.jp.nec.com>
 
-So it's been a long session of hunting races and implementing the
-cleanups above.
+Updated Documentaion/ja_JP/SubmittingPatches due to changes from upstream
+version(2.6.39) of the file.
 
-Unfortunately as my finger hovered over the send button I realized one
-hurdle remains  -- there's a narrow race in the period timer shutdown
-path:
+And also, this translated SubmittingPatches is already reviewed by JF
+project. The JF project is the Japanese equivalent of LDP.
 
-- Our period timer can decide that we're going idle as a result of no activity
-- Right after it makes this decision a task sneaks in and runs on
-another cpu.  We can see the timer has chosen to go idle (it's
-possible to  synchronize on that state around the bandwidth lock) but
-there's no good way to kick the period timer into an about-face since
-it's already active.
-- The timing is sufficiently rare and short that we could do something
-awful like spin until the timer is complete, but I think it's probably
-better to put a kick in one of our already existing re-occuring paths
-such as update_shares.
+Signed-off-by: Keiichi Kii <k-keiichi@bx.jp.nec.com>
+---
 
-I'll fix this after some sleep, I'm out of steam for now.
+ Documentation/ja_JP/SubmittingPatches |  258 +++++++++++++++++++++++++++------
+ 1 files changed, 213 insertions(+), 45 deletions(-)
 
 
->
->
-> Thanks,
-> H.Seto
->
->
+diff --git a/Documentation/ja_JP/SubmittingPatches b/Documentation/ja_JP/SubmittingPatches
+index f107c83..97f78dd 100644
+--- a/Documentation/ja_JP/SubmittingPatches
++++ b/Documentation/ja_JP/SubmittingPatches
+@@ -11,16 +11,18 @@ for non English (read: Japanese) speakers and is not intended as a
+ fork. So if you have any comments or updates of this file, please try
+ to update the original English file first.
+ 
+-Last Updated: 2007/10/24
++Last Updated: 2011/06/09
++
+ ==================================
+ $B$3$l$O!"(B
+-linux-2.6.23/Documentation/SubmittingPatches $B$NOBLu(B
++linux-2.6.39/Documentation/SubmittingPatches $B$NOBLu(B
+ $B$G$9!#(B
+ $BK]LuCDBN!'(B JF $B%W%m%8%'%/%H(B < http://www.linux.or.jp/JF/ >
+-$BK]LuF|!'(B 2007/10/17
++$BK]LuF|!'(B 2011/06/09
+ $BK]Lu<T!'(B Keiichi Kii <k-keiichi at bx dot jp dot nec dot com>
+ $B9;@5<T!'(B Masanari Kobayashi $B$5$s(B <zap03216 at nifty dot ne dot jp>
+          Matsukura $B$5$s(B <nbh--mats at nifty dot com>
++         Takeshi Hamasaki $B$5$s(B <hmatrjp at users dot sourceforge dot jp>
+ ==================================
+ 
+         Linux $B%+!<%M%k$KJQ99$r2C$($k$?$a$N(B Howto
+@@ -97,7 +99,7 @@ Quilt:
+ http://savannah.nongnu.org/projects/quilt
+ 
+ Andrew Morton's patch scripts:
+-http://userweb.kernel.org/~akpm/stuff/tpp.txt
++http://userweb.kernel.org/~akpm/stuff/patch-scripts.tar.gz
+ $B$3$N%j%s%/$N@h$N%9%/%j%W%H$NBe$o$j$H$7$F!"(Bquilt $B$,%Q%C%A%^%M%8%a%s%H(B
+ $B%D!<%k$H$7$F?d>)$5$l$F$$$^$9(B($B>e$N%j%s%/$r8+$F$/$@$5$$(B)$B!#(B
+ 
+@@ -109,9 +111,25 @@ http://userweb.kernel.org/~akpm/stuff/tpp.txt
+ $B!V%I%i%$%P!<(B X $B$KBP$9$k%P%0%U%#%C%/%9!W$"$k$$$O!V$3$N%Q%C%A$O%5%V%7%9(B
+ $B%F%`(B X $B$KBP$9$k99?7$r4^$s$G$$$^$9!#$I$&$+<h$jF~$l$F$/$@$5$$!#!W$J$I$G$9!#(B
+ 
++$B%Q%C%A$N@bL@$r(B Linux $B%+!<%M%k$N%=!<%9%3!<%I%^%M%8%a%s%H%7%9%F%`!V(B git $B!W$N(B
++$B%3%_%C%H%m%0$H$7$F4JC1$K0zMQ$G$-$k7A$G=q$1$P!"%a%s%F%J$+$i46<U$5$l$k$G$7$g$&!#(B
++$B0J2<$N(B #15 $B$r8+$F$/$@$5$$!#(B
++
+ $B@bL@$,D9$/$J$j$@$7$?$N$G$"$l$P!"$*$=$i$/$=$l$O%Q%C%A$rJ,$1$kI,MW$,$"$k(B
+ $B$H$$$&C{8u$G$9!#<!$N(B #3 $B$r8+$F$/$@$5$$!#(B
+ 
++$B%Q%C%A(B($B%7%j!<%:(B)$B$r(B($B:F(B)$BEj9F$9$k;~!"==J,$J%Q%C%A$N@bL@$H$=$N%Q%C%A$,I,MW$JM}M3$r(B
++$B%Q%C%A$K4^$a$F$/$@$5$$!#$?$@!V$3$l$O%Q%C%A(B($B%7%j!<%:(B)$B$N%P!<%8%g%s(B N$B!W$H$@$1(B
++$B=q$+$J$$$G$/$@$5$$!#$=$7$F!"%Q%C%A$r%^!<%8$9$k?M$K%Q%C%A$N@bL@$rC5$5$;$=$l$r(B
++$B%Q%C%A$KDI5-$5$;$k$?$a!"2a5n$N%P!<%8%g%s$N%Q%C%A$d$=$N%Q%C%A$N(B URL $B$r;2>H$9$k(B
++$B<j4V$r$+$1$5$;$J$$$G$/$@$5$$!#(B
++$B$D$^$j!"%Q%C%A%7%j!<%:$H$=$N@bL@$O0l=o$K$"$k$Y$-$G$9!#$3$l$O%Q%C%A$r%^!<%8$9$k(B
++$B?M!"%l%S%e!<$9$k?M!"$I$A$i$N$?$a$K$b$J$j$^$9!#%l%S%e!<$9$k?M$NCf$K$O!"$*$=$i$/(B
++$B2a5n$N%P!<%8%g%s$N%Q%C%A$r<u$1<h$C$F$b$$$J$$?M$,$$$^$9!#(B
++
++$BEPO?:Q$_$N%P%0%(%s%H%j$r=$@5$9$k%Q%C%A$G$"$l$P!"$=$N%P%0%(%s%H%j$r<($9%P%0(B ID
++$B$d(B URL $B$rL@5-$7$F$/$@$5$$!#(B
++
+ 3) $B%Q%C%A$NJ,3d(B
+ 
+ $B0UL#$N$"$k$R$H$^$H$^$j$4$H$KJQ99$r8D!9$N%Q%C%A%U%!%$%k$KJ,$1$F$/$@$5$$!#(B
+@@ -141,7 +159,7 @@ http://userweb.kernel.org/~akpm/stuff/tpp.txt
+ $B5qH]$5$l$k$G$7$g$&!#(B
+ 
+ $B$"$J$?$O%Q%C%A$rEj9F$9$kA0$K:GDc8B%Q%C%A%9%?%$%k%A%'%C%+!<(B
+-( scripts/patchcheck.pl )$B$rMxMQ$7$F%Q%C%A$r%A%'%C%/$9$Y$-$G$9!#(B
++( scripts/checkpatch.pl )$B$rMxMQ$7$F%Q%C%A$r%A%'%C%/$9$Y$-$G$9!#(B
+ $B$b$7%Q%C%A$K0cH?$,$N$3$C$F$$$k$J$i$P!"$=$l$i$NA4$F$K$D$$$F$"$J$?$O@5Ev$J(B
+ $BM}M3$r<($;$k$h$&$K$7$F$*$/I,MW$,$"$j$^$9!#(B
+ 
+@@ -192,13 +210,13 @@ VGER.KERNEL.ORG $B$G%[%9%F%#%s%0$5$l$F$$$k%a!<%j%s%0%j%9%H$N(B
+ $B>pJs$,%^%K%e%"%k%Z!<%8$NCf$KF~$C$F$/$k$h$&$K!"JQ99$,5/$-$?$H$$$&(B
+ $BDLCN$rAw$C$F$/$@$5$$!#(B
+ 
+-$B$?$H$(!"%a%s%F%J$,(B #4 $B$GH?1~$,$J$+$C$?$H$7$F$b!"%a%s%F%J$N%3!<%I$KJQ99$r(B
++$B$?$H$(!"%a%s%F%J$,(B #5 $B$GH?1~$,$J$+$C$?$H$7$F$b!"%a%s%F%J$N%3!<%I$KJQ99$r(B
+ $B2C$($?$H$-$K$O!"$$$D$b%a%s%F%J$K(B CC $B$9$k$N$rK:$l$J$$$h$&$K$7$F$/$@$5$$!#(B
+ 
+-$B>.$5$J%Q%C%A$G$"$l$P!"(BAdrian Bunk $B$,4IM}$7$F$$$k(B Trivial Patch Monkey
+-($B$A$g$C$H$7$?%Q%C%A$r=8$a$F$$$k(B)<trivial@kernel.org>$B$K(B CC $B$7$F$b$$$$(B
+-$B$G$9!#$A$g$C$H$7$?%Q%C%A$H$O0J2<$N%k!<%k$N$I$l$+(B1$B$D$rK~$?$7$F$$$J$1(B
+-$B$l$P$J$j$^$;$s!#(B
++$B>.$5$J%Q%C%A$G$"$l$P!"(BTrivial Patch Monkey($B$A$g$C$H$7$?%Q%C%A$r=8$a$F$$$k(B)
++<trivial@kernel.org>$B$K(B CC $B$7$F$b$$$$$G$9!#$=$N8=4IM}<T$K$D$$$F$O(B MAINTAINERS
++$B%U%!%$%k$r8+$F$/$@$5$$!#$A$g$C$H$7$?%Q%C%A$H$O0J2<$N%k!<%k$N$I$l$+(B1$B$D$rK~$?$7$F(B
++$B$$$J$1$l$P$J$j$^$;$s!#(B
+  $B!&%I%-%e%a%s%H$N%9%Z%k%_%9$N=$@5(B
+  $B!&(Bgrep(1) $B%3%^%s%I$K$h$k8!:w$r:$Fq$K$7$F$$$k%9%Z%k$N=$@5(B
+  $B!&%3%s%Q%$%k;~$N7Y9p$N=$@5(B($BL5BL$J7Y9p$,;6Mp$9$k$3$H$O9%$^$7$/$J$$$?(B
+@@ -210,7 +228,6 @@ VGER.KERNEL.ORG $B$G%[%9%F%#%s%0$5$l$F$$$k%a!<%j%s%0%j%9%H$N(B
+  $B!&0\?"@-$N$J$$%3!<%I$+$i0\?"@-$N$"$k%3!<%I$X$NCV$-49$((B($B>.$5$$HO0O$G(B
+    $B$"$l$P%"!<%-%F%/%A%cFCM-$N$3$H$G$bB>$N?M$,%3%T!<$G$-$^$9(B)
+  $B!&:n<T$d%a%s%F%J$K$h$k=$@5(B($B$9$J$o$A(B patch monkey $B$N:FE>Aw%b!<%I(B)
+-EMAIL: <trivial@kernel.org>
+ 
+ 7) MIME $B$d%j%s%/$d05=L%U%!%$%k$dE:IU%U%!%$%k$G$O$J$/%W%l%$%s%F%-%9%H$N$_(B
+ 
+@@ -233,26 +250,15 @@ MIME $B7A<0$NE:IU%U%!%$%k$O(B Linus $B$K<j4V$r<h$i$;$k$3$H$K$J(B
+ $BNc30!'$*;H$$$NEE;R%a!<%k%/%i%$%"%s%H$,%Q%C%A$r$a$A$c$/$A$c$K$9$k$N$G(B
+ $B$"$l$P!"C/$+$,(B MIME $B7A<0$N%Q%C%A$r:FAw$9$k$h$&5a$a$k$+$b$7$l$^$;$s!#(B
+ 
+-$B7Y9p!'(B Mozilla $B$N$h$&$JFCDj$NEE;R%a!<%k%/%i%$%"%s%H$OEE;R%a!<%k$N(B
+-$B%X%C%@$K0J2<$N$b$N$rIU2C$7$FAw$j$^$9!#(B
+----- message header ----
+-Content-Type: text/plain; charset=us-ascii; format=flowed
+----- message header ----
+-$BLdBj$O!"!V(B format=flowed $B!W$,IU$$$?EE;R%a!<%k$rFCDj$N<u?.B&$NEE;R%a!<%k(B
+-$B%/%i%$%"%s%H$,%?%V$r%9%Z!<%9$KCV$-49$($k$H$$$&$h$&$JJQ99$r$9$k$3$H$G$9!#(B
+-$B$7$?$,$C$FAw$i$l$F$-$?%Q%C%A$O2u$l$F$$$k$h$&$K8+$($k$G$7$g$&!#(B
+-
+-$B$3$l$r=$@5$9$k$K$O!"(Bmozilla $B$N(B defaults/pref/mailnews.js $B%U%!%$%k$r(B
+-$B0J2<$N$h$&$K=$@5$7$^$9!#(B
+-pref("mailnews.send_plaintext_flowed", false); // RFC 2646=======
+-pref("mailnews.display.disable_format_flowed_support", true);
++$BM>7W$JJQ99$r2C$($:$K$"$J$?$N%Q%C%A$rAw?.$9$k$?$a$NEE;R%a!<%k%/%i%$%"%s%H$N@_Dj(B
++$B$N%R%s%H$K$D$$$F$O(B Documentation/email-clients.txt $B$r;2>H$7$F$/$@$5$$!#(B
+ 
+ 8) $BEE;R%a!<%k$N%5%$%:(B
+ 
+ $B%Q%C%A$r(B Linus $B$XAw$k$H$-$O>o$K(B #7 $B$N<j=g$K=>$C$F$/$@$5$$!#(B
+ 
+ $BBg$-$J%Q%C%A$O%a!<%j%s%0%j%9%H$d%a%s%F%J$K$H$C$FIT?F@Z$G$9!#%Q%C%A$,(B
+-$BL$05=L$G(B 40KB $B$rD6$($k$h$&$G$"$k$J$i!"%$%s%?!<%M%C%H>e$N%"%/%;%92DG=$J(B
++$BL$05=L$G(B 300KB $B$rD6$($k$h$&$G$"$k$J$i!"%$%s%?!<%M%C%H>e$N%"%/%;%92DG=$J(B
+ $B%5!<%P$KJ]B8$7!"J]B8>l=j$r<($9(B URL $B$rEA$($k$[$&$,E,@Z$G$9!#(B
+ 
+ 9) $B%+!<%M%k%P!<%8%g%s$NL@5-(B
+@@ -324,7 +330,7 @@ Linus $B$d(B LKML $B$X$NBgNL$NEE;R%a!<%k$N$?$a$K!"%5%V%8%'%/%H(B
+         (c) $BK\4sM?$O(B(a)$B!"(B(b)$B!"(B(c)$B$r>ZL@$9$kBh(B3$B<T$+$i;d$XD>@\Ds6!$5$l$?(B
+             $B$b$N$G$"$j!";d$O$=$l$KJQ99$r2C$($F$$$J$$!#(B
+ 
+-	(d) $B;d$O$3$N%W%m%8%'%/%H$HK\4sM?$,8x$N$b$N$G$"$k$3$H$KM}2r5Z$SF10U$9(B
++        (d) $B;d$O$3$N%W%m%8%'%/%H$HK\4sM?$,8x$N$b$N$G$"$k$3$H$KM}2r5Z$SF10U$9(B
+             $B$k!#F1;~$K!"4XM?$7$?5-O?(B($BEj9F$N:]$NA4$F$N8D?M>pJs$H(B sign-off $B$r(B
+             $B4^$`(B)$B$,L54|8B$KJ]A4$5$l$k$3$H$H!"Ev3:%W%m%8%'%/%HKt$O4XO"$9$k(B
+             $B%*!<%W%s%=!<%9%i%$%;%s%9$K1h$C$?7A$G:FG[I[$5$l$k$3$H$KM}2r5Z$S(B
+@@ -340,7 +346,51 @@ Linus $B$d(B LKML $B$X$NBgNL$NEE;R%a!<%k$N$?$a$K!"%5%V%8%'%/%H(B
+ $BL5;k$5$l$^$9$,!"$"$J$?$O$=$N%?%0$r<RFb$N<jB3$-$KMxMQ$7$?$j!"(Bsign-off $B$KFCJL(B
+ $B$J>pJs$r<($7$?$j$9$k$3$H$,$G$-$^$9!#(B
+ 
+-13) $B$$$D(B Acked-by: $B$r;H$&$N$+(B
++$B$"$J$?$,%5%V%7%9%F%`$^$?$O%V%i%s%A$N%a%s%F%J$G$"$l$P!"<u$1<h$C$?%Q%C%A$r<+?H$N(B
++$B%D%j!<$K%^!<%8$9$k$?$a$K!"$o$:$+$KJQ99$,I,MW$H$J$k>l9g$,$"$j$^$9!#$J$<$J$i(B
++$B$"$J$?$N%D%j!<$NCf$N%3!<%I$HEj9F<T$N%D%j!<$NCf$N%3!<%I$OF10l$G$O$J$$$?$a$G$9!#(B
++$B$b$7!"$"$J$?$,87L)$K>e5-%k!<%k(B(c)$B$K$3$@$o$k$N$G$"$l$P!"Ej9F<T$K:FEY:9J,$r(B
++$B$H$k$h$&0MMj$9$Y$-$G$9!#$7$+$7!"$3$l$O;~4V$H%(%M%k%.!<$rHs@8;:E*$KO2Hq$9$k(B
++$B$3$H$K$J$j$^$9!#%k!<%k(B(b)$B$O$"$J$?$K%3!<%I$r=$@5$9$k8"Mx$rM?$($F$/$l$^$9!#(B
++$B$7$+$7!"Ej9F<T$N%3!<%I$r=$@5$7!"$=$N=$@5$K$h$k%P%0$rEj9F<T$K2!$7IU$1$F$7$^$&(B
++$B$3$H$O$H$F$b<:Ni$J$3$H$G$9!#$3$NLdBj$r2r7h$9$k$?$a$K!"KvHx$NEj9F<T$N(B
++Signed-off-by $B$H$"$J$?$,$=$NKvHx$KDI2C$9$k(B Signed-off-by $B$N4V$K!"=$@5$r(B
++$B2C$($?$3$H$r<($9(B1$B9T$rDI2C$9$k$3$H$,?d>)$5$l$F$$$^$9!#(B
++($B$=$N(B1$B9T$N=q$-J}$K(B)$B7h$^$j$O$"$j$^$;$s$,!"Bg3g8L$NCf$KEE;R%a!<%k%"%I%l%9$d;aL>(B
++$B$H=$@5FbMF$r5-:\$9$k$d$jJ}$OL\$K$D$-$d$9$/!":G=*CJ3,$G$NJQ99$N@UG$$,$"$J$?$K(B
++$B$"$k$3$H$rL@3N$K$9$k$N$K==J,$JJ}K!$N$h$&$G$9!#Nc$($P!"(B
++
++	Signed-off-by: Random J Developer <random@developer.example.org>
++	[lucky@maintainer.example.org: struct foo moved from foo.c to foo.h]
++	Signed-off-by: Lucky K Maintainer <lucky@maintainer.example.org>
++
++$B$"$J$?$,0BDjHG$N%V%i%s%A$r4IM}$7$F$*$j!":n@.<T$N%/%l%8%C%H!"JQ99$NDI@W!"(B
++$B=$@5$N%^!<%8!"$HF1;~$K6l>p$+$i$NEj9F<T$NJ]8n$r9T$$$?$$>l9g!"$3$N47=,$OFC$K(B
++$BM-MQ$H$J$j$^$9!#$$$+$J$k;v>p$,$"$C$F$b%A%'%s%8%m%0$K=P$F$/$k:n@.<T$N(B
++$B%"%$%G%s%F%#%F%#>pJs(B(From $B%X%C%@(B)$B$OJQ99$G$-$J$$$3$H$KCm0U$7$F$/$@$5$$!#(B
++
++$B%P%C%/%]!<%H$9$k?M$N$?$a$NFCJL$JCm0U;v9`!#DI@W$rMF0W$K9T$&$?$a$K!"%3%_%C%H(B
++$B%a%C%;!<%8$N%H%C%W(B($B%5%V%8%'%/%H9T$N$9$08e(B)$B$K%Q%C%A$N5/8;$r<($9>pJs$r5-=R$9$k(B
++$B$3$H$O0lHLE*$GM-MQ$J47=,$G$9!#Nc$($P!"$3$l$O(B 2.6-stable $B%D%j!<$G$N0lNc$G$9!#(B    
++
++    Date:   Tue May 13 19:10:30 2008 +0000
++
++        SCSI: libiscsi regression in 2.6.25: fix nop timer handling
++
++        commit 4cf1043593db6a337f10e006c23c69e5fc93e722 upstream
++
++$B$=$7$F!"$3$l$O(B 2.4 $B%D%j!<$G$N0lNc$G$9!#(B
++
++    Date:   Tue May 13 22:12:27 2008 +0200
++
++        wireless, airo: waitbusy() won't delay
++
++        [backport of 2.6 commit b7acbdfbd1f277c1eb23f344f899cfa4cd0bf36a]
++
++$B$I$s$J7A<0$G$"$l!"$3$N>pJs$O$"$J$?$N%D%j!<$rDI@W$9$k?M$d$"$J$?$N%D%j!<$N%P%0$r(B
++$B2r7h$7$h$&$H$7$F$$$k?M$K$H$C$F2ACM$N$"$k;Y1g$H$J$j$^$9!#(B
++
++13) $B$$$D(B Acked-by: $B$H(B Cc: $B$r;H$&$N$+(B
+ 
+ $B!V(B Signed-off-by: $B!W%?%0$O$=$N=pL><T$,%Q%C%A$N3+H/$K4X$o$C$F$$$?$3$H$d%Q%C%A(B
+ $B$NEAGE%Q%9$K$$$?$3$H$r<($7$F$$$^$9!#(B
+@@ -354,7 +404,7 @@ Linus $B$d(B LKML $B$X$NBgNL$NEE;R%a!<%k$N$?$a$K!"%5%V%8%'%/%H(B
+ 
+ Acked-by: $B$O(B Signed-off-by: $B$N$h$&$K8x<0$J%?%0$G$O$"$j$^$;$s!#$=$l$O%a%s%F%J$,(B
+ $B>/$J$/$H$b%Q%C%A$r%l%S%e!<$7!"F10U$r<($7$F$$$k$H$$$&5-O?$G$9!#$=$N$h$&$J(B
+-$B$3$H$+$i%Q%C%A$NE}9g<T$,%a%s%F%J$N!V$&$s!"NI$$$H;W$&$h!W$H$$$&H/8@$r(B
++$B$3$H$+$i%Q%C%A$r%^!<%8$9$k?M$,%a%s%F%J$N!V$&$s!"NI$$$H;W$&$h!W$H$$$&H/8@$r(B
+ Acked-by: $B$XCV$-49$($k$3$H$,$"$j$^$9!#(B
+ 
+ Acked-by: $B$,I,$:$7$b%Q%C%AA4BN$N>5G'$r<($7$F$$$k$o$1$G$O$"$j$^$;$s!#Nc$($P!"(B
+@@ -364,7 +414,62 @@ Acked-by: $B$,I,$:$7$b%Q%C%AA4BN$N>5G'$r<($7$F$$$k$o$1$G$O(B
+ $B$3$NE@$O!"$4<+J,$GH=CG$7$F$/$@$5$$!#(B($B$=$N(B Acked-by: $B$,(B)$B5?$o$7$$>l9g$O!"(B
+ $B%a!<%j%s%0%j%9%H%"!<%+%$%V$NCf$NBg85$N5DO@$r;2>H$9$Y$-$G$9!#(B
+ 
+-14) $BI8=`E*$J%Q%C%A$N%U%)!<%^%C%H(B
++$B%Q%C%A$K%3%a%s%H$9$k5!2q$r;}$C$F$$$?$,!"$=$N;~$K%3%a%s%H$7$J$+$C$??M$,$$$l$P!"(B
++$B$=$N?M$r;X$9!V(BCc:$B!W%?%0$rG$0U$GDI2C$7$F$b$+$^$$$^$;$s!#$3$l$O;XDj$5$l$??M$+$i$N(B
++$BL@3N$J%"%/%7%g%s$J$7$KIUM?$G$-$kM#0l$N%?%0$G$9!#(B
++$B$3$N%?%0$O%Q%C%A$K4X?4$,$"$k$H;W$o$l$k?MC#$,$=$N%Q%C%A$N5DO@$K4^$^$l$F$$$?$3$H(B
++$B$rL@J82=$7$^$9!#(B
++
++14) Reported-by $B$H(B Tested-by: $B$H(B Reviewed-by: $B$NMxMQ(B
++
++$BB>$NC/$+$K$h$C$FJs9p$5$l$?LdBj$r=$@5$9$k%Q%C%A$G$"$l$P!"LdBjJs9p<T$H$$$&4sM?$r(B
++$B%/%l%8%C%H$9$k$?$a$K!"(BReported-by: $B%?%0$rDI2C$9$k$3$H$r8!F$$7$F$/$@$5$$!#(B
++$B$3$^$a$K%P%0Js9p<T$r%/%l%8%C%H$7$F$$$/$3$H$G!"$&$^$/$$$1$P$=$N?M$?$A$,>-Mh:F$S(B
++$B%3%_%e%K%F%#$NNO$H$J$C$F$/$l$k$G$7$g$&!#(B
++$B$?$@$7!"Js9p<T$N5v2DL5$/$3$N%?%0$rDI2C$7$J$$$h$&$KCm0U$7$F$/$@$5$$!#FC$K!"(B
++$BLdBj$,8x$N>l$GJs9p$5$l$F$$$J$+$C$?$N$G$"$l$P!#(B
++
++Tested-by: $B%?%0$O%?%0$G;XDj$5$l$??M$K$h$C$F(B($B$"$k4D6-2<$G(B)$B%Q%C%A$N%F%9%H$K@.8y(B
++$B$7$F$$$k$3$H$r<($7$^$9!#$3$N%?%0$O%a%s%F%J$K%F%9%H$,<B;\:Q$_$G$"$k$3$H$r(B
++$BCN$i$;!">-Mh$N4XO"%Q%C%A$N%F%9%H6(NO<T$r8+$D$1$kJ}K!$rDs6!$7!"%F%9%H<B;\<T$K(B
++$BBP$9$k%/%l%8%C%H$rJ]>Z$7$^$9!#(B
++
++Reviewed-by: $B%?%0$O!"$=$l$H$O0[$J$j!"2<5-$N%l%S%e!<%"@k8@$N2<$K%l%S%e!<$5$l!"(B
++$B<u$1F~$l2DG=$H$_$J$5$l$?%Q%C%A$G$"$k$3$H$r<($7$^$9!#(B
++
++        $B%l%S%e!<%"$K$h$k4FFD@k8@(B
++
++        $B;d$O(B Reviewed-by: $B%?%0$rDs<($9$k$3$H$K$h$C$F!"0J2<$N$3$H$rL@8@$9$k!#(B
++
++        (a) $B;d$O%a%$%s%i%$%s%+!<%M%k$X$NE}9g$K8~$1!"$=$NBEEv@-5Z$S!VB(1~@-(B
++            ($BLuCm(B)$B!W$r8!>Z$7!"5;=QE*B&LL$+$i%Q%C%A$r%l%S%e!<:Q$_$G$"$k!#(B
++
++        $BLuCm(B:
++        $B!VB(1~@-!W$N86J8$O(B "readiness"$B!#(B
++        $B%Q%C%A$,==J,$JIJ<A$r;}$C$F$*$j!"%a%$%s%i%$%s%+!<%M%k$X$NE}9g$rB(:B$K(B
++        $B9T$&$3$H$,$G$-$k>uBV$G$"$k$+$I$&$+$r(B "readiness" $B$H$$$&C18l$GI=8=(B
++        $B$7$F$$$k!#(B
++
++        (b) $B%Q%C%A$K4X$9$k$"$i$f$kLdBj!"7|G0!"$"$k$$$O!"5?Ld$OEj9F<T$XEAC#:Q$_(B
++            $B$G$"$k!#;d$O$=$l$i$N%3%a%s%H$KBP$9$kEj9F<T$NJVEz$KK~B-$7$F$$$k!#(B
++
++        (c) $BEj9F$KH<$$2~NI$5$l$k%3!<%I$,$"$k0lJ}$G!"8=;~E@$G!";d$O(B(1)$B$=$l$,(B
++            $B%+!<%M%k$K$H$C$F2ACM$N$"$kJQ99$G$"$k$3$H!"$=$7$F!"(B(2)$BE}9g$K:]$7$F(B
++            $B5DO@$K$J$jF@$k$h$&$JLdBj$O$J$$$b$N$H3N?.$7$F$$$k!#(B
++
++        (d) $B;d$O%Q%C%A$r%l%S%e!<$7E,@Z$G$"$k$H3N?.$7$F$$$k0lJ}$G!"$"$i$f$k(B
++            $B>u67$K$*$$$F$=$N@k8@$7$?L\E*$d5!G=$,@5$7$/<B8=$9$k$3$H$K4X$7$F!"(B
++            $B$$$+$J$kJ]>Z$b$7$J$$(B($BFC$K$I$3$+$GL@<($7$J$$8B$j(B)$B!#(B
++
++Reviewd-by $B%?%0$O$=$N%Q%C%A$,%+!<%M%k$KBP$7$FE,@Z$J=$@5$G$"$C$F!"?<9o$J5;=QE*(B
++$BLdBj$r;D$7$F$$$J$$$H$$$&0U8+$N@k8@$G$9!#6=L#$N$"$k%l%S%e!<%"$OC/$G$b(B($B%l%S%e!<(B
++$B:n6H$r=*$($?$i(B)$B%Q%C%A$KBP$7$F(B Reviewed-by $B%?%0$rDs<($G$-$^$9!#$3$N%?%0$O(B
++$B%l%S%e!<%"$N4sM?$r%/%l%8%C%H$9$kF/$-!"%l%S%e!<$N?JD=$NEY9g$$$r%a%s%F%J$K(B
++$BCN$i$;$kF/$-$r;}$A$^$9!#$=$N%Q%C%A$NNN0h$K>\$7$/!"$=$7$F!"$7$C$+$j$H$7$?(B
++$B%l%S%e!<$r<B;\$7$?%l%S%e!<%"$K$h$C$FDs6!$5$l$k;~!"(BReviewed-by: $B%?%0$,$"$J$?$N(B
++$B%Q%C%A$r%+!<%M%k$K%^!<%8$9$k2DG=@-$r9b$a$k$G$7$g$&!#(B
++
++15) $BI8=`E*$J%Q%C%A$N%U%)!<%^%C%H(B
+ 
+ $BI8=`E*$J%Q%C%A$N%5%V%8%'%/%H$O0J2<$N$H$*$j$G$9!#(B
+ 
+@@ -396,18 +501,37 @@ Acked-by: $B$,I,$:$7$b%Q%C%AA4BN$N>5G'$r<($7$F$$$k$o$1$G$O(B
+ $BEE;R%a!<%k$N%5%V%8%'%/%HFb$N%5%V%7%9%F%`I=5-$O!"%Q%C%A$,E,MQ$5$l$k(B
+ $BJ,Ln$^$?$O%5%V%7%9%F%`$r<1JL$G$-$k$h$&$K$9$Y$-$G$9!#(B
+ 
+-$BEE;R%a!<%k$N%5%V%8%'%/%H$N!V35MW$N8@$$2s$7!W$O$=$N%Q%C%A$N35MW$r@53N(B
+-$B$KI=8=$7$J$1$l$P$J$j$^$;$s!#!V35MW$N8@$$2s$7!W$r%U%!%$%kL>$K$7$F$O$$(B
+-$B$1$^$;$s!#0lO"$N%Q%C%ACf$G$=$l$>$l$N%Q%C%A$OF1$8!V35MW$N8@$$2s$7!W$r(B
+-$B;H$C$F$O$$$1$^$;$s(B($B!V0lO"$N%Q%C%A!W$H$O=g=xIU$1$i$l$?4XO"$N$"$kJ#?t$N(B
++$BEE;R%a!<%k$N%5%V%8%'%/%H$N!V(Bsummary phrase$B!W$O$=$N%Q%C%A$N35MW$r@53N(B
++$B$KI=8=$7$J$1$l$P$J$j$^$;$s!#!V(Bsummary phrase$B!W$r%U%!%$%kL>$K$7$F$O$$(B
++$B$1$^$;$s!#%Q%C%A%7%j!<%:Cf$G$=$l$>$l$N%Q%C%A$OF1$8!V(Bsummary phrase$B!W$r(B
++$B;H$C$F$O$$$1$^$;$s(B($B!V%Q%C%A%7%j!<%:!W$H$O=g=xIU$1$i$l$?4XO"$N$"$kJ#?t$N(B
+ $B%Q%C%A72$G$9(B)$B!#(B
+ 
+-$B$"$J$?$NEE;R%a!<%k$N!V35MW$N8@$$2s$7!W$,$=$N%Q%C%A$K$H$C$F@$3&$GM#(B
+-$B0l$N<1JL;R$K$J$k$h$&$K?4$,$1$F$/$@$5$$!#!V35MW$N8@$$2s$7!W$O(B git $B$N(B
+-$B%A%'%s%8%m%0$NCf$X$:$C$HEAGE$7$F$$$-$^$9!#!V35MW$N8@$$2s$7!W$O!"3+(B
+-$BH/<T$,8e$G%Q%C%A$r;2>H$9$k$?$a$K5DO@$NCf$GMxMQ$9$k$+$b$7$l$^$;$s!#(B
+-$B?M!9$O$=$N%Q%C%A$K4XO"$7$?5DO@$rFI$`$?$a$K!V35MW$N8@$$2s$7!W$r;H$C$F(B
+-google $B$G8!:w$7$?$,$k$G$7$g$&!#(B
++$B$"$J$?$NEE;R%a!<%k$N!V(Bsummary phrase$B!W$,$=$N%Q%C%A$K$H$C$F@$3&$GM#0l$N<1JL;R$K(B
++$B$J$k$h$&$K?4$,$1$F$/$@$5$$!#!V(Bsummary phrase$B!W$O(B git $B$N%A%'%s%8%m%0$NCf$X(B
++$B$:$C$HEAGE$7$F$$$-$^$9!#!V(Bsummary phrase$B!W$O!"3+H/<T$,8e$G%Q%C%A$r;2>H$9$k(B
++$B$?$a$K5DO@$NCf$GMxMQ$9$k$+$b$7$l$^$;$s!#(B
++$B?M!9$O$=$N%Q%C%A$K4XO"$7$?5DO@$rFI$`$?$a$K!V(Bsummary phrase$B!W$r;H$C$F(B google $B$G(B
++$B8!:w$7$?$,$k$G$7$g$&!#$=$l$O$^$?(B2$B!"(B3$B%v7n$"$H$G!"?M!9$,!V(Bgitk$B!W$d(B
++$B!V(Bgit log --oneline$B!W$N$h$&$J%D!<%k$r;HMQ$7$F2?@i$b$N%Q%C%A$KL\$rDL$9;~!"(B
++$BM#0lL\$K$H$^$k>pJs$H$J$k$G$7$g$&!#(B
++
++$B$3$l$i$NM}M3$N$?$a!"!V(Bsummary phrase$B!W$O$J$<%Q%C%A$,I,MW$G$"$k$+!"%Q%C%A$,2?$r(B
++$BJQ99$9$k$+$N(B2$B$D$N>pJs$r$;$$$<$$(B70$B!A(B75$BJ8;z$GI=8=$7$F$$$J$1$l$P$J$j$^$;$s!#(B
++$B!V(Bsummary phrase$B!W$O4J7i$G$"$j@bL@E*$G$"$kI=8=$rL\;X$7$D$D!"$&$^$/(B
++$B$^$H$a$i$l$F$$$k35MW$H$J$k$Y$-$G$9!#(B
++
++$B!V(Bsummary phrase$B!W$O!V(BSubject: [PATCH tag] <summary phrase>$B!W$N$h$&$K!"(B
++$BBg3g8L$GJD$8$i$l$?%?%0$r@\F,<-$H$7$FIU2C$7$F$b$+$^$$$^$;$s!#$3$N%?%0$O(B
++$B!V(Bsummary phrase$B!W$N0lIt$H$O9M$($^$;$s$,!"%Q%C%A$r$I$N$h$&$K<h$j07$&$Y$-$+$r(B
++$BI=8=$7$^$9!#(B
++$B0lHLE*$K$O!V(Bv1, v2, v3$B!W$N$h$&$J%P!<%8%g%s>pJs$rI=$9%?%0(B($B2a5n$N%Q%C%A$KBP$9$k(B
++$B%3%a%s%H$rH?1G$9$k$?$a$KJ#?t$N%P!<%8%g%s$N%Q%C%A$,Ej9F$5$l$F$$$k$N$G$"$l$P(B)$B!"(B
++$B!V(BRFC$B!W$N$h$&$J%3%a%s%H$rMW5a$9$k%?%0$,5s$2$i$l$^$9!#%Q%C%A%7%j!<%:$H$7$F(B4$B$D$N(B
++$B%Q%C%A$,$"$l$P!"8D!9$N%Q%C%A$K!V(B1/4, 2/4, 3/4, 4/4$B!W$N$h$&$KHV9f$rIU$1$F$b(B
++$B$+$^$$$^$;$s!#$3$l$O3+H/<T$,%Q%C%A$rE,MQ$9$k=gHV$r3N<B$KGD0.$9$k$?$a$G$9!#(B
++$B$=$7$F!"3+H/<T$,%Q%C%A%7%j!<%:$NCf$N$9$Y$F$N%Q%C%A$r$b$i$5$:%l%S%e!<0?$$$O(B
++$BE,MQ$9$k$N$rJ]>Z$9$k$?$a$G$9!#(B
+ 
+ $B%5%V%8%'%/%H$NNc$rFs$D(B
+ 
+@@ -426,7 +550,12 @@ google $B$G8!:w$7$?$,$k$G$7$g$&!#(B
+ 
+ $B@bL@K\BN$OL54|8B$N%=!<%9$N%A%'%s%8%m%0$K%3%_%C%H$5$l$^$9!#$J$N$G!"@bL@(B
+ $BK\BN$O$=$N%Q%C%A$K;j$C$?5DO@$N>\:Y$rK:$l$F$$$k$"$kDxEY$N5;NL$r;}$C$F$$$k?M(B
+-$B$,$=$N>\:Y$r;W$$=P$9$3$H$,$G$-$k$b$N$G$J$1$l$P$J$j$^$;$s!#(B
++$B$,$=$N>\:Y$r;W$$=P$9$3$H$,$G$-$k$b$N$G$J$1$l$P$J$j$^$;$s!#%Q%C%A$,BP=h$9$k(B
++$B>c32$N>I>u(B($B%+!<%M%k%m%0%a%C%;!<%8$d(B oops $B%a%C%;!<%8Ey(B)$B$r5-:\$9$k$3$H$OLdBj$K(B
++$BBP=h2DG=$J%Q%C%A$r5a$a$F%3%_%C%H%m%0$r8!:w$9$k?M!9$K$H$C$FFC$KM-MQ$G$9!#(B
++$B%Q%C%A$,%3%s%Q%$%kLdBj$r2r7h$9$k$N$G$"$l$P!"$=$N%Q%C%A$rC5$7$F$$$k?M$,8+$D$1$k(B
++$B$3$H$,$G$-$k>pJs$@$1$G==J,$G$"$j!"%3%s%Q%$%k;~$NA4$F$N%(%i!<$r4^$a$kI,MW$O(B
++$B$"$j$^$;$s!#!V(Bsummary phrase$B!W$HF1MM$K!"4J7i$G$"$j@bL@E*$G$"$k$3$H$,=EMW$G$9!#(B
+ 
+ $B!V(B --- $B!W%^!<%+!<9T$O%Q%C%A=hM}%D!<%k$KBP$7$F!"%A%'%s%8%m%0%a%C%;!<%8$N=*C<(B
+ $BItJ,$rG'<1$5$;$k$H$$$&=EMW$JLrL\$r2L$?$7$^$9!#(B
+@@ -436,14 +565,46 @@ google $B$G8!:w$7$?$,$k$G$7$g$&!#(B
+ $BDI2C$5$l2?9T>C$5$l$?$+$r<($9$b$N$G$9!#(Bdiffstat $B%3%^%s%I$OFC$KBg$-$J%Q%C%A$K(B
+ $B$*$$$FLrN)$A$^$9!#$=$N;~E@$G$@$1Kt$O%a%s%F%J$K$H$C$F$N$_4X78$N$"$k%3%a%s%H(B
+ $B$OL54|8B$KJ]B8$5$l$k%A%'%s%8%m%0$K$H$C$FE,@Z$G$O$"$j$^$;$s!#$=$N$?$a!"$3$N(B
+-$B$h$&$J%3%a%s%H$b%^!<%+!<9T$N8e$K=q$+$l$k$Y$-$G$9!#%U%!%$%kL>$O%+!<%M%k%=!<(B
+-$B%9%D%j!<$N%H%C%W%G%#%l%/%H%j$+$i$NI=5-$G%j%9%H$5$l$k$?$a!"2#J}8~$N%9%Z!<%9(B
+-$B$r$H$j2a$.$J$$$h$&$K!"(Bdiffstat $B%3%^%s%I$K%*%W%7%g%s!V(B  -p 1 -w 70 $B!W$r;XDj$7(B
+-$B$F$/$@$5$$(B($B%$%s%G%s%H$r4^$a$F$A$g$&$I(B80$BNs$K9g$&$G$7$g$&(B)$B!#(B
++$B$h$&$J%3%a%s%H$b%^!<%+!<9T$N8e$K=q$+$l$k$Y$-$G$9!#(B
++$B$3$N$h$&$J%3%a%s%H$NNI$$Nc$H$7$F!"(Bv1 $B$H(B v2 $B$N%P!<%8%g%s4V$G2?$,JQ99$5$l$?$+$r(B
++$BI=$9!V%Q%C%A$NJQ99MzNr!W$,5s$2$i$l$^$9!#(B
++
++$B!V(B --- $B!W%^!<%+!<9T$N8e$K(B diffstat $B%3%^%s%I$N7k2L$r4^$a$k$N$G$"$l$P!"%U%!%$%k(B
++$BL>$O%+!<%M%k%=!<%9%D%j!<$N%H%C%W%G%#%l%/%H%j$+$i$NI=5-$GNs5-$5$l$k$?$a!"2#J}8~(B
++$B$N%9%Z!<%9$r$H$j2a$.$J$$$h$&$K!"(Bdiffstat $B%3%^%s%I$K%*%W%7%g%s!V(B -p 1 -w 70 $B!W(B
++$B$r;XDj$7$F$/$@$5$$(B($B%$%s%G%s%H$r4^$a$F$A$g$&$I(B80$BNs$K9g$&$G$7$g$&(B)$B!#(B
+ 
+ $BE,@Z$J%Q%C%A$N%U%)!<%^%C%H$N>\:Y$K$D$$$F$O%;%/%7%g%s(B3$B$N;29MJ88%$r;2>H$7$F(B
+ $B$/$@$5$$!#(B
+ 
++16) $B!V(Bgit pull$B!WMW5a$NAw$jJ}(B(Linus $B$NEE;R%a!<%k$+$i(B)
++
++$B4V0c$C$?%V%i%s%A$+$i0z$CD%$k$N$rKI$0$?$a$K!"(Bgit $B%j%]%8%H%j$N%"%I%l%9$H(B
++$B%V%i%s%AL>$rF1$89T$K(B1$B9T$G5-:\$7$F$/$@$5$$!#$=$&$9$k$3$H$G!"(B3$B2s$NO"B3%/%j%C%/(B
++$B$GA4$FA*Br$G$-$^$9!#(B
++
++$B@5$7$$7A<0$O2<5-$NDL$j$G$9!#(B
++
++	"Please pull from
++
++		git://jdelvare.pck.nerim.net/jdelvare-2.6 i2c-for-linus
++
++	 to get these changes:"
++
++$B$=$N7k2L!"%"%I%l%9$r<+J,<+?H$G%?%$%T%s%0$7$F4V0c$($k$3$H$O$J$/$J$j$^$9(B($B<B:]$K!"(B
++$B2?EY$+4V0c$C$?%V%i%s%A$+$i0z$CD%$C$F$-$F$7$^$$!"$=$N;~$K(B diffstat $B$N7k2L$r(B
++$B8!>Z$7$F4V0c$C$F$$$k$3$H$K5$$E$$$?$3$H$,$"$j$^$9!#$I$3$+$i2?$r0z$CD%$k$Y$-$+$r(B
++$B!VC5$7$?$j!W!"@5$7$$%V%i%s%AL>$+$I$&$+$r=E$M$F%A%'%C%/$7$?$j$9$kI,MW$,(B
++$B$J$/$J$l$P$h$j2wE,$K$J$k$G$7$g$&(B)$B!#(B
++
++diffstat $B$N7k2L$r@8@.$9$k$?$a$K!V(B git diff -M --stat --summary $B!W$r;H$C$F(B
++$B$/$@$5$$!#(B-M $B%*%W%7%g%s$O%U%!%$%kL>$NJQ99$r8!CN$G$-!"(B--summary $B%*%W%7%g%s$O(B
++$B?75,%U%!%$%k!":o=|$5$l$?%U%!%$%k!"L>A0$,JQ99$5$l$?%U%!%$%k$N35MW$r@8@.$7$^$9!#(B
++
++-M $B%*%W%7%g%s(B($B%U%!%$%kL>$NJQ998!CN(B)$B$r;XDj$9$k$H!"(Bdiffstat $B$N7k2L$O$+$J$j(B
++$B0[$J$C$F$-$^$9!#(Bgit $B$OBg5,LO$JJQ99(B($BDI2C$H:o=|$N%Z%"(B)$B$r%U%!%$%kL>$NJQ99$H(B
++$BH=CG$9$k$?$a$G$9!#(B
++
+ ------------------------------------
+ $B%;%/%7%g%s(B2 - $B%R%s%H$H(BTIPS$B$H>.5;(B
+ ------------------------------------
+@@ -459,7 +620,7 @@ google $B$G8!:w$7$?$,$k$G$7$g$&!#(B
+ $B$b0oC&$7$F$$$k$H!"%l%S%e!<$d%3%a%s%H$J$7$K<u$1<h$C$F$b$i$($J$$$+$b$7(B
+ $B$l$^$;$s!#(B
+ 
+-$BM#0l$NFCI.$9$Y$-Nc30$O!"%3!<%I$r$"$k%U%!%$%k$+$iJL$N%U%!%$%k$K0\F0(B
++$BFCI.$9$Y$-Nc30$O!"%3!<%I$r$"$k%U%!%$%k$+$iJL$N%U%!%$%k$K0\F0(B
+ $B$9$k$H$-$G$9!#$3$N>l9g!"%3!<%I$r0\F0$9$k%Q%C%A$G$O!"0\F0$5$l$k%3!<%I(B
+ $B$K4X$7$F0\F00J30$NJQ99$r0l@Z2C$($k$Y$-$G$O$"$j$^$;$s!#$3$l$K$h$j!"(B
+ $B%3!<%I$N0\F0$H$"$J$?$,9T$C$?%3!<%I$N=$@5$rL@3N$K6hJL$G$-$k$h$&$K$J(B
+@@ -553,4 +714,11 @@ Kernel Documentation/CodingStyle:
+ 
+ Linus Torvalds's mail on the canonical patch format:
+   <http://lkml.org/lkml/2005/4/7/183>
++
++Andi Kleen, "On submitting kernel patches"
++  Some strategies to get difficult or controversial changes in.
++  http://halobates.de/on-submitting-patches.pdf
++
+ --
++
++
+
