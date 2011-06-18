@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751691Ab1FRRcX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 13:32:23 -0400
-Received: from astoria.ccjclearline.com ([64.235.106.9]:60778 "EHLO
-	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab1FRRcV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 13:32:21 -0400
-Date: Sat, 18 Jun 2011 13:32:14 -0400 (EDT)
-From: "Robert P. J. Day" <rpjday@crashcourse.ca>
-X-X-Sender: rpjday@localhost6.localdomain6
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, hughd@google.com,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH] TMPFS: Expand "help" to explain value of
- TMPFS_POSIX_ACL
-In-Reply-To: <20110618192847.62dc6d87@stein>
-Message-ID: <alpine.DEB.2.02.1106181331490.5909@localhost6.localdomain6>
-References: <alpine.DEB.2.02.1106180743040.17576@localhost6.localdomain6> <20110618192847.62dc6d87@stein>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751769Ab1FRReA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 13:34:00 -0400
+Received: from mga14.intel.com ([143.182.124.37]:31580 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750839Ab1FRRd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jun 2011 13:33:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,386,1304319600"; 
+   d="scan'208";a="14936512"
+Date: Sun, 19 Jun 2011 01:33:55 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Meelis Roos <mroos@linux.ee>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: 3.0-rc3: WARNING: at fs/fs-writeback.c:356
+ writeback_single_inode+0x3e/0x18f()
+Message-ID: <20110618173355.GB4652@localhost>
+References: <alpine.SOC.1.00.1106141213570.11764@math.ut.ee>
+ <1308112976.2635.27.camel@pasglop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - crashcourse.ca
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308112976.2635.27.camel@pasglop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 18 Jun 2011, Stefan Richter wrote:
+Hi Benjamin,
 
-> On Jun 18 Robert P. J. Day wrote:
-> > +	  If you've selected TMPFS, you almost certainly want this option
-> > +	  as well since a number of user space features (ie., ALSA sound)
-> > +	  require POSIX ACL support under /dev to work properly.  In other
->
-> There are still many systems which do not use ACLs in /dev or anywhere
-> else at all.  Hence, "may require POSIX ACL support".
->
-> > +	  words, if you're not sure and you have no *compelling* reason to
-> > +	  deselect this feature, say Y.
->
-> The asterisks around compelling are unnecessary.
+On Wed, Jun 15, 2011 at 02:42:56PM +1000, Benjamin Herrenschmidt wrote:
+> On Tue, 2011-06-14 at 12:15 +0300, Meelis Roos wrote:
+> > Tested 3.0-rc3 on my PC (2 PATA disks, single duron CPU). Got several of 
+> > these in dmesg:
+> 
+> Same here on a powerpc64 machine while doing a fresh debian install
+> (while the installer's installing the packages), -rc3 as well.
 
-  ok, i can reword and resubmit if you like.
+Do you have some clue that this bug show up in between 3.0-rc1 and
+3.0-rc3, or between 2.6.39 and 3.0-rc3?
 
-rday
+Thanks,
+Fengguang
 
--- 
-
-========================================================================
-Robert P. J. Day                                 Ottawa, Ontario, CANADA
-                        http://crashcourse.ca
-
-Twitter:                                       http://twitter.com/rpjday
-LinkedIn:                               http://ca.linkedin.com/in/rpjday
-========================================================================
+> > [  842.680141] ------------[ cut here ]------------
+> > [  842.680172] WARNING: at fs/fs-writeback.c:356 writeback_single_inode+0x3e/0x18f()
+> > [  842.680178] Hardware name:         
+> > [  842.680182] Modules linked in: mga ppdev lp ipv6 fuse loop snd_ens1371 gameport snd_ac97_codec snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq sg sr_mod snd_timer snd_seq_device pcspkr evdev cdrom snd uhci_hcd ehci_hcd parport_pc rtc_cmos parport soundcore usbcore via686a snd_page_alloc ac97_bus hwmon i2c_viapro processor button
+> > [  842.680248] Pid: 1341, comm: flush-8:0 Not tainted 3.0.0-rc3 #67
+> > [  842.680254] Call Trace:
+> > [  842.680269]  [<c1254ada>] ? printk+0x18/0x1a
+> > [  842.680281]  [<c101fb6b>] warn_slowpath_common+0x77/0x8c
+> > [  842.680288]  [<c1092f8e>] ? writeback_single_inode+0x3e/0x18f
+> > [  842.680294]  [<c1092f8e>] ? writeback_single_inode+0x3e/0x18f
+> > [  842.680300]  [<c101fb9d>] warn_slowpath_null+0x1d/0x1f
+> > [  842.680306]  [<c1092f8e>] writeback_single_inode+0x3e/0x18f
+> > [  842.680313]  [<c1093519>] writeback_sb_inodes+0xcb/0x153
+> > [  842.680320]  [<c1093aba>] writeback_inodes_wb+0xb0/0xf1
+> > [  842.680326]  [<c1093c1d>] wb_writeback+0x122/0x1b0
+> > [  842.680334]  [<c1093d15>] wb_check_old_data_flush+0x6a/0x76
+> > [  842.680340]  [<c1093dc1>] wb_do_writeback+0xa0/0xf3
+> > [  842.680347]  [<c1093e53>] bdi_writeback_thread+0x3f/0xd7
+> > [  842.680354]  [<c1093e14>] ? wb_do_writeback+0xf3/0xf3
+> > [  842.680366]  [<c10328cc>] kthread+0x61/0x66
+> > [  842.680373]  [<c103286b>] ? kthread_worker_fn+0xf7/0xf7
+> > [  842.680383]  [<c125ce7e>] kernel_thread_helper+0x6/0xd
+> > [  842.680388] ---[ end trace c75e8a0e74c129b7 ]---
+> > 
+> > 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
