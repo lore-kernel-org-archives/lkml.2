@@ -1,84 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751838Ab1FRRnO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 13:43:14 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44323 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599Ab1FRRnM (ORCPT
+	id S1751959Ab1FRSEy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 14:04:54 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:35992 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332Ab1FRSEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 13:43:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=SRfb0Lj2bJEVC2/1lvsV7A9saX9VmYOALLNbobPDh4PT3sitK43AVf9QZmQrHI1CLj
-         c5MswC1qfqtXlhB7K09sHAV/7ign0eRWLhlGBzalf0jUBp3cixABGyb3MSnyqOZQMtQ8
-         eTD6LDWsL7e3KKD/FMYg1jvCp46CQxwHAFmAw=
-Subject: Re: Does Linux select() violate POSIX?
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Nemo Publius <nemo@self-evident.org>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <BANLkTik9HzR_oJ7FocQ=o+zNoK22tUTjBg@mail.gmail.com>
-References: <BANLkTik9HzR_oJ7FocQ=o+zNoK22tUTjBg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 18 Jun 2011 19:43:05 +0200
-Message-ID: <1308418985.3539.58.camel@edumazet-laptop>
+	Sat, 18 Jun 2011 14:04:52 -0400
+Date: Sat, 18 Jun 2011 20:04:50 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Steven Whitehouse <swhiteho@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        chris.mason@oracle.com, josef@redhat.com, agruen@linbit.com,
+        "Serge E. Hallyn" <serue@us.ibm.com>
+Subject: Re: [PATCH 1/4] Cache xattr security drop check for write v2
+Message-ID: <20110618180450.GH16236@one.firstfloor.org>
+References: <1306596354-18453-1-git-send-email-andi@firstfloor.org> <1306849896.2816.22.camel@menhir> <20110531180643.GB9261@alboin.amr.corp.intel.com> <1306867346.2816.49.camel@menhir> <20110531200750.GO11521@ZenIV.linux.org.uk> <4DFC4C7E.1030006@gmail.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DFC4C7E.1030006@gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le samedi 18 juin 2011 à 10:06 -0700, Nemo Publius a écrit :
-> Suppose I  have a file descriptor referencing a TCP/IP socket in blocking mode.
-> 
-> Suppose select() reports that the descriptor is ready for reading.
-> 
-> If I then call recv() on that descriptor, can it _ever_ block?
-> 
-> 
-> According to the Linux select man page
-> (http://linux.die.net/man/2/select), the answer is yes:
-> 
-> "Under Linux, select() may report a socket file descriptor as "ready
-> for reading", while nevertheless a subsequent read blocks. This could
-> for example happen when data has arrived but upon examination has
-> wrong checksum and is discarded. There may be other circumstances in
-> which a file descriptor is spuriously reported as ready."
-> 
+> several fs now uses MS_NOSEC (because this flag is set in mount_bdev()) 
+> but I don't see any user of the function inode_has_no_xattr() in the 
+> latest version. If I well understand, a fs that wants to manage this 
+> feature has to set MS_NOSEC and calls when needed this function, isn't 
+> it? So at this point, why there aren't any user of this function?
 
-Only UDP can currently do that, not TCP, if NIC did not already verified
-the checksum.
+Calling the function is just an optimization to avoid the lookup
+for the first write.  But most of the benefit you already get
+when just the flag is set.
 
-So the answer to your question is no.
+I haven't resent the patches using it to the fs maintainers yet and none
+of them took it the first round. 
 
-> 
-> According to the POSIX specification for select
-> (http://pubs.opengroup.org/onlinepubs/9699919799/functions/select.html),
-> the answer is no:
-> 
-> "A descriptor shall be considered ready for reading when a call to an
-> input function with O_NONBLOCK clear would not block, whether or not
-> the function would transfer data successfully. (The function might
-> return data, an end-of-file indication, or an error other than one
-> indicating that it is blocked, and in each of these cases the
-> descriptor shall be considered ready for reading.)"
-> 
-> 
-> There are only three possibilities:
-> 
-> 1) I am mis-reading the POSIX spec.
-> 2) The Linux select() man page is wrong.
-> 3) Linux select() violates the POSIX spec.
-
-We dont care, since every sane application using select() should also
-use socket in non blocking mode.
-
-Between time select()/poll() says 'OK you can go', and time you enter
-kernel, conditions might have changed. For example, maybe kernel memory
-is not available and a send() would _block_, even if socket queue is
-empty.
-
-
-
+-Andi
