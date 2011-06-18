@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755815Ab1FRL2m (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 07:28:42 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36103 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755115Ab1FRL2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 07:28:38 -0400
-Date: Sat, 18 Jun 2011 13:28:34 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, borislav.petkov@amd.com, davej@redhat.com,
-        mark.langsdorf@amd.com, cpufreq@vger.kernel.org,
-        andreas.herrmann3@amd.com
-Subject: Re: [PATCH V2 5/6] cpufreq: Add compatibility hack to powernow-k8
-Message-ID: <20110618112834.GD7445@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
-	borislav.petkov@amd.com, davej@redhat.com, mark.langsdorf@amd.com,
-	cpufreq@vger.kernel.org, andreas.herrmann3@amd.com
-References: <1308340257-10117-1-git-send-email-mjg@redhat.com>
- <1308340257-10117-5-git-send-email-mjg@redhat.com>
+	id S1755673Ab1FRLpo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 07:45:44 -0400
+Received: from astoria.ccjclearline.com ([64.235.106.9]:41725 "EHLO
+	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752002Ab1FRLpn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jun 2011 07:45:43 -0400
+Date: Sat, 18 Jun 2011 07:45:35 -0400 (EDT)
+From: "Robert P. J. Day" <rpjday@crashcourse.ca>
+X-X-Sender: rpjday@localhost6.localdomain6
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+cc: hughd@google.com
+Subject: [PATCH] TMPFS: Expand "help" to explain value of TMPFS_POSIX_ACL
+Message-ID: <alpine.DEB.2.02.1106180743040.17576@localhost6.localdomain6>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1308340257-10117-5-git-send-email-mjg@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - crashcourse.ca
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 03:50:56PM -0400, Matthew Garrett wrote:
-> cpufreq modules are often loaded from init scripts that assume that all
-> recent AMD systems will use powernow-k8, so we should ensure that loading
-> it triggers a load of acpi-cpufreq if the latter is built as a module.
-> This avoids the problem of users ending up without any cpufreq support
-> after the transition.
-> 
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
-> ---
->  drivers/cpufreq/powernow-k8.c |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-> index 83479b6..8591ec8 100644
-> --- a/drivers/cpufreq/powernow-k8.c
-> +++ b/drivers/cpufreq/powernow-k8.c
-> @@ -1545,8 +1545,12 @@ static int __cpuinit powernowk8_init(void)
->  			supported_cpus++;
->  	}
->  
-> -	if (supported_cpus != num_online_cpus())
-> +	if (supported_cpus != num_online_cpus()) {
-> +		if (cpu_has(0, X86_FEATURE_HW_PSTATE))
 
-you mean here
-		if (boot_cpu_has(X86_FEATURE_HW_PSTATE))
+Expand the fs/Kconfig "help" info to clarify why it's a bad idea to
+deselect the TMPFS_POSIX_ACL config variable.
 
-otherwise:
+Signed-off-by: Robert P. J. Day <rpjday@crashcourse.ca>
 
-drivers/cpufreq/powernow-k8.c: In function ‘powernowk8_init’:
-drivers/cpufreq/powernow-k8.c:1553: error: invalid type argument of ‘->’ (have ‘int’)
-drivers/cpufreq/powernow-k8.c:1553: error: invalid type argument of ‘->’ (have ‘int’)
-make[2]: *** [drivers/cpufreq/powernow-k8.o] Error 1
-make[1]: *** [drivers/cpufreq] Error 2
-make: *** [drivers] Error 2
-make: *** Waiting for unfinished jobs....
+---
 
+diff --git a/fs/Kconfig b/fs/Kconfig
+index 19891aa..4217543 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -127,14 +127,20 @@ config TMPFS_POSIX_ACL
+ 	select TMPFS_XATTR
+ 	select GENERIC_ACL
+ 	help
+-	  POSIX Access Control Lists (ACLs) support permissions for users and
+-	  groups beyond the owner/group/world scheme.
++	  POSIX Access Control Lists (ACLs) support additional access rights
++	  for users and groups beyond the standard owner/group/world scheme,
++	  and this option selects support for ACLs specifically for tmpfs
++	  filesystems.
++
++	  If you've selected TMPFS, you almost certainly want this option
++	  as well since a number of user space features (ie., ALSA sound)
++	  require POSIX ACL support under /dev to work properly.  In other
++	  words, if you're not sure and you have no *compelling* reason to
++	  deselect this feature, say Y.
 
-> +			request_module("acpi_cpufreq");
-> +
->  		return -ENODEV;
-> +	}
->  
->  	printk(KERN_INFO PFX "Found %d %s (%d cpu cores) (" VERSION ")\n",
->  		num_online_nodes(), boot_cpu_data.x86_model_id, supported_cpus);
-> -- 
-> 1.7.5.2
+ 	  To learn more about Access Control Lists, visit the POSIX ACLs for
+ 	  Linux website <http://acl.bestbits.at/>.
+
+-	  If you don't know what Access Control Lists are, say N.
+-
+ config TMPFS_XATTR
+ 	bool "Tmpfs extended attributes"
+ 	depends on TMPFS
 
 -- 
-Regards/Gruss,
-    Boris.
+
+========================================================================
+Robert P. J. Day                                 Ottawa, Ontario, CANADA
+                        http://crashcourse.ca
+
+Twitter:                                       http://twitter.com/rpjday
+LinkedIn:                               http://ca.linkedin.com/in/rpjday
+========================================================================
