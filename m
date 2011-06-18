@@ -1,80 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769Ab1FRReA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 13:34:00 -0400
-Received: from mga14.intel.com ([143.182.124.37]:31580 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750839Ab1FRRd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 13:33:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,386,1304319600"; 
-   d="scan'208";a="14936512"
-Date: Sun, 19 Jun 2011 01:33:55 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Meelis Roos <mroos@linux.ee>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: 3.0-rc3: WARNING: at fs/fs-writeback.c:356
- writeback_single_inode+0x3e/0x18f()
-Message-ID: <20110618173355.GB4652@localhost>
-References: <alpine.SOC.1.00.1106141213570.11764@math.ut.ee>
- <1308112976.2635.27.camel@pasglop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308112976.2635.27.camel@pasglop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751925Ab1FRRzy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 13:55:54 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:55994 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844Ab1FRRzv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jun 2011 13:55:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=xbKRd/txXSwNQdmxmZnaeLAWMUX2GCx+HpMkiK26LQnqDwjFgsF6VZa48LUNDLUoVf
+         A3yHN+MC4eoO0hYT75h+89Q5b2lBKp1YqY23/U+9vhMYX14Ya7spnx25AeA8e0cXojYU
+         72A3juGk/BJnopoSHZDF+UKsmvYwAfeDBhlLs=
+From: Dave Carroll <dtcarroll@gmail.com>
+To: Milton Miller <miltonm@bga.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: LPPC <linuxppc-dev@lists.ozlabs.org>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Carroll <dcarroll@astekcorp.com>
+Subject: [PATCH 1/2][v2] powerpc: Move free_initmem to common code
+Date: Sat, 18 Jun 2011 11:36:39 -0600
+Message-Id: <1308418600-9167-1-git-send-email-dcarroll@astekcorp.com>
+X-Mailer: git-send-email 1.7.5
+In-Reply-To: <1308350584.32158.58.camel@pasglop>
+References: <1308350584.32158.58.camel@pasglop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+From: Dave Carroll <dcarroll@astekcorp.com>
 
-On Wed, Jun 15, 2011 at 02:42:56PM +1000, Benjamin Herrenschmidt wrote:
-> On Tue, 2011-06-14 at 12:15 +0300, Meelis Roos wrote:
-> > Tested 3.0-rc3 on my PC (2 PATA disks, single duron CPU). Got several of 
-> > these in dmesg:
-> 
-> Same here on a powerpc64 machine while doing a fresh debian install
-> (while the installer's installing the packages), -rc3 as well.
+The free_initmem function is basically duplicated in mm/init_32,
+and init_64, and is moved to the common 32/64-bit mm/mem.c.
 
-Do you have some clue that this bug show up in between 3.0-rc1 and
-3.0-rc3, or between 2.6.39 and 3.0-rc3?
+All other sections except init were removed in v2.6.15 by
+6c45ab992e4299c869fb26427944a8f8ea177024 (powerpc: Remove section
+free() and linker script bits), and therefore the bulk of the executed
+code is identical.
 
-Thanks,
-Fengguang
+This patch also removes updating ppc_md.progress to NULL in the powermac
+late_initcall.
 
-> > [  842.680141] ------------[ cut here ]------------
-> > [  842.680172] WARNING: at fs/fs-writeback.c:356 writeback_single_inode+0x3e/0x18f()
-> > [  842.680178] Hardware name:         
-> > [  842.680182] Modules linked in: mga ppdev lp ipv6 fuse loop snd_ens1371 gameport snd_ac97_codec snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq sg sr_mod snd_timer snd_seq_device pcspkr evdev cdrom snd uhci_hcd ehci_hcd parport_pc rtc_cmos parport soundcore usbcore via686a snd_page_alloc ac97_bus hwmon i2c_viapro processor button
-> > [  842.680248] Pid: 1341, comm: flush-8:0 Not tainted 3.0.0-rc3 #67
-> > [  842.680254] Call Trace:
-> > [  842.680269]  [<c1254ada>] ? printk+0x18/0x1a
-> > [  842.680281]  [<c101fb6b>] warn_slowpath_common+0x77/0x8c
-> > [  842.680288]  [<c1092f8e>] ? writeback_single_inode+0x3e/0x18f
-> > [  842.680294]  [<c1092f8e>] ? writeback_single_inode+0x3e/0x18f
-> > [  842.680300]  [<c101fb9d>] warn_slowpath_null+0x1d/0x1f
-> > [  842.680306]  [<c1092f8e>] writeback_single_inode+0x3e/0x18f
-> > [  842.680313]  [<c1093519>] writeback_sb_inodes+0xcb/0x153
-> > [  842.680320]  [<c1093aba>] writeback_inodes_wb+0xb0/0xf1
-> > [  842.680326]  [<c1093c1d>] wb_writeback+0x122/0x1b0
-> > [  842.680334]  [<c1093d15>] wb_check_old_data_flush+0x6a/0x76
-> > [  842.680340]  [<c1093dc1>] wb_do_writeback+0xa0/0xf3
-> > [  842.680347]  [<c1093e53>] bdi_writeback_thread+0x3f/0xd7
-> > [  842.680354]  [<c1093e14>] ? wb_do_writeback+0xf3/0xf3
-> > [  842.680366]  [<c10328cc>] kthread+0x61/0x66
-> > [  842.680373]  [<c103286b>] ? kthread_worker_fn+0xf7/0xf7
-> > [  842.680383]  [<c125ce7e>] kernel_thread_helper+0x6/0xd
-> > [  842.680388] ---[ end trace c75e8a0e74c129b7 ]---
-> > 
-> > 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Suggested-by: Milton Miller <miltonm@bga.com>
+Suggested-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Dave Carroll <dcarroll@astekcorp.com>
+---
+ [v2] This is a rebase of the original patch to Linus' current tree
+ 
+ arch/powerpc/mm/init_32.c               |   32 -------------------------------
+ arch/powerpc/mm/init_64.c               |   16 ---------------
+ arch/powerpc/mm/mem.c                   |   19 ++++++++++++++++++
+ arch/powerpc/platforms/powermac/setup.c |    3 --
+ 4 files changed, 19 insertions(+), 51 deletions(-)
+
+diff --git a/arch/powerpc/mm/init_32.c b/arch/powerpc/mm/init_32.c
+index 5de0f25..c77fef5 100644
+--- a/arch/powerpc/mm/init_32.c
++++ b/arch/powerpc/mm/init_32.c
+@@ -191,38 +191,6 @@ void __init *early_get_page(void)
+ 		return __va(memblock_alloc(PAGE_SIZE, PAGE_SIZE));
+ }
+ 
+-/* Free up now-unused memory */
+-static void free_sec(unsigned long start, unsigned long end, const char *name)
+-{
+-	unsigned long cnt = 0;
+-
+-	while (start < end) {
+-		ClearPageReserved(virt_to_page(start));
+-		init_page_count(virt_to_page(start));
+-		free_page(start);
+-		cnt++;
+-		start += PAGE_SIZE;
+- 	}
+-	if (cnt) {
+-		printk(" %ldk %s", cnt << (PAGE_SHIFT - 10), name);
+-		totalram_pages += cnt;
+-	}
+-}
+-
+-void free_initmem(void)
+-{
+-#define FREESEC(TYPE) \
+-	free_sec((unsigned long)(&__ ## TYPE ## _begin), \
+-		 (unsigned long)(&__ ## TYPE ## _end), \
+-		 #TYPE);
+-
+-	printk ("Freeing unused kernel memory:");
+-	FREESEC(init);
+- 	printk("\n");
+-	ppc_md.progress = NULL;
+-#undef FREESEC
+-}
+-
+ #ifdef CONFIG_8xx /* No 8xx specific .c file to put that in ... */
+ void setup_initial_memory_limit(phys_addr_t first_memblock_base,
+ 				phys_addr_t first_memblock_size)
+diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
+index f6dbb4c..e94b57f 100644
+--- a/arch/powerpc/mm/init_64.c
++++ b/arch/powerpc/mm/init_64.c
+@@ -83,22 +83,6 @@ EXPORT_SYMBOL_GPL(memstart_addr);
+ phys_addr_t kernstart_addr;
+ EXPORT_SYMBOL_GPL(kernstart_addr);
+ 
+-void free_initmem(void)
+-{
+-	unsigned long addr;
+-
+-	addr = (unsigned long)__init_begin;
+-	for (; addr < (unsigned long)__init_end; addr += PAGE_SIZE) {
+-		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
+-		ClearPageReserved(virt_to_page(addr));
+-		init_page_count(virt_to_page(addr));
+-		free_page(addr);
+-		totalram_pages++;
+-	}
+-	printk ("Freeing unused kernel memory: %luk freed\n",
+-		((unsigned long)__init_end - (unsigned long)__init_begin) >> 10);
+-}
+-
+ static void pgd_ctor(void *addr)
+ {
+ 	memset(addr, 0, PGD_TABLE_SIZE);
+diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+index 29d4dde..f4e6408 100644
+--- a/arch/powerpc/mm/mem.c
++++ b/arch/powerpc/mm/mem.c
+@@ -382,6 +382,25 @@ void __init mem_init(void)
+ 	mem_init_done = 1;
+ }
+ 
++void free_initmem(void)
++{
++	unsigned long addr;
++
++	ppc_md.progress = NULL;
++
++	addr = (unsigned long)__init_begin;
++	for (; addr < (unsigned long)__init_end; addr += PAGE_SIZE) {
++		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
++		ClearPageReserved(virt_to_page(addr));
++		init_page_count(virt_to_page(addr));
++		free_page(addr);
++		totalram_pages++;
++	}
++	pr_info("Freeing unused kernel memory: %luk freed\n",
++		((unsigned long)__init_end -
++		(unsigned long)__init_begin) >> 10);
++}
++
+ #ifdef CONFIG_BLK_DEV_INITRD
+ void __init free_initrd_mem(unsigned long start, unsigned long end)
+ {
+diff --git a/arch/powerpc/platforms/powermac/setup.c b/arch/powerpc/platforms/powermac/setup.c
+index aa45281..a028f08 100644
+--- a/arch/powerpc/platforms/powermac/setup.c
++++ b/arch/powerpc/platforms/powermac/setup.c
+@@ -355,9 +355,6 @@ static int initializing = 1;
+ static int pmac_late_init(void)
+ {
+ 	initializing = 0;
+-	/* this is udbg (which is __init) and we can later use it during
+-	 * cpu hotplug (in smp_core99_kick_cpu) */
+-	ppc_md.progress = NULL;
+ 	return 0;
+ }
+ machine_late_initcall(powermac, pmac_late_init);
+-- 
+1.7.5
+
