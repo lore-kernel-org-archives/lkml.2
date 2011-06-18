@@ -1,37 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759575Ab1FQXti (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Jun 2011 19:49:38 -0400
-Received: from nm20-vm1.bullet.mail.sp2.yahoo.com ([98.139.91.219]:21380 "HELO
-	nm20-vm1.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754290Ab1FQXth (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Jun 2011 19:49:37 -0400
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 685220.30142.bm@omp1016.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
-  b=T4GEgKhwlBeh++2VG8bUkB/N1U2GQ2AQdGax/b80g1TBZ1Nd5whdM5co52K4+rAE4W3YnlsvoXQ5o0WE1VdEkrIVeM42MoL6L3sRWZjXaA0pDHGu2W9bNUdNr2h8Rk8m2AGi2aSBpnhZzbubX3XfZVNEQ3fZN9abXDTbobTPqc0=;
-Message-ID: <101059.37171.qm@web112601.mail.gq1.yahoo.com>
-X-Mailer: YahooMailWebService/0.8.111.304355
-Date: Fri, 17 Jun 2011 16:49:36 -0700 (PDT)
-From: "lucian_ignat2005@yahoo.com" <lucian_ignat2005@yahoo.com>
-Subject: Curs Engleza fara profesor
-To: "llaika@yahoo.com" <llaika@yahoo.com>
+	id S1759587Ab1FRACQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Jun 2011 20:02:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31130 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754290Ab1FRACP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Jun 2011 20:02:15 -0400
+Date: Fri, 17 Jun 2011 20:02:10 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: linux-usb@vger.kernel.org
+Subject: Remove over-broad module alias from zaurus.
+Message-ID: <20110618000210.GA8639@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-usb@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This module and a bunch of dependancies are getting loaded on several
+of laptops I have (probably picking up the mobile broadband device),
+that have nothing to do with zaurus. Matching by class without
+any vendor/device pair isn't the right thing to do here, as it
+will prevent any other driver from correctly binding to it.
+(Or in the absense of a driver, will just waste time & memory by
+ unnecessarily loading modules)
 
-Invata sa vorbesti,sa scrii si sa citesti in limba engleza in doar 20 de zile, 50 minute pe zi.
+Signed-off-by: Dave Jones <davej@redhat.com>
 
-Daca esti in cautarea unei metode de invatare a limbii engleze in mod rapid, usor si eficient, acest site este solutia potrivita pentru cerintele tale.
-Poti invata limba engleza folosind cursurile noastre complete si usor de inteles pentru toate varstele.
-
-Viziteaza: http://engleza.smarket.ro
-
-Livrare in toata tara in 48 ore prin Fan Curier.
-
+diff --git a/drivers/net/usb/zaurus.c b/drivers/net/usb/zaurus.c
+index 241756e..1a2234c 100644
+--- a/drivers/net/usb/zaurus.c
++++ b/drivers/net/usb/zaurus.c
+@@ -331,17 +331,7 @@ static const struct usb_device_id	products [] = {
+ 	ZAURUS_MASTER_INTERFACE,
+ 	.driver_info = ZAURUS_PXA_INFO,
+ },
+-
+-
+-/* At least some of the newest PXA units have very different lies about
+- * their standards support:  they claim to be cell phones offering
+- * direct access to their radios!  (No, they don't conform to CDC MDLM.)
+- */
+ {
+-	USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_MDLM,
+-			USB_CDC_PROTO_NONE),
+-	.driver_info = (unsigned long) &bogus_mdlm_info,
+-}, {
+ 	/* Motorola MOTOMAGX phones */
+ 	USB_DEVICE_AND_INTERFACE_INFO(0x22b8, 0x6425, USB_CLASS_COMM,
+ 			USB_CDC_SUBCLASS_MDLM, USB_CDC_PROTO_NONE),
