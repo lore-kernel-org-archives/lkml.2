@@ -1,118 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756300Ab1FRPwa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 11:52:30 -0400
-Received: from mta11.charter.net ([216.33.127.80]:44568 "EHLO
-	mta11.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756173Ab1FRPw3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 11:52:29 -0400
-X-Authority-Analysis: v=1.1 cv=G6Q69DB3AUoJKS2BpLRaz8MQ2NORN7h5HRzrJMPOhRw=
- c=1 sm=1 a=p9YancsnzTcA:10 a=ATN9wnctRWoA:10 a=8nJEP1OIZ-IA:10
- a=xzrYXqw+0zwiO4gHSXHcAg==:17 a=Q-fNiiVtAAAA:8 a=FcborOI1YaU8jPD6dEEA:9
- a=cmryx0jSbUdzuLlkYTsA:7 a=wPNLvfGTeEIA:10 a=lcTMV_K9oDIA:10
- a=xzrYXqw+0zwiO4gHSXHcAg==:117
-Message-ID: <4DFCC9BE.6000006@cuw.edu>
-Date: Sat, 18 Jun 2011 10:52:30 -0500
-From: Greg Dietsche <gregory.dietsche@cuw.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110505 Icedove/3.0.11
+	id S1753623Ab1FRQEf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 12:04:35 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:54797 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752309Ab1FRQEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jun 2011 12:04:31 -0400
+Date: Sat, 18 Jun 2011 09:04:27 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>
+Subject: Re: [PATCH 1/4] rcu: Detect uses of rcu read side in extended
+ quiescent states
+Message-ID: <20110618160426.GB2238@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1307663247-5397-1-git-send-email-fweisbec@gmail.com>
+ <1307663247-5397-2-git-send-email-fweisbec@gmail.com>
+ <20110610002350.GO2285@linux.vnet.ibm.com>
+ <20110610005041.GI25771@somewhere.redhat.com>
+ <20110617231902.GM2258@linux.vnet.ibm.com>
+ <20110618142353.GA9266@somewhere>
 MIME-Version: 1.0
-To: Henry Ptasinski <henryp@broadcom.com>
-CC: Julian Calaby <julian.calaby@gmail.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        Brett Rudley <brudley@broadcom.com>, Dowan Kim <dowan@broadcom.com>,
-        Roland Vossen <rvossen@broadcom.com>,
-        Arend Van Spriel <arend@broadcom.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: brcm80211: return false if not a broadcom board
-References: <1308176709-14765-1-git-send-email-Gregory.Dietsche@cuw.edu> <20110616013615.GA14700@broadcom.com> <4DF96F22.5070508@cuw.edu> <20110616233736.GA2344@broadcom.com> <BANLkTi=tLWXn7mMf-6pf-3gM6x8zX=WNtw@mail.gmail.com> <20110617220108.GH3801@broadcom.com>
-In-Reply-To: <20110617220108.GH3801@broadcom.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110618142353.GA9266@somewhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Jun 18, 2011 at 04:23:58PM +0200, Frederic Weisbecker wrote:
+> On Fri, Jun 17, 2011 at 04:19:03PM -0700, Paul E. McKenney wrote:
+> > On Fri, Jun 10, 2011 at 02:50:43AM +0200, Frederic Weisbecker wrote:
+> > > On Thu, Jun 09, 2011 at 05:23:50PM -0700, Paul E. McKenney wrote:
+> > > > On Fri, Jun 10, 2011 at 01:47:24AM +0200, Frederic Weisbecker wrote:
+> > > > > Detect uses of rcu that are not supposed to happen when we
+> > > > > are in an extended quiescent state.
+> > > > > 
+> > > > > This can happen for example if we use rcu between the time we
+> > > > > stop the tick and the time we restart it. Or inside an irq that
+> > > > > didn't use rcu_irq_enter,exit() or other possible kind of rcu API
+> > > > > misuse.
+> > > > > 
+> > > > > v2: Rebase against latest rcu changes, handle tiny RCU as well
+> > > > 
+> > > > Good idea on checking for RCU read-side critical sections happening
+> > > > in dyntick-idle periods!
+> > > > 
+> > > > But wouldn't it be better to put the checks in rcu_read_lock() and
+> > > > friends?  The problem I see with putting them in rcu_dereference_check()
+> > > > is that someone can legitimately do something like the following
+> > > > while in dyntick-idle mode:
+> > > > 
+> > > > 	spin_lock(&mylock);
+> > > > 	/* do a bunch of stuff */
+> > > > 	p = rcu_dereference_check(myrcuptr, lockdep_is_held(&mylock));
+> > > > 
+> > > > The logic below would complain about this usage, despite the fact
+> > > > that it is perfectly safe because the update-side lock is held.
+> > > > 
+> > > > Make sense, or am I missing something?
+> > > > 
+> > > > 						Thanx, Paul
+> > > 
+> > > I'm an idiot. I put my check in rcu_dereference_check() on purpose because
+> > > it's always called from places that check one of the rcu locks are held,
+> > > but I forgot that's also used for custom conditions with the _check()
+> > > things.
+> > > 
+> > > That said, putting the check in rcu_read_lock() and alike  would only work
+> > > with rcu_read_lock() itself. Few users of rcu_read_lock_sched() actually
+> > > call it explicitely but rely on irq disabled or preempt disabled. And I can't put the
+> > > checks there as it's fine to disabled irqs in dyntick idle.
+> > > 
+> > > What about the below? (untested yet)
+> > > 
+> > > And I would print the state of dynticks-idle mode in the final lockdep warning.
+> > 
+> > Printing the dynticks-idle mode would be quite good!
+> > 
+> > However, it is possible to have an RCU read-side critical section that does
+> > not have an rcu_dereference() or an rcu_read_lock_held().  So I do believe
+> > that we really do need rcu_read_lock() and friends to do this checking.
+> 
+> Right, then we need to check everything: rcu_read_lock() and friends in case
+> we have no rcu_read_lock_held() check made (ie: no rcu_dereference_check()),
+> but also rcu_read_lock_held()/rcu_read_lock_sched_held()/... because preempt_disable(),
+> local_irq_disable(), local_bh_disable() can't be checked so for rcu sched and rcu bh
+> we can only check the ...held() things.
 
+Good point.  To make sure I understand, we have different approaches
+for the different types of RCU.  We need to instrument the following
+primitives:
 
-On 06/17/2011 05:01 PM, Henry Ptasinski wrote:
-> On Thu, Jun 16, 2011 at 04:45:21PM -0700, Julian Calaby wrote:
->    
->> Henry,
->>
->> On Fri, Jun 17, 2011 at 09:37, Henry Ptasinski<henryp@broadcom.com>  wrote:
->>      
->>> How's this for a somewhat clearer implementation:
->>>
->>> static bool brcms_c_validboardtype(struct brcms_c_hw_info *wlc_hw)
->>> {
->>>         bool goodboard = true;
->>>         uint boardrev = wlc_hw->boardrev;
->>>
->>>         if (wlc_hw->sih->boardvendor == PCI_VENDOR_ID_BROADCOM) {
->>>        
->> You could reduce indentation by having this be:
->>
->> if (wlc_hw->sih->boardvendor != PCI_VENDOR_ID_BROADCOM)
->>      return true;
->>
->>      
->>>                 /* validate boardrev */
->>>                 if (boardrev == 0)
->>>                         goodboard = false;
->>>        
->> and remove the goodboard variable by having this return false immediately.
->>
->>      
->>>                 else if (boardrev>  0xff) {
->>>        
->> You could also drop the else and have this as
->>
->> if (boardrev<= 0xff)
->>      return true;
->>
->>      
->>>                         /* 4 bits each for board type, major, minor, and tiny
->>>                         version numbers */
->>>                         uint brt = (boardrev&  0xf000)>>  12;
->>>                         uint b0 = (boardrev&  0xf00)>>  8;
->>>                         uint b1 = (boardrev&  0xf0)>>  4;
->>>                         uint b2 = boardrev&  0xf;
->>>
->>>                         if ((brt>  2) || (brt == 0) || (b0>  9) || (b0 == 0)
->>>                                 || (b1>  9) || (b2>  9))
->>>                                 goodboard = false;
->>>        
->> and return false here too.
->>
->>      
->>>                 }
->>>         }
->>>
->>>         return goodboard;
->>>        
->> then just return true here.
->>
->>      
->>> }
->>>        
->> Thanks,
->>
->> -- 
->> Julian Calaby
->>      
-> Yea, it's a lot flatter with those changes.  Look for it in a patch set
-> relatively soon ...
->
-> - Henry
->
->
->    
+1.	rcu_read_lock() because a stray rcu_dereference() will already
+	be caught by PROVE_RCU.
+2.	rcu_read_lock_bh_held() because it is OK to do local_bh_disable()
+	in dyntick-idle mode, so we cannot prohibit all of the
+	read-acquisition cases.  We can also instrument rcu_read_lock_bh()
+	to catch RCU-bh read-side critical sections that don't happen
+	to contain rcu_dereference_bh().
+3.	rcu_read_lock_sched_held() because it is OK to do preempt_disable()
+	and local_irq_save() from dyntick-idle mode, so we again
+	cannot prohibit all of the read-acquisition cases.  We can
+	also instrument rcu_read_lock_sched() to catch RCU-sched
+	read-side critical sections that don't happen to contain
+	rcu_dereference_sched().
+4.	srcu_read_lock() because a stray srcu_dereference() will already
+	by caught by PROVE_RCU.
 
-All good points above - also, I might add a short comment to explain why 
-the code checks the vendor id so it's clear to people who read the code 
-in the future too.
+We miss a few cases, for example, an RCU-sched read-side critical
+section that uses local_irq_disable(), but that also does not contain
+an rcu_dereference_sched().  But still this sounds quite worthwhile.
 
-Greg
+> > That might seem to leave open the possibility of a stray rcu_dereference()
+> > being executed from dyntick-idle mode, but the existing PROVE_RCU
+> > checking will catch that, right?
+> > 
+> > So I believe that the simplest approach with the best coverage is to
+> > put the checks into RCU's read-side critical-section-entry primitives.
+> > 
+> > Make sense, or am I confused?
+> 
+> If we also check the rcu_read_...._held() things then yeah that works.
+> But checking only rcu_read_..._lock() things in not sufficient like I said
+> above.
 
+Got it!
+
+							Thanx, Paul
