@@ -1,62 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404Ab1FRLLq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 07:11:46 -0400
-Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:34229
-	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754786Ab1FRLLo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 07:11:44 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de p5IBBOj2015988
-From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [2.6.39] drm/i915: blank screen on Lenovo Ideapad U160
-In-Reply-To: <20110616114146.4662ea2f@jbarnes-desktop> (Jesse Barnes's message
-	of "Thu, 16 Jun 2011 11:41:46 -0700")
-References: <gi1uzevjl4.fsf@mx10.gouders.net>
-	<alpine.DEB.2.00.1105311406210.5012@localhost6.localdomain6>
-	<gitycau362.fsf@mx10.gouders.net> <giei3eoeic.fsf@mx10.gouders.net>
-	<gi1uyx8m2f.fsf_-_@mx10.gouders.net>
-	<20110615115903.685acba0@jbarnes-desktop>
-	<giips6lr5a.fsf@mx10.gouders.net>
-	<20110615144132.074167f3@jbarnes-desktop>
-	<giei2ulpl1.fsf@mx10.gouders.net>
-	<20110615150737.79cd5de7@jbarnes-desktop>
-	<gi4o3q2plu.fsf@karga.hank.lab> <gizkli0zew.fsf@karga.hank.lab>
-	<20110616094030.15714852@jbarnes-desktop>
-	<gisjr9ll0j.fsf@mx10.gouders.net>
-	<20110616114146.4662ea2f@jbarnes-desktop>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-Date: Sat, 18 Jun 2011 13:11:23 +0200
-Message-ID: <gik4cjl7hg.fsf@mx10.gouders.net>
+	id S1755311Ab1FRLZp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 07:25:45 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33302 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751756Ab1FRLZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jun 2011 07:25:42 -0400
+Date: Sat, 18 Jun 2011 13:25:35 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, borislav.petkov@amd.com, davej@redhat.com,
+        mark.langsdorf@amd.com, cpufreq@vger.kernel.org,
+        andreas.herrmann3@amd.com
+Subject: Re: [PATCH V2 1/6] x86: Add AMD HW_PSTATE cpu feature bit and MSRs
+Message-ID: <20110618112535.GA7445@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
+	borislav.petkov@amd.com, davej@redhat.com, mark.langsdorf@amd.com,
+	cpufreq@vger.kernel.org, andreas.herrmann3@amd.com
+References: <1308340257-10117-1-git-send-email-mjg@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Sat, 18 Jun 2011 13:11:25 +0200 (CEST)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1308340257-10117-1-git-send-email-mjg@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jesse Barnes <jbarnes@virtuousgeek.org> writes:
+On Fri, Jun 17, 2011 at 03:50:52PM -0400, Matthew Garrett wrote:
+> AMD CPUs that support hardware P-state setting expose this via cpuid. Add
+> the bit to the generic code so the ACPI cpufreq driver can make use of it,
+> and also add the related MSRs.
+> 
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> ---
+>  arch/x86/include/asm/cpufeature.h |    1 +
+>  arch/x86/include/asm/msr-index.h  |    2 ++
+>  arch/x86/kernel/cpu/scattered.c   |    1 +
+>  3 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+> index 71cc380..312f455 100644
+> --- a/arch/x86/include/asm/cpufeature.h
+> +++ b/arch/x86/include/asm/cpufeature.h
+> @@ -174,6 +174,7 @@
+>  #define X86_FEATURE_PLN		(7*32+ 5) /* Intel Power Limit Notification */
+>  #define X86_FEATURE_PTS		(7*32+ 6) /* Intel Package Thermal Status */
+>  #define X86_FEATURE_DTS		(7*32+ 7) /* Digital Thermal Sensor */
+> +#define X86_FEATURE_HW_PSTATE	(7*32+ 8) /* AMD frequency scaling */
 
->> > Does your machine also work if you set the lvds_use_ssc param to 0?
->> 
->> Yes, that works!
->> I undid all modifications, compiled the i915 driver as a module (I am
->> not sure if that is necessary) und used i915.lvds_use_ssc=0 as a
->> further bootparameter, I will attach the dmesg output.
->> 
->> Would you say "This problem was just a case of wrong parameter usage",
->> then?
->
-> No, we should be parsing the VBT differently in your case it appears.
-> But the simple change above will break other platforms, so it's
-> possible we're missing a VBT format change and need to parse it
-> differently depending on the version.
+Yeah, this is actually called			  /* AMD hardware P-state control */
 
-OK, thanks a lot for spending your time to help me to find this
-comfortable workaround.
+because older CPUs also do frequency scaling but use a different method.
 
-Please let me know if I can help with further testing.
+Other than that
 
-Dirk
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+
+>  
+>  /* Virtualization flags: Linux defined, word 8 */
+>  #define X86_FEATURE_TPR_SHADOW  (8*32+ 0) /* Intel TPR Shadow */
+> diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+> index 485b4f1..1772978 100644
+> --- a/arch/x86/include/asm/msr-index.h
+> +++ b/arch/x86/include/asm/msr-index.h
+> @@ -234,6 +234,8 @@
+>  
+>  #define MSR_IA32_PERF_STATUS		0x00000198
+>  #define MSR_IA32_PERF_CTL		0x00000199
+> +#define MSR_AMD_PERF_STATUS		0xc0010063
+> +#define MSR_AMD_PERF_CTL		0xc0010062
+>  
+>  #define MSR_IA32_MPERF			0x000000e7
+>  #define MSR_IA32_APERF			0x000000e8
+> diff --git a/arch/x86/kernel/cpu/scattered.c b/arch/x86/kernel/cpu/scattered.c
+> index c7f64e6..4adffc4 100644
+> --- a/arch/x86/kernel/cpu/scattered.c
+> +++ b/arch/x86/kernel/cpu/scattered.c
+> @@ -39,6 +39,7 @@ void __cpuinit init_scattered_cpuid_features(struct cpuinfo_x86 *c)
+>  		{ X86_FEATURE_APERFMPERF,	CR_ECX, 0, 0x00000006, 0 },
+>  		{ X86_FEATURE_EPB,		CR_ECX, 3, 0x00000006, 0 },
+>  		{ X86_FEATURE_XSAVEOPT,		CR_EAX,	0, 0x0000000d, 1 },
+> +		{ X86_FEATURE_HW_PSTATE,	CR_EDX, 7, 0x80000007, 0 },
+>  		{ X86_FEATURE_CPB,		CR_EDX, 9, 0x80000007, 0 },
+>  		{ X86_FEATURE_NPT,		CR_EDX, 0, 0x8000000a, 0 },
+>  		{ X86_FEATURE_LBRV,		CR_EDX, 1, 0x8000000a, 0 },
+> -- 
+> 1.7.5.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Regards/Gruss,
+    Boris.
