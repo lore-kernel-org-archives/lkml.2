@@ -1,94 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab1FRUwK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 16:52:10 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:64415 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293Ab1FRUwI convert rfc822-to-8bit (ORCPT
+	id S1752796Ab1FRUzy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 16:55:54 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39391 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752293Ab1FRUzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 16:52:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=MEsvBXSxkrAdCiAUWYNTJN+sCXmyA05ZDnPpzJvxTAPIs3VwxH16HwgYURgRoOXoix
-         y9nyUjBTDMkfzJJpE0GMzgu4RyNII977D5xXvSBgqTVExKnVfqzPChkTKl52P1froV2r
-         c4ZKyrNw8hTjTO8j8H1aN1ElibaRp8BAvcPVE=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTikpPzt3B6osydhd6BhiXUHAJsC3oA@mail.gmail.com>
-References: <BANLkTi=o06eHLtFvmmz7c4TEjahy=EOrJQ@mail.gmail.com>
-	<20110618133957.378b5266@farn.lan>
-	<BANLkTikT3qoZhTrd0uF-JNehNhTCRjF6kw@mail.gmail.com>
-	<BANLkTinf8X1AUEHteMnU3MMBEPEO1WNtzA@mail.gmail.com>
-	<20110618150356.1b9e31cb@farn.lan>
-	<BANLkTikpPzt3B6osydhd6BhiXUHAJsC3oA@mail.gmail.com>
-Date: Sat, 18 Jun 2011 22:52:06 +0200
-Message-ID: <BANLkTikopw_egOuA_jT+-e=DewR8FK9B8Q@mail.gmail.com>
-Subject: Re: Lock up when faking MMIO read[bwl] on some machines [WAS: Faking
- MMIO ops? Fooling a driver]
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Pekka Paalanen <pq@iki.fi>, David Woodhouse <dwmw2@infradead.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-wireless@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 18 Jun 2011 16:55:52 -0400
+From: Per Forlin <per.forlin@linaro.org>
+To: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        Venkatraman S <svenkatr@ti.com>
+Cc: Chris Ball <cjb@laptop.org>, Per Forlin <per.forlin@linaro.org>
+Subject: [PATCH v5 00/12] mmc: use nonblock mmc requests to minimize latency
+Date: Sat, 18 Jun 2011 22:55:14 +0200
+Message-Id: <1308430526-9412-1-git-send-email-per.forlin@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 18 czerwca 2011 16:43 użytkownik Rafał Miłecki
-<zajec5@gmail.com> napisał:
-> W dniu 18 czerwca 2011 14:03 użytkownik Pekka Paalanen <pq@iki.fi> napisał:
->> Maybe the driver is doing a 16-bit wide access, and happens to
->> store something else in the other 16/48 bits of RAX?
->
-> OK, attached is updated version of my patch. I think we can get some
-> clue from dmesgs with this patch applied.
->
->
-> My system (working):
-> [   74.472502] mmiotrace: ZAJEC: overwriting 0x27 with 0xFFFF
-> [   74.472511] mmiotrace: [ZAJEC] opcode is 0x8B
-> [   74.472515] mmiotrace: [ZAJEC] prf info: shorted:1; enlarged:0, rexr:0, rex:0
-> [   74.472517] mmiotrace: [ZAJEC] register is 0x0
-> [   74.472520] mmiotrace: [ZAJEC] overwritting 2-byte value 0x0514 with 0xFFFF
-> [   74.472523] mmiotrace: [ZAJEC] overwritting resulted in 0xFFFF
->
-> [   74.487081] mmiotrace: ZAJEC: overwriting 0x20 with 0xFFFF
-> [   74.487086] mmiotrace: [ZAJEC] opcode is 0x8B
-> [   74.487089] mmiotrace: [ZAJEC] prf info: shorted:1; enlarged:0, rexr:0, rex:0
-> [   74.487092] mmiotrace: [ZAJEC] register is 0x0
-> [   74.487095] mmiotrace: [ZAJEC] overwritting 2-byte value 0x427E with 0xFFFF
-> [   74.487097] mmiotrace: [ZAJEC] overwritting resulted in 0xFFFF
->
->
-> MacBook (with real overwritting commenet out!):
-> [  228.248715] mmiotrace: ZAJEC: overwriting 0x810 with 0xFFFF
-> [  228.254227] mmiotrace: [ZAJEC] opcode is 0xB70F
-> [  228.259784] mmiotrace: [ZAJEC] prf info: shorted:0; enlarged:0, rexr:0, rex:0
-> [  228.265399] mmiotrace: [ZAJEC] register is 0x0
-> [  228.270955] mmiotrace: [ZAJEC] overwritting 4-byte value 0x00000000
-> with 0xFFFF
-> [  228.276597] mmiotrace: [ZAJEC] overwritting resulted in 0x00000000
->
-> [  228.284284] mmiotrace: ZAJEC: overwriting 0x810 with 0xFFFF
-> [  228.289818] mmiotrace: [ZAJEC] opcode is 0xB70F
-> [  228.295250] mmiotrace: [ZAJEC] prf info: shorted:0; enlarged:0, rexr:0, rex:0
-> [  228.300838] mmiotrace: [ZAJEC] register is 0x0
-> [  228.306339] mmiotrace: [ZAJEC] overwritting 4-byte value 0x00000000
-> with 0xFFFF
-> [  228.311905] mmiotrace: [ZAJEC] overwritting resulted in 0x00000000
->
->
-> It's 2-byte vs. 4-byte. I suspect this can be the source of our
-> problem. Writing u16 0xFFFF value as u32 write.
+How significant is the cache maintenance over head?
+It depends, the eMMC are much faster now
+compared to a few years ago and cache maintenance cost more due to
+multiple cache levels and speculative cache pre-fetch. In relation the
+cost for handling the caches have increased and is now a bottle neck
+dealing with fast eMMC together with DMA.
 
-Ohh, that was so stupid...
+The intention for introducing none blocking mmc requests is to minimize the
+time between a mmc request ends and another mmc request starts. In the
+current implementation the MMC controller is idle when dma_map_sg and
+dma_unmap_sg is processing. Introducing none blocking mmc request makes it
+possible to prepare the caches for next job parallel with an active
+mmc request.
 
-Writing 0xFFFF to PHY register 0x810 causes lockup on BCM4331! That's
-all! My code is working fine, just some bits in 0xFFFF value are
-really not friendly for the hardware.
+This is done by making the issue_rw_rq() none blocking.
+The increase in throughput is proportional to the time it takes to
+prepare (major part of preparations is dma_map_sg and dma_unmap_sg)
+a request and how fast the memory is. The faster the MMC/SD is
+the more significant the prepare request time becomes. Measurements on U5500
+and Panda on eMMC and SD shows significant performance gain for large
+reads when running DMA mode. In the PIO case the performance is unchanged.
+
+There are two optional hooks pre_req() and post_req() that the host driver
+may implement in order to move work to before and after the actual mmc_request
+function is called. In the DMA case pre_req() may do dma_map_sg() and prepare
+the dma descriptor and post_req runs the dma_unmap_sg.
+
+Details on measurements from IOZone and mmc_test:
+https://wiki.linaro.org/WorkingGroups/Kernel/Specs/StoragePerfMMC-async-req
+
+Changes since v4:
+ * rebase on top of linux 3.0
+
+Per Forlin (12):
+  mmc: add none blocking mmc request function
+  omap_hsmmc: use original sg_len for dma_unmap_sg
+  omap_hsmmc: add support for pre_req and post_req
+  mmci: implement pre_req() and post_req()
+  mmc: mmc_test: add debugfs file to list all tests
+  mmc: mmc_test: add test for none blocking transfers
+  mmc: add member in mmc queue struct to hold request data
+  mmc: add a block request prepare function
+  mmc: move error code in mmc_block_issue_rw_rq to a separate function.
+  mmc: add a second mmc queue request member
+  mmc: test: add random fault injection in core.c
+  mmc: add handling for two parallel block requests in issue_rw_rq
+
+ drivers/mmc/card/block.c      |  534 ++++++++++++++++++++++++-----------------
+ drivers/mmc/card/mmc_test.c   |  361 +++++++++++++++++++++++++++-
+ drivers/mmc/card/queue.c      |  184 +++++++++-----
+ drivers/mmc/card/queue.h      |   33 ++-
+ drivers/mmc/core/core.c       |  165 ++++++++++++-
+ drivers/mmc/core/debugfs.c    |    5 +
+ drivers/mmc/host/mmci.c       |  146 ++++++++++-
+ drivers/mmc/host/mmci.h       |    8 +
+ drivers/mmc/host/omap_hsmmc.c |   90 +++++++-
+ include/linux/mmc/core.h      |    6 +-
+ include/linux/mmc/host.h      |   24 ++
+ lib/Kconfig.debug             |   11 +
+ 12 files changed, 1237 insertions(+), 330 deletions(-)
 
 -- 
-Rafał
+1.7.4.1
+
