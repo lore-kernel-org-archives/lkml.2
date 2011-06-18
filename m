@@ -1,43 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959Ab1FRSEy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 14:04:54 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:35992 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332Ab1FRSEw (ORCPT
+	id S1752015Ab1FRSGt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 14:06:49 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59701 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332Ab1FRSGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 14:04:52 -0400
-Date: Sat, 18 Jun 2011 20:04:50 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Steven Whitehouse <swhiteho@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        chris.mason@oracle.com, josef@redhat.com, agruen@linbit.com,
-        "Serge E. Hallyn" <serue@us.ibm.com>
-Subject: Re: [PATCH 1/4] Cache xattr security drop check for write v2
-Message-ID: <20110618180450.GH16236@one.firstfloor.org>
-References: <1306596354-18453-1-git-send-email-andi@firstfloor.org> <1306849896.2816.22.camel@menhir> <20110531180643.GB9261@alboin.amr.corp.intel.com> <1306867346.2816.49.camel@menhir> <20110531200750.GO11521@ZenIV.linux.org.uk> <4DFC4C7E.1030006@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DFC4C7E.1030006@gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	Sat, 18 Jun 2011 14:06:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:organization:user-agent:mime-version:to
+         :subject:content-type:content-transfer-encoding;
+        b=wW3qAtMNNoF88dfQLi0hSRS5HK79CBZWpn2M88cUB3v4idRuFdylHVJoLsvVSi5YUr
+         STHEgxEAQHY2qXlVV/QCyFTjTBmw5LkQbvPVmpNgjXTqVFOX5aoV8lHCXJRvoEZDL05m
+         HMnEwsbZjoAS7K61FXNxsVw6iSE4fkLiles38=
+Message-ID: <4DFCE934.1080409@gmail.com>
+Date: Sat, 18 Jun 2011 21:06:44 +0300
+From: Oleksandr Natalenko <pfactum@gmail.com>
+Organization: ITS NTUU =?ISO-8859-1?Q?=ABKPI=BB?=
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110601 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Interview with Nigel Cunningham, TuxOnIce developer
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> several fs now uses MS_NOSEC (because this flag is set in mount_bdev()) 
-> but I don't see any user of the function inode_has_no_xattr() in the 
-> latest version. If I well understand, a fs that wants to manage this 
-> feature has to set MS_NOSEC and calls when needed this function, isn't 
-> it? So at this point, why there aren't any user of this function?
+Here is the interview with TuxOnIce developer, Nigel Cunningham.
 
-Calling the function is just an optimization to avoid the lookup
-for the first write.  But most of the benefit you already get
-when just the flag is set.
-
-I haven't resent the patches using it to the fs maintainers yet and none
-of them took it the first round. 
-
--Andi
+http://natalenko.name/myfiles/interviews/nigelc_eng.html
