@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754330Ab1FRI6x (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 04:58:53 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60564 "EHLO
+	id S1754577Ab1FRJEh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 05:04:37 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55306 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139Ab1FRI6w (ORCPT
+	with ESMTP id S1751526Ab1FRJEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 04:58:52 -0400
+	Sat, 18 Jun 2011 05:04:36 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding
-         :content-disposition:message-id;
-        b=nRQhYmy5M+wfVJKj9NTy+ez0UbF2cyw5XwzySLoZkR+zUaqCi5QSbZ4D9K2YAD8488
-         +ahpn0gqcw5jCBtj0mYIDyjnekMS5fv9beZnEuo/UkOhvJhoCYlpDO1Jk5DOUWW1fGCp
-         PSzrGN2u57A/d+c1Fxh79V74itNXSdl/aWX34=
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 2/5] ptrace: implement PTRACE_SEIZE
-Date: Sat, 18 Jun 2011 10:58:48 +0200
-User-Agent: KMail/1.8.2
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=g5KuCt+eCASgwjhCCAts/5tUySja9tmG184vqC1zSPGsy1SXIPMyoP39Has0RBsVa5
+         7bM4VsUXKWch70Seg6wsJk+/7aM7w1Sn7YPh02rIb6P24SrLBP9xIgcEwdfrLnU6g4ry
+         2KPElCR4WJfQ/vIQb/RswlMk09vd7bvCSLSHo=
+Date: Sat, 18 Jun 2011 11:04:31 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Denys Vlasenko <vda.linux@googlemail.com>
 Cc: oleg@redhat.com, jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu,
         bdonlan@gmail.com, pedro@codesourcery.com
-References: <1308043218-23619-1-git-send-email-tj@kernel.org> <201106180955.37531.vda.linux@googlemail.com> <20110618083032.GJ2611@htj.dyndns.org>
-In-Reply-To: <20110618083032.GJ2611@htj.dyndns.org>
+Subject: Re: [PATCH 2/5] ptrace: implement PTRACE_SEIZE
+Message-ID: <20110618090431.GL2611@htj.dyndns.org>
+References: <1308043218-23619-1-git-send-email-tj@kernel.org>
+ <201106180959.38847.vda.linux@googlemail.com>
+ <20110618083559.GK2611@htj.dyndns.org>
+ <201106181057.02477.vda.linux@googlemail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201106181058.48744.vda.linux@googlemail.com>
+In-Reply-To: <201106181057.02477.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 18 June 2011 10:30, Tejun Heo wrote:
-> > I propose to define PTRACE_EVENT_STOP as 64 instead, leaving 64 low
-> > PTRACE_EVENT_foo constants for possible future PTRACE_O_foo bits.
-> > 
-> > [32 should be enough too, but I feel paranoid today :)]
+Hello,
+
+On Sat, Jun 18, 2011 at 10:57:02AM +0200, Denys Vlasenko wrote:
+> I explained this already. strace code is a bit complex, and adding
+> more complexity so that it uses PTRACE_SEIZE if available, but PTRACE_ATTACH
+> if it is not, will add some PITA.
 > 
-> But this might not be a bad idea.  Given that we also support 32bit
-> archs, going over 32 wouldn't help much tho.
+> Considering that strace does not want PTRACE_SEIZE per se, it only wants
+> to have a way to properly see and handle group stops, having an option
+> to enable *only that functonality* without having to use PTRACE_SEIZE
+> will be useful for strace.
 
-In 2030, 32 bit will be sort of like 16 bit today :)
-and we'll suddenly find it not impossible to use bit positions >= 32.
+I understand that it would make strace's life somewhat easier but
+don't agree the difference is significant enough to justify
+introducing more options.  We're talking about small number of well
+defined behaviors.  Yes, it wouldn't be as simple as adding several
+liners during initialization but that doesn't warrant extra kernel
+features and differing behaviors which, I think, in the long run, make
+things much more complicated (not complex) than necessary.
 
-(and I will be so old it's not funny)
+Thanks.
 
 -- 
-vda
+tejun
