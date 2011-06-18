@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751056Ab1FREE7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 00:04:59 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60876 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767Ab1FREE5 (ORCPT
+	id S1751478Ab1FREke (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 00:40:34 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:3267 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790Ab1FREkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 00:04:57 -0400
-Date: Fri, 17 Jun 2011 21:08:56 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: Ankita Garg <ankita@in.ibm.com>
-Cc: paulmck@linux.vnet.ibm.com, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        svaidy@linux.vnet.ibm.com, thomas.abraham@linaro.org
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-Message-ID: <20110617210856.1dd3b482@infradead.org>
-In-Reply-To: <20110615165321.GC23151@in.ibm.com>
-References: <20110610165529.GC2230@linux.vnet.ibm.com>
-	<20110610170535.GC25774@srcf.ucam.org>
-	<20110610171939.GE2230@linux.vnet.ibm.com>
-	<20110610172307.GA27630@srcf.ucam.org>
-	<20110610175248.GF2230@linux.vnet.ibm.com>
-	<20110610180807.GB28500@srcf.ucam.org>
-	<20110610184738.GG2230@linux.vnet.ibm.com>
-	<20110610192329.GA30496@srcf.ucam.org>
-	<20110610193713.GJ2230@linux.vnet.ibm.com>
-	<20110610200233.5ddd5a31@infradead.org>
-	<20110615165321.GC23151@in.ibm.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 18 Jun 2011 00:40:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=AnDPEdapX6HN8xgnYKsGiFVIvOoQHjZPMFJTShjs6uUQ2K/ChCUfeUsDTaZsZjsuoZ
+         MDhES0i7U7547OoO77Ow==
+Date: Fri, 17 Jun 2011 21:40:15 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Chris Wilson <chris@chris-wilson.co.uk>
+cc: Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm/i915: Suppress spurious vblank interrupts
+In-Reply-To: <AANLkTi=JD4zwo9aW7iQW-==dQM9W7NHyq12uOPBqGYSB@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1106172136290.21481@sister.anvils>
+References: <849307$bc24ct@azsmga001.ch.intel.com> <1296471462-8578-1-git-send-email-chris@chris-wilson.co.uk> <alpine.LSU.2.00.1102010909270.1586@sister.anvils> <20110201094643.366bc073@jbarnes-desktop> <20110201100833.3219687e@jbarnes-desktop>
+ <AANLkTim4kL9OjBDiQQ1MBfOCzThxmDonBic11N45NKxj@mail.gmail.com> <20110201113238.60b33ff9@jbarnes-desktop> <AANLkTikwfHd6t95-jhbXCy1ciW3OV+HVYVikZNs5LHfz@mail.gmail.com> <20110202091838.5efaa660@jbarnes-desktop> <alpine.LSU.2.00.1102081132160.1591@sister.anvils>
+ <87E55E65-72FF-462C-8BD3-84C367021DB7@tuebingen.mpg.de> <AANLkTi=JD4zwo9aW7iQW-==dQM9W7NHyq12uOPBqGYSB@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-833175681-1308372025=:21481"
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jun 2011 22:23:21 +0530
-Ankita Garg <ankita@in.ibm.com> wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> The maximum order in buddy allocator is by default 1k pages. Isn't
-> this too small a granularity to track blocks that might comprise a
-> PASR unit? 
+--8323584-833175681-1308372025=:21481
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-we had to bump the default up a little, but not all that much
+On Mon, 14 Feb 2011, Hugh Dickins wrote:
+> On Fri, Feb 11, 2011 at 10:21 AM, Mario Kleiner
+> <mario.kleiner@tuebingen.mpg.de> wrote:
+> > On Feb 8, 2011, at 8:52 PM, Hugh Dickins wrote:
+> >> =C2=A0It appears that the
+> >> underruns, while mysterious and worrisome, have litte or nothing to do
+> >> with the unflushed text problem which is making 2.6.38-rc unusable.
+> >>
+> I'm sorry to say that I have now given up on this: it has already
+> consumed a lot more time than I can afford to give it.  So I've now
+> just turned CONFIG_DRM_I915_KMS off, which gives me a laptop on which
+> 2.6.38-rc is usable.
+>=20
+> If in due course there's a likely patch someone would like me to try,
+> that I can do.  And from time to time, with new kernels and with
+> upgraded userspace, I'll give I915_KMS a try again - indeed, for the
+> moment I still have it in my 64bit kernel.
+>=20
+> Before switching KMS off, I did establish that, with Chris's overrun
+> fix, do_intel_finish_page_flip() - the function whose call to
+> do_gettimeofday() I moved - is no longer called at all.  So that
+> modification was just cargo-cult magic by now (though perhaps made a
+> difference to timings when overruns were happening), and there's no
+> reason to suspect Mario's vblank patch at all.  Let's assume that if I
+> attempted a fifth bisection, it would lead me to another (equally
+> blameless) patch.  Nobody else is complaining: maybe my 965 is broken
+> and just gets along better with 2.6.38 KMS off.
 
-(like 4x)
+Just wanted to report that something (sorry, no time to work out what)
+in 3.0-rc1 fixed this issue for me, so now I am back on I915_KMS: thanks.
+
+Hugh
+--8323584-833175681-1308372025=:21481--
