@@ -1,33 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015Ab1FRSGt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 14:06:49 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59701 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332Ab1FRSGp (ORCPT
+	id S1752044Ab1FRSMa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 14:12:30 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:52622 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751867Ab1FRSM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 14:06:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:organization:user-agent:mime-version:to
-         :subject:content-type:content-transfer-encoding;
-        b=wW3qAtMNNoF88dfQLi0hSRS5HK79CBZWpn2M88cUB3v4idRuFdylHVJoLsvVSi5YUr
-         STHEgxEAQHY2qXlVV/QCyFTjTBmw5LkQbvPVmpNgjXTqVFOX5aoV8lHCXJRvoEZDL05m
-         HMnEwsbZjoAS7K61FXNxsVw6iSE4fkLiles38=
-Message-ID: <4DFCE934.1080409@gmail.com>
-Date: Sat, 18 Jun 2011 21:06:44 +0300
-From: Oleksandr Natalenko <pfactum@gmail.com>
-Organization: ITS NTUU =?ISO-8859-1?Q?=ABKPI=BB?=
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110601 Thunderbird/3.1.10
+	Sat, 18 Jun 2011 14:12:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] serial/imx: add device tree support
+Date: Sat, 18 Jun 2011 20:11:32 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: Grant Likely <grant.likely@secretlab.ca>, patches@linaro.org,
+        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Jason Liu <jason.hui@linaro.org>, linux-kernel@vger.kernel.org,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+References: <1308410354-21387-1-git-send-email-shawn.guo@linaro.org> <201106181821.46574.arnd@arndb.de> <20110618162655.GK8195@ponder.secretlab.ca>
+In-Reply-To: <20110618162655.GK8195@ponder.secretlab.ca>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Interview with Nigel Cunningham, TuxOnIce developer
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201106182011.33146.arnd@arndb.de>
+X-Provags-ID: V02:K0:J89Eg4Ls03bb1aJUF9qOHPGVV7B3SdP6VLgKi2QKfy5
+ 8GfrFYf4KgZmR4A+p2Y58QtVxFZYoDrx2MvlUIAqHLEDREZkfa
+ biNSbqtkjVBqNAFqGEhM47NTRhTRUMxlulDcWx0gQjBqjpH2KT
+ KdK/qh/fkd0ShBIHhZH+ue+DgIaxw1rmRSsBXZGF1iGBc45xD5
+ pOdhyjFv6Aw3brNw6oouA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is the interview with TuxOnIce developer, Nigel Cunningham.
+On Saturday 18 June 2011 18:26:55 Grant Likely wrote:
+> On Sat, Jun 18, 2011 at 06:21:46PM +0200, Arnd Bergmann wrote:
 
-http://natalenko.name/myfiles/interviews/nigelc_eng.html
+> > Should this also support the "clock-frequency" property that 8250-style
+> > serial ports support [1]?
+> > 
+> > For the flow-control properties, should we name that more generic? The
+> > same property certainly makes sense for other serial-ports if it does
+> > here. OTOH, I'm not sure it's actually reliable, because it also depends
+> > on whether the other side of the connection and the cable support hw flow
+> > control.
+> 
+> I'd like to see a few use cases before defining a common property.
+> That said, has-rts-cts does sound like a useful generic property.
+> Or maybe named "uart-has-rts-cts" to make it clear that it is a uart
+> specific binding?
+> 
+
+
+Sounds ok to me.
+
+	Arnd
