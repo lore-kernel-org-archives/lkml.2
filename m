@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973Ab1FRRz7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 13:55:59 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:55994 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab1FRRzx (ORCPT
+	id S1751773Ab1FRRhk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 13:37:40 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:37507 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750839Ab1FRRhj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 13:55:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=wFRVxlqoZUgwTj7USvQXQhjK0n59HwhiUnuQgpbKKPkbzY14aPkskhHep0LvNx6x6Q
-         fnCaJLm6b3oZM14PMraNqldUy5F/4duv8mZJZFjwtF4kLV4r293IWjQWCffh4G40CcS2
-         gNNRIUd4eDi4NLJWtOl51WsgDRrtG2XcMsJq8=
-From: Dave Carroll <dtcarroll@gmail.com>
-To: Milton Miller <miltonm@bga.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: LPPC <linuxppc-dev@lists.ozlabs.org>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Carroll <dcarroll@astekcorp.com>
-Subject: [PATCH 2/2][v2] powerpc: Add printk companion for ppc_md.progress
-Date: Sat, 18 Jun 2011 11:36:40 -0600
-Message-Id: <1308418600-9167-2-git-send-email-dcarroll@astekcorp.com>
-X-Mailer: git-send-email 1.7.5
-In-Reply-To: <1308418600-9167-1-git-send-email-dcarroll@astekcorp.com>
-References: <1308350584.32158.58.camel@pasglop>
- <1308418600-9167-1-git-send-email-dcarroll@astekcorp.com>
+	Sat, 18 Jun 2011 13:37:39 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=EIHU8wiOh46bjVRopZ3fyT6VAc5YsVm8KXvAHKWMGMcmh9MaLDO5QJmsAoYcjswQXc34bxH6r+8ySWcb2i00zCcRRL2AecdbGvg+39hJonEwYjzaN8CLJVhH1OtchLyy;
+Date: Sat, 18 Jun 2011 10:37:37 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: "Robert P. J. Day" <rpjday@crashcourse.ca>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        hughd@google.com
+Subject: Re: [PATCH] TMPFS: Expand "help" to explain value of
+ TMPFS_POSIX_ACL
+Message-Id: <20110618103737.c6d95512.rdunlap@xenotime.net>
+In-Reply-To: <alpine.DEB.2.02.1106181331490.5909@localhost6.localdomain6>
+References: <alpine.DEB.2.02.1106180743040.17576@localhost6.localdomain6>
+	<20110618192847.62dc6d87@stein>
+	<alpine.DEB.2.02.1106181331490.5909@localhost6.localdomain6>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Carroll <dcarroll@astekcorp.com>
+On Sat, 18 Jun 2011 13:32:14 -0400 (EDT) Robert P. J. Day wrote:
 
-This patch adds a printk companion to replace the udbg progress function
-when initmem is freed.
+> On Sat, 18 Jun 2011, Stefan Richter wrote:
+> 
+> > On Jun 18 Robert P. J. Day wrote:
+> > > +	  If you've selected TMPFS, you almost certainly want this option
+> > > +	  as well since a number of user space features (ie., ALSA sound)
+> > > +	  require POSIX ACL support under /dev to work properly.  In other
+> >
+> > There are still many systems which do not use ACLs in /dev or anywhere
+> > else at all.  Hence, "may require POSIX ACL support".
+> >
+> > > +	  words, if you're not sure and you have no *compelling* reason to
+> > > +	  deselect this feature, say Y.
+> >
+> > The asterisks around compelling are unnecessary.
 
-Suggested-by: Milton Miller <miltonm@bga.com>
-Suggested-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Dave Carroll <dcarroll@astekcorp.com>
+agreed.
+
+>   ok, i can reword and resubmit if you like.
+
+yes, please.
+
 ---
- [v2] This is a rebase of the original patch to Linus' current tree
- 
- arch/powerpc/include/asm/setup.h   |    2 ++
- arch/powerpc/kernel/setup-common.c |    5 +++++
- arch/powerpc/mm/mem.c              |    2 +-
- 3 files changed, 8 insertions(+), 1 deletions(-)
-
-diff --git a/arch/powerpc/include/asm/setup.h b/arch/powerpc/include/asm/setup.h
-index dae1934..c77cb7a 100644
---- a/arch/powerpc/include/asm/setup.h
-+++ b/arch/powerpc/include/asm/setup.h
-@@ -3,4 +3,6 @@
- 
- #include <asm-generic/setup.h>
- 
-+extern void ppc_printk_progress(char *s, unsigned short hex);
-+
- #endif	/* _ASM_POWERPC_SETUP_H */
-diff --git a/arch/powerpc/kernel/setup-common.c b/arch/powerpc/kernel/setup-common.c
-index 79fca26..e053b16 100644
---- a/arch/powerpc/kernel/setup-common.c
-+++ b/arch/powerpc/kernel/setup-common.c
-@@ -704,6 +704,11 @@ static int powerpc_debugfs_init(void)
- arch_initcall(powerpc_debugfs_init);
- #endif
- 
-+void ppc_printk_progress(char *s, unsigned short hex)
-+{
-+	pr_info("%s\n", s);
-+}
-+
- static int ppc_dflt_bus_notify(struct notifier_block *nb,
- 				unsigned long action, void *data)
- {
-diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
-index f4e6408..e0d2aa0 100644
---- a/arch/powerpc/mm/mem.c
-+++ b/arch/powerpc/mm/mem.c
-@@ -386,7 +386,7 @@ void free_initmem(void)
- {
- 	unsigned long addr;
- 
--	ppc_md.progress = NULL;
-+	ppc_md.progress = ppc_printk_progress;
- 
- 	addr = (unsigned long)__init_begin;
- 	for (; addr < (unsigned long)__init_end; addr += PAGE_SIZE) {
--- 
-1.7.5
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
