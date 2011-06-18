@@ -1,81 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186Ab1FRIia (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 04:38:30 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:51545 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753139Ab1FRIi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 04:38:26 -0400
-Date: Sat, 18 Jun 2011 10:38:20 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Borislav Petkov <bp@amd64.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 4/8] x86, mce: rename bootparam parser
-Message-ID: <20110618083820.GA27319@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@amd64.org>,
-	Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	"H. Peter Anvin" <hpa@zytor.com>
-References: <4DFB1242.90404@jp.fujitsu.com>
- <4DFB13E2.4080909@jp.fujitsu.com>
- <20110617154143.GC20010@aftab>
- <987664A83D2D224EAE907B061CE93D5301E8E3054B@orsmsx505.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <987664A83D2D224EAE907B061CE93D5301E8E3054B@orsmsx505.amr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754480Ab1FRIni (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 04:43:38 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:49113 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751526Ab1FRIng convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jun 2011 04:43:36 -0400
+Date: Sat, 18 Jun 2011 10:43:11 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: lethal@linux-sh.org, linux-fbdev@vger.kernel.org, francis.moro@gmail.com,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Herton Ronaldo Krzesinski <herton@mandriva.com.br>, stable@kernel.org
+Subject: Re: [PATCH] fb: avoid possible deadlock caused by fb_set_suspend
+Message-ID: <20110618104311.6d80ba50@neptune.home>
+In-Reply-To: <1308337359-3480-1-git-send-email-FlorianSchandinat@gmx.de>
+References: <4DF7B0B4.4060002@gmx.de>
+	<1308337359-3480-1-git-send-email-FlorianSchandinat@gmx.de>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 03:25:51PM -0700, Luck, Tony wrote:
-> > and leave this like this. "nomce" is the same as "mce=off" and frankly,
-> > I'd like to remove this redundancy, thus no need to do the code
-> > relocation. In addition, I don't think there are lots of systems running
-> > with "nomce" so I really think we should drop it.
-> >
-> > So Ingo, hpa, what is the proper way to remove early setup params? Maybe
-> > through Documentation/feature-removal-schedule.txt?
+On Fri, 17 June 2011 Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
+> From: Herton Ronaldo Krzesinski <herton@mandriva.com.br>
 > 
-> Though it seems odd to me that anyone would want to turn mce off,
-> the fact that we have two ways to do so would indicate that people
-> do (or at least did) want to do this.
+> A lock ordering issue can cause deadlocks: in framebuffer/console code,
+> all needed struct fb_info locks are taken before acquire_console_sem(),
+> in places which need to take console semaphore.
+> 
+> But fb_set_suspend is always called with console semaphore held, and
+> inside it we call lock_fb_info which gets the fb_info lock, inverse
+> locking order of what the rest of the code does. This causes a real
+> deadlock issue, when we write to state fb sysfs attribute (which calls
+> fb_set_suspend) while a framebuffer is being unregistered by
+> remove_conflicting_framebuffers, as can be shown by following show
+> blocked state trace on a test program which loads i915 and runs another
+> forked processes writing to state attribute:
+> 
+> Test process with semaphore held and trying to get fb_info lock:
 
-Yeah, the only usecase I could think of for this is people doing their
-own userspace DRAM ECC evaluation like google. But they'd still need to
-have an #MC handler... or they could parse syslog for the output from
-the default unexpected_machine_check().. hm.
+...
 
-> It seems like we'd need a long "deprecated" period (till all the
-> major OSVs turn out a new release) to remove this without surprises.
-> If the "nomce" option just disappears, then people using it will
-> not realize that their boot time argument was ignored (until they
-> see a reported error).
+> fb-test2 which reproduces above is available on kernel.org bug #26232.
+> To solve this issue, avoid calling lock_fb_info inside fb_set_suspend,
+> and move it out to where needed (callers of fb_set_suspend must call
+> lock_fb_info before if needed). So far, the only place which needs to
+> call lock_fb_info is store_fbstate, all other places which calls
+> fb_set_suspend are suspend/resume hooks that should not need the lock as
+> they should be run only when processes are already frozen in
+> suspend/resume.
 
-Yeah, we could do a grace period with a warning:
+>From a quick look through FB drivers in 2.6.39 I've found one that would need
+more work:
+- drivers/video/sh_mobile_hdmi.c: sh_hdmi_edid_work_fn()
+  Should get changed to
+  a) right locking order in case (hdmi->hp_state == HDMI_HOTPLUG_CONNECTED)
+  b) lock fb_info in the other case
+  For this one fb_set_suspend() does get call in a hotplug worker,
+  thus independently on suspend/resume process.
 
-/*
- * Old style boot options parsing. Only for compatibility.
- */
-static int __init mcheck_disable(char *str)
-{
-	pr_err("\"nomce\" boot param is deprecated. Please use \"mce=off\"\n");
+The rest does match the suspend/resume hook pattern mentioned.
 
-	mce_disabled = 1;
-	return 1;
-}
-__setup("nomce", mcheck_disable);
+Bruno
 
-and then kill it.
 
--- 
-Regards/Gruss,
-    Boris.
+> References: https://bugzilla.kernel.org/show_bug.cgi?id=26232
+> Signed-off-by: Herton Ronaldo Krzesinski <herton@mandriva.com.br>
+> Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+> Cc: stable@kernel.org
+> ---
+>  drivers/video/fbmem.c   |    3 ---
+>  drivers/video/fbsysfs.c |    3 +++
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+> index 5aac00e..ad93629 100644
+> --- a/drivers/video/fbmem.c
+> +++ b/drivers/video/fbmem.c
+> @@ -1738,8 +1738,6 @@ void fb_set_suspend(struct fb_info *info, int state)
+>  {
+>  	struct fb_event event;
+>  
+> -	if (!lock_fb_info(info))
+> -		return;
+>  	event.info = info;
+>  	if (state) {
+>  		fb_notifier_call_chain(FB_EVENT_SUSPEND, &event);
+> @@ -1748,7 +1746,6 @@ void fb_set_suspend(struct fb_info *info, int state)
+>  		info->state = FBINFO_STATE_RUNNING;
+>  		fb_notifier_call_chain(FB_EVENT_RESUME, &event);
+>  	}
+> -	unlock_fb_info(info);
+>  }
+>  
+>  /**
+> diff --git a/drivers/video/fbsysfs.c b/drivers/video/fbsysfs.c
+> index 04251ce..67afa9c 100644
+> --- a/drivers/video/fbsysfs.c
+> +++ b/drivers/video/fbsysfs.c
+> @@ -399,9 +399,12 @@ static ssize_t store_fbstate(struct device *device,
+>  
+>  	state = simple_strtoul(buf, &last, 0);
+>  
+> +	if (!lock_fb_info(fb_info))
+> +		return -ENODEV;
+>  	console_lock();
+>  	fb_set_suspend(fb_info, (int)state);
+>  	console_unlock();
+> +	unlock_fb_info(fb_info);
+>  
+>  	return count;
+>  }
