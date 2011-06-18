@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016Ab1FRKi2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 06:38:28 -0400
-Received: from smtp-out1.tiscali.nl ([195.241.79.176]:49152 "EHLO
-	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875Ab1FRKi1 (ORCPT
+	id S1755143Ab1FRKkO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 06:40:14 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:42987 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754687Ab1FRKkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 06:38:27 -0400
-Subject: Re: [Bug 37682] New: Kernel mis-detects size/position of partition
- created with Seagate DiscWizard (OnTrack Disk Manager)
-From: Paul Bolle <pebolle@tiscali.nl>
-To: markk@clara.co.uk
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        bugme-daemon@bugzilla.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <c6813b0914dd61da40fc2db868ea5b11.squirrel@ssl-webmail-vh.clara.net>
-References: <bug-37682-10286@https.bugzilla.kernel.org/>
-	 <20110617143104.3b883bda.akpm@linux-foundation.org>
-	 <1308359856.2166.23.camel@t41.thuisdomein>
-	 <c6813b0914dd61da40fc2db868ea5b11.squirrel@ssl-webmail-vh.clara.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 18 Jun 2011 12:38:21 +0200
-Message-ID: <1308393501.23584.27.camel@x61.thuisdomein>
+	Sat, 18 Jun 2011 06:40:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:in-reply-to:references
+         :x-mailer:mime-version:content-type:content-transfer-encoding;
+        b=P+bK5ZuTvl6DBDwJqbFYphsZNnld2zAdRZ8icCrekQI4Aa2PUlB6s6WFKr8tc4Hy5W
+         Er8Nw3oMILril0Dl7pbq7a/vOWO+kkUBMFMsUgJ/TVy2TQ9cbwAlUSaEynQ0obMFQIea
+         7vlDqyxoCjRFdn1cmqykKDxJEGruE47QPw2zA=
+Date: Sat, 18 Jun 2011 13:39:57 +0300
+From: Pekka Paalanen <pq@iki.fi>
+To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-wireless@vger.kernel.org,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: Lock up when faking MMIO read[bwl] on some machines [WAS:
+ Faking MMIO ops? Fooling a driver]
+Message-ID: <20110618133957.378b5266@farn.lan>
+In-Reply-To: <BANLkTi=o06eHLtFvmmz7c4TEjahy=EOrJQ@mail.gmail.com>
+References: <BANLkTi=o06eHLtFvmmz7c4TEjahy=EOrJQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-06-18 at 09:51 +0100, markk@clara.co.uk wrote:
-> Paul Bolle wrote:
-> > That was 232595eaff951e96cabe5e85fed35f66b72ff51e ("ide: remove
-> > obsoleted "hdx=" kernel parameters"), which was applied in the v2.6.27
-> > cycle.
+On Sat, 18 Jun 2011 00:31:32 +0200
+Rafał Miłecki <zajec5@gmail.com> wrote:
+
+> I use attached patch to fake result of read[bwl] performed by
+> closed source driver (ndiswrapper+bcmwl and wl).
 > 
-> Was the feature which that commit removed specific to ide devices? That
-> is, would it have not applied for a drive connected via a USB/Firewire
-> bridge?
-
-I have no clue. I'd guess it wouldn't. For instance, a drive connected
-using USB uses the SCSI layer, doesn't it? That wasn't different a few
-years ago.
-
-> Ideally the kernel partition-scanning code would be fixed to handle these
-> strange partitions. As a temporary measure, it might be best to print a
-> warning and not create the incorrect block device.
+> 1) It works great on my Sony VAIO with Intel(R) Core(TM)2 Duo CPU
+> P8400 2) It locks up Macbook Pro 8,1 with some 8-cores Intel
 > 
-> E.g. user might think "I'll back up this partition"
->   dd if=/dev/sdc1 of=partition.bin
-> or "I'll wipe this partition before disposing of the disk"
->   dd if=/dev/zero of=/dev/sdc1.
-> Neither has the desired effect.
+> Do you have any idea why it causes the lockup? Function causing
+> problem is "set_ins_reg_val". I've created it as copy of
+> get_ins_reg_val, it just sets values in struct pt_regs, instead of
+> reading them).
 
-Digging further into this I found commit d708c40d ("ide: mark
-"hdx=remap" and "hdx=remap63" kernel parameters as obsoleted"). The
-commit message reads:
-    Mark "hdx=remap" and "hdx=remap63" kernel parameters as obsoleted
-    (they are layering violation and should be dealt with in the same
-    way as done by libata - device-mapper should be used instead).
+Sorry, I have no insight to that... does unmodified mmiotrace
+work properly? Are you tracing the exact same kernel binary blob
+on both machines? Maybe it's using some rare instruction
+mmiotrace does not decode properly? Maybe with a rep prefix?
+Do those CPUs have any differences in their registers or
+struct pt_regs?
 
-Perhaps this means one is expected to use dmsetup(8) for this. I have
-never configured device-mapper at that level by hand. man 8 dmsetup is
-over 300 lines of (new for me) information. Without a disk like yours at
-hand, it's hard to say whether device-mapper allows to do stuff like
-this (ie, remapping an entire drive by 63 sectors) by hand.
-
-Of course, for your particular drive it might be easier to just dd the
-actual partition (so skipping 63 sectors) into new file (a 20G image) on
-another drive. That image should be loop mountable. If that's correct
-you could then do with the drive as you please. Given its age, it may be
-wise to, say, shred(1) its corresponding device and drop the drive at
-your local recycling site.
+I'm not even sure how "legal" it is to poke pt_regs there. :-/
 
 
-Paul Bolle
+Good luck.
 
+-- 
+Pekka Paalanen
+http://www.iki.fi/pq/
