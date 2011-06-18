@@ -1,100 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab1FRLZp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 07:25:45 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33302 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751756Ab1FRLZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 07:25:42 -0400
-Date: Sat, 18 Jun 2011 13:25:35 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, borislav.petkov@amd.com, davej@redhat.com,
-        mark.langsdorf@amd.com, cpufreq@vger.kernel.org,
-        andreas.herrmann3@amd.com
-Subject: Re: [PATCH V2 1/6] x86: Add AMD HW_PSTATE cpu feature bit and MSRs
-Message-ID: <20110618112535.GA7445@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
-	borislav.petkov@amd.com, davej@redhat.com, mark.langsdorf@amd.com,
-	cpufreq@vger.kernel.org, andreas.herrmann3@amd.com
-References: <1308340257-10117-1-git-send-email-mjg@redhat.com>
+	id S1755543Ab1FRL0S (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 07:26:18 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55980 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751756Ab1FRL0P convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jun 2011 07:26:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=NyX4DGPzen6gss9jl6XRyAWPDjs2x9ducxvkkpazx4SwENY6YKP5x6Z7SaucK4EdoU
+         jR6Q0wcIjyQojoiak9SCU0mWmopWJOyUwV7GNO3P5D0oad7/quAB6pwqFjQ4ni0PYYgu
+         psHYwu+RDg6dc/uiXaqyP41SnUL9jNg886ZMU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1308340257-10117-1-git-send-email-mjg@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <BANLkTikT3qoZhTrd0uF-JNehNhTCRjF6kw@mail.gmail.com>
+References: <BANLkTi=o06eHLtFvmmz7c4TEjahy=EOrJQ@mail.gmail.com>
+	<20110618133957.378b5266@farn.lan>
+	<BANLkTikT3qoZhTrd0uF-JNehNhTCRjF6kw@mail.gmail.com>
+Date: Sat, 18 Jun 2011 13:26:14 +0200
+Message-ID: <BANLkTinf8X1AUEHteMnU3MMBEPEO1WNtzA@mail.gmail.com>
+Subject: Re: Lock up when faking MMIO read[bwl] on some machines [WAS: Faking
+ MMIO ops? Fooling a driver]
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Pekka Paalanen <pq@iki.fi>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-wireless@vger.kernel.org,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 03:50:52PM -0400, Matthew Garrett wrote:
-> AMD CPUs that support hardware P-state setting expose this via cpuid. Add
-> the bit to the generic code so the ACPI cpufreq driver can make use of it,
-> and also add the related MSRs.
-> 
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
-> ---
->  arch/x86/include/asm/cpufeature.h |    1 +
->  arch/x86/include/asm/msr-index.h  |    2 ++
->  arch/x86/kernel/cpu/scattered.c   |    1 +
->  3 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-> index 71cc380..312f455 100644
-> --- a/arch/x86/include/asm/cpufeature.h
-> +++ b/arch/x86/include/asm/cpufeature.h
-> @@ -174,6 +174,7 @@
->  #define X86_FEATURE_PLN		(7*32+ 5) /* Intel Power Limit Notification */
->  #define X86_FEATURE_PTS		(7*32+ 6) /* Intel Package Thermal Status */
->  #define X86_FEATURE_DTS		(7*32+ 7) /* Digital Thermal Sensor */
-> +#define X86_FEATURE_HW_PSTATE	(7*32+ 8) /* AMD frequency scaling */
+W dniu 18 czerwca 2011 12:57 użytkownik Rafał Miłecki
+<zajec5@gmail.com> napisał:
+> W dniu 18 czerwca 2011 12:39 użytkownik Pekka Paalanen <pq@iki.fi> napisał:
+>> On Sat, 18 Jun 2011 00:31:32 +0200
+>> Rafał Miłecki <zajec5@gmail.com> wrote:
+>>
+>>> I use attached patch to fake result of read[bwl] performed by
+>>> closed source driver (ndiswrapper+bcmwl and wl).
+>>>
+>>> 1) It works great on my Sony VAIO with Intel(R) Core(TM)2 Duo CPU
+>>> P8400 2) It locks up Macbook Pro 8,1 with some 8-cores Intel
+>>>
+>>> Do you have any idea why it causes the lockup? Function causing
+>>> problem is "set_ins_reg_val". I've created it as copy of
+>>> get_ins_reg_val, it just sets values in struct pt_regs, instead of
+>>> reading them).
+>>
+>> Sorry, I have no insight to that... does unmodified mmiotrace
+>> work properly? Are you tracing the exact same kernel binary blob
+>> on both machines? Maybe it's using some rare instruction
+>> mmiotrace does not decode properly? Maybe with a rep prefix?
+>> Do those CPUs have any differences in their registers or
+>> struct pt_regs?
+>>
+>> I'm not even sure how "legal" it is to poke pt_regs there. :-/
+>
+> Not modified MMIO tracing works great on this machine, I've grabbed
+> dumps 10-20 times without a lock up or anything.
+>
+> I'm using different drivers on both machines, because Macbook Pro 8,1
+> has unique BCM4331 card that I can not buy and that is not available
+> with PCI(e) slot. Is uses some vendor specific, PCIe compatible slot.
+> Simple commenting out "set_ins_reg_val" work fine on this Macbook, PHY
+> reads are tracked correctly.
+>
+> As for differences in struct pt_regs... yeah, I think that happens.
+> I'm using x86 kernel, while on Macbook we use x86_64 as it's required
+> to use 64bit driver in ndiswrapper.
+>
+> I can try to find out, which register we try to overwrite on Macbook.
 
-Yeah, this is actually called			  /* AMD hardware P-state control */
+This is what does happen on my machine (working):
+[  122.550991] mmiotrace: ZAJEC: read PHY 0x20
+[  122.550994] mmiotrace: ZAJEC: overwriting 0x20 with 0xFFFF
+[  122.550997] [ZAJEC] setting AX with 0xFFFF
+(...)
+[  122.551071] mmiotrace: ZAJEC: read PHY 0x22
+[  122.551074] mmiotrace: ZAJEC: overwriting 0x22 with 0xFFFF
+[  122.551077] [ZAJEC] setting AX with 0xFFFF
+(...)
+[  122.551198] mmiotrace: ZAJEC: read PHY 0x27
+[  122.551201] mmiotrace: ZAJEC: overwriting 0x27 with 0xFFFF
+[  122.551204] [ZAJEC] setting AX with 0xFFFF
 
-because older CPUs also do frequency scaling but use a different method.
 
-Other than that
+This is what does happen on Macbook:
+[  166.886438] mmiotrace: ZAJEC: read PHY 0x810
+[  166.886649] mmiotrace: ZAJEC: overwriting 0x810 with 0xFFFF
+[  166.886860] [ZAJEC] setting AX with 0xFFFF
+LOCK UP
 
-Acked-by: Borislav Petkov <borislav.petkov@amd.com>
 
->  
->  /* Virtualization flags: Linux defined, word 8 */
->  #define X86_FEATURE_TPR_SHADOW  (8*32+ 0) /* Intel TPR Shadow */
-> diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-> index 485b4f1..1772978 100644
-> --- a/arch/x86/include/asm/msr-index.h
-> +++ b/arch/x86/include/asm/msr-index.h
-> @@ -234,6 +234,8 @@
->  
->  #define MSR_IA32_PERF_STATUS		0x00000198
->  #define MSR_IA32_PERF_CTL		0x00000199
-> +#define MSR_AMD_PERF_STATUS		0xc0010063
-> +#define MSR_AMD_PERF_CTL		0xc0010062
->  
->  #define MSR_IA32_MPERF			0x000000e7
->  #define MSR_IA32_APERF			0x000000e8
-> diff --git a/arch/x86/kernel/cpu/scattered.c b/arch/x86/kernel/cpu/scattered.c
-> index c7f64e6..4adffc4 100644
-> --- a/arch/x86/kernel/cpu/scattered.c
-> +++ b/arch/x86/kernel/cpu/scattered.c
-> @@ -39,6 +39,7 @@ void __cpuinit init_scattered_cpuid_features(struct cpuinfo_x86 *c)
->  		{ X86_FEATURE_APERFMPERF,	CR_ECX, 0, 0x00000006, 0 },
->  		{ X86_FEATURE_EPB,		CR_ECX, 3, 0x00000006, 0 },
->  		{ X86_FEATURE_XSAVEOPT,		CR_EAX,	0, 0x0000000d, 1 },
-> +		{ X86_FEATURE_HW_PSTATE,	CR_EDX, 7, 0x80000007, 0 },
->  		{ X86_FEATURE_CPB,		CR_EDX, 9, 0x80000007, 0 },
->  		{ X86_FEATURE_NPT,		CR_EDX, 0, 0x8000000a, 0 },
->  		{ X86_FEATURE_LBRV,		CR_EDX, 1, 0x8000000a, 0 },
-> -- 
-> 1.7.5.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+So on both machines we modify AX register in the same place. My
+function set_ins_reg_val is a copy of get_ins_reg_val which works
+fine... So no idea what may we be doing wrong on this Macbook
+x86_64...
+
+
+P.S.
+You can see I've changed 0x20, 0x22, 0x27 to 0x810 on Macbook. That's
+because first 3 registers are not used by BCM4331. I've been testing
+them with BCM43225.
 
 -- 
-Regards/Gruss,
-    Boris.
+Rafał
