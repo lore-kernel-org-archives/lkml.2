@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687Ab1FRQ4U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 12:56:20 -0400
-Received: from sh.osrg.net ([192.16.179.4]:35286 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066Ab1FRQ4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 12:56:17 -0400
-Date: Sun, 19 Jun 2011 01:55:14 +0900
-To: hch@lst.de
-Cc: torvalds@linux-foundation.org, nab@linux-iscsi.org, michaelc@cs.wisc.edu,
-        agrover@redhat.com, James.Bottomley@hansenpartnership.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] iscsi-target: Merge for .40-rc1
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20110530130949.GB13494@lst.de>
-References: <1306551592.23461.506.camel@haakon2.linux-iscsi.org>
-	<BANLkTimt5qisV7EH7NMv1tG8gR_9d-kA3g@mail.gmail.com>
-	<20110530130949.GB13494@lst.de>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20110619015025V.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sun, 19 Jun 2011 01:55:18 +0900 (JST)
+	id S1751392Ab1FRRFF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 13:05:05 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34326 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972Ab1FRRFC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jun 2011 13:05:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=references:in-reply-to:mime-version:content-type:message-id
+         :content-transfer-encoding:cc:x-mailer:from:subject:date:to;
+        b=ETNFiMGDGOrYDtI/CPHyHFR3bI/o0GlgWRDx0T4LlvRC9fKoec9ZBoLdqNHt9v04TI
+         urk24jxmG5YIlAQaxqnjMej7mpbCKgMWVXr+NHhs8wOCsyO6q64eUDIblk8q13rPSgzk
+         K/2pUpaPdxhXs8/Bd3Hs8DO83jeYWTNARKIyU=
+References: <alpine.DEB.2.02.1106172106080.7672@p34.internal.lan> <4DFCD004.5090400@teksavvy.com>
+In-Reply-To: <4DFCD004.5090400@teksavvy.com>
+Mime-Version: 1.0 (iPhone Mail 8J2)
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <C9702C53-7906-46F5-B635-3ED698A394C2@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Cc: Justin Piszcz <jpiszcz@lucidpixels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-net@vger.kernel.org" <linux-net@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+X-Mailer: iPhone Mail (8J2)
+From: Andreas Dilger <aedilger@gmail.com>
+Subject: Re: 2.6.39.1: Intel I340-T4: irq/64-eth3-TxR: page allocation failure. order:1, mode:0x20
+Date: Sat, 18 Jun 2011 11:05:16 -0600
+To: Mark Lord <kernel@teksavvy.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 May 2011 15:09:49 +0200
-Christoph Hellwig <hch@lst.de> wrote:
-
-> On Sun, May 29, 2011 at 11:49:08AM -0700, Linus Torvalds wrote:
-> > I don't feel confident or motivated enough about iscsi-target, so
-> > after some (little) thought I ended up not pulling this. I really need
-> > a lot of acks from people who actually work on and care about SCSI,
-> > and right now I feel like with me being away for the next week, I
-> > can't handle it.
-> > 
-> > I just don't want to be in the situation where I pull something that
-> > is apparently contentious in the SCSI space in general, but that's
-> > _particularly_ true this release. So I'm afraid that this essentially
-> > got pushed out to the next release.
+On 2011-06-18, at 10:19 AM, Mark Lord <kernel@teksavvy.com> wrote:
+> On 11-06-17 09:16 PM, Justin Piszcz wrote:
+>> 
+>> Kernel 2.6.39.1, x86_64.
+>> Has anyone seen a page allocation failure on a NIC before?
+> ..
+>> [60295.925691] irq/64-eth3-TxR: page allocation failure. order:1, mode:0x20
+>> [60295.945328] Pid: 2299, comm: irq/64-eth3-TxR Not tainted 2.6.39.1 #1
+>> [60295.945329] Call Trace:
+>> [60295.945330]  <IRQ>  [<ffffffff810882f6>] ? __alloc_pages_nodemask+0x606/0x890
+>> [60295.945341]  [<ffffffff810b1435>] ? cache_alloc_refill+0x2c5/0x530
+>> [60295.945343]  [<ffffffff810b180b>] ? kmem_cache_alloc+0x7b/0xa0
+>> [60295.945347]  [<ffffffff815031ac>] ? sk_prot_alloc.clone.35+0x3c/0x120
+>> [60295.945349]  [<ffffffff81503320>] ? sk_clone+0x10/0x2b0
+>> [60295.945352]  [<ffffffff815580bb>] 
 > 
-> The main contention right now is wether to put the authentification
-> into kernel space or not.  Doing the slow path in userspace worked
-> out okay but not great on the initiator, but it has the potential
-> to become a nightmare worse than oprofile if the split ends up not
-> beeing perfect.
+> Not on a NIC, but also with 2.6.39:
+> 
+> [35850.612899] sd 4:0:0:0: [sdc] Attached SCSI disk
+> [35943.085264] mount: page allocation failure. order:5, mode:0xc0d0
+> [35943.085277] Pid: 14228, comm: mount Not tainted 2.6.39 #10
+> [35943.085284] Call Trace:
+> [35943.085306]  [<ffffffff8106fa96>] ? __alloc_pages_nodemask+0x710/0x74d
+> [35943.085322]  [<ffffffff8106fb5b>] ? __get_free_pages+0x12/0x50
+> [35943.085335]  [<ffffffff810f9120>] ? ext4_fill_super+0xe4f/0x20ff
+> [35943.085347]  [<ffffffff810f82d1>] ? ext4_remount+0x40e/0x40e
 
-As I said earlier, the split is pretty simple for target code unlike
-initiator code. Doing operations before SCSI nexus establishment in
-userspace and then the kernel takes over nexuses. The information that
-the user space needs for the login negotiation is exported via
-configfs. Unlike open-iscsi split, the nexuses don't go back and forth
-between user and kernel space.
+There are a few places in the ext4 mount that are doing large allocations. In some places they fall back to vmalloc, so they should really be done with GFP_NOWARN.
 
+ A few places don't yet fall back to vmalloc(), which is a problem with fragmented memory or very large filesystems. We were trying to test a 192TB ext4 filesystem, but were unable to mount it without patching the kernel.
 
-> Given that we pretty well tested and working code that's used in lots
-> of production setups my vote is for taking it as-is unless someone can
-> actually show a prototype for a nicely working user/kernel split.
-
-ok, I implemented something like that. It's not finished at all but
-my open-iscsi box successfully logged in. The daemon just passes a file
-descriptor to kernel space after the negotiation finishes.
-
-ssh://master.kernel.org/pub/scm/linux/kernel/git/tomo/linux-2.6-misc.git lio-4.1-ud
-
-The user space code is at:
-ssh://master.kernel.org/pub/scm/linux/kernel/git/tomo/iscsi-tcmd.git
+Cheers, Andreas
