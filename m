@@ -1,95 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab1FRQaL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 12:30:11 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45065 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab1FRQaI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 12:30:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=mDgoeAAKix3P/0knyNRISqhsFb+riAvyJLy6uggck5AEc6a4yNaa6kYmxHFJVkNU1N
-         618pvRGzMYC2cq2xk3PlY2PUUknDlhnCWfWpd5uWD4eYXrsvQ02lW15uz0Z2cYebISTb
-         y/zuDqf+khBJu94KYjjoTGuCQkq8RH4XJdcI8=
+	id S1753704Ab1FRQg3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 12:36:29 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:35152 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752397Ab1FRQg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jun 2011 12:36:28 -0400
+Date: Sat, 18 Jun 2011 09:36:24 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>
+Subject: Re: [PATCH 1/4] rcu: Detect uses of rcu read side in extended
+ quiescent states
+Message-ID: <20110618163624.GC2238@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1307663247-5397-1-git-send-email-fweisbec@gmail.com>
+ <1307663247-5397-2-git-send-email-fweisbec@gmail.com>
+ <20110610002350.GO2285@linux.vnet.ibm.com>
+ <20110610005041.GI25771@somewhere.redhat.com>
+ <20110617231902.GM2258@linux.vnet.ibm.com>
+ <20110618142353.GA9266@somewhere>
+ <20110618160426.GB2238@linux.vnet.ibm.com>
+ <20110618161032.GB9266@somewhere>
 MIME-Version: 1.0
-From: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Date: Sat, 18 Jun 2011 13:29:47 -0300
-Message-ID: <BANLkTikAJEma_NNi0NYnjBEB6RkFJK3Dpg@mail.gmail.com>
-Subject: i915, framebuffer: wrong xoffset?
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@redhat.com>,
-        Keith Packard <keithp@keithp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110618161032.GB9266@somewhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since 3.0-rc1 when booting my computer the text in the fb console is
-displayed with a wrong xoffset. I took a picture (sorry for the poor
-quality):
+On Sat, Jun 18, 2011 at 06:10:36PM +0200, Frederic Weisbecker wrote:
+> On Sat, Jun 18, 2011 at 09:04:27AM -0700, Paul E. McKenney wrote:
+> > On Sat, Jun 18, 2011 at 04:23:58PM +0200, Frederic Weisbecker wrote:
+> > > On Fri, Jun 17, 2011 at 04:19:03PM -0700, Paul E. McKenney wrote:
+> > > > On Fri, Jun 10, 2011 at 02:50:43AM +0200, Frederic Weisbecker wrote:
+> > > > > On Thu, Jun 09, 2011 at 05:23:50PM -0700, Paul E. McKenney wrote:
+> > > > > > On Fri, Jun 10, 2011 at 01:47:24AM +0200, Frederic Weisbecker wrote:
+> > > > > > > Detect uses of rcu that are not supposed to happen when we
+> > > > > > > are in an extended quiescent state.
+> > > > > > > 
+> > > > > > > This can happen for example if we use rcu between the time we
+> > > > > > > stop the tick and the time we restart it. Or inside an irq that
+> > > > > > > didn't use rcu_irq_enter,exit() or other possible kind of rcu API
+> > > > > > > misuse.
+> > > > > > > 
+> > > > > > > v2: Rebase against latest rcu changes, handle tiny RCU as well
+> > > > > > 
+> > > > > > Good idea on checking for RCU read-side critical sections happening
+> > > > > > in dyntick-idle periods!
+> > > > > > 
+> > > > > > But wouldn't it be better to put the checks in rcu_read_lock() and
+> > > > > > friends?  The problem I see with putting them in rcu_dereference_check()
+> > > > > > is that someone can legitimately do something like the following
+> > > > > > while in dyntick-idle mode:
+> > > > > > 
+> > > > > > 	spin_lock(&mylock);
+> > > > > > 	/* do a bunch of stuff */
+> > > > > > 	p = rcu_dereference_check(myrcuptr, lockdep_is_held(&mylock));
+> > > > > > 
+> > > > > > The logic below would complain about this usage, despite the fact
+> > > > > > that it is perfectly safe because the update-side lock is held.
+> > > > > > 
+> > > > > > Make sense, or am I missing something?
+> > > > > > 
+> > > > > > 						Thanx, Paul
+> > > > > 
+> > > > > I'm an idiot. I put my check in rcu_dereference_check() on purpose because
+> > > > > it's always called from places that check one of the rcu locks are held,
+> > > > > but I forgot that's also used for custom conditions with the _check()
+> > > > > things.
+> > > > > 
+> > > > > That said, putting the check in rcu_read_lock() and alike  would only work
+> > > > > with rcu_read_lock() itself. Few users of rcu_read_lock_sched() actually
+> > > > > call it explicitely but rely on irq disabled or preempt disabled. And I can't put the
+> > > > > checks there as it's fine to disabled irqs in dyntick idle.
+> > > > > 
+> > > > > What about the below? (untested yet)
+> > > > > 
+> > > > > And I would print the state of dynticks-idle mode in the final lockdep warning.
+> > > > 
+> > > > Printing the dynticks-idle mode would be quite good!
+> > > > 
+> > > > However, it is possible to have an RCU read-side critical section that does
+> > > > not have an rcu_dereference() or an rcu_read_lock_held().  So I do believe
+> > > > that we really do need rcu_read_lock() and friends to do this checking.
+> > > 
+> > > Right, then we need to check everything: rcu_read_lock() and friends in case
+> > > we have no rcu_read_lock_held() check made (ie: no rcu_dereference_check()),
+> > > but also rcu_read_lock_held()/rcu_read_lock_sched_held()/... because preempt_disable(),
+> > > local_irq_disable(), local_bh_disable() can't be checked so for rcu sched and rcu bh
+> > > we can only check the ...held() things.
+> > 
+> > Good point.  To make sure I understand, we have different approaches
+> > for the different types of RCU.  We need to instrument the following
+> > primitives:
+> > 
+> > 1.	rcu_read_lock() because a stray rcu_dereference() will already
+> > 	be caught by PROVE_RCU.
+> > 2.	rcu_read_lock_bh_held() because it is OK to do local_bh_disable()
+> > 	in dyntick-idle mode, so we cannot prohibit all of the
+> > 	read-acquisition cases.  We can also instrument rcu_read_lock_bh()
+> > 	to catch RCU-bh read-side critical sections that don't happen
+> > 	to contain rcu_dereference_bh().
+> > 3.	rcu_read_lock_sched_held() because it is OK to do preempt_disable()
+> > 	and local_irq_save() from dyntick-idle mode, so we again
+> > 	cannot prohibit all of the read-acquisition cases.  We can
+> > 	also instrument rcu_read_lock_sched() to catch RCU-sched
+> > 	read-side critical sections that don't happen to contain
+> > 	rcu_dereference_sched().
+> 
+> Exactly!
+> 
+> > 4.	srcu_read_lock() because a stray srcu_dereference() will already
+> > 	by caught by PROVE_RCU.
+> 
+> Well I have no idea how srcu works so I'll first focus on the rcu part :)
 
-http://www.politreco.com/files/IMG_20110610_090045.jpg
+Fair enough!  ;-)
 
-It appears that there's a negative xoffset applied when booting the
-computer. After starting X and returning to console everything is back
-to normal, though.
+> > We miss a few cases, for example, an RCU-sched read-side critical
+> > section that uses local_irq_disable(), but that also does not contain
+> > an rcu_dereference_sched().  But still this sounds quite worthwhile.
+> 
+> Right.
+> 
+> So I'll send a v3 that takes the above point into accounts.
 
-I started  to bisect this, but there are too many iterations missing:
+Looking forward to seeing it!
 
-$ git bisect log
-git bisect start
-# good: [61c4f2c81c61f73549928dfd9f3e8f26aa36a8cf] Linux 2.6.39
-git bisect good 61c4f2c81c61f73549928dfd9f3e8f26aa36a8cf
-# bad: [55922c9d1b84b89cb946c777fddccb3247e7df2c] Linux 3.0-rc1
-git bisect bad 55922c9d1b84b89cb946c777fddccb3247e7df2c
-# good: [c44dead70a841d90ddc01968012f323c33217c9e] Merge branch
-'usb-next' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb-2.6
-git bisect good c44dead70a841d90ddc01968012f323c33217c9e
-# bad: [a09ed5e00084448453c8bada4dcd31e5fbfc2f21] vmscan: change
-shrink_slab() interfaces by passing shrink_control
-git bisect bad a09ed5e00084448453c8bada4dcd31e5fbfc2f21
-# good: [9461702d2a54cd4d9da09b7755c96815791a9d07] m68k: let Makefile
-sort out compiling mmu and non-mmu lib/checksum.c
-git bisect good 9461702d2a54cd4d9da09b7755c96815791a9d07
-
-
-My card:
-
-00:02.0 VGA compatible controller: Intel Corporation Mobile 4 Series
-Chipset Integrated Graphics Controller (rev 07)
-00:02.1 Display controller: Intel Corporation Mobile 4 Series Chipset
-Integrated Graphics Controller (rev 07)
-
-dmesg:
-
-[    0.619044] i915 0000:00:02.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-[    0.619049] i915 0000:00:02.0: setting latency timer to 64
-[    0.712209] i915 0000:00:02.0: irq 45 for MSI/MSI-X
-[    0.712215] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-[    0.712216] [drm] Driver supports precise vblank timestamp query.
-[    0.764605] composite sync not supported
-[    0.765713] fixme: max PWM is zero.
-[    0.813774] composite sync not supported
-[    0.827331] fbcon: inteldrmfb (fb0) is primary device
-[    0.863748] Console: switching to colour frame buffer device 160x50
-[    0.866442] fb0: inteldrmfb frame buffer device
-[    0.866443] drm: registered panic notifier
-[    0.904054] acpi device:06: registered as cooling_device0
-[    0.904172] input: Video Bus as
-/devices/LNXSYSTM:00/device:00/PNP0A08:00/LNXVIDEO:01/input/input4
-[    0.904179] ACPI: Video Device [GFX0] (multi-head: yes  rom: no  post: no)
-[    0.904208] [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
-
-
-It says "multi-head: yes", but there's no other monitor connected whatsoever.
-
-
-
-
-Any ideas what could be happening?
-
--- 
-
-Lucas De Marchi
+							Thanx, Paul
