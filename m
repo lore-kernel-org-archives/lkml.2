@@ -1,328 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab1FRU5b (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 16:57:31 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39391 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753110Ab1FRU5O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 16:57:14 -0400
-From: Per Forlin <per.forlin@linaro.org>
-To: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        Venkatraman S <svenkatr@ti.com>
-Cc: Chris Ball <cjb@laptop.org>, Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v5 12/12] mmc: add handling for two parallel block requests in issue_rw_rq
-Date: Sat, 18 Jun 2011 22:55:26 +0200
-Message-Id: <1308430526-9412-13-git-send-email-per.forlin@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1308430526-9412-1-git-send-email-per.forlin@linaro.org>
-References: <1308430526-9412-1-git-send-email-per.forlin@linaro.org>
+	id S1752764Ab1FRUzl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 16:55:41 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44526 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752187Ab1FRUzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jun 2011 16:55:39 -0400
+Date: Sat, 18 Jun 2011 20:55:28 GMT
+From: tip-bot for Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Message-ID: <tip-7d68dc3f1003a38948c55c803c32d1989dd49198@git.kernel.org>
+Cc: mjg@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@redhat.com, m.b.lankhorst@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        mjg@redhat.com, m.b.lankhorst@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <4DF7A005.1050407@gmail.com>
+References: <4DF7A005.1050407@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, efi: Do not reserve boot services regions within reserved areas
+Git-Commit-ID: 7d68dc3f1003a38948c55c803c32d1989dd49198
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 18 Jun 2011 20:55:29 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change mmc_blk_issue_rw_rq() to become asynchronous.
-The execution flow looks like this:
-The mmc-queue calls issue_rw_rq(), which sends the request
-to the host and returns back to the mmc-queue. The mmc-queue calls
-issue_rw_rq() again with a new request. This new request is prepared,
-in isuue_rw_rq(), then it waits for the active request to complete before
-pushing it to the host. When to mmc-queue is empty it will call
-isuue_rw_rq() with req=NULL to finish off the active request
-without starting a new request.
+Commit-ID:  7d68dc3f1003a38948c55c803c32d1989dd49198
+Gitweb:     http://git.kernel.org/tip/7d68dc3f1003a38948c55c803c32d1989dd49198
+Author:     Maarten Lankhorst <m.b.lankhorst@gmail.com>
+AuthorDate: Tue, 14 Jun 2011 19:53:09 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sat, 18 Jun 2011 22:48:49 +0200
 
-Signed-off-by: Per Forlin <per.forlin@linaro.org>
+x86, efi: Do not reserve boot services regions within reserved areas
+
+Commit 916f676f8dc started reserving boot service code since some systems
+require you to keep that code around until SetVirtualAddressMap is called.
+
+However, in some cases those areas will overlap with reserved regions.
+The proper medium-term fix is to fix the bootloader to prevent the
+conflicts from occurring by moving the kernel to a better position,
+but the kernel should check for this possibility, and only reserve regions
+which can be reserved.
+
+Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Link: http://lkml.kernel.org/r/4DF7A005.1050407@gmail.com
+Acked-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- drivers/mmc/card/block.c |  121 +++++++++++++++++++++++++++++++++-------------
- drivers/mmc/card/queue.c |   17 +++++--
- drivers/mmc/card/queue.h |    1 +
- 3 files changed, 101 insertions(+), 38 deletions(-)
+ arch/x86/include/asm/memblock.h |    2 +-
+ arch/x86/mm/memblock.c          |    4 ++--
+ arch/x86/platform/efi/efi.c     |   29 +++++++++++++++++++++++++----
+ 3 files changed, 28 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index 6a84a75..66db77a 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -108,6 +108,7 @@ static DEFINE_MUTEX(open_lock);
+diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
+index 19ae14b..0cd3800 100644
+--- a/arch/x86/include/asm/memblock.h
++++ b/arch/x86/include/asm/memblock.h
+@@ -4,7 +4,6 @@
+ #define ARCH_DISCARD_MEMBLOCK
  
- enum mmc_blk_status {
- 	MMC_BLK_SUCCESS = 0,
-+	MMC_BLK_PARTIAL,
- 	MMC_BLK_RETRY,
- 	MMC_BLK_DATA_ERR,
- 	MMC_BLK_CMD_ERR,
-@@ -668,14 +669,16 @@ static inline void mmc_apply_rel_rw(struct mmc_blk_request *brq,
- 	}
- }
+ u64 memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align);
+-void memblock_x86_to_bootmem(u64 start, u64 end);
  
--static enum mmc_blk_status mmc_blk_err_check(struct mmc_blk_request *brq,
--					     struct request *req,
--					     struct mmc_card *card,
--					     struct mmc_blk_data *md)
-+static int mmc_blk_err_check(struct mmc_card *card,
-+			     struct mmc_async_req *areq)
+ void memblock_x86_reserve_range(u64 start, u64 end, char *name);
+ void memblock_x86_free_range(u64 start, u64 end);
+@@ -19,5 +18,6 @@ u64 memblock_x86_hole_size(u64 start, u64 end);
+ u64 memblock_x86_find_in_range_node(int nid, u64 start, u64 end, u64 size, u64 align);
+ u64 memblock_x86_free_memory_in_range(u64 addr, u64 limit);
+ u64 memblock_x86_memory_in_range(u64 addr, u64 limit);
++bool memblock_x86_check_reserved_size(u64 *addrp, u64 *sizep, u64 align);
+ 
+ #endif
+diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
+index aa11693..992da5e 100644
+--- a/arch/x86/mm/memblock.c
++++ b/arch/x86/mm/memblock.c
+@@ -8,7 +8,7 @@
+ #include <linux/range.h>
+ 
+ /* Check for already reserved areas */
+-static bool __init check_with_memblock_reserved_size(u64 *addrp, u64 *sizep, u64 align)
++bool __init memblock_x86_check_reserved_size(u64 *addrp, u64 *sizep, u64 align)
  {
- 	struct mmc_command cmd;
- 	u32 status = 0;
- 	enum mmc_blk_status ret = MMC_BLK_SUCCESS;
-+	struct mmc_queue_req *mq_mrq = container_of(areq, struct mmc_queue_req,
-+						    mmc_active);
-+	struct mmc_blk_request *brq = &mq_mrq->brq;
-+	struct request *req = mq_mrq->req;
+ 	struct memblock_region *r;
+ 	u64 addr = *addrp, last;
+@@ -59,7 +59,7 @@ u64 __init memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align)
+ 		if (addr >= ei_last)
+ 			continue;
+ 		*sizep = ei_last - addr;
+-		while (check_with_memblock_reserved_size(&addr, sizep, align))
++		while (memblock_x86_check_reserved_size(&addr, sizep, align))
+ 			;
  
- 	/*
- 	 * Check for errors here, but don't jump to cmd_err
-@@ -770,7 +773,11 @@ static enum mmc_blk_status mmc_blk_err_check(struct mmc_blk_request *brq,
- 		else
- 			ret = MMC_BLK_DATA_ERR;
- 	}
--out:
-+
-+	if (ret == MMC_BLK_SUCCESS &&
-+	    blk_rq_bytes(req) != brq->data.bytes_xfered)
-+		ret = MMC_BLK_PARTIAL;
-+ out:
- 	return ret;
- }
+ 		if (*sizep)
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 0d3a4fa..474356b 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -310,14 +310,31 @@ void __init efi_reserve_boot_services(void)
  
-@@ -901,27 +908,59 @@ static void mmc_blk_rw_rq_prep(struct mmc_queue_req *mqrq,
- 		brq->data.sg_len = i;
- 	}
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		efi_memory_desc_t *md = p;
+-		unsigned long long start = md->phys_addr;
+-		unsigned long long size = md->num_pages << EFI_PAGE_SHIFT;
++		u64 start = md->phys_addr;
++		u64 size = md->num_pages << EFI_PAGE_SHIFT;
  
-+	mqrq->mmc_active.mrq = &brq->mrq;
-+	mqrq->mmc_active.err_check = mmc_blk_err_check;
-+
- 	mmc_queue_bounce_pre(mqrq);
- }
- 
--static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *req)
-+static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
- {
- 	struct mmc_blk_data *md = mq->data;
- 	struct mmc_card *card = md->queue.card;
--	struct mmc_blk_request *brq = &mq->mqrq_cur->brq;
--	int ret = 1, disable_multi = 0;
-+	struct mmc_blk_request *brq;
-+	int ret = 1;
-+	int disable_multi = 0;
- 	enum mmc_blk_status status;
-+	struct mmc_queue_req *mq_rq;
-+	struct request *req;
-+	struct mmc_async_req *areq;
-+
-+	if (!rqc && !mq->mqrq_prev->req)
-+		goto out;
- 
- 	do {
--		mmc_blk_rw_rq_prep(mq->mqrq_cur, card, disable_multi, mq);
--		mmc_wait_for_req(card->host, &brq->mrq);
-+		if (rqc) {
-+			mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
-+			areq = &mq->mqrq_cur->mmc_active;
+ 		if (md->type != EFI_BOOT_SERVICES_CODE &&
+ 		    md->type != EFI_BOOT_SERVICES_DATA)
+ 			continue;
+-
+-		memblock_x86_reserve_range(start, start + size, "EFI Boot");
++		/* Only reserve where possible:
++		 * - Not within any already allocated areas
++		 * - Not over any memory area (really needed, if above?)
++		 * - Not within any part of the kernel
++		 * - Not the bios reserved area
++		*/
++		if ((start+size >= virt_to_phys(_text)
++				&& start <= virt_to_phys(_end)) ||
++			!e820_all_mapped(start, start+size, E820_RAM) ||
++			memblock_x86_check_reserved_size(&start, &size,
++							1<<EFI_PAGE_SHIFT)) {
++			/* Could not reserve, skip it */
++			md->num_pages = 0;
++			memblock_dbg(PFX "Could not reserve boot range "
++					"[0x%010llx-0x%010llx]\n",
++						start, start+size-1);
 +		} else
-+			areq = NULL;
-+		areq = mmc_start_req(card->host, areq, (int *) &status);
-+		if (!areq)
-+			goto out;
- 
--		mmc_queue_bounce_post(mq->mqrq_cur);
--		status = mmc_blk_err_check(brq, req, card, md);
-+		mq_rq = container_of(areq, struct mmc_queue_req, mmc_active);
-+		brq = &mq_rq->brq;
-+		req = mq_rq->req;
-+		mmc_queue_bounce_post(mq_rq);
- 
- 		switch (status) {
--		case MMC_BLK_CMD_ERR:
--			goto cmd_err;
-+		case MMC_BLK_SUCCESS:
-+		case MMC_BLK_PARTIAL:
-+			/*
-+			 * A block was successfully transferred.
-+			 */
-+			spin_lock_irq(&md->lock);
-+			ret = __blk_end_request(req, 0,
-+						brq->data.bytes_xfered);
-+			spin_unlock_irq(&md->lock);
-+			if (status == MMC_BLK_SUCCESS && ret) {
-+				/* If this happen it is a bug */
-+				printk(KERN_ERR "%s BUG rq_tot %d d_xfer %d\n",
-+				       __func__, blk_rq_bytes(req),
-+				       brq->data.bytes_xfered);
-+				goto cmd_err;
-+			}
- 			break;
- 		case MMC_BLK_RETRY:
- 			disable_multi = 1;
-@@ -934,36 +973,41 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *req)
- 			 * read a single sector.
- 			 */
- 			spin_lock_irq(&md->lock);
--			ret = __blk_end_request(req, -EIO,
--						brq->data.blksz);
-+			ret = __blk_end_request(req, -EIO, brq->data.blksz);
- 			spin_unlock_irq(&md->lock);
--
-+			if (!ret)
-+				goto start_new_req;
- 			break;
--		case MMC_BLK_SUCCESS:
-+		case MMC_BLK_CMD_ERR:
-+			ret = 1;
-+			goto cmd_err;
-+			break;
-+		}
-+
-+		if (ret) {
- 			/*
--			 * A block was successfully transferred.
-+			 * In case of a none complete request
-+			 * prepare it again and resend.
- 			 */
--			spin_lock_irq(&md->lock);
--			ret = __blk_end_request(req, 0, brq->data.bytes_xfered);
--			spin_unlock_irq(&md->lock);
--			break;
-+			mmc_blk_rw_rq_prep(mq_rq, card, disable_multi, mq);
-+			mmc_start_req(card->host, &mq_rq->mmc_active, NULL);
- 		}
- 	} while (ret);
- 
- 	return 1;
--
-+ out:
-+	return 0;
-  cmd_err:
-- 	/*
-- 	 * If this is an SD card and we're writing, we can first
-- 	 * mark the known good sectors as ok.
-- 	 *
-+	/*
-+	 * If this is an SD card and we're writing, we can first
-+	 * mark the known good sectors as ok.
-+	 *
- 	 * If the card is not SD, we can still ok written sectors
- 	 * as reported by the controller (which might be less than
- 	 * the real number of written sectors, but never more).
- 	 */
- 	if (mmc_card_sd(card)) {
- 		u32 blocks;
--
- 		blocks = mmc_sd_num_wr_blocks(card);
- 		if (blocks != (u32)-1) {
- 			spin_lock_irq(&md->lock);
-@@ -981,6 +1025,12 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *req)
- 		ret = __blk_end_request(req, -EIO, blk_rq_cur_bytes(req));
- 	spin_unlock_irq(&md->lock);
- 
-+ start_new_req:
-+	if (rqc) {
-+		mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
-+		mmc_start_req(card->host, &mq->mqrq_cur->mmc_active, NULL);
-+	}
-+
- 	return 0;
++			memblock_x86_reserve_range(start, start+size,
++							"EFI Boot");
+ 	}
  }
  
-@@ -990,26 +1040,31 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
- 	struct mmc_blk_data *md = mq->data;
- 	struct mmc_card *card = md->queue.card;
+@@ -334,6 +351,10 @@ static void __init efi_free_boot_services(void)
+ 		    md->type != EFI_BOOT_SERVICES_DATA)
+ 			continue;
  
--	mmc_claim_host(card->host);
-+	if (req && !mq->mqrq_prev->req)
-+		/* claim host only for the first request */
-+		mmc_claim_host(card->host);
++		/* Could not reserve boot area */
++		if (!size)
++			continue;
 +
- 	ret = mmc_blk_part_switch(card, md);
- 	if (ret) {
- 		ret = 0;
- 		goto out;
+ 		free_bootmem_late(start, size);
  	}
- 
--	if (req->cmd_flags & REQ_DISCARD) {
-+	if (req && req->cmd_flags & REQ_DISCARD) {
- 		if (req->cmd_flags & REQ_SECURE)
- 			ret = mmc_blk_issue_secdiscard_rq(mq, req);
- 		else
- 			ret = mmc_blk_issue_discard_rq(mq, req);
--	} else if (req->cmd_flags & REQ_FLUSH) {
-+	} else if (req && req->cmd_flags & REQ_FLUSH) {
- 		ret = mmc_blk_issue_flush(mq, req);
- 	} else {
- 		ret = mmc_blk_issue_rw_rq(mq, req);
- 	}
- 
- out:
--	mmc_release_host(card->host);
-+	if (!req)
-+		/* release host only when there are no more requests */
-+		mmc_release_host(card->host);
- 	return ret;
  }
- 
-diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
-index 0757a39..2d6696a 100644
---- a/drivers/mmc/card/queue.c
-+++ b/drivers/mmc/card/queue.c
-@@ -52,6 +52,7 @@ static int mmc_queue_thread(void *d)
- 	down(&mq->thread_sem);
- 	do {
- 		struct request *req = NULL;
-+		struct mmc_queue_req *tmp;
- 
- 		spin_lock_irq(q->queue_lock);
- 		set_current_state(TASK_INTERRUPTIBLE);
-@@ -59,7 +60,10 @@ static int mmc_queue_thread(void *d)
- 		mq->mqrq_cur->req = req;
- 		spin_unlock_irq(q->queue_lock);
- 
--		if (!req) {
-+		if (req || mq->mqrq_prev->req) {
-+			set_current_state(TASK_RUNNING);
-+			mq->issue_fn(mq, req);
-+		} else {
- 			if (kthread_should_stop()) {
- 				set_current_state(TASK_RUNNING);
- 				break;
-@@ -67,11 +71,14 @@ static int mmc_queue_thread(void *d)
- 			up(&mq->thread_sem);
- 			schedule();
- 			down(&mq->thread_sem);
--			continue;
- 		}
--		set_current_state(TASK_RUNNING);
- 
--		mq->issue_fn(mq, req);
-+		/* Current request becomes previous request and vice versa. */
-+		mq->mqrq_prev->brq.mrq.data = NULL;
-+		mq->mqrq_prev->req = NULL;
-+		tmp = mq->mqrq_prev;
-+		mq->mqrq_prev = mq->mqrq_cur;
-+		mq->mqrq_cur = tmp;
- 	} while (1);
- 	up(&mq->thread_sem);
- 
-@@ -97,7 +104,7 @@ static void mmc_request(struct request_queue *q)
- 		return;
- 	}
- 
--	if (!mq->mqrq_cur->req)
-+	if (!mq->mqrq_cur->req && !mq->mqrq_prev->req)
- 		wake_up_process(mq->thread);
- }
- 
-diff --git a/drivers/mmc/card/queue.h b/drivers/mmc/card/queue.h
-index c8fb2dc..f937538 100644
---- a/drivers/mmc/card/queue.h
-+++ b/drivers/mmc/card/queue.h
-@@ -19,6 +19,7 @@ struct mmc_queue_req {
- 	char			*bounce_buf;
- 	struct scatterlist	*bounce_sg;
- 	unsigned int		bounce_sg_len;
-+	struct mmc_async_req	mmc_active;
- };
- 
- struct mmc_queue {
--- 
-1.7.4.1
-
