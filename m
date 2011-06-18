@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920Ab1FRPFZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 11:05:25 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:36201 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752773Ab1FRPFY (ORCPT
+	id S1754182Ab1FRPGW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 11:06:22 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:35304 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572Ab1FRPGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 11:05:24 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=OG/qyJyxsiZREX8QUPn6GXcFy2Wig1eSKQNtpozg8lMHuBPY0Rv/+xxeng+E4dg0g4EtyK3xmk9F2tRgdVydEG13yHpu+baXUUX4QRPpx0EAZOAnWdkE3R+bJSQx9Vli;
-Date: Sat, 18 Jun 2011 08:05:22 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: "Robert P. J. Day" <rpjday@crashcourse.ca>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, hughd@google.com
-Subject: Re: [PATCH] TMPFS: Expand "help" to explain value of
- TMPFS_POSIX_ACL
-Message-Id: <20110618080522.c3992e50.rdunlap@xenotime.net>
-In-Reply-To: <alpine.DEB.2.02.1106181102550.3659@localhost6.localdomain6>
-References: <alpine.DEB.2.02.1106180743040.17576@localhost6.localdomain6>
-	<20110618075301.b4d3816c.rdunlap@xenotime.net>
-	<alpine.DEB.2.02.1106181102550.3659@localhost6.localdomain6>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Sat, 18 Jun 2011 11:06:21 -0400
+Date: Sat, 18 Jun 2011 16:06:13 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        dg77.kim@samsung.com, kyungmin.park@samsung.com,
+        myungjoo.ham@gmail.com, Ben Dooks <ben-linux@fluff.org>
+Subject: Re: [PATCH 1/2] Samsung SoC ADC: use regulator (VDD for ADC).
+Message-ID: <20110618150612.GA25163@sirena.org.uk>
+References: <1308213003-6526-1-git-send-email-myungjoo.ham@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308213003-6526-1-git-send-email-myungjoo.ham@samsung.com>
+X-Cookie: BOFH excuse
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 18 Jun 2011 11:03:35 -0400 (EDT) Robert P. J. Day wrote:
+On Thu, Jun 16, 2011 at 05:30:02PM +0900, MyungJoo Ham wrote:
 
-> On Sat, 18 Jun 2011, Randy Dunlap wrote:
-> 
-> > On Sat, 18 Jun 2011 07:45:35 -0400 (EDT) Robert P. J. Day wrote:
-> >
-> > >
-> > > Expand the fs/Kconfig "help" info to clarify why it's a bad idea to
-> > > deselect the TMPFS_POSIX_ACL config variable.
-> > >
-> > > Signed-off-by: Robert P. J. Day <rpjday@crashcourse.ca>
-> > >
-> > > ---
-> > >
-> > > diff --git a/fs/Kconfig b/fs/Kconfig
-> > > index 19891aa..4217543 100644
-> > > --- a/fs/Kconfig
-> > > +++ b/fs/Kconfig
-> > > @@ -127,14 +127,20 @@ config TMPFS_POSIX_ACL
-> > >  	select TMPFS_XATTR
-> > >  	select GENERIC_ACL
-> > >  	help
-> > > -	  POSIX Access Control Lists (ACLs) support permissions for users and
-> > > -	  groups beyond the owner/group/world scheme.
-> > > +	  POSIX Access Control Lists (ACLs) support additional access rights
-> > > +	  for users and groups beyond the standard owner/group/world scheme,
-> > > +	  and this option selects support for ACLs specifically for tmpfs
-> > > +	  filesystems.
-> > > +
-> > > +	  If you've selected TMPFS, you almost certainly want this option
-> > > +	  as well since a number of user space features (ie., ALSA sound)
-> >
-> > 	                                                 e.g.,
-> > ?
-> >
-> > Otherwise, looks good to me.
-> > Thanks.
-> 
->   oops, i can submit a V2 patch that changes that.  or you can hack
-> what i submitted.  either way works for me.
+> +	adc->vdd = regulator_get(dev, S3C_ADC_REGULATOR_NAME);
 
-Please submit a v2 patch and cc: akpm on it since he will probably merge it.
+I'm not convinced that the #define for the name is terribly good style
+here, especially given that you actually call it vdd in the code.
 
-thanks,
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+> +	if (IS_ERR_OR_NULL(adc->vdd)) {
+> +		dev_dbg(dev, "operating without regulator %s.\n", S3C_ADC_REGULATOR_NAME);
+> +		adc->vdd = NULL; /* Do not control regulator */
+> +	}
+> +
+
+No, don't do this.  Just unconditionally assume the regulator is present
+if power is essential for use of the device.  The regulator API will
+stub out correctly if it's not in use to allow things to proceed and if
+vdd is genuinely not hooked up then the driver can't function.
+
+> +	if (adc->vdd)
+> +		regulator_enable(adc->vdd);
+
+You're not checking the return value here or anywhere else after the
+inital get().
