@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170Ab1FRSl3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 14:41:29 -0400
-Received: from ulysses.noc.ntua.gr ([147.102.222.230]:65220 "EHLO
-	ulysses.noc.ntua.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752025Ab1FRSl1 (ORCPT
+	id S1752272Ab1FRSvk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 14:51:40 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:54010 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066Ab1FRSvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 14:41:27 -0400
-Message-ID: <4DFCF13F.50401@cslab.ece.ntua.gr>
-Date: Sat, 18 Jun 2011 21:41:03 +0300
-From: Vasileios Karakasis <bkk@cslab.ece.ntua.gr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9pre) Gecko/20100217 Lightning/1.0b1 Shredder/3.0.3pre
+	Sat, 18 Jun 2011 14:51:39 -0400
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-numa@vger.kernel.org
-Subject: Re: [BUG] Invalid return address of mmap() followed by mbind() in
- multithreaded context
-References: <4DFB710D.7000902@cslab.ece.ntua.gr> <20110618181232.GI16236@one.firstfloor.org>
-In-Reply-To: <20110618181232.GI16236@one.firstfloor.org>
-X-Enigmail-Version: 1.0.1
-OpenPGP: id=17A67A9C;
-	url=http://www.cslab.ece.ntua.gr/~bkk/files/bkk.pub
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig1CC55EF867D4A735A093B854"
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (ulysses.noc.ntua.gr [147.102.222.230]); Sat, 18 Jun 2011 21:41:17 +0300 (EEST)
+In-Reply-To: <20110618193340.53811cbe@lxorguk.ukuu.org.uk>
+References: <BANLkTik9HzR_oJ7FocQ=o+zNoK22tUTjBg@mail.gmail.com>
+	<1308418985.3539.58.camel@edumazet-laptop>
+	<BANLkTi=Vis=aZ5vn7E0A2LGVPOcmjd+r-g@mail.gmail.com>
+	<20110618193340.53811cbe@lxorguk.ukuu.org.uk>
+Date: Sat, 18 Jun 2011 11:51:38 -0700
+Message-ID: <BANLkTi=bvmtkv-o3PROYjmOwkBNCBFGv7w@mail.gmail.com>
+Subject: Re: Does Linux select() violate POSIX?
+From: Nemo Publius <nemo@self-evident.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig1CC55EF867D4A735A093B854
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Sat, Jun 18, 2011 at 11:33 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-That's right, but what I want to demonstrate is that the address
-returned by mmap() is invalid and the dereference crashes the program,
-while it shouldn't. I could equally omit this statement, in which case
-mbind() would fail with EFAULT.
+>> This is simply not true for any POSIX-compliant operating system.
+>> Which in this case happens to include every Unix ever written since
+>> the beginning of time, apart from Linux.
+>
+> Actually no - there are lots of device cases where instantaneously it is
+> true that a read would not block but the condition then changes again.
 
-On 06/18/2011 09:12 PM, Andi Kleen wrote:
->>     for (i =3D 0; i < NR_ITER; i++) {
->>         addr =3D mmap(0, PAGE_SIZE, PROT_READ | PROT_WRITE,
->>                     MAP_ANONYMOUS | MAP_PRIVATE, 0, 0);
->>         if (addr =3D=3D (void *) -1) {
->>             assert(0 && "mmap failed");
->>         }
->>         *addr =3D 0;
->>
->>         err =3D mbind(addr, PAGE_SIZE, MPOL_BIND, &node, sizeof(node),=
- 0);
->=20
-> mbind() can be only done before the first touch. you're not actually te=
-sting=20
-> numa policy.
->=20
-> -andi
+Well, not to be contentious, but...  Can you identify any Unix other
+than Linux where this is allowed to happen?  I am pretty sure BSD (for
+example) takes pains to avoid it.
 
---=20
-V.K.
+> An obvious simple example beyond that is a socket with two readers.
 
+With any "test something, then assume result of test" sequence,
+obviously I can have race conditions with multiple processes or
+threads.  I mean, had I asked, "I call write() and then lseek() to
+where I started and then read() on a file; am I guaranteed to read
+back what I wrote?"  And you said no, because some other process could
+write in the meantime...  I would say that is technically true but not
+at all what I was asking.
 
---------------enig1CC55EF867D4A735A093B854
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+This is the same thing.  Of course I am talking about select()
+followed by recv() without any intervening user-space operations on
+the descriptor.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+> Linux follows Posix generally, but nobody writes portable code that does
+> blocking reads on a poll/select interface because there are a bazillion
+> ways it can then block - events read by other tasks, discards due to
+> memory exhaustion, events that are cleared the other end, etc.
 
-iEYEARECAAYFAk388U0ACgkQHUHhfRemepxHwwCg8nBwl3ZuVdCmwEecizOdDuOM
-680An3lRmAFNS5Ek8ZQjBSPb5YUcqNwA
-=CacT
------END PGP SIGNATURE-----
+Only if I wrote my program that way...  Or if I am running on Linux.
 
---------------enig1CC55EF867D4A735A093B854--
+> It's a design decision and a huge performance win. It's one of the areas
+> where POSIX read in its strictest form cripples your performance.
+
+A fair answer.  :-)
+
+So in short, Linux deliberately chooses non-compliance here because
+(a) it is a "huge performance win" and (b) there is an easy
+work-around that (c) you usually want to be doing anyway.  That
+answers my question.
+
+Thank you for taking the time to reply, Alan.  I was hoping for an
+"authoritative" response, and yours certainly qualifies.
