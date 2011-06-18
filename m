@@ -1,57 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832Ab1FREsm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 00:48:42 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59024 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750827Ab1FREsj (ORCPT
+	id S1752052Ab1FRFgP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 01:36:15 -0400
+Received: from exprod5ob107.obsmtp.com ([64.18.0.183]:49761 "HELO
+	exprod5ob107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751304Ab1FRFgN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 00:48:39 -0400
+	Sat, 18 Jun 2011 01:36:13 -0400
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1106171509100.20144@sister.anvils>
-References: <1308097798.17300.142.camel@schen9-DESK> <1308156337.2171.23.camel@laptop>
- <1308163398.17300.147.camel@schen9-DESK> <1308169937.15315.88.camel@twins>
- <4DF91CB9.5080504@linux.intel.com> <1308172336.17300.177.camel@schen9-DESK>
- <1308173849.15315.91.camel@twins> <BANLkTim5TPKQ9RdLYRxy=mphOVKw5EXvTA@mail.gmail.com>
- <1308255972.17300.450.camel@schen9-DESK> <BANLkTinptaydNvK4ZvGvy0KVLnRmmza7tA@mail.gmail.com>
- <BANLkTi=GPtwjQ-bYDNUYCwzW5h--y86Law@mail.gmail.com> <BANLkTim-dBjva9w7AajqggKT3iUVYG2euQ@mail.gmail.com>
- <BANLkTimLV8aCZ7snXT_Do+f4vRY0EkoS4A@mail.gmail.com> <BANLkTinUBTYWxrF5TCuDSQuFUAyivXJXjQ@mail.gmail.com>
- <1308310080.2355.19.camel@twins> <BANLkTim2bmPfeRT1tS7hx2Z85QHjPHwU3Q@mail.gmail.com>
- <alpine.LSU.2.00.1106171040460.7018@sister.anvils> <BANLkTim3vo0vpovV=5sU=GLxkotheB=Ryg@mail.gmail.com>
- <1308334688.12801.19.camel@laptop> <1308335557.12801.24.camel@laptop>
- <BANLkTimStT22tA2YkeuYBzarnnWTnMjiKQ@mail.gmail.com> <alpine.LSU.2.00.1106171509100.20144@sister.anvils>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 17 Jun 2011 21:47:40 -0700
-Message-ID: <BANLkTimsWSR=pob28f=pb9mK9f-_zUBrOA@mail.gmail.com>
-Subject: Re: REGRESSION: Performance regressions from switching anon_vma->lock
- to mutex
-To: Hugh Dickins <hughd@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-        Namhyung Kim <namhyung@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Subject: GOOD DAY
+Date: Sat, 18 Jun 2011 01:23:43 -0400
+Message-ID: <70718156F62DC648BF3BDEF463E46E8703381713@exchange.stepone.org>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: GOOD DAY
+Thread-Index: Acwtd+HLme78WSioQbG4DRQwO6aRlA==
+From: "Michelle Miller" <mmiller@nctasc.org>
+To: <info@hotmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 3:20 PM, Hugh Dickins <hughd@google.com> wrote:
->
-> Yes, that fixed the lockdep issue, and ran nicely under load for an hour.
+ 
+ 
 
-Ok, nobody screamed or complained, so the thing is now merged and pushed out.
+Mrs.Edith .E. Simon  picked your email for an inheritance of $18Million.For details email: Mrs.Edith-Simon@hotmail.com
 
-            Linus
