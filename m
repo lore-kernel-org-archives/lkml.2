@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751551Ab1FRR1a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 13:27:30 -0400
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:34889 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750839Ab1FRR12 (ORCPT
+	id S1751533Ab1FRR2h (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 13:28:37 -0400
+Received: from mailrelay010.isp.belgacom.be ([195.238.6.177]:46024 "EHLO
+	mailrelay010.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750798Ab1FRR2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 13:27:28 -0400
+	Sat, 18 Jun 2011 13:28:35 -0400
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EANXe/E1tgyeh/2dsb2JhbABSpl54iHW9Dg6GHAShYQ
-Date: Sat, 18 Jun 2011 19:27:27 +0200
+X-IronPort-Anti-Spam-Result: Av0EABre/E1tgyeh/2dsb2JhbABSpl54iHW9EQ6GHAShYQ
+Date: Sat, 18 Jun 2011 19:28:32 +0200
 From: Wim Van Sebroeck <wim@iguana.be>
 To: LKML <linux-kernel@vger.kernel.org>,
         Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>
 Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 9/10 v2] Generic Watchdog Timer Driver
-Message-ID: <20110618172727.GJ3441@infomag.iguana.be>
+Subject: [PATCH 10/10 v2] Generic Watchdog Timer Driver
+Message-ID: <20110618172832.GK3441@infomag.iguana.be>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,67 +25,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-watchdog: WatchDog Timer Driver Core - Part 9
+watchdog: WatchDog Timer Driver Core - Part 10
 
-Add support for extra ioctl calls by adding a
-ioctl watchdog operation. This operation will be
-called before we do our own handling of ioctl
-commands. This way we can override the internal
-ioctl command handling and we can also add
-extra ioctl commands. The ioctl watchdog operation
-should return the appropriate error codes or
--ENOIOCTLCMD if the ioctl command should be handled
-through the internal ioctl handling of the framework.
+Add min_timeout (minimum timeout) and max_timeout
+values so that the framework can check if the new
+timeout value is between the minimum and maximum
+timeout values. If both values are 0, then the
+framework will leave the check for the watchdog
+device driver itself.
 
 Signed-off-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
 Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 
-diff -urN linux-2.6.38-generic-part8/Documentation/watchdog/watchdog-kernel-api.txt linux-2.6.38-generic-part9/Documentation/watchdog/watchdog-kernel-api.txt
---- linux-2.6.38-generic-part8/Documentation/watchdog/watchdog-kernel-api.txt	2011-06-17 10:03:41.326632851 +0200
-+++ linux-2.6.38-generic-part9/Documentation/watchdog/watchdog-kernel-api.txt	2011-06-17 10:14:55.514632632 +0200
-@@ -74,6 +74,7 @@
- 	int (*ping)(struct watchdog_device *);
- 	int (*status)(struct watchdog_device *);
- 	int (*set_timeout)(struct watchdog_device *, int);
-+	long (*ioctl)(struct watchdog_device *, unsigned int, unsigned long);
+diff -urN linux-2.6.38-generic-part9/Documentation/watchdog/watchdog-kernel-api.txt linux-2.6.38-generic-partA/Documentation/watchdog/watchdog-kernel-api.txt
+--- linux-2.6.38-generic-part9/Documentation/watchdog/watchdog-kernel-api.txt	2011-06-17 10:14:55.514632632 +0200
++++ linux-2.6.38-generic-partA/Documentation/watchdog/watchdog-kernel-api.txt	2011-06-17 12:20:35.765063301 +0200
+@@ -44,6 +44,8 @@
+ 	const struct watchdog_ops *ops;
+ 	struct device *parent;
+ 	int timeout;
++	int min_timeout;
++	int max_timeout;
+ 	int bootstatus;
+ 	long status;
  };
+@@ -56,6 +58,8 @@
+ * parent: a pointer to the parent device of the watchdog. This will be set
+   as the parent of the misc device.
+ * timeout: the watchdog timer's timeout value (in seconds).
++* min_timeout: the watchdog timer's minimum timeout value (in seconds).
++* max_timeout: the watchdog timer's maximum timeout value (in seconds).
+ * bootstatus: status of the device after booting (reported with watchdog
+   WDIOF_* status bits).
+ * status: this field contains a number of status bits that give extra
+diff -urN linux-2.6.38-generic-part9/drivers/watchdog/core/watchdog_core.c linux-2.6.38-generic-partA/drivers/watchdog/core/watchdog_core.c
+--- linux-2.6.38-generic-part9/drivers/watchdog/core/watchdog_core.c	2011-06-16 19:35:42.731177562 +0200
++++ linux-2.6.38-generic-partA/drivers/watchdog/core/watchdog_core.c	2011-06-17 13:43:20.661062411 +0200
+@@ -66,6 +66,13 @@
+ 	if (wdd->ops->start == NULL || wdd->ops->stop == NULL)
+ 		return -ENODATA;
  
- It is important that you first define the module owner of the watchdog timer
-@@ -119,6 +120,10 @@
-   was just used to re-program the watchdog timer device.
-   (Note: the WDIOF_SETTIMEOUT needs to be set in the options field of the
-   watchdog's info structure).
-+* ioctl: if this routine is present then it will be called first before we do
-+  our own internal ioctl call handling. This routine should return -ENOIOCTLCMD
-+  if a command is not supported. The parameters that are passsed to the ioctl
-+  call are: watchdog_device, cmd and arg.
- 
- The status bits should (preferably) be set with the set_bit and clear_bit alike
- bit-operations. The status bit's that are defined are:
-diff -urN linux-2.6.38-generic-part8/drivers/watchdog/core/watchdog_dev.c linux-2.6.38-generic-part9/drivers/watchdog/core/watchdog_dev.c
---- linux-2.6.38-generic-part8/drivers/watchdog/core/watchdog_dev.c	2011-06-17 10:03:41.326632851 +0200
-+++ linux-2.6.38-generic-part9/drivers/watchdog/core/watchdog_dev.c	2011-06-17 10:14:55.522632632 +0200
-@@ -209,6 +209,12 @@
- 
- 	trace("%p, %u, %li", file, cmd, arg);
- 
-+	if (wdd->ops->ioctl) {
-+		err = wdd->ops->ioctl(wdd, cmd, arg);
-+		if (err != -ENOIOCTLCMD)
-+			return err;
++	/* Check that we have valid min and max timeout values, if
++	 * not reset them both to 0 (=not used or unknown) */
++	if (wdd->min_timeout > wdd->max_timeout) {
++		wdd->min_timeout = 0;
++		wdd->max_timeout = 0;
 +	}
 +
- 	switch (cmd) {
- 	case WDIOC_GETSUPPORT:
- 		return copy_to_user(argp, wdd->info,
-diff -urN linux-2.6.38-generic-part8/include/linux/watchdog.h linux-2.6.38-generic-part9/include/linux/watchdog.h
---- linux-2.6.38-generic-part8/include/linux/watchdog.h	2011-06-17 12:17:52.893063162 +0200
-+++ linux-2.6.38-generic-part9/include/linux/watchdog.h	2011-06-17 12:18:05.261063514 +0200
-@@ -72,6 +72,7 @@
- 	int (*ping)(struct watchdog_device *);
- 	int (*status)(struct watchdog_device *);
- 	int (*set_timeout)(struct watchdog_device *, int);
-+	long (*ioctl)(struct watchdog_device *, unsigned int, unsigned long);
- };
- 
- /* The structure that defines a watchdog device */
+ 	/* Note: now that all watchdog_device data has been verified, we
+ 	 * will not check this anymore in other functions. If data get's
+ 	 * corrupted in a later stage then we expect a kernel panic! */
+diff -urN linux-2.6.38-generic-part9/drivers/watchdog/core/watchdog_dev.c linux-2.6.38-generic-partA/drivers/watchdog/core/watchdog_dev.c
+--- linux-2.6.38-generic-part9/drivers/watchdog/core/watchdog_dev.c	2011-06-17 10:14:55.522632632 +0200
++++ linux-2.6.38-generic-partA/drivers/watchdog/core/watchdog_dev.c	2011-06-17 13:48:31.493062339 +0200
+@@ -250,6 +250,9 @@
+ 			return -EOPNOTSUPP;
+ 		if (get_user(val, p))
+ 			return -EFAULT;
++		if ((wdd->max_timeout != 0) &&
++		    (val < wdd->min_timeout || val > wdd->max_timeout))
++				return -EINVAL;
+ 		err = wdd->ops->set_timeout(wdd, val);
+ 		if (err < 0)
+ 			return err;
+diff -urN linux-2.6.38-generic-part9/include/linux/watchdog.h linux-2.6.38-generic-partA/include/linux/watchdog.h
+--- linux-2.6.38-generic-part9/include/linux/watchdog.h	2011-06-17 12:18:05.261063514 +0200
++++ linux-2.6.38-generic-partA/include/linux/watchdog.h	2011-06-17 12:19:20.637064105 +0200
+@@ -83,6 +83,8 @@
+ 	struct device *parent;
+ 	int bootstatus;
+ 	int timeout;
++	int min_timeout;
++	int max_timeout;
+ 	long status;
+ #define WDOG_ACTIVE		0	/* is the watchdog running/active */
+ #define WDOG_DEV_OPEN		1	/* is the watchdog opened via
