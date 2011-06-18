@@ -1,174 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab1FRVAd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 17:00:33 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39002 "EHLO ogre.sisk.pl"
+	id S1752842Ab1FRVFF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 17:05:05 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60439 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751937Ab1FRVAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 17:00:31 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [linux-pm] calling runtime PM from system PM methods
-Date: Sat, 18 Jun 2011 23:01:03 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org, linux-omap@vger.kernel.org,
-        Kevin Hilman <khilman@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1106181123050.29370-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1106181123050.29370-100000@netrider.rowland.org>
+	id S1752517Ab1FRVFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Jun 2011 17:05:03 -0400
+Date: Sat, 18 Jun 2011 21:04:49 GMT
+From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
+Message-ID: <tip-40b7f3dfcc5ab211a0b8d916751bb22ac2290806@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, ben@decadent.org.uk, borislav.petkov@amd.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, borislav.petkov@amd.com, ben@decadent.org.uk
+In-Reply-To: <1302752223.5282.674.camel@localhost>
+References: <1302752223.5282.674.camel@localhost>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/microcode] x86, microcode, AMD: Fix section header size check
+Git-Commit-ID: 40b7f3dfcc5ab211a0b8d916751bb22ac2290806
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106182301.04090.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 18 Jun 2011 21:04:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, June 18, 2011, Alan Stern wrote:
-> On Sat, 18 Jun 2011, Rafael J. Wysocki wrote:
-> 
-> > On Friday, June 17, 2011, Rafael J. Wysocki wrote:
-> > > On Friday, June 17, 2011, Alan Stern wrote:
-> > > > On Fri, 17 Jun 2011, Rafael J. Wysocki wrote:
-> > > > 
-> > > > > Having considered that a bit more I see that, in fact, commit
-> > > > > e8665002477f0278f84f898145b1f141ba26ee26 (PM: Allow pm_runtime_suspend() to
-> > > > > succeed during system suspend) has introduced at least one regression.
-> > > > > Namely, the PCI bus type runs pm_runtime_resume() in its .prepare()
-> > > > > callback to guarantee that devices will be in a well known state before
-> > > > > the PCI .suspend() and .suspend_noirq() callbacks are executed.
-> > > > > Unfortunately, after commit e8665002477f0278f84f898145b1f141ba26ee26 this
-> > > > > isn't valid any more, because devices can be runtime-suspend after the
-> > > > > pm_runtime_resume() in .prepare() has run.
-> > > > > 
-> > > > > USB seems to do something similar in choose_wakeup().
-> > > > > 
-> > > > > So, either the both of these subsystems should be modified to use
-> > > > > pm_runtime_get_sync() and then pm_runtime_put_<something>() some time
-> > > > > during resume, or we should revert commit e8665002477f0278f84f898145b1f141ba26ee26.
-> > > > 
-> > > > pm_runtime_put_noidle would be appropriate.
-> > > > 
-> > > > > Quite frankly, which shouldn't be a surprise to anyone at this point, I'd
-> > > > > prefer to revert that commit for 3.0.
-> > > > 
-> > > > Maybe we can compromise.  Instead of reverting that commit outright,
-> > > > put the get_noresume just before the suspend callback and put the
-> > > > put_sync just after the resume callback.
-> > > 
-> > > That wouldn't fix the PCI problem, though, because it would leave a small
-> > > window in which the device could be suspended after the pm_runtime_resume()
-> > > in pci_pm_prepare() had run.
-> > 
-> > That said, the PCI case can be solved with a separate patch and if the other
-> > subsystems are not affected, perhaps that's the best approach.
-> 
-> Yes, it would be a simple change.
-> 
-> > Still, I'd like to make sure that there won't be any races between runtime
-> > PM and .suspend_noirq() and .resume_noirq() callbacks, so I'd like to apply
-> > the patch below.
-> > 
-> > Thanks,
-> > Rafael
-> > 
-> > ---
-> >  drivers/base/power/main.c |    7 ++++++-
-> >  1 file changed, 6 insertions(+), 1 deletion(-)
-> > 
-> > Index: linux-2.6/drivers/base/power/main.c
-> > ===================================================================
-> > --- linux-2.6.orig/drivers/base/power/main.c
-> > +++ linux-2.6/drivers/base/power/main.c
-> > @@ -591,6 +591,8 @@ void dpm_resume(pm_message_t state)
-> >  	async_error = 0;
-> >  
-> >  	list_for_each_entry(dev, &dpm_suspended_list, power.entry) {
-> > +		pm_runtime_get_noresume(dev);
-> > +		pm_runtime_enable(dev);
-> >  		INIT_COMPLETION(dev->power.completion);
-> >  		if (is_async(dev)) {
-> >  			get_device(dev);
-> > @@ -614,6 +616,7 @@ void dpm_resume(pm_message_t state)
-> >  		}
-> >  		if (!list_empty(&dev->power.entry))
-> >  			list_move_tail(&dev->power.entry, &dpm_prepared_list);
-> > +		pm_runtime_put_noidle(dev);
-> >  		put_device(dev);
-> >  	}
-> >  	mutex_unlock(&dpm_list_mtx);
-> > @@ -939,8 +942,10 @@ int dpm_suspend(pm_message_t state)
-> >  			put_device(dev);
-> >  			break;
-> >  		}
-> > -		if (!list_empty(&dev->power.entry))
-> > +		if (!list_empty(&dev->power.entry)) {
-> >  			list_move(&dev->power.entry, &dpm_suspended_list);
-> > +			pm_runtime_disable(dev);
-> > +		}
-> 
-> The put_noidle is in the wrong place for async resumes.  Likewise for
-> the pm_runtime_disable() and async suspends.  Also this runs into
-> problems if a device is never suspended (i.e., if the sleep transition
-> aborts before suspending that device).
+Commit-ID:  40b7f3dfcc5ab211a0b8d916751bb22ac2290806
+Gitweb:     http://git.kernel.org/tip/40b7f3dfcc5ab211a0b8d916751bb22ac2290806
+Author:     Borislav Petkov <borislav.petkov@amd.com>
+AuthorDate: Wed, 15 Jun 2011 15:34:57 +0200
+Committer:  Borislav Petkov <borislav.petkov@amd.com>
+CommitDate: Thu, 16 Jun 2011 17:23:54 +0200
 
-I overlooked that, thanks for pointing it out.
+x86, microcode, AMD: Fix section header size check
 
-Well, assuming that https://patchwork.kernel.org/patch/893722/ is applied,
-which is going to be, I think we can put
+The ucode size check has to take the section header size into account
+too when sanity checking the section length. Shorten and clarify define
+names, while at it.
 
-+       pm_runtime_get_noresume(dev);
-+       pm_runtime_enable(dev);
-
-in device_resume() after the dev->power.is_suspended check and
-pm_runtime_put_noidle() under the End label.  That cause them to
-be called under the device lock, but that shouldn't be a big deal.
-
-Accordingly, we can call pm_runtime_disable(dev) in __device_suspend(),
-right next to the setting of power.is_suspended.
-
-This is implemented by the patch below.
-
-Thanks,
-Rafael
-
+Caught-by: Ben Hutchings <ben@decadent.org.uk>
+Link: http://lkml.kernel.org/r/1302752223.5282.674.camel@localhost
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- drivers/base/power/main.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ arch/x86/kernel/microcode_amd.c |   15 ++++++++-------
+ 1 files changed, 8 insertions(+), 7 deletions(-)
 
-Index: linux-2.6/drivers/base/power/main.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/main.c
-+++ linux-2.6/drivers/base/power/main.c
-@@ -521,6 +521,9 @@ static int device_resume(struct device *
- 	if (!dev->power.is_suspended)
- 		goto Unlock;
+diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+index d30d67c..591be0e 100644
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -66,8 +66,8 @@ struct microcode_amd {
+ 	unsigned int			mpb[0];
+ };
  
-+	pm_runtime_get_noresume(dev);
-+	pm_runtime_enable(dev);
-+
- 	if (dev->pwr_domain) {
- 		pm_dev_dbg(dev, state, "power domain ");
- 		error = pm_op(dev, &dev->pwr_domain->ops, state);
-@@ -557,6 +560,7 @@ static int device_resume(struct device *
+-#define UCODE_CONTAINER_SECTION_HDR	8
+-#define UCODE_CONTAINER_HEADER_SIZE	12
++#define SECTION_HDR_SIZE	8
++#define CONTAINER_HDR_SZ	12
  
-  End:
- 	dev->power.is_suspended = false;
-+	pm_runtime_put_noidle(dev);
+ static struct equiv_cpu_entry *equiv_cpu_table;
  
-  Unlock:
- 	device_unlock(dev);
-@@ -888,7 +892,10 @@ static int __device_suspend(struct devic
+@@ -177,7 +177,7 @@ static unsigned int verify_ucode_size(int cpu, const u8 *buf, unsigned int size)
+ 
+ 	actual_size = *(u32 *)(buf + 4);
+ 
+-	if (actual_size > size || actual_size > max_size) {
++	if (actual_size + SECTION_HDR_SIZE > size || actual_size > max_size) {
+ 		pr_err("section size mismatch\n");
+ 		return 0;
+ 	}
+@@ -204,8 +204,8 @@ get_next_ucode(int cpu, const u8 *buf, unsigned int size, unsigned int *mc_size)
+ 	if (!mc)
+ 		goto out;
+ 
+-	get_ucode_data(mc, buf + UCODE_CONTAINER_SECTION_HDR, actual_size);
+-	*mc_size = actual_size + UCODE_CONTAINER_SECTION_HDR;
++	get_ucode_data(mc, buf + SECTION_HDR_SIZE, actual_size);
++	*mc_size = actual_size + SECTION_HDR_SIZE;
+ 
+ out:
+ 	return mc;
+@@ -229,9 +229,10 @@ static int install_equiv_cpu_table(const u8 *buf)
+ 		return -ENOMEM;
  	}
  
-  End:
--	dev->power.is_suspended = !error;
-+	if (!error) {
-+		dev->power.is_suspended = true;
-+		pm_runtime_disable(dev);
-+	}
+-	get_ucode_data(equiv_cpu_table, buf + UCODE_CONTAINER_HEADER_SIZE, size);
++	get_ucode_data(equiv_cpu_table, buf + CONTAINER_HDR_SZ, size);
  
-  Unlock:
- 	device_unlock(dev);
+-	return size + UCODE_CONTAINER_HEADER_SIZE; /* add header length */
++	/* add header length */
++	return size + CONTAINER_HDR_SZ;
+ }
+ 
+ static void free_equiv_cpu_table(void)
