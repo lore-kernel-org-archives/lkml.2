@@ -1,141 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab1FSP2K (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 11:28:10 -0400
-Received: from mga01.intel.com ([192.55.52.88]:2099 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754249Ab1FSP2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 11:28:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,389,1304319600"; 
-   d="scan'208";a="20092985"
-Message-Id: <20110619150510.717948499@intel.com>
-User-Agent: quilt/0.48-1
-Date: Sun, 19 Jun 2011 23:01:15 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-CC: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 7/7] writeback: timestamp based bdi dirty_exceeded state
-References: <20110619150108.691351746@intel.com>
-Content-Disposition: inline; filename=writeback-dirty-exceed-time.patch
+	id S1754190Ab1FSPCk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 11:02:40 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:11251 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753761Ab1FSPCj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jun 2011 11:02:39 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Sun, 19 Jun 2011 11:02:18 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Alexander Holler <holler@ahsoftware.de>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        gregkh@suse.de, lkml <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin@rab.in>
+Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing the
+ packed attribute
+In-reply-to: <201106162220.02185.arnd@arndb.de>
+Message-id: <alpine.LFD.2.00.1106191048040.2142@xanadu.home>
+References: <Pine.LNX.4.44L0.1106161541260.1697-100000@iolanthe.rowland.org>
+ <4DFA634D.6000907@ahsoftware.de> <201106162220.02185.arnd@arndb.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When there are only one (or several) dirtiers, dirty_exceeded is always
-(or mostly) off. Converting to timestamp avoids this problem. It helps
-to use smaller write_chunk for smoother throttling.
+On Thu, 16 Jun 2011, Arnd Bergmann wrote:
 
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
+> On Thursday 16 June 2011 22:10:53 Alexander Holler wrote:
+> > Using packed doesn't seem to be necessary (at least not with those 
+> > versions of gcc I'm using here), I've tried both versions (on arm, 
+> > without packed and with packed, aligned(4)) and both are working. I've 
+> > only posted the patch because I found the usage of packed, aligned(4) 
+> > much clearer than without packed. And It might help avoiding such 
+> > discussions like this with people like me who aren't that deep involved 
+> > in gcc-specific implementation details. ;)
+> > 
+> > Anyway, feel free to nack that patch. I don't really care and just 
+> > thought I should post it (e.g. as an alternative to removing that packed).
+> 
+> At least I would be happier without the patch. I'm trying to convince
+> people to not use these attributes unless required because too much
+> harm is done when they are used without understanding the full
+> consequences. I also recommend using __packed as localized as possible,
+> i.e. set it for the members that need it, not the entire struct.
+> 
+> I agree that your patch is harmless, it's just the opposite of
+> a cleanup in my opinion.
 
-Before patch, the wait time in balance_dirty_pages() are ~200ms:
+The question is: does the structure really has to be packed?
 
-[ 1093.397700] write_bandwidth: comm=swapper pages=1536 time=204ms
-[ 1093.594319] write_bandwidth: comm=swapper pages=1536 time=196ms
-[ 1093.796642] write_bandwidth: comm=swapper pages=1536 time=200ms
+If it does, then the follow-up question is: is a packing on word 
+boundaries sufficient?
 
-After patch, ~25ms:
+If the answer is yes in both cases, then having packed,aligned(4) is not 
+a frivolity but rather a correctness issue.  We can of course provide a 
+define in include/linux/compiler-gcc.hto hide the ugliness of it 
+somewhat:
 
-[   90.261339] write_bandwidth: comm=swapper pages=192 time=20ms
-[   90.293168] write_bandwidth: comm=swapper pages=192 time=24ms
-[   90.323853] write_bandwidth: comm=swapper pages=192 time=24ms
-[   90.354510] write_bandwidth: comm=swapper pages=192 time=28ms
-[   90.389890] write_bandwidth: comm=swapper pages=192 time=28ms
-[   90.421787] write_bandwidth: comm=swapper pages=192 time=24ms
+#define __packed_32  __attribute__((packed,aligned(4)))
 
- include/linux/backing-dev.h |    2 +-
- mm/backing-dev.c            |    2 --
- mm/page-writeback.c         |   24 ++++++++++++------------
- 3 files changed, 13 insertions(+), 15 deletions(-)
-
---- linux-next.orig/mm/page-writeback.c	2011-06-19 22:59:49.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-06-19 22:59:53.000000000 +0800
-@@ -483,6 +483,15 @@ unsigned long bdi_dirty_limit(struct bac
- 	return bdi_dirty;
- }
- 
-+/*
-+ * last time exceeded (limit - limit/DIRTY_BRAKE)
-+ */
-+static bool dirty_exceeded_recently(struct backing_dev_info *bdi,
-+				    unsigned long time_window)
-+{
-+	return jiffies - bdi->dirty_exceed_time <= time_window;
-+}
-+
- static void bdi_update_write_bandwidth(struct backing_dev_info *bdi,
- 				       unsigned long elapsed,
- 				       unsigned long written)
-@@ -621,7 +630,6 @@ static void balance_dirty_pages(struct a
- 	unsigned long bdi_thresh;
- 	unsigned long pages_written = 0;
- 	unsigned long pause = 1;
--	bool dirty_exceeded = false;
- 	struct backing_dev_info *bdi = mapping->backing_dev_info;
- 	unsigned long start_time = jiffies;
- 
-@@ -669,14 +677,9 @@ static void balance_dirty_pages(struct a
- 		 * bdi or process from holding back light ones; The latter is
- 		 * the last resort safeguard.
- 		 */
--		dirty_exceeded = (bdi_dirty > bdi_thresh) ||
--				  (nr_dirty > dirty_thresh);
--
--		if (!dirty_exceeded)
-+		if (bdi_dirty <= bdi_thresh && nr_dirty <= dirty_thresh)
- 			break;
--
--		if (!bdi->dirty_exceeded)
--			bdi->dirty_exceeded = 1;
-+		bdi->dirty_exceed_time = jiffies;
- 
- 		bdi_update_bandwidth(bdi, dirty_thresh, nr_dirty, bdi_dirty,
- 				     start_time);
-@@ -719,9 +722,6 @@ static void balance_dirty_pages(struct a
- 			pause = HZ / 10;
- 	}
- 
--	if (!dirty_exceeded && bdi->dirty_exceeded)
--		bdi->dirty_exceeded = 0;
--
- 	if (writeback_in_progress(bdi))
- 		return;
- 
-@@ -775,7 +775,7 @@ void balance_dirty_pages_ratelimited_nr(
- 		return;
- 
- 	ratelimit = ratelimit_pages;
--	if (mapping->backing_dev_info->dirty_exceeded)
-+	if (dirty_exceeded_recently(bdi, MAX_PAUSE))
- 		ratelimit = 8;
- 
- 	/*
---- linux-next.orig/include/linux/backing-dev.h	2011-06-19 22:54:58.000000000 +0800
-+++ linux-next/include/linux/backing-dev.h	2011-06-19 22:59:53.000000000 +0800
-@@ -79,7 +79,7 @@ struct backing_dev_info {
- 	unsigned long avg_write_bandwidth;
- 
- 	struct prop_local_percpu completions;
--	int dirty_exceeded;
-+	unsigned long dirty_exceed_time;
- 
- 	unsigned int min_ratio;
- 	unsigned int max_ratio, max_prop_frac;
---- linux-next.orig/mm/backing-dev.c	2011-06-19 22:59:49.000000000 +0800
-+++ linux-next/mm/backing-dev.c	2011-06-19 22:59:53.000000000 +0800
-@@ -670,8 +670,6 @@ int bdi_init(struct backing_dev_info *bd
- 			goto err;
- 	}
- 
--	bdi->dirty_exceeded = 0;
--
- 	bdi->bw_time_stamp = jiffies;
- 	bdi->written_stamp = 0;
- 
+I suspect that the vast majority of the __packed uses in the kernel 
+would be better with this __packed_32 instead, the actual need and 
+intent would be more clearly expressed, and the generated code in the 
+presence of those GCC changes would then be way more efficient and still 
+correct.
 
 
+Nicolas
