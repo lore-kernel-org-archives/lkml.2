@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684Ab1FSHud (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 03:50:33 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:58279 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752323Ab1FSHub (ORCPT
+	id S1752657Ab1FSIA4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 04:00:56 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:42483 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774Ab1FSIAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 03:50:31 -0400
-X-SpamScore: -13
-X-BigFish: VS-13(zz4015L1432N98dKzz1202hzzz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Sun, 19 Jun 2011 15:55:53 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, Shawn Guo <shawn.guo@linaro.org>,
-        <patches@linaro.org>, <netdev@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        Jason Liu <jason.hui@linaro.org>, <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 2/3] net/fec: add device tree support
-Message-ID: <20110619075552.GE23171@S2100-06.ap.freescale.net>
-References: <1308410354-21387-1-git-send-email-shawn.guo@linaro.org>
- <1308410354-21387-3-git-send-email-shawn.guo@linaro.org>
- <201106182027.22974.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <201106182027.22974.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	Sun, 19 Jun 2011 04:00:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=w2OAVpvPnTfjGUho4sf9jSTEj9I99T00eIjtVN3gFGcsRx0Z0UQ1mAlX966ODOmrNn
+         w1dz9pwcWmP4//PR/V6fWaKu9d9nixkzdFaSojDbfPyR7/HwTdWuISHeDRVTghsGfVqc
+         FT0aFpTsEzO1Dl2q55BB2+oWwaG2hXJkBSvi8=
+Subject: Re: tracing kernel panics
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Shane <software.research.development@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTik3iseHFah_s=NNasQ22NtA+9zLWA@mail.gmail.com>
+References: <BANLkTik3iseHFah_s=NNasQ22NtA+9zLWA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 19 Jun 2011 10:00:47 +0200
+Message-ID: <1308470447.3539.66.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 18, 2011 at 08:27:22PM +0200, Arnd Bergmann wrote:
-> On Saturday 18 June 2011 17:19:13 Shawn Guo wrote:
-> > diff --git a/Documentation/devicetree/bindings/net/fsl-fec.txt b/Documentation/devicetree/bindings/net/fsl-fec.txt
-> > new file mode 100644
-> > index 0000000..705111d
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/net/fsl-fec.txt
-> > @@ -0,0 +1,14 @@
-> > +* Freescale Fast Ethernet Controller (FEC)
-> > +
-> > +Required properties:
-> > +- compatible : should be "fsl,<soc>-fec", "fsl,fec"
-> > +- reg : address and length of the register set for the device
-> > +- interrupts : should contain fec interrupt
-> > +
-> > +Example:
-> > +
-> > +fec@83fec000 {
-> > +	compatible = "fsl,imx51-fec", "fsl,fec";
-> > +	reg = <0x83fec000 0x4000>;
-> > +	interrupts = <87>;
-> > +};
+Le samedi 18 juin 2011 à 19:12 -0500, Shane a écrit :
+> Anyone offer advice on how I should go about tracking down this kernel
+> panic? Apologies if I've got the wrong list, let me know.
 > 
-> How about also adding device_type="network" as required here, so you
-> inherit the attributes like "local-mac-address".
+> I'm developing a networking module, my own protocol over TCP. I load
+> my module, I make a network connection, and then I close it. I do
+> nothing more, then after about 1-2 minutes, it throws this panic
+> output and none of it seems to come from my module code. I know my
+> code is the problem, and if I don't run my modules, I never get
+> panics. But nothing in the stack trace I recognize from my code and
+> I'm having a very hard time find where in my code I've gone wrong. I
+> run my kernel modules in a VM as a guest OS which connects to another
+> guest OS (currently using 2.6.36-r5).
 > 
-> I would also suggest adding a call to of_get_mac_address() so you
-> can read the address out of the device tree when it is not configured
-> in hardware. Today, the driver relies on a module parameter or
-> platform_data on hardware with a mac address set.
-> 
-> The other information that is currently encoded in platform_data
-> is the phy mode. How about adding a property that enables RMII mode
-> when present?
-> 
-Ah, yes.  I missed that.  Will add support for local-mac-address and
-phy-mode.  Thanks, Arnd.
+> I've read how to analyze an OOPS, but ... here I can't even find the
+> file that this might belong to so as to disassemble it, or understand
+> what device this is. Any suggestions/pointers/advice much appreciated?
 
--- 
-Regards,
-Shawn
+General kernel programming advices ...
+
+It seems you have bugs in your module, maybe something like freeing
+memory twice, or memory you dont own, or manipulating some data without
+taking the associated lock protecting it.
+
+tcp sockets are protected by RCU and various locks, getting them used
+right is not an easy task.
+
+You should take a look at various options in "Kernel hacking"
+(some of them cannot be used together)
+
+1) Using SLUB debug and "slub_debug=FZPU"
+2) CONFIG_DEBUG_KMEMLEAK
+3) CONFIG_PROVE_LOCKING
+4) CONFIG_PROVE_RCU
+5) debug linked list manipulations
+
+and so on.
+
+
 
