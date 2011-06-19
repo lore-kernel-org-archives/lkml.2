@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab1FSNqN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 09:46:13 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39658 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752481Ab1FSNqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 09:46:12 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH 2/2] PM: fix async resume following suspend failure
-Date: Sun, 19 Jun 2011 15:47:15 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1106182134290.3523-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1106182134290.3523-100000@netrider.rowland.org>
+	id S1754057Ab1FSNzY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 09:55:24 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:50861
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753953Ab1FSNzX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jun 2011 09:55:23 -0400
+Date: Sun, 19 Jun 2011 09:55:07 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        axboe@kernel.dk, linux-kernel@vger.kernel.org, hch@infradead.org
+Subject: Re: [RFC] virtio: Support releasing lock during kick
+Message-ID: <20110619135507.GA25728@infradead.org>
+References: <1277328242-10685-1-git-send-email-stefanha@linux.vnet.ibm.com>
+ <20110619074841.GA8613@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106191547.15512.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110619074841.GA8613@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, June 19, 2011, Alan Stern wrote:
-> On Sat, 18 Jun 2011, Rafael J. Wysocki wrote:
-> 
-> > > Okay; I should have been more careful.  Thanks for fixing this up.
-> > 
-> > No problem. :-)
-> > 
-> > Appended is what I'm going to push to Linus.
-> > 
-> > Thanks,
-> > Rafael
-> > 
-> > ---
-> > From: Alan Stern <stern@rowland.harvard.edu>
-> > Subject: PM: Fix async resume following suspend failure
-> 
-> This looks fine.  It's a little hard to test; you have to create an 
-> artificial suspend failure.  Have you tried doing that?
+On Sun, Jun 19, 2011 at 10:48:41AM +0300, Michael S. Tsirkin wrote:
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 4ce953f..a8672ec 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -433,6 +433,8 @@ void blk_run_queue(struct request_queue *q)
+>  	spin_lock_irqsave(q->queue_lock, flags);
+>  	__blk_run_queue(q);
+>  	spin_unlock_irqrestore(q->queue_lock, flags);
+> +	if (q->request_done)
+> +		q->request_done(q);
 
-Not yet, but I have a plan to do that. :-)
+We have quite a few cases where __blk_run_queue is called directly, and
+one more (although not applicable to virtio-blk) that calls ->request_fn
+directly.
 
-Thanks,
-Rafael
+I think Stefan's way is the way to go for now, releasing and reacquiring
+the queue lock once in ->request_fn is much less than the common IDE and
+SCSI setups do today.
+
+Eventually ->queue_lock should be split from the driver-internal lock,
+and we could do a more efficient calling convention than the one per
+request blk_peek_request.  I've started looking into that, but it's
+going to take a while.
+
