@@ -1,136 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751251Ab1FSEvP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 00:51:15 -0400
-Received: from lunge.queued.net ([66.23.231.200]:44722 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750773Ab1FSEvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 00:51:13 -0400
-Date: Sat, 18 Jun 2011 21:51:07 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: dsd@laptop.org, cjb@laptop.org, linux-kernel@vger.kernel.org,
-        dcbw@redhat.com, libertas-dev@lists.infradead.org
-Subject: [PATCH linux-firmware] libertas: add OLPC libertas blobs
-Message-ID: <20110618215107.692747d4@debxo>
-In-Reply-To: <20110618213803.521db1b3@debxo>
-References: <20110618213803.521db1b3@debxo>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751852Ab1FSG27 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 02:28:59 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48999 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366Ab1FSG25 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jun 2011 02:28:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=toXX5QKDe3oG2ygzCZ6cI/ccN12zy0o02nEDUIOIV12OMaUAe67hofO/4SltGhQhLr
+         AH2upNLmvFbRFvos0fxLamTHoXnLhaqB61nxcjS4XCilsABdHdNLOObeGrLPP8nbMDNQ
+         0BGs2RaL7ty7T3DSm+IEioEAd8PviNrKtDdRU=
+Message-ID: <4DFD9716.3090201@gmail.com>
+Date: Sat, 18 Jun 2011 23:28:38 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH]drivers:base:power:trace.c Add "UTC" Coordinated Universal
+ Time to the printk.
+References: <1307599301-2524-1-git-send-email-justinmattock@gmail.com> <201106132347.08007.rjw@sisk.pl> <4DF68D00.8000200@gmail.com> <201106142202.46411.rjw@sisk.pl>
+In-Reply-To: <201106142202.46411.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These blobs are released by the OLPC project, and drive Marvell
-libertas chips.  OLPC hardware has additional features and quirks,
-which makes special firmware necessary.
+On 06/14/2011 01:02 PM, Rafael J. Wysocki wrote:
+> On Tuesday, June 14, 2011, Justin P. Mattock wrote:
+>> On 06/13/2011 02:47 PM, Rafael J. Wysocki wrote:
+>>> On Monday, June 13, 2011, Justin P. Mattock wrote:
+>>>> On 06/12/2011 01:27 PM, Rafael J. Wysocki wrote:
+>>>>> On Sunday, June 12, 2011, Justin P. Mattock wrote:
+>>>>>> On 06/12/2011 11:35 AM, Rafael J. Wysocki wrote:
+>>>>>>> On Sunday, June 12, 2011, Justin P. Mattock wrote:
+>>>>>>>> On 06/12/2011 05:12 AM, Rafael J. Wysocki wrote:
+>>>>>>>>> Hi,
+>>>>>>>>>
+>>>>>>>>> On Thursday, June 09, 2011, Justin P. Mattock wrote:
+>>>>>>>>>> From: "Justin P. Mattock"<justinmattock@gmail.com>
+>>>>>>>>>>
+>>>>>>>>>> sounds stupid, but taking a glance at the time, and seeing the wrong time, or what seemed
+>>>>>>>>>> wrong in dmesg, caused me to go into total check the time clock panic mode.. So the patch below adds:
+>>>>>>>>>> "UTC" Coordinated Universal Time abreviation to the printk so people like me dont flip out over the time!
+>>>>>>>>>>
+>>>>>>>>>> before:
+>>>>>>>>>> [    0.114915] Time:  1:47:03  Date: 06/09/11
+>>>>>>>>>>
+>>>>>>>>>> after:
+>>>>>>>>>> [    0.114728] Time:  5:46:02 UTC Date: 06/09/11
+>>>>>>>>>>
+>>>>>>>>>> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>>>>>>>>
+>>>>>>>>> I suspect the goal is to mark messages printed by the PM trace code so that
+>>>>>>>>> they can be easily distinguished from messages from other sources to avoid
+>>>>>>>>> confusion.  Why do you think it's a good idea to use the "UTC" string for
+>>>>>>>>> this purpose?  The time printed in those messages need not be UTC.
+>>>>>>>>>
+>>>>>>>>> It would be better to simply print "RTC time: ..., date: ..." IMO.
+>>>>>>>>>
+>>>>>>>>> Thanks,
+>>>>>>>>> Rafael
+>>>>>>>>>
+>>>>>>>>
+>>>>>>>> well.. if thats better, then thats better.. over here(people that dont
+>>>>>>>> know what RTC time is) would not get so confused with a simple UTC or
+>>>>>>>> PDT or whatever the time zone is but if RTC is bettr, then its better.
+>>>>>>>
+>>>>>>> My point is we don't know this time is always UTC, so we rather shouldn't
+>>>>>>> label it as UTC unconditionally, should we?
+>>>>>>>
+>>>>>>> Rafael
+>>>>>>>
+>>>>>>
+>>>>>> sounds good to me!!
+>>>>>
+>>>>> I'm not sure what you mean?
+>>>>>
+>>>>
+>>>> with what you are saying "RTC" if anything.. rather than "UTC"
+>>>
+>>> So, it looks like you'd like the appended patch to be appiled?
+>>>
+>>> Rafael
+>>
+>>
+>> whatever works best with you guys...
+>
+> OK, I'll queue up the one below for 3.1, then.
 
-The firmware was downloaded from
-http://dev.laptop.org/pub/firmware/libertas/.
+before anything happens, I just noticed down dmesg:
 
-Signed-off-by: Andres Salomon <dilinger@lunge.queued.net>
----
- LICENCE.OLPC                 |   33 +++++++++++++++++++++++++++++++++
- WHENCE                       |   20 ++++++++++++++++++++
- libertas/lbtf_sdio.bin       |  Bin 0 -> 120924 bytes
- libertas/lbtf_usb.bin        |  Bin 0 -> 118888 bytes
- libertas/sd8686_v9_OLPC.bin  |  Bin 0 -> 124244 bytes
- libertas/usb8388_v5_OLPC.bin |  Bin 0 -> 127824 bytes
- 6 files changed, 53 insertions(+), 0 deletions(-)
- create mode 100644 LICENCE.OLPC
- create mode 100644 libertas/lbtf_sdio.bin
- create mode 100644 libertas/lbtf_usb.bin
- create mode 100644 libertas/sd8686_v9_OLPC.bin
- create mode 100644 libertas/usb8388_v5_OLPC.bin
+[    1.931771]   Magic number: 15:676:165
+[    1.940022] rtc_cmos 00:08: setting system clock to 2011-06-19 
+06:11:22 UTC (1308463882)
+[    1.948456] Initializing network drop monitor service
 
-diff --git a/LICENCE.OLPC b/LICENCE.OLPC
-new file mode 100644
-index 0000000..a740952
---- /dev/null
-+++ b/LICENCE.OLPC
-@@ -0,0 +1,33 @@
-+Copyright (c) 2006, One Laptop per Child and Marvell Corporation.
-+All rights reserved.
-+
-+Redistribution.  Redistribution and use in binary form, without 
-+modification, are permitted provided that the following conditions are 
-+met:
-+
-+* Redistributions must reproduce the above copyright notice and the 
-+  following disclaimer in the documentation and/or other materials 
-+  provided with the distribution.
-+* Neither the name of Marvell Corporation nor the names of its suppliers 
-+  may be used to endorse or promote products derived from this software 
-+  without specific prior written permission.
-+* No reverse engineering, decompilation, or disassembly of this software 
-+  is permitted.
-+* You may not use or attempt to use this software in conjunction with
-+  any product that is offered by a third party as a replacement,
-+  substitute or alternative to a Marvell Product where a Marvell Product
-+  is defined as a proprietary wireless LAN embedded client solution of
-+  Marvell or a Marvell Affiliate.
-+
-+DISCLAIMER.  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
-+CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, 
-+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
-+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
-+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS 
-+OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND 
-+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR 
-+TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE 
-+USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH 
-+DAMAGE.
-diff --git a/WHENCE b/WHENCE
-index 4c51b23..f43f347 100644
---- a/WHENCE
-+++ b/WHENCE
-@@ -644,6 +644,26 @@ Linux driver tarballs downloaded from Marvell's "Extranet" with permission.
- 
- --------------------------------------------------------------------------
- 
-+Driver: libertas - Marvell Libertas 802.11b/g cards, OLPC firmware
-+
-+File: libertas/lbtf_sdio.bin
-+Info: v9.0.7.p4
-+
-+File: libertas/lbtf_usb.bin
-+Info: v5.132.3.p1
-+
-+File: libertas/sd8686_v9_OLPC.bin
-+Info: v9.70.7.p0
-+
-+File: libertas/usb8388_v5_OLPC.bin
-+Info: v5.110.22.p23
-+
-+Licence: Redistributable. See LICENCE.OLPC for details.
-+
-+Available from http://dev.laptop.org/pub/firmware/libertas/
-+
-+--------------------------------------------------------------------------
-+
- Driver: mwl8k - Marvell Libertas softmac-type 802.11b/g cards
- 
- File: mwl8k/fmimage_8687.fw
-diff --git a/libertas/lbtf_sdio.bin b/libertas/lbtf_sdio.bin
-new file mode 100644
-index 0000000..a93d765
-Binary files /dev/null and b/libertas/lbtf_sdio.bin differ
-diff --git a/libertas/lbtf_usb.bin b/libertas/lbtf_usb.bin
-new file mode 100644
-index 0000000..8ee231a
-Binary files /dev/null and b/libertas/lbtf_usb.bin differ
-diff --git a/libertas/sd8686_v9_OLPC.bin b/libertas/sd8686_v9_OLPC.bin
-new file mode 100644
-index 0000000..8f877a7
-Binary files /dev/null and b/libertas/sd8686_v9_OLPC.bin differ
-diff --git a/libertas/usb8388_v5_OLPC.bin b/libertas/usb8388_v5_OLPC.bin
-new file mode 100644
-index 0000000..e01b6c2
-Binary files /dev/null and b/libertas/usb8388_v5_OLPC.bin differ
--- 
-1.7.2.5
+see how there is a UTC after the time. should this be for the above?
+(keep in mind I just noticed this, so I could be wrong)
+
+>
+>> I just tripped out on that, and created what I had sent out..
+>>>
+>>> ---
+>>> From: Rafael J. Wysocki<rjw@sisk.pl>
+>>> Subject: PM: Add "RTC" to PM trace time stamps to avoid confusion
+>>>
+>>> Some users are apparently confused by dmesg output from
+>>> read_magic_time(), which looks like "real" time and date.
+>>> Add the "RTC" string to time stamps printed by read_magic_time() to
+>>> avoid that confusion.
+>>>
+>>> Reported-by: Justin P. Mattock<justinmattock@gmail.com>
+>>> Signed-off-by: Rafael J. Wysocki<rjw@sisk.pl>
+>>> ---
+>>>    drivers/base/power/trace.c |    2 +-
+>>>    1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> Index: linux-2.6/drivers/base/power/trace.c
+>>> ===================================================================
+>>> --- linux-2.6.orig/drivers/base/power/trace.c
+>>> +++ linux-2.6/drivers/base/power/trace.c
+>>> @@ -112,7 +112,7 @@ static unsigned int read_magic_time(void
+>>>    	unsigned int val;
+>>>
+>>>    	get_rtc_time(&time);
+>>> -	pr_info("Time: %2d:%02d:%02d  Date: %02d/%02d/%02d\n",
+>>> +	pr_info("RTC time: %2d:%02d:%02d, date: %02d/%02d/%02d\n",
+>>>    		time.tm_hour, time.tm_min, time.tm_sec,
+>>>    		time.tm_mon + 1, time.tm_mday, time.tm_year % 100);
+>>>    	val = time.tm_year;				/* 100 years */
+>>>
+>>
+>>
+>> Justin P. Mattock
+>>
+>>
+>
+>
 
