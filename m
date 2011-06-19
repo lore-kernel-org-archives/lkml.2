@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818Ab1FSIqp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 04:46:45 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:41749 "EHLO mx3.mail.elte.hu"
+	id S1752379Ab1FSIvZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 04:51:25 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:56366 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751114Ab1FSIqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 04:46:43 -0400
-Date: Sun, 19 Jun 2011 10:46:38 +0200
+	id S1751369Ab1FSIvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jun 2011 04:51:23 -0400
+Date: Sun, 19 Jun 2011 10:51:18 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] generic IPI fix
-Message-ID: <20110619084638.GA23754@elte.hu>
+Subject: [GIT PULL] timer fixes
+Message-ID: <20110619085118.GA24512@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -31,86 +31,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest sched-urgent-for-linus git tree from:
+Please pull the latest timers-urgent-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git sched-urgent-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timers-urgent-for-linus
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Takao Indoh (1):
-      generic-ipi: Fix kexec boot crash by initializing call_single_queue before enabling interrupts
+Max Asbock (1):
+      timerfd: Fix wakeup of processes when timer is cancelled on clock change
+
+Thomas Gleixner (1):
+      clocksource: Make watchdog robust vs. interruption
 
 
- include/linux/smp.h |    5 ++++-
- init/main.c         |    1 +
- kernel/smp.c        |    5 +----
- 3 files changed, 6 insertions(+), 5 deletions(-)
+ fs/timerfd.c                |    5 ++++-
+ include/linux/clocksource.h |    1 +
+ kernel/time/clocksource.c   |   24 +++++++++++++-----------
+ 3 files changed, 18 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/smp.h b/include/linux/smp.h
-index 7ad824d..8cc38d3 100644
---- a/include/linux/smp.h
-+++ b/include/linux/smp.h
-@@ -85,12 +85,15 @@ int smp_call_function_any(const struct cpumask *mask,
-  * Generic and arch helpers
+diff --git a/fs/timerfd.c b/fs/timerfd.c
+index f67acbd..dffeb37 100644
+--- a/fs/timerfd.c
++++ b/fs/timerfd.c
+@@ -61,7 +61,9 @@ static enum hrtimer_restart timerfd_tmrproc(struct hrtimer *htmr)
+ 
+ /*
+  * Called when the clock was set to cancel the timers in the cancel
+- * list.
++ * list. This will wake up processes waiting on these timers. The
++ * wake-up requires ctx->ticks to be non zero, therefore we increment
++ * it before calling wake_up_locked().
   */
- #ifdef CONFIG_USE_GENERIC_SMP_HELPERS
-+void __init call_function_init(void);
- void generic_smp_call_function_single_interrupt(void);
- void generic_smp_call_function_interrupt(void);
- void ipi_call_lock(void);
- void ipi_call_unlock(void);
- void ipi_call_lock_irq(void);
- void ipi_call_unlock_irq(void);
-+#else
-+static inline void call_function_init(void) { }
- #endif
- 
- /*
-@@ -134,7 +137,7 @@ static inline void smp_send_reschedule(int cpu) { }
- #define smp_prepare_boot_cpu()			do {} while (0)
- #define smp_call_function_many(mask, func, info, wait) \
- 			(up_smp_call_function(func, info))
--static inline void init_call_single_data(void) { }
-+static inline void call_function_init(void) { }
- 
- static inline int
- smp_call_function_any(const struct cpumask *mask, smp_call_func_t func,
-diff --git a/init/main.c b/init/main.c
-index cafba67..d7211fa 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -542,6 +542,7 @@ asmlinkage void __init start_kernel(void)
- 	timekeeping_init();
- 	time_init();
- 	profile_init();
-+	call_function_init();
- 	if (!irqs_disabled())
- 		printk(KERN_CRIT "start_kernel(): bug: interrupts were "
- 				 "enabled early\n");
-diff --git a/kernel/smp.c b/kernel/smp.c
-index 73a1951..fb67dfa 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -74,7 +74,7 @@ static struct notifier_block __cpuinitdata hotplug_cfd_notifier = {
- 	.notifier_call		= hotplug_cfd,
- };
- 
--static int __cpuinit init_call_single_data(void)
-+void __init call_function_init(void)
+ void timerfd_clock_was_set(void)
  {
- 	void *cpu = (void *)(long)smp_processor_id();
- 	int i;
-@@ -88,10 +88,7 @@ static int __cpuinit init_call_single_data(void)
+@@ -76,6 +78,7 @@ void timerfd_clock_was_set(void)
+ 		spin_lock_irqsave(&ctx->wqh.lock, flags);
+ 		if (ctx->moffs.tv64 != moffs.tv64) {
+ 			ctx->moffs.tv64 = KTIME_MAX;
++			ctx->ticks++;
+ 			wake_up_locked(&ctx->wqh);
+ 		}
+ 		spin_unlock_irqrestore(&ctx->wqh.lock, flags);
+diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
+index d4646b4..18a1baf 100644
+--- a/include/linux/clocksource.h
++++ b/include/linux/clocksource.h
+@@ -188,6 +188,7 @@ struct clocksource {
+ #ifdef CONFIG_CLOCKSOURCE_WATCHDOG
+ 	/* Watchdog related data, used by the framework */
+ 	struct list_head wd_list;
++	cycle_t cs_last;
+ 	cycle_t wd_last;
+ #endif
+ } ____cacheline_aligned;
+diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+index 1c95fd6..e0980f0 100644
+--- a/kernel/time/clocksource.c
++++ b/kernel/time/clocksource.c
+@@ -185,7 +185,6 @@ static struct clocksource *watchdog;
+ static struct timer_list watchdog_timer;
+ static DECLARE_WORK(watchdog_work, clocksource_watchdog_work);
+ static DEFINE_SPINLOCK(watchdog_lock);
+-static cycle_t watchdog_last;
+ static int watchdog_running;
  
- 	hotplug_cfd(&hotplug_cfd_notifier, CPU_UP_PREPARE, cpu);
- 	register_cpu_notifier(&hotplug_cfd_notifier);
+ static int clocksource_watchdog_kthread(void *data);
+@@ -254,11 +253,6 @@ static void clocksource_watchdog(unsigned long data)
+ 	if (!watchdog_running)
+ 		goto out;
+ 
+-	wdnow = watchdog->read(watchdog);
+-	wd_nsec = clocksource_cyc2ns((wdnow - watchdog_last) & watchdog->mask,
+-				     watchdog->mult, watchdog->shift);
+-	watchdog_last = wdnow;
 -
--	return 0;
- }
--early_initcall(init_call_single_data);
+ 	list_for_each_entry(cs, &watchdog_list, wd_list) {
  
- /*
-  * csd_lock/csd_unlock used to serialize access to per-cpu csd resources
+ 		/* Clocksource already marked unstable? */
+@@ -268,19 +262,28 @@ static void clocksource_watchdog(unsigned long data)
+ 			continue;
+ 		}
+ 
++		local_irq_disable();
+ 		csnow = cs->read(cs);
++		wdnow = watchdog->read(watchdog);
++		local_irq_enable();
+ 
+ 		/* Clocksource initialized ? */
+ 		if (!(cs->flags & CLOCK_SOURCE_WATCHDOG)) {
+ 			cs->flags |= CLOCK_SOURCE_WATCHDOG;
+-			cs->wd_last = csnow;
++			cs->wd_last = wdnow;
++			cs->cs_last = csnow;
+ 			continue;
+ 		}
+ 
+-		/* Check the deviation from the watchdog clocksource. */
+-		cs_nsec = clocksource_cyc2ns((csnow - cs->wd_last) &
++		wd_nsec = clocksource_cyc2ns((wdnow - cs->wd_last) & watchdog->mask,
++					     watchdog->mult, watchdog->shift);
++
++		cs_nsec = clocksource_cyc2ns((csnow - cs->cs_last) &
+ 					     cs->mask, cs->mult, cs->shift);
+-		cs->wd_last = csnow;
++		cs->cs_last = csnow;
++		cs->wd_last = wdnow;
++
++		/* Check the deviation from the watchdog clocksource. */
+ 		if (abs(cs_nsec - wd_nsec) > WATCHDOG_THRESHOLD) {
+ 			clocksource_unstable(cs, cs_nsec - wd_nsec);
+ 			continue;
+@@ -318,7 +321,6 @@ static inline void clocksource_start_watchdog(void)
+ 		return;
+ 	init_timer(&watchdog_timer);
+ 	watchdog_timer.function = clocksource_watchdog;
+-	watchdog_last = watchdog->read(watchdog);
+ 	watchdog_timer.expires = jiffies + WATCHDOG_INTERVAL;
+ 	add_timer_on(&watchdog_timer, cpumask_first(cpu_online_mask));
+ 	watchdog_running = 1;
