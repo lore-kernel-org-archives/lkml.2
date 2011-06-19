@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab1FSO7N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 10:59:13 -0400
-Received: from home.keithp.com ([63.227.221.253]:41955 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753761Ab1FSO7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 10:59:11 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Luiz Augusto von Dentz <luiz.dentz@gmail.com>,
-        Waldemar.Rymarkiewicz@tieto.com, padovan@profusion.mobi,
-        marcel@holtmann.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Regression caused by "Bluetooth: Map sec_level to link key requirements"
-In-Reply-To: <BANLkTim4F8ZvWPMHSXpcBj9Eb2uFThcz4w@mail.gmail.com>
-References: <yunboy7a2so.fsf@aiko.keithp.com> <99B09243E1A5DA4898CDD8B700111448175AA2DB2A@EXMB04.eu.tieto.com> <20110609083345.GA2894@dell.ccr.corp.intel.com> <yuny61b3pnm.fsf@aiko.keithp.com> <99B09243E1A5DA4898CDD8B700111448175AA2DE98@EXMB04.eu.tieto.com> <20110610055558.GA1832@dell> <BANLkTim4F8ZvWPMHSXpcBj9Eb2uFThcz4w@mail.gmail.com>
-User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Sun, 19 Jun 2011 13:11:17 +0200
-Message-ID: <yun8vsynkiy.fsf@aiko.keithp.com>
+	id S1753469Ab1FSLTK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 07:19:10 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:35677 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753404Ab1FSLTJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jun 2011 07:19:09 -0400
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Michael Schmitz <schmitzmic@googlemail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        "Linux\/m68k" <linux-m68k@vger.kernel.org>
+Subject: Re: m68k: Convert to genirq (WIP)
+References: <alpine.DEB.2.00.1105282010370.16617@ayla.of.borg>
+	<BANLkTinDvLqHChPUpG9v1AXp0E=iRLteDg@mail.gmail.com>
+	<m2sjr8gyp0.fsf@igel.home>
+	<BANLkTikxzQSXLfr81q+b1rScW8YCcoJZRQ@mail.gmail.com>
+X-Yow: How many retired bricklayers from FLORIDA are out purchasing
+ PENCIL SHARPENERS right NOW??
+Date: Sun, 19 Jun 2011 13:19:05 +0200
+In-Reply-To: <BANLkTikxzQSXLfr81q+b1rScW8YCcoJZRQ@mail.gmail.com> (Geert
+	Uytterhoeven's message of "Sun, 19 Jun 2011 12:17:34 +0200")
+Message-ID: <m2mxhejcgm.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Geert Uytterhoeven <geert@linux-m68k.org> writes:
 
-On Fri, 10 Jun 2011 14:58:50 +0900, Luiz Augusto von Dentz <luiz.dentz@gmai=
-l.com> wrote:
+> BUG_ON(!irqs_disabled()) triggers as flags is 0x2619 there.
 
-> diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
-> index 2f5ae53..b309f84 100644
-> --- a/net/bluetooth/hci_conn.c
-> +++ b/net/bluetooth/hci_conn.c
-> @@ -673,8 +673,8 @@ auth:
->         if (test_and_set_bit(HCI_CONN_ENCRYPT_PEND, &conn->pend))
->                 return 0;
->=20
-> -       hci_conn_auth(conn, sec_level, auth_type);
-> -       return 0;
-> +       if (!(hci_conn_auth(conn, sec_level, auth_type)))
-> +               return 0;
->=20
->  encrypt:
->         if (conn->link_mode & HCI_LM_ENCRYPT)
+Which is correct, since arch_local_irq_disable would set it to 2719.
+You need to find out why arch_local_irq_disable wasn't called.
 
-That makes the first connection afer boot succeed, but subsequent
-connections fail in the same way.
+Andreas.
 
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFN/dlVQp8BWwlsTdMRAi8RAKDGQGMMW6LSFzz24zRSK15LGq4b1wCfZaPB
-X3v7geL/ClYDgt1xh76tG+8=
-=5E4L
------END PGP SIGNATURE-----
---=-=-=--
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
