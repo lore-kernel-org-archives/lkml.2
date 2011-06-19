@@ -1,91 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682Ab1FSTAF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 15:00:05 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:32948 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754631Ab1FSTAD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 15:00:03 -0400
-Date: Sun, 19 Jun 2011 15:00:01 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Nicolas Pitre <nico@fluxnic.net>
-cc: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
-        Alexander Holler <holler@ahsoftware.de>, <linux-usb@vger.kernel.org>,
-        <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>
-Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing
- the packed attribute
-In-Reply-To: <alpine.LFD.2.00.1106191048040.2142@xanadu.home>
-Message-ID: <Pine.LNX.4.44L0.1106191453200.14586-100000@netrider.rowland.org>
+	id S1754690Ab1FSTB6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 15:01:58 -0400
+Received: from home.keithp.com ([63.227.221.253]:52272 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754631Ab1FSTB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jun 2011 15:01:57 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Johan Hedberg <johan.hedberg@gmail.com>
+Cc: Luiz Augusto von Dentz <luiz.dentz@gmail.com>,
+        Waldemar.Rymarkiewicz@tieto.com, padovan@profusion.mobi,
+        marcel@holtmann.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Regression caused by "Bluetooth: Map sec_level to link key requirements"
+In-Reply-To: <20110619175937.GA24188@dell.ger.corp.intel.com>
+References: <yunboy7a2so.fsf@aiko.keithp.com> <99B09243E1A5DA4898CDD8B700111448175AA2DB2A@EXMB04.eu.tieto.com> <20110609083345.GA2894@dell.ccr.corp.intel.com> <yuny61b3pnm.fsf@aiko.keithp.com> <99B09243E1A5DA4898CDD8B700111448175AA2DE98@EXMB04.eu.tieto.com> <20110610055558.GA1832@dell> <BANLkTim4F8ZvWPMHSXpcBj9Eb2uFThcz4w@mail.gmail.com> <yun8vsynkiy.fsf@aiko.keithp.com> <20110619175937.GA24188@dell.ger.corp.intel.com>
+User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Sun, 19 Jun 2011 21:01:40 +0200
+Message-ID: <yunliwxabmz.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 19 Jun 2011, Nicolas Pitre wrote:
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-> On Thu, 16 Jun 2011, Arnd Bergmann wrote:
-> 
-> > On Thursday 16 June 2011 22:10:53 Alexander Holler wrote:
-> > > Using packed doesn't seem to be necessary (at least not with those 
-> > > versions of gcc I'm using here), I've tried both versions (on arm, 
-> > > without packed and with packed, aligned(4)) and both are working. I've 
-> > > only posted the patch because I found the usage of packed, aligned(4) 
-> > > much clearer than without packed. And It might help avoiding such 
-> > > discussions like this with people like me who aren't that deep involved 
-> > > in gcc-specific implementation details. ;)
-> > > 
-> > > Anyway, feel free to nack that patch. I don't really care and just 
-> > > thought I should post it (e.g. as an alternative to removing that packed).
-> > 
-> > At least I would be happier without the patch. I'm trying to convince
-> > people to not use these attributes unless required because too much
-> > harm is done when they are used without understanding the full
-> > consequences. I also recommend using __packed as localized as possible,
-> > i.e. set it for the members that need it, not the entire struct.
-> > 
-> > I agree that your patch is harmless, it's just the opposite of
-> > a cleanup in my opinion.
-> 
-> The question is: does the structure really has to be packed?
+On Sun, 19 Jun 2011 20:59:37 +0300, Johan Hedberg <johan.hedberg@gmail.com>=
+ wrote:
 
-What do you mean?  The structure really does need to be allocated
-without padding between the fields; is that the same thing?  So do a
-bunch of other structures that currently have no annotations at all.
+> I think you'll need both of them to fix the pairing/security issues.
 
-> If it does, then the follow-up question is: is a packing on word 
-> boundaries sufficient?
+Yup, with both of those patches, I get syncml and dun working again.
 
-Again, what do you mean?  The structure contains some 32-bit fields and 
-it must always be allocated at a 4-byte boundary.  However there's 
-nothing wrong with stricter allocation -- I don't recall the details 
-but it's entirely possible that some of the fields could be 64 bits on 
-some architectures, in which cases the alignment certainly should be 
-8-byte.
+(sorry for the delayed testing, I'm traveling)
 
-> If the answer is yes in both cases, then having packed,aligned(4) is not 
-> a frivolity but rather a correctness issue.
+=2D-=20
+keith.packard@intel.com
 
-Why so?  Current systems work just fine without it.
+--=-=-=
+Content-Type: application/pgp-signature
 
->  We can of course provide a 
-> define in include/linux/compiler-gcc.hto hide the ugliness of it 
-> somewhat:
-> 
-> #define __packed_32  __attribute__((packed,aligned(4)))
-> 
-> I suspect that the vast majority of the __packed uses in the kernel 
-> would be better with this __packed_32 instead, the actual need and 
-> intent would be more clearly expressed, and the generated code in the 
-> presence of those GCC changes would then be way more efficient and still 
-> correct.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-What if the intent is that the structure should be 4-byte aligned on 
-32-bit systems and 8-byte aligned on 64-bit systems?  The compiler 
-already does this sort of thing automatically, why mess with it?
-
-Alan Stern
-
+iD8DBQFN/keUQp8BWwlsTdMRAm0HAJ44h1GTyPKILM0gaxQz9fa0HtvxmACg48Rs
+v4TTnREemuN/1jzKOtfTfsw=
+=agQ6
+-----END PGP SIGNATURE-----
+--=-=-=--
