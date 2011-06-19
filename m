@@ -1,153 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368Ab1FSP3B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 11:29:01 -0400
-Received: from mga11.intel.com ([192.55.52.93]:3908 "EHLO mga11.intel.com"
+	id S1754516Ab1FSP2K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 11:28:10 -0400
+Received: from mga01.intel.com ([192.55.52.88]:2099 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754239Ab1FSP1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 11:27:52 -0400
+	id S1754249Ab1FSP2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jun 2011 11:28:05 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,389,1304319600"; 
-   d="scan'208";a="18058371"
-Message-Id: <20110619150510.600942700@intel.com>
+   d="scan'208";a="20092985"
+Message-Id: <20110619150510.717948499@intel.com>
 User-Agent: quilt/0.48-1
-Date: Sun, 19 Jun 2011 23:01:14 +0800
+Date: Sun, 19 Jun 2011 23:01:15 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
 CC: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
         Christoph Hellwig <hch@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Theodore Tso <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Wu Fengguang <fengguang.wu@intel.com>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 6/7] writeback: scale IO chunk size up to half device bandwidth
+Subject: [PATCH 7/7] writeback: timestamp based bdi dirty_exceeded state
 References: <20110619150108.691351746@intel.com>
-Content-Disposition: inline; filename=writeback-128M-MAX_WRITEBACK_PAGES.patch
+Content-Disposition: inline; filename=writeback-dirty-exceed-time.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Originally, MAX_WRITEBACK_PAGES was hard-coded to 1024 because of a
-concern of not holding I_SYNC for too long.  (At least, that was the
-comment previously.)  This doesn't make sense now because the only
-time we wait for I_SYNC is if we are calling sync or fsync, and in
-that case we need to write out all of the data anyway.  Previously
-there may have been other code paths that waited on I_SYNC, but not
-any more.					    -- Theodore Ts'o
+When there are only one (or several) dirtiers, dirty_exceeded is always
+(or mostly) off. Converting to timestamp avoids this problem. It helps
+to use smaller write_chunk for smoother throttling.
 
-So remove the MAX_WRITEBACK_PAGES constraint. The writeback pages
-will adapt to as large as the storage device can write within 500ms.
-
-XFS is observed to do IO completions in a batch, and the batch size is
-equal to the write chunk size. To avoid dirty pages to suddenly drop
-out of balance_dirty_pages()'s dirty control scope and create large
-fluctuations, the chunk size is also limited to half the control scope.
-
-The balance_dirty_pages() control scrope is
-
-	[(background_thresh + dirty_thresh) / 2, dirty_thresh]
-
-which is by default [15%, 20%] * dirty_pages, with the size
-dirty_thresh / DIRTY_FULL_SCOPE.
-
-The adpative write chunk size will be rounded to the nearest 4MB
-boundary.
-
-http://bugzilla.kernel.org/show_bug.cgi?id=13930
-
-CC: Theodore Ts'o <tytso@mit.edu>
-CC: Dave Chinner <david@fromorbit.com>
-CC: Chris Mason <chris.mason@oracle.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/fs-writeback.c         |   23 ++++++++++-------------
- include/linux/writeback.h |   11 +++++++++++
- 2 files changed, 21 insertions(+), 13 deletions(-)
 
---- linux-next.orig/include/linux/writeback.h	2011-06-16 22:17:10.000000000 +0800
-+++ linux-next/include/linux/writeback.h	2011-06-16 22:17:27.000000000 +0800
-@@ -8,6 +8,10 @@
- #include <linux/fs.h>
- 
- /*
-+ * The 1/4 region under the global dirty thresh is for smooth dirty throttling:
-+ *
-+ *		(thresh - thresh/DIRTY_FULL_SCOPE, thresh)
-+ *
-  * The 1/16 region above the global dirty limit will be put to maximum pauses:
-  *
-  *		(limit, limit + limit/DIRTY_MAXPAUSE)
-@@ -25,9 +29,16 @@
-  * knocks down the global dirty threshold quickly, in which case the global
-  * dirty limit will follow down slowly to prevent livelocking all dirtier tasks.
-  */
-+#define DIRTY_SCOPE		8
-+#define DIRTY_FULL_SCOPE	(DIRTY_SCOPE / 2)
- #define DIRTY_MAXPAUSE		16
- #define DIRTY_PASSGOOD		8
+Before patch, the wait time in balance_dirty_pages() are ~200ms:
+
+[ 1093.397700] write_bandwidth: comm=swapper pages=1536 time=204ms
+[ 1093.594319] write_bandwidth: comm=swapper pages=1536 time=196ms
+[ 1093.796642] write_bandwidth: comm=swapper pages=1536 time=200ms
+
+After patch, ~25ms:
+
+[   90.261339] write_bandwidth: comm=swapper pages=192 time=20ms
+[   90.293168] write_bandwidth: comm=swapper pages=192 time=24ms
+[   90.323853] write_bandwidth: comm=swapper pages=192 time=24ms
+[   90.354510] write_bandwidth: comm=swapper pages=192 time=28ms
+[   90.389890] write_bandwidth: comm=swapper pages=192 time=28ms
+[   90.421787] write_bandwidth: comm=swapper pages=192 time=24ms
+
+ include/linux/backing-dev.h |    2 +-
+ mm/backing-dev.c            |    2 --
+ mm/page-writeback.c         |   24 ++++++++++++------------
+ 3 files changed, 13 insertions(+), 15 deletions(-)
+
+--- linux-next.orig/mm/page-writeback.c	2011-06-19 22:59:49.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-06-19 22:59:53.000000000 +0800
+@@ -483,6 +483,15 @@ unsigned long bdi_dirty_limit(struct bac
+ 	return bdi_dirty;
+ }
  
 +/*
-+ * 4MB minimal write chunk size
++ * last time exceeded (limit - limit/DIRTY_BRAKE)
 + */
-+#define MIN_WRITEBACK_PAGES	(4096UL >> (PAGE_CACHE_SHIFT - 10))
++static bool dirty_exceeded_recently(struct backing_dev_info *bdi,
++				    unsigned long time_window)
++{
++	return jiffies - bdi->dirty_exceed_time <= time_window;
++}
 +
- struct backing_dev_info;
+ static void bdi_update_write_bandwidth(struct backing_dev_info *bdi,
+ 				       unsigned long elapsed,
+ 				       unsigned long written)
+@@ -621,7 +630,6 @@ static void balance_dirty_pages(struct a
+ 	unsigned long bdi_thresh;
+ 	unsigned long pages_written = 0;
+ 	unsigned long pause = 1;
+-	bool dirty_exceeded = false;
+ 	struct backing_dev_info *bdi = mapping->backing_dev_info;
+ 	unsigned long start_time = jiffies;
  
- /*
---- linux-next.orig/fs/fs-writeback.c	2011-06-16 22:17:10.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2011-06-16 22:17:11.000000000 +0800
-@@ -30,15 +30,6 @@
- #include "internal.h"
- 
- /*
-- * The maximum number of pages to writeout in a single bdi flush/kupdate
-- * operation.  We do this so we don't hold I_SYNC against an inode for
-- * enormous amounts of time, which would block a userspace task which has
-- * been forced to throttle against that inode.  Also, the code reevaluates
-- * the dirty each time it has written this many pages.
-- */
--#define MAX_WRITEBACK_PAGES     1024L
+@@ -669,14 +677,9 @@ static void balance_dirty_pages(struct a
+ 		 * bdi or process from holding back light ones; The latter is
+ 		 * the last resort safeguard.
+ 		 */
+-		dirty_exceeded = (bdi_dirty > bdi_thresh) ||
+-				  (nr_dirty > dirty_thresh);
 -
--/*
-  * Passed into wb_writeback(), essentially a subset of writeback_control
-  */
- struct wb_writeback_work {
-@@ -515,7 +506,8 @@ static bool pin_sb_for_writeback(struct 
- 	return false;
- }
+-		if (!dirty_exceeded)
++		if (bdi_dirty <= bdi_thresh && nr_dirty <= dirty_thresh)
+ 			break;
+-
+-		if (!bdi->dirty_exceeded)
+-			bdi->dirty_exceeded = 1;
++		bdi->dirty_exceed_time = jiffies;
  
--static long writeback_chunk_size(struct wb_writeback_work *work)
-+static long writeback_chunk_size(struct backing_dev_info *bdi,
-+				 struct wb_writeback_work *work)
- {
- 	long pages;
+ 		bdi_update_bandwidth(bdi, dirty_thresh, nr_dirty, bdi_dirty,
+ 				     start_time);
+@@ -719,9 +722,6 @@ static void balance_dirty_pages(struct a
+ 			pause = HZ / 10;
+ 	}
  
-@@ -534,8 +526,13 @@ static long writeback_chunk_size(struct 
- 	 */
- 	if (work->sync_mode == WB_SYNC_ALL || work->tagged_writepages)
- 		pages = LONG_MAX;
--	else
--		pages = min(MAX_WRITEBACK_PAGES, work->nr_pages);
-+	else {
-+		pages = min(bdi->avg_write_bandwidth / 2,
-+			    global_dirty_limit / DIRTY_SCOPE);
-+		pages = min(pages, work->nr_pages);
-+		pages = round_down(pages + MIN_WRITEBACK_PAGES,
-+				   MIN_WRITEBACK_PAGES);
-+	}
+-	if (!dirty_exceeded && bdi->dirty_exceeded)
+-		bdi->dirty_exceeded = 0;
+-
+ 	if (writeback_in_progress(bdi))
+ 		return;
  
- 	return pages;
- }
-@@ -600,7 +597,7 @@ static long writeback_sb_inodes(struct s
- 			continue;
- 		}
- 		__iget(inode);
--		write_chunk = writeback_chunk_size(work);
-+		write_chunk = writeback_chunk_size(wb->bdi, work);
- 		wbc.nr_to_write = write_chunk;
- 		wbc.pages_skipped = 0;
+@@ -775,7 +775,7 @@ void balance_dirty_pages_ratelimited_nr(
+ 		return;
+ 
+ 	ratelimit = ratelimit_pages;
+-	if (mapping->backing_dev_info->dirty_exceeded)
++	if (dirty_exceeded_recently(bdi, MAX_PAUSE))
+ 		ratelimit = 8;
+ 
+ 	/*
+--- linux-next.orig/include/linux/backing-dev.h	2011-06-19 22:54:58.000000000 +0800
++++ linux-next/include/linux/backing-dev.h	2011-06-19 22:59:53.000000000 +0800
+@@ -79,7 +79,7 @@ struct backing_dev_info {
+ 	unsigned long avg_write_bandwidth;
+ 
+ 	struct prop_local_percpu completions;
+-	int dirty_exceeded;
++	unsigned long dirty_exceed_time;
+ 
+ 	unsigned int min_ratio;
+ 	unsigned int max_ratio, max_prop_frac;
+--- linux-next.orig/mm/backing-dev.c	2011-06-19 22:59:49.000000000 +0800
++++ linux-next/mm/backing-dev.c	2011-06-19 22:59:53.000000000 +0800
+@@ -670,8 +670,6 @@ int bdi_init(struct backing_dev_info *bd
+ 			goto err;
+ 	}
+ 
+-	bdi->dirty_exceeded = 0;
+-
+ 	bdi->bw_time_stamp = jiffies;
+ 	bdi->written_stamp = 0;
  
 
 
