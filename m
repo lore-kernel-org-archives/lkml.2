@@ -1,77 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab1FSS6M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 14:58:12 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:49919 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754631Ab1FSS6I (ORCPT
+	id S1754682Ab1FSTAF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 15:00:05 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:32948 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754631Ab1FSTAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 14:58:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonas Bonn <jonas@southpole.se>
-Subject: Re: [PATCH 05/19] OpenRISC: Build infrastructure
-Date: Sun, 19 Jun 2011 20:57:47 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <1308483825-6023-1-git-send-email-jonas@southpole.se> <1308483825-6023-6-git-send-email-jonas@southpole.se>
-In-Reply-To: <1308483825-6023-6-git-send-email-jonas@southpole.se>
+	Sun, 19 Jun 2011 15:00:03 -0400
+Date: Sun, 19 Jun 2011 15:00:01 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Nicolas Pitre <nico@fluxnic.net>
+cc: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
+        Alexander Holler <holler@ahsoftware.de>, <linux-usb@vger.kernel.org>,
+        <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin@rab.in>
+Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing
+ the packed attribute
+In-Reply-To: <alpine.LFD.2.00.1106191048040.2142@xanadu.home>
+Message-ID: <Pine.LNX.4.44L0.1106191453200.14586-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106192057.47617.arnd@arndb.de>
-X-Provags-ID: V02:K0:i+GaEhuznQdbciioRR/h7MAH1iKL8R4rQpuLSVoPU8A
- 9wnwN/ONspVt/lUqRvHGBfhFH4K+2rojboCuG6L5RtgR/w1img
- SC2LtdVjyJN6jgKPxo0id6qAk3di3s+2jwfAXLrydZ7XmQpwnI
- Qeh19VbGlmAjrEmPtzhraQT9Bcbw8aAQVu/RLLND2y+oSiDjHJ
- kDLKv18LGObnY+kXmsNmg==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 19 June 2011 13:43:31 Jonas Bonn wrote:
+On Sun, 19 Jun 2011, Nicolas Pitre wrote:
 
-> +config MMU
-> +	bool
-> +	default y
+> On Thu, 16 Jun 2011, Arnd Bergmann wrote:
+> 
+> > On Thursday 16 June 2011 22:10:53 Alexander Holler wrote:
+> > > Using packed doesn't seem to be necessary (at least not with those 
+> > > versions of gcc I'm using here), I've tried both versions (on arm, 
+> > > without packed and with packed, aligned(4)) and both are working. I've 
+> > > only posted the patch because I found the usage of packed, aligned(4) 
+> > > much clearer than without packed. And It might help avoiding such 
+> > > discussions like this with people like me who aren't that deep involved 
+> > > in gcc-specific implementation details. ;)
+> > > 
+> > > Anyway, feel free to nack that patch. I don't really care and just 
+> > > thought I should post it (e.g. as an alternative to removing that packed).
+> > 
+> > At least I would be happier without the patch. I'm trying to convince
+> > people to not use these attributes unless required because too much
+> > harm is done when they are used without understanding the full
+> > consequences. I also recommend using __packed as localized as possible,
+> > i.e. set it for the members that need it, not the entire struct.
+> > 
+> > I agree that your patch is harmless, it's just the opposite of
+> > a cleanup in my opinion.
+> 
+> The question is: does the structure really has to be packed?
 
-You can turn all the 'bool, default y' into 'def_bool y'
+What do you mean?  The structure really does need to be allocated
+without padding between the fields; is that the same thing?  So do a
+bunch of other structures that currently have no annotations at all.
 
-> +config GENERIC_CALIBRATE_DELAY
-> +	bool
-> +	default y
+> If it does, then the follow-up question is: is a packing on word 
+> boundaries sufficient?
 
-Do you need it? If you always pass the timer frequency in the
-device tree, you can skip the calibrate_delay portion of the boot
-process and at the same time get a more accurate time representation.
+Again, what do you mean?  The structure contains some 32-bit fields and 
+it must always be allocated at a 4-byte boundary.  However there's 
+nothing wrong with stricter allocation -- I don't recall the details 
+but it's entirely possible that some of the fields could be 64 bits on 
+some architectures, in which cases the alignment certainly should be 
+8-byte.
 
-> +config FRAME_POINTER
-> +       bool
-> +       default y
+> If the answer is yes in both cases, then having packed,aligned(4) is not 
+> a frivolity but rather a correctness issue.
 
-Many architectures don't need this any more. Are you sure you still do?
+Why so?  Current systems work just fine without it.
 
-> +choice
-> +	prompt "Subarchitecture"
-> +	default OR1K_1200
-> +
-> +config OR1K_1200
-> +	bool "OR1200"
-> +	help
-> +	  Generic OpenRISC 1200 architecture
-> +
-> +endchoice
+>  We can of course provide a 
+> define in include/linux/compiler-gcc.hto hide the ugliness of it 
+> somewhat:
+> 
+> #define __packed_32  __attribute__((packed,aligned(4)))
+> 
+> I suspect that the vast majority of the __packed uses in the kernel 
+> would be better with this __packed_32 instead, the actual need and 
+> intent would be more clearly expressed, and the generated code in the 
+> presence of those GCC changes would then be way more efficient and still 
+> correct.
 
-This seems pointless as long as there is only a single one. If you don't
-plan to add a second one in the near future, just leave the menu out.
+What if the intent is that the structure should be 4-byte aligned on 
+32-bit systems and 8-byte aligned on 64-bit systems?  The compiler 
+already does this sort of thing automatically, why mess with it?
 
-> +CONFIG_EMBEDDED=y
+Alan Stern
 
-Why set CONFIG_EMBEDDED? I don't see any options depending on that being
-set.
-
-> +CONFIG_PREEMPT=y
-
-Setting PREEMPT in the defconfig is fairly unusual.
-
-	Arnd
