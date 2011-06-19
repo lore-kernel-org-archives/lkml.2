@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711Ab1FSLrS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 07:47:18 -0400
-Received: from mail.southpole.se ([193.12.106.18]:37751 "EHLO
+	id S1753874Ab1FSLqu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 07:46:50 -0400
+Received: from mail.southpole.se ([193.12.106.18]:37742 "EHLO
 	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753607Ab1FSLpY (ORCPT
+	with ESMTP id S1753643Ab1FSLp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 07:45:24 -0400
+	Sun, 19 Jun 2011 07:45:29 -0400
 From: Jonas Bonn <jonas@southpole.se>
 To: linux-kernel@vger.kernel.org
 Cc: Jonas Bonn <jonas@southpole.se>
-Subject: [PATCH 14/19] OpenRISC: Module support
-Date: Sun, 19 Jun 2011 13:43:40 +0200
-Message-Id: <1308483825-6023-15-git-send-email-jonas@southpole.se>
+Subject: [PATCH 15/19] OpenRISC: Traps
+Date: Sun, 19 Jun 2011 13:43:41 +0200
+Message-Id: <1308483825-6023-16-git-send-email-jonas@southpole.se>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1308483825-6023-1-git-send-email-jonas@southpole.se>
 References: <1308483825-6023-1-git-send-email-jonas@southpole.se>
@@ -24,141 +24,405 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jonas Bonn <jonas@southpole.se>
 ---
- arch/openrisc/kernel/module.c |  126 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 126 insertions(+), 0 deletions(-)
- create mode 100644 arch/openrisc/kernel/module.c
+ arch/openrisc/kernel/traps.c |  390 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 390 insertions(+), 0 deletions(-)
+ create mode 100644 arch/openrisc/kernel/traps.c
 
-diff --git a/arch/openrisc/kernel/module.c b/arch/openrisc/kernel/module.c
+diff --git a/arch/openrisc/kernel/traps.c b/arch/openrisc/kernel/traps.c
 new file mode 100644
-index 0000000..952b129
+index 0000000..656d169
 --- /dev/null
-+++ b/arch/openrisc/kernel/module.c
-@@ -0,0 +1,126 @@
++++ b/arch/openrisc/kernel/traps.c
+@@ -0,0 +1,390 @@
 +/*
-+ * OpenRISC module.c
++ * OpenRISC traps.c
 + *
 + * Linux architectural port borrowing liberally from similar works of
 + * others.  All original copyrights apply as per the original source
 + * declaration.
 + *
 + * Modifications for the OpenRISC architecture:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
 + * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
 + *
 + *      This program is free software; you can redistribute it and/or
 + *      modify it under the terms of the GNU General Public License
 + *      as published by the Free Software Foundation; either version
 + *      2 of the License, or (at your option) any later version.
++ *
++ *  Here we handle the break vectors not used by the system call
++ *  mechanism, as well as some general stack/register dumping
++ *  things.
++ *
 + */
 +
-+#include <linux/moduleloader.h>
-+#include <linux/elf.h>
-+#include <linux/vmalloc.h>
-+#include <linux/fs.h>
-+#include <linux/string.h>
++#include <linux/init.h>
++#include <linux/sched.h>
 +#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/kmod.h>
++#include <linux/string.h>
++#include <linux/errno.h>
++#include <linux/ptrace.h>
++#include <linux/timer.h>
++#include <linux/mm.h>
++#include <linux/kallsyms.h>
++#include <asm/uaccess.h>
 +
-+void *module_alloc(unsigned long size)
++#include <asm/system.h>
++#include <asm/segment.h>
++#include <asm/io.h>
++#include <asm/pgtable.h>
++
++extern char _etext, _stext;
++
++int kstack_depth_to_print = 0x180;
++
++static inline int valid_stack_ptr(struct thread_info *tinfo, void *p)
 +{
-+	pr_debug("module_alloc size: %lu\n", size);
-+
-+	if (size == 0)
-+		return NULL;
-+
-+	return vmalloc(size);
++	return p > (void *)tinfo && p < (void *)tinfo + THREAD_SIZE - 3;
 +}
 +
-+
-+/* Free memory returned from module_alloc */
-+void module_free(struct module *mod, void *module_region)
++void show_trace(struct task_struct *task, unsigned long *stack)
 +{
-+	vfree(module_region);
-+	/* FIXME: If module_region == mod->init_region, trim exception
-+           table entries. */
-+}
++	struct thread_info *context;
++	unsigned long addr;
 +
-+/* We don't need anything special. */
-+int module_frob_arch_sections(Elf_Ehdr *hdr,
-+			      Elf_Shdr *sechdrs,
-+			      char *secstrings,
-+			      struct module *mod)
-+{
-+	return 0;
-+}
++	context = (struct thread_info *)
++		((unsigned long)stack & (~(THREAD_SIZE - 1)));
 +
-+int apply_relocate_add(Elf32_Shdr *sechdrs,
-+		       const char *strtab,
-+		       unsigned int symindex,
-+		       unsigned int relsec,
-+		       struct module *me)
-+{
-+	unsigned int i;
-+	Elf32_Rela *rel = (void *)sechdrs[relsec].sh_addr;
-+	Elf32_Sym *sym;
-+//	Elf32_Addr relocation;
-+	uint32_t *location;
-+	uint32_t value;
-+
-+	pr_debug("Applying relocate section %u to %u\n", relsec,
-+		 sechdrs[relsec].sh_info);
-+	for (i = 0; i < sechdrs[relsec].sh_size / sizeof(*rel); i++) {
-+		/* This is where to make the change */
-+		location = (void *)sechdrs[sechdrs[relsec].sh_info].sh_addr
-+			+ rel[i].r_offset;
-+
-+		/* This is the symbol it is referring to.  Note that all
-+		   undefined symbols have been resolved.  */
-+		sym = (Elf32_Sym *)sechdrs[symindex].sh_addr
-+			+ ELF32_R_SYM(rel[i].r_info);
-+		value = sym->st_value + rel[i].r_addend;
-+
-+		switch(ELF32_R_TYPE(rel[i].r_info)) {
-+		case R_OR32_32:
-+			*location = value;
-+			break;
-+		case R_OR32_CONST:
-+			location = (uint16_t*)location + 1;
-+			*((uint16_t*)location) = (uint16_t) (value);
-+			break;
-+		case R_OR32_CONSTH:
-+			location = (uint16_t*)location + 1;
-+			*((uint16_t*)location) = (uint16_t) (value >> 16);
-+			break;
-+		case R_OR32_JUMPTARG:
-+			value -= (uint32_t)location;
-+			value >>= 2;
-+			value &= 0x03ffffff;
-+			value |= *location & 0xfc000000;
-+			*location = value;
-+			break;
-+		default:
-+			pr_err("module %s: Unknown relocation: %u\n",
-+			       me->name, ELF32_R_TYPE(rel[i].r_info));
-+			break;
++	while (valid_stack_ptr(context, stack)) {
++		addr = *stack++;
++		if (__kernel_text_address(addr)) {
++			printk(" [<%08lx>]", addr);
++			print_symbol(" %s", addr);
++			printk("\n");
 +		}
 +	}
-+
-+	return 0;
++	printk(" =======================\n");
 +}
 +
-+int apply_relocate(Elf32_Shdr *sechdrs,
-+		   const char *strtab,
-+		   unsigned int symindex,
-+		   unsigned int relsec,
-+		   struct module *me)
++/* displays a short stack trace */
++void show_stack(struct task_struct *task, unsigned long *esp)
 +{
-+	pr_err("module %s: REL relocation unsupported\n", me->name);
-+	return -ENOEXEC;
++	unsigned long addr, *stack;
++	int i;
++
++	// debugging aid: "show_stack(NULL);" prints the
++	// back trace for this cpu.
++
++	if (esp == NULL)
++		esp = (unsigned long*) &esp;
++
++	stack = esp;
++
++	printk("Stack dump [0x%08lx]:\n", (unsigned long)esp);
++	for (i = 0; i < kstack_depth_to_print; i++) {
++		if (kstack_end(stack))
++			break;
++		if (__get_user(addr, stack)) {
++			/* This message matches "failing address" marked
++			   s390 in ksymoops, so lines containing it will
++			   not be filtered out by ksymoops.  */
++			printk("Failing address 0x%lx\n", (unsigned long)stack);
++			break;
++		}
++		stack++;
++
++		printk("sp + %02d: 0x%08lx\n", i*4, addr);
++	}
++	printk("\n");
++
++	show_trace(task, esp);
++
++	return;
 +}
 +
-+int module_finalize(const Elf_Ehdr *hdr,
-+		    const Elf_Shdr *sechdrs,
-+		    struct module *me)
++void show_trace_task(struct task_struct *tsk)
 +{
-+	return 0;
++	/*
++	 * TODO: SysRq-T trace dump...
++	 */
 +}
 +
-+void module_arch_cleanup(struct module *mod)
++/*
++ * The architecture-independent backtrace generator
++ */
++void dump_stack(void)
 +{
++	unsigned long stack;
++
++	show_stack(current, &stack);
++}
++
++void show_registers(struct pt_regs *regs)
++{
++	int i;
++	int in_kernel = 1;
++	unsigned long esp;
++
++	esp = (unsigned long)(&regs->sp);
++	if (user_mode(regs))
++		in_kernel = 0;
++
++	printk("CPU #: %d\n"
++	       "   PC: %08lx    SR: %08lx    SP: %08lx\n",
++	       smp_processor_id(), regs->pc, regs->sr, regs->sp);
++	printk("GPR00: %08lx GPR01: %08lx GPR02: %08lx GPR03: %08lx\n",
++	       0L, regs->gpr[1], regs->gpr[2], regs->gpr[3]);
++	printk("GPR04: %08lx GPR05: %08lx GPR06: %08lx GPR07: %08lx\n",
++	       regs->gpr[4], regs->gpr[5], regs->gpr[6], regs->gpr[7]);
++	printk("GPR08: %08lx GPR09: %08lx GPR10: %08lx GPR11: %08lx\n",
++	       regs->gpr[8], regs->gpr[9], regs->gpr[10], regs->gpr[11]);
++	printk("GPR12: %08lx GPR13: %08lx GPR14: %08lx GPR15: %08lx\n",
++	       regs->gpr[12], regs->gpr[13], regs->gpr[14], regs->gpr[15]);
++	printk("GPR16: %08lx GPR17: %08lx GPR18: %08lx GPR19: %08lx\n",
++	       regs->gpr[16], regs->gpr[17], regs->gpr[18], regs->gpr[19]);
++	printk("GPR20: %08lx GPR21: %08lx GPR22: %08lx GPR23: %08lx\n",
++	       regs->gpr[20], regs->gpr[21], regs->gpr[22], regs->gpr[23]);
++	printk("GPR24: %08lx GPR25: %08lx GPR26: %08lx GPR27: %08lx\n",
++	       regs->gpr[24], regs->gpr[25], regs->gpr[26], regs->gpr[27]);
++	printk("GPR28: %08lx GPR29: %08lx GPR30: %08lx GPR31: %08lx\n",
++	       regs->gpr[28], regs->gpr[29], regs->gpr[30], regs->gpr[31]);
++	printk("  RES: %08lx oGPR11: %08lx syscallno: %08lx\n",
++	       regs->gpr[11], regs->orig_gpr11, regs->syscallno);
++
++	printk("Process %s (pid: %d, stackpage=%08lx)\n",
++	       current->comm, current->pid, (unsigned long)current);
++	/*
++	 * When in-kernel, we also print out the stack and code at the
++	 * time of the fault..
++	 */
++	if (in_kernel) {
++
++		printk("\nStack: ");
++		show_stack(NULL, (unsigned long *)esp);
++
++		printk("\nCode: ");
++		if (regs->pc < PAGE_OFFSET)
++			goto bad;
++
++		for (i = -24; i < 24; i++) {
++			unsigned char c;
++			if (__get_user(c, &((unsigned char *)regs->pc)[i])) {
++bad:
++				printk(" Bad PC value.");
++				break;
++			}
++
++			if (i == 0)
++				printk("(%02x) ", c);
++			else
++				printk("%02x ", c);
++		}
++	}
++	printk("\n");
++}
++
++void nommu_dump_state(struct pt_regs *regs,
++		      unsigned long ea, unsigned long vector)
++{
++	int i;
++	unsigned long addr, stack = regs->sp;
++
++	printk("\n\r[nommu_dump_state] :: ea %lx, vector %lx\n\r", ea, vector);
++
++	printk("CPU #: %d\n"
++	       "   PC: %08lx    SR: %08lx    SP: %08lx\n",
++	       0, regs->pc, regs->sr, regs->sp);
++	printk("GPR00: %08lx GPR01: %08lx GPR02: %08lx GPR03: %08lx\n",
++	       0L, regs->gpr[1], regs->gpr[2], regs->gpr[3]);
++	printk("GPR04: %08lx GPR05: %08lx GPR06: %08lx GPR07: %08lx\n",
++	       regs->gpr[4], regs->gpr[5], regs->gpr[6], regs->gpr[7]);
++	printk("GPR08: %08lx GPR09: %08lx GPR10: %08lx GPR11: %08lx\n",
++	       regs->gpr[8], regs->gpr[9], regs->gpr[10], regs->gpr[11]);
++	printk("GPR12: %08lx GPR13: %08lx GPR14: %08lx GPR15: %08lx\n",
++	       regs->gpr[12], regs->gpr[13], regs->gpr[14], regs->gpr[15]);
++	printk("GPR16: %08lx GPR17: %08lx GPR18: %08lx GPR19: %08lx\n",
++	       regs->gpr[16], regs->gpr[17], regs->gpr[18], regs->gpr[19]);
++	printk("GPR20: %08lx GPR21: %08lx GPR22: %08lx GPR23: %08lx\n",
++	       regs->gpr[20], regs->gpr[21], regs->gpr[22], regs->gpr[23]);
++	printk("GPR24: %08lx GPR25: %08lx GPR26: %08lx GPR27: %08lx\n",
++	       regs->gpr[24], regs->gpr[25], regs->gpr[26], regs->gpr[27]);
++	printk("GPR28: %08lx GPR29: %08lx GPR30: %08lx GPR31: %08lx\n",
++	       regs->gpr[28], regs->gpr[29], regs->gpr[30], regs->gpr[31]);
++	printk("  RES: %08lx oGPR11: %08lx syscallno: %08lx\n",
++	       regs->gpr[11], regs->orig_gpr11, regs->syscallno);
++
++	printk("Process %s (pid: %d, stackpage=%08lx)\n",
++	       ((struct task_struct*)(__pa(current)))->comm,
++	       ((struct task_struct*)(__pa(current)))->pid,
++	       (unsigned long)current);
++
++	printk("\nStack: ");
++	printk("Stack dump [0x%08lx]:\n", (unsigned long)stack);
++	for (i = 0; i < kstack_depth_to_print; i++) {
++		if (((long)stack & (THREAD_SIZE - 1)) == 0)
++			break;
++		stack++;
++
++		printk("%lx :: sp + %02d: 0x%08lx\n", stack, i*4,
++		       *((unsigned long*)(__pa(stack))));
++	}
++	printk("\n");
++
++	printk("Call Trace:   ");
++	i = 1;
++	while (((long)stack & (THREAD_SIZE - 1)) != 0) {
++		addr = *((unsigned long *)__pa(stack));
++		stack++;
++
++		if (kernel_text_address(addr)) {
++			if (i && ((i % 6) == 0))
++				printk("\n ");
++			printk(" [<%08lx>]", addr);
++			i++;
++		}
++	}
++	printk("\n");
++
++	printk("\nCode: ");
++
++	for (i = -24; i < 24; i++) {
++		unsigned char c;
++		c = ((unsigned char *)(__pa(regs->pc)))[i];
++
++		if (i == 0)
++			printk("(%02x) ", c);
++		else
++			printk("%02x ", c);
++	}
++	printk("\n");
++}
++
++/* This is normally the 'Oops' routine */
++void die(const char *str, struct pt_regs *regs, long err)
++{
++
++	console_verbose();
++	printk("\n%s#: %04lx\n", str, err & 0xffff);
++	show_registers(regs);
++#ifdef CONFIG_JUMP_UPON_UNHANDLED_EXCEPTION
++	printk("\n\nUNHANDLED_EXCEPTION: entering infinite loop\n");
++
++	/* shut down interrupts */
++	local_irq_disable();
++
++/*
++ * this doesn't work
++ *
++ */
++#if 0
++	/* stop the simulator */
++	__asm__ __volatile__(
++		"l.nop   1                     ;"
++		"l.ori   r3,r0,0x8001          ;"
++                "l.mtspr r0,r3,64              ;" /* SPR_ESR_BASE */
++                "l.movhi r3,hi(0xf0000100)     ;"
++                "l.ori   r3,r3,lo(0xf0000100)  ;"
++                "l.mtspr r0,r3,32              ;" /* SPR_EPCR_BASE */
++		"l.nop   1                     ;"
++		"l.nop   1                     ;"
++		"l.nop   1                     ;"
++		"l.nop   1                     ;"
++                "l.rfe");
++#endif
++
++	__asm__ __volatile__("l.nop   1");
++	for (;;) ;
++#endif
++	do_exit(SIGSEGV);
++}
++
++/* This is normally the 'Oops' routine */
++void die_if_kernel(const char *str, struct pt_regs *regs, long err)
++{
++	if (user_mode(regs))
++		return;
++
++	die(str, regs, err);
++}
++
++void unhandled_exception(struct pt_regs *regs, int ea, int vector)
++{
++	printk("Unable to handle exception at EA =0x%x, vector 0x%x",
++	       ea, vector);
++	die("Oops", regs, 9);
++}
++
++void __init trap_init(void)
++{
++	/* Nothing needs to be done */
++}
++
++asmlinkage void do_trap(struct pt_regs *regs, unsigned long address)
++{
++	siginfo_t info;
++	memset(&info, 0, sizeof(info));
++	info.si_signo = SIGTRAP;
++	info.si_code = TRAP_TRACE;
++	info.si_addr = (void*) address;
++	force_sig_info(SIGTRAP, &info, current);
++
++	if (!(test_tsk_thread_flag(current, TIF_SINGLESTEP)))
++		regs->pc += 4;
++}
++
++asmlinkage void do_unaligned_access(struct pt_regs *regs, unsigned long address)
++{
++	siginfo_t info;
++
++	if (user_mode(regs)) {
++		/* Send a SIGSEGV */
++		info.si_signo = SIGSEGV;
++		info.si_errno = 0;
++		/* info.si_code has been set above */
++		info.si_addr = (void *)address;
++		force_sig_info(SIGSEGV, &info, current);
++	} else {
++		printk("KERNEL: Unaligned Access 0x%.8lx\n", address);
++		show_registers(regs);
++		die("Die:", regs, address);
++	}
++
++}
++
++asmlinkage void do_bus_fault(struct pt_regs *regs, unsigned long address)
++{
++	siginfo_t info;
++
++	if (user_mode(regs)) {
++		/* Send a SIGBUS */
++		info.si_signo = SIGBUS;
++		info.si_errno = 0;
++		info.si_code = BUS_ADRERR;
++		info.si_addr = (void *)address;
++		force_sig_info(SIGBUS, &info, current);
++	} else {		/* Kernel mode */
++		printk("KERNEL: Bus error (SIGBUS) 0x%.8lx\n", address);
++		show_registers(regs);
++		die("Die:", regs, address);
++	}
++}
++
++asmlinkage void do_illegal_instruction(struct pt_regs *regs,
++				       unsigned long address)
++{
++	siginfo_t info;
++
++	if (user_mode(regs)) {
++		/* Send a SIGILL */
++		info.si_signo = SIGILL;
++		info.si_errno = 0;
++		info.si_code = ILL_ILLOPC;
++		info.si_addr = (void *)address;
++		force_sig_info(SIGBUS, &info, current);
++	} else {		/* Kernel mode */
++		printk("KERNEL: Illegal instruction (SIGILL) 0x%.8lx\n",
++		       address);
++		show_registers(regs);
++		die("Die:", regs, address);
++	}
 +}
 -- 
 1.7.4.1
