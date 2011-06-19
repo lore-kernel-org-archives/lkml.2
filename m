@@ -1,53 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab1FSLcg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 07:32:36 -0400
-Received: from fep20.mx.upcmail.net ([62.179.121.40]:59584 "EHLO
-	fep20.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753404Ab1FSLcf (ORCPT
+	id S1753540Ab1FSLjy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 07:39:54 -0400
+Received: from sncsmrelay2.nai.com ([67.97.80.206]:56358 "EHLO
+	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753472Ab1FSLjw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 07:32:35 -0400
-X-SourceIP: 115.184.85.172
-Reply-To: <centerdept2@yahoo.com>
-From: "VERIFICATION DESK" <iml.koopmans@tiscali.nl>
-Subject: VERIFICATION DESK
-Date: Sun, 19 Jun 2011 17:02:31 +0530
+	Sun, 19 Jun 2011 07:39:52 -0400
+Message-ID: <4DFDDFF4.8000305@snapgear.com>
+Date: Sun, 19 Jun 2011 21:39:32 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_00FD_01C2A9A6.3E8615DE"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 110618-1, 06/19/2011), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20110619113232.ZUNB1387.viefep20-int.chello.at@edge04.upcmail.net>
-X-Cloudmark-Analysis: v=1.1 cv=kR4HTYXl3FXdRAFjS5RpcnDbDNViz/VYMWXR75RtSM0= c=1 sm=0 a=rs8dsEx4Bv4A:10 a=oJL9TIRMo0YA:10 a=8EU9Q7FnrCoA:10 a=drcVBYOvXG8A:10 a=ZKRbYMbU8n4C7wYheXcA:9 a=6M3x49BwGxP9Dons:21 a=tmDB2pz8zgVS8dQt:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-To: unlisted-recipients:; (no To-header on input)
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <patches@linaro.org>,
+        <netdev@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        Jason Liu <jason.hui@linaro.org>, <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 2/3] net/fec: add device tree support
+References: <1308410354-21387-1-git-send-email-shawn.guo@linaro.org> <1308410354-21387-3-git-send-email-shawn.guo@linaro.org>
+In-Reply-To: <1308410354-21387-3-git-send-email-shawn.guo@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
 
-------=_NextPart_000_00FD_01C2A9A6.3E8615DE
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+Hi Shawn,
+
+On 06/19/2011 01:19 AM, Shawn Guo wrote:
+> It adds device tree data parsing support for fec driver.
+>
+> Signed-off-by: Jason Liu<jason.hui@linaro.org>
+> Signed-off-by: Shawn Guo<shawn.guo@linaro.org>
+> Cc: David S. Miller<davem@davemloft.net>
+> ---
+>   Documentation/devicetree/bindings/net/fsl-fec.txt |   14 ++++++++++
+>   drivers/net/fec.c                                 |   28 +++++++++++++++++++++
+>   2 files changed, 42 insertions(+), 0 deletions(-)
+>   create mode 100644 Documentation/devicetree/bindings/net/fsl-fec.txt
+>
+> diff --git a/Documentation/devicetree/bindings/net/fsl-fec.txt b/Documentation/devicetree/bindings/net/fsl-fec.txt
+> new file mode 100644
+> index 0000000..705111d
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/net/fsl-fec.txt
+> @@ -0,0 +1,14 @@
+> +* Freescale Fast Ethernet Controller (FEC)
+> +
+> +Required properties:
+> +- compatible : should be "fsl,<soc>-fec", "fsl,fec"
+> +- reg : address and length of the register set for the device
+> +- interrupts : should contain fec interrupt
+> +
+> +Example:
+> +
+> +fec@83fec000 {
+> +	compatible = "fsl,imx51-fec", "fsl,fec";
+> +	reg =<0x83fec000 0x4000>;
+> +	interrupts =<87>;
+> +};
+> diff --git a/drivers/net/fec.c b/drivers/net/fec.c
+> index 885d8ba..ef3d175 100644
+> --- a/drivers/net/fec.c
+> +++ b/drivers/net/fec.c
+> @@ -44,6 +44,8 @@
+>   #include<linux/platform_device.h>
+>   #include<linux/phy.h>
+>   #include<linux/fec.h>
+> +#include<linux/of.h>
+> +#include<linux/of_device.h>
+>
+>   #include<asm/cacheflush.h>
+>
+> @@ -78,6 +80,26 @@ static struct platform_device_id fec_devtype[] = {
+>   	{ }
+>   };
+>
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id fec_dt_ids[] = {
+> +	{ .compatible = "fsl,fec", .data =&fec_devtype[0], },
+> +	{},
+> +};
+> +
+> +static const struct of_device_id *
+> +fec_get_of_device_id(struct platform_device *pdev)
+> +{
+> +	return of_match_device(fec_dt_ids,&pdev->dev);
+> +}
+> +#else
+> +#define fec_dt_ids NULL
+> +static inline struct of_device_id *
+> +fec_get_of_device_id(struct platform_device *pdev)
+> +{
+> +	return NULL;
+> +}
+> +#endif
+> +
+>   static unsigned char macaddr[ETH_ALEN];
+>   module_param_array(macaddr, byte, NULL, 0);
+>   MODULE_PARM_DESC(macaddr, "FEC Ethernet MAC address");
+> @@ -1363,6 +1385,11 @@ fec_probe(struct platform_device *pdev)
+>   	struct net_device *ndev;
+>   	int i, irq, ret = 0;
+>   	struct resource *r;
+> +	const struct of_device_id *of_id;
+> +
+> +	of_id = fec_get_of_device_id(pdev);
+
+fec_get_of_device_id() is defined inside of "#ifdef CONFIG_OF". This
+use of it will break compilation when this is not defined.
+
+Regards
+Greg
 
 
-------=_NextPart_000_00FD_01C2A9A6.3E8615DE
-Content-Type: application/octet-stream;
-	name="fmt.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="fmt.txt"
 
-WW91ciBFbWFpbCBJZCBoYXMgd29uIDEsMDAwLDAwMC4wMCBHQlAgaW4gdGhl
-IEJyaXRpc2ggTUlDUk9TT0ZUIA0KUHJvbW8gDQoyMDExLiANCnNlbmQgeW91
-ciANCg0KTmFtZXMuIA0KQWRkcmVzcy4gDQpTZXguIA0KQWdlLiANClRlbC4g
-DQpPY2N1cGF0aW9uLiANCg0KdG8gb3VyIGNsYWltcyBkZXBhcnRtZW50IGJ5
-IGNsaWNraW5nIHJlcGx5IHRvIA0KDQpUaGFuayB5b3UgZm9yIHlvdXIgY29y
-cG9yYXRpb24gDQpDQVJM
+> +	if (of_id)
+> +		pdev->id_entry = (struct platform_device_id *) of_id->data;
+>
+>   	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>   	if (!r)
+> @@ -1531,6 +1558,7 @@ static struct platform_driver fec_driver = {
+>   #ifdef CONFIG_PM
+>   		.pm	=&fec_pm_ops,
+>   #endif
+> +		.of_match_table = fec_dt_ids,
+>   	},
+>   	.id_table = fec_devtype,
+>   	.probe	= fec_probe,
 
-------=_NextPart_000_00FD_01C2A9A6.3E8615DE--
+
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close,                            FAX:         +61 7 3891 3630
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
