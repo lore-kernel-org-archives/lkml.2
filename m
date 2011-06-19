@@ -1,70 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979Ab1FSBmI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 21:42:08 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:46450 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751306Ab1FSBmF (ORCPT
+	id S1752147Ab1FSByj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 21:54:39 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57086 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888Ab1FSByh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 21:42:05 -0400
-Date: Sat, 18 Jun 2011 21:42:04 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: linux-pm@lists.linux-foundation.org, <linux-omap@vger.kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-pm] calling runtime PM from system PM methods
-In-Reply-To: <201106190157.31526.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1106182137100.3523-100000@netrider.rowland.org>
+	Sat, 18 Jun 2011 21:54:37 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1308320844.2586.14.camel@mulgrave>
+References: <20110615081610.2237.44767.stgit@ltc233.sdl.hitachi.co.jp>
+ <20110615081627.2237.9620.stgit@ltc233.sdl.hitachi.co.jp> <20110615153337.GA10160@kroah.com>
+ <4DF9F11F.705@hitachi.com> <20110616154129.GA31498@kroah.com>
+ <1308239454.2436.34.camel@mulgrave> <20110616161442.GA32113@kroah.com>
+ <1308241506.2436.44.camel@mulgrave> <20110616181943.GB1439@kroah.com>
+ <1308256290.2436.143.camel@mulgrave> <BANLkTikfCMR_=5Jp7tLhM_Wr3vxihEL+rA@mail.gmail.com>
+ <1308264321.2436.161.camel@mulgrave> <BANLkTinvfmU0dszQyu4U=Pw3_BtrmOUi_g@mail.gmail.com>
+ <1308320844.2586.14.camel@mulgrave>
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Sat, 18 Jun 2011 21:54:16 -0400
+Message-ID: <BANLkTi=BsGjgWk3i_Ke5yBoycqWtNyf1zg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, Greg KH <greg@kroah.com>,
+        Nao Nishijima <nao.nishijima.xt@hitachi.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jcm@redhat.com, hare@suse.de, stefanr@s5r6.in-berlin.de,
+        yrl.pp-manager.tt@hitachi.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 19 Jun 2011, Rafael J. Wysocki wrote:
+On Fri, Jun 17, 2011 at 10:27, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+> On Fri, 2011-06-17 at 01:04 +0200, Kay Sievers wrote:
+>> >> We need many names, and we need all of them from the very beginning,
+>> >> and they should not change during device lifetime unless the device
+>> >> state changes.
+>> >
+>> > So that's actually an argument for leaving the links, surely?  We can
+>> > have many inbound links, but the kernel can only print one name in
+>> > messages, which would be the preferred name that was currently set.
+>>
+>> I really question any concept of _the_ name. My take on it: It will
+>> never work in reality.
+>
+> OK, so lets take the common example: a desktop with three disks and an
+> enclosure with three slots and labels "fred", "jim", and "betty".
+>
+> The desired outcome is that whenever the user manipulates those devices
+> he uses a name related to the label, so whenever dmesg flags a problem,
+> it says sd betty:  device offline or something.  Whenever he mounts, he
+> mounts by /dev/disk/by-preferred/betty (or whatever the current udev
+> vernacular is).  Whenever smartmon says there's an over temp problem. it
+> says that fred has it;  cat /proc/partitions shows how fred, jim and
+> betty are partitioned and so on.
 
-> On Saturday, June 18, 2011, Rafael J. Wysocki wrote:
-> > On Saturday, June 18, 2011, Alan Stern wrote:
-> > > On Sat, 18 Jun 2011, Rafael J. Wysocki wrote:
-> ...
-> > 
-> > Well, assuming that https://patchwork.kernel.org/patch/893722/ is applied,
-> > which is going to be, I think we can put
-> > 
-> > +       pm_runtime_get_noresume(dev);
-> > +       pm_runtime_enable(dev);
-> > 
-> > in device_resume() after the dev->power.is_suspended check and
-> > pm_runtime_put_noidle() under the End label.  That cause them to
-> > be called under the device lock, but that shouldn't be a big deal.
-> > 
-> > Accordingly, we can call pm_runtime_disable(dev) in __device_suspend(),
-> > right next to the setting of power.is_suspended.
-> > 
-> > This is implemented by the patch below.
-> 
-> Well, it hangs suspend on my Toshiba test box, I'm not sure why exactly.
-> 
-> This happens even if the pm_runtime_disable() is replaced with a version
-> that only increments the disable depth, so it looks like something down
-> the road relies on disable_depth being zero.  Which is worrisome.
+Hm...
 
-This is a sign that the PM subsystem is getting a little too 
-complicated.  :-(
+So there's already all this work going into an event-tracing framework,
+and most of the interesting device errors are getting converted to use
+functions such as "dev_err()" and the like.
 
-> Trying to figure out what the problem is I noticed that, for example,
-> the generic PM operations use pm_runtime_suspended() to decide whether or
-> not to execute system suspend callbacks, so the patch below would break it.
-> 
-> Also, after commit e8665002477f0278f84f898145b1f141ba26ee26 the
-> pm_runtime_suspended() check in __pm_generic_call() doesn't really make
-> sense.
+Perhaps the kernel needs a "log" event?  You could add a basic unique-id
+allocator (64-bit integer) and give each device or other interesting object a
+unique "tag".  A generic printk without a "tag" field would automatically
+get tag 0.
 
-In light of the recent changes, we should revisit the decisions behind 
-the generic PM operations.
+There would be another few special events generated to make it possible
+to uniquely map tags to device-model objects (or filesystems or whatever)
+long after the fact, including enough information to determine the parent
+device or other key attributes.
 
-Alan Stern
+Then all of the dev_dbg() would automatically generate the necessary
+trace events tagged by device, with the log-level and "string" as the
+payload.
 
+Suddenly you can monitor a device (and optionally all of its parents or
+children) for "interesting kernel events", even if that particular driver
+is still doing all of its logging with "primitive" dev_err() printks.
+
+Since it's tagged by device you can just install a modified "klogd" that
+cooperates with udev to log events with information about exactly
+which device-model node it applies to.  You can even have that
+program generate dbus messages, so your desktop environment
+can complain that the kernel has reported filesystem errors on that
+thumbdrive you just plugged in, but that the media itself seems to
+be fine (no I/O errors).
+
+A future extension might be to allow trace-events to have a "fallback"
+handler of sorts analogous to the way that audit messages are
+currently handled.  If a process is monitoring events and has a filter
+which matches the event then it will be handled by that process;
+otherwise it will call the "fallback" handler and resort to a printk().
+
+That would allow a more advanced driver to generate specific
+status and error messages for consumption by monitoring software,
+but still fall back to dmesg when the system is in single-user-mode
+or the monitoring software dies, etc.
+
+Thoughts?
+
+Cheers,
+Kyle Moffett
