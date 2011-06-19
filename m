@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161Ab1FSDej (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 23:34:39 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:57403 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab1FSDeh (ORCPT
+	id S1752263Ab1FSDpO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 23:45:14 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38945 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751835Ab1FSDpK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 23:34:37 -0400
-X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=3rvgeqzMqd0A:10 a=bnYJitQnDroA:10 a=Zx2FLkwYMp0A:10 a=kj9zAlcOel0A:10 a=mpMdnlmFKti1S5SNY1DT+A==:17 a=yQdBAQUQAAAA:8 a=VwQbUJbxAAAA:8 a=ppCmxOWCxf9IY5qlpcIA:9 a=CjuIK1q_8ugA:10 a=IcxpeKGZWnEA:10 a=LI9Vle30uBYA:10 a=mpMdnlmFKti1S5SNY1DT+A==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 65.28.92.85
-Date: Sat, 18 Jun 2011 22:34:34 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Subject: [PATCH] staging: r8192e_pci: Handle duplicate PCI ID
- 0x10ec:0x8192 conflict with rtl8192se
-Message-ID: <4dfd6e4a.gI5divq0rG5Vpxbz%Larry.Finger@lwfinger.net>
-User-Agent: Heirloom mailx 12.2 01/07/07
+	Sat, 18 Jun 2011 23:45:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=PbSb3mXVgmqoh1xmNSSrzjQW8R4TK6B2OvMFrI6B8Lz2NEPEh67mbpkwj1I6anXvUA
+         cYZN9wDH8PDzRmu+00BykvdP9F9yVaNEAUAR4diOwgy6lHp06RCDqX38Uyz0+MdFSdFL
+         JHovghNJRVtEJGJZGJPF66Ok9tWdbI9ufPnUI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <BANLkTik3iseHFah_s=NNasQ22NtA+9zLWA@mail.gmail.com>
+References: <BANLkTik3iseHFah_s=NNasQ22NtA+9zLWA@mail.gmail.com>
+From: Bryan Donlan <bdonlan@gmail.com>
+Date: Sat, 18 Jun 2011 23:44:29 -0400
+Message-ID: <BANLkTi=SrUOgTdBZUzP2SCGNHogw+P_Y5g@mail.gmail.com>
+Subject: Re: tracing kernel panics
+To: Shane <software.research.development@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Calvin Owens <jcalvinowens@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two devices with PCI ID 0x10ec:0x8192, namely RTL8192E and
-RTL8192SE. The method of distinguishing them is by the revision ID
-at offset 0x8 of the PCI configuration space. If the value is 0x10,
-then the device uses rtl8192se for a driver.
+On Sat, Jun 18, 2011 at 20:12, Shane
+<software.research.development@gmail.com> wrote:
+> Anyone offer advice on how I should go about tracking down this kernel
+> panic? Apologies if I've got the wrong list, let me know.
+>
+> I'm developing a networking module, my own protocol over TCP. I load
+> my module, I make a network connection, and then I close it. I do
+> nothing more, then after about 1-2 minutes, it throws this panic
+> output and none of it seems to come from my module code. I know my
+> code is the problem, and if I don't run my modules, I never get
+> panics. But nothing in the stack trace I recognize from my code and
+> I'm having a very hard time find where in my code I've gone wrong. I
+> run my kernel modules in a VM as a guest OS which connects to another
+> guest OS (currently using 2.6.36-r5).
+>
+> I've read how to analyze an OOPS, but ... here I can't even find the
+> file that this might belong to so as to disassemble it, or understand
+> what device this is. Any suggestions/pointers/advice much appreciated?
+[...]
+> [  330.829809]  [<ffffffff8147f763>] arp_process+0x1a8/0x4e9
+> [  330.829809]  [<ffffffff8104b236>] ? pvclock_clocksource_read+0x4b/0xb4
+> [  330.829809]  [<ffffffff8147f5bb>] ? arp_process+0x0/0x4e9
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Stable <stable@kernel.org>
----
+First, try turning on frame pointers (CONFIG_FRAME_POINTER) - without
+them the stack traces can be a bit unreliable, as we can see here.
 
-Greg,
+If you still need help after turning on frame pointers and getting a
+clean trace, you may want to consider cross-posting to
+linux-net@vger.kernel.org and kernelnewbies@kernelnewbies.org as well.
 
-This patch should be applied to kernel 3.0 to prevent problems if both
-rtl8192se and r8192e_pci are configured. There is a similar patch to
-rtl8192se that is submitted to John Linville's tree. As r8192e_pci
-is in older kernels, this patch should also be applied to stable.
 
-Larry
----
-
-Index: wireless-testing-new/drivers/staging/rtl8192e/r8192E_core.c
-===================================================================
---- wireless-testing-new.orig/drivers/staging/rtl8192e/r8192E_core.c
-+++ wireless-testing-new/drivers/staging/rtl8192e/r8192E_core.c
-@@ -4532,6 +4532,7 @@ static int __devinit rtl8192_pci_probe(s
- 	u8 unit = 0;
- 	int ret = -ENODEV;
- 	unsigned long pmem_start, pmem_len, pmem_flags;
-+	u8 revisionid;
- 
- 	RT_TRACE(COMP_INIT,"Configuring chip resources\n");
- 
-@@ -4592,6 +4593,11 @@ static int __devinit rtl8192_pci_probe(s
-          pci_write_config_byte(pdev, 0x41, 0x00);
- 
- 
-+	pci_read_config_byte(pdev, 0x08, &revisionid);
-+	/* If the revisionid is 0x10, the device uses rtl8192se. */
-+	if (pdev->device == 0x8192 && revisionid == 0x10)
-+		goto fail1;
-+
- 	pci_read_config_byte(pdev, 0x05, &unit);
- 	pci_write_config_byte(pdev, 0x05, unit & (~0x04));
- 
+Also, if you're just doing this as an exercise in learning kernel APIs
+ignore this, but if this is for a real application, please consider
+implementing TCP-based protocols in userspace instead of the kernel;
+for most use cases there's no real need to put it down in the kernel
+(with some exceptions, such as network filesystems).
