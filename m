@@ -1,44 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761Ab1FSHu6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 03:50:58 -0400
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:40744 "EHLO smtp2.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751774Ab1FSHu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 03:50:56 -0400
-Date: Sun, 19 Jun 2011 10:50:53 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: Wu Fengguang <fengguang.wu@intel.com>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: 3.0-rc3: WARNING: at fs/fs-writeback.c:356
- writeback_single_inode+0x3e/0x18f()
-In-Reply-To: <20110618173355.GB4652@localhost>
-Message-ID: <alpine.SOC.1.00.1106191029590.14979@math.ut.ee>
-References: <alpine.SOC.1.00.1106141213570.11764@math.ut.ee> <1308112976.2635.27.camel@pasglop> <20110618173355.GB4652@localhost>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1752684Ab1FSHud (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 03:50:33 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:58279 "EHLO
+	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752323Ab1FSHub (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jun 2011 03:50:31 -0400
+X-SpamScore: -13
+X-BigFish: VS-13(zz4015L1432N98dKzz1202hzzz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Sun, 19 Jun 2011 15:55:53 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, Shawn Guo <shawn.guo@linaro.org>,
+        <patches@linaro.org>, <netdev@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        Jason Liu <jason.hui@linaro.org>, <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 2/3] net/fec: add device tree support
+Message-ID: <20110619075552.GE23171@S2100-06.ap.freescale.net>
+References: <1308410354-21387-1-git-send-email-shawn.guo@linaro.org>
+ <1308410354-21387-3-git-send-email-shawn.guo@linaro.org>
+ <201106182027.22974.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <201106182027.22974.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > Tested 3.0-rc3 on my PC (2 PATA disks, single duron CPU). Got several of 
-> > > these in dmesg:
-> > 
-> > Same here on a powerpc64 machine while doing a fresh debian install
-> > (while the installer's installing the packages), -rc3 as well.
+On Sat, Jun 18, 2011 at 08:27:22PM +0200, Arnd Bergmann wrote:
+> On Saturday 18 June 2011 17:19:13 Shawn Guo wrote:
+> > diff --git a/Documentation/devicetree/bindings/net/fsl-fec.txt b/Documentation/devicetree/bindings/net/fsl-fec.txt
+> > new file mode 100644
+> > index 0000000..705111d
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/net/fsl-fec.txt
+> > @@ -0,0 +1,14 @@
+> > +* Freescale Fast Ethernet Controller (FEC)
+> > +
+> > +Required properties:
+> > +- compatible : should be "fsl,<soc>-fec", "fsl,fec"
+> > +- reg : address and length of the register set for the device
+> > +- interrupts : should contain fec interrupt
+> > +
+> > +Example:
+> > +
+> > +fec@83fec000 {
+> > +	compatible = "fsl,imx51-fec", "fsl,fec";
+> > +	reg = <0x83fec000 0x4000>;
+> > +	interrupts = <87>;
+> > +};
 > 
-> Do you have some clue that this bug show up in between 3.0-rc1 and
-> 3.0-rc3, or between 2.6.39 and 3.0-rc3?
-
-Did some log grepping. 3.0-rc2 did not show them on 3 bootups but 
-3.0-rc3 had it while I did dist-upgrade. I rebooted into the 3.0-rc2 
-kernel and did todays dist-upgrade but the error did not show up, so 
-it's probably post-rc2.
+> How about also adding device_type="network" as required here, so you
+> inherit the attributes like "local-mac-address".
+> 
+> I would also suggest adding a call to of_get_mac_address() so you
+> can read the address out of the device tree when it is not configured
+> in hardware. Today, the driver relies on a module parameter or
+> platform_data on hardware with a mac address set.
+> 
+> The other information that is currently encoded in platform_data
+> is the phy mode. How about adding a property that enables RMII mode
+> when present?
+> 
+Ah, yes.  I missed that.  Will add support for local-mac-address and
+phy-mode.  Thanks, Arnd.
 
 -- 
-Meelis Roos (mroos@linux.ee)
+Regards,
+Shawn
+
