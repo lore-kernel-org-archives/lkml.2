@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab1FSOmF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 10:42:05 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:2678 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754019Ab1FSOmB (ORCPT
+	id S1754182Ab1FSPBK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 11:01:10 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:44321 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753761Ab1FSPBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 10:42:01 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host p5JEfmCi028753
-Subject: Re: Does Linux select() violate POSIX?
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: Nemo Publius <nemo@self-evident.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Eric Dumazet <eric.dumazet@gmail.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <BANLkTi=bvmtkv-o3PROYjmOwkBNCBFGv7w@mail.gmail.com>
-References: <BANLkTik9HzR_oJ7FocQ=o+zNoK22tUTjBg@mail.gmail.com>
-	 <1308418985.3539.58.camel@edumazet-laptop>
-	 <BANLkTi=Vis=aZ5vn7E0A2LGVPOcmjd+r-g@mail.gmail.com>
-	 <20110618193340.53811cbe@lxorguk.ukuu.org.uk>
-	 <BANLkTi=bvmtkv-o3PROYjmOwkBNCBFGv7w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 19 Jun 2011 16:41:48 +0200
-Message-ID: <1308494508.13047.4.camel@thorin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
-X-DCC-debian-Metrics: esgaroth.petrovitsch.priv.at; whitelist
+	Sun, 19 Jun 2011 11:01:07 -0400
+Date: Sun, 19 Jun 2011 11:01:06 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: linux-pm@lists.linux-foundation.org, <linux-omap@vger.kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: [linux-pm] calling runtime PM from system PM methods
+In-Reply-To: <201106191604.11074.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1106191042510.11375-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sam, 2011-06-18 at 11:51 -0700, Nemo Publius wrote:
-[...] 
-> With any "test something, then assume result of test" sequence,
-> obviously I can have race conditions with multiple processes or
-> threads.  I mean, had I asked, "I call write() and then lseek() to
+On Sun, 19 Jun 2011, Rafael J. Wysocki wrote:
 
-ACK.
+> Well, that was kind of difficult to debug, but not impossible. :-)
+> 
+> The problem here turns out to be related to the SCSI subsystem.
+> Namely, when the AHCI controller is suspended, it uses the SCSI error
+> handling mechanism for scheduling the suspend operation (I'm still at a little
+> loss why that is necessary, but Tejun says it is :-)).  This (after several
+> convoluted operations) causes scsi_error_handler() to be woken up and
+> it calls scsi_autopm_get_host(shost), which returns error code (-EAGAIN),
+> because the runtime PM has been disabled at the host level.
 
-> where I started and then read() on a file; am I guaranteed to read
-> back what I wrote?"  And you said no, because some other process could
-> write in the meantime...  I would say that is technically true but not
-> at all what I was asking.
+Oh no.  I was afraid something like this was going to happen 
+eventually.
 
-Then you should reformulate your question because the answer is
-technically correct.
-If the (technically correct!) answer does not help you, you asked the
-wrong question.
-It's as simple as that.
+It's clear that we don't want runtime PM kicking in while the SCSI 
+error handler is running.  That's why I added the 
+scsi_autopm_get_host().  But this also means we will run into trouble 
+if the error handler needs to be used during a power transition.
 
-Kind regards,
-Bernd
--- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
+> This happens because scsi_autopm_get_host() uses
+> pm_runtime_get_sync(&shost->shost_gendev) and returns error code when
+> shost_gendev.power.disable_depth is nonzero.
+
+Maybe get_sync doesn't need to return an error if the runtime status is 
+already ACTIVE.  I'm not sure about this; it's just an idea...
+
+> So, the problem is either in scsi_autopm_get_host() that should check the
+> error code returned by pm_runtime_get_sync(), or in rpm_suspend() that should
+> return 0 if RPM_GET_PUT is set in flags.  I'm inclined to say that the
+> problem should be fixed in rpm_suspend() and hence the appended patch that
+> works (well, it probably should be split into three separate patches).
+
+Maybe it would be good enough if the error handler ended up doing a 
+get_noresume instead of get_sync?  Although I could be wrong, I don't 
+think scsi_error_handler() will ever run in a situation where the host 
+adapter is not runtime-active.
+
+Tejun, does that sound right to you?
+
+Alan Stern
 
