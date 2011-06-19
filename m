@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab1FSIA4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 04:00:56 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:42483 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774Ab1FSIAy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 04:00:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=w2OAVpvPnTfjGUho4sf9jSTEj9I99T00eIjtVN3gFGcsRx0Z0UQ1mAlX966ODOmrNn
-         w1dz9pwcWmP4//PR/V6fWaKu9d9nixkzdFaSojDbfPyR7/HwTdWuISHeDRVTghsGfVqc
-         FT0aFpTsEzO1Dl2q55BB2+oWwaG2hXJkBSvi8=
-Subject: Re: tracing kernel panics
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Shane <software.research.development@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <BANLkTik3iseHFah_s=NNasQ22NtA+9zLWA@mail.gmail.com>
-References: <BANLkTik3iseHFah_s=NNasQ22NtA+9zLWA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 19 Jun 2011 10:00:47 +0200
-Message-ID: <1308470447.3539.66.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1751958Ab1FSIPQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 04:15:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22919 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751408Ab1FSIPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jun 2011 04:15:13 -0400
+Date: Sun, 19 Jun 2011 11:15:06 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Asias He <asias.hejun@gmail.com>
+Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Prasad Joshi <prasadjoshi124@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
+Message-ID: <20110619081506.GA8744@redhat.com>
+References: <1308153214.7566.6.camel@jaguar>
+ <20110616142859.GA18356@redhat.com>
+ <4DFA1AC2.20605@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <4DFA1AC2.20605@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le samedi 18 juin 2011 à 19:12 -0500, Shane a écrit :
-> Anyone offer advice on how I should go about tracking down this kernel
-> panic? Apologies if I've got the wrong list, let me know.
+On Thu, Jun 16, 2011 at 11:01:22PM +0800, Asias He wrote:
+> On 06/16/2011 10:28 PM, Michael S. Tsirkin wrote:
+> > On Wed, Jun 15, 2011 at 06:53:34PM +0300, Pekka Enberg wrote:
+> >> Hi all,
+> >>
+> >> We’re proud to announce the second version of the Native Linux KVM tool! We’re
+> >> now officially aiming for merging to mainline in 3.1.
+> >>
+> >> Highlights:
+> >>
+> >> - Experimental GUI support using SDL and VNC
+> >>
+> >> - SMP support. tools/kvm/ now has a highly scalable, largely lockless driver
+> >>   interface and the individual drivers are using finegrained locks.
+> >>
+> >> - TAP-based virtio networking
+> > 
+> > Wanted to ask for a while: would it make sense to use vhost-net?
+> > Or maybe use that exclusively?
+> > Less hypervisor code to support would help the focus.
+> > 
 > 
-> I'm developing a networking module, my own protocol over TCP. I load
-> my module, I make a network connection, and then I close it. I do
-> nothing more, then after about 1-2 minutes, it throws this panic
-> output and none of it seems to come from my module code. I know my
-> code is the problem, and if I don't run my modules, I never get
-> panics. But nothing in the stack trace I recognize from my code and
-> I'm having a very hard time find where in my code I've gone wrong. I
-> run my kernel modules in a VM as a guest OS which connects to another
-> guest OS (currently using 2.6.36-r5).
-> 
-> I've read how to analyze an OOPS, but ... here I can't even find the
-> file that this might belong to so as to disassemble it, or understand
-> what device this is. Any suggestions/pointers/advice much appreciated?
+> Sure. We are planning to use vhost-net. Just out of time right now, we
+> are currently working on simple user model network support which allows
+> plain user to use network without root privilege.
 
-General kernel programming advices ...
+Yes, qemu does this by implementing NAT and the
+TCP stack in userspace.  What always made me unhappy
+about this solution is that we have a perfectly fine NAT and TCP
+in kernel, we just lack APIs to make an unpriveledged
+user make use of it the way we want.
+I hope you can avoid this duplication.
 
-It seems you have bugs in your module, maybe something like freeing
-memory twice, or memory you dont own, or manipulating some data without
-taking the associated lock protecting it.
+Another question is whether you want to implement a dhcp server.
 
-tcp sockets are protected by RCU and various locks, getting them used
-right is not an easy task.
-
-You should take a look at various options in "Kernel hacking"
-(some of them cannot be used together)
-
-1) Using SLUB debug and "slub_debug=FZPU"
-2) CONFIG_DEBUG_KMEMLEAK
-3) CONFIG_PROVE_LOCKING
-4) CONFIG_PROVE_RCU
-5) debug linked list manipulations
-
-and so on.
-
-
-
+-- 
+MST
