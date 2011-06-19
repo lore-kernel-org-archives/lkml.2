@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958Ab1FSIPQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 04:15:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22919 "EHLO mx1.redhat.com"
+	id S1751973Ab1FSIdi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 04:33:38 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48870 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751408Ab1FSIPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 04:15:13 -0400
-Date: Sun, 19 Jun 2011 11:15:06 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Asias He <asias.hejun@gmail.com>
-Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Prasad Joshi <prasadjoshi124@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: Re: [ANNOUNCE] Native Linux KVM tool v2
-Message-ID: <20110619081506.GA8744@redhat.com>
-References: <1308153214.7566.6.camel@jaguar>
- <20110616142859.GA18356@redhat.com>
- <4DFA1AC2.20605@gmail.com>
+	id S1751369Ab1FSIdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jun 2011 04:33:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=gR22M/7s4VkNOxvqOXxbLIShmVY9rfcWZ8gwh+GKGLtoO3IifbuK5hEnRQEYrr8bUO
+         701lhfZom+hf6NvMMKmfrzLsxPa90V2v87+BDO3TAu3jL8cPwgbZT0VWruRo093Z/OwX
+         q24U3+4J+CXGuzYZavbTg60kfIJAZDUURrFCE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4DFA1AC2.20605@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1308417114.9218.220.camel@gandalf.stny.rr.com>
+References: <BANLkTint_00+oHVGpgV4n4E2A9W5O8nJxA@mail.gmail.com>
+	<1308275405.9218.156.camel@gandalf.stny.rr.com>
+	<BANLkTik8PpdwGgLOE7rAauXqGYdnT53GpQ@mail.gmail.com>
+	<1308322563.9218.184.camel@gandalf.stny.rr.com>
+	<BANLkTimUd3BWFg4hi6OWLjUYsxvWRRBUZg@mail.gmail.com>
+	<1308417114.9218.220.camel@gandalf.stny.rr.com>
+Date: Sun, 19 Jun 2011 16:33:32 +0800
+Message-ID: <BANLkTikm1h45+sCYeKOXBhw1haQAHO1uPA@mail.gmail.com>
+Subject: Re: [PATCH] sched: update cpupri for runqueue when its priority changes
+From: Hillf Danton <dhillf@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=UTF-8
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [140.211.167.34]); Sun, 19 Jun 2011 08:33:35 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 11:01:22PM +0800, Asias He wrote:
-> On 06/16/2011 10:28 PM, Michael S. Tsirkin wrote:
-> > On Wed, Jun 15, 2011 at 06:53:34PM +0300, Pekka Enberg wrote:
-> >> Hi all,
-> >>
-> >> We’re proud to announce the second version of the Native Linux KVM tool! We’re
-> >> now officially aiming for merging to mainline in 3.1.
-> >>
-> >> Highlights:
-> >>
-> >> - Experimental GUI support using SDL and VNC
-> >>
-> >> - SMP support. tools/kvm/ now has a highly scalable, largely lockless driver
-> >>   interface and the individual drivers are using finegrained locks.
-> >>
-> >> - TAP-based virtio networking
-> > 
-> > Wanted to ask for a while: would it make sense to use vhost-net?
-> > Or maybe use that exclusively?
-> > Less hypervisor code to support would help the focus.
-> > 
-> 
-> Sure. We are planning to use vhost-net. Just out of time right now, we
-> are currently working on simple user model network support which allows
-> plain user to use network without root privilege.
+On Sun, Jun 19, 2011 at 1:11 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>> There are two cases that NULL is returned in _pick_next_task_rt(), it is the
+>> second case, after checking rt_rq->rt_nr_running, that is captured, and if
+>> NULL is returned in the second case, the CPU priority does change.
+>
+> The two cases are:
+>
+> 1) no rt task exists
+> 2) the runqueue is throttled.
+>
+> We already talked about the throttled case. The case where no rt task
+> exists means that the last rt task has been dequeued. When that happens,
+> the cpupri is updated then. I don't see any bug. There's no need to
+> update cpupri at this point.
+>
 
-Yes, qemu does this by implementing NAT and the
-TCP stack in userspace.  What always made me unhappy
-about this solution is that we have a perfectly fine NAT and TCP
-in kernel, we just lack APIs to make an unpriveledged
-user make use of it the way we want.
-I hope you can avoid this duplication.
+In case 2) , the CPU will be held then by non-RT task, and we have to
+update priority.
 
-Another question is whether you want to implement a dhcp server.
+I understand 1) and 2) to be, there has RT tasks on runqueue but they
+could not run at the moment.
 
--- 
-MST
+If throttled RQ == no RT tasks, please drop this patch directly.
+
+>>
+>> In another scenario that has little with {en, de}queue, as shown by
+>> requeue_task_rt(), the CPU priority will change if other RT tasks exist.
+>>
+>
+> The requeue_task_rt() does not change the priority of the CPU. It just
+> updates the task in its order of placement in the queue of other tasks
+> of the same priority.
+>
+
+You are right, updating CPU priority for requeue is unnecessary.
+
+thanks
+           Hillf
