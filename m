@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab1FSKMZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 06:12:25 -0400
+	id S1753391Ab1FSKMd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 06:12:33 -0400
 Received: from mail-iw0-f174.google.com ([209.85.214.174]:47507 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752886Ab1FSKMW (ORCPT
+	with ESMTP id S1753339Ab1FSKMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 06:12:22 -0400
+	Sun, 19 Jun 2011 06:12:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=pFecvkEi2oAX6loDFsjLTyuaJWZ/Jfcq0SaSXaISbdPUTejMzm9NckO32BgA1DlWtL
-         FP2c08LzYm8Q6RBhQh5yThdNEV5uFWWIQIUeUxUnZuSZ/TGBwloEN+18M0wHBgK6/kVd
-         ue2y0CxIqLphw2LPfNah5NNcn1ZW24y13pa/E=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=Wmcj/5RrjY7Hr9zledABCdE0IMooIlx3aJR4upHitW/lJRIxt5PtbgFWbkVxeSLqZP
+         uH1AqS5/lXK0StBsep7XEPyPgGlD930M+wIZhdLAxJMcWs19fMzqRQuvCI9ccCOH2Rrq
+         TawGp67GwCAZDmkqQM5WU2OPgrocl/I98wOWY=
 From: Wanlong Gao <wanlong.gao@gmail.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
@@ -24,39 +24,40 @@ Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
 	<u.kleine-koenig@pengutronix.de>,
         Ben Hutchings <ben@decadent.org.uk>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, Wanlong Gao <wanlong.gao@gmail.com>
-Subject: [PATCH 1/3] drivers:rtl8187se:remove the use of obsolete create_workqueue in ieee80211_softmac.c
-Date: Sun, 19 Jun 2011 18:11:56 +0800
-Message-Id: <1308478318-8462-1-git-send-email-wanlong.gao@gmail.com>
+Subject: [PATCH 2/3] drivers:rtl8192u:remove the use of obsolete create_workqueue in r8192U_core.c
+Date: Sun, 19 Jun 2011 18:11:57 +0800
+Message-Id: <1308478318-8462-2-git-send-email-wanlong.gao@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1308478318-8462-1-git-send-email-wanlong.gao@gmail.com>
+References: <1308478318-8462-1-git-send-email-wanlong.gao@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the use of obsolete create_workqueue(name, 0) in
-ieee80211_softmac.c, since the create_workqueue interface has changed.
+Remove the use of obsolete create_workqueue(name, 0) interface
+in r8192U_core.c, since it has changed.
 
 Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
 ---
- .../rtl8187se/ieee80211/ieee80211_softmac.c        |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+ drivers/staging/rtl8192u/r8192U_core.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
-index 736a140..8925989 100644
---- a/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
-+++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
-@@ -2568,11 +2568,8 @@ void ieee80211_softmac_init(struct ieee80211_device *ieee)
- 	ieee->beacon_timer.data = (unsigned long) ieee;
- 	ieee->beacon_timer.function = ieee80211_send_beacon_cb;
+diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
+index e81b8ab..334e078d 100644
+--- a/drivers/staging/rtl8192u/r8192U_core.c
++++ b/drivers/staging/rtl8192u/r8192U_core.c
+@@ -2852,11 +2852,7 @@ static void rtl8192_init_priv_task(struct net_device* dev)
+ {
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
  
 -#ifdef PF_SYNCTHREAD
--	ieee->wq = create_workqueue(DRV_NAME,0);
+-	priv->priv_wq = create_workqueue(DRV_NAME,0);
 -#else
- 	ieee->wq = create_workqueue(DRV_NAME);
+ 	priv->priv_wq = create_workqueue(DRV_NAME);
 -#endif
-+
- 	INIT_DELAYED_WORK(&ieee->start_ibss_wq,(void*) ieee80211_start_ibss_wq);
- 	INIT_WORK(&ieee->associate_complete_wq,(void*) ieee80211_associate_complete_wq);
- 	INIT_WORK(&ieee->associate_procedure_wq,(void*) ieee80211_associate_procedure_wq);
+ 
+ 	INIT_WORK(&priv->reset_wq, rtl8192_restart);
+ 
 -- 
 1.7.4.1
 
