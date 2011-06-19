@@ -1,147 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852Ab1FSG27 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 02:28:59 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48999 "EHLO
+	id S1751916Ab1FSGkH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 02:40:07 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45873 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab1FSG25 (ORCPT
+	with ESMTP id S1751490Ab1FSGkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 02:28:57 -0400
+	Sun, 19 Jun 2011 02:40:04 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=toXX5QKDe3oG2ygzCZ6cI/ccN12zy0o02nEDUIOIV12OMaUAe67hofO/4SltGhQhLr
-         AH2upNLmvFbRFvos0fxLamTHoXnLhaqB61nxcjS4XCilsABdHdNLOObeGrLPP8nbMDNQ
-         0BGs2RaL7ty7T3DSm+IEioEAd8PviNrKtDdRU=
-Message-ID: <4DFD9716.3090201@gmail.com>
-Date: Sat, 18 Jun 2011 23:28:38 -0700
+        h=message-id:date:from:user-agent:mime-version:to:subject
+         :content-type:content-transfer-encoding;
+        b=NAAcVKzqRGBUkq0JkAHtVkH5uh2k7g25jVoPuRvr8dTHi/lMSgw+OzrfzlC05DC2HC
+         8ENqjckfYF7VdAOl2DYSB+kLv90GaxDtkwydxpWXXK/ijtTYJI3mnQ0RZBCB815Dc7n6
+         rXQ3XV9dlVeg7peZgQKuooAhAdHRUQ+1VVj0o=
+Message-ID: <4DFD99B2.1050902@gmail.com>
+Date: Sat, 18 Jun 2011 23:39:46 -0700
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH]drivers:base:power:trace.c Add "UTC" Coordinated Universal
- Time to the printk.
-References: <1307599301-2524-1-git-send-email-justinmattock@gmail.com> <201106132347.08007.rjw@sisk.pl> <4DF68D00.8000200@gmail.com> <201106142202.46411.rjw@sisk.pl>
-In-Reply-To: <201106142202.46411.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: WARNING: at kernel/timer.c:1011 del_timer_sync+0xa9/0xc4()
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2011 01:02 PM, Rafael J. Wysocki wrote:
-> On Tuesday, June 14, 2011, Justin P. Mattock wrote:
->> On 06/13/2011 02:47 PM, Rafael J. Wysocki wrote:
->>> On Monday, June 13, 2011, Justin P. Mattock wrote:
->>>> On 06/12/2011 01:27 PM, Rafael J. Wysocki wrote:
->>>>> On Sunday, June 12, 2011, Justin P. Mattock wrote:
->>>>>> On 06/12/2011 11:35 AM, Rafael J. Wysocki wrote:
->>>>>>> On Sunday, June 12, 2011, Justin P. Mattock wrote:
->>>>>>>> On 06/12/2011 05:12 AM, Rafael J. Wysocki wrote:
->>>>>>>>> Hi,
->>>>>>>>>
->>>>>>>>> On Thursday, June 09, 2011, Justin P. Mattock wrote:
->>>>>>>>>> From: "Justin P. Mattock"<justinmattock@gmail.com>
->>>>>>>>>>
->>>>>>>>>> sounds stupid, but taking a glance at the time, and seeing the wrong time, or what seemed
->>>>>>>>>> wrong in dmesg, caused me to go into total check the time clock panic mode.. So the patch below adds:
->>>>>>>>>> "UTC" Coordinated Universal Time abreviation to the printk so people like me dont flip out over the time!
->>>>>>>>>>
->>>>>>>>>> before:
->>>>>>>>>> [    0.114915] Time:  1:47:03  Date: 06/09/11
->>>>>>>>>>
->>>>>>>>>> after:
->>>>>>>>>> [    0.114728] Time:  5:46:02 UTC Date: 06/09/11
->>>>>>>>>>
->>>>>>>>>> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->>>>>>>>>
->>>>>>>>> I suspect the goal is to mark messages printed by the PM trace code so that
->>>>>>>>> they can be easily distinguished from messages from other sources to avoid
->>>>>>>>> confusion.  Why do you think it's a good idea to use the "UTC" string for
->>>>>>>>> this purpose?  The time printed in those messages need not be UTC.
->>>>>>>>>
->>>>>>>>> It would be better to simply print "RTC time: ..., date: ..." IMO.
->>>>>>>>>
->>>>>>>>> Thanks,
->>>>>>>>> Rafael
->>>>>>>>>
->>>>>>>>
->>>>>>>> well.. if thats better, then thats better.. over here(people that dont
->>>>>>>> know what RTC time is) would not get so confused with a simple UTC or
->>>>>>>> PDT or whatever the time zone is but if RTC is bettr, then its better.
->>>>>>>
->>>>>>> My point is we don't know this time is always UTC, so we rather shouldn't
->>>>>>> label it as UTC unconditionally, should we?
->>>>>>>
->>>>>>> Rafael
->>>>>>>
->>>>>>
->>>>>> sounds good to me!!
->>>>>
->>>>> I'm not sure what you mean?
->>>>>
->>>>
->>>> with what you are saying "RTC" if anything.. rather than "UTC"
->>>
->>> So, it looks like you'd like the appended patch to be appiled?
->>>
->>> Rafael
->>
->>
->> whatever works best with you guys...
->
-> OK, I'll queue up the one below for 3.1, then.
+this just fired off with the latest..:
+http://fpaste.org/CPE0/
 
-before anything happens, I just noticed down dmesg:
+[ 1118.316635] ------------[ cut here ]------------
+[ 1118.316654] WARNING: at kernel/timer.c:1011 del_timer_sync+0xa9/0xc4()
+[ 1118.316659] Hardware name: MacBookPro2,2
+[ 1118.316664] Modules linked in: fuse cpufreq_ondemand 8021q 
+acpi_cpufreq freq_table mperf garp stp llc ipt_REJECT nf_conntrack_ipv4 
+nf_defrag_ipv4 xt_state nf_conntrack iptable_filter ip_tables arc4 
+radeon ath9k mac80211 ath9k_common ttm ath9k_hw btusb drm_kms_helper 
+bluetooth drm uvcvideo videodev ath cfg80211 v4l2_compat_ioctl32 
+i2c_algo_bit iTCO_wdt joydev i2c_i801 rfkill i2c_core appletouch 
+applesmc iTCO_vendor_support input_polldev sky2 video apple_bl microcode 
+[last unloaded: scsi_wait_scan]
+[ 1118.316780] Pid: 0, comm: swapper Not tainted 3.0.0-rc3-00256-gde505e7 #1
+[ 1118.316785] Call Trace:
+[ 1118.316790]  <IRQ>  [<ffffffff8104c560>] warn_slowpath_common+0x83/0x9b
+[ 1118.316809]  [<ffffffff8104c592>] warn_slowpath_null+0x1a/0x1c
+[ 1118.316817]  [<ffffffff81059409>] del_timer_sync+0xa9/0xc4
+[ 1118.316826]  [<ffffffff81059360>] ? process_timeout+0x10/0x10
+[ 1118.316845]  [<ffffffffa0078971>] ath_reset+0x43/0x1d0 [ath9k]
+[ 1118.316854]  [<ffffffff810524b6>] ? _local_bh_enable_ip+0xca/0xce
+[ 1118.316871]  [<ffffffffa007ce71>] ath_tx_complete_aggr+0x7c3/0x7dd 
+[ath9k]
+[ 1118.316887]  [<ffffffffa007c6ae>] ? ath_tx_flush_tid+0xe0/0xe0 [ath9k]
+[ 1118.316905]  [<ffffffffa007e396>] ath_tx_tasklet+0x235/0x2cb [ath9k]
+[ 1118.316921]  [<ffffffffa0078d23>] ath9k_tasklet+0xf4/0x135 [ath9k]
+[ 1118.316930]  [<ffffffff81052112>] tasklet_action+0x8d/0xed
+[ 1118.316938]  [<ffffffff810526d4>] __do_softirq+0xdb/0x1ec
+[ 1118.316948]  [<ffffffff8107bf55>] ? lock_release+0x165/0x18e
+[ 1118.316959]  [<ffffffff814a93dc>] call_softirq+0x1c/0x30
+[ 1118.316968]  [<ffffffff8100ab5a>] do_softirq+0x4b/0xa1
+[ 1118.316976]  [<ffffffff810529f5>] irq_exit+0x5d/0xa8
+[ 1118.316984]  [<ffffffff814a9c7e>] do_IRQ+0x8e/0xa5
+[ 1118.316994]  [<ffffffff814a1953>] common_interrupt+0x13/0x13
+[ 1118.316999]  <EOI>  [<ffffffff8129afab>] ? arch_local_irq_enable+0x8/0xd
+[ 1118.317017]  [<ffffffff8107c471>] ? trace_hardirqs_on+0xd/0xf
+[ 1118.317025]  [<ffffffff8129b981>] acpi_idle_enter_c1+0xa0/0xbe
+[ 1118.317036]  [<ffffffff813a35a0>] cpuidle_idle_call+0xdb/0x175
+[ 1118.317047]  [<ffffffff810082e9>] cpu_idle+0xaa/0xe4
+[ 1118.317057]  [<ffffffff8147dfe3>] rest_init+0xb7/0xbe
+[ 1118.317066]  [<ffffffff8147df2c>] ? csum_partial_copy_generic+0x16c/0x16c
+[ 1118.317078]  [<ffffffff81b6db9a>] start_kernel+0x3d9/0x3e4
+[ 1118.317088]  [<ffffffff81b6d2c4>] x86_64_start_reservations+0xaf/0xb3
+[ 1118.317097]  [<ffffffff81b6d140>] ? early_idt_handlers+0x140/0x140
+[ 1118.317106]  [<ffffffff81b6d3ca>] x86_64_start_kernel+0x102/0x111
+[ 1118.317112] ---[ end trace efebbef7cc9c1d4c ]---
+[ 1118.317120] ------------[ cut here ]------------
+[ 1118.317129] WARNING: at kernel/softirq.c:98 
+__local_bh_disable+0x45/0xb1()
+[ 1118.317135] Hardware name: MacBookPro2,2
+[ 1118.317139] Modules linked in: fuse cpufreq_ondemand 8021q 
+acpi_cpufreq freq_table mperf garp stp llc ipt_REJECT nf_conntrack_ipv4 
+nf_defrag_ipv4 xt_state nf_conntrack iptable_filter ip_tables arc4 
+radeon ath9k mac80211 ath9k_common ttm ath9k_hw btusb drm_kms_helper 
+bluetooth drm uvcvideo videodev ath cfg80211 v4l2_compat_ioctl32 
+i2c_algo_bit iTCO_wdt joydev i2c_i801 rfkill i2c_core appletouch 
+applesmc iTCO_vendor_support input_polldev sky2 video apple_bl microcode 
+[last unloaded: scsi_wait_scan]
+[ 1118.317245] Pid: 0, comm: swapper Tainted: G        W 
+3.0.0-rc3-00256-gde505e7 #1
+[ 1118.317250] Call Trace:
+[ 1118.317254]  <IRQ>  [<ffffffff8104c560>] warn_slowpath_common+0x83/0x9b
+[ 1118.317269]  [<ffffffff814a11f9>] ? _raw_spin_lock_bh+0x16/0x45
+[ 1118.317277]  [<ffffffff8104c592>] warn_slowpath_null+0x1a/0x1c
+[ 1118.317286]  [<ffffffff810522aa>] __local_bh_disable+0x45/0xb1
+[ 1118.317294]  [<ffffffff8105232d>] local_bh_disable+0x17/0x19
+[ 1118.317303]  [<ffffffff814a11f9>] _raw_spin_lock_bh+0x16/0x45
+[ 1118.317318]  [<ffffffffa007898c>] ath_reset+0x5e/0x1d0 [ath9k]
+[ 1118.317327]  [<ffffffff810524b6>] ? _local_bh_enable_ip+0xca/0xce
+[ 1118.317343]  [<ffffffffa007ce71>] ath_tx_complete_aggr+0x7c3/0x7dd 
+[ath9k]
+[ 1118.317359]  [<ffffffffa007c6ae>] ? ath_tx_flush_tid+0xe0/0xe0 [ath9k]
+[ 1118.317376]  [<ffffffffa007e396>] ath_tx_tasklet+0x235/0x2cb [ath9k]
+[ 1118.317392]  [<ffffffffa0078d23>] ath9k_tasklet+0xf4/0x135 [ath9k]
+[ 1118.317401]  [<ffffffff81052112>] tasklet_action+0x8d/0xed
+[ 1118.317410]  [<ffffffff810526d4>] __do_softirq+0xdb/0x1ec
+[ 1118.317418]  [<ffffffff8107bf55>] ? lock_release+0x165/0x18e
+[ 1118.317427]  [<ffffffff814a93dc>] call_softirq+0x1c/0x30
+[ 1118.317435]  [<ffffffff8100ab5a>] do_softirq+0x4b/0xa1
+[ 1118.317443]  [<ffffffff810529f5>] irq_exit+0x5d/0xa8
+[ 1118.317450]  [<ffffffff814a9c7e>] do_IRQ+0x8e/0xa5
+[ 1118.317459]  [<ffffffff814a1953>] common_interrupt+0x13/0x13
+[ 1118.317464]  <EOI>  [<ffffffff8129afab>] ? arch_local_irq_enable+0x8/0xd
+[ 1118.317479]  [<ffffffff8107c471>] ? trace_hardirqs_on+0xd/0xf
+[ 1118.317487]  [<ffffffff8129b981>] acpi_idle_enter_c1+0xa0/0xbe
+[ 1118.317497]  [<ffffffff813a35a0>] cpuidle_idle_call+0xdb/0x175
+[ 1118.317506]  [<ffffffff810082e9>] cpu_idle+0xaa/0xe4
+[ 1118.317514]  [<ffffffff8147dfe3>] rest_init+0xb7/0xbe
+[ 1118.317522]  [<ffffffff8147df2c>] ? csum_partial_copy_generic+0x16c/0x16c
+[ 1118.317531]  [<ffffffff81b6db9a>] start_kernel+0x3d9/0x3e4
+[ 1118.317540]  [<ffffffff81b6d2c4>] x86_64_start_reservations+0xaf/0xb3
+[ 1118.317549]  [<ffffffff81b6d140>] ? early_idt_handlers+0x140/0x140
+[ 1118.317558]  [<ffffffff81b6d3ca>] x86_64_start_kernel+0x102/0x111
+[ 1118.317560] ---[ end trace efebbef7cc9c1d4d ]---
 
-[    1.931771]   Magic number: 15:676:165
-[    1.940022] rtc_cmos 00:08: setting system clock to 2011-06-19 
-06:11:22 UTC (1308463882)
-[    1.948456] Initializing network drop monitor service
 
-see how there is a UTC after the time. should this be for the above?
-(keep in mind I just noticed this, so I could be wrong)
+I'm not on the list so please Cc's me if you have/need any info.
 
->
->> I just tripped out on that, and created what I had sent out..
->>>
->>> ---
->>> From: Rafael J. Wysocki<rjw@sisk.pl>
->>> Subject: PM: Add "RTC" to PM trace time stamps to avoid confusion
->>>
->>> Some users are apparently confused by dmesg output from
->>> read_magic_time(), which looks like "real" time and date.
->>> Add the "RTC" string to time stamps printed by read_magic_time() to
->>> avoid that confusion.
->>>
->>> Reported-by: Justin P. Mattock<justinmattock@gmail.com>
->>> Signed-off-by: Rafael J. Wysocki<rjw@sisk.pl>
->>> ---
->>>    drivers/base/power/trace.c |    2 +-
->>>    1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> Index: linux-2.6/drivers/base/power/trace.c
->>> ===================================================================
->>> --- linux-2.6.orig/drivers/base/power/trace.c
->>> +++ linux-2.6/drivers/base/power/trace.c
->>> @@ -112,7 +112,7 @@ static unsigned int read_magic_time(void
->>>    	unsigned int val;
->>>
->>>    	get_rtc_time(&time);
->>> -	pr_info("Time: %2d:%02d:%02d  Date: %02d/%02d/%02d\n",
->>> +	pr_info("RTC time: %2d:%02d:%02d, date: %02d/%02d/%02d\n",
->>>    		time.tm_hour, time.tm_min, time.tm_sec,
->>>    		time.tm_mon + 1, time.tm_mday, time.tm_year % 100);
->>>    	val = time.tm_year;				/* 100 years */
->>>
->>
->>
->> Justin P. Mattock
->>
->>
->
->
-
+Justin P. Mattock
