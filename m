@@ -1,220 +1,658 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab1FSQNM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 12:13:12 -0400
-Received: from blu0-omc1-s10.blu0.hotmail.com ([65.55.116.21]:36903 "EHLO
-	blu0-omc1-s10.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754055Ab1FSQNK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 12:13:10 -0400
-Message-ID: <BLU158-w5217D3FF20A9A3110002AA876F0@phx.gbl>
-Content-Type: multipart/mixed;
-	boundary="_c046969f-c6f7-49fd-8625-7885c6859471_"
-X-Originating-IP: [82.9.63.55]
-From: Fred Matthews <fredmm@hotmail.co.uk>
-To: <linux-kernel@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
-        <ath9k-devel@venema.h4ckr.net>, <ath9k-devel@lists.ath9k>
-Subject: RE: Patching ath9k/mac80211 to change MAC layer features
-Date: Sun, 19 Jun 2011 17:13:08 +0100
-Importance: Normal
-In-Reply-To: <BLU158-w332CD7657F92343D3D2D1C876A0@phx.gbl>
-References: <BLU158-w332CD7657F92343D3D2D1C876A0@phx.gbl>
+	id S1754413Ab1FSQOk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 12:14:40 -0400
+Received: from mga14.intel.com ([143.182.124.37]:57837 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754156Ab1FSQOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jun 2011 12:14:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,389,1304319600"; 
+   d="scan'208";a="15196260"
+Date: Mon, 20 Jun 2011 00:14:33 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7] writeback: make writeback_control.nr_to_write
+ straight
+Message-ID: <20110619161433.GB14338@localhost>
+References: <20110619150108.691351746@intel.com>
+ <20110619150510.484877943@intel.com>
+ <20110619153536.GB20424@infradead.org>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 19 Jun 2011 16:13:09.0128 (UTC) FILETIME=[C7A66080:01CC2E9B]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110619153536.GB20424@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_c046969f-c6f7-49fd-8625-7885c6859471_
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+On Sun, Jun 19, 2011 at 11:35:36PM +0800, Christoph Hellwig wrote:
+> I'd rather see this earlier in the series, before the write bandwith
+> estimation ones, as it's groundwork independ of those changes.
 
+OK, done.
 
-Hi=2C
+> > +		if (wrote) {
+> > +			if (jiffies - start_time > HZ / 10UL)
+> > +				break;
+> > +			if (work->nr_pages <= 0)
+> > +				break;
+> > +		}
+> 
+> This code probably wants some comments.
 
-I would appreciate if anyone can help me with my previous query as=A0soon a=
-s possible.
-Thanks!
-From: fredmm@hotmail.co.uk
-To: linux-kernel@vger.kernel.org=3B linux-wireless@vger.kernel.org=3B ath9k=
--devel@venema.h4ckr.net=3B ath9k-devel@lists.ath9k
-Subject: Patching ath9k/mac80211 to change MAC layer features
-Date: Thu=2C 16 Jun 2011 21:39:09 +0100
+It's duplicated tests as in writeback_sb_inodes(), which have the comments
 
+                /*
+                 * bail out to wb_writeback() often enough to check
+                 * background threshold and other termination conditions.
+                 */        
 
-Hello all=2C
+I'll add a simple comment here:
 
-I have a query regarding patching ath9k/mac80211 to change MAC layer featur=
-es=A0and I would be most grateful if someone can assist.
+/* refer to the same tests at the end of writeback_sb_inodes */
 
-I need to patch ath9k so that I can be able to=A0modify/fix the A-MPDU aggr=
-egation frame length and other parameters such that they can be configured =
-at runtime via debugfs. I made a newbie attempt at trying to change the agg=
-regate length (attached)=2C but I am unsure of the correctness/efficiency=
-=A0=A0- when applied throughput varies with different frame lengths entered=
- but I can't be sure if its actually changing the aggregation length (passe=
-s the framelen/aggr_limit). Hence I would be very grateful if someone can a=
-ssist in the correct way of doing this (possibly directly via mac80211).=20
+> >  static void bdi_flush_io(struct backing_dev_info *bdi)
+> >  {
+> > -	struct writeback_control wbc = {
+> > -		.sync_mode		= WB_SYNC_NONE,
+> > -		.older_than_this	= NULL,
+> > -		.range_cyclic		= 1,
+> > -		.nr_to_write		= 1024,
+> > -	};
+> > -
+> > -	writeback_inodes_wb(&bdi->wb, &wbc);
+> > +	writeback_inodes_wb(&bdi->wb, 1024);
+> >  }
+> 
+> At this point you could probably also kill the bdi_flush_io wrapper, and
+> just call writeback_inodes_wb directly.
 
-Also if the ampdu aggregate length is changed I believe the number/length o=
-f the subframes of the aggregate stays constant (at the default which is 32=
-).=A0I try to change this in my patch=A0as well as the maximum software ret=
-ries by just changing the=A0default=A0definition in ath9k.h=2C thus is ther=
-e a (more) correct/better way of changing these.=A0Finally=2C how can I pat=
-ch the driver to be able to disable Block-Acks/aggregation via debugfs or o=
-therwise.=20
+Fair enough.
 
-I highly appreciate=2C help in any of the above=2C as well as other advice=
-=2C
-Many thanks
-  		 	   		  =
+> A comment on the 1024 pages to
+> write would be nice, if you remember it from poking the code.  I can't
+> find any good explanation for it offhand.
 
---_c046969f-c6f7-49fd-8625-7885c6859471_
-Content-Type: text/x-patch
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="aggr+subframe+retry_change_attempt.patch"
+I comment it with
 
-ZGlmZiAtTmF1ciBhL2RyaXZlcnMvbmV0L3dpcmVsZXNzL2F0aC9hdGg5ay9hdGg5ay5oIGIvZHJp
-dmVycy9uZXQvd2lyZWxlc3MvYXRoL2F0aDlrL2F0aDlrLmgKLS0tIGEvZHJpdmVycy9uZXQvd2ly
-ZWxlc3MvYXRoL2F0aDlrL2F0aDlrLmgJMjAxMS0wNS0yNyAyMDowNDo0OS4wMDAwMDAwMDAgKzAx
-MDAKKysrIGIvZHJpdmVycy9uZXQvd2lyZWxlc3MvYXRoL2F0aDlrL2F0aDlrLmgJMjAxMS0wNi0w
-MiAxOTo1OToyOC4wNDMzMjcwMDAgKzAxMDAKQEAgLTEzNyw3ICsxMzcsNyBAQAogI2RlZmluZSBB
-VEhfQUdHUl9FTkNSWVBUREVMSU0gICAgICAxMAogLyogbWluaW11bSBoL3cgcWRlcHRoIHRvIGJl
-IHN1c3RhaW5lZCB0byBtYXhpbWl6ZSBhZ2dyZWdhdGlvbiAqLwogI2RlZmluZSBBVEhfQUdHUl9N
-SU5fUURFUFRIICAgICAgICAyCi0jZGVmaW5lIEFUSF9BTVBEVV9TVUJGUkFNRV9ERUZBVUxUIDMy
-CisjZGVmaW5lIEFUSF9BTVBEVV9TVUJGUkFNRV9ERUZBVUxUIHNjLT5kZWJ1Zy5zdWJmcmFtZV9z
-aXplCiAKICNkZWZpbmUgSUVFRTgwMjExX1NFUV9TRVFfU0hJRlQgICAgNAogI2RlZmluZSBJRUVF
-ODAyMTFfU0VRX01BWCAgICAgICAgICA0MDk2CkBAIC01MzcsNyArNTM3LDcgQEAKICNkZWZpbmUg
-REVGQVVMVF9DQUNIRUxJTkUgICAgICAgMzIKICNkZWZpbmUgQVRIX1JFR0NMQVNTSURTX01BWCAg
-ICAgMTAKICNkZWZpbmUgQVRIX0NBQlFfUkVBRFlfVElNRSAgICAgODAgICAgICAvKiAlIG9mIGJl
-YWNvbiBpbnRlcnZhbCAqLwotI2RlZmluZSBBVEhfTUFYX1NXX1JFVFJJRVMgICAgICAxMAorI2Rl
-ZmluZSBBVEhfTUFYX1NXX1JFVFJJRVMgICAgICBzYy0+ZGVidWcucmV0cnlfbGltaXQKICNkZWZp
-bmUgQVRIX0NIQU5fTUFYICAgICAgICAgICAgMjU1CiAKICNkZWZpbmUgQVRIX1RYUE9XRVJfTUFY
-ICAgICAgICAgMTAwICAgICAvKiAuNSBkQm0gdW5pdHMgKi8KZGlmZiAtTmF1ciBhL2RyaXZlcnMv
-bmV0L3dpcmVsZXNzL2F0aC9hdGg5ay9kZWJ1Zy5jIGIvZHJpdmVycy9uZXQvd2lyZWxlc3MvYXRo
-L2F0aDlrL2RlYnVnLmMKLS0tIGEvZHJpdmVycy9uZXQvd2lyZWxlc3MvYXRoL2F0aDlrL2RlYnVn
-LmMJMjAxMS0wNS0yNyAyMDowNDo0OS4wMDAwMDAwMDAgKzAxMDAKKysrIGIvZHJpdmVycy9uZXQv
-d2lyZWxlc3MvYXRoL2F0aDlrL2RlYnVnLmMJMjAxMS0wNi0wMiAxOTo1NDowOS4yNjAzMjAwMDAg
-KzAxMDAKQEAgLTEwNDUsNiArMTA0OCwxNjIgQEAKIAkubGxzZWVrID0gZGVmYXVsdF9sbHNlZWss
-CiB9OwogCitzdGF0aWMgc3NpemVfdCByZWFkX2ZpbGVfYW1wZHVfbGVuKHN0cnVjdCBmaWxlICpm
-aWxlLCBjaGFyIF9fdXNlciAqdXNlcl9idWYsCisgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgIHNpemVfdCBjb3VudCwgbG9mZl90ICpwcG9zKQoreworCXN0cnVjdCBhdGhfc29mdGMgKnNj
-ID0gZmlsZS0+cHJpdmF0ZV9kYXRhOworCWNoYXIgYnVmWzMyXTsKKwl1bnNpZ25lZCBpbnQgbGVu
-OworCisJbGVuID0gc3ByaW50ZihidWYsICIldVxuIiwgc2MtPmRlYnVnLmFtcGR1X2xlbik7CisJ
-cmV0dXJuIHNpbXBsZV9yZWFkX2Zyb21fYnVmZmVyKHVzZXJfYnVmLCBjb3VudCwgcHBvcywgYnVm
-LCBsZW4pOworfQorCitzdGF0aWMgc3NpemVfdCB3cml0ZV9maWxlX2FtcGR1X2xlbihzdHJ1Y3Qg
-ZmlsZSAqZmlsZSwgY29uc3QgY2hhciBfX3VzZXIgKnVzZXJfYnVmLAorCQkJICAgICBzaXplX3Qg
-Y291bnQsIGxvZmZfdCAqcHBvcykKK3sKKwlzdHJ1Y3QgYXRoX3NvZnRjICpzYyA9IGZpbGUtPnBy
-aXZhdGVfZGF0YTsKKwl1bnNpZ25lZCBsb25nIGFtcGR1X2xlbjsKKwljaGFyIGJ1ZlszMl07CisJ
-c3NpemVfdCBsZW47CisKKwlsZW4gPSBtaW4oY291bnQsIHNpemVvZihidWYpIC0gMSk7CisJaWYg
-KGNvcHlfZnJvbV91c2VyKGJ1ZiwgdXNlcl9idWYsIGxlbikpCisJCXJldHVybiAtRUZBVUxUOwor
-CisJYnVmW2xlbl0gPSAnXDAnOworCWlmIChzdHJpY3Rfc3RydG91bChidWYsIDAsICZhbXBkdV9s
-ZW4pKQorCQlyZXR1cm4gLUVJTlZBTDsKKworCXNjLT5kZWJ1Zy5hbXBkdV9sZW4gPSBhbXBkdV9s
-ZW47CisJcmV0dXJuIGNvdW50OworfQorCitzdGF0aWMgY29uc3Qgc3RydWN0IGZpbGVfb3BlcmF0
-aW9ucyBmb3BzX2FtcGR1X2xlbiA9IHsKKwkucmVhZCA9IHJlYWRfZmlsZV9hbXBkdV9sZW4sCisJ
-LndyaXRlID0gd3JpdGVfZmlsZV9hbXBkdV9sZW4sCisJLm9wZW4gPSBhdGg5a19kZWJ1Z2ZzX29w
-ZW4sCisJLm93bmVyID0gVEhJU19NT0RVTEUsCisJLmxsc2VlayA9IGRlZmF1bHRfbGxzZWVrLAor
-fTsKKworc3RhdGljIHNzaXplX3QgcmVhZF9maWxlX3JldHJ5X2xpbWl0KHN0cnVjdCBmaWxlICpm
-aWxlLCBjaGFyIF9fdXNlciAqdXNlcl9idWYsCisgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgIHNpemVfdCBjb3VudCwgbG9mZl90ICpwcG9zKQoreworCXN0cnVjdCBhdGhfc29mdGMgKnNj
-ID0gZmlsZS0+cHJpdmF0ZV9kYXRhOworCWNoYXIgYnVmWzE2XTsKKwl1bnNpZ25lZCBpbnQgbGVu
-OworCisJbGVuID0gc3ByaW50ZihidWYsICIldVxuIiwgc2MtPmRlYnVnLnJldHJ5X2xpbWl0KTsK
-KwlyZXR1cm4gc2ltcGxlX3JlYWRfZnJvbV9idWZmZXIodXNlcl9idWYsIGNvdW50LCBwcG9zLCBi
-dWYsIGxlbik7Cit9CisKK3N0YXRpYyBzc2l6ZV90IHdyaXRlX2ZpbGVfcmV0cnlfbGltaXQoc3Ry
-dWN0IGZpbGUgKmZpbGUsIGNvbnN0IGNoYXIgX191c2VyICp1c2VyX2J1ZiwKKwkJCSAgICAgc2l6
-ZV90IGNvdW50LCBsb2ZmX3QgKnBwb3MpCit7CisJc3RydWN0IGF0aF9zb2Z0YyAqc2MgPSBmaWxl
-LT5wcml2YXRlX2RhdGE7CisJdW5zaWduZWQgbG9uZyByZXRyeV9saW1pdDsKKwljaGFyIGJ1Zlsx
-Nl07CisJc3NpemVfdCBsZW47CisKKwlsZW4gPSBtaW4oY291bnQsIHNpemVvZihidWYpIC0gMSk7
-CisJaWYgKGNvcHlfZnJvbV91c2VyKGJ1ZiwgdXNlcl9idWYsIGxlbikpCisJCXJldHVybiAtRUZB
-VUxUOworCisJYnVmW2xlbl0gPSAnXDAnOworCWlmIChzdHJpY3Rfc3RydG91bChidWYsIDAsICZy
-ZXRyeV9saW1pdCkpCisJCXJldHVybiAtRUlOVkFMOworCisJc2MtPmRlYnVnLnJldHJ5X2xpbWl0
-ID0gcmV0cnlfbGltaXQ7CisJcmV0dXJuIGNvdW50OworfQorCitzdGF0aWMgY29uc3Qgc3RydWN0
-IGZpbGVfb3BlcmF0aW9ucyBmb3BzX3JldHJ5X2xpbWl0ID0geworCS5yZWFkID0gcmVhZF9maWxl
-X3JldHJ5X2xpbWl0LAorCS53cml0ZSA9IHdyaXRlX2ZpbGVfcmV0cnlfbGltaXQsCisJLm9wZW4g
-PSBhdGg5a19kZWJ1Z2ZzX29wZW4sCisJLm93bmVyID0gVEhJU19NT0RVTEUsCisJLmxsc2VlayA9
-IGRlZmF1bHRfbGxzZWVrLAorfTsKKworc3RhdGljIHNzaXplX3QgcmVhZF9maWxlX3N1YmZyYW1l
-X3NpemUoc3RydWN0IGZpbGUgKmZpbGUsIGNoYXIgX191c2VyICp1c2VyX2J1ZiwKKyAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgc2l6ZV90IGNvdW50LCBsb2ZmX3QgKnBwb3MpCit7CisJ
-c3RydWN0IGF0aF9zb2Z0YyAqc2MgPSBmaWxlLT5wcml2YXRlX2RhdGE7CisJY2hhciBidWZbMTZd
-OworCXVuc2lnbmVkIGludCBsZW47CisKKwlsZW4gPSBzcHJpbnRmKGJ1ZiwgIiV1XG4iLCBzYy0+
-ZGVidWcuc3ViZnJhbWVfc2l6ZSk7CisJcmV0dXJuIHNpbXBsZV9yZWFkX2Zyb21fYnVmZmVyKHVz
-ZXJfYnVmLCBjb3VudCwgcHBvcywgYnVmLCBsZW4pOworfQorCitzdGF0aWMgc3NpemVfdCB3cml0
-ZV9maWxlX3N1YmZyYW1lX3NpemUoc3RydWN0IGZpbGUgKmZpbGUsIGNvbnN0IGNoYXIgX191c2Vy
-ICp1c2VyX2J1ZiwKKwkJCSAgICAgc2l6ZV90IGNvdW50LCBsb2ZmX3QgKnBwb3MpCit7CisJc3Ry
-dWN0IGF0aF9zb2Z0YyAqc2MgPSBmaWxlLT5wcml2YXRlX2RhdGE7CisJdW5zaWduZWQgbG9uZyBz
-dWJmcmFtZV9zaXplOworCWNoYXIgYnVmWzE2XTsKKwlzc2l6ZV90IGxlbjsKKworCWxlbiA9IG1p
-bihjb3VudCwgc2l6ZW9mKGJ1ZikgLSAxKTsKKwlpZiAoY29weV9mcm9tX3VzZXIoYnVmLCB1c2Vy
-X2J1ZiwgbGVuKSkKKwkJcmV0dXJuIC1FRkFVTFQ7CisKKwlidWZbbGVuXSA9ICdcMCc7CisJaWYg
-KHN0cmljdF9zdHJ0b3VsKGJ1ZiwgMCwgJnN1YmZyYW1lX3NpemUpKQorCQlyZXR1cm4gLUVJTlZB
-TDsKKworCXNjLT5kZWJ1Zy5zdWJmcmFtZV9zaXplID0gc3ViZnJhbWVfc2l6ZTsKKwlyZXR1cm4g
-Y291bnQ7Cit9CisKK3N0YXRpYyBjb25zdCBzdHJ1Y3QgZmlsZV9vcGVyYXRpb25zIGZvcHNfc3Vi
-ZnJhbWVfc2l6ZSA9IHsKKwkucmVhZCA9IHJlYWRfZmlsZV9zdWJmcmFtZV9zaXplLAorCS53cml0
-ZSA9IHdyaXRlX2ZpbGVfc3ViZnJhbWVfc2l6ZSwKKwkub3BlbiA9IGF0aDlrX2RlYnVnZnNfb3Bl
-biwKKwkub3duZXIgPSBUSElTX01PRFVMRSwKKwkubGxzZWVrID0gZGVmYXVsdF9sbHNlZWssCit9
-OworCitzdGF0aWMgc3NpemVfdCByZWFkX2ZpbGVfYXV0b19hbXBkdShzdHJ1Y3QgZmlsZSAqZmls
-ZSwgY2hhciBfX3VzZXIgKnVzZXJfYnVmLAorICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICBzaXplX3QgY291bnQsIGxvZmZfdCAqcHBvcykKK3sKKwlzdHJ1Y3QgYXRoX3NvZnRjICpzYyA9
-IGZpbGUtPnByaXZhdGVfZGF0YTsKKwljaGFyIGJ1Zls4XTsKKwl1bnNpZ25lZCBpbnQgbGVuOwor
-CisJbGVuID0gc3ByaW50ZihidWYsICIldVxuIiwgc2MtPmRlYnVnLmF1dG9fYW1wZHUpOworCXJl
-dHVybiBzaW1wbGVfcmVhZF9mcm9tX2J1ZmZlcih1c2VyX2J1ZiwgY291bnQsIHBwb3MsIGJ1Ziwg
-bGVuKTsKK30KKworc3RhdGljIHNzaXplX3Qgd3JpdGVfZmlsZV9hdXRvX2FtcGR1KHN0cnVjdCBm
-aWxlICpmaWxlLCBjb25zdCBjaGFyIF9fdXNlciAqdXNlcl9idWYsCisJCQkgICAgIHNpemVfdCBj
-b3VudCwgbG9mZl90ICpwcG9zKQoreworCXN0cnVjdCBhdGhfc29mdGMgKnNjID0gZmlsZS0+cHJp
-dmF0ZV9kYXRhOworCXVuc2lnbmVkIGxvbmcgYXV0b19hbXBkdTsKKwljaGFyIGJ1Zls4XTsKKwlz
-c2l6ZV90IGxlbjsKKworCWxlbiA9IG1pbihjb3VudCwgc2l6ZW9mKGJ1ZikgLSAxKTsKKwlpZiAo
-Y29weV9mcm9tX3VzZXIoYnVmLCB1c2VyX2J1ZiwgbGVuKSkKKwkJcmV0dXJuIC1FRkFVTFQ7CisK
-KwlidWZbbGVuXSA9ICdcMCc7CisJaWYgKHN0cmljdF9zdHJ0b3VsKGJ1ZiwgMCwgJmF1dG9fYW1w
-ZHUpKQorCQlyZXR1cm4gLUVJTlZBTDsKKworCXNjLT5kZWJ1Zy5hdXRvX2FtcGR1ID0gYXV0b19h
-bXBkdTsKKwlyZXR1cm4gY291bnQ7Cit9CisKK3N0YXRpYyBjb25zdCBzdHJ1Y3QgZmlsZV9vcGVy
-YXRpb25zIGZvcHNfYXV0b19hbXBkdSA9IHsKKwkucmVhZCA9IHJlYWRfZmlsZV9hdXRvX2FtcGR1
-LAorCS53cml0ZSA9IHdyaXRlX2ZpbGVfYXV0b19hbXBkdSwKKwkub3BlbiA9IGF0aDlrX2RlYnVn
-ZnNfb3BlbiwKKwkub3duZXIgPSBUSElTX01PRFVMRSwKKwkubGxzZWVrID0gZGVmYXVsdF9sbHNl
-ZWssCit9OworCiBzdGF0aWMgc3NpemVfdCByZWFkX2ZpbGVfcmVndmFsKHN0cnVjdCBmaWxlICpm
-aWxlLCBjaGFyIF9fdXNlciAqdXNlcl9idWYsCiAJCQkgICAgIHNpemVfdCBjb3VudCwgbG9mZl90
-ICpwcG9zKQogewpAQCAtMTE2Miw2ICsxNDA3LDE1IEBACiAJCQkgICAgc2MtPmRlYnVnLmRlYnVn
-ZnNfcGh5LCBzYywgJmZvcHNfdHhfY2hhaW5tYXNrKTsKIAlkZWJ1Z2ZzX2NyZWF0ZV9maWxlKCJy
-ZWdpZHgiLCBTX0lSVVNSIHwgU19JV1VTUiwgc2MtPmRlYnVnLmRlYnVnZnNfcGh5LAogCQkJICAg
-IHNjLCAmZm9wc19yZWdpZHgpOworCQkJICAgIAorCWRlYnVnZnNfY3JlYXRlX2ZpbGUoImFtcGR1
-X2xlbiIsIFNfSVJVU1IgfCBTX0lXVVNSLCBzYy0+ZGVidWcuZGVidWdmc19waHksCisJCQkgICAg
-c2MsICZmb3BzX2FtcGR1X2xlbik7CisJZGVidWdmc19jcmVhdGVfZmlsZSgicmV0cnlfbGltaXQi
-LCBTX0lSVVNSIHwgU19JV1VTUiwgc2MtPmRlYnVnLmRlYnVnZnNfcGh5LAorCQkJICAgIHNjLCAm
-Zm9wc19yZXRyeV9saW1pdCk7CisJZGVidWdmc19jcmVhdGVfZmlsZSgic3ViZnJhbWVfc2l6ZSIs
-IFNfSVJVU1IgfCBTX0lXVVNSLCBzYy0+ZGVidWcuZGVidWdmc19waHksCisJCQkgICAgc2MsICZm
-b3BzX3N1YmZyYW1lX3NpemUpOworCWRlYnVnZnNfY3JlYXRlX2ZpbGUoImF1dG9fYW1wZHVbMDpP
-RkYsMTpPTl0iLCBTX0lSVVNSIHwgU19JV1VTUiwgc2MtPmRlYnVnLmRlYnVnZnNfcGh5LAorCQkJ
-ICAgIHNjLCAmZm9wc19hdXRvX2FtcGR1KTsKIAlkZWJ1Z2ZzX2NyZWF0ZV9maWxlKCJyZWd2YWwi
-LCBTX0lSVVNSIHwgU19JV1VTUiwgc2MtPmRlYnVnLmRlYnVnZnNfcGh5LAogCQkJICAgIHNjLCAm
-Zm9wc19yZWd2YWwpOwogCWRlYnVnZnNfY3JlYXRlX2Jvb2woImlnbm9yZV9leHRjY2EiLCBTX0lS
-VVNSIHwgU19JV1VTUiwKQEAgLTExNzcsNSArMTMwMiw4IEBACiAJCQkgICBzYy0+ZGVidWcuZGVi
-dWdmc19waHksICZzYy0+c2NfYWgtPmdwaW9fdmFsKTsKIAogCXNjLT5kZWJ1Zy5yZWdpZHggPSAw
-OworCXNjLT5kZWJ1Zy5hdXRvX2FtcGR1ID0gMTsKKyAJc2MtPmRlYnVnLmFtcGR1X2xlbiA9IEFU
-SF9BTVBEVV9MSU1JVF9NQVg7CisgCXNjLT5kZWJ1Zy5yZXRyeV9saW1pdCA9IDEwOwogCXJldHVy
-biAwOwogfQogCmRpZmYgLU5hdXIgYS9kcml2ZXJzL25ldC93aXJlbGVzcy9hdGgvYXRoOWsvZGVi
-dWcuaCBiL2RyaXZlcnMvbmV0L3dpcmVsZXNzL2F0aC9hdGg5ay9kZWJ1Zy5oCi0tLSBhL2RyaXZl
-cnMvbmV0L3dpcmVsZXNzL2F0aC9hdGg5ay9kZWJ1Zy5oCTIwMTEtMDUtMjcgMjA6MDQ6NDkuMDAw
-MDAwMDAwICswMTAwCisrKyBiL2RyaXZlcnMvbmV0L3dpcmVsZXNzL2F0aC9hdGg5ay9kZWJ1Zy5o
-CTIwMTEtMDYtMDIgMTk6NTU6MzMuMzMyMzM3MDAwICswMTAwCkBAIC0xNzksNiArMTgwLDEwIEBA
-CiBzdHJ1Y3QgYXRoOWtfZGVidWcgewogCXN0cnVjdCBkZW50cnkgKmRlYnVnZnNfcGh5OwogCXUz
-MiByZWdpZHg7CisJdTMyIGFtcGR1X2xlbjsKKwl1MTYgcmV0cnlfbGltaXQ7CisJdTE2IHN1YmZy
-YW1lX3NpemU7CisJdTggYXV0b19hbXBkdTsKIAlzdHJ1Y3QgYXRoX3N0YXRzIHN0YXRzOwogfTsK
-IApkaWZmIC1OYXVyIGEvZHJpdmVycy9uZXQvd2lyZWxlc3MvYXRoL2F0aDlrL3htaXQuYyBiL2Ry
-aXZlcnMvbmV0L3dpcmVsZXNzL2F0aC9hdGg5ay94bWl0LmMKLS0tIGEvZHJpdmVycy9uZXQvd2ly
-ZWxlc3MvYXRoL2F0aDlrL3htaXQuYwkyMDExLTA1LTI3IDIwOjA0OjQ5LjAwMDAwMDAwMCArMDEw
-MAorKysgYi9kcml2ZXJzL25ldC93aXJlbGVzcy9hdGgvYXRoOWsveG1pdC5jCTIwMTEtMDYtMDIg
-MTk6NTg6MTkuNjQ3MzQ3MDAwICswMTAwCkBAIC02MTYsOCArNjE2LDEyIEBACiAJCQlpZiAocmF0
-ZXNbaV0uZmxhZ3MgJiBJRUVFODAyMTFfVFhfUkNfU0hPUlRfR0kpCiAJCQkJbW9kZWlkeCsrOwog
-Ci0JCQlmcm1sZW4gPSBhdGhfbWF4XzRtc19mcmFtZWxlblttb2RlaWR4XVtyYXRlc1tpXS5pZHhd
-OwotCQkJbWF4XzRtc19mcmFtZWxlbiA9IG1pbihtYXhfNG1zX2ZyYW1lbGVuLCBmcm1sZW4pOwor
-CQkJCWZybWxlbiA9IGF0aF9tYXhfNG1zX2ZyYW1lbGVuW21vZGVpZHhdW3JhdGVzW2ldLmlkeF07
-CisJCQkJCisJCQlpZiAoc2MtPmRlYnVnLmF1dG9fYW1wZHU9PTEpIAorCQkJCW1heF80bXNfZnJh
-bWVsZW4gPSBtaW4obWF4XzRtc19mcmFtZWxlbiwgZnJtbGVuKTsKKwkJCWVsc2UgCisJCQkJbWF4
-XzRtc19mcmFtZWxlbiA9IHNjLT5kZWJ1Zy5hbXBkdV9sZW47CiAJCX0KIAl9CiAKQEAgLTY0MSw3
-ICs2NDUsNyBAQAogCSAqIFRoZSBJRSwgaG93ZXZlciBjYW4gaG9sZCB1cCB0byA2NTUzNiwgd2hp
-Y2ggc2hvd3MgdXAgaGVyZQogCSAqIGFzIHplcm8uIElnbm9yZSA2NTUzNiBzaW5jZSB3ZSAgYXJl
-IGNvbnN0cmFpbmVkIGJ5IGh3LgogCSAqLwotCWlmICh0aWQtPmFuLT5tYXhhbXBkdSkKKwlpZiAo
-c2MtPmRlYnVnLmF1dG9fYW1wZHU9PTEgJiYgdGlkLT5hbi0+bWF4YW1wZHUpCiAJCWFnZ3JfbGlt
-aXQgPSBtaW4oYWdncl9saW1pdCwgdGlkLT5hbi0+bWF4YW1wZHUpOwogCiAJcmV0dXJuIGFnZ3Jf
-bGltaXQ7Cg==
+        Hopefully 1024 is large enough for efficient IO.
 
---_c046969f-c6f7-49fd-8625-7885c6859471_--
+Thanks,
+Fengguang
+---
+Subject: writeback: make writeback_control.nr_to_write straight 
+Date: Wed May 04 19:54:37 CST 2011
+
+Pass struct wb_writeback_work all the way down to writeback_sb_inodes(),
+and initialize the struct writeback_control there.
+
+struct writeback_control is basically designed to control writeback of a
+single file, but we keep abuse it for writing multiple files in
+writeback_sb_inodes() and its callers.
+
+It immediately clean things up, e.g. suddenly wbc.nr_to_write vs
+work->nr_pages starts to make sense, and instead of saving and restoring
+pages_skipped in writeback_sb_inodes it can always start with a clean
+zero value.
+
+It also makes a neat IO pattern change: large dirty files are now
+written in the full 4MB writeback chunk size, rather than whatever
+remained quota in wbc->nr_to_write.
+
+Acked-by: Jan Kara <jack@suse.cz>
+Proposed-by: Christoph Hellwig <hch@infradead.org>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/btrfs/extent_io.c             |    2 
+ fs/fs-writeback.c                |  196 ++++++++++++++++-------------
+ include/linux/writeback.h        |    6 
+ include/trace/events/writeback.h |   39 ++++-
+ mm/backing-dev.c                 |   17 --
+ mm/page-writeback.c              |   17 --
+ 6 files changed, 148 insertions(+), 129 deletions(-)
+
+change set:
+- move writeback_control from wb_writeback() down to writeback_sb_inodes()
+- change return value of writeback_sb_inodes()/__writeback_inodes_wb()
+  to the number of pages and/or inodes written
+- move writeback_control.older_than_this to struct wb_writeback_work
+- remove writeback_control.inodes_written
+- remove wbc_writeback_* trace events for now
+
+--- linux-next.orig/fs/fs-writeback.c	2011-06-19 23:57:41.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2011-06-20 00:08:00.000000000 +0800
+@@ -30,11 +30,21 @@
+ #include "internal.h"
+ 
+ /*
++ * The maximum number of pages to writeout in a single bdi flush/kupdate
++ * operation.  We do this so we don't hold I_SYNC against an inode for
++ * enormous amounts of time, which would block a userspace task which has
++ * been forced to throttle against that inode.  Also, the code reevaluates
++ * the dirty each time it has written this many pages.
++ */
++#define MAX_WRITEBACK_PAGES     1024L
++
++/*
+  * Passed into wb_writeback(), essentially a subset of writeback_control
+  */
+ struct wb_writeback_work {
+ 	long nr_pages;
+ 	struct super_block *sb;
++	unsigned long *older_than_this;
+ 	enum writeback_sync_modes sync_mode;
+ 	unsigned int tagged_writepages:1;
+ 	unsigned int for_kupdate:1;
+@@ -472,7 +482,6 @@ writeback_single_inode(struct inode *ino
+ 			 * No need to add it back to the LRU.
+ 			 */
+ 			list_del_init(&inode->i_wb_list);
+-			wbc->inodes_written++;
+ 		}
+ 	}
+ 	inode_sync_complete(inode);
+@@ -506,6 +515,31 @@ static bool pin_sb_for_writeback(struct 
+ 	return false;
+ }
+ 
++static long writeback_chunk_size(struct wb_writeback_work *work)
++{
++	long pages;
++
++	/*
++	 * WB_SYNC_ALL mode does livelock avoidance by syncing dirty
++	 * inodes/pages in one big loop. Setting wbc.nr_to_write=LONG_MAX
++	 * here avoids calling into writeback_inodes_wb() more than once.
++	 *
++	 * The intended call sequence for WB_SYNC_ALL writeback is:
++	 *
++	 *      wb_writeback()
++	 *          writeback_sb_inodes()       <== called only once
++	 *              write_cache_pages()     <== called once for each inode
++	 *                   (quickly) tag currently dirty pages
++	 *                   (maybe slowly) sync all tagged pages
++	 */
++	if (work->sync_mode == WB_SYNC_ALL || work->tagged_writepages)
++		pages = LONG_MAX;
++	else
++		pages = min(MAX_WRITEBACK_PAGES, work->nr_pages);
++
++	return pages;
++}
++
+ /*
+  * Write a portion of b_io inodes which belong to @sb.
+  *
+@@ -513,18 +547,30 @@ static bool pin_sb_for_writeback(struct 
+  * inodes. Otherwise write only ones which go sequentially
+  * in reverse order.
+  *
+- * Return 1, if the caller writeback routine should be
+- * interrupted. Otherwise return 0.
++ * Return the number of pages and/or inodes written.
+  */
+-static int writeback_sb_inodes(struct super_block *sb, struct bdi_writeback *wb,
+-		struct writeback_control *wbc, bool only_this_sb)
++static long writeback_sb_inodes(struct super_block *sb,
++				struct bdi_writeback *wb,
++				struct wb_writeback_work *work)
+ {
++	struct writeback_control wbc = {
++		.sync_mode		= work->sync_mode,
++		.tagged_writepages	= work->tagged_writepages,
++		.for_kupdate		= work->for_kupdate,
++		.for_background		= work->for_background,
++		.range_cyclic		= work->range_cyclic,
++		.range_start		= 0,
++		.range_end		= LLONG_MAX,
++	};
++	unsigned long start_time = jiffies;
++	long write_chunk;
++	long wrote = 0;  /* count both pages and inodes */
++
+ 	while (!list_empty(&wb->b_io)) {
+-		long pages_skipped;
+ 		struct inode *inode = wb_inode(wb->b_io.prev);
+ 
+ 		if (inode->i_sb != sb) {
+-			if (only_this_sb) {
++			if (work->sb) {
+ 				/*
+ 				 * We only want to write back data for this
+ 				 * superblock, move all inodes not belonging
+@@ -539,7 +585,7 @@ static int writeback_sb_inodes(struct su
+ 			 * Bounce back to the caller to unpin this and
+ 			 * pin the next superblock.
+ 			 */
+-			return 0;
++			break;
+ 		}
+ 
+ 		/*
+@@ -553,12 +599,18 @@ static int writeback_sb_inodes(struct su
+ 			requeue_io(inode, wb);
+ 			continue;
+ 		}
+-
+ 		__iget(inode);
++		write_chunk = writeback_chunk_size(work);
++		wbc.nr_to_write = write_chunk;
++		wbc.pages_skipped = 0;
++
++		writeback_single_inode(inode, wb, &wbc);
+ 
+-		pages_skipped = wbc->pages_skipped;
+-		writeback_single_inode(inode, wb, wbc);
+-		if (wbc->pages_skipped != pages_skipped) {
++		work->nr_pages -= write_chunk - wbc.nr_to_write;
++		wrote += write_chunk - wbc.nr_to_write;
++		if (!(inode->i_state & I_DIRTY))
++			wrote++;
++		if (wbc.pages_skipped) {
+ 			/*
+ 			 * writeback is not making progress due to locked
+ 			 * buffers.  Skip this inode for now.
+@@ -570,17 +622,25 @@ static int writeback_sb_inodes(struct su
+ 		iput(inode);
+ 		cond_resched();
+ 		spin_lock(&wb->list_lock);
+-		if (wbc->nr_to_write <= 0)
+-			return 1;
++		/*
++		 * bail out to wb_writeback() often enough to check
++		 * background threshold and other termination conditions.
++		 */
++		if (wrote) {
++			if (jiffies - start_time > HZ / 10UL)
++				break;
++			if (work->nr_pages <= 0)
++				break;
++		}
+ 	}
+-	/* b_io is empty */
+-	return 1;
++	return wrote;
+ }
+ 
+-static void __writeback_inodes_wb(struct bdi_writeback *wb,
+-				  struct writeback_control *wbc)
++static long __writeback_inodes_wb(struct bdi_writeback *wb,
++				  struct wb_writeback_work *work)
+ {
+-	int ret = 0;
++	unsigned long start_time = jiffies;
++	long wrote = 0;
+ 
+ 	while (!list_empty(&wb->b_io)) {
+ 		struct inode *inode = wb_inode(wb->b_io.prev);
+@@ -590,33 +650,37 @@ static void __writeback_inodes_wb(struct
+ 			requeue_io(inode, wb);
+ 			continue;
+ 		}
+-		ret = writeback_sb_inodes(sb, wb, wbc, false);
++		wrote += writeback_sb_inodes(sb, wb, work);
+ 		drop_super(sb);
+ 
+-		if (ret)
+-			break;
++		/* refer to the same tests at the end of writeback_sb_inodes */
++		if (wrote) {
++			if (jiffies - start_time > HZ / 10UL)
++				break;
++			if (work->nr_pages <= 0)
++				break;
++		}
+ 	}
+ 	/* Leave any unwritten inodes on b_io */
++	return wrote;
+ }
+ 
+-void writeback_inodes_wb(struct bdi_writeback *wb,
+-		struct writeback_control *wbc)
++long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages)
+ {
++	struct wb_writeback_work work = {
++		.nr_pages	= nr_pages,
++		.sync_mode	= WB_SYNC_NONE,
++		.range_cyclic	= 1,
++	};
++
+ 	spin_lock(&wb->list_lock);
+ 	if (list_empty(&wb->b_io))
+-		queue_io(wb, wbc->older_than_this);
+-	__writeback_inodes_wb(wb, wbc);
++		queue_io(wb, NULL);
++	__writeback_inodes_wb(wb, &work);
+ 	spin_unlock(&wb->list_lock);
+-}
+ 
+-/*
+- * The maximum number of pages to writeout in a single bdi flush/kupdate
+- * operation.  We do this so we don't hold I_SYNC against an inode for
+- * enormous amounts of time, which would block a userspace task which has
+- * been forced to throttle against that inode.  Also, the code reevaluates
+- * the dirty each time it has written this many pages.
+- */
+-#define MAX_WRITEBACK_PAGES     1024
++	return nr_pages - work.nr_pages;
++}
+ 
+ static inline bool over_bground_thresh(void)
+ {
+@@ -646,42 +710,13 @@ static inline bool over_bground_thresh(v
+ static long wb_writeback(struct bdi_writeback *wb,
+ 			 struct wb_writeback_work *work)
+ {
+-	struct writeback_control wbc = {
+-		.sync_mode		= work->sync_mode,
+-		.tagged_writepages	= work->tagged_writepages,
+-		.older_than_this	= NULL,
+-		.for_kupdate		= work->for_kupdate,
+-		.for_background		= work->for_background,
+-		.range_cyclic		= work->range_cyclic,
+-	};
++	long nr_pages = work->nr_pages;
+ 	unsigned long oldest_jif;
+-	long wrote = 0;
+-	long write_chunk = MAX_WRITEBACK_PAGES;
+ 	struct inode *inode;
+-
+-	if (!wbc.range_cyclic) {
+-		wbc.range_start = 0;
+-		wbc.range_end = LLONG_MAX;
+-	}
+-
+-	/*
+-	 * WB_SYNC_ALL mode does livelock avoidance by syncing dirty
+-	 * inodes/pages in one big loop. Setting wbc.nr_to_write=LONG_MAX
+-	 * here avoids calling into writeback_inodes_wb() more than once.
+-	 *
+-	 * The intended call sequence for WB_SYNC_ALL writeback is:
+-	 *
+-	 *      wb_writeback()
+-	 *          writeback_sb_inodes()       <== called only once
+-	 *              write_cache_pages()     <== called once for each inode
+-	 *                   (quickly) tag currently dirty pages
+-	 *                   (maybe slowly) sync all tagged pages
+-	 */
+-	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_writepages)
+-		write_chunk = LONG_MAX;
++	long progress;
+ 
+ 	oldest_jif = jiffies;
+-	wbc.older_than_this = &oldest_jif;
++	work->older_than_this = &oldest_jif;
+ 
+ 	spin_lock(&wb->list_lock);
+ 	for (;;) {
+@@ -711,24 +746,17 @@ static long wb_writeback(struct bdi_writ
+ 		if (work->for_kupdate) {
+ 			oldest_jif = jiffies -
+ 				msecs_to_jiffies(dirty_expire_interval * 10);
+-			wbc.older_than_this = &oldest_jif;
++			work->older_than_this = &oldest_jif;
+ 		}
+ 
+-		wbc.nr_to_write = write_chunk;
+-		wbc.pages_skipped = 0;
+-		wbc.inodes_written = 0;
+-
+-		trace_wbc_writeback_start(&wbc, wb->bdi);
++		trace_writeback_start(wb->bdi, work);
+ 		if (list_empty(&wb->b_io))
+-			queue_io(wb, wbc.older_than_this);
++			queue_io(wb, work->older_than_this);
+ 		if (work->sb)
+-			writeback_sb_inodes(work->sb, wb, &wbc, true);
++			progress = writeback_sb_inodes(work->sb, wb, work);
+ 		else
+-			__writeback_inodes_wb(wb, &wbc);
+-		trace_wbc_writeback_written(&wbc, wb->bdi);
+-
+-		work->nr_pages -= write_chunk - wbc.nr_to_write;
+-		wrote += write_chunk - wbc.nr_to_write;
++			progress = __writeback_inodes_wb(wb, work);
++		trace_writeback_written(wb->bdi, work);
+ 
+ 		/*
+ 		 * Did we write something? Try for more
+@@ -738,9 +766,7 @@ static long wb_writeback(struct bdi_writ
+ 		 * mean the overall work is done. So we keep looping as long
+ 		 * as made some progress on cleaning pages or inodes.
+ 		 */
+-		if (wbc.nr_to_write < write_chunk)
+-			continue;
+-		if (wbc.inodes_written)
++		if (progress)
+ 			continue;
+ 		/*
+ 		 * No more inodes for IO, bail
+@@ -753,8 +779,8 @@ static long wb_writeback(struct bdi_writ
+ 		 * we'll just busyloop.
+ 		 */
+ 		if (!list_empty(&wb->b_more_io))  {
++			trace_writeback_wait(wb->bdi, work);
+ 			inode = wb_inode(wb->b_more_io.prev);
+-			trace_wbc_writeback_wait(&wbc, wb->bdi);
+ 			spin_lock(&inode->i_lock);
+ 			inode_wait_for_writeback(inode, wb);
+ 			spin_unlock(&inode->i_lock);
+@@ -762,7 +788,7 @@ static long wb_writeback(struct bdi_writ
+ 	}
+ 	spin_unlock(&wb->list_lock);
+ 
+-	return wrote;
++	return nr_pages - work->nr_pages;
+ }
+ 
+ /*
+--- linux-next.orig/include/linux/writeback.h	2011-06-19 23:57:41.000000000 +0800
++++ linux-next/include/linux/writeback.h	2011-06-20 00:03:25.000000000 +0800
+@@ -24,12 +24,9 @@ enum writeback_sync_modes {
+  */
+ struct writeback_control {
+ 	enum writeback_sync_modes sync_mode;
+-	unsigned long *older_than_this;	/* If !NULL, only write back inodes
+-					   older than this */
+ 	long nr_to_write;		/* Write this many pages, and decrement
+ 					   this for each page written */
+ 	long pages_skipped;		/* Pages which were not written */
+-	long inodes_written;		/* # of inodes written (at least) */
+ 
+ 	/*
+ 	 * For a_ops->writepages(): is start or end are non-zero then this is
+@@ -56,8 +53,7 @@ void writeback_inodes_sb_nr(struct super
+ int writeback_inodes_sb_if_idle(struct super_block *);
+ int writeback_inodes_sb_nr_if_idle(struct super_block *, unsigned long nr);
+ void sync_inodes_sb(struct super_block *);
+-void writeback_inodes_wb(struct bdi_writeback *wb,
+-		struct writeback_control *wbc);
++long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages);
+ long wb_do_writeback(struct bdi_writeback *wb, int force_wait);
+ void wakeup_flusher_threads(long nr_pages);
+ 
+--- linux-next.orig/mm/backing-dev.c	2011-06-19 23:57:41.000000000 +0800
++++ linux-next/mm/backing-dev.c	2011-06-20 00:13:48.000000000 +0800
+@@ -260,18 +260,6 @@ int bdi_has_dirty_io(struct backing_dev_
+ 	return wb_has_dirty_io(&bdi->wb);
+ }
+ 
+-static void bdi_flush_io(struct backing_dev_info *bdi)
+-{
+-	struct writeback_control wbc = {
+-		.sync_mode		= WB_SYNC_NONE,
+-		.older_than_this	= NULL,
+-		.range_cyclic		= 1,
+-		.nr_to_write		= 1024,
+-	};
+-
+-	writeback_inodes_wb(&bdi->wb, &wbc);
+-}
+-
+ /*
+  * kupdated() used to do this. We cannot do it from the bdi_forker_thread()
+  * or we risk deadlocking on ->s_umount. The longer term solution would be
+@@ -457,9 +445,10 @@ static int bdi_forker_thread(void *ptr)
+ 			if (IS_ERR(task)) {
+ 				/*
+ 				 * If thread creation fails, force writeout of
+-				 * the bdi from the thread.
++				 * the bdi from the thread. Hopefully 1024 is
++				 * large enough for efficient IO.
+ 				 */
+-				bdi_flush_io(bdi);
++				writeback_inodes_wb(&bdi->wb, 1024);
+ 			} else {
+ 				/*
+ 				 * The spinlock makes sure we do not lose
+--- linux-next.orig/mm/page-writeback.c	2011-06-19 23:58:14.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-06-20 00:03:25.000000000 +0800
+@@ -492,13 +492,6 @@ static void balance_dirty_pages(struct a
+ 	struct backing_dev_info *bdi = mapping->backing_dev_info;
+ 
+ 	for (;;) {
+-		struct writeback_control wbc = {
+-			.sync_mode	= WB_SYNC_NONE,
+-			.older_than_this = NULL,
+-			.nr_to_write	= write_chunk,
+-			.range_cyclic	= 1,
+-		};
+-
+ 		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
+ 					global_page_state(NR_UNSTABLE_NFS);
+ 		nr_writeback = global_page_state(NR_WRITEBACK);
+@@ -560,17 +553,17 @@ static void balance_dirty_pages(struct a
+ 		 * threshold otherwise wait until the disk writes catch
+ 		 * up.
+ 		 */
+-		trace_wbc_balance_dirty_start(&wbc, bdi);
++		trace_balance_dirty_start(bdi);
+ 		if (bdi_nr_reclaimable > bdi_thresh) {
+-			writeback_inodes_wb(&bdi->wb, &wbc);
+-			pages_written += write_chunk - wbc.nr_to_write;
+-			trace_wbc_balance_dirty_written(&wbc, bdi);
++			pages_written += writeback_inodes_wb(&bdi->wb,
++							     write_chunk);
++			trace_balance_dirty_written(bdi, pages_written);
+ 			if (pages_written >= write_chunk)
+ 				break;		/* We've done our duty */
+ 		}
+-		trace_wbc_balance_dirty_wait(&wbc, bdi);
+ 		__set_current_state(TASK_UNINTERRUPTIBLE);
+ 		io_schedule_timeout(pause);
++		trace_balance_dirty_wait(bdi);
+ 
+ 		/*
+ 		 * Increase the delay for each loop, up to our previous
+--- linux-next.orig/include/trace/events/writeback.h	2011-06-19 23:58:12.000000000 +0800
++++ linux-next/include/trace/events/writeback.h	2011-06-19 23:58:23.000000000 +0800
+@@ -62,6 +62,9 @@ DEFINE_EVENT(writeback_work_class, name,
+ DEFINE_WRITEBACK_WORK_EVENT(writeback_nothread);
+ DEFINE_WRITEBACK_WORK_EVENT(writeback_queue);
+ DEFINE_WRITEBACK_WORK_EVENT(writeback_exec);
++DEFINE_WRITEBACK_WORK_EVENT(writeback_start);
++DEFINE_WRITEBACK_WORK_EVENT(writeback_written);
++DEFINE_WRITEBACK_WORK_EVENT(writeback_wait);
+ 
+ TRACE_EVENT(writeback_pages_written,
+ 	TP_PROTO(long pages_written),
+@@ -101,6 +104,30 @@ DEFINE_WRITEBACK_EVENT(writeback_bdi_reg
+ DEFINE_WRITEBACK_EVENT(writeback_bdi_unregister);
+ DEFINE_WRITEBACK_EVENT(writeback_thread_start);
+ DEFINE_WRITEBACK_EVENT(writeback_thread_stop);
++DEFINE_WRITEBACK_EVENT(balance_dirty_start);
++DEFINE_WRITEBACK_EVENT(balance_dirty_wait);
++
++TRACE_EVENT(balance_dirty_written,
++
++	TP_PROTO(struct backing_dev_info *bdi, int written),
++
++	TP_ARGS(bdi, written),
++
++	TP_STRUCT__entry(
++		__array(char,	name, 32)
++		__field(int,	written)
++	),
++
++	TP_fast_assign(
++		strncpy(__entry->name, dev_name(bdi->dev), 32);
++		__entry->written = written;
++	),
++
++	TP_printk("bdi %s written %d",
++		  __entry->name,
++		  __entry->written
++	)
++);
+ 
+ DECLARE_EVENT_CLASS(wbc_class,
+ 	TP_PROTO(struct writeback_control *wbc, struct backing_dev_info *bdi),
+@@ -114,7 +141,6 @@ DECLARE_EVENT_CLASS(wbc_class,
+ 		__field(int, for_background)
+ 		__field(int, for_reclaim)
+ 		__field(int, range_cyclic)
+-		__field(unsigned long, older_than_this)
+ 		__field(long, range_start)
+ 		__field(long, range_end)
+ 	),
+@@ -128,14 +154,12 @@ DECLARE_EVENT_CLASS(wbc_class,
+ 		__entry->for_background	= wbc->for_background;
+ 		__entry->for_reclaim	= wbc->for_reclaim;
+ 		__entry->range_cyclic	= wbc->range_cyclic;
+-		__entry->older_than_this = wbc->older_than_this ?
+-						*wbc->older_than_this : 0;
+ 		__entry->range_start	= (long)wbc->range_start;
+ 		__entry->range_end	= (long)wbc->range_end;
+ 	),
+ 
+ 	TP_printk("bdi %s: towrt=%ld skip=%ld mode=%d kupd=%d "
+-		"bgrd=%d reclm=%d cyclic=%d older=0x%lx "
++		"bgrd=%d reclm=%d cyclic=%d "
+ 		"start=0x%lx end=0x%lx",
+ 		__entry->name,
+ 		__entry->nr_to_write,
+@@ -145,7 +169,6 @@ DECLARE_EVENT_CLASS(wbc_class,
+ 		__entry->for_background,
+ 		__entry->for_reclaim,
+ 		__entry->range_cyclic,
+-		__entry->older_than_this,
+ 		__entry->range_start,
+ 		__entry->range_end)
+ )
+@@ -154,12 +177,6 @@ DECLARE_EVENT_CLASS(wbc_class,
+ DEFINE_EVENT(wbc_class, name, \
+ 	TP_PROTO(struct writeback_control *wbc, struct backing_dev_info *bdi), \
+ 	TP_ARGS(wbc, bdi))
+-DEFINE_WBC_EVENT(wbc_writeback_start);
+-DEFINE_WBC_EVENT(wbc_writeback_written);
+-DEFINE_WBC_EVENT(wbc_writeback_wait);
+-DEFINE_WBC_EVENT(wbc_balance_dirty_start);
+-DEFINE_WBC_EVENT(wbc_balance_dirty_written);
+-DEFINE_WBC_EVENT(wbc_balance_dirty_wait);
+ DEFINE_WBC_EVENT(wbc_writepage);
+ 
+ TRACE_EVENT(writeback_queue_io,
+--- linux-next.orig/fs/btrfs/extent_io.c	2011-06-19 23:57:40.000000000 +0800
++++ linux-next/fs/btrfs/extent_io.c	2011-06-19 23:58:23.000000000 +0800
+@@ -2551,7 +2551,6 @@ int extent_write_full_page(struct extent
+ 	};
+ 	struct writeback_control wbc_writepages = {
+ 		.sync_mode	= wbc->sync_mode,
+-		.older_than_this = NULL,
+ 		.nr_to_write	= 64,
+ 		.range_start	= page_offset(page) + PAGE_CACHE_SIZE,
+ 		.range_end	= (loff_t)-1,
+@@ -2584,7 +2583,6 @@ int extent_write_locked_range(struct ext
+ 	};
+ 	struct writeback_control wbc_writepages = {
+ 		.sync_mode	= mode,
+-		.older_than_this = NULL,
+ 		.nr_to_write	= nr_pages * 2,
+ 		.range_start	= start,
+ 		.range_end	= end + 1,
