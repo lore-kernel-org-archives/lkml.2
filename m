@@ -1,103 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479Ab1FSSJP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 14:09:15 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:34601 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908Ab1FSSJJ (ORCPT
+	id S1754513Ab1FSSLe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 14:11:34 -0400
+Received: from lunge.queued.net ([66.23.231.200]:56206 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752351Ab1FSSLd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 14:09:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=q8/B8LrEJIZWERGxUceN1NfL8JxOfTcMYFFJEY47h7oKAuJ+kx9f90KZf4vY7bROS8
-         u9hBsF9ok+fOhvnFEDjagHv2xpb7gzTXCsJBEARNkudBD46v9OP6LVFewdnysHhT6WR8
-         zfBGJi3WOKzNwV4GSUQ4zUV72RTnh0PamGd1g=
-MIME-Version: 1.0
-Date: Sun, 19 Jun 2011 20:09:08 +0200
-Message-ID: <BANLkTimU=FL-QG9KcGbYOegfizf5HNH+ZQ@mail.gmail.com>
-Subject: [PCI Driver Help] Locking Pages of a running process
-From: newton mailinglist <newtonmailinglist@gmail.com>
-To: linux-kernel@vger.kernel.org
+	Sun, 19 Jun 2011 14:11:33 -0400
+Date: Sun, 19 Jun 2011 11:11:27 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: Daniel Drake <dsd@laptop.org>
+Cc: David Woodhouse <dwmw2@infradead.org>, cjb@laptop.org,
+        linux-kernel@vger.kernel.org, dcbw@redhat.com,
+        libertas-dev@lists.infradead.org
+Subject: Re: [GIT PULL linux-firmware.git] OLPC libertas firmware blobs
+Message-ID: <20110619111127.005064d0@debxo>
+In-Reply-To: <BANLkTimyFj+iTWAopPMEyohP2pop_=g=6g@mail.gmail.com>
+References: <20110618213803.521db1b3@debxo>
+	<20110618214203.0028ba85@debxo>
+	<BANLkTimyFj+iTWAopPMEyohP2pop_=g=6g@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, 19 Jun 2011 10:41:22 +0100
+Daniel Drake <dsd@laptop.org> wrote:
 
-I have written a PCI driver for my device. The device is an FPGA which
-is configured with a design that allows it to have direct access to
-memory of a host computer to which the fpga board is connected. My
-device driver is responsible for translating virtual addresses to
-physical addresses and sending these to the FPGA so the DMA unit in
-the FPGA can directly access pages in memory.
+> On 19 June 2011 05:42, Andres Salomon <dilinger@queued.net> wrote:
+> >>  LICENCE.OLPC                 |   33
+> >> +++++++++++++++++++++++++++++++++ WHENCE                       |
+> >> 20 ++++++++++++++++++++ libertas/lbtf_sdio.bin       |  Bin 0 ->
+> >> 120924 bytes libertas/lbtf_usb.bin        |  Bin 0 -> 118888 bytes
+> >>  libertas/sd8686_v9_OLPC.bin  |  Bin 0 -> 124244 bytes
+> >>  libertas/usb8388_v5_OLPC.bin |  Bin 0 -> 127824 bytes
+> >
+> > Of course, if people would prefer the OLPC version to supersede the
+> > ones currently in the linux-firmware tree, I can do that instead.  I
+> > don't know what versions of sd8686.bin and usb8388.bin are actually
+> > in the tree.  I also don't know if the OLPC versions improve or
+> > make things worse for people using those chips on non-OLPC systems.
+> 
+> This overlaps with a submission I made the other day (of usb8388
+> firmware), sorry for the lack of coordination there.
 
-I have a C program which uses the driver to open this PCI device and
-then sends a command to the device, so it can begin accessing
-memory(for some calculations done in the fpga). This is done via
-IOCTL. The FPGA sends an interrupt when its done. However my program
-does not wait for the FPGA but instead resumes execution immmediately
-after the IOCTL call returns. If the FPGA has a virtual address which
-it needs to translate, it interrupts my PCI driver and I want to
-translate this address in the interrupt handler and write back the
-translated address to the device using memory mapped I/O.
+Ah, sorry, I didn't know you were on top of this.  I'm wanting to
+kill off the Debian OLPC-specific libertas package, and finally found
+some time to put together a pull request.
 
-The issue is that when my driver gets the virtual address, it attempts
-to lock the user space pages first(those of the running C program) in
-memory using get_user_pages() and then translates the address using
-pci_map_page(). Pinning the pages in memory is needed as the fpga will
-access them later using DMA. Here is the code I use   :
+> 
+> I don't think the OLPC hardware has any quirks or special features
+> that mean it requires special firmware.
+> 
+> However, for the usb8388 we do use a special firmware developed by
+> Cozybit (not Marvell), the one you submitted, which has its own
+> versioning scheme. The main difference is that it includes mesh
+> support. I am pretty sure it would run on any usb8388 but OLPC is the
+> only user of the hardware anyway. See
+> http://lists.infradead.org/pipermail/libertas-dev/2010-November/003330.html
+> and the rest of the discussion.
+> 
+> As for sd8686, I thought our firmware was standard, from Marvell, and
+> simply a newer version of what is in linux-firmware. Do you have
+> reason to believe otherwise?
+> 
 
-//get page
-result = get_user_pages(htex_dev->tsk, htex_dev->tsk->mm, virt_addr,
-1, 1, 0, &page, NULL);
-if (result <= 0)
-{
-	ERROR_MSG("unable to get page\n");
-	return 0;
-}
-//get bus address of page
-translated = pci_map_page(htex_dev->dev, page, 0, PAGE_SIZE, DMA_BIDIRECTIONAL);
+I was just playing it safe.  I have changelogs for the usb8388 firmware
+releases, but not for sd8686.  I'll defer to you for XO-1.5 stuff.
 
-update_htx_tlb(index, tag, translated, htex_dev);
-
-However the call fails with -14 (bad address) everytime. It appears
-that perhaps the running C program's process pages cannot be accessed
-by the ISR to lock them in memory.
-
-Yet I need to allow the program to run while the driver services
-interrupts in the background. This is for performance reasons as
-halting the program would waste time.
-
-If I do put the program to sleep when it makes the IOCTL call using
-wait_event_interruptible() :
-
-static int htex_ioctl(struct inode *inode, struct file *filp, unsigned
-int cmd, unsigned long arg)
-{
-	struct htex_dev_t *htex_dev = filp->private_data;
-	int result;	
-	....
-	switch (cmd)
-	{
-		case HTEX_IOSET:
-		//reset the tlb and ccu
-		iowrite32(HTEX_RESET_C, htex_dev->bar2->bar);
-		*(((u64 *)htex_dev->bar2->bar) + 1) = arg;	
-		u32 temp;
-		temp = ioread32(htex_dev->bar2->bar+16);
-		iowrite32(HTEX_SET_C, htex_dev->bar2->bar);	
-		result = wait_event_interruptible(wait_queue, htex_dev->done != 0);
-// <------------------
-		....
-}
-
-then it does work, but this is probably due to the fact that the
-process is sleeping and its pages can be locked in memory.
-
-So how should I be doing the address translation with the user space
-process running?
-
-Thanks,
-Abh
+I'm more interested in the lbtf stuff anyways, as I don't see much use
+for the on-chip mesh.
