@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347Ab1FSP1x (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 11:27:53 -0400
-Received: from mga11.intel.com ([192.55.52.93]:3908 "EHLO mga11.intel.com"
+	id S1754419Ab1FSP16 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 11:27:58 -0400
+Received: from mga02.intel.com ([134.134.136.20]:57825 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754168Ab1FSP1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754249Ab1FSP1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 19 Jun 2011 11:27:51 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,389,1304319600"; 
-   d="scan'208";a="18058365"
-Message-Id: <20110619150510.011659314@intel.com>
+   d="scan'208";a="16865961"
+Message-Id: <20110619150510.130768812@intel.com>
 User-Agent: quilt/0.48-1
-Date: Sun, 19 Jun 2011 23:01:09 +0800
+Date: Sun, 19 Jun 2011 23:01:10 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
 CC: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
@@ -19,86 +19,87 @@ CC: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Wu Fengguang <fengguang.wu@intel.com>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/7] writeback: consolidate variable names in balance_dirty_pages()
+Subject: [PATCH 2/7] writeback: add parameters to __bdi_update_bandwidth()
 References: <20110619150108.691351746@intel.com>
-Content-Disposition: inline; filename=writeback-cleanup-name-merge.patch
+Content-Disposition: inline; filename=lll
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce
+The added parameters will be used by the next patch and more future patches.
 
-	nr_dirty = NR_FILE_DIRTY + NR_WRITEBACK + NR_UNSTABLE_NFS
-
-in order to simplify many tests in the following patches.
-
-balance_dirty_pages() will eventually care only about the dirty sums
-besides nr_writeback.
+It's separated out for easier review, and will be merged either with the
+next patch or with the previous write bandwidth patch in future posts.
 
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/page-writeback.c |   21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
+ fs/fs-writeback.c         |    2 +-
+ include/linux/writeback.h |    3 +++
+ mm/page-writeback.c       |   21 +++++++++++++++++++--
+ 3 files changed, 23 insertions(+), 3 deletions(-)
 
---- linux-next.orig/mm/page-writeback.c	2011-06-13 17:27:10.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-06-13 17:27:30.000000000 +0800
-@@ -560,8 +560,9 @@ static void bdi_update_bandwidth(struct 
- static void balance_dirty_pages(struct address_space *mapping,
- 				unsigned long write_chunk)
+--- linux-next.orig/mm/page-writeback.c	2011-06-19 22:51:50.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-06-19 22:53:46.000000000 +0800
+@@ -549,6 +549,9 @@ static void global_update_bandwidth(unsi
+ }
+ 
+ void __bdi_update_bandwidth(struct backing_dev_info *bdi,
++			    unsigned long thresh,
++			    unsigned long dirty,
++			    unsigned long bdi_dirty,
+ 			    unsigned long start_time)
  {
--	long nr_reclaimable, bdi_nr_reclaimable;
--	long nr_writeback, bdi_nr_writeback;
-+	unsigned long nr_reclaimable, bdi_nr_reclaimable;
-+	unsigned long nr_dirty;  /* = file_dirty + writeback + unstable_nfs */
-+	unsigned long bdi_dirty;
- 	unsigned long background_thresh;
- 	unsigned long dirty_thresh;
- 	unsigned long bdi_thresh;
-@@ -581,7 +582,7 @@ static void balance_dirty_pages(struct a
+ 	unsigned long now = jiffies;
+@@ -581,12 +593,16 @@ snapshot:
+ }
  
- 		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
- 					global_page_state(NR_UNSTABLE_NFS);
--		nr_writeback = global_page_state(NR_WRITEBACK);
-+		nr_dirty = nr_reclaimable + global_page_state(NR_WRITEBACK);
+ static void bdi_update_bandwidth(struct backing_dev_info *bdi,
++				 unsigned long thresh,
++				 unsigned long dirty,
++				 unsigned long bdi_dirty,
+ 				 unsigned long start_time)
+ {
+ 	if (jiffies - bdi->bw_time_stamp <= MAX_PAUSE + MAX_PAUSE / 10)
+ 		return;
+ 	if (spin_trylock(&bdi->wb.list_lock)) {
+-		__bdi_update_bandwidth(bdi, start_time);
++		__bdi_update_bandwidth(bdi, thresh, dirty, bdi_dirty,
++				       start_time);
+ 		spin_unlock(&bdi->wb.list_lock);
+ 	}
+ }
+@@ -673,7 +689,8 @@ static void balance_dirty_pages(struct a
+ 		if (!bdi->dirty_exceeded)
+ 			bdi->dirty_exceeded = 1;
  
- 		global_dirty_limits(&background_thresh, &dirty_thresh);
+-		bdi_update_bandwidth(bdi, start_time);
++		bdi_update_bandwidth(bdi, dirty_thresh, nr_dirty, bdi_dirty,
++				     start_time);
  
-@@ -590,8 +591,7 @@ static void balance_dirty_pages(struct a
- 		 * catch-up. This avoids (excessively) small writeouts
- 		 * when the bdi limits are ramping up.
- 		 */
--		if (nr_reclaimable + nr_writeback <=
--				(background_thresh + dirty_thresh) / 2)
-+		if (nr_dirty <= (background_thresh + dirty_thresh) / 2)
- 			break;
+ 		/* Note: nr_reclaimable denotes nr_dirty + nr_unstable.
+ 		 * Unstable writes are a feature of certain networked
+--- linux-next.orig/include/linux/writeback.h	2011-06-19 22:51:50.000000000 +0800
++++ linux-next/include/linux/writeback.h	2011-06-19 22:53:29.000000000 +0800
+@@ -125,6 +125,9 @@ unsigned long bdi_dirty_limit(struct bac
+ 			       unsigned long dirty);
  
- 		bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
-@@ -609,10 +609,12 @@ static void balance_dirty_pages(struct a
- 		 */
- 		if (bdi_thresh < 2*bdi_stat_error(bdi)) {
- 			bdi_nr_reclaimable = bdi_stat_sum(bdi, BDI_RECLAIMABLE);
--			bdi_nr_writeback = bdi_stat_sum(bdi, BDI_WRITEBACK);
-+			bdi_dirty = bdi_nr_reclaimable +
-+				    bdi_stat_sum(bdi, BDI_WRITEBACK);
- 		} else {
- 			bdi_nr_reclaimable = bdi_stat(bdi, BDI_RECLAIMABLE);
--			bdi_nr_writeback = bdi_stat(bdi, BDI_WRITEBACK);
-+			bdi_dirty = bdi_nr_reclaimable +
-+				    bdi_stat(bdi, BDI_WRITEBACK);
- 		}
+ void __bdi_update_bandwidth(struct backing_dev_info *bdi,
++			    unsigned long thresh,
++			    unsigned long dirty,
++			    unsigned long bdi_dirty,
+ 			    unsigned long start_time);
  
- 		/*
-@@ -621,9 +623,8 @@ static void balance_dirty_pages(struct a
- 		 * bdi or process from holding back light ones; The latter is
- 		 * the last resort safeguard.
- 		 */
--		dirty_exceeded =
--			(bdi_nr_reclaimable + bdi_nr_writeback > bdi_thresh)
--			|| (nr_reclaimable + nr_writeback > dirty_thresh);
-+		dirty_exceeded = (bdi_dirty > bdi_thresh) ||
-+				  (nr_dirty > dirty_thresh);
+ void page_writeback_init(void);
+--- linux-next.orig/fs/fs-writeback.c	2011-06-19 22:51:50.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2011-06-19 22:53:29.000000000 +0800
+@@ -635,7 +635,7 @@ static inline bool over_bground_thresh(v
+ static void wb_update_bandwidth(struct bdi_writeback *wb,
+ 				unsigned long start_time)
+ {
+-	__bdi_update_bandwidth(wb->bdi, start_time);
++	__bdi_update_bandwidth(wb->bdi, 0, 0, 0, start_time);
+ }
  
- 		if (!dirty_exceeded)
- 			break;
+ /*
 
 
