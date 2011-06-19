@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754946Ab1FSWpy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 18:45:54 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:34807 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754922Ab1FSWpw convert rfc822-to-8bit (ORCPT
+	id S1755065Ab1FSXCC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 19:02:02 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:35133 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755022Ab1FSXCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 18:45:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110619233225.17914c60@lxorguk.ukuu.org.uk>
-References: <BANLkTik9HzR_oJ7FocQ=o+zNoK22tUTjBg@mail.gmail.com>
-	<1308418985.3539.58.camel@edumazet-laptop>
-	<BANLkTi=Vis=aZ5vn7E0A2LGVPOcmjd+r-g@mail.gmail.com>
-	<20110618193340.53811cbe@lxorguk.ukuu.org.uk>
-	<BANLkTi=bvmtkv-o3PROYjmOwkBNCBFGv7w@mail.gmail.com>
-	<1308494508.13047.4.camel@thorin>
-	<BANLkTimAxbVWzahU8Ke_Rb8bgiVVrsihRA@mail.gmail.com>
-	<20110619233225.17914c60@lxorguk.ukuu.org.uk>
-Date: Sun, 19 Jun 2011 15:45:51 -0700
-Message-ID: <BANLkTi=Uz5nZ5gFTQ3NxCSDYTY03v3an9Q@mail.gmail.com>
-Subject: Re: Does Linux select() violate POSIX?
-From: Nemo Publius <nemo@self-evident.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Bernd Petrovitsch <bernd@petrovitsch.priv.at>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 19 Jun 2011 19:02:00 -0400
+Date: Sun, 19 Jun 2011 16:01:50 -0700 (PDT)
+Message-Id: <20110619.160150.1199476848151993579.davem@davemloft.net>
+To: andi@firstfloor.org
+Cc: torvalds@linux-foundation.org, mroos@linux.ee,
+        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: reorganized struct inode results in unaligned accesses
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <m2boxtfo0d.fsf@firstfloor.org>
+References: <alpine.SOC.1.00.1106191927250.4844@math.ut.ee>
+	<BANLkTiktb6GS7fcHRRgC=bHJjz8k0hVmPw@mail.gmail.com>
+	<m2boxtfo0d.fsf@firstfloor.org>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 19 Jun 2011 16:01:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 19, 2011 at 3:32 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->
-> It's worth noting that the POSIX semantics are actually unimplementable
-> for some network protocols anyway particularly on send. TCP is a fine
-> example. A remote TCP isn't *supposed* to shrink its window but they can
-> do, and that that point the space select() saw for a send is closed down
-> again by the remote host.
+From: Andi Kleen <andi@firstfloor.org>
+Date: Sun, 19 Jun 2011 15:35:30 -0700
 
-Which makes me wonder what *BSD does for such a situation.  Although
-not enough to check the source.  :-)
+> Linus Torvalds <torvalds@linux-foundation.org> writes:
+>>
+>> Dang. I guess it needs to be made "unsigned long" again. Which is a
+>> shame, because we only use a couple of bits from there, and "struct
+>> inode" really is much too big already.
+> 
+> In the past it was usually enough to just align it to alignof(unsigned
+> long), not actually make it long. struct page went through this
+> a long time ago.
 
-> All sorts of similar issues appear all over the place. There are also
-> interesting API corner cases such as the behaviour of
->
->        listen()
->        select
->                        connection made
->        select returns
->                        remote closes connection
->        accept
->                        behaviour is not determinate
+Hmmm, can this scheme actually work out properly on both big and
+little endian?  Because endianness determines whether the bits start
+in the "lower addressed" 32-bit word or the "higher addressed" 32-bit
+word.
 
-Hm, I thought this was what ECONNABORTED was for?
-
-That is, accept() might return ECONNABORTED, or it might return a
-descriptor and then a later operation on that descriptor would fail
-with ECONNRESET...  But either way, select() followed by accept() need
-not block.
-
-> (and in general POSIX doens't address sockets well)
-
-Well, no argument there.
-
-> So for portable code always mix select and poll with non blocking I/O. It
-> doesn't matter what the specs say, the real world says drive defensively
-> 8)
-
-No argument here, either.  This was mostly for a barroom bet (well,
-StackOverflow...  same thing), but also because I was curious.  There
-are not a lot of ways in which Linux chooses to violate POSIX.  Which
-might make a fun list to put together, come to think of it.
-
-Thanks again, Alan.
+If this trick is being attempted elsewhere, I think it could perhaps
+account for some strange bugs :-)
