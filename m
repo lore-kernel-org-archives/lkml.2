@@ -1,69 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab1FSVkG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 17:40:06 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53535 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752929Ab1FSVkB (ORCPT
+	id S1754795Ab1FSVjh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 17:39:37 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:25548 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752929Ab1FSVje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 17:40:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=WjlO2czvlfKTwMN+cuTip1oYrJ1aYTqMnKSzEqvfxBL2sPpOoTvPGR3KQM17tto6xk
-         aZzhj/yHR2AtWNm2KMz07AarQrRWjnJhKvE01slmPRohOQeAOckvGaZXF7zQs+DiFpXT
-         d5by2XQVj3jlqUgJ1w0Uv41LT1u0zNTYFWmAA=
-From: Jason Stubbs <jasonbstubbs@gmail.com>
-To: Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] platform: fix samsung brightness min/max calculations
-Date: Mon, 20 Jun 2011 07:36:29 +1000
-User-Agent: KMail/1.13.7 (Linux/2.6.39-ARCH; KDE/4.6.3; x86_64; ; )
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
-References: <201104201358.50443.jasonbstubbs@gmail.com> <201105132044.25928.jasonbstubbs@gmail.com> <20110613235549.GA14762@kroah.com>
-In-Reply-To: <20110613235549.GA14762@kroah.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106200736.29259.jasonbstubbs@gmail.com>
+	Sun, 19 Jun 2011 17:39:34 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Sun, 19 Jun 2011 17:39:33 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Alan Stern <stern@rowland.harvard.edu>, gregkh@suse.de,
+        linux-usb@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin@rab.in>, Alexander Holler <holler@ahsoftware.de>
+Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing the
+ packed attribute
+In-reply-to: <201106192202.23989.arnd@arndb.de>
+Message-id: <alpine.LFD.2.00.1106191732440.2142@xanadu.home>
+References: <Pine.LNX.4.44L0.1106191453200.14586-100000@netrider.rowland.org>
+ <201106192202.23989.arnd@arndb.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Jun 2011 09:55:49 Greg KH wrote:
-> On Fri, May 13, 2011 at 08:44:25PM +1000, Jason Stubbs wrote:
-> > As far as I can tell, the patches aren't applied to any trees yet and are
-> > just sitting in .../gregkh/patches.git. If that's the case, what I would
-> > like is for fix-samsung-brightness-min-max-calculations.patch to be
-> > replaced with the version in https://lkml.org/lkml/2011/4/20/1 and I
-> > resubmit a fixed (and enhanced)
-> > add-support-for-samsung-nc210-nc110.patch that applies on top of it.
-> > That way an enhancement patch won't hold up a bugfix patch should there
-> > be any further issues.
+On Sun, 19 Jun 2011, Arnd Bergmann wrote:
+
+> On Sunday 19 June 2011 21:00:01 Alan Stern wrote:
+> > On Sun, 19 Jun 2011, Nicolas Pitre wrote:
+> > > On Thu, 16 Jun 2011, Arnd Bergmann wrote:
+> > > > On Thursday 16 June 2011 22:10:53 Alexander Holler wrote:
+> > > > At least I would be happier without the patch. I'm trying to convince
+> > > > people to not use these attributes unless required because too much
+> > > > harm is done when they are used without understanding the full
+> > > > consequences. I also recommend using __packed as localized as possible,
+> > > > i.e. set it for the members that need it, not the entire struct.
+> > > > 
+> > > > I agree that your patch is harmless, it's just the opposite of
+> > > > a cleanup in my opinion.
+> > > 
+> > > The question is: does the structure really has to be packed?
+> > 
+> > What do you mean?  The structure really does need to be allocated
+> > without padding between the fields; is that the same thing?  So do a
+> > bunch of other structures that currently have no annotations at all.
 > 
-> Ok, I'll drop this one, but can you resend the above referenced patch so
-> I can apply it?
+> I guess the issue is that some ABIs actually require a minimum alignment,
+> like the old ARM ABI that you can still use to build the kernel.
+> 
+> If a structure is not a multiple of four bytes in size, that ABI
+> will add padding at the end, e.g. in
+> 
+> struct s {
+> 	char c[2];
+> };
+> 
+> struct t {
+> 	struct s t1;
+> 	unsigned short t2[3];
+> };
+> 
+> On most architectures, struct s will be two bytes in size and one byte
+> aligned, while struct t is eight bytes and two byte aligned.
+> 
+> On ARM oABI, struct s ends up with four byte size and alignment while
+> struct t is twelve bytes long. All this is ok for regular structures,
+> but not when they are used to describe memory layout of hardware
+> registers on on-wire packets.
 
-Somehow I managed to screw things up again as the nc210-nc110 patch isn't
-against the min-max-calculations patch... Doesn't matter though. The patch I
-just resent applies on top of the nc210-nc110 patch that you already have in
-patches.git.
+Agreed.  Is that the case with EHCI though?  In your example, you'd have 
+to mark that structure as packed,aligned(2).
 
-> Sorry for the delay in working on this, my access to a samsung laptop is
-> now gone, and I've been swamped with other stuff.
+> > > If it does, then the follow-up question is: is a packing on word 
+> > > boundaries sufficient?
+> > 
+> > > If the answer is yes in both cases, then having packed,aligned(4) is not 
+> > > a frivolity but rather a correctness issue.
+> > 
+> > Why so?  Current systems work just fine without it.
+> 
+> I think Nicolas got it backwards here, adding both packed and
+> aligned(4) would make a structure like the one above consistently
+> incorrect when used to describe a tightly packed hardware structure.
 
-No problem.
+I didn't look at the details, but your example above requires 
+aligned(2).  That tells the compiler that it may use instructions to 
+access the data (or hardware) that are up to 2-byte wide (on ARM that 
+means STRh/LDRH) for the data of that width instead of the byte per byte 
+loads.
 
-> Any chance you want to take over maintaining this driver now yourself?
-> You seem to have a much better understanding of it in places than I do
-> at the moment, combined with a strong need to keep it working properly
 
-I'm not exactly sure what that entails, but I don't have access to any specs
-and have never dealt with any hardware programming before. Even these patches
-don't directly deal with the hardware so I'm not sure that I'm best suited to
-being the maintainer. Having said that, I'm happy to try my hand at any bugs
-that arise and review any patches..
 
-Regards,
-Jason Stubbs
+> 
+> In this case, we would have to do
+> 
+> struct s {
+> 	char c[2];
+> } __packed;
+> 
+> struct t {
+> 	struct s t1;
+> 	unsigned short t2[3] __aligned(2);
+> } __packed;
+> 
+> To tell the compiler that t2 is indeed aligned, while struct t
+> is packed to include no padding around t.
+
+... and give the aligned(2) attribute to struct t so those shorts are 
+accessed with a 16-bit wide load/store not byte loads/stores.
+
+
+Nicolas
