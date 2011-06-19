@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab1FSNzY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 09:55:24 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:50861
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753953Ab1FSNzX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 09:55:23 -0400
-Date: Sun, 19 Jun 2011 09:55:07 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        axboe@kernel.dk, linux-kernel@vger.kernel.org, hch@infradead.org
-Subject: Re: [RFC] virtio: Support releasing lock during kick
-Message-ID: <20110619135507.GA25728@infradead.org>
-References: <1277328242-10685-1-git-send-email-stefanha@linux.vnet.ibm.com>
- <20110619074841.GA8613@redhat.com>
+	id S1754080Ab1FSN40 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 09:56:26 -0400
+Received: from mga09.intel.com ([134.134.136.24]:65145 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752562Ab1FSN4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jun 2011 09:56:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,388,1304319600"; 
+   d="scan'208";a="15412978"
+Date: Sun, 19 Jun 2011 21:56:18 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Meelis Roos <mroos@linux.ee>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: 3.0-rc3: WARNING: at fs/fs-writeback.c:356
+ writeback_single_inode+0x3e/0x18f()
+Message-ID: <20110619135618.GA4545@localhost>
+References: <alpine.SOC.1.00.1106141213570.11764@math.ut.ee>
+ <1308112976.2635.27.camel@pasglop>
+ <20110618173355.GB4652@localhost>
+ <1308438438.32158.62.camel@pasglop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110619074841.GA8613@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1308438438.32158.62.camel@pasglop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 19, 2011 at 10:48:41AM +0300, Michael S. Tsirkin wrote:
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index 4ce953f..a8672ec 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -433,6 +433,8 @@ void blk_run_queue(struct request_queue *q)
->  	spin_lock_irqsave(q->queue_lock, flags);
->  	__blk_run_queue(q);
->  	spin_unlock_irqrestore(q->queue_lock, flags);
-> +	if (q->request_done)
-> +		q->request_done(q);
+On Sun, Jun 19, 2011 at 07:07:18AM +0800, Benjamin Herrenschmidt wrote:
+> On Sun, 2011-06-19 at 01:33 +0800, Wu Fengguang wrote:
+> > Hi Benjamin,
+> > 
+> > On Wed, Jun 15, 2011 at 02:42:56PM +1000, Benjamin Herrenschmidt wrote:
+> > > On Tue, 2011-06-14 at 12:15 +0300, Meelis Roos wrote:
+> > > > Tested 3.0-rc3 on my PC (2 PATA disks, single duron CPU). Got several of 
+> > > > these in dmesg:
+> > > 
+> > > Same here on a powerpc64 machine while doing a fresh debian install
+> > > (while the installer's installing the packages), -rc3 as well.
+> > 
+> > Do you have some clue that this bug show up in between 3.0-rc1 and
+> > 3.0-rc3, or between 2.6.39 and 3.0-rc3?
+> 
+> No idea. I just noticed that as I was re-installing debian on a machine
+> (to track down another problem actually).
+> 
+> Maybe Meelis has more data.
 
-We have quite a few cases where __blk_run_queue is called directly, and
-one more (although not applicable to virtio-blk) that calls ->request_fn
-directly.
+OK, thanks.
 
-I think Stefan's way is the way to go for now, releasing and reacquiring
-the queue lock once in ->request_fn is much less than the common IDE and
-SCSI setups do today.
+Andi/Meelis, what's your kconfig? Hope that can give me more better
+opportunity to reproduce the bug.
 
-Eventually ->queue_lock should be split from the driver-internal lock,
-and we could do a more efficient calling convention than the one per
-request blk_peek_request.  I've started looking into that, but it's
-going to take a while.
-
+Thanks,
+Fengguang
