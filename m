@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab1FSPHK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 11:07:10 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:58123 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754169Ab1FSPHH (ORCPT
+	id S1754246Ab1FSPJX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 11:09:23 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:50431 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754171Ab1FSPJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 11:07:07 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=DEoAwd/Ye6fH3dgfZmaKoZjMdEV7dOW+U4Z8IXqdHEQORTcIl81wPYzLmfp3cZjrA99FLQMbTdniPOytNllEonBdiRaZN693BSs9DjpbI4vEipj0F0/64M98XiNyCqXa;
-Date: Sun, 19 Jun 2011 08:07:04 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: halfdog <me@halfdog.net>, linux-ext4@vger.kernel.org
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Can someone confirm ext4 BUG_ON on latest kernel build?
-Message-Id: <20110619080704.33753b99.rdunlap@xenotime.net>
-In-Reply-To: <4DFDCBE0.5020806@halfdog.net>
-References: <4DFDCBE0.5020806@halfdog.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 19 Jun 2011 11:09:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=n7DgIlY08R9b+pRRqmAok0pmvBr933qHTuHiNv884skJWq8BPelkpX33dV3rIrKVwR
+         fCM0hOY4uE0Z6hVrDEHGn7PcuT1EYBH1DsqIn3PxHPshbxdMtnJ+Ft4u76iK7zKXMcoJ
+         MOT74FDBcSY/rYfWjdsbMMihyjYIZoQsxio30=
+Message-ID: <4DFE111B.8010001@gmail.com>
+Date: Sun, 19 Jun 2011 10:09:15 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, Greg Ungerer <gerg@snapgear.com>,
+        patches@linaro.org, netdev@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, Jason Liu <jason.hui@linaro.org>,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 2/3] net/fec: add device tree support
+References: <1308410354-21387-1-git-send-email-shawn.guo@linaro.org>	<1308410354-21387-3-git-send-email-shawn.guo@linaro.org>	<4DFDDFF4.8000305@snapgear.com> <201106191411.32137.arnd@arndb.de>
+In-Reply-To: <201106191411.32137.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[adding ext4 mailing list]
+On 06/19/2011 07:11 AM, Arnd Bergmann wrote:
+> On Sunday 19 June 2011 13:39:32 Greg Ungerer wrote:
+>>> +#ifdef CONFIG_OF
+>>> +static const struct of_device_id fec_dt_ids[] = {
+>>> +     { .compatible = "fsl,fec", .data =&fec_devtype[0], },
+>>> +     {},
+>>> +};
+>>> +
+>>> +static const struct of_device_id *
+>>> +fec_get_of_device_id(struct platform_device *pdev)
+>>> +{
+>>> +     return of_match_device(fec_dt_ids,&pdev->dev);
+>>> +}
+>>> +#else
+>>> +#define fec_dt_ids NULL
+>>> +static inline struct of_device_id *
+>>> +fec_get_of_device_id(struct platform_device *pdev)
+>>> +{
+>>> +     return NULL;
+>>> +}
+>>> +#endif
+>>> +
+>>>   static unsigned char macaddr[ETH_ALEN];
+>>>   module_param_array(macaddr, byte, NULL, 0);
+>>>   MODULE_PARM_DESC(macaddr, "FEC Ethernet MAC address");
+>>> @@ -1363,6 +1385,11 @@ fec_probe(struct platform_device *pdev)
+>>>       struct net_device *ndev;
+>>>       int i, irq, ret = 0;
+>>>       struct resource *r;
+>>> +     const struct of_device_id *of_id;
+>>> +
+>>> +     of_id = fec_get_of_device_id(pdev);
+>>
+>> fec_get_of_device_id() is defined inside of "#ifdef CONFIG_OF". This
+>> use of it will break compilation when this is not defined.
+>>
+> 
+> 
+> Why? Note the #else path defining an empty function.
+> 
 
+None of this is necessary in the first place. Just call of_match_device
+directly. There is already an empty function to return NULL when
+CONFIG_OF is not defined.
 
-On Sun, 19 Jun 2011 10:13:52 +0000 halfdog wrote:
-
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
-> 
-> Sorry, I do not have latest kernel. Can someone confirm this on latest?
-> At least bugtracker does not know about it, and to my understanding of
-> source, should be still here.
-> 
-> 
-> dd if=/dev/zero bs=1M count=64 of=test
-> mkfs.ext4 -F test
-> echo -n " " | dd of=test bs=1 count=1 seek=297195 conv=notrunc
-> mount -o loop test /mnt/test
-> dmesg -c
-> 
-> On ubuntu natty with latest kernel, it seems, that
-> fs/ext4/super.c:__save_error_info calls mod_timer before timer->function
-> is set at end of fs/ext4/super.c:ext4_fill_super via
->   sbi->s_err_report.function = print_daily_error_info;
-> 
-> This causes BUG_ON(!timer->function) in kernel/timer.c:__mod_timer
-> Device is stuck, not usable any more.
-> 
-> Thanks
-> 
-> - -- 
-> http://www.halfdog.net/
-> PGP: 156A AE98 B91F 0114 FE88  2BD8 C459 9386 feed a bee
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1.4.6 (GNU/Linux)
-> 
-> iD8DBQFN/cvFxFmThv7tq+4RAgfvAJ97N9bnKq4kN99XneTMyJZ5Hha9MQCfcguN
-> L4trkTeOsIqDWF8m6VUqcgc=
-> =zvYY
-> -----END PGP SIGNATURE-----
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Rob
