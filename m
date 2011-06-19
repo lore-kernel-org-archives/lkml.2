@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469Ab1FSLTK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 07:19:10 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:35677 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753404Ab1FSLTJ (ORCPT
+	id S1753486Ab1FSLZq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 07:25:46 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:57867 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753447Ab1FSLZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 07:19:09 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Michael Schmitz <schmitzmic@googlemail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        "Linux\/m68k" <linux-m68k@vger.kernel.org>
-Subject: Re: m68k: Convert to genirq (WIP)
-References: <alpine.DEB.2.00.1105282010370.16617@ayla.of.borg>
-	<BANLkTinDvLqHChPUpG9v1AXp0E=iRLteDg@mail.gmail.com>
-	<m2sjr8gyp0.fsf@igel.home>
-	<BANLkTikxzQSXLfr81q+b1rScW8YCcoJZRQ@mail.gmail.com>
-X-Yow: How many retired bricklayers from FLORIDA are out purchasing
- PENCIL SHARPENERS right NOW??
-Date: Sun, 19 Jun 2011 13:19:05 +0200
-In-Reply-To: <BANLkTikxzQSXLfr81q+b1rScW8YCcoJZRQ@mail.gmail.com> (Geert
-	Uytterhoeven's message of "Sun, 19 Jun 2011 12:17:34 +0200")
-Message-ID: <m2mxhejcgm.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Sun, 19 Jun 2011 07:25:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 7/10 v2] Generic Watchdog Timer Driver
+Date: Sun, 19 Jun 2011 13:25:17 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: Wim Van Sebroeck <wim@iguana.be>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>
+References: <20110618172537.GH3441@infomag.iguana.be> <201106182107.45682.arnd@arndb.de> <20110619110328.39c0f5e1@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110619110328.39c0f5e1@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106191325.17181.arnd@arndb.de>
+X-Provags-ID: V02:K0:WiQfGjc8WG/+lIZnDcOrOmF5W/Rz+favx8HgyUL+IoY
+ evQL/xt+v3OQUUh4Uexg8vs+N9K0OqAoI5kylwSiq6PkOEr029
+ 1IT1cpl+O0gKD06xfqbB2kQTmf/SgC86D7P6PlbFj85lrfgCdC
+ sJP/KDXSBje4mGpBJNMsRzrGOp0h0m/1SR8jix40WLowoRQf8w
+ QBB5CTSGVZum1yGtl5YIA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> writes:
+On Sunday 19 June 2011 12:03:28 Alan Cox wrote:
+> > >         /* Register the watchdog timer device */
+> > >         res = watchdog_register_device(&wdt_dev);
+> > 
+> > Why is this a feature of the individual drivers and not of the core?
+> 
+> It's a hardware dependant feature - some watchdogs cannot be stopped once
+> initialized.
 
-> BUG_ON(!irqs_disabled()) triggers as flags is 0x2619 there.
+Ah, I see. OTOH, 80 of the 107 watchdogs in the kernel do provide it as a
+module option, which indicates that there is some room for consolidation,
+even if it might not be appropriate for every one of them.
 
-Which is correct, since arch_local_irq_disable would set it to 2719.
-You need to find out why arch_local_irq_disable wasn't called.
+> > Maybe it can be in both, so existing drivers don't need to change the user
+> > interface, but new drivers don't have to provide the option individually
+> > when you can simply set it for the base module.
+> 
+> Then you'd need an additional interface to specify which watchdog as soon
+> as we support multiple watchdogs.
 
-Andreas.
+You can always have multiple ways of setting nowayout -- hardware requirements,
+global module option, local module option, and a new ioctl command -- but
+what is being used is then the logical OR of all of them.
 
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+	Arnd
