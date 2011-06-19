@@ -1,42 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab1FSCeM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Jun 2011 22:34:12 -0400
-Received: from nm18.access.bullet.mail.mud.yahoo.com ([66.94.237.219]:40423
-	"HELO nm18.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751992Ab1FSCeI (ORCPT
+	id S1752209Ab1FSCrR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Jun 2011 22:47:17 -0400
+Received: from nm12-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.11]:22028
+	"HELO nm12-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751883Ab1FSCrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Jun 2011 22:34:08 -0400
-X-Yahoo-Newman-Id: 789959.76070.bm@omp1014.access.mail.mud.yahoo.com
+	Sat, 18 Jun 2011 22:47:15 -0400
+X-Greylist: delayed 423 seconds by postgrey-1.27 at vger.kernel.org; Sat, 18 Jun 2011 22:47:15 EDT
+X-Yahoo-Newman-Id: 154406.43130.bm@omp1030.access.mail.mud.yahoo.com
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
   s=s1024; d=rogers.com;
-  h=DKIM-Signature:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:To:Cc:Subject:Date:Message-ID:Organization:User-Agent:In-Reply-To:References:MIME-Version:Content-Transfer-Encoding:Content-Type;
-  b=3ivdfI3wqsg/O/2oPNri0bWB4o1I3LKUzOVwyhR64ZRP3QQ/iCfUUnV/EIzSlPV5SqvORWtuQtYYhVZAimebpce2YIUgFiKD+PrAbX+geiM0zVaQI3Jae61c32z5nn8y235K3jyAyfKx6FJ77vxbFe88lj40QZbJ/vPSrKf+9ME=  ;
+  h=DKIM-Signature:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:To:Subject:Date:Message-ID:Organization:User-Agent:MIME-Version:Content-Transfer-Encoding:Content-Type;
+  b=zByIUXe67T0+VXY3q4w9NDoc+Q4tnzXQiy6kWwhAKaSpWX+/XUOnbXFQ0rxkrcou7zW0Gwfvi24jrA/nGomGBmkthog+VkumBq6PETfzkcaJs7sggT/W5v5AkDCjauLCbJgGHMrKf27ET6RWVGMrJOm2w4vZaBLwD0h4LlTuIjM=  ;
 X-Yahoo-SMTP: rZzhDImswBA_40COIyZI42.8nAz5YXic.zo1v550XQVtX7k-
-X-YMail-OSG: tT8G3iEVM1n2xbf5cLvMj.U2oCmov4hu4CUB_NKx66992Xf
- 4eKyzZJITo1iBUg.XnPsABEdC2Uewol1zgCZ21HxlMvvTfFAkMwFA.0y0Sb0
- 3Jx4kfe23udfDeDJ0zkxWZJzJ0ed4qfyqZtZS.mGDyDK1kHKHoQZHjLpL60j
- N8ag8Je6BTbK8VWH5owr9NEsArMvX1AZBxEw_d64hMqElMGeYgA20B03XQoR
- DAZAcB9j7ZN1JhblbiFU2pumiBfrXMJROqL32WsX8IZB_E3hpavF48yg6Rln
- JqXHDa3PadKr7bSri_7GUVamYiV4xGFgrnqSPSIgi8fTa55HfwsH7j8IEAZH
- ObbglmWmKReWLNcguBM5WcuAgcUeUpU8mipWlXCwxAt_eReZQZtnm.49SI4U
- cpi0qBd6b_AEsEokZ_IPxzNDz6dpCrJZV3HmqpH11Ez8aq7hFLL.VZV6oTLR
- iM8Ekvxklj22v_BfREDGQemDdhjo_jKbEYmdGNkYvN4sqcgWQWci1KdoQyVP
- z8k_rw9.HQeWKP9I3Rl.UtEpUCNwGL3TrdMWX
+X-YMail-OSG: ZMDa.4sVM1mtoHlRS7Dfxxc3LvjrzPxrgR.vAdWXm04DXG.
+ i5fo.jPLWSdCexqlbJPNiwOjXlCHW_fo_yONxECep4atd58ZVAeXGWNqnQAW
+ pPrGTNJeAtGcc7.F.F4cuRtajvpqxArFYS6TBNkBzi5QXy1YAu9qotm1C8ma
+ .Au6icTpd.eQeFUSS5fGPvXcwXtdaBz6OP66Ukzq2wQVWGF1X9IKgkIffpSr
+ t1QGtgszMTogrVJabQtNJD6Uh4yZrhitYeZqmEjqd8BYOL.WrZx5073FYzoQ
+ nJ6l_zKX2NlLE8LLxHflnj4iHGxQ87PO.tB533zxSwHfqmuNCM3CU9cnmuEj
+ VLkJ6O2ahhpaRUiLMl_pqGHvbFs1WtJzaHW0A9No-
 X-Yahoo-Newman-Property: ymail-3
 From: Shawn Starr <shawn.starr@rogers.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-Subject: Re: [Bug #37232] [3.0-rc1][NMI/DMAR][iwlagn] errors - PCI system error (SERR) for reason a1 on CPU 0
-Date: Sat, 18 Jun 2011 22:34:03 -0400
-Message-ID: <9766569.DLsi33Yrbe@segfault.sh0n.net>
+To: linux-kernel@vger.kernel.org
+Subject: [3.0-rc2+][REGRESSION] using VirtualBox 64bit CPU detecton broke?
+Date: Sat, 18 Jun 2011 22:40:06 -0400
+Message-ID: <1552308.8jIRfYQQ5e@segfault.sh0n.net>
 Organization: sh0n.net
 User-Agent: KMail/4.6.0 (Linux/3.0-0.rc3.git5.1.fc16.x86_64; KDE/4.6.80; x86_64; ; )
-In-Reply-To: <JL7O0m0yLjL.A.suC.xNS9NB@chimera>
-References: <vv0uv79EvLN.A.jiC.pNS9NB@chimera> <JL7O0m0yLjL.A.suC.xNS9NB@chimera>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -44,30 +36,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, June 12, 2011 10:30:54 PM Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
-> 
-> The following bug entry is on the current list of known regressions
-> from 2.6.39.  Please verify if it still should be listed and let the
-> tracking team know (either way).
-> 
-This continues in -rc3 (3.0-0.rc3.git5.1.fc16.x86_64)
+Hello Folks, 
 
-[   22.675931] NMI: PCI system error (SERR) for reason a1 on CPU 0.
-[  163.002909] DMAR:[DMA Write] Request device [03:00.0] fault addr ffe48000 
-[  163.002911] DMAR:[fault reason 05] PTE Write access is not set
+For some reason after 3.0-rc1 VirtualBox will not boot any 64bit operating 
+systems even though this CPU is 64bit. I'm not sure if this is a VirtualBox 
+issue or something changed in kernel that broke this.
 
-03:00.0 Network controller: Intel Corporation PRO/Wireless 5100 AGN [Shiloh] 
-Network Connection
+Can anyone else confirm this as well? My current kernel is 
+3.0-0.rc3.git5.1.fc16.x86_64
 
-I assume both of those are separate issues, but they continue in any case.
+I don't suspect it's a Fedora specific patch that is causing this, but I'm not 
+sure.
 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=37232
-> Subject		: [3.0-rc1][NMI/DMAR][iwlagn] errors - PCI system error (SERR) 
-for
-> reason a1 on CPU 0 Submitter	: Shawn Starr <shawn.starr@XXXXX>
-> Date		: 2011-06-03 4:56 (10 days old)
-> Message-ID	: <4478124.OuFNgaPiHS@XXXXXX>
-> References	: http://marc.info/?l=linux-kernel&m=130707737616116&w=2
+/proc/cpuinfo:
+
+processor       : 1
+vendor_id       : GenuineIntel
+cpu family      : 6
+model           : 23
+model name      : Intel(R) Core(TM)2 Duo CPU     T9400  @ 2.53GHz
+stepping        : 10
+cpu MHz         : 800.000
+cache size      : 6144 KB
+physical id     : 0
+siblings        : 2
+core id         : 1
+cpu cores       : 2
+apicid          : 1
+initial apicid  : 1
+fpu             : yes
+fpu_exception   : yes
+cpuid level     : 13
+wp              : yes
+flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca 
+cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx lm 
+constant_tsc arch_perfmon pebs bts nopl aperfmperf pni dtes64 monitor ds_cpl 
+vmx smx est tm2 ssse3 cx16 xtpr pdcm sse4_1 xsave lahf_lm ida dts tpr_shadow 
+vnmi flexpriority
+bogomips        : 5053.73
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 36 bits physical, 48 bits virtual
+power management:
+
+
