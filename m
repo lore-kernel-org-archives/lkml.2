@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973Ab1FSNhB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 09:37:01 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64511 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753709Ab1FSNg7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 09:36:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=gVMofGovkxk/2kgjt8YjGaZa0+W/pn1GFD/RuYl8LQh7+2bdCmuuGgXkIVAw9LUAad
-         d3QoYk5oC5K0eG6yLoDO/kfd1dg6Q3PMRdhvh8Sx+f2YIxD1Gj6EsptweXFqwzkYUNUb
-         BqO9UIAEnPVVlvA7UJVxKLNd/7IWDyaKAlZpQ=
+	id S1754020Ab1FSNp1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 09:45:27 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:39649 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752481Ab1FSNpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jun 2011 09:45:25 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Shawn Starr <shawn.starr@rogers.com>
+Subject: Re: [Bug #37232] [3.0-rc1][NMI/DMAR][iwlagn] errors - PCI system error (SERR) for reason a1 on CPU 0
+Date: Sun, 19 Jun 2011 15:46:02 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+References: <vv0uv79EvLN.A.jiC.pNS9NB@chimera> <JL7O0m0yLjL.A.suC.xNS9NB@chimera> <9766569.DLsi33Yrbe@segfault.sh0n.net>
+In-Reply-To: <9766569.DLsi33Yrbe@segfault.sh0n.net>
 MIME-Version: 1.0
-In-Reply-To: <m2mxhejcgm.fsf@igel.home>
-References: <alpine.DEB.2.00.1105282010370.16617@ayla.of.borg>
-	<BANLkTinDvLqHChPUpG9v1AXp0E=iRLteDg@mail.gmail.com>
-	<m2sjr8gyp0.fsf@igel.home>
-	<BANLkTikxzQSXLfr81q+b1rScW8YCcoJZRQ@mail.gmail.com>
-	<m2mxhejcgm.fsf@igel.home>
-Date: Sun, 19 Jun 2011 15:36:58 +0200
-X-Google-Sender-Auth: JVMQvxsApZrKQiKffBDzSyL3W8Y
-Message-ID: <BANLkTimWnDmKx2bh7T+V_x-pPj47faLJfw@mail.gmail.com>
-Subject: Re: m68k: Convert to genirq (WIP)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Michael Schmitz <schmitzmic@googlemail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106191546.02503.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 19, 2011 at 13:19, Andreas Schwab <schwab@linux-m68k.org> wrote:
-> Geert Uytterhoeven <geert@linux-m68k.org> writes:
->
->> BUG_ON(!irqs_disabled()) triggers as flags is 0x2619 there.
->
-> Which is correct, since arch_local_irq_disable would set it to 2719.
-> You need to find out why arch_local_irq_disable wasn't called.
+On Sunday, June 19, 2011, Shawn Starr wrote:
+> On Sunday, June 12, 2011 10:30:54 PM Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> > 
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.39.  Please verify if it still should be listed and let the
+> > tracking team know (either way).
+> > 
+> This continues in -rc3 (3.0-0.rc3.git5.1.fc16.x86_64)
+> 
+> [   22.675931] NMI: PCI system error (SERR) for reason a1 on CPU 0.
+> [  163.002909] DMAR:[DMA Write] Request device [03:00.0] fault addr ffe48000 
+> [  163.002911] DMAR:[fault reason 05] PTE Write access is not set
+> 
+> 03:00.0 Network controller: Intel Corporation PRO/Wireless 5100 AGN [Shiloh] 
+> Network Connection
+> 
+> I assume both of those are separate issues, but they continue in any case.
 
-I don't think we ever explicitly disable interrupts in interrupt handlers.
-The CPU disables all interupts of the same or lower level anyway.
-As all Atari interrupts (except for hblank and vblank) run at level 6,
-this is why flags & 0x700 == 0x600 above.
+Thanks for the update.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Rafael
