@@ -1,230 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833Ab1FSWGs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 18:06:48 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:40255 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752929Ab1FSWGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 18:06:46 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Magnus Damm <magnus.damm@gmail.com>
-Subject: [Update][PATCH 8/8] ARM / shmobile: Support for I/O power domains for SH7372 (v6)
-Date: Mon, 20 Jun 2011 00:07:47 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org
-References: <201106112223.04972.rjw@sisk.pl> <BANLkTi=u_eyGZt9e0CuVpyz9B08HarEyVw@mail.gmail.com> <201106160106.40553.rjw@sisk.pl>
-In-Reply-To: <201106160106.40553.rjw@sisk.pl>
+	id S1754874Ab1FSWKa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 18:10:30 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49032 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752366Ab1FSWK3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jun 2011 18:10:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=JkmCQ62u46TFt4b8TgtYJErJCZDf/Dfn6/z2Valc4IjwifWSxYRCLqY0sZoLozytBx
+         HzIlhra5qh+m7lNkOh2DPTmc571bD+vrB2uk5rKAo+jfZR0GkGjQK4NuC0nvzaUbf/bU
+         ikf+/CDXDTs8YBRjrZidfFdgZKgY90pLwo+Ho=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106200007.47828.rjw@sisk.pl>
+In-Reply-To: <1308470447.3539.66.camel@edumazet-laptop>
+References: <BANLkTik3iseHFah_s=NNasQ22NtA+9zLWA@mail.gmail.com>
+	<1308470447.3539.66.camel@edumazet-laptop>
+Date: Sun, 19 Jun 2011 17:10:28 -0500
+Message-ID: <BANLkTik_9p+6CA_+A91CNH+KuskH3sh72w@mail.gmail.com>
+Subject: Re: tracing kernel panics
+From: Shane <software.research.development@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+> It seems you have bugs in your module, maybe something like freeing
+> memory twice, or memory you dont own, or manipulating some data without
+> taking the associated lock protecting it.
+>
+> tcp sockets are protected by RCU and various locks, getting them used
+> right is not an easy task.
+>
 
-Use the generic power domains support introduced by the previous
-patch to implement support for power domains on SH7372.
+All very helpful comments. I'm interested in how you guys came to the
+conclusion that I was doing these things wrong. Not that I don't deny
+it, but I'm trying to learn the *how* of getting to the source of a
+problem without asking what am I doing wrong.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
+For example, is there anyplace that tells how to use TCP sockets
+correctly in relation to the various locks? Best I can tell, I'm doing
+exactly as is in the kernel sources under /net. I'm still trying to
+understand when to use a lock when manipulating data, or what type of
+data needs a lock.
 
-Hi,
-
-I think that all of the previous comments have been addressed in this
-version of the patch.
-
-Thanks,
-Rafael
-
----
- arch/arm/Kconfig                             |    1 
- arch/arm/mach-shmobile/Makefile              |    4 +
- arch/arm/mach-shmobile/board-mackerel.c      |    4 +
- arch/arm/mach-shmobile/include/mach/sh7372.h |   28 ++++++++++
- arch/arm/mach-shmobile/pm-sh7372.c           |   71 +++++++++++++++++++++++++++
- 5 files changed, 108 insertions(+)
-
-Index: linux-2.6/arch/arm/mach-shmobile/board-mackerel.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-shmobile/board-mackerel.c
-+++ linux-2.6/arch/arm/mach-shmobile/board-mackerel.c
-@@ -1582,6 +1582,10 @@ static void __init mackerel_init(void)
- 
- 	platform_add_devices(mackerel_devices, ARRAY_SIZE(mackerel_devices));
- 
-+	sh7372_init_pm_domain(&sh7372_a4lc_domain);
-+	sh7372_add_device_to_domain(SH7372_A4LC, &lcdc_device);
-+	sh7372_add_device_to_domain(SH7372_A4LC, &hdmi_lcdc_device);
-+
- 	hdmi_init_pm_clock();
- 	sh7372_pm_init();
- }
-Index: linux-2.6/arch/arm/mach-shmobile/include/mach/sh7372.h
-===================================================================
---- linux-2.6.orig/arch/arm/mach-shmobile/include/mach/sh7372.h
-+++ linux-2.6/arch/arm/mach-shmobile/include/mach/sh7372.h
-@@ -12,6 +12,7 @@
- #define __ASM_SH7372_H__
- 
- #include <linux/sh_clk.h>
-+#include <linux/pm_domain.h>
- 
- /*
-  * Pin Function Controller:
-@@ -470,4 +471,31 @@ extern struct clk sh7372_fsibck_clk;
- extern struct clk sh7372_fsidiva_clk;
- extern struct clk sh7372_fsidivb_clk;
- 
-+struct platform_device;
-+
-+struct sh7372_pm_domain {
-+	struct generic_pm_domain genpd;
-+	unsigned int bit_shift;
-+};
-+
-+static inline struct sh7372_pm_domain *to_sh7372_pd(struct generic_pm_domain *d)
-+{
-+	return container_of(d, struct sh7372_pm_domain, genpd);
-+}
-+
-+#ifdef CONFIG_PM
-+extern struct sh7372_pm_domain sh7372_a4lc_domain;
-+#define SH7372_A4LC	(&sh7372_a4lc_domain)
-+
-+extern void sh7372_init_pm_domain(struct sh7372_pm_domain *sh7372_pd);
-+extern void sh7372_add_device_to_domain(struct sh7372_pm_domain *sh7372_pd,
-+					struct platform_device *pdev);
-+#else
-+#define SH7372_A4LC	NULL
-+
-+static inline void sh7372_init_pm_domain(struct sh7372_pm_domain *sh7372_pd) {}
-+static inline void sh7372_add_device_to_domain(struct sh7372_pm_domain *pd,
-+					       struct platform_device *pdev) {}
-+#endif /* CONFIG_PM */
-+
- #endif /* __ASM_SH7372_H__ */
-Index: linux-2.6/arch/arm/mach-shmobile/Makefile
-===================================================================
---- linux-2.6.orig/arch/arm/mach-shmobile/Makefile
-+++ linux-2.6/arch/arm/mach-shmobile/Makefile
-@@ -42,6 +42,10 @@ obj-$(CONFIG_MACH_AP4EVB)	+= board-ap4ev
- obj-$(CONFIG_MACH_AG5EVM)	+= board-ag5evm.o
- obj-$(CONFIG_MACH_MACKEREL)	+= board-mackerel.o
- 
-+# PM objects
-+pm-$(CONFIG_ARCH_SH7372)	+= pm-sh7372.o
-+
- # Framework support
- obj-$(CONFIG_SMP)		+= $(smp-y)
- obj-$(CONFIG_GENERIC_GPIO)	+= $(pfc-y)
-+obj-$(CONFIG_PM)		+= $(pm-y)
-Index: linux-2.6/arch/arm/mach-shmobile/pm-sh7372.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-shmobile/pm-sh7372.c
-+++ linux-2.6/arch/arm/mach-shmobile/pm-sh7372.c
-@@ -15,16 +15,87 @@
- #include <linux/list.h>
- #include <linux/err.h>
- #include <linux/slab.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/platform_device.h>
- #include <asm/system.h>
- #include <asm/io.h>
- #include <asm/tlbflush.h>
- #include <mach/common.h>
-+#include <mach/sh7372.h>
- 
- #define SMFRAM 0xe6a70000
- #define SYSTBCR 0xe6150024
- #define SBAR 0xe6180020
- #define APARMBAREA 0xe6f10020
- 
-+#define SPDCR 0xe6180008
-+#define SWUCR 0xe6180014
-+#define PSTR 0xe6180080
-+
-+static int pd_power_down(struct generic_pm_domain *genpd)
-+{
-+	struct sh7372_pm_domain *sh7372_pd = to_sh7372_pd(genpd);
-+	unsigned int mask = 1 << sh7372_pd->bit_shift;
-+
-+	if (__raw_readl(PSTR) & mask) {
-+		__raw_writel(mask, SPDCR);
-+
-+		while (__raw_readl(SPDCR) & mask)
-+			cpu_relax();
-+
-+		pr_debug("sh7372 power domain down 0x%08x -> PSTR = 0x%08x\n",
-+			 mask, __raw_readl(PSTR));
-+	}
-+
-+	return 0;
-+}
-+
-+static int pd_power_up(struct generic_pm_domain *genpd)
-+{
-+	struct sh7372_pm_domain *sh7372_pd = to_sh7372_pd(genpd);
-+	unsigned int mask = 1 << sh7372_pd->bit_shift;
-+
-+	if (!(__raw_readl(PSTR) & mask)) {
-+		__raw_writel(mask, SWUCR);
-+
-+		while (__raw_readl(SWUCR) & mask)
-+			cpu_relax();
-+
-+		pr_debug("sh7372 power domain up 0x%08x -> PSTR = 0x%08x\n",
-+			 mask, __raw_readl(PSTR));
-+	}
-+
-+	return 0;
-+}
-+
-+void sh7372_init_pm_domain(struct sh7372_pm_domain *sh7372_pd)
-+{
-+	struct generic_pm_domain *genpd = &sh7372_pd->genpd;
-+
-+	pm_genpd_init(genpd, NULL, false);
-+	genpd->stop_device = pm_runtime_clk_suspend;
-+	genpd->start_device = pm_runtime_clk_resume;
-+	genpd->power_off = pd_power_down;
-+	genpd->power_on = pd_power_up;
-+	pd_power_up(&sh7372_pd->genpd);
-+}
-+
-+void sh7372_add_device_to_domain(struct sh7372_pm_domain *sh7372_pd,
-+				 struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+
-+	if (!dev->power.subsys_data) {
-+		pm_runtime_clk_init(dev);
-+		pm_runtime_clk_add(dev, NULL);
-+	}
-+	pm_genpd_add_device(&sh7372_pd->genpd, dev);
-+}
-+
-+struct sh7372_pm_domain sh7372_a4lc_domain = {
-+	.bit_shift = 1,
-+};
-+
- static void sh7372_enter_core_standby(void)
- {
- 	void __iomem *smfram = (void __iomem *)SMFRAM;
-Index: linux-2.6/arch/arm/Kconfig
-===================================================================
---- linux-2.6.orig/arch/arm/Kconfig
-+++ linux-2.6/arch/arm/Kconfig
-@@ -642,6 +642,7 @@ config ARCH_SHMOBILE
- 	select NO_IOPORT
- 	select SPARSE_IRQ
- 	select MULTI_IRQ_HANDLER
-+	select PM_GENERIC_DOMAINS
- 	help
- 	  Support for Renesas's SH-Mobile and R-Mobile ARM platforms.
- 
+What scares me (because I'm spending so much time on it) is that some
+of these panics seem to be coming from the VM and I may be chasing
+something that is the effect rather than the cause, and therefore not
+seeing/catching the real panic. Or maybe I have all the info I need,
+but just confused on how to read it.
