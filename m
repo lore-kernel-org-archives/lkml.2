@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492Ab1FSL3C (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 07:29:02 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:53041 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753430Ab1FSL27 (ORCPT
+	id S1753491Ab1FSLcg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 07:32:36 -0400
+Received: from fep20.mx.upcmail.net ([62.179.121.40]:59584 "EHLO
+	fep20.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753404Ab1FSLcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 07:28:59 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 9/10 v2] Generic Watchdog Timer Driver
-Date: Sun, 19 Jun 2011 13:28:40 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: Wim Van Sebroeck <wim@iguana.be>, LKML <linux-kernel@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>
-References: <20110618172727.GJ3441@infomag.iguana.be> <201106182117.49026.arnd@arndb.de> <20110619110141.1ac221f1@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110619110141.1ac221f1@lxorguk.ukuu.org.uk>
+	Sun, 19 Jun 2011 07:32:35 -0400
+X-SourceIP: 115.184.85.172
+Reply-To: <centerdept2@yahoo.com>
+From: "VERIFICATION DESK" <iml.koopmans@tiscali.nl>
+Subject: VERIFICATION DESK
+Date: Sun, 19 Jun 2011 17:02:31 +0530
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106191328.40602.arnd@arndb.de>
-X-Provags-ID: V02:K0:z2bq/83KNUiTBBWJVqiwnPElHwBboeGzv4pfIfebS24
- 6KWw/+HOVFsTlxmEz9b0CBgXWQX07H8cEYDYS30VBD3XP8rTlt
- dD0w81wWiTcvneFaXduWuvTSMCmKG51VrKwn2utmdmSVp+D1SF
- k87vjafXdkAbVxUL+w50FG8aJ3L8M4W9XJkZm/FpOZQ8n9vv76
- EL49YiXBdxt2HMfRpvdAA==
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_00FD_01C2A9A6.3E8615DE"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 110618-1, 06/19/2011), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <20110619113232.ZUNB1387.viefep20-int.chello.at@edge04.upcmail.net>
+X-Cloudmark-Analysis: v=1.1 cv=kR4HTYXl3FXdRAFjS5RpcnDbDNViz/VYMWXR75RtSM0= c=1 sm=0 a=rs8dsEx4Bv4A:10 a=oJL9TIRMo0YA:10 a=8EU9Q7FnrCoA:10 a=drcVBYOvXG8A:10 a=ZKRbYMbU8n4C7wYheXcA:9 a=6M3x49BwGxP9Dons:21 a=tmDB2pz8zgVS8dQt:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 19 June 2011 12:01:41 Alan Cox wrote:
-> > Hmm, I'm not sure about this one. It does make the conversion
-> > of existing drivers easier but doesn't encourage doing a good
-> > job there.
-> 
-> It's not ultimately about conversion. A lot of watchdogs have interfaces
-> that are not quite generic, extra requirements and custom interfaces. The
-> ioctl interface is needed for that, not for conversions.
+This is a multi-part message in MIME format.
 
-It's probably fine to have additional custom interfaces in some watchdogs
-where needed, but do you think we also need to give drivers a way to
-override the common ones?
+------=_NextPart_000_00FD_01C2A9A6.3E8615DE
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
-If a driver has a different interpretation of a common command, I would
-consider that a bug, not a driver specific extension. I would also
-like to see the proper extensions easily visible, so we can create
-new common interfaces in cases where multiple drivers have the same
-requirement.
 
-	Arnd
+------=_NextPart_000_00FD_01C2A9A6.3E8615DE
+Content-Type: application/octet-stream;
+	name="fmt.txt"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="fmt.txt"
+
+WW91ciBFbWFpbCBJZCBoYXMgd29uIDEsMDAwLDAwMC4wMCBHQlAgaW4gdGhl
+IEJyaXRpc2ggTUlDUk9TT0ZUIA0KUHJvbW8gDQoyMDExLiANCnNlbmQgeW91
+ciANCg0KTmFtZXMuIA0KQWRkcmVzcy4gDQpTZXguIA0KQWdlLiANClRlbC4g
+DQpPY2N1cGF0aW9uLiANCg0KdG8gb3VyIGNsYWltcyBkZXBhcnRtZW50IGJ5
+IGNsaWNraW5nIHJlcGx5IHRvIA0KDQpUaGFuayB5b3UgZm9yIHlvdXIgY29y
+cG9yYXRpb24gDQpDQVJM
+
+------=_NextPart_000_00FD_01C2A9A6.3E8615DE--
