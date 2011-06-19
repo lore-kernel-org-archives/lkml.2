@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab1FSLri (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 07:47:38 -0400
-Received: from mail.southpole.se ([193.12.106.18]:37750 "EHLO
+	id S1753711Ab1FSLrS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 07:47:18 -0400
+Received: from mail.southpole.se ([193.12.106.18]:37751 "EHLO
 	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753605Ab1FSLpX (ORCPT
+	with ESMTP id S1753607Ab1FSLpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 07:45:23 -0400
+	Sun, 19 Jun 2011 07:45:24 -0400
 From: Jonas Bonn <jonas@southpole.se>
 To: linux-kernel@vger.kernel.org
 Cc: Jonas Bonn <jonas@southpole.se>
-Subject: [PATCH 13/19] OpenRISC: GPIO
-Date: Sun, 19 Jun 2011 13:43:39 +0200
-Message-Id: <1308483825-6023-14-git-send-email-jonas@southpole.se>
+Subject: [PATCH 14/19] OpenRISC: Module support
+Date: Sun, 19 Jun 2011 13:43:40 +0200
+Message-Id: <1308483825-6023-15-git-send-email-jonas@southpole.se>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1308483825-6023-1-git-send-email-jonas@southpole.se>
 References: <1308483825-6023-1-git-send-email-jonas@southpole.se>
@@ -24,81 +24,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jonas Bonn <jonas@southpole.se>
 ---
- arch/openrisc/include/asm/gpio.h |   65 ++++++++++++++++++++++++++++++++++++++
- 1 files changed, 65 insertions(+), 0 deletions(-)
- create mode 100644 arch/openrisc/include/asm/gpio.h
+ arch/openrisc/kernel/module.c |  126 +++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 126 insertions(+), 0 deletions(-)
+ create mode 100644 arch/openrisc/kernel/module.c
 
-diff --git a/arch/openrisc/include/asm/gpio.h b/arch/openrisc/include/asm/gpio.h
+diff --git a/arch/openrisc/kernel/module.c b/arch/openrisc/kernel/module.c
 new file mode 100644
-index 0000000..0b0d174
+index 0000000..952b129
 --- /dev/null
-+++ b/arch/openrisc/include/asm/gpio.h
-@@ -0,0 +1,65 @@
++++ b/arch/openrisc/kernel/module.c
+@@ -0,0 +1,126 @@
 +/*
-+ * OpenRISC Linux
++ * OpenRISC module.c
 + *
 + * Linux architectural port borrowing liberally from similar works of
 + * others.  All original copyrights apply as per the original source
 + * declaration.
 + *
-+ * OpenRISC implementation:
-+ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Modifications for the OpenRISC architecture:
 + * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
-+ * et al.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ *      This program is free software; you can redistribute it and/or
++ *      modify it under the terms of the GNU General Public License
++ *      as published by the Free Software Foundation; either version
++ *      2 of the License, or (at your option) any later version.
 + */
 +
-+#ifndef __ASM_OPENRISC_GPIO_H
-+#define __ASM_OPENRISC_GPIO_H
++#include <linux/moduleloader.h>
++#include <linux/elf.h>
++#include <linux/vmalloc.h>
++#include <linux/fs.h>
++#include <linux/string.h>
++#include <linux/kernel.h>
 +
-+#include <linux/errno.h>
-+#include <asm-generic/gpio.h>
-+
-+#ifdef CONFIG_GPIOLIB
-+
-+/*
-+ * OpenRISC (or1k) does not have on-chip GPIO's so there is not really
-+ * any standardized implementation that makes sense here.  If passing
-+ * through gpiolib becomes a bottleneck then it may make sense, on a
-+ * case-by-case basis, to implement these inlined/rapid versions.
-+ *
-+ * Just call gpiolib.
-+ */
-+static inline int gpio_get_value(unsigned int gpio)
++void *module_alloc(unsigned long size)
 +{
-+	return __gpio_get_value(gpio);
++	pr_debug("module_alloc size: %lu\n", size);
++
++	if (size == 0)
++		return NULL;
++
++	return vmalloc(size);
 +}
 +
-+static inline void gpio_set_value(unsigned int gpio, int value)
++
++/* Free memory returned from module_alloc */
++void module_free(struct module *mod, void *module_region)
 +{
-+	__gpio_set_value(gpio, value);
++	vfree(module_region);
++	/* FIXME: If module_region == mod->init_region, trim exception
++           table entries. */
 +}
 +
-+static inline int gpio_cansleep(unsigned int gpio)
++/* We don't need anything special. */
++int module_frob_arch_sections(Elf_Ehdr *hdr,
++			      Elf_Shdr *sechdrs,
++			      char *secstrings,
++			      struct module *mod)
 +{
-+	return __gpio_cansleep(gpio);
++	return 0;
 +}
 +
-+/*
-+ * Not implemented, yet.
-+ */
-+static inline int gpio_to_irq(unsigned int gpio)
++int apply_relocate_add(Elf32_Shdr *sechdrs,
++		       const char *strtab,
++		       unsigned int symindex,
++		       unsigned int relsec,
++		       struct module *me)
 +{
-+	return -ENOSYS;
++	unsigned int i;
++	Elf32_Rela *rel = (void *)sechdrs[relsec].sh_addr;
++	Elf32_Sym *sym;
++//	Elf32_Addr relocation;
++	uint32_t *location;
++	uint32_t value;
++
++	pr_debug("Applying relocate section %u to %u\n", relsec,
++		 sechdrs[relsec].sh_info);
++	for (i = 0; i < sechdrs[relsec].sh_size / sizeof(*rel); i++) {
++		/* This is where to make the change */
++		location = (void *)sechdrs[sechdrs[relsec].sh_info].sh_addr
++			+ rel[i].r_offset;
++
++		/* This is the symbol it is referring to.  Note that all
++		   undefined symbols have been resolved.  */
++		sym = (Elf32_Sym *)sechdrs[symindex].sh_addr
++			+ ELF32_R_SYM(rel[i].r_info);
++		value = sym->st_value + rel[i].r_addend;
++
++		switch(ELF32_R_TYPE(rel[i].r_info)) {
++		case R_OR32_32:
++			*location = value;
++			break;
++		case R_OR32_CONST:
++			location = (uint16_t*)location + 1;
++			*((uint16_t*)location) = (uint16_t) (value);
++			break;
++		case R_OR32_CONSTH:
++			location = (uint16_t*)location + 1;
++			*((uint16_t*)location) = (uint16_t) (value >> 16);
++			break;
++		case R_OR32_JUMPTARG:
++			value -= (uint32_t)location;
++			value >>= 2;
++			value &= 0x03ffffff;
++			value |= *location & 0xfc000000;
++			*location = value;
++			break;
++		default:
++			pr_err("module %s: Unknown relocation: %u\n",
++			       me->name, ELF32_R_TYPE(rel[i].r_info));
++			break;
++		}
++	}
++
++	return 0;
 +}
 +
-+static inline int irq_to_gpio(unsigned int irq)
++int apply_relocate(Elf32_Shdr *sechdrs,
++		   const char *strtab,
++		   unsigned int symindex,
++		   unsigned int relsec,
++		   struct module *me)
 +{
-+	return -EINVAL;
++	pr_err("module %s: REL relocation unsupported\n", me->name);
++	return -ENOEXEC;
 +}
 +
-+#endif /* CONFIG_GPIOLIB */
++int module_finalize(const Elf_Ehdr *hdr,
++		    const Elf_Shdr *sechdrs,
++		    struct module *me)
++{
++	return 0;
++}
 +
-+#endif /* __ASM_OPENRISC_GPIO_H */
++void module_arch_cleanup(struct module *mod)
++{
++}
 -- 
 1.7.4.1
 
