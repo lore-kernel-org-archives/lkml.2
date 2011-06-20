@@ -1,30 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab1FTRZQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 13:25:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42184 "EHLO mx1.redhat.com"
+	id S1755713Ab1FTR1o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 13:27:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45128 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753625Ab1FTRZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 13:25:13 -0400
-Message-ID: <4DFF8271.20301@redhat.com>
-Date: Tue, 21 Jun 2011 01:25:05 +0800
+	id S1755689Ab1FTR1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 13:27:39 -0400
+Message-ID: <4DFF82E2.1010409@redhat.com>
+Date: Tue, 21 Jun 2011 01:26:58 +0800
 From: Cong Wang <amwang@redhat.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
 CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <jweiner@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
 Subject: Re: [PATCH 3/3] mm: print information when THP is disabled automatically
-References: <1308587683-2555-1-git-send-email-amwang@redhat.com> <1308587683-2555-3-git-send-email-amwang@redhat.com> <20110620165425.GF20843@redhat.com>
-In-Reply-To: <20110620165425.GF20843@redhat.com>
+References: <1308587683-2555-1-git-send-email-amwang@redhat.com> <1308587683-2555-3-git-send-email-amwang@redhat.com> <20110620170106.GC9396@suse.de>
+In-Reply-To: <20110620170106.GC9396@suse.de>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年06月21日 00:54, Andrea Arcangeli 写道:
+于 2011年06月21日 01:01, Mel Gorman 写道:
 > On Tue, Jun 21, 2011 at 12:34:30AM +0800, Amerigo Wang wrote:
 >> Print information when THP is disabled automatically so that
 >> users can find this info in dmesg.
@@ -46,15 +47,19 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 >> +	if (totalram_pages<  (CONFIG_TRANSPARENT_HUGEPAGE_THRESHOLD
 >> +					<<  (20 - PAGE_SHIFT))) {
 >> +		printk(KERN_INFO "hugepage: disabled auotmatically\n");
+>>   		transparent_hugepage_flags = 0;
+>> +	}
+>>
+>>   	start_khugepaged();
+>>
 >
-> typo automatically. I'd suggest to change the prefix from "hugepage:"
-> to "THP:" to avoid the risk of possible confusion with hugetlbfs
-> support. Maybe you could print the minimal threshold too ("disabled
-> automatically with less than %dMB of RAM").
+> Guess this doesn't hurt. You misspelled automatically though and
+> mentioning "hugepage" could be confused with hugetlbfs.
+>
 
-Well, the "hugepage:" prefix is copied from other printk messages
-in the same function. ;-)
+Yeah, sorry for the typo.
 
-Yeah, it would be nice to print the threshold too.
+But, there are many printk messages in the same file start with "hugepage:".
+:-) I can send a patch to replace all of them with "THP" if you want...
 
-Thanks for your reply.
+Thanks!
