@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051Ab1FTNYf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 09:24:35 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:60767 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752891Ab1FTNYd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 09:24:33 -0400
-Date: Mon, 20 Jun 2011 09:24:33 -0400 (EDT)
-From: Dave Anderson <anderson@redhat.com>
-To: amwang@redhat.com
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <818132268.99935.1308576273046.JavaMail.root@zmail05.collab.prod.int.phx2.redhat.com>
-Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
- physical addresses
+	id S1754324Ab1FTN0X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 09:26:23 -0400
+Received: from mga01.intel.com ([192.55.52.88]:60635 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753100Ab1FTN0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 09:26:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,394,1304319600"; 
+   d="scan'208";a="18392205"
+Date: Mon, 20 Jun 2011 15:26:26 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Keshava Munegowda <keshava_mgowda@ti.com>
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com, gadiyar@ti.com,
+        parthab@india.ti.com
+Subject: Re: [PATCH] mfd: omap: fix the crash during omap ehci or ohci driver
+ initialization
+Message-ID: <20110620132626.GJ22420@sortiz-mobl>
+References: <1307367739-20110-1-git-send-email-keshava_mgowda@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.5.5.72]
-X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307367739-20110-1-git-send-email-keshava_mgowda@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, Jun 20, 2011 at 10:42:47, Amerigo Wang <amwang@redhat.com> wrote:
->> On Fri, Jun 17, 2011 at 5:55 PM, Petr Tesarik <ptesarik@suse.cz> wrote:
->> Dne PÃ¡ 17. Äervna 2011 11:30:32 Ingo Molnar napsal(a):
->>> * Petr Tesarik <ptesarik@suse.cz> wrote:
->>> > This patch series enhances /dev/mem, so that read and write is
->>> > possible at any address. The patchset includes actual
->>> > implementation for x86.
->>>
->>> This series lacks a description of why this is desired.
->>
->> Hi Ingo,
->>
->>> My strong opinion is that it's not desired at all: /dev/mem never
->>> worked beyond 4G addresses so by today it has become largely obsolete
->>> and is on the way out really.
->>>
->>> I'm aware of these current /dev/mem uses:
->>>
->>>  - Xorg maps below 4G non-RAM addresses and the video BIOS
->>>
->>>  - It used to have some debugging role but these days kexec and kgdb
->>>    has largely taken over that role - partly due to the 4G limit.
->>
->> It is still used as a "memory source" by Dave Anderson's crash utility for
->> live examination of a running system. Redhat has "overcome" the /dev/mem
->> deficiencies by writing an out-of-tree re-implementation of /dev/mem, which
->> uses /dev/crash instead. As it is an "unnecessary duplication of an existing
->> driver", this method was rejected by the project manager here at SUSE.
->>
->> The suggested alternative was to enhance (or fix) the existing driver. Without
->> this patch series there is no way to access high memory. In conjunction with
->> CONFIG_HIGHPTE, it makes the crash utility near to useless on anything with
->> high memory, because crash can no longer translate virtual to physical
->> addresses.
->>
->
-> How about /proc/kcore? AFAIK, it can access highmem, but Dave didn't consider
-> it for some reason.
+Hi Keshava,
 
-I don't know what you mean by I "didn't consider it", because 
-the crash utility does support using /proc/kcore as an alternative
-live memory source.
+On Mon, Jun 06, 2011 at 07:12:19PM +0530, Keshava Munegowda wrote:
+> From: Keshava Munegowda <Keshava_mgowda@ti.com>
+> 
+> Oops are produced during initialization of ehci and ohci
+> drivers. This is because the run time pm apis are used by
+> the driver but the corresponding hwmod structures and
+> initialization is not merged. 
+You mean they're currently checked in a different tree ? Is that a public one?
 
-The problem is that /proc/kcore can only access highmem if it
-is mapped as kernel virtual address.  So it cannot read 32-bit 
-highmem PTE's, user-space memory, etc.
+Cheers,
+Samuel.
 
-Dave
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
