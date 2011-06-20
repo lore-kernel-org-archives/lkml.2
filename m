@@ -1,73 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188Ab1FTIVA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 04:21:00 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:61271 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844Ab1FTIU7 (ORCPT
+	id S1752605Ab1FTIXX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 04:23:23 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:40659 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752395Ab1FTIXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 04:20:59 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonas Bonn <jonas@southpole.se>
-Subject: Re: [PATCH 11/19] OpenRISC: Idle/Power management
-Date: Mon, 20 Jun 2011 10:20:39 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <1308483825-6023-1-git-send-email-jonas@southpole.se> <1308483825-6023-12-git-send-email-jonas@southpole.se>
-In-Reply-To: <1308483825-6023-12-git-send-email-jonas@southpole.se>
+	Mon, 20 Jun 2011 04:23:22 -0400
+Message-ID: <4DFF0338.7000407@ru.mvista.com>
+Date: Mon, 20 Jun 2011 12:22:16 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
+CC: Borislav Petkov <bp@alien8.de>, "David S. Miller" <davem@davemloft.net>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        christian.dietrich@informatik.uni-erlangen.de, sshtylyov@mvista.com
+Subject: Re: [PATCH 01/11] drivers/ide: use printk_ratelimited() instead of
+ printk_ratelimit()
+References: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>	<0a1488254bd51475a90133c0fc41a4d34b533ef4.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>	<20110616141930.GA12872@eferding.osrc.amd.com> <BANLkTim=yg+tCxa-JhMYw5zsnBSzQqVnqg@mail.gmail.com>
+In-Reply-To: <BANLkTim=yg+tCxa-JhMYw5zsnBSzQqVnqg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106201020.39097.arnd@arndb.de>
-X-Provags-ID: V02:K0:K4Blfxe+lumEC4bhfuxXL6f2zYCy/7fMlvRlMM/TRLP
- SkBniKVBAPaOFU3UhC6brw0ePZP+EDYMpN6LjQcscnEcV5PPgQ
- gxGn726pg4+0fGyUzv4ecPSYKBIV7ZkmK1hp1/p15qgSTW51Q0
- +VmF0AJTG1vOMTNylAuEjb2jdl5rLzBYYaT/z6En6G/uU0ixk/
- 2j9OeUBek8DPM8Zt1R5fw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 19 June 2011 13:43:37 Jonas Bonn wrote:
-> +void cpu_idle(void)
-> +{
-> +        unsigned int cpu = smp_processor_id();
-> +
-> +        set_thread_flag(TIF_POLLING_NRFLAG);
-> +
-> +        /* endless idle loop with no priority at all */
-> +        while (1) {
-> +                tick_nohz_stop_sched_tick(1);
-> +
-> +                while (!need_resched()) {
-> +                        check_pgt_cache();
-> +                        rmb();
-> +
-> +/*                        if (cpu_is_offline(cpu))
-> +                                play_dead();
-> +*/
-> +                       clear_thread_flag(TIF_POLLING_NRFLAG);
-> +
-> +                        local_irq_disable();
-> +                        /* Don't trace irqs off for idle */
-> +                        stop_critical_timings();
-> +                       if (powersave != NULL )
-> +                               powersave();
-> +                       start_critical_timings();
-> +                       local_irq_enable();
-> +                       set_thread_flag(TIF_POLLING_NRFLAG);
-> +                }
-> +
-> +                tick_nohz_restart_sched_tick();
-> +                preempt_enable_no_resched();
-> +                schedule();
-> +                preempt_disable();
-> +        }
+Hello.
 
-Shouldn't you check need_resched() inside of local_irq_disable? Otherwise
-you may get interrupted between the check at the start of the loop and
-the irq_disable, which tries to wake up another process just before you go
-to sleep indefinitely.
+On 20-06-2011 12:17, Manuel Zerpies wrote:
 
-	Arnd
+>> Does the printk fit on one line if you do
+
+>>         pr_warn_ratelimited(...)
+
+>> instead?
+
+>> Thanks.
+
+>> --
+>> Regards/Gruss,
+>> Boris.
+
+> No I'm affraid. I tried it, but it didn't fit the 80 chars per line
+> code-styling.
+
+    It's enough that the string literal fits on one line.
+
+>> Why not pr_warn_ratelimited()?
+
+>> WBR, Sergei
+
+> I just kind of ignored it. As you see, I built it in.
+
+> Here my new patch:
+
+> Since printk_ratelimit() shouldn't be used anymore (see comment in
+> include/linux/printk.h), replace it with printk_ratelimited().
+
+    This doesn't match the patch anymore...
+
+> Signed-off-by: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
+> ---
+>   drivers/ide/ide-atapi.c |    6 +++---
+>   1 files changed, 3 insertions(+), 3 deletions(-)
+> diff --git a/drivers/ide/ide-atapi.c b/drivers/ide/ide-atapi.c
+> index 6f218e01..c9e69d7 100644
+> --- a/drivers/ide/ide-atapi.c
+> +++ b/drivers/ide/ide-atapi.c
+> @@ -8,6 +8,7 @@
+>   #include<linux/ide.h>
+>   #include<linux/scatterlist.h>
+>   #include<linux/gfp.h>
+> +#include<linux/ratelimit.h>
+>
+>   #include<scsi/scsi.h>
+>
+> @@ -200,9 +201,8 @@ void ide_prep_sense(ide_drive_t *drive, struct request *rq)
+>    err = blk_rq_map_kern(drive->queue, sense_rq, sense, sense_len,
+>         GFP_NOIO);
+>    if (unlikely(err)) {
+> - if (printk_ratelimit())
+> - printk(KERN_WARNING PFX "%s: failed to map sense "
+> -    "buffer\n", drive->name);
+> + pr_warn_ratelimited(PFX "%s: failed to map sense buffer\n",
+> +    drive->name);
+>    return;
+>    }
+
+    Unfortunately, the new patch is whitespace-damaged.
+
+WBR, Sergei
