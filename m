@@ -1,131 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753077Ab1FTG0L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 02:26:11 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44195 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752315Ab1FTG0J convert rfc822-to-8bit (ORCPT
+	id S1753123Ab1FTGin (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 02:38:43 -0400
+Received: from eastrmfepi103.cox.net ([68.230.241.199]:52920 "EHLO
+	eastrmfepi103.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752203Ab1FTGil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 02:26:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=rxG/gWC2OGn0eETb4YN1N+f/SKeiP8+Ru85xnsb1wYXwT/jKj7SKoCcGW4jwAGwFYa
-         Eu32dqf1KQyuy3BudgvYI59bqA1jrAQKyHrEssf+RncIFcNImSQwEp0N6mV0O96vL1mb
-         QmSnStRFDyUMD6h4d9vLmUPuDUU6leoKMyN5U=
+	Mon, 20 Jun 2011 02:38:41 -0400
+X-Greylist: delayed 361 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Jun 2011 02:38:41 EDT
+X-CT-Score: 5.00
+X-CT-RefID: str=0001.0A02020A.4DFED837.00B2,ss=3,sh,re=0.000,fgs=16
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=+zmVqi6HbhBxOY6lzrsfnB2wShF2MeCUcHVIQWL6sOU=
+ c=1 sm=1 a=G8Uczd0VNMoA:10 a=M58Ut_zYM0YA:10 a=dcIMPEurbQsA:10
+ a=IkcTkHD0fZMA:10 a=1irRP9yUgqMih2bc7s8iaw==:17 a=aSRvjw2BAAAA:8
+ a=XpexGFeAkJszDXqsqHcA:9 a=UeAJzJl0MbUEGxWfLuEA:7 a=QEXdDO2ut3YA:10
+ a=qu0y9A8pCpJQHav6:21 a=ProRuW4RSsEiaZCj:21 a=1irRP9yUgqMih2bc7s8iaw==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20110620023236.2X8TD.165691.imail@eastrmwml36>
+Date: Mon, 20 Jun 2011 2:32:36 -0400
+From: BBC <hfhjf7@cox.net>
+Reply-To: akekobat6688@aol.com
+Subject: 
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <20110618151227.GB25163@sirena.org.uk>
-References: <1308215372-17420-1-git-send-email-myungjoo.ham@samsung.com>
-	<20110618151227.GB25163@sirena.org.uk>
-Date: Mon, 20 Jun 2011 15:26:08 +0900
-X-Google-Sender-Auth: x4sVa-AGDy46qccdlE3EXyhDBqs
-Message-ID: <BANLkTiniwMCW-ED4CX=qybMvk243Zdki4Q@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Exynos4 NURI: configure regulators and PMIC
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        dg77.kim@samsung.com, kyungmin.park@samsung.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 19, 2011 at 12:12 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Thu, Jun 16, 2011 at 06:09:31PM +0900, MyungJoo Ham wrote:
->
->>  static struct regulator_init_data emmc_fixed_voltage_init_data = {
->>       .constraints            = {
->> +             .min_uV         = 2800000,
->> +             .max_uV         = 2800000,
->>               .name           = "VMEM_VDD_2.8V",
->>               .valid_ops_mask = REGULATOR_CHANGE_STATUS,
->
-> Since the regualtor can't change voltage specifying the voltage here
-> isn't going to achieve anything - to get the voltage reported through
-> get_voltage() you need to put the voltage in the platform data for the
-> fixed regulator.
+Dear Winner.Your e-mail has just won you
 
-Ah.. they are useless. I'll remove them.
+1,000,000.00GBP from the BBC LOTTERY on our Saturday June 18th/2011
 
->
->> +static struct regulator_consumer_supply nuri_max8997_ldo1_consumer[] = {
->> +     REGULATOR_SUPPLY("vadc", NULL), /* Used by CPU's ADC drv */
->> +};
->
-> In the ADC regulator patch you called the supply vdd (though the chip
-> normally calls it vadc so that's the better name)...
+charity bonanza.The draw no. 03 08 10 35 38 39 BONUS 31 brought out your
 
-Um.. this happened as I have seperated NURI-board platform patch for
-ADC and PMIC.
-After ADC patch, that name became ("vdd", "s5p-adc").
-I'll let them either be merged or be disjoint completely.
+e-mail address from a Data Base of Internet Email Users
 
-Anyway, do you think "vadc" is better than "vdd" for ADC drivers? The
-circuit schematics says the pin on the consumer side is "VDD33_ADC"
-(VDD 3.3V for ADC).
+and qualified you a bonafied winner of the stated
 
-
->
-> Extra ' too.
->
->> +static struct regulator_consumer_supply nuri_max8997_ldo8_consumer[] = {
->> +     REGULATOR_SUPPLY("vusb_d", NULL), /* Used by CPU */
->> +     REGULATOR_SUPPLY("vdac", NULL), /* Used by CPU */
->> +};
->
-> Another VADC?  For a different supply?
-
-That's DAC (opposite to ADC).
-
->
->> +             .state_mem      = {
->> +                     .enabled        = 0,
->
-> No need to initialize to zero.
-
-Ok, I'll remove every zero-initialization from the patch.
-
->
->> +static struct regulator_init_data nuri_max8997_ldo10_data = {
->> +     .constraints    = {
->
-> You should be able to use __initdata for a lot of this by the way.
-
-Ah.. way to reduce some weight. Fine.
-
->
->> +#define NURI_PMIC_GPIO               EXYNOS4_GPX0(7)
->> +static void __init nuri_pmic_init(void)
->> +{
->> +     int gpio;
->> +
->> +     nuri_max8997_pdata.irq_base = irq_get_next_irq(IRQ_GPIO_END);
->> +     gpio = NURI_PMIC_GPIO;
->> +     gpio_request(gpio, "AP_PMIC_IRQ");
->> +     s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(0xf));
->> +     s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
->> +}
->
-> I'm not sure both the #define and the variable make sense here...
->
-
-I've defined them because two statements are using the gpio address of
-NURI_PMIC.
+winning amount.For claims,
 
 
 
-Thanks you very much!
+1.Your Full Names:..
+2. Address:...
+3. Country/State:....
+4. Mobile No:.....
+5. Sex:....
+6. Age:...
+7. Occupation:....
+8. Email:....For confirmation of your winning numbers,
 
-- MyungJoo
--- 
-MyungJoo Ham (함명주), Ph.D.
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: 82-10-6714-2858
+please ensure your check your winning details on our
+
+site given below
+
+http://www.bbc.co.uk/lottery
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Dear Winner.Your e-mail has just won you
+
+1,000,000.00GBP from the BBC LOTTERY on our Saturday June 18th/2011
+
+charity bonanza.The draw no. 03 08 10 35 38 39 BONUS 31 brought out your
+
+e-mail address from a Data Base of Internet Email Users
+
+and qualified you a bonafied winner of the stated
+
+winning amount.For claims,
+
+
+
+1.Your Full Names:..
+2. Address:...
+3. Country/State:....
+4. Mobile No:.....
+5. Sex:....
+6. Age:...
+7. Occupation:....
+8. Email:....For confirmation of your winning numbers,
+
+please ensure your check your winning details on our
+
+site given below
+
+http://www.bbc.co.uk/lottery
