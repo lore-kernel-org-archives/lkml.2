@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab1FTXlp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 19:41:45 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42643 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751439Ab1FTXln (ORCPT
+	id S1756246Ab1FTXma (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 19:42:30 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:11821 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755981Ab1FTXm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 19:41:43 -0400
-Date: Tue, 21 Jun 2011 00:41:40 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>
-Subject: Re: [PATCH 2/8] regmap: Add I2C bus support
-Message-ID: <20110620234140.GB1905@opensource.wolfsonmicro.com>
-References: <20110620124608.GB31140@opensource.wolfsonmicro.com>
- <1308574489-31322-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1308574489-31322-2-git-send-email-broonie@opensource.wolfsonmicro.com>
- <4DFFD64F.8040902@metafoo.de>
+	Mon, 20 Jun 2011 19:42:27 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6383"; a="98765676"
+From: David Brown <davidb@codeaurora.org>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [GIT PULL] msm fixes for 3.0-rc4
+Date: Mon, 20 Jun 2011 16:42:27 -0700
+Message-ID: <8yar56onk7w.fsf@huya.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DFFD64F.8040902@metafoo.de>
-X-Cookie: You are magnetic in your bearing.
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 01:22:55AM +0200, Lars-Peter Clausen wrote:
-> On 06/20/2011 02:54 PM, Mark Brown wrote:
-> > [...]
-> > +
-> > +#include <linux/regmap.h>
-> > +#include <linux/i2c.h>
+The following changes since commit 2c53b436a30867eb6b47dd7bab23ba638d1fb0d2:
 
-> #include <linux/init.h>
+  Linux 3.0-rc3 (2011-06-13 15:29:59 -0700)
 
-For...?
+are available in the git repository at:
+  git://codeaurora.org/quic/kernel/davidb/linux-msm.git msm-fix
 
-> > +static int regmap_i2c_read(struct device *dev,
-> > +			   const void *reg, size_t reg_size,
-> > +			   void *val, size_t val_size)
-> > +{
-> > +	struct i2c_client *i2c = to_i2c_client(dev);
-> > +	struct i2c_msg xfer[2];
-> > +	int ret;
+Jeff Ohlstein (1):
+      msm: timer: compensate for timer shift in msm_read_timer_count
 
-> > +	if (!i2c_check_functionality(i2c->adapter, I2C_FUNC_PROTOCOL_MANGLING))
-> > +		return -ENOTSUPP;
+Stephen Boyd (2):
+      msm: timer: Fix SMP build error
+      msm: timer: Fix DGT rate on 8960 and 8660
 
-> You shouldn't need I2C_FUNC_PROTOCOL_MANGLING for reading.
+ arch/arm/mach-msm/timer.c |   14 +++++++++++---
+ 1 files changed, 11 insertions(+), 3 deletions(-)
 
-Hrm, yeah, probably not.
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
