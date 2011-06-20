@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab1FTHmB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 03:42:01 -0400
-Received: from mga03.intel.com ([143.182.124.21]:21937 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753449Ab1FTHl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 03:41:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,392,1304319600"; 
-   d="scan'208";a="15429852"
-Message-ID: <4DFEF9B6.7000402@intel.com>
-Date: Mon, 20 Jun 2011 10:41:42 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S1753518Ab1FTHpS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 03:45:18 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:54823 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753395Ab1FTHpO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 03:45:14 -0400
+Date: Mon, 20 Jun 2011 09:44:52 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH 2/8] x86, mce: remove redundant mce_available() checks
+Message-ID: <20110620074451.GD9070@aftab>
+References: <4DFB1242.90404@jp.fujitsu.com>
+ <4DFB1359.9000204@jp.fujitsu.com>
+ <20110617143947.GH18054@aftab>
+ <4DFED0FD.6060701@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@gmail.com>
-CC: Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org,
-        gregkh@suse.de
-Subject: Re: [PATCH reRESEND] block: add REQ_SECURE to REQ_COMMON_MASK
-References: <1308278608-3284-1-git-send-email-namhyung@gmail.com> <1308280320-3510-1-git-send-email-namhyung@gmail.com>
-In-Reply-To: <1308280320-3510-1-git-send-email-namhyung@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DFED0FD.6060701@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/06/11 06:12, Namhyung Kim wrote:
-> Add REQ_SECURE flag to REQ_COMMON_MASK so that
-> init_request_from_bio() can pass it to @req->cmd_flags.
->
-> Signed-off-by: Namhyung Kim<namhyung@gmail.com>
-> ---
-> Send it again due to Adrian's mail delivery failure.
->
->   include/linux/blk_types.h |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-> index 2a7cea53ca0d..6395692b2e7a 100644
-> --- a/include/linux/blk_types.h
-> +++ b/include/linux/blk_types.h
-> @@ -167,7 +167,7 @@ enum rq_flag_bits {
->   	(REQ_FAILFAST_DEV | REQ_FAILFAST_TRANSPORT | REQ_FAILFAST_DRIVER)
->   #define REQ_COMMON_MASK \
->   	(REQ_WRITE | REQ_FAILFAST_MASK | REQ_SYNC | REQ_META | REQ_DISCARD | \
-> -	 REQ_NOIDLE | REQ_FLUSH | REQ_FUA)
-> +	 REQ_NOIDLE | REQ_FLUSH | REQ_FUA | REQ_SECURE)
->   #define REQ_CLONE_MASK		REQ_COMMON_MASK
->
->   #define REQ_RAHEAD		(1<<  __REQ_RAHEAD)
+On Mon, Jun 20, 2011 at 12:47:57AM -0400, Hidetoshi Seto wrote:
+> > I don't think this will ever happen so why complicate the code
+> > needlessly? This can only be executed if at least one of the cores on
+> > the system has CPUID(1)_EDX, bits 7 and 14 cleared and that's just
+> > silly.
+> 
+> This is a guard against such silly situation, isn't it?
+> I don't think it looks so complicated and needless.
+> 
+> I think this code will not run on systems with single socket as
+> long as the processor vendors are in the right mind.
+> But in cases when it is numa with strange nodes or when it is
+> migrated to/from misconfigured virtual machine I can't say that
+> with certainty.
 
-Acked-by: Adrian Hunter <adrian.hunter@intel.com>
+Let me put it this way: are you talking about a concrete example where
+there's machine with the BSP's MCA features enabled and the rest of the
+cores are not or is this some theoretical thing you're conjecturing?
 
-The fix needs to go back to 2.6.36
+If it is the first I'd really like to know about it, if it's the second,
+then my initial point stands - no need to handle purely theoretical
+cases.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
