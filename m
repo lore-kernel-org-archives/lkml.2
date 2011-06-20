@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751472Ab1FTEsO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 00:48:14 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44746 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361Ab1FTEsL (ORCPT
+	id S1751611Ab1FTEsd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 00:48:33 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45926 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945Ab1FTEsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 00:48:11 -0400
+	Mon, 20 Jun 2011 00:48:32 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DFED0FD.6060701@jp.fujitsu.com>
-Date: Mon, 20 Jun 2011 13:47:57 +0900
+Message-ID: <4DFED112.50903@jp.fujitsu.com>
+Date: Mon, 20 Jun 2011 13:48:18 +0900
 From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
@@ -18,57 +18,63 @@ CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
         Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
         "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH 2/8] x86, mce: remove redundant mce_available() checks
-References: <4DFB1242.90404@jp.fujitsu.com> <4DFB1359.9000204@jp.fujitsu.com> <20110617143947.GH18054@aftab>
-In-Reply-To: <20110617143947.GH18054@aftab>
+Subject: Re: [PATCH 5/8] x86, mce: introduce mce_sysdev_init()
+References: <4DFB1242.90404@jp.fujitsu.com> <4DFB1438.3030504@jp.fujitsu.com> <20110617163241.GE20010@aftab>
+In-Reply-To: <20110617163241.GE20010@aftab>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/17 23:39), Borislav Petkov wrote:
->> @@ -1418,8 +1414,15 @@ void __cpuinit mcheck_cpu_init(struct cpuinfo_x86 *c)
->>  	if (__mcheck_cpu_ancient_init(c))
->>  		return;
+(2011/06/18 1:32), Borislav Petkov wrote:
+>> @@ -1953,6 +1953,39 @@ static __cpuinit void mce_sysdev_remove(unsigned int cpu)
+>>  	cpumask_clear_cpu(cpu, mce_sysdev_initialized);
+>>  }
 >>  
->> -	if (!mce_available(c))
->> +	if (!mce_available(c)) {
->> +		/*
->> +		 * Asymmetric configurations are not supported today.
->> +		 * If mce_banks is allocated there must be a cpu passed here.
->> +		 */
->> +		WARN_ON(!mce_disabled && mce_banks);
->> +		mce_disabled = 1;
->>  		return;
+>> +static __init int mce_sysdev_init(void)
+>> +{
+>> +	int err, i;
+>> +
+>> +	zalloc_cpumask_var(&mce_sysdev_initialized, GFP_KERNEL);
+>> +
+>> +	/* init attributes for each mce_banks */
+>> +	for (i = 0; i < banks; i++) {
+>> +		struct mce_bank *b = &mce_banks[i];
+>> +		struct sysdev_attribute *a = &b->attr;
+>> +
+>> +		sysfs_attr_init(&a->attr);
+>> +		a->attr.name	= b->attrname;
+>> +		snprintf(b->attrname, ATTR_LEN, "bank%d", i);
+>> +
+>> +		a->attr.mode	= 0644;
+>> +		a->show		= show_bank;
+>> +		a->store	= set_bank;
+>> +	}
+>> +
+>> +	err = sysdev_class_register(&mce_sysdev_class);
+>> +	if (err)
+>> +		return err;
+>> +
+>> +	for_each_online_cpu(i) {
+>> +		err = mce_sysdev_create(i);
+>> +		if (err)
+>> +			return err;
 >> +	}
 > 
-> I don't think this will ever happen so why complicate the code
-> needlessly? This can only be executed if at least one of the cores on
-> the system has CPUID(1)_EDX, bits 7 and 14 cleared and that's just
-> silly.
-
-This is a guard against such silly situation, isn't it?
-I don't think it looks so complicated and needless.
-
-I think this code will not run on systems with single socket as
-long as the processor vendors are in the right mind.
-But in cases when it is numa with strange nodes or when it is
-migrated to/from misconfigured virtual machine I can't say that
-with certainty.
-
+> Yeah, let's handle the error case here and unwind to a sane state:
 > 
-> Besides, mcheck_init_device() already confirms we don't support
-> MCE-asymmetric configs:
+> 	if (err)
+> 		goto sysdev_unwind;
+> ...
 > 
->         if (!mce_available(&boot_cpu_data))
->                 return -EIO;
+> sysdev_unwind:
+> 	while (--i > 0)
+> 		mce_sysdev_remove(i);
+> 
 
-Without above check, mcheck_init_device() will not notice the
-issue when boot cpu is mce capable but others are not.
-
-Maybe I should have another patch to do well with silly
-configurations, and let this patch to a simple cleanup.
+Nice!
+I'll do it.
 
 
 Thanks,
