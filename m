@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213Ab1FTFpf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 01:45:35 -0400
-Received: from qmta05.westchester.pa.mail.comcast.net ([76.96.62.48]:38438
-	"EHLO qmta05.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752018Ab1FTFpa (ORCPT
+	id S1752414Ab1FTGB6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 02:01:58 -0400
+Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:36223 "EHLO
+	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752154Ab1FTGB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 01:45:30 -0400
+	Mon, 20 Jun 2011 02:01:56 -0400
 From: matt mooney <mfm@muteddisk.com>
 To: Greg KH <greg@kroah.com>
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 03/22] staging: usbip: userspace: usbip_common.h: move enums
-Date: Sun, 19 Jun 2011 22:44:33 -0700
-Message-Id: <6d9f92fc4b7f241d03a519c1428c1cf14d4c4901.1308547654.git.mfm@muteddisk.com>
+Subject: [PATCH 04/22] staging: usbip: userspace: usbip_common.h: fixup header includes
+Date: Sun, 19 Jun 2011 22:44:34 -0700
+Message-Id: <78266d3fcf3d7daa9a3e399d5f5af6bb2f5a9649.1308547654.git.mfm@muteddisk.com>
 X-Mailer: git-send-email 1.7.5.2
 In-Reply-To: <cover.1308547654.git.mfm@muteddisk.com>
 References: <cover.1308547654.git.mfm@muteddisk.com>
@@ -20,88 +20,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Relocate enums to follow logging macros.
+Remove unnecessary headers from the file, and add the now missing
+headers into the files that actually need them.
 
 Signed-off-by: matt mooney <mfm@muteddisk.com>
 ---
- .../staging/usbip/userspace/libsrc/usbip_common.h  |   50 +++++++++----------
- 1 files changed, 24 insertions(+), 26 deletions(-)
+ .../staging/usbip/userspace/libsrc/stub_driver.c   |    2 ++
+ .../staging/usbip/userspace/libsrc/usbip_common.h  |   18 ++++++++----------
+ drivers/staging/usbip/userspace/src/utils.c        |    1 +
+ 3 files changed, 11 insertions(+), 10 deletions(-)
 
+diff --git a/drivers/staging/usbip/userspace/libsrc/stub_driver.c b/drivers/staging/usbip/userspace/libsrc/stub_driver.c
+index 4d4d171..6a1272d 100644
+--- a/drivers/staging/usbip/userspace/libsrc/stub_driver.c
++++ b/drivers/staging/usbip/userspace/libsrc/stub_driver.c
+@@ -4,6 +4,8 @@
+ 
+ #include <sys/types.h>
+ #include <sys/stat.h>
++
++#include <errno.h>
+ #include <unistd.h>
+ 
+ #include "usbip.h"
 diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_common.h b/drivers/staging/usbip/userspace/libsrc/usbip_common.h
-index 090b7c5..7dadb21 100644
+index 7dadb21..eedefbd 100644
 --- a/drivers/staging/usbip/userspace/libsrc/usbip_common.h
 +++ b/drivers/staging/usbip/userspace/libsrc/usbip_common.h
-@@ -30,30 +30,6 @@
- #define USBIP_HOST_DRV_NAME	"usbip-host"
- #define USBIP_VHCI_DRV_NAME	"vhci_hcd"
+@@ -2,20 +2,18 @@
+  * Copyright (C) 2005-2007 Takahiro Hirofuchi
+  */
  
--enum usb_device_speed {
--	USB_SPEED_UNKNOWN = 0,                  /* enumerating */
--	USB_SPEED_LOW, USB_SPEED_FULL,          /* usb 1.1 */
--	USB_SPEED_HIGH,                         /* usb 2.0 */
--	USB_SPEED_VARIABLE                      /* wireless (usb 2.5) */
--};
--
--/* FIXME: how to sync with drivers/usbip_common.h ? */
--enum usbip_device_status{
--	/* sdev is available. */
--	SDEV_ST_AVAILABLE = 0x01,
--	/* sdev is now used. */
--	SDEV_ST_USED,
--	/* sdev is unusable because of a fatal error. */
--	SDEV_ST_ERROR,
--
--	/* vdev does not connect a remote device. */
--	VDEV_ST_NULL,
--	/* vdev is used, but the USB address is not assigned yet */
--	VDEV_ST_NOTASSIGNED,
--	VDEV_ST_USED,
--	VDEV_ST_ERROR
--};
--
- extern int usbip_use_syslog;
- extern int usbip_use_stderr;
- extern int usbip_use_debug ;
-@@ -102,6 +78,30 @@ extern int usbip_use_debug ;
- 		abort();				\
- 	} while (0)
+-#ifndef _USBIP_COMMON_H
+-#define _USBIP_COMMON_H
++#ifndef __USBIP_COMMON_H
++#define __USBIP_COMMON_H
++
++#include <sysfs/libsysfs.h>
  
-+enum usb_device_speed {
-+	USB_SPEED_UNKNOWN = 0,                  /* enumerating */
-+	USB_SPEED_LOW, USB_SPEED_FULL,          /* usb 1.1 */
-+	USB_SPEED_HIGH,                         /* usb 2.0 */
-+	USB_SPEED_VARIABLE                      /* wireless (usb 2.5) */
-+};
-+
-+/* FIXME: how to sync with drivers/usbip_common.h ? */
-+enum usbip_device_status{
-+	/* sdev is available. */
-+	SDEV_ST_AVAILABLE = 0x01,
-+	/* sdev is now used. */
-+	SDEV_ST_USED,
-+	/* sdev is unusable because of a fatal error. */
-+	SDEV_ST_ERROR,
-+
-+	/* vdev does not connect a remote device. */
-+	VDEV_ST_NULL,
-+	/* vdev is used, but the USB address is not assigned yet */
-+	VDEV_ST_NOTASSIGNED,
-+	VDEV_ST_USED,
-+	VDEV_ST_ERROR
-+};
-+
- struct usbip_usb_interface {
- 	uint8_t bInterfaceClass;
- 	uint8_t bInterfaceSubClass;
-@@ -109,8 +109,6 @@ struct usbip_usb_interface {
- 	uint8_t padding;	/* alignment */
- } __attribute__((packed));
+-#include <unistd.h>
+ #include <stdint.h>
+-#include <syslog.h>
+-#include <errno.h>
+ #include <stdio.h>
+-#include <string.h>
+ #include <stdlib.h>
++#include <string.h>
  
--
--
- struct usbip_usb_device {
- 	char path[SYSFS_PATH_MAX];
- 	char busid[SYSFS_BUS_ID_SIZE];
+-#include <sysfs/libsysfs.h>
+-#include <netdb.h>
+-#include <sys/socket.h>
++#include <syslog.h>
++#include <unistd.h>
+ 
+ #ifndef USBIDS_FILE
+ #define USBIDS_FILE "/usr/share/hwdata/usb.ids"
+@@ -146,4 +144,4 @@ void usbip_names_free(void);
+ void usbip_names_get_product(char *buff, size_t size, uint16_t vendor, uint16_t product);
+ void usbip_names_get_class(char *buff, size_t size, uint8_t class, uint8_t subclass, uint8_t protocol);
+ 
+-#endif
++#endif /* __USBIP_COMMON_H */
+diff --git a/drivers/staging/usbip/userspace/src/utils.c b/drivers/staging/usbip/userspace/src/utils.c
+index 1da1109..2a25cec 100644
+--- a/drivers/staging/usbip/userspace/src/utils.c
++++ b/drivers/staging/usbip/userspace/src/utils.c
+@@ -6,6 +6,7 @@
+ #include <sysfs/libsysfs.h>
+ 
+ #include <limits.h>
++#include <errno.h>
+ #include <stdio.h>
+ #include <string.h>
+ 
 -- 
 1.7.5.2
 
