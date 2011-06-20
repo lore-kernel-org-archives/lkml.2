@@ -1,67 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab1FTNOz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 09:14:55 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53550 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754322Ab1FTNMa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 09:12:30 -0400
-Date: Mon, 20 Jun 2011 09:12:09 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: stefano.stabellini@eu.citrix.com, sven.koehler@gmail.com,
-        tom.goetz@virtualcomputer.com, drjones@redhat.com
-Subject: [GIT PULL] (xen) bug-fixes for 3.0-rc3: stable/bug.fixes
-Message-ID: <20110620131209.GA10215@dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4DFF4735.009C:SCFMA922111,ss=1,re=-4.000,fgs=0
+	id S1754941Ab1FTNP4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 09:15:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43344 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754005Ab1FTNM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 09:12:26 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 03/14] mm: Introduce __GFP_MEMALLOC to allow access to emergency reserves
+Date: Mon, 20 Jun 2011 14:12:09 +0100
+Message-Id: <1308575540-25219-4-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1308575540-25219-1-git-send-email-mgorman@suse.de>
+References: <1308575540-25219-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Linus
+__GFP_MEMALLOC will allow the allocation to disregard the watermarks,
+much like PF_MEMALLOC. It allows one to pass along the memalloc state in
+object related allocation flags as opposed to task related flags, such
+as sk->sk_allocation. This removes the need for ALLOC_PFMEMALLOC as
+callers using __GFP_MEMALLOC can get the ALLOC_NO_WATERMARK flag which
+is now enough to identify allocations related to page reclaim.
 
-Please pull the following git branch:
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/gfp.h             |   10 ++++++++--
+ include/linux/mm_types.h        |    2 +-
+ include/trace/events/gfpflags.h |    1 +
+ mm/page_alloc.c                 |   14 ++++++--------
+ mm/slab.c                       |    2 +-
+ 5 files changed, 17 insertions(+), 12 deletions(-)
 
- git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/bug.fixes
-
-which has these patches since git commit f124c6ae59e193705c9ddac57684d50006d710e6
-Dan Carpenter(1):
-  xen: off by one errors in multicalls.c
-
-(which you had merged some time ago).
-
-The patches in this git pull fix compile warnings; fix bootup issues when CONFIG_MAXSMP
-is used, when the initrd image is quite small; and properly shutdown the kernel (wrong arguments
-to a hypercall).
-
-The diffstat:
-
- arch/x86/xen/enlighten.c |    9 ++++++++-
- arch/x86/xen/mmu.c       |   12 ++++++++++--
- arch/x86/xen/setup.c     |   10 ++++++----
- arch/x86/xen/smp.c       |    7 +++++++
- drivers/xen/events.c     |    2 +-
- 5 files changed, 32 insertions(+), 8 deletions(-)
-
-The changelog:
-
-Andrew Jones (1):
-      xen: support CONFIG_MAXSMP
-
-Konrad Rzeszutek Wilk (2):
-      xen: Fix compile warning when CONFIG_SMP is not defined.
-      xen/setup: Fix for incorrect xen_extra_mem_start.
-
-Stefano Stabellini (1):
-      xen: partially revert "xen: set max_pfn_mapped to the last pfn mapped"
-
-Tom Goetz (1):
-      xen: When calling power_off, don't call the halt function.
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index cb40892..faefba9 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -23,6 +23,7 @@ struct vm_area_struct;
+ #define ___GFP_REPEAT		0x400u
+ #define ___GFP_NOFAIL		0x800u
+ #define ___GFP_NORETRY		0x1000u
++#define ___GFP_MEMALLOC		0x2000u
+ #define ___GFP_COMP		0x4000u
+ #define ___GFP_ZERO		0x8000u
+ #define ___GFP_NOMEMALLOC	0x10000u
+@@ -75,9 +76,14 @@ struct vm_area_struct;
+ #define __GFP_REPEAT	((__force gfp_t)___GFP_REPEAT)	/* See above */
+ #define __GFP_NOFAIL	((__force gfp_t)___GFP_NOFAIL)	/* See above */
+ #define __GFP_NORETRY	((__force gfp_t)___GFP_NORETRY) /* See above */
++#define __GFP_MEMALLOC	((__force gfp_t)___GFP_MEMALLOC)/* Allow access to emergency reserves */
+ #define __GFP_COMP	((__force gfp_t)___GFP_COMP)	/* Add compound page metadata */
+ #define __GFP_ZERO	((__force gfp_t)___GFP_ZERO)	/* Return zeroed page on success */
+-#define __GFP_NOMEMALLOC ((__force gfp_t)___GFP_NOMEMALLOC) /* Don't use emergency reserves */
++#define __GFP_NOMEMALLOC ((__force gfp_t)___GFP_NOMEMALLOC) /* Don't use emergency reserves.
++							 * This takes precedence over the
++							 * __GFP_MEMALLOC flag if both are
++							 * set
++							 */
+ #define __GFP_HARDWALL   ((__force gfp_t)___GFP_HARDWALL) /* Enforce hardwall cpuset memory allocs */
+ #define __GFP_THISNODE	((__force gfp_t)___GFP_THISNODE)/* No fallback, no policies */
+ #define __GFP_RECLAIMABLE ((__force gfp_t)___GFP_RECLAIMABLE) /* Page is reclaimable */
+@@ -127,7 +133,7 @@ struct vm_area_struct;
+ /* Control page allocator reclaim behavior */
+ #define GFP_RECLAIM_MASK (__GFP_WAIT|__GFP_HIGH|__GFP_IO|__GFP_FS|\
+ 			__GFP_NOWARN|__GFP_REPEAT|__GFP_NOFAIL|\
+-			__GFP_NORETRY|__GFP_NOMEMALLOC)
++			__GFP_NORETRY|__GFP_MEMALLOC|__GFP_NOMEMALLOC)
+ 
+ /* Control slab gfp mask during early boot */
+ #define GFP_BOOT_MASK (__GFP_BITS_MASK & ~(__GFP_WAIT|__GFP_IO|__GFP_FS))
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 2986426..319a7cd 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -72,7 +72,7 @@ struct page {
+ 		pgoff_t index;		/* Our offset within mapping. */
+ 		void *freelist;		/* SLUB: freelist req. slab lock */
+ 		bool pfmemalloc;	/* If set by the page allocator,
+-					 * ALLOC_PFMEMALLOC was set and the
++					 * ALLOC_NO_WATERMARKS was set and the
+ 					 * low watermark was not met implying
+ 					 * that the system is under some
+ 					 * pressure. The caller should try
+diff --git a/include/trace/events/gfpflags.h b/include/trace/events/gfpflags.h
+index 9fe3a366..d6fd8e5 100644
+--- a/include/trace/events/gfpflags.h
++++ b/include/trace/events/gfpflags.h
+@@ -30,6 +30,7 @@
+ 	{(unsigned long)__GFP_COMP,		"GFP_COMP"},		\
+ 	{(unsigned long)__GFP_ZERO,		"GFP_ZERO"},		\
+ 	{(unsigned long)__GFP_NOMEMALLOC,	"GFP_NOMEMALLOC"},	\
++	{(unsigned long)__GFP_MEMALLOC,		"GFP_MEMALLOC"},	\
+ 	{(unsigned long)__GFP_HARDWALL,		"GFP_HARDWALL"},	\
+ 	{(unsigned long)__GFP_THISNODE,		"GFP_THISNODE"},	\
+ 	{(unsigned long)__GFP_RECLAIMABLE,	"GFP_RECLAIMABLE"},	\
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 7769a3d..27043e7 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1369,7 +1369,6 @@ failed:
+ #define ALLOC_HARDER		0x10 /* try to alloc harder */
+ #define ALLOC_HIGH		0x20 /* __GFP_HIGH set */
+ #define ALLOC_CPUSET		0x40 /* check for correct cpuset */
+-#define ALLOC_PFMEMALLOC	0x80 /* Caller has PF_MEMALLOC set */
+ 
+ #ifdef CONFIG_FAIL_PAGE_ALLOC
+ 
+@@ -2044,11 +2043,10 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ 	} else if (unlikely(rt_task(current)) && !in_interrupt())
+ 		alloc_flags |= ALLOC_HARDER;
+ 
+-	if ((current->flags & PF_MEMALLOC) ||
+-			unlikely(test_thread_flag(TIF_MEMDIE))) {
+-		alloc_flags |= ALLOC_PFMEMALLOC;
+-
+-		if (likely(!(gfp_mask & __GFP_NOMEMALLOC)) && !in_interrupt())
++	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
++		if (gfp_mask & __GFP_MEMALLOC)
++			alloc_flags |= ALLOC_NO_WATERMARKS;
++		else if (likely(!(gfp_mask & __GFP_NOMEMALLOC)) && !in_interrupt())
+ 			alloc_flags |= ALLOC_NO_WATERMARKS;
+ 	}
+ 
+@@ -2057,7 +2055,7 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ 
+ bool gfp_pfmemalloc_allowed(gfp_t gfp_mask)
+ {
+-	return !!(gfp_to_alloc_flags(gfp_mask) & ALLOC_PFMEMALLOC);
++	return !!(gfp_to_alloc_flags(gfp_mask) & ALLOC_NO_WATERMARKS);
+ }
+ 
+ static inline struct page *
+@@ -2239,7 +2237,7 @@ got_pg:
+ 	 * steps that will free more memory. The caller should avoid the
+ 	 * page being used for !PFMEMALLOC purposes.
+ 	 */
+-	page->pfmemalloc = !!(alloc_flags & ALLOC_PFMEMALLOC);
++	page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
+ 
+ 	return page;
+ }
+diff --git a/mm/slab.c b/mm/slab.c
+index a6480df..fceb656 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -2979,7 +2979,7 @@ static int cache_grow(struct kmem_cache *cachep,
+ 	if (!slabp)
+ 		goto opps1;
+ 
+-	/* Record if ALLOC_PFMEMALLOC was set when allocating the slab */
++	/* Record if ALLOC_NO_WATERMARKS was set when allocating the slab */
+ 	if (pfmemalloc) {
+ 		struct array_cache *ac = cpu_cache_get(cachep);
+ 		slabp->pfmemalloc = true;
+-- 
+1.7.3.4
 
