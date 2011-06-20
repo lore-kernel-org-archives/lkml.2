@@ -1,41 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751774Ab1FTIJa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 04:09:30 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52585
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750717Ab1FTIJ2 (ORCPT
+	id S1751006Ab1FTIQc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 04:16:32 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54475 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439Ab1FTIQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 04:09:28 -0400
-Date: Mon, 20 Jun 2011 04:09:21 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Andreas Gruenbacher <agruen@kernel.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] xattr: Fix error results for non-existent / invisible
- attributes
-Message-ID: <20110620080921.GA23159@infradead.org>
-References: <201105271450.37089.agruen@kernel.org>
+	Mon, 20 Jun 2011 04:16:28 -0400
+Message-ID: <4DFF019B.8030605@ru.mvista.com>
+Date: Mon, 20 Jun 2011 12:15:23 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201105271450.37089.agruen@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Yuan-Hsin Chen <yuanlmm@gmail.com>
+CC: jgarzik@pobox.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tj@kernel.org, sshtylyov@mvista.com,
+        Yuan-Hsin Chen <yhchen@faraday-tech.com>
+Subject: Re: [PATCH v4] ahci: move ahci_sb600_softreset to libahci.c and rename
+ it
+References: <20110617120704.GH2611@htj.dyndns.org> <1308557202-1895-1-git-send-email-yuanlmm@gmail.com>
+In-Reply-To: <1308557202-1895-1-git-send-email-yuanlmm@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 02:50:36PM +0200, Andreas Gruenbacher wrote:
-> Return -ENODATA when trying to read a user.* attribute which cannot
-> exist: user space otherwise does not have a reasonable way to
-> distinguish between non-existent and inaccessible attributes.
-> 
-> Likewise, return -ENODATA when an unprivileged process tries to read a
-> trusted.* attribute: to unprivileged processes, those attributes are
-> invisible (listxattr() won't include them).
+Hello.
 
-This breaks xfstests 062.  It would also be very useful to send VFS
-patches to linux-fsdevel, btw.
+On 20-06-2011 12:06, Yuan-Hsin Chen wrote:
 
+> From: Yuan-Hsin Chen<yhchen@faraday-tech.com>
+
+> ahci_sb600_softreset was in ahci.c. This function is used
+> to fix soft reset failure and renames as ahci_pmp_retry_srst_softreset
+> in libahci.c.
+
+> diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+> index 71afe03..2de36b6 100644
+> --- a/drivers/ata/ahci.c
+> +++ b/drivers/ata/ahci.c
+> @@ -79,8 +79,6 @@ enum board_ids {
+>   };
+>
+>   static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent);
+> -static int ahci_sb600_softreset(struct ata_link *link, unsigned int *class,
+> -			  unsigned long deadline);
+>   static int ahci_vt8251_hardreset(struct ata_link *link, unsigned int *class,
+>   				 unsigned long deadline);
+>   static int ahci_p5wdh_hardreset(struct ata_link *link, unsigned int *class,
+> @@ -106,8 +104,7 @@ static struct ata_port_operations ahci_p5wdh_ops = {
+>
+>   static struct ata_port_operations ahci_sb600_ops = {
+>   	.inherits		=&ahci_ops,
+> -	.softreset		= ahci_sb600_softreset,
+> -	.pmp_softreset		= ahci_sb600_softreset,
+> +	.softreset		= ahci_pmp_retry_srst_softreset,
+
+    I have to ask you again: have you tried to compile this?
+
+> diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
+> index d38c40f..0fd5a30 100644
+> --- a/drivers/ata/libahci.c
+> +++ b/drivers/ata/libahci.c
+> @@ -82,6 +82,8 @@ static void ahci_pmp_attach(struct ata_port *ap);
+>   static void ahci_pmp_detach(struct ata_port *ap);
+>   static int ahci_softreset(struct ata_link *link, unsigned int *class,
+>   			  unsigned long deadline);
+> +static int ahci_pmp_retry_srst_softreset(struct ata_link *link, unsigned int *class,
+> +			  unsigned long deadline);
+
+    How come this is static if you reference it outside this module?
+
+WBR, Sergei
