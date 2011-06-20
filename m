@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab1FTLUS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 07:20:18 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:42005 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487Ab1FTLUQ convert rfc822-to-8bit (ORCPT
+	id S1752848Ab1FTLbI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 07:31:08 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39871 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574Ab1FTLbG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 07:20:16 -0400
+	Mon, 20 Jun 2011 07:31:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=vrfy.org; s=google;
+        d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type:content-transfer-encoding;
-        b=jPUnSqhY50wzy8/fqteDgDtQy/Ozgynk1FCRJ/TcBdCaUcUMvNswNPPo4n0qt0WC/K
-         NiNgbom2fkLEAcle3LXSYaHoxPZa2UkYJfHqVvNLDY3M9oQPz2waX+CH41WtI5aZnk6q
-         mFcYZoa5dGIYHkWsAm4IdAryHYjiIOUttJuQ8=
+        b=Lq5bWXjUCk+n9mWTOWp6511D1Vfjyrfem+jfkcV/J3WsANEtUAKxQnu7ilohJ5HTBD
+         UotbK6SzkBdtYaBXOuxxnDrFtkoo4SRhm1Yc6vivEaH5b4LVm6xPXL96EBrSgG6U4i1+
+         tkRMbYxZOUUOG+06iXF0XBH/2DMBQPWPthm10=
 MIME-Version: 1.0
-In-Reply-To: <8739j59zib.fsf@rustcorp.com.au>
-References: <1308434431.1050.5.camel@mop> <8739j59zib.fsf@rustcorp.com.au>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Mon, 20 Jun 2011 13:20:00 +0200
-Message-ID: <BANLkTink8YTe=-Tr5Ax3epiFoFCfzcex7w@mail.gmail.com>
-Subject: Re: module: sysfs - add 'uevent' file to allow coldplug
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <alpine.LRH.2.00.1106202040400.10448@tundra.namei.org>
+References: <alpine.LRH.2.00.1106192154220.7503@taiga.selinuxproject.org>
+ <alpine.LRH.2.00.1106201455560.6055@tundra.namei.org> <20110620103917.GA5230@albatros>
+ <alpine.LRH.2.00.1106202040400.10448@tundra.namei.org>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Mon, 20 Jun 2011 20:23:28 +0900
+Message-ID: <BANLkTi=vdCDnD-_Ut0si=dZ=zcDc_yiU0A@mail.gmail.com>
+Subject: Re: [RFC 2/5 v4] procfs: add hidepid= and gid= mount options
+To: James Morris <jmorris@namei.org>
+Cc: Vasiliy Kulikov <segoon@openwall.com>, kernel-hardening@lists.openwall.com,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 01:23, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> On Sun, 19 Jun 2011 00:00:29 +0200, Kay Sievers <kay.sievers@vrfy.org> wrote:
->> From: Kay Sievers <kay.sievers@vrfy.org>
->> Subject: module: sysfs - add 'uevent' file to allow built-in coldplug
->>
->> Userspace wants to manage module parameters with udev rules.
->> This currently only works for loaded modules, but not for
->> built-in ones.
+2011/6/20 James Morris <jmorris@namei.org>:
+> On Mon, 20 Jun 2011, Vasiliy Kulikov wrote:
 >
-> I'm confused. Â What does "manage" mean here?
+>> > Can you provide evidence that this is a useful feature?  e.g. examples of
+>> > exploits / techniques which would be _usefully_ hampered or blocked.
+>>
+>> First, most of these files are usefull in sense of statistics gathering
+>> and debugging.  There is no reason to provide this information to the
+>> world.
+>>
+>> Second, yes, it blocks one source of information used in timing attacks,
+>> just use reading the counters as more or less precise time measurement
+>> when actual timing measurements are not precise enough.
+>
+> Can you provide concrete examples?
 
-Hook system management into module-load events, which might include
-changing module parameters in /sys/module/*/parameters/*, or at
-bootup/coldplug run it for built-in modules.
+Vasiliy,
 
-We do the same to set properties for buses, drivers or devices when they appear.
+I'm now stand aside James. I mean, if we don't understand your usecase
+clearly. we can't gurantee to don't break the feature in the future. So,
+we strongly hope to understand it.
 
-Kay
+Moreover, _now_ I haven't understand your concrete usecase, and then
+_I_ can't review and be convinced your code. Please please avoid one line
+answer as far as possible, please provide us more information.
