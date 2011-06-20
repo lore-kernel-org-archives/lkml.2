@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330Ab1FTBmX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 21:42:23 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:36573 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751827Ab1FTBmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 21:42:21 -0400
-Date: Sun, 19 Jun 2011 21:42:19 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: halfdog <me@halfdog.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: Re: Can someone confirm ext4 BUG_ON on latest kernel build?
-Message-ID: <20110620014219.GA32133@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, halfdog <me@halfdog.net>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org
-References: <4DFDCBE0.5020806@halfdog.net>
-MIME-Version: 1.0
+	id S1752295Ab1FTCCk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 22:02:40 -0400
+Received: from linux-sh.org ([111.68.239.195]:55663 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750731Ab1FTCCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jun 2011 22:02:37 -0400
+Date: Mon, 20 Jun 2011 11:01:32 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Magnus Damm <magnus.damm@gmail.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org
+Subject: Re: [Update][PATCH 8/8] ARM / shmobile: Support for I/O power domains for SH7372 (v6)
+Message-ID: <20110620020125.GA26125@linux-sh.org>
+References: <201106112223.04972.rjw@sisk.pl> <BANLkTi=u_eyGZt9e0CuVpyz9B08HarEyVw@mail.gmail.com> <201106160106.40553.rjw@sisk.pl> <201106200007.47828.rjw@sisk.pl>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DFDCBE0.5020806@halfdog.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <201106200007.47828.rjw@sisk.pl>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 19, 2011 at 10:13:52AM +0000, halfdog wrote:
-> 
-> Sorry, I do not have latest kernel. Can someone confirm this on latest?
-> At least bugtracker does not know about it, and to my understanding of
-> source, should be still here.
-> 
-> dd if=/dev/zero bs=1M count=64 of=test
-> mkfs.ext4 -F test
-> echo -n " " | dd of=test bs=1 count=1 seek=297195 conv=notrunc
-> mount -o loop test /mnt/test
-> dmesg -c
-> 
-> On ubuntu natty with latest kernel, it seems, that
-> fs/ext4/super.c:__save_error_info calls mod_timer before timer->function
-> is set at end of fs/ext4/super.c:ext4_fill_super via
->   sbi->s_err_report.function = print_daily_error_info;
-> 
-> This causes BUG_ON(!timer->function) in kernel/timer.c:__mod_timer
-> Device is stuck, not usable any more.
-
-This problem is fixed in 2.6.39 (via commit 0449641130f5, which landed
-in mainline in 2.6.39-rc3).
-
-Regards,
-
-					- Ted
+On Mon, Jun 20, 2011 at 12:07:47AM +0200, Rafael J. Wysocki wrote:
+> +static int pd_power_down(struct generic_pm_domain *genpd)
+> +{
+> +	struct sh7372_pm_domain *sh7372_pd = to_sh7372_pd(genpd);
+> +	unsigned int mask = 1 << sh7372_pd->bit_shift;
+> +
+> +	if (__raw_readl(PSTR) & mask) {
+> +		__raw_writel(mask, SPDCR);
+> +
+> +		while (__raw_readl(SPDCR) & mask)
+> +			cpu_relax();
+> +
+> +		pr_debug("sh7372 power domain down 0x%08x -> PSTR = 0x%08x\n",
+> +			 mask, __raw_readl(PSTR));
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int pd_power_up(struct generic_pm_domain *genpd)
+> +{
+> +	struct sh7372_pm_domain *sh7372_pd = to_sh7372_pd(genpd);
+> +	unsigned int mask = 1 << sh7372_pd->bit_shift;
+> +
+> +	if (!(__raw_readl(PSTR) & mask)) {
+> +		__raw_writel(mask, SWUCR);
+> +
+> +		while (__raw_readl(SWUCR) & mask)
+> +			cpu_relax();
+> +
+> +		pr_debug("sh7372 power domain up 0x%08x -> PSTR = 0x%08x\n",
+> +			 mask, __raw_readl(PSTR));
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+Given that these functions can return errors, it's probably more prudent
+to implement some timeout logic on top of the busy loop. Hardware does
+get stuck, after all.
