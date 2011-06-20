@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751184Ab1FTErT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 00:47:19 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34084 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750746Ab1FTErS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 00:47:18 -0400
-Date: Mon, 20 Jun 2011 14:47:05 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the rcu tree with the tip tree
-Message-Id: <20110620144705.c9a5513b.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__20_Jun_2011_14_47_05_+1000_1QboXMiol9YMg_sE"
+	id S1751472Ab1FTEsO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 00:48:14 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44746 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361Ab1FTEsL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 00:48:11 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DFED0FD.6060701@jp.fujitsu.com>
+Date: Mon, 20 Jun 2011 13:47:57 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH 2/8] x86, mce: remove redundant mce_available() checks
+References: <4DFB1242.90404@jp.fujitsu.com> <4DFB1359.9000204@jp.fujitsu.com> <20110617143947.GH18054@aftab>
+In-Reply-To: <20110617143947.GH18054@aftab>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__20_Jun_2011_14_47_05_+1000_1QboXMiol9YMg_sE
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(2011/06/17 23:39), Borislav Petkov wrote:
+>> @@ -1418,8 +1414,15 @@ void __cpuinit mcheck_cpu_init(struct cpuinfo_x86 *c)
+>>  	if (__mcheck_cpu_ancient_init(c))
+>>  		return;
+>>  
+>> -	if (!mce_available(c))
+>> +	if (!mce_available(c)) {
+>> +		/*
+>> +		 * Asymmetric configurations are not supported today.
+>> +		 * If mce_banks is allocated there must be a cpu passed here.
+>> +		 */
+>> +		WARN_ON(!mce_disabled && mce_banks);
+>> +		mce_disabled = 1;
+>>  		return;
+>> +	}
+> 
+> I don't think this will ever happen so why complicate the code
+> needlessly? This can only be executed if at least one of the cores on
+> the system has CPUID(1)_EDX, bits 7 and 14 cleared and that's just
+> silly.
 
-Hi Paul,
+This is a guard against such silly situation, isn't it?
+I don't think it looks so complicated and needless.
 
-Today's linux-next merge of the rcu tree got conflicts in
-kernel/rcutree.c and kernel/rcutree_plugin.h between various commits from
-the tip tree and various commits from the rcu tree.
+I think this code will not run on systems with single socket as
+long as the processor vendors are in the right mind.
+But in cases when it is numa with strange nodes or when it is
+migrated to/from misconfigured virtual machine I can't say that
+with certainty.
 
-I can't easily resolve these, so I have dropped the rcu tree for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+> 
+> Besides, mcheck_init_device() already confirms we don't support
+> MCE-asymmetric configs:
+> 
+>         if (!mce_available(&boot_cpu_data))
+>                 return -EIO;
 
---Signature=_Mon__20_Jun_2011_14_47_05_+1000_1QboXMiol9YMg_sE
-Content-Type: application/pgp-signature
+Without above check, mcheck_init_device() will not notice the
+issue when boot cpu is mce capable but others are not.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Maybe I should have another patch to do well with silly
+configurations, and let this patch to a simple cleanup.
 
-iQEcBAEBAgAGBQJN/tDJAAoJEDMEi1NhKgbsQsUIAImC8bzTGHGr7mIq3+97L7Po
-aCAJH0q1QFyJGDhMtwd03pc8y8H19OYaIJBzXOVGhJUxknl3Xxtm9BOCgtkplXP+
-0njNhJ/cfDgne8NnSNKiumVXfr+brwJiC/BM8Q1TpB3awniNbrI3I+9w2y8+ybYK
-AWV2cUihdWv6deu+enGXttcYDYrimAQhUiWERvXB/sRtMcCe4Hmkjg+WSx5Iy1MD
-f0Ln9Z3SHZomLiJ5aXllw9W1nymZ9jd0K6B2EpvbCvVh09hy/mdm82FnvBjlREId
-xznBxGS+rCykKxMJqzDCM64PEYdSMkR2Qk3vvNcbbtWU/YBWYvwprmMD173n6oM=
-=dPFc
------END PGP SIGNATURE-----
 
---Signature=_Mon__20_Jun_2011_14_47_05_+1000_1QboXMiol9YMg_sE--
+Thanks,
+H.Seto
+
