@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751732Ab1FTEs6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 00:48:58 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44764 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab1FTEs5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 00:48:57 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DFED129.20307@jp.fujitsu.com>
-Date: Mon, 20 Jun 2011 13:48:41 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, "Luck, Tony" <tony.luck@intel.com>,
-        Borislav Petkov <bp@amd64.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 4/8] x86, mce: rename bootparam parser
-References: <4DFB1242.90404@jp.fujitsu.com> <4DFB13E2.4080909@jp.fujitsu.com> <20110617154143.GC20010@aftab> <987664A83D2D224EAE907B061CE93D5301E8E3054B@orsmsx505.amr.corp.intel.com> <20110618083820.GA27319@liondog.tnic>
-In-Reply-To: <20110618083820.GA27319@liondog.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751558Ab1FTE6T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 00:58:19 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:33863 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750866Ab1FTE6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 00:58:17 -0400
+Date: Mon, 20 Jun 2011 14:58:07 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg KH <greg@kroah.com>, Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: linux-next: build failure after merge of the net tree
+Message-Id: <20110620145807.9c202509.sfr@canb.auug.org.au>
+In-Reply-To: <20110615085617.949d418f.sfr@canb.auug.org.au>
+References: <20110609145657.96fae0d0.sfr@canb.auug.org.au>
+	<20110615085617.949d418f.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__20_Jun_2011_14_58_07_+1000_BhR9.e35ucdTGR.a"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/18 17:38), Borislav Petkov wrote:
-> On Fri, Jun 17, 2011 at 03:25:51PM -0700, Luck, Tony wrote:
->>> and leave this like this. "nomce" is the same as "mce=off" and frankly,
->>> I'd like to remove this redundancy, thus no need to do the code
->>> relocation. In addition, I don't think there are lots of systems running
->>> with "nomce" so I really think we should drop it.
->>>
->>> So Ingo, hpa, what is the proper way to remove early setup params? Maybe
->>> through Documentation/feature-removal-schedule.txt?
->>
->> Though it seems odd to me that anyone would want to turn mce off,
->> the fact that we have two ways to do so would indicate that people
->> do (or at least did) want to do this.
-> 
-> Yeah, the only usecase I could think of for this is people doing their
-> own userspace DRAM ECC evaluation like google. But they'd still need to
-> have an #MC handler... or they could parse syslog for the output from
-> the default unexpected_machine_check().. hm.
-> 
->> It seems like we'd need a long "deprecated" period (till all the
->> major OSVs turn out a new release) to remove this without surprises.
->> If the "nomce" option just disappears, then people using it will
->> not realize that their boot time argument was ignored (until they
->> see a reported error).
-> 
-> Yeah, we could do a grace period with a warning:
-> 
-> /*
->  * Old style boot options parsing. Only for compatibility.
->  */
-> static int __init mcheck_disable(char *str)
-> {
-> 	pr_err("\"nomce\" boot param is deprecated. Please use \"mce=off\"\n");
-> 
-> 	mce_disabled = 1;
-> 	return 1;
-> }
-> __setup("nomce", mcheck_disable);
-> 
-> and then kill it.
+--Signature=_Mon__20_Jun_2011_14_58_07_+1000_BhR9.e35ucdTGR.a
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thank you for giving a new direction!
-I'll write a patch to "deprecate nomce" instead of this rename/cleanup.
+Hi Dave,
 
+On Wed, 15 Jun 2011 08:56:17 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> On Thu, 9 Jun 2011 14:56:57 +1000 Stephen Rothwell <sfr@canb.auug.org.au>=
+ wrote:
+> >
+> > After merging the net tree, today's linux-next build (x86_64 allmodconf=
+ig)
+> > failed like this:
+> >=20
+> > [See summary in patch below.]
+> >=20
+> > I assume that this is fallout from commit a6b7a407865a ("net: remove
+> > interrupt.h inclusion from netdevice.h").
+> >=20
+> > I added the following patch for today:
+> >=20
+> > From 520e46c255afa851b33e5c4a2bcf2112ecccbb6f Mon Sep 17 00:00:00 2001
+> > From: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Date: Thu, 9 Jun 2011 14:19:09 +1000
+> > Subject: [PATCH] net/staging: add needed interrupt.h and hardirq.h incl=
+udes
+>=20
+> I am still getting these build errors and applying the patch.  I would
+> assume that if you merge Linus' tree (-rc3 will do it) into net-next, you
+> will get these failures as well (for an x86_64 allmodconfig build at
+> least).
+>=20
+> I think that this patch would probably apply to just the net-next tree
+> anyway.
 
-Thanks,
-H.Seto
+Ping.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Mon__20_Jun_2011_14_58_07_+1000_BhR9.e35ucdTGR.a
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN/tNfAAoJEDMEi1NhKgbs7osH/iS7PPd3DfdacFKi9gyyRjGI
+RgaIBgiqLaQRgPRJ8qypGb9E8PHXRNztEnhLRXZh487rAYLpEOgwEyfPmxGFmkwm
+junQ2/MJcxrg9x/g26P+9CczoHf/dTdvwNzsjDARnn2F/9P7aeWZklm/9PHzMZoF
+n/C5V51IokGhQxH9hIcEYLgSdqlWeV/rmC77ETDDJH8dkmSh8rRBEjocIdpJshPM
+j0k3qWRiFIBvhfNFyDVl7ZiJvJfW0rMYZOPi/MVkeivN4pXe4Kmq8T3XrOp9DhG9
+eQ3IdEIcjDyRvW9RQLAHUsoEafCte4kKn7oOweuzl8DDehAozZ0KUrnZvEmT/vw=
+=mrBq
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__20_Jun_2011_14_58_07_+1000_BhR9.e35ucdTGR.a--
