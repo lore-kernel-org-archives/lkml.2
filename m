@@ -1,104 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab1FTXCr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 19:02:47 -0400
-Received: from eastrmfepo203.cox.net ([68.230.241.218]:55499 "EHLO
-	eastrmfepo203.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751450Ab1FTXCp (ORCPT
+	id S1756177Ab1FTWvJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 18:51:09 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:41318 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756055Ab1FTWvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 19:02:45 -0400
-X-Greylist: delayed 849 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Jun 2011 19:02:45 EDT
-X-CT-Score: 5.00
-X-CT-RefID: str=0001.0A020202.4DFFC47D.0031,ss=3,sh,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=yFHAE0zmTawA24Oq7y6/6YtGf/lGoQYA0C3uw5xHDzk=
- c=1 sm=1 a=gqLAPezR-OoA:10 a=G8Uczd0VNMoA:10 a=jhJMmD9kBJAA:10
- a=IkcTkHD0fZMA:10 a=K5iIL/z6zok8+QdrmtA9jg==:17 a=aSRvjw2BAAAA:8
- a=7kZtOJ7op4IYybnY54UA:9 a=vtLdeTotjVx5JimPu8EA:7 a=QEXdDO2ut3YA:10
- a=98ig6eU3Z4x2SVUJ:21 a=7lWBq-05ZrBZ_RnH:21 a=K5iIL/z6zok8+QdrmtA9jg==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20110620184819.UHAQ2.153611.imail@eastrmwml29>
-Date: Mon, 20 Jun 2011 18:48:19 -0400
-From: BBC <bbc3000@cox.net>
-Reply-To: dfkb2011@qatar.io
-Subject: 1,000,000GBP from the BBC AWARD
+	Mon, 20 Jun 2011 18:51:07 -0400
+Subject: [PATCH] of/gpio: Add new method for getting gpios under different
+	property names
+To: glikely@secretlab.ca, linux-kernel@vger.kernel.org
+From: John Bonesio <bones@secretlab.ca>
+Date: Mon, 20 Jun 2011 15:51:03 -0700
+Message-ID: <20110620225103.4559.67928.stgit@riker>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attention,
+This patch adds a new routine, of_get_named_gpio_flags(), which takes the
+property name as a parameter rather than assuming "gpios".
 
-Your e-mail has just won you 1,000,000GBP from the BBC AWARD on our 2011Award Programme .which took place  18-06 2011 The draw no. 03 08 10 35 38 39 BONUS 31 brought out your e-mail id from a Data Base of Internet Email Users and qualified you a  winner of the stated winning amount. send us the following info for funds release
+of_get_gpio_flags() is modified to call of_get_named_gpio_flags() with "gpios"
+as the property parameter.
 
-1.Full Names 2. Address 3. Country/State 
-4. phone 5. Sex: 6. Age 7. Occupation 8. Email
+Signed-off-by: John Bonesio <bones@secretlab.ca>
+---
 
-please ensure you check your winning details on our site given below
+ drivers/of/gpio.c       |   12 +++++++-----
+ include/linux/of_gpio.h |   42 ++++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 45 insertions(+), 9 deletions(-)
 
-http://www.bbc.co.uk/lottery
+diff --git a/drivers/of/gpio.c b/drivers/of/gpio.c
+index 9059603..6e6a786 100644
+--- a/drivers/of/gpio.c
++++ b/drivers/of/gpio.c
+@@ -20,9 +20,11 @@
+ #include <linux/of_gpio.h>
+ #include <linux/slab.h>
+ 
++
+ /**
+- * of_get_gpio_flags - Get a GPIO number and flags to use with GPIO API
++ * of_get_named_gpio_flags - Get a GPIO number and flags to use with GPIO API
+  * @np:		device node to get GPIO from
++ * @list_name:	property name that contains a list
+  * @index:	index of the GPIO
+  * @flags:	a flags pointer to fill in
+  *
+@@ -30,8 +32,8 @@
+  * value on the error condition. If @flags is not NULL the function also fills
+  * in flags for the GPIO.
+  */
+-int of_get_gpio_flags(struct device_node *np, int index,
+-		      enum of_gpio_flags *flags)
++int of_get_named_gpio_flags(struct device_node *np, const char *list_name,
++                           int index, enum of_gpio_flags *flags)
+ {
+ 	int ret;
+ 	struct device_node *gpio_np;
+@@ -40,7 +42,7 @@ int of_get_gpio_flags(struct device_node *np, int index,
+ 	const void *gpio_spec;
+ 	const __be32 *gpio_cells;
+ 
+-	ret = of_parse_phandles_with_args(np, "gpios", "#gpio-cells", index,
++	ret = of_parse_phandles_with_args(np, list_name, "#gpio-cells", index,
+ 					  &gpio_np, &gpio_spec);
+ 	if (ret) {
+ 		pr_debug("%s: can't parse gpios property\n", __func__);
+@@ -79,7 +81,7 @@ err0:
+ 	pr_debug("%s exited with status %d\n", __func__, ret);
+ 	return ret;
+ }
+-EXPORT_SYMBOL(of_get_gpio_flags);
++EXPORT_SYMBOL(of_get_named_gpio_flags);
+ 
+ /**
+  * of_gpio_count - Count GPIOs for a device
+diff --git a/include/linux/of_gpio.h b/include/linux/of_gpio.h
+index 6598c04..920f195 100644
+--- a/include/linux/of_gpio.h
++++ b/include/linux/of_gpio.h
+@@ -46,8 +46,9 @@ static inline struct of_mm_gpio_chip *to_of_mm_gpio_chip(struct gpio_chip *gc)
+ 	return container_of(gc, struct of_mm_gpio_chip, gc);
+ }
+ 
+-extern int of_get_gpio_flags(struct device_node *np, int index,
+-			     enum of_gpio_flags *flags);
++extern int of_get_named_gpio_flags(struct device_node *np,
++		const char *list_name, int index, enum of_gpio_flags *flags);
++
+ extern unsigned int of_gpio_count(struct device_node *np);
+ 
+ extern int of_mm_gpiochip_add(struct device_node *np,
+@@ -60,8 +61,8 @@ extern struct gpio_chip *of_node_to_gpiochip(struct device_node *np);
+ #else /* CONFIG_OF_GPIO */
+ 
+ /* Drivers may not strictly depend on the GPIO support, so let them link. */
+-static inline int of_get_gpio_flags(struct device_node *np, int index,
+-				    enum of_gpio_flags *flags)
++static inline int of_get_named_gpio_flags(struct device_node *np,
++		const char *list_name, int index, enum of_gpio_flags *flags)
+ {
+ 	return -ENOSYS;
+ }
+@@ -77,6 +78,39 @@ static inline void of_gpiochip_remove(struct gpio_chip *gc) { }
+ #endif /* CONFIG_OF_GPIO */
+ 
+ /**
++ * of_get_gpio_flags - Get a GPIO number and flags to use with GPIO API
++ * @np:		device node to get GPIO from
++ * @index:	index of the GPIO
++ * @flags:	a flags pointer to fill in
++ *
++ * Returns GPIO number to use with Linux generic GPIO API, or one of the errno
++ * value on the error condition. If @flags is not NULL the function also fills
++ * in flags for the GPIO.
++ */
++static inline int of_get_gpio_flags(struct device_node *np, int index,
++		      enum of_gpio_flags *flags)
++{
++	return of_get_named_gpio_flags(np, "gpios", index, flags);
++}
++
++
++/**
++ * of_get_named_gpio - Get a GPIO number to use with GPIO API
++ * @np:		device node to get GPIO from
++ * @list_name:	property name that contains a list
++ * @index:	index of the GPIO
++ *
++ * Returns GPIO number to use with Linux generic GPIO API, or one of the errno
++ * value on the error condition.
++ */
++static inline int of_get_named_gpio(struct device_node *np,
++                                   const char *list_name, int index)
++{
++	return of_get_named_gpio_flags(np, list_name, index, NULL);
++}
++
++
++/**
+  * of_get_gpio - Get a GPIO number to use with GPIO API
+  * @np:		device node to get GPIO from
+  * @index:	index of the GPIO
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Attention,
-
-Your e-mail has just won you 1,000,000GBP from the BBC AWARD on our 2011Award Programme .which took place  18-06 2011 The draw no. 03 08 10 35 38 39 BONUS 31 brought out your e-mail id from a Data Base of Internet Email Users and qualified you a  winner of the stated winning amount. send us the following info for funds release
-
-1.Full Names 2. Address 3. Country/State 
-4. phone 5. Sex: 6. Age 7. Occupation 8. Email
-
-please ensure you check your winning details on our site given below
-
-http://www.bbc.co.uk/lottery
