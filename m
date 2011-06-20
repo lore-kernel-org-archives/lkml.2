@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755211Ab1FTOqQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 10:46:16 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:59595 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755151Ab1FTOqO (ORCPT
+	id S1755102Ab1FTOsb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 10:48:31 -0400
+Received: from mail.elliptictech.com ([209.217.122.41]:56131 "EHLO
+	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013Ab1FTOs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 10:46:14 -0400
-Date: Mon, 20 Jun 2011 10:46:13 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH] PCI / PM: Block races between runtime PM and system
- sleep
-In-Reply-To: <201106192149.19401.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1106201039580.2113-100000@iolanthe.rowland.org>
+	Mon, 20 Jun 2011 10:48:29 -0400
+Date: Mon, 20 Jun 2011 10:48:18 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, autofs@linux.kernel.org,
+        Ian Kent <raven@themaw.net>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: Lockdep splat in autofs with 2.6.39-rc2
+Message-ID: <20110620144818.GA30283@elliptictech.com>
+References: <20110407194403.GA29404@elliptictech.com>
+ <20110421212537.GC24898@home.goodmis.org>
+ <20110427132219.GA2843@elliptictech.com>
+ <20110511191301.GA18504@elliptictech.com>
+ <1308012193.9218.105.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308012193.9218.105.camel@gandalf.stny.rr.com>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 19 Jun 2011, Rafael J. Wysocki wrote:
+Hi Steven, and sorry for the delay.
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> After commit e8665002477f0278f84f898145b1f141ba26ee26
-> (PM: Allow pm_runtime_suspend() to succeed during system suspend) it
-> is possible that a device resumed by the pm_runtime_resume(dev) in
-> pci_pm_prepare() will be suspended immediately from a work item,
-> timer function or otherwise, defeating the very purpose of calling
-> pm_runtime_resume(dev) from there.  To prevent that from happening
-> it is necessary to increment the runtime PM usage counter of the
-> device by replacing pm_runtime_resume() with pm_runtime_get_sync().
-> Moreover, the incremented runtime PM usage counter has to be
-> decremented by the corresponding pci_pm_complete(), via
-> pm_runtime_put_noidle().
+On 2011-06-13 20:43 -0400, Steven Rostedt wrote:
+> I'm going to wrap this up and send it out as a proper patch. Can I add
+> your "Reported-by" and "Tested-by" tags?
 
-In both this and the previous patch, the final decrement should be done 
-by pm_runtime_put_sync() instead of pm_runtime_put_idle().  Otherwise 
-you face the possibility that the usage_count may go to 0 but the 
-device will be left active.
+Sure, but please only add Tested-by if the code changes are the same as
+the patch I actually tested.
 
-Furthermore, since we're going to disable runtime PM as soon as the
-suspend callback returns anyway, why not increment usage_count before
-invoking the callback?  This will prevent runtime suspends from 
-occurring while the callback runs, so no changes will be needed in the 
-PCI or USB subsystems.
-
-It also will prevent Kevin from calling pm_runtime_suspend from within
-his suspend callbacks, but you have already determined that subsystems
-and drivers should never do that in any case.
-
-Alan Stern
-
+Cheers,
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
