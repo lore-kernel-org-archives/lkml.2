@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756246Ab1FTXma (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 19:42:30 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:11821 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755981Ab1FTXm1 (ORCPT
+	id S1756323Ab1FTXnO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 19:43:14 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35596 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756269Ab1FTXnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 19:42:27 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6383"; a="98765676"
-From: David Brown <davidb@codeaurora.org>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [GIT PULL] msm fixes for 3.0-rc4
-Date: Mon, 20 Jun 2011 16:42:27 -0700
-Message-ID: <8yar56onk7w.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 20 Jun 2011 19:43:12 -0400
+Date: Mon, 20 Jun 2011 16:42:41 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Howells <dhowells@redhat.com>
+Cc: torvalds@linux-foundation.org, linux-am33-list@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] linux/uaccess.h needs to #include linux/kernel.h for
+ might_sleep()
+Message-Id: <20110620164241.ac6b5d2a.akpm@linux-foundation.org>
+In-Reply-To: <20110615002210.1392.64165.stgit@warthog.procyon.org.uk>
+References: <20110615002210.1392.64165.stgit@warthog.procyon.org.uk>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 2c53b436a30867eb6b47dd7bab23ba638d1fb0d2:
+On Wed, 15 Jun 2011 01:22:10 +0100
+David Howells <dhowells@redhat.com> wrote:
 
-  Linux 3.0-rc3 (2011-06-13 15:29:59 -0700)
+> linux/uaccess.h needs to #include linux/kernel.h to get might_sleep() otherwise
+> it fails to build on MN10300 allyesconfig.  This fails in a few places with
+> messages like the following:
 
-are available in the git repository at:
-  git://codeaurora.org/quic/kernel/davidb/linux-msm.git msm-fix
+uaccess.h doesn't textually refer to might_sleep().
 
-Jeff Ohlstein (1):
-      msm: timer: compensate for timer shift in msm_read_timer_count
+> In file included from security/keys/trusted.c:14:
+> include/linux/uaccess.h: In function '__copy_from_user_nocache':
+> include/linux/uaccess.h:52: error: implicit declaration of function 'might_sleep'
 
-Stephen Boyd (2):
-      msm: timer: Fix SMP build error
-      msm: timer: Fix DGT rate on 8960 and 8660
+This happened because of arch/mn10300/include/asm/uaccess.h's
 
- arch/arm/mach-msm/timer.c |   14 +++++++++++---
- 1 files changed, 11 insertions(+), 3 deletions(-)
+#define __copy_from_user(to, from, n)			\
+({							\
+	might_sleep();					\
+	__copy_from_user_inatomic((to), (from), (n));	\
+})
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+>  include/linux/uaccess.h |    1 +
+
+So I'd suggest that patching the arch header file is the appropriate fix.
+
