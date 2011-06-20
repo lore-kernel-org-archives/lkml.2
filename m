@@ -1,108 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab1FTVAG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 17:00:06 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:40893 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755307Ab1FTVAD (ORCPT
+	id S1755495Ab1FTVB4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 17:01:56 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:57564 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752344Ab1FTVBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 17:00:03 -0400
-Date: Mon, 20 Jun 2011 17:00:03 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH] PCI / PM: Block races between runtime PM and system
- sleep
-In-Reply-To: <201106202142.45802.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1106201651270.2113-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 20 Jun 2011 17:01:52 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX18uAdgwtdQuFUorxYIRZKTRYls3fvBUpsiJwWOXDD
+	Cd/aIVKtAeD33f
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Samuel Ortiz <sameo@linux.intel.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH 1/2 v3] mfd/ab3550: Convert to kstrtou8_from_user
+Date: Mon, 20 Jun 2011 23:01:37 +0200
+Message-Id: <1308603698-32166-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <20110620195037.GA2534@p183.telecom.by>
+References: <20110620195037.GA2534@p183.telecom.by>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jun 2011, Rafael J. Wysocki wrote:
+This patch replaces the code for getting an number from a
+userspace buffer by a simple call to kstrou8_from_user.
+This makes it easier to read and less error prone.
 
-> > Furthermore, since we're going to disable runtime PM as soon as the
-> > suspend callback returns anyway, why not increment usage_count before
-> > invoking the callback?  This will prevent runtime suspends from 
-> > occurring while the callback runs, so no changes will be needed in the 
-> > PCI or USB subsystems.
-> 
-> The PCI case is different from the USB one.  PCI needs to resume devices
-> before calling their drivers' .suspend() callbacks, so it does that in
-> .prepare().  If the core acquired a reference to every device  before executing
-> the subsystem .suspend(), then pm_runtime_resume() could be moved from
-> pci_pm_prepare() to pci_prepare_suspend(), but then additionally it would
-> have to be called from pci_pm_freeze() and pci_pm_poweroff().  It simply is
-> more efficient to call it once from pci_pm_prepare(), but then PCI needs to
-> take the reference by itself.
+Since the old buffers held only values up to 255, we don't need
+kstrtoul, but rather kstrtou8.
 
-Ah, okay.  The PCI part makes sense then.
+Kernel Version: v3.0-rc3
 
-> > It also will prevent Kevin from calling pm_runtime_suspend from within
-> > his suspend callbacks, but you have already determined that subsystems
-> > and drivers should never do that in any case.
-> 
-> Then reverting commit e8665002477f0278f84f898145b1f141ba26ee26 would be
-> even better. :-)
+Changes in v2:
+- Use kstrtou8 instead of kstrtoul due to small numbers
+- Dropped then unnecessary checks
+Changes in v3:
+- Drop now unnecessary local variables
+- Change the debug_address and debug_bank members to u8 since they hold
+  only values up to 255, and also remove the now superfluous u8 casts
+(Remarks from Alexey Dobriyan, Thanks!)
 
-See below.
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/mfd/ab3550-core.c |   79 +++++++++++++-------------------------------
+ 1 files changed, 24 insertions(+), 55 deletions(-)
 
-
-> > As I see it, we never want a suspend or suspend_noirq callback to call 
-> > pm_runtime_suspend().  However it's okay for the suspend callback to 
-> > invoke pm_runtime_resume(), as long as this is all done in subsystem 
-> > code.
-> 
-> First off, I don't really see a reason for a subsystem to call
-> pm_runtime_resume() from its .suspend_noirq() callback.
-
-I was referring to .suspend(), not .suspend_noirq().
-
->  Now, if
-> pm_runtime_resume() is to be called concurrently with the subsystem's
-> .suspend_noirq() callback, I'd rather won't let that happen. :-)
-
-Me too.  But I see no reason to prevent pm_runtime_resume() from being 
-called by .suspend().
-
-> > And in between the prepare and suspend callbacks, runtime PM should be
-> > more or less fully functional, right?  For most devices it will never
-> > be triggered, because it has to run in process context and both
-> > userspace and pm_wq are frozen.  It may trigger for devices marked as
-> > IRQ-safe, though.
-> 
-> It also may trigger for drivers using non-freezable workqueues and calling
-> runtime PM synchronously from there.
-
-Right.  So we shouldn't ignore this window.
-
-> > Maybe the barrier should be moved into __device_suspend().
-> 
-> I _really_ think that the initial approach, i.e. before commit
-> e8665002477f0278f84f898145b1f141ba26ee26, made the most sense.  It didn't
-> cover the "pm_runtime_resume() called during system suspend" case, but
-> it did cover everything else.
-
-But it prevented runtime PM from working during the window between 
-.prepare() and .suspend(), and also between .resume() and .complete().
-If a subsystem like PCI wants to rule out runtime PM during those 
-windows, then fine -- it can do whatever it wants.  But the PM core 
-shouldn't do this.
-
-> So, I think there are serious technical arguments for reverting that commit.
-> 
-> I think we went really far trying to avoid that, but I'm not sure I want to go
-> any further.
-
-What I'm suggesting is to revert the commit but at the same time,
-move the get_noresume() into __device_suspend() and the put_sync() into 
-device_resume().
-
-Alan Stern
+diff --git a/drivers/mfd/ab3550-core.c b/drivers/mfd/ab3550-core.c
+index 3d7dce6..bd0df90 100644
+--- a/drivers/mfd/ab3550-core.c
++++ b/drivers/mfd/ab3550-core.c
+@@ -73,8 +73,8 @@ struct ab3550 {
+ 	u8 startup_events[AB3550_NUM_EVENT_REG];
+ 	bool startup_events_read;
+ #ifdef CONFIG_DEBUG_FS
+-	unsigned int debug_bank;
+-	unsigned int debug_address;
++	u8 debug_bank;
++	u8 debug_address;
+ #endif
+ };
+ 
+@@ -879,20 +879,13 @@ static ssize_t ab3550_bank_write(struct file *file,
+ 	size_t count, loff_t *ppos)
+ {
+ 	struct ab3550 *ab = ((struct seq_file *)(file->private_data))->private;
+-	char buf[32];
+-	int buf_size;
+-	unsigned long user_bank;
++	u8 user_bank;
+ 	int err;
+ 
+-	/* Get userspace string and assure termination */
+-	buf_size = min(count, (sizeof(buf) - 1));
+-	if (copy_from_user(buf, user_buf, buf_size))
+-		return -EFAULT;
+-	buf[buf_size] = 0;
+-
+-	err = strict_strtoul(buf, 0, &user_bank);
++	/* Get userspace string and convert to number */
++	err = kstrtou8_from_user(user_buf, count, 0, &user_bank);
+ 	if (err)
+-		return -EINVAL;
++		return err;
+ 
+ 	if (user_bank >= AB3550_NUM_BANKS) {
+ 		dev_err(&ab->i2c_client[0]->dev,
+@@ -902,7 +895,7 @@ static ssize_t ab3550_bank_write(struct file *file,
+ 
+ 	ab->debug_bank = user_bank;
+ 
+-	return buf_size;
++	return count;
+ }
+ 
+ static int ab3550_address_print(struct seq_file *s, void *p)
+@@ -923,27 +916,14 @@ static ssize_t ab3550_address_write(struct file *file,
+ 	size_t count, loff_t *ppos)
+ {
+ 	struct ab3550 *ab = ((struct seq_file *)(file->private_data))->private;
+-	char buf[32];
+-	int buf_size;
+-	unsigned long user_address;
+ 	int err;
+ 
+-	/* Get userspace string and assure termination */
+-	buf_size = min(count, (sizeof(buf) - 1));
+-	if (copy_from_user(buf, user_buf, buf_size))
+-		return -EFAULT;
+-	buf[buf_size] = 0;
+-
+-	err = strict_strtoul(buf, 0, &user_address);
++	/* Get userspace string and convert to number */
++	err = kstrtou8_from_user(user_buf, count, 0, &ab->debug_address);
+ 	if (err)
+-		return -EINVAL;
+-	if (user_address > 0xff) {
+-		dev_err(&ab->i2c_client[0]->dev,
+-			"debugfs error input > 0xff\n");
+-		return -EINVAL;
+-	}
+-	ab->debug_address = user_address;
+-	return buf_size;
++		return err;
++
++	return count;
+ }
+ 
+ static int ab3550_val_print(struct seq_file *s, void *p)
+@@ -952,8 +932,8 @@ static int ab3550_val_print(struct seq_file *s, void *p)
+ 	int err;
+ 	u8 regvalue;
+ 
+-	err = get_register_interruptible(ab, (u8)ab->debug_bank,
+-		(u8)ab->debug_address, &regvalue);
++	err = get_register_interruptible(ab, ab->debug_bank,
++		ab->debug_address, &regvalue);
+ 	if (err)
+ 		return -EINVAL;
+ 	seq_printf(s, "0x%02X\n", regvalue);
+@@ -971,38 +951,27 @@ static ssize_t ab3550_val_write(struct file *file,
+ 	size_t count, loff_t *ppos)
+ {
+ 	struct ab3550 *ab = ((struct seq_file *)(file->private_data))->private;
+-	char buf[32];
+-	int buf_size;
+-	unsigned long user_val;
++	u8 user_val;
+ 	int err;
+ 	u8 regvalue;
+ 
+-	/* Get userspace string and assure termination */
+-	buf_size = min(count, (sizeof(buf)-1));
+-	if (copy_from_user(buf, user_buf, buf_size))
+-		return -EFAULT;
+-	buf[buf_size] = 0;
+-
+-	err = strict_strtoul(buf, 0, &user_val);
++	/* Get userspace string and convert to number */
++	err = kstrtou8_from_user(user_buf, count, 0, &user_val);
+ 	if (err)
+-		return -EINVAL;
+-	if (user_val > 0xff) {
+-		dev_err(&ab->i2c_client[0]->dev,
+-			"debugfs error input > 0xff\n");
+-		return -EINVAL;
+-	}
++		return err;
++
+ 	err = mask_and_set_register_interruptible(
+-		ab, (u8)ab->debug_bank,
+-		(u8)ab->debug_address, 0xFF, (u8)user_val);
++		ab, ab->debug_bank,
++		ab->debug_address, 0xFF, user_val);
+ 	if (err)
+ 		return -EINVAL;
+ 
+-	get_register_interruptible(ab, (u8)ab->debug_bank,
+-		(u8)ab->debug_address, &regvalue);
++	get_register_interruptible(ab, ab->debug_bank,
++		ab->debug_address, &regvalue);
+ 	if (err)
+ 		return -EINVAL;
+ 
+-	return buf_size;
++	return count;
+ }
+ 
+ static const struct file_operations ab3550_bank_fops = {
+-- 
+1.7.3.4
 
