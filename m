@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672Ab1FTAhe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 20:37:34 -0400
-Received: from tundra.namei.org ([65.99.196.166]:38534 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750743Ab1FTAhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 20:37:33 -0400
-Date: Mon, 20 Jun 2011 10:37:30 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Chris Forbes <chrisf@ijw.co.nz>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] security: inode: fixed coding style issue
-In-Reply-To: <1308295341-27566-1-git-send-email-chrisf@ijw.co.nz>
-Message-ID: <alpine.LRH.2.00.1106201036040.5170@tundra.namei.org>
-References: <1308295341-27566-1-git-send-email-chrisf@ijw.co.nz>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1751010Ab1FTAm5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 20:42:57 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:59221 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab1FTAmz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jun 2011 20:42:55 -0400
+Date: Sun, 19 Jun 2011 18:42:52 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Petr Tesarik <ptesarik@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of
+	arbitrary physical addresses
+Message-ID: <20110620004252.GE19693@parisc-linux.org>
+References: <201106171038.25988.ptesarik@suse.cz> <20110617093032.GA19235@elte.hu> <4DFE7FF9.9070406@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DFE7FF9.9070406@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Jun 2011, Chris Forbes wrote:
+On Mon, Jun 20, 2011 at 09:02:17AM +1000, Ryan Mallon wrote:
+> There are drivers where this makes sense. For example an FPGA device  
+> with a proprietary register layout on the memory bus can be done this  
+> way. The FPGA can simply be mapped in user-space via /dev/mem and  
+> handled there. If the device requires no access other than memory bus  
+> reads and writes then writing a custom char device driver just to get an  
+> mmap function seems a bit overkill.
 
-> --- a/security/inode.c
-> +++ b/security/inode.c
-> @@ -75,7 +75,8 @@ static struct inode *get_inode(struct super_block *sb, int mode, dev_t dev)
->  			inode->i_op = &simple_dir_inode_operations;
->  			inode->i_fop = &simple_dir_operations;
->  
-> -			/* directory inodes start off with i_nlink == 2 (for "." entry) */
-> +			/* directory inodes start off with i_nlink == 2
-> +			 * (for "." entry) */
-
-This is not correct for multi-line comments.
-
-> -	static struct tree_descr files[] = {{""}};
-> +	static struct tree_descr files[] = { {""} };
-
-Why ?
-
-
+Calling a 30 line device driver "overkill" might in itself be overkill?
 
 -- 
-James Morris
-<jmorris@namei.org>
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
