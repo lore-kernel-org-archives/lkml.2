@@ -1,110 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123Ab1FTGin (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 02:38:43 -0400
-Received: from eastrmfepi103.cox.net ([68.230.241.199]:52920 "EHLO
-	eastrmfepi103.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752203Ab1FTGil (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 02:38:41 -0400
-X-Greylist: delayed 361 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Jun 2011 02:38:41 EDT
-X-CT-Score: 5.00
-X-CT-RefID: str=0001.0A02020A.4DFED837.00B2,ss=3,sh,re=0.000,fgs=16
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=+zmVqi6HbhBxOY6lzrsfnB2wShF2MeCUcHVIQWL6sOU=
- c=1 sm=1 a=G8Uczd0VNMoA:10 a=M58Ut_zYM0YA:10 a=dcIMPEurbQsA:10
- a=IkcTkHD0fZMA:10 a=1irRP9yUgqMih2bc7s8iaw==:17 a=aSRvjw2BAAAA:8
- a=XpexGFeAkJszDXqsqHcA:9 a=UeAJzJl0MbUEGxWfLuEA:7 a=QEXdDO2ut3YA:10
- a=qu0y9A8pCpJQHav6:21 a=ProRuW4RSsEiaZCj:21 a=1irRP9yUgqMih2bc7s8iaw==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20110620023236.2X8TD.165691.imail@eastrmwml36>
-Date: Mon, 20 Jun 2011 2:32:36 -0400
-From: BBC <hfhjf7@cox.net>
-Reply-To: akekobat6688@aol.com
-Subject: 
+	id S1752914Ab1FTG2r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 02:28:47 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57596 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751951Ab1FTG2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 02:28:46 -0400
+Message-ID: <4DFEE9BE.6050501@cn.fujitsu.com>
+Date: Mon, 20 Jun 2011 14:33:34 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Paul Menage <menage@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH 0/4] cgroups: Start a basic rlimit subsystem
+References: <1308527474-20704-1-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1308527474-20704-1-git-send-email-fweisbec@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-20 14:28:20,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-20 14:28:20,
+	Serialize complete at 2011-06-20 14:28:20
 Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Winner.Your e-mail has just won you
+Frederic Weisbecker wrote:
+> This starts a basic rlimit cgroup subsystem with only the
+> equivalent of RLIMIT_NPROC yet. This can be useful to limit
+> the global effects of a local fork bomb for example (local
+> in term of a cgroup).
+> 
+> The thing is further expandable to host more general resource
+> limitations in the scope of a cgroup.
+> 
 
-1,000,000.00GBP from the BBC LOTTERY on our Saturday June 18th/2011
+As this subsystem is named "rlimit", I think we should have a bigger
+picture about how this subsystem will be.
 
-charity bonanza.The draw no. 03 08 10 35 38 39 BONUS 31 brought out your
+For example, which of other RLIMIT_XXX can be make cgroup-aware in
+a meaningful way and which can't.
 
-e-mail address from a Data Base of Internet Email Users
-
-and qualified you a bonafied winner of the stated
-
-winning amount.For claims,
-
-
-
-1.Your Full Names:..
-2. Address:...
-3. Country/State:....
-4. Mobile No:.....
-5. Sex:....
-6. Age:...
-7. Occupation:....
-8. Email:....For confirmation of your winning numbers,
-
-please ensure your check your winning details on our
-
-site given below
-
-http://www.bbc.co.uk/lottery
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Dear Winner.Your e-mail has just won you
-
-1,000,000.00GBP from the BBC LOTTERY on our Saturday June 18th/2011
-
-charity bonanza.The draw no. 03 08 10 35 38 39 BONUS 31 brought out your
-
-e-mail address from a Data Base of Internet Email Users
-
-and qualified you a bonafied winner of the stated
-
-winning amount.For claims,
-
-
-
-1.Your Full Names:..
-2. Address:...
-3. Country/State:....
-4. Mobile No:.....
-5. Sex:....
-6. Age:...
-7. Occupation:....
-8. Email:....For confirmation of your winning numbers,
-
-please ensure your check your winning details on our
-
-site given below
-
-http://www.bbc.co.uk/lottery
+Another issue is, we can apply the limit of RLIMIT_NPROC as the sum
+of the tasks' limit in a cgroup, but some other RLIMIT_XXX can't
+work in this way. Take RLIMIT_NICE for example, we can apply this
+limit to each of the tasks in the cgroup.
