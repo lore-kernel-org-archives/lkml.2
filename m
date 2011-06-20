@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab1FTM5h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 08:57:37 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43305 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752422Ab1FTM5g (ORCPT
+	id S1754135Ab1FTM5V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 08:57:21 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37764 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752422Ab1FTM5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 08:57:36 -0400
-Date: Mon, 20 Jun 2011 13:57:15 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH] ARM: smp: Fix the CPU hotplug race with scheduler.
-Message-ID: <20110620125715.GK2082@n2100.arm.linux.org.uk>
-References: <20110620101438.GD2082@n2100.arm.linux.org.uk> <4DFF20B3.7010209@ti.com> <20110620104415.GF2082@n2100.arm.linux.org.uk> <4DFF255E.5030308@ti.com> <20110620111336.GG2082@n2100.arm.linux.org.uk> <4DFF2E37.8030602@ti.com> <20110620114019.GH2082@n2100.arm.linux.org.uk> <4DFF3454.30507@ti.com> <20110620121939.GI2082@n2100.arm.linux.org.uk> <4DFF3C95.1080903@ti.com>
+	Mon, 20 Jun 2011 08:57:18 -0400
+Date: Mon, 20 Jun 2011 13:57:16 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: ashishj3 <ashish.jangam@kpitcummins.com>
+Cc: lrg@slimlogic.co.uk, linux-kernel@vger.kernel.org, dajun.chen@diasemi.com,
+        linaro-dev@lists.linaro.org
+Subject: Re: [PATCHv3 5/11 ] Regulator: Fixed DA9052 _sel() functions
+Message-ID: <20110620125716.GC31140@opensource.wolfsonmicro.com>
+References: <1308571392.3180.37.camel@L-0532.kpit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DFF3C95.1080903@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1308571392.3180.37.camel@L-0532.kpit.com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 05:57:01PM +0530, Santosh Shilimkar wrote:
-> On 6/20/2011 5:49 PM, Russell King - ARM Linux wrote:
->> On Mon, Jun 20, 2011 at 05:21:48PM +0530, Santosh Shilimkar wrote:
->>> On 6/20/2011 5:10 PM, Russell King - ARM Linux wrote:
->
-> [...]
->
->>>
->>> Any pointers on the other question about "why we need to enable
->>> interrupts before the CPU is ready?"
->>
->> To ensure that things like the delay loop calibration and twd calibration
->> can run, though that looks like it'll run happily enough with the boot
->> CPU updating jiffies.
->>
-> I guessed it and had same point as above. Calibration will still
-> work.
->
->> However, I'm still not taking your patch because I believe its just
->> papering over the real issue, which is not as you describe.
->>
->> You first need to work out why the spinlock lockup detection is firing
->> after just 61us rather than the full 1s and fix that.
->>
-> This is possibly because of my script which doesn't wait for 1
-> second.
+On Mon, Jun 20, 2011 at 05:33:12PM +0530, ashishj3 wrote:
 
-How could a userspace script affect the internal behaviour of
-spin_lock() and the spinlock lockup detector?
+> --- a/drivers/regulator/da9052-regulator.c
+> +++ b/drivers/regulator/da9052-regulator.c
+> @@ -24,7 +24,7 @@
+>  #include <linux/mfd/da9052/reg.h>
+>  #include <linux/mfd/da9052/pdata.h>
+>  
+> -/* Buck step size Macros */
+> +/* Buck step size */
+>  #define DA9052_BUCK_PERI_3uV_STEP		100000
+>  #define DA9052_BUCK_PERI_REG_MAP_UPTO_3uV	24
+>  #define DA9052_CONST_3uV			3000000
 
-> Latest mainline kernel with omap2plus_defconfig and below simple script
-> to trigger the failure.
->
-> -------------
-> while true
-> do
-> echo 0 > /sys/devices/system/cpu/cpu1/online
-> echo 1 > /sys/devices/system/cpu/cpu1/online
-> done
+This appears to be an incremental patch against some previous version of
+the driver.  Since this driver is not yet part of Linux you need to send
+it as a new patch, as a result I've not read the rest of the patch and
+must once more urge you to read and follow the instructions in
+SubmittingPatches.
 
-Thanks, I'll give it a go here and see if I can debug it further.
+Given the very substantial problems that this process appears to be
+causing you I strongly urge you to accept the offers of help that the
+Linaro team have made recently.
