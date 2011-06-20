@@ -1,99 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab1FTSwb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 14:52:31 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62844 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750816Ab1FTSw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 14:52:28 -0400
-Message-ID: <4DFF9766.3080505@cn.fujitsu.com>
-Date: Tue, 21 Jun 2011 02:54:30 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 10/15] KVM: MMU: lockless walking shadow page table
-References: <4DEE205E.8000601@cn.fujitsu.com> <4DEE21E2.8000301@cn.fujitsu.com> <20110620163704.GD17130@amt.cnet>
-In-Reply-To: <20110620163704.GD17130@amt.cnet>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-21 02:52:04,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-21 02:52:04,
-	Serialize complete at 2011-06-21 02:52:04
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1755466Ab1FTSzm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 14:55:42 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:52575 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755422Ab1FTSzl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 14:55:41 -0400
+From: Taylor Hutt <thutt@chromium.org>
+To: thutt@chromium.org
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Peter Hsiang <Peter.Hsiang@maxim-ic.com>,
+        Olof Johansson <olofj@chromium.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ASoC: codecs: Max98095: Fix logging of hardware revision.
+Date: Mon, 20 Jun 2011 11:54:32 -0700
+Message-Id: <1308596072-17158-1-git-send-email-thutt@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2011 12:37 AM, Marcelo Tosatti wrote:
+The base hardware revision of the Maxim 98095 part is 0x40; the code
+which outputs the revision of the hardware has been updated to
+properly use uppercase alphabetic values for the revision numbers.
 
->> +	if (atomic_read(&kvm->arch.reader_counter)) {
->> +		free_mmu_pages_unlock_parts(invalid_list);
->> +		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
->> +		list_del_init(invalid_list);
->> +		call_rcu(&sp->rcu, free_invalid_pages_rcu);
->> +		return;
->> +	}
-> 
-> This is probably wrong, the caller wants the page to be zapped by the 
-> time the function returns, not scheduled sometime in the future.
-> 
+Also, the use of a constant for the length 'max98095_dai' has been
+replaced with ARRAY_SIZE().
 
-It can be freed soon and KVM does not reuse these pages anymore...
-it is not too bad, no?
+Signed-off-by: Taylor Hutt <thutt@chromium.org>
+---
+ sound/soc/codecs/max98095.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
->> +
->>  	do {
->>  		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
->>  		WARN_ON(!sp->role.invalid || sp->root_count);
->> @@ -2601,6 +2633,35 @@ static gpa_t nonpaging_gva_to_gpa_nested(struct kvm_vcpu *vcpu, gva_t vaddr,
->>  	return vcpu->arch.nested_mmu.translate_gpa(vcpu, vaddr, access);
->>  }
->>  
->> +int kvm_mmu_walk_shadow_page_lockless(struct kvm_vcpu *vcpu, u64 addr,
->> +				      u64 sptes[4])
->> +{
->> +	struct kvm_shadow_walk_iterator iterator;
->> +	int nr_sptes = 0;
->> +
->> +	rcu_read_lock();
->> +
->> +	atomic_inc(&vcpu->kvm->arch.reader_counter);
->> +	/* Increase the counter before walking shadow page table */
->> +	smp_mb__after_atomic_inc();
->> +
->> +	for_each_shadow_entry(vcpu, addr, iterator) {
->> +		sptes[iterator.level-1] = *iterator.sptep;
->> +		nr_sptes++;
->> +		if (!is_shadow_present_pte(*iterator.sptep))
->> +			break;
->> +	}
-> 
-> Why is lockless access needed for the MMIO optimization? Note the spte 
-> contents are copied to the array here are used for debugging purposes
-> only, their contents are potentially stale.
-> 
-
-Um, we can use it to check the mmio page fault if it is the real mmio access or the
-bug of KVM, i discussed it with Avi:
-
-===============================================
->
-> Yes, it is, i just want to detect BUG for KVM, it helps us to know if "ept misconfig" is the
-> real MMIO or the BUG. I noticed some "ept misconfig" BUGs is reported before, so i think doing
-> this is necessary, and i think it is not too bad, since walking spte hierarchy is lockless,
-> it really fast.
-
-Okay.  We can later see if it show up on profiles. 
-===============================================
-
-And it is really fast, i will attach the 'perf result' when the v2 is posted.
-
-Yes, their contents are potentially stale, we just use it to check mmio, after all, if we get the
-stale spte, we will call page fault path to fix it.
+diff --git a/sound/soc/codecs/max98095.c b/sound/soc/codecs/max98095.c
+index e1d282d..9a793b3 100644
+--- a/sound/soc/codecs/max98095.c
++++ b/sound/soc/codecs/max98095.c
+@@ -2261,11 +2261,11 @@ static int max98095_probe(struct snd_soc_codec *codec)
  
-
+ 	ret = snd_soc_read(codec, M98095_0FF_REV_ID);
+ 	if (ret < 0) {
+-		dev_err(codec->dev, "Failed to read device revision: %d\n",
++		dev_err(codec->dev, "Failure reading hardware revision: %d\n",
+ 			ret);
+ 		goto err_access;
+ 	}
+-	dev_info(codec->dev, "revision %c\n", ret + 'A');
++	dev_info(codec->dev, "Hardware revision: %c\n", ret - 0x40 + 'A');
+ 
+ 	snd_soc_write(codec, M98095_097_PWR_SYS, M98095_PWRSV);
+ 
+@@ -2342,8 +2342,8 @@ static int max98095_i2c_probe(struct i2c_client *i2c,
+ 	max98095->control_data = i2c;
+ 	max98095->pdata = i2c->dev.platform_data;
+ 
+-	ret = snd_soc_register_codec(&i2c->dev,
+-			&soc_codec_dev_max98095, &max98095_dai[0], 3);
++	ret = snd_soc_register_codec(&i2c->dev, &soc_codec_dev_max98095,
++				     max98095_dai, ARRAY_SIZE(max98095_dai));
+ 	if (ret < 0)
+ 		kfree(max98095);
+ 	return ret;
+-- 
+1.7.3.1
 
