@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab1FTRKs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 13:10:48 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55784 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755448Ab1FTRKp (ORCPT
+	id S1755483Ab1FTRLA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 13:11:00 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:45074 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab1FTRK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 13:10:45 -0400
-Date: Mon, 20 Jun 2011 18:10:43 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [git pull] more vfs/fs patches
-Message-ID: <20110620171043.GX11521@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 20 Jun 2011 13:10:57 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Mon, 20 Jun 2011 13:10:50 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        Alexander Holler <holler@ahsoftware.de>, linux-usb@vger.kernel.org,
+        gregkh@suse.de, lkml <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin@rab.in>
+Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing the
+ packed attribute
+In-reply-to: <Pine.LNX.4.44L0.1106201240240.2113-100000@iolanthe.rowland.org>
+Message-id: <alpine.LFD.2.00.1106201306210.2142@xanadu.home>
+References: <Pine.LNX.4.44L0.1106201240240.2113-100000@iolanthe.rowland.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan's fix for ubifs breakage + removal of a bunch of really dumb
-detritus from ->permission() instances + fix for long-standing
-stupidity in devcgroups_inode_permission() (the thing is a
-no-op for non-devices and that check definitely ought to be
-taken to inline wrapper).  Please, pull from the usual place
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ #for-linus
+On Mon, 20 Jun 2011, Alan Stern wrote:
 
-Shortlog:
+> On Mon, 20 Jun 2011, Nicolas Pitre wrote:
+> 
+> > On Mon, 20 Jun 2011, Alan Stern wrote:
+> > 
+> > > On Sun, 19 Jun 2011, Nicolas Pitre wrote:
+> > > 
+> > > > > > The question is: does the structure really has to be packed?
+> > > > > 
+> > > > > What do you mean?  The structure really does need to be allocated
+> > > > > without padding between the fields; is that the same thing?  So do a
+> > > > > bunch of other structures that currently have no annotations at all.
+> > > > 
+> > > > Yes, that's the same thing.  The packed attribute tells the compiler 
+> > > > that you don't want it to insert padding in it as it sees fit.
+> > > 
+> > > I thought the packed attribute does more than that.  For example, on
+> > > some architectures doesn't it also force the compiler to use
+> > > byte-oriented instructions for accessing the structure's fields?
+> > 
+> > Yes, but that's a consequence of not being able to access those fields 
+> > in their naturally aligned position anymore.  Hence the addition of the 
+> > align attribute to tell the compiler that we know that the structure is 
+> > still aligned to a certain degree letting the compiler to avoid 
+> > byte-oriented instructions when possible.
+> 
+> Not exactly.  As far as I can tell, the ((packed)) attribute caused the 
+> compiler to change the structure's alignment from its natural value to 
+> 1.  That's why the fields weren't in their naturally aligned positions 
+> and why removing ((packed)) fixed the problem.
 
-Al Viro (11):
-      bad_inode_permission() is safe from RCU mode
-      cifs_permission() doesn't need to bail out in RCU mode
-      coda_ioctl_permission() is safe in RCU mode
-      logfs doesn't need ->permission() at all
-      nilfs2_permission() doesn't need to bail out in RCU mode
-      proc_fd_permission() is doesn't need to bail out in RCU mode
-      reiserfs_permission() doesn't need to bail out in RCU mode
-      proc_sys_permission() is OK in RCU mode
-      kill obsolete comment for follow_down()
-      fix comment in generic_permission()
-      devcgroup_inode_permission: take "is it a device node" checks to inlined wrapper
+Are we talking past each other?
 
-Dan Carpenter (1):
-      ubifs: dereferencing an ERR_PTR in ubifs_mount()
+Remember that I was the one asking if the align attribute was needed in 
+the first place.  If it is not then by all means please get rid of it!
 
-Diffstat:
+But if it _is_ needed, then the generated code can be much better if the 
+packed attribute is _also_ followed by the align attribute to 
+increase it from 1.
 
- fs/bad_inode.c                |    3 ---
- fs/cifs/cifsfs.c              |    3 ---
- fs/coda/pioctl.c              |    2 --
- fs/logfs/dir.c                |    8 --------
- fs/namei.c                    |    6 ++----
- fs/nilfs2/inode.c             |    7 +------
- fs/proc/base.c                |    6 +-----
- fs/proc/proc_sysctl.c         |    3 ---
- fs/reiserfs/xattr.c           |    2 --
- fs/ubifs/super.c              |    1 +
- include/linux/device_cgroup.h |   10 +++++++++-
- security/device_cgroup.c      |    8 +-------
- 12 files changed, 15 insertions(+), 44 deletions(-)
+
+Nicolas
