@@ -1,40 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab1FTNM6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 09:12:58 -0400
-Received: from mga14.intel.com ([143.182.124.37]:13275 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754161Ab1FTNMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 09:12:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,394,1304319600"; 
-   d="scan'208";a="15556642"
-Date: Mon, 20 Jun 2011 15:13:01 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] MFD: jz4740-adc: Use generic irq chip
-Message-ID: <20110620131301.GH22420@sortiz-mobl>
-References: <1307063666-10702-1-git-send-email-lars@metafoo.de>
+	id S1754634Ab1FTNSY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 09:18:24 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41776 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754215Ab1FTNSU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 09:18:20 -0400
+Date: Mon, 20 Jun 2011 14:18:18 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-arch@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC] get_write_access()/deny_write_access() without
+ inode->i_lock
+Message-ID: <20110620131818.GR11521@ZenIV.linux.org.uk>
+References: <20110619235147.GQ11521@ZenIV.linux.org.uk>
+ <21839.1308574037@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1307063666-10702-1-git-send-email-lars@metafoo.de>
+In-Reply-To: <21839.1308574037@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lars-Peter,
+On Mon, Jun 20, 2011 at 01:47:17PM +0100, David Howells wrote:
+> Al Viro <viro@ZenIV.linux.org.uk> wrote:
+> 
+> > +	for (v = atomic_read(&inode->i_writecount); v >= 0; v = v1) {
+> > +		v1 = atomic_cmpxchg(&inode->i_writecount, v, v + 1);
+> > +		if (likely(v1 == v))
+> > +			return 0;
+> > +	}
+> 
+> You don't need to reissue the atomic_read().  atomic_cmpxchg() returns the
+> current value of the memory location.  Just set v to v1 before going round the
+> loop again.
 
-On Fri, Jun 03, 2011 at 03:14:26AM +0200, Lars-Peter Clausen wrote:
-> Use the generic irq chip framework for implementing the irq chip for
-> the jz4740-adc driver.
-Nice, patch applied to my for-next branch.
-
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+That's precisely what that loop is doing...
