@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab1FTRGA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 13:06:00 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:34337 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751294Ab1FTRF5 (ORCPT
+	id S1755399Ab1FTRGM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 13:06:12 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62104 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab1FTRGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 13:05:57 -0400
-Date: Mon, 20 Jun 2011 20:05:52 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Skacore Systems <skacore.systems@gmail.com>
-Cc: balbi@ti.com, Alan Stern <stern@rowland.harvard.edu>,
-        Viliam Mateicka <viliam.mateicka@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] s3c2410_udc: fix custom UDC command handling
-Message-ID: <20110620170551.GE26623@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <BANLkTimWM2oew2f9uWxoD1kw1=2bSYFFuw@mail.gmail.com>
- <Pine.LNX.4.44L0.1106201105430.2113-100000@iolanthe.rowland.org>
- <20110620151522.GN14262@legolas.emea.dhcp.ti.com>
- <BANLkTi=5S6bWs3jr9hTsg2=LXh4xKAprUA@mail.gmail.com>
- <20110620153645.GQ14262@legolas.emea.dhcp.ti.com>
- <BANLkTik-zdp57zTjrafR0jXGoJiq2hrm3g@mail.gmail.com>
- <BANLkTi=tuh028X-Rr9i8ZF_B_Q6VBK2-Lw@mail.gmail.com>
- <20110620160650.GA26623@legolas.emea.dhcp.ti.com>
- <BANLkTi=nEma5muF9R3_QUzZWWJ64DW9Skw@mail.gmail.com>
+	Mon, 20 Jun 2011 13:06:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=q8iIsm89ggJObV+1X5cGtXsW6Ujw1Tftj7T9PvgHdu4U/wEkdCbRuGpTmuDw8iHuay
+         6PvjiPRRzOfVAJo2/m84rdr+XjwSEttFvKzp2VNs2B9MiJzHOVTCUCkCyZ0sotrRHSaC
+         pj5RWpyum4CWzaLNsPGfIAIo7JupMfEpokhtQ=
+Date: Mon, 20 Jun 2011 21:06:01 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: James Morris <jmorris@namei.org>
+Cc: kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [RFC 2/5 v4] procfs: add hidepid= and gid= mount options
+Message-ID: <20110620170600.GA25601@albatros>
+References: <alpine.LRH.2.00.1106192154220.7503@taiga.selinuxproject.org>
+ <alpine.LRH.2.00.1106201455560.6055@tundra.namei.org>
+ <20110620103917.GA5230@albatros>
+ <alpine.LRH.2.00.1106202040400.10448@tundra.namei.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FN+gV9K+162wdwwF"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTi=nEma5muF9R3_QUzZWWJ64DW9Skw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LRH.2.00.1106202040400.10448@tundra.namei.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(cc'ed Eric)
 
---FN+gV9K+162wdwwF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jun 20, 2011 at 20:43 +1000, James Morris wrote:
+> > > > hidepid=1 means users may not access any /proc/<pid>/ directories, but their
+> > > > own.  Sensitive files like cmdline, io, sched*, status, wchan are now
+> > > > protected against other users.  As permission checking done in
+> > > > proc_pid_permission() and files' permissions are left untouched,
+> > > > programs expecting specific files' permissions are not confused.
+> > > 
+> > > IMHO such programs are beyond broken and have voided their kernel 
+> > > warranty.
+> > 
+> > Policykit, Debian's start-stop-daemon, util-linux use /proc/PID's uid.
+> > procps use both /proc/PID's uid and gid.  Are all of them totally broken?
+> 
+> If they depend on specific permissions, yes.
 
-Hi,
+Could you please then clarify why does this patch changes
+pid_revalidate() behaviour:
 
-On Mon, Jun 20, 2011 at 06:41:59PM +0200, Skacore Systems wrote:
-> Yeah I think that one line break and tabs are sabotaging your work.
-> So stop being an 8=3D=3D=3D=3DO - hole. No wonder if you are paid by TI t=
-hat
-> one line patch into the upstream takes you so long to comprehend.
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=99f895518368252ba862cc15ce4eb98ebbe1bec6
 
-you are this close for me to drop your fix and add you to the shitlist.
+It changes files permissions to allow userspace apps to quickly stat
+files, not looking into /proc/PID/status.  So, uid and gid are explicit
+ABI.  Breaking procfs uid/gid attributes would break these apps.
 
---=20
-balbi
+Or am I missing something?
 
---FN+gV9K+162wdwwF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Thanks,
 
-iQEcBAEBAgAGBQJN/33vAAoJEAv8Txj19kN149gH/1T/zf8dtRToK0Qd43D6/hWV
-nQXGZfh46ZwiuzHwrzNcEbLjL8Cwb2RotMae3srhnfzkP/+3Jdmc77vLIailjU0z
-2o5saj4TA1w/WWiknA8caLfK+vj0mVJMAb7wE72sHCTquTAf6eoLR7ZTvNmuMOGW
-OS5OtZSFKhmIVXf8Wva0qyVE6A/pc3Yp0WjBIzQSCq5c7XE1+eFr1CdTOpQ39H52
-98GmgNCBs/bM8ddp0ByCdDaQ7Kwz233jrOODFZQldP6M8COeXbHImJ2jxPwmWiyE
-g9g6KrdIaiEyvOCIj46aV0/2F11qmXA4VIXPvrPApJ5Ogb0qvUI8OFq6satm5GM=
-=cWLN
------END PGP SIGNATURE-----
-
---FN+gV9K+162wdwwF--
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
