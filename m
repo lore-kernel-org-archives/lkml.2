@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751558Ab1FTE6T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 00:58:19 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:33863 "EHLO smtps.tip.net.au"
+	id S1751783Ab1FTFIQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 01:08:16 -0400
+Received: from tundra.namei.org ([65.99.196.166]:39699 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750866Ab1FTE6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 00:58:17 -0400
-Date: Mon, 20 Jun 2011 14:58:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg KH <greg@kroah.com>, Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: linux-next: build failure after merge of the net tree
-Message-Id: <20110620145807.9c202509.sfr@canb.auug.org.au>
-In-Reply-To: <20110615085617.949d418f.sfr@canb.auug.org.au>
-References: <20110609145657.96fae0d0.sfr@canb.auug.org.au>
-	<20110615085617.949d418f.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__20_Jun_2011_14_58_07_+1000_BhR9.e35ucdTGR.a"
+	id S1750867Ab1FTFIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 01:08:12 -0400
+Date: Mon, 20 Jun 2011 15:07:48 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Vasiliy Kulikov <segoon@openwall.com>
+cc: kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [RFC 2/5 v4] procfs: add hidepid= and gid= mount options
+In-Reply-To: <alpine.LRH.2.00.1106192154220.7503@taiga.selinuxproject.org>
+Message-ID: <alpine.LRH.2.00.1106201455560.6055@tundra.namei.org>
+References: <alpine.LRH.2.00.1106192154220.7503@taiga.selinuxproject.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__20_Jun_2011_14_58_07_+1000_BhR9.e35ucdTGR.a
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[please cc: the lsm list with this kind of thing]
 
-Hi Dave,
+> This patch adds support of mount options to restrict access to
+> /proc/PID/ directories.  The default backward-compatible 'relaxed'
+> behaviour is left untouched.
 
-On Wed, 15 Jun 2011 08:56:17 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> On Thu, 9 Jun 2011 14:56:57 +1000 Stephen Rothwell <sfr@canb.auug.org.au>=
- wrote:
-> >
-> > After merging the net tree, today's linux-next build (x86_64 allmodconf=
-ig)
-> > failed like this:
-> >=20
-> > [See summary in patch below.]
-> >=20
-> > I assume that this is fallout from commit a6b7a407865a ("net: remove
-> > interrupt.h inclusion from netdevice.h").
-> >=20
-> > I added the following patch for today:
-> >=20
-> > From 520e46c255afa851b33e5c4a2bcf2112ecccbb6f Mon Sep 17 00:00:00 2001
-> > From: Stephen Rothwell <sfr@canb.auug.org.au>
-> > Date: Thu, 9 Jun 2011 14:19:09 +1000
-> > Subject: [PATCH] net/staging: add needed interrupt.h and hardirq.h incl=
-udes
->=20
-> I am still getting these build errors and applying the patch.  I would
-> assume that if you merge Linus' tree (-rc3 will do it) into net-next, you
-> will get these failures as well (for an x86_64 allmodconfig build at
-> least).
->=20
-> I think that this patch would probably apply to just the net-next tree
-> anyway.
+Can you provide evidence that this is a useful feature?  e.g. examples of 
+exploits / techniques which would be _usefully_ hampered or blocked.
 
-Ping.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+> The first mount option is called "hidepid" and its value defines how much
+> info about processes we want to be available for non-owners:
+> 
+> hidepid=0 (default) means the current behaviour - anybody may read all
+> world-readable /proc/PID/* files.
 
---Signature=_Mon__20_Jun_2011_14_58_07_+1000_BhR9.e35ucdTGR.a
-Content-Type: application/pgp-signature
+Why not utilize unix perms on the proc files?  Perhaps via stricter 
+overall defaults which are selected at kernel build or runtime.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> hidepid=1 means users may not access any /proc/<pid>/ directories, but their
+> own.  Sensitive files like cmdline, io, sched*, status, wchan are now
+> protected against other users.  As permission checking done in
+> proc_pid_permission() and files' permissions are left untouched,
+> programs expecting specific files' permissions are not confused.
 
-iQEcBAEBAgAGBQJN/tNfAAoJEDMEi1NhKgbs7osH/iS7PPd3DfdacFKi9gyyRjGI
-RgaIBgiqLaQRgPRJ8qypGb9E8PHXRNztEnhLRXZh487rAYLpEOgwEyfPmxGFmkwm
-junQ2/MJcxrg9x/g26P+9CczoHf/dTdvwNzsjDARnn2F/9P7aeWZklm/9PHzMZoF
-n/C5V51IokGhQxH9hIcEYLgSdqlWeV/rmC77ETDDJH8dkmSh8rRBEjocIdpJshPM
-j0k3qWRiFIBvhfNFyDVl7ZiJvJfW0rMYZOPi/MVkeivN4pXe4Kmq8T3XrOp9DhG9
-eQ3IdEIcjDyRvW9RQLAHUsoEafCte4kKn7oOweuzl8DDehAozZ0KUrnZvEmT/vw=
-=mrBq
------END PGP SIGNATURE-----
+IMHO such programs are beyond broken and have voided their kernel 
+warranty.
 
---Signature=_Mon__20_Jun_2011_14_58_07_+1000_BhR9.e35ucdTGR.a--
+
+-- 
+James Morris
+<jmorris@namei.org>
