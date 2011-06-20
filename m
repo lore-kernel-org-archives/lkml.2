@@ -1,343 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab1FTNhI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 09:37:08 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:7627
-	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753358Ab1FTNhG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 09:37:06 -0400
-X-SpamScore: 7
-X-BigFish: VPS7(zzzz1202h10d2nzz8275bhz32i2a8h668h839h66h)
-X-Spam-TCS-SCL: 5:0
-X-Forefront-Antispam-Report: CIP:203.197.93.240;KIP:(null);UIP:(null);IPVD:NLI;H:Kcinpunhjhc01.kpit.com;RD:Kcinpunhjhc01.kpit.com;EFVD:NLI
-Subject: [PATCHv5 6/11] HWMON: moved DA9052 battery temperature lookup
- table to a common place
-From: ashishj3 <ashish.jangam@kpitcummins.com>
-To: <guenter.roeck@ericsson.com>
-CC: <randy.dunlap@oracle.com>, <linux-kernel@vger.kernel.org>,
-        <lm-sensors@lm-sensors.org>, <dchen@diasemi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 20 Jun 2011 19:06:37 +0530
-Message-ID: <1308576997.3180.130.camel@L-0532.kpit.com>
+	id S1754652Ab1FTNjN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 09:39:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43757 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754116Ab1FTNjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 09:39:12 -0400
+Date: Mon, 20 Jun 2011 16:38:54 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Glauber Costa <glommer@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 3/7] KVM-HV: KVM Steal time implementation
+Message-ID: <20110620133854.GA491@redhat.com>
+References: <1308007897-17013-4-git-send-email-glommer@redhat.com>
+ <20110614074500.GM491@redhat.com>
+ <4DF8226B.20408@redhat.com>
+ <20110615090951.GQ491@redhat.com>
+ <4DFDED2E.6030009@redhat.com>
+ <20110619125956.GV491@redhat.com>
+ <4DFDF35E.8030504@redhat.com>
+ <20110620072128.GW491@redhat.com>
+ <4DFEFE8A.4050101@redhat.com>
+ <4DFF4037.20306@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: kpitcummins.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DFF4037.20306@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
----
-Changes since v4:
-- DA9052 battery temperature lookup table tbat_lookup[] is moved to a
-common MFD header file were both Battery and Hwmon module can access
-it. 
-- tbat_lookup[] table is now in mill degree celsius.
-- removed couple of intermidate temporary variables.
-- removed extra blank lines.
-- used common path error handling.
-- couple of code formatting errors. 
-diff --git a/drivers/hwmon/da9052-hwmon.c b/drivers/hwmon/da9052-hwmon.c
-index 0e54508..f7797dc 100755
---- a/drivers/hwmon/da9052-hwmon.c
-+++ b/drivers/hwmon/da9052-hwmon.c
-@@ -29,6 +29,7 @@ struct da9052_hwmon {
- 	struct device	*class_device;
- 	struct mutex	hwmon_lock;
- };
-+
- static const char * const input_names[] = {
- 	[DA9052_ADC_VDDOUT]	=	"VDDOUT",
- 	[DA9052_ADC_ICH]	=	"CHARGING CURRENT",
-@@ -41,40 +42,6 @@ static const char * const input_names[] = {
- 	[DA9052_ADC_VBBAT]	=	"BACK-UP BATTERY VOLTAGE",
- };
- 
--/*
-- * TBAT look-up table is computed from the R90 reg (8 bit register)
-- * reading as below.
-- * TBAT = 1/(t1+1/298) - 273
-- * where t1 = (1/B)* ln(( ADCval * 2.5)/(R25*ITBAT*255))
-- * Default values are R25 = 10e3, B = 3380, ITBAT = 50e-6
-- * Example:
-- * R25=10E3, B=3380, ITBAT=50e-6, ADCVAL=62d calculates
-- * TBAT = 20 degrees Centrigrade
-- * For R90 reading of 0, a value of -1 is returned, as log of 0
-- * is undefined.
--*/
--static const int8_t tbat_lookup[] = {
--	-1, 183, 144, 124, 111, 102, 94,  88,  83,  79,  75,  72,  69,  66,  63,
--	61,  59,  57,  55,  53,  52,  50,  49,  48,  46,  45,  44,  43,  42,
--	41,  40,  39,  38,  37,  36,  35,  35,  34,  33,  32,  32,  31,  30,
--	30,  29,  28,  28,  27,  27,  26,  26,  25,  25,  24,  24,  23,  23,
--	22,  22,  21,  21,  20,  20,  20,  19,  19,  18,  18,  18,  17,  17,
--	17,  16,  16,  16,  15,  15,  15,  14,  14,  14,  13,  13,  13,  12,
--	12,  12,  12,  11,  11,  11,  11,  10,  10,  10,  10,  9,   9,   9,
--	9,   8,   8,   8,   8,   7,   7,   7,   7,   7,   6,   6,   6,   6,
--	6,   5,   5,   5,   5,   5,   4,   4,   4,   4,   4,   3,   3,   3,
--	3,   3,   3,   2,   2,   2,   2,   2,   1,   1,   1,   1,   1,   1,
--	1,   0,   0,   0,   0,   0,   0,   -1,  -1,  -1,  -1,  -1,  -1,  -1,
--	-2,  -2,  -2,  -2,  -2,  -2,  -2,  -3,  -3,  -3,  -3,  -3,  -3,  -3,
--	-3,  -4,  -4,  -4,  -4,  -4,  -4,  -4,   -4, -5,  -5,  -5,  -5,  -5,
--	-5,  -5,  -5,  -5,  -6,  -6,  -6,  -6,  -6,  -6,  -6,  -6,  -6,  -7,
--	-7,  -7,  -7,  -7,  -7,  -7,  -7,  -7,  -8,  -8,  -8,  -8,  -8,  -8,
--	-8,  -8,  -8,  -8,  -8,  -9,  -9,  -9,  -9,  -9,  -9,  -9,  -9,  -9,
--	-9,  -10, -10, -10, -10, -10, -10, -10, -10, -10, -10, -10, -10, -11,
--	-11, -11, -11, -11, -11, -11, -11, -11, -11, -11, -12, -12, -12, -12,
--	-12, -12, -12
--};
--
- static int da9052_enable_vddout_channel(struct da9052 *da9052)
- {
- 	int ret;
-@@ -84,6 +51,7 @@ static int da9052_enable_vddout_channel(struct da9052 *da9052)
- 		return ret;
- 
- 	ret |= DA9052_ADCCONT_AUTOVDDEN;
-+
- 	return da9052_reg_write(da9052, DA9052_ADC_CONT_REG, ret);
- }
- 
-@@ -96,12 +64,12 @@ static int da9052_disable_vddout_channel(struct da9052 *da9052)
- 		return ret;
- 
- 	ret &= ~DA9052_ADCCONT_AUTOVDDEN;
--	return da9052_reg_write(da9052, DA9052_ADC_CONT_REG, ret);
- 
-+	return da9052_reg_write(da9052, DA9052_ADC_CONT_REG, ret);
- }
- 
- static ssize_t da9052_read_vddout(struct device *dev,
--	struct device_attribute *devattr, char *buf)
-+				   struct device_attribute *devattr, char *buf)
- {
- 	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
- 	int ret, vdd = -1;
-@@ -126,13 +94,14 @@ static ssize_t da9052_read_vddout(struct device *dev,
- 		mutex_unlock(&hwmon->hwmon_lock);
- 		return sprintf(buf, "%d\n", vdd);
- 	}
-+
- hwmon_err:
- 	mutex_unlock(&hwmon->hwmon_lock);
- 	return ret;
- }
- 
- static ssize_t da9052_read_ich(struct device *dev,
--	struct device_attribute *devattr, char *buf)
-+				struct device_attribute *devattr, char *buf)
- {
- 	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
- 	int ret;
-@@ -142,21 +111,15 @@ static ssize_t da9052_read_ich(struct device *dev,
- 		return ret;
- 
- 	/* Equivalent to 3.9mA/bit in register ICHG_AV */
--	ret = DIV_ROUND_CLOSEST(ret * 39, 10);
--	return sprintf(buf, "%d\n", ret);
-+	return sprintf(buf, "%d\n", DIV_ROUND_CLOSEST(ret * 39, 10));
- }
- 
- static ssize_t da9052_read_tbat(struct device *dev,
--			struct device_attribute *devattr, char *buf)
-+				 struct device_attribute *devattr, char *buf)
- {
- 	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
--	int ret, tbat;
- 
--	ret = da9052_reg_read(hwmon->da9052, DA9052_TBAT_RES_REG);
--	if (ret < 0)
--		return ret;
--	tbat = tbat_lookup[ret];
--	return sprintf(buf, "%d\n", (tbat*1000));
-+	return sprintf(buf, "%d\n", da9052_adc_temperature_read(hwmon->da9052));
- }
- 
- static ssize_t da9052_read_vbat(struct device *dev,
-@@ -173,7 +136,8 @@ static ssize_t da9052_read_vbat(struct device *dev,
- }
- 
- static ssize_t da9052_read_misc_channel(struct device *dev,
--	struct device_attribute *devattr, char *buf)
-+					 struct device_attribute *devattr,
-+					 char *buf)
- {
- 	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
- 	int channel = to_sensor_dev_attr(devattr)->index;
-@@ -187,29 +151,25 @@ static ssize_t da9052_read_misc_channel(struct device *dev,
- }
- 
- static ssize_t da9052_read_tjunc(struct device *dev,
--	struct device_attribute *devattr, char *buf)
-+				  struct device_attribute *devattr, char *buf)
- {
- 	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
--	int temp;
--	int ret;
-+	int tjunc, toffset;
- 
--	ret = da9052_reg_read(hwmon->da9052, DA9052_TJUNC_RES_REG);
--	if (ret < 0)
--		return ret;
-+	tjunc = da9052_reg_read(hwmon->da9052, DA9052_TJUNC_RES_REG);
-+	if (tjunc < 0)
-+		return tjunc;
- 
--	temp = ret;
--
--	ret = da9052_reg_read(hwmon->da9052, DA9052_T_OFFSET_REG);
--	if (ret < 0)
--		return ret;
-+	toffset = da9052_reg_read(hwmon->da9052, DA9052_T_OFFSET_REG);
-+	if (toffset < 0)
-+		return toffset;
- 
- 	/* Degrees celsius = 1.708 * (TJUNC_RES - T_OFFSET) - 108.8 */
--	ret = 1708 * (temp - ret) - 108800;
--	return sprintf(buf, "%d\n", ret);
-+	return sprintf(buf, "%d\n", 1708 * (tjunc - toffset) - 108800);
- }
- 
- static ssize_t da9052_read_vbbat(struct device *dev,
--	struct device_attribute *devattr, char *buf)
-+				  struct device_attribute *devattr, char *buf)
- {
- 	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
- 	int ret;
-@@ -223,7 +183,8 @@ static ssize_t da9052_read_vbbat(struct device *dev,
- }
- 
- static ssize_t da9052_hwmon_show_name(struct device *dev,
--		struct device_attribute *devattr, char *buf)
-+				       struct device_attribute *devattr,
-+				       char *buf)
- {
- 	return sprintf(buf, "da9052-hwmon\n");
- }
-@@ -232,47 +193,47 @@ static ssize_t show_label(struct device *dev,
- 			  struct device_attribute *devattr, char *buf)
- {
- 	return sprintf(buf, "%s\n",
--			input_names[to_sensor_dev_attr(devattr)->index]);
-+		       input_names[to_sensor_dev_attr(devattr)->index]);
- }
- 
- static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, da9052_read_vddout, NULL,
--				DA9052_ADC_ICH);
-+			   DA9052_ADC_ICH);
- static SENSOR_DEVICE_ATTR(in0_label, S_IRUGO, show_label, NULL,
--				DA9052_ADC_ICH);
-+			   DA9052_ADC_ICH);
- static SENSOR_DEVICE_ATTR(in3_input, S_IRUGO, da9052_read_vbat, NULL,
--				DA9052_ADC_VBAT);
-+			   DA9052_ADC_VBAT);
- static SENSOR_DEVICE_ATTR(in3_label, S_IRUGO, show_label, NULL,
--				DA9052_ADC_VBAT);
-+			   DA9052_ADC_VBAT);
- static SENSOR_DEVICE_ATTR(in4_input, S_IRUGO, da9052_read_misc_channel, NULL,
--				DA9052_ADC_IN4);
-+			   DA9052_ADC_IN4);
- static SENSOR_DEVICE_ATTR(in4_label, S_IRUGO, show_label, NULL,
--				DA9052_ADC_IN4);
-+			   DA9052_ADC_IN4);
- static SENSOR_DEVICE_ATTR(in5_input, S_IRUGO, da9052_read_misc_channel, NULL,
--				DA9052_ADC_IN5);
-+			   DA9052_ADC_IN5);
- static SENSOR_DEVICE_ATTR(in5_label, S_IRUGO, show_label, NULL,
--				DA9052_ADC_IN5);
-+			   DA9052_ADC_IN5);
- static SENSOR_DEVICE_ATTR(in6_input, S_IRUGO, da9052_read_misc_channel, NULL,
--				DA9052_ADC_IN6);
-+			   DA9052_ADC_IN6);
- static SENSOR_DEVICE_ATTR(in6_label, S_IRUGO, show_label, NULL,
--				DA9052_ADC_IN6);
-+			   DA9052_ADC_IN6);
- static SENSOR_DEVICE_ATTR(in9_input, S_IRUGO, da9052_read_vbbat, NULL,
--				DA9052_ADC_VBBAT);
-+			   DA9052_ADC_VBBAT);
- static SENSOR_DEVICE_ATTR(in9_label, S_IRUGO, show_label, NULL,
--				DA9052_ADC_VBBAT);
-+			   DA9052_ADC_VBBAT);
-+
- static SENSOR_DEVICE_ATTR(curr1_input, S_IRUGO, da9052_read_ich, NULL,
--				DA9052_ADC_ICH);
-+			   DA9052_ADC_ICH);
- static SENSOR_DEVICE_ATTR(curr1_label, S_IRUGO, show_label, NULL,
--				DA9052_ADC_ICH);
-+			   DA9052_ADC_ICH);
- 
- static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, da9052_read_tbat, NULL,
--				DA9052_ADC_TBAT);
-+			   DA9052_ADC_TBAT);
- static SENSOR_DEVICE_ATTR(temp1_label, S_IRUGO, show_label, NULL,
--				DA9052_ADC_TBAT);
--
-+			   DA9052_ADC_TBAT);
- static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, da9052_read_tjunc, NULL,
--				DA9052_ADC_TJUNC);
-+			   DA9052_ADC_TJUNC);
- static SENSOR_DEVICE_ATTR(temp2_label, S_IRUGO, show_label, NULL,
--				DA9052_ADC_TJUNC);
-+			   DA9052_ADC_TJUNC);
- 
- static DEVICE_ATTR(name, S_IRUGO, da9052_hwmon_show_name, NULL);
- 
-@@ -323,12 +284,13 @@ static int __init da9052_hwmon_probe(struct platform_device *pdev)
- 	hwmon->class_device = hwmon_device_register(&pdev->dev);
- 	if (IS_ERR(hwmon->class_device)) {
- 		ret = PTR_ERR(hwmon->class_device);
--		sysfs_remove_group(&pdev->dev.kobj, &da9052_attr_group);
--		goto err_mem;
-+		goto err_sysfs;
- 	}
- 
- 	return 0;
- 
-+err_sysfs:
-+	sysfs_remove_group(&pdev->dev.kobj, &da9052_attr_group);
- err_mem:
- 	kfree(hwmon);
- 	return ret;
-@@ -340,24 +302,22 @@ static int __devexit da9052_hwmon_remove(struct platform_device *pdev)
- 
- 	hwmon_device_unregister(hwmon->class_device);
- 	sysfs_remove_group(&pdev->dev.kobj, &da9052_attr_group);
--	mutex_destroy(&hwmon->hwmon_lock);
- 	kfree(hwmon);
-+
- 	return 0;
- }
- 
- static struct platform_driver da9052_hwmon_driver = {
-+		.probe = da9052_hwmon_probe,
-+		.remove = __devexit_p(da9052_hwmon_remove),
- 	.driver = {
--		.name	= "da9052-hwmon",
--		.owner	= THIS_MODULE,
-+		.name = "da9052-hwmon",
-+		.owner = THIS_MODULE,
- 	},
--	.probe		= da9052_hwmon_probe,
--	.remove		= __devexit_p(da9052_hwmon_remove),
--
- };
- 
- static int __init da9052_hwmon_init(void)
- {
--
- 	return platform_driver_register(&da9052_hwmon_driver);
- }
- module_init(da9052_hwmon_init);
-@@ -370,7 +330,5 @@ module_exit(da9052_hwmon_exit);
- 
- MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
- MODULE_DESCRIPTION("DA9052 HWMON driver");
--MODULE_LICENSE("GPL v2");
-+MODULE_LICENSE("GPL");
- MODULE_ALIAS("platform:da9052-hwmon");
--
--
+On Mon, Jun 20, 2011 at 09:42:31AM -0300, Glauber Costa wrote:
+> On 06/20/2011 05:02 AM, Avi Kivity wrote:
+> >On 06/20/2011 10:21 AM, Gleb Natapov wrote:
+> >>On Sun, Jun 19, 2011 at 04:02:22PM +0300, Avi Kivity wrote:
+> >>> On 06/19/2011 03:59 PM, Gleb Natapov wrote:
+> >>> >On Sun, Jun 19, 2011 at 03:35:58PM +0300, Avi Kivity wrote:
+> >>> >> On 06/15/2011 12:09 PM, Gleb Natapov wrote:
+> >>> >> >>
+> >>> >> >> Actually, I'd expect most read/writes to benefit from caching,
+> >>no?
+> >>> >> >> So why don't we just rename kvm_write_guest_cached() to
+> >>> >> >> kvm_write_guest(), and the few places - if any - that need to
+> >>force
+> >>> >> >> transversing of the gfn mappings, get renamed to
+> >>> >> >> kvm_write_guest_uncached ?
+> >>> >> >>
+> >>> >> >Good idea. I do not see any places where
+> >>kvm_write_guest_uncached is
+> >>> >> >needed from a brief look. Avi?
+> >>> >> >
+> >>> >>
+> >>> >> kvm_write_guest_cached() needs something to supply the cache, and
+> >>> >> needs recurring writes to the same location. Neither of these are
+> >>> >> common (for example, instruction emulation doesn't have either).
+> >>> >>
+> >>> >Correct. Missed that. So what about changing steal time to use
+> >>> >kvm_write_guest_cached()?
+> >>>
+> >>> Makes sense, definitely. Want to post read_guest_cached() as well?
+> >>>
+> >>Glauber can you write read_guest_cached() as part of your series (should
+> >>be trivial), or do you want me to do it? I do not have a code to test it
+> >>with though :)
+> >
+> >Yes.
+> >
+> >(you can write it, and Glauber can include it in the series)
+> >
+> Write it, handle me the patch, I'll include it and test it.
 
+Only compile tested.
 
+===
+Introduce kvm_read_guest_cached() function in addition to write one we
+already have.
+
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index fa2321a..bf62c76 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1414,6 +1414,26 @@ int kvm_write_guest_cached(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
+ }
+ EXPORT_SYMBOL_GPL(kvm_write_guest_cached);
+ 
++int kvm_read_guest_cached(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
++			   void *data, unsigned long len)
++{
++	struct kvm_memslots *slots = kvm_memslots(kvm);
++	int r;
++
++	if (slots->generation != ghc->generation)
++		kvm_gfn_to_hva_cache_init(kvm, ghc, ghc->gpa);
++
++	if (kvm_is_error_hva(ghc->hva))
++		return -EFAULT;
++
++	r = __copy_from_user(data, (void __user *)ghc->hva, len);
++	if (r)
++		return -EFAULT;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(kvm_read_guest_cached);
++
+ int kvm_clear_guest_page(struct kvm *kvm, gfn_t gfn, int offset, int len)
+ {
+ 	return kvm_write_guest_page(kvm, gfn, (const void *) empty_zero_page,
+--
+			Gleb.
