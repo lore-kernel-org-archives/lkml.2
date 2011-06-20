@@ -1,83 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab1FTLmP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 07:42:15 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:37193 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751776Ab1FTLmL (ORCPT
+	id S1753216Ab1FTLpk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 07:45:40 -0400
+Received: from mtagate2.uk.ibm.com ([194.196.100.162]:48010 "EHLO
+	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab1FTLpj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 07:42:11 -0400
-Message-ID: <4DFF320B.7090009@ti.com>
-Date: Mon, 20 Jun 2011 17:12:03 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH] ARM: smp: Fix the CPU hotplug race with scheduler.
-References: <1308561839-18407-1-git-send-email-santosh.shilimkar@ti.com> <20110620095053.GA2082@n2100.arm.linux.org.uk> <20110620101438.GD2082@n2100.arm.linux.org.uk> <4DFF20B3.7010209@ti.com> <20110620103521.GE2082@n2100.arm.linux.org.uk> <4DFF24D0.202@ti.com>
-In-Reply-To: <4DFF24D0.202@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 20 Jun 2011 07:45:39 -0400
+Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was
+ Vpid:)
+From: Greg Kurz <gkurz@fr.ibm.com>
+To: Bryan Donlan <bdonlan@gmail.com>
+Cc: akpm@linux-foundation.org, containers@lists.osdl.org,
+        linux-kernel@vger.kernel.org, serge@hallyn.com, daniel.lezcano@free.fr,
+        ebiederm@xmission.com, oleg@redhat.com, xemul@openvz.org,
+        Cedric Le Goater <clg@vnet.ibm.com>
+In-Reply-To: <BANLkTimSC_OSrbekhM=wd2Gie4np3Q4F5A@mail.gmail.com>
+References: <20110615145527.4016.70157.stgit@bahia.local>
+	 <BANLkTimSC_OSrbekhM=wd2Gie4np3Q4F5A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Jun 2011 13:45:16 +0200
+Message-ID: <1308570316.8230.140.camel@bahia.local>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/20/2011 4:15 PM, Santosh Shilimkar wrote:
-> On 6/20/2011 4:05 PM, Russell King - ARM Linux wrote:
->> On Mon, Jun 20, 2011 at 03:58:03PM +0530, Santosh Shilimkar wrote:
->>> On 6/20/2011 3:44 PM, Russell King - ARM Linux wrote:
->>>> On Mon, Jun 20, 2011 at 10:50:53AM +0100, Russell King - ARM Linux
->>>> wrote:
->>>>> On Mon, Jun 20, 2011 at 02:53:59PM +0530, Santosh Shilimkar wrote:
->>>>>> The current ARM CPU hotplug code suffers from couple of race
->>>>>> conditions
->>>>>> in CPU online path with scheduler.
->>>>>> The ARM CPU hotplug code doesn't wait for hot-plugged CPU to be
->>>>>> marked
->>>>>> active as part of cpu_notify() by the CPU which brought it up before
->>>>>> enabling interrupts.
->>>>>
->>>>> Hmm, why not just move the set_cpu_online() call before
->>>>> notify_cpu_starting()
->>>>> and add the wait after the set_cpu_online() ?
->>>>
->>>> Actually, the race is caused by the CPU being marked online (and
->>>> therefore
->>>> available for the scheduler) but not yet active (the CPU asking this
->>>> one
->>>> to boot hasn't run the online notifiers yet.)
->>>>
->>> Scheduler uses the active mask and not online mask. For schedules CPU
->>> is ready for migration as soon as it is marked as active and that's
->>> the reason, interrupts should never be enabled before CPU is marked
->>> as active in online path.
->>>
->>>> This, I feel, is a fault of generic code. If the CPU is not ready to
->>>> have
->>>> processes scheduled on it (because migration is not initialized)
->>>> then we
->>>> shouldn't be scheduling processes on the new CPU yet.
->>>>
->>>> In any case, this should close the window by ensuring that we don't
->>>> receive
->>>> an interrupt in the online-but-not-active case. Can you please test?
->>>>
->>> No it doesn't work. I still get the crash. The important point
->>> here is not to enable interrupts before CPU is marked
->>> as online and active.
->>
->> But we can't do that.
-> Why is that ?
-> Is it because of calibration or the hotplug start notifies needs to
-> be called with interrupts enabled ?
->
-BTW, how is ARM different from X86 here. I mean the X86 code seems to
-do similar what my patch is trying to fix for ARM. Some pointers
-would help me to understand why can't we delay the interrupt enable
-part on ARM hotplug code.
+On Thu, 2011-06-16 at 13:54 -0400, Bryan Donlan wrote:
+> On Wed, Jun 15, 2011 at 10:55, Greg Kurz <gkurz@fr.ibm.com> wrote:
+> > Since pid namespaces were introduced, there's a recurring demand: how one
+> > can correlate a pid from a child pid ns with a pid from a parent pid ns ?
+> > The need arises in the LXC community when one wants to send a signal from
+> > the host (aka. init_pid_ns context) to a container process for which one
+> > only knows the pid inside the container.
+> >
+> > In the future, this should be achievable thanks to Eric Biederman's setns()
+> > syscall but there's still some work to be done to support pid namespaces:
+> >
+> > https://lkml.org/lkml/2011/5/21/162
+> >
+> > As stated by Serge Hallyn in:
+> >
+> > http://sourceforge.net/mailarchive/message.php?msg_id=27424447
+> >
+> > "There is nothing that gives you a 100% guaranteed correct race-free
+> > correspondence right now.  You can look under /proc/<pid>/root/proc/ to
+> > see the pids valid in the container, and you can relate output of
+> > lxc-ps --forest to ps --forest output.  But nothing under /proc that I
+> > know of tells you "this task is the same as that task".  You can't
+> > even look at /proc/<pid> inode numbers since they are different
+> > filesystems for each proc mount."
+> >
+> > This patch adds a single line to /proc/self/status. Provided one has kept
+> > track of its container tasks (with a cgroup like liblxc does for example),
+> > he may correlate global pids and container pids. This is still racy but
+> > definitely easier than what we have today.
+> 
+> Although getting the in-namespace PID is a useful thing, wouldn't a
+> truly race-free API be preferable? Any access by PID has the race
+> condition in which the target process could die, and its PID get
+> recycled between retrieving the PID and doing something with it.
 
-Regards
-Santosh
+Well the PID is a racy construct when used by another task than the
+parent... fortunately, most userland code can cope with it ! :)
+
+> Perhaps a file-descriptor API would be better, such as something like
+> this:
+> 
+> int openpid(int id, int flags);
+> int rt_sigqueueinfo_fd(int process_fd, int sig, siginfo_t *info);
+> int sigqueue_fd(int process_fd, int sig, const union sigval value); //
+> glibc wrapper
+> 
+
+The race still exists: openpid() is being passed a PID... Only the
+parent can legitimately know that this PID identifies a specific
+unwaited child.
+
+> The opened process FD could be passed across a unix domain socket to a
+> process outside the namespace, which could then send signals without
+> knowing the in-namespace PID. This same API can be easily extended to
+> cover other syscalls which may require PIDs as well.
+
+Indeed, the idea of not exposing a PID from another namespace sounds
+nice.
+
+-- 
+Gregory Kurz                                     gkurz@fr.ibm.com
+Software Engineer @ IBM/Meiosys                  http://www.ibm.com
+Tel +33 (0)534 638 479                           Fax +33 (0)561 400 420
+
+"Anarchy is about taking complete responsibility for yourself."
+        Alan Moore.
+
