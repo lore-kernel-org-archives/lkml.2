@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353Ab1FTPda (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 11:33:30 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:40969 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752956Ab1FTPdF (ORCPT
+	id S1752894Ab1FTPdD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 11:33:03 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:34280 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752167Ab1FTPdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 11:33:05 -0400
+	Mon, 20 Jun 2011 11:33:01 -0400
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 20gQWUgVM1nJWhQlTsy7i3RjUODu63AwNLuYVX9zi3ebjvC
- Mn0HXaa_81IMN2a8PC9EzfoGRTwe0TCNLVwq9yH1sTabM5P5WENp60.S..Qp
- j2JEG0t2UXlhtRmm4U_UfdPTCXJtpfiP6Du1OGB9c5uNuewi.WJpUs1eQKoz
- SSo7ck0Qgf.47OpiPAd6c2n38eOKWrURmMBfzSuX8JInPf8ui7Y0KSS_Egy0
- IOWSvxiBDwFGT_2Wn_aXAsSuJYIm8WZKYoa13M7hMXNYxSbCMuQWxkKIqqAL
- 4EcrDo40it.kzsHHOKljcCGyHjwW2HsM2bkQ6Lr1TQm2JyYFI
+X-YMail-OSG: 4tb9zxMVM1l7OU5qjzcHQqG3CvZUoEWFNvhzJiTw8FlsB9S
+ JuwIltgCQ1BT4_k2QNQKVY6AqpTySSo6RrYQYVEtiV_1dWZBdnkXes9ThEXq
+ LCPvVInoDrvEjHY6105NiB9T3cuD6xrVJa91VTgN3E4GAFUn_uf.08cusScb
+ vnDqe7UUhZmZZ7amztSN6fadRc4LdjskYK9MthwkhJpS6YS0fxcW.ClEsei2
+ EkGoC9wBFYiq.bBluKGRJQxNTSo8w5goJQsEftQLpnk.nT5ygfsjWmerndpO
+ pfaGx2hOzbpOcekZBDt76Euf.sHre8TUZftF3_KaSXstqtoVUzpvbIJ7kzc5
+ zsvltv6RX0aoTR2CvBkbfTt7p
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Message-Id: <20110620153244.214038140@linux.com>
+Message-Id: <20110620153258.817879095@linux.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 20 Jun 2011 10:32:44 -0500
+Date: Mon, 20 Jun 2011 10:32:45 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Pekka Enberg <penberg@cs.helsinki.fi>
 Cc: David Rientjes <rientjes@google.com>
@@ -28,54 +29,52 @@ Cc: Matt Mackall <mpm@selenic.com>
 Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: Adrian Drzewiecki <z@drze.net>
 Cc: linux-kernel@vger.kernel.org
-Subject: [slub p2 0/4] SLUB: [RFC] Per cpu partial lists V2
+Subject: [slub p2 1/4] slub: Prepare inuse field in new_slab()
+References: <20110620153244.214038140@linux.com>
+Content-Disposition: inline; filename=new_slab
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patchset applied on top of the lockless patchset V7. It
-introduces per cpu partial lists which allow a performance increase of
-around ~15 during contention for the nodelock (can be tested using
-hackbench).
+inuse will always be set to page->objects. There is no point in
+initializing the field to zero in new_slab() and then overwriting
+the value in __slab_alloc().
 
-These lists help to avoid per nodelocking overhead. Allocator latency
-could be further reduced by making these operations work without
-disabling interrupts (like the fastpath and the free slowpath) as well as
-implementing better ways of handling ther cpu array with partial pages.
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-I am still not satisfied with the cleanliness of the code after these
-changes. Some review with suggestions as to how to restructure the
-code given these changes in operations would be appreciated.
 
-It is interesting to note that BSD has gone to a scheme with partial
-pages only per cpu (source: Adrian). Transfer of cpu ownerships is
-done using IPIs. Probably too much overhead for our taste. The use
-of a few per cpu partial pages looks to be beneficial though.
+---
+ mm/slub.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-Note that there is no performance gain when there is no contention.
-
-Performance:
-
-				Before		After
-./hackbench 100 process 200000
-				Time: 2299.072	1742.454
-./hackbench 100 process 20000
-				Time: 224.654	182.393
-./hackbench 100 process 20000
-				Time: 227.126	182.780
-./hackbench 100 process 20000
-				Time: 219.608	182.899
-./hackbench 10 process 20000
-				Time: 21.769	18.756
-./hackbench 10 process 20000
-				Time: 21.657	18.938
-./hackbench 10 process 20000
-				Time: 23.193	19.537
-./hackbench 1 process 20000
-				Time: 2.337	2.263
-./hackbench 1 process 20000
-				Time: 2.223	2.271
-./hackbench 1 process 20000
-				Time: 2.269	2.301
-
+Index: linux-2.6/mm/slub.c
+===================================================================
+--- linux-2.6.orig/mm/slub.c	2011-06-14 11:43:54.864072250 -0500
++++ linux-2.6/mm/slub.c	2011-06-14 12:33:15.887854446 -0500
+@@ -1341,7 +1341,7 @@ static struct page *new_slab(struct kmem
+ 	set_freepointer(s, last, NULL);
+ 
+ 	page->freelist = start;
+-	page->inuse = 0;
++	page->inuse = page->objects;
+ 	page->frozen = 1;
+ out:
+ 	return page;
+@@ -2036,7 +2036,6 @@ new_slab:
+ 		 */
+ 		object = page->freelist;
+ 		page->freelist = NULL;
+-		page->inuse = page->objects;
+ 
+ 		stat(s, ALLOC_SLAB);
+ 		c->node = page_to_nid(page);
+@@ -2574,7 +2573,7 @@ static void early_kmem_cache_node_alloc(
+ 	n = page->freelist;
+ 	BUG_ON(!n);
+ 	page->freelist = get_freepointer(kmem_cache_node, n);
+-	page->inuse++;
++	page->inuse = 1;
+ 	page->frozen = 0;
+ 	kmem_cache_node->node[node] = n;
+ #ifdef CONFIG_SLUB_DEBUG
 
