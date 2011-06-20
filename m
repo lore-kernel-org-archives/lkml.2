@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136Ab1FTLZy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 07:25:54 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:40468 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751736Ab1FTLZv (ORCPT
+	id S1753283Ab1FTL0F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 07:26:05 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35035 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753151Ab1FTL0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 07:25:51 -0400
-Message-ID: <4DFF2E37.8030602@ti.com>
-Date: Mon, 20 Jun 2011 16:55:43 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH] ARM: smp: Fix the CPU hotplug race with scheduler.
-References: <1308561839-18407-1-git-send-email-santosh.shilimkar@ti.com> <20110620095053.GA2082@n2100.arm.linux.org.uk> <20110620101438.GD2082@n2100.arm.linux.org.uk> <4DFF20B3.7010209@ti.com> <20110620104415.GF2082@n2100.arm.linux.org.uk> <4DFF255E.5030308@ti.com> <20110620111336.GG2082@n2100.arm.linux.org.uk>
-In-Reply-To: <20110620111336.GG2082@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 20 Jun 2011 07:26:01 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: Ensure value written by wm831x_set_bits() is within the mask
+Date: Mon, 20 Jun 2011 12:25:58 +0100
+Message-Id: <1308569158-22484-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/20/2011 4:43 PM, Russell King - ARM Linux wrote:
-> On Mon, Jun 20, 2011 at 04:17:58PM +0530, Santosh Shilimkar wrote:
->> Yes. It's because of interrupt and the CPU active-online
->> race.
->
-> I don't see that as a conclusion from this dump.
->
->> Here is the chash log..
->> [   21.025451] CPU1: Booted secondary processor
->> [   21.025451] CPU1: Unknown IPI message 0x1
->> [   21.029113] Switched to NOHz mode on CPU #1
->> [   21.029174] BUG: spinlock lockup on CPU#1, swapper/0, c06220c4
->
-> That's the xtime seqlock.  We're trying to update the xtime from CPU1,
-> which is not yet online and not yet active.  That's fine, we're just
-> spinning on the spinlock here, waiting for the other CPUs to release
-> it.
->
-> But what this is saying is that the other CPUs aren't releasing it.
-> The cpu hotplug code doesn't hold the seqlock either.  So who else is
-> holding this lock, causing CPU1 to time out on it.
->
-> The other thing is that this is only supposed to trigger after about
-> one second:
->
->          u64 loops = loops_per_jiffy * HZ;
->                  for (i = 0; i<  loops; i++) {
->                          if (arch_spin_trylock(&lock->raw_lock))
->                                  return;
->                          __delay(1);
->                  }
->
-> which from the timings you have at the beginning of your printk lines
-> is clearly not the case - it's more like 61us.
->
-> Are you running with those h/w timer delay patches?
-Nope.
+Purely for defensiveness.
 
-Regards
-Santosh
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm831x-core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
+index 02c9109..6c53376 100644
+--- a/drivers/mfd/wm831x-core.c
++++ b/drivers/mfd/wm831x-core.c
+@@ -260,7 +260,7 @@ int wm831x_set_bits(struct wm831x *wm831x, unsigned short reg,
+ 		goto out;
+ 
+ 	r &= ~mask;
+-	r |= val;
++	r |= val & mask;
+ 
+ 	ret = wm831x_write(wm831x, reg, 2, &r);
+ 
+-- 
+1.7.5.4
+
