@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab1FTWP2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 18:15:28 -0400
-Received: from claw.goop.org ([74.207.240.146]:53599 "EHLO claw.goop.org"
+	id S932089Ab1FTWRs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 18:17:48 -0400
+Received: from claw.goop.org ([74.207.240.146]:53613 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755806Ab1FTWPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 18:15:23 -0400
+	id S1755944Ab1FTWPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 18:15:25 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: Xen Devel <Xen-devel@lists.xensource.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 06/15] xen/trace: add ptpage alloc/release tracepoints
-Date: Mon, 20 Jun 2011 15:15:02 -0700
-Message-Id: <a92051a41ed96ad362d1f79c7b3e36c8cc4dd80b.1308607697.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 07/15] xen/trace: add xen_pgd_(un)pin tracepoints
+Date: Mon, 20 Jun 2011 15:15:03 -0700
+Message-Id: <cdfa49a00e83b62d4fbd0cab251c9c1571a3ce6f.1308607697.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <cover.1308607697.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1308607697.git.jeremy.fitzhardinge@citrix.com>
@@ -28,84 +28,67 @@ From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/xen/mmu.c         |   10 ++++++++--
- include/trace/events/xen.h |   33 +++++++++++++++++++++++++++++++++
- 2 files changed, 41 insertions(+), 2 deletions(-)
+ arch/x86/xen/mmu.c         |    4 ++++
+ include/trace/events/xen.h |   24 ++++++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 90101c5..84c796f 100644
+index 84c796f..8aaa398 100644
 --- a/arch/x86/xen/mmu.c
 +++ b/arch/x86/xen/mmu.c
-@@ -1473,8 +1473,11 @@ static void __init xen_release_pmd_init(unsigned long pfn)
- static void xen_alloc_ptpage(struct mm_struct *mm, unsigned long pfn, unsigned level)
+@@ -884,6 +884,8 @@ static int xen_pin_page(struct mm_struct *mm, struct page *page,
+    read-only, and can be pinned. */
+ static void __xen_pgd_pin(struct mm_struct *mm, pgd_t *pgd)
  {
- 	struct page *page = pfn_to_page(pfn);
-+	int pinned = PagePinned(virt_to_page(mm->pgd));
-+ 
-+	trace_xen_mmu_alloc_ptpage(mm, pfn, level, pinned);
- 
--	if (PagePinned(virt_to_page(mm->pgd))) {
-+	if (pinned) {
- 		SetPagePinned(page);
- 
- 		if (!PageHighMem(page)) {
-@@ -1503,8 +1506,11 @@ static void xen_alloc_pmd(struct mm_struct *mm, unsigned long pfn)
- static void xen_release_ptpage(unsigned long pfn, unsigned level)
- {
- 	struct page *page = pfn_to_page(pfn);
-+	bool pinned = PagePinned(page);
- 
--	if (PagePinned(page)) {
-+	trace_xen_mmu_release_ptpage(pfn, level, pinned);
++	trace_xen_mmu_pgd_pin(mm, pgd);
 +
-+	if (pinned) {
- 		if (!PageHighMem(page)) {
- 			if (level == PT_PTE && USE_SPLIT_PTLOCKS)
- 				pin_pagetable_pfn(MMUEXT_UNPIN_TABLE, pfn);
+ 	xen_mc_batch();
+ 
+ 	if (__xen_pgd_walk(mm, pgd, xen_pin_page, USER_LIMIT)) {
+@@ -1009,6 +1011,8 @@ static int xen_unpin_page(struct mm_struct *mm, struct page *page,
+ /* Release a pagetables pages back as normal RW */
+ static void __xen_pgd_unpin(struct mm_struct *mm, pgd_t *pgd)
+ {
++	trace_xen_mmu_pgd_unpin(mm, pgd);
++
+ 	xen_mc_batch();
+ 
+ 	xen_do_pin(MMUEXT_UNPIN_TABLE, PFN_DOWN(__pa(pgd)));
 diff --git a/include/trace/events/xen.h b/include/trace/events/xen.h
-index 5c4e967..16edcb7 100644
+index 16edcb7..5811c24 100644
 --- a/include/trace/events/xen.h
 +++ b/include/trace/events/xen.h
-@@ -347,6 +347,39 @@ TRACE_EVENT(xen_mmu_ptep_modify_prot_commit,
- 		      (int)sizeof(pteval_t) * 2, (unsigned long long)__entry->pteval)
+@@ -381,6 +381,30 @@ TRACE_EVENT(xen_mmu_release_ptpage,
+ 		      __entry->pinned ? "" : "un")
  	);
  
-+TRACE_EVENT(xen_mmu_alloc_ptpage,
-+	    TP_PROTO(struct mm_struct *mm, unsigned long pfn, unsigned level, bool pinned),
-+	    TP_ARGS(mm, pfn, level, pinned),
++TRACE_EVENT(xen_mmu_pgd_pin,
++	    TP_PROTO(struct mm_struct *mm, pgd_t *pgd),
++	    TP_ARGS(mm, pgd),
 +	    TP_STRUCT__entry(
 +		    __field(struct mm_struct *, mm)
-+		    __field(unsigned long, pfn)
-+		    __field(unsigned, level)
-+		    __field(bool, pinned)
++		    __field(pgd_t *, pgd)
 +		    ),
 +	    TP_fast_assign(__entry->mm = mm;
-+			   __entry->pfn = pfn;
-+			   __entry->level = level;
-+			   __entry->pinned = pinned),
-+	    TP_printk("mm %p  pfn %lx  level %d  %spinned",
-+		      __entry->mm, __entry->pfn, __entry->level,
-+		      __entry->pinned ? "" : "un")
++			   __entry->pgd = pgd),
++	    TP_printk("mm %p pgd %p", __entry->mm, __entry->pgd)
 +	);
 +
-+TRACE_EVENT(xen_mmu_release_ptpage,
-+	    TP_PROTO(unsigned long pfn, unsigned level, bool pinned),
-+	    TP_ARGS(pfn, level, pinned),
++TRACE_EVENT(xen_mmu_pgd_unpin,
++	    TP_PROTO(struct mm_struct *mm, pgd_t *pgd),
++	    TP_ARGS(mm, pgd),
 +	    TP_STRUCT__entry(
-+		    __field(unsigned long, pfn)
-+		    __field(unsigned, level)
-+		    __field(bool, pinned)
++		    __field(struct mm_struct *, mm)
++		    __field(pgd_t *, pgd)
 +		    ),
-+	    TP_fast_assign(__entry->pfn = pfn;
-+			   __entry->level = level;
-+			   __entry->pinned = pinned),
-+	    TP_printk("pfn %lx  level %d  %spinned",
-+		      __entry->pfn, __entry->level,
-+		      __entry->pinned ? "" : "un")
++	    TP_fast_assign(__entry->mm = mm;
++			   __entry->pgd = pgd),
++	    TP_printk("mm %p pgd %p", __entry->mm, __entry->pgd)
 +	);
- 
++
  #endif /*  _TRACE_XEN_H */
  
+ /* This part must be outside protection */
 -- 
 1.7.5.4
 
