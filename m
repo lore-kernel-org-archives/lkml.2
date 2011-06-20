@@ -1,74 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab1FTDoF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 23:44:05 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:46432 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752776Ab1FTDoD (ORCPT
+	id S1751195Ab1FTEJl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 00:09:41 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37084 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863Ab1FTEJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 23:44:03 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=D6g1VFUQePYqbyDNrRlBOkVAXTheSpcZlfKVVbYYAxdk6xurjoNn16BCfqhCLlyIwtzMSTi0K1DJMEgA9cAuvFtck/2Cx2iZJsW3qcS2ExzRa798s1tuvey4It3VORD7;
-Date: Sun, 19 Jun 2011 20:44:00 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Wim Van Sebroeck <wim@iguana.be>, LKML <linux-kernel@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 1/10 v2] Generic Watchdog Timer Driver
-Message-Id: <20110619204400.d732e8aa.rdunlap@xenotime.net>
-In-Reply-To: <201106182058.14702.arnd@arndb.de>
-References: <20110618171946.GB3441@infomag.iguana.be>
-	<201106182058.14702.arnd@arndb.de>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Mon, 20 Jun 2011 00:09:37 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 20 Jun 2011 13:02:27 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Ying Han <yinghan@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Andrew Bresticker <abrestic@google.com>
+Subject: Re: [PATCH 3/7] memcg: add memory.scan_stat
+Message-Id: <20110620130227.6202e8f6.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110620084123.c63d3e12.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110616124730.d6960b8b.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110616125314.4f78b1e0.kamezawa.hiroyu@jp.fujitsu.com>
+	<BANLkTimYEr9k3Sk5JoaRrrQH4mGoTmL1Wf5gadYVGDuNpxofHw@mail.gmail.com>
+	<20110620084123.c63d3e12.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 18 Jun 2011 20:58:14 +0200 Arnd Bergmann wrote:
+On Mon, 20 Jun 2011 08:41:23 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-> On Saturday 18 June 2011 19:19:46 Wim Van Sebroeck wrote:
-> > watchdog: WatchDog Timer Driver Core - Part 1
+> On Fri, 17 Jun 2011 15:04:18 -0700
+> Ying Han <yinghan@google.com> wrote:
+> 
+> > On Wed, Jun 15, 2011 at 8:53 PM, KAMEZAWA Hiroyuki
+> > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > From e08990dd9ada13cf236bec1ef44b207436434b8e Mon Sep 17 00:00:00 2001
+> > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > Date: Wed, 15 Jun 2011 14:11:01 +0900
+> > > Subject: [PATCH 3/7] memcg: add memory.scan_stat
+> > >
+> > > commit log of commit 0ae5e89 " memcg: count the soft_limit reclaim in..."
+> > > says it adds scanning stats to memory.stat file. But it doesn't because
+> > > we considered we needed to make a concensus for such new APIs.
+> > >
+> > > This patch is a trial to add memory.scan_stat. This shows
+> > >  - the number of scanned pages
+> > >  - the number of recleimed pages
+> > >  - the number of elaplsed time (including sleep/pause time)
+> > >  for both of direct/soft reclaim and shrinking caused by changing limit
+> > >  or force_empty.
+> > >
+> > > The biggest difference with oringinal Ying's one is that this file
+> > > can be reset by some write, as
+> > >
+> > >  # echo 0 ...../memory.scan_stat
+> > >
+> > > [kamezawa@bluextal ~]$ cat /cgroup/memory/A/memory.scan_stat
+> > > scanned_pages_by_limit 358470
+> > > freed_pages_by_limit 180795
+> > > elapsed_ns_by_limit 21629927
+> > > scanned_pages_by_system 0
+> > > freed_pages_by_system 0
+> > > elapsed_ns_by_system 0
+> > > scanned_pages_by_shrink 76646
+> > > freed_pages_by_shrink 38355
+> > > elappsed_ns_by_shrink 31990670
+> > > total_scanned_pages_by_limit 358470
+> > > total_freed_pages_by_limit 180795
+> > > total_elapsed_ns_by_hierarchical 216299275
+> > > total_scanned_pages_by_system 0
+> > > total_freed_pages_by_system 0
+> > > total_elapsed_ns_by_system 0
+> > > total_scanned_pages_by_shrink 76646
+> > > total_freed_pages_by_shrink 38355
+> > > total_elapsed_ns_by_shrink 31990670
+> > >
+> > > total_xxxx is for hierarchy management.
+> > >
+> > > This will be useful for further memcg developments and need to be
+> > > developped before we do some complicated rework on LRU/softlimit
+> > > management.
 > > 
-> > The WatchDog Timer Driver Core is a framework
-> > that contains the common code for all watchdog-driver's.
-> > It also introduces a watchdog device structure and the
-> > operations that go with it.
+> > Agreed. Actually we are also looking into adding a per-memcg API for
+> > adding visibility of
+> > page reclaim path. It would be helpful for us to settle w/ the API first.
 > > 
-> > This is the introduction of this framework. This part
-> > supports the minimal watchdog userspace API (or with
-> > other words: the functionality to use /dev/watchdog's
-> > open, release and write functionality as defined in
-> > the simplest watchdog API). Extra functionality will
-> > follow in the next set of patches.
+> > I am not a fan of names, but how about
+> > "/dev/cgroup/memory/memory.reclaim_stat" ?
 > > 
-> > Signed-off-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
-> > Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 > 
-> Hi Wim,
+> Hm, ok, I have no favorite. 
 > 
-> Great to see the series posted again, I'm looking forward to seeing
-> this included in 3.1.
 > 
-> I've got a few comments for stuff that can still be improved.
-> 
-> I noticed that your email subject lines are all the same, you should
-> probably see if you mail setup can be fixed to take the one-line
-> comment in each patch as the subject, and also to make all mails
-> replies to the [PATCH 0/10] email.
 
-It would also be good to include diffstat summaries with each patch.
+If I rename, I'll just rename file name as "reclaim_stat" but doesn't
+rename internal structures because there is already "struct reclaim_stat".
 
-This info in Documentation/ioctl/ioctl-number.txt does not change, correct?
+Hm, to be honest, I don't like the name "reclaim_stat".
+(Because in most case, the pages are not freed for reclaim, but for
+ hitting limit.)
 
-'W'	00-1F	linux/watchdog.h	conflict!
+memory.vmscan_info ?
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Thanks,
+-Kame
+
