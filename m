@@ -1,55 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783Ab1FTFIQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 01:08:16 -0400
-Received: from tundra.namei.org ([65.99.196.166]:39699 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750867Ab1FTFIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 01:08:12 -0400
-Date: Mon, 20 Jun 2011 15:07:48 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Vasiliy Kulikov <segoon@openwall.com>
-cc: kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [RFC 2/5 v4] procfs: add hidepid= and gid= mount options
-In-Reply-To: <alpine.LRH.2.00.1106192154220.7503@taiga.selinuxproject.org>
-Message-ID: <alpine.LRH.2.00.1106201455560.6055@tundra.namei.org>
-References: <alpine.LRH.2.00.1106192154220.7503@taiga.selinuxproject.org>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1751714Ab1FTFRC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 01:17:02 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55384 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770Ab1FTFRB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 01:17:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=IrSu6Ad8QxSbLhrDLL7j/DmikGU9qq7oYOtPIqmSWhYHqYVR7BBs4ZJIY+8XAUYLtr
+         mWZMTu4JqFuhYpxQyR3328QLkU7TIa8tNl+67+xRxlz4u0l3dU/eYv2+623AWHz3fznK
+         yJztaNJ4xNWIA94b/2esbRayp6JcM3rEWutvY=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <20110618150612.GA25163@sirena.org.uk>
+References: <1308213003-6526-1-git-send-email-myungjoo.ham@samsung.com>
+	<20110618150612.GA25163@sirena.org.uk>
+Date: Mon, 20 Jun 2011 14:16:59 +0900
+X-Google-Sender-Auth: jVBlegtsb_FP1I-_nYmttAorQSo
+Message-ID: <BANLkTimHWJ=qgQOxQtBQd9u6-euf79PJTA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Samsung SoC ADC: use regulator (VDD for ADC).
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        dg77.kim@samsung.com, kyungmin.park@samsung.com,
+        Ben Dooks <ben-linux@fluff.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[please cc: the lsm list with this kind of thing]
+Hello,
 
-> This patch adds support of mount options to restrict access to
-> /proc/PID/ directories.  The default backward-compatible 'relaxed'
-> behaviour is left untouched.
+On Sun, Jun 19, 2011 at 12:06 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Thu, Jun 16, 2011 at 05:30:02PM +0900, MyungJoo Ham wrote:
+>
+>> +     adc->vdd = regulator_get(dev, S3C_ADC_REGULATOR_NAME);
+>
+> I'm not convinced that the #define for the name is terribly good style
+> here, especially given that you actually call it vdd in the code.
 
-Can you provide evidence that this is a useful feature?  e.g. examples of 
-exploits / techniques which would be _usefully_ hampered or blocked.
+Then, would it be fine to use as [ regulator_get(dev, "vdd"); ] ?
 
-> The first mount option is called "hidepid" and its value defines how much
-> info about processes we want to be available for non-owners:
-> 
-> hidepid=0 (default) means the current behaviour - anybody may read all
-> world-readable /proc/PID/* files.
+>
+>> +     if (IS_ERR_OR_NULL(adc->vdd)) {
+>> +             dev_dbg(dev, "operating without regulator %s.\n", S3C_ADC_REGULATOR_NAME);
+>> +             adc->vdd = NULL; /* Do not control regulator */
+>> +     }
+>> +
+>
+> No, don't do this.  Just unconditionally assume the regulator is present
+> if power is essential for use of the device.  The regulator API will
+> stub out correctly if it's not in use to allow things to proceed and if
+> vdd is genuinely not hooked up then the driver can't function.
 
-Why not utilize unix perms on the proc files?  Perhaps via stricter 
-overall defaults which are selected at kernel build or runtime.
+This ADC driver is for every ADC from S3C24xx series to Exynos4 (and
+its successors as well).
+The regulator (VDD for ADC) is essential for the recent chips
+(S5PC110, S5PV210, and Exynos4).
+I was just worried about the old boards using the same ADC driver
+(mach-s3c2410/mach-*.c, mach-s3c6410/mach-*.c, and so on) without
+ADC-VDD regulators defined.
 
-> hidepid=1 means users may not access any /proc/<pid>/ directories, but their
-> own.  Sensitive files like cmdline, io, sched*, status, wchan are now
-> protected against other users.  As permission checking done in
-> proc_pid_permission() and files' permissions are left untouched,
-> programs expecting specific files' permissions are not confused.
+However, no s3c compliance defconfigs have ever used CONFIG_REGULATOR.
+Thus, it seems that it's safe to enforce using "vdd" with regulators
+in plat-samsung's ADC driver.
+I'll proceed as you have commented.
 
-IMHO such programs are beyond broken and have voided their kernel 
-warranty.
+>
+>> +     if (adc->vdd)
+>> +             regulator_enable(adc->vdd);
+>
+> You're not checking the return value here or anywhere else after the
+> inital get().
+>
+
+Ok. I'll let it handle errors from regulator_enable.
 
 
+Thank you!
+
+- MyungJoo.
 -- 
-James Morris
-<jmorris@namei.org>
+MyungJoo Ham (함명주), Ph.D.
+Mobile Software Platform Lab,
+Digital Media and Communications (DMC) Business
+Samsung Electronics
+cell: 82-10-6714-2858
