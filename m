@@ -1,129 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260Ab1FTPs0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 11:48:26 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65341 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752726Ab1FTPsY convert rfc822-to-8bit (ORCPT
+	id S1753185Ab1FTPv3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 11:51:29 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:53847 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751356Ab1FTPv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 11:48:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Iskt1zd34bDHd3Of5+NibWTLt0c0NTo7z5z3wwcVp/l4VhiwlZwsRXtKJShNliPLsl
-         3gmzYUdmMWUOp0OelNFO+ya/Ceek6cMCHCDHlpN+WYmpflrI7APeo3cmUmE6nxOLVbtK
-         zpnFZdbMTmkpMyEwkCZjbdrtwfDxctrRcvuEE=
+	Mon, 20 Jun 2011 11:51:27 -0400
+X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=wom5GMh1gUkA:10 a=Z9NF-r3ie7EA:10 a=Rj1_iGo3bfgA:10 a=kj9zAlcOel0A:10 a=g3F5VGk0NOMZWSIEWMgijA==:17 a=XkRKQH6RAAAA:8 a=rPmccLwA9GJN2CUmtIUA:9 a=K_5O1ddBASymVZQtJLQA:7 a=CjuIK1q_8ugA:10 a=QGsFc6kCM0wA:10 wl=env:18 a=g3F5VGk0NOMZWSIEWMgijA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 70.123.158.191
+Date: Mon, 20 Jun 2011 10:51:24 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>, Eric Paris <eparis@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        apparmor@lists.ubuntu.com,
+        "selinux@tycho.nsa.gov Stephen Smalley" <sds@tycho.nsa.gov>,
+        James Morris <jmorris@namei.org>, Eric Paris <eparis@parisplace.org>,
+        John Johansen <john.johansen@canonical.com>,
+        kernel-hardening@lists.openwall.com, serge@hallyn.com,
+        Andrew Morgan <morgan@kernel.org>
+Subject: Re: [RFC v2] security: intoduce ptrace_task_may_access_current
+Message-ID: <20110620155124.GA16444@mail.hallyn.com>
+References: <20110617171152.GA1389@albatros>
+ <4DFF5795.9080609@redhat.com>
+ <20110620150001.GF12469@mail.hallyn.com>
+ <20110620154429.GA12879@albatros>
 MIME-Version: 1.0
-In-Reply-To: <20110620153645.GQ14262@legolas.emea.dhcp.ti.com>
-References: <BANLkTimWM2oew2f9uWxoD1kw1=2bSYFFuw@mail.gmail.com>
-	<Pine.LNX.4.44L0.1106201105430.2113-100000@iolanthe.rowland.org>
-	<20110620151522.GN14262@legolas.emea.dhcp.ti.com>
-	<BANLkTi=5S6bWs3jr9hTsg2=LXh4xKAprUA@mail.gmail.com>
-	<20110620153645.GQ14262@legolas.emea.dhcp.ti.com>
-Date: Mon, 20 Jun 2011 17:48:23 +0200
-Message-ID: <BANLkTik-zdp57zTjrafR0jXGoJiq2hrm3g@mail.gmail.com>
-Subject: Re: [PATCH] s3c2410_udc: fix custom UDC command handling
-From: Skacore Systems <skacore.systems@gmail.com>
-To: balbi@ti.com
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Viliam Mateicka <viliam.mateicka@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110620154429.GA12879@albatros>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok I'm giving it up. This is just a non-sence.
-I've followed the exact rules written there, so tell me how the patch
-could be wrong.
-The rules are obsolete or you made up a new ones ?
-Regarding to the testing. If you've at least looked in to the patch
-(and you probably not giving a stupid questions about it!)
-you would know that this is 100% bug and you don't even have to
-compile to see that fix is actually working.
-And of course I've tested it on our production kernel.
-Look somehow it's gonna fix it. It must not be you,
-someone will just (I hope Samsung's people do care about their stuff) do it.
-The amount of time I and you've put into this discussion is just pure waste.
+Quoting Vasiliy Kulikov (segoon@openwall.com):
+> On Mon, Jun 20, 2011 at 10:00 -0500, Serge Hallyn wrote:
+> > > >diff --git a/kernel/capability.c b/kernel/capability.c
+> > > >index 283c529..bc9b07f 100644
+> > > >--- a/kernel/capability.c
+> > > >+++ b/kernel/capability.c
+> > > >@@ -356,6 +356,30 @@ bool capable(int cap)
+> > > >  }
+> > > >  EXPORT_SYMBOL(capable);
+> > > >
+> > > >+bool task_capable(struct task_struct *task, int cap)
+> > > >+{
+> > > >+	return ns_task_capable(task,&init_user_ns, cap);
+> > > >+}
+> > > >+EXPORT_SYMBOL(task_capable);
+> > > 
+> > > Why do we keep adding things like task_capable?  Can't we just stop
+> > > adding non-lsm functions and just call the right LSM functions from
+> > > now on?  This is my original comments mostly directed at Serge.  I'm
+> > > to the point where I want to NAK anything new in kernel/capability.c
+> > > (and yes, I know i'm guilty in the paste)
+> > > 
+> > > >+bool ns_task_capable(struct task_struct *task, struct user_namespace *ns, int cap)
+> > 
+> > Can you just use has_ns_capability() at the places where you wanted to
+> > use your new ns_task_capable()?  It won't set PF_SUPERPRIV, but you
+> > can't set that on another task anyway IIRC.
+> 
+> has_ns_capability() doesn't touch LSMs, but ns_task_capable() uses
+> security_task_capable() which uses LSMs.
 
-Vilo
+I don't understand what you mean by "doesn't touch LSMs."
+has_ns_capability() uses security_real_capable() which calls
+security_ops->capable().
 
+The difference between 'has_capability' and 'capable' functions is
+that the latter, as implied, have current as the subject, while
+the former ask about another task.
 
-On Mon, Jun 20, 2011 at 5:36 PM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Mon, Jun 20, 2011 at 05:20:02PM +0200, Skacore Systems wrote:
->> I've been exactly following
->> http://www.kernel.org/doc/Documentation/SubmittingPatches:
->>
->> To create a patch for a single file, it is often sufficient to do:
->>
->>       SRCTREE= linux-2.6
->>       MYFILE=  drivers/net/mydriver.c
->>
->>       cd $SRCTREE
->>       cp $MYFILE $MYFILE.orig
->>       vi $MYFILE      # make your change
->>       cd ..
->>       diff -up $SRCTREE/$MYFILE{.orig,} > /tmp/patch
->>
->> And that's what I've done. What do you think is wrong with it ???
->
-> patch should be in 'p1' format to start with, not 'p0'!!
->
-> Your commit log shouldn't include your "regards" or anything like that,
-> or that will go into the git history.
->
->> Subject: [PATCH] s3c2410_udc: fix custom UDC command handling
->
-> this should be something like:
->
-> [PATCH] usb: gadget: s3c2410_udc: fix custom UDC command handling
->
-> we generally put the subsystem on the subject to help maintainers
-> filter patches related to them.
->
->> There is a bug in Samsung's UDC driver, which is completely disabling
->> the USB device when a custom UDC command is used.
->> Following patch seems to get the right?behavior (e.g. enabling pull-up
->> instead of disabling then Vcc is applied).
->
-> "seems to get the right behavior" makes me wonder if you really tested
-> this properly. Either it fixes the problem, or it doesn't. Have you
-> tried with other possible commands to see if also helps ?
->
->> Also I'm not in mailing list so please CC me.
->
-> this would go to commit log, shouldn't be here.
->
->> Greetingz,
->> Vilo
->
-> this shouldn't be here either.
->
->> Signed-off-by: Viliam Mateicka <viliam.mateicka@gmail.com>
->
-> there should be a tear line here. (---)
->
->> --- drivers/usb/gadget/s3c2410_udc.c.orig ? ? ? 2011-05-19
->> 06:06:34.000000000 +0200
->
-> this line break is bogus.
->
-> you could have looked at any mailing list archive for properly formatted
-> patches, but instead you chose to be unpolite with the persons who are
-> giving you a "service" free of charge.
->
-> At [1] you can find an example of a proper patch
->
-> [1] http://marc.info/?l=linux-usb&m=130833192703040&w=2
->
-> --
-> balbi
->
+-serge
