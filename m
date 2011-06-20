@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab1FTLRJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 07:17:09 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41361 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab1FTLRH (ORCPT
+	id S1752031Ab1FTLRF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 07:17:05 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:46973
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751139Ab1FTLRC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 07:17:07 -0400
-Date: Mon, 20 Jun 2011 12:16:29 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>,
-        linux-arm-kernel@lists.infradead.org, trivial@kernel.org,
-        linux-kernel@vger.kernel.org, Vasily Khoruzhick <anarsoul@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>
-Subject: Re: [PATCH][Trivial] S3C2410 bluetooth: Remove duplicate
-	linux/leds.h include
-Message-ID: <20110620111629.GC26089@n2100.arm.linux.org.uk>
-References: <alpine.LNX.2.00.1106201035590.18991@swampdragon.chaosbits.net> <4DFF1AA5.80508@ru.mvista.com> <alpine.LNX.2.00.1106201232530.18991@swampdragon.chaosbits.net>
+	Mon, 20 Jun 2011 07:17:02 -0400
+Date: Mon, 20 Jun 2011 07:16:58 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, oleg@redhat.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, hch@infradead.org
+Subject: Re: [PATCHSET] ptrace: kill most tracehooks
+Message-ID: <20110620111658.GA19720@infradead.org>
+References: <1308322240-8247-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1106201232530.18991@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1308322240-8247-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 12:34:37PM +0200, Jesper Juhl wrote:
-> On Mon, 20 Jun 2011, Sergei Shtylyov wrote:
+On Fri, Jun 17, 2011 at 04:50:33PM +0200, Tejun Heo wrote:
+> Hello,
 > 
-> > Hello.
-> > 
-> > On 20-06-2011 12:40, Jesper Juhl wrote:
-> > 
-> > > Remove the duplicate inclusion of linux/leds.h from
-> > > arch/arm/mach-s3c2410/h1940-bluetooth.c that was added by commit 50e2d10d.
-> > 
-> >    Pelase also specify that commit's summary in parens.
-> > 
+> At this point, tracehooks aren't useful to mainline kernel and mostly
+> just add an extra layer of obfuscation.  Although they have comments,
+> without actual in-kernel users, it is difficult to tell what are their
+> assumptions and they're actually trying to achieve.  To mainline
+> kernel, they just aren't worth keeping around.
 > 
-> Anyone can just do a "git show 50e2d10d" to read it. But sure, here's a 
-> new patch description:
+> This patchset kills most tracehooks which aren't used from arch codes.
+> The remaining ones will be dealt with with future changes.
 
-Anyone with git can.  Those without git can't (eg, because they're using
-some other tool for source management.)  This is why Linus requires commit
-IDs to be followed by their summary.
+Thanks, this makes the whole ptrace interaction a lot more sensible and
+actually possible to follow.
 
-Please ensure that you always include the summary along with the git commit
-id.
