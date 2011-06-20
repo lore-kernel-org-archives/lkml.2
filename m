@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163Ab1FTWrq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 18:47:46 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:59670 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755338Ab1FTWrl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 18:47:41 -0400
+	id S1756191Ab1FTWrz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 18:47:55 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:43854 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756095Ab1FTWrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 18:47:45 -0400
 From: Ram Pai <linuxram@us.ibm.com>
 To: jbarnes@virtuousgeek.org
 Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org, svenkatr@ti.com,
         yinghai@kernel.org, cjb@laptop.org, linux-pci@vger.kernel.org,
-        linux-net-drivers@solarflare.com, bhutchings@solarflare.com
-Subject: [PATCH 1/4] PCI: honor child buses add_size in hot plug configuration
-Date: Mon, 20 Jun 2011 15:47:14 -0700
-Message-Id: <1308610037-6261-2-git-send-email-linuxram@us.ibm.com>
+        linux-net-drivers@solarflare.com, bhutchings@solarflare.com,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: [PATCH 2/4] PCI : ability to resize assigned pci-resource
+Date: Mon, 20 Jun 2011 15:47:15 -0700
+Message-Id: <1308610037-6261-3-git-send-email-linuxram@us.ibm.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1308610037-6261-1-git-send-email-linuxram@us.ibm.com>
 References: <1308610037-6261-1-git-send-email-linuxram@us.ibm.com>
@@ -22,100 +22,464 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yinghai Lu <yinghai@kernel.org>
+Currently pci-bridges are allocated enough resources to satisfy their immediate
+requirements.  Any additional resource-requests fail if additional free space,
+contiguous to the one already allocated, is not available. This behavior is not
+satisfying when sufficient contiguous resources, that can satisfy the request,
+is available in a different location.
 
-Recent pci_bus_size change will use add_size for minimum resource size for pcie
-hotplug bridge.  But it does not pass children back to parent bridge.
+This patch provides the ability to expand a allocated resource.  This behavior
+is particularly useful to satisfy larger size nice-to-have resource requests,
+like SRIOV BARs or cardbus bridges.
 
-that will have problem on some setup like:
-hot add one chassis with more hot plug slots.
-for example: if the chassis have 8 slots, we should allocate 8x2M instead
-of one 1x2M for parent bus.
-
-So try to get child add_size and compare the sum with parent bus bridge...
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Ram Pai <linuxram@us.ibm.com>
+	Signed-off-by: Ram Pai <linuxram@us.ibm.com>
 ---
- drivers/pci/setup-bus.c |   26 ++++++++++++++++++++++++++
- 1 files changed, 26 insertions(+), 0 deletions(-)
+ drivers/pci/setup-bus.c |   30 ++++++---
+ drivers/pci/setup-res.c |  152 +++++++++++++++++++++++++++++------------------
+ include/linux/pci.h     |    1 +
+ kernel/resource.c       |   98 ++++++++++++++++++++++++++++---
+ 4 files changed, 206 insertions(+), 75 deletions(-)
 
 diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index 1e9e5a5..e42b89a 100644
+index e42b89a..c282c48 100644
 --- a/drivers/pci/setup-bus.c
 +++ b/drivers/pci/setup-bus.c
-@@ -536,6 +536,20 @@ static resource_size_t calculate_memsize(resource_size_t size,
- 	return size;
+@@ -34,6 +34,7 @@ struct resource_list_x {
+ 	resource_size_t start;
+ 	resource_size_t end;
+ 	resource_size_t add_size;
++	resource_size_t min_align;
+ 	unsigned long flags;
+ };
+ 
+@@ -58,7 +59,7 @@ struct resource_list_x {
+  */
+ static void add_to_list(struct resource_list_x *head,
+ 		 struct pci_dev *dev, struct resource *res,
+-		 resource_size_t add_size)
++		 resource_size_t add_size, resource_size_t min_align)
+ {
+ 	struct resource_list_x *list = head;
+ 	struct resource_list_x *ln = list->next;
+@@ -77,13 +78,16 @@ static void add_to_list(struct resource_list_x *head,
+ 	tmp->end = res->end;
+ 	tmp->flags = res->flags;
+ 	tmp->add_size = add_size;
++	tmp->min_align = min_align;
+ 	list->next = tmp;
  }
  
-+static resource_size_t get_res_add_size(struct resource_list_x *add_head,
-+					struct resource *res)
+ static void add_to_failed_list(struct resource_list_x *head,
+ 				struct pci_dev *dev, struct resource *res)
+ {
+-	add_to_list(head, dev, res, 0);
++	add_to_list(head, dev, res,
++			0 /* dont care */,
++			0 /* dont care */);
+ }
+ 
+ static void __dev_sort_resources(struct pci_dev *dev,
+@@ -152,13 +156,19 @@ static void adjust_resources_sorted(struct resource_list_x *add_head,
+ 
+ 		idx = res - &list->dev->resource[0];
+ 		add_size=list->add_size;
+-		if (!resource_size(res) && add_size) {
+-			 res->end = res->start + add_size - 1;
+-			 if(pci_assign_resource(list->dev, idx))
++		if (!resource_size(res)) {
++			res->end = res->start + add_size - 1;
++			if(pci_assign_resource(list->dev, idx))
+ 				reset_resource(res);
+-		} else if (add_size) {
+-			adjust_resource(res, res->start,
+-				resource_size(res) + add_size);
++		} else {
++			resource_size_t align = list->min_align;
++			res->flags |= list->flags &
++			   (IORESOURCE_STARTALIGN|IORESOURCE_SIZEALIGN);
++			if (pci_reassign_resource(list->dev, idx, add_size,
++					align))
++				dev_printk(KERN_DEBUG, &list->dev->dev,
++				"failed to add optional resources res=%pR\n",
++				res);
+ 		}
+ out:
+ 		tmp = list;
+@@ -615,7 +625,7 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size,
+ 	b_res->end = b_res->start + size0 - 1;
+ 	b_res->flags |= IORESOURCE_STARTALIGN;
+ 	if (size1 > size0 && add_head)
+-		add_to_list(add_head, bus->self, b_res, size1-size0);
++		add_to_list(add_head, bus->self, b_res, size1-size0, 4096);
+ }
+ 
+ /**
+@@ -718,7 +728,7 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+ 	b_res->end = size0 + min_align - 1;
+ 	b_res->flags |= IORESOURCE_STARTALIGN | mem64_mask;
+ 	if (size1 > size0 && add_head)
+-		add_to_list(add_head, bus->self, b_res, size1-size0);
++		add_to_list(add_head, bus->self, b_res, size1-size0, min_align);
+ 	return 1;
+ }
+ 
+diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
+index bc0e6ee..e8a94d5 100644
+--- a/drivers/pci/setup-res.c
++++ b/drivers/pci/setup-res.c
+@@ -129,16 +129,16 @@ void pci_disable_bridge_window(struct pci_dev *dev)
+ }
+ #endif	/* CONFIG_PCI_QUIRKS */
+ 
++
++
+ static int __pci_assign_resource(struct pci_bus *bus, struct pci_dev *dev,
+-				 int resno)
++		int resno, resource_size_t size, resource_size_t align)
+ {
+ 	struct resource *res = dev->resource + resno;
+-	resource_size_t size, min, align;
++	resource_size_t min;
+ 	int ret;
+ 
+-	size = resource_size(res);
+ 	min = (res->flags & IORESOURCE_IO) ? PCIBIOS_MIN_IO : PCIBIOS_MIN_MEM;
+-	align = pci_resource_alignment(dev, res);
+ 
+ 	/* First, try exact prefetching match.. */
+ 	ret = pci_bus_alloc_resource(bus, res, size, align, min,
+@@ -155,56 +155,101 @@ static int __pci_assign_resource(struct pci_bus *bus, struct pci_dev *dev,
+ 		ret = pci_bus_alloc_resource(bus, res, size, align, min, 0,
+ 					     pcibios_align_resource, dev);
+ 	}
++	return ret;
++}
+ 
+-	if (ret < 0 && dev->fw_addr[resno]) {
+-		struct resource *root, *conflict;
+-		resource_size_t start, end;
++static int pci_revert_fw_address(struct resource *res, struct pci_dev *dev, 
++		int resno, resource_size_t size)
 +{
-+	struct resource_list_x *list;
++	struct resource *root, *conflict;
++	resource_size_t start, end;
++	int ret = 0;
+ 
+-		/*
+-		 * If we failed to assign anything, let's try the address
+-		 * where firmware left it.  That at least has a chance of
+-		 * working, which is better than just leaving it disabled.
+-		 */
++	if (res->flags & IORESOURCE_IO)
++		root = &ioport_resource;
++	else
++		root = &iomem_resource;
 +
-+	/* check if it is in add_head list */
-+	for (list = add_head->next; list && list->res != res;
-+			list = list->next);
-+	if (list)
-+		return list->add_size;
-+
-+	return 0;
++	start = res->start;
++	end = res->end;
++	res->start = dev->fw_addr[resno];
++	res->end = res->start + size - 1;
++	dev_info(&dev->dev, "BAR %d: trying firmware assignment %pR\n",
++		 resno, res);
++	conflict = request_resource_conflict(root, res);
++	if (conflict) {
++		dev_info(&dev->dev,
++			 "BAR %d: %pR conflicts with %s %pR\n", resno,
++			 res, conflict->name, conflict);
++		res->start = start;
++		res->end = end;
++		ret = 1;
++	}
++	return ret;
 +}
 +
++static int _pci_assign_resource(struct pci_dev *dev, int resno, int size, resource_size_t min_align)
++{
++	struct resource *res = dev->resource + resno;
++	struct pci_bus *bus;
++	int ret;
++	char *type;
+ 
+-		if (res->flags & IORESOURCE_IO)
+-			root = &ioport_resource;
++	bus = dev->bus;
++	while ((ret = __pci_assign_resource(bus, dev, resno, size, min_align))) {
++		if (!bus->parent || !bus->self->transparent)
++			break;
++		bus = bus->parent;
++	}
++
++	if (ret) {
++		if (res->flags & IORESOURCE_MEM)
++			if (res->flags & IORESOURCE_PREFETCH)
++				type = "mem pref";
++			else
++				type = "mem";
++		else if (res->flags & IORESOURCE_IO)
++			type = "io";
+ 		else
+-			root = &iomem_resource;
+-
+-		start = res->start;
+-		end = res->end;
+-		res->start = dev->fw_addr[resno];
+-		res->end = res->start + size - 1;
+-		dev_info(&dev->dev, "BAR %d: trying firmware assignment %pR\n",
+-			 resno, res);
+-		conflict = request_resource_conflict(root, res);
+-		if (conflict) {
+-			dev_info(&dev->dev,
+-				 "BAR %d: %pR conflicts with %s %pR\n", resno,
+-				 res, conflict->name, conflict);
+-			res->start = start;
+-			res->end = end;
+-		} else
+-			ret = 0;
++			type = "unknown";
++		dev_info(&dev->dev,
++			 "BAR %d: can't assign %s (size %#llx)\n",
++			 resno, type, (unsigned long long) resource_size(res));
+ 	}
+ 
++	return ret;
++}
++
++int pci_reassign_resource(struct pci_dev *dev, int resno, resource_size_t addsize,
++			resource_size_t min_align)
++{
++	struct resource *res = dev->resource + resno;
++	resource_size_t new_size;
++	int ret;
++
++	if (!res->parent) {
++		dev_info(&dev->dev, "BAR %d: can't reassign an unassigned resouce %pR "
++			 "\n", resno, res);
++		return -EINVAL;
++	}
++
++	new_size = resource_size(res) + addsize + min_align - 1;
++	ret = _pci_assign_resource(dev, resno, new_size, min_align);
+ 	if (!ret) {
+ 		res->flags &= ~IORESOURCE_STARTALIGN;
+ 		dev_info(&dev->dev, "BAR %d: assigned %pR\n", resno, res);
+ 		if (resno < PCI_BRIDGE_RESOURCES)
+ 			pci_update_resource(dev, resno);
+ 	}
+-
+ 	return ret;
+ }
+ 
+ int pci_assign_resource(struct pci_dev *dev, int resno)
+ {
+ 	struct resource *res = dev->resource + resno;
+-	resource_size_t align;
++	resource_size_t align, size;
+ 	struct pci_bus *bus;
+ 	int ret;
+-	char *type;
+ 
+ 	align = pci_resource_alignment(dev, res);
+ 	if (!align) {
+@@ -214,34 +259,27 @@ int pci_assign_resource(struct pci_dev *dev, int resno)
+ 	}
+ 
+ 	bus = dev->bus;
+-	while ((ret = __pci_assign_resource(bus, dev, resno))) {
+-		if (bus->parent && bus->self->transparent)
+-			bus = bus->parent;
+-		else
+-			bus = NULL;
+-		if (bus)
+-			continue;
+-		break;
+-	}
++	size = resource_size(res);
++	ret = _pci_assign_resource(dev, resno, size, align);
+ 
+-	if (ret) {
+-		if (res->flags & IORESOURCE_MEM)
+-			if (res->flags & IORESOURCE_PREFETCH)
+-				type = "mem pref";
+-			else
+-				type = "mem";
+-		else if (res->flags & IORESOURCE_IO)
+-			type = "io";
+-		else
+-			type = "unknown";
+-		dev_info(&dev->dev,
+-			 "BAR %d: can't assign %s (size %#llx)\n",
+-			 resno, type, (unsigned long long) resource_size(res));
+-	}
++	/*
++	 * If we failed to assign anything, let's try the address
++	 * where firmware left it.  That at least has a chance of
++	 * working, which is better than just leaving it disabled.
++	 */
++	if (ret < 0 && dev->fw_addr[resno])
++		ret = pci_revert_fw_address(res, dev, resno, size);
+ 
++	if (!ret) {
++		res->flags &= ~IORESOURCE_STARTALIGN;
++		dev_info(&dev->dev, "BAR %d: assigned %pR\n", resno, res);
++		if (resno < PCI_BRIDGE_RESOURCES)
++			pci_update_resource(dev, resno);
++	}
+ 	return ret;
+ }
+ 
++
+ /* Sort resources by alignment */
+ void pdev_sort_resources(struct pci_dev *dev, struct resource_list *head)
+ {
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index c446b5c..f39d894 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -800,6 +800,7 @@ int __pci_reset_function(struct pci_dev *dev);
+ int pci_reset_function(struct pci_dev *dev);
+ void pci_update_resource(struct pci_dev *dev, int resno);
+ int __must_check pci_assign_resource(struct pci_dev *dev, int i);
++int __must_check pci_reassign_resource(struct pci_dev *dev, int i, resource_size_t add_size, resource_size_t align);
+ int pci_select_bars(struct pci_dev *dev, unsigned long flags);
+ 
+ /* ROM control related routines */
+diff --git a/kernel/resource.c b/kernel/resource.c
+index 798e2fa..ff3629c 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -386,7 +386,8 @@ static bool resource_contains(struct resource *res1, struct resource *res2)
+ /*
+  * Find empty slot in the resource tree given range and alignment.
+  */
+-static int find_resource(struct resource *root, struct resource *new,
++static int __find_resource(struct resource *root, struct resource *old,
++			 struct resource *new,
+ 			 resource_size_t size, resource_size_t min,
+ 			 resource_size_t max, resource_size_t align,
+ 			 resource_size_t (*alignf)(void *,
+@@ -404,14 +405,22 @@ static int find_resource(struct resource *root, struct resource *new,
+ 	 * Skip past an allocated resource that starts at 0, since the assignment
+ 	 * of this->start - 1 to tmp->end below would cause an underflow.
+ 	 */
+-	if (this && this->start == 0) {
+-		tmp.start = this->end + 1;
+-		this = this->sibling;
++	if (this && this->start == root->start) {
++		if (this == old) {
++			tmp.start = old->start;
++		} else {
++			tmp.start = this->end + 1;
++		}
++ 		this = this->sibling;
+ 	}
+ 	for(;;) {
+-		if (this)
+-			tmp.end = this->start - 1;
+-		else
++		if (this) {
++			if (this == old) {
++				tmp.end = this->end;
++			} else {
++				tmp.end = this->start - 1;
++			}
++		} else
+ 			tmp.end = root->end;
+ 
+ 		resource_clip(&tmp, min, max);
+@@ -432,12 +441,82 @@ static int find_resource(struct resource *root, struct resource *new,
+ 		}
+ 		if (!this)
+ 			break;
+-		tmp.start = this->end + 1;
++		if (this != old)
++			tmp.start = this->end + 1;
+ 		this = this->sibling;
+ 	}
+ 	return -EBUSY;
+ }
+ 
++/*
++ * Find empty slot in the resource tree given range and alignment.
++ */
++static int find_resource(struct resource *root, struct resource *new,
++			 resource_size_t size, resource_size_t min,
++			 resource_size_t max, resource_size_t align,
++			 resource_size_t (*alignf)(void *,
++						   const struct resource *,
++						   resource_size_t,
++						   resource_size_t),
++			 void *alignf_data)
++{
++	return  __find_resource(root, NULL, new, size, min, max, align, alignf, alignf_data);
++}
++
++/**
++ * reallocate_resource - allocate empty slot in the resource tree given range & alignment
++ * @root: root resource descriptor
++ * @new: resource descriptor desired by caller
++ * @size: requested resource region size
++ * @min: minimum size to allocate
++ * @max: maximum size to allocate
++ * @align: alignment requested, in bytes
++ * @alignf: alignment function, optional, called if not NULL
++ * @alignf_data: arbitrary data to pass to the @alignf function
++ */
++int reallocate_resource(struct resource *root, struct resource *old,
++		      resource_size_t newsize, resource_size_t min,
++		      resource_size_t max, resource_size_t align,
++		      resource_size_t (*alignf)(void *,
++						const struct resource *,
++						resource_size_t,
++						resource_size_t),
++		      void *alignf_data)
++{
++	int err=0;
++	struct resource new = *old;
++
++	write_lock(&resource_lock);
++
++	if ((err = __find_resource(root, old, &new, newsize, min, max, align, 
++			alignf, alignf_data)))
++		goto out;
++
++	if (resource_contains(&new, old)) {
++		old->start = new.start;
++		old->end = new.end;
++		goto out;
++	}
++
++	if (old->child) {
++		err = -EBUSY;
++		goto out;
++	}
++
++	if (resource_contains(old, &new)) {
++		old->start = new.start;
++		old->end = new.end;
++	} else {
++		__release_resource(old);
++		*old = new;
++		__request_resource(root, old);
++	}
++out:
++	write_unlock(&resource_lock);
++	return err;
++}
++
++
  /**
-  * pbus_size_io() - size the io window of a given bus
-  *
-@@ -555,6 +569,7 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size,
- 	struct pci_dev *dev;
- 	struct resource *b_res = find_free_bus_resource(bus, IORESOURCE_IO);
- 	unsigned long size = 0, size0 = 0, size1 = 0;
-+	resource_size_t children_add_size = 0;
+  * allocate_resource - allocate empty slot in the resource tree given range & alignment
+  * @root: root resource descriptor
+@@ -463,6 +542,9 @@ int allocate_resource(struct resource *root, struct resource *new,
+ 	if (!alignf)
+ 		alignf = simple_align_resource;
  
- 	if (!b_res)
-  		return;
-@@ -575,10 +590,15 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size,
- 				size += r_size;
- 			else
- 				size1 += r_size;
++	if ( new->parent )
++		return reallocate_resource(root, new, size, min, max, align, alignf, alignf_data);
 +
-+			if (add_head)
-+				children_add_size += get_res_add_size(add_head, r);
- 		}
- 	}
- 	size0 = calculate_iosize(size, min_size, size1,
- 			resource_size(b_res), 4096);
-+	if (children_add_size > add_size)
-+		add_size = children_add_size;
- 	size1 = (!add_head || (add_head && !add_size)) ? size0 :
- 		calculate_iosize(size, min_size+add_size, size1,
- 			resource_size(b_res), 4096);
-@@ -620,6 +640,7 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
- 	int order, max_order;
- 	struct resource *b_res = find_free_bus_resource(bus, type);
- 	unsigned int mem64_mask = 0;
-+	resource_size_t children_add_size = 0;
- 
- 	if (!b_res)
- 		return 0;
-@@ -661,6 +682,9 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
- 			if (order > max_order)
- 				max_order = order;
- 			mem64_mask &= r->flags & IORESOURCE_MEM_64;
-+
-+			if (add_head)
-+				children_add_size += get_res_add_size(add_head, r);
- 		}
- 	}
- 	align = 0;
-@@ -677,6 +701,8 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
- 		align += aligns[order];
- 	}
- 	size0 = calculate_memsize(size, min_size, 0, resource_size(b_res), min_align);
-+	if (children_add_size > add_size)
-+		add_size = children_add_size;
- 	size1 = (!add_head || (add_head && !add_size)) ? size0 :
- 		calculate_memsize(size, min_size+add_size, 0,
- 				resource_size(b_res), min_align);
+ 	write_lock(&resource_lock);
+ 	err = find_resource(root, new, size, min, max, align, alignf, alignf_data);
+ 	if (err >= 0 && __request_resource(root, new))
 -- 
 1.7.0.4
 
