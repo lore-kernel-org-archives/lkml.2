@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755837Ab1FTRfi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 13:35:38 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:53713 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755819Ab1FTRfg (ORCPT
+	id S1755659Ab1FTRiK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 13:38:10 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36269 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755465Ab1FTRiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 13:35:36 -0400
-Date: Mon, 20 Jun 2011 13:35:35 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Nicolas Pitre <nico@fluxnic.net>
-cc: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
-        Alexander Holler <holler@ahsoftware.de>, <linux-usb@vger.kernel.org>,
-        <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>
-Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing
- the packed attribute
-In-Reply-To: <alpine.LFD.2.00.1106201306210.2142@xanadu.home>
-Message-ID: <Pine.LNX.4.44L0.1106201329390.2113-100000@iolanthe.rowland.org>
+	Mon, 20 Jun 2011 13:38:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=Bfowhp6lG4BqBHg5BPoBSGR6laGPWOHfRTz/gpCG2VMV4qnLfnph6iC0hU6599S9jt
+         k9EHhjiZziRhFdQuPh+qbhTtEbEdHMa9oAcSHhCw0YxvWmrrur0gmEr7NT/XZJpxLm3i
+         +le6wgOwx8DxFFQ1Hz/cmlCQxBcuE9vrYDCjw=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1308570316.8230.140.camel@bahia.local>
+References: <20110615145527.4016.70157.stgit@bahia.local> <BANLkTimSC_OSrbekhM=wd2Gie4np3Q4F5A@mail.gmail.com>
+ <1308570316.8230.140.camel@bahia.local>
+From: Bryan Donlan <bdonlan@gmail.com>
+Date: Mon, 20 Jun 2011 13:37:24 -0400
+Message-ID: <BANLkTiknqo0iKry7mjq+mc4iOWj_A_mrrw@mail.gmail.com>
+Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was Vpid:)
+To: Greg Kurz <gkurz@fr.ibm.com>
+Cc: akpm@linux-foundation.org, containers@lists.osdl.org,
+        linux-kernel@vger.kernel.org, serge@hallyn.com, daniel.lezcano@free.fr,
+        ebiederm@xmission.com, oleg@redhat.com, xemul@openvz.org,
+        Cedric Le Goater <clg@vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jun 2011, Nicolas Pitre wrote:
+On Mon, Jun 20, 2011 at 07:45, Greg Kurz <gkurz@fr.ibm.com> wrote:
+> On Thu, 2011-06-16 at 13:54 -0400, Bryan Donlan wrote:
 
-> Are we talking past each other?
-> 
-> Remember that I was the one asking if the align attribute was needed in 
-> the first place.  If it is not then by all means please get rid of it!
-> 
-> But if it _is_ needed, then the generated code can be much better if the 
-> packed attribute is _also_ followed by the align attribute to 
-> increase it from 1.
+>> Although getting the in-namespace PID is a useful thing, wouldn't a
+>> truly race-free API be preferable? Any access by PID has the race
+>> condition in which the target process could die, and its PID get
+>> recycled between retrieving the PID and doing something with it.
+>
+> Well the PID is a racy construct when used by another task than the
+> parent... fortunately, most userland code can cope with it ! :)
 
-According to Arnd, any remaining possible issues will be addressed by
-changing the implementation of readl/writel on ARM.  It doesn't look as
-though the ehci files need anything else done.
+That doesn't mean we shouldn't try to fix the race! :)
 
-As far as I can tell, the other structures in ehci.h have 
-((aligned(32)) simply in order to save space, since there can be large 
-numbers of these structures allocated.  That doesn't apply to the 
-structures in ehci_def.h; there will only be one of each.
+>> Perhaps a file-descriptor API would be better, such as something like
+>> this:
+>>
+>> int openpid(int id, int flags);
+>> int rt_sigqueueinfo_fd(int process_fd, int sig, siginfo_t *info);
+>> int sigqueue_fd(int process_fd, int sig, const union sigval value); //
+>> glibc wrapper
+>>
+>
+> The race still exists: openpid() is being passed a PID... Only the
+> parent can legitimately know that this PID identifies a specific
+> unwaited child.
 
-Alan Stern
-
+Yes, the idea would be either the parent process, or the target
+process itself would open the PID, then pass the resulting file
+descriptor to whatever process is actually doing the killing.
+Alternately, one could add additional calls to help identify whether
+the right process was opened (perhaps a call to get a directory handle
+to the corresponding /proc directory?)
