@@ -1,93 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605Ab1FTIXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 04:23:23 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40659 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752395Ab1FTIXW (ORCPT
+	id S1751988Ab1FTIWk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 04:22:40 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:49805 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844Ab1FTIWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 04:23:22 -0400
-Message-ID: <4DFF0338.7000407@ru.mvista.com>
-Date: Mon, 20 Jun 2011 12:22:16 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
-CC: Borislav Petkov <bp@alien8.de>, "David S. Miller" <davem@davemloft.net>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        christian.dietrich@informatik.uni-erlangen.de, sshtylyov@mvista.com
-Subject: Re: [PATCH 01/11] drivers/ide: use printk_ratelimited() instead of
- printk_ratelimit()
-References: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>	<0a1488254bd51475a90133c0fc41a4d34b533ef4.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>	<20110616141930.GA12872@eferding.osrc.amd.com> <BANLkTim=yg+tCxa-JhMYw5zsnBSzQqVnqg@mail.gmail.com>
-In-Reply-To: <BANLkTim=yg+tCxa-JhMYw5zsnBSzQqVnqg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 20 Jun 2011 04:22:39 -0400
+Date: Mon, 20 Jun 2011 01:22:35 -0700 (PDT)
+Message-Id: <20110620.012235.1491245779003024008.davem@davemloft.net>
+To: rol@witbe.net
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: WARNING: at net/ipv4/route.c:1677 ip_rt_bug+0x5a/0x70()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110620094725.3508a4e4@tux.DEF.witbe.net>
+References: <20110620094725.3508a4e4@tux.DEF.witbe.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-2022-jp
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 20 Jun 2011 01:22:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+From: Paul Rolland (ポール・ロラン) <rol@witbe.net>
+Date: Mon, 20 Jun 2011 09:47:25 +0200
 
-On 20-06-2011 12:17, Manuel Zerpies wrote:
+> I'm getting a series of these warning when I start a 64bit Win7 inside
+> VirtualBox in a 64bit 3.0.0-rc3 linux.
 
->> Does the printk fit on one line if you do
+Please report networking bugs to netdev@vger.kernel.org
 
->>         pr_warn_ratelimited(...)
+Also, see:
 
->> instead?
+http://marc.info/?l=linux-netdev&m=130841949406760&w=2
 
->> Thanks.
 
->> --
->> Regards/Gruss,
->> Boris.
-
-> No I'm affraid. I tried it, but it didn't fit the 80 chars per line
-> code-styling.
-
-    It's enough that the string literal fits on one line.
-
->> Why not pr_warn_ratelimited()?
-
->> WBR, Sergei
-
-> I just kind of ignored it. As you see, I built it in.
-
-> Here my new patch:
-
-> Since printk_ratelimit() shouldn't be used anymore (see comment in
-> include/linux/printk.h), replace it with printk_ratelimited().
-
-    This doesn't match the patch anymore...
-
-> Signed-off-by: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
-> ---
->   drivers/ide/ide-atapi.c |    6 +++---
->   1 files changed, 3 insertions(+), 3 deletions(-)
-> diff --git a/drivers/ide/ide-atapi.c b/drivers/ide/ide-atapi.c
-> index 6f218e01..c9e69d7 100644
-> --- a/drivers/ide/ide-atapi.c
-> +++ b/drivers/ide/ide-atapi.c
-> @@ -8,6 +8,7 @@
->   #include<linux/ide.h>
->   #include<linux/scatterlist.h>
->   #include<linux/gfp.h>
-> +#include<linux/ratelimit.h>
->
->   #include<scsi/scsi.h>
->
-> @@ -200,9 +201,8 @@ void ide_prep_sense(ide_drive_t *drive, struct request *rq)
->    err = blk_rq_map_kern(drive->queue, sense_rq, sense, sense_len,
->         GFP_NOIO);
->    if (unlikely(err)) {
-> - if (printk_ratelimit())
-> - printk(KERN_WARNING PFX "%s: failed to map sense "
-> -    "buffer\n", drive->name);
-> + pr_warn_ratelimited(PFX "%s: failed to map sense buffer\n",
-> +    drive->name);
->    return;
->    }
-
-    Unfortunately, the new patch is whitespace-damaged.
-
-WBR, Sergei
