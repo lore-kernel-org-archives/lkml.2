@@ -1,42 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755184Ab1FTOpX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 10:45:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55525 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754889Ab1FTOpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 10:45:20 -0400
-Message-ID: <4DFF5CCA.6070206@redhat.com>
-Date: Mon, 20 Jun 2011 10:44:26 -0400
-From: Eric Paris <eparis@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1755211Ab1FTOqQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 10:46:16 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:59595 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755151Ab1FTOqO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 10:46:14 -0400
+Date: Mon, 20 Jun 2011 10:46:13 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH] PCI / PM: Block races between runtime PM and system
+ sleep
+In-Reply-To: <201106192149.19401.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1106201039580.2113-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Vasiliy Kulikov <segoon@openwall.com>
-CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        apparmor@lists.ubuntu.com,
-        "selinux@tycho.nsa.gov Stephen Smalley" <sds@tycho.nsa.gov>,
-        James Morris <jmorris@namei.org>, Eric Paris <eparis@parisplace.org>,
-        John Johansen <john.johansen@canonical.com>,
-        kernel-hardening@lists.openwall.com, serge@hallyn.com
-Subject: Re: [RFC v2] security: intoduce ptrace_task_may_access_current
-References: <20110617171152.GA1389@albatros> <4DFF5795.9080609@redhat.com> <20110620144328.GA11933@albatros>
-In-Reply-To: <20110620144328.GA11933@albatros>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2011 10:43 AM, Vasiliy Kulikov wrote:
-> On Mon, Jun 20, 2011 at 10:22 -0400, Eric Paris wrote:
->> serge even if you disagree with all of that, you are definitely
->> going to need to review the capability changes added here.
->> Personally I'd like to see all of the capability changes done as a
->> separate patch from the ptrace changes.
-> I'm afraid the patch series will not be bisectable (capabilities and
-> ptrace code are very interconnected), but I'll try.
+On Sun, 19 Jun 2011, Rafael J. Wysocki wrote:
 
-Just add the new functions, describe them, document them, but don't use 
-them.  Then use them in the second patch.
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> After commit e8665002477f0278f84f898145b1f141ba26ee26
+> (PM: Allow pm_runtime_suspend() to succeed during system suspend) it
+> is possible that a device resumed by the pm_runtime_resume(dev) in
+> pci_pm_prepare() will be suspended immediately from a work item,
+> timer function or otherwise, defeating the very purpose of calling
+> pm_runtime_resume(dev) from there.  To prevent that from happening
+> it is necessary to increment the runtime PM usage counter of the
+> device by replacing pm_runtime_resume() with pm_runtime_get_sync().
+> Moreover, the incremented runtime PM usage counter has to be
+> decremented by the corresponding pci_pm_complete(), via
+> pm_runtime_put_noidle().
 
--Eric
+In both this and the previous patch, the final decrement should be done 
+by pm_runtime_put_sync() instead of pm_runtime_put_idle().  Otherwise 
+you face the possibility that the usage_count may go to 0 but the 
+device will be left active.
+
+Furthermore, since we're going to disable runtime PM as soon as the
+suspend callback returns anyway, why not increment usage_count before
+invoking the callback?  This will prevent runtime suspends from 
+occurring while the callback runs, so no changes will be needed in the 
+PCI or USB subsystems.
+
+It also will prevent Kevin from calling pm_runtime_suspend from within
+his suspend callbacks, but you have already determined that subsystems
+and drivers should never do that in any case.
+
+Alan Stern
+
