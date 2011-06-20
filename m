@@ -1,115 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751346Ab1FTAvN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 20:51:13 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35078 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765Ab1FTAvK (ORCPT
+	id S1751789Ab1FTAxC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 20:53:02 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:48454 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222Ab1FTAw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 20:51:10 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DFE997C.2060805@jp.fujitsu.com>
-Date: Mon, 20 Jun 2011 09:51:08 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	Sun, 19 Jun 2011 20:52:59 -0400
+Date: Sun, 19 Jun 2011 18:52:55 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Petr Tesarik <ptesarik@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of
+	arbitrary physical addresses
+Message-ID: <20110620005255.GF19693@parisc-linux.org>
+References: <201106171038.25988.ptesarik@suse.cz> <20110617093032.GA19235@elte.hu> <4DFE7FF9.9070406@gmail.com> <20110620004252.GE19693@parisc-linux.org> <4DFE9850.7030400@gmail.com>
 MIME-Version: 1.0
-To: david@fromorbit.com
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 03/12] vmscan: reduce wind up shrinker->nr when shrinker
- can't do work
-References: <1306998067-27659-1-git-send-email-david@fromorbit.com> <1306998067-27659-4-git-send-email-david@fromorbit.com>
-In-Reply-To: <1306998067-27659-4-git-send-email-david@fromorbit.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DFE9850.7030400@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/02 16:00), Dave Chinner wrote:
-> From: Dave Chinner <dchinner@redhat.com>
-> 
-> When a shrinker returns -1 to shrink_slab() to indicate it cannot do
-> any work given the current memory reclaim requirements, it adds the
-> entire total_scan count to shrinker->nr. The idea ehind this is that
-> whenteh shrinker is next called and can do work, it will do the work
-> of the previously aborted shrinker call as well.
-> 
-> However, if a filesystem is doing lots of allocation with GFP_NOFS
-> set, then we get many, many more aborts from the shrinkers than we
-> do successful calls. The result is that shrinker->nr winds up to
-> it's maximum permissible value (twice the current cache size) and
-> then when the next shrinker call that can do work is issued, it
-> has enough scan count built up to free the entire cache twice over.
-> 
-> This manifests itself in the cache going from full to empty in a
-> matter of seconds, even when only a small part of the cache is
-> needed to be emptied to free sufficient memory.
-> 
-> Under metadata intensive workloads on ext4 and XFS, I'm seeing the
-> VFS caches increase memory consumption up to 75% of memory (no page
-> cache pressure) over a period of 30-60s, and then the shrinker
-> empties them down to zero in the space of 2-3s. This cycle repeats
-> over and over again, with the shrinker completely trashing the іnode
-> and dentry caches every minute or so the workload continues.
-> 
-> This behaviour was made obvious by the shrink_slab tracepoints added
-> earlier in the series, and made worse by the patch that corrected
-> the concurrent accounting of shrinker->nr.
-> 
-> To avoid this problem, stop repeated small increments of the total
-> scan value from winding shrinker->nr up to a value that can cause
-> the entire cache to be freed. We still need to allow it to wind up,
-> so use the delta as the "large scan" threshold check - if the delta
-> is more than a quarter of the entire cache size, then it is a large
-> scan and allowed to cause lots of windup because we are clearly
-> needing to free lots of memory.
-> 
-> If it isn't a large scan then limit the total scan to half the size
-> of the cache so that windup never increases to consume the whole
-> cache. Reducing the total scan limit further does not allow enough
-> wind-up to maintain the current levels of performance, whilst a
-> higher threshold does not prevent the windup from freeing the entire
-> cache under sustained workloads.
-> 
-> Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> ---
->  mm/vmscan.c |   14 ++++++++++++++
->  1 files changed, 14 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index dce2767..3688f47 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -277,6 +277,20 @@ unsigned long shrink_slab(struct shrink_control *shrink,
->  		}
->  
->  		/*
-> +		 * Avoid excessive windup on fielsystem shrinkers due to large
-> +		 * numbers of GFP_NOFS allocations causing the shrinkers to
-> +		 * return -1 all the time. This results in a large nr being
-> +		 * built up so when a shrink that can do some work comes along
-> +		 * it empties the entire cache due to nr >>> max_pass.  This is
-> +		 * bad for sustaining a working set in memory.
-> +		 *
-> +		 * Hence only allow nr to go large when a large delta is
-> +		 * calculated.
-> +		 */
-> +		if (delta < max_pass / 4)
-> +			total_scan = min(total_scan, max_pass / 2);
-> +
-> +		/*
->  		 * Avoid risking looping forever due to too large nr value:
->  		 * never try to free more than twice the estimate number of
->  		 * freeable entries.
+On Mon, Jun 20, 2011 at 10:46:08AM +1000, Ryan Mallon wrote:
+> On 20/06/11 10:42, Matthew Wilcox wrote:
+>> On Mon, Jun 20, 2011 at 09:02:17AM +1000, Ryan Mallon wrote:
+>>> There are drivers where this makes sense. For example an FPGA device
+>>> with a proprietary register layout on the memory bus can be done this
+>>> way. The FPGA can simply be mapped in user-space via /dev/mem and
+>>> handled there. If the device requires no access other than memory bus
+>>> reads and writes then writing a custom char device driver just to get an
+>>> mmap function seems a bit overkill.
+>> Calling a 30 line device driver "overkill" might in itself be overkill?
+>>
+> I mean overkill in the sense of having to write the driver at all. Why  
+> write a 30 line driver just to re-implement some functionality of 
+> /dev/mem?
 
-I guess "max_pass/4" and "min(total_scan, max_pass / 2)" are your heuristic value. right?
-If so, please write your benchmark name and its result into the description. I mean,
-currently some mm folks plan to enhance shrinker. So, sharing benchmark may help to avoid
-an accidental regression.
+Because it pushes the tradeoff in the right direction.  Somebody wants
+to do something weird is a little inconvenienced vs protecting the vast
+majority of users from some security escalation problems.
 
-I mean, your code itself looks pretty good to me.
+Besides, if you have a real bus with discoverable regions
+(like PCI BARs), the bus should have sysfs entries like
+/sys/bus/pci/devices/0000\:06\:06.0/resource0 that can be mmaped.
+Then there's no need for a device driver at all, *and* the privilege
+escalation isn't achievable.
 
-thanks.
+Of course, most embedded architectures have crap discoverability.
 
-
+-- 
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
