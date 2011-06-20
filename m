@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940Ab1FTKqr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 06:46:47 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36122 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752779Ab1FTKqn (ORCPT
+	id S1752576Ab1FTKsD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 06:48:03 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49149 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750758Ab1FTKsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 06:46:43 -0400
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-fbdev@vger.kernel.org, linux-omap@vger.kernel.org
-Cc: linux@arm.linux.org.uk, tony@atomide.com, lethal@linux-sh.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        Tomi Valkeinen <tomi.valkeinen@nokia.com>
-Subject: [PATCH 2/2] video: omap2: Compile omap2 support only when needed
-Date: Mon, 20 Jun 2011 16:16:01 +0530
-Message-Id: <1308566761-2850-3-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1308566761-2850-1-git-send-email-tushar.behera@linaro.org>
-References: <1308566761-2850-1-git-send-email-tushar.behera@linaro.org>
+	Mon, 20 Jun 2011 06:48:01 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
+        Graeme Gregory <gg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: Implement tps65910 IRQ cleanup
+Date: Mon, 20 Jun 2011 11:47:55 +0100
+Message-Id: <1308566875-17441-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently display support for omap2 is selected by default and
-it gets built for all the configurations.
+The tps65910_irq_exit() cleanup function was generating a warning from
+sparse due to the lack of a prototype. This wasn't causing GCC warnings
+as the driver wasn't cleaning up its IRQs on exit at all so there was no
+use of an unprototyped function.
 
-Instead of it being a built-in feature, it's compilation should
-depend on the config option CONFIG_FB_OMAP2.
-
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: Tomi Valkeinen <tomi.valkeinen@nokia.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/video/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/mfd/tps65910.c       |    1 +
+ include/linux/mfd/tps65910.h |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/video/Makefile b/drivers/video/Makefile
-index 8b83129..a19e44e 100644
---- a/drivers/video/Makefile
-+++ b/drivers/video/Makefile
-@@ -133,7 +133,7 @@ obj-$(CONFIG_FB_SH_MOBILE_HDMI)	  += sh_mobile_hdmi.o
- obj-$(CONFIG_FB_SH_MOBILE_MERAM)  += sh_mobile_meram.o
- obj-$(CONFIG_FB_SH_MOBILE_LCDC)	  += sh_mobile_lcdcfb.o
- obj-$(CONFIG_FB_OMAP)             += omap/
--obj-y                             += omap2/
-+obj-$(CONFIG_FB_OMAP2)            += omap2/
- obj-$(CONFIG_XEN_FBDEV_FRONTEND)  += xen-fbfront.o
- obj-$(CONFIG_FB_CARMINE)          += carminefb.o
- obj-$(CONFIG_FB_MB862XX)	  += mb862xx/
+diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+index 2229e66..837f0e6 100644
+--- a/drivers/mfd/tps65910.c
++++ b/drivers/mfd/tps65910.c
+@@ -187,6 +187,7 @@ static int tps65910_i2c_remove(struct i2c_client *i2c)
+ 	struct tps65910 *tps65910 = i2c_get_clientdata(i2c);
+ 
+ 	mfd_remove_devices(tps65910->dev);
++	tps65910_irq_exit(tps65910);
+ 	kfree(tps65910);
+ 
+ 	return 0;
+diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
+index 8bb85b9..efcdb29 100644
+--- a/include/linux/mfd/tps65910.h
++++ b/include/linux/mfd/tps65910.h
+@@ -791,6 +791,7 @@ int tps65910_clear_bits(struct tps65910 *tps65910, u8 reg, u8 mask);
+ void tps65910_gpio_init(struct tps65910 *tps65910, int gpio_base);
+ int tps65910_irq_init(struct tps65910 *tps65910, int irq,
+ 		struct tps65910_platform_data *pdata);
++int tps65910_irq_exit(struct tps65910 *tps65910);
+ 
+ static inline int tps65910_chip_id(struct tps65910 *tps65910)
+ {
 -- 
-1.7.4.1
+1.7.5.4
 
