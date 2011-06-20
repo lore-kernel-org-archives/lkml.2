@@ -1,102 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756301Ab1FTWXq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 18:23:46 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:64341 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756271Ab1FTWXp (ORCPT
+	id S932108Ab1FTW1c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 18:27:32 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:64187 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755422Ab1FTW1a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 18:23:45 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Mon, 20 Jun 2011 18:23:44 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        gregkh@suse.de, lkml <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>, Alexander Holler <holler@ahsoftware.de>
-Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing the
- packed attribute
-In-reply-to: <201106202323.49513.arnd@arndb.de>
-Message-id: <alpine.LFD.2.00.1106201814490.2142@xanadu.home>
-References: <alpine.LFD.2.00.1106201306210.2142@xanadu.home>
- <201106202226.37381.arnd@arndb.de>
- <20110620205559.GM26089@n2100.arm.linux.org.uk>
- <201106202323.49513.arnd@arndb.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Mon, 20 Jun 2011 18:27:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=xR6yH9syER/N5AmV9E+xBvHs2KuwArXrHACYZEY9OMTdgtRjh80p2KFkuL5/XLgAkL
+         AnAP2jfQH+uPEvUHntT+wSLu8/QnBtTfQf+rHpLn/DIVh0U7TVfe0FsAO49RAoaZh8vY
+         Wid4JzTCCO1bKGdu/maxPm8KtusPl+B9roEqA=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTin2f2Dn9onaazgxtkC2kWLrj6cOnw@mail.gmail.com>
+References: <1307389135-8150-1-git-send-email-mjg@redhat.com>
+	<1307389135-8150-2-git-send-email-mjg@redhat.com>
+	<BANLkTinHYQ14A7vzTxA1c2frxUVE6HWNQg@mail.gmail.com>
+	<BANLkTimESgP1FMzP8cbKcECLSbEY9Mj3bQ@mail.gmail.com>
+	<20110606214735.GA4026@srcf.ucam.org>
+	<20110610040012.GA14233@auslistsprd01.us.dell.com>
+	<BANLkTin2f2Dn9onaazgxtkC2kWLrj6cOnw@mail.gmail.com>
+Date: Mon, 20 Jun 2011 15:27:29 -0700
+X-Google-Sender-Auth: al3zVEGzaT9WY1VIpj1260tBKs8
+Message-ID: <BANLkTiniLZFZgnLqdBPubOff9X0mOUN+nA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] pstore: Add extra context for writes and erases
+From: Tony Luck <tony.luck@intel.com>
+To: Mike Waychison <mikew@google.com>
+Cc: Matt Domsch <Matt_Domsch@dell.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jun 2011, Arnd Bergmann wrote:
+On Fri, Jun 10, 2011 at 12:12 AM, Mike Waychison <mikew@google.com> wrote:
+> On Thu, Jun 9, 2011 at 9:00 PM, Matt Domsch <Matt_Domsch@dell.com> wrote:
+>> On Mon, Jun 06, 2011 at 10:47:35PM +0100, Matthew Garrett wrote:
+>>> On Mon, Jun 06, 2011 at 02:43:46PM -0700, Tony Luck wrote:
+>>>
+>>> > Does someone claim maintainership of  drivers/firmware/efivars.c for part3?
+>>>
+>>> I think that'd be Matt.
+>>
+>> I'm out of the office this week and next, and haven't looked at it
+>> closely.  Mike Waychison has done most of the editing in there
+>> recently, I'd be happy if he wishes to be considered the maintainer
+>> thereof.
+>
+> I'm out of the office too until next Tuesday.  I should be able to
+> look at this between now and mid next-week.
 
-> On Monday 20 June 2011 22:55:59 Russell King - ARM Linux wrote:
-> > On Mon, Jun 20, 2011 at 10:26:37PM +0200, Arnd Bergmann wrote:
-> > > * We already need a compiler barrier in the non-_relaxed() versions of
-> > >   the I/O accessors, which will force a reload of the base address
-> > >   in a lot of cases, so the code is already suboptimal. Yes, we don't
-> > >   have the barrier today without CONFIG_ARM_DMA_MEM_BUFFERABLE, but that
-> > >   is a bug, because it lets the compiler move accesses to DMA buffers
-> > >   around readl/writel.
-> > 
-> > You're now being obtuse there.  You don't need compiler barriers to
-> > guarantee order - that's what volatile does there.
-> > 
-> 
-> A simple counterexample:
-> 
-> 
-> int f(volatile unsigned long *v)
-> {
->         unsigned long a[2], ret;
->         a[0] = 1;              /* initialize our DMA buffer */
->         a[1] = 2;
->         *v = (unsigned long)a; /* pass the address to the device, start DMA */
->         ret = *v;              /* flush DMA by reading from mmio */
->         return ret + a[1];     /* return accumulated status from readl and from modified
-> 				  DMA buffer */
-> }
-> 
-> arm-linux-gnueabi-gcc -Wall -O2 test.c -S
-> 
-> Without a barrier, the stores into the DMA buffer before the start are
-> lost, as is the load from the modified DMA buffer:
-> 
->         sub     sp, sp, #8
->         add     r3, sp, #0
->         str     r3, [r0, #0]
->         ldr     r0, [r0, #0]
->         adds    r0, r0, #2
->         add     sp, sp, #8
->         bx      lr
-> 
-> Adding a memory clobber to the volatile dereference turns this into the
-> expected output:
-> 
->         sub     sp, sp, #8
->         movs    r3, #2
->         movs    r2, #1
->         stmia   sp, {r2, r3}
->         add     r3, sp, #0
->         str     r3, [r0, #0]
->         ldr     r0, [r0, #0]
->         ldr     r3, [sp, #4]
->         adds    r0, r0, r3
->         add     sp, sp, #8
->         bx      lr
-> 
-> Now, the dma buffer is written before the volatile access, and read out
-> again afterwards.
+Mike; Did you find time to look at Matthew's efi-for-pstore patches yet?
+If we want to hit the 3.1 merge window we should be trying to get these
+beaten into shape pretty soon (Linus will presumably declare -rc4 tonight,
+so not much time left).
 
-This example is flawed. The DMA API documentation already forbids DMA to 
-the stack because of cache line sharing issues.  If you declare your 
-buffer outside of the function body, the compiler can't optimize away 
-the buffer store anymore, and this example works as expected without any 
-memory clobber.
-
-
-Nicolas
+-Tony
