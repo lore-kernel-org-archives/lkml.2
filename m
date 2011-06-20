@@ -1,481 +1,406 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755973Ab1FTWml (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 18:42:41 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:46659 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755932Ab1FTWmh (ORCPT
+	id S1756104Ab1FTWpD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 18:45:03 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:11336 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755534Ab1FTWo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 18:42:37 -0400
-Message-ID: <4DFFCCDC.2070106@candelatech.com>
-Date: Mon, 20 Jun 2011 15:42:36 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: linux-nfs@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: NFS crash in un-modified 3.0.0-rc3+, list corruption.
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 20 Jun 2011 18:44:59 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=YEcWI15+/tfm1i9uGqV4CcPszcTWg2dCFmVfRslxC/dxF/4K+CiYVyfhrjVv7TEo8
+	qLIkQUIScDFIH6nQ9XqTA==
+From: Dan Ehrenberg <dehrenberg@google.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Ehrenberg <dehrenberg@google.com>
+Subject: [PATCH] dio: Fast-path for page-aligned IOs
+Date: Mon, 20 Jun 2011 15:44:08 -0700
+Message-Id: <1308609848-9995-1-git-send-email-dehrenberg@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This machine is acting as a server.  It is from linux-2.6, pulled
-today:
+This code introduces a fast-path variant of __blockdev_direct_IO
+for the special case where the request size is a multiple of the page
+size, the inode block size is a page, the user memory is page-aligned,
+the underlying storage is contiguous on disk and the file location is
+already initialized. The special case decreases the amount of
+bookkeeping required, which saves a significant amount of CPU time on
+a fast device such as a ramdisk or an SSD.  The patch is inspired by
+earlier code by Ken Chen.
 
-commit de505e709ffb09a7382ca8e0d8c7dbb171ba5830
+In my testing, this patch saves about a quarter of system time
+compared to the old version when executed on a workload of 4k
+random read operations on a high performance SSD. It does this
+by nearly eliminating the CPU usage from fs/direct-io.c.  It only
+works for this particular special case which we find to be common
+in our workloads.
 
-We are hitting it with 200 clients reading and writing, mounting and un-mounting.
-This bug is fairly reproducible (twice today).
+With hard drives, this optimization is less relevant because
+(a) the long latency of a seek will mask most of this CPU time, and
+(b) applications issue fewer, larger requests to minimize seeks,
+thereby minimizing the CPU overhead from this code path. But on SSDs,
+the drive makes requests as small as a page size fast. It is common
+to use direct I/O here because the page cache overhead is easily
+visible. And it is common to use operations which are multiples of
+page size rather than smaller ones because most SSDs use 4k or bigger
+blocks at the lowest level, even if the firmware may expose smaller
+blocks.
 
-Large amounts of debugging options are enabled.
+The fast path does not apply for operations of the wrong size
+or alignmnent, or for operations on raw drives with 512-byte sectors.
+It might be possible to make this special case a little more general
+while maintaining its performance benefits, but I do not believe that
+the full performance benefits can be achieved without resorting to
+special handling of simple cases, as is done in this patch.
 
+Signed-off-by: Dan Ehrenberg <dehrenberg@google.com>
+---
+ fs/direct-io.c |  289 +++++++++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 264 insertions(+), 25 deletions(-)
 
-NFSD: Using /var/lib/nfs/v4recovery as the NFSv4 state recovery directory
-NFSD: starting 90-second grace period
-------------[ cut here ]------------
-WARNING: at /home/greearb/git/linux-2.6.linus/lib/list_debug.c:30 __list_add+0x68/0x80()
-Hardware name: X7DBU
-list_add corruption. prev->next should be next (ffff880222777e38), but was 6b6b6b6b6b6b6b6b. (prev=ffff88021cb8d190).
-Modules linked in: xt_addrtype xt_TPROXY nf_tproxy_core xt_socket nf_defrag_ipv6 xt_set ip_set nfnetlink xt_connlimit macvlan pktgen fuse iscsi_tcp libiscsi_tcp 
-libiscsi scsi_transport_iscsi ip6table_filter ip6_tables ebtable_nat ebtables stp llc nfsd nfs lockd fscache auth_rpcgss nfs_acl sunrpc ipv6 kvm uinput i5k_amb 
-i5000_edac iTCO_wdt iTCO_vendor_support i2c_i801 ioatdma pcspkr edac_core e1000e shpchp microcode dca floppy radeon ttm drm_kms_helper drm hwmon i2c_algo_bit 
-i2c_core [last unloaded: xt_connmark]
-Pid: 3347, comm: nfsd Not tainted 3.0.0-rc3+ #1
-Call Trace:
-  <IRQ>  [<ffffffff81049f72>] warn_slowpath_common+0x80/0x98
-  [<ffffffff8104a01e>] warn_slowpath_fmt+0x41/0x43
-  [<ffffffff81232ea4>] __list_add+0x68/0x80
-  [<ffffffffa029958a>] ? svc_xprt_enqueue+0x91/0x1c0 [sunrpc]
-  [<ffffffffa029969b>] svc_xprt_enqueue+0x1a2/0x1c0 [sunrpc]
-  [<ffffffff8140e170>] ? tcp_rcv_state_process+0x89e/0x8de
-  [<ffffffffa028f2b4>] svc_tcp_listen_data_ready+0x4c/0x8c [sunrpc]
-  [<ffffffff81416b3c>] tcp_child_process+0x61/0x109
-  [<ffffffff814150c1>] tcp_v4_do_rcv+0x2bf/0x33c
-  [<ffffffff81415f20>] ? tcp_v4_rcv+0x2f3/0x7a2
-  [<ffffffff814160e4>] tcp_v4_rcv+0x4b7/0x7a2
-  [<ffffffff813f8502>] ? ip_local_deliver_finish+0x46/0x246
-  [<ffffffff813f866d>] ip_local_deliver_finish+0x1b1/0x246
-  [<ffffffff813f8502>] ? ip_local_deliver_finish+0x46/0x246
-  [<ffffffff813f84bc>] ? xfrm4_policy_check.clone.0+0x5c/0x5c
-  [<ffffffff813f874e>] NF_HOOK.clone.1+0x4c/0x53
-  [<ffffffff813f879e>] ip_local_deliver+0x49/0x4d
-  [<ffffffff813f82db>] ip_rcv_finish+0x330/0x35a
-  [<ffffffff813f7fab>] ? skb_dst+0x41/0x41
-  [<ffffffff813f874e>] NF_HOOK.clone.1+0x4c/0x53
-  [<ffffffff813f89d2>] ip_rcv+0x230/0x25e
-  [<ffffffff813bfed7>] __netif_receive_skb+0x502/0x561
-  [<ffffffff813c5356>] netif_receive_skb+0x7c/0x83
-  [<ffffffff813baadb>] ? __netdev_alloc_skb+0x1d/0x3a
-  [<ffffffff813c5381>] napi_skb_finish+0x24/0x3b
-  [<ffffffff813c5b60>] napi_gro_receive+0x2a/0x2f
-  [<ffffffffa01bb92f>] e1000_receive_skb+0x50/0x5b [e1000e]
-  [<ffffffffa01bdbb1>] e1000_clean_rx_irq+0x1fb/0x28d [e1000e]
-  [<ffffffffa01be067>] e1000_clean+0x75/0x23b [e1000e]
-  [<ffffffff813c560a>] net_rx_action+0xc6/0x235
-  [<ffffffff810507fa>] __do_softirq+0x117/0x280
-  [<ffffffff810754aa>] ? tick_dev_program_event+0x37/0xf8
-  [<ffffffff8106a879>] ? hrtimer_interrupt+0x12e/0x1c0
-  [<ffffffff81485d1c>] call_softirq+0x1c/0x30
-  [<ffffffff8100bbfe>] do_softirq+0x46/0x9e
-  [<ffffffff810500b3>] irq_exit+0x4e/0xba
-  [<ffffffff81023291>] smp_apic_timer_interrupt+0x85/0x93
-  [<ffffffffa0299a6e>] ? svc_delete_xprt+0x90/0xf4 [sunrpc]
-  [<ffffffff814854d3>] apic_timer_interrupt+0x13/0x20
-  <EOI>  [<ffffffff81050025>] ? _local_bh_enable_ip+0xc6/0xec
-  [<ffffffff81050054>] local_bh_enable_ip+0x9/0xb
-  [<ffffffff8147e643>] _raw_spin_unlock_bh+0x39/0x3e
-  [<ffffffffa0299a6e>] svc_delete_xprt+0x90/0xf4 [sunrpc]
-  [<ffffffffa0299af7>] svc_close_all+0x25/0x3e [sunrpc]
-  [<ffffffffa028e194>] svc_destroy+0x77/0x136 [sunrpc]
-  [<ffffffffa028e2eb>] svc_exit_thread+0x98/0xa1 [sunrpc]
-  [<ffffffffa0364836>] ? nfsd_svc+0x183/0x183 [nfsd]
-  [<ffffffffa036495a>] nfsd+0x124/0x13e [nfsd]
-  [<ffffffff81066e10>] kthread+0x7d/0x85
-  [<ffffffff81485c24>] kernel_thread_helper+0x4/0x10
-  [<ffffffff8147ee18>] ? retint_restore_args+0x13/0x13
-  [<ffffffff81066d93>] ? __init_kthread_worker+0x56/0x56
-  [<ffffffff81485c20>] ? gs_change+0x13/0x13
----[ end trace 6a1345b5521d6905 ]---
-=============================================================================
-BUG kmalloc-4096: Poison overwritten
------------------------------------------------------------------------------
-
-INFO: 0xffff88021cb8d190-0xffff88021cb8d197. First byte 0x48 instead of 0x6b
-INFO: Allocated in seq_read+0xc1/0x368 age=7 cpu=6 pid=5924
-INFO: Freed in seq_release+0x18/0x26 age=7 cpu=6 pid=5924
-INFO: Slab 0xffffea00076485c0 objects=7 used=0 fp=0xffff88021cb8a090 flags=0x40000000004080
-INFO: Object 0xffff88021cb8d168 @offset=20840 fp=0xffff88021cb88000
-
-Bytes b4 0xffff88021cb8d158:  79 76 6e 00 01 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a yvn.....ZZZZZZZZ
-   Object 0xffff88021cb8d168:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d178:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d188:  6b 6b 6b 6b 6b 6b 6b 6b 48 41 7f 0f 02 88 ff ff kkkkkkkkHA....ÿÿ
-   Object 0xffff88021cb8d198:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d1a8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d1b8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d1c8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d1d8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d1e8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d1f8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d208:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d218:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d228:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d238:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d248:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d258:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d268:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d278:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d288:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d298:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d2a8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d2b8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d2c8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d2d8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d2e8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d2f8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d308:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d318:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d328:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d338:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d348:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d358:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d368:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d378:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d388:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d398:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d3a8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d3b8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d3c8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d3d8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d3e8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d3f8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d408:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d418:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d428:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d438:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d448:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d458:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d468:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d478:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d488:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d498:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d4a8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d4b8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d4c8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d4d8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d4e8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d4f8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d508:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d518:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d528:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d538:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d548:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d558:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d568:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d578:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d588:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d598:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d5a8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d5b8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d5c8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d5d8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d5e8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d5f8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d608:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d618:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d628:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d638:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d648:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d658:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d668:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d678:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d688:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d698:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d6a8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d6b8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d6c8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d6d8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d6e8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d6f8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d708:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d718:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d728:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d738:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d748:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d758:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d768:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d778:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d788:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d798:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d7a8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d7b8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d7c8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d7d8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d7e8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d7f8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d808:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d818:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d828:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d838:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d848:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d858:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d868:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d878:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d888:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d898:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d8a8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d8b8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d8c8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d8d8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d8e8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d8f8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d908:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d918:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d928:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d938:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d948:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d958:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d968:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d978:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d988:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d998:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d9a8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d9b8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d9c8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d9d8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d9e8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8d9f8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8da08:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8da18:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8da28:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8da38:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8da48:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8da58:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8da68:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8da78:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8da88:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8da98:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8daa8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dab8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dac8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dad8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dae8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8daf8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8db08:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8db18:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8db28:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8db38:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8db48:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8db58:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8db68:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8db78:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8db88:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8db98:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dba8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dbb8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dbc8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dbd8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dbe8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dbf8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dc08:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dc18:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dc28:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dc38:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dc48:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dc58:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dc68:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dc78:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dc88:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dc98:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dca8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dcb8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dcc8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dcd8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dce8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dcf8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dd08:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dd18:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dd28:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dd38:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dd48:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dd58:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dd68:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dd78:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dd88:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dd98:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dda8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8ddb8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8ddc8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8ddd8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dde8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8ddf8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8de08:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8de18:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8de28:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8de38:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8de48:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8de58:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8de68:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8de78:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8de88:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8de98:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dea8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8deb8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dec8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8ded8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dee8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8def8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8df08:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8df18:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8df28:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8df38:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8df48:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8df58:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8df68:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8df78:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8df88:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8df98:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dfa8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dfb8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dfc8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dfd8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dfe8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8dff8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e008:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e018:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e028:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e038:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e048:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e058:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e068:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e078:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e088:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e098:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e0a8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e0b8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e0c8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e0d8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e0e8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e0f8:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e108:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e118:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e128:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e138:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e148:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-   Object 0xffff88021cb8e158:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5 kkkkkkkkkkkkkkk¥
-  Redzone 0xffff88021cb8e168:  bb bb bb bb bb bb bb bb                         »»»»»»»»
-  Padding 0xffff88021cb8e1a8:  5a 5a 5a 5a 5a 5a 5a 5a                         ZZZZZZZZ
-Pid: 3347, comm: nfsd Tainted: G        W   3.0.0-rc3+ #1
-Call Trace:
-  [<ffffffff811054f4>] print_trailer+0x12e/0x137
-  [<ffffffff811059dd>] check_bytes_and_report+0xb9/0xfd
-  [<ffffffff81105ad6>] check_object+0xb5/0x192
-  [<ffffffff81105c49>] __free_slab+0x96/0x13a
-  [<ffffffff81105d2e>] discard_slab+0x41/0x43
-  [<ffffffff8110728b>] __slab_free+0x143/0x150
-  [<ffffffffa028edf1>] ? svc_sock_free+0x4d/0x51 [sunrpc]
-  [<ffffffffa028edf1>] ? svc_sock_free+0x4d/0x51 [sunrpc]
-  [<ffffffff81107cbb>] kfree+0x107/0x13a
-  [<ffffffffa028edf1>] svc_sock_free+0x4d/0x51 [sunrpc]
-  [<ffffffffa029a799>] svc_xprt_free+0x60/0x70 [sunrpc]
-  [<ffffffffa029a739>] ? svc_recv+0x7fc/0x7fc [sunrpc]
-  [<ffffffff812265da>] kref_put+0x43/0x4d
-  [<ffffffffa02999dc>] svc_xprt_put+0x14/0x16 [sunrpc]
-  [<ffffffffa0299ac9>] svc_delete_xprt+0xeb/0xf4 [sunrpc]
-  [<ffffffffa0299af7>] svc_close_all+0x25/0x3e [sunrpc]
-  [<ffffffffa028e194>] svc_destroy+0x77/0x136 [sunrpc]
-  [<ffffffffa028e2eb>] svc_exit_thread+0x98/0xa1 [sunrpc]
-  [<ffffffffa0364836>] ? nfsd_svc+0x183/0x183 [nfsd]
-  [<ffffffffa036495a>] nfsd+0x124/0x13e [nfsd]
-  [<ffffffff81066e10>] kthread+0x7d/0x85
-  [<ffffffff81485c24>] kernel_thread_helper+0x4/0x10
-  [<ffffffff8147ee18>] ? retint_restore_args+0x13/0x13
-  [<ffffffff81066d93>] ? __init_kthread_worker+0x56/0x56
-  [<ffffffff81485c20>] ? gs_change+0x13/0x13
-FIX kmalloc-4096: Restoring 0xffff88021cb8d190-0xffff88021cb8d197=0x6b
-
-------------[ cut here ]------------
-WARNING: at /home/greearb/git/linux-2.6.linus/lib/list_debug.c:30 __list_add+0x68/0x80()
-Hardware name: X7DBU
-list_add corruption. prev->next should be next (ffff880222777e38), but was 6b6b6b6b6b6b6b6b. (prev=ffff88021cbb1070).
-Modules linked in: xt_addrtype xt_TPROXY nf_tproxy_core xt_socket nf_defrag_ipv6 xt_set ip_set nfnetlink xt_connlimit macvlan pktgen fuse iscsi_tcp libiscsi_tcp 
-libiscsi scsi_transport_iscsi ip6table_filter ip6_tables ebtable_nat ebtables stp llc nfsd nfs lockd fscache auth_rpcgss nfs_acl sunrpc ipv6 kvm uinput i5k_amb 
-i5000_edac iTCO_wdt iTCO_vendor_support i2c_i801 ioatdma pcspkr edac_core e1000e shpchp microcode dca floppy radeon ttm drm_kms_helper drm hwmon i2c_algo_bit 
-i2c_core [last unloaded: xt_connmark]
-Pid: 3347, comm: nfsd Tainted: G        W   3.0.0-rc3+ #1
-Call Trace:
-  <IRQ>  [<ffffffff81049f72>] warn_slowpath_common+0x80/0x98
-  [<ffffffff8104a01e>] warn_slowpath_fmt+0x41/0x43
-  [<ffffffff81232ea4>] __list_add+0x68/0x80
-  [<ffffffffa029958a>] ? svc_xprt_enqueue+0x91/0x1c0 [sunrpc]
-  [<ffffffffa029969b>] svc_xprt_enqueue+0x1a2/0x1c0 [sunrpc]
-  [<ffffffffa028f1a7>] svc_tcp_data_ready+0x54/0x7f [sunrpc]
-  [<ffffffff8140a677>] tcp_data_queue+0x491/0xa3d
-  [<ffffffff813ffc7e>] ? inet_unhash+0xab/0xab
-  [<ffffffff81078c85>] ? mark_lock+0x2d/0x22d
-  [<ffffffff8140d875>] tcp_rcv_established+0x641/0x69e
-  [<ffffffff81414f97>] tcp_v4_do_rcv+0x195/0x33c
-  [<ffffffff8147e154>] ? _raw_spin_lock_nested+0x42/0x49
-  [<ffffffff81415f20>] ? tcp_v4_rcv+0x2f3/0x7a2
-  [<ffffffff814160e4>] tcp_v4_rcv+0x4b7/0x7a2
-  [<ffffffff813f8502>] ? ip_local_deliver_finish+0x46/0x246
-  [<ffffffff813f866d>] ip_local_deliver_finish+0x1b1/0x246
-  [<ffffffff813f8502>] ? ip_local_deliver_finish+0x46/0x246
-  [<ffffffff813f84bc>] ? xfrm4_policy_check.clone.0+0x5c/0x5c
-  [<ffffffff813f874e>] NF_HOOK.clone.1+0x4c/0x53
-  [<ffffffff813f879e>] ip_local_deliver+0x49/0x4d
-  [<ffffffff813f82db>] ip_rcv_finish+0x330/0x35a
-  [<ffffffff813f7fab>] ? skb_dst+0x41/0x41
-  [<ffffffff813f874e>] NF_HOOK.clone.1+0x4c/0x53
-  [<ffffffff813f89d2>] ip_rcv+0x230/0x25e
-  [<ffffffff813bfed7>] __netif_receive_skb+0x502/0x561
-  [<ffffffff813c5356>] netif_receive_skb+0x7c/0x83
-  [<ffffffff8107a2a7>] ? __lock_acquire+0x39f/0xdd5
-  [<ffffffff813c5381>] napi_skb_finish+0x24/0x3b
-  [<ffffffff813c5b60>] napi_gro_receive+0x2a/0x2f
-  [<ffffffffa01bb92f>] e1000_receive_skb+0x50/0x5b [e1000e]
-  [<ffffffffa01bdbb1>] e1000_clean_rx_irq+0x1fb/0x28d [e1000e]
-  [<ffffffffa01be067>] e1000_clean+0x75/0x23b [e1000e]
-  [<ffffffff813c560a>] net_rx_action+0xc6/0x235
-  [<ffffffff810507fa>] __do_softirq+0x117/0x280
-  [<ffffffff81485d1c>] call_softirq+0x1c/0x30
-  [<ffffffff8100bbfe>] do_softirq+0x46/0x9e
-  [<ffffffff810500b3>] irq_exit+0x4e/0xba
-  [<ffffffff8100b563>] do_IRQ+0x97/0xae
-  [<ffffffff8147ed53>] common_interrupt+0x13/0x13
-  <EOI>  [<ffffffff81111119>] ? mem_cgroup_bad_page_check+0x2/0x34
-  [<ffffffff810cf2fa>] ? free_pages_prepare+0xcf/0x1b2
-  [<ffffffff810cf3fa>] __free_pages_ok+0x1d/0xd9
-  [<ffffffff810cf6ca>] __free_pages+0x2a/0x2c
-  [<ffffffff81105cde>] __free_slab+0x12b/0x13a
-  [<ffffffff81105d2e>] discard_slab+0x41/0x43
-  [<ffffffff8110728b>] __slab_free+0x143/0x150
-  [<ffffffffa028edf1>] ? svc_sock_free+0x4d/0x51 [sunrpc]
-  [<ffffffffa028edf1>] ? svc_sock_free+0x4d/0x51 [sunrpc]
-  [<ffffffff81107cbb>] kfree+0x107/0x13a
-  [<ffffffffa028edf1>] svc_sock_free+0x4d/0x51 [sunrpc]
-  [<ffffffffa029a799>] svc_xprt_free+0x60/0x70 [sunrpc]
-  [<ffffffffa029a739>] ? svc_recv+0x7fc/0x7fc [sunrpc]
-  [<ffffffff812265da>] kref_put+0x43/0x4d
-  [<ffffffffa02999dc>] svc_xprt_put+0x14/0x16 [sunrpc]
-  [<ffffffffa0299ac9>] svc_delete_xprt+0xeb/0xf4 [sunrpc]
-  [<ffffffffa0299af7>] svc_close_all+0x25/0x3e [sunrpc]
-  [<ffffffffa028e194>] svc_destroy+0x77/0x136 [sunrpc]
-  [<ffffffffa028e2eb>] svc_exit_thread+0x98/0xa1 [sunrpc]
-  [<ffffffffa0364836>] ? nfsd_svc+0x183/0x183 [nfsd]
-  [<ffffffffa036495a>] nfsd+0x124/0x13e [nfsd]
-  [<ffffffff81066e10>] kthread+0x7d/0x85
-  [<ffffffff81485c24>] kernel_thread_helper+0x4/0x10
-  [<ffffffff8147ee18>] ? retint_restore_args+0x13/0x13
-  [<ffffffff81066d93>] ? __init_kthread_worker+0x56/0x56
-  [<ffffffff81485c20>] ? gs_change+0x13/0x13
----[ end trace 6a1345b5521d6906 ]---
-nfsd: last server has exited, flushing export cache
-
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index ac5f164..8af2abf 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -38,6 +38,10 @@
+ #include <asm/atomic.h>
+ 
+ /*
++ * General case implementation of __blockdev_direct_IO
++ */
++
++/*
+  * How many user pages to map in one call to get_user_pages().  This determines
+  * the size of a structure on the stack.
+  */
+@@ -428,22 +432,22 @@ static struct bio *dio_await_one(struct dio *dio)
+ /*
+  * Process one completed BIO.  No locks are held.
+  */
+-static int dio_bio_complete(struct dio *dio, struct bio *bio)
++static int __dio_bio_complete(struct bio *bio, int is_async, int rw, int *error)
+ {
+ 	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+ 	struct bio_vec *bvec = bio->bi_io_vec;
+ 	int page_no;
+ 
+ 	if (!uptodate)
+-		dio->io_error = -EIO;
++		*error = -EIO;
+ 
+-	if (dio->is_async && dio->rw == READ) {
++	if (is_async && rw == READ) {
+ 		bio_check_pages_dirty(bio);	/* transfers ownership */
+ 	} else {
+ 		for (page_no = 0; page_no < bio->bi_vcnt; page_no++) {
+ 			struct page *page = bvec[page_no].bv_page;
+ 
+-			if (dio->rw == READ && !PageCompound(page))
++			if (rw == READ && !PageCompound(page))
+ 				set_page_dirty_lock(page);
+ 			page_cache_release(page);
+ 		}
+@@ -452,6 +456,11 @@ static int dio_bio_complete(struct dio *dio, struct bio *bio)
+ 	return uptodate ? 0 : -EIO;
+ }
+ 
++static int dio_bio_complete(struct dio *dio, struct bio *bio)
++{
++	return __dio_bio_complete(bio, dio->is_async, dio->rw, &dio->io_error);
++}
++
+ /*
+  * Wait on and process all in-flight BIOs.  This must only be called once
+  * all bios have been issued so that the refcount can only decrease.
+@@ -1137,27 +1146,8 @@ direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode,
+ 	return ret;
+ }
+ 
+-/*
+- * This is a library function for use by filesystem drivers.
+- *
+- * The locking rules are governed by the flags parameter:
+- *  - if the flags value contains DIO_LOCKING we use a fancy locking
+- *    scheme for dumb filesystems.
+- *    For writes this function is called under i_mutex and returns with
+- *    i_mutex held, for reads, i_mutex is not held on entry, but it is
+- *    taken and dropped again before returning.
+- *    For reads and writes i_alloc_sem is taken in shared mode and released
+- *    on I/O completion (which may happen asynchronously after returning to
+- *    the caller).
+- *
+- *  - if the flags value does NOT contain DIO_LOCKING we don't use any
+- *    internal locking but rather rely on the filesystem to synchronize
+- *    direct I/O reads/writes versus each other and truncate.
+- *    For reads and writes both i_mutex and i_alloc_sem are not held on
+- *    entry and are never taken.
+- */
+-ssize_t
+-__blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
++static ssize_t
++dio_generic(int rw, struct kiocb *iocb, struct inode *inode,
+ 	struct block_device *bdev, const struct iovec *iov, loff_t offset, 
+ 	unsigned long nr_segs, get_block_t get_block, dio_iodone_t end_io,
+ 	dio_submit_t submit_io,	int flags)
+@@ -1253,4 +1243,253 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ out:
+ 	return retval;
+ }
++
++/*
++ * Special case for __blockdev_direct_IO:
++ * page-aligned page-sized IOs when the inode block size is page-sized.
++ *
++ * The following code does the exact same thing as the above
++ * general-case code, but the smaller amount of bookkeeping
++ * has a big impact on CPU usage, which is visible on fast
++ * devices like SSDs.
++ */
++
++/*
++ * struct mini_dio has a subset of the fields in struct dio.
++ * For comments on fields, see that struct definition.
++ */
++struct mini_dio {
++	/* The following struct items are needed in the completion. */
++	dio_iodone_t *end_io;
++	struct kiocb *iocb;
++	loff_t offset;
++	int rw;
++	int flags;
++	struct inode *inode;
++	size_t size;
++
++	/*
++	 * The following struct items are allocated just because
++	 * they're big, and they are only used during submission.
++	 */
++	struct buffer_head map_bh;
++	struct page *pages[DIO_PAGES];
++};
++
++/*
++ * In this function we treat everything as if it's AIO to simplify the logic.
++ * The AIO code paths also handle the synchronous case appropriately.
++ */
++static void dio_fast_end_aio(struct bio *bio, int error)
++{
++	struct mini_dio *mdio = bio->bi_private;
++	struct kiocb *iocb = mdio->iocb;
++	int res;
++
++	__dio_bio_complete(bio, 1, mdio->rw, &error);
++
++	/* Could it be some other value? */
++	res = (error < 0) ? error : mdio->size;
++
++	if (mdio->end_io)
++		mdio->end_io(iocb, mdio->offset, res,
++			     mdio->map_bh.b_private, 0, 1);
++	else
++		aio_complete(iocb, res, 0);
++
++	if (mdio->flags & DIO_LOCKING)
++		up_read_non_owner(&mdio->inode->i_alloc_sem);
++
++	kfree(mdio);
++}
++
++static ssize_t dio_fast(int rw, struct kiocb *iocb, struct inode *inode,
++	struct block_device *bdev, const struct iovec *iov, loff_t offset,
++	get_block_t get_block, dio_iodone_t end_io, int flags)
++{
++	struct bio *bio;
++	struct mini_dio *mdio;
++	int res, i;
++	size_t size = iov[0].iov_len;
++	int num_pages = size >> PAGE_SHIFT;
++
++	mdio = kmalloc(sizeof(*mdio), GFP_KERNEL);
++	if (mdio == NULL)
++		goto fallback;
++	mdio->end_io = end_io;
++	mdio->iocb = iocb;
++	mdio->offset = offset;
++	mdio->rw = rw;
++	mdio->flags = flags;
++	mdio->inode = inode;
++	mdio->size = size;
++	/* get_block expects a partially initialized bh */
++	mdio->map_bh.b_size = size;
++	mdio->map_bh.b_state = 0;
++
++	res = get_user_pages_fast(
++		(unsigned long)iov[0].iov_base,	/* Where from */
++		num_pages,			/* How many pages */
++		rw == READ,			/* Write to memory? */
++		mdio->pages);			/* Put results here */
++	if (res < 0)
++		goto fallback_free;
++	if (res != num_pages) {
++		num_pages = res;	/* Used for how many to free */
++		goto fallback_pages;
++	}
++
++	if (flags & DIO_LOCKING) {
++		if (rw == READ) {
++			struct address_space *mapping =
++					iocb->ki_filp->f_mapping;
++
++			mutex_lock(&inode->i_mutex);
++
++			res = filemap_write_and_wait_range(
++				mapping, offset,
++				offset + size - 1);
++			if (res != 0)
++				goto fallback_unlock;
++		}
++
++		/*
++		 * The i_alloc_sem will be released at I/O completion,
++		 * possibly in a different thread.
++		 */
++		down_read_non_owner(&inode->i_alloc_sem);
++	}
++
++
++	if ((*get_block)(inode, offset >> PAGE_SHIFT, &mdio->map_bh, 0) != 0)
++		goto fallback_sem_up;
++	if (!buffer_mapped(&mdio->map_bh) || mdio->map_bh.b_size != size)
++		/*
++		 * Bail out to the general case.
++		 *
++		 * If the first condition is false, we've either
++		 * encountered a file hole, or we are appending to
++		 * the end of the file.
++		 *
++		 * The second condition will only be false if the
++		 * file system returns a mapping shorter than the
++		 * total size. Here, we only handle physically
++		 * contiguous mappings, which can be implemented
++		 * with a single bio.
++		 */
++		goto fallback_sem_up;
++	bio = bio_alloc(GFP_KERNEL, num_pages);
++	bio->bi_bdev = mdio->map_bh.b_bdev;
++	bio->bi_end_io = dio_fast_end_aio;
++	bio->bi_private = mdio;
++	/*
++	 * On this fast path, inode->i_blkbits is guaranteed
++	 * to be equal to PAGE_SIZE
++	 */
++	bio->bi_sector = mdio->map_bh.b_blocknr << (PAGE_SHIFT - 9);
++
++	for (i = 0; i < num_pages; i++) {
++		if (bio_add_page(bio, mdio->pages[i], PAGE_SIZE, 0)
++				!= PAGE_SIZE) {
++			bio_put(bio);
++			goto fallback_sem_up;
++		}
++	}
++	/* bio is ready, submit it */
++	if (rw == READ)
++		bio_set_pages_dirty(bio);
++	submit_bio(rw, bio);
++	mutex_unlock(&inode->i_mutex);
++	return -EIOCBQUEUED;
++
++fallback_sem_up:
++	if (flags & DIO_LOCKING)
++		up_read_non_owner(&inode->i_alloc_sem);
++fallback_unlock:
++	if ((flags & DIO_LOCKING) && rw == READ)
++		mutex_unlock(&inode->i_mutex);
++fallback_pages:
++	for (i = 0; i < num_pages; i++)
++		page_cache_release(mdio->pages[i]);
++fallback_free:
++	kfree(mdio);
++
++fallback:	/* Bail out to the general case */
++	return dio_generic(rw, iocb, inode,
++			bdev, iov, offset, 1,
++			get_block, end_io, flags);
++}
++
++/*
++ * __blockdev_direct_IO - issue a direct I/O request
++ *
++ * This is a library function for use by filesystem drivers in their
++ * direct I/O routine. It translates an I/O request into bios and
++ * sends those down to the block layer.
++ *
++ * @rw: either READ or WRITE
++ * @iocb: iocb of the request
++ * @inode: inode of the request
++ * @bdev: backing block device
++ * @iov: vector of ranges of user-space memory
++ * @offset: logical byte offset for the start of the IO
++ * @nr_segs: number of elements in iov
++ * @get_block: a callback to map blocks into a buffer_head
++ *    signature: int (*get_block)(struct inode *inode,
++ *		sector_t iblock, struct buffer_head *bh, int create)
++ *    On entry, bh will have its b_size field initialized with the
++ *    length of the request
++ *    On exit, get_block should have initialized bh. get_block returns
++ *    0 on success, or an error code if the block didn't exist. On success,
++ *    the bh will be mapped if possible, or marked as unmapped otherwise.
++ *    The boolean flag create indicates whether an allocation (or
++ *    initializiation) should be attempted if no block is already present for
++ *    the logical block offset iblock.
++ * @end_io: a callback on IO completion, or NULL (defaulting to aio_complete)
++ *    signature: void (*end_io)(struct kiocb *iocb, loff_t offset,
++ *			    ssize_t size, void *private, int ret,
++ *			    bool is_async)
++ *    The private argument is extracted from bh.b_private, allowing get_block to
++ *    pass information to the completion.
++ * @flags: two flags allowed, DIO_LOCKING and DIO_SKIP_HOLES.
++ *    DIO_SKIP_HOLES indicates that this DIO request cannot fill
++ *    in a hole in the middle of a file.
++ *
++ * The locking rules are governed by the flags parameter:
++ *  - if the flags value contains DIO_LOCKING we use a fancy locking
++ *    scheme for dumb filesystems.
++ *    For writes this function is called under i_mutex and returns with
++ *    i_mutex held, for reads, i_mutex is not held on entry, but it is
++ *    taken and dropped again before returning.
++ *    For reads and writes i_alloc_sem is taken in shared mode and released
++ *    on I/O completion (which may happen asynchronously after returning to
++ *    the caller).
++ *
++ *  - if the flags value does NOT contain DIO_LOCKING we don't use any
++ *    internal locking but rather rely on the filesystem to synchronize
++ *    direct I/O reads/writes versus each other and truncate.
++ *    For reads and writes both i_mutex and i_alloc_sem are not held on
++ *    entry and are never taken.
++ */
++ssize_t
++__blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
++	struct block_device *bdev, const struct iovec *iov, loff_t offset,
++	unsigned long nr_segs, get_block_t get_block, dio_iodone_t end_io,
++	int flags)
++{
++	BUG_ON(rw != READ && rw != WRITE);
++	if (inode->i_blkbits == PAGE_SHIFT
++	    && nr_segs == 1
++	    && IS_ALIGNED(offset, PAGE_SIZE)
++	    && IS_ALIGNED((unsigned long)iov[0].iov_base, PAGE_SIZE)
++	    && IS_ALIGNED(iov[0].iov_len, PAGE_SIZE)
++	    && iov[0].iov_len >> PAGE_SHIFT <= DIO_PAGES)
++		return dio_fast(rw, iocb, inode,
++				bdev, iov, offset,
++				get_block, end_io, flags);
++
++	return dio_generic(rw, iocb, inode,
++			bdev, iov, offset,
++			nr_segs, get_block, end_io, flags);
++}
+ EXPORT_SYMBOL(__blockdev_direct_IO);
 -- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+1.7.3.1
 
