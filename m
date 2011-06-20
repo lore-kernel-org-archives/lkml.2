@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab1FTRGM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 13:06:12 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62104 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197Ab1FTRGJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 13:06:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=q8iIsm89ggJObV+1X5cGtXsW6Ujw1Tftj7T9PvgHdu4U/wEkdCbRuGpTmuDw8iHuay
-         6PvjiPRRzOfVAJo2/m84rdr+XjwSEttFvKzp2VNs2B9MiJzHOVTCUCkCyZ0sotrRHSaC
-         pj5RWpyum4CWzaLNsPGfIAIo7JupMfEpokhtQ=
-Date: Mon, 20 Jun 2011 21:06:01 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: James Morris <jmorris@namei.org>
-Cc: kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [RFC 2/5 v4] procfs: add hidepid= and gid= mount options
-Message-ID: <20110620170600.GA25601@albatros>
-References: <alpine.LRH.2.00.1106192154220.7503@taiga.selinuxproject.org>
- <alpine.LRH.2.00.1106201455560.6055@tundra.namei.org>
- <20110620103917.GA5230@albatros>
- <alpine.LRH.2.00.1106202040400.10448@tundra.namei.org>
+	id S1755430Ab1FTRHW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 13:07:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15895 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751197Ab1FTRHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 13:07:21 -0400
+Message-ID: <4DFF7E3B.1040404@redhat.com>
+Date: Tue, 21 Jun 2011 01:07:07 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1106202040400.10448@tundra.namei.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mel Gorman <mgorman@suse.de>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [PATCH 1/3] mm: completely disable THP by transparent_hugepage=never
+References: <1308587683-2555-1-git-send-email-amwang@redhat.com> <20110620165844.GA9396@suse.de>
+In-Reply-To: <20110620165844.GA9396@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ed Eric)
+于 2011年06月21日 00:58, Mel Gorman 写道:
+> On Tue, Jun 21, 2011 at 12:34:28AM +0800, Amerigo Wang wrote:
+>> transparent_hugepage=never should mean to disable THP completely,
+>> otherwise we don't have a way to disable THP completely.
+>> The design is broken.
+>>
+>
+> I don't get why it's broken. Why would the user be prevented from
+> enabling it at runtime?
+>
 
-On Mon, Jun 20, 2011 at 20:43 +1000, James Morris wrote:
-> > > > hidepid=1 means users may not access any /proc/<pid>/ directories, but their
-> > > > own.  Sensitive files like cmdline, io, sched*, status, wchan are now
-> > > > protected against other users.  As permission checking done in
-> > > > proc_pid_permission() and files' permissions are left untouched,
-> > > > programs expecting specific files' permissions are not confused.
-> > > 
-> > > IMHO such programs are beyond broken and have voided their kernel 
-> > > warranty.
-> > 
-> > Policykit, Debian's start-stop-daemon, util-linux use /proc/PID's uid.
-> > procps use both /proc/PID's uid and gid.  Are all of them totally broken?
-> 
-> If they depend on specific permissions, yes.
+We need to a way to totally disable it, right? Otherwise, when I configure
+THP in .config, I always have THP initialized even when I pass "=never".
 
-Could you please then clarify why does this patch changes
-pid_revalidate() behaviour:
+For me, if you don't provide such way to disable it, it is not flexible.
 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=99f895518368252ba862cc15ce4eb98ebbe1bec6
+I meet this problem when I try to disable THP in kdump kernel, there is
+no user of THP in kdump kernel, THP is a waste for kdump kernel. This is
+why I need to find a way to totally disable it.
 
-It changes files permissions to allow userspace apps to quickly stat
-files, not looking into /proc/PID/status.  So, uid and gid are explicit
-ABI.  Breaking procfs uid/gid attributes would break these apps.
-
-Or am I missing something?
-
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Thanks.
