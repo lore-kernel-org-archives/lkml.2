@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755149Ab1FTU2v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 16:28:51 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:44234 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751652Ab1FTU2u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 16:28:50 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Mon, 20 Jun 2011 16:28:49 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Alexander Holler <holler@ahsoftware.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        gregkh@suse.de, lkml <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>
-Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing the
- packed attribute
-In-reply-to: <201106202207.23104.arnd@arndb.de>
-Message-id: <alpine.LFD.2.00.1106201622160.2142@xanadu.home>
-References: <Pine.LNX.4.44L0.1106201240240.2113-100000@iolanthe.rowland.org>
- <alpine.LFD.2.00.1106201306210.2142@xanadu.home>
- <4DFF85D6.1090104@ahsoftware.de> <201106202207.23104.arnd@arndb.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754676Ab1FTUfn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 16:35:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14275 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751956Ab1FTUfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 16:35:42 -0400
+Date: Mon, 20 Jun 2011 22:33:20 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, hch@infradead.org
+Subject: Re: [PATCH 5/7] ptrace: kill clone/exec tracehooks
+Message-ID: <20110620203320.GC17157@redhat.com>
+References: <1308322240-8247-1-git-send-email-tj@kernel.org> <1308322240-8247-6-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308322240-8247-6-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jun 2011, Arnd Bergmann wrote:
+On 06/17, Tejun Heo wrote:
+>
+> At this point, tracehooks aren't useful to mainline kernel and mostly
+> just add an extra layer of obfuscation.
 
-> On Monday 20 June 2011 19:39:34 Alexander Holler wrote:
-> > That packed without an additional aligned() caused errors on ARM with 
-> > gcc 4.6 is another problem which got (currently) fixed by removing packed.
-> 
-> Packed caused errors because it is *wrong*. The code as it was used undefined
-> behavior in the language.
+Yes, this is true.
 
-I wouldn't call this issue as such, but this is a Red herring.
+> @@ -1481,10 +1481,22 @@ long do_fork(unsigned long clone_flags,
+>  	}
+>
+>  	/*
+> -	 * When called from kernel_thread, don't do user tracing stuff.
+> +	 * Determine whether and which event to report to ptracer.  When
+> +	 * called from kernel_thread or CLONE_UNTRACED is explicitly
+> +	 * requested, no event is reported; otherwise, report if the event
+> +	 * for the type of forking is enabled.
+>  	 */
+> -	if (likely(user_mode(regs)))
+> -		trace = tracehook_prepare_clone(clone_flags);
+> +	if (likely(user_mode(regs)) && !(clone_flags & CLONE_UNTRACED)) {
 
-Could you please provide a pointer to the structure definition so a 
-second opinion to the usefulness of __packed there could be provided?  
-If it is not matching any of the fairly limited cases where having 
-__packed is relevant then we can just confirm that it should go.
+Off-topic, but I never understood this user_mode() check... OK, a
+traced task can call kernel_thread() in kernel, but this used
+CLONE_UNTRACED.
 
+> +		if (clone_flags & CLONE_VFORK)
+> +			trace = PTRACE_EVENT_VFORK;
+> +		else if ((clone_flags & CSIGNAL) != SIGCHLD)
+> +			trace = PTRACE_EVENT_CLONE;
+> +		else
+> +			trace = PTRACE_EVENT_FORK;
+> +
+> +		if (likely(!ptrace_event_enabled(current, trace)))
+> +			trace = 0;
+> +	}
 
-Nicolas
+As I said am going to apply this all except 6/7, but imho this
+deserves a trivial helper anyway.
+
+Oleg.
+
