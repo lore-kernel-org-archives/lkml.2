@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757Ab1FTQrg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 12:47:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43629 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751801Ab1FTQrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 12:47:33 -0400
-Message-ID: <4DFF78E9.7010202@zytor.com>
-Date: Mon, 20 Jun 2011 09:44:25 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1753453Ab1FTQos (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 12:44:48 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:52327 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab1FTQor (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 12:44:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=CAhVAkSWQRncFnIqstf3eOep6+f+3+PLIVKwSqC7NvlO8nu247tSz3Swxs8/IQBnZX
+         b5lG95AZdvcQMolAlDeToXCFbcj9BiiQcC6wCBWLjYZZjudeSvwJaD1hsfKY3E7UzWl+
+         9oUSXlZphczLC991s4u42oyCAcHKatLiXGbHA=
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Ryan Mallon <rmallon@gmail.com>, Petr Tesarik <ptesarik@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
- physical addresses
-References: <201106171038.25988.ptesarik@suse.cz> <20110617093032.GA19235@elte.hu> <4DFE7FF9.9070406@gmail.com> <4DFE89E0.5020509@zytor.com> <20110620074124.GB24716@elte.hu> <4DFF6E58.8090306@zytor.com> <20110620164045.GB10815@elte.hu>
-In-Reply-To: <20110620164045.GB10815@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.LNX.2.00.1106201608460.11049@pobox.suse.cz>
+References: <alpine.LNX.2.00.1106201035590.18991@swampdragon.chaosbits.net>
+	<4DFF1AA5.80508@ru.mvista.com>
+	<alpine.LNX.2.00.1106201232530.18991@swampdragon.chaosbits.net>
+	<1308566964.13261.14.camel@vivanov>
+	<alpine.LNX.2.00.1106201608460.11049@pobox.suse.cz>
+Date: Mon, 20 Jun 2011 19:44:46 +0300
+Message-ID: <BANLkTimfWxPm6EC9PZvqaqELz1gf-0iVLA@mail.gmail.com>
+Subject: Re: [PATCH][Trivial] S3C2410 bluetooth: Remove duplicate linux/leds.h include
+From: Vitaliy Ivanov <vitalivanov@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Jesper Juhl <jj@chaosbits.net>, Sergei Shtylyov <sshtylyov@mvista.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Vasily Khoruzhick <anarsoul@gmail.com>,
+        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2011 09:40 AM, Ingo Molnar wrote:
-> 
-> There is no reason why they couldnt use a .config option or a boot 
-> option to get their weird stuff going, which weird stuff also happens 
-> to be useful.
-> 
-> What i'm somewhat against is having this enabled by default for weird 
-> stuff that also happens to be harmful - and the fact that it never 
-> worked over 4G physical gives us the perfect opportunity to do just 
-> that.
-> 
+On Mon, Jun 20, 2011 at 5:09 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Mon, 20 Jun 2011, Vitaliy Ivanov wrote:
+>
+>> Giri,
+>>
+>> I would still recommend to use the following patch as it corrects many
+>> other places for trivial includes duplication. Also I was the first who
+>> sent it:).
+>
+> Unfortunately I haven't been copied on it.
+>
+>> --
+>> From: Vitaliy Ivanov <vitalivanov@gmail.com>
+>>
+>> Many stupid corrections of duplicated includes based on the output of scripts/checkincludes.pl.
+>>
+>> Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
+>
+> I have applied it, and after performing build tests I will be pushing it
+> out.
 
-I'm concerned about that notion.  I think it's fine to modularize
-/dev/mem, but what we're seeing is that Red Hat and all kinds of other
-entities are putting in ad hoc versions of /dev/mem, but of course doing
-so incorrectly.
+Thanks Jiri. Can see it in your tree already. The patch itself is
+absolutely harmless except of one non usual correction to
+cyashalomap_kernel.h.
 
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+- Vitaliy
