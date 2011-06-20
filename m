@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412Ab1FTQfR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 12:35:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55529 "EHLO mx1.redhat.com"
+	id S1752525Ab1FTQfx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 12:35:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2705 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750789Ab1FTQfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 12:35:14 -0400
+	id S1751945Ab1FTQfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 12:35:51 -0400
 From: Amerigo Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, Amerigo Wang <amwang@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: [PATCH 1/3] mm: completely disable THP by transparent_hugepage=never
-Date: Tue, 21 Jun 2011 00:34:28 +0800
-Message-Id: <1308587683-2555-1-git-send-email-amwang@redhat.com>
+Subject: [PATCH 2/3] mm: make the threshold of enabling THP configurable
+Date: Tue, 21 Jun 2011 00:34:29 +0800
+Message-Id: <1308587683-2555-2-git-send-email-amwang@redhat.com>
+In-Reply-To: <1308587683-2555-1-git-send-email-amwang@redhat.com>
+References: <1308587683-2555-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-transparent_hugepage=never should mean to disable THP completely,
-otherwise we don't have a way to disable THP completely.
-The design is broken.
+Don't hard-code 512M as the threshold in kernel, make it configruable,
+and set 512M by default.
 
 Signed-off-by: WANG Cong <amwang@redhat.com>
 ---
- mm/huge_memory.c |   11 +++++++++--
- 1 files changed, 9 insertions(+), 2 deletions(-)
+ mm/Kconfig       |   10 ++++++++++
+ mm/huge_memory.c |    2 +-
+ 2 files changed, 11 insertions(+), 1 deletions(-)
 
+diff --git a/mm/Kconfig b/mm/Kconfig
+index 8ca47a5..a826471 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -340,6 +340,16 @@ choice
+ 	  benefit.
+ endchoice
+ 
++config TRANSPARENT_HUGEPAGE_THRESHOLD
++	depends on TRANSPARENT_HUGEPAGE
++	int "The minimal threshold of enabling Transparent Hugepage"
++	range 512 8192
++	default "512"
++	help
++	  The threshold of enabling Transparent Huagepage automatically,
++	  in Mbytes, below this value, Transparent Hugepage will be disabled
++	  by default during boot.
++
+ #
+ # UP and nommu archs use km based percpu allocator
+ #
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 81532f2..9c63c90 100644
+index 9c63c90..7fb44cc 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -488,19 +488,26 @@ static struct attribute_group khugepaged_attr_group = {
- };
- #endif /* CONFIG_SYSFS */
- 
-+#define hugepage_enabled()	khugepaged_enabled()
-+
- static int __init hugepage_init(void)
- {
--	int err;
-+	int err = 0;
- #ifdef CONFIG_SYSFS
- 	static struct kobject *hugepage_kobj;
- #endif
- 
--	err = -EINVAL;
- 	if (!has_transparent_hugepage()) {
-+		err = -EINVAL;
+@@ -544,7 +544,7 @@ static int __init hugepage_init(void)
+ 	 * where the extra memory used could hurt more than TLB overhead
+ 	 * is likely to save.  The admin can still enable it through /sys.
+ 	 */
+-	if (totalram_pages < (512 << (20 - PAGE_SHIFT)))
++	if (totalram_pages < (CONFIG_TRANSPARENT_HUGEPAGE_THRESHOLD << (20 - PAGE_SHIFT)))
  		transparent_hugepage_flags = 0;
- 		goto out;
- 	}
  
-+	if (!hugepage_enabled()) {
-+		printk(KERN_INFO "hugepage: totally disabled\n");
-+		goto out;
-+	}
-+
- #ifdef CONFIG_SYSFS
- 	err = -ENOMEM;
- 	hugepage_kobj = kobject_create_and_add("transparent_hugepage", mm_kobj);
+ 	start_khugepaged();
 -- 
 1.7.4.4
 
