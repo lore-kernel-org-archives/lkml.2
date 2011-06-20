@@ -1,99 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab1FTMns (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 08:43:48 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36468 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752816Ab1FTMnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 08:43:45 -0400
-Date: Mon, 20 Jun 2011 12:43:01 GMT
-From: tip-bot for Marcin Slusarz <marcin.slusarz@gmail.com>
-Message-ID: <tip-161b6ae0e067e421b20bb35caf66bdb405c929ac@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        catalin.marinas@arm.com, marcin.slusarz@gmail.com,
-        paulmck@linux.vnet.ibm.com, tj@kernel.org, dipankar@in.ibm.com,
-        tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        catalin.marinas@arm.com, marcin.slusarz@gmail.com,
-        paulmck@linux.vnet.ibm.com, tj@kernel.org, dipankar@in.ibm.com,
-        tglx@linutronix.de
-In-Reply-To: <20110528112342.GA3068@joi.lan>
-References: <20110528112342.GA3068@joi.lan>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/urgent] debugobjects: Fix boot crash when kmemleak and debugobjects enabled
-Git-Commit-ID: 161b6ae0e067e421b20bb35caf66bdb405c929ac
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753873Ab1FTMqP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 08:46:15 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47083 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752248Ab1FTMqN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 08:46:13 -0400
+Date: Mon, 20 Jun 2011 13:46:08 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: [PATCH 0/8] Generic I2C and SPI register map library
+Message-ID: <20110620124608.GB31140@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 20 Jun 2011 12:43:02 +0000 (UTC)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  161b6ae0e067e421b20bb35caf66bdb405c929ac
-Gitweb:     http://git.kernel.org/tip/161b6ae0e067e421b20bb35caf66bdb405c929ac
-Author:     Marcin Slusarz <marcin.slusarz@gmail.com>
-AuthorDate: Sat, 28 May 2011 13:23:42 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 20 Jun 2011 14:38:43 +0200
+Many I2C and SPI based devices implement register maps on top of the raw
+wire interface.  This is generally done in a very standard fashion by
+devices, resulting in a lot of very similar code in drivers.  For some
+time now ASoC has factored this code out into the subsystem but that's
+only useful for audio devices.  The intention with this series is to
+generalise the concept so that it can be used throughout the kernel.
 
-debugobjects: Fix boot crash when kmemleak and debugobjects enabled
+It's not intended that this be suitable for all devices - some devices
+have things that are hard to generalise like registers with variable
+size and paging which are hard to support genericly.  At the minute the
+code is focused on the common cases.  It is likely that the same code
+could be used with other buses with similar properties to I2C and SPI.
 
-Order of initialization look like this:
-...
-debugobjects
-kmemleak
-...(lots of other subsystems)...
-workqueues (through early initcall)
-...
+Currently only physical I/O is handled, the intention is that once this
+support has been reviewed and merged the generic register cache code
+that ASoC includes will also be factored out too.  For devices with read
+heavy workloads (especially those that need a lot of read/modify/write
+cycles) or which don't support read at all this can provide a useful
+performance improvement and for sparse register maps there's a lot of
+benefit in relatively complex cache code.
 
-debugobjects use schedule_work for batch freeing of its data and kmemleak
-heavily use debugobjects, so when it comes to freeing and workqueues were
-not initialized yet, kernel crashes:
+I'm not entirely happy with the implementation currently but am fairly
+happy with the external interfaces.
 
-BUG: unable to handle kernel NULL pointer dereference at           (null)
-IP: [<ffffffff810854d1>] __queue_work+0x29/0x41a
- [<ffffffff81085910>] queue_work_on+0x16/0x1d
- [<ffffffff81085abc>] queue_work+0x29/0x55
- [<ffffffff81085afb>] schedule_work+0x13/0x15
- [<ffffffff81242de1>] free_object+0x90/0x95
- [<ffffffff81242f6d>] debug_check_no_obj_freed+0x187/0x1d3
- [<ffffffff814b6504>] ? _raw_spin_unlock_irqrestore+0x30/0x4d
- [<ffffffff8110bd14>] ? free_object_rcu+0x68/0x6d
- [<ffffffff8110890c>] kmem_cache_free+0x64/0x12c
- [<ffffffff8110bd14>] free_object_rcu+0x68/0x6d
- [<ffffffff810b58bc>] __rcu_process_callbacks+0x1b6/0x2d9
-...
+A semi-random set of driver conversions have been included in the series
+with various degrees of testing including the subsystem wide ASoC code.
+Far more drivers could use the code, these have mostly just been done as
+samples in a minimally invasive fashion.
 
-because system_wq is NULL.
+There's a git branch at:
 
-Fix it by checking if workqueues susbystem was initialized before using.
+   git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git for-next
 
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: stable@kernel.org
-Link: http://lkml.kernel.org/r/20110528112342.GA3068@joi.lan
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- lib/debugobjects.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+but due to various -next dependencies this does not currently include
+all of the patches posted here.  I've also created a regmap-asoc branch
+there which merges current ASoC code with the regmap code.
 
-diff --git a/lib/debugobjects.c b/lib/debugobjects.c
-index 9d86e45..a78b7c6 100644
---- a/lib/debugobjects.c
-+++ b/lib/debugobjects.c
-@@ -198,7 +198,7 @@ static void free_object(struct debug_obj *obj)
- 	 * initialized:
- 	 */
- 	if (obj_pool_free > ODEBUG_POOL_SIZE && obj_cache)
--		sched = !work_pending(&debug_obj_work);
-+		sched = keventd_up() && !work_pending(&debug_obj_work);
- 	hlist_add_head(&obj->node, &obj_pool);
- 	obj_pool_free++;
- 	obj_pool_used--;
+ MAINTAINERS                            |    7 +
+ drivers/Kconfig                        |    1 +
+ drivers/Makefile                       |    1 +
+ drivers/mfd/Kconfig                    |    4 +
+ drivers/mfd/pcf50633-core.c            |  114 ++------
+ drivers/mfd/wm831x-core.c              |   97 +++----
+ drivers/mfd/wm831x-i2c.c               |   56 ----
+ drivers/mfd/wm831x-spi.c               |   48 ----
+ drivers/mfd/wm8994-core.c              |  175 ++----------
+ drivers/regmap/Kconfig                 |    6 +
+ drivers/regmap/Makefile                |    3 +
+ drivers/regmap/regmap-i2c.c            |  112 ++++++++
+ drivers/regmap/regmap-spi.c            |   75 +++++
+ drivers/regmap/regmap.c                |  478 ++++++++++++++++++++++++++++++++
+ drivers/regulator/Kconfig              |    1 +
+ drivers/regulator/tps65023-regulator.c |   98 ++-----
+ include/linux/mfd/pcf50633/core.h      |    3 +-
+ include/linux/mfd/wm831x/core.h        |    7 +-
+ include/linux/mfd/wm8994/core.h        |    9 +-
+ include/linux/regmap.h                 |   75 +++++
+ include/sound/soc.h                    |    2 +
+ sound/soc/Kconfig                      |    1 +
+ sound/soc/soc-io.c                     |  316 ++-------------------
+ 23 files changed, 920 insertions(+), 769 deletions(-)
