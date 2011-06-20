@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab1FTUSa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 16:18:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64428 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750789Ab1FTUS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 16:18:28 -0400
-Date: Mon, 20 Jun 2011 22:16:03 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, hch@infradead.org,
-        John Johansen <john.johansen@canonical.com>,
-        Stephen Smalley <sds@tycho.nsa.gov>
-Subject: Re: [PATCH 7/7] ptrace: s/tracehook_tracer_task()/ptrace_parent()/
-Message-ID: <20110620201603.GA17157@redhat.com>
-References: <1308322240-8247-1-git-send-email-tj@kernel.org> <1308322240-8247-8-git-send-email-tj@kernel.org>
+	id S1753578Ab1FTUQY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 16:16:24 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:47889 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751808Ab1FTUQW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 16:16:22 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX19Q+M9kg3JQ2GuJkdhUUwvWufOY2b6ukQqR3pIqsO
+	XfCsZ/P8FaBqt+
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [PATCH 1/2 v2] mfd/ab3550: Convert to kstrtou8_from_user
+Date: Mon, 20 Jun 2011 22:16:19 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.38.8; KDE/4.4.5; x86_64; ; )
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+References: <BANLkTikKRVP4PW48YtR+mMMNsaxTDxoGtw@mail.gmail.com> <1308599189-28555-1-git-send-email-peterhuewe@gmx.de> <20110620195037.GA2534@p183.telecom.by>
+In-Reply-To: <20110620195037.GA2534@p183.telecom.by>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308322240-8247-8-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106202216.20343.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17, Tejun Heo wrote:
->
-> tracehook.h is on the way out.  Rename tracehook_tracer_task() to
-> ptrace_parent() and move it from tracehook.h to ptrace.h.
+Am Montag 20 Juni 2011, 21:50:38 schrieb Alexey Dobriyan:
+> On Mon, Jun 20, 2011 at 09:46:28PM +0200, Peter Huewe wrote:
+> > -	char buf[32];
+> > -	int buf_size;
+> > -	unsigned long user_address;
+> > +	u8 user_address;
 
-I am a bit surpised you decided to keep this helper. Can't we simply
-kill it?
+> > +	/* Get userspace string and convert to number */
+> > +	err = kstrtou8_from_user(user_buf, count, 0, &user_address);
+...
+> > 
+> >  	ab->debug_address = user_address;
 
-OK, we will see. I guess this change is mostly needed to remove yet
-another function from tracehook.h.
+> 
+> You don't need temporary variable and should write straight to final
+> location, because kstrto* functions will never write to result unless it
+> was converted successfully.
 
-> @@ -216,7 +216,7 @@ static struct mm_struct *__check_mem_permission(struct task_struct *task)
->  	if (task_is_stopped_or_traced(task)) {
->  		int match;
->  		rcu_read_lock();
-> -		match = (tracehook_tracer_task(task) == current);
-> +		match = (ptrace_parent(task) == current);
->  		rcu_read_unlock();
->  		if (match && ptrace_may_access(task, PTRACE_MODE_ATTACH))
+Alexey thank you very much for your review, hints and most of all patience ;)
+The code really gets cleaner and cleaner.
 
-All we need
+While changing the code (once again ;) and looking at your remarks I also saw 
+that ab3550->debug_address and ->debug_bank are always casted to u8.
 
-	if (task_is_traced(task) && task->parent == current) {
-		if (ptrace_may_access()
-			return mm;
-	}
+Do you think I could also change the two fields of the struct ab3550 (only 
+used in this file) to u8 in this patch, too?
+This way I could get rid of the u8* cast which is now needed in this case, if 
+I take you last remark into account.
+> err = kstrtou8_from_user(user_buf, count, 0, (u8 *)&ab->debug_address);
 
-Of course I do not blame this patch, my only point is that this helper
-only adds more confusion imho.
+And also clean the code from all the other unnecessary u8 casts.
 
+What do you think?
+Or split it up into two seperate patches?
 
-
-
-> @@ -67,7 +67,7 @@ static int may_change_ptraced_domain(struct task_struct *task,
->  	int error = 0;
->
->  	rcu_read_lock();
-> -	tracer = tracehook_tracer_task(task);
-> +	tracer = ptrace_parent(task);
->  	if (tracer) {
->  		/* released below */
->  		cred = get_task_cred(tracer);
-
-Hmm. And then this task_struct is used after we dropped rcu_read_lock().
-
-John, is this correct?
-
-Oleg.
-
+Thanks,
+Peter
