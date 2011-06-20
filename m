@@ -1,117 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740Ab1FTIPi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 04:15:38 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52570 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab1FTIPh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 04:15:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=H3gTmoR78fM3h1bSyKe7ShpQ8t4wvg7MaHZGp5Mvpo9n8HEgLyApou4qRDCAUrXNBP
-         YdG+lP9e4Mb+3R+5O/0BpTNiIqrvT+BFo1opTlt5vImliusgzDt9KTlPkYeZ1TuX3vEp
-         hXvFEM0hh3UaeCNUWauOOGMVvslEuWYGzWt/w=
+	id S1752284Ab1FTIXD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 04:23:03 -0400
+Received: from mx-rz-2.rrze.uni-erlangen.de ([131.188.11.21]:52915 "EHLO
+	mx-rz-2.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750844Ab1FTIXA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 04:23:00 -0400
+X-Greylist: delayed 304 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Jun 2011 04:23:00 EDT
+X-RRZE-Submit-IP: 209.85.160.174
 MIME-Version: 1.0
-In-Reply-To: <BLU158-w332CD7657F92343D3D2D1C876A0@phx.gbl>
-References: <BLU158-w332CD7657F92343D3D2D1C876A0@phx.gbl>
-Date: Mon, 20 Jun 2011 13:45:35 +0530
-Message-ID: <BANLkTinr-5k3grHM-gfjVi2PA67VvvTiNg@mail.gmail.com>
-Subject: Re: [ath9k-devel] Patching ath9k/mac80211 to change MAC layer features
-From: Mohammed Shafi <shafi.wireless@gmail.com>
-To: Fred Matthews <fredmm@hotmail.co.uk>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        ath9k-devel@venema.h4ckr.net, ath9k-devel@lists.ath9k
+In-Reply-To: <20110616141930.GA12872@eferding.osrc.amd.com>
+References: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
+	<0a1488254bd51475a90133c0fc41a4d34b533ef4.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
+	<20110616141930.GA12872@eferding.osrc.amd.com>
+Date: Mon, 20 Jun 2011 10:17:53 +0200
+Message-ID: <BANLkTim=yg+tCxa-JhMYw5zsnBSzQqVnqg@mail.gmail.com>
+Subject: Re: [PATCH 01/11] drivers/ide: use printk_ratelimited() instead of printk_ratelimit()
+From: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
+To: Borislav Petkov <bp@alien8.de>,
+        Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>,
+        "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        christian.dietrich@informatik.uni-erlangen.de, sshtylyov@mvista.com
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 2:09 AM, Fred Matthews <fredmm@hotmail.co.uk> wrote:
-> Hello all,
+Hello,
+2011/6/16 Borislav Petkov <bp@alien8.de>
 >
+> On Thu, Jun 16, 2011 at 02:06:37PM +0200, Manuel Zerpies wrote:
 >
-> I have a query regarding patching ath9k/mac80211 to change MAC layer
-> features and I would be most grateful if someone can assist.
+> Does the printk fit on one line if you do
 >
+>        pr_warn_ratelimited(...)
 >
-> I need to patch ath9k so that I can be able to modify/fix the A-MPDU
-> aggregation frame length and other parameters such that they can be
-> configured at runtime via debugfs. I made a newbie attempt at trying to
-> change the aggregate length (attached), but I am unsure of the
-> correctness/efficiency  - when applied throughput varies with different
-> frame lengths entered but I can't be sure if its actually changing the
-> aggregation length (passes the framelen/aggr_limit). Hence I would be very
-> grateful if someone can assist in the correct way of doing this (possibly
-> directly via mac80211).
+> instead?
 >
+> Thanks.
 >
->
-> Also if the ampdu aggregate length is changed I believe the number/length of
-> the subframes of the aggregate stays constant (at the default which is
-> 32). I try to change this in my patch as well as the maximum software
-> retries by just changing the default definition in ath9k.h, thus is there a
-> (more) correct/better way of changing these. Finally, how can I patch the
-> driver to be able to disable Block-Acks/aggregation via debugfs or
-> otherwise.
+> --
+> Regards/Gruss,
+> Boris.
 
+No I'm affraid. I tried it, but it didn't fit the 80 chars per line
+code-styling.
 
-to disable aggregation in the driver, please try this
-diff --git a/drivers/net/wireless/ath/ath9k/init.c
-b/drivers/net/wireless/ath/ath9k/init.c
-index d4b166c..e0175d0 100644
---- a/drivers/net/wireless/ath/ath9k/init.c
-+++ b/drivers/net/wireless/ath/ath9k/init.c
-@@ -524,8 +524,6 @@ static void ath9k_init_misc(struct ath_softc *sc)
-        sc->config.txpowlimit = ATH_TXPOWER_MAX;
+>Why not pr_warn_ratelimited()?
+>WBR, Sergei
 
-        if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_HT) {
--               sc->sc_flags |= SC_OP_TXAGGR;
--               sc->sc_flags |= SC_OP_RXAGGR;
-        }
+I just kind of ignored it. As you see, I built it in.
 
-        common->tx_chainmask = sc->sc_ah->caps.tx_chainmask;
+Here my new patch:
 
-if you want only tx-aggregation to be disabled , please comment out only that.
-also you can completely disable HT by
-diff --git a/drivers/net/wireless/ath/ath9k/hw.c
-b/drivers/net/wireless/ath/ath9k/hw.c
-index 6de2655..696b4cc 100644
---- a/drivers/net/wireless/ath/ath9k/hw.c
-+++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -1915,10 +1915,7 @@ int ath9k_hw_fill_cap_info(struct ath_hw *ah)
+Since printk_ratelimit() shouldn't be used anymore (see comment in
+include/linux/printk.h), replace it with printk_ratelimited().
+Signed-off-by: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
+---
+ drivers/ide/ide-atapi.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+diff --git a/drivers/ide/ide-atapi.c b/drivers/ide/ide-atapi.c
+index 6f218e01..c9e69d7 100644
+--- a/drivers/ide/ide-atapi.c
++++ b/drivers/ide/ide-atapi.c
+@@ -8,6 +8,7 @@
+ #include <linux/ide.h>
+ #include <linux/scatterlist.h>
+ #include <linux/gfp.h>
++#include <linux/ratelimit.h>
 
-        common->crypt_caps |= ATH_CRYPT_CAP_CIPHER_AESCCM;
+ #include <scsi/scsi.h>
 
--       if (ah->hw_version.devid != AR2427_DEVID_PCIE)
--               pCap->hw_caps |= ATH9K_HW_CAP_HT;
--       else
--               pCap->hw_caps &= ~ATH9K_HW_CAP_HT;
-+       pCap->hw_caps &= ~ATH9K_HW_CAP_HT;
+@@ -200,9 +201,8 @@ void ide_prep_sense(ide_drive_t *drive, struct request *rq)
+  err = blk_rq_map_kern(drive->queue, sense_rq, sense, sense_len,
+       GFP_NOIO);
+  if (unlikely(err)) {
+- if (printk_ratelimit())
+- printk(KERN_WARNING PFX "%s: failed to map sense "
+-    "buffer\n", drive->name);
++ pr_warn_ratelimited(PFX "%s: failed to map sense buffer\n",
++    drive->name);
+  return;
+  }
 
-        if (AR_SREV_9271(ah))
-                pCap->num_gpio_pins = AR9271_NUM_GPIO;
-
-
-
-
->
->
->
-> I highly appreciate, help in any of the above, as well as other advice,
-> Many thanks
->
-> _______________________________________________
-> ath9k-devel mailing list
-> ath9k-devel@lists.ath9k.org
-> https://lists.ath9k.org/mailman/listinfo/ath9k-devel
->
->
-
-
-
--- 
-shafi
+--
+1.7.4.1
