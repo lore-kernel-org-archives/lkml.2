@@ -1,65 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab1FTU4k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 16:56:40 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44345 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117Ab1FTU4i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 16:56:38 -0400
-Date: Mon, 20 Jun 2011 21:55:59 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        Nicolas Pitre <nico@fluxnic.net>, gregkh@suse.de,
-        lkml <linux-kernel@vger.kernel.org>, Rabin Vincent <rabin@rab.in>,
-        Alexander Holler <holler@ahsoftware.de>
-Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing
-	the packed attribute
-Message-ID: <20110620205559.GM26089@n2100.arm.linux.org.uk>
-References: <alpine.LFD.2.00.1106201306210.2142@xanadu.home> <Pine.LNX.4.44L0.1106201329390.2113-100000@iolanthe.rowland.org> <20110620184849.GI26089@n2100.arm.linux.org.uk> <201106202226.37381.arnd@arndb.de>
+	id S1755579Ab1FTU5C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 16:57:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9758 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753117Ab1FTU47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 16:56:59 -0400
+Date: Mon, 20 Jun 2011 17:56:19 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Glauber Costa <glommer@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH v2 3/7] KVM-HV: KVM Steal time implementation
+Message-ID: <20110620205619.GA3971@amt.cnet>
+References: <1308262856-5779-1-git-send-email-glommer@redhat.com>
+ <1308262856-5779-4-git-send-email-glommer@redhat.com>
+ <4DFDC821.2090905@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201106202226.37381.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <4DFDC821.2090905@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 10:26:37PM +0200, Arnd Bergmann wrote:
-> * We already need a compiler barrier in the non-_relaxed() versions of
->   the I/O accessors, which will force a reload of the base address
->   in a lot of cases, so the code is already suboptimal. Yes, we don't
->   have the barrier today without CONFIG_ARM_DMA_MEM_BUFFERABLE, but that
->   is a bug, because it lets the compiler move accesses to DMA buffers
->   around readl/writel.
-
-You're now being obtuse there.  You don't need compiler barriers to
-guarantee order - that's what volatile does there.
-
-Before you start quoting stuff about volatile, look at the
-volatile-considered-harmful.txt document:
-
-  - The above-mentioned accessor functions might use volatile on
-    architectures where direct I/O memory access does work.  Essentially,
-    each accessor call becomes a little critical section on its own and
-    ensures that the access happens as expected by the programmer.
-
-which is what we're doing here.  And because each accessor is its own
-little critical section, there's no need for a compiler barrier.
-
-> > If it is the case that these structures do not require packing to get
-> > their desired layout, then they don't require packing, and the packed
-> > attribute should be dropped.
+On Sun, Jun 19, 2011 at 12:57:53PM +0300, Avi Kivity wrote:
+> On 06/17/2011 01:20 AM, Glauber Costa wrote:
+> >To implement steal time, we need the hypervisor to pass the guest information
+> >about how much time was spent running other processes outside the VM.
+> >This is per-vcpu, and using the kvmclock structure for that is an abuse
+> >we decided not to make.
+> >
+> >In this patchset, I am introducing a new msr, KVM_MSR_STEAL_TIME, that
+> >holds the memory area address containing information about steal time
+> >
+> >This patch contains the hypervisor part for it. I am keeping it separate from
+> >the headers to facilitate backports to people who wants to backport the kernel
+> >part but not the hypervisor, or the other way around.
+> >
+> >
+> >
+> >+#define KVM_STEAL_ALIGNMENT_BITS 5
+> >+#define KVM_STEAL_VALID_BITS ((-1ULL<<  (KVM_STEAL_ALIGNMENT_BITS + 1)))
+> >+#define KVM_STEAL_RESERVED_MASK (((1<<  KVM_STEAL_ALIGNMENT_BITS) - 1 )<<  1)
 > 
-> Yes. But are you going to audit every other use of __packed in the kernel
-> to check if it is used on __iomem pointers?
+> Clumsy, but okay.
+> 
+> >+static void record_steal_time(struct kvm_vcpu *vcpu)
+> >+{
+> >+	u64 delta;
+> >+
+> >+	if (vcpu->arch.st.stime&&  vcpu->arch.st.this_time_out) {
+> 
+> 0 is a valid value for stime.
+> 
+> >+
+> >+		if (unlikely(kvm_read_guest(vcpu->kvm, vcpu->arch.st.stime,
+> >+			&vcpu->arch.st.steal, sizeof(struct kvm_steal_time)))) {
+> >+
+> >+			vcpu->arch.st.stime = 0;
+> >+			return;
+> >+		}
+> >+
+> >+		delta = (get_kernel_ns() - vcpu->arch.st.this_time_out);
+> >+
+> >+		vcpu->arch.st.steal.steal += delta;
+> >+		vcpu->arch.st.steal.version += 2;
+> >+
+> >+		if (unlikely(kvm_write_guest(vcpu->kvm, vcpu->arch.st.stime,
+> >+			&vcpu->arch.st.steal, sizeof(struct kvm_steal_time)))) {
+> >+
+> >+			vcpu->arch.st.stime = 0;
+> >+			return;
+> >+		}
+> >+	}
+> >+
+> >+}
+> >+
+> >
+> >@@ -2158,6 +2206,8 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+> >  			kvm_migrate_timers(vcpu);
+> >  		vcpu->cpu = cpu;
+> >  	}
+> >+
+> >+	record_steal_time(vcpu);
+> >  }
+> 
+> This records time spent in userspace in the vcpu thread as steal
+> time.  Is this what we want?  Or just time preempted away?
 
-As I've said, using __packed on __iomem pointers is fraught for many
-reasons, and ignoring the other reasons and just concentrating on the
-IO accessor problem is bad news in any case.
+It also accounts halt time (kvm_vcpu_block) as steal time. Glauber, you
+could instead use the "runnable-state-but-waiting-in-runqueue" field of
+SCHEDSTATS, i forgot the exact name.
 
-So yes, __packed needs to be solved _irrespective_ of the IO accessor
-issue.
