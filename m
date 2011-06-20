@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879Ab1FTQlV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 12:41:21 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38688 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750767Ab1FTQlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 12:41:18 -0400
-Date: Mon, 20 Jun 2011 18:40:45 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ryan Mallon <rmallon@gmail.com>, Petr Tesarik <ptesarik@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
- physical addresses
-Message-ID: <20110620164045.GB10815@elte.hu>
-References: <201106171038.25988.ptesarik@suse.cz>
- <20110617093032.GA19235@elte.hu>
- <4DFE7FF9.9070406@gmail.com>
- <4DFE89E0.5020509@zytor.com>
- <20110620074124.GB24716@elte.hu>
- <4DFF6E58.8090306@zytor.com>
+	id S1752131Ab1FTQmD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 12:42:03 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:26565 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816Ab1FTQmA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 12:42:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=blBe9xt/YKZWXTwtgEVVYdXp5STWQ0N0go1Tx3Ni/v9gOv9C+gAePDOmCXQm1vGMYF
+         p6uhZHVI3/oshO0xROzQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DFF6E58.8090306@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <alpine.DEB.2.00.1106201830260.17005@justus.melware.de>
+References: <alpine.DEB.2.00.1106201132170.14886@justus.melware.de> <alpine.DEB.2.00.1106201830260.17005@justus.melware.de>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 20 Jun 2011 10:41:38 -0600
+Message-ID: <BANLkTim9fBeY3L_+M9B5GECs8QtuAeUrTw@mail.gmail.com>
+Subject: Re: Map PCI resource to user space problem.
+To: Armin Schindler <armin@melware.de>
+Cc: Linux Kernel Mailinglist <linux-kernel@vger.kernel.org>,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
++cc linux-pci
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
-
-> On 06/20/2011 12:41 AM, Ingo Molnar wrote:
-> > 
-> > * H. Peter Anvin <hpa@zytor.com> wrote:
-> > 
-> >> There are some test drivers which really want /dev/mem to work.
-> > 
-> > Test drivers and test hardware with zero enumeration can use below 4G 
-> > addresses just fine.
-> >
-> > Also, debugging is not an issue and some non-default kernel or boot 
-> > option can enable any sort of device i guess, so my main worry isnt 
-> > really security but that we should stand in the way of the apparent 
-> > practice of *shipping* user-space drivers that use /dev/mem ...
-> > 
-> 
-> We should either fix /dev/mem to work according to its 
-> specification or rip it out.  The issue with test drivers is not 
-> spurious... I ran into this one myself a few weeks ago while trying 
-> to do a memory test (by limiting the amount of memory available to 
-> the kernel).  This is something that is typically done on factory 
-> floors, and it would be nice to be able to get those environments 
-> over to using Linux.
-
-There is no reason why they couldnt use a .config option or a boot 
-option to get their weird stuff going, which weird stuff also happens 
-to be useful.
-
-What i'm somewhat against is having this enabled by default for weird 
-stuff that also happens to be harmful - and the fact that it never 
-worked over 4G physical gives us the perfect opportunity to do just 
-that.
-
-Thanks,
-
-	Ingo
+On Mon, Jun 20, 2011 at 10:38 AM, Armin Schindler <armin@melware.de> wrote:
+> On Mon, 20 Jun 2011, Armin Schindler wrote:
+>>
+>> Hello,
+>>
+>> when I try to map PCI resource of size < PAGE_SIZE to user space
+>> with e.g. remap_pfn_range() the mapping seems to be created,
+>> but the access to the PCI device just doesn't work (read returns 0xff).
+>>
+>> The same happens when using sysfs. The device has
+>> # ls -al /sys/bus/pci/devices/0000\:02\:09.0/resource*
+>> -rw------- 1 root root     512 Jun 20 11:33
+>> /sys/bus/pci/devices/0000:02:09.0/resource0
+>> -rw------- 1 root root     256 Jun 20 11:33
+>> /sys/bus/pci/devices/0000:02:09.0/resource1
+>> -rw------- 1 root root 8388608 Jun 20 11:33
+>> /sys/bus/pci/devices/0000:02:09.0/resource2
+>> -rw------- 1 root root  262144 Jun 20 11:33
+>> /sys/bus/pci/devices/0000:02:09.0/resource3
+>>
+>> and when I mmap() resource0, a valid address is returned, but reading the
+>> area always returns 0xff.
+>>
+>> Since a kernel driver can access resource0 here without problems when
+>> using
+>> ioremap(), I'm not sure what is wrong with the sysfs entry for user space
+>> (or using remap_pfn_range() in own mmap function).
+>> The only hint I have so far is the size, which is smaller than PAGE_SIZE.
+>
+> I found the reason. It is not the size of the resource.
+> The resource0 is assigned to a not page-aligned address.
+> Example, the pci resource0 has address 0xfe5ffc00. mmap()ing it will
+> actually seems to map address 0xfe5ff000 and the user needs to add 0xc00 to
+> the address returned by mmap().
+>
+> Armin
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
