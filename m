@@ -1,111 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241Ab1FTJYq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 05:24:46 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48353 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752659Ab1FTJYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 05:24:45 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [RFC PATCH] ARM: smp: Fix the CPU hotplug race with scheduler.
-Date: Mon, 20 Jun 2011 14:53:59 +0530
-Message-ID: <1308561839-18407-1-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: git-send-email 1.5.6.6
+	id S1753133Ab1FTJcv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 05:32:51 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:57264 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155Ab1FTJcu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 05:32:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=e5J2CygEWdBX24Vj7rg44WIwWVqsqdKNX4EPmk1uyeOm9XDl2Q3Rv/ovGqti8oQL2k
+         gPVMR7Nvof59SZ4Fn5AXhwwk6VlAP1uBgwLpvVt0sjrG4O/GS6oCf8AQhq9b0wb1gsJM
+         a/72ZdXI6Yiy0/iJZmOF5q6Avs9r+/e65PP2I=
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <alpine.LNX.2.00.1106201035590.18991@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1106201035590.18991@swampdragon.chaosbits.net>
+Date: Mon, 20 Jun 2011 12:32:49 +0300
+Message-ID: <BANLkTimjoiDxDX-_Qg4U6TSW6jjEa5xSsw@mail.gmail.com>
+Subject: Re: [PATCH][Trivial] S3C2410 bluetooth: Remove duplicate linux/leds.h include
+From: Vitaliy Ivanov <vitalivanov@gmail.com>
+To: Jesper Juhl <jj@chaosbits.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Vasily Khoruzhick <anarsoul@gmail.com>, trivial@kernel.org,
+        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current ARM CPU hotplug code suffers from couple of race conditions
-in CPU online path with scheduler.
-The ARM CPU hotplug code doesn't wait for hot-plugged CPU to be marked
-active as part of cpu_notify() by the CPU which brought it up before
-enabling interrupts.
+Jusper/Linus/All,
 
-So we end up in with couple of race conditions,
-1) Interrupts are enabled even before CPU is marked as active.
-2) Newly plugged CPU is marked as active but it is not marked online yet.
+On Mon, Jun 20, 2011 at 11:40 AM, Jesper Juhl <jj@chaosbits.net> wrote:
+> Remove the duplicate inclusion of linux/leds.h from
+> arch/arm/mach-s3c2410/h1940-bluetooth.c that was added by commit 50e2d10d.
+>
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  h1940-bluetooth.c |    1 -
+>  1 file changed, 1 deletion(-)
+>
+> diff --git a/arch/arm/mach-s3c2410/h1940-bluetooth.c b/arch/arm/mach-s3c2410/h1940-bluetooth.c
+> index 2c126bb..a5eeb62 100644
+> --- a/arch/arm/mach-s3c2410/h1940-bluetooth.c
+> +++ b/arch/arm/mach-s3c2410/h1940-bluetooth.c
+> @@ -18,7 +18,6 @@
+>  #include <linux/leds.h>
+>  #include <linux/gpio.h>
+>  #include <linux/rfkill.h>
+> -#include <linux/leds.h>
+>
+>  #include <mach/regs-gpio.h>
+>  #include <mach/hardware.h>
+>
+> --
 
-When an interrupt happens before the cpu_active bit is set, the scheduler
-can't schedule the woken thread which is bound to that newly onlined cpu
-and and selects a fallback runqueue.
+Some time ago I already sent a patch to handle all the headers
+duplication corrections. Please check this:
 
-Secondly marking CPU active before it is online also not desirable behaviour.
+https://lkml.org/lkml/2011/6/16/301
 
-Fix this race conditions.
+It should handle all the cases you described at:
 
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
----
-On v3.0 kernel I started seeing lock-up and random crashes when
-CPU online/offline was attempted aggressively. With git bisect I could
-reach to Peter's commit e4a52bcb9a18142d79e231b6733cabdbf2e67c1f[sched:
-Remove rq->lock from the first half of ttwu()] which was also reported
-by Marc Zyngier. But even after using the follow up fix from Peter
-d6aa8f85f163[sched: Fix ttwu() for __ARCH_WANT_INTERRUPTS_ON_CTXSW],
-I was still seeing issues with hotplug path. So as a experiment I just
-pushed down the interrupt enabling on newly plugged CPU after it's marked
-as online. This made things better and much stable but occasionally I was
-still seeing lock-up.
+https://lkml.org/lkml/2011/6/20/72
+https://lkml.org/lkml/2011/6/20/78
+https://lkml.org/lkml/2011/6/20/75
 
-With above as background I looked at arch/x86/ code and got convinced
-myself that the experimental hack could be the right fix. While doing
-this I came across a commit from Thomas fd8a7de177b [x86: cpu-hotplug:
-Prevent softirq wakeup on wrong CPU] which fixed the race 2) on x86
-architecture. 
+I didn't receive any comments and still can see that it's not in
+mainline Linus' tree.
 
-In this patch I have folded possible fixes for both race conditions for
-ARM hotplug code as mentioned in change log. Hopefully I am not
-introducing any new race with this patch and hence the RFC. 
 
- arch/arm/kernel/smp.c |   18 +++++++++++-------
- 1 files changed, 11 insertions(+), 7 deletions(-)
-
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 344e52b..84373a9 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -302,13 +302,6 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
- 	platform_secondary_init(cpu);
- 
- 	/*
--	 * Enable local interrupts.
--	 */
--	notify_cpu_starting(cpu);
--	local_irq_enable();
--	local_fiq_enable();
--
--	/*
- 	 * Setup the percpu timer for this CPU.
- 	 */
- 	percpu_timer_setup();
-@@ -322,6 +315,17 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
- 	 */
- 	set_cpu_online(cpu, true);
- 
-+
-+	while (!cpumask_test_cpu(smp_processor_id(), cpu_active_mask))
-+		cpu_relax();
-+
-+	/*
-+	 * Enable local interrupts.
-+	 */
-+	notify_cpu_starting(cpu);
-+	local_irq_enable();
-+	local_fiq_enable();
-+
- 	/*
- 	 * OK, it's off to the idle thread for us
- 	 */
--- 
-1.6.0.4
-
+Thanks,
+Vitaliy
