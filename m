@@ -1,61 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105Ab1FTWaa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 18:30:30 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:34202 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755338Ab1FTWa3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 18:30:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=vM8S/571pWvN2wlbJG3qWYoBJaD5srvfQUiXu3QHp4YKtJe9yK4DBmAS4raQuthaZe
-         RClbN7v4aTlXnBL+xYZg==
+	id S1756042Ab1FTW3Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 18:29:25 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:43364 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755338Ab1FTW3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 18:29:21 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [Update][PATCH 8/8] ARM / shmobile: Support for I/O power domains for SH7372 (v6)
+Date: Tue, 21 Jun 2011 00:30:01 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Magnus Damm <magnus.damm@gmail.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org
+References: <201106112223.04972.rjw@sisk.pl> <201106200007.47828.rjw@sisk.pl> <20110620020125.GA26125@linux-sh.org>
+In-Reply-To: <20110620020125.GA26125@linux-sh.org>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTiniLZFZgnLqdBPubOff9X0mOUN+nA@mail.gmail.com>
-References: <1307389135-8150-1-git-send-email-mjg@redhat.com>
- <1307389135-8150-2-git-send-email-mjg@redhat.com> <BANLkTinHYQ14A7vzTxA1c2frxUVE6HWNQg@mail.gmail.com>
- <BANLkTimESgP1FMzP8cbKcECLSbEY9Mj3bQ@mail.gmail.com> <20110606214735.GA4026@srcf.ucam.org>
- <20110610040012.GA14233@auslistsprd01.us.dell.com> <BANLkTin2f2Dn9onaazgxtkC2kWLrj6cOnw@mail.gmail.com>
- <BANLkTiniLZFZgnLqdBPubOff9X0mOUN+nA@mail.gmail.com>
-From: Mike Waychison <mikew@google.com>
-Date: Mon, 20 Jun 2011 15:29:51 -0700
-Message-ID: <BANLkTinw72Xabag9871=qsWsxO0xc78ZNVdJ+nyBwTQjkVbJ3A@mail.gmail.com>
-Subject: Re: [PATCH 2/3] pstore: Add extra context for writes and erases
-To: Tony Luck <tony.luck@intel.com>
-Cc: Matt Domsch <Matt_Domsch@dell.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106210030.01922.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 3:27 PM, Tony Luck <tony.luck@intel.com> wrote:
-> On Fri, Jun 10, 2011 at 12:12 AM, Mike Waychison <mikew@google.com> wrote:
->> On Thu, Jun 9, 2011 at 9:00 PM, Matt Domsch <Matt_Domsch@dell.com> wrote:
->>> On Mon, Jun 06, 2011 at 10:47:35PM +0100, Matthew Garrett wrote:
->>>> On Mon, Jun 06, 2011 at 02:43:46PM -0700, Tony Luck wrote:
->>>>
->>>> > Does someone claim maintainership of  drivers/firmware/efivars.c for part3?
->>>>
->>>> I think that'd be Matt.
->>>
->>> I'm out of the office this week and next, and haven't looked at it
->>> closely.  Mike Waychison has done most of the editing in there
->>> recently, I'd be happy if he wishes to be considered the maintainer
->>> thereof.
->>
->> I'm out of the office too until next Tuesday.  I should be able to
->> look at this between now and mid next-week.
->
-> Mike; Did you find time to look at Matthew's efi-for-pstore patches yet?
-> If we want to hit the 3.1 merge window we should be trying to get these
-> beaten into shape pretty soon (Linus will presumably declare -rc4 tonight,
-> so not much time left).
->
+On Monday, June 20, 2011, Paul Mundt wrote:
+> On Mon, Jun 20, 2011 at 12:07:47AM +0200, Rafael J. Wysocki wrote:
+> > +static int pd_power_down(struct generic_pm_domain *genpd)
+> > +{
+> > +	struct sh7372_pm_domain *sh7372_pd = to_sh7372_pd(genpd);
+> > +	unsigned int mask = 1 << sh7372_pd->bit_shift;
+> > +
+> > +	if (__raw_readl(PSTR) & mask) {
+> > +		__raw_writel(mask, SPDCR);
+> > +
+> > +		while (__raw_readl(SPDCR) & mask)
+> > +			cpu_relax();
+> > +
+> > +		pr_debug("sh7372 power domain down 0x%08x -> PSTR = 0x%08x\n",
+> > +			 mask, __raw_readl(PSTR));
+> > +	}
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int pd_power_up(struct generic_pm_domain *genpd)
+> > +{
+> > +	struct sh7372_pm_domain *sh7372_pd = to_sh7372_pd(genpd);
+> > +	unsigned int mask = 1 << sh7372_pd->bit_shift;
+> > +
+> > +	if (!(__raw_readl(PSTR) & mask)) {
+> > +		__raw_writel(mask, SWUCR);
+> > +
+> > +		while (__raw_readl(SWUCR) & mask)
+> > +			cpu_relax();
+> > +
+> > +		pr_debug("sh7372 power domain up 0x%08x -> PSTR = 0x%08x\n",
+> > +			 mask, __raw_readl(PSTR));
+> > +	}
+> > +
+> > +	return 0;
+> > +}
+> > +
+> Given that these functions can return errors, it's probably more prudent
+> to implement some timeout logic on top of the busy loop. Hardware does
+> get stuck, after all.
 
-My bad.  This fell off my plate :(   Looking now.
+Yes, it does, but we don't really know what timeout value to use in there.
+
+In fact, failures of pd_power_down() don't really matter (at worst the power
+domain won't be powered off really) and pd_power_up() should only return error
+code if the error is known to be unrecoverable.
+
+So, what about this: repeat certain number of times (I verified that it took
+several iterations of the loop until the new value settled on my hardware)
+and then return from pd_power_down() or go to sleep for a short time and repeat
+in pd_power_up()?
+
+Rafael
+
+---
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: ARM / shmobile: Support for I/O power domains for SH7372 (v7)
+
+Use the generic power domains support introduced by the previous
+patch to implement support for power domains on SH7372.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ arch/arm/Kconfig                             |    1 
+ arch/arm/mach-shmobile/Makefile              |    4 +
+ arch/arm/mach-shmobile/board-mackerel.c      |    4 +
+ arch/arm/mach-shmobile/include/mach/sh7372.h |   28 +++++++++
+ arch/arm/mach-shmobile/pm-sh7372.c           |   84 +++++++++++++++++++++++++++
+ 5 files changed, 121 insertions(+)
+
+Index: linux-2.6/arch/arm/mach-shmobile/board-mackerel.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-shmobile/board-mackerel.c
++++ linux-2.6/arch/arm/mach-shmobile/board-mackerel.c
+@@ -1582,6 +1582,10 @@ static void __init mackerel_init(void)
+ 
+ 	platform_add_devices(mackerel_devices, ARRAY_SIZE(mackerel_devices));
+ 
++	sh7372_init_pm_domain(&sh7372_a4lc_domain);
++	sh7372_add_device_to_domain(SH7372_A4LC, &lcdc_device);
++	sh7372_add_device_to_domain(SH7372_A4LC, &hdmi_lcdc_device);
++
+ 	hdmi_init_pm_clock();
+ 	sh7372_pm_init();
+ }
+Index: linux-2.6/arch/arm/mach-shmobile/include/mach/sh7372.h
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-shmobile/include/mach/sh7372.h
++++ linux-2.6/arch/arm/mach-shmobile/include/mach/sh7372.h
+@@ -12,6 +12,7 @@
+ #define __ASM_SH7372_H__
+ 
+ #include <linux/sh_clk.h>
++#include <linux/pm_domain.h>
+ 
+ /*
+  * Pin Function Controller:
+@@ -470,4 +471,31 @@ extern struct clk sh7372_fsibck_clk;
+ extern struct clk sh7372_fsidiva_clk;
+ extern struct clk sh7372_fsidivb_clk;
+ 
++struct platform_device;
++
++struct sh7372_pm_domain {
++	struct generic_pm_domain genpd;
++	unsigned int bit_shift;
++};
++
++static inline struct sh7372_pm_domain *to_sh7372_pd(struct generic_pm_domain *d)
++{
++	return container_of(d, struct sh7372_pm_domain, genpd);
++}
++
++#ifdef CONFIG_PM
++extern struct sh7372_pm_domain sh7372_a4lc_domain;
++#define SH7372_A4LC	(&sh7372_a4lc_domain)
++
++extern void sh7372_init_pm_domain(struct sh7372_pm_domain *sh7372_pd);
++extern void sh7372_add_device_to_domain(struct sh7372_pm_domain *sh7372_pd,
++					struct platform_device *pdev);
++#else
++#define SH7372_A4LC	NULL
++
++static inline void sh7372_init_pm_domain(struct sh7372_pm_domain *sh7372_pd) {}
++static inline void sh7372_add_device_to_domain(struct sh7372_pm_domain *pd,
++					       struct platform_device *pdev) {}
++#endif /* CONFIG_PM */
++
+ #endif /* __ASM_SH7372_H__ */
+Index: linux-2.6/arch/arm/mach-shmobile/Makefile
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-shmobile/Makefile
++++ linux-2.6/arch/arm/mach-shmobile/Makefile
+@@ -42,6 +42,10 @@ obj-$(CONFIG_MACH_AP4EVB)	+= board-ap4ev
+ obj-$(CONFIG_MACH_AG5EVM)	+= board-ag5evm.o
+ obj-$(CONFIG_MACH_MACKEREL)	+= board-mackerel.o
+ 
++# PM objects
++pm-$(CONFIG_ARCH_SH7372)	+= pm-sh7372.o
++
+ # Framework support
+ obj-$(CONFIG_SMP)		+= $(smp-y)
+ obj-$(CONFIG_GENERIC_GPIO)	+= $(pfc-y)
++obj-$(CONFIG_PM)		+= $(pm-y)
+Index: linux-2.6/arch/arm/mach-shmobile/pm-sh7372.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-shmobile/pm-sh7372.c
++++ linux-2.6/arch/arm/mach-shmobile/pm-sh7372.c
+@@ -15,16 +15,100 @@
+ #include <linux/list.h>
+ #include <linux/err.h>
+ #include <linux/slab.h>
++#include <linux/pm_runtime.h>
++#include <linux/platform_device.h>
++#include <linux/delay.h>
+ #include <asm/system.h>
+ #include <asm/io.h>
+ #include <asm/tlbflush.h>
+ #include <mach/common.h>
++#include <mach/sh7372.h>
+ 
+ #define SMFRAM 0xe6a70000
+ #define SYSTBCR 0xe6150024
+ #define SBAR 0xe6180020
+ #define APARMBAREA 0xe6f10020
+ 
++#define SPDCR 0xe6180008
++#define SWUCR 0xe6180014
++#define PSTR 0xe6180080
++
++#define PSTR_RETRIES 100
++#define PSTR_DELAY_MS 10
++
++static int pd_power_down(struct generic_pm_domain *genpd)
++{
++	struct sh7372_pm_domain *sh7372_pd = to_sh7372_pd(genpd);
++	unsigned int mask = 1 << sh7372_pd->bit_shift;
++
++	if (__raw_readl(PSTR) & mask) {
++		unsigned int retry_count = PSTR_RETRIES;
++
++		__raw_writel(mask, SPDCR);
++		while ((__raw_readl(SPDCR) & mask) && retry_count--)
++			cpu_relax();
++	}
++
++	pr_debug("sh7372 power domain down 0x%08x -> PSTR = 0x%08x\n",
++		 mask, __raw_readl(PSTR));
++
++	return 0;
++}
++
++static int pd_power_up(struct generic_pm_domain *genpd)
++{
++	struct sh7372_pm_domain *sh7372_pd = to_sh7372_pd(genpd);
++	unsigned int mask = 1 << sh7372_pd->bit_shift;
++
++	if (!(__raw_readl(PSTR) & mask)) {
++		do {
++			unsigned int retry_count = PSTR_RETRIES;
++
++			__raw_writel(mask, SWUCR);
++			while ((__raw_readl(SWUCR) & mask) && retry_count--)
++				cpu_relax();
++
++			if (!(__raw_readl(SWUCR) & mask))
++				break;
++
++			msleep(PSTR_DELAY_MS);
++		} while (true);
++	}
++
++	pr_debug("sh7372 power domain up 0x%08x -> PSTR = 0x%08x\n",
++		 mask, __raw_readl(PSTR));
++
++	return 0;
++}
++
++void sh7372_init_pm_domain(struct sh7372_pm_domain *sh7372_pd)
++{
++	struct generic_pm_domain *genpd = &sh7372_pd->genpd;
++
++	pm_genpd_init(genpd, NULL, false);
++	genpd->stop_device = pm_runtime_clk_suspend;
++	genpd->start_device = pm_runtime_clk_resume;
++	genpd->power_off = pd_power_down;
++	genpd->power_on = pd_power_up;
++	pd_power_up(&sh7372_pd->genpd);
++}
++
++void sh7372_add_device_to_domain(struct sh7372_pm_domain *sh7372_pd,
++				 struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++
++	if (!dev->power.subsys_data) {
++		pm_runtime_clk_init(dev);
++		pm_runtime_clk_add(dev, NULL);
++	}
++	pm_genpd_add_device(&sh7372_pd->genpd, dev);
++}
++
++struct sh7372_pm_domain sh7372_a4lc_domain = {
++	.bit_shift = 1,
++};
++
+ static void sh7372_enter_core_standby(void)
+ {
+ 	void __iomem *smfram = (void __iomem *)SMFRAM;
+Index: linux-2.6/arch/arm/Kconfig
+===================================================================
+--- linux-2.6.orig/arch/arm/Kconfig
++++ linux-2.6/arch/arm/Kconfig
+@@ -642,6 +642,7 @@ config ARCH_SHMOBILE
+ 	select NO_IOPORT
+ 	select SPARSE_IRQ
+ 	select MULTI_IRQ_HANDLER
++	select PM_GENERIC_DOMAINS
+ 	help
+ 	  Support for Renesas's SH-Mobile and R-Mobile ARM platforms.
+ 
