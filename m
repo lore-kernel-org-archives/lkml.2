@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751307Ab1FTAn7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 20:43:59 -0400
-Received: from mail04-md.ns.itscom.net ([175.177.155.114]:34311 "EHLO
-	mail04-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717Ab1FTAn5 (ORCPT
+	id S1751502Ab1FTAov (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 20:44:51 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58028 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756Ab1FTAot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 20:43:57 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
-To: Michal Suchanek <hramrach@centrum.cz>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Valerie Aurora <val@vaaconsulting.com>,
-        Andrew Morton <akpm@linux-foundation.org>, NeilBrown <neilb@suse.de>,
-        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        apw@canonical.com, nbd@openwrt.org, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu
-In-Reply-To: <BANLkTi=6hKExj-LrOPBBhF4ym_YZNVG3Sg@mail.gmail.com>
-References: <20110609125114.8dff08da.akpm@linux-foundation.org> <BANLkTi=uWDSw96v0Y4W94NZvgD=j=3r3zg@mail.gmail.com> <20110610100143.28037551@lxorguk.ukuu.org.uk> <8739jbjqa7.fsf@tucsk.pomaz.szeredi.hu> <11186.1308148376@jrobl> <87vcw7hz7y.fsf@tucsk.pomaz.szeredi.hu> <15402.1308154495@jrobl> <BANLkTi=hvBBbZPBj5niUV9StSRRjmLtK8w@mail.gmail.com> <18273.1308192226@jrobl> <BANLkTimhL5BG9gHOG0Fr9U5fLkE0NJvpng@mail.gmail.com> <12737.1308237353@jrobl> <BANLkTi=6hKExj-LrOPBBhF4ym_YZNVG3Sg@mail.gmail.com>
-Date: Mon, 20 Jun 2011 09:43:48 +0900
-Message-ID: <6167.1308530628@jrobl>
+	Sun, 19 Jun 2011 20:44:49 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DFE97F1.2030206@jp.fujitsu.com>
+Date: Mon, 20 Jun 2011 09:44:33 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: david@fromorbit.com
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 01/12] vmscan: add shrink_slab tracepoints
+References: <1306998067-27659-1-git-send-email-david@fromorbit.com> <1306998067-27659-2-git-send-email-david@fromorbit.com>
+In-Reply-To: <1306998067-27659-2-git-send-email-david@fromorbit.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2011/06/02 16:00), Dave Chinner wrote:
+> From: Dave Chinner <dchinner@redhat.com>
+> 
+> Іt is impossible to understand what the shrinkers are actually doing
+> without instrumenting the code, so add a some tracepoints to allow
+> insight to be gained.
+> 
+> Signed-off-by: Dave Chinner <dchinner@redhat.com>
+> ---
+>  include/trace/events/vmscan.h |   67 +++++++++++++++++++++++++++++++++++++++++
+>  mm/vmscan.c                   |    6 +++-
+>  2 files changed, 72 insertions(+), 1 deletions(-)
 
-Michal Suchanek:
-> Is there any reason why a directory cannot be whiteout?
-
-Just to reduce consuming inodes.
-
-
-> It may possibly hide a XXXXXXXX file if it is later added to the lower layer.
-
-No, because it is "doubly" whiteouted.
+This look good to me. I have two minor request. 1) please change patch order,
+move this patch after shrinker changes. iow, now both this and [2/12] have
+tracepoint change. I don't like it. 2) please avoid cryptic abbreviated variable
+names. Instead, please just use the same variable name with vmscan.c source code.
 
 
-> Just as whiteout has totally different file-type from a file. It's
-> specific to the union.
-
-Ok, we are talking about different whiteouts.
-
-
-J. R. Okajima
