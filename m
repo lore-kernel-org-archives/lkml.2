@@ -1,37 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431Ab1FTPHz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 11:07:55 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:45173 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751837Ab1FTPHw (ORCPT
+	id S1752483Ab1FTPK4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 11:10:56 -0400
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:54270 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750997Ab1FTPKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 11:07:52 -0400
-Date: Mon, 20 Jun 2011 11:07:51 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Viliam Mateicka <viliam.mateicka@gmail.com>
-cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] s3c2410_udc: fix custom UDC command handling
-In-Reply-To: <BANLkTimWM2oew2f9uWxoD1kw1=2bSYFFuw@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1106201105430.2113-100000@iolanthe.rowland.org>
+	Mon, 20 Jun 2011 11:10:51 -0400
+Message-ID: <4DFF62F5.2080802@ti.com>
+Date: Mon, 20 Jun 2011 20:40:45 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Peter Zijlstra <peterz@infradead.org>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH] ARM: smp: Fix the CPU hotplug race with scheduler.
+References: <20110620095053.GA2082@n2100.arm.linux.org.uk> <20110620101438.GD2082@n2100.arm.linux.org.uk> <4DFF20B3.7010209@ti.com> <20110620104415.GF2082@n2100.arm.linux.org.uk> <4DFF255E.5030308@ti.com> <20110620111336.GG2082@n2100.arm.linux.org.uk> <4DFF2E37.8030602@ti.com> <20110620114019.GH2082@n2100.arm.linux.org.uk> <20110620142338.GL2082@n2100.arm.linux.org.uk> <4DFF5F29.2000904@ti.com> <20110620150140.GM2082@n2100.arm.linux.org.uk>
+In-Reply-To: <20110620150140.GM2082@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jun 2011, Viliam Mateicka wrote:
+On 6/20/2011 8:31 PM, Russell King - ARM Linux wrote:
+> On Mon, Jun 20, 2011 at 08:24:33PM +0530, Santosh Shilimkar wrote:
+>> I am away from my board now. Will test this change.
+>> btw, the online-active race is still open even with this patch close
+>> and should be fixed.
+>
+> I have yet to see any evidence of that race - I've been running your
+> test loop for about an hour so far on Versatile Express and nothing
+> yet.
+>
+In that case my script was just exposing the calibrate() code race
+condition.
 
-> So, will somebody at least react/reply (or just fix) ?
+> That's not to say that we shouldn't wait for the active mask to become
+> true before calling schedule(), but I don't think its as big a deal as
+> you're suggesting it is.
+I am not expert to really trigger that exact race online-to-active but
+am sure the race needs to be fixed.
 
-Have some patience.  You did not address your email message to either
-of the driver's authors or to the current Gadget maintainer.  Also,
-David Brownell is deceased and Greg KH is on vacation.
+May be Thomas can suggest a test-case to expose that race. From
+his fix for x86, it appeared that the race was indeed hit in some
+sequence.
 
-Alan Stern
+Regards,
+Santosh
 
