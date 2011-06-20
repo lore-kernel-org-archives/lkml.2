@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab1FTThM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 15:37:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7253 "EHLO mx1.redhat.com"
+	id S1755441Ab1FTTl0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 15:41:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10184 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753584Ab1FTThL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 15:37:11 -0400
-Date: Mon, 20 Jun 2011 21:37:02 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Cong Wang <amwang@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: Re: [PATCH 3/3] mm: print information when THP is disabled
- automatically
-Message-ID: <20110620193702.GH20843@redhat.com>
-References: <1308587683-2555-1-git-send-email-amwang@redhat.com>
- <1308587683-2555-3-git-send-email-amwang@redhat.com>
- <20110620170106.GC9396@suse.de>
- <4DFF82E2.1010409@redhat.com>
+	id S1751352Ab1FTTlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 15:41:24 -0400
+Date: Mon, 20 Jun 2011 21:39:29 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, hch@infradead.org
+Subject: Re: [PATCH 6/7] ptrace: kill detah tracehooks
+Message-ID: <20110620193929.GA15228@redhat.com>
+References: <1308322240-8247-1-git-send-email-tj@kernel.org> <1308322240-8247-7-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DFF82E2.1010409@redhat.com>
+In-Reply-To: <1308322240-8247-7-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Cong,
+On 06/17, Tejun Heo wrote:
+>
+> This patch kills tracehook_notify_death() by reimplementing the logic
+> in its caller - exit_notify().  I opted for re-implementation as the
+> existing code was a bit difficult to wrap one's head around.
 
-On Tue, Jun 21, 2011 at 01:26:58AM +0800, Cong Wang wrote:
-> But, there are many printk messages in the same file start with "hugepage:".
-> :-) I can send a patch to replace all of them with "THP" if you want...
+I always hated this particular tracehook much more than others ;)
 
-Those are in failure paths practically impossible to trigger unless
-the memory layout is misconfigured and the kernel won't succeed
-booting so I guess I didn't care much what I wrote in those 3 sorry.
-Replacing those with THP surely sounds valid cleanup to avoid
-confusion if you add a "THP:" prefix elsewhere.
+But the patch doesn't look right, please see below.
 
-Thanks,
-Andrea
+> -	signal = tracehook_notify_death(tsk, &cookie, group_dead);
+> -	if (signal >= 0)
+> -		signal = do_notify_parent(tsk, signal);
+> +	/*
+> +	 * Notify interested parent if the whole group is dead.  Ptracer
+> +	 * should always be notified.  If something other than our normal
+> +	 * parent is ptracing us, then send it a SIGCHLD instead of
+> +	 * honoring exit_signal.  exit_signal only has special meaning to
+> +	 * our real parent.
+> +	 */
+> +	if (!task_detached(tsk) && thread_group_empty(tsk)) {
+> +		if (!ptrace_reparented(tsk))
+> +			do_notify_parent(tsk, tsk->exit_signal);
+> +		else
+> +			do_notify_parent(tsk, SIGCHLD);
+
+Forget about ptrace, suppose a single threaded child exits and its
+parent ignores SIGCHLD. In this case do_notify_parent() sets
+exit_signal = -1 to mark it dead, we should set exit_state = EXIT_DEAD
+and release it.
+
+
+Note! This looks very ugly, I wanted to cleanup this a long ago.
+I think we should never change ->exit_signal, and do_notify_parent()
+should return a boolean. I'll try to make the patches tomorrow.
+Then _perhaps_ this patch will become simpler.
+
+Oleg.
+
