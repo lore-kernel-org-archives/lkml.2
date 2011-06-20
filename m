@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab1FTVB4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 17:01:56 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:57564 "HELO
+	id S1755751Ab1FTVCB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 17:02:01 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:57817 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752344Ab1FTVBw (ORCPT
+	with SMTP id S1755677Ab1FTVB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 17:01:52 -0400
+	Mon, 20 Jun 2011 17:01:58 -0400
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18uAdgwtdQuFUorxYIRZKTRYls3fvBUpsiJwWOXDD
-	Cd/aIVKtAeD33f
+X-Provags-ID: V01U2FsdGVkX18hQDdb80AhGIzYRIw4+EJJpFvNccUKJLs3+T5cM1
+	G+w2t7nKwzKaxh
 From: Peter Huewe <peterhuewe@gmx.de>
 To: Samuel Ortiz <sameo@linux.intel.com>,
         Alexey Dobriyan <adobriyan@gmail.com>
@@ -20,9 +20,9 @@ Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
         Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         kernel-janitors@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 1/2 v3] mfd/ab3550: Convert to kstrtou8_from_user
-Date: Mon, 20 Jun 2011 23:01:37 +0200
-Message-Id: <1308603698-32166-1-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 2/2 v4] mfd/ab8500: Convert to kstrtou8_from_user
+Date: Mon, 20 Jun 2011 23:01:38 +0200
+Message-Id: <1308603698-32166-2-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <20110620195037.GA2534@p183.telecom.by>
 References: <20110620195037.GA2534@p183.telecom.by>
@@ -44,35 +44,56 @@ Changes in v2:
 - Use kstrtou8 instead of kstrtoul due to small numbers
 - Dropped then unnecessary checks
 Changes in v3:
-- Drop now unnecessary local variables
+- The local struct dev variable isn't needed anymore
+Changes in v4:
+- Drop unneccesary now local variables and casts
 - Change the debug_address and debug_bank members to u8 since they hold
-  only values up to 255, and also remove the now superfluous u8 casts
+only values up to 255, and also remove the now superfluous u8 casts
+
 (Remarks from Alexey Dobriyan, Thanks!)
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/mfd/ab3550-core.c |   79 +++++++++++++-------------------------------
- 1 files changed, 24 insertions(+), 55 deletions(-)
+ drivers/mfd/ab8500-debugfs.c |   74 ++++++++++++-----------------------------
+ 1 files changed, 22 insertions(+), 52 deletions(-)
 
-diff --git a/drivers/mfd/ab3550-core.c b/drivers/mfd/ab3550-core.c
-index 3d7dce6..bd0df90 100644
---- a/drivers/mfd/ab3550-core.c
-+++ b/drivers/mfd/ab3550-core.c
-@@ -73,8 +73,8 @@ struct ab3550 {
- 	u8 startup_events[AB3550_NUM_EVENT_REG];
- 	bool startup_events_read;
- #ifdef CONFIG_DEBUG_FS
--	unsigned int debug_bank;
--	unsigned int debug_address;
-+	u8 debug_bank;
-+	u8 debug_address;
- #endif
- };
+diff --git a/drivers/mfd/ab8500-debugfs.c b/drivers/mfd/ab8500-debugfs.c
+index 64748e4..5d3cd35 100644
+--- a/drivers/mfd/ab8500-debugfs.c
++++ b/drivers/mfd/ab8500-debugfs.c
+@@ -14,8 +14,8 @@
+ #include <linux/mfd/abx500.h>
+ #include <linux/mfd/ab8500.h>
  
-@@ -879,20 +879,13 @@ static ssize_t ab3550_bank_write(struct file *file,
+-static u32 debug_bank;
+-static u32 debug_address;
++static u8 debug_bank;
++static u8 debug_address;
+ 
+ /**
+  * struct ab8500_reg_range
+@@ -357,7 +357,7 @@ static int ab8500_registers_print(struct seq_file *s, void *p)
+ {
+ 	struct device *dev = s->private;
+ 	unsigned int i;
+-	u32 bank = debug_bank;
++	u8 bank = debug_bank;
+ 
+ 	seq_printf(s, AB8500_NAME_STRING " register values:\n");
+ 
+@@ -372,7 +372,7 @@ static int ab8500_registers_print(struct seq_file *s, void *p)
+ 			int err;
+ 
+ 			err = abx500_get_register_interruptible(dev,
+-				(u8)bank, (u8)reg, &value);
++				bank, (u8)reg, &value);
+ 			if (err < 0) {
+ 				dev_err(dev, "ab->read fail %d\n", err);
+ 				return err;
+@@ -419,20 +419,13 @@ static ssize_t ab8500_bank_write(struct file *file,
  	size_t count, loff_t *ppos)
  {
- 	struct ab3550 *ab = ((struct seq_file *)(file->private_data))->private;
+ 	struct device *dev = ((struct seq_file *)(file->private_data))->private;
 -	char buf[32];
 -	int buf_size;
 -	unsigned long user_bank;
@@ -92,21 +113,22 @@ index 3d7dce6..bd0df90 100644
 -		return -EINVAL;
 +		return err;
  
- 	if (user_bank >= AB3550_NUM_BANKS) {
- 		dev_err(&ab->i2c_client[0]->dev,
-@@ -902,7 +895,7 @@ static ssize_t ab3550_bank_write(struct file *file,
+ 	if (user_bank >= AB8500_NUM_BANKS) {
+ 		dev_err(dev, "debugfs error input > number of banks\n");
+@@ -441,7 +434,7 @@ static ssize_t ab8500_bank_write(struct file *file,
  
- 	ab->debug_bank = user_bank;
+ 	debug_bank = user_bank;
  
 -	return buf_size;
 +	return count;
  }
  
- static int ab3550_address_print(struct seq_file *s, void *p)
-@@ -923,27 +916,14 @@ static ssize_t ab3550_address_write(struct file *file,
+ static int ab8500_address_print(struct seq_file *s, void *p)
+@@ -458,27 +451,14 @@ static ssize_t ab8500_address_write(struct file *file,
+ 	const char __user *user_buf,
  	size_t count, loff_t *ppos)
  {
- 	struct ab3550 *ab = ((struct seq_file *)(file->private_data))->private;
+-	struct device *dev = ((struct seq_file *)(file->private_data))->private;
 -	char buf[32];
 -	int buf_size;
 -	unsigned long user_address;
@@ -119,44 +141,40 @@ index 3d7dce6..bd0df90 100644
 -	buf[buf_size] = 0;
 -
 -	err = strict_strtoul(buf, 0, &user_address);
-+	/* Get userspace string and convert to number */
-+	err = kstrtou8_from_user(user_buf, count, 0, &ab->debug_address);
++	/* Get userspace string and convert to number*/
++	err = kstrtou8_from_user(user_buf, count, 0, &debug_address);
  	if (err)
 -		return -EINVAL;
 -	if (user_address > 0xff) {
--		dev_err(&ab->i2c_client[0]->dev,
--			"debugfs error input > 0xff\n");
+-		dev_err(dev, "debugfs error input > 0xff\n");
 -		return -EINVAL;
 -	}
--	ab->debug_address = user_address;
+-	debug_address = user_address;
 -	return buf_size;
 +		return err;
 +
 +	return count;
  }
  
- static int ab3550_val_print(struct seq_file *s, void *p)
-@@ -952,8 +932,8 @@ static int ab3550_val_print(struct seq_file *s, void *p)
- 	int err;
+ static int ab8500_val_print(struct seq_file *s, void *p)
+@@ -488,7 +468,7 @@ static int ab8500_val_print(struct seq_file *s, void *p)
  	u8 regvalue;
  
--	err = get_register_interruptible(ab, (u8)ab->debug_bank,
--		(u8)ab->debug_address, &regvalue);
-+	err = get_register_interruptible(ab, ab->debug_bank,
-+		ab->debug_address, &regvalue);
- 	if (err)
- 		return -EINVAL;
- 	seq_printf(s, "0x%02X\n", regvalue);
-@@ -971,38 +951,27 @@ static ssize_t ab3550_val_write(struct file *file,
+ 	ret = abx500_get_register_interruptible(dev,
+-		(u8)debug_bank, (u8)debug_address, &regvalue);
++		debug_bank, debug_address, &regvalue);
+ 	if (ret < 0) {
+ 		dev_err(dev, "abx500_get_reg fail %d, %d\n",
+ 			ret, __LINE__);
+@@ -509,32 +489,22 @@ static ssize_t ab8500_val_write(struct file *file,
  	size_t count, loff_t *ppos)
  {
- 	struct ab3550 *ab = ((struct seq_file *)(file->private_data))->private;
+ 	struct device *dev = ((struct seq_file *)(file->private_data))->private;
 -	char buf[32];
 -	int buf_size;
 -	unsigned long user_val;
 +	u8 user_val;
  	int err;
- 	u8 regvalue;
  
 -	/* Get userspace string and assure termination */
 -	buf_size = min(count, (sizeof(buf)-1));
@@ -170,32 +188,24 @@ index 3d7dce6..bd0df90 100644
  	if (err)
 -		return -EINVAL;
 -	if (user_val > 0xff) {
--		dev_err(&ab->i2c_client[0]->dev,
--			"debugfs error input > 0xff\n");
+-		dev_err(dev, "debugfs error input > 0xff\n");
 -		return -EINVAL;
 -	}
 +		return err;
 +
- 	err = mask_and_set_register_interruptible(
--		ab, (u8)ab->debug_bank,
--		(u8)ab->debug_address, 0xFF, (u8)user_val);
-+		ab, ab->debug_bank,
-+		ab->debug_address, 0xFF, user_val);
- 	if (err)
+ 	err = abx500_set_register_interruptible(dev,
+-		(u8)debug_bank, debug_address, (u8)user_val);
++		debug_bank, debug_address, user_val);
+ 	if (err < 0) {
+ 		printk(KERN_ERR "abx500_set_reg failed %d, %d", err, __LINE__);
  		return -EINVAL;
- 
--	get_register_interruptible(ab, (u8)ab->debug_bank,
--		(u8)ab->debug_address, &regvalue);
-+	get_register_interruptible(ab, ab->debug_bank,
-+		ab->debug_address, &regvalue);
- 	if (err)
- 		return -EINVAL;
+ 	}
  
 -	return buf_size;
 +	return count;
  }
  
- static const struct file_operations ab3550_bank_fops = {
+ static const struct file_operations ab8500_bank_fops = {
 -- 
 1.7.3.4
 
