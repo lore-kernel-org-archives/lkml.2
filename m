@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab1FTMrY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 08:47:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54307 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752248Ab1FTMrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 08:47:23 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20110619235147.GQ11521@ZenIV.linux.org.uk>
-References: <20110619235147.GQ11521@ZenIV.linux.org.uk>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC] get_write_access()/deny_write_access() without inode->i_lock
-Date: Mon, 20 Jun 2011 13:47:17 +0100
-Message-ID: <21839.1308574037@redhat.com>
+	id S1754060Ab1FTMrp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 08:47:45 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36925 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752248Ab1FTMrn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 08:47:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=x2OF5xQvmcNbvRyFVPubJ0qzsbo0HpzW8xZqkyaCq4DyxFjSkPY4HUUCCg8NDCP7HC
+         QebLoGoVUuC1tv/C7u707oqUfWCnWD9DfUc9WrzYJtwyNemAMDrHcnnH2Q7zSbk7TCsi
+         OTASIzAJbAA4eyXXLxbdFpHdRNsf3BF9H43ME=
+Date: Mon, 20 Jun 2011 14:47:38 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Yuan-Hsin Chen <yuanlmm@gmail.com>
+Cc: jgarzik@pobox.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sshtylyov@mvista.com, Yuan-Hsin Chen <yhchen@faraday-tech.com>
+Subject: Re: [PATCH v4] ahci: move ahci_sb600_softreset to libahci.c and
+ rename it
+Message-ID: <20110620124738.GO2611@htj.dyndns.org>
+References: <20110617120704.GH2611@htj.dyndns.org>
+ <1308557202-1895-1-git-send-email-yuanlmm@gmail.com>
+ <20110620081937.GN2611@htj.dyndns.org>
+ <BANLkTi=dgTNUESCstJNFUg6_YLbfwpNF5g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=dgTNUESCstJNFUg6_YLbfwpNF5g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
+Hello,
 
-> +	for (v = atomic_read(&inode->i_writecount); v >= 0; v = v1) {
-> +		v1 = atomic_cmpxchg(&inode->i_writecount, v, v + 1);
-> +		if (likely(v1 == v))
-> +			return 0;
-> +	}
+On Mon, Jun 20, 2011 at 06:06:52PM +0800, Yuan-Hsin Chen wrote:
+> > Heh, I know I suggested that name but that is one ugly name.  If
+> > anyone has any better idea, please come forward.
+> 
+> How about ahci_pmp_workaround_softreset or ahci_pmp_ipms_set_softreset?
+> Also applys to ops, ahci_pmp_workaround_ops or ahci_pmp_ipms_set_ops.
 
-You don't need to reissue the atomic_read().  atomic_cmpxchg() returns the
-current value of the memory location.  Just set v to v1 before going round the
-loop again.
+Heh, maybe.  ahci_pmp_workaround_softreset is a bit generic but at
+least doesn't completely stupid.  I don't know. :)
 
-David
+Thanks.
+
+-- 
+tejun
