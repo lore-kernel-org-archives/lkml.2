@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528Ab1FTFpo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 01:45:44 -0400
-Received: from qmta02.westchester.pa.mail.comcast.net ([76.96.62.24]:34845
-	"EHLO qmta02.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752413Ab1FTFpm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 01:45:42 -0400
-From: matt mooney <mfm@muteddisk.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 22/22] staging: usbip: userspace: configure.ac: change package data
-Date: Sun, 19 Jun 2011 22:44:52 -0700
-Message-Id: <55814ea1c62b0b5ce0f93d303920bf9094b7da92.1308547654.git.mfm@muteddisk.com>
-X-Mailer: git-send-email 1.7.5.2
-In-Reply-To: <cover.1308547654.git.mfm@muteddisk.com>
-References: <cover.1308547654.git.mfm@muteddisk.com>
+	id S1752082Ab1FTF5q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 01:57:46 -0400
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:35984 "EHLO smtp2.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751417Ab1FTF5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 01:57:45 -0400
+Date: Mon, 20 Jun 2011 08:57:43 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: Christoph Hellwig <hch@infradead.org>
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: 3.0-rc3: WARNING: at fs/fs-writeback.c:356
+ writeback_single_inode+0x3e/0x18f()
+In-Reply-To: <20110619143422.GA19875@infradead.org>
+Message-ID: <alpine.SOC.1.00.1106200856240.15133@math.ut.ee>
+References: <alpine.SOC.1.00.1106141213570.11764@math.ut.ee> <1308112976.2635.27.camel@pasglop> <20110619143422.GA19875@infradead.org>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change package name to usbip-utils, email address to linux-usb, and
-bump minor version number.
+> > > Tested 3.0-rc3 on my PC (2 PATA disks, single duron CPU). Got several of 
+> > > these in dmesg:
+> > 
+> > Same here on a powerpc64 machine while doing a fresh debian install
+> > (while the installer's installing the packages), -rc3 as well.
+> 
+> Does commit 50338b889dc504c69e0cb316ac92d1b9e51f3c8a fix the issue for
+> you?
 
-Signed-off-by: matt mooney <mfm@muteddisk.com>
----
- drivers/staging/usbip/userspace/configure.ac |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I updated to yesterdays git and tested it. Booting up, doing a debian 
+unstable upgrade and moving 20G files around did not cause the warnings 
+so far, so it seems to have been fixed.
 
-diff --git a/drivers/staging/usbip/userspace/configure.ac b/drivers/staging/usbip/userspace/configure.ac
-index 39e4a47..89fefd5 100644
---- a/drivers/staging/usbip/userspace/configure.ac
-+++ b/drivers/staging/usbip/userspace/configure.ac
-@@ -1,7 +1,7 @@
- dnl Process this file with autoconf to produce a configure script.
- 
- AC_PREREQ(2.59)
--AC_INIT([usbip], [1.0.0], [usbip-devel@lists.sourceforge.net])
-+AC_INIT([usbip-utils], [1.1.0], [linux-usb@vger.kernel.org])
- AC_DEFINE([USBIP_VERSION], [0x00000100], [binary-coded decimal version number])
- 
- CURRENT=0
 -- 
-1.7.5.2
-
+Meelis Roos (mroos@linux.ee)
