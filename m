@@ -1,80 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754954Ab1FTAFx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 20:05:53 -0400
-Received: from sncsmrelay2.nai.com ([67.97.80.206]:63642 "EHLO
-	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754870Ab1FTAFw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 20:05:52 -0400
-Message-ID: <4DFE8ED1.3050007@snapgear.com>
-Date: Mon, 20 Jun 2011 10:05:37 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	id S1751672Ab1FTAhe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 20:37:34 -0400
+Received: from tundra.namei.org ([65.99.196.166]:38534 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750743Ab1FTAhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jun 2011 20:37:33 -0400
+Date: Mon, 20 Jun 2011 10:37:30 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Chris Forbes <chrisf@ijw.co.nz>
+cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] security: inode: fixed coding style issue
+In-Reply-To: <1308295341-27566-1-git-send-email-chrisf@ijw.co.nz>
+Message-ID: <alpine.LRH.2.00.1106201036040.5170@tundra.namei.org>
+References: <1308295341-27566-1-git-send-email-chrisf@ijw.co.nz>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, Shawn Guo <shawn.guo@linaro.org>,
-        <patches@linaro.org>, <netdev@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        Jason Liu <jason.hui@linaro.org>, <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 2/3] net/fec: add device tree support
-References: <1308410354-21387-1-git-send-email-shawn.guo@linaro.org> <1308410354-21387-3-git-send-email-shawn.guo@linaro.org> <4DFDDFF4.8000305@snapgear.com> <201106191411.32137.arnd@arndb.de>
-In-Reply-To: <201106191411.32137.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/06/11 22:11, Arnd Bergmann wrote:
-> On Sunday 19 June 2011 13:39:32 Greg Ungerer wrote:
->>> +#ifdef CONFIG_OF
->>> +static const struct of_device_id fec_dt_ids[] = {
->>> +     { .compatible = "fsl,fec", .data =&fec_devtype[0], },
->>> +     {},
->>> +};
->>> +
->>> +static const struct of_device_id *
->>> +fec_get_of_device_id(struct platform_device *pdev)
->>> +{
->>> +     return of_match_device(fec_dt_ids,&pdev->dev);
->>> +}
->>> +#else
->>> +#define fec_dt_ids NULL
->>> +static inline struct of_device_id *
->>> +fec_get_of_device_id(struct platform_device *pdev)
->>> +{
->>> +     return NULL;
->>> +}
->>> +#endif
->>> +
->>>    static unsigned char macaddr[ETH_ALEN];
->>>    module_param_array(macaddr, byte, NULL, 0);
->>>    MODULE_PARM_DESC(macaddr, "FEC Ethernet MAC address");
->>> @@ -1363,6 +1385,11 @@ fec_probe(struct platform_device *pdev)
->>>        struct net_device *ndev;
->>>        int i, irq, ret = 0;
->>>        struct resource *r;
->>> +     const struct of_device_id *of_id;
->>> +
->>> +     of_id = fec_get_of_device_id(pdev);
->>
->> fec_get_of_device_id() is defined inside of "#ifdef CONFIG_OF". This
->> use of it will break compilation when this is not defined.
->>
->
->
-> Why? Note the #else path defining an empty function.
+On Fri, 17 Jun 2011, Chris Forbes wrote:
 
-Sorry, missed that :-)
+> --- a/security/inode.c
+> +++ b/security/inode.c
+> @@ -75,7 +75,8 @@ static struct inode *get_inode(struct super_block *sb, int mode, dev_t dev)
+>  			inode->i_op = &simple_dir_inode_operations;
+>  			inode->i_fop = &simple_dir_operations;
+>  
+> -			/* directory inodes start off with i_nlink == 2 (for "." entry) */
+> +			/* directory inodes start off with i_nlink == 2
+> +			 * (for "." entry) */
 
-Regards
-Greg
+This is not correct for multi-line comments.
+
+> -	static struct tree_descr files[] = {{""}};
+> +	static struct tree_descr files[] = { {""} };
+
+Why ?
 
 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+
+-- 
+James Morris
+<jmorris@namei.org>
