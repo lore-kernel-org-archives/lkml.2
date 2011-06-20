@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab1FTQ6z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 12:58:55 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35383 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755332Ab1FTQ6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 12:58:51 -0400
-Date: Mon, 20 Jun 2011 17:58:45 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: Re: [PATCH 1/3] mm: completely disable THP by
- transparent_hugepage=never
-Message-ID: <20110620165844.GA9396@suse.de>
-References: <1308587683-2555-1-git-send-email-amwang@redhat.com>
+	id S1755355Ab1FTQ6y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 12:58:54 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:57596 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816Ab1FTQ6u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 12:58:50 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing the packed attribute
+Date: Mon, 20 Jun 2011 18:58:45 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Nicolas Pitre <nico@fluxnic.net>, linux-arm-kernel@lists.infradead.org,
+        Alexander Holler <holler@ahsoftware.de>, linux-usb@vger.kernel.org,
+        gregkh@suse.de, lkml <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin@rab.in>
+References: <Pine.LNX.4.44L0.1106201240240.2113-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1106201240240.2113-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1308587683-2555-1-git-send-email-amwang@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106201858.45624.arnd@arndb.de>
+X-Provags-ID: V02:K0:8o+AQXYYSwSwugQEDIXp4kYwpON9dUeINfbbh2wn24C
+ m1VP6l9t3iNvqj4K1eFbke3heZFAlSUoBbVVhsFIjKPahBoBo0
+ RahsR4Jfq6zKpMNo1UJbi7IxSzB+rHOMMf10kbgFeSERAFZKzU
+ 183NA8itAU/em3DZS6Wirc2+fHgn/Gb8JJMKKbK47AwdvpvpMG
+ sRxlwhfG1YnUYWed7vDyQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 12:34:28AM +0800, Amerigo Wang wrote:
-> transparent_hugepage=never should mean to disable THP completely,
-> otherwise we don't have a way to disable THP completely.
-> The design is broken.
+On Monday 20 June 2011, Alan Stern wrote:
+> I thought the source of the thread had nothing to do with any recent
+> changes to gcc.  Maybe I was wrong.  In any case, the issue was not the
+> lack of an alignment indication but rather the unnecessary presence of
+> a ((packed)) attribute causing the compiler to forget about the natural
+> alignment.
 > 
+> To put it another way, the problem was caused by having ((packed))  
+> where it wasn't needed.  You want to fix the immediate fallout of the
+> problem by adding an alignment attribute, instead of fixing the problem
+> itself by removing the underlying cause.
 
-I don't get why it's broken. Why would the user be prevented from
-enabling it at runtime?
+A recent change in gcc changed the default behaviour when compiling the
+ehci driver on ARM, but the behaviour was already nondeterministic
+because the definition of the readl/writel macros on ARM relies on
+unspecified behaviour (cast to pointer with larger aligment).
 
--- 
-Mel Gorman
-SUSE Labs
+We are also going to change the ARM implementation to always do 32 bit
+accesses in readl/writel, but the patch that went into the ehci driver
+was correct nonetheless.
+
+	Arnd
