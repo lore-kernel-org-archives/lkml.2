@@ -1,168 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919Ab1FTVcK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 17:32:10 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55219 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755412Ab1FTVcF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 17:32:05 -0400
-Date: Mon, 20 Jun 2011 14:31:31 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: drepper@akkadia.org
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-        rientjes@google.com, torvalds@linux-foundation.org,
-        viro@zeniv.linux.org.uk, wilsons@start.ca, linux-man@vger.kernel.org,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Chris Zankel <chris@zankel.net>
-Subject: Re: [PATCH] Add cloexec information to fdinfo
-Message-Id: <20110620143131.9c6e040c.akpm@linux-foundation.org>
-In-Reply-To: <201106100355.p5A3t8Aa024924@drepperk.user.openhosting.com>
-References: <201106100355.p5A3t8Aa024924@drepperk.user.openhosting.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755908Ab1FTVi0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 17:38:26 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43417 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755361Ab1FTViY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 17:38:24 -0400
+Date: Mon, 20 Jun 2011 23:38:18 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 7/7] writeback: timestamp based bdi dirty_exceeded state
+Message-ID: <20110620213818.GI4810@quack.suse.cz>
+References: <20110619150108.691351746@intel.com>
+ <20110619150510.717948499@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110619150510.717948499@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jun 2011 23:55:08 -0400
-drepper@akkadia.org wrote:
+On Sun 19-06-11 23:01:15, Wu Fengguang wrote:
+> When there are only one (or several) dirtiers, dirty_exceeded is always
+> (or mostly) off. Converting to timestamp avoids this problem. It helps
+> to use smaller write_chunk for smoother throttling.
+  Hmm, what do you mean by "dirty_exceeded is always (or mostly) off"? I
+agree that dirty_exceeded handling is broken in current kernel when there
+are more dirtiers because of tasks having different dirty limits. Is this
+the problem you are speaking about?
 
-> There is one piece of information about a file descriptor which is
-> currently not visible from the outside: the close-on-exec flag.  The
-> /proc/PID/fdinfo/* files have the mode information but this is
-> missing.  Is the following patch acceptable?
+If yes, I think I have a cleaner fix for that - setting dirty_exceeded
+when bdi_dirty enters the range where per-task dirty limits can be and
+resetting it only when we leave that range. I can refresh the fix and
+send it to you...
+
+								Honza
+
+> Before patch, the wait time in balance_dirty_pages() are ~200ms:
 > 
-> What I don't know is whether the RCU locking is needed given that
-> real locks are taken.  Someone with more knowledge could just
-> remove those two lines.
-
-The locking looks OK to me.
-
-Hopefully /prod/pid/fdinfo is documented somewhere. 
-linux-man@vger.kernel.org appears to be the email address we use to rub
-the documentation lamp.
-
-> diff --git a/fs/proc/base.c b/fs/proc/base.c
-> index 14def99..bda3651 100644
-> --- a/fs/proc/base.c
-> +++ b/fs/proc/base.c
-> @@ -1924,12 +1924,23 @@ static int proc_fd_info(struct inode *inode, struct path *path, char *info)
->  				*path = file->f_path;
->  				path_get(&file->f_path);
->  			}
-> -			if (info)
-> +			if (info) {
-> +				int cloexec;
-> +				struct fdtable *fdt;
+> [ 1093.397700] write_bandwidth: comm=swapper pages=1536 time=204ms
+> [ 1093.594319] write_bandwidth: comm=swapper pages=1536 time=196ms
+> [ 1093.796642] write_bandwidth: comm=swapper pages=1536 time=200ms
+> 
+> After patch, ~25ms:
+> 
+> [   90.261339] write_bandwidth: comm=swapper pages=192 time=20ms
+> [   90.293168] write_bandwidth: comm=swapper pages=192 time=24ms
+> [   90.323853] write_bandwidth: comm=swapper pages=192 time=24ms
+> [   90.354510] write_bandwidth: comm=swapper pages=192 time=28ms
+> [   90.389890] write_bandwidth: comm=swapper pages=192 time=28ms
+> [   90.421787] write_bandwidth: comm=swapper pages=192 time=24ms
+> 
+>  include/linux/backing-dev.h |    2 +-
+>  mm/backing-dev.c            |    2 --
+>  mm/page-writeback.c         |   24 ++++++++++++------------
+>  3 files changed, 13 insertions(+), 15 deletions(-)
+> 
+> --- linux-next.orig/mm/page-writeback.c	2011-06-19 22:59:49.000000000 +0800
+> +++ linux-next/mm/page-writeback.c	2011-06-19 22:59:53.000000000 +0800
+> @@ -483,6 +483,15 @@ unsigned long bdi_dirty_limit(struct bac
+>  	return bdi_dirty;
+>  }
+>  
+> +/*
+> + * last time exceeded (limit - limit/DIRTY_BRAKE)
+> + */
+> +static bool dirty_exceeded_recently(struct backing_dev_info *bdi,
+> +				    unsigned long time_window)
+> +{
+> +	return jiffies - bdi->dirty_exceed_time <= time_window;
+> +}
 > +
-> +				rcu_read_lock();
-> +				fdt = files_fdtable(files);
-> +				cloexec = FD_ISSET(fd, fdt->close_on_exec);
-
-Does FD_ISSET return 0 or 1?  Or 0 or non-zero?
-
-For x86 it's the former.
-
-<checks the architectures>
-
-arch/h8300/include/asm/posix_types.h: busted
-#define __FD_ISSET(d, set)      ((set)->fds_bits[__FDELT(d)] & __FDMASK(d))
-
-arch/m68k/include/asm/posix_types.h: busted
-#define __FD_ISSET(d, set)      ((set)->fds_bits[__FDELT(d)] & __FDMASK(d))
-
-arch/xtensa/include/asm/posix_types.h: busted
-#define __FD_ISSET(d, set)      ((set)->fds_bits[__FDELT(d)] & __FDMASK(d))
-
-
-From: Andrew Morton <akpm@linux-foundation.org>
-
-Harmonise these return values with other architectures.  In some cases
-this affects all compilers and in other cases non-gcc compilers only.
-
-Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Chris Zankel <chris@zankel.net>
-Cc: Ulrich Drepper <drepper@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- arch/h8300/include/asm/posix_types.h  |    2 +-
- arch/m68k/include/asm/posix_types.h   |    2 +-
- arch/xtensa/include/asm/posix_types.h |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
-
-diff -puN arch/h8300/include/asm/posix_types.h~h8300-m68k-xtensa-__fd_isset-should-return-0-1 arch/h8300/include/asm/posix_types.h
---- a/arch/h8300/include/asm/posix_types.h~h8300-m68k-xtensa-__fd_isset-should-return-0-1
-+++ a/arch/h8300/include/asm/posix_types.h
-@@ -50,7 +50,7 @@ typedef struct {
- #define	__FD_CLR(d, set)	((set)->fds_bits[__FDELT(d)] &= ~__FDMASK(d))
- 
- #undef	__FD_ISSET
--#define	__FD_ISSET(d, set)	((set)->fds_bits[__FDELT(d)] & __FDMASK(d))
-+#define	__FD_ISSET(d, set)	(!!((set)->fds_bits[__FDELT(d)] & __FDMASK(d)))
- 
- #undef	__FD_ZERO
- #define __FD_ZERO(fdsetp) (memset (fdsetp, 0, sizeof(*(fd_set *)fdsetp)))
-diff -puN arch/m68k/include/asm/posix_types.h~h8300-m68k-xtensa-__fd_isset-should-return-0-1 arch/m68k/include/asm/posix_types.h
---- a/arch/m68k/include/asm/posix_types.h~h8300-m68k-xtensa-__fd_isset-should-return-0-1
-+++ a/arch/m68k/include/asm/posix_types.h
-@@ -51,7 +51,7 @@ typedef struct {
- #define	__FD_CLR(d, set)	((set)->fds_bits[__FDELT(d)] &= ~__FDMASK(d))
- 
- #undef	__FD_ISSET
--#define	__FD_ISSET(d, set)	((set)->fds_bits[__FDELT(d)] & __FDMASK(d))
-+#define	__FD_ISSET(d, set)	(!!((set)->fds_bits[__FDELT(d)] & __FDMASK(d)))
- 
- #undef	__FD_ZERO
- #define __FD_ZERO(fdsetp) (memset (fdsetp, 0, sizeof(*(fd_set *)fdsetp)))
-diff -puN arch/xtensa/include/asm/posix_types.h~h8300-m68k-xtensa-__fd_isset-should-return-0-1 arch/xtensa/include/asm/posix_types.h
---- a/arch/xtensa/include/asm/posix_types.h~h8300-m68k-xtensa-__fd_isset-should-return-0-1
-+++ a/arch/xtensa/include/asm/posix_types.h
-@@ -58,7 +58,7 @@ typedef struct {
- 
- #define	__FD_SET(d, set)	((set)->fds_bits[__FDELT(d)] |= __FDMASK(d))
- #define	__FD_CLR(d, set)	((set)->fds_bits[__FDELT(d)] &= ~__FDMASK(d))
--#define	__FD_ISSET(d, set)	((set)->fds_bits[__FDELT(d)] & __FDMASK(d))
-+#define	__FD_ISSET(d, set)	(!!((set)->fds_bits[__FDELT(d)] & __FDMASK(d)))
- #define	__FD_ZERO(set)	\
-   ((void) memset ((void *) (set), 0, sizeof (__kernel_fd_set)))
- 
-_
-
-
-> +				rcu_read_unlock();
-> +
->  				snprintf(info, PROC_FDINFO_MAX,
->  					 "pos:\t%lli\n"
-> -					 "flags:\t0%o\n",
-> +					 "flags:\t0%o\n"
-> +					 "cloexec: %d\n",
-
-Should use a tab here for consistency.
-
---- a/fs/proc/base.c~proc-pid-fdinfo-add-cloexec-information-fix
-+++ a/fs/proc/base.c
-@@ -1936,7 +1936,7 @@ static int proc_fd_info(struct inode *in
- 				snprintf(info, PROC_FDINFO_MAX,
- 					 "pos:\t%lli\n"
- 					 "flags:\t0%o\n"
--					 "cloexec: %d\n",
-+					 "cloexec:\t%d\n",
- 					 (long long) file->f_pos,
- 					 file->f_flags,
- 					 cloexec);
-_
-
->  					 (long long) file->f_pos,
-> -					 file->f_flags);
-> +					 file->f_flags,
-> +					 cloexec);
-> +			}
->  			spin_unlock(&files->file_lock);
->  			put_files_struct(files);
->  			return 0;
+>  static void bdi_update_write_bandwidth(struct backing_dev_info *bdi,
+>  				       unsigned long elapsed,
+>  				       unsigned long written)
+> @@ -621,7 +630,6 @@ static void balance_dirty_pages(struct a
+>  	unsigned long bdi_thresh;
+>  	unsigned long pages_written = 0;
+>  	unsigned long pause = 1;
+> -	bool dirty_exceeded = false;
+>  	struct backing_dev_info *bdi = mapping->backing_dev_info;
+>  	unsigned long start_time = jiffies;
+>  
+> @@ -669,14 +677,9 @@ static void balance_dirty_pages(struct a
+>  		 * bdi or process from holding back light ones; The latter is
+>  		 * the last resort safeguard.
+>  		 */
+> -		dirty_exceeded = (bdi_dirty > bdi_thresh) ||
+> -				  (nr_dirty > dirty_thresh);
+> -
+> -		if (!dirty_exceeded)
+> +		if (bdi_dirty <= bdi_thresh && nr_dirty <= dirty_thresh)
+>  			break;
+> -
+> -		if (!bdi->dirty_exceeded)
+> -			bdi->dirty_exceeded = 1;
+> +		bdi->dirty_exceed_time = jiffies;
+>  
+>  		bdi_update_bandwidth(bdi, dirty_thresh, nr_dirty, bdi_dirty,
+>  				     start_time);
+> @@ -719,9 +722,6 @@ static void balance_dirty_pages(struct a
+>  			pause = HZ / 10;
+>  	}
+>  
+> -	if (!dirty_exceeded && bdi->dirty_exceeded)
+> -		bdi->dirty_exceeded = 0;
+> -
+>  	if (writeback_in_progress(bdi))
+>  		return;
+>  
+> @@ -775,7 +775,7 @@ void balance_dirty_pages_ratelimited_nr(
+>  		return;
+>  
+>  	ratelimit = ratelimit_pages;
+> -	if (mapping->backing_dev_info->dirty_exceeded)
+> +	if (dirty_exceeded_recently(bdi, MAX_PAUSE))
+>  		ratelimit = 8;
+>  
+>  	/*
+> --- linux-next.orig/include/linux/backing-dev.h	2011-06-19 22:54:58.000000000 +0800
+> +++ linux-next/include/linux/backing-dev.h	2011-06-19 22:59:53.000000000 +0800
+> @@ -79,7 +79,7 @@ struct backing_dev_info {
+>  	unsigned long avg_write_bandwidth;
+>  
+>  	struct prop_local_percpu completions;
+> -	int dirty_exceeded;
+> +	unsigned long dirty_exceed_time;
+>  
+>  	unsigned int min_ratio;
+>  	unsigned int max_ratio, max_prop_frac;
+> --- linux-next.orig/mm/backing-dev.c	2011-06-19 22:59:49.000000000 +0800
+> +++ linux-next/mm/backing-dev.c	2011-06-19 22:59:53.000000000 +0800
+> @@ -670,8 +670,6 @@ int bdi_init(struct backing_dev_info *bd
+>  			goto err;
+>  	}
+>  
+> -	bdi->dirty_exceeded = 0;
+> -
+>  	bdi->bw_time_stamp = jiffies;
+>  	bdi->written_stamp = 0;
+>  
+> 
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
