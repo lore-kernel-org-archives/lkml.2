@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756206Ab1FTX1V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 19:27:21 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:5132 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755167Ab1FTX1S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 19:27:18 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6383"; a="98763905"
-From: David Brown <davidb@codeaurora.org>
-To: Greg KH <greg@kroah.com>
-Cc: Jeff Ohlstein <johlstei@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [stable] [PATCH v2] msm: timer: compensate for timer shift in msm_read_timer_count
-References: <1308344138-2862-1-git-send-email-johlstei@codeaurora.org>
-	<20110620215922.GA21909@kroah.com>
-Date: Mon, 20 Jun 2011 16:27:16 -0700
-In-Reply-To: <20110620215922.GA21909@kroah.com> (Greg KH's message of "Mon, 20
-	Jun 2011 14:59:22 -0700")
-Message-ID: <8ya7h8gozhn.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1756331Ab1FTX2S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 19:28:18 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:43515 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756306Ab1FTX2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 19:28:14 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: [PATCH] PM / Runtime: Handle clocks correctly if CONFIG_PM_RUNTIME is unset
+Date: Tue, 21 Jun 2011 01:28:51 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Kevin Hilman <khilman@ti.com>, Magnus Damm <magnus.damm@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106210128.52101.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20 2011, Greg KH wrote:
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-> On Fri, Jun 17, 2011 at 01:55:38PM -0700, Jeff Ohlstein wrote:
->> Some msm targets have timers whose lower bits are unreliable. So, we
->> present our timers as lower frequency than they actually are, and ignore
->> the bottom 5 bits on such targets. This compensation was erroneously
->> removed from the msm_read_timer_count function, so restore it.
->> 
->> This was broken by 94790ec25 "msm: timer: SMP timer support for msm".
->> 
->> Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
->> ---
->>  arch/arm/mach-msm/timer.c |    6 +++++-
->>  1 files changed, 5 insertions(+), 1 deletions(-)
->> 
->
-> <formletter>
->
-> This is not the correct way to submit patches for inclusion in the
-> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-> for how to do this properly.
->
-> </formletter>
+Commit 85eb8c8d0b0900c073b0e6f89979ac9c439ade1a (PM / Runtime:
+Generic clock manipulation rountines for runtime PM (v6)) converted
+the shmobile platform to using generic code for runtime PM clock
+management, but it changed the behavior for CONFIG_PM_RUNTIME unset
+incorrectly.
 
-I don't think this patch was intended for stable in the first place.
-Jeff, this is a fix for 3.0-rcx, right?
+Specifically, for CONFIG_PM_RUNTIME unset pm_runtime_clk_notify()
+should enable clocks for action equal to BUS_NOTIFY_BIND_DRIVER and
+it should disable them for action equal to BUS_NOTIFY_UNBOUND_DRIVER
+(instead of BUS_NOTIFY_ADD_DEVICE and BUS_NOTIFY_DEL_DEVICE,
+respectively).  Make this function behave as appropriate.
 
-David
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/base/power/clock_ops.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Index: linux-2.6/drivers/base/power/clock_ops.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/clock_ops.c
++++ linux-2.6/drivers/base/power/clock_ops.c
+@@ -387,7 +387,7 @@ static int pm_runtime_clk_notify(struct
+ 	clknb = container_of(nb, struct pm_clk_notifier_block, nb);
+ 
+ 	switch (action) {
+-	case BUS_NOTIFY_ADD_DEVICE:
++	case BUS_NOTIFY_BIND_DRIVER:
+ 		if (clknb->con_ids[0]) {
+ 			for (con_id = clknb->con_ids; *con_id; con_id++)
+ 				enable_clock(dev, *con_id);
+@@ -395,7 +395,7 @@ static int pm_runtime_clk_notify(struct
+ 			enable_clock(dev, NULL);
+ 		}
+ 		break;
+-	case BUS_NOTIFY_DEL_DEVICE:
++	case BUS_NOTIFY_UNBOUND_DRIVER:
+ 		if (clknb->con_ids[0]) {
+ 			for (con_id = clknb->con_ids; *con_id; con_id++)
+ 				disable_clock(dev, *con_id);
