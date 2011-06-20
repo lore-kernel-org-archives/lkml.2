@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab1FTTUq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 15:20:46 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:15086 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab1FTTUp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 15:20:45 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Mon, 20 Jun 2011 15:20:44 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, Alan Stern <stern@rowland.harvard.edu>,
-        gregkh@suse.de, linux-usb@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, Rabin Vincent <rabin@rab.in>,
-        Alexander Holler <holler@ahsoftware.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] USB: ehci: use packed,
- aligned(4) instead of removing the packed attribute
-In-reply-to: <20110620190240.GJ26089@n2100.arm.linux.org.uk>
-Message-id: <alpine.LFD.2.00.1106201515050.2142@xanadu.home>
-References: <Pine.LNX.4.44L0.1106201240240.2113-100000@iolanthe.rowland.org>
- <201106201858.45624.arnd@arndb.de>
- <20110620190240.GJ26089@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754609Ab1FTTV6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 15:21:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3505 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751352Ab1FTTV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 15:21:56 -0400
+Date: Mon, 20 Jun 2011 21:21:17 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>, Cong Wang <amwang@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [PATCH 1/3] mm: completely disable THP by
+ transparent_hugepage=never
+Message-ID: <20110620192117.GG20843@redhat.com>
+References: <1308587683-2555-1-git-send-email-amwang@redhat.com>
+ <20110620165844.GA9396@suse.de>
+ <4DFF7E3B.1040404@redhat.com>
+ <4DFF7F0A.8090604@redhat.com>
+ <4DFF8106.8090702@redhat.com>
+ <4DFF8327.1090203@redhat.com>
+ <4DFF84BB.3050209@redhat.com>
+ <4DFF8848.2060802@redhat.com>
+ <20110620182558.GF4749@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110620182558.GF4749@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jun 2011, Russell King - ARM Linux wrote:
+On Mon, Jun 20, 2011 at 02:25:58PM -0400, Vivek Goyal wrote:
+> So I see some opprotunity there to save memory. But this 10kB
+> definitely sounds trivial amount to me.
 
-> On Mon, Jun 20, 2011 at 06:58:45PM +0200, Arnd Bergmann wrote:
-> > A recent change in gcc changed the default behaviour when compiling the
-> > ehci driver on ARM, but the behaviour was already nondeterministic
-> > because the definition of the readl/writel macros on ARM relies on
-> > unspecified behaviour (cast to pointer with larger aligment).
-> 
-> It's unspecified behaviour period.  If you pass a pointer to readl/writel
-> which is not word aligned, what you get back is anyones guess.
+Agree with you and Rik. Also I already avoided the big memory waste
+(that for example isn't avoided in the ksmd and could be optimized
+away without decreasing flexibility of KSM, and ksmd surely runs on
+the kdump kernel too...) that is to make khugepaged exit and release
+kernel stack when enabled=never (either done by sysfs or at boot with
+transparent_hugepage=never) and all other structs associated with a
+(temporarily) useless kernel thread.
 
-The pointer _is_ aligned.  The problem is that it comes from the address 
-of a structure member, which structure is marked __packed.
+The khugepaged_slab_init and mm_slot_hash_init() maybe could be
+deferred to when khugepaged starts, and be released when it shutdown
+but it makes it more tricky/racey. If you really want to optimize
+that, without preventing to ever enable THP again despite all .text
+was compiled in and ready to run. You will likely save more if you
+make ksmd exit when run=0 (which btw is a much more common config than
+enabled=never with THP). And slots hashes are allocated by ksm too so
+you could optimize those too if you want and allocate them only by the
+time ksmd starts.
 
-Older GCC would see the cast to unsigned int applied to that pointer 
-within the ARM's readl()/writel() implementation and ignore that the 
-source of the address is marked __packed, which __packed implies an 
-alignment of 1.  REcent GCC versions would honnor the alignment of 1 and 
-perform the unsigned int * access using byte sized loads/stores.
-
-
-Nicolas
+As long as it'd still possible to enable the feature again as it is
+possible now without noticing an altered behavior from userland, I'm
+not entirely against optimizing for saving ~8k of ram even if it
+increases complexity a bit (more kernel code will increase .text a bit
+though, hopefully not 8k more of .text ;).
