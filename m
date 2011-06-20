@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab1FTK1L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 06:27:11 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41705 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753265Ab1FTK1I (ORCPT
+	id S1753975Ab1FTK2N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 06:28:13 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:38948 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753206Ab1FTK2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 06:27:08 -0400
-Date: Mon, 20 Jun 2011 11:27:05 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: myungjoo.ham@gmail.com
-Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        dg77.kim@samsung.com, kyungmin.park@samsung.com
-Subject: Re: [PATCH 1/2] Exynos4 NURI: configure regulators and PMIC
-Message-ID: <20110620102705.GC31864@opensource.wolfsonmicro.com>
-References: <1308215372-17420-1-git-send-email-myungjoo.ham@samsung.com>
- <20110618151227.GB25163@sirena.org.uk>
- <BANLkTiniwMCW-ED4CX=qybMvk243Zdki4Q@mail.gmail.com>
+	Mon, 20 Jun 2011 06:28:12 -0400
+Message-ID: <4DFF20B3.7010209@ti.com>
+Date: Mon, 20 Jun 2011 15:58:03 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTiniwMCW-ED4CX=qybMvk243Zdki4Q@mail.gmail.com>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH] ARM: smp: Fix the CPU hotplug race with scheduler.
+References: <1308561839-18407-1-git-send-email-santosh.shilimkar@ti.com> <20110620095053.GA2082@n2100.arm.linux.org.uk> <20110620101438.GD2082@n2100.arm.linux.org.uk>
+In-Reply-To: <20110620101438.GD2082@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 03:26:08PM +0900, MyungJoo Ham wrote:
-> On Sun, Jun 19, 2011 at 12:12 AM, Mark Brown
+On 6/20/2011 3:44 PM, Russell King - ARM Linux wrote:
+> On Mon, Jun 20, 2011 at 10:50:53AM +0100, Russell King - ARM Linux wrote:
+>> On Mon, Jun 20, 2011 at 02:53:59PM +0530, Santosh Shilimkar wrote:
+>>> The current ARM CPU hotplug code suffers from couple of race conditions
+>>> in CPU online path with scheduler.
+>>> The ARM CPU hotplug code doesn't wait for hot-plugged CPU to be marked
+>>> active as part of cpu_notify() by the CPU which brought it up before
+>>> enabling interrupts.
+>>
+>> Hmm, why not just move the set_cpu_online() call before notify_cpu_starting()
+>> and add the wait after the set_cpu_online() ?
+>
+> Actually, the race is caused by the CPU being marked online (and therefore
+> available for the scheduler) but not yet active (the CPU asking this one
+> to boot hasn't run the online notifiers yet.)
+>
+Scheduler uses the active mask and not online mask. For schedules CPU
+is ready for migration as soon as it is marked as active and that's
+the reason, interrupts should never be enabled before CPU is marked
+as active in online path.
 
-> >> +static struct regulator_consumer_supply nuri_max8997_ldo1_consumer[] = {
-> >> +     REGULATOR_SUPPLY("vadc", NULL), /* Used by CPU's ADC drv */
-> >> +};
+> This, I feel, is a fault of generic code.  If the CPU is not ready to have
+> processes scheduled on it (because migration is not initialized) then we
+> shouldn't be scheduling processes on the new CPU yet.
+>
+> In any case, this should close the window by ensuring that we don't receive
+> an interrupt in the online-but-not-active case.  Can you please test?
+>
+No it doesn't work. I still get the crash. The important point
+here is not to enable interrupts before CPU is marked
+as online and active.
 
-> > In the ADC regulator patch you called the supply vdd (though the chip
-> > normally calls it vadc so that's the better name)...
-
-> Um.. this happened as I have seperated NURI-board platform patch for
-> ADC and PMIC.
-> After ADC patch, that name became ("vdd", "s5p-adc").
-> I'll let them either be merged or be disjoint completely.
-
-You may as well get it right to start off with, there's no harm 
-defining a supply that doesn't get used.
-
-> Anyway, do you think "vadc" is better than "vdd" for ADC drivers? The
-> circuit schematics says the pin on the consumer side is "VDD33_ADC"
-> (VDD 3.3V for ADC).
-
-If that's what the pin is called on the package that is the best name
-to use.
-
-> >> +static void __init nuri_pmic_init(void)
-> >> +{
-> >> +     int gpio;
-> >> +
-> >> +     nuri_max8997_pdata.irq_base = irq_get_next_irq(IRQ_GPIO_END);
-> >> +     gpio = NURI_PMIC_GPIO;
-> >> +     gpio_request(gpio, "AP_PMIC_IRQ");
-> >> +     s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(0xf));
-> >> +     s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
-> >> +}
-
-> > I'm not sure both the #define and the variable make sense here...
-
-> I've defined them because two statements are using the gpio address of
-> NURI_PMIC.
-
-Right, but there's no point in doing both - either use the #define
-everywhere or use the variable everywhere but having both seems
-excessive.
+Regards
+Santosh
