@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756101Ab1FTWPm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 18:15:42 -0400
-Received: from claw.goop.org ([74.207.240.146]:53652 "EHLO claw.goop.org"
+	id S1756140Ab1FTWQy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 18:16:54 -0400
+Received: from claw.goop.org ([74.207.240.146]:53651 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755989Ab1FTWPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 18:15:30 -0400
+	id S1755972Ab1FTWP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 18:15:27 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: Xen Devel <Xen-devel@lists.xensource.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 10/15] xen/mmu: use extend_args for more mmuext updates
-Date: Mon, 20 Jun 2011 15:15:06 -0700
-Message-Id: <33d3519a9483d932335b36ff25b980604d32f7ea.1308607697.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 11/15] xen/mmu: tune pgtable alloc/release
+Date: Mon, 20 Jun 2011 15:15:07 -0700
+Message-Id: <52e5abf03b2f294b0c5cafe14306b11fd6cf67f2.1308607697.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <cover.1308607697.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1308607697.git.jeremy.fitzhardinge@citrix.com>
@@ -26,87 +26,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
+Make sure the fastpath code is inlined.  Batch the page permission change
+and the pin/unpin, and make sure that it can be batched with any
+adjacent set_pte/pmd/etc operations.
+
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/xen/mmu.c |   42 +++++++++++++++++++++++++++---------------
- 1 files changed, 27 insertions(+), 15 deletions(-)
+ arch/x86/xen/mmu.c |   49 ++++++++++++++++++++++++++++++++++++++++++-------
+ 1 files changed, 42 insertions(+), 7 deletions(-)
 
 diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index ad8a226..112259f 100644
+index 112259f..ebfdc3d 100644
 --- a/arch/x86/xen/mmu.c
 +++ b/arch/x86/xen/mmu.c
-@@ -228,6 +228,24 @@ static void xen_extend_mmu_update(const struct mmu_update *update)
- 	*u = *update;
+@@ -1492,22 +1492,52 @@ static void __init xen_release_pmd_init(unsigned long pfn)
+ 	make_lowmem_page_readwrite(__va(PFN_PHYS(pfn)));
  }
  
-+static void xen_extend_mmuext_op(const struct mmuext_op *op)
++static inline void __pin_pagetable_pfn(unsigned cmd, unsigned long pfn)
 +{
 +	struct multicall_space mcs;
-+	struct mmuext_op *u;
++	struct mmuext_op *op;
 +
-+	mcs = xen_mc_extend_args(__HYPERVISOR_mmuext_op, sizeof(*u));
++	mcs = __xen_mc_entry(sizeof(*op));
++	op = mcs.args;
++	op->cmd = cmd;
++	op->arg1.mfn = pfn_to_mfn(pfn);
 +
-+	if (mcs.mc != NULL) {
-+		mcs.mc->args[1]++;
-+	} else {
-+		mcs = __xen_mc_entry(sizeof(*u));
-+		MULTI_mmuext_op(mcs.mc, mcs.args, 1, NULL, DOMID_SELF);
-+	}
-+
-+	u = mcs.args;
-+	*u = *op;
++	MULTI_mmuext_op(mcs.mc, mcs.args, 1, NULL, DOMID_SELF);
 +}
 +
- static void xen_set_pmd_hyper(pmd_t *ptr, pmd_t val)
- {
- 	struct mmu_update u;
-@@ -809,14 +827,12 @@ static void xen_pte_unlock(void *v)
- 
- static void xen_do_pin(unsigned level, unsigned long pfn)
- {
--	struct mmuext_op *op;
--	struct multicall_space mcs;
-+	struct mmuext_op op;
- 
--	mcs = __xen_mc_entry(sizeof(*op));
--	op = mcs.args;
--	op->cmd = level;
--	op->arg1.mfn = pfn_to_mfn(pfn);
--	MULTI_mmuext_op(mcs.mc, op, 1, NULL, DOMID_SELF);
-+	op.cmd = level;
-+	op.arg1.mfn = pfn_to_mfn(pfn);
++static inline void __set_pfn_prot(unsigned long pfn, pgprot_t prot)
++{
++	struct multicall_space mcs;
++	unsigned long addr = (unsigned long)__va(pfn << PAGE_SHIFT);
 +
-+	xen_extend_mmuext_op(&op);
++	mcs = __xen_mc_entry(0);
++	MULTI_update_va_mapping(mcs.mc, (unsigned long)addr,
++				pfn_pte(pfn, prot), 0);
++}
++
+ /* This needs to make sure the new pte page is pinned iff its being
+    attached to a pinned pagetable. */
+-static void xen_alloc_ptpage(struct mm_struct *mm, unsigned long pfn, unsigned level)
++static inline void xen_alloc_ptpage(struct mm_struct *mm, unsigned long pfn,
++				    unsigned level)
+ {
+-	struct page *page = pfn_to_page(pfn);
+ 	int pinned = PagePinned(virt_to_page(mm->pgd));
+  
+ 	trace_xen_mmu_alloc_ptpage(mm, pfn, level, pinned);
+ 
+ 	if (pinned) {
++		struct page *page = pfn_to_page(pfn);
++
+ 		SetPagePinned(page);
+ 
+ 		if (!PageHighMem(page)) {
+-			make_lowmem_page_readonly(__va(PFN_PHYS((unsigned long)pfn)));
++			xen_mc_batch();
++
++			__set_pfn_prot(pfn, PAGE_KERNEL_RO);
++
+ 			if (level == PT_PTE && USE_SPLIT_PTLOCKS)
+-				pin_pagetable_pfn(MMUEXT_PIN_L1_TABLE, pfn);
++				__pin_pagetable_pfn(MMUEXT_PIN_L1_TABLE, pfn);
++
++			xen_mc_issue(PARAVIRT_LAZY_MMU);
+ 		} else {
+ 			/* make sure there are no stray mappings of
+ 			   this page */
+@@ -1527,7 +1557,7 @@ static void xen_alloc_pmd(struct mm_struct *mm, unsigned long pfn)
  }
  
- static int xen_pin_page(struct mm_struct *mm, struct page *page,
-@@ -1302,8 +1318,7 @@ static void set_current_cr3(void *v)
- 
- static void __xen_write_cr3(bool kernel, unsigned long cr3)
+ /* This should never happen until we're OK to use struct page */
+-static void xen_release_ptpage(unsigned long pfn, unsigned level)
++static inline void xen_release_ptpage(unsigned long pfn, unsigned level)
  {
--	struct mmuext_op *op;
--	struct multicall_space mcs;
-+	struct mmuext_op op;
- 	unsigned long mfn;
+ 	struct page *page = pfn_to_page(pfn);
+ 	bool pinned = PagePinned(page);
+@@ -1536,9 +1566,14 @@ static void xen_release_ptpage(unsigned long pfn, unsigned level)
  
- 	trace_xen_mmu_write_cr3(kernel, cr3);
-@@ -1315,13 +1330,10 @@ static void __xen_write_cr3(bool kernel, unsigned long cr3)
- 
- 	WARN_ON(mfn == 0 && kernel);
- 
--	mcs = __xen_mc_entry(sizeof(*op));
-+	op.cmd = kernel ? MMUEXT_NEW_BASEPTR : MMUEXT_NEW_USER_BASEPTR;
-+	op.arg1.mfn = mfn;
- 
--	op = mcs.args;
--	op->cmd = kernel ? MMUEXT_NEW_BASEPTR : MMUEXT_NEW_USER_BASEPTR;
--	op->arg1.mfn = mfn;
--
--	MULTI_mmuext_op(mcs.mc, op, 1, NULL, DOMID_SELF);
-+	xen_extend_mmuext_op(&op);
- 
- 	if (kernel) {
- 		percpu_write(xen_cr3, cr3);
+ 	if (pinned) {
+ 		if (!PageHighMem(page)) {
++			xen_mc_batch();
++
+ 			if (level == PT_PTE && USE_SPLIT_PTLOCKS)
+-				pin_pagetable_pfn(MMUEXT_UNPIN_TABLE, pfn);
+-			make_lowmem_page_readwrite(__va(PFN_PHYS(pfn)));
++				__pin_pagetable_pfn(MMUEXT_UNPIN_TABLE, pfn);
++
++			__set_pfn_prot(pfn, PAGE_KERNEL);
++
++			xen_mc_issue(PARAVIRT_LAZY_MMU);
+ 		}
+ 		ClearPagePinned(page);
+ 	}
 -- 
 1.7.5.4
 
