@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab1FTWgU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 18:36:20 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:16049 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755460Ab1FTWgT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 18:36:19 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Mon, 20 Jun 2011 18:36:18 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Alexander Holler <holler@ahsoftware.de>, linux-usb@vger.kernel.org,
-        gregkh@suse.de, lkml <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>
-Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing the
- packed attribute
-In-reply-to: <Pine.LNX.4.44L0.1106201640290.2113-100000@iolanthe.rowland.org>
-Message-id: <alpine.LFD.2.00.1106201653450.2142@xanadu.home>
-References: <Pine.LNX.4.44L0.1106201640290.2113-100000@iolanthe.rowland.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756000Ab1FTWiM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 18:38:12 -0400
+Received: from mga14.intel.com ([143.182.124.37]:52060 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752901Ab1FTWiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 18:38:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,396,1304319600"; 
+   d="scan'208";a="15826019"
+Message-ID: <4DFFCBAD.9040507@linux.intel.com>
+Date: Mon, 20 Jun 2011 15:37:33 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Organization: Intel Open Source Technology Center
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: stefano.stabellini@eu.citrix.com
+CC: hpa@zytor.com, konrad.wilk@oracle.com, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        yinghai@kernel.org
+Subject: Re: [PATCH 1/3] x86: calculate precisely the memory needed by init_memory_mapping
+References: <alpine.DEB.2.00.1106071849290.12963@kaball-desktop> <1307470409-7654-1-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1307470409-7654-1-git-send-email-stefano.stabellini@eu.citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jun 2011, Alan Stern wrote:
-
-> On Mon, 20 Jun 2011, Nicolas Pitre wrote:
+On 06/07/2011 11:13 AM, stefano.stabellini@eu.citrix.com wrote:
 > 
-> > > As far as I can tell, the other structures in ehci.h have 
-> > > ((aligned(32)) simply in order to save space, since there can be large 
-> > > numbers of these structures allocated.
-> > 
-> > How can increasing the alignment to 32 bytes save space?
+> - remove the extra page added on x86_32 for the fixmap because is not
+> needed: the PMD entry is already allocated and contiguous for the whole
+> range (a PMD page covers 4G of virtual addresses) and the pte entry is
+> already allocated by early_ioremap_init.
 > 
-> No, no -- the alignment is _decreased_ to 32 bits.  Without the 
-> attribute the alignment would have been 64 bits.
 
-The aligned attribute requires a byte value not a bit value.
-Maybe what you meant is ((aligned(4)) ?
+Hi Stefano,
 
+I think this is wrong.  A PMD page covers *1G* of virtual addresses, and
+in the 2+2 and 1+3 memory configurations, we may or may not need a
+separate PMD for the fixmap.
 
-Nicolas
+Am I missing something?
+
+	-hpa
