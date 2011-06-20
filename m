@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201Ab1FTQRc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 12:17:32 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39644 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754862Ab1FTQR2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 12:17:28 -0400
-Date: Mon, 20 Jun 2011 12:17:23 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: Chris Forbes <chrisf@ijw.co.nz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: hugetlb: fix coding style issues
-Message-ID: <20110620161723.GA9697@mgebm.net>
-References: <1308299399-825-1-git-send-email-chrisf@ijw.co.nz>
+	id S1755083Ab1FTQXR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 12:23:17 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43334 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750980Ab1FTQXO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 12:23:14 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SLDf9lqlvOQaIe6s"
-Content-Disposition: inline
-In-Reply-To: <1308299399-825-1-git-send-email-chrisf@ijw.co.nz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110620161352.GT11521@ZenIV.linux.org.uk>
+References: <20110619235147.GQ11521@ZenIV.linux.org.uk> <BANLkTimdPT2dbTToTHGVzJr=f3xPKT9tZw@mail.gmail.com>
+ <20110620161352.GT11521@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 20 Jun 2011 09:22:32 -0700
+Message-ID: <BANLkTikUi9M1Mx4L54vJOP0SK0P3yAz=uQ@mail.gmail.com>
+Subject: Re: [RFC] get_write_access()/deny_write_access() without inode->i_lock
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-arch@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 20, 2011 at 9:13 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Er...  The current mainline does atomic_read() followed by atomic_inc(),
+> so we get the same thing (plus the spin_lock()/spin_unlock()), don't we?
 
---SLDf9lqlvOQaIe6s
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes. Unless the spinlock is in the same cacheline. No reason not to
+fix that, though.
 
-On Fri, 17 Jun 2011, Chris Forbes wrote:
+Of course, if the "ETXTBUSY" case is the common case (which I doubt),
+then not doing the write at all would be the optimal case. But I doubt
+that case is even worth really worrying about ;)
 
-> Fixed coding style issues flagged by checkpatch.pl
->=20
-> Signed-off-by: Chris Forbes <chrisf@ijw.co.nz>
+> For get_write_access() it's probably the right assumption for everything but
+> /dev/tty*; for deny_write_access() it's not - a lot of binaries are run by
+> more than one process...
 
-Looks like whitespace/bracing cleanup without any logic changes (intentiona=
-l or
-otherwise).
+Note the fact that EVEN IF WE GUESS INCORRECTLY, performance is likely
+better by guessing rather than reading, unless you know the thing is
+already in the local CPU cache.
 
-Acked-by: Eric B Munson <emunson@mgebm.net>
+Doing the loop twice instead of once is still *much* faster than an
+extra cache transaction that goes to the bus (or L3 or whatever).
 
---SLDf9lqlvOQaIe6s
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> FWIW, I wonder what will the things look like on ll/sc architectures;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+There are no ll/sc architectures worth worrying about, so I don't
+think that's the primary concern.  That said, I don't disagree with
+creating a "atomic_inc_unless_negative()" helper.
 
-iQEcBAEBAgAGBQJN/3KTAAoJEH65iIruGRnNg6wH/0YRW3vYfeaNPZj6ou9Po9Ce
-NbNYAqZ1dCGAoQj8mcvwATwEBDNVJWH9EkEIjKm1+qSsFuLtriMcHibgRGTbmr4D
-a0/EaYR9S1Y9sQON1UGOEeNfpAUUdXCKsMsOf89RoUXVnobjBVATfeasjuL7jRlJ
-SFHfupudiX9ummusak2jO3aeS6zrrkcyQOVTAfBL71NqogE0OOXSoO/CM7lTMMUh
-qizshKMjO+BN79P75btQ5cUys8DtZxg3irWv3VRewN6GmxEujPKyT2PA7rL5q4oZ
-z7zJk02tHfN9uWR1TjR7gLS0/khz5g9Y+fUoC7uoPDwvnCJZxVgtHroOf7FlbFk=
-=3y/I
------END PGP SIGNATURE-----
-
---SLDf9lqlvOQaIe6s--
+                     Linus
