@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089Ab1FTWRs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 18:17:48 -0400
-Received: from claw.goop.org ([74.207.240.146]:53613 "EHLO claw.goop.org"
+	id S932074Ab1FTWRq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 18:17:46 -0400
+Received: from claw.goop.org ([74.207.240.146]:53623 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755944Ab1FTWPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755954Ab1FTWPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 Jun 2011 18:15:25 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: Xen Devel <Xen-devel@lists.xensource.com>
@@ -12,9 +12,9 @@ Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 07/15] xen/trace: add xen_pgd_(un)pin tracepoints
-Date: Mon, 20 Jun 2011 15:15:03 -0700
-Message-Id: <cdfa49a00e83b62d4fbd0cab251c9c1571a3ce6f.1308607697.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 08/15] xen/trace: add segment desc tracing
+Date: Mon, 20 Jun 2011 15:15:04 -0700
+Message-Id: <834e06a069d43f0cd34794326aaa7094cd53433b.1308607697.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <cover.1308607697.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1308607697.git.jeremy.fitzhardinge@citrix.com>
@@ -28,63 +28,161 @@ From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/xen/mmu.c         |    4 ++++
- include/trace/events/xen.h |   24 ++++++++++++++++++++++++
- 2 files changed, 28 insertions(+), 0 deletions(-)
+ arch/x86/xen/enlighten.c   |   16 +++++++++-
+ include/trace/events/xen.h |   75 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 90 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 84c796f..8aaa398 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -884,6 +884,8 @@ static int xen_pin_page(struct mm_struct *mm, struct page *page,
-    read-only, and can be pinned. */
- static void __xen_pgd_pin(struct mm_struct *mm, pgd_t *pgd)
- {
-+	trace_xen_mmu_pgd_pin(mm, pgd);
-+
- 	xen_mc_batch();
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index dd7b88f..fa4e2d2 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -341,6 +341,8 @@ static void xen_set_ldt(const void *addr, unsigned entries)
+ 	struct mmuext_op *op;
+ 	struct multicall_space mcs = xen_mc_entry(sizeof(*op));
  
- 	if (__xen_pgd_walk(mm, pgd, xen_pin_page, USER_LIMIT)) {
-@@ -1009,6 +1011,8 @@ static int xen_unpin_page(struct mm_struct *mm, struct page *page,
- /* Release a pagetables pages back as normal RW */
- static void __xen_pgd_unpin(struct mm_struct *mm, pgd_t *pgd)
- {
-+	trace_xen_mmu_pgd_unpin(mm, pgd);
++	trace_xen_cpu_set_ldt(addr, entries);
 +
- 	xen_mc_batch();
+ 	op = mcs.args;
+ 	op->cmd = MMUEXT_SET_LDT;
+ 	op->arg1.linear_addr = (unsigned long)addr;
+@@ -496,6 +498,8 @@ static void xen_write_ldt_entry(struct desc_struct *dt, int entrynum,
+ 	xmaddr_t mach_lp = arbitrary_virt_to_machine(&dt[entrynum]);
+ 	u64 entry = *(u64 *)ptr;
  
- 	xen_do_pin(MMUEXT_UNPIN_TABLE, PFN_DOWN(__pa(pgd)));
++	trace_xen_cpu_write_ldt_entry(dt, entrynum, entry);
++
+ 	preempt_disable();
+ 
+ 	xen_mc_flush();
+@@ -565,6 +569,8 @@ static void xen_write_idt_entry(gate_desc *dt, int entrynum, const gate_desc *g)
+ 	unsigned long p = (unsigned long)&dt[entrynum];
+ 	unsigned long start, end;
+ 
++	trace_xen_cpu_write_idt_entry(dt, entrynum, g);
++
+ 	preempt_disable();
+ 
+ 	start = __this_cpu_read(idt_desc.address);
+@@ -619,6 +625,8 @@ static void xen_load_idt(const struct desc_ptr *desc)
+ 	static DEFINE_SPINLOCK(lock);
+ 	static struct trap_info traps[257];
+ 
++	trace_xen_cpu_load_idt(desc);
++
+ 	spin_lock(&lock);
+ 
+ 	__get_cpu_var(idt_desc) = *desc;
+@@ -637,6 +645,8 @@ static void xen_load_idt(const struct desc_ptr *desc)
+ static void xen_write_gdt_entry(struct desc_struct *dt, int entry,
+ 				const void *desc, int type)
+ {
++	trace_xen_cpu_write_gdt_entry(dt, entry, desc, type);
++
+ 	preempt_disable();
+ 
+ 	switch (type) {
+@@ -665,6 +675,8 @@ static void xen_write_gdt_entry(struct desc_struct *dt, int entry,
+ static void __init xen_write_gdt_entry_boot(struct desc_struct *dt, int entry,
+ 					    const void *desc, int type)
+ {
++	trace_xen_cpu_write_gdt_entry(dt, entry, desc, type);
++
+ 	switch (type) {
+ 	case DESC_LDT:
+ 	case DESC_TSS:
+@@ -684,7 +696,9 @@ static void __init xen_write_gdt_entry_boot(struct desc_struct *dt, int entry,
+ static void xen_load_sp0(struct tss_struct *tss,
+ 			 struct thread_struct *thread)
+ {
+-	struct multicall_space mcs = xen_mc_entry(0);
++	struct multicall_space mcs;
++
++	mcs = xen_mc_entry(0);
+ 	MULTI_stack_switch(mcs.mc, __KERNEL_DS, thread->sp0);
+ 	xen_mc_issue(PARAVIRT_LAZY_CPU);
+ }
 diff --git a/include/trace/events/xen.h b/include/trace/events/xen.h
-index 16edcb7..5811c24 100644
+index 5811c24..b1f73c4 100644
 --- a/include/trace/events/xen.h
 +++ b/include/trace/events/xen.h
-@@ -381,6 +381,30 @@ TRACE_EVENT(xen_mmu_release_ptpage,
- 		      __entry->pinned ? "" : "un")
+@@ -405,6 +405,81 @@ TRACE_EVENT(xen_mmu_pgd_unpin,
+ 	    TP_printk("mm %p pgd %p", __entry->mm, __entry->pgd)
  	);
  
-+TRACE_EVENT(xen_mmu_pgd_pin,
-+	    TP_PROTO(struct mm_struct *mm, pgd_t *pgd),
-+	    TP_ARGS(mm, pgd),
++/* CPU */
++TRACE_EVENT(xen_cpu_write_ldt_entry,
++	    TP_PROTO(struct desc_struct *dt, int entrynum, u64 desc),
++	    TP_ARGS(dt, entrynum, desc),
 +	    TP_STRUCT__entry(
-+		    __field(struct mm_struct *, mm)
-+		    __field(pgd_t *, pgd)
++		    __field(struct desc_struct *, dt)
++		    __field(int, entrynum)
++		    __field(u64, desc)
 +		    ),
-+	    TP_fast_assign(__entry->mm = mm;
-+			   __entry->pgd = pgd),
-+	    TP_printk("mm %p pgd %p", __entry->mm, __entry->pgd)
++	    TP_fast_assign(__entry->dt = dt;
++			   __entry->entrynum = entrynum;
++			   __entry->desc = desc;
++		    ),
++	    TP_printk("dt %p  entrynum %d  entry %016llx",
++		      __entry->dt, __entry->entrynum,
++		      (unsigned long long)__entry->desc)
 +	);
 +
-+TRACE_EVENT(xen_mmu_pgd_unpin,
-+	    TP_PROTO(struct mm_struct *mm, pgd_t *pgd),
-+	    TP_ARGS(mm, pgd),
++TRACE_EVENT(xen_cpu_write_idt_entry,
++	    TP_PROTO(gate_desc *dt, int entrynum, const gate_desc *ent),
++	    TP_ARGS(dt, entrynum, ent),
 +	    TP_STRUCT__entry(
-+		    __field(struct mm_struct *, mm)
-+		    __field(pgd_t *, pgd)
++		    __field(gate_desc *, dt)
++		    __field(int, entrynum)
 +		    ),
-+	    TP_fast_assign(__entry->mm = mm;
-+			   __entry->pgd = pgd),
-+	    TP_printk("mm %p pgd %p", __entry->mm, __entry->pgd)
++	    TP_fast_assign(__entry->dt = dt;
++			   __entry->entrynum = entrynum;
++		    ),
++	    TP_printk("dt %p  entrynum %d",
++		      __entry->dt, __entry->entrynum)
 +	);
++
++TRACE_EVENT(xen_cpu_load_idt,
++	    TP_PROTO(const struct desc_ptr *desc),
++	    TP_ARGS(desc),
++	    TP_STRUCT__entry(
++		    __field(unsigned long, addr)
++		    ),
++	    TP_fast_assign(__entry->addr = desc->address),
++	    TP_printk("addr %lx", __entry->addr)
++	);
++
++TRACE_EVENT(xen_cpu_write_gdt_entry,
++	    TP_PROTO(struct desc_struct *dt, int entrynum, const void *desc, int type),
++	    TP_ARGS(dt, entrynum, desc, type),
++	    TP_STRUCT__entry(
++		    __field(struct desc_struct *, dt)
++		    __field(int, entrynum)
++		    __field(int, type)
++		    __field(u64, desc)
++		    ),
++	    TP_fast_assign(__entry->dt = dt;
++			   __entry->entrynum = entrynum;
++			   __entry->type = type;
++			   __entry->desc = *(u64 *)desc;
++		    ),
++	    TP_printk("dt %p  entrynum %d  type %d  desc %016llx",
++		      __entry->dt, __entry->entrynum, __entry->type,
++		      (unsigned long long)__entry->desc)
++	);
++
++TRACE_EVENT(xen_cpu_set_ldt,
++	    TP_PROTO(const void *addr, unsigned entries),
++	    TP_ARGS(addr, entries),
++	    TP_STRUCT__entry(
++		    __field(const void *, addr)
++		    __field(unsigned, entries)
++		    ),
++	    TP_fast_assign(__entry->addr = addr;
++			   __entry->entries = entries),
++	    TP_printk("addr %p  entries %u",
++		      __entry->addr, __entry->entries)
++	);
++
 +
  #endif /*  _TRACE_XEN_H */
  
