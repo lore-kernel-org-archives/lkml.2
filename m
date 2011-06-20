@@ -1,147 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172Ab1FTWRQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 18:17:16 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:2653 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756157Ab1FTWRL convert rfc822-to-8bit (ORCPT
+	id S1756301Ab1FTWXq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 18:23:46 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:64341 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756271Ab1FTWXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 18:17:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=gwDye5mfXwmfz0AVvElbPJ9JvjXlcWxEPIhSt0Ke8HOluBYftr+/S46l5WwrdUJMDU
-         42GxhH2SxkbuuCJVhpqg==
-MIME-Version: 1.0
-In-Reply-To: <20110620164504.GC4749@redhat.com>
-References: <20110620141631.GA4749@redhat.com> <BANLkTin9xgN0t4rn_Zf81TBdnLmJXPzNDT1fXtg3m64SnJVn5g@mail.gmail.com>
- <20110620164504.GC4749@redhat.com>
-From: Justin TerAvest <teravest@google.com>
-Date: Mon, 20 Jun 2011 15:16:48 -0700
-Message-ID: <BANLkTik5+R3L5MQN9a4JVOL+Yt7y=72OsK0rDeAcNAJcaZKXsw@mail.gmail.com>
-Subject: Re: [PATCH] cfq: Fix starvation of async writes in presence of heavy
- sync workload
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Tao Ma <tm@tao.ma>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Mon, 20 Jun 2011 18:23:45 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Mon, 20 Jun 2011 18:23:44 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        gregkh@suse.de, lkml <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin@rab.in>, Alexander Holler <holler@ahsoftware.de>
+Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing the
+ packed attribute
+In-reply-to: <201106202323.49513.arnd@arndb.de>
+Message-id: <alpine.LFD.2.00.1106201814490.2142@xanadu.home>
+References: <alpine.LFD.2.00.1106201306210.2142@xanadu.home>
+ <201106202226.37381.arnd@arndb.de>
+ <20110620205559.GM26089@n2100.arm.linux.org.uk>
+ <201106202323.49513.arnd@arndb.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 9:45 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Mon, Jun 20, 2011 at 09:14:18AM -0700, Justin TerAvest wrote:
->> On Mon, Jun 20, 2011 at 7:16 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> > In presence of heavy sync workload CFQ can starve asnc writes.
->> > If one launches multiple readers (say 16), then one can notice
->> > that CFQ can withhold dispatch of WRITEs for a very long time say
->> > 200 or 300 seconds.
->> >
->> > Basically CFQ schedules an async queue but does not dispatch any
->> > writes because it is waiting for exisintng sync requests in queue to
->> > finish. While it is waiting, one or other reader gets queued up and
->> > preempts the async queue. So we did schedule the async queue but never
->> > dispatched anything from it. This can repeat for long time hence
->> > practically starving Writers.
->> >
->> > This patch allows async queue to dispatch atleast 1 requeust once
->> > it gets scheduled and denies preemption if async queue has been
->> > waiting for sync requests to drain and has not been able to dispatch
->> > a request yet.
->> >
->> > One concern with this fix is that how does it impact readers
->> > in presence of heavy writting going on.
->> >
->> > I did a test where I launch firefox, load a website and close
->> > firefox and measure the time. I ran the test 3 times and took
->> > average.
->> >
->> > - Vanilla kernel time ~= 1 minute 40 seconds
->> > - Patched kenrel time ~= 1 minute 35 seconds
->> >
->> > Basically it looks like that for this test times have not
->> > changed much for this test. But I would not claim that it does
->> > not impact reader's latencies at all. It might show up in
->> > other workloads.
->> >
->> > I think we anyway need to fix writer starvation. If this patch
->> > causes issues, then we need to look at reducing writer's
->> > queue depth further to improve latencies for readers.
->>
->> Maybe we should be more specific about what it means to "fix writer starvation"
->>
->
-> Tao ma recently ran into issues with writer starvation. Here is
-> the lkml thread.
->
-> https://lkml.org/lkml/2011/6/9/167
->
-> I also ran some fio based scripts launching multiple readers
-> and multiple buffered writers and noticed that there are large
-> windows where we don't dispatch even a single request from
-> async queues. That's what starvation is. Time period for
-> not dispatching request was in the range of 200 seconds.
+On Mon, 20 Jun 2011, Arnd Bergmann wrote:
 
-How do we establish what's acceptable? My complaint is that it's not
-obvious what tradeoffs to make in the I/O scheduler.
+> On Monday 20 June 2011 22:55:59 Russell King - ARM Linux wrote:
+> > On Mon, Jun 20, 2011 at 10:26:37PM +0200, Arnd Bergmann wrote:
+> > > * We already need a compiler barrier in the non-_relaxed() versions of
+> > >   the I/O accessors, which will force a reload of the base address
+> > >   in a lot of cases, so the code is already suboptimal. Yes, we don't
+> > >   have the barrier today without CONFIG_ARM_DMA_MEM_BUFFERABLE, but that
+> > >   is a bug, because it lets the compiler move accesses to DMA buffers
+> > >   around readl/writel.
+> > 
+> > You're now being obtuse there.  You don't need compiler barriers to
+> > guarantee order - that's what volatile does there.
+> > 
+> 
+> A simple counterexample:
+> 
+> 
+> int f(volatile unsigned long *v)
+> {
+>         unsigned long a[2], ret;
+>         a[0] = 1;              /* initialize our DMA buffer */
+>         a[1] = 2;
+>         *v = (unsigned long)a; /* pass the address to the device, start DMA */
+>         ret = *v;              /* flush DMA by reading from mmio */
+>         return ret + a[1];     /* return accumulated status from readl and from modified
+> 				  DMA buffer */
+> }
+> 
+> arm-linux-gnueabi-gcc -Wall -O2 test.c -S
+> 
+> Without a barrier, the stores into the DMA buffer before the start are
+> lost, as is the load from the modified DMA buffer:
+> 
+>         sub     sp, sp, #8
+>         add     r3, sp, #0
+>         str     r3, [r0, #0]
+>         ldr     r0, [r0, #0]
+>         adds    r0, r0, #2
+>         add     sp, sp, #8
+>         bx      lr
+> 
+> Adding a memory clobber to the volatile dereference turns this into the
+> expected output:
+> 
+>         sub     sp, sp, #8
+>         movs    r3, #2
+>         movs    r2, #1
+>         stmia   sp, {r2, r3}
+>         add     r3, sp, #0
+>         str     r3, [r0, #0]
+>         ldr     r0, [r0, #0]
+>         ldr     r3, [sp, #4]
+>         adds    r0, r0, r3
+>         add     sp, sp, #8
+>         bx      lr
+> 
+> Now, the dma buffer is written before the volatile access, and read out
+> again afterwards.
 
->
->> This makes the preemption logic slightly harder to understand, and I'm
->> concerned we'll keep making little adjustments like this to the
->> scheduler.
->
-> If you have other ideas for handling this, we can definitely give
-> it a try.
+This example is flawed. The DMA API documentation already forbids DMA to 
+the stack because of cache line sharing issues.  If you declare your 
+buffer outside of the function body, the compiler can't optimize away 
+the buffer store anymore, and this example works as expected without any 
+memory clobber.
 
-I haven't written out a case to prove it, but it seems like other
-preemption logic (like the cfq_rq_close() case) could also cause some
-requests to be starved indefinitely.
 
-I think if we want to make stronger guarantees about request
-starvation, we might have to rethink how preemption works.
-
->
-> Thanks
-> Vivek
->
->>
->> >
->> > Reported-and-Tested-by: Tao Ma <tm@tao.ma>
->> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
->> > ---
->> >  block/cfq-iosched.c |    9 ++++++++-
->> >  1 file changed, 8 insertions(+), 1 deletion(-)
->> >
->> > Index: linux-2.6/block/cfq-iosched.c
->> > ===================================================================
->> > --- linux-2.6.orig/block/cfq-iosched.c  2011-06-10 10:05:34.660781278 -0400
->> > +++ linux-2.6/block/cfq-iosched.c       2011-06-20 08:29:13.328186380 -0400
->> > @@ -3315,8 +3315,15 @@ cfq_should_preempt(struct cfq_data *cfqd
->> >         * if the new request is sync, but the currently running queue is
->> >         * not, let the sync request have priority.
->> >         */
->> > -       if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq))
->> > +       if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq)) {
->> > +               /*
->> > +                * Allow atleast one dispatch otherwise this can repeat
->> > +                * and writes can be starved completely
->> > +                */
->> > +               if (!cfqq->slice_dispatch)
->> > +                       return false;
->> >                return true;
->> > +       }
->> >
->> >        if (new_cfqq->cfqg != cfqq->cfqg)
->> >                return false;
->> >
->> >
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> > the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> > Please read the FAQ at  http://www.tux.org/lkml/
->> >
->
+Nicolas
