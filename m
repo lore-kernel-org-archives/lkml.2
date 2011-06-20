@@ -1,346 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436Ab1FTGGq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 02:06:46 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35354 "EHLO smtps.tip.net.au"
+	id S1752994Ab1FTGIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 02:08:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41758 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751447Ab1FTGGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 02:06:43 -0400
-Date: Mon, 20 Jun 2011 16:06:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for June 20
-Message-Id: <20110620160632.b50738c6.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__20_Jun_2011_16_06_32_+1000_cTQR8VxR.2e0FOzf"
+	id S1752276Ab1FTGIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 02:08:11 -0400
+Message-ID: <4DFEE3B7.7090508@redhat.com>
+Date: Mon, 20 Jun 2011 09:07:51 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Glauber Costa <glommer@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH v2 5/7] KVM-GST: KVM Steal time accounting
+References: <1308262856-5779-1-git-send-email-glommer@redhat.com> <1308262856-5779-6-git-send-email-glommer@redhat.com> <4DFDC9BD.8080008@redhat.com> <4DFEB29B.6080408@redhat.com>
+In-Reply-To: <4DFEB29B.6080408@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__20_Jun_2011_16_06_32_+1000_cTQR8VxR.2e0FOzf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 06/20/2011 05:38 AM, Glauber Costa wrote:
+> On 06/19/2011 07:04 AM, Avi Kivity wrote:
+>> On 06/17/2011 01:20 AM, Glauber Costa wrote:
+>>> This patch accounts steal time time in kernel/sched.
+>>> I kept it from last proposal, because I still see advantages
+>>> in it: Doing it here will give us easier access from scheduler
+>>> variables such as the cpu rq. The next patch shows an example of
+>>> usage for it.
+>>>
+>>> Since functions like account_idle_time() can be called from
+>>> multiple places, not only account_process_tick(), steal time
+>>> grabbing is repeated in each account function separatedely.
+>>>
+>>> /*
+>>> + * We have to at flush steal time information every time something 
+>>> else
+>>> + * is accounted. Since the accounting functions are all visible to
+>>> the rest
+>>> + * of the kernel, it gets tricky to do them in one place. This helper
+>>> function
+>>> + * helps us.
+>>> + *
+>>> + * When the system is idle, the concept of steal time does not apply.
+>>> We just
+>>> + * tell the underlying hypervisor that we grabbed the data, but skip
+>>> steal time
+>>> + * accounting
+>>> + */
+>>> +static inline bool touch_steal_time(int is_idle)
+>>> +{
+>>> + u64 steal, st = 0;
+>>> +
+>>> + if (static_branch(&paravirt_steal_enabled)) {
+>>> +
+>>> + steal = paravirt_steal_clock(smp_processor_id());
+>>> +
+>>> + steal -= this_rq()->prev_steal_time;
+>>> + if (is_idle) {
+>>> + this_rq()->prev_steal_time += steal;
+>>> + return false;
+>>> + }
+>>> +
+>>> + while (steal>= TICK_NSEC) {
+>>> + /*
+>>> + * Inline assembly required to prevent the compiler
+>>> + * optimising this loop into a divmod call.
+>>> + * See __iter_div_u64_rem() for another example of this.
+>>> + */
+>>
+>> Why not use said function?
+>
+> because here we want to do work during each loop. The said function
+> would have to be adapted for that, possibly using a macro, to run 
+> arbitrary code during each loop iteration, in a way that I don't think
+> it is worthy given the current number of callers (2 counting this new 
+> one)
 
-Hi all,
+You mean adding to prev_steal_time?  That can be done outside the loop.
 
-Changes since 20110617:
+>
+>>> + asm("" : "+rm" (steal));
+>>> +
+>>> + steal -= TICK_NSEC;
+>>> + this_rq()->prev_steal_time += TICK_NSEC;
+>>> + st++;
+>>
+>> Suppose a live migration or SIGSTOP causes lots of steal time. How long
+>> will we spend here?
+> Silly me. I actually used this same argument with Peter to cap it with 
+> "delta" in the next patch in this series. So I think you are 100 % 
+> right. Here, however, we do want to account all that time, I believe.
+>
+> How about we do a slow division if we're > 10 sec (unlikely), and 
+> account everything as steal time in this scenario ?
 
-Dropped tree: rcu (complex conflict)
+Okay.  Division would be faster for a lot less than 10s though.
 
-The powerpc allyesconfig (and probably others) is still broken because we
-now build the staging drivers and because of a commit in Linus' tree.
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
-The net tree gained a conflict against the net-current tree and still has
-its build failure for which I applied a patch.
-
-The mmc tree gained a build failure so I used the version from
-next-20110617.
-
-The rcu tree gained a complex conflict against the tip tree, so I dropped
-it for today.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 194 trees (counting Linus' and 28 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging kbuild-current/rc-fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging 52xx-and-virtex-current/powerpc/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging devicetree-current/devicetree/merge
-Merging spi-current/spi/merge
-Merging arm/for-next
-Merging arm-lpae/for-next
-CONFLICT (content): Merge conflict in arch/arm/include/asm/pgalloc.h
-CONFLICT (content): Merge conflict in arch/arm/include/asm/pgtable.h
-CONFLICT (content): Merge conflict in arch/arm/include/asm/tlb.h
-CONFLICT (content): Merge conflict in arch/arm/mm/context.c
-CONFLICT (content): Merge conflict in arch/arm/mm/dma-mapping.c
-CONFLICT (content): Merge conflict in arch/arm/mm/proc-v7.S
-Merging at91/at91-next
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging linux-spec/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging ux500-core/ux500-core
-Merging xilinx/arm-next
-CONFLICT (add/add): Merge conflict in arch/arm/kernel/devtree.c
-CONFLICT (content): Merge conflict in arch/arm/mm/init.c
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/for-next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/powerpc/next
-Merging galak/next
-CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020ds.dts
-CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020rdb.dts
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-Merging sparc/master
-Merging tile/master
-Merging unicore32/unicore32
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-CONFLICT (content): Merge conflict in fs/ceph/export.c
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/dev
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-Merging pci/linux-next
-Merging of-pci/of-pci
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging docs/docs-move
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
-Merging powertools/tools-test
-Merging cpupowerutils/master
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging slave-dma/next
-Merging async_tx/next
-Merging net/master
-CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-agn-=
-rxon.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/rtlwifi/pci.c
-CONFLICT (content): Merge conflict in net/netfilter/ipvs/ip_vs_core.c
-Applying: net/staging: add needed interrupt.h and hardirq.h includes
-Merging wireless/master
-CONFLICT (content): Merge conflict in drivers/net/wireless/rtlwifi/pci.c
-Merging bluetooth/master
-Merging mtd/master
-Merging l2-mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging sound-asoc/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-Merging input-mt/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-CONFLICT (delete/modify): drivers/mmc/host/sdhci-of-core.c deleted in mmc/m=
-mc-next and modified in HEAD. Version HEAD of drivers/mmc/host/sdhci-of-cor=
-e.c left in tree.
-$ git rm -f drivers/mmc/host/sdhci-of-core.c
-$ git reset --hard HEAD^
-Merging refs/next/20110617/mmc
-CONFLICT (delete/modify): drivers/mmc/host/sdhci-of-core.c deleted in refs/=
-next/20110617/mmc and modified in HEAD. Version HEAD of drivers/mmc/host/sd=
-hci-of-core.c left in tree.
-$ git rm -f drivers/mmc/host/sdhci-of-core.c
-[master 162ebea] Merge commit 'refs/next/20110617/mmc'
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging selinux/master
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-CONFLICT (delete/modify): arch/arm/mach-ep93xx/dma-m2p.c deleted in HEAD an=
-d modified in trivial/for-next. Version trivial/for-next of arch/arm/mach-e=
-p93xx/dma-m2p.c left in tree.
-CONFLICT (content): Merge conflict in drivers/mtd/maps/pxa2xx-flash.c
-$ git rm -f arch/arm/mach-ep93xx/dma-m2p.c
-Merging audit/for-next
-Merging suspend/linux-next
-Merging apm/for-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/devicetree/next
-Merging spi/spi/next
-Merging gpio/gpio/next
-CONFLICT (content): Merge conflict in arch/arm/mach-ep93xx/Makefile
-CONFLICT (content): Merge conflict in drivers/gpio/gpio-ep93xx.c
-Merging tip/auto-latest
-Merging rcu/rcu/next
-CONFLICT (content): Merge conflict in kernel/rcutree.c
-CONFLICT (content): Merge conflict in kernel/rcutree_plugin.h
-$ git reset --hard
-Merging kvm/linux-next
-Merging oprofile/for-next
-Merging ptrace/ptrace
-Merging xen/upstream/xen
-Merging xen-two/linux-next
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging namespace/master
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-Merging usb/usb-next
-Merging staging/staging-next
-CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/dh=
-d_linux.c
-CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/wl=
-_iw.c
-Merging bkl-config/config
-Merging tmem/linux-next
-Merging writeback/next
-Merging arm-dt/devicetree/arm-next
-Merging scsi-post-merge/merge-base:master
-
---Signature=_Mon__20_Jun_2011_16_06_32_+1000_cTQR8VxR.2e0FOzf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN/uNoAAoJEDMEi1NhKgbsjGAIAJT4Gs+HMGuEGAW0v+pNvIAu
-0UpLOBx2lnOLvW695zSX0gXl4gbT4YWWo3ajpsB6VHnmG8iXPWq7CFzNDx17YfgQ
-RjlqRp3uWcBjXzsXFxKduGwV/r5JbuaJPr8rA7K6UN9Ec8S0+W6l8EGJOhB+KdCc
-qyxLihPYmHLI5n2WX3q0XDR/vjUIl0myrcjotGxGabLmJmFZPJCAWbKdFqLpswGc
-eL1OC7BtQYo1hJRgyO/nkV+ZD7bk8ipzQGMw/G1kneainCVRkNJTax8z8r/LlvO9
-+Nejp7CeE3tVyJa9POEr8/5TLh3gtcpAPkMw+ARBGTXkxzA6+SsTgjC/G8XbL0Q=
-=RSew
------END PGP SIGNATURE-----
-
---Signature=_Mon__20_Jun_2011_16_06_32_+1000_cTQR8VxR.2e0FOzf--
