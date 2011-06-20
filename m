@@ -1,52 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab1FTVJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 17:09:28 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:41843 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755284Ab1FTVJ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 17:09:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=HojMnPtulWXxp1HYurA1VAF3H05p2U2pHeXu7CzHEqwyYxdE9AUS0oU4wZzkUoKXyE
-         eAfZE7GspcJltU4c+A7Q==
-Date: Mon, 20 Jun 2011 14:09:19 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Frantisek Hrbata <fhrbata@redhat.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+	id S1755456Ab1FTVSV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 17:18:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60119 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751106Ab1FTVSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 17:18:18 -0400
+Date: Mon, 20 Jun 2011 23:18:10 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        CAI Qian <caiqian@redhat.com>, lwoodman@redhat.com
-Subject: Re: [PATCH] oom: add uid to "Killed process" message
-In-Reply-To: <1308567876-23581-1-git-send-email-fhrbata@redhat.com>
-Message-ID: <alpine.DEB.2.00.1106201409090.2639@chino.kir.corp.google.com>
-References: <1308567876-23581-1-git-send-email-fhrbata@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        LKML <linux-kernel@vger.kernel.org>, mgorman@suse.de
+Subject: Re: [PATCH 3/7] writeback: introduce smoothed global dirty limit
+Message-ID: <20110620211810.GH4810@quack.suse.cz>
+References: <20110619150108.691351746@intel.com>
+ <20110619150510.246140117@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110619150510.246140117@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jun 2011, Frantisek Hrbata wrote:
-
-> Add user id to the oom killer's "Killed process" message, so the user of the
-> killed process can be identified.
+On Sun 19-06-11 23:01:11, Wu Fengguang wrote:
+> The start of a heavy weight application (ie. KVM) may instantly knock
+> down determine_dirtyable_memory() and hence the global/bdi dirty
+> thresholds.
 > 
+> So introduce global_dirty_limit for tracking the global dirty threshold
+> with policies
+> 
+> - follow downwards slowly
+> - follow up in one shot
+> 
+> global_dirty_limit can effectively mask out the impact of sudden drop of
+> dirtyable memory. It will be used in the next patch for two new type of
+> dirty limits.
+Looking into the code, this patch is dependent on previously submitted
+patches for estimation of BDI write bandwidth, isn't it?
 
-Notified in what way?  Unless you are using the memory controller, there's 
-no userspace notification that an oom event has happened so nothing would 
-know to scrape the kernel log for this information.
+> 
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  include/linux/writeback.h |    2 +
+>  mm/page-writeback.c       |   41 ++++++++++++++++++++++++++++++++++++
+>  2 files changed, 43 insertions(+)
+> 
+> --- linux-next.orig/include/linux/writeback.h	2011-06-19 22:56:18.000000000 +0800
+> +++ linux-next/include/linux/writeback.h	2011-06-19 22:59:29.000000000 +0800
+> @@ -88,6 +88,8 @@ static inline void laptop_sync_completio
+>  #endif
+>  void throttle_vm_writeout(gfp_t gfp_mask);
+>  
+> +extern unsigned long global_dirty_limit;
+> +
+>  /* These are exported to sysctl. */
+>  extern int dirty_background_ratio;
+>  extern unsigned long dirty_background_bytes;
+> --- linux-next.orig/mm/page-writeback.c	2011-06-19 22:56:18.000000000 +0800
+> +++ linux-next/mm/page-writeback.c	2011-06-19 22:59:29.000000000 +0800
+> @@ -116,6 +116,7 @@ EXPORT_SYMBOL(laptop_mode);
+>  
+>  /* End of sysctl-exported parameters */
+>  
+> +unsigned long global_dirty_limit;
+>  
+>  /*
+>   * Scale the writeback cache size proportional to the relative writeout speeds.
+> @@ -510,6 +511,43 @@ static void bdi_update_write_bandwidth(s
+>  	bdi->avg_write_bandwidth = avg;
+>  }
+>  
+> +static void update_dirty_limit(unsigned long thresh,
+> +				 unsigned long dirty)
+> +{
+> +	unsigned long limit = global_dirty_limit;
+> +
+> +	if (limit < thresh) {
+> +		limit = thresh;
+> +		goto update;
+> +	}
+> +
+> +	if (limit > thresh &&
+> +	    limit > dirty) {
+> +		limit -= (limit - max(thresh, dirty)) >> 5;
+> +		goto update;
+> +	}
+Hmm, but strictly speaking this never really converges to the new limit,
+right? And even in practice it takes 22 steps to converge within 50% and 73
+steps to converge withing 10% of the desired threshold. But before we get
+into the discussion about how to update dirty threshold, I'd like to
+discuss what are the properties we require from dirty threshold updates?
 
-We've had a long-time desire for an oom notifier, not only at the time of 
-oom but when approaching it with configurable thresholds, that would 
-wakeup a userspace daemon that might be polling on notifier.  That seems 
-more useful for realtime notification of an oom event rather than relying 
-on the kernel log?
+I understand it's kind of unexpected that when some process allocates
+anonymous memory, we suddently stall writers to flush out dirty data. OTOH
+it is a nice behavior from memory management point of view because we
+really try to keep amount of dirty pages in free memory at given
+percentage which is nice for reclaim. When we choose to update dirty limit
+in steps as you propose, we get some kind of compromise between behavior
+for user and behavior for memory management.
+
+But there are also other options - for example it would seem natural to me
+treat allocation of anonymous page the same way as dirtiying the page thus
+the process getting us over dirty threshold due to allocations will wait
+until enough pages are written. Then we wouldn't need any smoothing of
+memory available for caches because allocations would be naturally
+throttled (OK, we still have memory taken by kernel allocations but these
+are order of magnitude smaller problem I'd say). But I'm not sure how
+acceptable this idea would be.
+
+								Honza
+
+> +	return;
+> +update:
+> +	global_dirty_limit = limit;
+> +}
+> +
+> +static void global_update_bandwidth(unsigned long thresh,
+> +				    unsigned long dirty,
+> +				    unsigned long now)
+> +{
+> +	static DEFINE_SPINLOCK(dirty_lock);
+> +
+> +	if (now - default_backing_dev_info.bw_time_stamp < MAX_PAUSE)
+> +		return;
+> +
+> +	spin_lock(&dirty_lock);
+> +	if (now - default_backing_dev_info.bw_time_stamp >= MAX_PAUSE) {
+> +		update_dirty_limit(thresh, dirty);
+> +		default_backing_dev_info.bw_time_stamp = now;
+> +	}
+> +	spin_unlock(&dirty_lock);
+> +}
+> +
+>  void __bdi_update_bandwidth(struct backing_dev_info *bdi,
+>  			    unsigned long thresh,
+>  			    unsigned long dirty,
+> @@ -535,6 +573,9 @@ void __bdi_update_bandwidth(struct backi
+>  	if (elapsed > HZ && time_before(bdi->bw_time_stamp, start_time))
+>  		goto snapshot;
+>  
+> +	if (thresh)
+> +		global_update_bandwidth(thresh, dirty, now);
+> +
+>  	bdi_update_write_bandwidth(bdi, elapsed, written);
+>  
+>  snapshot:
+> 
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
