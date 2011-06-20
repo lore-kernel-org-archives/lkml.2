@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab1FTQmS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 12:42:18 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53612 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753281Ab1FTQmN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 12:42:13 -0400
-Date: Mon, 20 Jun 2011 17:42:11 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-arch@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] get_write_access()/deny_write_access() without
- inode->i_lock
-Message-ID: <20110620164211.GV11521@ZenIV.linux.org.uk>
-References: <20110619235147.GQ11521@ZenIV.linux.org.uk>
- <BANLkTimdPT2dbTToTHGVzJr=f3xPKT9tZw@mail.gmail.com>
- <20110620161352.GT11521@ZenIV.linux.org.uk>
- <BANLkTikUi9M1Mx4L54vJOP0SK0P3yAz=uQ@mail.gmail.com>
+	id S1753757Ab1FTQrg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 12:47:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43629 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751801Ab1FTQrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 12:47:33 -0400
+Message-ID: <4DFF78E9.7010202@zytor.com>
+Date: Mon, 20 Jun 2011 09:44:25 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTikUi9M1Mx4L54vJOP0SK0P3yAz=uQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@elte.hu>
+CC: Ryan Mallon <rmallon@gmail.com>, Petr Tesarik <ptesarik@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
+ physical addresses
+References: <201106171038.25988.ptesarik@suse.cz> <20110617093032.GA19235@elte.hu> <4DFE7FF9.9070406@gmail.com> <4DFE89E0.5020509@zytor.com> <20110620074124.GB24716@elte.hu> <4DFF6E58.8090306@zytor.com> <20110620164045.GB10815@elte.hu>
+In-Reply-To: <20110620164045.GB10815@elte.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 09:22:32AM -0700, Linus Torvalds wrote:
-> On Mon, Jun 20, 2011 at 9:13 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > Er... ?The current mainline does atomic_read() followed by atomic_inc(),
-> > so we get the same thing (plus the spin_lock()/spin_unlock()), don't we?
+On 06/20/2011 09:40 AM, Ingo Molnar wrote:
 > 
-> Yes. Unless the spinlock is in the same cacheline. No reason not to
-> fix that, though.
+> There is no reason why they couldnt use a .config option or a boot 
+> option to get their weird stuff going, which weird stuff also happens 
+> to be useful.
 > 
-> Of course, if the "ETXTBUSY" case is the common case (which I doubt),
-> then not doing the write at all would be the optimal case. But I doubt
-> that case is even worth really worrying about ;)
+> What i'm somewhat against is having this enabled by default for weird 
+> stuff that also happens to be harmful - and the fact that it never 
+> worked over 4G physical gives us the perfect opportunity to do just 
+> that.
+> 
 
-It isn't, unless your box is spinning in attempts to do something like
-opening /bin/sh for write.  In which case you've got worse problems ;-)
-> 
-> > For get_write_access() it's probably the right assumption for everything but
-> > /dev/tty*; for deny_write_access() it's not - a lot of binaries are run by
-> > more than one process...
-> 
-> Note the fact that EVEN IF WE GUESS INCORRECTLY, performance is likely
-> better by guessing rather than reading, unless you know the thing is
-> already in the local CPU cache.
-> 
-> Doing the loop twice instead of once is still *much* faster than an
-> extra cache transaction that goes to the bus (or L3 or whatever).
-> 
-> > FWIW, I wonder what will the things look like on ll/sc architectures;
-> 
-> There are no ll/sc architectures worth worrying about, so I don't
-> think that's the primary concern.  That said, I don't disagree with
-> creating a "atomic_inc_unless_negative()" helper.
+I'm concerned about that notion.  I think it's fine to modularize
+/dev/mem, but what we're seeing is that Red Hat and all kinds of other
+entities are putting in ad hoc versions of /dev/mem, but of course doing
+so incorrectly.
 
-OK...  Let me see if I got it right:
-static inline int atomic_inc_unless_negative(atomic_t *p)
-{
-	int v, v1;
-	for (v = 0; v >= 0; v = v1) {
-		v1 = atomic_cmpxchg(p, v, v + 1);
-		if (v == v1)
-			return 1;
-	}
-	return 0;
-}
-with get_write_access(inode) becoming
-	return atomic_inc_unless_negative(&inode->i_writecount) ? 0 : -ETXTBUSY;
-and similar for atomic_dec_unless_positive()/deny_write_access()?
+	-hpa
 
-BTW, atomic_add_unless/atomic_inc_not_zero is done as read/cmpxchg on
-everything I've checked, including alpha and sparc.  I suspect that
-it's seriously suboptimal there...
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
