@@ -1,75 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751006Ab1FTIQc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 04:16:32 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:54475 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439Ab1FTIQ2 (ORCPT
+	id S1751740Ab1FTIPi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 04:15:38 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:52570 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851Ab1FTIPh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 04:16:28 -0400
-Message-ID: <4DFF019B.8030605@ru.mvista.com>
-Date: Mon, 20 Jun 2011 12:15:23 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Mon, 20 Jun 2011 04:15:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=H3gTmoR78fM3h1bSyKe7ShpQ8t4wvg7MaHZGp5Mvpo9n8HEgLyApou4qRDCAUrXNBP
+         YdG+lP9e4Mb+3R+5O/0BpTNiIqrvT+BFo1opTlt5vImliusgzDt9KTlPkYeZ1TuX3vEp
+         hXvFEM0hh3UaeCNUWauOOGMVvslEuWYGzWt/w=
 MIME-Version: 1.0
-To: Yuan-Hsin Chen <yuanlmm@gmail.com>
-CC: jgarzik@pobox.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tj@kernel.org, sshtylyov@mvista.com,
-        Yuan-Hsin Chen <yhchen@faraday-tech.com>
-Subject: Re: [PATCH v4] ahci: move ahci_sb600_softreset to libahci.c and rename
- it
-References: <20110617120704.GH2611@htj.dyndns.org> <1308557202-1895-1-git-send-email-yuanlmm@gmail.com>
-In-Reply-To: <1308557202-1895-1-git-send-email-yuanlmm@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <BLU158-w332CD7657F92343D3D2D1C876A0@phx.gbl>
+References: <BLU158-w332CD7657F92343D3D2D1C876A0@phx.gbl>
+Date: Mon, 20 Jun 2011 13:45:35 +0530
+Message-ID: <BANLkTinr-5k3grHM-gfjVi2PA67VvvTiNg@mail.gmail.com>
+Subject: Re: [ath9k-devel] Patching ath9k/mac80211 to change MAC layer features
+From: Mohammed Shafi <shafi.wireless@gmail.com>
+To: Fred Matthews <fredmm@hotmail.co.uk>
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        ath9k-devel@venema.h4ckr.net, ath9k-devel@lists.ath9k
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 20-06-2011 12:06, Yuan-Hsin Chen wrote:
-
-> From: Yuan-Hsin Chen<yhchen@faraday-tech.com>
-
-> ahci_sb600_softreset was in ahci.c. This function is used
-> to fix soft reset failure and renames as ahci_pmp_retry_srst_softreset
-> in libahci.c.
-
-> diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-> index 71afe03..2de36b6 100644
-> --- a/drivers/ata/ahci.c
-> +++ b/drivers/ata/ahci.c
-> @@ -79,8 +79,6 @@ enum board_ids {
->   };
+On Fri, Jun 17, 2011 at 2:09 AM, Fred Matthews <fredmm@hotmail.co.uk> wrote:
+> Hello all,
 >
->   static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent);
-> -static int ahci_sb600_softreset(struct ata_link *link, unsigned int *class,
-> -			  unsigned long deadline);
->   static int ahci_vt8251_hardreset(struct ata_link *link, unsigned int *class,
->   				 unsigned long deadline);
->   static int ahci_p5wdh_hardreset(struct ata_link *link, unsigned int *class,
-> @@ -106,8 +104,7 @@ static struct ata_port_operations ahci_p5wdh_ops = {
 >
->   static struct ata_port_operations ahci_sb600_ops = {
->   	.inherits		=&ahci_ops,
-> -	.softreset		= ahci_sb600_softreset,
-> -	.pmp_softreset		= ahci_sb600_softreset,
-> +	.softreset		= ahci_pmp_retry_srst_softreset,
+> I have a query regarding patching ath9k/mac80211 to change MAC layer
+> features and I would be most grateful if someone can assist.
+>
+>
+> I need to patch ath9k so that I can be able to modify/fix the A-MPDU
+> aggregation frame length and other parameters such that they can be
+> configured at runtime via debugfs. I made a newbie attempt at trying to
+> change the aggregate length (attached), but I am unsure of the
+> correctness/efficiency  - when applied throughput varies with different
+> frame lengths entered but I can't be sure if its actually changing the
+> aggregation length (passes the framelen/aggr_limit). Hence I would be very
+> grateful if someone can assist in the correct way of doing this (possibly
+> directly via mac80211).
+>
+>
+>
+> Also if the ampdu aggregate length is changed I believe the number/length of
+> the subframes of the aggregate stays constant (at the default which is
+> 32). I try to change this in my patch as well as the maximum software
+> retries by just changing the default definition in ath9k.h, thus is there a
+> (more) correct/better way of changing these. Finally, how can I patch the
+> driver to be able to disable Block-Acks/aggregation via debugfs or
+> otherwise.
 
-    I have to ask you again: have you tried to compile this?
 
-> diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-> index d38c40f..0fd5a30 100644
-> --- a/drivers/ata/libahci.c
-> +++ b/drivers/ata/libahci.c
-> @@ -82,6 +82,8 @@ static void ahci_pmp_attach(struct ata_port *ap);
->   static void ahci_pmp_detach(struct ata_port *ap);
->   static int ahci_softreset(struct ata_link *link, unsigned int *class,
->   			  unsigned long deadline);
-> +static int ahci_pmp_retry_srst_softreset(struct ata_link *link, unsigned int *class,
-> +			  unsigned long deadline);
+to disable aggregation in the driver, please try this
+diff --git a/drivers/net/wireless/ath/ath9k/init.c
+b/drivers/net/wireless/ath/ath9k/init.c
+index d4b166c..e0175d0 100644
+--- a/drivers/net/wireless/ath/ath9k/init.c
++++ b/drivers/net/wireless/ath/ath9k/init.c
+@@ -524,8 +524,6 @@ static void ath9k_init_misc(struct ath_softc *sc)
+        sc->config.txpowlimit = ATH_TXPOWER_MAX;
 
-    How come this is static if you reference it outside this module?
+        if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_HT) {
+-               sc->sc_flags |= SC_OP_TXAGGR;
+-               sc->sc_flags |= SC_OP_RXAGGR;
+        }
 
-WBR, Sergei
+        common->tx_chainmask = sc->sc_ah->caps.tx_chainmask;
+
+if you want only tx-aggregation to be disabled , please comment out only that.
+also you can completely disable HT by
+diff --git a/drivers/net/wireless/ath/ath9k/hw.c
+b/drivers/net/wireless/ath/ath9k/hw.c
+index 6de2655..696b4cc 100644
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -1915,10 +1915,7 @@ int ath9k_hw_fill_cap_info(struct ath_hw *ah)
+
+        common->crypt_caps |= ATH_CRYPT_CAP_CIPHER_AESCCM;
+
+-       if (ah->hw_version.devid != AR2427_DEVID_PCIE)
+-               pCap->hw_caps |= ATH9K_HW_CAP_HT;
+-       else
+-               pCap->hw_caps &= ~ATH9K_HW_CAP_HT;
++       pCap->hw_caps &= ~ATH9K_HW_CAP_HT;
+
+        if (AR_SREV_9271(ah))
+                pCap->num_gpio_pins = AR9271_NUM_GPIO;
+
+
+
+
+>
+>
+>
+> I highly appreciate, help in any of the above, as well as other advice,
+> Many thanks
+>
+> _______________________________________________
+> ath9k-devel mailing list
+> ath9k-devel@lists.ath9k.org
+> https://lists.ath9k.org/mailman/listinfo/ath9k-devel
+>
+>
+
+
+
+-- 
+shafi
