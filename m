@@ -1,204 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060Ab1FTWou (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 18:44:50 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:11256 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755534Ab1FTWos convert rfc822-to-8bit (ORCPT
+	id S1756087Ab1FTWpp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 18:45:45 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:55602 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755099Ab1FTWpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 18:44:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=raMhaONyC8yYu0YoMcLY9T9/laeNFPiqjaVJCLYG16H/D9UzVTyvPslxLF53fdmk9k
-         qpH3UkKjlEqRUIQ+gQIg==
+	Mon, 20 Jun 2011 18:45:43 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Bryan Donlan <bdonlan@gmail.com>
+Cc: Greg Kurz <gkurz@fr.ibm.com>, akpm@linux-foundation.org,
+        containers@lists.osdl.org, linux-kernel@vger.kernel.org,
+        serge@hallyn.com, daniel.lezcano@free.fr, oleg@redhat.com,
+        xemul@openvz.org, Cedric Le Goater <clg@vnet.ibm.com>
+References: <20110615145527.4016.70157.stgit@bahia.local>
+	<BANLkTimSC_OSrbekhM=wd2Gie4np3Q4F5A@mail.gmail.com>
+	<1308570316.8230.140.camel@bahia.local>
+	<BANLkTiknqo0iKry7mjq+mc4iOWj_A_mrrw@mail.gmail.com>
+Date: Mon, 20 Jun 2011 15:44:57 -0700
+In-Reply-To: <BANLkTiknqo0iKry7mjq+mc4iOWj_A_mrrw@mail.gmail.com> (Bryan
+	Donlan's message of "Mon, 20 Jun 2011 13:37:24 -0400")
+Message-ID: <m1ei2o9l7a.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <4DFFCCD4.7070403@google.com>
-References: <1307388985-7852-1-git-send-email-mjg@redhat.com>
- <1307388985-7852-2-git-send-email-mjg@redhat.com> <4DFFCCD4.7070403@google.com>
-From: Mike Waychison <mikew@google.com>
-Date: Mon, 20 Jun 2011 15:44:25 -0700
-Message-ID: <BANLkTi=8zDDXLSXV9rxufr9uqciB94xxdnj6s7Q582ZAGZUX5A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] efi: Add infrastructure for UEFI 2.0 runtime services
-To: Matthew Garrett <mjg@redhat.com>
-Cc: x86@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+wTnmaBFMRV3oryeGlRaZhV0viLuSB6tU=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Bryan Donlan <bdonlan@gmail.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was Vpid:)
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 3:42 PM, Mike Waychison <mikew@google.com> wrote:
-> On 06/06/11 12:36, Matthew Garrett wrote:
->>
->> We're currently missing support for any of the runtime service calls
->> introduced with the UEFI 2.0 spec in 2006. Add the infrastructure for
->> supporting them.
->
-> This patch looks like it introduced runtime_version in mainline, but I don't
-> see where it gets zero.
+Bryan Donlan <bdonlan@gmail.com> writes:
 
-Er, I don't see where it gets initialized.
+> On Mon, Jun 20, 2011 at 07:45, Greg Kurz <gkurz@fr.ibm.com> wrote:
+>> On Thu, 2011-06-16 at 13:54 -0400, Bryan Donlan wrote:
+>
+>>> Although getting the in-namespace PID is a useful thing, wouldn't a
+>>> truly race-free API be preferable? Any access by PID has the race
+>>> condition in which the target process could die, and its PID get
+>>> recycled between retrieving the PID and doing something with it.
+>>
+>> Well the PID is a racy construct when used by another task than the
+>> parent... fortunately, most userland code can cope with it ! :)
+>
+> That doesn't mean we shouldn't try to fix the race! :)
+>
+>>> Perhaps a file-descriptor API would be better, such as something like
+>>> this:
+>>>
+>>> int openpid(int id, int flags);
+>>> int rt_sigqueueinfo_fd(int process_fd, int sig, siginfo_t *info);
+>>> int sigqueue_fd(int process_fd, int sig, const union sigval value); //
+>>> glibc wrapper
+>>>
+>>
+>> The race still exists: openpid() is being passed a PID... Only the
+>> parent can legitimately know that this PID identifies a specific
+>> unwaited child.
+>
+> Yes, the idea would be either the parent process, or the target
+> process itself would open the PID, then pass the resulting file
+> descriptor to whatever process is actually doing the killing.
+> Alternately, one could add additional calls to help identify whether
+> the right process was opened (perhaps a call to get a directory handle
+> to the corresponding /proc directory?)
 
->
->>
->> Signed-off-by: Matthew Garrett<mjg@redhat.com>
->> ---
->>  arch/x86/platform/efi/efi.c |   37 +++++++++++++++++++++++++++++++++++++
->>  include/linux/efi.h         |   32 ++++++++++++++++++++++++++++++++
->>  2 files changed, 69 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
->> index f4f6de9..a0e4244 100644
->> --- a/arch/x86/platform/efi/efi.c
->> +++ b/arch/x86/platform/efi/efi.c
->> @@ -131,6 +131,18 @@ static efi_status_t
->> virt_efi_set_variable(efi_char16_t *name,
->>                              data_size, data);
->>  }
->>
->> +static efi_status_t virt_efi_query_variable_info(u32 attr,
->> +                                                u64 *storage_space,
->> +                                                u64 *remaining_space,
->> +                                                u64 *max_variable_size)
->> +{
->> +       if (efi.runtime_version<  EFI_2_00_SYSTEM_TABLE_REVISION)
->> +               return EFI_UNSUPPORTED;
->> +
->> +       return efi_call_virt4(query_variable_info, attr, storage_space,
->> +                             remaining_space, max_variable_size);
->> +}
->> +
->>  static efi_status_t virt_efi_get_next_high_mono_count(u32 *count)
->>  {
->>        return efi_call_virt1(get_next_high_mono_count, count);
->> @@ -145,6 +157,28 @@ static void virt_efi_reset_system(int reset_type,
->>                       data_size, data);
->>  }
->>
->> +static efi_status_t virt_efi_update_capsule(efi_capsule_header_t
->> **capsules,
->> +                                           unsigned long count,
->> +                                           unsigned long sg_list)
->> +{
->> +       if (efi.runtime_version<  EFI_2_00_SYSTEM_TABLE_REVISION)
->> +               return EFI_UNSUPPORTED;
->> +
->> +       return efi_call_virt3(update_capsule, capsules, count, sg_list);
->> +}
->> +
->> +static efi_status_t virt_efi_query_capsule_caps(efi_capsule_header_t
->> **capsules,
->> +                                               unsigned long count,
->> +                                               u64 *max_size,
->> +                                               int *reset_type)
->> +{
->> +       if (efi.runtime_version<  EFI_2_00_SYSTEM_TABLE_REVISION)
->> +               return EFI_UNSUPPORTED;
->> +
->> +       return efi_call_virt4(query_capsule_caps, capsules, count,
->> max_size,
->> +                             reset_type);
->> +}
->> +
->>  static efi_status_t __init phys_efi_set_virtual_address_map(
->>        unsigned long memory_map_size,
->>        unsigned long descriptor_size,
->> @@ -651,6 +685,9 @@ void __init efi_enter_virtual_mode(void)
->>        efi.get_next_high_mono_count = virt_efi_get_next_high_mono_count;
->>        efi.reset_system = virt_efi_reset_system;
->>        efi.set_virtual_address_map = NULL;
->> +       efi.query_variable_info = virt_efi_query_variable_info;
->> +       efi.update_capsule = virt_efi_update_capsule;
->> +       efi.query_capsule_caps = virt_efi_query_capsule_caps;
->>        if (__supported_pte_mask&  _PAGE_NX)
->>                runtime_code_page_mkexec();
->>        early_iounmap(memmap.map, memmap.nr_map * memmap.desc_size);
->> diff --git a/include/linux/efi.h b/include/linux/efi.h
->> index 0758753..ec25726 100644
->> --- a/include/linux/efi.h
->> +++ b/include/linux/efi.h
->> @@ -101,6 +101,13 @@ typedef struct {
->>        u64 attribute;
->>  } efi_memory_desc_t;
->>
->> +typedef struct {
->> +       efi_guid_t guid;
->> +       u32 headersize;
->> +       u32 flags;
->> +       u32 imagesize;
->> +} efi_capsule_header_t;
->> +
->>  typedef int (*efi_freemem_callback_t) (u64 start, u64 end, void *arg);
->>
->>  /*
->> @@ -156,6 +163,9 @@ typedef struct {
->>        unsigned long set_variable;
->>        unsigned long get_next_high_mono_count;
->>        unsigned long reset_system;
->> +       unsigned long update_capsule;
->> +       unsigned long query_capsule_caps;
->> +       unsigned long query_variable_info;
->>  } efi_runtime_services_t;
->>
->>  typedef efi_status_t efi_get_time_t (efi_time_t *tm, efi_time_cap_t *tc);
->> @@ -177,6 +187,17 @@ typedef efi_status_t efi_set_virtual_address_map_t
->> (unsigned long memory_map_siz
->>                                                unsigned long
->> descriptor_size,
->>                                                u32 descriptor_version,
->>                                                efi_memory_desc_t
->> *virtual_map);
->> +typedef efi_status_t efi_query_variable_info_t(u32 attr,
->> +                                              u64 *storage_space,
->> +                                              u64 *remaining_space,
->> +                                              u64 *max_variable_size);
->> +typedef efi_status_t efi_update_capsule_t(efi_capsule_header_t
->> **capsules,
->> +                                         unsigned long count,
->> +                                         unsigned long sg_list);
->> +typedef efi_status_t efi_query_capsule_caps_t(efi_capsule_header_t
->> **capsules,
->> +                                             unsigned long count,
->> +                                             u64 *max_size,
->> +                                             int *reset_type);
->>
->>  /*
->>   *  EFI Configuration Table and GUID definitions
->> @@ -218,6 +239,13 @@ typedef struct {
->>
->>  #define EFI_SYSTEM_TABLE_SIGNATURE ((u64)0x5453595320494249ULL)
->>
->> +#define EFI_2_30_SYSTEM_TABLE_REVISION  ((2<<  16) | (30))
->> +#define EFI_2_20_SYSTEM_TABLE_REVISION  ((2<<  16) | (20))
->> +#define EFI_2_10_SYSTEM_TABLE_REVISION  ((2<<  16) | (10))
->> +#define EFI_2_00_SYSTEM_TABLE_REVISION  ((2<<  16) | (00))
->> +#define EFI_1_10_SYSTEM_TABLE_REVISION  ((1<<  16) | (10))
->> +#define EFI_1_02_SYSTEM_TABLE_REVISION  ((1<<  16) | (02))
->> +
->>  typedef struct {
->>        efi_table_hdr_t hdr;
->>        unsigned long fw_vendor;        /* physical addr of CHAR16 vendor
->> string */
->> @@ -250,6 +278,7 @@ struct efi_memory_map {
->>   */
->>  extern struct efi {
->>        efi_system_table_t *systab;     /* EFI system table */
->> +       unsigned int runtime_version;   /* Runtime services version */
->>        unsigned long mps;              /* MPS table */
->>        unsigned long acpi;             /* ACPI table  (IA64 ext 0.71) */
->>        unsigned long acpi20;           /* ACPI table  (ACPI 2.0) */
->> @@ -266,6 +295,9 @@ extern struct efi {
->>        efi_get_variable_t *get_variable;
->>        efi_get_next_variable_t *get_next_variable;
->>        efi_set_variable_t *set_variable;
->> +       efi_query_variable_info_t *query_variable_info;
->> +       efi_update_capsule_t *update_capsule;
->> +       efi_query_capsule_caps_t *query_capsule_caps;
->>        efi_get_next_high_mono_count_t *get_next_high_mono_count;
->>        efi_reset_system_t *reset_system;
->>        efi_set_virtual_address_map_t *set_virtual_address_map;
->
->
+fd = open("/proc/self/", O_DIRECTORY);
+?
+
+Doing something based on proc files seems like a reasonable direction to
+head if we are working on a race free api.
+
+I suspect all we need is a sigqueue file.
+
+Eric
+
