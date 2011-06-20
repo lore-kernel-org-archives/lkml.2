@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284Ab1FTIXD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 04:23:03 -0400
-Received: from mx-rz-2.rrze.uni-erlangen.de ([131.188.11.21]:52915 "EHLO
-	mx-rz-2.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750844Ab1FTIXA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 04:23:00 -0400
-X-Greylist: delayed 304 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Jun 2011 04:23:00 EDT
-X-RRZE-Submit-IP: 209.85.160.174
+	id S1752149Ab1FTITp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 04:19:45 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48639 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844Ab1FTITm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 04:19:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=kGKqUEVu2fIkTmf8VOU73PrTX5VayJkKqh+bHcjmFb3xAbSjprOo1jn2h47symbsRw
+         zmjgHEUWEyEtHrLib2v3dJ+mE2pw5a3Ja+f0KV18yizezslfIxW8uyEKzKTcK4oX023D
+         46Hupwadf7AQSooT18ggHdsBiaDVSCIlxDtw8=
+Date: Mon, 20 Jun 2011 10:19:37 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Yuan-Hsin Chen <yuanlmm@gmail.com>
+Cc: jgarzik@pobox.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sshtylyov@mvista.com, Yuan-Hsin Chen <yhchen@faraday-tech.com>
+Subject: Re: [PATCH v4] ahci: move ahci_sb600_softreset to libahci.c and
+ rename it
+Message-ID: <20110620081937.GN2611@htj.dyndns.org>
+References: <20110617120704.GH2611@htj.dyndns.org>
+ <1308557202-1895-1-git-send-email-yuanlmm@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110616141930.GA12872@eferding.osrc.amd.com>
-References: <cover.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
-	<0a1488254bd51475a90133c0fc41a4d34b533ef4.1308142053.git.manuel.f.zerpies@ww.stud.uni-erlangen.de>
-	<20110616141930.GA12872@eferding.osrc.amd.com>
-Date: Mon, 20 Jun 2011 10:17:53 +0200
-Message-ID: <BANLkTim=yg+tCxa-JhMYw5zsnBSzQqVnqg@mail.gmail.com>
-Subject: Re: [PATCH 01/11] drivers/ide: use printk_ratelimited() instead of printk_ratelimit()
-From: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
-To: Borislav Petkov <bp@alien8.de>,
-        Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>,
-        "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        christian.dietrich@informatik.uni-erlangen.de, sshtylyov@mvista.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308557202-1895-1-git-send-email-yuanlmm@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-2011/6/16 Borislav Petkov <bp@alien8.de>
->
-> On Thu, Jun 16, 2011 at 02:06:37PM +0200, Manuel Zerpies wrote:
->
-> Does the printk fit on one line if you do
->
->        pr_warn_ratelimited(...)
->
-> instead?
->
-> Thanks.
->
-> --
-> Regards/Gruss,
-> Boris.
+Hello, Yuan.
 
-No I'm affraid. I tried it, but it didn't fit the 80 chars per line
-code-styling.
+Yeap, almost there, just few very minor things. :)
 
->Why not pr_warn_ratelimited()?
->WBR, Sergei
+On Mon, Jun 20, 2011 at 04:06:41PM +0800, Yuan-Hsin Chen wrote:
+>  static struct ata_port_operations ahci_sb600_ops = {
+>  	.inherits		= &ahci_ops,
+> -	.softreset		= ahci_sb600_softreset,
+> -	.pmp_softreset		= ahci_sb600_softreset,
+> +	.softreset		= ahci_pmp_retry_srst_softreset,
+>  };
 
-I just kind of ignored it. As you see, I built it in.
+Why doesn't sb600 just use ahci_pmp_retry_srst_ops?
 
-Here my new patch:
+> @@ -312,6 +312,7 @@ extern struct device_attribute *ahci_sdev_attrs[];
+>  	.sdev_attrs		= ahci_sdev_attrs
+>  
+>  extern struct ata_port_operations ahci_ops;
+> +extern struct ata_port_operations ahci_pmp_retry_srst_ops;
 
-Since printk_ratelimit() shouldn't be used anymore (see comment in
-include/linux/printk.h), replace it with printk_ratelimited().
-Signed-off-by: Manuel Zerpies <manuel.f.zerpies@ww.stud.uni-erlangen.de>
----
- drivers/ide/ide-atapi.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-diff --git a/drivers/ide/ide-atapi.c b/drivers/ide/ide-atapi.c
-index 6f218e01..c9e69d7 100644
---- a/drivers/ide/ide-atapi.c
-+++ b/drivers/ide/ide-atapi.c
-@@ -8,6 +8,7 @@
- #include <linux/ide.h>
- #include <linux/scatterlist.h>
- #include <linux/gfp.h>
-+#include <linux/ratelimit.h>
+Heh, I know I suggested that name but that is one ugly name.  If
+anyone has any better idea, please come forward.
 
- #include <scsi/scsi.h>
+> @@ -82,6 +82,8 @@ static void ahci_pmp_attach(struct ata_port *ap);
+>  static void ahci_pmp_detach(struct ata_port *ap);
+>  static int ahci_softreset(struct ata_link *link, unsigned int *class,
+>  			  unsigned long deadline);
+> +static int ahci_pmp_retry_srst_softreset(struct ata_link *link, unsigned int *class,
+> +			  unsigned long deadline);
 
-@@ -200,9 +201,8 @@ void ide_prep_sense(ide_drive_t *drive, struct request *rq)
-  err = blk_rq_map_kern(drive->queue, sense_rq, sense, sense_len,
-       GFP_NOIO);
-  if (unlikely(err)) {
-- if (printk_ratelimit())
-- printk(KERN_WARNING PFX "%s: failed to map sense "
--    "buffer\n", drive->name);
-+ pr_warn_ratelimited(PFX "%s: failed to map sense buffer\n",
-+    drive->name);
-  return;
-  }
+srst equals softreset, so ahci_pmp_retry_softreset() should do.
 
---
-1.7.4.1
+> +struct ata_port_operations ahci_pmp_retry_srst_ops = {
+> +	.inherits		= &ahci_ops,
+> +	.softreset		= ahci_pmp_retry_srst_softreset,
+> +};
+> +EXPORT_SYMBOL_GPL(ahci_pmp_retry_srst_ops);
+> +
+>  struct ata_port_operations ahci_ops = {
+>  	.inherits		= &sata_pmp_port_ops,
+
+Maybe it's better to place ahci_pmp_retry_srst_ops after ahci_ops?
+
+> +static int ahci_pmp_check_ready(struct ata_link *link)
+
+It would be better if the name reflects that it's not for specific
+workaround.
+
+Thank you.
+
+-- 
+tejun
