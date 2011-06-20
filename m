@@ -1,94 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755677Ab1FTVYM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 17:24:12 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:62941 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580Ab1FTVYJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 17:24:09 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing the packed attribute
-Date: Mon, 20 Jun 2011 23:23:49 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        Nicolas Pitre <nico@fluxnic.net>, gregkh@suse.de,
-        lkml <linux-kernel@vger.kernel.org>, Rabin Vincent <rabin@rab.in>,
-        Alexander Holler <holler@ahsoftware.de>
-References: <alpine.LFD.2.00.1106201306210.2142@xanadu.home> <201106202226.37381.arnd@arndb.de> <20110620205559.GM26089@n2100.arm.linux.org.uk>
-In-Reply-To: <20110620205559.GM26089@n2100.arm.linux.org.uk>
+	id S1755432Ab1FTV2Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 17:28:16 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:43224 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751352Ab1FTV2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 17:28:13 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH] PCI / PM: Block races between runtime PM and system sleep
+Date: Mon, 20 Jun 2011 23:28:53 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+References: <Pine.LNX.4.44L0.1106201651270.2113-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1106201651270.2113-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106202323.49513.arnd@arndb.de>
-X-Provags-ID: V02:K0:migES4fzcFjb+8aed8TdNLfrfh6EXb+lsu/o7g7YDAv
- i4wck+8+y5doj9JVCut9+kHTKLj8LqLfWrnqZiHYei+JSqJ/u5
- 0WUmjC5Pz8sykc393wjnrxwBwYtQ8oTFY/O/Ec4jmqxQ64sWAz
- BmIYguBlxG74KVSkZfguPL+jtRU/d+w4oX952Kd0GzayRpZySd
- 0J4bxN3sptfpbrCj3AnaA==
+Message-Id: <201106202328.54100.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 20 June 2011 22:55:59 Russell King - ARM Linux wrote:
-> On Mon, Jun 20, 2011 at 10:26:37PM +0200, Arnd Bergmann wrote:
-> > * We already need a compiler barrier in the non-_relaxed() versions of
-> >   the I/O accessors, which will force a reload of the base address
-> >   in a lot of cases, so the code is already suboptimal. Yes, we don't
-> >   have the barrier today without CONFIG_ARM_DMA_MEM_BUFFERABLE, but that
-> >   is a bug, because it lets the compiler move accesses to DMA buffers
-> >   around readl/writel.
+On Monday, June 20, 2011, Alan Stern wrote:
+> On Mon, 20 Jun 2011, Rafael J. Wysocki wrote:
 > 
-> You're now being obtuse there.  You don't need compiler barriers to
-> guarantee order - that's what volatile does there.
+> > > Furthermore, since we're going to disable runtime PM as soon as the
+> > > suspend callback returns anyway, why not increment usage_count before
+> > > invoking the callback?  This will prevent runtime suspends from 
+> > > occurring while the callback runs, so no changes will be needed in the 
+> > > PCI or USB subsystems.
+> > 
+> > The PCI case is different from the USB one.  PCI needs to resume devices
+> > before calling their drivers' .suspend() callbacks, so it does that in
+> > .prepare().  If the core acquired a reference to every device  before executing
+> > the subsystem .suspend(), then pm_runtime_resume() could be moved from
+> > pci_pm_prepare() to pci_prepare_suspend(), but then additionally it would
+> > have to be called from pci_pm_freeze() and pci_pm_poweroff().  It simply is
+> > more efficient to call it once from pci_pm_prepare(), but then PCI needs to
+> > take the reference by itself.
 > 
+> Ah, okay.  The PCI part makes sense then.
 
-A simple counterexample:
+OK, so the appended patch is a modification of the $subject one using
+pm_runtime_put_sync() instead of pm_runtime_put_noidle().
 
+> > > It also will prevent Kevin from calling pm_runtime_suspend from within
+> > > his suspend callbacks, but you have already determined that subsystems
+> > > and drivers should never do that in any case.
+> > 
+> > Then reverting commit e8665002477f0278f84f898145b1f141ba26ee26 would be
+> > even better. :-)
+> 
+> See below.
+> 
+> 
+> > > As I see it, we never want a suspend or suspend_noirq callback to call 
+> > > pm_runtime_suspend().  However it's okay for the suspend callback to 
+> > > invoke pm_runtime_resume(), as long as this is all done in subsystem 
+> > > code.
+> > 
+> > First off, I don't really see a reason for a subsystem to call
+> > pm_runtime_resume() from its .suspend_noirq() callback.
+> 
+> I was referring to .suspend(), not .suspend_noirq().
+> 
+> >  Now, if
+> > pm_runtime_resume() is to be called concurrently with the subsystem's
+> > .suspend_noirq() callback, I'd rather won't let that happen. :-)
+> 
+> Me too.  But I see no reason to prevent pm_runtime_resume() from being 
+> called by .suspend().
 
-int f(volatile unsigned long *v)
-{
-        unsigned long a[2], ret;
-        a[0] = 1;              /* initialize our DMA buffer */
-        a[1] = 2;
-        *v = (unsigned long)a; /* pass the address to the device, start DMA */
-        ret = *v;              /* flush DMA by reading from mmio */
-        return ret + a[1];     /* return accumulated status from readl and from modified
-				  DMA buffer */
-}
+Hmm.
 
-arm-linux-gnueabi-gcc -Wall -O2 test.c -S
+> > > And in between the prepare and suspend callbacks, runtime PM should be
+> > > more or less fully functional, right?  For most devices it will never
+> > > be triggered, because it has to run in process context and both
+> > > userspace and pm_wq are frozen.  It may trigger for devices marked as
+> > > IRQ-safe, though.
+> > 
+> > It also may trigger for drivers using non-freezable workqueues and calling
+> > runtime PM synchronously from there.
+> 
+> Right.  So we shouldn't ignore this window.
 
-Without a barrier, the stores into the DMA buffer before the start are
-lost, as is the load from the modified DMA buffer:
+So, your point is that while .suspend() or .resume() are running, the
+synchronization between runtime PM and system suspend/resume should be the
+subsystem's problem, right?
 
-        sub     sp, sp, #8
-        add     r3, sp, #0
-        str     r3, [r0, #0]
-        ldr     r0, [r0, #0]
-        adds    r0, r0, #2
-        add     sp, sp, #8
-        bx      lr
+> > > Maybe the barrier should be moved into __device_suspend().
+> > 
+> > I _really_ think that the initial approach, i.e. before commit
+> > e8665002477f0278f84f898145b1f141ba26ee26, made the most sense.  It didn't
+> > cover the "pm_runtime_resume() called during system suspend" case, but
+> > it did cover everything else.
+> 
+> But it prevented runtime PM from working during the window between 
+> .prepare() and .suspend(), and also between .resume() and .complete().
+> If a subsystem like PCI wants to rule out runtime PM during those 
+> windows, then fine -- it can do whatever it wants.  But the PM core 
+> shouldn't do this.
 
-Adding a memory clobber to the volatile dereference turns this into the
-expected output:
+I actually see a reason for doing this.  Namely, I don't really think
+driver writers should be bothered with preventing races between different
+PM callbacks from happening.  Runtime PM takes care of that at run time,
+the design of the system suspend/resume code ensures that the callbacks
+for the same device are executed sequentially, but if we allow runtime PM
+callbacks to be executed in parallel with system suspend/resume callbacks,
+someone has to prevent those callbacks from racing with each other.
 
-        sub     sp, sp, #8
-        movs    r3, #2
-        movs    r2, #1
-        stmia   sp, {r2, r3}
-        add     r3, sp, #0
-        str     r3, [r0, #0]
-        ldr     r0, [r0, #0]
-        ldr     r3, [sp, #4]
-        adds    r0, r0, r3
-        add     sp, sp, #8
-        bx      lr
+Now, if you agree that that shouldn't be a driver's task, then it has to
+be the subsystem's one and I'm not sure what a subsystem can do other than
+disabling runtime PM or at least taking a reference on every device before
+calling device drivers' .suspend() callbacks.
 
-Now, the dma buffer is written before the volatile access, and read out
-again afterwards.
+Please note, I think that .prepare() and .complete() are somewhat special,
+so perhaps we should allow those to race with runtime PM callbacks, but IMO
+allowing .suspend() and .resume() to race with .runtime_suspend() and
+.runtime_resume() is not a good idea.
 
-	Arnd
+> > So, I think there are serious technical arguments for reverting that commit.
+> > 
+> > I think we went really far trying to avoid that, but I'm not sure I want to go
+> > any further.
+> 
+> What I'm suggesting is to revert the commit but at the same time,
+> move the get_noresume() into __device_suspend() and the put_sync() into 
+> device_resume().
+
+What about doing pm_runtime_get_noresume() and the pm_runtime_barrier()
+in dpm_prepare(), but _after_ calling device_prepare() and doing
+pm_runtime_put_noidle() in dpm_complete() _before_ calling .complete()
+from the subsystem (a _put_sync() at this point will likely invoke
+.runtime_idle() from the subsystem before executing .complete(), which may
+not be desirable)?
+
+Rafael
+
+---
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: PCI / PM: Block races between runtime PM and system sleep
+
+After commit e8665002477f0278f84f898145b1f141ba26ee26
+(PM: Allow pm_runtime_suspend() to succeed during system suspend) it
+is possible that a device resumed by the pm_runtime_resume(dev) in
+pci_pm_prepare() will be suspended immediately from a work item,
+timer function or otherwise, defeating the very purpose of calling
+pm_runtime_resume(dev) from there.  To prevent that from happening
+it is necessary to increment the runtime PM usage counter of the
+device by replacing pm_runtime_resume() with pm_runtime_get_sync().
+Moreover, the incremented runtime PM usage counter has to be
+decremented by the corresponding pci_pm_complete(), via
+pm_runtime_put_sync().
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: stable@kernel.org
+---
+ drivers/pci/pci-driver.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+Index: linux-2.6/drivers/pci/pci-driver.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/pci-driver.c
++++ linux-2.6/drivers/pci/pci-driver.c
+@@ -624,7 +624,7 @@ static int pci_pm_prepare(struct device
+ 	 * system from the sleep state, we'll have to prevent it from signaling
+ 	 * wake-up.
+ 	 */
+-	pm_runtime_resume(dev);
++	pm_runtime_get_sync(dev);
+ 
+ 	if (drv && drv->pm && drv->pm->prepare)
+ 		error = drv->pm->prepare(dev);
+@@ -638,6 +638,8 @@ static void pci_pm_complete(struct devic
+ 
+ 	if (drv && drv->pm && drv->pm->complete)
+ 		drv->pm->complete(dev);
++
++	pm_runtime_put_sync(dev);
+ }
+ 
+ #else /* !CONFIG_PM_SLEEP */
