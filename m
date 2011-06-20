@@ -1,130 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924Ab1FTPgx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 11:36:53 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:56319 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751383Ab1FTPgw (ORCPT
+	id S1753086Ab1FTPhu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 11:37:50 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:44028 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751835Ab1FTPht convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 11:36:52 -0400
-Date: Mon, 20 Jun 2011 18:36:47 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Skacore Systems <skacore.systems@gmail.com>
-Cc: balbi@ti.com, Alan Stern <stern@rowland.harvard.edu>,
-        Viliam Mateicka <viliam.mateicka@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] s3c2410_udc: fix custom UDC command handling
-Message-ID: <20110620153645.GQ14262@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <BANLkTimWM2oew2f9uWxoD1kw1=2bSYFFuw@mail.gmail.com>
- <Pine.LNX.4.44L0.1106201105430.2113-100000@iolanthe.rowland.org>
- <20110620151522.GN14262@legolas.emea.dhcp.ti.com>
- <BANLkTi=5S6bWs3jr9hTsg2=LXh4xKAprUA@mail.gmail.com>
+	Mon, 20 Jun 2011 11:37:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=c21oC2xnFAsvJMPABwET4IQUawVXGzCnAPDrhXScxgmlv2ECzGk/apfTOdMHPCHPY/
+         eCrmeViRSOvwOziSzPUY+x1SxEvU1yO+Yq3q3uJcG1sVdjC7Hnp2HGM1HE8WnTQGiY8i
+         L2AeHgU+PInvpHMEREw1PRcNieQMxssyH5VTg=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Jesse Barnes <jbarnes@virtuousgeek.org>, chris@chris-wilson.co.uk
+Subject: Re: [Bug #34002] [REGRESSION] [2.6.39-rc3] Wrong resolution in framebuffer and X Window
+Date: Mon, 20 Jun 2011 17:37:42 +0200
+User-Agent: KMail/1.13.7 (Linux/3.0.0-rc3; KDE/4.6.3; i686; ; )
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Florian Mickler <florian@mickler.org>
+References: <9NVbY1BZ_5D.A.2lE.jzS9NB@chimera> <kTLfM29CaqB.A.P3F.a1S9NB@chimera> <20110615114614.054df25f@jbarnes-desktop>
+In-Reply-To: <20110615114614.054df25f@jbarnes-desktop>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aTHdXM4WpLndGb15"
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=5S6bWs3jr9hTsg2=LXh4xKAprUA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201106201737.42559.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On środa, 15 czerwca 2011 o 20:46:14 Jesse Barnes wrote:
 
---aTHdXM4WpLndGb15
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> 
+> Did you ever bisect this issue? As Chris says it sounds like an EDID
+> problem; we detect the outputs and attach some modes, but they sound
+> like the wrong ones for your config.  Maybe we broke EDID fetching for
+> your config?
 
-Hi,
 
-On Mon, Jun 20, 2011 at 05:20:02PM +0200, Skacore Systems wrote:
-> I've been exactly following
-> http://www.kernel.org/doc/Documentation/SubmittingPatches:
->=20
-> To create a patch for a single file, it is often sufficient to do:
->=20
-> 	SRCTREE=3D linux-2.6
-> 	MYFILE=3D  drivers/net/mydriver.c
->=20
-> 	cd $SRCTREE
-> 	cp $MYFILE $MYFILE.orig
-> 	vi $MYFILE	# make your change
-> 	cd ..
-> 	diff -up $SRCTREE/$MYFILE{.orig,} > /tmp/patch
->=20
-> And that's what I've done. What do you think is wrong with it ???
+Result of bisection:
+8f9a3f9b63b8cd3f03be9dc53533f90bd4120e5f is the first bad commit
+commit 8f9a3f9b63b8cd3f03be9dc53533f90bd4120e5f
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Tue Feb 1 09:01:13 2011 +0000
 
-patch should be in 'p1' format to start with, not 'p0'!!
+    drm/i915: Enable GMBUS for post-gen2 chipsets
 
-Your commit log shouldn't include your "regards" or anything like that,
-or that will go into the git history.
+    With the recent SDVO fix, this is working on all the machines I have to
+    hand - except for an 845G.
 
-> Subject: [PATCH] s3c2410_udc: fix custom UDC command handling
+    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 
-this should be something like:
+:040000 040000 eb835ca9bf353d1d548b69d415801720a577184a
+3e0a9430c43030735dfe2f694a1ad694cc01d483 M      drivers
 
-[PATCH] usb: gadget: s3c2410_udc: fix custom UDC command handling
+Revert this commit from 3.0-rc1 solves problem.
 
-we generally put the subsystem on the subject to help maintainers
-filter patches related to them.
-
-> There is a bug in Samsung's UDC driver, which is completely disabling
-> the USB device when a custom UDC command is used.
-> Following patch seems to get the right?behavior (e.g. enabling pull-up
-> instead of disabling then Vcc is applied).
-
-"seems to get the right behavior" makes me wonder if you really tested
-this properly. Either it fixes the problem, or it doesn't. Have you
-tried with other possible commands to see if also helps ?
-
-> Also I'm not in mailing list so please CC me.
-
-this would go to commit log, shouldn't be here.
-
-> Greetingz,
-> Vilo
-
-this shouldn't be here either.
-
-> Signed-off-by: Viliam Mateicka <viliam.mateicka@gmail.com>
-
-there should be a tear line here. (---)
-
-> --- drivers/usb/gadget/s3c2410_udc.c.orig ? ? ? 2011-05-19
-> 06:06:34.000000000 +0200
-
-this line break is bogus.
-
-you could have looked at any mailing list archive for properly formatted
-patches, but instead you chose to be unpolite with the persons who are
-giving you a "service" free of charge.
-
-At [1] you can find an example of a proper patch
-
-[1] http://marc.info/?l=3Dlinux-usb&m=3D130833192703040&w=3D2
-
---=20
-balbi
-
---aTHdXM4WpLndGb15
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN/2kNAAoJEAv8Txj19kN1uboH/R+zIrHB4oPI+/oSvR8fyhIS
-+oFasydiCaxKJ0EpWK9NOLtPMz+KDfYxANgqfjyXIopGQah8XOw+QkBMqQS6SeRr
-w3wEzI6QpzRql/kDraQLntJUpsTHKnlUMVhjyOWLPO64yUf7QLV9vcl0acY9aivZ
-X2TzzatELfLX/yRPSZpPOn8Rl6Cl+MCqDOSyUs/YN98yjYP2u57Flxrk+mzXwwQe
-KGSGgby3umMeYvCUrvuG/n8svhsM087Dn3LlCLzKYBoifnku4LtWJQbJo4SKGAg7
-0O7i08suHr74GJFA89whiNMuoJcURM05U46WgfZVTVe93HdREgZWuxNN6XJpEnw=
-=YYd+
------END PGP SIGNATURE-----
-
---aTHdXM4WpLndGb15--
+Regards
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
