@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755649Ab1FTTMN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 15:12:13 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:26701 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755388Ab1FTTML (ORCPT
+	id S1752616Ab1FTTUq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 15:20:46 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:15086 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106Ab1FTTUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 15:12:11 -0400
-X-IronPort-AV: E=Sophos;i="4.65,395,1304294400"; 
-   d="scan'208";a="6385235"
-Date: Mon, 20 Jun 2011 20:16:01 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Ian Jackson <Ian.Jackson@eu.citrix.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>
-Subject: Re: [Xen-devel] [PATCH 1/3] x86: calculate precisely the memory
- needed by init_memory_mapping
-In-Reply-To: <19963.35531.684825.285975@mariner.uk.xensource.com>
-Message-ID: <alpine.DEB.2.00.1106202008390.12963@kaball-desktop>
-References: <alpine.DEB.2.00.1106071849290.12963@kaball-desktop> <m2n.s.1QU0lc-137774@chiark.greenend.org.uk> <19963.35531.684825.285975@mariner.uk.xensource.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Mon, 20 Jun 2011 15:20:45 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Mon, 20 Jun 2011 15:20:44 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, Alan Stern <stern@rowland.harvard.edu>,
+        gregkh@suse.de, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, Rabin Vincent <rabin@rab.in>,
+        Alexander Holler <holler@ahsoftware.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] USB: ehci: use packed,
+ aligned(4) instead of removing the packed attribute
+In-reply-to: <20110620190240.GJ26089@n2100.arm.linux.org.uk>
+Message-id: <alpine.LFD.2.00.1106201515050.2142@xanadu.home>
+References: <Pine.LNX.4.44L0.1106201240240.2113-100000@iolanthe.rowland.org>
+ <201106201858.45624.arnd@arndb.de>
+ <20110620190240.GJ26089@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Jun 2011, Ian Jackson wrote:
-> stefano.stabellini@eu.citrix.com writes ("[Xen-devel] [PATCH 1/3] x86: calculate precisely the memory needed by init_memory_mapping"):
-> > +	if (pgt_buf_end != pgt_buf_top)
-> > +		printk(KERN_DEBUG "initial kernel pagetable allocation wasted %lx"
-> > +				" pages\n", pgt_buf_top - pgt_buf_end);
+On Mon, 20 Jun 2011, Russell King - ARM Linux wrote:
+
+> On Mon, Jun 20, 2011 at 06:58:45PM +0200, Arnd Bergmann wrote:
+> > A recent change in gcc changed the default behaviour when compiling the
+> > ehci driver on ARM, but the behaviour was already nondeterministic
+> > because the definition of the readl/writel macros on ARM relies on
+> > unspecified behaviour (cast to pointer with larger aligment).
 > 
-> If (due to a bug) pgt_buf_end > pgt_buf_top, this will printk a
-> message about wasting a negative number of pages, rather than
-> crashing.  Is there something else that will catch this case ?
+> It's unspecified behaviour period.  If you pass a pointer to readl/writel
+> which is not word aligned, what you get back is anyones guess.
 
-Thanks for reviewing this patch!
+The pointer _is_ aligned.  The problem is that it comes from the address 
+of a structure member, which structure is marked __packed.
 
-Yes, there is something else that catches this case: both the 32 bit
-and the 64 bit versions of alloc_low_page contain this code:
-
-
-unsigned long pfn = pgt_buf_end++;
-
-if (pfn >= pgt_buf_top)
-		panic("alloc_low_page: ran out of memory");
+Older GCC would see the cast to unsigned int applied to that pointer 
+within the ARM's readl()/writel() implementation and ignore that the 
+source of the address is marked __packed, which __packed implies an 
+alignment of 1.  REcent GCC versions would honnor the alignment of 1 and 
+perform the unsigned int * access using byte sized loads/stores.
 
 
-so we are safe from that point of view.
+Nicolas
