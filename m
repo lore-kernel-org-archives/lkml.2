@@ -1,62 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049Ab1FTKoW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 06:44:22 -0400
-Received: from tundra.namei.org ([65.99.196.166]:52868 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751344Ab1FTKoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 06:44:21 -0400
-Date: Mon, 20 Jun 2011 20:43:57 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Vasiliy Kulikov <segoon@openwall.com>
-cc: kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [RFC 2/5 v4] procfs: add hidepid= and gid= mount options
-In-Reply-To: <20110620103917.GA5230@albatros>
-Message-ID: <alpine.LRH.2.00.1106202040400.10448@tundra.namei.org>
-References: <alpine.LRH.2.00.1106192154220.7503@taiga.selinuxproject.org> <alpine.LRH.2.00.1106201455560.6055@tundra.namei.org> <20110620103917.GA5230@albatros>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1752618Ab1FTKoe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 06:44:34 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56347 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254Ab1FTKod (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 06:44:33 -0400
+Date: Mon, 20 Jun 2011 11:44:15 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH] ARM: smp: Fix the CPU hotplug race with scheduler.
+Message-ID: <20110620104415.GF2082@n2100.arm.linux.org.uk>
+References: <1308561839-18407-1-git-send-email-santosh.shilimkar@ti.com> <20110620095053.GA2082@n2100.arm.linux.org.uk> <20110620101438.GD2082@n2100.arm.linux.org.uk> <4DFF20B3.7010209@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DFF20B3.7010209@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jun 2011, Vasiliy Kulikov wrote:
+On Mon, Jun 20, 2011 at 03:58:03PM +0530, Santosh Shilimkar wrote:
+> No it doesn't work. I still get the crash. The important point
+> here is not to enable interrupts before CPU is marked
+> as online and active.
 
-> > Can you provide evidence that this is a useful feature?  e.g. examples of 
-> > exploits / techniques which would be _usefully_ hampered or blocked.
-> 
-> First, most of these files are usefull in sense of statistics gathering
-> and debugging.  There is no reason to provide this information to the
-> world.
-> 
-> Second, yes, it blocks one source of information used in timing attacks,
-> just use reading the counters as more or less precise time measurement
-> when actual timing measurements are not precise enough.
+What is the crash (in full please)?
 
-Can you provide concrete examples?
-
-> > > hidepid=1 means users may not access any /proc/<pid>/ directories, but their
-> > > own.  Sensitive files like cmdline, io, sched*, status, wchan are now
-> > > protected against other users.  As permission checking done in
-> > > proc_pid_permission() and files' permissions are left untouched,
-> > > programs expecting specific files' permissions are not confused.
-> > 
-> > IMHO such programs are beyond broken and have voided their kernel 
-> > warranty.
-> 
-> Policykit, Debian's start-stop-daemon, util-linux use /proc/PID's uid.
-> procps use both /proc/PID's uid and gid.  Are all of them totally broken?
-
-If they depend on specific permissions, yes.
-
-To access the information, why not just create a group with Unix read 
-access to these files?
-
-
-
-- James
--- 
-James Morris 
-<jmorris@namei.org>
+Do we know what interrupt is causing it?
