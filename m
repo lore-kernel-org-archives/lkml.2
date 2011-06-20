@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab1FUABk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 20:01:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48322 "EHLO mx1.redhat.com"
+	id S1756470Ab1FUAAG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 20:00:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49069 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756472Ab1FTX75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 19:59:57 -0400
+	id S1756494Ab1FUAAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 20:00:00 -0400
 From: Zachary Amsden <zamsden@redhat.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         Glauber Costa <glommer@redhat.com>, Frank Arnold <farnold@redhat.com>,
@@ -13,9 +13,9 @@ To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         Jan Kiszka <jan.kiszka@siemens.com>, linux-kvm@vger.kernel.org,
         linux-kernel@vger.kernel.org, Zachary Amsden <zamsden@gmail.com>
 Cc: Zachary Amsden <zamsden@redhat.com>, Zachary Amsden <zamsden@gmail.com>
-Subject: [KVM TSC emulation 2/9] Improve TSC offset matching
-Date: Mon, 20 Jun 2011 16:59:30 -0700
-Message-Id: <1308614377-18627-3-git-send-email-zamsden@redhat.com>
+Subject: [KVM TSC emulation 3/9] Leave TSC synchronization window open with each new sync
+Date: Mon, 20 Jun 2011 16:59:31 -0700
+Message-Id: <1308614377-18627-4-git-send-email-zamsden@redhat.com>
 In-Reply-To: <1308614377-18627-1-git-send-email-zamsden@redhat.com>
 References: <1308614377-18627-1-git-send-email-zamsden@redhat.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
@@ -26,108 +26,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are a few improvements that can be made to the TSC offset
-matching code.  First, we don't need to call the 128-bit multiply
-(especially on a constant number), the code works much nicer to
-do computation in nanosecond units.
+Currently, when the TSC is written by the guest, the variable
+ns is updated to force the current write to appear to have taken
+place at the time of the first write in this sync phase.  This
+leaves a cliff at the end of the match window where updates will
+fall of the end.  There are two scenarios where this can be a
+problem in practe - first, on a system with a large number of
+VCPUs, the sync period may last for an extended period of time.
 
-Second, the way everything is setup with software TSC rate scaling,
-we currently have per-cpu rates.  Obviously this isn't too desirable
-to use in practice, but if for some reason we do change the rate of
-all VCPUs at runtime, then reset the TSCs, we will only want to
-match offsets for VCPUs running at the same rate.
+The second way this can happen is if the VM reboots very rapidly
+and we catch a VCPU TSC synchronization just around the edge.
+We may be unaware of the reboot, and thus the first VCPU might
+synchronize with an old set of the timer (at, say 0.97 seconds
+ago, when first powered on).  The second VCPU can come in 0.04
+seconds later to try to synchronize, but it misses the window
+because it is just over the threshold.
 
-Finally, for the case where we have an unstable host TSC, but
-rate scaling is being done in hardware, we should call the platform
-code to compute the TSC offset, so the math is reorganized to recompute
-the base instead, then transform the base into an offset using the
-existing API.
+Instead, stop doing this artificial setback of the ns variable
+and just update it with every write of the TSC.
+
+It may be observed that doing so causes values computed by
+compute_guest_tsc to diverge slightly across CPUs - note that
+the last_tsc_ns and last_tsc_write variable are used here, and
+now they last_tsc_ns will be different for each VCPU, reflecting
+the actual time of the update.
+
+However, compute_guest_tsc is used only for guests which already
+have TSC stability issues, and further, note that the previous
+patch has caused last_tsc_write to be incremented by the difference
+in nanoseconds, converted back into guest cycles.  As such, only
+boundary rounding errors should be visible, which given the
+resolution in nanoseconds, is going to only be a few cycles and
+only visible in cross-CPU consistency tests.  The problem can be
+fixed by adding a new set of variables to track the start offset
+and start write value for the current sync cycle.
 
 Signed-off-by: Zachary Amsden <zamsden@redhat.com>
 ---
- arch/x86/include/asm/kvm_host.h |    1 +
- arch/x86/kvm/x86.c              |   37 ++++++++++++++++++++++---------------
- 2 files changed, 23 insertions(+), 15 deletions(-)
+ arch/x86/kvm/x86.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 184cd38..865f051 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -468,6 +468,7 @@ struct kvm_arch {
- 	u64 last_tsc_nsec;
- 	u64 last_tsc_offset;
- 	u64 last_tsc_write;
-+	u32 last_tsc_khz;
- 
- 	struct kvm_xen_hvm_config xen_hvm_config;
- 
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 776895a..457bd79 100644
+index 457bd79..2176714 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -1041,33 +1041,39 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
- 	struct kvm *kvm = vcpu->kvm;
- 	u64 offset, ns, elapsed;
- 	unsigned long flags;
--	s64 sdiff;
-+	s64 nsdiff;
- 
- 	raw_spin_lock_irqsave(&kvm->arch.tsc_write_lock, flags);
- 	offset = kvm_x86_ops->compute_tsc_offset(vcpu, data);
- 	ns = get_kernel_ns();
- 	elapsed = ns - kvm->arch.last_tsc_nsec;
--	sdiff = data - kvm->arch.last_tsc_write;
--	if (sdiff < 0)
--		sdiff = -sdiff;
-+
-+	/* n.b - signed multiplication and division required */
-+	nsdiff = data - kvm->arch.last_tsc_write;
-+	nsdiff = (nsdiff * 1000) / vcpu->arch.virtual_tsc_khz;
-+	nsdiff -= elapsed;
-+	if (nsdiff < 0)
-+		nsdiff = -nsdiff;
- 
- 	/*
--	 * Special case: close write to TSC within 5 seconds of
--	 * another CPU is interpreted as an attempt to synchronize
--	 * The 5 seconds is to accommodate host load / swapping as
--	 * well as any reset of TSC during the boot process.
--	 *
--	 * In that case, for a reliable TSC, we can match TSC offsets,
--	 * or make a best guest using elapsed value.
--	 */
--	if (sdiff < nsec_to_cycles(vcpu, 5ULL * NSEC_PER_SEC) &&
--	    elapsed < 5ULL * NSEC_PER_SEC) {
-+	 * Special case: TSC write with a small delta (1 second) of virtual
-+	 * cycle time against real time is interpreted as an attempt to
-+	 * synchronize the CPU.
-+         *
-+	 * For a reliable TSC, we can match TSC offsets, and for an unstable
-+	 * TSC, we add elapsed time in this computation.  We could let the
-+	 * compensation code attempt to catch up if we fall behind, but
-+	 * it's better to try to match offsets from the beginning.
-+         */
-+	if (nsdiff < NSEC_PER_SEC &&
-+	    vcpu->arch.virtual_tsc_khz == kvm->arch.last_tsc_khz) {
- 		if (!check_tsc_unstable()) {
- 			offset = kvm->arch.last_tsc_offset;
- 			pr_debug("kvm: matched tsc offset for %llu\n", data);
- 		} else {
- 			u64 delta = nsec_to_cycles(vcpu, elapsed);
--			offset += delta;
-+			data += delta;
-+			offset = kvm_x86_ops->compute_tsc_offset(vcpu, data);
+@@ -1076,7 +1076,6 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
+ 			offset = kvm_x86_ops->compute_tsc_offset(vcpu, data);
  			pr_debug("kvm: adjusted tsc offset by %llu\n", delta);
  		}
- 		ns = kvm->arch.last_tsc_nsec;
-@@ -1075,6 +1081,7 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
+-		ns = kvm->arch.last_tsc_nsec;
+ 	}
  	kvm->arch.last_tsc_nsec = ns;
  	kvm->arch.last_tsc_write = data;
- 	kvm->arch.last_tsc_offset = offset;
-+	kvm->arch.last_tsc_khz = vcpu->arch.virtual_tsc_khz;
- 	kvm_x86_ops->write_tsc_offset(vcpu, offset);
- 	raw_spin_unlock_irqrestore(&kvm->arch.tsc_write_lock, flags);
- 
 -- 
 1.7.1
 
