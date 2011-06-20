@@ -1,120 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab1FTMHe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 08:07:34 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55270 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751487Ab1FTMHc convert rfc822-to-8bit (ORCPT
+	id S1753501Ab1FTMUC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 08:20:02 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53883 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751583Ab1FTMT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 08:07:32 -0400
-From: "Premi, Sanjeev" <premi@ti.com>
-To: Tushar Behera <tushar.behera@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "lethal@linux-sh.org" <lethal@linux-sh.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "Nilofer, Samreen" <samreen@ti.com>
-Date: Mon, 20 Jun 2011 17:37:07 +0530
-Subject: RE: [PATCH 1/2] config: omap2+: force fb and dss support as built-in
-Thread-Topic: [PATCH 1/2] config: omap2+: force fb and dss support as
- built-in
-Thread-Index: AcwvN19gEJ7Y1X0qS8m6gKiRvpoONAACv7gg
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024D625A5C@dbde02.ent.ti.com>
-References: <1308566761-2850-1-git-send-email-tushar.behera@linaro.org>
- <1308566761-2850-2-git-send-email-tushar.behera@linaro.org>
-In-Reply-To: <1308566761-2850-2-git-send-email-tushar.behera@linaro.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 20 Jun 2011 08:19:58 -0400
+Date: Mon, 20 Jun 2011 13:19:39 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH] ARM: smp: Fix the CPU hotplug race with scheduler.
+Message-ID: <20110620121939.GI2082@n2100.arm.linux.org.uk>
+References: <1308561839-18407-1-git-send-email-santosh.shilimkar@ti.com> <20110620095053.GA2082@n2100.arm.linux.org.uk> <20110620101438.GD2082@n2100.arm.linux.org.uk> <4DFF20B3.7010209@ti.com> <20110620104415.GF2082@n2100.arm.linux.org.uk> <4DFF255E.5030308@ti.com> <20110620111336.GG2082@n2100.arm.linux.org.uk> <4DFF2E37.8030602@ti.com> <20110620114019.GH2082@n2100.arm.linux.org.uk> <4DFF3454.30507@ti.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DFF3454.30507@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-omap-owner@vger.kernel.org 
-> [mailto:linux-omap-owner@vger.kernel.org] On Behalf Of Tushar Behera
-> Sent: Monday, June 20, 2011 4:16 PM
-> To: linux-kernel@vger.kernel.org; 
-> linux-arm-kernel@lists.infradead.org; 
-> linux-fbdev@vger.kernel.org; linux-omap@vger.kernel.org
-> Cc: linux@arm.linux.org.uk; tony@atomide.com; 
-> lethal@linux-sh.org; linaro-dev@lists.linaro.org; 
-> patches@linaro.org; Nilofer, Samreen
-> Subject: [PATCH 1/2] config: omap2+: force fb and dss support 
-> as built-in
-> 
-> In certain board files, there are references to vram related functions
-> which are defined in drivers/video/omap2/vram.c. Because of 
-> this direct
-> dependency, CONFIG_FB_OMAP2 should be a built-in feature.
-> 
-> As per the current architecture, CONFIG_FB_OMAP2 is dependent on
-> CONFIG_OMAP2_DSS. Hence CONFIG_OMAP2_DSS support should also 
-> be selected
-> by default.
-> 
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: Samreen <samreen@ti.com>
-> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> ---
-> arch/arm/mach-omap2/built-in.o: In function `rx51_video_mem_init':
-> linux-linaro-2.6.39/arch/arm/mach-omap2/board-rx51-video.c:97:
->  undefined reference to `omap_vram_set_sdram_vram'
-> arch/arm/plat-omap/built-in.o: In function `omap_reserve':
-> linux-linaro-2.6.39/arch/arm/plat-omap/common.c:66: undefined 
-> reference to `omap_vram_reserve_sdram_memblock'
-> arch/arm/plat-omap/built-in.o: In function `omap_detect_sram':
-> linux-linaro-2.6.39/arch/arm/plat-omap/sram.c:179: undefined 
-> reference to `omap_vram_reserve_sram'
-> make[1]: *** [.tmp_vmlinux1] Error 1
-> make: *** [sub-make] Error 2
-> 
->  arch/arm/configs/omap2plus_defconfig |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/configs/omap2plus_defconfig 
-> b/arch/arm/configs/omap2plus_defconfig
-> index d5f00d7..c3ffff2 100644
-> --- a/arch/arm/configs/omap2plus_defconfig
-> +++ b/arch/arm/configs/omap2plus_defconfig
-> @@ -138,11 +138,11 @@ CONFIG_FIRMWARE_EDID=y
->  CONFIG_FB_MODE_HELPERS=y
->  CONFIG_FB_TILEBLITTING=y
->  CONFIG_FB_OMAP_LCD_VGA=y
-> -CONFIG_OMAP2_DSS=m
-> +CONFIG_OMAP2_DSS=y
->  CONFIG_OMAP2_DSS_RFBI=y
->  CONFIG_OMAP2_DSS_SDI=y
->  CONFIG_OMAP2_DSS_DSI=y
-> -CONFIG_FB_OMAP2=m
-> +CONFIG_FB_OMAP2=y
->  CONFIG_PANEL_GENERIC_DPI=m
->  CONFIG_PANEL_SHARP_LS037V7DW01=m
->  CONFIG_PANEL_NEC_NL8048HL11_01B=m
+On Mon, Jun 20, 2011 at 05:21:48PM +0530, Santosh Shilimkar wrote:
+> On 6/20/2011 5:10 PM, Russell King - ARM Linux wrote:
+>> On Mon, Jun 20, 2011 at 04:55:43PM +0530, Santosh Shilimkar wrote:
+>>> On 6/20/2011 4:43 PM, Russell King - ARM Linux wrote:
+>>>> On Mon, Jun 20, 2011 at 04:17:58PM +0530, Santosh Shilimkar wrote:
+>>>>> Yes. It's because of interrupt and the CPU active-online
+>>>>> race.
+>>>>
+>>>> I don't see that as a conclusion from this dump.
+>>>>
+>>>>> Here is the chash log..
+>>>>> [   21.025451] CPU1: Booted secondary processor
+>>>>> [   21.025451] CPU1: Unknown IPI message 0x1
+>>>>> [   21.029113] Switched to NOHz mode on CPU #1
+>>>>> [   21.029174] BUG: spinlock lockup on CPU#1, swapper/0, c06220c4
+>>>>
+>>>> That's the xtime seqlock.  We're trying to update the xtime from CPU1,
+>>>> which is not yet online and not yet active.  That's fine, we're just
+>>>> spinning on the spinlock here, waiting for the other CPUs to release
+>>>> it.
+>>>>
+>>>> But what this is saying is that the other CPUs aren't releasing it.
+>>>> The cpu hotplug code doesn't hold the seqlock either.  So who else is
+>>>> holding this lock, causing CPU1 to time out on it.
+>>>>
+>>>> The other thing is that this is only supposed to trigger after about
+>>>> one second:
+>>>>
+>>>>           u64 loops = loops_per_jiffy * HZ;
+>>>>                   for (i = 0; i<   loops; i++) {
+>>>>                           if (arch_spin_trylock(&lock->raw_lock))
+>>>>                                   return;
+>>>>                           __delay(1);
+>>>>                   }
+>>>>
+>>>> which from the timings you have at the beginning of your printk lines
+>>>> is clearly not the case - it's more like 61us.
+>>>>
+>>>> Are you running with those h/w timer delay patches?
+>>> Nope.
+>>
+>> Ok.  So loops_per_jiffy must be too small.  My guess is you're using an
+>> older kernel without 71c696b1 (calibrate: extract fall-back calculation
+>> into own helper).
+>>
+> I am on V3.0-rc3+(latest mainline) and the above commit is already
+> part of it.
+>
+>> The delay calibration code used to start out by setting:
+>>
+>> 	loops_per_jiffy = (1<<12);
+>>
+>> This will shorten the delay right down, and that's probably causing these
+>> false spinlock lockup bug dumps.
+>>
+>> Arranging for IRQs to be disabled across the delay calibration just avoids
+>> the issue by preventing any spinlock being taken.
+>>
+>> The reason that CPU#0 also complains about spinlock lockup is that for
+>> some reason CPU#1 never finishes its calibration, and so the loop also
+>> times out early on CPU#0.
+>>
+> I am not sure but what I think is happening is as soon as interrupts
+> start firing, as part of IRQ handling, scheduler will try to
+> enqueue softIRQ thread for newly booted CPU since it sees that
+> it's active and ready. But that's failing and both CPU's
+> eventually lock-up. But I may be wrong here.
 
+Even if that happens, there is NO WAY that the spinlock lockup detector
+should report lockup in anything under 1s.
 
-[sp] Instead of changing the omap2plus_defconfig, shouldn't the
-     board specific file be fixed instead?
+>> Of course, fiddling with this global variable in this way is _not_ a good
+>> idea while other CPUs are running and using that variable.
+>>
+>> We could also do with implementing trigger_all_cpu_backtrace() to get
+>> backtraces from the other CPUs when spinlock lockup happens...
+>
+> Any pointers on the other question about "why we need to enable
+> interrupts before the CPU is ready?"
 
-~sanjeev
+To ensure that things like the delay loop calibration and twd calibration
+can run, though that looks like it'll run happily enough with the boot
+CPU updating jiffies.
 
-> -- 
-> 1.7.4.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe 
-> linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+However, I'm still not taking your patch because I believe its just
+papering over the real issue, which is not as you describe.
+
+You first need to work out why the spinlock lockup detection is firing
+after just 61us rather than the full 1s and fix that.
+
+You then need to work out whether you really do have spinlock lockup,
+and if so, why.  Implementing trigger_all_cpu_backtrace() may help to
+find out what CPU#0 is doing, though we can only do that with IRQs on,
+and so would be fragile.
+
+We can test whether CPU#0 is going off to do something else while CPU#1
+is being brought up, by adding a preempt_disable() / preempt_enable()
+in __cpu_up() to prevent the wait-for-cpu#1-online being preempted by
+other threads - I suspect you'll still see spinlock lockup on the
+xtime seqlock on CPU#1 though.  That would suggest a coherency issue.
+
+Finally, how are you provoking this - and what kernel configuration are
+you using?
