@@ -1,141 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab1FTR1J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 13:27:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19808 "EHLO mx1.redhat.com"
+	id S1751551Ab1FTQiX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 12:38:23 -0400
+Received: from mx1.melware.net ([78.47.171.162]:38928 "EHLO mx1.melware.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755562Ab1FTR0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 13:26:54 -0400
-Date: Mon, 20 Jun 2011 13:37:04 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 10/15] KVM: MMU: lockless walking shadow page table
-Message-ID: <20110620163704.GD17130@amt.cnet>
-References: <4DEE205E.8000601@cn.fujitsu.com>
- <4DEE21E2.8000301@cn.fujitsu.com>
+	id S1750789Ab1FTQiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 12:38:22 -0400
+Date: Mon, 20 Jun 2011 18:38:20 +0200 (CEST)
+From: Armin Schindler <armin@melware.de>
+To: Linux Kernel Mailinglist <linux-kernel@vger.kernel.org>
+Subject: Re: Map PCI resource to user space problem.
+In-Reply-To: <alpine.DEB.2.00.1106201132170.14886@justus.melware.de>
+Message-ID: <alpine.DEB.2.00.1106201830260.17005@justus.melware.de>
+References: <alpine.DEB.2.00.1106201132170.14886@justus.melware.de>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Organization: Cytronics & Melware
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DEE21E2.8000301@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 09:04:34PM +0800, Xiao Guangrong wrote:
-> Using rcu to protect shadow pages table to be freed, so we can safely walk it,
-> it should run fast and is needed by mmio page fault
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-> ---
->  arch/x86/include/asm/kvm_host.h |    4 ++
->  arch/x86/kvm/mmu.c              |   79 ++++++++++++++++++++++++++++++---------
->  arch/x86/kvm/mmu.h              |    4 +-
->  arch/x86/kvm/vmx.c              |    2 +-
->  4 files changed, 69 insertions(+), 20 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 326af42..260582b 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -232,6 +232,8 @@ struct kvm_mmu_page {
->  	unsigned int unsync_children;
->  	unsigned long parent_ptes;	/* Reverse mapping for parent_pte */
->  	DECLARE_BITMAP(unsync_child_bitmap, 512);
-> +
-> +	struct rcu_head rcu;
->  };
->  
->  struct kvm_pv_mmu_op_buffer {
-> @@ -478,6 +480,8 @@ struct kvm_arch {
->  	u64 hv_guest_os_id;
->  	u64 hv_hypercall;
->  
-> +	atomic_t reader_counter;
-> +
->  	#ifdef CONFIG_KVM_MMU_AUDIT
->  	int audit_point;
->  	#endif
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 9f3a746..52d4682 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -1675,6 +1675,30 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
->  	return ret;
->  }
->  
-> +static void free_mmu_pages_unlock_parts(struct list_head *invalid_list)
-> +{
-> +	struct kvm_mmu_page *sp;
-> +
-> +	list_for_each_entry(sp, invalid_list, link)
-> +		kvm_mmu_free_lock_parts(sp);
-> +}
-> +
-> +static void free_invalid_pages_rcu(struct rcu_head *head)
-> +{
-> +	struct kvm_mmu_page *next, *sp;
-> +
-> +	sp = container_of(head, struct kvm_mmu_page, rcu);
-> +	while (sp) {
-> +		if (!list_empty(&sp->link))
-> +			next = list_first_entry(&sp->link,
-> +				      struct kvm_mmu_page, link);
-> +		else
-> +			next = NULL;
-> +		kvm_mmu_free_unlock_parts(sp);
-> +		sp = next;
-> +	}
-> +}
-> +
->  static void kvm_mmu_commit_zap_page(struct kvm *kvm,
->  				    struct list_head *invalid_list)
->  {
-> @@ -1685,6 +1709,14 @@ static void kvm_mmu_commit_zap_page(struct kvm *kvm,
->  
->  	kvm_flush_remote_tlbs(kvm);
->  
-> +	if (atomic_read(&kvm->arch.reader_counter)) {
-> +		free_mmu_pages_unlock_parts(invalid_list);
-> +		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
-> +		list_del_init(invalid_list);
-> +		call_rcu(&sp->rcu, free_invalid_pages_rcu);
-> +		return;
-> +	}
+On Mon, 20 Jun 2011, Armin Schindler wrote:
+> Hello,
+>
+> when I try to map PCI resource of size < PAGE_SIZE to user space
+> with e.g. remap_pfn_range() the mapping seems to be created,
+> but the access to the PCI device just doesn't work (read returns 0xff).
+>
+> The same happens when using sysfs. The device has
+> # ls -al /sys/bus/pci/devices/0000\:02\:09.0/resource*
+> -rw------- 1 root root     512 Jun 20 11:33 
+> /sys/bus/pci/devices/0000:02:09.0/resource0
+> -rw------- 1 root root     256 Jun 20 11:33 
+> /sys/bus/pci/devices/0000:02:09.0/resource1
+> -rw------- 1 root root 8388608 Jun 20 11:33 
+> /sys/bus/pci/devices/0000:02:09.0/resource2
+> -rw------- 1 root root  262144 Jun 20 11:33 
+> /sys/bus/pci/devices/0000:02:09.0/resource3
+>
+> and when I mmap() resource0, a valid address is returned, but reading the 
+> area always returns 0xff.
+>
+> Since a kernel driver can access resource0 here without problems when using
+> ioremap(), I'm not sure what is wrong with the sysfs entry for user space
+> (or using remap_pfn_range() in own mmap function).
+> The only hint I have so far is the size, which is smaller than PAGE_SIZE.
 
-This is probably wrong, the caller wants the page to be zapped by the 
-time the function returns, not scheduled sometime in the future.
+I found the reason. It is not the size of the resource.
+The resource0 is assigned to a not page-aligned address.
+Example, the pci resource0 has address 0xfe5ffc00. mmap()ing it will
+actually seems to map address 0xfe5ff000 and the user needs to add 0xc00 to 
+the address returned by mmap().
 
-> +
->  	do {
->  		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
->  		WARN_ON(!sp->role.invalid || sp->root_count);
-> @@ -2601,6 +2633,35 @@ static gpa_t nonpaging_gva_to_gpa_nested(struct kvm_vcpu *vcpu, gva_t vaddr,
->  	return vcpu->arch.nested_mmu.translate_gpa(vcpu, vaddr, access);
->  }
->  
-> +int kvm_mmu_walk_shadow_page_lockless(struct kvm_vcpu *vcpu, u64 addr,
-> +				      u64 sptes[4])
-> +{
-> +	struct kvm_shadow_walk_iterator iterator;
-> +	int nr_sptes = 0;
-> +
-> +	rcu_read_lock();
-> +
-> +	atomic_inc(&vcpu->kvm->arch.reader_counter);
-> +	/* Increase the counter before walking shadow page table */
-> +	smp_mb__after_atomic_inc();
-> +
-> +	for_each_shadow_entry(vcpu, addr, iterator) {
-> +		sptes[iterator.level-1] = *iterator.sptep;
-> +		nr_sptes++;
-> +		if (!is_shadow_present_pte(*iterator.sptep))
-> +			break;
-> +	}
-
-Why is lockless access needed for the MMIO optimization? Note the spte 
-contents are copied to the array here are used for debugging purposes
-only, their contents are potentially stale.
+Armin
 
