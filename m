@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab1FTHcB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 03:32:01 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:36505 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753283Ab1FTHb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 03:31:59 -0400
-Date: Mon, 20 Jun 2011 09:31:22 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: Petr Tesarik <ptesarik@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
- physical addresses
-Message-ID: <20110620073122.GA24716@elte.hu>
-References: <201106171038.25988.ptesarik@suse.cz>
- <20110617093032.GA19235@elte.hu>
- <4DFE7FF9.9070406@gmail.com>
+	id S1753384Ab1FTHhW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 03:37:22 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:50077 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753144Ab1FTHhT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 03:37:19 -0400
+Date: Mon, 20 Jun 2011 09:36:56 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH 1/8] x86, mce: stop calling del_timer_sync() from
+ interrupt
+Message-ID: <20110620073656.GC9070@aftab>
+References: <4DFB1242.90404@jp.fujitsu.com>
+ <4DFB1304.10604@jp.fujitsu.com>
+ <20110617135634.GF18054@aftab>
+ <4DFED0A4.1060002@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DFE7FF9.9070406@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4DFED0A4.1060002@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ryan Mallon <rmallon@gmail.com> wrote:
-
-> On 17/06/11 19:30, Ingo Molnar wrote:
-> >* Petr Tesarik<ptesarik@suse.cz>  wrote:
-> >
-> >>This patch series enhances /dev/mem, so that read and write is
-> >>possible at any address. The patchset includes actual
-> >>implementation for x86.
-> >This series lacks a description of why this is desired.
-> >
-> >My strong opinion is that it's not desired at all: /dev/mem never
-> >worked beyond 4G addresses so by today it has become largely obsolete
-> >and is on the way out really.
-> >
-> >I'm aware of these current /dev/mem uses:
-> >
-> >  - Xorg maps below 4G non-RAM addresses and the video BIOS
-> >
-> >  - It used to have some debugging role but these days kexec and kgdb
-> >    has largely taken over that role - partly due to the 4G limit.
-> >
-> >  - there's some really horrible out-of-tree drivers that do mmap()s
-> >    via /dev/mem, those should be fixed if they want to move beyond
-> >    4G: their char device should be mmap()able.
+On Mon, Jun 20, 2011 at 12:46:28AM -0400, Hidetoshi Seto wrote:
+> > You're adding the mce_available(..) check just to remove it in the next
+> > patch. Since all those sysfs nodes are behind such a check, there's no
+> > need for it here too.
 > 
-> There are drivers where this makes sense. For example an FPGA 
-> device with a proprietary register layout on the memory bus can be 
-> done this way. [...]
+> Maybe it would be better to change the order of patches to make
+> this fix after the removal of unnecessary mce_available().
 
-So you want us to help vendors screw users with insane, proprietary, 
-user-space drivers with sekrit binary blobs?
+Yes, and then don't add it to mce_timer_delete_all because this functionality is
+guarded my mce_available() checks in the sysfs nodes init path.
 
-Wow.
+-- 
+Regards/Gruss,
+Boris.
 
-Thanks,
-
-	Ingo
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
