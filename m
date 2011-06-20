@@ -1,67 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755950Ab1FTWGH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 18:06:07 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:56393 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754225Ab1FTWGF (ORCPT
+	id S1756259Ab1FTWWA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 18:22:00 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:22690 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752901Ab1FTWV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 18:06:05 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Felipe Balbi <balbi@ti.com>, Keshava Munegowda <keshava_mgowda@ti.com>,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gadiyar@ti.com, parthab@india.ti.com
-Subject: Re: [PATCH] mfd: omap: fix the crash during omap ehci or ohci driver initialization
-Organization: Texas Instruments, Inc.
-References: <1307367739-20110-1-git-send-email-keshava_mgowda@ti.com>
-	<20110620132626.GJ22420@sortiz-mobl>
-	<20110620132851.GJ14262@legolas.emea.dhcp.ti.com>
-	<20110620145941.GQ22420@sortiz-mobl>
-Date: Mon, 20 Jun 2011 15:06:01 -0700
-In-Reply-To: <20110620145941.GQ22420@sortiz-mobl> (Samuel Ortiz's message of
-	"Mon, 20 Jun 2011 16:59:41 +0200")
-Message-ID: <87liww6tva.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Mon, 20 Jun 2011 18:21:58 -0400
+Date: Tue, 21 Jun 2011 00:13:10 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: netdev@vger.kernel.org
+cc: "David S. Miller" <davem@davemloft.net>, coreteam@netfilter.org,
+        netfilter@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dmitry Kozlov <xeb@mail.ru>
+Subject: [PATCH] Remove redundant linux/version.h includes from net/
+Message-ID: <alpine.LNX.2.00.1106210009520.27735@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Samuel Ortiz <sameo@linux.intel.com> writes:
+It was suggested by "make versioncheck" that the follwing includes of
+linux/version.h are redundant:
 
-> Hi Felipe,
->
-> On Mon, Jun 20, 2011 at 04:28:52PM +0300, Felipe Balbi wrote:
->> Hi,
->> 
->> On Mon, Jun 20, 2011 at 03:26:26PM +0200, Samuel Ortiz wrote:
->> > On Mon, Jun 06, 2011 at 07:12:19PM +0530, Keshava Munegowda wrote:
->> > > From: Keshava Munegowda <Keshava_mgowda@ti.com>
->> > > 
->> > > Oops are produced during initialization of ehci and ohci
->> > > drivers. This is because the run time pm apis are used by
->> > > the driver but the corresponding hwmod structures and
->> > > initialization is not merged. 
->> > You mean they're currently checked in a different tree ? Is that a
->> > public one?
->> 
->> it was supposed to go via linux-omap tree but the patches got lost in
->> the limbo :-(
-> Then shouldn't those patches be the ones to be sent to Linus as a fix for 3.0 ?
+  /home/jj/src/linux-2.6/net/caif/caif_dev.c: 14 linux/version.h not needed.
+  /home/jj/src/linux-2.6/net/caif/chnl_net.c: 10 linux/version.h not needed.
+  /home/jj/src/linux-2.6/net/ipv4/gre.c: 19 linux/version.h not needed.
+  /home/jj/src/linux-2.6/net/netfilter/ipset/ip_set_core.c: 20 linux/version.h not needed.
+  /home/jj/src/linux-2.6/net/netfilter/xt_set.c: 16 linux/version.h not needed.
 
-If they were ready, maybe.  But those patches still need important work
-(and review) and are not "fix" material but need to wait until the next
-merge window.
+and it seems that it is right.
 
-Basically, the original patch should not have been submitted to mainline
-until the runtime PM support was ready, so the correct short term fix is
-to simply revert.
+Beyond manually inspecting the source files I also did a few build
+tests with various configs to confirm that including the header in
+those files is indeed not needed.
 
-Also, to echo the question from Dima Zavin:
+Here's a patch to remove the pointless includes.
 
-Why isn't this just a simple revert of the original patch?
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ net/caif/caif_dev.c               |    1 -
+ net/caif/chnl_net.c               |    1 -
+ net/ipv4/gre.c                    |    1 -
+ net/netfilter/ipset/ip_set_core.c |    1 -
+ net/netfilter/xt_set.c            |    1 -
+ 5 files changed, 0 insertions(+), 5 deletions(-)
 
-Kevin
+diff --git a/net/caif/caif_dev.c b/net/caif/caif_dev.c
+index 682c0fe..7c2fa0a 100644
+--- a/net/caif/caif_dev.c
++++ b/net/caif/caif_dev.c
+@@ -11,7 +11,6 @@
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ":%s(): " fmt, __func__
+ 
+-#include <linux/version.h>
+ #include <linux/kernel.h>
+ #include <linux/if_arp.h>
+ #include <linux/net.h>
+diff --git a/net/caif/chnl_net.c b/net/caif/chnl_net.c
+index adbb424..8237766 100644
+--- a/net/caif/chnl_net.c
++++ b/net/caif/chnl_net.c
+@@ -7,7 +7,6 @@
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ":%s(): " fmt, __func__
+ 
+-#include <linux/version.h>
+ #include <linux/fs.h>
+ #include <linux/init.h>
+ #include <linux/module.h>
+diff --git a/net/ipv4/gre.c b/net/ipv4/gre.c
+index c6933f2..9dbe108 100644
+--- a/net/ipv4/gre.c
++++ b/net/ipv4/gre.c
+@@ -16,7 +16,6 @@
+ #include <linux/skbuff.h>
+ #include <linux/in.h>
+ #include <linux/netdevice.h>
+-#include <linux/version.h>
+ #include <linux/spinlock.h>
+ #include <net/protocol.h>
+ #include <net/gre.h>
+diff --git a/net/netfilter/ipset/ip_set_core.c b/net/netfilter/ipset/ip_set_core.c
+index 42aa64b..40c9645 100644
+--- a/net/netfilter/ipset/ip_set_core.c
++++ b/net/netfilter/ipset/ip_set_core.c
+@@ -17,7 +17,6 @@
+ #include <linux/spinlock.h>
+ #include <linux/netlink.h>
+ #include <linux/rculist.h>
+-#include <linux/version.h>
+ #include <net/netlink.h>
+ 
+ #include <linux/netfilter.h>
+diff --git a/net/netfilter/xt_set.c b/net/netfilter/xt_set.c
+index b3babae..5c23c44 100644
+--- a/net/netfilter/xt_set.c
++++ b/net/netfilter/xt_set.c
+@@ -13,7 +13,6 @@
+ 
+ #include <linux/module.h>
+ #include <linux/skbuff.h>
+-#include <linux/version.h>
+ 
+ #include <linux/netfilter/x_tables.h>
+ #include <linux/netfilter/xt_set.h>
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
