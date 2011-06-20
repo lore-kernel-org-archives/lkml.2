@@ -1,92 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751249Ab1FTH6P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 03:58:15 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48757 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945Ab1FTH6K convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 03:58:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=xMjCv9jI8JybcG/hFzNKBHXH/Ylz1qIIgMPiSxcrrXizxaLogabFrigkGji6HRPYw/
-         Zmm4ucRpl783d0sxM+XAM6mCkVTBsOnLDMOVmBW3BdNJfclIsrs4lPpPdxkRw02ondRS
-         o3MwHtoHeD7hsdwe0a50nbPxnSZ83bmAE2Lek=
+	id S1752544Ab1FTIf1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 04:35:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17634 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750844Ab1FTIfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 04:35:24 -0400
+Message-ID: <4DFEFE8A.4050101@redhat.com>
+Date: Mon, 20 Jun 2011 11:02:18 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <20110618151227.GB25163@sirena.org.uk>
-References: <1308215372-17420-1-git-send-email-myungjoo.ham@samsung.com>
-	<20110618151227.GB25163@sirena.org.uk>
-Date: Mon, 20 Jun 2011 16:58:09 +0900
-X-Google-Sender-Auth: m5yROe1thFcYg23j9en5hW4zQ88
-Message-ID: <BANLkTin6hSaNSDd+dEZdkk3F5O5nDYf9yQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Exynos4 NURI: configure regulators and PMIC
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        dg77.kim@samsung.com, kyungmin.park@samsung.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Gleb Natapov <gleb@redhat.com>
+CC: Glauber Costa <glommer@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 3/7] KVM-HV: KVM Steal time implementation
+References: <1308007897-17013-1-git-send-email-glommer@redhat.com> <1308007897-17013-4-git-send-email-glommer@redhat.com> <20110614074500.GM491@redhat.com> <4DF8226B.20408@redhat.com> <20110615090951.GQ491@redhat.com> <4DFDED2E.6030009@redhat.com> <20110619125956.GV491@redhat.com> <4DFDF35E.8030504@redhat.com> <20110620072128.GW491@redhat.com>
+In-Reply-To: <20110620072128.GW491@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 06/20/2011 10:21 AM, Gleb Natapov wrote:
+> On Sun, Jun 19, 2011 at 04:02:22PM +0300, Avi Kivity wrote:
+> >  On 06/19/2011 03:59 PM, Gleb Natapov wrote:
+> >  >On Sun, Jun 19, 2011 at 03:35:58PM +0300, Avi Kivity wrote:
+> >  >>   On 06/15/2011 12:09 PM, Gleb Natapov wrote:
+> >  >>   >>
+> >  >>   >>    Actually, I'd expect most read/writes to benefit from caching, no?
+> >  >>   >>    So why don't we just rename kvm_write_guest_cached() to
+> >  >>   >>    kvm_write_guest(), and the few places - if any - that need to force
+> >  >>   >>    transversing of the gfn mappings, get renamed to
+> >  >>   >>    kvm_write_guest_uncached ?
+> >  >>   >>
+> >  >>   >Good idea. I do not see any places where kvm_write_guest_uncached is
+> >  >>   >needed from a brief look. Avi?
+> >  >>   >
+> >  >>
+> >  >>   kvm_write_guest_cached() needs something to supply the cache, and
+> >  >>   needs recurring writes to the same location.  Neither of these are
+> >  >>   common (for example, instruction emulation doesn't have either).
+> >  >>
+> >  >Correct. Missed that. So what about changing steal time to use
+> >  >kvm_write_guest_cached()?
+> >
+> >  Makes sense, definitely.  Want to post read_guest_cached() as well?
+> >
+> Glauber can you write read_guest_cached() as part of your series (should
+> be trivial), or do you want me to do it? I do not have a code to test it
+> with though :)
 
-On Sun, Jun 19, 2011 at 12:12 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Thu, Jun 16, 2011 at 06:09:31PM +0900, MyungJoo Ham wrote:
->
-[]
->
->> +static struct regulator_init_data nuri_max8997_ldo10_data = {
->> +     .constraints    = {
->
-> You should be able to use __initdata for a lot of this by the way.
->
+Yes.
 
-
-Anyway, I've got a question about using __initdata for platform_data entries.
-
-Using __initdata on this entry and other max8997's platform_data did
-not create any SECTION MISMATCH warnings.
-
-"Documentation/DocBook/kernel-hacking.tmpl" says, __initdata means
-that the content of it may be free'd after boot.
-
-
-However, the MAX8997 driver uses platform_data's entry (variables
-defined in "static struct max8997_platform_data __initdata
-nuri_max8997_pdata)
-in its normal functions other than its probe function, which are often
-called after boot.
-
-Probably, I'm thinking wrong in some place; however, it seems that
-there should be SECTION MISMATCH warnings as the MAX8997 driver uses
-the pdata, which is declared to be __initdata, in non-_init function.
-Or, is it safe to use platform_data (by dev_get_platdata) out of probe
-in drivers even if the platdata is declared to be __initdata in the
-platform files?
-
-I just can't sure whether I should let probe function copy
-platform-data used by non-probe functions to its own local data
-assuming that the content may be freed (assuming that the SECTION
-MISMATCH warning is not "complete".) or just believe the completeness
-of gcc's SECTION MISMATCH warning.
-
-
-Cheers!
-
-- MyungJoo
-
+(you can write it, and Glauber can include it in the series)
 
 -- 
-MyungJoo Ham (함명주), Ph.D.
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: 82-10-6714-2858
+error compiling committee.c: too many arguments to function
+
