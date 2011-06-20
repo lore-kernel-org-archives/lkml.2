@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883Ab1FTO1r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 10:27:47 -0400
-Received: from ccserver2.unican.es ([130.206.5.101]:57984 "EHLO
-	ccserver2.unican.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753927Ab1FTO1q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 10:27:46 -0400
-Message-ID: <4DFF58DD.3040801@unican.es>
-Date: Mon, 20 Jun 2011 16:27:41 +0200
-From: Monica Puig-Pey <puigpeym@unican.es>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) 
-	Gecko/20110424 Thunderbird/3.1.10
+	id S1755019Ab1FTOeQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 10:34:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10205 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754378Ab1FTOeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 10:34:15 -0400
+Date: Mon, 20 Jun 2011 10:34:11 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Cc: Tao Ma <tm@tao.ma>
+Subject: Re: [PATCH] cfq: Fix starvation of async writes in presence of heavy
+ sync workload
+Message-ID: <20110620143411.GB4749@redhat.com>
+References: <20110620141631.GA4749@redhat.com>
 MIME-Version: 1.0
-To: <linux-rt-users@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: synchronization mechanisms
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [193.144.198.131]
-X-imss-version: 2.054
-X-imss-result: Passed
-X-imss-scanInfo: M:P L:E SM:0
-X-imss-tmaseResult: TT:0 TS:0.0000 TC:00 TRN:0 TV:6.5.1024(18210.007)
-X-imss-scores: Clean:6.21862 C:2 M:3 S:5 R:5
-X-imss-settings: Baseline:1 C:1 M:2 S:2 R:2 (0.0000 0.0000)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110620141631.GA4749@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 20, 2011 at 10:16:31AM -0400, Vivek Goyal wrote:
+> In presence of heavy sync workload CFQ can starve asnc writes.
+> If one launches multiple readers (say 16), then one can notice
+> that CFQ can withhold dispatch of WRITEs for a very long time say
+> 200 or 300 seconds.
+> 
+> Basically CFQ schedules an async queue but does not dispatch any
+> writes because it is waiting for exisintng sync requests in queue to
+> finish. While it is waiting, one or other reader gets queued up and
+> preempts the async queue. So we did schedule the async queue but never
+> dispatched anything from it. This can repeat for long time hence
+> practically starving Writers.
+> 
+> This patch allows async queue to dispatch atleast 1 requeust once
+> it gets scheduled and denies preemption if async queue has been
+> waiting for sync requests to drain and has not been able to dispatch
+> a request yet.
+> 
+> One concern with this fix is that how does it impact readers
+> in presence of heavy writting going on.
+> 
+> I did a test where I launch firefox, load a website and close
+> firefox and measure the time. I ran the test 3 times and took
+> average.
+> 
+> - Vanilla kernel time ~= 1 minute 40 seconds
+> - Patched kenrel time ~= 1 minute 35 seconds
+> 
 
-Hello!
-As I told you in previous questions I'm developing drivers using the 
-2.6.31-11-rt patch under ubuntu 10.04.
-It is very important for me to know about which real time 
-synchronization mechanisms do I have.
-I found the RT-mutexes, with priority inherintance, the plists (priority 
-lists) and now I'm looking for more information about semaphores. I 
-haven't found anything relevant in the code that I could know that they 
-work well under real time, having a priority queue of tasks waiting on 
-it. So I've made an easy example where I have 3 kernel threads with 
-different priorities each (60,70,80) in the semaphore queue. Then I see 
-is always the most priority kthread who wakes up the first. Good! It 
-seems to work as a RT semaphore!
-In my code I have an error. I can use down_interruptible but I can't use 
-down_killable. Why is it?
-Could anybody give me some help about semaphores in the rt-patch and 
-about any other synchronization mechanism thought for real time?
+Forgot to mention that this was in the presence of a dd doing
+writes.
 
-Thanks a lot
+dd if=/dev/zero of=zerofile bs=4K count=1M
 
-Mónica
+Launching firefox takes around 25 seconds or so. Loading first
+website takes a long time. I had a quick look at blktrace
+and it I see for long time no reads are queued at all. Looks
+like firefox has some dependency on some write to finish
+before next read can be issued.
+
+Thanks
+Vivek
