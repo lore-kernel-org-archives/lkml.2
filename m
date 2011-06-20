@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab1FTIwl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 04:52:41 -0400
-Received: from webbox687.server-home.net ([195.149.74.151]:51084 "EHLO
-	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751839Ab1FTIwk (ORCPT
+	id S1752825Ab1FTI4c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 04:56:32 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45515 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751875Ab1FTI4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 04:52:40 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH 2/2] Add watchdog driver for Intel TunnelCreek
-Date: Mon, 20 Jun 2011 10:51:48 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
-References: <1308222350-21634-1-git-send-email-alexander.stein@systec-electronic.com> <1308222350-21634-2-git-send-email-alexander.stein@systec-electronic.com> <36169.1308344475@turing-police.cc.vt.edu>
-In-Reply-To: <36169.1308344475@turing-police.cc.vt.edu>
+	Mon, 20 Jun 2011 04:56:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=TACaY3ryGEqaT0d5M7AUM0kGQTdHhX5K4qRcVyfhFFJaQXodmtAUZ6eh1QVD9Tgomt
+         GbkJgD4dJIMFIES7DfVFFx2XT+qAMZuNQ3wAAhqQIwUmpgKS0w6X74bm22pGJF1PCyas
+         gQPBbXC3tWkyym9vdoMOq8f29G6z6tnHghPRI=
+Date: Mon, 20 Jun 2011 01:56:22 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.0-rc3
+Message-ID: <20110620085621.GA26733@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106201051.49055.alexander.stein@systec-electronic.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 17 June 2011 23:01:15 Valdis.Kletnieks@vt.edu wrote:
-> On Thu, 16 Jun 2011 13:05:50 +0200, Alexander Stein said:
-> > +config INTEL_TUNNELCREEK_WATCHDOG
-> > +	tristate "Intel TunnelCreek watchdog"
-> > +	depends on WATCHDOG && PCI && X86
-> > +	select MFD_CORE
-> > +	select LPC_SCH
-> > +	---help---
-> > +	  Hardware driver for the watchdog timer built into the Intel
-> > +	  Tunnel Creek processor.
-> 
-> Please add part names here so we don't have to guess/remember what the
-> now-retired code name for a processor was.  Just because the guy who wrote
-> the driver knows what the development name was doesn't mean that the poor
-> guy saying 'make oldconfig' knows whether this is a driver he cares about.
-> 
-> http://www.engadget.com/2010/09/15/intel-retires-tunnel-creek-codename-debu
-> ts-e600-series-atom-sys/
+Hi Linus,
 
-Thanks for the hint.
-Would you also recommend to rename the driver module name? Currently it is 
-intel_tunnelcreek_watchdog, so it may be called intel_e6xx_watchdog.
+Please pull from:
 
-Regards,
-Alexander
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+
+to receive a couple of fixups for the input subsystem.
+
+Changelog:
+---------
+
+Dmitry Torokhov (1):
+      Input: evdev - try to wake up readers only if we have full packet
+
+Hans Petter Selasky (1):
+      Input: properly assign return value of clamp() macro.
+
+Janusz Krzysztofik (1):
+      Input: omap-keypad - add missing input_sync()
+
+Magnus Damm (1):
+      Input: sh_keysc - 8x8 MODE_6 fix
+
+
+Diffstat:
+--------
+
+ drivers/input/evdev.c                |    3 ++-
+ drivers/input/input.c                |    2 +-
+ drivers/input/keyboard/omap-keypad.c |    1 +
+ drivers/input/keyboard/sh_keysc.c    |    2 +-
+ drivers/input/mousedev.c             |    4 ++--
+ include/linux/input/sh_keysc.h       |    2 +-
+ 6 files changed, 8 insertions(+), 6 deletions(-)
+
+-- 
+Dmitry
+
