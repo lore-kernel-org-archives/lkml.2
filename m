@@ -1,164 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683Ab1FTTFM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 15:05:12 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:55380 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965Ab1FTTFJ convert rfc822-to-8bit (ORCPT
+	id S1755772Ab1FTTIm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 15:08:42 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36500 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755745Ab1FTTIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 15:05:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=WaeFVLPura2nAmMHRG4R/FE20ULUQwv5Gbx6TaIOEPB5vjKtvpXPLx0HGNhQT/gJq4
-         SVXiay5zNVKviI0ibTq13P3fs3gjHtpbMeuB0DTxFC6wYw2SrtRhU1GULe4Kxv3HFd7i
-         YoHD8UXqeSD4rwKnPP9/SRiWtBt36o7U5k2Nw=
+	Mon, 20 Jun 2011 15:08:39 -0400
+Message-ID: <4DFF9A08.5090609@windriver.com>
+Date: Mon, 20 Jun 2011 15:05:44 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110620173444.GG26623@legolas.emea.dhcp.ti.com>
-References: <Pine.LNX.4.44L0.1106201105430.2113-100000@iolanthe.rowland.org>
-	<20110620151522.GN14262@legolas.emea.dhcp.ti.com>
-	<BANLkTi=5S6bWs3jr9hTsg2=LXh4xKAprUA@mail.gmail.com>
-	<20110620153645.GQ14262@legolas.emea.dhcp.ti.com>
-	<BANLkTik-zdp57zTjrafR0jXGoJiq2hrm3g@mail.gmail.com>
-	<BANLkTi=tuh028X-Rr9i8ZF_B_Q6VBK2-Lw@mail.gmail.com>
-	<20110620160650.GA26623@legolas.emea.dhcp.ti.com>
-	<BANLkTi=nEma5muF9R3_QUzZWWJ64DW9Skw@mail.gmail.com>
-	<20110620170551.GE26623@legolas.emea.dhcp.ti.com>
-	<BANLkTinc-9hxLQ1Epf5=PoHvxtapfO7Vvg@mail.gmail.com>
-	<20110620173444.GG26623@legolas.emea.dhcp.ti.com>
-Date: Mon, 20 Jun 2011 21:05:07 +0200
-Message-ID: <BANLkTimaQq99BHAhBMYT_iZz4Kfag1n6Lw@mail.gmail.com>
-Subject: Re: [PATCH] s3c2410_udc: fix custom UDC command handling
-From: Viliam Mateicka <viliam.mateicka@gmail.com>
-To: balbi@ti.com
-Cc: Skacore Systems <skacore.systems@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Greg KH <gregkh@suse.de>
+CC: <linux-kernel@vger.kernel.org>, <stable@kernel.org>,
+        Nelson Elhage <nelhage@ksplice.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Graf <tgraf@infradead.org>, Moritz Muehlenhoff <jmm@debian.org>,
+        <akpm@linux-foundation.org>, <torvalds@linux-foundation.org>,
+        <stable-review@kernel.org>, <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [stable] [68/74] inet_diag: Make sure we actually run the same
+ bytecode we audited.
+References: <20110413155150.306533092@clark.kroah.org>
+In-Reply-To: <20110413155150.306533092@clark.kroah.org>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Look. I didn't wanna spend more time with the issue because for me -
-it was solved. It was just the stupid byrocratic system you've
-enforced to minimize your work - which I would say its complete
-non-sence if it could ever have a problem with whitespace or line
-break. I understand that on the source level every character it's
-important to the look of the code, but at least when you try to force
-somebody to use some rules (which most of it at my copy were applied
-fine just fine by myself), at least use a tool which take a care about
-it (the look of the kernel code). Just look how much time it took to
-upstream a little change (valid on the first look), just because of my
-ignorance to some the formating rules (linebreaks and tabs namely - if
-you have a proper editor which takes care about it.) and a faulty
-mailer (I).
+On 11-04-13 11:51 AM, Greg KH wrote:
+> 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-Anyway, if the Documentation/SubmittingPatches would mention git
-format-patch and git send-email I would have use it and there would'nt
-be any trouble using faulty mailer.  Instead as a first option there
-is solution which almost everytime produces such a problems.
+This introduces new compile warnings, albeit reasonably harmless ones:
 
-So many thanks, for doing your job and keeping the bad asses using
-wrong tools out of the formating heaven. I could imagine that this
-would be hard (to get one line into the kernel) but still haven't
-thought that hard. I would like to thank you for your patience and the
-exact amount of right doingness, while showing me what's wrong instead
-of telling me how to do it properly.
+net/ipv4/inet_diag.c: In function ‘inet_csk_diag_dump’:
+net/ipv4/inet_diag.c:496:10: warning: passing argument 1 of ‘nlmsg_find_attr’ discards qualifiers from pointer target type
+include/net/netlink.h:387:30: note: expected ‘struct nlmsghdr *’ but argument is of type ‘const struct nlmsghdr *’
 
-Also liked the diff between our patches:
+and more instances of the same.  Grabbing the following commit in
+conjunction with this existing one fixes it to be quiet again.
 
-player tmp # diff -ur wastetime wastetime2
---- wastetime	2011-06-20 20:33:25.000000000 +0200
-+++ wastetime2	2011-06-20 20:30:21.000000000 +0200
-@@ -2,11 +2,12 @@
- index 100f263..b6e1ca5 100644
- --- a/drivers/usb/gadget/s3c2410_udc.c
- +++ b/drivers/usb/gadget/s3c2410_udc.c
--@@ -1567,7 +1567,7 @@ static void s3c2410_udc_command(enum
-s3c2410_udc_cmd_e cmd)
-- 		return;
--
-- 	if (udc_info->udc_command) {
---		udc_info->udc_command(S3C2410_UDC_P_DISABLE);
--+		udc_info->udc_command(cmd);
-- 	} else if (gpio_is_valid(udc_info->pullup_pin)) {
-- 		int value;
-+@@ -1567,7 +1567,7 @@ static void s3c2410_udc_command(enum
-+s3c2410_udc_cmd_e cmd)
-+                return;
-+
-+        if (udc_info->udc_command) {
-+-               udc_info->udc_command(S3C2410_UDC_P_DISABLE);
-++               udc_info->udc_command(cmd);
-+        } else if (gpio_is_valid(udc_info->pullup_pin)) {
-+                int value;
+commit 6b8c92ba07287578718335ce409de8e8d7217e40
+Author: Nelson Elhage <nelhage@ksplice.com>
+Date:   Wed Nov 3 16:35:40 2010 +0000
 
-Vilo
+    netlink: Make nlmsg_find_attr take a const nlmsghdr*.
+    
+    This will let us use it on a nlmsghdr stored inside a netlink_callback.
+    
+    Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
 
-On Mon, Jun 20, 2011 at 7:34 PM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Mon, Jun 20, 2011 at 07:27:18PM +0200, Viliam Mateicka wrote:
->> I wonder then, who applies the patch first. One ass can't stop
->> progress (was there some progress afterall ?) because of one
->> line-break (which git produces by default afterall) and several
->> non-conforming whitespace conversions. I think you should stop
->> replying to me, because I'm kinda starting to like trolling afterall.
->
-> Look, maybe you're just new to git/linux and that's fine. The only
-> problem we had from day one is that you have been a complete dick when
-> replying.
->
-> If you go that road, that's what you'll get in return.
->
-> Just so you see the properly formatted patch, I'm quoting below. See
-> that there's no line breaks introduced by git.
->
-> commit c27c9b5312f4b2a7e66ee772943355d77fc2c550
-> Author: Viliam Mateicka <viliam.mateicka@gmail.com>
-> Date:   Mon Jun 20 19:08:27 2011 +0300
->
->    usb: gadget: s3c2410_udc: fix custom UDC command handling
->
->    There is a bug in Samsung's UDC driver, which is
->    completely disabling the USB device when a custom
->    UDC command is used.
->
->    Following patch seems to get the right behavior
->    (e.g. enabling pull-up instead of disabling then
->    Vcc is applied).
->
->    Signed-off-by: Viliam Mateicka <viliam.mateicka@gmail.com>
->
->    [ balbi@ti.com : manually re-created the patch because
->        author was unable to send a proper one ]
->
->    Signed-off-by: Felipe Balbi <balbi@ti.com>
->
-> diff --git a/drivers/usb/gadget/s3c2410_udc.c b/drivers/usb/gadget/s3c2410_udc.c
-> index 100f263..b6e1ca5 100644
-> --- a/drivers/usb/gadget/s3c2410_udc.c
-> +++ b/drivers/usb/gadget/s3c2410_udc.c
-> @@ -1567,7 +1567,7 @@ static void s3c2410_udc_command(enum s3c2410_udc_cmd_e cmd)
->                return;
->
->        if (udc_info->udc_command) {
-> -               udc_info->udc_command(S3C2410_UDC_P_DISABLE);
-> +               udc_info->udc_command(cmd);
->        } else if (gpio_is_valid(udc_info->pullup_pin)) {
->                int value;
->
->
-> (if you see any line breaks that's your mailer, it's better to check
-> from the archives [1])
->
-> [1] http://marc.info/?l=linux-usb
->
-> --
-> balbi
->
+Thanks,
+Paul.
+
+
+> 
+> ------------------
+> 
+> From: Nelson Elhage <nelhage@ksplice.com>
+> 
+> commit 22e76c849d505d87c5ecf3d3e6742a65f0ff4860 upstream.
+> 
+> We were using nlmsg_find_attr() to look up the bytecode by attribute when
+> auditing, but then just using the first attribute when actually running
+> bytecode. So, if we received a message with two attribute elements, where only
+> the second had type INET_DIAG_REQ_BYTECODE, we would validate and run different
+> bytecode strings.
+> 
+> Fix this by consistently using nlmsg_find_attr everywhere.
+> 
+> Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
+> Signed-off-by: Thomas Graf <tgraf@infradead.org>
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+> [jmm: Slightly adapted to apply against 2.6.32]
+> Cc: Moritz Muehlenhoff <jmm@debian.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> 
+> ---
+>  net/ipv4/inet_diag.c |   27 ++++++++++++++++-----------
+>  1 file changed, 16 insertions(+), 11 deletions(-)
+> 
+> --- a/net/ipv4/inet_diag.c
+> +++ b/net/ipv4/inet_diag.c
+> @@ -489,9 +489,11 @@ static int inet_csk_diag_dump(struct soc
+>  {
+>  	struct inet_diag_req *r = NLMSG_DATA(cb->nlh);
+>  
+> -	if (cb->nlh->nlmsg_len > 4 + NLMSG_SPACE(sizeof(*r))) {
+> +	if (nlmsg_attrlen(cb->nlh, sizeof(*r))) {
+>  		struct inet_diag_entry entry;
+> -		struct rtattr *bc = (struct rtattr *)(r + 1);
+> +		const struct nlattr *bc = nlmsg_find_attr(cb->nlh,
+> +							  sizeof(*r),
+> +							  INET_DIAG_REQ_BYTECODE);
+>  		struct inet_sock *inet = inet_sk(sk);
+>  
+>  		entry.family = sk->sk_family;
+> @@ -511,7 +513,7 @@ static int inet_csk_diag_dump(struct soc
+>  		entry.dport = ntohs(inet->dport);
+>  		entry.userlocks = sk->sk_userlocks;
+>  
+> -		if (!inet_diag_bc_run(RTA_DATA(bc), RTA_PAYLOAD(bc), &entry))
+> +		if (!inet_diag_bc_run(nla_data(bc), nla_len(bc), &entry))
+>  			return 0;
+>  	}
+>  
+> @@ -526,9 +528,11 @@ static int inet_twsk_diag_dump(struct in
+>  {
+>  	struct inet_diag_req *r = NLMSG_DATA(cb->nlh);
+>  
+> -	if (cb->nlh->nlmsg_len > 4 + NLMSG_SPACE(sizeof(*r))) {
+> +	if (nlmsg_attrlen(cb->nlh, sizeof(*r))) {
+>  		struct inet_diag_entry entry;
+> -		struct rtattr *bc = (struct rtattr *)(r + 1);
+> +		const struct nlattr *bc = nlmsg_find_attr(cb->nlh,
+> +							  sizeof(*r),
+> +							  INET_DIAG_REQ_BYTECODE);
+>  
+>  		entry.family = tw->tw_family;
+>  #if defined(CONFIG_IPV6) || defined (CONFIG_IPV6_MODULE)
+> @@ -547,7 +551,7 @@ static int inet_twsk_diag_dump(struct in
+>  		entry.dport = ntohs(tw->tw_dport);
+>  		entry.userlocks = 0;
+>  
+> -		if (!inet_diag_bc_run(RTA_DATA(bc), RTA_PAYLOAD(bc), &entry))
+> +		if (!inet_diag_bc_run(nla_data(bc), nla_len(bc), &entry))
+>  			return 0;
+>  	}
+>  
+> @@ -617,7 +621,7 @@ static int inet_diag_dump_reqs(struct sk
+>  	struct inet_diag_req *r = NLMSG_DATA(cb->nlh);
+>  	struct inet_connection_sock *icsk = inet_csk(sk);
+>  	struct listen_sock *lopt;
+> -	struct rtattr *bc = NULL;
+> +	const struct nlattr *bc = NULL;
+>  	struct inet_sock *inet = inet_sk(sk);
+>  	int j, s_j;
+>  	int reqnum, s_reqnum;
+> @@ -637,8 +641,9 @@ static int inet_diag_dump_reqs(struct sk
+>  	if (!lopt || !lopt->qlen)
+>  		goto out;
+>  
+> -	if (cb->nlh->nlmsg_len > 4 + NLMSG_SPACE(sizeof(*r))) {
+> -		bc = (struct rtattr *)(r + 1);
+> +	if (nlmsg_attrlen(cb->nlh, sizeof(*r))) {
+> +		bc = nlmsg_find_attr(cb->nlh, sizeof(*r),
+> +				     INET_DIAG_REQ_BYTECODE);
+>  		entry.sport = inet->num;
+>  		entry.userlocks = sk->sk_userlocks;
+>  	}
+> @@ -671,8 +676,8 @@ static int inet_diag_dump_reqs(struct sk
+>  					&ireq->rmt_addr;
+>  				entry.dport = ntohs(ireq->rmt_port);
+>  
+> -				if (!inet_diag_bc_run(RTA_DATA(bc),
+> -						    RTA_PAYLOAD(bc), &entry))
+> +				if (!inet_diag_bc_run(nla_data(bc),
+> +						      nla_len(bc), &entry))
+>  					continue;
+>  			}
+>  
+> 
+> 
+> _______________________________________________
+> stable mailing list
+> stable@linux.kernel.org
+> http://linux.kernel.org/mailman/listinfo/stable
+> 
