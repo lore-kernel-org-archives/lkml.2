@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196Ab1FTS0K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 14:26:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20102 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752805Ab1FTS0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 14:26:06 -0400
-Date: Mon, 20 Jun 2011 14:25:58 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Cong Wang <amwang@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: Re: [PATCH 1/3] mm: completely disable THP by
- transparent_hugepage=never
-Message-ID: <20110620182558.GF4749@redhat.com>
-References: <1308587683-2555-1-git-send-email-amwang@redhat.com>
- <20110620165844.GA9396@suse.de>
- <4DFF7E3B.1040404@redhat.com>
- <4DFF7F0A.8090604@redhat.com>
- <4DFF8106.8090702@redhat.com>
- <4DFF8327.1090203@redhat.com>
- <4DFF84BB.3050209@redhat.com>
- <4DFF8848.2060802@redhat.com>
+	id S1754559Ab1FTSay (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 14:30:54 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56749 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753330Ab1FTSaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 14:30:52 -0400
+Message-ID: <4DFF9256.2070805@cn.fujitsu.com>
+Date: Tue, 21 Jun 2011 02:32:54 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DFF8848.2060802@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 02/15] KVM: MMU: do not update slot bitmap if spte is
+ nonpresent
+References: <4DEE205E.8000601@cn.fujitsu.com> <4DEE20AD.5060109@cn.fujitsu.com> <20110620162806.GC17130@amt.cnet>
+In-Reply-To: <20110620162806.GC17130@amt.cnet>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-21 02:30:28,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-21 02:30:28,
+	Serialize complete at 2011-06-21 02:30:28
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 01:50:00PM -0400, Rik van Riel wrote:
-> On 06/20/2011 01:34 PM, Cong Wang wrote:
+On 06/21/2011 12:28 AM, Marcelo Tosatti wrote:
+> On Tue, Jun 07, 2011 at 08:59:25PM +0800, Xiao Guangrong wrote:
+>> Set slot bitmap only if the spte is present
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+>> ---
+>>  arch/x86/kvm/mmu.c |   15 +++++++--------
+>>  1 files changed, 7 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>> index cda666a..125f78d 100644
+>> --- a/arch/x86/kvm/mmu.c
+>> +++ b/arch/x86/kvm/mmu.c
+>> @@ -743,9 +743,6 @@ static int rmap_add(struct kvm_vcpu *vcpu, u64 *spte, gfn_t gfn)
+>>  	struct kvm_mmu_page *sp;
+>>  	unsigned long *rmapp;
+>>  
+>> -	if (!is_rmap_spte(*spte))
+>> -		return 0;
+>> -
 > 
-> >Even if it is really 10K, why not save it since it doesn't
-> >much effort to make this. ;) Not only memory, but also time,
-> >this could also save a little time to initialize the kernel.
-> >
-> >For me, the more serious thing is the logic, there is
-> >no way to totally disable it as long as I have THP in .config
-> >currently. This is why I said the design is broken.
-> 
-> There are many things you cannot totally disable as long
-> as they are enabled in the .config.  Think about things
-> like swap, or tmpfs - neither of which you are going to
-> use in the crashdump kernel.
-> 
-> I believe we need to keep the kernel optimized for common
-> use and convenience.
-> 
-> Crashdump is very much a corner case.  Yes, using less
-> memory in crashdump is worthwhile, but lets face it -
-> the big memory user there is likely to be the struct page
-> array, with everything else down in the noise...
+> Not sure if this is safe, what if the spte is set as nonpresent but
+> rmap not removed?
 
-We are creating struct page array only for memory visible in 
-second kernel. So in this case struct page array for 128G.
+It can not happen, since when we set the spte as nonpresent, we always use
+drop_spte to remove the rmap, we also do it in set_spte()
 
-One of big user is per cpu data on large cpu systems. (256 etc).
-Even though we boot second kernel with maxcpus=1, it does not
-change possible cpu maps and initalizes LAPIC etc and that seem
-to be consuming significant amount of memory. (In the order of MBs).
-So I see some opprotunity there to save memory. But this 10kB
-definitely sounds trivial amount to me.
+> 
+> BTW i don't see what patch 1 and this have to do with the goal
+> of the series.
+> 
+>
 
-thanks
-Vivek
+There are the preparing work for mmio page fault:
+- Patch 1 fix the bug in walking shadow page, so we can safely use it to
+  lockless-ly walk shadow page
+- Patch 2 can avoid add rmap for the mmio spte :-)
+
