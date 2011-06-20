@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203Ab1FTWd3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 18:33:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42428 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755338Ab1FTWd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 18:33:27 -0400
-Date: Mon, 20 Jun 2011 18:33:21 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Justin TerAvest <teravest@google.com>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Tao Ma <tm@tao.ma>
-Subject: Re: [PATCH] cfq: Fix starvation of async writes in presence of heavy
- sync workload
-Message-ID: <20110620223321.GA10523@redhat.com>
-References: <20110620141631.GA4749@redhat.com>
- <BANLkTin9xgN0t4rn_Zf81TBdnLmJXPzNDT1fXtg3m64SnJVn5g@mail.gmail.com>
- <20110620164504.GC4749@redhat.com>
- <BANLkTik5+R3L5MQN9a4JVOL+Yt7y=72OsK0rDeAcNAJcaZKXsw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTik5+R3L5MQN9a4JVOL+Yt7y=72OsK0rDeAcNAJcaZKXsw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755965Ab1FTWgU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 18:36:20 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:16049 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755460Ab1FTWgT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 18:36:19 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Mon, 20 Jun 2011 18:36:18 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        Alexander Holler <holler@ahsoftware.de>, linux-usb@vger.kernel.org,
+        gregkh@suse.de, lkml <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin@rab.in>
+Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing the
+ packed attribute
+In-reply-to: <Pine.LNX.4.44L0.1106201640290.2113-100000@iolanthe.rowland.org>
+Message-id: <alpine.LFD.2.00.1106201653450.2142@xanadu.home>
+References: <Pine.LNX.4.44L0.1106201640290.2113-100000@iolanthe.rowland.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 03:16:48PM -0700, Justin TerAvest wrote:
+On Mon, 20 Jun 2011, Alan Stern wrote:
 
-[..]
-> How do we establish what's acceptable? My complaint is that it's not
-> obvious what tradeoffs to make in the I/O scheduler.
+> On Mon, 20 Jun 2011, Nicolas Pitre wrote:
 > 
-
-I think it should be driven with real workloads and some common
-sense. Easily reproducible complete starvation of async requests
-sounds bad enough that it needs fixing. 
-
-> >
-> >> This makes the preemption logic slightly harder to understand, and I'm
-> >> concerned we'll keep making little adjustments like this to the
-> >> scheduler.
-> >
-> > If you have other ideas for handling this, we can definitely give
-> > it a try.
+> > > As far as I can tell, the other structures in ehci.h have 
+> > > ((aligned(32)) simply in order to save space, since there can be large 
+> > > numbers of these structures allocated.
+> > 
+> > How can increasing the alignment to 32 bytes save space?
 > 
-> I haven't written out a case to prove it, but it seems like other
-> preemption logic (like the cfq_rq_close() case) could also cause some
-> requests to be starved indefinitely.
+> No, no -- the alignment is _decreased_ to 32 bits.  Without the 
+> attribute the alignment would have been 64 bits.
 
-If we can easily reproduce this starvation may be that also needs
-fixing.
+The aligned attribute requires a byte value not a bit value.
+Maybe what you meant is ((aligned(4)) ?
 
-> 
-> I think if we want to make stronger guarantees about request
-> starvation, we might have to rethink how preemption works.
 
-What's your proposal? cpu scheduler like only class based preemption
-is not going to work for the simple reason that writes come in big
-sizes without any dependencies and reads can come in small sizes
-one at a time because these are dependent reads.
-
-So are you saying that write starvation is not a real problem or you
-are suggesting that overall you are not happy with preemption logic
-and want more changes in there.
-
-Thanks
-Vivek
+Nicolas
