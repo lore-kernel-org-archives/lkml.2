@@ -1,46 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab1FTSAB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 14:00:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25612 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755200Ab1FTSAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 14:00:00 -0400
-Date: Mon, 20 Jun 2011 13:59:52 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Cong Wang <amwang@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: Re: [PATCH 1/3] mm: completely disable THP by
- transparent_hugepage=never
-Message-ID: <20110620175952.GD4749@redhat.com>
-References: <1308587683-2555-1-git-send-email-amwang@redhat.com>
- <20110620165844.GA9396@suse.de>
- <4DFF7E3B.1040404@redhat.com>
- <4DFF7F0A.8090604@redhat.com>
- <4DFF8106.8090702@redhat.com>
- <4DFF8327.1090203@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DFF8327.1090203@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752529Ab1FTSVG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 14:21:06 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:52945 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985Ab1FTSVD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 14:21:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=ojFsk09PIDtiPRZbeKNITXAGUHhjYnz8TYhUriqEGm5284G4NJYSawPrANBDOvbEv4
+         Mund1sUW4MeBOFSG9b1gglGnKb1M7YM0fs5kWwIYa5+swUEBwgAi2In/+WpKqOOXhgh4
+         /z9Lz9mhbLgI9o7o0fAT7d3R4mbovDYPNp/tw=
+Date: Mon, 20 Jun 2011 14:20:59 -0400
+From: Jay Estabrook <jay.estabrook@gmail.com>
+To: airlied@linux.ie, linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-alpha <linux-alpha@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Cc: Matt Turner <mattst88@gmail.com>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Jay Estabrook <jay.estabrook@gmail.com>
+Subject: [PATCH 3/3 REPOST] alpha, drm: Add Alpha support to Radeon DRM code
+Message-ID: <20110620142059.04c3b912.jay.estabrook_gmail.com@gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; alpha-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 01:28:07PM -0400, Rik van Riel wrote:
 
-[..]
-> I'm not convinced that a 10kB memory reduction is
-> worth the price of never being able to enable
-> transparent hugepages when a system is booted with
-> THP disabled...
+Alpha needs to have available the system bus address for the Radeon's
+local memory, so that it can be used in ttm_bo_vm_fault(), when building
+the PTEs for accessing that VRAM.  So, we make bus.addr hold the ioremap()
+return, and then we can modify bus.base appropriately for use during page
+fault processing.
 
-Agreed.
+Signed-off-by: Jay Estabrook <jay.estabrook@gmail.com>
+---
+ drivers/gpu/drm/radeon/radeon_ttm.c |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
-Thanks
-Vivek
+diff -Naurp a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
+--- a/drivers/gpu/drm/radeon/radeon_ttm.c	2011-04-26 23:48:50.000000000 -0400
++++ b/drivers/gpu/drm/radeon/radeon_ttm.c	2011-05-03 18:24:27.000000000 -0400
+@@ -450,6 +450,29 @@ static int radeon_ttm_io_mem_reserve(str
+ 			return -EINVAL;
+ 		mem->bus.base = rdev->mc.aper_base;
+ 		mem->bus.is_iomem = true;
++#ifdef __alpha__
++		/*
++		 * Alpha: use bus.addr to hold the ioremap() return,
++		 * so we can modify bus.base below.
++		 */
++		if (mem->placement & TTM_PL_FLAG_WC)
++			mem->bus.addr =
++				ioremap_wc(mem->bus.base + mem->bus.offset,
++					   mem->bus.size);
++		else
++			mem->bus.addr =
++				ioremap_nocache(mem->bus.base + mem->bus.offset,
++						mem->bus.size);
++
++		/*
++		 * Alpha: Take just the bus offset and
++		 * add the hose/domain memory base.
++		 * Then, bus.base can be returned
++		 * for use in an mmap() call.
++		 */
++		mem->bus.base = (mem->bus.base & 0x0ffffffffUL) +
++			rdev->ddev->hose->dense_mem_base;
++#endif
+ 		break;
+ 	default:
+ 		return -EINVAL;
