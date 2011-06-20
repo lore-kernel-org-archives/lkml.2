@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab1FTSzm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 14:55:42 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:52575 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755422Ab1FTSzl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 14:55:41 -0400
-From: Taylor Hutt <thutt@chromium.org>
-To: thutt@chromium.org
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Peter Hsiang <Peter.Hsiang@maxim-ic.com>,
-        Olof Johansson <olofj@chromium.org>, alsa-devel@alsa-project.org,
+	id S1755406Ab1FTSzL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 14:55:11 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:37159 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751352Ab1FTSzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 14:55:08 -0400
+Message-ID: <4DFF9784.8000604@slimlogic.co.uk>
+Date: Mon, 20 Jun 2011 20:55:00 +0200
+From: Graeme Gregory <gg@slimlogic.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] ASoC: codecs: Max98095: Fix logging of hardware revision.
-Date: Mon, 20 Jun 2011 11:54:32 -0700
-Message-Id: <1308596072-17158-1-git-send-email-thutt@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-X-System-Of-Record: true
+Subject: Re: [PATCH] mfd: Implement tps65910 IRQ cleanup
+References: <1308566875-17441-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1308566875-17441-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The base hardware revision of the Maxim 98095 part is 0x40; the code
-which outputs the revision of the hardware has been updated to
-properly use uppercase alphabetic values for the revision numbers.
+On 06/20/2011 12:47 PM, Mark Brown wrote:
+> The tps65910_irq_exit() cleanup function was generating a warning from
+> sparse due to the lack of a prototype. This wasn't causing GCC warnings
+> as the driver wasn't cleaning up its IRQs on exit at all so there was no
+> use of an unprototyped function.
+>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/mfd/tps65910.c       |    1 +
+>  include/linux/mfd/tps65910.h |    1 +
+>  2 files changed, 2 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+> index 2229e66..837f0e6 100644
+> --- a/drivers/mfd/tps65910.c
+> +++ b/drivers/mfd/tps65910.c
+> @@ -187,6 +187,7 @@ static int tps65910_i2c_remove(struct i2c_client *i2c)
+>  	struct tps65910 *tps65910 = i2c_get_clientdata(i2c);
+>  
+>  	mfd_remove_devices(tps65910->dev);
+> +	tps65910_irq_exit(tps65910);
+>  	kfree(tps65910);
+>  
+>  	return 0;
+> diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
+> index 8bb85b9..efcdb29 100644
+> --- a/include/linux/mfd/tps65910.h
+> +++ b/include/linux/mfd/tps65910.h
+> @@ -791,6 +791,7 @@ int tps65910_clear_bits(struct tps65910 *tps65910, u8 reg, u8 mask);
+>  void tps65910_gpio_init(struct tps65910 *tps65910, int gpio_base);
+>  int tps65910_irq_init(struct tps65910 *tps65910, int irq,
+>  		struct tps65910_platform_data *pdata);
+> +int tps65910_irq_exit(struct tps65910 *tps65910);
+>  
+>  static inline int tps65910_chip_id(struct tps65910 *tps65910)
+>  {
+Acked-by: Graeme Gregory <gg@slimlogic.co.uk>
 
-Also, the use of a constant for the length 'max98095_dai' has been
-replaced with ARRAY_SIZE().
+Thanks for that cleanup.
 
-Signed-off-by: Taylor Hutt <thutt@chromium.org>
----
- sound/soc/codecs/max98095.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/sound/soc/codecs/max98095.c b/sound/soc/codecs/max98095.c
-index e1d282d..9a793b3 100644
---- a/sound/soc/codecs/max98095.c
-+++ b/sound/soc/codecs/max98095.c
-@@ -2261,11 +2261,11 @@ static int max98095_probe(struct snd_soc_codec *codec)
- 
- 	ret = snd_soc_read(codec, M98095_0FF_REV_ID);
- 	if (ret < 0) {
--		dev_err(codec->dev, "Failed to read device revision: %d\n",
-+		dev_err(codec->dev, "Failure reading hardware revision: %d\n",
- 			ret);
- 		goto err_access;
- 	}
--	dev_info(codec->dev, "revision %c\n", ret + 'A');
-+	dev_info(codec->dev, "Hardware revision: %c\n", ret - 0x40 + 'A');
- 
- 	snd_soc_write(codec, M98095_097_PWR_SYS, M98095_PWRSV);
- 
-@@ -2342,8 +2342,8 @@ static int max98095_i2c_probe(struct i2c_client *i2c,
- 	max98095->control_data = i2c;
- 	max98095->pdata = i2c->dev.platform_data;
- 
--	ret = snd_soc_register_codec(&i2c->dev,
--			&soc_codec_dev_max98095, &max98095_dai[0], 3);
-+	ret = snd_soc_register_codec(&i2c->dev, &soc_codec_dev_max98095,
-+				     max98095_dai, ARRAY_SIZE(max98095_dai));
- 	if (ret < 0)
- 		kfree(max98095);
- 	return ret;
--- 
-1.7.3.1
-
+Graeme
