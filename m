@@ -1,31 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab1FTQix (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 12:38:53 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38407 "EHLO mx3.mail.elte.hu"
+	id S1751879Ab1FTQlV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 12:41:21 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:38688 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750829Ab1FTQiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 12:38:50 -0400
-Date: Mon, 20 Jun 2011 18:38:25 +0200
+	id S1750767Ab1FTQlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 12:41:18 -0400
+Date: Mon, 20 Jun 2011 18:40:45 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Mel Gorman <mgorman@suse.de>, Randy Dunlap <randy.dunlap@oracle.com>,
-        dave@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [BUGFIX][PATCH][-rc3] Define a consolidated definition of
- node_start/end_pfn for build error in page_cgroup.c (Was Re: mmotm
- 2011-06-15-16-56 uploaded (mm/page_cgroup.c)
-Message-ID: <20110620163825.GA10815@elte.hu>
-References: <201106160034.p5G0Y4dr028904@imap1.linux-foundation.org>
- <20110615214917.a7dce8e6.randy.dunlap@oracle.com>
- <20110616172819.1e2d325c.kamezawa.hiroyu@jp.fujitsu.com>
- <20110616103559.GA5244@suse.de>
- <20110617094628.aecf5ee1.kamezawa.hiroyu@jp.fujitsu.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ryan Mallon <rmallon@gmail.com>, Petr Tesarik <ptesarik@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
+ physical addresses
+Message-ID: <20110620164045.GB10815@elte.hu>
+References: <201106171038.25988.ptesarik@suse.cz>
+ <20110617093032.GA19235@elte.hu>
+ <4DFE7FF9.9070406@gmail.com>
+ <4DFE89E0.5020509@zytor.com>
+ <20110620074124.GB24716@elte.hu>
+ <4DFF6E58.8090306@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110617094628.aecf5ee1.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4DFF6E58.8090306@zytor.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -39,67 +46,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
-> On Thu, 16 Jun 2011 11:35:59 +0100
-> Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > A caller that does node_end_pfn(nid++) will get a nasty surprise
-> > due to side-effects. I know architectures currently get this wrong
-> > including x86_64 but we might as well fix it up now. The definition
-> > in arch/x86/include/asm/mmzone_32.h is immune to side-effects and
-> > might be a better choice despite the use of a temporary variable.
+> On 06/20/2011 12:41 AM, Ingo Molnar wrote:
+> > 
+> > * H. Peter Anvin <hpa@zytor.com> wrote:
+> > 
+> >> There are some test drivers which really want /dev/mem to work.
+> > 
+> > Test drivers and test hardware with zero enumeration can use below 4G 
+> > addresses just fine.
+> >
+> > Also, debugging is not an issue and some non-default kernel or boot 
+> > option can enable any sort of device i guess, so my main worry isnt 
+> > really security but that we should stand in the way of the apparent 
+> > practice of *shipping* user-space drivers that use /dev/mem ...
 > > 
 > 
-> Ok, here is a fixed one. Thank you for comments/review.
-> ==
-> >From 507cc95c5ba2351bff16c5421255d1395a3b555b Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Thu, 16 Jun 2011 17:28:07 +0900
-> Subject: [PATCH] Fix node_start/end_pfn() definition for mm/page_cgroup.c
-> 
-> commit 21a3c96 uses node_start/end_pfn(nid) for detection start/end
-> of nodes. But, it's not defined in linux/mmzone.h but defined in
-> /arch/???/include/mmzone.h which is included only under
-> CONFIG_NEED_MULTIPLE_NODES=y.
-> 
-> Then, we see
-> mm/page_cgroup.c: In function 'page_cgroup_init':
-> mm/page_cgroup.c:308: error: implicit declaration of function 'node_start_pfn'
-> mm/page_cgroup.c:309: error: implicit declaration of function 'node_end_pfn'
-> 
-> So, fixiing page_cgroup.c is an idea...
+> We should either fix /dev/mem to work according to its 
+> specification or rip it out.  The issue with test drivers is not 
+> spurious... I ran into this one myself a few weeks ago while trying 
+> to do a memory test (by limiting the amount of memory available to 
+> the kernel).  This is something that is typically done on factory 
+> floors, and it would be nice to be able to get those environments 
+> over to using Linux.
 
-s/fixing
+There is no reason why they couldnt use a .config option or a boot 
+option to get their weird stuff going, which weird stuff also happens 
+to be useful.
 
-> 
-> But node_start_pfn()/node_end_pfn() is a very generic macro and
-> should be implemented in the same manner for all archs.
-> (m32r has different implementation...)
-> 
-> This patch removes definitions of node_start/end_pfn() in each archs
-> and defines a unified one in linux/mmzone.h. It's not under
-> CONFIG_NEED_MULTIPLE_NODES, now.
-> 
-> A result of macro expansion is here (mm/page_cgroup.c)
-> 
-> for !NUMA
->  start_pfn = ((&contig_page_data)->node_start_pfn);
->   end_pfn = ({ pg_data_t *__pgdat = (&contig_page_data); __pgdat->node_start_pfn + __pgdat->node_spanned_pages;});
-> 
-> for NUMA (x86-64)
->   start_pfn = ((node_data[nid])->node_start_pfn);
->   end_pfn = ({ pg_data_t *__pgdat = (node_data[nid]); __pgdat->node_start_pfn + __pgdat->node_spanned_pages;});
-> 
-> 
-> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Reported-by: Ingo Molnar <mingo@elte.hu>
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-Your patch solved all the build failures on x86 and on a couple of 
-cross-builds as well i tried:
-
-  Tested-by: Ingo Molnar <mingo@elte.hu>
+What i'm somewhat against is having this enabled by default for weird 
+stuff that also happens to be harmful - and the fact that it never 
+worked over 4G physical gives us the perfect opportunity to do just 
+that.
 
 Thanks,
 
