@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab1FTC41 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Jun 2011 22:56:27 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:50795 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751917Ab1FTC4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Jun 2011 22:56:24 -0400
-Date: Mon, 20 Jun 2011 12:56:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hans Schillstrom <hans.schillstrom@ericsson.com>,
-        Simon Horman <horms@verge.net.au>
-Subject: linux-next: manual merge of the net tree with the net-current tree
-Message-Id: <20110620125616.e319c55c.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752799Ab1FTDUY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Jun 2011 23:20:24 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:58648 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878Ab1FTDUV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Jun 2011 23:20:21 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Sun, 19 Jun 2011 23:20:20 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        trivial@kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH][Trivial] ARM: remove duplicate include from
+ arch/arm/mach-dove/common.c
+In-reply-to: <alpine.LNX.2.00.1106162348320.8140@swampdragon.chaosbits.net>
+Message-id: <alpine.LFD.2.00.1106192318310.2142@xanadu.home>
+References: <alpine.LNX.2.00.1105261130190.17400@swampdragon.chaosbits.net>
+ <20110526144804.GA31651@lunn.ch>
+ <alpine.LNX.2.00.1106162348320.8140@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Thu, 16 Jun 2011, Jesper Juhl wrote:
 
-Today's linux-next merge of the net tree got a conflict in
-net/netfilter/ipvs/ip_vs_core.c between commit 8f4e0a18682d ("IPVS netns
-exit causes crash in conntrack") from the net-current tree and commit
-503cf15a5ecc ("IPVS: rename of netns init and cleanup functions") from
-the net tree.
+> On Thu, 26 May 2011, Andrew Lunn wrote:
+> 
+> > Jesper Juhl pointed out there is a redundant include of
+> > linux/serial_8250.h. However it turns out both are redundant.
+> > This patch removes them both.
+> > 
+> > Only compile tested.
+> > 
+> > Reported-by:  Jesper Juhl <jj@chaosbits.net>
+> > Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+> 
+> Seems you are right.
+> 
+> Reviewed-by: Jesper Juhl <jj@chaosbits.net>
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Could this patch be sent to RMK's patch system if no one else 
+picks it up please?
+Thanks.
 
-diff --cc net/netfilter/ipvs/ip_vs_core.c
-index 24c28d2,2200bae..0000000
---- a/net/netfilter/ipvs/ip_vs_core.c
-+++ b/net/netfilter/ipvs/ip_vs_core.c
-@@@ -1945,8 -1945,7 +1945,8 @@@ static void __net_exit __ip_vs_dev_clea
-  {
-  	EnterFunction(2);
-  	net_ipvs(net)->enable = 0;	/* Disable packet reception */
- +	smp_wmb();
-- 	__ip_vs_sync_cleanup(net);
-+ 	ip_vs_sync_net_cleanup(net);
-  	LeaveFunction(2);
-  }
-  
+
+Nicolas
