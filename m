@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900Ab1FTI6i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 04:58:38 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:12067 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab1FTI6h (ORCPT
+	id S1752777Ab1FTIwl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 04:52:41 -0400
+Received: from webbox687.server-home.net ([195.149.74.151]:51084 "EHLO
+	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751839Ab1FTIwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 04:58:37 -0400
-Date: Mon, 20 Jun 2011 10:49:52 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-cc: linux-scsi@vger.kernel.org, James Bottomley <jbottomley@parallels.com>,
-        linux-kernel@vger.kernel.org, trivial@kernel.org,
-        "Nicholas A. Bellinger" <nab@risingtidesystems.com>
-Subject: [PATCH][Trivial] SCSI, Target, tcm_loop: Remove include duplicate
-Message-ID: <alpine.LNX.2.00.1106201044310.18991@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 20 Jun 2011 04:52:40 -0400
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH 2/2] Add watchdog driver for Intel TunnelCreek
+Date: Mon, 20 Jun 2011 10:51:48 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
+References: <1308222350-21634-1-git-send-email-alexander.stein@systec-electronic.com> <1308222350-21634-2-git-send-email-alexander.stein@systec-electronic.com> <36169.1308344475@turing-police.cc.vt.edu>
+In-Reply-To: <36169.1308344475@turing-police.cc.vt.edu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106201051.49055.alexander.stein@systec-electronic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit e66ecd50 added a duplicate include of scsi/scsi_tcq.h to 
-drivers/target/loopback/tcm_loop.c - this patch removes the duplicate.
+On Friday 17 June 2011 23:01:15 Valdis.Kletnieks@vt.edu wrote:
+> On Thu, 16 Jun 2011 13:05:50 +0200, Alexander Stein said:
+> > +config INTEL_TUNNELCREEK_WATCHDOG
+> > +	tristate "Intel TunnelCreek watchdog"
+> > +	depends on WATCHDOG && PCI && X86
+> > +	select MFD_CORE
+> > +	select LPC_SCH
+> > +	---help---
+> > +	  Hardware driver for the watchdog timer built into the Intel
+> > +	  Tunnel Creek processor.
+> 
+> Please add part names here so we don't have to guess/remember what the
+> now-retired code name for a processor was.  Just because the guy who wrote
+> the driver knows what the development name was doesn't mean that the poor
+> guy saying 'make oldconfig' knows whether this is a driver he cares about.
+> 
+> http://www.engadget.com/2010/09/15/intel-retires-tunnel-creek-codename-debu
+> ts-e600-series-atom-sys/
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- tcm_loop.c |    1 -
- 1 file changed, 1 deletion(-)
+Thanks for the hint.
+Would you also recommend to rename the driver module name? Currently it is 
+intel_tunnelcreek_watchdog, so it may be called intel_e6xx_watchdog.
 
-diff --git a/drivers/target/loopback/tcm_loop.c b/drivers/target/loopback/tcm_loop.c
-index dee2a2c..ee95903 100644
---- a/drivers/target/loopback/tcm_loop.c
-+++ b/drivers/target/loopback/tcm_loop.c
-@@ -31,7 +31,6 @@
- #include <scsi/scsi_host.h>
- #include <scsi/scsi_device.h>
- #include <scsi/scsi_cmnd.h>
--#include <scsi/scsi_tcq.h>
- 
- #include <target/target_core_base.h>
- #include <target/target_core_transport.h>
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Regards,
+Alexander
