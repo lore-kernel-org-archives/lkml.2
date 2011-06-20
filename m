@@ -1,56 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633Ab1FTULF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 16:11:05 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:53795 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab1FTULB (ORCPT
+	id S1752920Ab1FTUKA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 16:10:00 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:55596
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751209Ab1FTUJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 16:11:01 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing the packed attribute
-Date: Mon, 20 Jun 2011 22:09:34 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Alexander Holler <holler@ahsoftware.de>, gregkh@suse.de,
-        Nicolas Pitre <nico@fluxnic.net>, linux-usb@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, Rabin Vincent <rabin@rab.in>
-References: <Pine.LNX.4.44L0.1106201436430.2113-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1106201436430.2113-100000@iolanthe.rowland.org>
+	Mon, 20 Jun 2011 16:09:56 -0400
+Date: Mon, 20 Jun 2011 16:09:50 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, swhiteho@redhat.com
+Subject: Re: [PATCH 7/7] writeback: timestamp based bdi dirty_exceeded state
+Message-ID: <20110620200950.GA18537@infradead.org>
+References: <20110619150108.691351746@intel.com>
+ <20110619150510.717948499@intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106202209.35152.arnd@arndb.de>
-X-Provags-ID: V02:K0:053sBDXy4IHbwAWSQPE+sk7HKXvDxuzJRhf9RVvZ7Px
- Rca70Vfzzc26rY8/ePkuhhHOP5sOIOLXOZDLFI83lNQTvCFtds
- 1aSScnEQxkxhZZsFZAPBEXHG5mNM3E6kvYmbpApQe/Ox/pUtPH
- v1Y6qolNsi8sYfzCqu9lzEWVUzCDSTY7zLnNY1oVzZG0BOc1Rv
- tRPUdY1K0ph+yG6q22uUQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110619150510.717948499@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 20 June 2011 20:39:02 Alan Stern wrote:
-> On Mon, 20 Jun 2011, Alexander Holler wrote:
+On Sun, Jun 19, 2011 at 11:01:15PM +0800, Wu Fengguang wrote:
+> When there are only one (or several) dirtiers, dirty_exceeded is always
+> (or mostly) off. Converting to timestamp avoids this problem. It helps
+> to use smaller write_chunk for smoother throttling.
+
+In current mainline gfs2 has grown a non-trivial reference to
+backing_dev_info.dirty_exceeded, which needs to be dealt with.
+
 > 
-> > I see it that way: packed is needed to be sure that at least for struct 
-> > ehci_regs there are no padding bytes inbetween the members.
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
 > 
-> But is it really needed?
-
-No. When the structure is marked packed, it's broken because it relies
-on undefined behavior. If it's not packed, there is no problem.
-
-> > It might 
-> > work without, but that depends on the compiler (-version, architecture, 
-> > whatever).
+> Before patch, the wait time in balance_dirty_pages() are ~200ms:
 > 
-> Have there ever been any combinations of compiler, version, 
-> architecture, whatever, that had unwanted padding bytes in this 
-> structure?
-
-Only on compilers that are not able to build Linux kernels anyway.
-
-	Arnd
+> [ 1093.397700] write_bandwidth: comm=swapper pages=1536 time=204ms
+> [ 1093.594319] write_bandwidth: comm=swapper pages=1536 time=196ms
+> [ 1093.796642] write_bandwidth: comm=swapper pages=1536 time=200ms
+> 
+> After patch, ~25ms:
+> 
+> [   90.261339] write_bandwidth: comm=swapper pages=192 time=20ms
+> [   90.293168] write_bandwidth: comm=swapper pages=192 time=24ms
+> [   90.323853] write_bandwidth: comm=swapper pages=192 time=24ms
+> [   90.354510] write_bandwidth: comm=swapper pages=192 time=28ms
+> [   90.389890] write_bandwidth: comm=swapper pages=192 time=28ms
+> [   90.421787] write_bandwidth: comm=swapper pages=192 time=24ms
+> 
+>  include/linux/backing-dev.h |    2 +-
+>  mm/backing-dev.c            |    2 --
+>  mm/page-writeback.c         |   24 ++++++++++++------------
+>  3 files changed, 13 insertions(+), 15 deletions(-)
+> 
+> --- linux-next.orig/mm/page-writeback.c	2011-06-19 22:59:49.000000000 +0800
+> +++ linux-next/mm/page-writeback.c	2011-06-19 22:59:53.000000000 +0800
+> @@ -483,6 +483,15 @@ unsigned long bdi_dirty_limit(struct bac
+>  	return bdi_dirty;
+>  }
+>  
+> +/*
+> + * last time exceeded (limit - limit/DIRTY_BRAKE)
+> + */
+> +static bool dirty_exceeded_recently(struct backing_dev_info *bdi,
+> +				    unsigned long time_window)
+> +{
+> +	return jiffies - bdi->dirty_exceed_time <= time_window;
+> +}
+> +
+>  static void bdi_update_write_bandwidth(struct backing_dev_info *bdi,
+>  				       unsigned long elapsed,
+>  				       unsigned long written)
+> @@ -621,7 +630,6 @@ static void balance_dirty_pages(struct a
+>  	unsigned long bdi_thresh;
+>  	unsigned long pages_written = 0;
+>  	unsigned long pause = 1;
+> -	bool dirty_exceeded = false;
+>  	struct backing_dev_info *bdi = mapping->backing_dev_info;
+>  	unsigned long start_time = jiffies;
+>  
+> @@ -669,14 +677,9 @@ static void balance_dirty_pages(struct a
+>  		 * bdi or process from holding back light ones; The latter is
+>  		 * the last resort safeguard.
+>  		 */
+> -		dirty_exceeded = (bdi_dirty > bdi_thresh) ||
+> -				  (nr_dirty > dirty_thresh);
+> -
+> -		if (!dirty_exceeded)
+> +		if (bdi_dirty <= bdi_thresh && nr_dirty <= dirty_thresh)
+>  			break;
+> -
+> -		if (!bdi->dirty_exceeded)
+> -			bdi->dirty_exceeded = 1;
+> +		bdi->dirty_exceed_time = jiffies;
+>  
+>  		bdi_update_bandwidth(bdi, dirty_thresh, nr_dirty, bdi_dirty,
+>  				     start_time);
+> @@ -719,9 +722,6 @@ static void balance_dirty_pages(struct a
+>  			pause = HZ / 10;
+>  	}
+>  
+> -	if (!dirty_exceeded && bdi->dirty_exceeded)
+> -		bdi->dirty_exceeded = 0;
+> -
+>  	if (writeback_in_progress(bdi))
+>  		return;
+>  
+> @@ -775,7 +775,7 @@ void balance_dirty_pages_ratelimited_nr(
+>  		return;
+>  
+>  	ratelimit = ratelimit_pages;
+> -	if (mapping->backing_dev_info->dirty_exceeded)
+> +	if (dirty_exceeded_recently(bdi, MAX_PAUSE))
+>  		ratelimit = 8;
+>  
+>  	/*
+> --- linux-next.orig/include/linux/backing-dev.h	2011-06-19 22:54:58.000000000 +0800
+> +++ linux-next/include/linux/backing-dev.h	2011-06-19 22:59:53.000000000 +0800
+> @@ -79,7 +79,7 @@ struct backing_dev_info {
+>  	unsigned long avg_write_bandwidth;
+>  
+>  	struct prop_local_percpu completions;
+> -	int dirty_exceeded;
+> +	unsigned long dirty_exceed_time;
+>  
+>  	unsigned int min_ratio;
+>  	unsigned int max_ratio, max_prop_frac;
+> --- linux-next.orig/mm/backing-dev.c	2011-06-19 22:59:49.000000000 +0800
+> +++ linux-next/mm/backing-dev.c	2011-06-19 22:59:53.000000000 +0800
+> @@ -670,8 +670,6 @@ int bdi_init(struct backing_dev_info *bd
+>  			goto err;
+>  	}
+>  
+> -	bdi->dirty_exceeded = 0;
+> -
+>  	bdi->bw_time_stamp = jiffies;
+>  	bdi->written_stamp = 0;
+>  
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+---end quoted text---
