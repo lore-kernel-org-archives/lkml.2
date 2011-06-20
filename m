@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756380Ab1FTXho (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 19:37:44 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:52308 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756165Ab1FTXhn (ORCPT
+	id S1756182Ab1FTXlp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 19:41:45 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42643 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751439Ab1FTXln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 19:37:43 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org
-Subject: Re: [PATCH 2/8] PM / Domains: Rename struct dev_power_domain to struct dev_pm_domain
-Organization: Texas Instruments, Inc.
-References: <201106112223.04972.rjw@sisk.pl> <201106112226.07631.rjw@sisk.pl>
-Date: Mon, 20 Jun 2011 16:37:39 -0700
-In-Reply-To: <201106112226.07631.rjw@sisk.pl> (Rafael J. Wysocki's message of
-	"Sat, 11 Jun 2011 22:26:07 +0200")
-Message-ID: <87fwn45b24.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Mon, 20 Jun 2011 19:41:43 -0400
+Date: Tue, 21 Jun 2011 00:41:40 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: linux-kernel@vger.kernel.org,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: Re: [PATCH 2/8] regmap: Add I2C bus support
+Message-ID: <20110620234140.GB1905@opensource.wolfsonmicro.com>
+References: <20110620124608.GB31140@opensource.wolfsonmicro.com>
+ <1308574489-31322-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1308574489-31322-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <4DFFD64F.8040902@metafoo.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DFFD64F.8040902@metafoo.de>
+X-Cookie: You are magnetic in your bearing.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> writes:
+On Tue, Jun 21, 2011 at 01:22:55AM +0200, Lars-Peter Clausen wrote:
+> On 06/20/2011 02:54 PM, Mark Brown wrote:
+> > [...]
+> > +
+> > +#include <linux/regmap.h>
+> > +#include <linux/i2c.h>
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
->
-> The naming convention used by commit 7538e3db6e015e890825fbd9f86599b
-> (PM: Add support for device power domains), which introduced the
-> struct dev_power_domain type for representing device power domains,
-> evidently confuses some developers who tend to think that objects
-> of this type must correspond to "power domains" as defined by
-> hardware, which is not the case.  Namely, at the kernel level, a
-> struct dev_power_domain object can represent arbitrary set of devices
-> that are mutually dependent power management-wise and need not belong
-> to one hardware power domain.  To avoid that confusion, rename struct
-> dev_power_domain to struct dev_pm_domain and rename the related
-> pointers in struct device and struct pm_clk_notifier_block from
-> pwr_domain to pm_domain.
->
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> #include <linux/init.h>
 
-Acked-by: Kevin Hilman <khilman@ti.com>
+For...?
 
-Thanks!
+> > +static int regmap_i2c_read(struct device *dev,
+> > +			   const void *reg, size_t reg_size,
+> > +			   void *val, size_t val_size)
+> > +{
+> > +	struct i2c_client *i2c = to_i2c_client(dev);
+> > +	struct i2c_msg xfer[2];
+> > +	int ret;
 
-Kevin
+> > +	if (!i2c_check_functionality(i2c->adapter, I2C_FUNC_PROTOCOL_MANGLING))
+> > +		return -ENOTSUPP;
+
+> You shouldn't need I2C_FUNC_PROTOCOL_MANGLING for reading.
+
+Hrm, yeah, probably not.
