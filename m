@@ -1,41 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab1FTPS1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 11:18:27 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:48767 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751276Ab1FTPSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 11:18:24 -0400
-Date: Mon, 20 Jun 2011 08:17:22 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the rcu tree with the tip tree
-Message-ID: <20110620151722.GA2933@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110620144705.c9a5513b.sfr@canb.auug.org.au>
+	id S1752866Ab1FTPUQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 11:20:16 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:43607 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab1FTPUD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 11:20:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=sdngELRj6+zLG3WBzP3RD88te7pXmDnrQ594PKOVeJfB4Ar9ZHMev0h5I5EzIAQ4Sd
+         pKd4PKRj3piiGa4/olZiPdIboft8ZDYCpUd3vfIQYBf9cTMpp57yHBo2MudJ2ViGonGD
+         sjppSr5j7NVoonsC4fDGsNamYEztVRMvCDTVA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110620144705.c9a5513b.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110620151522.GN14262@legolas.emea.dhcp.ti.com>
+References: <BANLkTimWM2oew2f9uWxoD1kw1=2bSYFFuw@mail.gmail.com>
+	<Pine.LNX.4.44L0.1106201105430.2113-100000@iolanthe.rowland.org>
+	<20110620151522.GN14262@legolas.emea.dhcp.ti.com>
+Date: Mon, 20 Jun 2011 17:20:02 +0200
+Message-ID: <BANLkTi=5S6bWs3jr9hTsg2=LXh4xKAprUA@mail.gmail.com>
+Subject: Re: [PATCH] s3c2410_udc: fix custom UDC command handling
+From: Skacore Systems <skacore.systems@gmail.com>
+To: balbi@ti.com
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Viliam Mateicka <viliam.mateicka@gmail.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 02:47:05PM +1000, Stephen Rothwell wrote:
-> Hi Paul,
-> 
-> Today's linux-next merge of the rcu tree got conflicts in
-> kernel/rcutree.c and kernel/rcutree_plugin.h between various commits from
-> the tip tree and various commits from the rcu tree.
-> 
-> I can't easily resolve these, so I have dropped the rcu tree for today.
+I've been exactly following
+http://www.kernel.org/doc/Documentation/SubmittingPatches:
 
-I will be resolving these shortly, please accept my apologies for the
-hassle.
+To create a patch for a single file, it is often sufficient to do:
 
-						Thanx, Paul
+	SRCTREE= linux-2.6
+	MYFILE=  drivers/net/mydriver.c
+
+	cd $SRCTREE
+	cp $MYFILE $MYFILE.orig
+	vi $MYFILE	# make your change
+	cd ..
+	diff -up $SRCTREE/$MYFILE{.orig,} > /tmp/patch
+
+And that's what I've done. What do you think is wrong with it ???
+
+Vilo
+
+
+On Mon, Jun 20, 2011 at 5:15 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Mon, Jun 20, 2011 at 11:07:51AM -0400, Alan Stern wrote:
+>> On Mon, 20 Jun 2011, Viliam Mateicka wrote:
+>>
+>> > So, will somebody at least react/reply (or just fix) ?
+>>
+>> Have some patience.  You did not address your email message to either
+>> of the driver's authors or to the current Gadget maintainer.  Also,
+>> David Brownell is deceased and Greg KH is on vacation.
+>
+> besides, the patch formatting is wrong. That was noted before and the
+> reply was less than acceptably polite, so unless the patch comes
+> Perfect(TM), I'm not looking into it.
+>
+> --
+> balbi
+>
