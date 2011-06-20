@@ -1,213 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754284Ab1FTM4G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 08:56:06 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38351 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754105Ab1FTMy7 (ORCPT
+	id S1754265Ab1FTM5h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 08:57:37 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43305 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752422Ab1FTM5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 08:54:59 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: linux-kernel@vger.kernel.org
-Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Graeme Gregory <gg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 8/8] regulator: Convert tps65023 to use regmap API
-Date: Mon, 20 Jun 2011 13:54:49 +0100
-Message-Id: <1308574489-31322-8-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1308574489-31322-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <20110620124608.GB31140@opensource.wolfsonmicro.com>
- <1308574489-31322-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Mon, 20 Jun 2011 08:57:36 -0400
+Date: Mon, 20 Jun 2011 13:57:15 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH] ARM: smp: Fix the CPU hotplug race with scheduler.
+Message-ID: <20110620125715.GK2082@n2100.arm.linux.org.uk>
+References: <20110620101438.GD2082@n2100.arm.linux.org.uk> <4DFF20B3.7010209@ti.com> <20110620104415.GF2082@n2100.arm.linux.org.uk> <4DFF255E.5030308@ti.com> <20110620111336.GG2082@n2100.arm.linux.org.uk> <4DFF2E37.8030602@ti.com> <20110620114019.GH2082@n2100.arm.linux.org.uk> <4DFF3454.30507@ti.com> <20110620121939.GI2082@n2100.arm.linux.org.uk> <4DFF3C95.1080903@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DFF3C95.1080903@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/regulator/Kconfig              |    1 +
- drivers/regulator/tps65023-regulator.c |   98 +++++++++-----------------------
- 2 files changed, 28 insertions(+), 71 deletions(-)
+On Mon, Jun 20, 2011 at 05:57:01PM +0530, Santosh Shilimkar wrote:
+> On 6/20/2011 5:49 PM, Russell King - ARM Linux wrote:
+>> On Mon, Jun 20, 2011 at 05:21:48PM +0530, Santosh Shilimkar wrote:
+>>> On 6/20/2011 5:10 PM, Russell King - ARM Linux wrote:
+>
+> [...]
+>
+>>>
+>>> Any pointers on the other question about "why we need to enable
+>>> interrupts before the CPU is ready?"
+>>
+>> To ensure that things like the delay loop calibration and twd calibration
+>> can run, though that looks like it'll run happily enough with the boot
+>> CPU updating jiffies.
+>>
+> I guessed it and had same point as above. Calibration will still
+> work.
+>
+>> However, I'm still not taking your patch because I believe its just
+>> papering over the real issue, which is not as you describe.
+>>
+>> You first need to work out why the spinlock lockup detection is firing
+>> after just 61us rather than the full 1s and fix that.
+>>
+> This is possibly because of my script which doesn't wait for 1
+> second.
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index d7ed20f..c8dc5f0 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -235,6 +235,7 @@ config REGULATOR_TPS6105X
- config REGULATOR_TPS65023
- 	tristate "TI TPS65023 Power regulators"
- 	depends on I2C
-+	select REGMAP
- 	help
- 	  This driver supports TPS65023 voltage regulator chips. TPS65023 provides
- 	  three step-down converters and two general-purpose LDO voltage regulators.
-diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
-index fbddc15..5e2c274 100644
---- a/drivers/regulator/tps65023-regulator.c
-+++ b/drivers/regulator/tps65023-regulator.c
-@@ -25,6 +25,7 @@
- #include <linux/i2c.h>
- #include <linux/delay.h>
- #include <linux/slab.h>
-+#include <linux/regmap.h>
- 
- /* Register definitions */
- #define	TPS65023_REG_VERSION		0
-@@ -125,93 +126,35 @@ struct tps_pmic {
- 	struct i2c_client *client;
- 	struct regulator_dev *rdev[TPS65023_NUM_REGULATOR];
- 	const struct tps_info *info[TPS65023_NUM_REGULATOR];
--	struct mutex io_lock;
-+	struct regmap *regmap;
- };
- 
--static inline int tps_65023_read(struct tps_pmic *tps, u8 reg)
--{
--	return i2c_smbus_read_byte_data(tps->client, reg);
--}
--
--static inline int tps_65023_write(struct tps_pmic *tps, u8 reg, u8 val)
--{
--	return i2c_smbus_write_byte_data(tps->client, reg, val);
--}
--
- static int tps_65023_set_bits(struct tps_pmic *tps, u8 reg, u8 mask)
- {
--	int err, data;
--
--	mutex_lock(&tps->io_lock);
--
--	data = tps_65023_read(tps, reg);
--	if (data < 0) {
--		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
--		err = data;
--		goto out;
--	}
--
--	data |= mask;
--	err = tps_65023_write(tps, reg, data);
--	if (err)
--		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
--
--out:
--	mutex_unlock(&tps->io_lock);
--	return err;
-+	return regmap_update_bits(tps->regmap, reg, mask, mask);
- }
- 
- static int tps_65023_clear_bits(struct tps_pmic *tps, u8 reg, u8 mask)
- {
--	int err, data;
--
--	mutex_lock(&tps->io_lock);
--
--	data = tps_65023_read(tps, reg);
--	if (data < 0) {
--		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
--		err = data;
--		goto out;
--	}
--
--	data &= ~mask;
--
--	err = tps_65023_write(tps, reg, data);
--	if (err)
--		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
--
--out:
--	mutex_unlock(&tps->io_lock);
--	return err;
--
-+	return regmap_update_bits(tps->regmap, reg, mask, 0);
- }
- 
- static int tps_65023_reg_read(struct tps_pmic *tps, u8 reg)
- {
--	int data;
-+	unsigned int val;
-+	int ret;
- 
--	mutex_lock(&tps->io_lock);
-+	ret = regmap_read(tps->regmap, reg, &val);
- 
--	data = tps_65023_read(tps, reg);
--	if (data < 0)
--		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
--
--	mutex_unlock(&tps->io_lock);
--	return data;
-+	if (ret != 0)
-+		return ret;
-+	else
-+		return val;
- }
- 
- static int tps_65023_reg_write(struct tps_pmic *tps, u8 reg, u8 val)
- {
--	int err;
--
--	mutex_lock(&tps->io_lock);
--
--	err = tps_65023_write(tps, reg, val);
--	if (err < 0)
--		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
--
--	mutex_unlock(&tps->io_lock);
--	return err;
-+	return regmap_write(tps->regmap, reg, val);
- }
- 
- static int tps65023_dcdc_is_enabled(struct regulator_dev *dev)
-@@ -463,6 +406,10 @@ static struct regulator_ops tps65023_ldo_ops = {
- 	.list_voltage = tps65023_ldo_list_voltage,
- };
- 
-+static struct regmap_config tps65023_regmap_config = {
-+	.reg_bits = 8, .val_bits = 8,
-+};
-+
- static int __devinit tps_65023_probe(struct i2c_client *client,
- 				     const struct i2c_device_id *id)
- {
-@@ -488,7 +435,13 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
- 	if (!tps)
- 		return -ENOMEM;
- 
--	mutex_init(&tps->io_lock);
-+	tps->regmap = regmap_init(&client->dev, &tps65023_regmap_config);
-+	if (IS_ERR(tps->regmap)) {
-+		error = PTR_ERR(tps->regmap);
-+		dev_err(&client->dev, "Failed to allocate register map: %d\n",
-+			error);
-+		goto fail_alloc;
-+	}
- 
- 	/* common for all regulators */
- 	tps->client = client;
-@@ -523,10 +476,12 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
- 
- 	return 0;
- 
-- fail:
-+fail:
- 	while (--i >= 0)
- 		regulator_unregister(tps->rdev[i]);
- 
-+	regmap_free(tps->regmap);
-+fail_alloc:
- 	kfree(tps);
- 	return error;
- }
-@@ -545,6 +500,7 @@ static int __devexit tps_65023_remove(struct i2c_client *client)
- 	for (i = 0; i < TPS65023_NUM_REGULATOR; i++)
- 		regulator_unregister(tps->rdev[i]);
- 
-+	regmap_free(tps->regmap);
- 	kfree(tps);
- 
- 	return 0;
--- 
-1.7.5.4
+How could a userspace script affect the internal behaviour of
+spin_lock() and the spinlock lockup detector?
 
+> Latest mainline kernel with omap2plus_defconfig and below simple script
+> to trigger the failure.
+>
+> -------------
+> while true
+> do
+> echo 0 > /sys/devices/system/cpu/cpu1/online
+> echo 1 > /sys/devices/system/cpu/cpu1/online
+> done
+
+Thanks, I'll give it a go here and see if I can debug it further.
