@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751338Ab1FTEsI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 00:48:08 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45902 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751Ab1FTEsE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 00:48:04 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DFED0A4.1060002@jp.fujitsu.com>
-Date: Mon, 20 Jun 2011 13:46:28 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH 1/8] x86, mce: stop calling del_timer_sync() from interrupt
-References: <4DFB1242.90404@jp.fujitsu.com> <4DFB1304.10604@jp.fujitsu.com> <20110617135634.GF18054@aftab>
-In-Reply-To: <20110617135634.GF18054@aftab>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751184Ab1FTErT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 00:47:19 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:34084 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750746Ab1FTErS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 00:47:18 -0400
+Date: Mon, 20 Jun 2011 14:47:05 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: linux-next: manual merge of the rcu tree with the tip tree
+Message-Id: <20110620144705.c9a5513b.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__20_Jun_2011_14_47_05_+1000_1QboXMiol9YMg_sE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/17 22:56), Borislav Petkov wrote:
-> On Fri, Jun 17, 2011 at 04:40:36AM -0400, Hidetoshi Seto wrote:
->> Function del_timer_sync() has WARN_ON(in_irq()) in it because
->> calling it from interrupt context can cause deadlock if it
->> interrupts the target timer running.
-> 
-> No need to explain the del_timer_sync() code here - just say that it's
-> not allowed to call it from an IRQ context.
-> 
+--Signature=_Mon__20_Jun_2011_14_47_05_+1000_1QboXMiol9YMg_sE
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'd like to add "why not allowed" in brief too...
-Anyway I'll update the patch description and make it short.
+Hi Paul,
 
->> only few MCE geeks experience this warning on write.
-> 
-> MCE geeks ??? I wonder who those are :-)
+Today's linux-next merge of the rcu tree got conflicts in
+kernel/rcutree.c and kernel/rcutree_plugin.h between various commits from
+the tip tree and various commits from the rcu tree.
 
-I'm just joking ;-)
+I can't easily resolve these, so I have dropped the rcu tree for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
->> +/* Must not be called from interrupt where del_timer_sync() can deadlock */
->> +static void mce_timer_delete_all(void)
->> +{
->> +	int cpu;
->> +
->> +	for_each_online_cpu(cpu) {
->> +		if (mce_available(&per_cpu(cpu_info, cpu)))
->> +			del_timer_sync(&per_cpu(mce_timer, cpu));
->> +	}
->> +}
-> 
-> You're adding the mce_available(..) check just to remove it in the next
-> patch. Since all those sysfs nodes are behind such a check, there's no
-> need for it here too.
+--Signature=_Mon__20_Jun_2011_14_47_05_+1000_1QboXMiol9YMg_sE
+Content-Type: application/pgp-signature
 
-Maybe it would be better to change the order of patches to make
-this fix after the removal of unnecessary mce_available().
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJN/tDJAAoJEDMEi1NhKgbsQsUIAImC8bzTGHGr7mIq3+97L7Po
+aCAJH0q1QFyJGDhMtwd03pc8y8H19OYaIJBzXOVGhJUxknl3Xxtm9BOCgtkplXP+
+0njNhJ/cfDgne8NnSNKiumVXfr+brwJiC/BM8Q1TpB3awniNbrI3I+9w2y8+ybYK
+AWV2cUihdWv6deu+enGXttcYDYrimAQhUiWERvXB/sRtMcCe4Hmkjg+WSx5Iy1MD
+f0Ln9Z3SHZomLiJ5aXllw9W1nymZ9jd0K6B2EpvbCvVh09hy/mdm82FnvBjlREId
+xznBxGS+rCykKxMJqzDCM64PEYdSMkR2Qk3vvNcbbtWU/YBWYvwprmMD173n6oM=
+=dPFc
+-----END PGP SIGNATURE-----
 
-Thanks,
-H.Seto
-
-
+--Signature=_Mon__20_Jun_2011_14_47_05_+1000_1QboXMiol9YMg_sE--
