@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab1FTRTp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 13:19:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57312 "EHLO mx1.redhat.com"
+	id S1755550Ab1FTRXh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 13:23:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49860 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755502Ab1FTRTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 13:19:43 -0400
-Message-ID: <4DFF8106.8090702@redhat.com>
-Date: Tue, 21 Jun 2011 01:19:02 +0800
+	id S1755310Ab1FTRXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 13:23:35 -0400
+Message-ID: <4DFF8207.5080700@redhat.com>
+Date: Tue, 21 Jun 2011 01:23:19 +0800
 From: Cong Wang <amwang@redhat.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: Re: [PATCH 1/3] mm: completely disable THP by transparent_hugepage=never
-References: <1308587683-2555-1-git-send-email-amwang@redhat.com> <20110620165844.GA9396@suse.de> <4DFF7E3B.1040404@redhat.com> <4DFF7F0A.8090604@redhat.com>
-In-Reply-To: <4DFF7F0A.8090604@redhat.com>
+Subject: Re: [PATCH 2/3] mm: make the threshold of enabling THP configurable
+References: <1308587683-2555-1-git-send-email-amwang@redhat.com>	 <1308587683-2555-2-git-send-email-amwang@redhat.com> <1308589163.11430.245.camel@nimitz>
+In-Reply-To: <1308589163.11430.245.camel@nimitz>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年06月21日 01:10, Rik van Riel 写道:
-> On 06/20/2011 01:07 PM, Cong Wang wrote:
->> 于 2011年06月21日 00:58, Mel Gorman 写道:
->>> On Tue, Jun 21, 2011 at 12:34:28AM +0800, Amerigo Wang wrote:
->>>> transparent_hugepage=never should mean to disable THP completely,
->>>> otherwise we don't have a way to disable THP completely.
->>>> The design is broken.
->>>>
->>>
->>> I don't get why it's broken. Why would the user be prevented from
->>> enabling it at runtime?
->>>
->>
->> We need to a way to totally disable it, right? Otherwise, when I configure
->> THP in .config, I always have THP initialized even when I pass "=never".
->>
->> For me, if you don't provide such way to disable it, it is not flexible.
->>
->> I meet this problem when I try to disable THP in kdump kernel, there is
->> no user of THP in kdump kernel, THP is a waste for kdump kernel. This is
->> why I need to find a way to totally disable it.
+于 2011年06月21日 00:59, Dave Hansen 写道:
+> On Tue, 2011-06-21 at 00:34 +0800, Amerigo Wang wrote:
+>> +config TRANSPARENT_HUGEPAGE_THRESHOLD
+>> +       depends on TRANSPARENT_HUGEPAGE
+>> +       int "The minimal threshold of enabling Transparent Hugepage"
+>> +       range 512 8192
+>> +       default "512"
+>> +       help
+>> +         The threshold of enabling Transparent Huagepage automatically,
+>> +         in Mbytes, below this value, Transparent Hugepage will be disabled
+>> +         by default during boot.
 >
-> What you have not explained yet is why having THP
-> halfway initialized (but not used, and without a
-> khugepaged thread) is a problem at all.
+> It makes some sense to me that there would _be_ a threshold, simply
+> because you need some space to defragment things.  But, I can't imagine
+> any kind of user having *ANY* kind of idea what to set this to.  Could
+> we add some text to this?  Maybe:
 >
-> Why is it a problem for you?
+>          Transparent hugepages are created by moving other pages out of
+>          the way to create large, contiguous swaths of free memory.
+>          However, some memory on a system can not be easily moved.  It is
+>          likely on small systems that this unmovable memory will occupy a
+>          large portion of total memory, which makes even attempting to
+>          create transparent hugepages very expensive.
+>
+>          If you are unsure, set this to the smallest possible value.
+>
+>          To override this at boot, use the $FOO boot command-line option.
+>
 
-It occupies some memory, memory is valuable in kdump kernel (usually
-only 128M). :) Since I am sure no one will use it, why do I still need
-to initialize it at all?
+Yeah, I totally agree to improve the help message as you said,
+please forgive a non-English speaker. ;)
+
+> I'm also not sure putting a ceiling on this makes a lot of sense.
+> What's the logic behind that?  I know it would be a mess to expose it to
+> users, but shouldn't this be a per-zone limit, logically?  Seems like a
+> 8GB system would have similar issues to a two-numa-node 16GB system.
+>
+
+I am not sure about this, since I am new to THP, I just replaced
+the hard-code 512 with a Kconfig var. But I am certainly open
+to improve this as you said if Andrea agrees.
 
 Thanks.
