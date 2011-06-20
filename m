@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516Ab1FTRTn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 13:19:43 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:47037 "EHLO e2.ny.us.ibm.com"
+	id S1755536Ab1FTRTp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 13:19:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57312 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754947Ab1FTRTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 13:19:42 -0400
-Message-ID: <4DFF80FD.8080600@linux.vnet.ibm.com>
-Date: Mon, 20 Jun 2011 22:48:53 +0530
-From: deepthi <deepthi@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	id S1755502Ab1FTRTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 13:19:43 -0400
+Message-ID: <4DFF8106.8090702@redhat.com>
+Date: Tue, 21 Jun 2011 01:19:02 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: linuxppc-dev@ozlabs.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf_events: Enable idle state tracing for pseries (ppc64)
-References: <20110601123554.GA12492@deepthi.in.ibm.com> <1308284659.32158.4.camel@pasglop>
-In-Reply-To: <1308284659.32158.4.camel@pasglop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Rik van Riel <riel@redhat.com>
+CC: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [PATCH 1/3] mm: completely disable THP by transparent_hugepage=never
+References: <1308587683-2555-1-git-send-email-amwang@redhat.com> <20110620165844.GA9396@suse.de> <4DFF7E3B.1040404@redhat.com> <4DFF7F0A.8090604@redhat.com>
+In-Reply-To: <4DFF7F0A.8090604@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 17 June 2011 09:54 AM, Benjamin Herrenschmidt wrote:
-> On Wed, 2011-06-01 at 18:05 +0530, Deepthi Dharwar wrote:
->> Hi,
+于 2011年06月21日 01:10, Rik van Riel 写道:
+> On 06/20/2011 01:07 PM, Cong Wang wrote:
+>> 于 2011年06月21日 00:58, Mel Gorman 写道:
+>>> On Tue, Jun 21, 2011 at 12:34:28AM +0800, Amerigo Wang wrote:
+>>>> transparent_hugepage=never should mean to disable THP completely,
+>>>> otherwise we don't have a way to disable THP completely.
+>>>> The design is broken.
+>>>>
+>>>
+>>> I don't get why it's broken. Why would the user be prevented from
+>>> enabling it at runtime?
+>>>
 >>
->> Please find below a patch, which has perf_events added for pseries (ppc64)
->> platform in order to emit the trace required for perf timechart. 
->> It essentially enables perf timechart for pseries platfrom to analyse
->> power savings events like cpuidle states.
-> 
-> Unless I'm mistaken, you added traces to dedicated CPU idle sleep but
-> not shared processor. Any reason ?
-> 
-Yes, the traces were added only to dedicated CPU idle sleep and not for 
-shared processor. This was added only for RFC purpose, and looking for 
-comments from trace implementation point of view. This can be
-easily extended to the latter too.
+>> We need to a way to totally disable it, right? Otherwise, when I configure
+>> THP in .config, I always have THP initialized even when I pass "=never".
+>>
+>> For me, if you don't provide such way to disable it, it is not flexible.
+>>
+>> I meet this problem when I try to disable THP in kdump kernel, there is
+>> no user of THP in kdump kernel, THP is a waste for kdump kernel. This is
+>> why I need to find a way to totally disable it.
+>
+> What you have not explained yet is why having THP
+> halfway initialized (but not used, and without a
+> khugepaged thread) is a problem at all.
+>
+> Why is it a problem for you?
 
-> Also I don't really know that tracing stuff but what's the point of
-> having start/end _and trace_cpu_idle if you're going to always start &
-> end around a single occurence of trace_cpu_idle ?
-> 
-power_start/end are the APIs that were used initially
-and they are going to be deprecated in the upcoming kernel releases.
-trace_cpu_idle call is going to replace power start/end routines. 
-To maintain backward compatibility and uniformity, both the routines 
-have been used.
-(ref:https://lkml.org/lkml/2010/11/14/60)
+It occupies some memory, memory is valuable in kdump kernel (usually
+only 128M). :) Since I am sure no one will use it, why do I still need
+to initialize it at all?
 
-> Wouldn't there be a way to start/end and then trace the snooze and
-> subsequent cede within the same start/end section or that makes no
-> sense ?
-> 
-We wanted to find the residency time of both Snooze as well as cede 
-separately. Knowing this will help us tweak our cpuidle code. So, both 
-have been captured separately.
-
-> Also would there be any interest in doing the tracing more generically
-> in idle.c ?
-> 
-Yes, this tracing is already implemented for Intel platform. This would
-be a part of cpuidle framework. Going further, once the power cpuidle 
-framework is ported and ready, we will extend this trace there as well.
-(ref:https://lkml.org/lkml/2011/6/7/375)
-
-> Cheers,
-> Ben.
-> 
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
-
-Regards,
-Deepthi
-
+Thanks.
