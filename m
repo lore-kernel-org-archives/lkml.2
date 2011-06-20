@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151Ab1FTMzB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 08:55:01 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38326 "EHLO
+	id S1754181Ab1FTMzE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 08:55:04 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38333 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753835Ab1FTMy5 (ORCPT
+	by vger.kernel.org with ESMTP id S1753708Ab1FTMy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 08:54:57 -0400
+	Mon, 20 Jun 2011 08:54:58 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: linux-kernel@vger.kernel.org
 Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
@@ -14,9 +14,9 @@ Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
         Lars-Peter Clausen <lars@metafoo.de>,
         Graeme Gregory <gg@slimlogic.co.uk>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/8] regmap: Add I2C bus support
-Date: Mon, 20 Jun 2011 13:54:43 +0100
-Message-Id: <1308574489-31322-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 3/8] regmap: Add SPI bus support
+Date: Mon, 20 Jun 2011 13:54:44 +0100
+Message-Id: <1308574489-31322-3-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1308574489-31322-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 References: <20110620124608.GB31140@opensource.wolfsonmicro.com>
@@ -31,28 +31,27 @@ use any of the bus until a device initialises a register map.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/regmap/Makefile     |    2 +-
- drivers/regmap/regmap-i2c.c |  112 +++++++++++++++++++++++++++++++++++++++++++
- drivers/regmap/regmap.c     |    4 +-
- 3 files changed, 115 insertions(+), 3 deletions(-)
- create mode 100644 drivers/regmap/regmap-i2c.c
+ drivers/regmap/Makefile     |    1 +
+ drivers/regmap/regmap-spi.c |   75 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 76 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/regmap/regmap-spi.c
 
 diff --git a/drivers/regmap/Makefile b/drivers/regmap/Makefile
-index 1e5037e..641c20a 100644
+index 641c20a..74c6680 100644
 --- a/drivers/regmap/Makefile
 +++ b/drivers/regmap/Makefile
-@@ -1,2 +1,2 @@
+@@ -1,2 +1,3 @@
  obj-$(CONFIG_REGMAP) += regmap.o
--
-+obj-$(CONFIG_I2C) += regmap-i2c.o
-diff --git a/drivers/regmap/regmap-i2c.c b/drivers/regmap/regmap-i2c.c
+ obj-$(CONFIG_I2C) += regmap-i2c.o
++obj-$(CONFIG_SPI) += regmap-spi.o
+diff --git a/drivers/regmap/regmap-spi.c b/drivers/regmap/regmap-spi.c
 new file mode 100644
-index 0000000..4a61560
+index 0000000..45fe4c4
 --- /dev/null
-+++ b/drivers/regmap/regmap-i2c.c
-@@ -0,0 +1,112 @@
++++ b/drivers/regmap/regmap-spi.c
+@@ -0,0 +1,75 @@
 +/*
-+ * Register map access API - I2C support
++ * Register map access API - SPI support
 + *
 + * Copyright 2011 Wolfson Microelectronics plc
 + *
@@ -64,127 +63,68 @@ index 0000000..4a61560
 + */
 +
 +#include <linux/regmap.h>
-+#include <linux/i2c.h>
++#include <linux/spi/spi.h>
 +
-+static int regmap_i2c_write(struct device *dev, const void *data, size_t count)
++static int regmap_spi_write(struct device *dev, const void *data, size_t count)
 +{
-+	struct i2c_client *i2c = to_i2c_client(dev);
-+	int ret;
++	struct spi_device *spi = to_spi_device(dev);
 +
-+	ret = i2c_master_send(i2c, data, count);
-+	if (ret == count)
-+		return 0;
-+	else if (ret < 0)
-+		return ret;
-+	else
-+		return -EIO;
++	return spi_write(spi, data, count);
 +}
 +
-+static int regmap_i2c_gather_write(struct device *dev,
-+				   const void *reg, size_t reg_size,
-+				   const void *val, size_t val_size)
++static int regmap_spi_gather_write(struct device *dev,
++				   const void *reg, size_t reg_len,
++				   const void *val, size_t val_len)
 +{
-+	struct i2c_client *i2c = to_i2c_client(dev);
-+	struct i2c_msg xfer[2];
-+	int ret;
++	struct spi_device *spi = to_spi_device(dev);
++	struct spi_message m;
++	struct spi_transfer t[2];
 +
-+	/* If the I2C controller can't do a gather tell the core, it
-+	 * will substitute in a linear write for us.
-+	 */
-+	if (!i2c_check_functionality(i2c->adapter, I2C_FUNC_PROTOCOL_MANGLING))
-+		return -ENOTSUPP;
++	spi_message_init(&m);
 +
-+	xfer[0].addr = i2c->addr;
-+	xfer[0].flags = 0;
-+	xfer[0].len = reg_size;
-+	xfer[0].buf = (void *)reg;
++	memset(&t, 0, sizeof(t));
 +
-+	xfer[1].addr = i2c->addr;
-+	xfer[1].flags = I2C_M_NOSTART;
-+	xfer[1].len = val_size;
-+	xfer[1].buf = (void *)val;
++	t[0].tx_buf = reg;
++	t[0].len = reg_len;
++	spi_message_add_tail(&t[0], &m);
 +
-+	ret = i2c_transfer(i2c->adapter, xfer, 2);
-+	if (ret == 2)
-+		return 0;
-+	if (ret < 0)
-+		return ret;
-+	else
-+		return -EIO;
++	t[1].tx_buf = val;
++	t[1].len = val_len;
++	spi_message_add_tail(&t[0], &m);
++
++	return spi_sync(spi, &m);
 +}
 +
-+static int regmap_i2c_read(struct device *dev,
++static int regmap_spi_read(struct device *dev,
 +			   const void *reg, size_t reg_size,
 +			   void *val, size_t val_size)
 +{
-+	struct i2c_client *i2c = to_i2c_client(dev);
-+	struct i2c_msg xfer[2];
-+	int ret;
++	struct spi_device *spi = to_spi_device(dev);
 +
-+	if (!i2c_check_functionality(i2c->adapter, I2C_FUNC_PROTOCOL_MANGLING))
-+		return -ENOTSUPP;
-+
-+	xfer[0].addr = i2c->addr;
-+	xfer[0].flags = 0;
-+	xfer[0].len = reg_size;
-+	xfer[0].buf = (void *)reg;
-+
-+	xfer[1].addr = i2c->addr;
-+	xfer[1].flags = I2C_M_RD;
-+	xfer[1].len = val_size;
-+	xfer[1].buf = val;
-+
-+	ret = i2c_transfer(i2c->adapter, xfer, 2);
-+	if (ret == 2)
-+		return 0;
-+	else if (ret < 0)
-+		return ret;
-+	else
-+		return -EIO;
++	return spi_write_then_read(spi, reg, reg_size, val, val_size);
 +}
 +
-+static struct regmap_bus regmap_i2c = {
-+	.type = &i2c_bus_type,
-+	.write = regmap_i2c_write,
-+	.gather_write = regmap_i2c_gather_write,
-+	.read = regmap_i2c_read,
++static struct regmap_bus regmap_spi = {
++	.type = &spi_bus_type,
++	.write = regmap_spi_write,
++	.gather_write = regmap_spi_gather_write,
++	.read = regmap_spi_read,
 +	.owner = THIS_MODULE,
++	.read_flag_in_reg = true,
 +};
 +
-+static int __init regmap_i2c_init(void)
++static int __init regmap_spi_init(void)
 +{
-+	regmap_add_bus(&regmap_i2c);
++	regmap_add_bus(&regmap_spi);
 +	return 0;
 +}
-+postcore_initcall(regmap_i2c_init);
++postcore_initcall(regmap_spi_init);
 +
-+static void __exit regmap_i2c_exit(void)
++static void __exit regmap_spi_exit(void)
 +{
-+	regmap_del_bus(&regmap_i2c);
++	regmap_del_bus(&regmap_spi);
 +}
-+module_exit(regmap_i2c_exit);
-diff --git a/drivers/regmap/regmap.c b/drivers/regmap/regmap.c
-index a8610c7..896b710 100644
---- a/drivers/regmap/regmap.c
-+++ b/drivers/regmap/regmap.c
-@@ -461,7 +461,7 @@ out:
- }
- EXPORT_SYMBOL_GPL(regmap_update_bits);
- 
--int regmap_add_bus(struct regmap_bus *bus)
-+void regmap_add_bus(struct regmap_bus *bus)
- {
- 	mutex_lock(&regmap_bus_lock);
- 	list_add(&bus->list, &regmap_bus_list);
-@@ -469,7 +469,7 @@ int regmap_add_bus(struct regmap_bus *bus)
- }
- EXPORT_SYMBOL_GPL(regmap_add_bus);
- 
--int regmap_del_bus(struct regmap_bus *bus)
-+void regmap_del_bus(struct regmap_bus *bus)
- {
- 	mutex_lock(&regmap_bus_lock);
- 	list_del(&bus->list);
++module_exit(regmap_spi_exit);
 -- 
 1.7.5.4
 
