@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756123Ab1FTWQt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 18:16:49 -0400
-Received: from claw.goop.org ([74.207.240.146]:53651 "EHLO claw.goop.org"
+	id S1756101Ab1FTWPm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 18:15:42 -0400
+Received: from claw.goop.org ([74.207.240.146]:53652 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755990Ab1FTWPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755989Ab1FTWPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 Jun 2011 18:15:30 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: Xen Devel <Xen-devel@lists.xensource.com>
@@ -12,9 +12,9 @@ Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 09/15] xen/trace: add tlb flush tracepoints
-Date: Mon, 20 Jun 2011 15:15:05 -0700
-Message-Id: <4db3e32a6b21efdb4d82646816ddb1bb82ff2259.1308607697.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 10/15] xen/mmu: use extend_args for more mmuext updates
+Date: Mon, 20 Jun 2011 15:15:06 -0700
+Message-Id: <33d3519a9483d932335b36ff25b980604d32f7ea.1308607697.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <cover.1308607697.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1308607697.git.jeremy.fitzhardinge@citrix.com>
@@ -28,109 +28,85 @@ From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/xen/mmu.c         |    8 +++++++
- include/trace/events/xen.h |   48 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 56 insertions(+), 0 deletions(-)
+ arch/x86/xen/mmu.c |   42 +++++++++++++++++++++++++++---------------
+ 1 files changed, 27 insertions(+), 15 deletions(-)
 
 diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 8aaa398..ad8a226 100644
+index ad8a226..112259f 100644
 --- a/arch/x86/xen/mmu.c
 +++ b/arch/x86/xen/mmu.c
-@@ -1221,6 +1221,8 @@ static void xen_flush_tlb(void)
- 	struct mmuext_op *op;
- 	struct multicall_space mcs;
+@@ -228,6 +228,24 @@ static void xen_extend_mmu_update(const struct mmu_update *update)
+ 	*u = *update;
+ }
  
-+	trace_xen_mmu_flush_tlb(0);
++static void xen_extend_mmuext_op(const struct mmuext_op *op)
++{
++	struct multicall_space mcs;
++	struct mmuext_op *u;
 +
- 	preempt_disable();
- 
- 	mcs = xen_mc_entry(sizeof(*op));
-@@ -1239,6 +1241,8 @@ static void xen_flush_tlb_single(unsigned long addr)
- 	struct mmuext_op *op;
- 	struct multicall_space mcs;
- 
-+	trace_xen_mmu_flush_tlb_single(addr);
++	mcs = xen_mc_extend_args(__HYPERVISOR_mmuext_op, sizeof(*u));
 +
- 	preempt_disable();
- 
- 	mcs = xen_mc_entry(sizeof(*op));
-@@ -1261,6 +1265,8 @@ static void xen_flush_tlb_others(const struct cpumask *cpus,
- 	} *args;
- 	struct multicall_space mcs;
- 
-+	trace_xen_mmu_flush_tlb_others(cpus, mm, va);
++	if (mcs.mc != NULL) {
++		mcs.mc->args[1]++;
++	} else {
++		mcs = __xen_mc_entry(sizeof(*u));
++		MULTI_mmuext_op(mcs.mc, mcs.args, 1, NULL, DOMID_SELF);
++	}
 +
- 	if (cpumask_empty(cpus))
- 		return;		/* nothing to do */
++	u = mcs.args;
++	*u = *op;
++}
++
+ static void xen_set_pmd_hyper(pmd_t *ptr, pmd_t val)
+ {
+ 	struct mmu_update u;
+@@ -809,14 +827,12 @@ static void xen_pte_unlock(void *v)
  
-@@ -1300,6 +1306,8 @@ static void __xen_write_cr3(bool kernel, unsigned long cr3)
- 	struct multicall_space mcs;
+ static void xen_do_pin(unsigned level, unsigned long pfn)
+ {
+-	struct mmuext_op *op;
+-	struct multicall_space mcs;
++	struct mmuext_op op;
+ 
+-	mcs = __xen_mc_entry(sizeof(*op));
+-	op = mcs.args;
+-	op->cmd = level;
+-	op->arg1.mfn = pfn_to_mfn(pfn);
+-	MULTI_mmuext_op(mcs.mc, op, 1, NULL, DOMID_SELF);
++	op.cmd = level;
++	op.arg1.mfn = pfn_to_mfn(pfn);
++
++	xen_extend_mmuext_op(&op);
+ }
+ 
+ static int xen_pin_page(struct mm_struct *mm, struct page *page,
+@@ -1302,8 +1318,7 @@ static void set_current_cr3(void *v)
+ 
+ static void __xen_write_cr3(bool kernel, unsigned long cr3)
+ {
+-	struct mmuext_op *op;
+-	struct multicall_space mcs;
++	struct mmuext_op op;
  	unsigned long mfn;
  
-+	trace_xen_mmu_write_cr3(kernel, cr3);
-+
- 	if (cr3)
- 		mfn = pfn_to_mfn(PFN_DOWN(cr3));
- 	else
-diff --git a/include/trace/events/xen.h b/include/trace/events/xen.h
-index b1f73c4..7d88f7d 100644
---- a/include/trace/events/xen.h
-+++ b/include/trace/events/xen.h
-@@ -405,6 +405,54 @@ TRACE_EVENT(xen_mmu_pgd_unpin,
- 	    TP_printk("mm %p pgd %p", __entry->mm, __entry->pgd)
- 	);
+ 	trace_xen_mmu_write_cr3(kernel, cr3);
+@@ -1315,13 +1330,10 @@ static void __xen_write_cr3(bool kernel, unsigned long cr3)
  
-+TRACE_EVENT(xen_mmu_flush_tlb,
-+	    TP_PROTO(int x),
-+	    TP_ARGS(x),
-+	    TP_STRUCT__entry(__array(char, x, 0)),
-+	    TP_fast_assign((void)x),
-+	    TP_printk("%s", "")
-+	);
-+
-+TRACE_EVENT(xen_mmu_flush_tlb_single,
-+	    TP_PROTO(unsigned long addr),
-+	    TP_ARGS(addr),
-+	    TP_STRUCT__entry(
-+		    __field(unsigned long, addr)
-+		    ),
-+	    TP_fast_assign(__entry->addr = addr),
-+	    TP_printk("addr %lx", __entry->addr)
-+	);
-+
-+TRACE_EVENT(xen_mmu_flush_tlb_others,
-+	    TP_PROTO(const struct cpumask *cpus, struct mm_struct *mm,
-+		     unsigned long addr),
-+	    TP_ARGS(cpus, mm, addr),
-+	    TP_STRUCT__entry(
-+		    __field(unsigned, ncpus)
-+		    __field(struct mm_struct *, mm)
-+		    __field(unsigned long, addr)
-+		    ),
-+	    TP_fast_assign(__entry->ncpus = cpumask_weight(cpus);
-+			   __entry->mm = mm;
-+			   __entry->addr = addr),
-+	    TP_printk("ncpus %d mm %p addr %lx",
-+		      __entry->ncpus, __entry->mm, __entry->addr)
-+	);
-+
-+TRACE_EVENT(xen_mmu_write_cr3,
-+	    TP_PROTO(bool kernel, unsigned long cr3),
-+	    TP_ARGS(kernel, cr3),
-+	    TP_STRUCT__entry(
-+		    __field(bool, kernel)
-+		    __field(unsigned long, cr3)
-+		    ),
-+	    TP_fast_assign(__entry->kernel = kernel;
-+			   __entry->cr3 = cr3),
-+	    TP_printk("%s cr3 %lx",
-+		      __entry->kernel ? "kernel" : "user", __entry->cr3)
-+	);
-+
-+
- /* CPU */
- TRACE_EVENT(xen_cpu_write_ldt_entry,
- 	    TP_PROTO(struct desc_struct *dt, int entrynum, u64 desc),
+ 	WARN_ON(mfn == 0 && kernel);
+ 
+-	mcs = __xen_mc_entry(sizeof(*op));
++	op.cmd = kernel ? MMUEXT_NEW_BASEPTR : MMUEXT_NEW_USER_BASEPTR;
++	op.arg1.mfn = mfn;
+ 
+-	op = mcs.args;
+-	op->cmd = kernel ? MMUEXT_NEW_BASEPTR : MMUEXT_NEW_USER_BASEPTR;
+-	op->arg1.mfn = mfn;
+-
+-	MULTI_mmuext_op(mcs.mc, op, 1, NULL, DOMID_SELF);
++	xen_extend_mmuext_op(&op);
+ 
+ 	if (kernel) {
+ 		percpu_write(xen_cr3, cr3);
 -- 
 1.7.5.4
 
