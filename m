@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378Ab1FTQEL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 12:04:11 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:26539
-	"EHLO CH1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753456Ab1FTQD7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 12:03:59 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LN3JAD-01-4PW-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH] perf tools: Don't corrupt PERF-VERSION-FILE with make debug
-Date: Mon, 20 Jun 2011 17:53:48 +0200
-Message-ID: <1308585228-3982-1-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.5.3
+	id S1752786Ab1FTP4c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 11:56:32 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44800 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751356Ab1FTP4a convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 11:56:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+In-Reply-To: <20110619235147.GQ11521@ZenIV.linux.org.uk>
+References: <20110619235147.GQ11521@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 20 Jun 2011 08:55:38 -0700
+Message-ID: <BANLkTimdPT2dbTToTHGVzJr=f3xPKT9tZw@mail.gmail.com>
+Subject: Re: [RFC] get_write_access()/deny_write_access() without inode->i_lock
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-arch@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When running make with debug option -d the PERF-VERSION-FILE gets
-corrupted because make is noisy:
+On Sun, Jun 19, 2011 at 4:51 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>        I'm seriously tempted to throw away i_lock uses in
+> {get,deny}_write_access(), as in the patch below.  The question is, how
+> badly will it suck on various architectures?  I'd expect it to be not
+> worse than the current version, but...
 
- PERF-VERSION-FILE:2: *** missing separator.  Stop.
+It might be worse, because doing a read-before-write can turn a single
+cache operation ("get for write") into multiple cache operations ("get
+for read" followed by "make exclusive").
 
-Fixing this by not passing the make flags in the MAKEFLAGS environment
-variable to the sub-make that generates the version string.
+We had that exact issue with some other users of the "read + cmpxchg" model.
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- tools/perf/util/PERF-VERSION-GEN |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The way we fixed it before was to simply omit the read, and turn that
+into a "guess".
 
-diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
-index 9c5fb4d..ad73300 100755
---- a/tools/perf/util/PERF-VERSION-GEN
-+++ b/tools/perf/util/PERF-VERSION-GEN
-@@ -23,7 +23,7 @@ if test -d ../../.git -o -f ../../.git &&
- then
- 	VN=$(echo "$VN" | sed -e 's/-/./g');
- else
--	VN=$(make -sC ../.. kernelversion)
-+	VN=$(MAKEFLAGS= make -sC ../.. kernelversion)
- fi
- 
- VN=$(expr "$VN" : v*'\(.*\)')
--- 
-1.7.5.3
+In other words, I'd suggest you get rid of the "atomic_read()"
+entirely, and just assume that the write counter was zero to begin
+with. Even if that is a wrong assumption (and it probably isn't all
+that wrong), it can actually be more efficient to essentiall go
+through the loop twice: the first time yoou use the cmpxchg as just an
+odd way to do a read. It basically bcomes a read-with-write-intent,
+and solves the cacheline issue.
 
+At that point, it's likely faster in pretty much all cases except for
+UP (where the spinlocks just go away, and "cmpxchg" is slower than
+normal code).
 
+                  Linus
