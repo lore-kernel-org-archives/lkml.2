@@ -1,74 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755731Ab1FTR2p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 13:28:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23035 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755195Ab1FTR2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 13:28:43 -0400
-Message-ID: <4DFF8327.1090203@redhat.com>
-Date: Mon, 20 Jun 2011 13:28:07 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1755777Ab1FTRex (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 13:34:53 -0400
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:48298 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755565Ab1FTRew (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 13:34:52 -0400
+Date: Mon, 20 Jun 2011 20:34:45 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Viliam Mateicka <viliam.mateicka@gmail.com>
+Cc: balbi@ti.com, Skacore Systems <skacore.systems@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] s3c2410_udc: fix custom UDC command handling
+Message-ID: <20110620173444.GG26623@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <Pine.LNX.4.44L0.1106201105430.2113-100000@iolanthe.rowland.org>
+ <20110620151522.GN14262@legolas.emea.dhcp.ti.com>
+ <BANLkTi=5S6bWs3jr9hTsg2=LXh4xKAprUA@mail.gmail.com>
+ <20110620153645.GQ14262@legolas.emea.dhcp.ti.com>
+ <BANLkTik-zdp57zTjrafR0jXGoJiq2hrm3g@mail.gmail.com>
+ <BANLkTi=tuh028X-Rr9i8ZF_B_Q6VBK2-Lw@mail.gmail.com>
+ <20110620160650.GA26623@legolas.emea.dhcp.ti.com>
+ <BANLkTi=nEma5muF9R3_QUzZWWJ64DW9Skw@mail.gmail.com>
+ <20110620170551.GE26623@legolas.emea.dhcp.ti.com>
+ <BANLkTinc-9hxLQ1Epf5=PoHvxtapfO7Vvg@mail.gmail.com>
 MIME-Version: 1.0
-To: Cong Wang <amwang@redhat.com>
-CC: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: Re: [PATCH 1/3] mm: completely disable THP by transparent_hugepage=never
-References: <1308587683-2555-1-git-send-email-amwang@redhat.com> <20110620165844.GA9396@suse.de> <4DFF7E3B.1040404@redhat.com> <4DFF7F0A.8090604@redhat.com> <4DFF8106.8090702@redhat.com>
-In-Reply-To: <4DFF8106.8090702@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IuhbYIxU28t+Kd57"
+Content-Disposition: inline
+In-Reply-To: <BANLkTinc-9hxLQ1Epf5=PoHvxtapfO7Vvg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2011 01:19 PM, Cong Wang wrote:
-> 于 2011年06月21日 01:10, Rik van Riel 写道:
->> On 06/20/2011 01:07 PM, Cong Wang wrote:
->>> 于 2011年06月21日 00:58, Mel Gorman 写道:
->>>> On Tue, Jun 21, 2011 at 12:34:28AM +0800, Amerigo Wang wrote:
->>>>> transparent_hugepage=never should mean to disable THP completely,
->>>>> otherwise we don't have a way to disable THP completely.
->>>>> The design is broken.
->>>>>
->>>>
->>>> I don't get why it's broken. Why would the user be prevented from
->>>> enabling it at runtime?
->>>>
->>>
->>> We need to a way to totally disable it, right? Otherwise, when I
->>> configure
->>> THP in .config, I always have THP initialized even when I pass "=never".
->>>
->>> For me, if you don't provide such way to disable it, it is not flexible.
->>>
->>> I meet this problem when I try to disable THP in kdump kernel, there is
->>> no user of THP in kdump kernel, THP is a waste for kdump kernel. This is
->>> why I need to find a way to totally disable it.
->>
->> What you have not explained yet is why having THP
->> halfway initialized (but not used, and without a
->> khugepaged thread) is a problem at all.
->>
->> Why is it a problem for you?
->
-> It occupies some memory, memory is valuable in kdump kernel (usually
-> only 128M). :) Since I am sure no one will use it, why do I still need
-> to initialize it at all?
 
-Lets take a look at how much memory your patches end
-up saving.
+--IuhbYIxU28t+Kd57
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-By bailing out earlier in hugepage_init, you end up
-saving 3 sysfs objects, one slab cache and a hash
-table with 1024 pointers.  That's a total of maybe
-10kB of memory on a 64 bit system.
+Hi,
 
-I'm not convinced that a 10kB memory reduction is
-worth the price of never being able to enable
-transparent hugepages when a system is booted with
-THP disabled...
+On Mon, Jun 20, 2011 at 07:27:18PM +0200, Viliam Mateicka wrote:
+> I wonder then, who applies the patch first. One ass can't stop
+> progress (was there some progress afterall ?) because of one
+> line-break (which git produces by default afterall) and several
+> non-conforming whitespace conversions. I think you should stop
+> replying to me, because I'm kinda starting to like trolling afterall.
 
+Look, maybe you're just new to git/linux and that's fine. The only
+problem we had from day one is that you have been a complete dick when
+replying.
+
+If you go that road, that's what you'll get in return.
+
+Just so you see the properly formatted patch, I'm quoting below. See
+that there's no line breaks introduced by git.
+
+commit c27c9b5312f4b2a7e66ee772943355d77fc2c550
+Author: Viliam Mateicka <viliam.mateicka@gmail.com>
+Date:   Mon Jun 20 19:08:27 2011 +0300
+
+    usb: gadget: s3c2410_udc: fix custom UDC command handling
+   =20
+    There is a bug in Samsung's UDC driver, which is
+    completely disabling the USB device when a custom
+    UDC command is used.
+   =20
+    Following patch seems to get the right=A0behavior
+    (e.g. enabling pull-up instead of disabling then
+    Vcc is applied).
+   =20
+    Signed-off-by: Viliam Mateicka <viliam.mateicka@gmail.com>
+   =20
+    [ balbi@ti.com : manually re-created the patch because
+    	author was unable to send a proper one ]
+   =20
+    Signed-off-by: Felipe Balbi <balbi@ti.com>
+
+diff --git a/drivers/usb/gadget/s3c2410_udc.c b/drivers/usb/gadget/s3c2410_=
+udc.c
+index 100f263..b6e1ca5 100644
+--- a/drivers/usb/gadget/s3c2410_udc.c
++++ b/drivers/usb/gadget/s3c2410_udc.c
+@@ -1567,7 +1567,7 @@ static void s3c2410_udc_command(enum s3c2410_udc_cmd_=
+e cmd)
+ 		return;
+=20
+ 	if (udc_info->udc_command) {
+-		udc_info->udc_command(S3C2410_UDC_P_DISABLE);
++		udc_info->udc_command(cmd);
+ 	} else if (gpio_is_valid(udc_info->pullup_pin)) {
+ 		int value;
+=20
+
+(if you see any line breaks that's your mailer, it's better to check
+=66rom the archives [1])
+
+[1] http://marc.info/?l=3Dlinux-usb
+
+--=20
+balbi
+
+--IuhbYIxU28t+Kd57
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN/4S0AAoJEAv8Txj19kN1ARYH/3Tcs/4gGVzeGgop6Rqc2gpG
+B9RDyqLtMuyTA96khUWMpNPTILUHHsBsB3eSnq7amLWDrWx4aRRBYp9AhokEGni9
+vVSv2C+TNrM7JVUN8khxA4lMtXLUfJ1ExvJO2wPgM1KDY/jdmXtmkWYzL4ZB4hXh
+yjnOPizKbqoSsuLtYpVBfu/DqSSZggxe9LDEoEc6JJJGP7iIB6RqjPMUr/S1WPTu
+cmWzFh6iHvrYG2yy6pvgM7GjvmewMTMeztuaNTEQidNBcWVtA6YWVTTJanGEDo6F
+QuySPHr5oFS5sRVquS3kHzTrEkPV5vAUigqW2wQQtvghlmDfbnVSmfk6IJ0Pbng=
+=lm4v
+-----END PGP SIGNATURE-----
+
+--IuhbYIxU28t+Kd57--
