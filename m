@@ -1,49 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756355Ab1FTWdk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 18:33:40 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:53980 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755338Ab1FTWdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 18:33:38 -0400
-Date: Mon, 20 Jun 2011 15:16:42 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Stefan Seyfried <stefan.seyfried@googlemail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [3.0-rc3] tree RCU boost vs hang notifier...
-Message-ID: <20110620221642.GD2933@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <BANLkTin2osfkSiu8maGmJAnzv4O5ODK0dw@mail.gmail.com>
- <20110614045150.GA2264@linux.vnet.ibm.com>
- <BANLkTinvygi9aSkFcnOs2CHCmExD2ixJuQ@mail.gmail.com>
- <20110614124048.GB2264@linux.vnet.ibm.com>
- <pan.2011.06.17.11.44.00@message-id.slipkonture.de>
+	id S1756172Ab1FTWRQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 18:17:16 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:2653 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756157Ab1FTWRL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 18:17:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=gwDye5mfXwmfz0AVvElbPJ9JvjXlcWxEPIhSt0Ke8HOluBYftr+/S46l5WwrdUJMDU
+         42GxhH2SxkbuuCJVhpqg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <pan.2011.06.17.11.44.00@message-id.slipkonture.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110620164504.GC4749@redhat.com>
+References: <20110620141631.GA4749@redhat.com> <BANLkTin9xgN0t4rn_Zf81TBdnLmJXPzNDT1fXtg3m64SnJVn5g@mail.gmail.com>
+ <20110620164504.GC4749@redhat.com>
+From: Justin TerAvest <teravest@google.com>
+Date: Mon, 20 Jun 2011 15:16:48 -0700
+Message-ID: <BANLkTik5+R3L5MQN9a4JVOL+Yt7y=72OsK0rDeAcNAJcaZKXsw@mail.gmail.com>
+Subject: Re: [PATCH] cfq: Fix starvation of async writes in presence of heavy
+ sync workload
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Tao Ma <tm@tao.ma>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 11:44:02AM +0000, Stefan Seyfried wrote:
-> On Tue, 14 Jun 2011 05:40:48 -0700, Paul E. McKenney wrote:
-> 
-> > On Tue, Jun 14, 2011 at 01:46:04PM +0800, Daniel J Blueman wrote:
-> >> Tested-by: Daniel J Blueman <daniel.blueman@gmail.com>
-> > 
-> > Thank you very much for testing this!
-> 
-> Hi Paul,
-> 
-> Will this also fix the constant system load of 1.0 or is this a different 
-> issue? (If it was, I'd need to report it properly ;)
+On Mon, Jun 20, 2011 at 9:45 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Mon, Jun 20, 2011 at 09:14:18AM -0700, Justin TerAvest wrote:
+>> On Mon, Jun 20, 2011 at 7:16 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+>> > In presence of heavy sync workload CFQ can starve asnc writes.
+>> > If one launches multiple readers (say 16), then one can notice
+>> > that CFQ can withhold dispatch of WRITEs for a very long time say
+>> > 200 or 300 seconds.
+>> >
+>> > Basically CFQ schedules an async queue but does not dispatch any
+>> > writes because it is waiting for exisintng sync requests in queue to
+>> > finish. While it is waiting, one or other reader gets queued up and
+>> > preempts the async queue. So we did schedule the async queue but never
+>> > dispatched anything from it. This can repeat for long time hence
+>> > practically starving Writers.
+>> >
+>> > This patch allows async queue to dispatch atleast 1 requeust once
+>> > it gets scheduled and denies preemption if async queue has been
+>> > waiting for sync requests to drain and has not been able to dispatch
+>> > a request yet.
+>> >
+>> > One concern with this fix is that how does it impact readers
+>> > in presence of heavy writting going on.
+>> >
+>> > I did a test where I launch firefox, load a website and close
+>> > firefox and measure the time. I ran the test 3 times and took
+>> > average.
+>> >
+>> > - Vanilla kernel time ~= 1 minute 40 seconds
+>> > - Patched kenrel time ~= 1 minute 35 seconds
+>> >
+>> > Basically it looks like that for this test times have not
+>> > changed much for this test. But I would not claim that it does
+>> > not impact reader's latencies at all. It might show up in
+>> > other workloads.
+>> >
+>> > I think we anyway need to fix writer starvation. If this patch
+>> > causes issues, then we need to look at reducing writer's
+>> > queue depth further to improve latencies for readers.
+>>
+>> Maybe we should be more specific about what it means to "fix writer starvation"
+>>
+>
+> Tao ma recently ran into issues with writer starvation. Here is
+> the lkml thread.
+>
+> https://lkml.org/lkml/2011/6/9/167
+>
+> I also ran some fio based scripts launching multiple readers
+> and multiple buffered writers and noticed that there are large
+> windows where we don't dispatch even a single request from
+> async queues. That's what starvation is. Time period for
+> not dispatching request was in the range of 200 seconds.
 
-Hello, Stefan,
+How do we establish what's acceptable? My complaint is that it's not
+obvious what tradeoffs to make in the I/O scheduler.
 
-Yes, it should also reduce the system load, given that the load
-calculations count tasks sleeping uninteruptably but not tasks
-sleeping interruptably.
+>
+>> This makes the preemption logic slightly harder to understand, and I'm
+>> concerned we'll keep making little adjustments like this to the
+>> scheduler.
+>
+> If you have other ideas for handling this, we can definitely give
+> it a try.
 
-							Thanx, Paul
+I haven't written out a case to prove it, but it seems like other
+preemption logic (like the cfq_rq_close() case) could also cause some
+requests to be starved indefinitely.
+
+I think if we want to make stronger guarantees about request
+starvation, we might have to rethink how preemption works.
+
+>
+> Thanks
+> Vivek
+>
+>>
+>> >
+>> > Reported-and-Tested-by: Tao Ma <tm@tao.ma>
+>> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+>> > ---
+>> >  block/cfq-iosched.c |    9 ++++++++-
+>> >  1 file changed, 8 insertions(+), 1 deletion(-)
+>> >
+>> > Index: linux-2.6/block/cfq-iosched.c
+>> > ===================================================================
+>> > --- linux-2.6.orig/block/cfq-iosched.c  2011-06-10 10:05:34.660781278 -0400
+>> > +++ linux-2.6/block/cfq-iosched.c       2011-06-20 08:29:13.328186380 -0400
+>> > @@ -3315,8 +3315,15 @@ cfq_should_preempt(struct cfq_data *cfqd
+>> >         * if the new request is sync, but the currently running queue is
+>> >         * not, let the sync request have priority.
+>> >         */
+>> > -       if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq))
+>> > +       if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq)) {
+>> > +               /*
+>> > +                * Allow atleast one dispatch otherwise this can repeat
+>> > +                * and writes can be starved completely
+>> > +                */
+>> > +               if (!cfqq->slice_dispatch)
+>> > +                       return false;
+>> >                return true;
+>> > +       }
+>> >
+>> >        if (new_cfqq->cfqg != cfqq->cfqg)
+>> >                return false;
+>> >
+>> >
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> > the body of a message to majordomo@vger.kernel.org
+>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> > Please read the FAQ at  http://www.tux.org/lkml/
+>> >
+>
