@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab1FUCwn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 22:52:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2821 "EHLO mx1.redhat.com"
+	id S1755339Ab1FUDDn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 23:03:43 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:47583 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753190Ab1FUCwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 22:52:42 -0400
-Message-ID: <4E000776.7000504@redhat.com>
-Date: Tue, 21 Jun 2011 10:52:38 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Dave Anderson <anderson@redhat.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
- physical addresses
-References: <818132268.99935.1308576273046.JavaMail.root@zmail05.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <818132268.99935.1308576273046.JavaMail.root@zmail05.collab.prod.int.phx2.redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1753773Ab1FUDDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 23:03:42 -0400
+Date: Tue, 21 Jun 2011 13:03:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: linux-next: build failure after merge of the mfd tree
+Message-Id: <20110621130331.368aaf74.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__21_Jun_2011_13_03_31_+1000_vreZH9ggnfM3zE.S"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年06月20日 21:24, Dave Anderson 写道:
->> On Mon, Jun 20, 2011 at 10:42:47, Amerigo Wang<amwang@redhat.com>  wrote:
->>> On Fri, Jun 17, 2011 at 5:55 PM, Petr Tesarik<ptesarik@suse.cz>  wrote:
->>> Dne PÃ¡ 17. Äervna 2011 11:30:32 Ingo Molnar napsal(a):
->>>> * Petr Tesarik<ptesarik@suse.cz>  wrote:
->>>>> This patch series enhances /dev/mem, so that read and write is
->>>>> possible at any address. The patchset includes actual
->>>>> implementation for x86.
->>>>
->>>> This series lacks a description of why this is desired.
->>>
->>> Hi Ingo,
->>>
->>>> My strong opinion is that it's not desired at all: /dev/mem never
->>>> worked beyond 4G addresses so by today it has become largely obsolete
->>>> and is on the way out really.
->>>>
->>>> I'm aware of these current /dev/mem uses:
->>>>
->>>>   - Xorg maps below 4G non-RAM addresses and the video BIOS
->>>>
->>>>   - It used to have some debugging role but these days kexec and kgdb
->>>>     has largely taken over that role - partly due to the 4G limit.
->>>
->>> It is still used as a "memory source" by Dave Anderson's crash utility for
->>> live examination of a running system. Redhat has "overcome" the /dev/mem
->>> deficiencies by writing an out-of-tree re-implementation of /dev/mem, which
->>> uses /dev/crash instead. As it is an "unnecessary duplication of an existing
->>> driver", this method was rejected by the project manager here at SUSE.
->>>
->>> The suggested alternative was to enhance (or fix) the existing driver. Without
->>> this patch series there is no way to access high memory. In conjunction with
->>> CONFIG_HIGHPTE, it makes the crash utility near to useless on anything with
->>> high memory, because crash can no longer translate virtual to physical
->>> addresses.
->>>
->>
->> How about /proc/kcore? AFAIK, it can access highmem, but Dave didn't consider
->> it for some reason.
->
-> I don't know what you mean by I "didn't consider it", because
-> the crash utility does support using /proc/kcore as an alternative
-> live memory source.
+--Signature=_Tue__21_Jun_2011_13_03_31_+1000_vreZH9ggnfM3zE.S
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sorry, I recall that in our last discussion you didn't
-mention this. But it is good to know that crash supports this!
+Hi Samuel,
 
->
-> The problem is that /proc/kcore can only access highmem if it
-> is mapped as kernel virtual address.  So it cannot read 32-bit
-> highmem PTE's, user-space memory, etc.
->
+After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-Hmm, looking at the code, you are right, it only has
-low memory in kernel space.
+drivers/mfd/wm831x-core.c: In function 'wm831x_device_init':
+drivers/mfd/wm831x-core.c:1507:12: error: 'WM831X_XTAL_ENA' undeclared (fir=
+st use in this function)
 
-But what's the problem of adding highmem into kcore? :-/
+Caused by commit e1af6eaa2160 ("mfd: Only register wm831x RTC device if
+the 32.768kHz crystal is enabled").
 
-Thanks.
+I have used the mfd tree from next-20110620 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__21_Jun_2011_13_03_31_+1000_vreZH9ggnfM3zE.S
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOAAoDAAoJEDMEi1NhKgbs4h4H/2Shpg6Qrpy+UQ90BujiXaEa
+5HOI0fZfh41w9BwILT/duZEcDGaKcMdpAOVJOHrdI4M1nR5p7DIi1CEv5VJtgoHE
+zRiY/4uRpNQtYbvy5woIIOxo44jkVQIJXLAKVMcWFyverQ8C1w+LF9/cvvgBtUhS
+ZON7LCVHXbiQYnnaVmfeNfp/VmRcbr18+xZLxV1jwFqoGBSFBXHX8GSaRx3tZiHN
+3Wf0Y3eIdUo7ab/UQdWcVUJG1wjuwJmMh6S0+CMZRh1QSDRnH7oz2T1AjXvxZzIH
+XaoZQIIzzNT0k9vBLgHH5ZtO66xbzGOvguFgt6h9sShMCiKNEIARKIHxseKehA4=
+=8VGB
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__21_Jun_2011_13_03_31_+1000_vreZH9ggnfM3zE.S--
