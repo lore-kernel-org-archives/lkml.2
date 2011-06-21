@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757158Ab1FUWfc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 18:35:32 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37726 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752792Ab1FUWfa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 18:35:30 -0400
-Date: Wed, 22 Jun 2011 00:35:27 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Arnaud Patard <arnaud.patard@rtp-net.org>
-Cc: Dinh.Nguyen@freescale.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        u.kleine-koenig@pengutronix.de, ra5478@freescale.com,
-        xiao-lizhang@freescale.com, festevam@gmail.com
-Subject: Re: [PATCHv7] ARM: mx51: Add support for low power suspend on MX51
-Message-ID: <20110621223527.GF6069@pengutronix.de>
-References: <1301325297-24126-1-git-send-email-Dinh.Nguyen@freescale.com>
- <87k4cfa550.fsf@lebrac.rtp-net.org>
+	id S1757226Ab1FUWlT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 18:41:19 -0400
+Received: from sous-sol.org ([216.99.217.87]:51651 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754991Ab1FUWlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 18:41:18 -0400
+Date: Tue, 21 Jun 2011 15:38:00 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Nai Xia <nai.xia@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
+        Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2 V2] ksm: take dirty bit as reference to avoid
+ volatile pages scanning
+Message-ID: <20110621223800.GO25383@sequoia.sous-sol.org>
+References: <201106212055.25400.nai.xia@gmail.com>
+ <201106212136.17445.nai.xia@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87k4cfa550.fsf@lebrac.rtp-net.org>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 00:35:02 up  4:22, 28 users,  load average: 2.10, 0.82, 0.49
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <201106212136.17445.nai.xia@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 11:46:35AM +0200, Arnaud Patard wrote:
-> <Dinh.Nguyen@freescale.com> writes:
-> 
-> Hi,
-> 
-> > From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> >
-> > Adds initial low power suspend functionality to MX51.
-> > Supports "mem" and "standby" modes.
-> >
-> > Tested on mx51-babbage.
-> >
-> > Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> 
-> I fail to see this patch in imx tree. Did it get merged in some other
-> tree ?
+* Nai Xia (nai.xia@gmail.com) wrote:
+> Introduced ksm_page_changed() to reference the dirty bit of a pte. We clear 
+> the dirty bit for each pte scanned but don't flush the tlb. For a huge page, 
+> if one of the subpage has changed, we try to skip the whole huge page 
+> assuming(this is true by now) that ksmd linearly scans the address space.
 
-Not yet. Have you tested this patch?
+This doesn't build w/ kvm as a module.
 
-Sascha
+> A NEW_FLAG is also introduced as a status of rmap_item to make ksmd scan
+> more aggressively for new VMAs - only skip the pages considered to be volatile
+> by the dirty bits. This can be enabled/disabled through KSM's sysfs interface.
 
-> 
-> Thanks,
-> Arnaud
-> 
+This seems like it should be separated out.  And while it might be useful
+to enable/disable for testing, I don't think it's worth supporting for
+the long term.  Would also be useful to see the value of this flag.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> @@ -454,7 +468,7 @@ static void remove_node_from_stable_tree(struct stable_node *stable_node)
+>  		else
+>  			ksm_pages_shared--;
+>  		put_anon_vma(rmap_item->anon_vma);
+> -		rmap_item->address &= PAGE_MASK;
+> +		rmap_item->address &= ~STABLE_FLAG;
+>  		cond_resched();
+>  	}
+>  
+> @@ -542,7 +556,7 @@ static void remove_rmap_item_from_tree(struct rmap_item *rmap_item)
+>  			ksm_pages_shared--;
+>  
+>  		put_anon_vma(rmap_item->anon_vma);
+> -		rmap_item->address &= PAGE_MASK;
+> +		rmap_item->address &= ~STABLE_FLAG;
+>  
+>  	} else if (rmap_item->address & UNSTABLE_FLAG) {
+>  		unsigned char age;
+> @@ -554,12 +568,14 @@ static void remove_rmap_item_from_tree(struct rmap_item *rmap_item)
+>  		 * than left over from before.
+>  		 */
+>  		age = (unsigned char)(ksm_scan.seqnr - rmap_item->address);
+> -		BUG_ON(age > 1);
+> +		BUG_ON (age > 1);
+
+No need to add space after BUG_ON() there
+
+> +
+>  		if (!age)
+>  			rb_erase(&rmap_item->node, &root_unstable_tree);
+>  
+>  		ksm_pages_unshared--;
+> -		rmap_item->address &= PAGE_MASK;
+> +		rmap_item->address &= ~UNSTABLE_FLAG;
+> +		rmap_item->address &= ~SEQNR_MASK;
+
+None of these changes are needed AFAICT.  &= PAGE_MASK clears all
+relevant bits.  How could it be in a tree, have NEW_FLAG set, and
+while removing from tree want to preserve NEW_FLAG?
+
+thanks,
+-chris
