@@ -1,75 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642Ab1FUIIp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 04:08:45 -0400
-Received: from smtp.witbe.net ([81.88.96.48]:44174 "EHLO smtp.witbe.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751980Ab1FUIIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 04:08:40 -0400
-Date: Tue, 21 Jun 2011 10:08:23 +0200
-From: Paul Rolland (=?UTF-8?B?44Od44O844Or44O744Ot44Op44Oz?=) 
-	<rol@witbe.net>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        rol@witbe.net
-Subject: Re: Linux 3.0-rc4 - fail to compile...
-Message-ID: <20110621100823.48c21b7c@tux.DEF.witbe.net>
-In-Reply-To: <20110621162739.ff1936d9.kamezawa.hiroyu@jp.fujitsu.com>
-References: <BANLkTimiVpKavmKY=rsJP34dMQSq__Xn7g@mail.gmail.com>
-	<20110621091335.49bc46df@tux.DEF.witbe.net>
-	<20110621162739.ff1936d9.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: Witbe.net
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-X-Ncc-RegId: fr.witbe
-X-Face: +^rP^g;Vjb!M*"%3$mF6xWU{DwwAx)W=b_<WXQMv}Rk8,fQ)?Wnk0NK/+m,;eWci?+;=I}d^:]I+)D+|r'vxjYjp.?o-8Va|&sD*-GVKn>}?Y)|*X<5cv@M`1P{\:)p9_:$=)(NY2`%AcypV*]z>YIyy5yY"9PUoV5@)*(W:S5e-48Ct7Wu6CkkO[=KB"ox,_2B/FwY&hr/E1H&<9IbOCx6NrBa"}FLA)UIvHg`9%NC\LfYB3ia]
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWsjH1VRjFydFciEg3a1tJxUEM6OCB1zdsDAAACcElEQVQ4jV2Tu3LcMAxFEY7SG/KQNYlY2685Zi1rmF5kQteBNcL/f0JAacfZDUscARePK9itY3Q4Qu5vplJKIFsrvI0t7Ii/8/nmQsERtgJpHAtiGW4ggylOAwhXTxPi0xfIcxDrZIc3qhMGD/kfKdwBExZrAf6l5PeC/Al7cAGfAGD+AgvL5yckcsxegVmG+QZRPgnYXnFUMAC8DLd6QZhAxj6dRo6vT/JNkmZQmPyDtoroMkD2VlaVgHsw2QrCAf1jPM+ou2Ju1j/G8+xINfZT+zGDPDjr7H/xnKewgi6SO4D7zloYoRDafSoogmirP0t9YIOJnN2ibDEKK6zDoSEjTIFXDcYYkwizoO/AjkATm3g+JVsSXPOCZIHwj7uBo2Bi97RMOoflJ4n3b3dvS2kVXDQupjvAk7zvaMEJlu0OJDFy4SsCusRbL95jRynY0LIA/rpyxCMkJ1ie+bWoEy+MG7pzDE3k8Z2C1a5eUdxmi0adGi2mdVjyUr2uvamrW9EeuLTCY84/AUjBj40LtqYbbM23vqolA2mpj5g03gparH45DqBgmsBK2hU0x662+QQLVYJLitxTnHB7yf0es4rraS/xqKW/hF1zPg9lOijpmtIBVrWKOQ6oTSkQjh3YtnarHQc0RrtS1XjtbQnScPrLeNKM6iS+6Qz6e9mVoPvaHHPU6eP5aKu1Ifd2QQvp6EA1bLaP3VREwewXY73xgLppBR2tg4LFg9lXzegHQlusWuxwogLCaswJ+qunQ2cyfuziX6B1p0E26nQazR3Qn2jQarRXVVZT9zP3uB5FV6pNjQG+u03ugbalEsEXqo7/AjAH60VpvOMvAAAAAElFTkSuQmCC
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/xDwe=+qb4db8ixwKVNFZFEr"; protocol="application/pgp-signature"
+	id S1754273Ab1FUIEg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 04:04:36 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63244 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752659Ab1FUIEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 04:04:32 -0400
+Message-ID: <4E0051B5.1050708@cn.fujitsu.com>
+Date: Tue, 21 Jun 2011 16:09:25 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Paul Menage <menage@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH 0/4] cgroups: Start a basic rlimit subsystem
+References: <1308527474-20704-1-git-send-email-fweisbec@gmail.com> <4DFEE9BE.6050501@cn.fujitsu.com> <20110620191126.GB1613@somewhere>
+In-Reply-To: <20110620191126.GB1613@somewhere>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-21 16:04:05,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-21 16:04:06,
+	Serialize complete at 2011-06-21 16:04:06
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/xDwe=+qb4db8ixwKVNFZFEr
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+03:11, Frederic Weisbecker wrote:
+> On Mon, Jun 20, 2011 at 02:33:34PM +0800, Li Zefan wrote:
+>> Frederic Weisbecker wrote:
+>>> This starts a basic rlimit cgroup subsystem with only the
+>>> equivalent of RLIMIT_NPROC yet. This can be useful to limit
+>>> the global effects of a local fork bomb for example (local
+>>> in term of a cgroup).
+>>>
+>>> The thing is further expandable to host more general resource
+>>> limitations in the scope of a cgroup.
+>>>
+>>
+>> As this subsystem is named "rlimit", I think we should have a bigger
+>> picture about how this subsystem will be.
+>>
+>> For example, which of other RLIMIT_XXX can be make cgroup-aware in
+>> a meaningful way and which can't.
+>>
+>> Another issue is, we can apply the limit of RLIMIT_NPROC as the sum
+>> of the tasks' limit in a cgroup, but some other RLIMIT_XXX can't
+>> work in this way. Take RLIMIT_NICE for example, we can apply this
+>> limit to each of the tasks in the cgroup.
+> 
+> Looking at the other rlimit options, it seems all of them can be applied
+> to a cgroup. They just won't all be implemented the same way.
+> 
+> Those that count and limit a global user resource, like NPROC, can be
+> implemented using the res_counter charge/uncharge that propagate the
+> resource consuming to the parent cgroups.
+> 
 
-Hello,
+res_counter seems a bit overkill while atomic should be sufficient for
+NPROC? Especially when it affects the fork path.
 
-On Tue, 21 Jun 2011 16:27:39 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+Normally we want to make the impact minimal when cgroup is not used,
+so we may treat the root cgroup somewhat special, and one choice is to
+always make it resource unlimited.
 
-> On Tue, 21 Jun 2011 09:13:35 +0200
-> Paul Rolland (=E3=83=9D=E3=83=BC=E3=83=AB=E3=83=BB=E3=83=AD=E3=83=A9=E3=
-=83=B3)  <rol@witbe.net> wrote:
->=20
-> Sorry, now patch is queued into mmotm.
->=20
-> This patch : http://marc.info/?l=3Dlinux-mm-commits&m=3D130834703319994&w=
-=3D2
+> Other rlimits that are traditionally only process wide can be implemented
+> here as a simple limit applied to all processes in the whole cgroup.
+> 
+> For example RLIMIT_CORE would be a limit in any core dump on
+> the whole cgroup.
+> 
+> RLIMIT_NOFILE would be a limit on the number of files opened by the whole
+> cgroup.
+> 
+> etc...
+> 
+> I think they all need to be treated case by case when/if users come and propose
+> more rlimit options. These don't all necessary need to mirror the setrlimit
+> options. We could pick existing ones but change a bit their semantics to fit
+> more into the cgroups meaning (as a general rule any rlimit.* file must be a
+> cgroup wide limitation), or create new rlimit options if specific needs arise.
+> 
+> There can be another kind of rlimit options that can be cgroup wide but apply
+> per process, in which case we should tweak a bit the name of the rlimit option file.
+> Consider RLIMIT_STACK for example.
+> If we want a cgroup option that applies to the total of stack used by the whole
+> cgroup, the file name would be rlim.stack. If we want that limitation to happen
+> to the whole cgroup but per process, it would be rlim.stack_per_process.
+> 
 
-Patch applied cleanly on top of -rc4
-
-Thanks very much, that fixes it !!
-
-Tested-by: Paul Rolland <rol@witbe.net>
-
-Best,
-Paul
-
-
-
---Sig_/xDwe=+qb4db8ixwKVNFZFEr
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.14 (GNU/Linux)
-
-iEYEARECAAYFAk4AUXsACgkQZP464AVDf+BXmgCeIsqFneQy1vXZ/Kuq6Knp+hdm
-oWQAoLFe60UhguIoYeugzjKixg9XLZRc
-=N9to
------END PGP SIGNATURE-----
-
---Sig_/xDwe=+qb4db8ixwKVNFZFEr--
+Or use a single cgroup interface for different rlimits, since all rlmits can be
+applied per process.
