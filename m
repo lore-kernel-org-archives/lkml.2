@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757494Ab1FUUmG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 16:42:06 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:53938 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791Ab1FUUmB (ORCPT
+	id S1757549Ab1FUUth (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 16:49:37 -0400
+Received: from antispam01.maxim-ic.com ([205.153.101.182]:53792 "EHLO
+	antispam01.maxim-ic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757317Ab1FUUtf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 16:42:01 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Tue, 21 Jun 2011 16:41:59 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Alexander Holler <holler@ahsoftware.de>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        gregkh@suse.de, lkml <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>
-Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing the
- packed attribute
-In-reply-to: <Pine.LNX.4.44L0.1106211054460.2327-100000@iolanthe.rowland.org>
-Message-id: <alpine.LFD.2.00.1106211636190.2142@xanadu.home>
-References: <Pine.LNX.4.44L0.1106211054460.2327-100000@iolanthe.rowland.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Tue, 21 Jun 2011 16:49:35 -0400
+X-ASG-Debug-ID: 1308689372-02ae9816fa104ba0001-xx1T2L
+X-Barracuda-Envelope-From: Peter.Hsiang@maxim-ic.com
+From: Peter Hsiang <Peter.Hsiang@maxim-ic.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Taylor Hutt <thutt@chromium.org>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Olof Johansson <olofj@chromium.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 21 Jun 2011 13:48:02 -0700
+Subject: RE: [PATCH] ASoC: codecs: Max98095: Fix logging of hardware
+	revision.
+Thread-Topic: [PATCH] ASoC: codecs: Max98095: Fix logging of hardware
+	revision.
+X-ASG-Orig-Subj: RE: [PATCH] ASoC: codecs: Max98095: Fix logging of hardware
+	revision.
+Thread-Index: AcwwCiv9OUNv8scKToef3k4Vl7TfqwASd41g
+Message-ID: <B2150E1E4418E1438554A300EA5040E40DDEC8CAD9@ITSVLEX06.it.maxim-ic.internal>
+References: <1308596072-17158-1-git-send-email-thutt@chromium.org>
+ <20110621002322.GE1905@opensource.wolfsonmicro.com>
+ <B2150E1E4418E1438554A300EA5040E40DDEC16D42@ITSVLEX06.it.maxim-ic.internal>
+ <20110621011038.GA4322@opensource.wolfsonmicro.com>
+ <20110621115547.GD25032@sirena.org.uk>
+In-Reply-To: <20110621115547.GD25032@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Barracuda-Connect: maxdalex02.maxim-ic.internal[10.16.15.104]
+X-Barracuda-Start-Time: 1308689372
+X-Barracuda-URL: http://AntiSpam02.maxim-ic.com:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.02
+X-Barracuda-Spam-Status: No, SCORE=0.02 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=THREAD_INDEX, THREAD_TOPIC
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.66729
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.01 THREAD_INDEX           thread-index: AcO7Y8iR61tzADqsRmmc5wNiFHEOig==
+	0.01 THREAD_TOPIC           Thread-Topic: ...(Japanese Subject)...
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Jun 2011, Alan Stern wrote:
-
-> On Mon, 20 Jun 2011, Nicolas Pitre wrote:
+On Tue, Jun 21, 2011, Mark Brown wrote:
+> On Tue, Jun 21, 2011 at 02:10:39AM +0100, Mark Brown wrote:
+> > On Mon, Jun 20, 2011 at 05:43:58PM -0700, Peter Hsiang wrote:
 > 
-> > > We don't fall into any of these cases, and therefore as you say, we
-> > > don't need packed.  Arnd and I have both explained this.  So why do you 
-> > > keep arguing that we do need it?
-> > 
-> > Please show me where I keep arguing that you need it?
+> > > I checked with hardware engineering and was told 0x40=RevA,
+> 0x41=RevB..
 > 
-> Not explicitly perhaps.  But you did write:
-> 
-> > Doesn't mean that because it used to work that it is strictly correct.  
-> > Wouldn't be the first time that a GCC upgrade broke the kernel because 
-> > the kernel wasn't describing things properly enough.
-> 
-> which strongly implies that "packed" is needed.  You also wrote:
+> This means if you're OK with it I can apply the patch as-is, BTW.
 
-In this case ...
+Acked-by: Peter Hsiang <peter.hsiang@maxim-ic.com>
 
-> > Yes, but that's a consequence of not being able to access those fields 
-> > in their naturally aligned position anymore.  Hence the addition of the 
-> > align attribute to tell the compiler that we know that the structure is 
-> > still aligned to a certain degree letting the compiler to avoid 
-> > byte-oriented instructions when possible.
-> 
-> which is predicated on the assumption that "packed" is needed.
-
-... and also in this case, I was talking about proper use of the packed 
-attribute in general, not at all about a specific case.  I wanted to 
-provide a broader view to some people who expressed doubts and 
-misunderstanding in the hope that the archive could keep this knowledge 
-base available.
-
-I apologize if that wasn't clear to you.
-
-
-Nicolas
