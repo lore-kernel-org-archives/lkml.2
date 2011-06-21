@@ -1,79 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755000Ab1FUVJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 17:09:16 -0400
-Received: from posta.ukf.sk ([193.87.12.33]:48785 "EHLO posta.ukf.sk"
+	id S1756718Ab1FUVO3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 17:14:29 -0400
+Received: from cantor.suse.de ([195.135.220.2]:54495 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750863Ab1FUVJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 17:09:13 -0400
-Message-ID: <4E01085D.2000007@ukf.sk>
-Date: Tue, 21 Jun 2011 23:08:45 +0200
-From: Milan Oravec <moravec@ukf.sk>
-Organization: CIKT UKF Nitra
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.11) Gecko/20101006 Thunderbird/3.1.5
+	id S1751279Ab1FUVO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 17:14:26 -0400
+Date: Tue, 21 Jun 2011 23:14:20 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 7/7] writeback: timestamp based bdi dirty_exceeded state
+Message-ID: <20110621211420.GF26195@quack.suse.cz>
+References: <20110619150108.691351746@intel.com>
+ <20110619150510.717948499@intel.com>
+ <20110620213818.GI4810@quack.suse.cz>
+ <20110621150752.GC4280@localhost>
 MIME-Version: 1.0
-To: Ville Tervo <ville.tervo@nokia.com>
-CC: ext Ed Tomlinson <edt@aei.ca>, linux-kernel@vger.kernel.org,
-        Hui Zhu <teawater@gmail.com>, Dave Young <hidave.darkstar@gmail.com>,
-        Bluettooth Linux <linux-bluetooth@vger.kernel.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>
-Subject: Re: Linux 2.6.39
-References: <BANLkTikB37AvEgh1MAFBbYvFaxsL6W11OQ@mail.gmail.com> <loom.20110521T194736-595@post.gmane.org> <201105211631.00804.edt@aei.ca> <201105231808.37369.edt@aei.ca> <20110525082744.GP2480@null>
-In-Reply-To: <20110525082744.GP2480@null>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110621150752.GC4280@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ville, than you for your patch. BT dongle works now again in 3.0-rc4 
-kernel.
+On Tue 21-06-11 23:07:52, Wu Fengguang wrote:
+> On Tue, Jun 21, 2011 at 05:38:18AM +0800, Jan Kara wrote:
+> > On Sun 19-06-11 23:01:15, Wu Fengguang wrote:
+> > > When there are only one (or several) dirtiers, dirty_exceeded is always
+> > > (or mostly) off. Converting to timestamp avoids this problem. It helps
+> > > to use smaller write_chunk for smoother throttling.
+> >   Hmm, what do you mean by "dirty_exceeded is always (or mostly) off"? I
+> > agree that dirty_exceeded handling is broken in current kernel when there
+> > are more dirtiers because of tasks having different dirty limits. Is this
+> > the problem you are speaking about?
+> 
+> For the 1-dirty case, it will quit on either of the two conditions
+> 
+> (1) no longer dirty exceeded, or
+> (2) write 1.5 times what it has dirtied
+> 
+> Note that (2) implies (1) because there is only 1 dirtier: if it takes
+> 4MB pages to make it dirty exceeded, it will sure drop out of the dirty
+> exceeded state after cleaned 6MB.
+> 
+> So the 1 dirtier will mostly see dirty_exceeded=0 inside
+> balance_dirty_pages_ratelimited_nr().
+> 
+> However that looks not a big problem. Since there is only 1 dirtier,
+> it will at most get dirty exceeded by 4MB, which is fairly acceptable.
+  Yes, 1 dirtier case works OK.
 
-Best wishes,
+> > If yes, I think I have a cleaner fix for that - setting dirty_exceeded
+> > when bdi_dirty enters the range where per-task dirty limits can be and
+> > resetting it only when we leave that range. I can refresh the fix and
+> > send it to you...
+> 
+> Yes there is the per-task dynamic thresholds. However given that the
+> current scheme looks not too bad, maybe we can just do nothing for now
+> and skip this patch?
+  Well, the current scheme has problems already when there are two
+dirtiers. Assume process P1 has threshold T1 and process P2 has threshold
+T2, T1 < T2. P1 first hits the threshold, sets dirty_exceeded and does some
+writeback. Meanwhile P2 still dirties pages, eventually it enters
+balance_dirty_pages() sees threshold T2 is not exceeded and clears
+dirty_exceeded even though threshold T1 still is exceeded. After dirtying
+another 4 MB, P1 enters balance_dirty_pages() again and sets dirty_exceeded
+again.
 
-Milan
+This way, dirty_exceeded is ping-ponged between 0 and 1 basically in a
+random way. If we are unlucky enough, we can get beyond dirty limit by 4 MB
+for each dirtier instead of 32 KB originally designed...
 
-On 05/25/2011 10:27 AM, Ville Tervo wrote:
-> On Mon, May 23, 2011 at 06:08:36PM -0400, ext Ed Tomlinson wrote:
->> On Saturday 21 May 2011 16:31:00 Ed Tomlinson wrote:
->>> On Saturday 21 May 2011 13:56:20 Milan Oravec wrote:
->>>> Hi Linus, I'm sorry bothering you, but my usb-bluetooth dongle stop working in
->>>> 2.6.39 kernel series.
->>>> I know it is nothing ground breaking but it is bug.
->>>> I'm using this hardware from 2.6.11 kernel series.
->>>> Details are included in this thread:
->>>>
->>>> https://lkml.org/lkml/2011/4/18/481
->>>>
->>>> I hope I'm doing nothing false writing this email.
->>>
->>> Same device, same problem here.
->>>
->>> You are not alone
->>
->> I had some time this afternood so I tried bisecting without much luck.  I ended up somewhere rc1 ish with a system
->> that would paniced during boot.  Here is the bisect log incase it helps:
->>
->> # bad: [61c4f2c81c61f73549928dfd9f3e8f26aa36a8cf] Linux 2.6.39
->> # good: [521cb40b0c44418a4fd36dc633f575813d59a43d] Linux 2.6.38
->> git bisect start 'v2.6.39' 'v2.6.38' '--' 'drivers/bluetooth'
->> # bad: [7a6362800cb7d1d618a697a650c7aaed3eb39320] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next-2.6
->> git bisect bad 7a6362800cb7d1d618a697a650c7aaed3eb39320
->> # bad: [0a0e9ae1bd788bc19adc4d4ae08c98b233697402] Merge branch 'master' of master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6
->> git bisect bad 0a0e9ae1bd788bc19adc4d4ae08c98b233697402
->> # skip: [03c2d0e89409b59c1ec9d9511533cedc0b7aaa69] Bluetooth: Use usb_fill_int_urb()
->> git bisect skip 03c2d0e89409b59c1ec9d9511533cedc0b7aaa69
->> # skip: [7f4b2b04c88377af30c022f36c060190182850fb] Bluetooth: Make hci a child of the corresponding tty device.
->> git bisect skip 7f4b2b04c88377af30c022f36c060190182850fb
->> # skip: [84f0e17f78471857104a20dfc57711409f68d7bf] Bluetooth: ath3k: Avoid duplication of code
->> git bisect skip 84f0e17f78471857104a20dfc57711409f68d7bf
->>
->> Ring any bells for anyone?
->>
->> Probably should open a regression bug for this too....
->
-> I think this is regression with d5859e22cd40b73164b3e5d8d5d796f96edcc6af
-> commit. Probably the code tries to enable something that is not supported.
->
-> Could you pastebin hcidump while doing hciconfig hci0 up?
->
+I already have a fix for this. Do you want me to base it on top of -mm tree
+or your latest writeback series?
+
+								Honza
+
+> > > Before patch, the wait time in balance_dirty_pages() are ~200ms:
+> > > 
+> > > [ 1093.397700] write_bandwidth: comm=swapper pages=1536 time=204ms
+> > > [ 1093.594319] write_bandwidth: comm=swapper pages=1536 time=196ms
+> > > [ 1093.796642] write_bandwidth: comm=swapper pages=1536 time=200ms
+> > > 
+> > > After patch, ~25ms:
+> > > 
+> > > [   90.261339] write_bandwidth: comm=swapper pages=192 time=20ms
+> > > [   90.293168] write_bandwidth: comm=swapper pages=192 time=24ms
+> > > [   90.323853] write_bandwidth: comm=swapper pages=192 time=24ms
+> > > [   90.354510] write_bandwidth: comm=swapper pages=192 time=28ms
+> > > [   90.389890] write_bandwidth: comm=swapper pages=192 time=28ms
+> > > [   90.421787] write_bandwidth: comm=swapper pages=192 time=24ms
+> > > 
+> > >  include/linux/backing-dev.h |    2 +-
+> > >  mm/backing-dev.c            |    2 --
+> > >  mm/page-writeback.c         |   24 ++++++++++++------------
+> > >  3 files changed, 13 insertions(+), 15 deletions(-)
+> > > 
+> > > --- linux-next.orig/mm/page-writeback.c	2011-06-19 22:59:49.000000000 +0800
+> > > +++ linux-next/mm/page-writeback.c	2011-06-19 22:59:53.000000000 +0800
+> > > @@ -483,6 +483,15 @@ unsigned long bdi_dirty_limit(struct bac
+> > >  	return bdi_dirty;
+> > >  }
+> > >  
+> > > +/*
+> > > + * last time exceeded (limit - limit/DIRTY_BRAKE)
+> > > + */
+> > > +static bool dirty_exceeded_recently(struct backing_dev_info *bdi,
+> > > +				    unsigned long time_window)
+> > > +{
+> > > +	return jiffies - bdi->dirty_exceed_time <= time_window;
+> > > +}
+> > > +
+> > >  static void bdi_update_write_bandwidth(struct backing_dev_info *bdi,
+> > >  				       unsigned long elapsed,
+> > >  				       unsigned long written)
+> > > @@ -621,7 +630,6 @@ static void balance_dirty_pages(struct a
+> > >  	unsigned long bdi_thresh;
+> > >  	unsigned long pages_written = 0;
+> > >  	unsigned long pause = 1;
+> > > -	bool dirty_exceeded = false;
+> > >  	struct backing_dev_info *bdi = mapping->backing_dev_info;
+> > >  	unsigned long start_time = jiffies;
+> > >  
+> > > @@ -669,14 +677,9 @@ static void balance_dirty_pages(struct a
+> > >  		 * bdi or process from holding back light ones; The latter is
+> > >  		 * the last resort safeguard.
+> > >  		 */
+> > > -		dirty_exceeded = (bdi_dirty > bdi_thresh) ||
+> > > -				  (nr_dirty > dirty_thresh);
+> > > -
+> > > -		if (!dirty_exceeded)
+> > > +		if (bdi_dirty <= bdi_thresh && nr_dirty <= dirty_thresh)
+> > >  			break;
+> > > -
+> > > -		if (!bdi->dirty_exceeded)
+> > > -			bdi->dirty_exceeded = 1;
+> > > +		bdi->dirty_exceed_time = jiffies;
+> > >  
+> > >  		bdi_update_bandwidth(bdi, dirty_thresh, nr_dirty, bdi_dirty,
+> > >  				     start_time);
+> > > @@ -719,9 +722,6 @@ static void balance_dirty_pages(struct a
+> > >  			pause = HZ / 10;
+> > >  	}
+> > >  
+> > > -	if (!dirty_exceeded && bdi->dirty_exceeded)
+> > > -		bdi->dirty_exceeded = 0;
+> > > -
+> > >  	if (writeback_in_progress(bdi))
+> > >  		return;
+> > >  
+> > > @@ -775,7 +775,7 @@ void balance_dirty_pages_ratelimited_nr(
+> > >  		return;
+> > >  
+> > >  	ratelimit = ratelimit_pages;
+> > > -	if (mapping->backing_dev_info->dirty_exceeded)
+> > > +	if (dirty_exceeded_recently(bdi, MAX_PAUSE))
+> > >  		ratelimit = 8;
+> > >  
+> > >  	/*
+> > > --- linux-next.orig/include/linux/backing-dev.h	2011-06-19 22:54:58.000000000 +0800
+> > > +++ linux-next/include/linux/backing-dev.h	2011-06-19 22:59:53.000000000 +0800
+> > > @@ -79,7 +79,7 @@ struct backing_dev_info {
+> > >  	unsigned long avg_write_bandwidth;
+> > >  
+> > >  	struct prop_local_percpu completions;
+> > > -	int dirty_exceeded;
+> > > +	unsigned long dirty_exceed_time;
+> > >  
+> > >  	unsigned int min_ratio;
+> > >  	unsigned int max_ratio, max_prop_frac;
+> > > --- linux-next.orig/mm/backing-dev.c	2011-06-19 22:59:49.000000000 +0800
+> > > +++ linux-next/mm/backing-dev.c	2011-06-19 22:59:53.000000000 +0800
+> > > @@ -670,8 +670,6 @@ int bdi_init(struct backing_dev_info *bd
+> > >  			goto err;
+> > >  	}
+> > >  
+> > > -	bdi->dirty_exceeded = 0;
+> > > -
+> > >  	bdi->bw_time_stamp = jiffies;
+> > >  	bdi->written_stamp = 0;
+> > >  
+> > > 
+> > > 
+> > -- 
+> > Jan Kara <jack@suse.cz>
+> > SUSE Labs, CR
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
