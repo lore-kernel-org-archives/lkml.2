@@ -1,66 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105Ab1FUEtE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 00:49:04 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:36662 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649Ab1FUEtC (ORCPT
+	id S1752556Ab1FUEvO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 00:51:14 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:50497 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751706Ab1FUEvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 00:49:02 -0400
-Message-ID: <4E0022B5.9000500@linaro.org>
-Date: Tue, 21 Jun 2011 10:18:53 +0530
-From: Tushar Behera <tushar.behera@linaro.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
+	Tue, 21 Jun 2011 00:51:09 -0400
+X-AuditID: b753bd60-a0a78ba0000050a4-4c-4e00233b006b
+X-AuditID: b753bd60-a0a78ba0000050a4-4c-4e00233b006b
+Message-ID: <4E002337.1010208@hitachi.com>
+Date: Tue, 21 Jun 2011 13:51:03 +0900
+From: Nao Nishijima <nao.nishijima.xt@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-fbdev@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux@arm.linux.org.uk, tony@atomide.com, lethal@linux-sh.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        Tomi Valkeinen <tomi.valkeinen@nokia.com>
-Subject: Re: [PATCH 2/2] video: omap2: Compile omap2 support only when needed
-References: <1308566761-2850-1-git-send-email-tushar.behera@linaro.org>	 <1308566761-2850-3-git-send-email-tushar.behera@linaro.org> <1308575201.2076.57.camel@deskari>
-In-Reply-To: <1308575201.2076.57.camel@deskari>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Greg KH <greg@kroah.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jcm@redhat.com, hare@suse.de,
+        stefanr@s5r6.in-berlin.de, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
+References: <20110616181943.GB1439@kroah.com> <1308256290.2436.143.camel@mulgrave> <BANLkTikfCMR_=5Jp7tLhM_Wr3vxihEL+rA@mail.gmail.com> <1308264321.2436.161.camel@mulgrave> <BANLkTinvfmU0dszQyu4U=Pw3_BtrmOUi_g@mail.gmail.com> <1308320844.2586.14.camel@mulgrave> <BANLkTikMa6vO4m3tk1O2mtj76k6s66f2gQ@mail.gmail.com> <1308322193.2586.30.camel@mulgrave> <BANLkTinywFK3yAxN51O7RDYyqeNRHBRThA@mail.gmail.com> <BANLkTinMzyQWZvxiRw4tvZBwW5xsxvMz-Q@mail.gmail.com> <20110617162247.GA16261@kroah.com> <1308426017.2586.1273.camel@mulgrave> <BANLkTin6xfEv85v2BnN1hOuCKtQfzc1Eiw@mail.gmail.com>
+In-Reply-To: <BANLkTin6xfEv85v2BnN1hOuCKtQfzc1Eiw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Monday 20 June 2011 06:36 PM, Tomi Valkeinen wrote:
-> On Mon, 2011-06-20 at 16:16 +0530, Tushar Behera wrote:
->> Currently display support for omap2 is selected by default and
->> it gets built for all the configurations.
+(2011/06/19 4:55), Kay Sievers wrote:
+> On Sat, Jun 18, 2011 at 21:40, James Bottomley
+> <James.Bottomley@hansenpartnership.com> wrote:
+>> On Fri, 2011-06-17 at 09:22 -0700, Greg KH wrote:
+>>> On Fri, Jun 17, 2011 at 06:12:14PM +0200, Kay Sievers wrote:
+>>>> On Fri, Jun 17, 2011 at 17:39, Kay Sievers <kay.sievers@vrfy.org> wrote:
+>>>>> On Fri, Jun 17, 2011 at 16:49, James Bottomley
+>>>>
+>>>>>> So this is subsystem specific.  For the case of a SCSI enclosure, I can
+>>>>>> answer that it's actually burned into the enclosure firmware.  When you
+>>>>>> build an enclosure with labels, the label names are stored in a
+>>>>>> diagnostic page.  We can actually interrogate the enclosure directly or
+>>>>>> use the ses driver to get these names mapped to current devices.
+>>>>>
+>>>>> To me this sounds like a nice name on top of the current bunch of
+>>>>> names, not like a 'preferred' name.
+>>>>>
+>>>>> I still don't like to introduce any new facility to the kernel that
+>>>>> can handle only one single name. Reality the last years has taught us
+>>>>> a very different story, and we've walked a long way to get where we
+>>>>> are. I really don't believe single names will ever work, it's just a
+>>>>> nice theory.
+>>>>
+>>>> I might need to clarify this a bit.
+>>>>
+>>>> I have no problem in general to add a 'alias' to every disk, and use
+>>>> that when stuff is logged. Just the same way the netifs have an alias.
+>>>> Sure, it might be useful for some use cases. And if that helps to
+>>>> solve any real problem, we should just do it.
+>>>>
+>>>> I just want to make clear, that I don't think that it is anywhere near
+>>>> to a solution for the problems which are described here. And that
+>>>> nobody should see this as an excuse not to get their stuff together
+>>>> and work on the problem, which is that we don't have machine-readable
+>>>> error and debug from the kernel and a smart syslog.
+>>>>
+>>>> If we had that, I'm very sure nobody would even ask for a 'pretty
+>>>> name' in the kernel, and I think that is a good indication that we are
+>>>> not on the right track here.
+>>>
+>>> And I totally agree here, which is why I don't want to accept this
+>>> change to the driver core to add this, as it's not the correct solution.
 >>
->> Instead of it being a built-in feature, it's compilation should
->> depend on the config option CONFIG_FB_OMAP2.
->
-> No, I don't think so. omap2 directory contains vram, vrfb and omapdss,
-> all of which can be used without omapfb driver. vram and vrfb can be
-> even used without omapdss driver.
-Even if I build the kernel with i386_defconfig, I get some compiled 
-files within drivers/video/omap2.
+>> OK, fine ... we'll do it as gendisk only then.  I suppose that is the
+>> 95% use case anyway.
+> 
+> Sounds fine. It's probably easier to have it domain-specific anyway.
+> Just like the netif alias already is.
+> 
 
-$ make ARCH=x86 i386_defconfig O=out_dir
-$ make ARCH=x86 O=out_dir
+Agreed. Our purpose is to output disk's alias name in kernel messages.
 
-$ ls out_dir/drivers/video/omap2
-built-in.o  displays  modules.builtin  modules.order
+> I would suggest not to call it 'preferred' though, but something
+> similar to 'alias'. Having /dev/disk/by-preferred/ doesn't sound too
+> convincing to me.
+> 
 
-IMHO, drivers/video/omap2/ should not be compiled if the kernel is not 
-built for omap2.
->
-> Is this patch fixing some real problem?
-This patch does not fix any other problem.
+OK, I will change 'preferred name' to 'alias name'.
 
+> An 'change' uevent when the alias is set sounds fine. I don't think a
+> set-once policy is needed.
+> 
 
->
->   Tomi
->
->
+I will intent to implement as follows
+- Change the name from preferred to alias
+- Add alias_name in gendisk
+- Notify 'change' uevent when the alias is set
 
+Thanks,
 
 -- 
-Tushar Behera
+Nao NISHIJIMA
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., YOKOHAMA Research  Laboratory
+Email： nao.nishijima.xt@hitachi.com
