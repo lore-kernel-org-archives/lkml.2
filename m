@@ -1,132 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932218Ab1FUKD1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 06:03:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14667 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932111Ab1FUKDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 06:03:24 -0400
-Subject: [PATCH 2/2] vhost: set log when updating used flags or avail event
-To: netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mst@redhat.com
-From: Jason Wang <jasowang@redhat.com>
-Date: Tue, 21 Jun 2011 18:04:38 +0800
-Message-ID: <20110621100438.6777.20695.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
-In-Reply-To: <20110621100426.6777.68855.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
-References: <20110621100426.6777.68855.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
-User-Agent: StGit/0.15
+	id S932188Ab1FUKGT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 06:06:19 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58657 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932111Ab1FUKGS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 06:06:18 -0400
+Date: Tue, 21 Jun 2011 11:06:15 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Taylor Hutt <thutt@google.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Peter Hsiang <Peter.Hsiang@maxim-ic.com>,
+        Olof Johansson <olofj@chromium.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: codecs: Max98095: Fix logging of hardware revision.
+Message-ID: <20110621100614.GA22177@opensource.wolfsonmicro.com>
+References: <1308596072-17158-1-git-send-email-thutt@chromium.org>
+ <20110621002322.GE1905@opensource.wolfsonmicro.com>
+ <BANLkTikH6XpGNamh8z4zspxteH3K4mNmew@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikH6XpGNamh8z4zspxteH3K4mNmew@mail.gmail.com>
+X-Cookie: Your ignorance cramps my conversation.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need set log when updating used flags and avail event. Otherwise guest may
-see stale values after migration and then do not exit or exit unexpectedly.
+On Mon, Jun 20, 2011 at 08:22:32PM -0700, Taylor Hutt wrote:
+> On Mon, Jun 20, 2011 at 5:23 PM, Mark Brown <
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/vhost/vhost.c |   61 +++++++++++++++++++++++++++++++++++++++----------
- 1 files changed, 48 insertions(+), 13 deletions(-)
+> > Don't include a series of random unrelated changes in a single patch,
+> > split them up into separate patches.  This makes review much easier if
+> > nothing else.  There's no overlap at all between this change and the one
+> > above.  The change is sensible.
 
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 43a3fc6..c344d4f 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -578,16 +578,6 @@ static long vhost_set_memory(struct vhost_dev *d, struct vhost_memory __user *m)
- 	return 0;
- }
- 
--int init_used(struct vhost_virtqueue *vq)
--{
--	int r = put_user(vq->used_flags, &vq->used->flags);
--
--	if (r)
--		return r;
--	vq->signalled_used_valid = false;
--	return get_user(vq->last_used_idx, &vq->used->idx);
--}
--
- static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
- {
- 	struct file *eventfp, *filep = NULL,
-@@ -954,6 +944,51 @@ int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
- 	return 0;
- }
- 
-+static int vhost_update_used_flags(struct vhost_virtqueue *vq)
-+{
-+	if (put_user(vq->used_flags, &vq->used->flags) < 0)
-+		return -EFAULT;
-+	if (unlikely(vq->log_used)) {
-+		/* Make sure the flag is seen before log. */
-+		smp_wmb();
-+		/* Log used flag write. */
-+		log_write(vq->log_base,
-+			  vq->log_addr + offsetof(struct vring_used, flags),
-+			  sizeof vq->used->flags);
-+		if (vq->log_ctx)
-+			eventfd_signal(vq->log_ctx, 1);
-+	}
-+	return 0;
-+}
-+
-+static int vhost_update_avail_event(struct vhost_virtqueue *vq, u16 avail_event)
-+{
-+	if (put_user(vq->avail_idx, vhost_avail_event(vq)))
-+		return -EFAULT;
-+	if (unlikely(vq->log_used)) {
-+		/* Make sure the event is seen before log. */
-+		smp_wmb();
-+		/* Log avail event write */
-+		log_write(vq->log_base,
-+			  vq->log_addr + offsetof(struct vring_used,
-+						  ring[vq->num]),
-+			  sizeof avail_event);
-+		if (vq->log_ctx)
-+			eventfd_signal(vq->log_ctx, 1);
-+	}
-+	return 0;
-+}
-+
-+int init_used(struct vhost_virtqueue *vq)
-+{
-+	int r = vhost_update_used_flags(vq);
-+
-+	if (r)
-+		return r;
-+	vq->signalled_used_valid = false;
-+	return get_user(vq->last_used_idx, &vq->used->idx);
-+}
-+
- static int translate_desc(struct vhost_dev *dev, u64 addr, u32 len,
- 			  struct iovec iov[], int iov_size)
- {
-@@ -1425,14 +1460,14 @@ bool vhost_enable_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
- 		return false;
- 	vq->used_flags &= ~VRING_USED_F_NO_NOTIFY;
- 	if (!vhost_has_feature(dev, VIRTIO_RING_F_EVENT_IDX)) {
--		r = put_user(vq->used_flags, &vq->used->flags);
-+		r = vhost_update_used_flags(vq);
- 		if (r) {
- 			vq_err(vq, "Failed to enable notification at %p: %d\n",
- 			       &vq->used->flags, r);
- 			return false;
- 		}
- 	} else {
--		r = put_user(vq->avail_idx, vhost_avail_event(vq));
-+		r = vhost_update_avail_event(vq, vq->avail_idx);
- 		if (r) {
- 			vq_err(vq, "Failed to update avail event index at %p: %d\n",
- 			       vhost_avail_event(vq), r);
-@@ -1475,7 +1510,7 @@ void vhost_disable_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
- 		return;
- 	vq->used_flags |= VRING_USED_F_NO_NOTIFY;
- 	if (!vhost_has_feature(dev, VIRTIO_RING_F_EVENT_IDX)) {
--		r = put_user(vq->used_flags, &vq->used->flags);
-+		r = vhost_update_used_flags(vq);
- 		if (r)
- 			vq_err(vq, "Failed to enable notification at %p: %d\n",
- 			       &vq->used->flags, r);
+> Ok, fine.  Seemed trivial enough and didn't seem like the code churn for
+> another patch was warranted.
+> But, ok.
 
+Like I say it's for review - it's much easier to look at a diff and
+verify that it does exactly one thing than it is to verify that it does
+a series of unrelated things, that all of them got covered, that there's
+no unexpected additional changes and that all of them are complete.
+
+> > >       ret = snd_soc_read(codec, M98095_0FF_REV_ID);
+> > >       if (ret < 0) {
+> > > -             dev_err(codec->dev, "Failed to read device revision: %d\n",
+> > > +             dev_err(codec->dev, "Failure reading hardware revision:
+> > %d\n",
+> > >                       ret);
+
+> > You've also got this again unrelated change which isn't mentioned in the
+> > changelog at all.
+> This is part of the change for the hardware revision, and it seems pretty
+
+> clear that they're related to me.  The text of the two output messages are
+> now more aligned, and they are both related to reporting the hardware
+> revision.
+
+You're doing three things here - you're changing the revision that's
+printed, you're rewriting the text that's output for some reason and
+you're changing the way the number of DAIs is stored and you only
+mentioned two of those.  My first thought when I saw this change, just
+looking at the shape of the diff rather than reading the text of the
+message, was that it didn't belong and I needed to slow down and look in
+more detail.  Had it been mentioned in the log I would have been
+expecting to see some random text only updates, making this less of a
+surprise.
