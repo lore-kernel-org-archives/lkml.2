@@ -1,44 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755806Ab1FUWBI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 18:01:08 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:45953 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751873Ab1FUWBG (ORCPT
+	id S1756014Ab1FUWHL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 18:07:11 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:35926 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752255Ab1FUWHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 18:01:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=sgKWdfrH3oerbBcoOXicjHSfewYt9CnhDmwu5WOalG/0SSrjMvmqUUBuWV7lqSacoh
-         MA+AVb/qAxK9xRAgg6n1qMKBbSC4HMqY/NDZ/zynDQJL3dMg1v1UEg7ikTsY6P+hv0/Q
-         0AKnPShHTneeCrNxzrUt4zu5RQGfge/4mjJRg=
+	Tue, 21 Jun 2011 18:07:07 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: <linux-kernel@vger.kernel.org>,
+        Linux Containers <containers@lists.osdl.org>
+Date: Tue, 21 Jun 2011 15:07:02 -0700
+Message-ID: <m162nyn8jd.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Date: Tue, 21 Jun 2011 15:01:05 -0700
-Message-ID: <BANLkTin7FZLkjqY1-Z_7DvQRgrFe3zYtwQ@mail.gmail.com>
-Subject: initramfs size & crashkernel reserved area
-From: Sujit V <sujit.linux@gmail.com>
-To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/8CTxj0HKfRqYr3bG+nfXLH6o/l/pnNmI=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Linus Torvalds <torvalds@linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: [GIT PULL] nsfd fixes
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am observing the following.
 
-We are using linux 2.6.23 kernel
-crashkernel=128M@16M
+Linus,
 
-We also have few kernel modules in our code base.
+When looking over my namespace file descriptor code I realized I goofed
+in the implementation.  I missed the addition of d_set_d_op, and
+painfully I badly placed the ptrace_may_read permission checks with the
+result that the dcache could cache things and bypass the checks.
 
-The kernel modules are gzip'ed in the cpio archive which is included
-in the .init.ramfs section of vmlinux
+The fixes are available at.
+git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/linux-2.6-nsfd.git
 
-When the size of the .init.ramfs section goes beyond certain limit
-then it corrupts the crash kernel reserved area.
 
-If the .init.ramfs size is 0x33d0f6 then things work ok.
+Eric W. Biederman (2):
+      proc: Use d_set_d_op in the namespace file descriptor code
+      proc: Fix the proc access checks to namespace files.
 
-If the init.ramfs size is 0x4be430 then it corrupts the crashkernel area.
+ fs/proc/inode.c      |    6 +-
+ fs/proc/namespaces.c |  160 +++++++++++++++++++++++++++++++++++++++++++-------
+ 2 files changed, 142 insertions(+), 24 deletions(-)
 
-Any pointers for further debugging?
+
+commit 7e05c935c50ab5c9ee488c411252076825ec2919
+Author: Eric W. Biederman <ebiederm@xmission.com>
+Date:   Sat Jun 18 17:48:18 2011 -0700
+
+    proc: Fix the proc access checks to namespace files.
+    
+    Access to namespace files needs to be restricted with
+    ptrace_may_read in proc to avoid unecessary information leaks
+    about processes and to avoid processes that could not otherwise
+    extend the lifetime of a namespace from opening a namespace file
+    and extending that lifetime.
+    
+    Add magic symlinks to the namespace files, so that we won't cache
+    the dentries for the namespace files in a way that can bypass the
+    ptrace_may_access checks.
+    
+    Remove the accident of the initial implementation that made
+    namespace files depend on pids and tasks, and change the
+    namespace files to be their own entities with their own dentry
+    and inode operations. The new namespace dentry operations
+    specify a policy of not caching namespace dentries when not in
+    use.  Not caching unused namespace dentries makes it easy to
+    verify the dcache won't keep namespaces alive longer than
+    necessary.
+    
+    Change the owner of namespace files to root as derving the
+    ownership of namespace files from a process is no longer possible
+    as namespace files are no longer implemented as per process
+    entities.  Namespace files being read only as root is safe and
+    changes nothing in practice as the kernel interfaces that take
+    namespace file descriptors require root capabilities.
+    
+    Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+
+commit b20c223833c931700f88ec53a54e2f95d0e01052
+Author: Eric W. Biederman <ebiederm@xmission.com>
+Date:   Sat Jun 18 23:34:09 2011 -0700
+
+    proc: Use d_set_d_op in the namespace file descriptor code
+    
+    Without this none of the pid_dentry_operations methods will
+    be called and we can slowly leak namespace file descriptors.
+    
+    Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
