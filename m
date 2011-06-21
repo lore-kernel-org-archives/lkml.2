@@ -1,87 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757197Ab1FURMZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 13:12:25 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40499 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554Ab1FURMW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 13:12:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ERlP7HoNyrJ7QSG3CtHb/cUwcOaYkzUizzUiDVnVZn4rzxg1PzEeXyWyN9Dl6UCJEn
-         iIg/SuFeqWkKYbQvSk7s0Z8Hoqmhpp/3+OZ17kGYnHuexTMoLCYUAAQbQ59tKSWonns5
-         i2J9Th4nuBC1jwCVtFcEtyg2CPpVMoYh8OMAo=
+	id S1757075Ab1FUROr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 13:14:47 -0400
+Received: from claw.goop.org ([74.207.240.146]:50739 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756941Ab1FUROq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 13:14:46 -0400
+Message-ID: <4E00D185.4030409@goop.org>
+Date: Tue, 21 Jun 2011 10:14:45 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110621151040.GB7476@srcf.ucam.org>
-References: <1307389135-8150-1-git-send-email-mjg@redhat.com>
-	<1307389135-8150-3-git-send-email-mjg@redhat.com>
-	<4DFFEC3B.90001@google.com>
-	<20110621151040.GB7476@srcf.ucam.org>
-Date: Tue, 21 Jun 2011 10:12:21 -0700
-X-Google-Sender-Auth: I2beBIogdRdG9S01bg9t16TNJ1Y
-Message-ID: <BANLkTimh8dWmYJFJY9e5sPHfYuL_FK1vbQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] efi: Add support for using efivars as a pstore backend
-From: Tony Luck <tony.luck@intel.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Mike Waychison <mikew@google.com>, linux-kernel@vger.kernel.org,
-        Matt_Domsch@dell.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Xen Devel <Xen-devel@lists.xensource.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 08/15] xen/trace: add segment desc tracing
+References: <cover.1308607697.git.jeremy.fitzhardinge@citrix.com> <834e06a069d43f0cd34794326aaa7094cd53433b.1308607697.git.jeremy.fitzhardinge@citrix.com> <20110621140331.GC28229@dumpdata.com>
+In-Reply-To: <20110621140331.GC28229@dumpdata.com>
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> How do I configure this thing?
->
-> You don't. I'll be posting a patch for pstore that lets you choose the
-> backend - that can be used to disable this functionality at boot time.
-
-For EFI - you need to configure CONFIG_PSTORE (which you may not be
-able to see until you first set CONFIG_MISCFILESYSTEMS) ... and of course
-you'll need CONFIG_EFIVARS.  At the moment (until Matthew provides the
-new pstore boot time choosing argument, you might need to set CONFIG_ACPI_APEI=n
-because otherwise its a link order race to see who gets to register
-their back end first.
-
-Once you boot into that kernel you can mount pstore:
-
- # mount -t pstore - /dev/pstore
-
-and once you crash/shutdown/reboot and mount it again - you should see
-some files
-in /dev/pstore with the tail of the saved console log from the
-previous kernel. Remove
-the files to clear the underlying store (in your case delete the efi
-variables that saved
-the text of the console log).
-
->> >+    sprintf(stub_name, "dump-type%u-%u-", type, part);
+On 06/21/2011 07:03 AM, Konrad Rzeszutek Wilk wrote:
+> On Mon, Jun 20, 2011 at 03:15:04PM -0700, Jeremy Fitzhardinge wrote:
+>> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 >>
->> The format specifier here uses an unsigned, but your series passes
->> part around as a signed int.  If part is truely non-negative,
->> consider changing it to unsigned?
->
-> The variable name is fundamentally meaningless. Just think of it as a
-> binary representation of the data. Formatting it as a signed integer
-> would break the parsing. But you're right that there's probably no
-> reason for it to be signed in the first place - Tony?
+>> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>> ---
+>>  arch/x86/xen/enlighten.c   |   16 +++++++++-
+>>  include/trace/events/xen.h |   75 ++++++++++++++++++++++++++++++++++++++++++++
+>>  2 files changed, 90 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+>> index dd7b88f..fa4e2d2 100644
+>> --- a/arch/x86/xen/enlighten.c
+>> +++ b/arch/x86/xen/enlighten.c
+>> @@ -341,6 +341,8 @@ static void xen_set_ldt(const void *addr, unsigned entries)
+>>  	struct mmuext_op *op;
+>>  	struct multicall_space mcs = xen_mc_entry(sizeof(*op));
+>>  
+>> +	trace_xen_cpu_set_ldt(addr, entries);
+>> +
+>>  	op = mcs.args;
+>>  	op->cmd = MMUEXT_SET_LDT;
+>>  	op->arg1.linear_addr = (unsigned long)addr;
+>> @@ -496,6 +498,8 @@ static void xen_write_ldt_entry(struct desc_struct *dt, int entrynum,
+>>  	xmaddr_t mach_lp = arbitrary_virt_to_machine(&dt[entrynum]);
+>>  	u64 entry = *(u64 *)ptr;
+>>  
+>> +	trace_xen_cpu_write_ldt_entry(dt, entrynum, entry);
+>> +
+>>  	preempt_disable();
+>>  
+>>  	xen_mc_flush();
+>> @@ -565,6 +569,8 @@ static void xen_write_idt_entry(gate_desc *dt, int entrynum, const gate_desc *g)
+>>  	unsigned long p = (unsigned long)&dt[entrynum];
+>>  	unsigned long start, end;
+>>  
+>> +	trace_xen_cpu_write_idt_entry(dt, entrynum, g);
+>> +
+>>  	preempt_disable();
+>>  
+>>  	start = __this_cpu_read(idt_desc.address);
+>> @@ -619,6 +625,8 @@ static void xen_load_idt(const struct desc_ptr *desc)
+>>  	static DEFINE_SPINLOCK(lock);
+>>  	static struct trap_info traps[257];
+>>  
+>> +	trace_xen_cpu_load_idt(desc);
+>> +
+>>  	spin_lock(&lock);
+>>  
+>>  	__get_cpu_var(idt_desc) = *desc;
+>> @@ -637,6 +645,8 @@ static void xen_load_idt(const struct desc_ptr *desc)
+>>  static void xen_write_gdt_entry(struct desc_struct *dt, int entry,
+>>  				const void *desc, int type)
+>>  {
+>> +	trace_xen_cpu_write_gdt_entry(dt, entry, desc, type);
+>> +
+>>  	preempt_disable();
+>>  
+>>  	switch (type) {
+>> @@ -665,6 +675,8 @@ static void xen_write_gdt_entry(struct desc_struct *dt, int entry,
+>>  static void __init xen_write_gdt_entry_boot(struct desc_struct *dt, int entry,
+>>  					    const void *desc, int type)
+>>  {
+>> +	trace_xen_cpu_write_gdt_entry(dt, entry, desc, type);
+>> +
+>>  	switch (type) {
+>>  	case DESC_LDT:
+>>  	case DESC_TSS:
+>> @@ -684,7 +696,9 @@ static void __init xen_write_gdt_entry_boot(struct desc_struct *dt, int entry,
+>>  static void xen_load_sp0(struct tss_struct *tss,
+>>  			 struct thread_struct *thread)
+>>  {
+>> -	struct multicall_space mcs = xen_mc_entry(0);
+>> +	struct multicall_space mcs;
+>> +
+>> +	mcs = xen_mc_entry(0);
+> <scratches his head> Is this prepping it for another commit?
 
-part numbers are integers (1, 2, 3 ...) - so making it unsigned makes sense.
+Urm, not sure.  Will check.
 
->> Hmm.  pstore doesn't have a pstore_unregister?  This is unfortunate
->> because this breaks efivars module unloading :(
->
-> Userspace really ought to depend on efivars being available on EFI
-> systems. I don't think losing the ability to unload it is a big loss.
+>>  	MULTI_stack_switch(mcs.mc, __KERNEL_DS, thread->sp0);
+>>  	xen_mc_issue(PARAVIRT_LAZY_CPU);
+>>  }
+>> diff --git a/include/trace/events/xen.h b/include/trace/events/xen.h
+>> index 5811c24..b1f73c4 100644
+>> --- a/include/trace/events/xen.h
+>> +++ b/include/trace/events/xen.h
+>> @@ -405,6 +405,81 @@ TRACE_EVENT(xen_mmu_pgd_unpin,
+>>  	    TP_printk("mm %p pgd %p", __entry->mm, __entry->pgd)
+>>  	);
+>>  
+>> +/* CPU */
+>> +TRACE_EVENT(xen_cpu_write_ldt_entry,
+>> +	    TP_PROTO(struct desc_struct *dt, int entrynum, u64 desc),
+>> +	    TP_ARGS(dt, entrynum, desc),
+>> +	    TP_STRUCT__entry(
+>> +		    __field(struct desc_struct *, dt)
+>> +		    __field(int, entrynum)
+>> +		    __field(u64, desc)
+>> +		    ),
+>> +	    TP_fast_assign(__entry->dt = dt;
+>> +			   __entry->entrynum = entrynum;
+>> +			   __entry->desc = desc;
+>> +		    ),
+>> +	    TP_printk("dt %p  entrynum %d  entry %016llx",
+>> +		      __entry->dt, __entry->entrynum,
+>> +		      (unsigned long long)__entry->desc)
+>> +	);
+>> +
+>> +TRACE_EVENT(xen_cpu_write_idt_entry,
+>> +	    TP_PROTO(gate_desc *dt, int entrynum, const gate_desc *ent),
+>> +	    TP_ARGS(dt, entrynum, ent),
+>> +	    TP_STRUCT__entry(
+>> +		    __field(gate_desc *, dt)
+>> +		    __field(int, entrynum)
+>> +		    ),
+>> +	    TP_fast_assign(__entry->dt = dt;
+>> +			   __entry->entrynum = entrynum;
+>> +		    ),
+>> +	    TP_printk("dt %p  entrynum %d",
+>> +		      __entry->dt, __entry->entrynum)
+>> +	);
+> The 'ent' isn't being printed?
 
-If there is a strong demand for this - maybe someone will write a patch
-for it?  But in general, once you attach a backend to pstore, I'd expect
-you to leave it attached - you don't know whether the system is about
-to crash, and you'd lose the kernel log if you crashed while the backend
-was not registered.
+Nor stored.  I don't remember why; possibly because its not all that
+interesting and the trace is just there for consistency's sake.  The idt
+entries are only ever set at boot time.
 
--Tony
+>> +
+>> +TRACE_EVENT(xen_cpu_load_idt,
+>> +	    TP_PROTO(const struct desc_ptr *desc),
+>> +	    TP_ARGS(desc),
+>> +	    TP_STRUCT__entry(
+>> +		    __field(unsigned long, addr)
+>> +		    ),
+>> +	    TP_fast_assign(__entry->addr = desc->address),
+>> +	    TP_printk("addr %lx", __entry->addr)
+>> +	);
+>> +
+>> +TRACE_EVENT(xen_cpu_write_gdt_entry,
+>> +	    TP_PROTO(struct desc_struct *dt, int entrynum, const void *desc, int type),
+>> +	    TP_ARGS(dt, entrynum, desc, type),
+>> +	    TP_STRUCT__entry(
+>> +		    __field(struct desc_struct *, dt)
+>> +		    __field(int, entrynum)
+>> +		    __field(int, type)
+>> +		    __field(u64, desc)
+> The order here is different from the arguments.
+
+Yeah, and not properly packed.
+
+    J
