@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab1FUJKW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 05:10:22 -0400
-Received: from webbox687.server-home.net ([195.149.74.151]:52298 "EHLO
-	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749Ab1FUJKT (ORCPT
+	id S1755697Ab1FUJUa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 05:20:30 -0400
+Received: from jabbah.telkomsa.net ([196.25.211.3]:22707 "EHLO
+	jabbah.telkomsa.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755440Ab1FUJUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 05:10:19 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: Re: [PATCH v3] pch_gpio: Support interrupt function
-Date: Tue, 21 Jun 2011 11:10:17 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; x86_64; ; )
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com
-References: <1308631468-2376-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-In-Reply-To: <1308631468-2376-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+	Tue, 21 Jun 2011 05:20:24 -0400
+X-Greylist: delayed 554 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Jun 2011 05:20:23 EDT
+Date: Tue, 21 Jun 2011 11:11:06 +0200 (SAST)
+From: "U.N Compensation Payout" <online771122@telkomsa.net>
+Reply-To: "U.N Compensation Payout" <unteam11@live.hk>
+Message-ID: <960691961.1322913.1308647466097.JavaMail.root@zimbra4-vm1.telkomsa.net>
+Subject: Pick Up Your $5,000USD Now!!
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106211110.18171.alexander.stein@systec-electronic.com>
+X-Originating-IP: [192.168.16.42]
+X-Mailer: Zimbra 6.0.10_GA_2692 (zclient/6.0.10_GA_2692)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 21 June 2011 06:44:28 Tomoya MORINAGA wrote:
-> Support interrupt function using irq_chip_generic
-> 
-> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Hello,
 
-I wrote a small program which use poll(2) on value, after edge hase been 
-configured from shell. I cannot test the edge detection appropriately due to 
-debouncing using jumpers.
+   I write to inform you that we have already sent you $5,000.00USD through Western Union as we have been given the mandate to transfer your full compensation payment of $520,000.00USD via Western Union Money Transfer by the United Nations (ECOWAS). This is because United Nations and (ECOWAS) are supporting individuals due to the worldwide economy meltdown.
 
-Despite from that:
+  I would have requested for your phone number to give you the information through phone but internet hackers were many. So i decided to email you the MTCN and sender name so that you can pick up this $5,000.00USD to enable us send another $5,000.00USD by tomorrow as you know that we will be sending you only $5,000.00USD per day.  The fund was send in the name which you use in opening your e-mail address.
+ Please pick up this information and rush to any western union to pick up the $5,000.00USD and send us an email back to enable us send you another payment by tomorrow.
 
-Tested-by: Alexander Stein <alexander.stein@systec-electronic.com>
+Email or call me once you picked up this $5,000.00USD today.
+
+Mr. mohammed bello
++2348167889472
+
+Here is the western union information to pick up the $5,000.00USD,
+
+SENDER'S NAME:.........mohammed bello
+
+MTCN....................1456 899 119
+COUNTRY....Nigeria
+AMOUNT:........................$5,000 USD
+TEST QUESTION:............we trust
+TEST ANSWER:..............in God
+
+I am waiting for your email or call once you pick up the $5,000.00USD,
+
+Thanks.
+
+Mr. mohammed bello
