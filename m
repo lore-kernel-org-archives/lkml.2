@@ -1,48 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab1FUUCB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 16:02:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15009 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753946Ab1FUUB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 16:01:59 -0400
-Message-ID: <4E00F88F.2080603@redhat.com>
-Date: Tue, 21 Jun 2011 16:01:19 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Cong Wang <amwang@redhat.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: Re: [PATCH 1/3] mm: completely disable THP by transparent_hugepage=never
-References: <1308587683-2555-1-git-send-email-amwang@redhat.com> <20110620165844.GA9396@suse.de> <4DFF7E3B.1040404@redhat.com> <4DFF7F0A.8090604@redhat.com> <4DFF8106.8090702@redhat.com> <4DFF8327.1090203@redhat.com> <4DFF84BB.3050209@redhat.com> <4DFF8848.2060802@redhat.com> <20110620182558.GF4749@redhat.com> <20110620192117.GG20843@redhat.com> <4E00192E.70901@redhat.com>
-In-Reply-To: <4E00192E.70901@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1756875Ab1FUUDo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 16:03:44 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:43420 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753946Ab1FUUDn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 16:03:43 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Jonas Bonn <jonas@southpole.se>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 14/19] OpenRISC: Module support
+In-Reply-To: Your message of "Sun, 19 Jun 2011 13:43:40 +0200."
+             <1308483825-6023-15-git-send-email-jonas@southpole.se>
+From: Valdis.Kletnieks@vt.edu
+References: <1308483825-6023-1-git-send-email-jonas@southpole.se>
+            <1308483825-6023-15-git-send-email-jonas@southpole.se>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1308686616_2609P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Tue, 21 Jun 2011 16:03:36 -0400
+Message-ID: <31626.1308686616@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Info: (0) 
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020201.4E00F91A.002B,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2011 12:08 AM, Cong Wang wrote:
+--==_Exmh_1308686616_2609P
+Content-Type: text/plain; charset=us-ascii
 
-> The thing is that we can save ~10K by adding 3 lines of code as this
-> patch showed, where else in kernel can you save 10K by 3 lines of code?
-> (except some kfree() cases, of course) So, again, why not have it? ;)
+On Sun, 19 Jun 2011 13:43:40 +0200, Jonas Bonn said:
 
-Because we'll end up with hundreds of lines of code, just
-to save under 1MB of memory.  Which ends up not being saved
-at all, because people will still give their kdump kernel
-128MB :)
+Arnd already did a number of comments - two things I didn't see him note:
 
-The only really big gain you are likely to get is making
-sure all the per-cpu memory is not allocated in the kdump
-kernel (which is booted with 1 cpu).
+>  arch/openrisc/kernel/module.c |  126 +++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 126 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/openrisc/kernel/module.c
+> 
+> diff --git a/arch/openrisc/kernel/module.c b/arch/openrisc/kernel/module.c
+> new file mode 100644
+> index 0000000..952b129
+> --- /dev/null
+> +++ b/arch/openrisc/kernel/module.c
+> @@ -0,0 +1,126 @@
+> +/*
+> + * OpenRISC module.c
 
-That is a big, multi-MB, optimization that can be implemented
-in one place.  Large savings for a localized change, so you
-actually have a chance of having the changes accepted upstream.
+Lose the filenames in the headers - you do this in multiple files.
 
--- 
-All rights reversed
+Also, do you even *need* a module.c? There isn't much in here, will the main
+kernel/module.c do the work needed?  Or did you end up with one because the
+arch you cloned had one?
+
+
+--==_Exmh_1308686616_2609P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOAPkYcC3lWbTT17ARAr1WAKDbPd0kTRmBqpa1sthVBIJxJLX2oACdH/N0
+Z+lsfkZdybWHFJo34Yk17Sc=
+=F8lN
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1308686616_2609P--
+
