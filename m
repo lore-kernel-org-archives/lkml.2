@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291Ab1FURzC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 13:55:02 -0400
-Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:42423
-	"EHLO DB3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757098Ab1FURzA (ORCPT
+	id S1757227Ab1FURxL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 13:53:11 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:62830 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756924Ab1FURxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 13:55:00 -0400
-X-SpamScore: -15
-X-BigFish: VPS-15(zz936eK4015L1432N98dKzz1202hzz8275bh8275dhz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LN5J3H-01-3J5-02
-X-M-MSG: 
-Date: Tue, 21 Jun 2011 19:54:51 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "oprofile-list@lists.sourceforge.net" 
-	<oprofile-list@lists.sourceforge.net>
-Subject: Re: [GIT PULL] oprofile fixes for v3.0
-Message-ID: <20110621175451.GD20052@erda.amd.com>
-References: <20110621125219.GZ20052@erda.amd.com>
- <20110621130308.GA22088@elte.hu>
+	Tue, 21 Jun 2011 13:53:07 -0400
+X-IronPort-AV: E=Sophos;i="4.65,402,1304294400"; 
+   d="scan'208";a="6409317"
+Date: Tue, 21 Jun 2011 18:57:01 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>
+Subject: Re: [PATCH 1/3] x86: calculate precisely the memory needed by
+ init_memory_mapping
+In-Reply-To: <4DFFCBAD.9040507@linux.intel.com>
+Message-ID: <alpine.DEB.2.00.1106211601570.12963@kaball-desktop>
+References: <alpine.DEB.2.00.1106071849290.12963@kaball-desktop> <1307470409-7654-1-git-send-email-stefano.stabellini@eu.citrix.com> <4DFFCBAD.9040507@linux.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110621130308.GA22088@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.06.11 09:03:08, Ingo Molnar wrote:
+On Mon, 20 Jun 2011, H. Peter Anvin wrote:
+> On 06/07/2011 11:13 AM, stefano.stabellini@eu.citrix.com wrote:
+> > 
+> > - remove the extra page added on x86_32 for the fixmap because is not
+> > needed: the PMD entry is already allocated and contiguous for the whole
+> > range (a PMD page covers 4G of virtual addresses) and the pte entry is
+> > already allocated by early_ioremap_init.
+> > 
 > 
-> Robert,
+> Hi Stefano,
 > 
-> * Robert Richter <robert.richter@amd.com> wrote:
+> I think this is wrong.  A PMD page covers *1G* of virtual addresses, and
+> in the 2+2 and 1+3 memory configurations, we may or may not need a
+> separate PMD for the fixmap.
 > 
-> > Ingo,
-> > 
-> > please pull oprofile fixes for v3.0 (tip/perf/urgent):
-> > 
-> >  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
-> > 
-> > Thanks,
-> > 
-> > -Robert
-> > 
-> > 
-> > The following changes since commit 2c53b436a30867eb6b47dd7bab23ba638d1fb0d2:
-> > 
-> >   Linux 3.0-rc3 (2011-06-13 15:29:59 -0700)
-> > 
-> > are available in the git repository at:
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
-> > 
-> > Robert Richter (2):
-> >       oprofile, x86: Fix race in nmi handler while starting counters
-> >       oprofile, x86: Fix nmi-unsafe callgraph support
-> > 
-> >  arch/x86/oprofile/backtrace.c |   56 ++++++++++++++++++++++++++++++++++------
-> >  arch/x86/oprofile/nmi_int.c   |   14 +++++++---
-> >  2 files changed, 57 insertions(+), 13 deletions(-)
-> 
-> Since when has NMI callgraph support been broken?
+> Am I missing something?
 
-I think it never worked correct. But the patch can be backported
-without conflicts/reworks only for .37 stable kernel. Do you rather
-like to take it for v3.1?
+You are right, a PMD page covers 1G of virtual addresses so that part of
+the explanation in the comment is wrong.
 
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+The reason why we don't need a separate PMD for the fixmap is that in
+both PAE and non-PAE cases the last gigabyte of virtual addresses is
+always covered by the initial allocation in head_32.S (swapper_pg_dir or
+initial_pg_pmd).
