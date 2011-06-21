@@ -1,69 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756440Ab1FUApW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 20:45:22 -0400
-Received: from antispam01.maxim-ic.com ([205.153.101.182]:34921 "EHLO
-	antispam01.maxim-ic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756307Ab1FUApT convert rfc822-to-8bit (ORCPT
+	id S1756434Ab1FUAr2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 20:47:28 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:42145 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755794Ab1FUAr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 20:45:19 -0400
-X-ASG-Debug-ID: 1308617117-02ae980a393843c0003-xx1T2L
-X-Barracuda-Envelope-From: Peter.Hsiang@maxim-ic.com
-From: Peter Hsiang <Peter.Hsiang@maxim-ic.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Taylor Hutt <thutt@chromium.org>
-CC: Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Olof Johansson <olofj@chromium.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 20 Jun 2011 17:43:58 -0700
-Subject: RE: [PATCH] ASoC: codecs: Max98095: Fix logging of hardware
- revision.
-Thread-Topic: [PATCH] ASoC: codecs: Max98095: Fix logging of hardware
- revision.
-X-ASG-Orig-Subj: RE: [PATCH] ASoC: codecs: Max98095: Fix logging of hardware
- revision.
-Thread-Index: AcwvqXuuZqLUunoKTr6UyAlqcV8IYwAAMi1A
-Message-ID: <B2150E1E4418E1438554A300EA5040E40DDEC16D42@ITSVLEX06.it.maxim-ic.internal>
-References: <1308596072-17158-1-git-send-email-thutt@chromium.org>
- <20110621002322.GE1905@opensource.wolfsonmicro.com>
-In-Reply-To: <20110621002322.GE1905@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 20 Jun 2011 20:47:26 -0400
+Message-ID: <4DFFE9C1.5060003@metafoo.de>
+Date: Tue, 21 Jun 2011 02:45:53 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110505 Icedove/3.0.11
 MIME-Version: 1.0
-X-Barracuda-Connect: maxdalex02.maxim-ic.internal[10.16.15.104]
-X-Barracuda-Start-Time: 1308617117
-X-Barracuda-URL: http://AntiSpam02.maxim-ic.com:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.02
-X-Barracuda-Spam-Status: No, SCORE=0.02 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=THREAD_INDEX, THREAD_TOPIC
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.66649
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.01 THREAD_INDEX           thread-index: AcO7Y8iR61tzADqsRmmc5wNiFHEOig==
-	0.01 THREAD_TOPIC           Thread-Topic: ...(Japanese Subject)...
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-kernel@vger.kernel.org,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: Re: [PATCH 1/8] regmap: Add generic non-memory mapped register access
+ API
+References: <20110620124608.GB31140@opensource.wolfsonmicro.com> <1308574489-31322-1-git-send-email-broonie@opensource.wolfsonmicro.com> <4DFFD486.7020901@metafoo.de> <20110621001438.GD1905@opensource.wolfsonmicro.com>
+In-Reply-To: <20110621001438.GD1905@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011, Mark Brown wrote:
-> On Mon, Jun 20, 2011 at 11:54:32AM -0700, Taylor Hutt wrote:
-> > The base hardware revision of the Maxim 98095 part is 0x40; the code
-> > which outputs the revision of the hardware has been updated to
-> > properly use uppercase alphabetic values for the revision numbers.
+On 06/21/2011 02:14 AM, Mark Brown wrote:
 > 
-> Are you sure that this is true for all devices that might be supported
-> by the driver (I'm guessing there may be other variants)?  There's
-> often a drift between silicon and package revisions which gets papered 
-> over by datasheets and ignored by drivers.
+>>> +static void regmap_format_4_12_write(struct regmap *map,
+>>> +				     unsigned int reg, unsigned int val)
+>>> +{
+>>> +	u16 *out = map->work_buf;
+>>> +	*out = cpu_to_be16((reg << 12) | val);
+>>> +}
+> 
+>>> +static void regmap_format_7_9_write(struct regmap *map,
+>>> +				    unsigned int reg, unsigned int val)
+>>> +{
+>>> +	u16 *out = map->work_buf;
+>>> +	*out = cpu_to_be16((reg << 9) | val);
+>>> +}
+> 
+>> It would make sense to keep val_bits around and implement these two generically:
+>> 	*out = cpu_to_be16((reg << map->format.val_bits) | val);
+> 
+> I'm not sure it's worth it for the two cases we know about, and as with
+> passing the map into these I like keeping the byte oriented assumption
+> in the interfaces as much as possible as it makes things easier to think
+> about.
 
-I checked with hardware engineering and was told 0x40=RevA, 0x41=RevB..
+Hm, ok I guess we can wait with this until there are actually other similar
+formats which follow this scheme.
 
-Would a raw value or the use of a 0x3F bit mask be more acceptable?
+> 
+>>> +struct regmap *regmap_init(struct device *dev, struct regmap_config *config)
+> 
+>> regmap_alloc would in my opinion be a better name.
+> 
+> I like init, especially considering the plan to add cache support as
+> there's more work in setting that up once you start doing the advanced
+> caches.
 
-Peter
+If you take a look at other kernel apis _alloc is usually used if the structure
+is allocated (and initialized) inside the function and _init is used when the
+function initializes an already existing structure. And it also matches better
+with regmap_free.
+
+> 
+>>> +	/*
+>>> +	 * Some buses flag reads by setting the high bit in the
+>>> +	 * register addresss; since it's always the high bit for all
+>>> +	 * current formats we can do this here rather than in
+>>> +	 * formatting.  This may break if we get interesting formats.
+>>> +	 */
+>>> +	if (map->bus->read_flag_in_reg)
+>>> +		u8[0] |= 0x80;
+> 
+>> This is rather specific. Making this a per device mask or bit offset, would
+>> make more sense in my opinion. I have for example one SPI codec device which
+>> uses the 7th bit to indicate a read. And I also have devices on a custom bus,
+> 
+> Can you say what device this is?  I'm just going on the devices we've
+> seen in the kernel so far here...  Still easy enough to do.
+> 
+
+The ad1836 for example really only uses 10 bits for data instead of 12.
+The 11th bit is reserved and the 12th bit is used to indicate whether it is an
+read or write. Though since gaps between register and data are not supported
+data was made 12 bits wide and the upper 2 bits are always set to 0.
+
+The adav801, which is going to be submitted upstream soon, uses a similar
+scheme. First seven bits are register address, then 1 bit which indicates
+read/write and then 8 bits data. We are currently using the same trick here and
+made data 9 bits wide.
+
+>>> +struct regmap_config {
+>>> +	int reg_bits;
+>>> +	int val_bits;
+> 
+>> size_t for both?
+> 
+> It doesn't seem particularly appropriate as we're working with a bit
+> count not the usual byte count where size_t gets used and I can't see it
+> ever making any difference.
+
+I suggested it because the byte count in the regmap_format struct is size_t and
+it calculated from the bit count.
