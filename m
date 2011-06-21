@@ -1,118 +1,555 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757355Ab1FUUau (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 16:30:50 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:39214 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753673Ab1FUUas (ORCPT
+	id S1757404Ab1FUUcO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 16:32:14 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51807 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751588Ab1FUUcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 16:30:48 -0400
-Message-ID: <4E00FF58.7070802@linux.vnet.ibm.com>
-Date: Tue, 21 Jun 2011 15:30:16 -0500
-From: Brian King <brking@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	Tue, 21 Jun 2011 16:32:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=YtA7EjjngBud5+OdjsKGHP0g432/azwPPW7/9zIgSPJXh2ZqOEnsRAVol5K85cQkSn
+         Xd6qW5zUmBWAYkB7lBxetrTHRSMngVA0VbYf2j1Ngx2xC+hxbRRuSGgj7AJ3a1GymkA/
+         hd1iMIqlFjkZxhXBZmJtr4+qSPehkjU1l4CV0=
+Date: Tue, 21 Jun 2011 13:32:01 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-input@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, Misael Lopez Cruz <misael.lopez@ti.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH v6 11/18] input: Add initial support for TWL6040 vibrator
+Message-ID: <20110621203200.GA3731@core.coreip.homeip.net>
+References: <1308663556-29120-1-git-send-email-peter.ujfalusi@ti.com>
+ <1308663556-29120-12-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-To: Nishanth Aravamudan <nacc@us.ibm.com>
-CC: Tejun Heo <tj@kernel.org>, linuxppc-dev@lists.ozlabs.org,
-        wayneb@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, mbizon@freebox.fr, jgarzik@pobox.com
-Subject: Re: [PATCH] libata/sas: only set FROZEN flag if new EH is supported
-References: <20110615191747.GA6324@us.ibm.com> <4DF90FCA.1040706@linux.vnet.ibm.com> <20110615233417.GB6324@us.ibm.com> <20110616075114.GH8141@htj.dyndns.org> <4DFA0507.3090609@linux.vnet.ibm.com> <20110616152836.GA15268@us.ibm.com> <20110621160714.GA14174@us.ibm.com>
-In-Reply-To: <20110621160714.GA14174@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308663556-29120-12-git-send-email-peter.ujfalusi@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good to me. Jeff/Tejun - any issues with merging this?
-
-Thanks,
-
-Brian
-
-On 06/21/2011 11:07 AM, Nishanth Aravamudan wrote:
-> Ping on this -- Tejun, Brian, Jeff, this is a pretty annoying 2.6.39
-> regression which it would be good to have fixed in 3.0.
+On Tue, Jun 21, 2011 at 04:39:09PM +0300, Peter Ujfalusi wrote:
+> From: Misael Lopez Cruz <misael.lopez@ti.com>
 > 
-> Thanks,
-> Nish
+> Add twl6040_vibra as a child of MFD device twl6040_codec. This
+> implementation covers the PCM-to-PWM mode of TWL6040 vibrator
+> module.
 > 
-> On 16.06.2011 [08:28:36 -0700], Nishanth Aravamudan wrote:
->> On 16.06.2011 [08:28:39 -0500], Brian King wrote:
->>> On 06/16/2011 02:51 AM, Tejun Heo wrote:
->>>> On Wed, Jun 15, 2011 at 04:34:17PM -0700, Nishanth Aravamudan wrote:
->>>>>> That looks like the right thing to do. For ipr's usage of
->>>>>> libata, we don't have the concept of a port frozen state, so this flag
->>>>>> should really never get set. The alternate way to fix this would be to
->>>>>> only set ATA_PFLAG_FROZEN in ata_port_alloc if ap->ops->error_handler
->>>>>> is not NULL.
->>>>>
->>>>> It seemed like ipr is as you say, but I wasn't sure if it was
->>>>> appropriate to make the change above in the common libata-scis code or
->>>>> not. I don't want to break some other device on accident.
->>>>>
->>>>> Also, I tried your suggestion, but I don't think that can happen in
->>>>> ata_port_alloc? ata_port_alloc is allocated ap itself, and it seems like
->>>>> ap->ops typically gets set only after ata_port_alloc returns?
->>>>
->>>> Maybe we can test error_handler in ata_sas_port_start()?
->>>
->>> Good point. Since libsas is converted to the new eh now, we would need to have
->>> this test.
->>
->> Commit 7b3a24c57d2eeda8dba9c205342b12689c4679f9 ("ahci: don't enable
->> port irq before handler is registered") caused a regression for CD-ROMs
->> attached to the IPR SATA bus on Power machines:
->>
->>   ata_port_alloc: ENTER
->>   ata_port_probe: ata1: bus probe begin
->>   ata1.00: ata_dev_read_id: ENTER
->>   ata1.00: failed to IDENTIFY (I/O error, err_mask=0x40)
->>   ata1.00: ata_dev_read_id: ENTER
->>   ata1.00: failed to IDENTIFY (I/O error, err_mask=0x40)
->>   ata1.00: limiting speed to UDMA7:PIO5
->>   ata1.00: ata_dev_read_id: ENTER
->>   ata1.00: failed to IDENTIFY (I/O error, err_mask=0x40)
->>   ata1.00: disabled
->>   ata_port_probe: ata1: bus probe end
->>   scsi_alloc_sdev: Allocation failure during SCSI scanning, some SCSI devices might not be configured
->>
->> The FROZEN flag added in that commit is only cleared by the new EH code,
->> which is not used by ipr. Clear this flag in the SAS code if we don't
->> support new EH.
->>
->> Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
->>
->> diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
->> index d51f979..ebe1685 100644
->> --- a/drivers/ata/libata-scsi.c
->> +++ b/drivers/ata/libata-scsi.c
->> @@ -3797,6 +3797,12 @@ EXPORT_SYMBOL_GPL(ata_sas_port_alloc);
->>   */
->>  int ata_sas_port_start(struct ata_port *ap)
->>  {
->> +	/*
->> +	 * the port is marked as frozen at allocation time, but if we don't
->> +	 * have new eh, we won't thaw it
->> +	 */
->> +	if (!ap->ops->error_handler)
->> +		ap->pflags &= ~ATA_PFLAG_FROZEN;
->>  	return 0;
->>  }
->>  EXPORT_SYMBOL_GPL(ata_sas_port_start);
->>
->>
->> -- 
->> Nishanth Aravamudan <nacc@us.ibm.com>
->> IBM Linux Technology Center
-> 
+> Signed-off-by: Misael Lopez Cruz <misael.lopez@ti.com>
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> CC: Tejun Heo <tj@kernel.org>
 
+Peter,
+
+As Tejun mentioned, there is no difference between having a "private"
+workqueue created with alloc_workqueue() with default parameters and
+using system-wide workqueue. Therefore please use system-wide one. If
+your use shows that you indeed need high-priority workqueue it can be
+added later.
+
+Otherwise:
+
+	Acked-by: Dmitry Torokhov <dtor@mail.ru>
+
+Please feel free to merge this code with the rest of TWL6040 patches
+(presumably throgh Samuel's MFD tree).
+
+Thanks.
+
+> ---
+>  drivers/input/misc/Kconfig         |   11 +
+>  drivers/input/misc/Makefile        |    1 +
+>  drivers/input/misc/twl6040-vibra.c |  416 ++++++++++++++++++++++++++++++++++++
+>  include/linux/i2c/twl.h            |    8 +
+>  4 files changed, 436 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/input/misc/twl6040-vibra.c
+> 
+> diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+> index 077309a..d1bf872 100644
+> --- a/drivers/input/misc/Kconfig
+> +++ b/drivers/input/misc/Kconfig
+> @@ -275,6 +275,17 @@ config INPUT_TWL4030_VIBRA
+>  	  To compile this driver as a module, choose M here. The module will
+>  	  be called twl4030_vibra.
+>  
+> +config INPUT_TWL6040_VIBRA
+> +	tristate "Support for TWL6040 Vibrator"
+> +	depends on TWL4030_CORE
+> +	select TWL6040_CORE
+> +	select INPUT_FF_MEMLESS
+> +	help
+> +	  This option enables support for TWL6040 Vibrator Driver.
+> +
+> +	  To compile this driver as a module, choose M here. The module will
+> +	  be called twl6040_vibra.
+> +
+>  config INPUT_UINPUT
+>  	tristate "User level driver support"
+>  	help
+> diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+> index 38efb2c..4da7c3a 100644
+> --- a/drivers/input/misc/Makefile
+> +++ b/drivers/input/misc/Makefile
+> @@ -40,6 +40,7 @@ obj-$(CONFIG_INPUT_SGI_BTNS)		+= sgi_btns.o
+>  obj-$(CONFIG_INPUT_SPARCSPKR)		+= sparcspkr.o
+>  obj-$(CONFIG_INPUT_TWL4030_PWRBUTTON)	+= twl4030-pwrbutton.o
+>  obj-$(CONFIG_INPUT_TWL4030_VIBRA)	+= twl4030-vibra.o
+> +obj-$(CONFIG_INPUT_TWL6040_VIBRA)	+= twl6040-vibra.o
+>  obj-$(CONFIG_INPUT_UINPUT)		+= uinput.o
+>  obj-$(CONFIG_INPUT_WISTRON_BTNS)	+= wistron_btns.o
+>  obj-$(CONFIG_INPUT_WM831X_ON)		+= wm831x-on.o
+> diff --git a/drivers/input/misc/twl6040-vibra.c b/drivers/input/misc/twl6040-vibra.c
+> new file mode 100644
+> index 0000000..9652ebf
+> --- /dev/null
+> +++ b/drivers/input/misc/twl6040-vibra.c
+> @@ -0,0 +1,416 @@
+> +/*
+> + * twl6040-vibra.c - TWL6040 Vibrator driver
+> + *
+> + * Author:      Jorge Eduardo Candelaria <jorge.candelaria@ti.com>
+> + * Author:      Misael Lopez Cruz <misael.lopez@ti.com>
+> + *
+> + * Copyright:   (C) 2011 Texas Instruments, Inc.
+> + *
+> + * Based on twl4030-vibra.c by Henrik Saari <henrik.saari@nokia.com>
+> + *				Felipe Balbi <felipe.balbi@nokia.com>
+> + *				Jari Vanhala <ext-javi.vanhala@nokia.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + * General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+> + * 02110-1301 USA
+> + *
+> + */
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/workqueue.h>
+> +#include <linux/i2c/twl.h>
+> +#include <linux/mfd/twl6040.h>
+> +#include <linux/slab.h>
+> +#include <linux/delay.h>
+> +#include <linux/regulator/consumer.h>
+> +
+> +#define EFFECT_DIR_180_DEG	0x8000
+> +
+> +/* Recommended modulation index 85% */
+> +#define TWL6040_VIBRA_MOD	85
+> +
+> +#define TWL6040_NUM_SUPPLIES 2
+> +
+> +struct vibra_info {
+> +	struct device *dev;
+> +	struct input_dev *input_dev;
+> +	struct workqueue_struct *workqueue;
+> +	struct work_struct play_work;
+> +	struct mutex mutex;
+> +
+> +	bool enabled;
+> +	int weak_speed;
+> +	int strong_speed;
+> +	int direction;
+> +
+> +	unsigned int vibldrv_res;
+> +	unsigned int vibrdrv_res;
+> +	unsigned int viblmotor_res;
+> +	unsigned int vibrmotor_res;
+> +
+> +	struct regulator_bulk_data supplies[TWL6040_NUM_SUPPLIES];
+> +
+> +	struct twl6040 *twl6040;
+> +};
+> +
+> +static irqreturn_t twl6040_vib_irq_handler(int irq, void *data)
+> +{
+> +	struct vibra_info *info = data;
+> +	struct twl6040 *twl6040 = info->twl6040;
+> +	u8 status;
+> +
+> +	status = twl6040_reg_read(twl6040, TWL6040_REG_STATUS);
+> +	if (status & TWL6040_VIBLOCDET) {
+> +		dev_warn(info->dev, "Left Vibrator overcurrent detected\n");
+> +		twl6040_clear_bits(twl6040, TWL6040_REG_VIBCTLL,
+> +				   TWL6040_VIBENAL);
+> +	}
+> +	if (status & TWL6040_VIBROCDET) {
+> +		dev_warn(info->dev, "Right Vibrator overcurrent detected\n");
+> +		twl6040_clear_bits(twl6040, TWL6040_REG_VIBCTLR,
+> +				   TWL6040_VIBENAR);
+> +	}
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static void twl6040_vibra_enable(struct vibra_info *info)
+> +{
+> +	struct twl6040 *twl6040 = info->twl6040;
+> +	int ret;
+> +
+> +	ret = regulator_bulk_enable(ARRAY_SIZE(info->supplies), info->supplies);
+> +	if (ret) {
+> +		dev_err(info->dev, "failed to enable regulators %d\n", ret);
+> +		return;
+> +	}
+> +
+> +	twl6040_power(info->twl6040, 1);
+> +	if (twl6040_get_rev(twl6040) <= TWL6040_REV_ES1_1) {
+> +		/*
+> +		 * ERRATA: Disable overcurrent protection for at least
+> +		 * 3ms when enabling vibrator drivers to avoid false
+> +		 * overcurrent detection
+> +		 */
+> +		twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLL,
+> +				  TWL6040_VIBENAL | TWL6040_VIBCTRLL);
+> +		twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLR,
+> +				  TWL6040_VIBENAR | TWL6040_VIBCTRLR);
+> +		usleep_range(3000, 3500);
+> +	}
+> +
+> +	twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLL,
+> +			  TWL6040_VIBENAL);
+> +	twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLR,
+> +			  TWL6040_VIBENAR);
+> +
+> +	info->enabled = true;
+> +}
+> +
+> +static void twl6040_vibra_disable(struct vibra_info *info)
+> +{
+> +	struct twl6040 *twl6040 = info->twl6040;
+> +
+> +	twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLL, 0x00);
+> +	twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLR, 0x00);
+> +	twl6040_power(info->twl6040, 0);
+> +
+> +	regulator_bulk_disable(ARRAY_SIZE(info->supplies), info->supplies);
+> +
+> +	info->enabled = false;
+> +}
+> +
+> +static u8 twl6040_vibra_code(int vddvib, int vibdrv_res, int motor_res,
+> +			     int speed, int direction)
+> +{
+> +	int vpk, max_code;
+> +	u8 vibdat;
+> +
+> +	/* output swing */
+> +	vpk = (vddvib * motor_res * TWL6040_VIBRA_MOD) /
+> +		(100 * (vibdrv_res + motor_res));
+> +
+> +	/* 50mV per VIBDAT code step */
+> +	max_code = vpk / 50;
+> +	if (max_code > TWL6040_VIBDAT_MAX)
+> +		max_code = TWL6040_VIBDAT_MAX;
+> +
+> +	/* scale speed to max allowed code */
+> +	vibdat = (u8)((speed * max_code) / USHRT_MAX);
+> +
+> +	/* 2's complement for direction > 180 degrees */
+> +	vibdat *= direction;
+> +
+> +	return vibdat;
+> +}
+> +
+> +static void twl6040_vibra_set_effect(struct vibra_info *info)
+> +{
+> +	struct twl6040 *twl6040 = info->twl6040;
+> +	u8 vibdatl, vibdatr;
+> +	int volt;
+> +
+> +	/* weak motor */
+> +	volt = regulator_get_voltage(info->supplies[0].consumer) / 1000;
+> +	vibdatl = twl6040_vibra_code(volt, info->vibldrv_res,
+> +				     info->viblmotor_res,
+> +				     info->weak_speed, info->direction);
+> +
+> +	/* strong motor */
+> +	volt = regulator_get_voltage(info->supplies[1].consumer) / 1000;
+> +	vibdatr = twl6040_vibra_code(volt, info->vibrdrv_res,
+> +				     info->vibrmotor_res,
+> +				     info->strong_speed, info->direction);
+> +
+> +	twl6040_reg_write(twl6040, TWL6040_REG_VIBDATL, vibdatl);
+> +	twl6040_reg_write(twl6040, TWL6040_REG_VIBDATR, vibdatr);
+> +}
+> +
+> +static void vibra_play_work(struct work_struct *work)
+> +{
+> +	struct vibra_info *info = container_of(work,
+> +				struct vibra_info, play_work);
+> +
+> +	mutex_lock(&info->mutex);
+> +
+> +	if (info->weak_speed || info->strong_speed) {
+> +		if (!info->enabled)
+> +			twl6040_vibra_enable(info);
+> +
+> +		twl6040_vibra_set_effect(info);
+> +	} else if (info->enabled)
+> +		twl6040_vibra_disable(info);
+> +
+> +	mutex_unlock(&info->mutex);
+> +}
+> +
+> +static int vibra_play(struct input_dev *input, void *data,
+> +		      struct ff_effect *effect)
+> +{
+> +	struct vibra_info *info = input_get_drvdata(input);
+> +	int ret;
+> +
+> +	info->weak_speed = effect->u.rumble.weak_magnitude;
+> +	info->strong_speed = effect->u.rumble.strong_magnitude;
+> +	info->direction = effect->direction < EFFECT_DIR_180_DEG ? 1 : -1;
+> +
+> +	ret = queue_work(info->workqueue, &info->play_work);
+> +	if (!ret) {
+> +		dev_info(&input->dev, "work is already on queue\n");
+> +		return ret;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void twl6040_vibra_close(struct input_dev *input)
+> +{
+> +	struct vibra_info *info = input_get_drvdata(input);
+> +
+> +	cancel_work_sync(&info->play_work);
+> +
+> +	mutex_lock(&info->mutex);
+> +
+> +	if (info->enabled)
+> +		twl6040_vibra_disable(info);
+> +
+> +	mutex_unlock(&info->mutex);
+> +}
+> +
+> +#if CONFIG_PM_SLEEP
+> +static int twl6040_vibra_suspend(struct device *dev)
+> +{
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +	struct vibra_info *info = platform_get_drvdata(pdev);
+> +
+> +	mutex_lock(&info->mutex);
+> +
+> +	if (info->enabled)
+> +		twl6040_vibra_disable(info);
+> +
+> +	mutex_unlock(&info->mutex);
+> +
+> +	return 0;
+> +}
+> +
+> +#endif
+> +
+> +static SIMPLE_DEV_PM_OPS(twl6040_vibra_pm_ops, twl6040_vibra_suspend, NULL);
+> +
+> +static int __devinit twl6040_vibra_probe(struct platform_device *pdev)
+> +{
+> +	struct twl4030_vibra_data *pdata = pdev->dev.platform_data;
+> +	struct vibra_info *info;
+> +	int ret;
+> +
+> +	if (!pdata) {
+> +		dev_err(&pdev->dev, "platform_data not available\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	info = kzalloc(sizeof(*info), GFP_KERNEL);
+> +	if (!info) {
+> +		dev_err(&pdev->dev, "couldn't allocate memory\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	info->dev = &pdev->dev;
+> +	info->twl6040 = dev_get_drvdata(pdev->dev.parent);
+> +	info->vibldrv_res = pdata->vibldrv_res;
+> +	info->vibrdrv_res = pdata->vibrdrv_res;
+> +	info->viblmotor_res = pdata->viblmotor_res;
+> +	info->vibrmotor_res = pdata->vibrmotor_res;
+> +	if ((!info->vibldrv_res && !info->viblmotor_res) ||
+> +	    (!info->vibrdrv_res && !info->vibrmotor_res)) {
+> +		dev_err(info->dev, "invalid vibra driver/motor resistance\n");
+> +		ret = -EINVAL;
+> +		goto err_kzalloc;
+> +	}
+> +
+> +	mutex_init(&info->mutex);
+> +
+> +	info->input_dev = input_allocate_device();
+> +	if (info->input_dev == NULL) {
+> +		dev_err(info->dev, "couldn't allocate input device\n");
+> +		ret = -ENOMEM;
+> +		goto err_kzalloc;
+> +	}
+> +
+> +	input_set_drvdata(info->input_dev, info);
+> +
+> +	info->input_dev->name = "twl6040:vibrator";
+> +	info->input_dev->id.version = 1;
+> +	info->input_dev->dev.parent = pdev->dev.parent;
+> +	info->input_dev->close = twl6040_vibra_close;
+> +	__set_bit(FF_RUMBLE, info->input_dev->ffbit);
+> +
+> +	ret = input_ff_create_memless(info->input_dev, NULL, vibra_play);
+> +	if (ret < 0) {
+> +		dev_err(info->dev, "couldn't register vibrator to FF\n");
+> +		goto err_ialloc;
+> +	}
+> +
+> +	ret = input_register_device(info->input_dev);
+> +	if (ret < 0) {
+> +		dev_err(info->dev, "couldn't register input device\n");
+> +		goto err_iff;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, info);
+> +
+> +	ret = twl6040_request_irq(info->twl6040, TWL6040_IRQ_VIB,
+> +				  twl6040_vib_irq_handler, 0,
+> +				  "twl6040_irq_vib", info);
+> +	if (ret) {
+> +		dev_err(info->dev, "VIB IRQ request failed: %d\n", ret);
+> +		goto err_irq;
+> +	}
+> +
+> +	info->supplies[0].supply = "vddvibl";
+> +	info->supplies[1].supply = "vddvibr";
+> +	ret = regulator_bulk_get(info->dev, ARRAY_SIZE(info->supplies),
+> +				 info->supplies);
+> +	if (ret) {
+> +		dev_err(info->dev, "couldn't get regulators %d\n", ret);
+> +		goto err_regulator;
+> +	}
+> +
+> +	if (pdata->vddvibl_uV) {
+> +		ret = regulator_set_voltage(info->supplies[0].consumer,
+> +					    pdata->vddvibl_uV,
+> +					    pdata->vddvibl_uV);
+> +		if (ret) {
+> +			dev_err(info->dev, "failed to set VDDVIBL volt %d\n",
+> +				ret);
+> +			goto err_voltage;
+> +		}
+> +	}
+> +
+> +	if (pdata->vddvibr_uV) {
+> +		ret = regulator_set_voltage(info->supplies[1].consumer,
+> +					    pdata->vddvibr_uV,
+> +					    pdata->vddvibr_uV);
+> +		if (ret) {
+> +			dev_err(info->dev, "failed to set VDDVIBR volt %d\n",
+> +				ret);
+> +			goto err_voltage;
+> +		}
+> +	}
+> +
+> +	info->workqueue = alloc_workqueue("twl6040-vibra", 0, 0);
+> +	if (info->workqueue == NULL) {
+> +		dev_err(info->dev, "couldn't create workqueue\n");
+> +		ret = -ENOMEM;
+> +		goto err_voltage;
+> +	}
+> +	INIT_WORK(&info->play_work, vibra_play_work);
+> +
+> +	return 0;
+> +
+> +err_voltage:
+> +	regulator_bulk_free(ARRAY_SIZE(info->supplies), info->supplies);
+> +err_regulator:
+> +	twl6040_free_irq(info->twl6040, TWL6040_IRQ_VIB, info);
+> +err_irq:
+> +	input_unregister_device(info->input_dev);
+> +	info->input_dev = NULL;
+> +err_iff:
+> +	if (info->input_dev)
+> +		input_ff_destroy(info->input_dev);
+> +err_ialloc:
+> +	input_free_device(info->input_dev);
+> +err_kzalloc:
+> +	kfree(info);
+> +	return ret;
+> +}
+> +
+> +static int __devexit twl6040_vibra_remove(struct platform_device *pdev)
+> +{
+> +	struct vibra_info *info = platform_get_drvdata(pdev);
+> +
+> +	input_unregister_device(info->input_dev);
+> +	twl6040_free_irq(info->twl6040, TWL6040_IRQ_VIB, info);
+> +	regulator_bulk_free(ARRAY_SIZE(info->supplies), info->supplies);
+> +	destroy_workqueue(info->workqueue);
+> +	kfree(info);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver twl6040_vibra_driver = {
+> +	.probe		= twl6040_vibra_probe,
+> +	.remove		= __devexit_p(twl6040_vibra_remove),
+> +	.driver		= {
+> +		.name	= "twl6040-vibra",
+> +		.owner	= THIS_MODULE,
+> +		.pm	= &twl6040_vibra_pm_ops,
+> +	},
+> +};
+> +
+> +static int __init twl6040_vibra_init(void)
+> +{
+> +	return platform_driver_register(&twl6040_vibra_driver);
+> +}
+> +module_init(twl6040_vibra_init);
+> +
+> +static void __exit twl6040_vibra_exit(void)
+> +{
+> +	platform_driver_unregister(&twl6040_vibra_driver);
+> +}
+> +module_exit(twl6040_vibra_exit);
+> +
+> +MODULE_ALIAS("platform:twl6040-vibra");
+> +MODULE_DESCRIPTION("TWL6040 Vibra driver");
+> +MODULE_LICENSE("GPL");
+> +MODULE_AUTHOR("Jorge Eduardo Candelaria <jorge.candelaria@ti.com>");
+> +MODULE_AUTHOR("Misael Lopez Cruz <misael.lopez@ti.com>");
+> diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
+> index ea5baa2..685fd76 100644
+> --- a/include/linux/i2c/twl.h
+> +++ b/include/linux/i2c/twl.h
+> @@ -669,6 +669,14 @@ struct twl4030_codec_data {
+>  
+>  struct twl4030_vibra_data {
+>  	unsigned int	coexist;
+> +
+> +	/* twl6040 */
+> +	unsigned int vibldrv_res;	/* left driver resistance */
+> +	unsigned int vibrdrv_res;	/* right driver resistance */
+> +	unsigned int viblmotor_res;	/* left motor resistance */
+> +	unsigned int vibrmotor_res;	/* right motor resistance */
+> +	int vddvibl_uV;			/* VDDVIBL volt, set 0 for fixed reg */
+> +	int vddvibr_uV;			/* VDDVIBR volt, set 0 for fixed reg */
+>  };
+>  
+>  struct twl4030_audio_data {
+> -- 
+> 1.7.5.3
+> 
 
 -- 
-Brian King
-Linux on Power Virtualization
-IBM Linux Technology Center
-
-
+Dmitry
