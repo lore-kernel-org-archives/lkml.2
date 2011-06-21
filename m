@@ -1,42 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab1FUJmf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 05:42:35 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:45242 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749Ab1FUJmc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 05:42:32 -0400
+	id S1756236Ab1FUJpZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 05:45:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59646 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755101Ab1FUJpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 05:45:23 -0400
+Date: Tue, 21 Jun 2011 11:44:55 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Jason Baron <jbaron@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] jump_label: fix jump_label update
+Message-ID: <20110621094455.GA1987@jolsa.brq.redhat.com>
+References: <4E00038B.2060404@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1307692817-15602-1-git-send-email-linus.walleij@stericsson.com>
-References: <1307692817-15602-1-git-send-email-linus.walleij@stericsson.com>
-Date: Tue, 21 Jun 2011 11:42:31 +0200
-Message-ID: <BANLkTinhxC1efmiTrB4fC3TqTqzBWhSxgg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] leds/lm3530: calibrate ALS input voltage
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E00038B.2060404@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew, this one:
+On Tue, Jun 21, 2011 at 10:35:55AM +0800, Xiao Guangrong wrote:
+> The key of module is out of __stop___jump_table, it causes the events
+> of modules does not work
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+> ---
+>  kernel/jump_label.c |   14 +++++++++-----
+>  1 files changed, 9 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+> index fa27e75..a8ce450 100644
+> --- a/kernel/jump_label.c
+> +++ b/kernel/jump_label.c
+> @@ -375,15 +375,19 @@ int jump_label_text_reserved(void *start, void *end)
+>  
+>  static void jump_label_update(struct jump_label_key *key, int enable)
+>  {
+> -	struct jump_entry *entry = key->entries;
+> -
+> -	/* if there are no users, entry can be NULL */
+> -	if (entry)
+> -		__jump_label_update(key, entry, __stop___jump_table, enable);
+> +	struct jump_entry *entry = key->entries, *stop = __stop___jump_table;
+>  
+>  #ifdef CONFIG_MODULES
+> +	struct module *mod = __module_address((jump_label_t)key);
+> +
+>  	__jump_label_mod_update(key, enable);
+> +
+> +	if (mod)
+> +		stop = mod->jump_entries + mod->num_jump_entries;
+>  #endif
+> +	/* if there are no users, entry can be NULL */
+> +	if (entry)
+> +		__jump_label_update(key, entry, stop, enable);
+>  }
+>  
+>  #endif
+> -- 
+> 1.7.5.4
 
-On Fri, Jun 10, 2011 at 10:00 AM, Linus Walleij
-<linus.walleij@stericsson.com> wrote:
-> From: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
->
-> This patch provides the support for auto calibration of ALS Zone
-> boundaries based on min/max ALS input voltage.
->
-> Signed-off-by: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+That works for me, but in order to test it I needed to export
+jump_label_inc/jump_label_dec functions.
 
-Can you pick this and [2/2] to the -mm tree too unless RIchard is very unhappy
-about it? It's pretty straight-forward improvements.
+Not sure I'm missing something, but to manage a key that is local
+to the module, we need to call jump_label_inc/jump_label_dec
+from within the module code, so we need some of the jump_label
+functions exported.. it'd be probably:
 
-Yours,
-Linus Walleij
+	jump_label_inc/jump_label_dec/jump_label_enabled
+
+wbr,
+jirka
+
+
+I used following module code to test:
+---
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/jump_label.h>
+
+static struct jump_label_key key;
+
+static bool enabled;
+module_param(enabled, bool, 0644);
+
+static int __init mod_init(void)
+{
+        if (enabled)
+                jump_label_inc(&key);
+
+        if (static_branch(&key))
+                printk("key enabled\n");
+        else
+                printk("key disabled\n");
+
+        if (jump_label_enabled(&key))
+                printk("key enabled1\n");
+        else
+                printk("key disabled1\n");
+
+        printk("mod loaded\n");
+        return 0;
+}
+
+static void __exit mod_exit(void)
+{
+        printk("mod unloaded\n");
+        return;
+}
+
+module_init(mod_init);
+module_exit(mod_exit);
+MODULE_LICENSE("GPL");
