@@ -1,201 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab1FUPh4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 11:37:56 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61828 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab1FUPhy convert rfc822-to-8bit (ORCPT
+	id S1754553Ab1FUPke (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 11:40:34 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55400 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752792Ab1FUPkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 11:37:54 -0400
+	Tue, 21 Jun 2011 11:40:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=aiZD1OArKQpHg836tTfZhik+3PfLf30TIDL954bROn9rDJCloArs84yrtIUwDfrTE7
-         1uAFX/0xQ0ttTuX+3385oBXyEAZ7+UQF14gXuqekFYXpvjSWKAk0LY+jJBr6heosp4qj
-         Gih72G5RIFewsGnkBe11Iu+2skVKytoESJJpE=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=WzZ1f6Mcrt0joB36oI6uQH7UUBUQJrkdJi8r86efuP8wuR+ddUpu/GXi0x/NVcY2Zm
+         5n5p3iG26VSTzDu1+YQgMe4J3Su7vsmDK2OaVm+1Iw4L6RgOUO7UaYHz4GjXaaAv/ObS
+         6S6rTqRbItMgS21LYjPzuW0sRiNg4RdXe1ezY=
 MIME-Version: 1.0
-In-Reply-To: <1308670305-7096-1-git-send-email-rdratlos@yahoo.co.uk>
-References: <1308670305-7096-1-git-send-email-rdratlos@yahoo.co.uk>
-Date: Tue, 21 Jun 2011 11:37:54 -0400
-Message-ID: <BANLkTi=cna6rLmwLCcPZsR-AMZKp4HVPDg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] drm/radeon: Fix Asus M2A-VM HDMI EDID error flooding problem
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Thomas Reim <reimth@googlemail.com>
-Cc: Dave Airlie <airlied@redhat.com>,
-        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
-        Jean Delvare <khali@linux-fr.org>,
-        Tyson Whitehead <twhitehead@gmail.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Thomas Reim <rdratlos@yahoo.co.uk>
+In-Reply-To: <20110621152301.GA5155@redhat.com>
+References: <4DB989B5.1030703@openvz.org>
+	<20110621152301.GA5155@redhat.com>
+Date: Tue, 21 Jun 2011 19:40:30 +0400
+X-Google-Sender-Auth: kLcz9pN8pIeDp6f6H9y6pkDcTpA
+Message-ID: <BANLkTi=zPq81nScodFcPxcLSrTGPNA1HWA@mail.gmail.com>
+Subject: Re: [RFC -tip] perf, x86: Add PERF_COUNT_HW_NMI_WATCHDOG event v2
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Vince Weaver <vweaver1@eecs.utk.edu>,
+        lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 11:31 AM, Thomas Reim <reimth@googlemail.com> wrote:
-> Some integrated ATI Radeon  chipset implementations
-> (e. g. Asus M2A-VM HDMI) indicate the availability
-> of a DDC even when there's no monitor connected.
-> In this case, drm_get_edid and drm_edid_block_valid
-> periodically dump data and kernel errors into system
-> log files and onto terminals, which lead to an unacceptable
-> system behaviour.
+On Tue, Jun 21, 2011 at 7:23 PM, Don Zickus <dzickus@redhat.com> wrote:
+> On Thu, Apr 28, 2011 at 07:37:25PM +0400, Cyrill Gorcunov wrote:
+>> Due to restriction and specifics of Netburst PMU we need a separated
+>> event for NMI watchdog. In particular every Netburst event consume not
+>> just a counter and config register, but also an additional ESCR register.
+>> Since ESCR registers are grouped upon counters (i.e. if ESCR is occupied
+>> for some event there is no room for another event to enter the room until
+>> it's released) we need to pick up "least" used ESCR (or most available)
+>> for nmi-watchdog purpose -- MSR_P4_CRU_ESCR2/3 was chosen.
+>>
+>> Note that on all other PMUs which support relocation of events between
+>> counters this event is a simple alias for PERF_COUNT_HW_CPU_CYCLES.
 >
-> Tested since kernel 2.35 on Asus M2A-VM HDMI board
+> Cyril,
 >
-> Signed-off-by: Thomas Reim <rdratlos@yahoo.co.uk>
+> What ever happened with this patch?
+>
+> Cheers,
+> Don
+>
 
-Does this patch fix the issue:
-http://git.kernel.org/?p=linux/kernel/git/airlied/drm-2.6.git;a=commitdiff;h=4a9a8b71e12d41abb71c4e741bff524f016cfef4
-
-Alex
-
-> ---
->  drivers/gpu/drm/radeon/radeon_connectors.c |   10 +++++
->  drivers/gpu/drm/radeon/radeon_display.c    |   11 +++++
->  drivers/gpu/drm/radeon/radeon_i2c.c        |   60 ++++++++++++++++++++++++++++
->  drivers/gpu/drm/radeon/radeon_mode.h       |    1 +
->  4 files changed, 82 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/gpu/drm/radeon/radeon_connectors.c b/drivers/gpu/drm/radeon/radeon_connectors.c
-> index cbfca3a..7a76e45 100644
-> --- a/drivers/gpu/drm/radeon/radeon_connectors.c
-> +++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-> @@ -828,6 +828,16 @@ radeon_dvi_detect(struct drm_connector *connector, bool force)
->
->        if (radeon_connector->ddc_bus)
->                dret = radeon_ddc_probe(radeon_connector);
-> +
-> +       /* Asus M2A-VM HDMI DDC quirk:
-> +        * Some integrated ATI Radeon chipset implementations (e. g. Asus
-> +        * M2A-VM HDMI) indicate the availability of a DDC even when there's
-> +        * no monitor connected.The following check prevents drm_get_edid()
-> +        * and drm_edid_block_valid() of periodically dumping data and kernel
-> +        * errors into the logs and onto the terminal, which would lead to an
-> +        * unacceptable system behaviour */
-> +       if (dret && connector->connector_type == DRM_MODE_CONNECTOR_HDMIA)
-> +               dret = radeon_ddc_edid_probe(radeon_connector);
->        if (dret) {
->                if (radeon_connector->edid) {
->                        kfree(radeon_connector->edid);
-> diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
-> index 292f73f..550f143 100644
-> --- a/drivers/gpu/drm/radeon/radeon_display.c
-> +++ b/drivers/gpu/drm/radeon/radeon_display.c
-> @@ -715,6 +715,9 @@ static bool radeon_setup_enc_conn(struct drm_device *dev)
->        if (ret) {
->                radeon_setup_encoder_clones(dev);
->                radeon_print_display_setup(dev);
-> +               /* Is this really required here?
-> +                  Seems to just force drm to dump EDID errors
-> +                  to kernel logs */
->                list_for_each_entry(drm_connector, &dev->mode_config.connector_list, head)
->                        radeon_ddc_dump(drm_connector);
->        }
-> @@ -777,8 +780,16 @@ static int radeon_ddc_dump(struct drm_connector *connector)
->        if (!radeon_connector->ddc_bus)
->                return -1;
->        edid = drm_get_edid(connector, &radeon_connector->ddc_bus->adapter);
-> +       /* Asus M2A-VM HDMI DDC quirk: Log EDID retrieval status here once,
-> +        * instead of periodically dumping data and kernel errors into the
-> +        * logs, if a monitor is not connected to HDMI */
->        if (edid) {
-> +               DRM_INFO("Radeon display connector %s: Found valid EDID",
-> +                               drm_get_connector_name(connector));
->                kfree(edid);
-> +       } else {
-> +               DRM_INFO("Radeon display connector %s: No display connected or invalid EDID",
-> +                               drm_get_connector_name(connector));
->        }
->        return ret;
->  }
-> diff --git a/drivers/gpu/drm/radeon/radeon_i2c.c b/drivers/gpu/drm/radeon/radeon_i2c.c
-> index 781196d..1d6decd 100644
-> --- a/drivers/gpu/drm/radeon/radeon_i2c.c
-> +++ b/drivers/gpu/drm/radeon/radeon_i2c.c
-> @@ -63,6 +63,66 @@ bool radeon_ddc_probe(struct radeon_connector *radeon_connector)
->        return false;
->  }
->
-> +/**
-> + * Probe EDID information via I2C.
-> + *
-> + * \param adapter : i2c device adaptor
-> + * \param buf     : EDID data buffer to be filled
-> + * \param len     : EDID data buffer length
-> + * \return 0 on success or -1 on failure.
-> + *
-> + * Try to fetch EDID information by calling i2c driver function and
-> + * probe for EDID header information.
-> + *
-> + * Remark:
-> + * This function has been added, because there are integrated ATI Radeon
-> + * chipset implementations (e. g. Asus M2A-VM HDMI that indicate the
-> + * availability of a DDC even when there's no monitor connected.
-> + * In this case, drm_get_edid and drm_edid_block_valid periodically dump
-> + * data and kernel errors into the logs and onto the terminal, which lead to
-> + * an unacceptable system behaviour.
-> + */
-> +bool radeon_ddc_edid_probe(struct radeon_connector *radeon_connector)
-> +{
-> +       u8 out_buf[] = { 0x0, 0x0};
-> +       u8 block[20];
-> +       int ret;
-> +       struct i2c_msg msgs[] = {
-> +               {
-> +                       .addr   = 0x50,
-> +                       .flags  = 0,
-> +                       .len    = 1,
-> +                       .buf    = out_buf,
-> +               }, {
-> +                       .addr   = 0x50,
-> +                       .flags  = I2C_M_RD,
-> +                       .len    = 20,
-> +                       .buf    = block,
-> +               }
-> +       };
-> +
-> +       ret = i2c_transfer(&radeon_connector->ddc_bus->adapter, msgs, 2);
-> +       if (ret == 2)
-> +               if ((block[0] == 0x00) &&
-> +                   (block[7] == 0x00) &&
-> +                   (block[1] == 0xff) &&
-> +                   (block[2] == 0xff) &&
-> +                   (block[3] == 0xff) &&
-> +                   (block[4] == 0xff) &&
-> +                   (block[5] == 0xff) &&
-> +                   (block[6] == 0xff))
-> +                       /* EDID header starts with:
-> +                        * 0x00,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00;
-> +                        * seems to be an EDID */
-> +                       if ((block[18] != 0x00) || (block[19] != 0x00))
-> +                               /* EDID headers end with EDID version and
-> +                                * revision number: EDID version is not 0.0 =>
-> +                                * EDID should be available */
-> +                               return true;
-> +       /* Couldn't find an accessible EDID on this connector. */
-> +       return false;
-> +}
-> +
->  /* bit banging i2c */
->
->  static void radeon_i2c_do_lock(struct radeon_i2c_chan *i2c, int lock_state)
-> diff --git a/drivers/gpu/drm/radeon/radeon_mode.h b/drivers/gpu/drm/radeon/radeon_mode.h
-> index 6df4e3c..14710fc 100644
-> --- a/drivers/gpu/drm/radeon/radeon_mode.h
-> +++ b/drivers/gpu/drm/radeon/radeon_mode.h
-> @@ -515,6 +515,7 @@ extern void radeon_i2c_put_byte(struct radeon_i2c_chan *i2c,
->  extern void radeon_router_select_ddc_port(struct radeon_connector *radeon_connector);
->  extern void radeon_router_select_cd_port(struct radeon_connector *radeon_connector);
->  extern bool radeon_ddc_probe(struct radeon_connector *radeon_connector);
-> +extern bool radeon_ddc_edid_probe(struct radeon_connector *radeon_connector);
->  extern int radeon_ddc_get_modes(struct radeon_connector *radeon_connector);
->
->  extern struct drm_encoder *radeon_best_encoder(struct drm_connector *connector);
-> --
-> 1.7.1
->
->
+Well, it's flowing around, I didn't get any more Ack's other than your. Since it
+introduces kind of abi I presume more ack's would be welcome before it
+(possibly) get merged.
