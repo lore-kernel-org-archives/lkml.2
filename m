@@ -1,103 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756809Ab1FUOwK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 10:52:10 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:38833 "HELO
+	id S1756825Ab1FUO6X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 10:58:23 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:41472 "HELO
 	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752698Ab1FUOwG (ORCPT
+	with SMTP id S1752160Ab1FUO6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 10:52:06 -0400
-Date: Tue, 21 Jun 2011 10:52:05 -0400 (EDT)
+	Tue, 21 Jun 2011 10:58:20 -0400
+Date: Tue, 21 Jun 2011 10:58:19 -0400 (EDT)
 From: Alan Stern <stern@rowland.harvard.edu>
 X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH] PCI / PM: Block races between runtime PM and system
- sleep
-In-Reply-To: <201106202328.54100.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1106211031410.2327-100000@iolanthe.rowland.org>
+To: Nicolas Pitre <nico@fluxnic.net>
+cc: Alexander Holler <holler@ahsoftware.de>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin@rab.in>
+Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing
+ the packed attribute
+In-Reply-To: <alpine.LFD.2.00.1106201824320.2142@xanadu.home>
+Message-ID: <Pine.LNX.4.44L0.1106211054460.2327-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jun 2011, Rafael J. Wysocki wrote:
+On Mon, 20 Jun 2011, Nicolas Pitre wrote:
 
-> > Ah, okay.  The PCI part makes sense then.
+> > We don't fall into any of these cases, and therefore as you say, we
+> > don't need packed.  Arnd and I have both explained this.  So why do you 
+> > keep arguing that we do need it?
 > 
-> OK, so the appended patch is a modification of the $subject one using
-> pm_runtime_put_sync() instead of pm_runtime_put_noidle().
+> Please show me where I keep arguing that you need it?
 
-Yes, it looks good.
+Not explicitly perhaps.  But you did write:
 
+> Doesn't mean that because it used to work that it is strictly correct.  
+> Wouldn't be the first time that a GCC upgrade broke the kernel because 
+> the kernel wasn't describing things properly enough.
 
-> So, your point is that while .suspend() or .resume() are running, the
-> synchronization between runtime PM and system suspend/resume should be the
-> subsystem's problem, right?
+which strongly implies that "packed" is needed.  You also wrote:
 
-Almost but not quite.  I was talking about the time period between 
-.prepare() and .suspend() (and also the time period between .resume() 
-and .complete()).
+> Yes, but that's a consequence of not being able to access those fields 
+> in their naturally aligned position anymore.  Hence the addition of the 
+> align attribute to tell the compiler that we know that the structure is 
+> still aligned to a certain degree letting the compiler to avoid 
+> byte-oriented instructions when possible.
 
-It's probably okay to prevent pm_runtime_suspend() from working during
-.suspend() or .resume(), but it's not a good idea to prevent
-pm_runtime_resume() from working then.
-
-> I actually see a reason for doing this.  Namely, I don't really think
-> driver writers should be bothered with preventing races between different
-> PM callbacks from happening.  Runtime PM takes care of that at run time,
-> the design of the system suspend/resume code ensures that the callbacks
-> for the same device are executed sequentially, but if we allow runtime PM
-> callbacks to be executed in parallel with system suspend/resume callbacks,
-> someone has to prevent those callbacks from racing with each other.
-> 
-> Now, if you agree that that shouldn't be a driver's task, then it has to
-> be the subsystem's one and I'm not sure what a subsystem can do other than
-> disabling runtime PM or at least taking a reference on every device before
-> calling device drivers' .suspend() callbacks.
-> 
-> Please note, I think that .prepare() and .complete() are somewhat special,
-> so perhaps we should allow those to race with runtime PM callbacks, but IMO
-> allowing .suspend() and .resume() to race with .runtime_suspend() and
-> .runtime_resume() is not a good idea.
-
-Races in the period after .suspend() and before .resume() will be 
-handled by disabling runtime PM when .suspend() returns and enabling it 
-before calling .resume().
-
-During the .suspend and .resume callbacks, races with
-.runtime_suspend() can be prevented by calling
-pm_runtime_get_noresume() just before .suspend() and then calling
-pm_runtime_put_sync() just after .resume().
-
-Races with .runtime_resume() can be handled to some extent by putting a
-runtime barrier immediately after the pm_runtime_get_noresume() call,
-but that's not a perfect solution.  Is it good enough?
-
-> > What I'm suggesting is to revert the commit but at the same time,
-> > move the get_noresume() into __device_suspend() and the put_sync() into 
-> > device_resume().
-> 
-> What about doing pm_runtime_get_noresume() and the pm_runtime_barrier()
-> in dpm_prepare(), but _after_ calling device_prepare() and doing
-> pm_runtime_put_noidle() in dpm_complete() _before_ calling .complete()
-> from the subsystem
-
-This does not address the issue of allowing runtime suspends in the 
-windows between .prepare() - .suspend() and .resume() - .complete().
-
->  (a _put_sync() at this point will likely invoke
-> .runtime_idle() from the subsystem before executing .complete(), which may
-> not be desirable)?
-
-It should be allowed.  The purpose of .complete() is not to re-enable
-runtime power management of the device; it is to release resources
-(like memory) allocated during .prepare() and perhaps also to allow new
-children to be registered under the device.
+which is predicated on the assumption that "packed" is needed.
 
 Alan Stern
 
