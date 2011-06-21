@@ -1,80 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753326Ab1FUCNS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 22:13:18 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46653 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751009Ab1FUCNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 22:13:15 -0400
-Date: Tue, 21 Jun 2011 12:13:10 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Gustavo F. Padovan" <padovan@profusion.mobi>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: linux-next: manual merge of the bluetooth tree with the
- wireless-current tree
-Message-Id: <20110621121310.bcdd3268.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753511Ab1FUCPV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 22:15:21 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:61512 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752296Ab1FUCPQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 22:15:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=QzYHTSBgSrmPujll6Zae0aoGM47XQUOEMDrfhysEYSNYmSuyyTCRsJHDymLi+kRQR3
+         q9V9XrOl0nGq7ETEEyg0wvSS/0hi5U2Ev5PbygpAOe7z+XHFUEvZuxtAVD1Wzg9Q0O+B
+         hdEfJnyJmwWWdUD23CWR+2lHph6x6JJaN1OXI=
+MIME-Version: 1.0
+In-Reply-To: <20110620141631.GA4749@redhat.com>
+References: <20110620141631.GA4749@redhat.com>
+Date: Tue, 21 Jun 2011 10:15:15 +0800
+X-Google-Sender-Auth: cqrWJZZd3IQeUWu6p-lUb5DM3cE
+Message-ID: <BANLkTike3ZhFR9HioPcQWzwXYhszo0-SkA@mail.gmail.com>
+Subject: Re: [PATCH] cfq: Fix starvation of async writes in presence of heavy
+ sync workload
+From: Shaohua Li <shaohua.li@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Tao Ma <tm@tao.ma>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gustavo,
+2011/6/20 Vivek Goyal <vgoyal@redhat.com>:
+> In presence of heavy sync workload CFQ can starve asnc writes.
+> If one launches multiple readers (say 16), then one can notice
+> that CFQ can withhold dispatch of WRITEs for a very long time say
+> 200 or 300 seconds.
+>
+> Basically CFQ schedules an async queue but does not dispatch any
+> writes because it is waiting for exisintng sync requests in queue to
+> finish. While it is waiting, one or other reader gets queued up and
+> preempts the async queue. So we did schedule the async queue but never
+> dispatched anything from it. This can repeat for long time hence
+> practically starving Writers.
+>
+> This patch allows async queue to dispatch atleast 1 requeust once
+> it gets scheduled and denies preemption if async queue has been
+> waiting for sync requests to drain and has not been able to dispatch
+> a request yet.
+>
+> One concern with this fix is that how does it impact readers
+> in presence of heavy writting going on.
+>
+> I did a test where I launch firefox, load a website and close
+> firefox and measure the time. I ran the test 3 times and took
+> average.
+>
+> - Vanilla kernel time ~= 1 minute 40 seconds
+> - Patched kenrel time ~= 1 minute 35 seconds
+>
+> Basically it looks like that for this test times have not
+> changed much for this test. But I would not claim that it does
+> not impact reader's latencies at all. It might show up in
+> other workloads.
+>
+> I think we anyway need to fix writer starvation. If this patch
+> causes issues, then we need to look at reducing writer's
+> queue depth further to improve latencies for readers.
+I'm afraid this can causes read latency because cfq_dispatch_requests
+doesn't check preempt. we will dispatch 4 requests at least instead of
+just one. can we add a logic to force it just dispatches one request?
 
-Today's linux-next merge of the bluetooth tree got a conflict in
-net/bluetooth/l2cap_core.c between commit df3c3931ec58 ("Bluetooth: Fix
-accepting connect requests for defer_setup") from the wireless-current/
-tree and various commits from the bluetooth tree.
-
-I fixed it up (I think - see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc net/bluetooth/l2cap_core.c
-index 8048337,700d01e..0000000
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@@ -4200,29 -4207,20 +4207,29 @@@ static int l2cap_security_cfm(struct hc
-  				l2cap_send_cmd(conn, chan->ident,
-  					L2CAP_CONN_REQ, sizeof(req), &req);
-  			} else {
-- 				l2cap_chan_clear_timer(chan);
-- 				l2cap_chan_set_timer(chan, HZ / 10);
-+ 				__clear_chan_timer(chan);
-+ 				__set_chan_timer(chan, HZ / 10);
-  			}
-- 		} else if (sk->sk_state == BT_CONNECT2) {
-+ 		} else if (chan->state == BT_CONNECT2) {
-  			struct l2cap_conn_rsp rsp;
- -			__u16 result;
- +			__u16 res, stat;
-  
-  			if (!status) {
- -				l2cap_state_change(chan, BT_CONFIG);
- -				result = L2CAP_CR_SUCCESS;
- +				if (bt_sk(sk)->defer_setup) {
- +					struct sock *parent = bt_sk(sk)->parent;
- +					res = L2CAP_CR_PEND;
- +					stat = L2CAP_CS_AUTHOR_PEND;
- +					parent->sk_data_ready(parent, 0);
- +				} else {
-- 					sk->sk_state = BT_CONFIG;
-++					l2cap_state_change(chan, BT_CONFIG);
- +					res = L2CAP_CR_SUCCESS;
- +					stat = L2CAP_CS_NO_INFO;
- +				}
-  			} else {
-- 				sk->sk_state = BT_DISCONN;
-- 				l2cap_chan_set_timer(chan, HZ / 10);
-+ 				l2cap_state_change(chan, BT_DISCONN);
-+ 				__set_chan_timer(chan, HZ / 10);
- -				result = L2CAP_CR_SEC_BLOCK;
- +				res = L2CAP_CR_SEC_BLOCK;
- +				stat = L2CAP_CS_NO_INFO;
-  			}
-  
-  			rsp.scid   = cpu_to_le16(chan->dcid);
+Thanks,
+Shaohua
