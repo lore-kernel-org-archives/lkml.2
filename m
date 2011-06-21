@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142Ab1FUBV6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 21:21:58 -0400
-Received: from antispam02.maxim-ic.com ([205.153.101.183]:36477 "EHLO
-	antispam02.maxim-ic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932079Ab1FUBV5 convert rfc822-to-8bit (ORCPT
+	id S932155Ab1FUBYf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 21:24:35 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58323 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932123Ab1FUBYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 21:21:57 -0400
-X-ASG-Debug-ID: 1308619315-02256b4f7c4b6f0005-xx1T2L
-X-Barracuda-Envelope-From: Peter.Hsiang@maxim-ic.com
-From: Peter Hsiang <Peter.Hsiang@maxim-ic.com>
-To: Manuel Estrada Sainz <ranty@debian.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 20 Jun 2011 18:20:52 -0700
-Subject: Getting request_firmware() filename info from user space
-Thread-Topic: Getting request_firmware() filename info from user space
-X-ASG-Orig-Subj: Getting request_firmware() filename info from user space
-Thread-Index: AQHML7F2ZjWZAw0XnUypJQaJC8Eqmw==
-Message-ID: <B2150E1E4418E1438554A300EA5040E40DDE603CE3@ITSVLEX06.it.maxim-ic.internal>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 20 Jun 2011 21:24:32 -0400
+Date: Tue, 21 Jun 2011 02:24:30 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: linux-kernel@vger.kernel.org,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: Re: [PATCH 1/8] regmap: Add generic non-memory mapped register
+ access API
+Message-ID: <20110621012429.GB4322@opensource.wolfsonmicro.com>
+References: <20110620124608.GB31140@opensource.wolfsonmicro.com>
+ <1308574489-31322-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <4DFFD486.7020901@metafoo.de>
+ <20110621001438.GD1905@opensource.wolfsonmicro.com>
+ <4DFFE9C1.5060003@metafoo.de>
 MIME-Version: 1.0
-X-Barracuda-Connect: maxdalex02.maxim-ic.internal[10.16.15.104]
-X-Barracuda-Start-Time: 1308619316
-X-Barracuda-URL: http://192.168.10.183:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.02
-X-Barracuda-Spam-Status: No, SCORE=0.02 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=THREAD_INDEX, THREAD_TOPIC
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.66652
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.01 THREAD_INDEX           thread-index: AcO7Y8iR61tzADqsRmmc5wNiFHEOig==
-	0.01 THREAD_TOPIC           Thread-Topic: ...(Japanese Subject)...
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DFFE9C1.5060003@metafoo.de>
+X-Cookie: You're at the end of the road again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jun 21, 2011 at 02:45:53AM +0200, Lars-Peter Clausen wrote:
+> On 06/21/2011 02:14 AM, Mark Brown wrote:
 
-Using the kernel request_firmware() function, it seems one can send any file by:
-    cat myfile.bin > /sys/class/firmware/xxxx/data
+> > I like init, especially considering the plan to add cache support as
+> > there's more work in setting that up once you start doing the advanced
+> > caches.
 
-How does the user space code obtain the filename parameter specified in the request_firmware() call?
+> If you take a look at other kernel apis _alloc is usually used if the structure
+> is allocated (and initialized) inside the function and _init is used when the
+> function initializes an already existing structure. And it also matches better
 
-The documentation says $DEVPATH and $FIRMWARE variables are provided in 
-the environment, but "echo $FIRMWARE" prints an empty string.
+That more applies to split alloc/init models - here there's a single
+operation that does both.  To me alloc() generally means that it just
+allocates a structure and leaves initialization still to be done while.
 
-I loaded the driver with an & just so I can get the shell prompt back to start the sysfs script.
-How would one load the driver and run the sysfs script to send the file from the same shell?
+> with regmap_free.
 
-Thanks,
-
-Peter
-
+That's true.
