@@ -1,90 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226Ab1FUWlT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 18:41:19 -0400
-Received: from sous-sol.org ([216.99.217.87]:51651 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754991Ab1FUWlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 18:41:18 -0400
-Date: Tue, 21 Jun 2011 15:38:00 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Nai Xia <nai.xia@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
-        Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2 V2] ksm: take dirty bit as reference to avoid
- volatile pages scanning
-Message-ID: <20110621223800.GO25383@sequoia.sous-sol.org>
-References: <201106212055.25400.nai.xia@gmail.com>
- <201106212136.17445.nai.xia@gmail.com>
+	id S1757044Ab1FUWk3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 18:40:29 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35148 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756257Ab1FUWk2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 18:40:28 -0400
+Date: Tue, 21 Jun 2011 23:40:27 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Greg Dietsche <greg@gregd.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: 3.0 rc3 bug & warning fs/inode.c && fs/fs-writeback.c
+Message-ID: <20110621224027.GA11521@ZenIV.linux.org.uk>
+References: <4E008DD0.2090809@gregd.org>
+ <20110621124556.GZ11521@ZenIV.linux.org.uk>
+ <4E01195F.8040000@gregd.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201106212136.17445.nai.xia@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <4E01195F.8040000@gregd.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nai Xia (nai.xia@gmail.com) wrote:
-> Introduced ksm_page_changed() to reference the dirty bit of a pte. We clear 
-> the dirty bit for each pte scanned but don't flush the tlb. For a huge page, 
-> if one of the subpage has changed, we try to skip the whole huge page 
-> assuming(this is true by now) that ksmd linearly scans the address space.
+On Tue, Jun 21, 2011 at 05:21:19PM -0500, Greg Dietsche wrote:
 
-This doesn't build w/ kvm as a module.
+> I'm leaning towards might be something else. Correct me if I'm
+> wrong, but it seems that 50338b889dc504c69e0cb316ac92d1b9e51f3c8a
+> was included in rc3.
 
-> A NEW_FLAG is also introduced as a status of rmap_item to make ksmd scan
-> more aggressively for new VMAs - only skip the pages considered to be volatile
-> by the dirty bits. This can be enabled/disabled through KSM's sysfs interface.
-
-This seems like it should be separated out.  And while it might be useful
-to enable/disable for testing, I don't think it's worth supporting for
-the long term.  Would also be useful to see the value of this flag.
-
-> @@ -454,7 +468,7 @@ static void remove_node_from_stable_tree(struct stable_node *stable_node)
->  		else
->  			ksm_pages_shared--;
->  		put_anon_vma(rmap_item->anon_vma);
-> -		rmap_item->address &= PAGE_MASK;
-> +		rmap_item->address &= ~STABLE_FLAG;
->  		cond_resched();
->  	}
->  
-> @@ -542,7 +556,7 @@ static void remove_rmap_item_from_tree(struct rmap_item *rmap_item)
->  			ksm_pages_shared--;
->  
->  		put_anon_vma(rmap_item->anon_vma);
-> -		rmap_item->address &= PAGE_MASK;
-> +		rmap_item->address &= ~STABLE_FLAG;
->  
->  	} else if (rmap_item->address & UNSTABLE_FLAG) {
->  		unsigned char age;
-> @@ -554,12 +568,14 @@ static void remove_rmap_item_from_tree(struct rmap_item *rmap_item)
->  		 * than left over from before.
->  		 */
->  		age = (unsigned char)(ksm_scan.seqnr - rmap_item->address);
-> -		BUG_ON(age > 1);
-> +		BUG_ON (age > 1);
-
-No need to add space after BUG_ON() there
-
-> +
->  		if (!age)
->  			rb_erase(&rmap_item->node, &root_unstable_tree);
->  
->  		ksm_pages_unshared--;
-> -		rmap_item->address &= PAGE_MASK;
-> +		rmap_item->address &= ~UNSTABLE_FLAG;
-> +		rmap_item->address &= ~SEQNR_MASK;
-
-None of these changes are needed AFAICT.  &= PAGE_MASK clears all
-relevant bits.  How could it be in a tree, have NEW_FLAG set, and
-while removing from tree want to preserve NEW_FLAG?
-
-thanks,
--chris
+Nope - it's in a branch that started before -rc3 but got merged between
+-rc3 and -rc4.  git log v3.0-rc3 fs/namei.c and watch it not being there
+while the same with s/rc3/rc4/ will show it just fine.  In fact, the last
+commit touching fs/namei.c in -rc3 is the one that introduced the breakage
+fixed by 50338b889dc504c69e0cb316ac92d1b9e51f3c8a.
