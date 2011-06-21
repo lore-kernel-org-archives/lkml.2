@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab1FUKRb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 06:17:31 -0400
-Received: from rere.qmqm.pl ([89.167.52.164]:41001 "EHLO rere.qmqm.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756039Ab1FUKR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 06:17:28 -0400
-Date: Tue, 21 Jun 2011 12:17:25 +0200
-From: =?iso-8859-2?Q?Micha=B3_Miros=B3aw?= <mirq-linux@rere.qmqm.pl>
-To: James Hogan <james@albanarts.com>
-Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] cb710: fix #ifdef HAVE_EFFICIENT_UNALIGNED_ACCESS
-Message-ID: <20110621101725.GA670@rere.qmqm.pl>
-References: <BANLkTikMc1WfJMJ2NeBr1E62dGjCj1Cd_w@mail.gmail.com>
+	id S1756009Ab1FUKRX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 06:17:23 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:38510 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755957Ab1FUKRU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 06:17:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=F0quwWye9HUmAAz15HSk5G3Rc7ASyJ8eOMCfTYvlLNDp6U1q740FWmUwbgu9eqQzGp
+         enHZfiB2X0YgA8FsarJlEfolZV4oWUyNux9bq5922ggy3KqF4FY9kQa0f6MwfuwQ4S9Z
+         Y5tQ+KdQTvrCr8YyG7IrFypQW/AcVPYzetxNo=
+Date: Tue, 21 Jun 2011 11:18:15 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 3.0-rc3 kmemleak reports
+Message-ID: <20110621101815.GB10396@1n450.cable.virginmedia.net>
+References: <itpou0$leu$1@dough.gmane.org>
+ <20110621095733.GA10396@1n450.cable.virginmedia.net>
+ <4E006BB9.90505@itwm.fraunhofer.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-2
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikMc1WfJMJ2NeBr1E62dGjCj1Cd_w@mail.gmail.com>
+In-Reply-To: <4E006BB9.90505@itwm.fraunhofer.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 10:55:34AM +0100, James Hogan wrote:
-> HAVE_EFFICIENT_UNALIGNED_ACCESS is a config option, therefore it needs
-> the CONFIG_ before it when used by the preprocessor.
+On Tue, Jun 21, 2011 at 12:00:25PM +0200, Bernd Schubert wrote:
+> On 06/21/2011 11:57 AM, Catalin Marinas wrote:
+> >On Tue, Jun 21, 2011 at 11:40:15AM +0200, Bernd Schubert wrote:
+> >>For some reasons I build a kernel with kmemleak support and got a
+> >>few reports.
+> >
+> >Do you know if they appear in 2.6.39 as well?
 > 
-> Signed-off-by: James Hogan <james@albanarts.com>
-> ---
->  drivers/misc/cb710/sgbuf2.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/misc/cb710/sgbuf2.c b/drivers/misc/cb710/sgbuf2.c
-> index d019746..2a40d0e 100644
-> --- a/drivers/misc/cb710/sgbuf2.c
-> +++ b/drivers/misc/cb710/sgbuf2.c
-> @@ -47,7 +47,7 @@ static uint32_t sg_dwiter_read_buffer(struct
-> sg_mapping_iter *miter)
-> 
->  static inline bool needs_unaligned_copy(const void *ptr)
->  {
-> -#ifdef HAVE_EFFICIENT_UNALIGNED_ACCESS
-> +#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
->  	return false;
->  #else
->  	return ((ptr - NULL) & 3) != 0;
+> No idea, if it is important I can build a previous kernel version
 
-Acked-by: Micha³ Miros³aw <mirq-linux@rere.qmqm.pl>
+It would be good, if you have time, as people can at least restrict the
+range of commits to check. It could as well be a kmemleak false
+positive, can't tell for sure. The ACPI reports are in general difficult
+to identify, unless you find some commit that introduced them.
 
-[Cc: linux-mmc]
+> (but please, no bisecting, I'm too busy with other things).
+
+No problem, thanks anyway.
+
+Thanks.
+
+-- 
+Catalin
