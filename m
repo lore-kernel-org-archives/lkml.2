@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab1FUH04 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 03:26:56 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:42984 "EHLO
+	id S932275Ab1FUHYx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 03:24:53 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:17121 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755457Ab1FUHVV (ORCPT
+	with ESMTP id S932163Ab1FUHVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 03:21:21 -0400
+	Tue, 21 Jun 2011 03:21:44 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
-	b=sn23NzK4Vld90sV+ZFedeRoyGAYCz92mZuibx6qGjC2HXc2O7RomsuyJGTkDxa0cb
-	4ZbFMxLGP3moFCeyXh+zA==
-Message-Id: <20110621071700.189704301@google.com>
+	b=MzRxOoovy2j2Qlyv4eDBSQeRjARMhfK4XfjkPWKf+lV/KAniWjXsB0YVVTCq718pT
+	SrLy/8JMX1aroFw6hEX/g==
+Message-Id: <20110621071700.284687900@google.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 21 Jun 2011 00:16:54 -0700
+Date: Tue, 21 Jun 2011 00:16:55 -0700
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -24,207 +24,217 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Srivatsa Vaddagiri <vatsa@in.ibm.com>,
         Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
         Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Nikhil Rao <ncrao@google.com>
-Subject: [patch 05/16] sched: accumulate per-cfs_rq cpu usage and charge against bandwidth
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
+Subject: [patch 06/16] sched: add a timer to handle CFS bandwidth refresh
 References: <20110621071649.862846205@google.com>
-Content-Disposition: inline; filename=sched-bwc-account_cfs_rq_runtime.patch
+Content-Disposition: inline; filename=sched-bwc-bandwidth_timers.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Account bandwidth usage on the cfs_rq level versus the task_groups to which
-they belong.  Whether we are tracking bandwidth on a given cfs_rq is maintained
-under cfs_rq->runtime_enabled.
+This patch adds a per-task_group timer which handles the refresh of the global
+CFS bandwidth pool.
 
-cfs_rq's which belong to a bandwidth constrained task_group have their runtime
-accounted via the update_curr() path, which withdraws bandwidth from the global
-pool as desired.  Updates involving the global pool are currently protected
-under cfs_bandwidth->lock, local runtime is protected by rq->lock.
-
-This patch only assigns and tracks quota, no action is taken in the case that
-cfs_rq->runtime_used exceeds cfs_rq->runtime_assigned.
+Since the RT pool is using a similar timer there's some small refactoring to
+share this support.
 
 Signed-off-by: Paul Turner <pjt@google.com>
-Signed-off-by: Nikhil Rao <ncrao@google.com>
-Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
 Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 
-
 ---
- include/linux/sched.h |    4 ++
- kernel/sched.c        |    3 +-
- kernel/sched_fair.c   |   72 ++++++++++++++++++++++++++++++++++++++++++++++++--
- kernel/sysctl.c       |   10 ++++++
- 4 files changed, 86 insertions(+), 3 deletions(-)
+ kernel/sched.c      |   87 ++++++++++++++++++++++++++++++++++++++++------------
+ kernel/sched_fair.c |   36 +++++++++++++++++++--
+ 2 files changed, 101 insertions(+), 22 deletions(-)
 
-Index: tip/kernel/sched_fair.c
-===================================================================
---- tip.orig/kernel/sched_fair.c
-+++ tip/kernel/sched_fair.c
-@@ -89,6 +89,20 @@ const_debug unsigned int sysctl_sched_mi
-  */
- unsigned int __read_mostly sysctl_sched_shares_window = 10000000UL;
- 
-+#ifdef CONFIG_CFS_BANDWIDTH
-+/*
-+ * Amount of runtime to allocate from global (tg) to local (per-cfs_rq) pool
-+ * each time a cfs_rq requests quota.
-+ *
-+ * Note: in the case that the slice exceeds the runtime remaining (either due
-+ * to consumption or the quota being specified to be smaller than the slice)
-+ * we will always only issue the remaining available time.
-+ *
-+ * default: 5 msec, units: microseconds
-+  */
-+unsigned int sysctl_sched_cfs_bandwidth_slice = 5000UL;
-+#endif
-+
- static const struct sched_class fair_sched_class;
- 
- /**************************************************************
-@@ -305,6 +319,8 @@ find_matching_se(struct sched_entity **s
- 
- #endif	/* CONFIG_FAIR_GROUP_SCHED */
- 
-+static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
-+				   unsigned long delta_exec);
- 
- /**************************************************************
-  * Scheduling class tree data structure manipulation methods:
-@@ -602,6 +618,8 @@ static void update_curr(struct cfs_rq *c
- 		cpuacct_charge(curtask, delta_exec);
- 		account_group_exec_runtime(curtask, delta_exec);
- 	}
-+
-+	account_cfs_rq_runtime(cfs_rq, delta_exec);
- }
- 
- static inline void
-@@ -1270,6 +1288,48 @@ static inline u64 default_cfs_period(voi
- {
- 	return 100000000ULL;
- }
-+
-+static inline u64 sched_cfs_bandwidth_slice(void)
-+{
-+	return (u64)sysctl_sched_cfs_bandwidth_slice * NSEC_PER_USEC;
-+}
-+
-+static void assign_cfs_rq_runtime(struct cfs_rq *cfs_rq)
-+{
-+	struct task_group *tg = cfs_rq->tg;
-+	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
-+	u64 amount = 0, min_amount;
-+
-+	/* note: this is a positive sum, runtime_remaining <= 0 */
-+	min_amount = sched_cfs_bandwidth_slice() - cfs_rq->runtime_remaining;
-+
-+	raw_spin_lock(&cfs_b->lock);
-+	if (cfs_b->quota == RUNTIME_INF)
-+		amount = min_amount;
-+	else if (cfs_b->runtime > 0) {
-+		amount = min(cfs_b->runtime, min_amount);
-+		cfs_b->runtime -= amount;
-+	}
-+	raw_spin_unlock(&cfs_b->lock);
-+
-+	cfs_rq->runtime_remaining += amount;
-+}
-+
-+static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
-+		unsigned long delta_exec)
-+{
-+	if (!cfs_rq->runtime_enabled)
-+		return;
-+
-+	cfs_rq->runtime_remaining -= delta_exec;
-+	if (cfs_rq->runtime_remaining > 0)
-+		return;
-+
-+	assign_cfs_rq_runtime(cfs_rq);
-+}
-+#else
-+static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
-+		unsigned long delta_exec) {}
- #endif
- 
- /**************************************************
-@@ -4264,8 +4324,16 @@ static void set_curr_task_fair(struct rq
- {
- 	struct sched_entity *se = &rq->curr->se;
- 
--	for_each_sched_entity(se)
--		set_next_entity(cfs_rq_of(se), se);
-+	for_each_sched_entity(se) {
-+		struct cfs_rq *cfs_rq = cfs_rq_of(se);
-+
-+		set_next_entity(cfs_rq, se);
-+		/*
-+		 * if bandwidth is enabled, make sure it is up-to-date or
-+		 * reschedule for the case of a move into a throttled cpu.
-+		 */
-+		account_cfs_rq_runtime(cfs_rq, 0);
-+	}
- }
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
-Index: tip/kernel/sysctl.c
-===================================================================
---- tip.orig/kernel/sysctl.c
-+++ tip/kernel/sysctl.c
-@@ -379,6 +379,16 @@ static struct ctl_table kern_table[] = {
- 		.extra2		= &one,
- 	},
- #endif
-+#ifdef CONFIG_CFS_BANDWIDTH
-+	{
-+		.procname	= "sched_cfs_bandwidth_slice_us",
-+		.data		= &sysctl_sched_cfs_bandwidth_slice,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &one,
-+	},
-+#endif
- #ifdef CONFIG_PROVE_LOCKING
- 	{
- 		.procname	= "prove_locking",
 Index: tip/kernel/sched.c
 ===================================================================
 --- tip.orig/kernel/sched.c
 +++ tip/kernel/sched.c
-@@ -248,7 +248,7 @@ struct cfs_bandwidth {
- #ifdef CONFIG_CFS_BANDWIDTH
- 	raw_spinlock_t lock;
+@@ -193,10 +193,28 @@ static inline int rt_bandwidth_enabled(v
+ 	return sysctl_sched_rt_runtime >= 0;
+ }
+ 
+-static void start_rt_bandwidth(struct rt_bandwidth *rt_b)
++static void start_bandwidth_timer(struct hrtimer *period_timer, ktime_t period)
+ {
+-	ktime_t now;
++	unsigned long delta;
++	ktime_t soft, hard, now;
++
++	for (;;) {
++		if (hrtimer_active(period_timer))
++			break;
++
++		now = hrtimer_cb_get_time(period_timer);
++		hrtimer_forward(period_timer, now, period);
++
++		soft = hrtimer_get_softexpires(period_timer);
++		hard = hrtimer_get_expires(period_timer);
++		delta = ktime_to_ns(ktime_sub(hard, soft));
++		__hrtimer_start_range_ns(period_timer, soft, delta,
++					 HRTIMER_MODE_ABS_PINNED, 0);
++	}
++}
+ 
++static void start_rt_bandwidth(struct rt_bandwidth *rt_b)
++{
+ 	if (!rt_bandwidth_enabled() || rt_b->rt_runtime == RUNTIME_INF)
+ 		return;
+ 
+@@ -204,22 +222,7 @@ static void start_rt_bandwidth(struct rt
+ 		return;
+ 
+ 	raw_spin_lock(&rt_b->rt_runtime_lock);
+-	for (;;) {
+-		unsigned long delta;
+-		ktime_t soft, hard;
+-
+-		if (hrtimer_active(&rt_b->rt_period_timer))
+-			break;
+-
+-		now = hrtimer_cb_get_time(&rt_b->rt_period_timer);
+-		hrtimer_forward(&rt_b->rt_period_timer, now, rt_b->rt_period);
+-
+-		soft = hrtimer_get_softexpires(&rt_b->rt_period_timer);
+-		hard = hrtimer_get_expires(&rt_b->rt_period_timer);
+-		delta = ktime_to_ns(ktime_sub(hard, soft));
+-		__hrtimer_start_range_ns(&rt_b->rt_period_timer, soft, delta,
+-				HRTIMER_MODE_ABS_PINNED, 0);
+-	}
++	start_bandwidth_timer(&rt_b->rt_period_timer, rt_b->rt_period);
+ 	raw_spin_unlock(&rt_b->rt_runtime_lock);
+ }
+ 
+@@ -250,6 +253,9 @@ struct cfs_bandwidth {
  	ktime_t period;
--	u64 quota;
-+	u64 quota, runtime;
+ 	u64 quota, runtime;
  	s64 hierarchal_quota;
++
++	int idle, timer_active;
++	struct hrtimer period_timer;
  #endif
  };
-@@ -403,6 +403,7 @@ static inline u64 default_cfs_period(voi
+ 
+@@ -399,6 +405,28 @@ static inline struct cfs_bandwidth *tg_c
+ }
+ 
+ static inline u64 default_cfs_period(void);
++static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun);
++
++static enum hrtimer_restart sched_cfs_period_timer(struct hrtimer *timer)
++{
++	struct cfs_bandwidth *cfs_b =
++		container_of(timer, struct cfs_bandwidth, period_timer);
++	ktime_t now;
++	int overrun;
++	int idle = 0;
++
++	for (;;) {
++		now = hrtimer_cb_get_time(timer);
++		overrun = hrtimer_forward(timer, now, cfs_b->period);
++
++		if (!overrun)
++			break;
++
++		idle = do_sched_cfs_period_timer(cfs_b, overrun);
++	}
++
++	return idle ? HRTIMER_NORESTART : HRTIMER_RESTART;
++}
+ 
  static void init_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
  {
- 	raw_spin_lock_init(&cfs_b->lock);
-+	cfs_b->runtime = 0;
+@@ -406,6 +434,9 @@ static void init_cfs_bandwidth(struct cf
+ 	cfs_b->runtime = 0;
  	cfs_b->quota = RUNTIME_INF;
  	cfs_b->period = ns_to_ktime(default_cfs_period());
- }
-Index: tip/include/linux/sched.h
-===================================================================
---- tip.orig/include/linux/sched.h
-+++ tip/include/linux/sched.h
-@@ -2012,6 +2012,10 @@ static inline void sched_autogroup_fork(
- static inline void sched_autogroup_exit(struct signal_struct *sig) { }
- #endif
- 
-+#ifdef CONFIG_CFS_BANDWIDTH
-+extern unsigned int sysctl_sched_cfs_bandwidth_slice;
-+#endif
 +
- #ifdef CONFIG_RT_MUTEXES
- extern int rt_mutex_getprio(struct task_struct *p);
- extern void rt_mutex_setprio(struct task_struct *p, int prio);
++	hrtimer_init(&cfs_b->period_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	cfs_b->period_timer.function = sched_cfs_period_timer;
+ }
+ 
+ static void init_cfs_rq_runtime(struct cfs_rq *cfs_rq)
+@@ -413,8 +444,26 @@ static void init_cfs_rq_runtime(struct c
+ 	cfs_rq->runtime_enabled = 0;
+ }
+ 
++/* requires cfs_b->lock */
++static void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
++{
++	/*
++	 * Handle the extremely unlikely case of trying to start the period
++	 * timer, while that timer is in the tear-down path from having
++	 * decided to no longer run.  In this case we must wait for the
++	 * (tail of the) callback to terminate so that we can re-enqueue it.
++	 */
++	if (unlikely(hrtimer_active(&cfs_b->period_timer)))
++		hrtimer_cancel(&cfs_b->period_timer);
++
++	cfs_b->timer_active = 1;
++	start_bandwidth_timer(&cfs_b->period_timer, cfs_b->period);
++}
++
+ static void destroy_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
+-{}
++{
++	hrtimer_cancel(&cfs_b->period_timer);
++}
+ #else
+ static void init_cfs_rq_runtime(struct cfs_rq *cfs_rq) {}
+ static void init_cfs_bandwidth(struct cfs_bandwidth *cfs_b) {}
+Index: tip/kernel/sched_fair.c
+===================================================================
+--- tip.orig/kernel/sched_fair.c
++++ tip/kernel/sched_fair.c
+@@ -1306,9 +1306,16 @@ static void assign_cfs_rq_runtime(struct
+ 	raw_spin_lock(&cfs_b->lock);
+ 	if (cfs_b->quota == RUNTIME_INF)
+ 		amount = min_amount;
+-	else if (cfs_b->runtime > 0) {
+-		amount = min(cfs_b->runtime, min_amount);
+-		cfs_b->runtime -= amount;
++	else {
++		/* ensure bandwidth timer remains active under consumption */
++		if (!cfs_b->timer_active)
++			__start_cfs_bandwidth(cfs_b);
++
++		if (cfs_b->runtime > 0) {
++			amount = min(cfs_b->runtime, min_amount);
++			cfs_b->runtime -= amount;
++			cfs_b->idle = 0;
++		}
+ 	}
+ 	raw_spin_unlock(&cfs_b->lock);
+ 
+@@ -1327,6 +1334,29 @@ static void account_cfs_rq_runtime(struc
+ 
+ 	assign_cfs_rq_runtime(cfs_rq);
+ }
++
++static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
++{
++	u64 quota, runtime = 0;
++	int idle = 1;
++
++	raw_spin_lock(&cfs_b->lock);
++	quota = cfs_b->quota;
++
++	if (quota != RUNTIME_INF) {
++		runtime = quota;
++		cfs_b->runtime = runtime;
++
++		idle = cfs_b->idle;
++		cfs_b->idle = 1;
++	}
++
++	if (idle)
++		cfs_b->timer_active = 0;
++	raw_spin_unlock(&cfs_b->lock);
++
++	return idle;
++}
+ #else
+ static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
+ 		unsigned long delta_exec) {}
 
 
