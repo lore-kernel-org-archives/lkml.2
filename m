@@ -1,101 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756944Ab1FUWcU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 18:32:20 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:61500 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752468Ab1FUWcR convert rfc822-to-8bit (ORCPT
+	id S1756978Ab1FUWeU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 18:34:20 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:42826 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755657Ab1FUWeR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 18:32:17 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-10.tower-127.messagelabs.com!1308695488!9055035!49
-X-StarScan-Version: 6.2.17; banners=-,-,-
-X-Originating-IP: [216.166.12.178]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Mike Frysinger <vapier@gentoo.org>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "mikpe@it.uu.se" <mikpe@it.uu.se>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>
-Date: Tue, 21 Jun 2011 17:32:04 -0500
-Subject: RE: [PATCH] ARM: quiet sparse noise due to
- __ARCH_WANT_SYS_RT_SIG(ACTION|SUSPEND)
-Thread-Topic: [PATCH] ARM: quiet sparse noise due to
- __ARCH_WANT_SYS_RT_SIG(ACTION|SUSPEND)
-Thread-Index: AcwwSdn7kwMZxo4HT3er/augjch+wwAGIRYg
-Message-ID: <ADE657CA350FB648AAC2C43247A983F001F38227C321@AUSP01VMBX24.collaborationhost.net>
-References: <201106211209.46462.hartleys@visionengravers.com>
- <BANLkTi=8mstQAWKxBBBFH_+byGoXr8ieRg@mail.gmail.com>
-In-Reply-To: <BANLkTi=8mstQAWKxBBBFH_+byGoXr8ieRg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Tue, 21 Jun 2011 18:34:17 -0400
 MIME-Version: 1.0
+In-Reply-To: <4E011678.4030208@firmworks.com>
+References: <1308410354-21387-1-git-send-email-shawn.guo@linaro.org>
+ <1308410354-21387-2-git-send-email-shawn.guo@linaro.org> <20110618161934.GH8195@ponder.secretlab.ca>
+ <20110619073000.GA23171@S2100-06.ap.freescale.net> <20110621135558.GB9228@S2101-09.ap.freescale.net>
+ <BANLkTim4vunTm1176MRw3pqRZnunu4=9jg@mail.gmail.com> <4E00F290.2010303@firmworks.com>
+ <BANLkTik9LXTJ--fRwUBscokWraPwOZnpHA@mail.gmail.com> <4E011678.4030208@firmworks.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 21 Jun 2011 16:33:57 -0600
+X-Google-Sender-Auth: _Zhhs27UK1oEh1ZXjMB7YVXwKow
+Message-ID: <BANLkTikBUo3jO=R0amkdxU1V3QMJoOUkEw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] serial/imx: add device tree support
+To: Mitch Bradley <wmb@firmworks.com>
+Cc: patches@linaro.org, netdev@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, Jason Liu <jason.hui@linaro.org>,
+        linux-kernel@vger.kernel.org, Shawn Guo <shawn.guo@freescale.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 21, 2011 12:31 PM, Mike Frysinger wrote:
-> On Tue, Jun 21, 2011 at 15:09, H Hartley Sweeten wrote:
->> --- a/arch/arm/include/asm/unistd.h
->> +++ b/arch/arm/include/asm/unistd.h
->> @@ -467,6 +467,20 @@
->> +#ifndef __ASSEMBLY__
->> +
->> +#include <linux/types.h>
->> +#include <linux/linkage.h>
->> +#include <linux/compiler.h>
->> +#include <linux/signal.h>
->> +
->> +asmlinkage long sys_rt_sigaction(int sig, const struct sigaction __user *act,
->> +                                struct sigaction __user *oact,
->> +                                size_t sigsetsize);
->> +asmlinkage long sys_rt_sigsuspend(sigset_t __user *unewset, size_t sigsetsize);
->> +
->> +#endif /* !__ASSEMBLY__ */
+On Tue, Jun 21, 2011 at 4:08 PM, Mitch Bradley <wmb@firmworks.com> wrote:
+> On 6/21/2011 9:38 AM, Grant Likely wrote:
+>>
+>> On Tue, Jun 21, 2011 at 1:35 PM, Mitch Bradley<wmb@firmworks.com>  wrote:
+>>>
+>>> What is the problem with
+>>>
+>>> aliases{
+>>>   serial0 = "/uart@7000c000";
+>>> }
+>>>
+>>> Properties in the alias node are supposed to have string values.
+>>
+>> ?
+>>
+>> Not sure I follow.  Indeed, properties in the aliases node are string
+>> values.
+>>
+>> Are you referring to how I was proposing some dtc syntax for
+>> generating the alias strings?
 >
-> yikes ... this really the only way to fix the sparse warning ?
+>
+> The point is that if you refer to the node explicitly by its string name,
+> the need for a label disappears and the problem of overriding a default
+> alias disappears (assuming that a later redefinition of a property takes
+> precedence over an earlier one, as is the OFW convention).
 
-Not sure...
+Ah, we're having an impedance mismatch.  I'm thinking specifically
+about the device tree compiler and some syntactic sugar for using the
+label definition to generate /also/ create alias properties. The
+hairiness is related to that and the way that dtc is implemented, not
+with the final aliases themselves.
 
-Russell's patch to add an asm/syscalls.h fixes the other system call
-sparse warnings in arm/arm/kernel/* but it doesn't fix the ones in
-kernel/signal.c.  This patch does but, as Russell said, asm/unistd.h
-is exported to it's a bit ugly.
-
-BTW, arch/ia64 does something very similar:
-
-
-#if !defined(__ASSEMBLY__) && !defined(ASSEMBLER)
-
-#include <linux/types.h>
-#include <linux/linkage.h>
-#include <linux/compiler.h>
-
-extern long __ia64_syscall (long a0, long a1, long a2, long a3, long a4, long nr);
-
-asmlinkage unsigned long sys_mmap(
-				unsigned long addr, unsigned long len,
-				int prot, int flags,
-				int fd, long off);
-asmlinkage unsigned long sys_mmap2(
-				unsigned long addr, unsigned long len,
-				int prot, int flags,
-				int fd, long pgoff);
-struct pt_regs;
-struct sigaction;
-asmlinkage long sys_ia64_pipe(void);
-asmlinkage long sys_rt_sigaction(int sig,
-				 const struct sigaction __user *act,
-				 struct sigaction __user *oact,
-				 size_t sigsetsize);
-
-Regards,
-Hartley
+g.
