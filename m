@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab1FUO6X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 10:58:23 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:41472 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752160Ab1FUO6U (ORCPT
+	id S1756838Ab1FUPCW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 11:02:22 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:50393 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756043Ab1FUPCV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 10:58:20 -0400
-Date: Tue, 21 Jun 2011 10:58:19 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Nicolas Pitre <nico@fluxnic.net>
-cc: Alexander Holler <holler@ahsoftware.de>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>
-Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing
- the packed attribute
-In-Reply-To: <alpine.LFD.2.00.1106201824320.2142@xanadu.home>
-Message-ID: <Pine.LNX.4.44L0.1106211054460.2327-100000@iolanthe.rowland.org>
+	Tue, 21 Jun 2011 11:02:21 -0400
+Date: Tue, 21 Jun 2011 16:02:10 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Mike Waychison <mikew@google.com>
+Cc: x86@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] efi: Add infrastructure for UEFI 2.0 runtime
+ services
+Message-ID: <20110621150210.GA7476@srcf.ucam.org>
+References: <1307388985-7852-1-git-send-email-mjg@redhat.com>
+ <1307388985-7852-2-git-send-email-mjg@redhat.com>
+ <4DFFCCD4.7070403@google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DFFCCD4.7070403@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jun 2011, Nicolas Pitre wrote:
-
-> > We don't fall into any of these cases, and therefore as you say, we
-> > don't need packed.  Arnd and I have both explained this.  So why do you 
-> > keep arguing that we do need it?
+On Mon, Jun 20, 2011 at 03:42:28PM -0700, Mike Waychison wrote:
+> On 06/06/11 12:36, Matthew Garrett wrote:
+> >We're currently missing support for any of the runtime service calls
+> >introduced with the UEFI 2.0 spec in 2006. Add the infrastructure for
+> >supporting them.
 > 
-> Please show me where I keep arguing that you need it?
+> This patch looks like it introduced runtime_version in mainline, but
+> I don't see where it gets zero.
 
-Not explicitly perhaps.  But you did write:
+Oops. Yeah, I'll fix that. Thanks!
 
-> Doesn't mean that because it used to work that it is strictly correct.  
-> Wouldn't be the first time that a GCC upgrade broke the kernel because 
-> the kernel wasn't describing things properly enough.
-
-which strongly implies that "packed" is needed.  You also wrote:
-
-> Yes, but that's a consequence of not being able to access those fields 
-> in their naturally aligned position anymore.  Hence the addition of the 
-> align attribute to tell the compiler that we know that the structure is 
-> still aligned to a certain degree letting the compiler to avoid 
-> byte-oriented instructions when possible.
-
-which is predicated on the assumption that "packed" is needed.
-
-Alan Stern
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
