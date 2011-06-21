@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752280Ab1FUSY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 14:24:28 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:44438 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144Ab1FUSY0 (ORCPT
+	id S1756792Ab1FUS15 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 14:27:57 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55316 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754679Ab1FUS1y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 14:24:26 -0400
+	Tue, 21 Jun 2011 14:27:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=oIpgDZun4ZGLf9Xl4xcdd3ZJYGpBBFN9VFBmaRrjP9j17tsgUG6rgBkKcx9VVLbyRh
+         liS/+vCZkUoAfbwcOUpxdwlgHCY9nOZEifyvOPd0AO58EvVs+UH9sb+KAK0Eteetr6l1
+         EQb5gLheC34rRmObrXct3f+M6FFQcO5CdyWI8=
 MIME-Version: 1.0
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF049D2EB8AD@HQMAIL01.nvidia.com>
-References: <20110621002318.8086.48367.stgit@riker> <74CDBE0F657A3D45AFBB94109FB122FF049D2EB8AD@HQMAIL01.nvidia.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 21 Jun 2011 12:24:05 -0600
-X-Google-Sender-Auth: uYfNIRRpH4oRLF6xBMVAHR8SVwA
-Message-ID: <BANLkTinUkAL_JwOhSSx5o9QYVH9G_B=5sw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: Tegra: i2c driver
-To: Stephen Warren <swarren@nvidia.com>
-Cc: John Bonesio <bones@secretlab.ca>, Ken Radtke <kradtke@nvidia.com>,
-        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rakesh Iyer <riyer@nvidia.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20110621102623.1382.71841.sendpatchset@t400s>
+References: <20110621102605.1382.90232.sendpatchset@t400s> <20110621102623.1382.71841.sendpatchset@t400s>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Tue, 21 Jun 2011 14:27:33 -0400
+X-Google-Sender-Auth: 6xpgXv5bz_BtYhv_ZrjkIoitO_U
+Message-ID: <BANLkTi=tut=Y4fc4tkT8wt_q1azJOYaDoQ@mail.gmail.com>
+Subject: Re: [PATCH 02/02] virtio: Add virtio platform driver
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        horms@verge.net.au, mst@redhat.com, iws@ovro.caltech.edu
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 11:27 AM, Stephen Warren <swarren@nvidia.com> wrote:
-> John Bonesio wrote at Monday, June 20, 2011 6:23 PM:
->> This patch modifies the tegra i2c driver so that it can be initiailized
->> using the device tree along with the devices connected to the i2c bus.
->
-> The patch title "ARM: Tegra: i2c driver" doesn't really describe what the
-> patch does and has the wrong tag; It sounds like adding a new driver.
-> Perhaps "i2c: Tegra: Add DeviceTree support"?
+On Tue, Jun 21, 2011 at 06:26, Magnus Damm wrote:
+> +config VIRTIO_PLATFORM
+> +       tristate "Platform driver for virtio devices (EXPERIMENTAL)"
+> +       select VIRTIO
+> +       select VIRTIO_RING
+> +       select VIRTIO_LGUEST
+> +       ---help---
+> +        This drivers provides support for virtio based paravirtual device
+> +        drivers over a platform bus.
+> +
+> +        If unsure, say N.
 
-Yes, sounds appropriate to me.
+be nice to add a note as to the name of the module if the user selects "M"
 
-g.
+> --- /dev/null
+> +++ work/drivers/virtio/virtio_platform.c       2011-03-03 16:07:31.000000000 +0900
+> --- /dev/null
+> +++ work/include/linux/virtio_platform.h        2011-03-03 15:56:54.000000000 +0900
 
->
-> The code looks fine.
->
-> --
-> nvpublic
->
->
-
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+both files lack a comment block at the top
+/*
+ * one line desc of file
+ *
+ * copyright
+ *
+ * license blurb
+ */
+-mike
