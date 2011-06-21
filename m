@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757330Ab1FUWum (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 18:50:42 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:53168 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756774Ab1FUWul (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 18:50:41 -0400
-Date: Tue, 21 Jun 2011 15:50:36 -0700 (PDT)
-Message-Id: <20110621.155036.1262228722432449059.davem@davemloft.net>
-To: joe@perches.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next V2] drivers/net: Remove casts of void *
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1308681934.3338.17.camel@Joe-Laptop>
-References: <3bea9d0803a4ebfee2bb0f6e42defbf76126dc86.1308287030.git.joe@perches.com>
-	<20110617.151903.1203335395245647912.davem@davemloft.net>
-	<1308681934.3338.17.camel@Joe-Laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1757190Ab1FUWw7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 18:52:59 -0400
+Received: from gate.crashing.org ([63.228.1.57]:42612 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752125Ab1FUWw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 18:52:57 -0400
+In-Reply-To: <BANLkTikBUo3jO=R0amkdxU1V3QMJoOUkEw@mail.gmail.com>
+References: <1308410354-21387-1-git-send-email-shawn.guo@linaro.org> <1308410354-21387-2-git-send-email-shawn.guo@linaro.org> <20110618161934.GH8195@ponder.secretlab.ca> <20110619073000.GA23171@S2100-06.ap.freescale.net> <20110621135558.GB9228@S2101-09.ap.freescale.net> <BANLkTim4vunTm1176MRw3pqRZnunu4=9jg@mail.gmail.com> <4E00F290.2010303@firmworks.com> <BANLkTik9LXTJ--fRwUBscokWraPwOZnpHA@mail.gmail.com> <4E011678.4030208@firmworks.com> <BANLkTikBUo3jO=R0amkdxU1V3QMJoOUkEw@mail.gmail.com>
+Mime-Version: 1.0 (Apple Message framework v624)
+Content-Type: text/plain; charset=US-ASCII; format=flowed
+Message-Id: <ba379b3b42f1659f4f6649c78b8bb1b2@kernel.crashing.org>
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 21 Jun 2011 15:50:39 -0700 (PDT)
+Cc: Jason Liu <jason.hui@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
+        Mitch Bradley <wmb@firmworks.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>, patches@linaro.org
+From: Segher Boessenkool <segher@kernel.crashing.org>
+Subject: Re: [PATCH 1/3] serial/imx: add device tree support
+Date: Wed, 22 Jun 2011 00:52:47 +0200
+To: Grant Likely <grant.likely@secretlab.ca>
+X-Mailer: Apple Mail (2.624)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Tue, 21 Jun 2011 11:45:34 -0700
+> Ah, we're having an impedance mismatch.  I'm thinking specifically
+> about the device tree compiler and some syntactic sugar for using the
+> label definition to generate /also/ create alias properties. The
+> hairiness is related to that and the way that dtc is implemented, not
+> with the final aliases themselves.
 
-> On Fri, 2011-06-17 at 15:19 -0400, David Miller wrote:
->> From: Joe Perches <joe@perches.com>
->> Date: Thu, 16 Jun 2011 22:08:06 -0700
->> > Unnecessary casts of void * clutter the code.
->> > These are the remainder casts after several specific
->> > patches to remove netdev_priv and dev_priv.
->> > Done via coccinelle script (and a little editing):
->> Applied, thanks.
-> 
-> Unapplied?  I don't see this in net-next.
+You can generate DTC-style aliases from OFW-style aliases instead (or
+as well), it has other advantages (like being more readable, and having
+the aliases grouped together).
 
-My bad, I have no idea how it disappeared.
 
-I put it into net-next-2.6 and pushed it out, it should _really_
-be there now.
+Segher
+
