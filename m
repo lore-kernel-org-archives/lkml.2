@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756495Ab1FUNSz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 09:18:55 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41169 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247Ab1FUNSy convert rfc822-to-8bit (ORCPT
+	id S1756571Ab1FUNTA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 09:19:00 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:56978 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752247Ab1FUNS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 09:18:54 -0400
-Subject: Re: [PATCH v4 3.0-rc2-tip 7/22]  7: uprobes: mmap and fork hooks.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1308303665.2355.11.camel@twins>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
-	 <20110607125931.28590.12362.sendpatchset@localhost6.localdomain6>
-	 <1308161486.2171.61.camel@laptop>
-	 <20110616032645.GF4952@linux.vnet.ibm.com>
-	 <1308225626.13240.34.camel@twins>
-	 <20110616130012.GL4952@linux.vnet.ibm.com>
-	 <1308248588.13240.267.camel@twins>
-	 <20110617045000.GM4952@linux.vnet.ibm.com>
-	 <1308297836.13240.380.camel@twins>
-	 <20110617090504.GN4952@linux.vnet.ibm.com> <1308303665.2355.11.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 21 Jun 2011 15:17:23 +0200
-Message-ID: <1308662243.26237.144.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 21 Jun 2011 09:18:56 -0400
+Date: Tue, 21 Jun 2011 14:18:42 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 1/4] ACPI, APEI, GHES, Prevent GHES to be built as
+ module
+Message-ID: <20110621131842.GA4902@srcf.ucam.org>
+References: <1308640587-24502-1-git-send-email-ying.huang@intel.com>
+ <1308640587-24502-2-git-send-email-ying.huang@intel.com>
+ <20110621072301.GA3263@one.firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110621072301.GA3263@one.firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-17 at 11:41 +0200, Peter Zijlstra wrote:
+On Tue, Jun 21, 2011 at 09:23:01AM +0200, Andi Kleen wrote:
+> On Tue, Jun 21, 2011 at 03:16:24PM +0800, Huang Ying wrote:
+> > GHES (Generic Hardware Error Source) is used to process hardware error
+> > notification in firmware first mode.  But because firmware first mode
+> > can be turned on but can not be turned off, it is unreasonable to
+> > unload the GHES module with firmware first mode turned on.  To avoid
+> > confusion, this patch makes GHES can be enable/disable in
+> > configuration time, but not built as module and unload at run time.
 > 
-> On thing I was thinking of to fix that initial problem of spurious traps
-> was to leave the uprobe in the tree but skip all probes without
-> consumers in mmap_uprobe().
+> It's better to keep it as a module, but disable unloading.
+> You can do that with a __module_get(THIS_MODULE) in the init code
+> when FFM is detected.
 
-Can you find fault with using __unregister_uprobe() as a cleanup path
-for __register_uprobe() so that we do a second vma-rmap walk, and
-ignoring empty probes on uprobe_mmap()?
+Anything that's enabled by an _OSC call is expected to be available 
+immediately. So the choices are either to ensure that GHES support is 
+built in, or to make a second _OSC call when the GHES code is loaded. 
+We've seen in the PCIe case that many firmware implementations 
+misinterpret multiple attempts to set _OSC with the same UUID, and a 
+cursory examination of some implementations of the systemwide one 
+suggest that we'd see the same issue there.
 
-We won't get spurious traps because the empty (no consumers) uprobe is
-still in the tree, we won't get any 'lost' probe insn because the
-cleanup does a second vma-rmap walk which will include the new mmap().
-And double probe insertion is harmless.
-
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
