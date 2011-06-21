@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362Ab1FUWV0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 18:21:26 -0400
-Received: from mta21.charter.net ([216.33.127.81]:35620 "EHLO
-	mta21.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613Ab1FUWVX (ORCPT
+	id S1756783Ab1FUWcI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 18:32:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56815 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752468Ab1FUWcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 18:21:23 -0400
-X-Authority-Analysis: v=1.1 cv=1b2X7W/SifksZeClH/haT1SUt4udqxFGF00pZw2/jJk=
- c=1 sm=1 a=p9YancsnzTcA:10 a=8DFDbwKGSZsA:10 a=0xc6OLWX_2kA:10
- a=8nJEP1OIZ-IA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17 a=n6QB8HQGw4dP2UgOK_EA:9
- a=wPNLvfGTeEIA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:117
-Message-ID: <4E01195F.8040000@gregd.org>
-Date: Tue, 21 Jun 2011 17:21:19 -0500
-From: Greg Dietsche <greg@gregd.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110505 Icedove/3.0.11
-MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: 3.0 rc3 bug & warning fs/inode.c && fs/fs-writeback.c
-References: <4E008DD0.2090809@gregd.org> <20110621124556.GZ11521@ZenIV.linux.org.uk>
-In-Reply-To: <20110621124556.GZ11521@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 21 Jun 2011 18:32:04 -0400
+Date: Tue, 21 Jun 2011 15:31:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [RFC 0/5 v4] procfs: introduce hidepid=, hidenet=, gid= mount
+ options
+Message-Id: <20110621153102.762557f3.akpm@linux-foundation.org>
+In-Reply-To: <1308163895-5963-1-git-send-email-segoon@openwall.com>
+References: <1308163895-5963-1-git-send-email-segoon@openwall.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2011 07:45 AM, Al Viro wrote:
-> On Tue, Jun 21, 2011 at 07:25:52AM -0500, Greg Dietsche wrote:
->> from the just missed rc4 department:
->> I recieved this BUG last night on my laptop and it was shortly
->> followed by a warning from the kernel. I doubt that I can reproduce
->> this. It happened under a light load. I was doing some emailing
->> using thunderbird (er.... icedove.....). let me know if there's
->> anything I can do to help debug or if there's more info I can get
->> that would help you figure out what went wrong.
->
-> Which filesystems had been mounted?  That looks like a stray pointer
-> to struct inode (i.e. outliving the inode eviction on final iput());
-> might be the one fixed by commit 50338b889dc504c69e0cb316ac92d1b9e51f3c8a,
-> might be something else...
->
-I'm leaning towards might be something else. Correct me if I'm wrong, 
-but it seems that 50338b889dc504c69e0cb316ac92d1b9e51f3c8a was included 
-in rc3.
 
-thanks,
-Greg
+Plese cc Alexey on procfs things.
+
+On Wed, 15 Jun 2011 22:51:35 +0400
+Vasiliy Kulikov <segoon@openwall.com> wrote:
+
+> This patch series adds support of procfs mount options and adds
+> mount options to restrict /proc/<pid>/ directories to owners and
+> /proc/<pid>/net/* to root.  Additional group may be defined via
+> gid=, and this group will be privileged to study others /proc/<pid>/
+> and networking information.
+> 
+> Similar features are implemented for old kernels in -ow patches (for
+> Linux 2.2 and 2.4) and for Linux 2.6 in -grsecurity, but both of them
+> are implemented as configure options, not cofigurable in runtime, with
+> changes of gid of /proc/<pid>/, and without backward-compatible
+> /proc/<pid>/net/* handling.
+
+This all seems highly specific to one particular set of requirements. 
+We have one set of access permission rules and then dive into procfs
+and hard-wire those rules into the implementation?  What happens if
+someone else has a similar but slightly different set of requirements? 
+More kernel patches?
+
+IOW is there some more general way of doing all this?  <handwaving>Like
+better permissions/chmod support in procfs and an inherited-across-fork
+per-process procfs permissions mask.</handwaving>
+
+
+Does all this code support `mount -o remount' as expected?
