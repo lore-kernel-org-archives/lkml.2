@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907Ab1FULrO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 07:47:14 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50440 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751374Ab1FULrL (ORCPT
+	id S1751504Ab1FULtY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 07:49:24 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:46345 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab1FULtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 07:47:11 -0400
-Date: Tue, 21 Jun 2011 12:47:09 +0100
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>
-Subject: Re: [PATCH 1/8] regmap: Add generic non-memory mapped register
-	access API
-Message-ID: <20110621114709.GA12691@opensource.wolfsonmicro.com>
-References: <20110620124608.GB31140@opensource.wolfsonmicro.com> <1308574489-31322-1-git-send-email-broonie@opensource.wolfsonmicro.com> <4DFFD486.7020901@metafoo.de> <20110621001438.GD1905@opensource.wolfsonmicro.com> <4DFFE9C1.5060003@metafoo.de> <20110621012429.GB4322@opensource.wolfsonmicro.com>
+	Tue, 21 Jun 2011 07:49:22 -0400
+Message-ID: <4E00853A.7010003@linaro.org>
+Date: Tue, 21 Jun 2011 17:19:14 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110621012429.GB4322@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: MyungJoo Ham <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, myungjoo.ham@gmail.com,
+        dg77.kim@samsung.com
+Subject: Re: [PATCH v2 1/4] Exynos4 NURI: configure regulators and PMIC
+References: <20110620103124.GD31864@opensource.wolfsonmicro.com> <1308622033-2521-1-git-send-email-myungjoo.ham@samsung.com> <1308622033-2521-2-git-send-email-myungjoo.ham@samsung.com> <4E002D18.2080401@linaro.org> <20110621111010.GH22177@opensource.wolfsonmicro.com>
+In-Reply-To: <20110621111010.GH22177@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 02:24:30AM +0100, Mark Brown wrote:
-> On Tue, Jun 21, 2011 at 02:45:53AM +0200, Lars-Peter Clausen wrote:
-> > On 06/21/2011 02:14 AM, Mark Brown wrote:
-> 
-> > > I like init, especially considering the plan to add cache support as
-> > > there's more work in setting that up once you start doing the advanced
-> > > caches.
-> 
-> > If you take a look at other kernel apis _alloc is usually used if the structure
-> > is allocated (and initialized) inside the function and _init is used when the
-> > function initializes an already existing structure. And it also matches better
-> 
-> That more applies to split alloc/init models - here there's a single
-> operation that does both.  To me alloc() generally means that it just
-> allocates a structure and leaves initialization still to be done while.
-> 
-> > with regmap_free.
-> 
-> That's true.
+On Tuesday 21 June 2011 04:40 PM, Mark Brown wrote:
+> On Tue, Jun 21, 2011 at 11:03:12AM +0530, Tushar Behera wrote:
+>
+>> Will it be possible to move PMIC specific defines to a common file
+>> and make appropriate calls in the board-specific file?
+>
+>> In that way, we can re-use this PMIC code on some other boards (e.g.
+>> Insignal low-cost board Origen featuring Exynos4210 also features
+>> MAX8997).
+>
+> If the board is similar enough in design to be sharing the PMIC code
+> that sounds like it should be sharing a lot more of the board setup
+> code.
+Origen board details can be found at http://www.origenboard.org/
 
-In the soc-cache code we use _init and _exit respectively.  Might be
-worth considering instead of _free?
+Under 'Documents' section, there are some schematics for the board.
 
-Thanks,
-Dimitris
+As for other peripherals, I am not sure how much similar this is w.r.t. 
+NURI (I don't have NURI board schematics).
+
+-- 
+Tushar Behera
