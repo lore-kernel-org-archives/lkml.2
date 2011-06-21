@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab1FUHED (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 03:04:03 -0400
-Received: from smtp2.kfki.hu ([148.6.0.28]:59484 "EHLO smtp2.kfki.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751266Ab1FUHD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 03:03:58 -0400
-X-Greylist: delayed 331 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Jun 2011 03:03:58 EDT
-Date: Tue, 21 Jun 2011 08:58:24 +0200 (CEST)
-From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-To: Jesper Juhl <jj@chaosbits.net>
-cc: netdev@vger.kernel.org, coreteam@netfilter.org,
-        linux-kernel@vger.kernel.org, Dmitry Kozlov <xeb@mail.ru>,
-        netfilter@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [netfilter-core] [PATCH] Remove redundant linux/version.h includes
- from net/
-In-Reply-To: <alpine.LNX.2.00.1106210009520.27735@swampdragon.chaosbits.net>
-Message-ID: <alpine.DEB.2.00.1106210854370.23091@blackhole.kfki.hu>
-References: <alpine.LNX.2.00.1106210009520.27735@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752438Ab1FUHKq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 03:10:46 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:40790 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974Ab1FUHKo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 03:10:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=MR1xfQfzKgTB1S6HY288OdKSjY8qgA9Kl05Spf1x0pOqZcz9UVUf1v+QXZinl2RRjL
+         S1BzYukUgsQBjSdqZr8fZ3IVvnr5fdKB6uD1obcP2yMojU8wKzKRHxuGaizXEn5qI1g3
+         GW11mhcmSlFn9piNjnrOexuMjW1+moVIOENGE=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <201106210128.52101.rjw@sisk.pl>
+References: <201106210128.52101.rjw@sisk.pl>
+Date: Tue, 21 Jun 2011 16:10:44 +0900
+Message-ID: <BANLkTin0dq07rquuAmE-jE1nmkRnKH7aSA@mail.gmail.com>
+Subject: Re: [PATCH] PM / Runtime: Handle clocks correctly if
+ CONFIG_PM_RUNTIME is unset
+From: Magnus Damm <magnus.damm@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-sh@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Jun 2011, Jesper Juhl wrote:
+On Tue, Jun 21, 2011 at 8:28 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+>
+> Commit 85eb8c8d0b0900c073b0e6f89979ac9c439ade1a (PM / Runtime:
+> Generic clock manipulation rountines for runtime PM (v6)) converted
+> the shmobile platform to using generic code for runtime PM clock
+> management, but it changed the behavior for CONFIG_PM_RUNTIME unset
+> incorrectly.
+>
+> Specifically, for CONFIG_PM_RUNTIME unset pm_runtime_clk_notify()
+> should enable clocks for action equal to BUS_NOTIFY_BIND_DRIVER and
+> it should disable them for action equal to BUS_NOTIFY_UNBOUND_DRIVER
+> (instead of BUS_NOTIFY_ADD_DEVICE and BUS_NOTIFY_DEL_DEVICE,
+> respectively).  Make this function behave as appropriate.
+>
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-> It was suggested by "make versioncheck" that the follwing includes of
-> linux/version.h are redundant:
-> 
->   /home/jj/src/linux-2.6/net/caif/caif_dev.c: 14 linux/version.h not needed.
->   /home/jj/src/linux-2.6/net/caif/chnl_net.c: 10 linux/version.h not needed.
->   /home/jj/src/linux-2.6/net/ipv4/gre.c: 19 linux/version.h not needed.
->   /home/jj/src/linux-2.6/net/netfilter/ipset/ip_set_core.c: 20 linux/version.h not needed.
->   /home/jj/src/linux-2.6/net/netfilter/xt_set.c: 16 linux/version.h not needed.
-> 
-> and it seems that it is right.
-> 
-> Beyond manually inspecting the source files I also did a few build
-> tests with various configs to confirm that including the header in
-> those files is indeed not needed.
-> 
-> Here's a patch to remove the pointless includes.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  net/caif/caif_dev.c               |    1 -
->  net/caif/chnl_net.c               |    1 -
->  net/ipv4/gre.c                    |    1 -
->  net/netfilter/ipset/ip_set_core.c |    1 -
->  net/netfilter/xt_set.c            |    1 -
->  5 files changed, 0 insertions(+), 5 deletions(-)
+Thanks Rafael!
 
-For ipset/xt_set.c:
-
-Acked-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-
-Best regards,
-Jozsef
--
-E-mail  : kadlec@blackhole.kfki.hu, kadlec@mail.kfki.hu
-PGP key : http://www.kfki.hu/~kadlec/pgp_public_key.txt
-Address : KFKI Research Institute for Particle and Nuclear Physics
-          H-1525 Budapest 114, POB. 49, Hungary
+Acked-by: Magnus Damm <damm@opensource.se>
