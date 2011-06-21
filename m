@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757518Ab1FUXjo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 19:39:44 -0400
+	id S1757540Ab1FUXjt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 19:39:49 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:65291 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757083Ab1FUXjm (ORCPT
+	with ESMTP id S1757083Ab1FUXjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 19:39:42 -0400
+	Tue, 21 Jun 2011 19:39:46 -0400
 From: Per Forlin <per.forlin@linaro.org>
 To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-mmc@vger.kernel.org, Venkatraman S <svenkatr@ti.com>
 Cc: Chris Ball <cjb@laptop.org>, Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v7 01/11] mmc: add non-blocking mmc request function
-Date: Wed, 22 Jun 2011 01:38:31 +0200
-Message-Id: <1308699521-20556-2-git-send-email-per.forlin@linaro.org>
+Subject: [PATCH v7 02/11] omap_hsmmc: add support for pre_req and post_req
+Date: Wed, 22 Jun 2011 01:38:32 +0200
+Message-Id: <1308699521-20556-3-git-send-email-per.forlin@linaro.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1308699521-20556-1-git-send-email-per.forlin@linaro.org>
 References: <1308699521-20556-1-git-send-email-per.forlin@linaro.org>
@@ -22,243 +22,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously there has only been one function mmc_wait_for_req()
-to start and wait for a request. This patch adds
- * mmc_start_req() - starts a request wihtout waiting
-   If there is on ongoing request wait for completion
-   of that request and start the new one and return.
-   Does not wait for the new command to complete.
-
-This patch also adds new function members in struct mmc_host_ops
-only called from core.c
- * pre_req - asks the host driver to prepare for the next job
- * post_req - asks the host driver to clean up after a completed job
-
-The intention is to use pre_req() and post_req() to do cache maintenance
-while a request is active. pre_req() can be called while a request is active
-to minimize latency to start next job. post_req() can be used after the next
-job is started to clean up the request. This will minimize the host driver
-request end latency. post_req() is typically used before ending the block
-request and handing over the buffer to the block layer.
-
-Add a host-private member in mmc_data to be used by
-pre_req to mark the data. The host driver will then
-check this mark to see if the data is prepared or not.
+pre_req() runs dma_map_sg(), post_req() runs dma_unmap_sg.
+If not calling pre_req() before omap_hsmmc_request()
+dma_map_sg will be issued before starting the transfer.
+It is optional to use pre_req(). If issuing pre_req()
+post_req() must be to be called as well.
 
 Signed-off-by: Per Forlin <per.forlin@linaro.org>
 ---
- drivers/mmc/core/core.c  |  110 +++++++++++++++++++++++++++++++++++++++++----
- include/linux/mmc/core.h |    6 ++-
- include/linux/mmc/host.h |   21 +++++++++
- 3 files changed, 126 insertions(+), 11 deletions(-)
+ drivers/mmc/host/omap_hsmmc.c |   87 +++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 83 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 68091dd..c82fa3b 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -198,9 +198,106 @@ mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index dedf3da..b0c6910 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -141,6 +141,11 @@
+ #define OMAP_HSMMC_WRITE(base, reg, val) \
+ 	__raw_writel((val), (base) + OMAP_HSMMC_##reg)
  
- static void mmc_wait_done(struct mmc_request *mrq)
- {
--	complete(mrq->done_data);
-+	complete(&mrq->completion);
- }
- 
-+static void __mmc_start_req(struct mmc_host *host, struct mmc_request *mrq)
-+{
-+	init_completion(&mrq->completion);
-+	mrq->done = mmc_wait_done;
-+	mmc_start_request(host, mrq);
-+}
-+
-+static void mmc_wait_for_req_done(struct mmc_host *host,
-+				  struct mmc_request *mrq)
-+{
-+	wait_for_completion(&mrq->completion);
-+}
-+
-+/**
-+ *	mmc_pre_req - Prepare for a new request
-+ *	@host: MMC host to prepare command
-+ *	@mrq: MMC request to prepare for
-+ *	@is_first_req: true if there is no previous started request
-+ *                     that may run in parellel to this call, otherwise false
-+ *
-+ *	mmc_pre_req() is called in prior to mmc_start_req() to let
-+ *	host prepare for the new request. Preparation of a request may be
-+ *	performed while another request is running on the host.
-+ */
-+static void mmc_pre_req(struct mmc_host *host, struct mmc_request *mrq,
-+		 bool is_first_req)
-+{
-+	if (host->ops->pre_req)
-+		host->ops->pre_req(host, mrq, is_first_req);
-+}
-+
-+/**
-+ *	mmc_post_req - Post process a completed request
-+ *	@host: MMC host to post process command
-+ *	@mrq: MMC request to post process for
-+ *	@err: Error, if non zero, clean up any resources made in pre_req
-+ *
-+ *	Let the host post process a completed request. Post processing of
-+ *	a request may be performed while another reuqest is running.
-+ */
-+static void mmc_post_req(struct mmc_host *host, struct mmc_request *mrq,
-+			 int err)
-+{
-+	if (host->ops->post_req)
-+		host->ops->post_req(host, mrq, err);
-+}
-+
-+/**
-+ *	mmc_start_req - start a non-blocking request
-+ *	@host: MMC host to start command
-+ *	@areq: async request to start
-+ *	@error: out parameter returns 0 for success, otherwise non zero
-+ *
-+ *	Start a new MMC custom command request for a host.
-+ *	If there is on ongoing async request wait for completion
-+ *	of that request and start the new one and return.
-+ *	Does not wait for the new request to complete.
-+ *
-+ *	Returns the completed async request, NULL in case of none completed.
-+ */
-+struct mmc_async_req *mmc_start_req(struct mmc_host *host,
-+				    struct mmc_async_req *areq, int *error)
-+{
-+	int err = 0;
-+	struct mmc_async_req *data = host->areq;
-+
-+	/* Prepare a new request */
-+	if (areq)
-+		mmc_pre_req(host, areq->mrq, !host->areq);
-+
-+	if (host->areq) {
-+		mmc_wait_for_req_done(host, host->areq->mrq);
-+		err = host->areq->err_check(host->card, host->areq);
-+		if (err) {
-+			mmc_post_req(host, host->areq->mrq, 0);
-+			if (areq)
-+				mmc_post_req(host, areq->mrq, -EINVAL);
-+
-+			host->areq = NULL;
-+			goto out;
-+		}
-+	}
-+
-+	if (areq)
-+		__mmc_start_req(host, areq->mrq);
-+
-+	if (host->areq)
-+		mmc_post_req(host, host->areq->mrq, 0);
-+
-+	host->areq = areq;
-+ out:
-+	if (error)
-+		*error = err;
-+	return data;
-+}
-+EXPORT_SYMBOL(mmc_start_req);
-+
- /**
-  *	mmc_wait_for_req - start a request and wait for completion
-  *	@host: MMC host to start command
-@@ -212,16 +309,9 @@ static void mmc_wait_done(struct mmc_request *mrq)
-  */
- void mmc_wait_for_req(struct mmc_host *host, struct mmc_request *mrq)
- {
--	DECLARE_COMPLETION_ONSTACK(complete);
--
--	mrq->done_data = &complete;
--	mrq->done = mmc_wait_done;
--
--	mmc_start_request(host, mrq);
--
--	wait_for_completion(&complete);
-+	__mmc_start_req(host, mrq);
-+	mmc_wait_for_req_done(host, mrq);
- }
--
- EXPORT_SYMBOL(mmc_wait_for_req);
- 
- /**
-diff --git a/include/linux/mmc/core.h b/include/linux/mmc/core.h
-index b6718e5..1b5a496 100644
---- a/include/linux/mmc/core.h
-+++ b/include/linux/mmc/core.h
-@@ -117,6 +117,7 @@ struct mmc_data {
- 
- 	unsigned int		sg_len;		/* size of scatter list */
- 	struct scatterlist	*sg;		/* I/O scatter list */
-+	s32			host_cookie;	/* host private data */
- };
- 
- struct mmc_request {
-@@ -125,13 +126,16 @@ struct mmc_request {
- 	struct mmc_data		*data;
- 	struct mmc_command	*stop;
- 
--	void			*done_data;	/* completion data */
-+	struct completion	completion;
- 	void			(*done)(struct mmc_request *);/* completion function */
- };
- 
- struct mmc_host;
- struct mmc_card;
-+struct mmc_async_req;
- 
-+extern struct mmc_async_req *mmc_start_req(struct mmc_host *,
-+					   struct mmc_async_req *, int *);
- extern void mmc_wait_for_req(struct mmc_host *, struct mmc_request *);
- extern int mmc_wait_for_cmd(struct mmc_host *, struct mmc_command *, int);
- extern int mmc_app_cmd(struct mmc_host *, struct mmc_card *);
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index 1ee4424..8ae44d8 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -106,6 +106,15 @@ struct mmc_host_ops {
- 	 */
- 	int (*enable)(struct mmc_host *host);
- 	int (*disable)(struct mmc_host *host, int lazy);
-+	/*
-+	 * It is optional for the host to implement pre_req and post_req in
-+	 * order to support double buffering of requests (prepare one
-+	 * request while another request is active).
-+	 */
-+	void	(*post_req)(struct mmc_host *host, struct mmc_request *req,
-+			    int err);
-+	void	(*pre_req)(struct mmc_host *host, struct mmc_request *req,
-+			   bool is_first_req);
- 	void	(*request)(struct mmc_host *host, struct mmc_request *req);
- 	/*
- 	 * Avoid calling these three functions too often or in a "fast path",
-@@ -144,6 +153,16 @@ struct mmc_host_ops {
- struct mmc_card;
- struct device;
- 
-+struct mmc_async_req {
-+	/* active mmc request */
-+	struct mmc_request	*mrq;
-+	/*
-+	 * Check error status of completed mmc request.
-+	 * Returns 0 if success otherwise non zero.
-+	 */
-+	int (*err_check) (struct mmc_card *, struct mmc_async_req *);
++struct omap_hsmmc_next {
++	unsigned int	dma_len;
++	s32		cookie;
 +};
 +
- struct mmc_host {
- 	struct device		*parent;
- 	struct device		class_dev;
-@@ -281,6 +300,8 @@ struct mmc_host {
+ struct omap_hsmmc_host {
+ 	struct	device		*dev;
+ 	struct	mmc_host	*mmc;
+@@ -184,6 +189,7 @@ struct omap_hsmmc_host {
+ 	int			reqs_blocked;
+ 	int			use_reg;
+ 	int			req_in_progress;
++	struct omap_hsmmc_next	next_data;
  
- 	struct dentry		*debugfs_root;
- 
-+	struct mmc_async_req	*areq;		/* active async req */
-+
- 	unsigned long		private[0] ____cacheline_aligned;
+ 	struct	omap_mmc_platform_data	*pdata;
  };
+@@ -1346,8 +1352,9 @@ static void omap_hsmmc_dma_cb(int lch, u16 ch_status, void *cb_data)
+ 		return;
+ 	}
  
+-	dma_unmap_sg(mmc_dev(host->mmc), data->sg, data->sg_len,
+-		omap_hsmmc_get_dma_dir(host, data));
++	if (!data->host_cookie)
++		dma_unmap_sg(mmc_dev(host->mmc), data->sg, data->sg_len,
++			     omap_hsmmc_get_dma_dir(host, data));
+ 
+ 	req_in_progress = host->req_in_progress;
+ 	dma_ch = host->dma_ch;
+@@ -1365,6 +1372,45 @@ static void omap_hsmmc_dma_cb(int lch, u16 ch_status, void *cb_data)
+ 	}
+ }
+ 
++static int omap_hsmmc_pre_dma_transfer(struct omap_hsmmc_host *host,
++				       struct mmc_data *data,
++				       struct omap_hsmmc_next *next)
++{
++	int dma_len;
++
++	if (!next && data->host_cookie &&
++	    data->host_cookie != host->next_data.cookie) {
++		printk(KERN_WARNING "[%s] invalid cookie: data->host_cookie %d"
++		       " host->next_data.cookie %d\n",
++		       __func__, data->host_cookie, host->next_data.cookie);
++		data->host_cookie = 0;
++	}
++
++	/* Check if next job is already prepared */
++	if (next ||
++	    (!next && data->host_cookie != host->next_data.cookie)) {
++		dma_len = dma_map_sg(mmc_dev(host->mmc), data->sg,
++				     data->sg_len,
++				     omap_hsmmc_get_dma_dir(host, data));
++
++	} else {
++		dma_len = host->next_data.dma_len;
++		host->next_data.dma_len = 0;
++	}
++
++
++	if (dma_len == 0)
++		return -EINVAL;
++
++	if (next) {
++		next->dma_len = dma_len;
++		data->host_cookie = ++next->cookie < 0 ? 1 : next->cookie;
++	} else
++		host->dma_len = dma_len;
++
++	return 0;
++}
++
+ /*
+  * Routine to configure and start DMA for the MMC card
+  */
+@@ -1398,9 +1444,10 @@ static int omap_hsmmc_start_dma_transfer(struct omap_hsmmc_host *host,
+ 			mmc_hostname(host->mmc), ret);
+ 		return ret;
+ 	}
++	ret = omap_hsmmc_pre_dma_transfer(host, data, NULL);
++	if (ret)
++		return ret;
+ 
+-	host->dma_len = dma_map_sg(mmc_dev(host->mmc), data->sg,
+-			data->sg_len, omap_hsmmc_get_dma_dir(host, data));
+ 	host->dma_ch = dma_ch;
+ 	host->dma_sg_idx = 0;
+ 
+@@ -1480,6 +1527,35 @@ omap_hsmmc_prepare_data(struct omap_hsmmc_host *host, struct mmc_request *req)
+ 	return 0;
+ }
+ 
++static void omap_hsmmc_post_req(struct mmc_host *mmc, struct mmc_request *mrq,
++				int err)
++{
++	struct omap_hsmmc_host *host = mmc_priv(mmc);
++	struct mmc_data *data = mrq->data;
++
++	if (host->use_dma) {
++		dma_unmap_sg(mmc_dev(host->mmc), data->sg, data->sg_len,
++			     omap_hsmmc_get_dma_dir(host, data));
++		data->host_cookie = 0;
++	}
++}
++
++static void omap_hsmmc_pre_req(struct mmc_host *mmc, struct mmc_request *mrq,
++			       bool is_first_req)
++{
++	struct omap_hsmmc_host *host = mmc_priv(mmc);
++
++	if (mrq->data->host_cookie) {
++		mrq->data->host_cookie = 0;
++		return ;
++	}
++
++	if (host->use_dma)
++		if (omap_hsmmc_pre_dma_transfer(host, mrq->data,
++						&host->next_data))
++			mrq->data->host_cookie = 0;
++}
++
+ /*
+  * Request function. for read/write operation
+  */
+@@ -1928,6 +2004,8 @@ static int omap_hsmmc_disable_fclk(struct mmc_host *mmc, int lazy)
+ static const struct mmc_host_ops omap_hsmmc_ops = {
+ 	.enable = omap_hsmmc_enable_fclk,
+ 	.disable = omap_hsmmc_disable_fclk,
++	.post_req = omap_hsmmc_post_req,
++	.pre_req = omap_hsmmc_pre_req,
+ 	.request = omap_hsmmc_request,
+ 	.set_ios = omap_hsmmc_set_ios,
+ 	.get_cd = omap_hsmmc_get_cd,
+@@ -2077,6 +2155,7 @@ static int __init omap_hsmmc_probe(struct platform_device *pdev)
+ 	host->mapbase	= res->start;
+ 	host->base	= ioremap(host->mapbase, SZ_4K);
+ 	host->power_mode = MMC_POWER_OFF;
++	host->next_data.cookie = 1;
+ 
+ 	platform_set_drvdata(pdev, host);
+ 	INIT_WORK(&host->mmc_carddetect_work, omap_hsmmc_detect);
 -- 
 1.7.4.1
 
