@@ -1,244 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757460Ab1FUT11 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 15:27:27 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:23992 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757338Ab1FUT10 (ORCPT
+	id S1757463Ab1FUTbm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 15:31:42 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35058 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757338Ab1FUTbl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 15:27:26 -0400
-Date: Tue, 21 Jun 2011 21:27:05 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Thomas Reim <reimth@googlemail.com>
-Cc: Dave Airlie <airlied@redhat.com>, Alex Deucher <alexdeucher@gmail.com>,
-        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
-        Tyson Whitehead <twhitehead@gmail.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Thomas Reim <rdratlos@yahoo.co.uk>
-Subject: Re: [PATCH 1/1] drm/radeon: Fix Asus M2A-VM HDMI EDID error
- flooding problem
-Message-ID: <20110621212705.1420c63e@endymion.delvare>
-In-Reply-To: <1308670305-7096-1-git-send-email-rdratlos@yahoo.co.uk>
-References: <1308670305-7096-1-git-send-email-rdratlos@yahoo.co.uk>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Jun 2011 15:31:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=hAYwcCoteNiyOEfLAFBT1kHbqbgqlUX8SxM6hIBZqlwb5hlhJs34YqjF6EykBwsBnA
+         TeMJTAtGKDcxKrXZjJ5ENvhjG9H4xXIJexOB4SpnW3UWUQCe6/uRSFQHf1RUjtREDlrQ
+         9Ya/azXY8/girVgb6SCgSQB5t49CyGpyONAsw=
+MIME-Version: 1.0
+In-Reply-To: <201106211209.46462.hartleys@visionengravers.com>
+References: <201106211209.46462.hartleys@visionengravers.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Tue, 21 Jun 2011 15:31:20 -0400
+X-Google-Sender-Auth: TFIuER0TYPMWeVanig51IEzDDGQ
+Message-ID: <BANLkTi=8mstQAWKxBBBFH_+byGoXr8ieRg@mail.gmail.com>
+Subject: Re: [PATCH] ARM: quiet sparse noise due to __ARCH_WANT_SYS_RT_SIG(ACTION|SUSPEND)
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, mikpe@it.uu.se,
+        ebiederm@xmission.com, tony.luck@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
-
-On Tue, 21 Jun 2011 17:31:45 +0200, Thomas Reim wrote:
-> Some integrated ATI Radeon  chipset implementations
-> (e. g. Asus M2A-VM HDMI) indicate the availability
-> of a DDC even when there's no monitor connected.
-> In this case, drm_get_edid and drm_edid_block_valid
-> periodically dump data and kernel errors into system
-> log files and onto terminals, which lead to an unacceptable
-> system behaviour.
-> 
-> Tested since kernel 2.35 on Asus M2A-VM HDMI board
-
-I don't like your implementation (see below.) Also, your comment above
-suggests that your main problem here is that logging is too verbose.
-Maybe that's what you should be fixing.
-
-> 
-> Signed-off-by: Thomas Reim <rdratlos@yahoo.co.uk>
-> ---
->  drivers/gpu/drm/radeon/radeon_connectors.c |   10 +++++
->  drivers/gpu/drm/radeon/radeon_display.c    |   11 +++++
->  drivers/gpu/drm/radeon/radeon_i2c.c        |   60 ++++++++++++++++++++++++++++
->  drivers/gpu/drm/radeon/radeon_mode.h       |    1 +
->  4 files changed, 82 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/radeon/radeon_connectors.c b/drivers/gpu/drm/radeon/radeon_connectors.c
-> index cbfca3a..7a76e45 100644
-> --- a/drivers/gpu/drm/radeon/radeon_connectors.c
-> +++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-> @@ -828,6 +828,16 @@ radeon_dvi_detect(struct drm_connector *connector, bool force)
->  
->  	if (radeon_connector->ddc_bus)
->  		dret = radeon_ddc_probe(radeon_connector);
+On Tue, Jun 21, 2011 at 15:09, H Hartley Sweeten wrote:
+> --- a/arch/arm/include/asm/unistd.h
+> +++ b/arch/arm/include/asm/unistd.h
+> @@ -467,6 +467,20 @@
+> +#ifndef __ASSEMBLY__
 > +
-> +	/* Asus M2A-VM HDMI DDC quirk:
-> +	 * Some integrated ATI Radeon chipset implementations (e. g. Asus
-> +	 * M2A-VM HDMI) indicate the availability of a DDC even when there's
-> +	 * no monitor connected.The following check prevents drm_get_edid()
-> +	 * and drm_edid_block_valid() of periodically dumping data and kernel
-> +	 * errors into the logs and onto the terminal, which would lead to an
-> +	 * unacceptable system behaviour */
-> +	if (dret && connector->connector_type == DRM_MODE_CONNECTOR_HDMIA)
-> +		dret = radeon_ddc_edid_probe(radeon_connector);
-
-I don't like this. radeon_ddc_edid_probe() is partly redundant with
-radeon_ddc_probe() and also partly redundant with drm_get_edid() and
-drm_edid_is_valid(). It will add yet another round of I2C transactions,
-and these transactions are slow, so the fewer we have at driver load
-time, the happier we are. This is even more true these days when every
-graphics card gets 8 I2C buses created.
-
-If nothing else, you should call radeon_ddc_edid_probe() instead of,
-not after, radeon_ddc_probe(), to save a transaction.
-
-But the root cause is most certainly that the underlying I2C bus is not
-working. I bet that SDA is stuck low, which causes every sent byte
-(including the slave address) to look like it was acked [1], and every
-read byte to be zero. So the key problem is that radeon_ddc_probe()
-isn't able to detect this case. Either the bus should be tested first
-(see i2c-algo-bit for a test function) or radeon_ddc_probe() should be
-improved to detect this case. It doesn't have to go to the extent of
-your new radeon_ddc_edid_probe() function. It would be enough to read 2
-bytes from the supposed EDID EEPROM, and check that they are not both 0.
-
-Properly checking for stuck bus would have the advantage that you don't
-have to retest later (contrary to missing EDID which can show up later
-when a monitor gets plugged.)
-
-[1] Incidentally I had a similar case reported a few days ago:
-    http://lists.lm-sensors.org/pipermail/lm-sensors/2011-June/032959.html
-
-Further comments below are just for completeness, as I don't think the
-route your took is appropriate.
-
->  	if (dret) {
->  		if (radeon_connector->edid) {
->  			kfree(radeon_connector->edid);
-> diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
-> index 292f73f..550f143 100644
-> --- a/drivers/gpu/drm/radeon/radeon_display.c
-> +++ b/drivers/gpu/drm/radeon/radeon_display.c
-> @@ -715,6 +715,9 @@ static bool radeon_setup_enc_conn(struct drm_device *dev)
->  	if (ret) {
->  		radeon_setup_encoder_clones(dev);
->  		radeon_print_display_setup(dev);
-> +		/* Is this really required here?
-> +		   Seems to just force drm to dump EDID errors
-> +		   to kernel logs */
->  		list_for_each_entry(drm_connector, &dev->mode_config.connector_list, head)
->  			radeon_ddc_dump(drm_connector);
->  	}
-> @@ -777,8 +780,16 @@ static int radeon_ddc_dump(struct drm_connector *connector)
->  	if (!radeon_connector->ddc_bus)
->  		return -1;
->  	edid = drm_get_edid(connector, &radeon_connector->ddc_bus->adapter);
-> +	/* Asus M2A-VM HDMI DDC quirk: Log EDID retrieval status here once,
-> +	 * instead of periodically dumping data and kernel errors into the
-> +	 * logs, if a monitor is not connected to HDMI */
->  	if (edid) {
-> +		DRM_INFO("Radeon display connector %s: Found valid EDID",
-> +				drm_get_connector_name(connector));
->  		kfree(edid);
-> +	} else {
-> +		DRM_INFO("Radeon display connector %s: No display connected or invalid EDID",
-> +				drm_get_connector_name(connector));
->  	}
->  	return ret;
->  }
-> diff --git a/drivers/gpu/drm/radeon/radeon_i2c.c b/drivers/gpu/drm/radeon/radeon_i2c.c
-> index 781196d..1d6decd 100644
-> --- a/drivers/gpu/drm/radeon/radeon_i2c.c
-> +++ b/drivers/gpu/drm/radeon/radeon_i2c.c
-> @@ -63,6 +63,66 @@ bool radeon_ddc_probe(struct radeon_connector *radeon_connector)
->  	return false;
->  }
->  
-> +/**
-> + * Probe EDID information via I2C.
-> + *
-> + * \param adapter : i2c device adaptor
-> + * \param buf     : EDID data buffer to be filled
-> + * \param len     : EDID data buffer length
-> + * \return 0 on success or -1 on failure.
-
-It doesn't look like the standard kernel documentation style. At least
-I've never seen such \ before. And worse, it doesn't describe the
-function below at all.
-
-> + *
-> + * Try to fetch EDID information by calling i2c driver function and
-> + * probe for EDID header information.
-> + *
-> + * Remark:
-> + * This function has been added, because there are integrated ATI Radeon
-> + * chipset implementations (e. g. Asus M2A-VM HDMI that indicate the
-> + * availability of a DDC even when there's no monitor connected.
-> + * In this case, drm_get_edid and drm_edid_block_valid periodically dump
-> + * data and kernel errors into the logs and onto the terminal, which lead to
-> + * an unacceptable system behaviour.
-> + */
-> +bool radeon_ddc_edid_probe(struct radeon_connector *radeon_connector)
-> +{
-> +	u8 out_buf[] = { 0x0, 0x0};
-
-You only use the first byte (same in radeon_ddc_probe, could be
-optimized.)
-
-> +	u8 block[20];
-> +	int ret;
-> +	struct i2c_msg msgs[] = {
-> +		{
-> +			.addr	= 0x50,
-> +			.flags	= 0,
-> +			.len	= 1,
-> +			.buf	= out_buf,
-> +		}, {
-> +			.addr	= 0x50,
-> +			.flags	= I2C_M_RD,
-> +			.len	= 20,
-> +			.buf	= block,
-> +		}
-> +	};
+> +#include <linux/types.h>
+> +#include <linux/linkage.h>
+> +#include <linux/compiler.h>
+> +#include <linux/signal.h>
 > +
-> +	ret = i2c_transfer(&radeon_connector->ddc_bus->adapter, msgs, 2);
-
-You are reading 20 bytes when you really only need 10. It would be more
-efficient to read 8 bytes first, and only if needed, the two remaining
-ones..
-
-> +	if (ret == 2)
-> +		if ((block[0] == 0x00) &&
-> +		    (block[7] == 0x00) &&
-> +		    (block[1] == 0xff) &&
-> +		    (block[2] == 0xff) &&
-> +		    (block[3] == 0xff) &&
-> +		    (block[4] == 0xff) &&
-> +		    (block[5] == 0xff) &&
-> +		    (block[6] == 0xff))
-> +			/* EDID header starts with:
-> +			 * 0x00,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00;
-> +			 * seems to be an EDID */
-> +			if ((block[18] != 0x00) || (block[19] != 0x00))
-
-You can drop many parentheses in these tests.
-
-> +				/* EDID headers end with EDID version and
-> +				 * revision number: EDID version is not 0.0 =>
-> +				 * EDID should be available */
-> +				return true;
-> +	/* Couldn't find an accessible EDID on this connector. */
-> +	return false;
-> +}
+> +asmlinkage long sys_rt_sigaction(int sig, const struct sigaction __user *act,
+> +                                struct sigaction __user *oact,
+> +                                size_t sigsetsize);
+> +asmlinkage long sys_rt_sigsuspend(sigset_t __user *unewset, size_t sigsetsize);
 > +
->  /* bit banging i2c */
->  
->  static void radeon_i2c_do_lock(struct radeon_i2c_chan *i2c, int lock_state)
-> diff --git a/drivers/gpu/drm/radeon/radeon_mode.h b/drivers/gpu/drm/radeon/radeon_mode.h
-> index 6df4e3c..14710fc 100644
-> --- a/drivers/gpu/drm/radeon/radeon_mode.h
-> +++ b/drivers/gpu/drm/radeon/radeon_mode.h
-> @@ -515,6 +515,7 @@ extern void radeon_i2c_put_byte(struct radeon_i2c_chan *i2c,
->  extern void radeon_router_select_ddc_port(struct radeon_connector *radeon_connector);
->  extern void radeon_router_select_cd_port(struct radeon_connector *radeon_connector);
->  extern bool radeon_ddc_probe(struct radeon_connector *radeon_connector);
-> +extern bool radeon_ddc_edid_probe(struct radeon_connector *radeon_connector);
->  extern int radeon_ddc_get_modes(struct radeon_connector *radeon_connector);
->  
->  extern struct drm_encoder *radeon_best_encoder(struct drm_connector *connector);
+> +#endif /* !__ASSEMBLY__ */
 
-
--- 
-Jean Delvare
+yikes ... this really the only way to fix the sparse warning ?
+-mike
