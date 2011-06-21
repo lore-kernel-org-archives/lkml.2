@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106Ab1FUBKn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 21:10:43 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52991 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932069Ab1FUBKm (ORCPT
+	id S932132Ab1FUBT3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 21:19:29 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:39986 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932079Ab1FUBT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 21:10:42 -0400
-Date: Tue, 21 Jun 2011 02:10:39 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Peter Hsiang <Peter.Hsiang@maxim-ic.com>
-Cc: Taylor Hutt <thutt@chromium.org>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Olof Johansson <olofj@chromium.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ASoC: codecs: Max98095: Fix logging of hardware revision.
-Message-ID: <20110621011038.GA4322@opensource.wolfsonmicro.com>
-References: <1308596072-17158-1-git-send-email-thutt@chromium.org>
- <20110621002322.GE1905@opensource.wolfsonmicro.com>
- <B2150E1E4418E1438554A300EA5040E40DDEC16D42@ITSVLEX06.it.maxim-ic.internal>
+	Mon, 20 Jun 2011 21:19:27 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-3.tower-127.messagelabs.com!1308619166!23055583!2
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.180]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] svcauth_unix.c: quiet sparse noise
+Date: Mon, 20 Jun 2011 18:19:12 -0700
+User-Agent: KMail/1.9.9
+CC: <netdev@vger.kernel.org>, <linux-nfs@vger.kernel.org>,
+        <Trond.Myklebust@netapp.com>, <bfields@fieldses.org>, <neilb@suse.de>,
+        <davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <B2150E1E4418E1438554A300EA5040E40DDEC16D42@ITSVLEX06.it.maxim-ic.internal>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <201106201819.12839.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 05:43:58PM -0700, Peter Hsiang wrote:
+Like svcauth_unix, the symbol svcauth_null is used external from this
+file. Declare it as extern to quiet the following sparse noise:
 
-> I checked with hardware engineering and was told 0x40=RevA, 0x41=RevB..
+warning: symbol 'svcauth_null' was not declared. Should it be static?
 
-> Would a raw value or the use of a 0x3F bit mask be more acceptable?
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Neil Brown <neilb@suse.de>
+Cc: "David S. Miller" <davem@davemloft.net>
 
-I don't mind (though it does seem like the high bit isn't part of the
-actual data), it was just that it's a common error to assume that die
-revisions and package revisions correspond directly.
+---
+
+diff --git a/net/sunrpc/svcauth_unix.c b/net/sunrpc/svcauth_unix.c
+index c8e1021..62e49e2 100644
+--- a/net/sunrpc/svcauth_unix.c
++++ b/net/sunrpc/svcauth_unix.c
+@@ -36,6 +36,7 @@ struct unix_domain {
+ 	/* other stuff later */
+ };
+ 
++extern struct auth_ops svcauth_null;
+ extern struct auth_ops svcauth_unix;
+ 
+ static void svcauth_unix_domain_release(struct auth_domain *dom)
