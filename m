@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756371Ab1FUAjh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 20:39:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:57115 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755338Ab1FUAjg (ORCPT
+	id S1756440Ab1FUApW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 20:45:22 -0400
+Received: from antispam01.maxim-ic.com ([205.153.101.182]:34921 "EHLO
+	antispam01.maxim-ic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756307Ab1FUApT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 20:39:36 -0400
-X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=XYJHFtupD_QA:10 a=Mm2usJTNaYsA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=omOdbC7AAAAA:8 a=0jCsFKKTGwoQmvHOPXAA:9 a=J-WSUEOF68lV2ECgQxsA:7 a=CjuIK1q_8ugA:10 a=T300VAY8Y_5_W7Dm:21 a=2I2dwy_6b_msad-5:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Date: Mon, 20 Jun 2011 20:39:35 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Jason Baron <jbaron@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] jump_label: fix  jump_label update
-Message-ID: <20110621003934.GG27245@home.goodmis.org>
-References: <4DFBB2D5.2060003@cn.fujitsu.com>
+	Mon, 20 Jun 2011 20:45:19 -0400
+X-ASG-Debug-ID: 1308617117-02ae980a393843c0003-xx1T2L
+X-Barracuda-Envelope-From: Peter.Hsiang@maxim-ic.com
+From: Peter Hsiang <Peter.Hsiang@maxim-ic.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Taylor Hutt <thutt@chromium.org>
+CC: Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Olof Johansson <olofj@chromium.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 20 Jun 2011 17:43:58 -0700
+Subject: RE: [PATCH] ASoC: codecs: Max98095: Fix logging of hardware
+ revision.
+Thread-Topic: [PATCH] ASoC: codecs: Max98095: Fix logging of hardware
+ revision.
+X-ASG-Orig-Subj: RE: [PATCH] ASoC: codecs: Max98095: Fix logging of hardware
+ revision.
+Thread-Index: AcwvqXuuZqLUunoKTr6UyAlqcV8IYwAAMi1A
+Message-ID: <B2150E1E4418E1438554A300EA5040E40DDEC16D42@ITSVLEX06.it.maxim-ic.internal>
+References: <1308596072-17158-1-git-send-email-thutt@chromium.org>
+ <20110621002322.GE1905@opensource.wolfsonmicro.com>
+In-Reply-To: <20110621002322.GE1905@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DFBB2D5.2060003@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Barracuda-Connect: maxdalex02.maxim-ic.internal[10.16.15.104]
+X-Barracuda-Start-Time: 1308617117
+X-Barracuda-URL: http://AntiSpam02.maxim-ic.com:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.02
+X-Barracuda-Spam-Status: No, SCORE=0.02 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=THREAD_INDEX, THREAD_TOPIC
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.66649
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.01 THREAD_INDEX           thread-index: AcO7Y8iR61tzADqsRmmc5wNiFHEOig==
+	0.01 THREAD_TOPIC           Thread-Topic: ...(Japanese Subject)...
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 18, 2011 at 04:02:29AM +0800, Xiao Guangrong wrote:
-> The key of module is out of __stop___jump_table, it causes the events
-> of modules does not work
+On Mon, Jun 20, 2011, Mark Brown wrote:
+> On Mon, Jun 20, 2011 at 11:54:32AM -0700, Taylor Hutt wrote:
+> > The base hardware revision of the Maxim 98095 part is 0x40; the code
+> > which outputs the revision of the hardware has been updated to
+> > properly use uppercase alphabetic values for the revision numbers.
 > 
-> This bug is introduced by commit: 7cbc5b8d4a775a43875a09e29c49a2a8195b5b2d
+> Are you sure that this is true for all devices that might be supported
+> by the driver (I'm guessing there may be other variants)?  There's
+> often a drift between silicon and package revisions which gets papered 
+> over by datasheets and ignored by drivers.
 
-What exactly breaks? I just tried events in modules, and they still work
-for me.
+I checked with hardware engineering and was told 0x40=RevA, 0x41=RevB..
 
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-> ---
->  kernel/jump_label.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-> index fa27e75..dcad2fb 100644
-> --- a/kernel/jump_label.c
-> +++ b/kernel/jump_label.c
-> @@ -375,11 +375,15 @@ int jump_label_text_reserved(void *start, void *end)
->  
->  static void jump_label_update(struct jump_label_key *key, int enable)
->  {
-> -	struct jump_entry *entry = key->entries;
-> +	struct jump_entry *entry = key->entries, *stop = __stop___jump_table;
-> +	struct module *mod = __module_address((jump_label_t)key);
-> +
-> +	if (mod)
-> +		stop = mod->jump_entries + mod->num_jump_entries;
->  
->  	/* if there are no users, entry can be NULL */
->  	if (entry)
-> -		__jump_label_update(key, entry, __stop___jump_table, enable);
-> +		__jump_label_update(key, entry, stop, enable);
->  
->  #ifdef CONFIG_MODULES
->  	__jump_label_mod_update(key, enable);
+Would a raw value or the use of a 0x3F bit mask be more acceptable?
 
-Doesn't the __jump_label_mod_update() do the job?
-
--- Steve
+Peter
