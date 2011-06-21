@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137Ab1FUBuF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 21:50:05 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:51562 "EHLO smtps.tip.net.au"
+	id S1756579Ab1FUWHg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 18:07:36 -0400
+Received: from ozlabs.org ([203.10.76.45]:51094 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932079Ab1FUBuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 21:50:04 -0400
-Date: Tue, 21 Jun 2011 11:49:57 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: linux-next: manual merge of the wireless tree with the
- wireless-current tree
-Message-Id: <20110621114957.59fae11d.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754959Ab1FUWHf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 18:07:35 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
+Subject: Re: module: sysfs - add 'uevent' file to allow coldplug
+In-Reply-To: <BANLkTink8YTe=-Tr5Ax3epiFoFCfzcex7w@mail.gmail.com>
+References: <1308434431.1050.5.camel@mop> <8739j59zib.fsf@rustcorp.com.au> <BANLkTink8YTe=-Tr5Ax3epiFoFCfzcex7w@mail.gmail.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Tue, 21 Jun 2011 11:23:05 +0930
+Message-ID: <87boxshrwe.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
+On Mon, 20 Jun 2011 13:20:00 +0200, Kay Sievers <kay.sievers@vrfy.org> wrote:
+> On Mon, Jun 20, 2011 at 01:23, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> > On Sun, 19 Jun 2011 00:00:29 +0200, Kay Sievers <kay.sievers@vrfy.org> wrote:
+> >> From: Kay Sievers <kay.sievers@vrfy.org>
+> >> Subject: module: sysfs - add 'uevent' file to allow built-in coldplug
+> >>
+> >> Userspace wants to manage module parameters with udev rules.
+> >> This currently only works for loaded modules, but not for
+> >> built-in ones.
+> >
+> > I'm confused.  What does "manage" mean here?
+> 
+> Hook system management into module-load events, which might include
+> changing module parameters in /sys/module/*/parameters/*, or at
+> bootup/coldplug run it for built-in modules.
+> 
+> We do the same to set properties for buses, drivers or devices when they appear.
 
-Today's linux-next merge of the wireless tree got a conflict in
-net/bluetooth/l2cap_core.c between commit df3c3931ec58 ("Bluetooth: Fix
-accepting connect requests for defer_setup") from the wireless-current
-tree and commit ab07801d2898 ("Bluetooth: create channel timer to replace
-sk_timer") from the wireless tree.
+Sorry, that's another vague answer :(
 
-Jusr context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+udev already knows about module load, and the parameters are created at
+that point; they are not *changed*.
 
-diff --cc net/bluetooth/l2cap_core.c
-index 56fdd91,dff9d76..0000000
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@@ -4002,24 -4205,15 +4205,24 @@@ static int l2cap_security_cfm(struct hc
-  			}
-  		} else if (sk->sk_state == BT_CONNECT2) {
-  			struct l2cap_conn_rsp rsp;
- -			__u16 result;
- +			__u16 res, stat;
-  
-  			if (!status) {
- -				sk->sk_state = BT_CONFIG;
- -				result = L2CAP_CR_SUCCESS;
- +				if (bt_sk(sk)->defer_setup) {
- +					struct sock *parent = bt_sk(sk)->parent;
- +					res = L2CAP_CR_PEND;
- +					stat = L2CAP_CS_AUTHOR_PEND;
- +					parent->sk_data_ready(parent, 0);
- +				} else {
- +					sk->sk_state = BT_CONFIG;
- +					res = L2CAP_CR_SUCCESS;
- +					stat = L2CAP_CS_NO_INFO;
- +				}
-  			} else {
-  				sk->sk_state = BT_DISCONN;
-- 				l2cap_sock_set_timer(sk, HZ / 10);
-+ 				l2cap_chan_set_timer(chan, HZ / 10);
- -				result = L2CAP_CR_SEC_BLOCK;
- +				res = L2CAP_CR_SEC_BLOCK;
- +				stat = L2CAP_CS_NO_INFO;
-  			}
-  
-  			rsp.scid   = cpu_to_le16(chan->dcid);
+What, *exactly* will this enable?  Don't use the word "hook" or
+"management": both vague terms which assume I know what you're talking
+about.  I don't.
+
+Show me exactly what udev will now be able to do that it can't do now,
+and how it will be used.  Preferably with examples.  Assume (correctly)
+that I have only a vague idea what udev does.
+
+Thanks,
+Rusty.
