@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932147Ab1FUBin (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 21:38:43 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:56135 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932082Ab1FUBil (ORCPT
+	id S932173Ab1FUBqT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 21:46:19 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40915 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932082Ab1FUBqR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 21:38:41 -0400
-Subject: Re: [PATCH] xattr: Fix error results for non-existent / invisible
- attributes
-From: Andreas Gruenbacher <agruen@kernel.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org
-In-Reply-To: <20110620080921.GA23159@infradead.org>
-References: <201105271450.37089.agruen@kernel.org>
-	 <20110620080921.GA23159@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Jun 2011 03:34:17 +0200
-Message-ID: <1308620057.2983.17.camel@schurl.linbit>
-Mime-Version: 1.0
-X-Mailer: Evolution 3.0.2 (3.0.2-2.fc15) 
-Content-Transfer-Encoding: 7bit
+	Mon, 20 Jun 2011 21:46:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=E3f4DisDG6wxzyTZSNMbbdY+AIU+AofxxDF9pYpkPjhYMzTuqYIj4DjuSShr1wuaue
+         CZp3DGO8rl0o92se5C2wpTmq6FeKIy1b61xFXiFxpfqlu2sWR0r7ZeBtmRXJgJhMaQEw
+         FKCW3/+mWlNUjR/m+cCRGdc5NxiThDRIVLOwU=
+MIME-Version: 1.0
+In-Reply-To: <20110621003507.GG1905@opensource.wolfsonmicro.com>
+References: <20110617103218.GA29723@opensource.wolfsonmicro.com>
+ <1308310831-27861-1-git-send-email-lars@metafoo.de> <4DFB53B3.8070806@ladisch.de>
+ <BANLkTimWfT_LSLX36oLcSSYNqi4buBiJUQ@mail.gmail.com> <4DFB98EE.9000609@ladisch.de>
+ <BANLkTi=idGOgMkBXF6p-Uo9ARAmgb1uR_g@mail.gmail.com> <20110621003507.GG1905@opensource.wolfsonmicro.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Mon, 20 Jun 2011 21:45:56 -0400
+X-Google-Sender-Auth: Ncg99RJ-MdiQ5mJqW4g-cN7rGXo
+Message-ID: <BANLkTinGMN8A99YZMVa1XDRuy3rUSO2UGg@mail.gmail.com>
+Subject: Re: [uclinux-dist-devel] [PATCH] firmware: Make firmware drivers
+ generally available
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>, Lars-Peter Clausen <lars@metafoo.de>,
+        linux-ia64@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, Clemens Ladisch <clemens@ladisch.de>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-20 at 04:09 -0400, Christoph Hellwig wrote:
-> On Fri, May 27, 2011 at 02:50:36PM +0200, Andreas Gruenbacher wrote:
-> > Return -ENODATA when trying to read a user.* attribute which cannot
-> > exist: user space otherwise does not have a reasonable way to
-> > distinguish between non-existent and inaccessible attributes.
-> > 
-> > Likewise, return -ENODATA when an unprivileged process tries to read a
-> > trusted.* attribute: to unprivileged processes, those attributes are
-> > invisible (listxattr() won't include them).
-> 
-> This breaks xfstests 062.
+On Mon, Jun 20, 2011 at 20:35, Mark Brown wrote:
+> On Fri, Jun 17, 2011 at 02:25:21PM -0400, Mike Frysinger wrote:
+>> On Fri, Jun 17, 2011 at 14:11, Clemens Ladisch wrote:
+>> > "drivers/firmware" is the obvious name for both, but that makes
+>> > it ambiguous.  I'd suggest to split the two subsystems into
+>> > "drivers/host-firmware" and "drivers/device-firmware".
+>
+>> i honestly dont see how this is better.  the drivers/firmware/ isnt
+>> exactly overflowing, and differentiating between the two modes doesnt
+>> seem to gain us anything.
+>
+> Do we have anything like an actual subsystem in firmware?  If we do and
+> it's sensible to do things that affect all firmwares then splitting
+> seems reasonable but if not then it's less clear.
 
-The test does a "getfattr -n <name> <file>" for an attribute which
-cannot exist.  The kernel now returns ENODATA instead of the previous
-EPERM.
-
-One way to fix this in xfstests is to use listxattr(2) instead of
-getxattr(2), e.g.,
-
-	- getfattr -m $nsp -n $nsp.name2 $SCRATCH_MNT/$inode
-	+ getfattr -m $nsp.name2 $SCRATCH_MNT/$inode
-
-Another is to accept ENODATA as well as EPERM.  Not sure which is preferable.
-
-Andreas
-
+i dont think there is.  we havent hit enough critical mass yet to warrant it.
+-mike
