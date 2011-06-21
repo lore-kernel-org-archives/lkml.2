@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755873Ab1FUKRM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 06:17:12 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:36204 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754007Ab1FUKRL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 06:17:11 -0400
-Message-ID: <4E006FA0.7050508@ti.com>
-Date: Tue, 21 Jun 2011 15:47:04 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	id S1756119Ab1FUKRb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 06:17:31 -0400
+Received: from rere.qmqm.pl ([89.167.52.164]:41001 "EHLO rere.qmqm.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756039Ab1FUKR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 06:17:28 -0400
+Date: Tue, 21 Jun 2011 12:17:25 +0200
+From: =?iso-8859-2?Q?Micha=B3_Miros=B3aw?= <mirq-linux@rere.qmqm.pl>
+To: James Hogan <james@albanarts.com>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: Re: [PATCH] cb710: fix #ifdef HAVE_EFFICIENT_UNALIGNED_ACCESS
+Message-ID: <20110621101725.GA670@rere.qmqm.pl>
+References: <BANLkTikMc1WfJMJ2NeBr1E62dGjCj1Cd_w@mail.gmail.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH] ARM: smp: Fix the CPU hotplug race with scheduler.
-References: <20110620101438.GD2082@n2100.arm.linux.org.uk> <4DFF20B3.7010209@ti.com> <20110620104415.GF2082@n2100.arm.linux.org.uk> <4DFF255E.5030308@ti.com> <20110620111336.GG2082@n2100.arm.linux.org.uk> <4DFF2E37.8030602@ti.com> <20110620114019.GH2082@n2100.arm.linux.org.uk> <20110620142338.GL2082@n2100.arm.linux.org.uk> <4DFF5F29.2000904@ti.com> <4E005F92.8030208@ti.com> <20110621100057.GB23802@n2100.arm.linux.org.uk>
-In-Reply-To: <20110621100057.GB23802@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-2
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTikMc1WfJMJ2NeBr1E62dGjCj1Cd_w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/21/2011 3:30 PM, Russell King - ARM Linux wrote:
-> On Tue, Jun 21, 2011 at 02:38:34PM +0530, Santosh Shilimkar wrote:
->> Russell,
->>
->> On 6/20/2011 8:24 PM, Santosh Shilimkar wrote:
->>> On 6/20/2011 7:53 PM, Russell King - ARM Linux wrote:
->>>> So, as loops_per_jiffy is not local to this function, the compiler has
->>>> to write out that zero value, before calling calibrate_delay_converge(),
->>>> and loops_per_jiffy only becomes non-zero _after_
->>>> calibrate_delay_converge()
->>>> has returned. This opens the window and allows the spinlock debugging
->>>> code to explode.
->>>>
->>>> This patch closes the window completely, by only writing to
->>>> loops_per_jiffy
->>>> only when we have a real value for it.
->>>>
->>>> This allows me to boot 3.0.0-rc3 on Versatile Express (4 CPU) whereas
->>>> without this it fails with spinlock lockup and rcu problems.
->>>>
->>>> init/calibrate.c | 14 ++++++++------
->>>> 1 files changed, 8 insertions(+), 6 deletions(-)
->>>>
->>> I am away from my board now. Will test this change.
->> Have tested your change and it seems to fix the crash I
->> was observing. Are you planning to send this fix for rc5?
->
-> Yes.  I think sending CPUs into infinite loops in the spinlock code is
-> definitely sufficiently serious that it needs to go to Linus ASAP.
-> It'd be nice to have a tested-by line though.
->
-Sure.
+On Tue, Jun 21, 2011 at 10:55:34AM +0100, James Hogan wrote:
+> HAVE_EFFICIENT_UNALIGNED_ACCESS is a config option, therefore it needs
+> the CONFIG_ before it when used by the preprocessor.
+> 
+> Signed-off-by: James Hogan <james@albanarts.com>
+> ---
+>  drivers/misc/cb710/sgbuf2.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/misc/cb710/sgbuf2.c b/drivers/misc/cb710/sgbuf2.c
+> index d019746..2a40d0e 100644
+> --- a/drivers/misc/cb710/sgbuf2.c
+> +++ b/drivers/misc/cb710/sgbuf2.c
+> @@ -47,7 +47,7 @@ static uint32_t sg_dwiter_read_buffer(struct
+> sg_mapping_iter *miter)
+> 
+>  static inline bool needs_unaligned_copy(const void *ptr)
+>  {
+> -#ifdef HAVE_EFFICIENT_UNALIGNED_ACCESS
+> +#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
+>  	return false;
+>  #else
+>  	return ((ptr - NULL) & 3) != 0;
 
->>> btw, the online-active race is still open even with this patch close
->>> and should be fixed.
->>>
->> The only problem remains is waiting for active mask before
->> marking CPU online. Shall I refresh my patch with only
->> this change then ?
->
-> I already have that as a separate change.
-Can you point me to both of these commits so that I have
-them in my tree for testing.
+Acked-by: Micha³ Miros³aw <mirq-linux@rere.qmqm.pl>
 
-Thanks for help.
-
-Regards
-Santosh
+[Cc: linux-mmc]
