@@ -1,40 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085Ab1FUKAb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 06:00:31 -0400
-Received: from mailgw1.uni-kl.de ([131.246.120.220]:40020 "EHLO
-	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753738Ab1FUKA2 (ORCPT
+	id S932117Ab1FUKBY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 06:01:24 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37197 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932111Ab1FUKBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 06:00:28 -0400
-Message-ID: <4E006BB9.90505@itwm.fraunhofer.de>
-Date: Tue, 21 Jun 2011 12:00:25 +0200
-From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110510 Iceowl/1.0b2 Icedove/3.1.10
+	Tue, 21 Jun 2011 06:01:22 -0400
+Date: Tue, 21 Jun 2011 11:00:57 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH] ARM: smp: Fix the CPU hotplug race with scheduler.
+Message-ID: <20110621100057.GB23802@n2100.arm.linux.org.uk>
+References: <20110620101438.GD2082@n2100.arm.linux.org.uk> <4DFF20B3.7010209@ti.com> <20110620104415.GF2082@n2100.arm.linux.org.uk> <4DFF255E.5030308@ti.com> <20110620111336.GG2082@n2100.arm.linux.org.uk> <4DFF2E37.8030602@ti.com> <20110620114019.GH2082@n2100.arm.linux.org.uk> <20110620142338.GL2082@n2100.arm.linux.org.uk> <4DFF5F29.2000904@ti.com> <4E005F92.8030208@ti.com>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: 3.0-rc3 kmemleak reports
-References: <itpou0$leu$1@dough.gmane.org> <20110621095733.GA10396@1n450.cable.virginmedia.net>
-In-Reply-To: <20110621095733.GA10396@1n450.cable.virginmedia.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ITWM-CharSet: ISO-8859-1
-X-ITWM-Scanned-By: mail2.itwm.fhg.de
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E005F92.8030208@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2011 11:57 AM, Catalin Marinas wrote:
-> On Tue, Jun 21, 2011 at 11:40:15AM +0200, Bernd Schubert wrote:
->> For some reasons I build a kernel with kmemleak support and got a
->> few reports.
+On Tue, Jun 21, 2011 at 02:38:34PM +0530, Santosh Shilimkar wrote:
+> Russell,
 >
-> Do you know if they appear in 2.6.39 as well?
+> On 6/20/2011 8:24 PM, Santosh Shilimkar wrote:
+>> On 6/20/2011 7:53 PM, Russell King - ARM Linux wrote:
+>>> So, as loops_per_jiffy is not local to this function, the compiler has
+>>> to write out that zero value, before calling calibrate_delay_converge(),
+>>> and loops_per_jiffy only becomes non-zero _after_
+>>> calibrate_delay_converge()
+>>> has returned. This opens the window and allows the spinlock debugging
+>>> code to explode.
+>>>
+>>> This patch closes the window completely, by only writing to
+>>> loops_per_jiffy
+>>> only when we have a real value for it.
+>>>
+>>> This allows me to boot 3.0.0-rc3 on Versatile Express (4 CPU) whereas
+>>> without this it fails with spinlock lockup and rcu problems.
+>>>
+>>> init/calibrate.c | 14 ++++++++------
+>>> 1 files changed, 8 insertions(+), 6 deletions(-)
+>>>
+>> I am away from my board now. Will test this change.
+> Have tested your change and it seems to fix the crash I
+> was observing. Are you planning to send this fix for rc5?
 
-No idea, if it is important I can build a previous kernel version (but 
-please, no bisecting, I'm too busy with other things).
+Yes.  I think sending CPUs into infinite loops in the spinlock code is
+definitely sufficiently serious that it needs to go to Linus ASAP.
+It'd be nice to have a tested-by line though.
 
+>> btw, the online-active race is still open even with this patch close
+>> and should be fixed.
+>>
+> The only problem remains is waiting for active mask before
+> marking CPU online. Shall I refresh my patch with only
+> this change then ?
 
-Cheers,
-Bernd
+I already have that as a separate change.
