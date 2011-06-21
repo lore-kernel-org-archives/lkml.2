@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932158Ab1FUBaO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 21:30:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:56523 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087Ab1FUBaK (ORCPT
+	id S932147Ab1FUBin (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 21:38:43 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:56135 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932082Ab1FUBil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 21:30:10 -0400
-X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=XYJHFtupD_QA:10 a=Mm2usJTNaYsA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=k-MBkcLGMU1Mezgd42IA:9 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Date: Mon, 20 Jun 2011 21:30:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Jason Baron <jbaron@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] jump_label: fix  jump_label update
-Message-ID: <20110621013007.GH27245@home.goodmis.org>
-References: <4DFBB2D5.2060003@cn.fujitsu.com>
- <20110621003934.GG27245@home.goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110621003934.GG27245@home.goodmis.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 20 Jun 2011 21:38:41 -0400
+Subject: Re: [PATCH] xattr: Fix error results for non-existent / invisible
+ attributes
+From: Andreas Gruenbacher <agruen@kernel.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org
+In-Reply-To: <20110620080921.GA23159@infradead.org>
+References: <201105271450.37089.agruen@kernel.org>
+	 <20110620080921.GA23159@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 21 Jun 2011 03:34:17 +0200
+Message-ID: <1308620057.2983.17.camel@schurl.linbit>
+Mime-Version: 1.0
+X-Mailer: Evolution 3.0.2 (3.0.2-2.fc15) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 08:39:35PM -0400, Steven Rostedt wrote:
-> On Sat, Jun 18, 2011 at 04:02:29AM +0800, Xiao Guangrong wrote:
-> > The key of module is out of __stop___jump_table, it causes the events
-> > of modules does not work
+On Mon, 2011-06-20 at 04:09 -0400, Christoph Hellwig wrote:
+> On Fri, May 27, 2011 at 02:50:36PM +0200, Andreas Gruenbacher wrote:
+> > Return -ENODATA when trying to read a user.* attribute which cannot
+> > exist: user space otherwise does not have a reasonable way to
+> > distinguish between non-existent and inaccessible attributes.
 > > 
-> > This bug is introduced by commit: 7cbc5b8d4a775a43875a09e29c49a2a8195b5b2d
+> > Likewise, return -ENODATA when an unprivileged process tries to read a
+> > trusted.* attribute: to unprivileged processes, those attributes are
+> > invisible (listxattr() won't include them).
 > 
-> What exactly breaks? I just tried events in modules, and they still work
-> for me.
+> This breaks xfstests 062.
 
-OK, it does break for me. I tested with CONFIG_JUMP_LABEL not set :-p
+The test does a "getfattr -n <name> <file>" for an attribute which
+cannot exist.  The kernel now returns ENODATA instead of the previous
+EPERM.
 
-Please Cc me on further patches.
+One way to fix this in xfstests is to use listxattr(2) instead of
+getxattr(2), e.g.,
 
-Thanks,
+	- getfattr -m $nsp -n $nsp.name2 $SCRATCH_MNT/$inode
+	+ getfattr -m $nsp.name2 $SCRATCH_MNT/$inode
 
--- Steve
+Another is to accept ENODATA as well as EPERM.  Not sure which is preferable.
+
+Andreas
 
