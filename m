@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130Ab1FUB7F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 21:59:05 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:15927 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932186Ab1FUB6x (ORCPT
+	id S1756415Ab1FUCHS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 22:07:18 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:13016 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752296Ab1FUCHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 21:58:53 -0400
-X-AuditID: cbfee61a-b7c59ae000003b70-d2-4dfffad971a8
-Date: Tue, 21 Jun 2011 10:58:47 +0900
+	Mon, 20 Jun 2011 22:07:16 -0400
+X-AuditID: cbfee61a-b7c59ae000003b70-bc-4dfffcd27ef3
+Date: Tue, 21 Jun 2011 11:07:09 +0900
 From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: [PATCH v2 5/5] Samsung SoC: header file revised to prevent declaring
- duplicated.
-In-reply-to: <1308621527-2457-1-git-send-email-myungjoo.ham@samsung.com>
+Subject: [PATCH v2 0/4] ARM: Exynos4: NURI Board Configuration Udpate
+In-reply-to: <20110620103124.GD31864@opensource.wolfsonmicro.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Russell King <linux@arm.linux.org.uk>,
         Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, dg77.kim@samsung.com,
-        myungjoo.ham@gmail.com
-Message-id: <1308621527-2457-6-git-send-email-myungjoo.ham@samsung.com>
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        myungjoo.ham@gmail.com, dg77.kim@samsung.com
+Message-id: <1308622033-2521-1-git-send-email-myungjoo.ham@samsung.com>
 X-Mailer: git-send-email 1.7.4.1
 Content-transfer-encoding: 7BIT
-References: <20110620101737.GA31864@opensource.wolfsonmicro.com>
- <1308621527-2457-1-git-send-email-myungjoo.ham@samsung.com>
-X-OriginalArrivalTime: 21 Jun 2011 01:58:12.0287 (UTC)
- FILETIME=[AD2D1CF0:01CC2FB6]
+References: <20110620103124.GD31864@opensource.wolfsonmicro.com>
+X-OriginalArrivalTime: 21 Jun 2011 02:06:38.0162 (UTC)
+ FILETIME=[DAB38320:01CC2FB7]
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There has been no #ifndef - #define - #endif protection for this header
-file.
+1/4: Add configuration for MAX8997 PMIC and regulators
+2/4: Add configuration for MAX17042 fuel gauge.
+3/4: Add configuration for ADC
+	depends on the recently submitted ADC for Samsung SoC patch series:
+	[PATCH v2 0/5] Update Samsung-SoC ADC (regulator / recent CPU support)
+4/4: Add configuration for NTC themistor.
+	depends on the recently submitted NTC-thermistor patch:
+	[PATCH v10] drivers/hwmon NTC Thermistor Initial Support v10 (applied to next)
 
-To compile EXYNOS4 with adc support without compiler errors, this patch is essential.
+MyungJoo Ham (4):
+  Exynos4 NURI: configure regulators and PMIC
+  Exynos4 NURI: configure MAX17042 fuel gauge
+  Exynos4 NURI: configure ADC.
+  Exynos4 NURI: support for NTC thermistor
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
---
-v2: No changes from v1. Resubmitted as a series of patches
----
- arch/arm/plat-samsung/include/plat/devs.h |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ arch/arm/mach-exynos4/mach-nuri.c |  703 ++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 702 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/plat-samsung/include/plat/devs.h b/arch/arm/plat-samsung/include/plat/devs.h
-index 4af108f..3c87779 100644
---- a/arch/arm/plat-samsung/include/plat/devs.h
-+++ b/arch/arm/plat-samsung/include/plat/devs.h
-@@ -12,6 +12,9 @@
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
- */
-+#ifndef __PLAT_DEVS_H
-+#define __PLAT_DEVS_H __FILE__
-+
- #include <linux/platform_device.h>
- 
- struct s3c24xx_uart_resources {
-@@ -159,3 +162,5 @@ extern struct platform_device s3c_device_ac97;
-  */
- extern void *s3c_set_platdata(void *pd, size_t pdsize,
- 			      struct platform_device *pdev);
-+
-+#endif /* __PLAT_DEVS_H */
 -- 
 1.7.4.1
 
