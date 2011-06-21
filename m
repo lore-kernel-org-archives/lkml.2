@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756824Ab1FUVV7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 17:21:59 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:39910 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929Ab1FUVV4 convert rfc822-to-8bit (ORCPT
+	id S1754855Ab1FUVge (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 17:36:34 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:35235 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752792Ab1FUVga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 17:21:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=PWO6IdLm62Ihc1HDU+wEo73HqYoSdvd/qd9n2awOX0KeGRMmQFyabfg5/soXJ72aIa
-         v0hjNvJzKct6zgrKx2zQ==
-MIME-Version: 1.0
-In-Reply-To: <m2oc1q3okc.fsf@firstfloor.org>
-References: <1308611855-18096-1-git-send-email-dehrenberg@google.com>
-	<m2oc1q3okc.fsf@firstfloor.org>
-Date: Tue, 21 Jun 2011 14:21:48 -0700
-Message-ID: <BANLkTi=GeY+6ZTKkYidFd+J=T7ER1+Lk6kv+uJe6GA6v1HrVaQ@mail.gmail.com>
-Subject: Re: [PATCH] dio: Fast-path for page-aligned IOs
-From: Daniel Ehrenberg <dehrenberg@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Tue, 21 Jun 2011 17:36:30 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=ilbTjkuPfZql5hKEE54KtesukJ3hoXWZG6K3jSh63zXWNNcpkcXfLIfh3gylllByRXGCeQ4hrjwJwx5KvMKJVdQspnVDeOhXTPC0oCAdifWJEkRlTGLWUV7Zw+pSB7eA;
+Date: Tue, 21 Jun 2011 14:36:22 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Ram Pai <linuxram@us.ibm.com>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        svenkatr@ti.com, yinghai@kernel.org, cjb@laptop.org,
+        linux-pci@vger.kernel.org, linux-net-drivers@solarflare.com,
+        bhutchings@solarflare.com
+Subject: Re: [PATCH 4/4] PCI: make cardbus-bridge resources nice-to-have
+Message-ID: <20110621143622.1fae90b3@jbarnes-desktop>
+In-Reply-To: <20110621162321.GB22917@ram-laptop>
+References: <1308610037-6261-1-git-send-email-linuxram@us.ibm.com>
+	<1308610037-6261-5-git-send-email-linuxram@us.ibm.com>
+	<20110621075659.GA4620@comet.dominikbrodowski.net>
+	<20110621162321.GB22917@ram-laptop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 1:41 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> Dan Ehrenberg <dehrenberg@google.com> writes:
->
->> This code introduces a fast-path variant of __blockdev_direct_IO
->> for the special case where the request size is a multiple of the page
->> size, the inode block size is a page, the user memory is page-aligned,
->> the underlying storage is contiguous on disk and the file location is
->> already initialized. The special case decreases the amount of
->> bookkeeping required, which saves a significant amount of CPU time on
->> a fast device such as a ramdisk or an SSD.  The patch is inspired by
->> earlier code by Ken Chen.
->
-> Is it understood why your fast path is that much faster?
-> i.e. what's the slow part in the normal path that it avoids?
->
-> I am wondering if some of the improvements could be gotten even for less
-> rigid pre conditions.
+On Tue, 21 Jun 2011 09:23:21 -0700
+Ram Pai <linuxram@us.ibm.com> wrote:
 
-I should start by saying that I really should've submitted this with
-an [RFC] tag. I'm eager for feedback on my first Linux kernel patch,
-and I'm really glad you responded.
+> On Tue, Jun 21, 2011 at 09:57:00AM +0200, Dominik Brodowski wrote:
+> > On Mon, Jun 20, 2011 at 03:47:17PM -0700, Ram Pai wrote:
+> > > Allocate resources to cardbus bridge only after all other genuine
+> > > resources requests are satisfied. Dont retry if resource allocation
+> > > for cardbus-bridge fails.
+> > 
+> > Well, for those who use cardbus cards, cardbus resources aren't "nice to
+> > have", they are absolutely required. Of course, not all cardbus cards need
+> > as many resources as are currently assigned, so I wouldn't oppose a patch
+> > which marks _some_ of the currently assigned resources as "nice to have".
+> > But this approach -- 0 required, all "nice to have" -- seems wrong to me.
+> 
+> Do you know how much minimal resource is good enough?  The value, before
+> this patch, was 256 for IO ports and  64M for memory.
+> 
+> BTW: If the BIOS has already assigned enough resources for all the devices on
+> the system, no devices will be starved including the cardbus. The OS intervenes
+> and is forced to make this hard choice only when it sees unassigned resources to
+> some devices along with resource contention.
 
-The slowness in the dio code that I have observed is not in any
-particular place, but rather a death of a thousand cuts. Lines like
-        memset(dio, 0, offsetof(struct dio, pages));
-show up as significant in the CPU profile, but so do other random
-lines that manipulate the struct dio.
+Dominik, presumably you have a few good cardbus test machines; can you
+give Ram's patches a try?  If we know they break existing
+configurations, I'm afraid we'll just have to revert the whole
+re-allocation patch yet again.  If your stuff survives, I'll ping Linus
+to see what he thinks, though he'll probably want to revert in any
+case...
 
-In an earlier version of the patch, I restricted the change to only
-page-sized operations. This was criticized for being insufficiently
-general. In generalizing to page-multiple operations, I noticed a
-minor regression, which seems to be from the IS_ALIGNED calls.
-
-You're right that these preconditions are rather rigid, though. If you
-have a suggestion for a more general precondition, I can try it out
-and see if it maintains the performance properties I want.
->
->> +             /*
->> +              * The i_alloc_sem will be released at I/O completion,
->> +              * possibly in a different thread.
->> +              */
->> +             down_read_non_owner(&inode->i_alloc_sem);
->
-> There's just a patch kit posted from hch which removes that semaphore.
->
-> -Andi
-
-Once this patch is finalized and merged, I can make a new version of
-the patch based on the new synchronization mechanism.
-
-Dan
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
