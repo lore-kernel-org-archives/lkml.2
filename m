@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509Ab1FUN3t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 09:29:49 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:34891 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752978Ab1FUN3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 09:29:46 -0400
-Date: Tue, 21 Jun 2011 09:29:42 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] ext4 update for 3.0
-Message-ID: <20110621132942.GF32133@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <E1QYhjj-0006Ne-Lp@tytso-glaptop>
- <BANLkTikdqt8ZYnDONWg9ryutL4g7ikXWtw@mail.gmail.com>
+	id S1756639Ab1FUNbH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 09:31:07 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:61741 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752394Ab1FUNbE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 09:31:04 -0400
+Date: Tue, 21 Jun 2011 09:30:50 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] xen: prepare tmem shim to handle frontswap
+Message-ID: <20110621133050.GC5650@dumpdata.com>
+References: <b9f0ec1d-0dd7-43e5-8c24-26979ae4245c@default>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikdqt8ZYnDONWg9ryutL4g7ikXWtw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <b9f0ec1d-0dd7-43e5-8c24-26979ae4245c@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090207.4E009D15.006D:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 08:08:36PM -0700, Linus Torvalds wrote:
-> On Mon, Jun 20, 2011 at 9:54 AM, Theodore Ts'o <tytso@mit.edu> wrote:
-> >
-> > Please pull from:
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git for_linus
-> >
-> > to grab bug fixes needed for 3.0.
+On Fri, Jun 17, 2011 at 03:00:55PM -0700, Dan Magenheimer wrote:
+> Hi Konrad --
 > 
-> There's nothing there. Forgot to push?
+> Please pull the following branch into your Xen for-linus tree
+> for the upcoming 3.1 window.
 
-Oops, argh.   Pushed.  Could you retry the pull?
-
-Thanks,
-
-					- Ted
+Pulled. Stuck it in stable/drivers.
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/djm/tmem.git stable/frontswap-tmemonly
+> 
+> The branch is based off of 3.0-rc1.
+> 
+> This single commit provides the shim code for frontswap for Xen
+> tmem (even though the core kernel frontswap patchset is not present
+> yet... the egg is before the chicken here.)
+> 
+> Diffstat:
+>  drivers/xen/Kconfig                      |    7 
+>  drivers/xen/Makefile                     |    2 
+>  drivers/xen/tmem.c                       |  170 +++++++++++++++++++--
+>  3 files changed, 166 insertions(+), 13 deletions(-
+> 
+> Dan Magenheimer (1):
+>       xen: prepare tmem shim to handle frontswap
+> 
+> Thanks,
+> Dan
