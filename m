@@ -1,44 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361Ab1FUUQw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 16:16:52 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:55003 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752255Ab1FUUQs (ORCPT
+	id S1757421Ab1FUURe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 16:17:34 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:35869 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756736Ab1FUURc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 16:16:48 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6384"; a="98993782"
-Message-ID: <4E00FC2F.1010400@codeaurora.org>
-Date: Tue, 21 Jun 2011 13:16:47 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH] ARM: smp: Fix the CPU hotplug race with scheduler.
-References: <20110620111336.GG2082@n2100.arm.linux.org.uk>	<4DFF2E37.8030602@ti.com>	<20110620114019.GH2082@n2100.arm.linux.org.uk>	<20110620142338.GL2082@n2100.arm.linux.org.uk>	<4DFF5F29.2000904@ti.com> <4E005F92.8030208@ti.com>	<20110621100057.GB23802@n2100.arm.linux.org.uk>	<4E006FA0.7050508@ti.com>	<20110621101900.GC23802@n2100.arm.linux.org.uk>	<4E00708C.6050108@ti.com> <20110621102600.GD23802@n2100.arm.linux.org.uk>
-In-Reply-To: <20110621102600.GD23802@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 21 Jun 2011 16:17:32 -0400
+Subject: Re: [PATCH v2 2/4] mm: make the threshold of enabling THP
+ configurable
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Amerigo Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+In-Reply-To: <1308667461.11430.315.camel@nimitz>
+References: <1308643849-3325-1-git-send-email-amwang@redhat.com>
+	 <1308643849-3325-2-git-send-email-amwang@redhat.com>
+	 <1308667461.11430.315.camel@nimitz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 21 Jun 2011 13:17:00 -0700
+Message-ID: <1308687420.11430.330.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2011 03:26 AM, Russell King - ARM Linux wrote:
-> On Tue, Jun 21, 2011 at 03:51:00PM +0530, Santosh Shilimkar wrote:
->> On 6/21/2011 3:49 PM, Russell King - ARM Linux wrote:
->>> I won't be committing the init/calibrate.c change to a git tree - it
->>> isn't ARM stuff so it goes in patch form.
->> Patches with change log would be fine as well.
-> The answer is not at the moment, but maybe soon.
+Urg.  Pasted the wrong thing.  Should be:
 
-Should we send those two patches to the stable trees as well? They seem
-to fix issues with cpu onlining that have existed for a long time.
+Acked-by: Dave Hansen <dave@linux.vnet.ibm.com> 
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+-- Dave
 
