@@ -1,40 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499Ab1FUDgO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 23:36:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42166 "EHLO mx1.redhat.com"
+	id S1755334Ab1FUDhx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 23:37:53 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:56819 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753117Ab1FUDgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 23:36:13 -0400
-Message-ID: <4E0011A0.4070401@redhat.com>
-Date: Tue, 21 Jun 2011 11:36:00 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Eric B Munson <emunson@mgebm.net>
-CC: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: Re: [PATCH 1/3] mm: completely disable THP by transparent_hugepage=never
-References: <1308587683-2555-1-git-send-email-amwang@redhat.com> <20110620165844.GA9396@suse.de> <4DFF7E3B.1040404@redhat.com> <4DFF7F0A.8090604@redhat.com> <4DFF8106.8090702@redhat.com> <4DFF8327.1090203@redhat.com> <4DFF84BB.3050209@redhat.com> <20110620175859.GB9697@mgebm.net>
-In-Reply-To: <20110620175859.GB9697@mgebm.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1755271Ab1FUDhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 23:37:51 -0400
+Date: Tue, 21 Jun 2011 13:37:40 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vitaliy Ivanov <vitalivanov@gmail.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: linux-next: manual merge of the trivial tree with the s390 tree
+Message-Id: <20110621133740.b23b87d4.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__21_Jun_2011_13_37_40_+1000_tGnOs94Zzb6RWnwh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年06月21日 01:58, Eric B Munson 写道:
-> If memory is this scarce, why not set CONFIG_TRANSPARENT_HUGEPAGE=n and be done
-> with it?  If the config option is enabled, the admin should be able to turn the
-> functionality back on if desired.  If you really don't _ever_ want THP then
-> disable the config.
->
+--Signature=_Tue__21_Jun_2011_13_37_40_+1000_tGnOs94Zzb6RWnwh
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Unfortunately, changing .config is not always as easy as you said,
-for the kdump case, we use the same kernel binary with the normal kernel
-which certainly has to have THP enabled in .config.
+Hi Jiri,
 
-Thanks.
+Today's linux-next merge of the trivial tree got a conflict in
+arch/s390/kvm/sie64a.S between commit 57e98c34511e ("[S390] move sie code
+to entry.S") from the s390 tree and commit e44ba033c565 ("treewide:
+remove duplicate includes") from the trivial tree.
+
+The former merged this file into another file, so I just removed this file.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__21_Jun_2011_13_37_40_+1000_tGnOs94Zzb6RWnwh
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOABIEAAoJEDMEi1NhKgbsIJYH/3w/mH8opPkev4MQ7vPjXpQL
+AQ6X1YV8nuQMz9WYcqscEmDeYNcJvIo77zIlrQSf9kX3yxXW4/dEhWI+pO2kOjmB
+AnHbZLnUEuofei9vKHLF150+qeWLJHzEnB3NW1SrTvwNWtL1lZfXaGk0pk8HtN0n
+43SVTZfno3Z9ZbrlcdG8q9wsPrRANZVKDEhpzdeYDaDNSwmlGc9BhJsZzBd55muH
+OMJ9C9oMmIHJupgMf/2ost2Oxse2rtmghaQbwcB2kapEXOfF7eRXDL+d6Xu9H2LW
+MgPHJ+GS2cV6hPV7AehVA64bjct53Wy9xJcN8yoHkMvirKqMDaBsxA8ZX96myTg=
+=pa9g
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__21_Jun_2011_13_37_40_+1000_tGnOs94Zzb6RWnwh--
