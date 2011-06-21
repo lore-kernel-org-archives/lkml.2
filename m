@@ -1,171 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744Ab1FUEgc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 00:36:32 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:35742 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab1FUEgb (ORCPT
+	id S1752231Ab1FUEox (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 00:44:53 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:42823 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751567Ab1FUEow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 00:36:31 -0400
-Message-ID: <4E001FC2.1000006@linux.vnet.ibm.com>
-Date: Tue, 21 Jun 2011 10:06:18 +0530
-From: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc11 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: linux-pm@lists.linux-foundation.org, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH V1 1/7] cpuidle: create bootparam "cpuidle.off=1"
-References: <20110607162847.6848.44707.stgit@tringupt.in.ibm.com> <20110607162922.6848.71783.stgit@tringupt.in.ibm.com> <1308284948.32158.6.camel@pasglop>
-In-Reply-To: <1308284948.32158.6.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Jun 2011 00:44:52 -0400
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+To: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        alexander.stein@systec-electronic.com
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH v3] pch_gpio: Support interrupt function
+Date: Tue, 21 Jun 2011 13:44:28 +0900
+Message-Id: <1308631468-2376-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Support interrupt function using irq_chip_generic
 
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+---
+ drivers/gpio/Kconfig    |    1 +
+ drivers/gpio/pch_gpio.c |  173 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 174 insertions(+), 0 deletions(-)
 
-On 06/17/2011 09:59 AM, Benjamin Herrenschmidt wrote:
-> On Tue, 2011-06-07 at 21:59 +0530, Trinabh Gupta wrote:
->> From: Len Brown<len.brown@intel.com>
->>
->> useful for disabling cpuidle to fall back
->> to architecture-default idle loop
->>
->> cpuidle drivers and governors will fail to register.
->> on x86 they'll say so:
->>
->> intel_idle: intel_idle yielding to (null)
->> ACPI: acpi_idle yielding to (null)
->>
->> Signed-off-by: Len Brown<len.brown@intel.com>
->> ---
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 2967002..bd64a55 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -352,6 +352,7 @@ config GPIO_LANGWELL
+ config GPIO_PCH
+ 	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR ML7223 IOH GPIO"
+ 	depends on PCI && X86
++	select GENERIC_IRQ_CHIP
+ 	help
+ 	  This driver is for PCH(Platform controller Hub) GPIO of Intel Topcliff
+ 	  which is an IOH(Input/Output Hub) for x86 embedded processor.
+diff --git a/drivers/gpio/pch_gpio.c b/drivers/gpio/pch_gpio.c
+index 36919e7..c7fd65d 100644
+--- a/drivers/gpio/pch_gpio.c
++++ b/drivers/gpio/pch_gpio.c
+@@ -17,10 +17,21 @@
+ #include <linux/kernel.h>
+ #include <linux/pci.h>
+ #include <linux/gpio.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
+ 
+ #define PCH_GPIO_ALL_PINS	0xfff /* Mask for GPIO pins 0 to 11 */
+ #define GPIO_NUM_PINS	12	/* Specifies number of GPIO PINS GPIO0-GPIO11 */
+ 
++#define PCH_EDGE_FALLING	0
++#define PCH_EDGE_RISING		BIT(0)
++#define PCH_LEVEL_L		BIT(1)
++#define PCH_LEVEL_H		(BIT(0) | BIT(1))
++#define PCH_EDGE_BOTH		BIT(2)
++#define PCH_IM_MASK		(BIT(0) | BIT(1) | BIT(2))
++
++#define PCH_IRQ_BASE		23
++
+ struct pch_regs {
+ 	u32	ien;
+ 	u32	istatus;
+@@ -55,6 +66,10 @@ struct pch_gpio_reg_data {
+  * @gpio:			Data for GPIO infrastructure.
+  * @pch_gpio_reg:		Memory mapped Register data is saved here
+  *				when suspend.
++ * @lock:			mutex_lock variable
++ * @irq_base:		Save base of IRQ number for interrupt
++ * @spinlock:		spin_lock variable
++ * @irq_mask:		IRQ mask variable
+  */
+ struct pch_gpio {
+ 	void __iomem *base;
+@@ -63,6 +78,9 @@ struct pch_gpio {
+ 	struct gpio_chip gpio;
+ 	struct pch_gpio_reg_data pch_gpio_reg;
+ 	struct mutex lock;
++	int irq_base;
++	spinlock_t spinlock;
++	unsigned int irq_mask;
+ };
+ 
+ static void pch_gpio_set(struct gpio_chip *gpio, unsigned nr, int val)
+@@ -146,6 +164,12 @@ static void pch_gpio_restore_reg_conf(struct pch_gpio *chip)
+ 	iowrite32(chip->pch_gpio_reg.pm_reg, &chip->reg->pm);
+ }
+ 
++static int pch_gpio_to_irq(struct gpio_chip *gpio, unsigned offset)
++{
++	struct pch_gpio *chip =	container_of(gpio, struct pch_gpio, gpio);
++	return chip->irq_base + offset;
++}
++
+ static void pch_gpio_setup(struct pch_gpio *chip)
+ {
+ 	struct gpio_chip *gpio = &chip->gpio;
+@@ -160,6 +184,124 @@ static void pch_gpio_setup(struct pch_gpio *chip)
+ 	gpio->base = -1;
+ 	gpio->ngpio = GPIO_NUM_PINS;
+ 	gpio->can_sleep = 0;
++	gpio->to_irq = pch_gpio_to_irq;
++}
++
++static int pch_irq_type(struct irq_data *d, unsigned int type)
++{
++	u32 im;
++	u32 *im_reg;
++	u32 ien;
++	u32 im_pos;
++	int ch;
++	unsigned long flags;
++	u32 val;
++	int irq = d->irq;
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
++	struct pch_gpio *chip = gc->private;
++
++	ch = irq - chip->irq_base;
++	if (irq <= chip->irq_base + 7) {
++		im_reg = &chip->reg->im0;
++		im_pos = ch;
++	} else {
++		im_reg = &chip->reg->im1;
++		im_pos = ch - 8;
++	}
++	dev_dbg(chip->dev, "%s:irq=%d type=%d ch=%d pos=%d\n",
++		__func__, irq, type, ch, im_pos);
++
++	spin_lock_irqsave(&chip->spinlock, flags);
++
++	if (type == IRQ_TYPE_EDGE_RISING)
++		val = PCH_EDGE_RISING;
++	else if (type == IRQ_TYPE_EDGE_FALLING)
++		val = PCH_EDGE_FALLING;
++	else if (type == IRQ_TYPE_EDGE_BOTH)
++		val = PCH_EDGE_BOTH;
++	else if (type == IRQ_TYPE_LEVEL_HIGH)
++		val = PCH_LEVEL_L;
++	else if (type == IRQ_TYPE_LEVEL_LOW)
++		val = PCH_LEVEL_H;
++	else if (type == IRQ_TYPE_PROBE)
++		goto end;
++	else {
++		dev_warn(chip->dev, "%s: unknown type(%dd)", __func__, type);
++		goto end;
++	}
++
++	/* Set interrupt mode */
++	im = ioread32(im_reg) & ~(PCH_IM_MASK << (im_pos * 4));
++	iowrite32(im | (val << (im_pos * 4)), im_reg);
++
++	/* iclr */
++	iowrite32(BIT(ch), &chip->reg->iclr);
++
++	/* IMASKCLR */
++	iowrite32(BIT(ch), &chip->reg->imaskclr);
++
++	/* Enable interrupt */
++	ien = ioread32(&chip->reg->ien);
++	iowrite32(ien | BIT(ch), &chip->reg->ien);
++end:
++	spin_unlock_irqrestore(&chip->spinlock, flags);
++
++	return 0;
++}
++
++static void pch_irq_unmask(struct irq_data *d)
++{
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
++	struct pch_gpio *chip = gc->private;
++
++	chip->irq_mask |= 1 << (d->irq - chip->irq_base);
++}
++
++static void pch_irq_mask(struct irq_data *d)
++{
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
++	struct pch_gpio *chip = gc->private;
++
++	chip->irq_mask &= ~(1 << (d->irq - chip->irq_base));
++}
++
++static irqreturn_t pch_gpio_handler(int irq, void *dev_id)
++{
++	struct pch_gpio *chip = dev_id;
++	u32 reg_val = ioread32(&chip->reg->istatus);
++	int i;
++	int ret = IRQ_NONE;
++
++	for (i = 0; i < GPIO_NUM_PINS; i++) {
++		if (reg_val & BIT(i) & chip->irq_mask) {
++			dev_dbg(chip->dev, "%s:[%d]:irq=%d  status=0x%x\n",
++				__func__, i, irq, reg_val);
++			iowrite32(BIT(i), &chip->reg->iclr);
++			generic_handle_irq(chip->irq_base + i);
++			ret = IRQ_HANDLED;
++		}
++	}
++	return ret;
++}
++
++static __devinit void
++pch_gpio_alloc_generic_chip(struct pch_gpio *chip, unsigned int irq_start,
++			    unsigned int num)
++{
++	struct irq_chip_generic *gc;
++	struct irq_chip_type *ct;
++
++	gc = irq_alloc_generic_chip("pch_gpio", 1, irq_start, chip->base,
++				    handle_simple_irq);
++	gc->private = chip;
++	ct = gc->chip_types;
++
++	ct->chip.irq_mask = pch_irq_mask;
++	ct->chip.irq_unmask = pch_irq_unmask;
++	ct->chip.irq_set_type = pch_irq_type;
++
++	irq_setup_generic_chip(gc, IRQ_MSK(num), IRQ_GC_INIT_MASK_CACHE,
++			       IRQ_NOREQUEST | IRQ_NOPROBE, 0);
+ }
+ 
+ static int __devinit pch_gpio_probe(struct pci_dev *pdev,
+@@ -167,6 +309,7 @@ static int __devinit pch_gpio_probe(struct pci_dev *pdev,
+ {
+ 	s32 ret;
+ 	struct pch_gpio *chip;
++	int irq_base;
+ 
+ 	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+@@ -202,8 +345,36 @@ static int __devinit pch_gpio_probe(struct pci_dev *pdev,
+ 		goto err_gpiochip_add;
+ 	}
+ 
++	irq_base = irq_alloc_descs(-1, PCH_IRQ_BASE, GPIO_NUM_PINS, GFP_KERNEL);
++	if (irq_base < 0) {
++		dev_err(&pdev->dev, "PCH gpio: Failed to get IRQ base num\n");
++		goto err_irq_alloc_descs;
++	}
++	chip->irq_base = irq_base;
++
++	ret = request_irq(pdev->irq, pch_gpio_handler,
++			     IRQF_SHARED, KBUILD_MODNAME, chip);
++	if (ret != 0) {
++		dev_err(&pdev->dev,
++			"%s request_irq failed\n", __func__);
++		goto err_request_irq;
++	}
++
++	pch_gpio_alloc_generic_chip(chip, irq_base, GPIO_NUM_PINS);
++
++	/* Initialize interrupt ien register */
++	iowrite32(0, &chip->reg->ien);
++
+ 	return 0;
+ 
++err_request_irq:
++	irq_free_descs(irq_base, GPIO_NUM_PINS);
++
++err_irq_alloc_descs:
++	ret = gpiochip_remove(&chip->gpio);
++	if (ret)
++		dev_err(&pdev->dev, "%s gpiochip_remove failed\n", __func__);
++
+ err_gpiochip_add:
+ 	pci_iounmap(pdev, chip->base);
+ 
+@@ -224,6 +395,8 @@ static void __devexit pch_gpio_remove(struct pci_dev *pdev)
+ 	int err;
+ 	struct pch_gpio *chip = pci_get_drvdata(pdev);
+ 
++	irq_free_descs(chip->irq_base, GPIO_NUM_PINS);
++
+ 	err = gpiochip_remove(&chip->gpio);
+ 	if (err)
+ 		dev_err(&pdev->dev, "Failed gpiochip_remove\n");
+-- 
+1.7.4.4
 
-Hi Ben,
-
-Thanks for the review.
->
-> When you carry over somebody's patch like this you need to also add your
-> own signed-off-by.
-
-Ok, thanks
->
-> Have those generic changes been reviewed by whoever is in charge of that
-> cpuidle framework ?
-
-These patches were posted by Len Brown himself who is ACPI, Intel Idle
-cpuidle driver maintainer. He pulled in most of the patches that were
-part of that series (https://lkml.org/lkml/2011/4/2/8)
-in 3.0-rc1, but these few patches are still out there. These changes
-(removal of pm_idle) have already been agreed upon as they were
-initially reported by Peter Zijlstra himself
-(http://lkml.org/lkml/2009/8/28/43).
-
-Thanks
--Trinabh
->
-> Cheers,
-> Ben.
->
->>   Documentation/kernel-parameters.txt |    3 +++
->>   drivers/cpuidle/cpuidle.c           |   10 ++++++++++
->>   drivers/cpuidle/cpuidle.h           |    1 +
->>   drivers/cpuidle/driver.c            |    3 +++
->>   drivers/cpuidle/governor.c          |    3 +++
->>   5 files changed, 20 insertions(+), 0 deletions(-)
->>
->> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->> index d9a203b..5697faf 100644
->> --- a/Documentation/kernel-parameters.txt
->> +++ b/Documentation/kernel-parameters.txt
->> @@ -546,6 +546,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>   			/proc/<pid>/coredump_filter.
->>   			See also Documentation/filesystems/proc.txt.
->>
->> +	cpuidle.off=1	[CPU_IDLE]
->> +			disable the cpuidle sub-system
->> +
->>   	cpcihp_generic=	[HW,PCI] Generic port I/O CompactPCI driver
->>   			Format:
->>   			<first_slot>,<last_slot>,<port>,<enum_bit>[,<debug>]
->> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
->> index 406be83..a171b9e 100644
->> --- a/drivers/cpuidle/cpuidle.c
->> +++ b/drivers/cpuidle/cpuidle.c
->> @@ -28,6 +28,12 @@ LIST_HEAD(cpuidle_detected_devices);
->>   static void (*pm_idle_old)(void);
->>
->>   static int enabled_devices;
->> +static int off __read_mostly;
->> +
->> +int cpuidle_disabled(void)
->> +{
->> +	return off;
->> +}
->>
->>   #if defined(CONFIG_ARCH_HAS_CPU_IDLE_WAIT)
->>   static void cpuidle_kick_cpus(void)
->> @@ -397,6 +403,9 @@ static int __init cpuidle_init(void)
->>   {
->>   	int ret;
->>
->> +	if (cpuidle_disabled())
->> +		return -ENODEV;
->> +
->>   	pm_idle_old = pm_idle;
->>
->>   	ret = cpuidle_add_class_sysfs(&cpu_sysdev_class);
->> @@ -408,4 +417,5 @@ static int __init cpuidle_init(void)
->>   	return 0;
->>   }
->>
->> +module_param(off, int, 0444);
->>   core_initcall(cpuidle_init);
->> diff --git a/drivers/cpuidle/cpuidle.h b/drivers/cpuidle/cpuidle.h
->> index 33e50d5..38c3fd8 100644
->> --- a/drivers/cpuidle/cpuidle.h
->> +++ b/drivers/cpuidle/cpuidle.h
->> @@ -13,6 +13,7 @@ extern struct list_head cpuidle_governors;
->>   extern struct list_head cpuidle_detected_devices;
->>   extern struct mutex cpuidle_lock;
->>   extern spinlock_t cpuidle_driver_lock;
->> +extern int cpuidle_disabled(void);
->>
->>   /* idle loop */
->>   extern void cpuidle_install_idle_handler(void);
->> diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
->> index 33e3189..284d7af 100644
->> --- a/drivers/cpuidle/driver.c
->> +++ b/drivers/cpuidle/driver.c
->> @@ -50,6 +50,9 @@ int cpuidle_register_driver(struct cpuidle_driver *drv)
->>   	if (!drv)
->>   		return -EINVAL;
->>
->> +	if (cpuidle_disabled())
->> +		return -ENODEV;
->> +
->>   	spin_lock(&cpuidle_driver_lock);
->>   	if (cpuidle_curr_driver) {
->>   		spin_unlock(&cpuidle_driver_lock);
->> diff --git a/drivers/cpuidle/governor.c b/drivers/cpuidle/governor.c
->> index 724c164..ea2f8e7 100644
->> --- a/drivers/cpuidle/governor.c
->> +++ b/drivers/cpuidle/governor.c
->> @@ -81,6 +81,9 @@ int cpuidle_register_governor(struct cpuidle_governor *gov)
->>   	if (!gov || !gov->select)
->>   		return -EINVAL;
->>
->> +	if (cpuidle_disabled())
->> +		return -ENODEV;
->> +
->>   	mutex_lock(&cpuidle_lock);
->>   	if (__cpuidle_find_governor(gov->name) == NULL) {
->>   		ret = 0;
->>
->> _______________________________________________
->> Linuxppc-dev mailing list
->> Linuxppc-dev@lists.ozlabs.org
->> https://lists.ozlabs.org/listinfo/linuxppc-dev
->
->
