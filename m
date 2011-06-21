@@ -1,159 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072Ab1FUFJW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 01:09:22 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:18766 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750848Ab1FUFJT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 01:09:19 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAKImAE55LChD/2dsb2JhbABUhEmiHniIc65fkQEOgR2DdYEKBKFx
-Date: Tue, 21 Jun 2011 15:09:14 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 03/12] vmscan: reduce wind up shrinker->nr when
- shrinker can't do work
-Message-ID: <20110621050914.GO32466@dastard>
-References: <1306998067-27659-1-git-send-email-david@fromorbit.com>
- <1306998067-27659-4-git-send-email-david@fromorbit.com>
- <4DFE997C.2060805@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4DFE997C.2060805@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753193Ab1FUFKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 01:10:33 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41026 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750848Ab1FUFKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 01:10:30 -0400
+Date: Tue, 21 Jun 2011 15:10:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        matt mooney <mfm@muteddisk.com>,
+        Vitaliy Ivanov <vitalivanov@gmail.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: linux-next: manual merge of the staging tree with the trivial tree
+Message-Id: <20110621151027.8de6c5b3.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__21_Jun_2011_15_10_27_+1000_.KoEc7l7Rr.DPQFa"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 09:51:08AM +0900, KOSAKI Motohiro wrote:
-> (2011/06/02 16:00), Dave Chinner wrote:
-> > From: Dave Chinner <dchinner@redhat.com>
-> > 
-> > When a shrinker returns -1 to shrink_slab() to indicate it cannot do
-> > any work given the current memory reclaim requirements, it adds the
-> > entire total_scan count to shrinker->nr. The idea ehind this is that
-> > whenteh shrinker is next called and can do work, it will do the work
-> > of the previously aborted shrinker call as well.
-> > 
-> > However, if a filesystem is doing lots of allocation with GFP_NOFS
-> > set, then we get many, many more aborts from the shrinkers than we
-> > do successful calls. The result is that shrinker->nr winds up to
-> > it's maximum permissible value (twice the current cache size) and
-> > then when the next shrinker call that can do work is issued, it
-> > has enough scan count built up to free the entire cache twice over.
-> > 
-> > This manifests itself in the cache going from full to empty in a
-> > matter of seconds, even when only a small part of the cache is
-> > needed to be emptied to free sufficient memory.
-> > 
-> > Under metadata intensive workloads on ext4 and XFS, I'm seeing the
-> > VFS caches increase memory consumption up to 75% of memory (no page
-> > cache pressure) over a period of 30-60s, and then the shrinker
-> > empties them down to zero in the space of 2-3s. This cycle repeats
-> > over and over again, with the shrinker completely trashing the іnode
-> > and dentry caches every minute or so the workload continues.
-> > 
-> > This behaviour was made obvious by the shrink_slab tracepoints added
-> > earlier in the series, and made worse by the patch that corrected
-> > the concurrent accounting of shrinker->nr.
-> > 
-> > To avoid this problem, stop repeated small increments of the total
-> > scan value from winding shrinker->nr up to a value that can cause
-> > the entire cache to be freed. We still need to allow it to wind up,
-> > so use the delta as the "large scan" threshold check - if the delta
-> > is more than a quarter of the entire cache size, then it is a large
-> > scan and allowed to cause lots of windup because we are clearly
-> > needing to free lots of memory.
-> > 
-> > If it isn't a large scan then limit the total scan to half the size
-> > of the cache so that windup never increases to consume the whole
-> > cache. Reducing the total scan limit further does not allow enough
-> > wind-up to maintain the current levels of performance, whilst a
-> > higher threshold does not prevent the windup from freeing the entire
-> > cache under sustained workloads.
-> > 
-> > Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> > ---
-> >  mm/vmscan.c |   14 ++++++++++++++
-> >  1 files changed, 14 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index dce2767..3688f47 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -277,6 +277,20 @@ unsigned long shrink_slab(struct shrink_control *shrink,
-> >  		}
-> >  
-> >  		/*
-> > +		 * Avoid excessive windup on fielsystem shrinkers due to large
-> > +		 * numbers of GFP_NOFS allocations causing the shrinkers to
-> > +		 * return -1 all the time. This results in a large nr being
-> > +		 * built up so when a shrink that can do some work comes along
-> > +		 * it empties the entire cache due to nr >>> max_pass.  This is
-> > +		 * bad for sustaining a working set in memory.
-> > +		 *
-> > +		 * Hence only allow nr to go large when a large delta is
-> > +		 * calculated.
-> > +		 */
-> > +		if (delta < max_pass / 4)
-> > +			total_scan = min(total_scan, max_pass / 2);
-> > +
-> > +		/*
-> >  		 * Avoid risking looping forever due to too large nr value:
-> >  		 * never try to free more than twice the estimate number of
-> >  		 * freeable entries.
-> 
-> I guess "max_pass/4" and "min(total_scan, max_pass / 2)" are your heuristic value. right?
+--Signature=_Tue__21_Jun_2011_15_10_27_+1000_.KoEc7l7Rr.DPQFa
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes.
+Hi Greg,
 
-> If so, please write your benchmark name and its result into the description.
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/usbip/userspace/src/utils.h between commit e44ba033c565
+("treewide: remove duplicate includes") from the trivial tree and commit
+4cbab52d18fc ("staging: usbip: userspace: move header includes out
+utils.h") from the staging tree.
 
-Take your pick.
-
-Anything that generates a large amount of vfs cache pressure
-combined with GFP_NOFS memory allocation will show changes in
--behaviour- as you modify these variables.  e.g. creating 50 million
-inodes in parallel with fs_mark, parallel chmod -R traversals of
-said inodes, parallel rm -rf, etc. The same cache behaviour can be
-observed with any of these sorts of cold cache workloads.
-
-I say changes in behaviour rather than performance because just
-measuring wall time does not necessarily show any difference in
-performance. The bug this fixes is the cache being complete trashed
-periodically, but none of the above workloads show significant wall
-time differences in behaviour because of this modification as they
-don't rely on cache hits for performance. If you have a workload
-that actually relies on resident cache hits for good performance,
-then you'll see a difference in performance that you can measure
-with wall time....
-
-What this change does have an effect on is the variance of the
-resident cache size, which I monitor via live graphing of the
-various cache metrics. It is not as simple to monitor as having a
-single number fall out the bottom that you can point to for
-improvement. Details of this is already documented in patch zero of
-the series:
-
-https://lkml.org/lkml/2011/6/2/42
-
-Bsically, the above numbers gave the lowest variance in the resident
-cache size without preventing the shrinker from being able to free
-enough memory for the system to work effectively.
-
-> I mean, currently some mm folks plan to enhance shrinker. So,
-> sharing benchmark may help to avoid an accidental regression.
-
-I predict that I will have some bug reporting to do in future. ;)
-
+The latter supercedes the former, so I used it.
+--=20
 Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+--Signature=_Tue__21_Jun_2011_15_10_27_+1000_.KoEc7l7Rr.DPQFa
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOACfDAAoJEDMEi1NhKgbsCoQH/3R9lM1tKRhgqHu+XT9MaFaL
+6qnydqOyYCUJqfOrFxfZwpCzrP7afi1vgum79lbs98vtLbEADIg2H+N4v+tabsyz
+xS1SEbuJkSDpr0QLaLaA8IwdXCMHEPzGwK3XAMNc32WTyRxCgc1d6lNGIVAFcLBY
+NYaK7lM9bJDoPkyW/20Qd8Ebp0I3yM/gNRn8mi/L94NKBIQpfGSUAjc207rPT3rp
+9QfjySrE/ev/BeUtKS6N15RKubyHM0lGQR5BEGHLjhXCjaaSI6VANPP4biWJ1zan
+nVI5Wux/Y7VgfXNLXKdw2zjITBWhQl5gKuZbK5UVYo2Vp+TFjRBg/Y4hdGvgRIA=
+=fo9S
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__21_Jun_2011_15_10_27_+1000_.KoEc7l7Rr.DPQFa--
