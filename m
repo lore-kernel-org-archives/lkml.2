@@ -1,30 +1,36 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1753390Ab1FMDf0 (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Sun, 12 Jun 2011 23:35:26 -0400
-Received: from mail.radatel.ru ([217.148.54.12]:49854 "EHLO cgp.relan.ru"
-        rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1751568Ab1FMDfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-        Sun, 12 Jun 2011 23:35:23 -0400
-X-Greylist: delayed 15123 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Jun 2011 23:35:22 EDT
-From: "Facebook" <noreply@netlogmail.com>
-Subject: hello
-Date: Mon, 13 Jun 2011 01:00:03 +0200
+        id S1755188Ab1FUI0c (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Tue, 21 Jun 2011 04:26:32 -0400
+Received: from mail.sienaheights.edu ([64.112.206.46]:49011 "EHLO
+        mail.sienaheights.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1753931Ab1FUI03 convert rfc822-to-8bit (ORCPT
+        <rfc822;linux-kernel@vger.kernel.org>);
+        Tue, 21 Jun 2011 04:26:29 -0400
+From: Storm Pagan <spagan@sienaheights.edu>
+Date: Tue, 21 Jun 2011 04:26:28 -0400
+Subject: Dear winner
+Thread-Topic: Dear winner
+Thread-Index: AQHML+zqW7420sWEFk+SvH5t43nXGw==
+Message-ID: <10D30DB3293221469AA66B9EEB69259D01EC706B2806@TRITON.sienahts.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+x-tm-as-product-ver: SMEX-8.0.0.1181-6.500.1024-18212.004
+x-tm-as-result: No--5.931400-0.000000-31
+x-tm-as-user-approved-sender: Yes
+x-tm-as-user-blocked-sender: No
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain;
-        charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-Message-ID: <auto-000088272817@cgp.relan.ru>
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-i wannted to send u my photo long ago, but i was afraid that u dont like to see me . check on the links u see my photo, i hope u like it
-
-Download that and see my photo...
-
-http://dropfile.ru/files/get/tYyVBHYGLG/dc9663852.zip
+Your Email Address has won £750,000,000(GBP) in the just concluded BMW international awareness promotion held here in London.contact your claim's agent (Mr Christian bishof) via email;bmwclaims16@gmail.com with your name/age/country/occupation/sex/Tel
+congratulations!!!
+Bmw cordinator.
+Mr Storm pagan
