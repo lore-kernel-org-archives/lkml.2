@@ -1,582 +1,371 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756230Ab1FUKSU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 06:18:20 -0400
+	id S1756258Ab1FUKS2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 06:18:28 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:54803 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755353Ab1FUKSQ (ORCPT
+	with ESMTP id S1755353Ab1FUKSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 06:18:16 -0400
+	Tue, 21 Jun 2011 06:18:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:date:message-id:in-reply-to:references:subject;
-        b=a/i0cT9QwybEa94dY/YcENtwZYgJcDH7z0B3Oku+t0DRjCPssMItMd7P7oAyLBOBrZ
-         yJQyUQB4bHS/EA1XyU5rohC0JJaJQYzU34qPj0niTYAOvBmmNRtvc90fxtMQpg73mUfT
-         bxwrxF1oznA7ndYSB9b/+ltdCKmtsIbk5sC6I=
+        b=gOHe2rT7X4Xt19//UKJzKSgvkgykO7JGBA+/5sIGNWcWB3Z46ygjx1rZ9Ghq3PXWGA
+         hjd8bi4QYQBUa+GEcEpDTVqUkD3NpUggvKTCzr95C4mIPwEwMInJMhckUSAg7jTs8kvT
+         zzdwnis/ZbsiYLGfTQp+XxOV28PhVXMiqi8Us=
 From: Magnus Damm <magnus.damm@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: vapier@gentoo.org, mst@redhat.com, linux-sh@vger.kernel.org,
-        rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        horms@verge.net.au, Magnus Damm <magnus.damm@gmail.com>,
+Cc: vapier@gentoo.org, linux-sh@vger.kernel.org, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org, horms@verge.net.au,
+        mst@redhat.com, Magnus Damm <magnus.damm@gmail.com>,
         iws@ovro.caltech.edu
-Date: Tue, 21 Jun 2011 19:26:14 +0900
-Message-Id: <20110621102614.1382.2547.sendpatchset@t400s>
+Date: Tue, 21 Jun 2011 19:26:23 +0900
+Message-Id: <20110621102623.1382.71841.sendpatchset@t400s>
 In-Reply-To: <20110621102605.1382.90232.sendpatchset@t400s>
 References: <20110621102605.1382.90232.sendpatchset@t400s>
-Subject: [PATCH 01/02] virtio: Break out lguest virtio code to virtio_lguest.c
+Subject: [PATCH 02/02] virtio: Add virtio platform driver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Magnus Damm <damm@opensource.se>
 
-This patch breaks out code from lguest_device.c to the new file
-virtio_lguest.c. The new file is built when CONFIG_VIRTIO_LGUEST
-is selected. The x86 architecture is updated to select this kconfig
-variable in the case of lguest.
+This patch adds a virtio platform driver. The code is based on
+the lguest implementation available in drivers/lguest/lguest_device.c
 
-Needed by the virtio platform driver that shares configuration data
-structures with lguest.
+The iomem resource is used to point out the lguest device descriptor,
+and the platform data contains two separate callbacks for notification.
 
 Signed-off-by: Magnus Damm <damm@opensource.se>
 ---
 
- arch/x86/lguest/Kconfig        |    1 
- drivers/lguest/lguest_device.c |  209 ----------------------------------------
- drivers/virtio/Kconfig         |    2 
- drivers/virtio/Makefile        |    1 
- drivers/virtio/virtio_lguest.c |  205 +++++++++++++++++++++++++++++++++++++++
- include/linux/lguest.h         |    1 
- include/linux/lguest_device.h  |   46 ++++++++
- 7 files changed, 258 insertions(+), 207 deletions(-)
+ drivers/virtio/Kconfig           |   11 +
+ drivers/virtio/Makefile          |    1 
+ drivers/virtio/virtio_platform.c |  282 ++++++++++++++++++++++++++++++++++++++
+ include/linux/virtio_platform.h  |   12 +
+ 4 files changed, 306 insertions(+)
 
---- 0001/arch/x86/lguest/Kconfig
-+++ work/arch/x86/lguest/Kconfig	2011-03-03 10:16:11.000000000 +0900
-@@ -4,6 +4,7 @@ config LGUEST_GUEST
- 	depends on X86_32
- 	select VIRTUALIZATION
- 	select VIRTIO
+--- 0002/drivers/virtio/Kconfig
++++ work/drivers/virtio/Kconfig	2011-03-03 15:56:53.000000000 +0900
+@@ -35,3 +35,14 @@ config VIRTIO_BALLOON
+ 
+ config VIRTIO_LGUEST
+ 	tristate
++
++config VIRTIO_PLATFORM
++	tristate "Platform driver for virtio devices (EXPERIMENTAL)"
++	select VIRTIO
++	select VIRTIO_RING
 +	select VIRTIO_LGUEST
- 	select VIRTIO_RING
- 	select VIRTIO_CONSOLE
- 	help
---- 0001/drivers/lguest/lguest_device.c
-+++ work/drivers/lguest/lguest_device.c	2011-03-03 10:16:11.000000000 +0900
-@@ -14,6 +14,7 @@
- #include <linux/virtio_config.h>
- #include <linux/interrupt.h>
- #include <linux/virtio_ring.h>
-+#include <linux/lguest_device.h>
- #include <linux/err.h>
- #include <linux/slab.h>
- #include <asm/io.h>
-@@ -37,137 +38,6 @@ static inline void lguest_unmap(void *ad
- 	iounmap((__force void __iomem *)addr);
- }
- 
--/*D:100
-- * Each lguest device is just a virtio device plus a pointer to its entry
-- * in the lguest_devices page.
-- */
--struct lguest_device {
--	struct virtio_device vdev;
--
--	/* The entry in the lguest_devices page for this device. */
--	struct lguest_device_desc *desc;
--};
--
--/*
-- * Since the virtio infrastructure hands us a pointer to the virtio_device all
-- * the time, it helps to have a curt macro to get a pointer to the struct
-- * lguest_device it's enclosed in.
-- */
--#define to_lgdev(vd) container_of(vd, struct lguest_device, vdev)
--
--/*D:130
-- * Device configurations
-- *
-- * The configuration information for a device consists of one or more
-- * virtqueues, a feature bitmap, and some configuration bytes.  The
-- * configuration bytes don't really matter to us: the Launcher sets them up, and
-- * the driver will look at them during setup.
-- *
-- * A convenient routine to return the device's virtqueue config array:
-- * immediately after the descriptor.
-- */
--static struct lguest_vqconfig *lg_vq(const struct lguest_device_desc *desc)
--{
--	return (void *)(desc + 1);
--}
--
--/* The features come immediately after the virtqueues. */
--static u8 *lg_features(const struct lguest_device_desc *desc)
--{
--	return (void *)(lg_vq(desc) + desc->num_vq);
--}
--
--/* The config space comes after the two feature bitmasks. */
--static u8 *lg_config(const struct lguest_device_desc *desc)
--{
--	return lg_features(desc) + desc->feature_len * 2;
--}
--
--/* The total size of the config page used by this device (incl. desc) */
--static unsigned desc_size(const struct lguest_device_desc *desc)
--{
--	return sizeof(*desc)
--		+ desc->num_vq * sizeof(struct lguest_vqconfig)
--		+ desc->feature_len * 2
--		+ desc->config_len;
--}
--
--/* This gets the device's feature bits. */
--static u32 lg_get_features(struct virtio_device *vdev)
--{
--	unsigned int i;
--	u32 features = 0;
--	struct lguest_device_desc *desc = to_lgdev(vdev)->desc;
--	u8 *in_features = lg_features(desc);
--
--	/* We do this the slow but generic way. */
--	for (i = 0; i < min(desc->feature_len * 8, 32); i++)
--		if (in_features[i / 8] & (1 << (i % 8)))
--			features |= (1 << i);
--
--	return features;
--}
--
--/*
-- * The virtio core takes the features the Host offers, and copies the ones
-- * supported by the driver into the vdev->features array.  Once that's all
-- * sorted out, this routine is called so we can tell the Host which features we
-- * understand and accept.
-- */
--static void lg_finalize_features(struct virtio_device *vdev)
--{
--	unsigned int i, bits;
--	struct lguest_device_desc *desc = to_lgdev(vdev)->desc;
--	/* Second half of bitmap is features we accept. */
--	u8 *out_features = lg_features(desc) + desc->feature_len;
--
--	/* Give virtio_ring a chance to accept features. */
--	vring_transport_features(vdev);
--
--	/*
--	 * The vdev->feature array is a Linux bitmask: this isn't the same as a
--	 * the simple array of bits used by lguest devices for features.  So we
--	 * do this slow, manual conversion which is completely general.
--	 */
--	memset(out_features, 0, desc->feature_len);
--	bits = min_t(unsigned, desc->feature_len, sizeof(vdev->features)) * 8;
--	for (i = 0; i < bits; i++) {
--		if (test_bit(i, vdev->features))
--			out_features[i / 8] |= (1 << (i % 8));
--	}
--}
--
--/* Once they've found a field, getting a copy of it is easy. */
--static void lg_get(struct virtio_device *vdev, unsigned int offset,
--		   void *buf, unsigned len)
--{
--	struct lguest_device_desc *desc = to_lgdev(vdev)->desc;
--
--	/* Check they didn't ask for more than the length of the config! */
--	BUG_ON(offset + len > desc->config_len);
--	memcpy(buf, lg_config(desc) + offset, len);
--}
--
--/* Setting the contents is also trivial. */
--static void lg_set(struct virtio_device *vdev, unsigned int offset,
--		   const void *buf, unsigned len)
--{
--	struct lguest_device_desc *desc = to_lgdev(vdev)->desc;
--
--	/* Check they didn't ask for more than the length of the config! */
--	BUG_ON(offset + len > desc->config_len);
--	memcpy(lg_config(desc) + offset, buf, len);
--}
--
--/*
-- * The operations to get and set the status word just access the status field
-- * of the device descriptor.
-- */
--static u8 lg_get_status(struct virtio_device *vdev)
--{
--	return to_lgdev(vdev)->desc->status;
--}
--
- /*
-  * To notify on status updates, we (ab)use the NOTIFY hypercall, with the
-  * descriptor address of the device.  A zero status means "reset".
-@@ -392,81 +262,6 @@ static struct virtio_config_ops lguest_c
-  */
- static struct device *lguest_root;
- 
--/*D:120
-- * This is the core of the lguest bus: actually adding a new device.
-- * It's a separate function because it's neater that way, and because an
-- * earlier version of the code supported hotplug and unplug.  They were removed
-- * early on because they were never used.
-- *
-- * As Andrew Tridgell says, "Untested code is buggy code".
-- *
-- * It's worth reading this carefully: we start with a pointer to the new device
-- * descriptor in the "lguest_devices" page, and the offset into the device
-- * descriptor page so we can uniquely identify it if things go badly wrong.
-- */
--static void add_lguest_device(struct lguest_device_desc *d,
--			      unsigned int offset)
--{
--	struct lguest_device *ldev;
--
--	/* Start with zeroed memory; Linux's device layer counts on it. */
--	ldev = kzalloc(sizeof(*ldev), GFP_KERNEL);
--	if (!ldev) {
--		printk(KERN_EMERG "Cannot allocate lguest dev %u type %u\n",
--		       offset, d->type);
--		return;
--	}
--
--	/* This devices' parent is the lguest/ dir. */
--	ldev->vdev.dev.parent = lguest_root;
--	/*
--	 * The device type comes straight from the descriptor.  There's also a
--	 * device vendor field in the virtio_device struct, which we leave as
--	 * 0.
--	 */
--	ldev->vdev.id.device = d->type;
--	/*
--	 * We have a simple set of routines for querying the device's
--	 * configuration information and setting its status.
--	 */
--	ldev->vdev.config = &lguest_config_ops;
--	/* And we remember the device's descriptor for lguest_config_ops. */
--	ldev->desc = d;
--
--	/*
--	 * register_virtio_device() sets up the generic fields for the struct
--	 * virtio_device and calls device_register().  This makes the bus
--	 * infrastructure look for a matching driver.
--	 */
--	if (register_virtio_device(&ldev->vdev) != 0) {
--		printk(KERN_ERR "Failed to register lguest dev %u type %u\n",
--		       offset, d->type);
--		kfree(ldev);
--	}
--}
--
--/*D:110
-- * scan_devices() simply iterates through the device page.  The type 0 is
-- * reserved to mean "end of devices".
-- */
--static void scan_devices(void)
--{
--	unsigned int i;
--	struct lguest_device_desc *d;
--
--	/* We start at the page beginning, and skip over each entry. */
--	for (i = 0; i < PAGE_SIZE; i += desc_size(d)) {
--		d = lguest_devices + i;
--
--		/* Once we hit a zero, stop. */
--		if (d->type == 0)
--			break;
--
--		printk("Device at %i has size %u\n", i, desc_size(d));
--		add_lguest_device(d, i);
--	}
--}
--
- /*D:105
-  * Fairly early in boot, lguest_devices_init() is called to set up the
-  * lguest device infrastructure.  We check that we are a Guest by checking
-@@ -493,7 +288,7 @@ static int __init lguest_devices_init(vo
- 	/* Devices are in a single page above top of "normal" mem */
- 	lguest_devices = lguest_map(max_pfn<<PAGE_SHIFT, 1);
- 
--	scan_devices();
-+	lg_scan_devices(lguest_devices, lguest_root, &lguest_config_ops);
- 	return 0;
- }
- /* We do this after core stuff, but before the drivers. */
---- 0001/drivers/virtio/Kconfig
-+++ work/drivers/virtio/Kconfig	2011-03-03 10:16:11.000000000 +0900
-@@ -33,3 +33,5 @@ config VIRTIO_BALLOON
- 
- 	 If unsure, say M.
- 
-+config VIRTIO_LGUEST
-+	tristate
---- 0001/drivers/virtio/Makefile
-+++ work/drivers/virtio/Makefile	2011-03-03 10:16:11.000000000 +0900
-@@ -2,3 +2,4 @@ obj-$(CONFIG_VIRTIO) += virtio.o
- obj-$(CONFIG_VIRTIO_RING) += virtio_ring.o
++	---help---
++	 This drivers provides support for virtio based paravirtual device
++	 drivers over a platform bus.
++
++	 If unsure, say N.
+--- 0002/drivers/virtio/Makefile
++++ work/drivers/virtio/Makefile	2011-03-03 15:56:53.000000000 +0900
+@@ -3,3 +3,4 @@ obj-$(CONFIG_VIRTIO_RING) += virtio_ring
  obj-$(CONFIG_VIRTIO_PCI) += virtio_pci.o
  obj-$(CONFIG_VIRTIO_BALLOON) += virtio_balloon.o
-+obj-$(CONFIG_VIRTIO_LGUEST) += virtio_lguest.o
+ obj-$(CONFIG_VIRTIO_LGUEST) += virtio_lguest.o
++obj-$(CONFIG_VIRTIO_PLATFORM) += virtio_platform.o
 --- /dev/null
-+++ work/drivers/virtio/virtio_lguest.c	2011-03-03 10:16:12.000000000 +0900
-@@ -0,0 +1,205 @@
-+/*P:050
-+ * Lguest guests use a very simple method to describe devices.  It's a
-+ * series of device descriptors contained just above the top of normal Guest
-+ * memory.
-+ *
-+ * We use the standard "virtio" device infrastructure, which provides us with a
-+ * console, a network and a block driver.  Each one expects some configuration
-+ * information and a "virtqueue" or two to send and receive data.
-+:*/
++++ work/drivers/virtio/virtio_platform.c	2011-03-03 16:07:31.000000000 +0900
+@@ -0,0 +1,282 @@
 +#include <linux/init.h>
-+#include <linux/bootmem.h>
-+#include <linux/lguest_launcher.h>
 +#include <linux/virtio.h>
 +#include <linux/virtio_config.h>
-+#include <linux/interrupt.h>
 +#include <linux/virtio_ring.h>
 +#include <linux/lguest_device.h>
++#include <linux/lguest_launcher.h>
++#include <linux/virtio_platform.h>
++#include <linux/platform_device.h>
++#include <linux/interrupt.h>
 +#include <linux/err.h>
 +#include <linux/slab.h>
-+#include <asm/io.h>
++#include <linux/io.h>
 +
-+/*D:130
-+ * Device configurations
-+ *
-+ * The configuration information for a device consists of one or more
-+ * virtqueues, a feature bitmap, and some configuration bytes.  The
-+ * configuration bytes don't really matter to us: the Launcher sets them up, and
-+ * the driver will look at them during setup.
-+ */
-+
-+/* The features come immediately after the virtqueues. */
-+static u8 *lg_features(const struct lguest_device_desc *desc)
++static void __iomem *virtio_map(unsigned long phys_addr, unsigned long pages)
 +{
-+	return (void *)(lg_vq(desc) + desc->num_vq);
++	return ioremap_nocache(phys_addr, PAGE_SIZE*pages);
 +}
 +
-+/* The config space comes after the two feature bitmasks. */
-+static u8 *lg_config(const struct lguest_device_desc *desc)
++static void virtio_unmap(void __iomem *addr)
 +{
-+	return lg_features(desc) + desc->feature_len * 2;
++	iounmap(addr);
 +}
 +
-+/* The total size of the config page used by this device (incl. desc) */
-+static unsigned desc_size(const struct lguest_device_desc *desc)
++static void set_status(struct virtio_device *vdev, u8 status)
 +{
-+	return sizeof(*desc)
-+		+ desc->num_vq * sizeof(struct lguest_vqconfig)
-+		+ desc->feature_len * 2
-+		+ desc->config_len;
++	struct platform_device *pdev = to_platform_device(vdev->dev.parent);
++	struct virtio_platform_data *pdata = pdev->dev.platform_data;
++
++	to_lgdev(vdev)->desc->status = status;
++	pdata->notify_virtio(pdev);
 +}
 +
-+/* This gets the device's feature bits. */
-+u32 lg_get_features(struct virtio_device *vdev)
++static void lg_set_status(struct virtio_device *vdev, u8 status)
 +{
-+	unsigned int i;
-+	u32 features = 0;
-+	struct lguest_device_desc *desc = to_lgdev(vdev)->desc;
-+	u8 *in_features = lg_features(desc);
++	BUG_ON(!status);
++	set_status(vdev, status);
++}
 +
-+	/* We do this the slow but generic way. */
-+	for (i = 0; i < min(desc->feature_len * 8, 32); i++)
-+		if (in_features[i / 8] & (1 << (i % 8)))
-+			features |= (1 << i);
-+
-+	return features;
++static void lg_reset(struct virtio_device *vdev)
++{
++	set_status(vdev, 0);
 +}
 +
 +/*
-+ * The virtio core takes the features the Host offers, and copies the ones
-+ * supported by the driver into the vdev->features array.  Once that's all
-+ * sorted out, this routine is called so we can tell the Host which features we
-+ * understand and accept.
-+ */
-+void lg_finalize_features(struct virtio_device *vdev)
-+{
-+	unsigned int i, bits;
-+	struct lguest_device_desc *desc = to_lgdev(vdev)->desc;
-+	/* Second half of bitmap is features we accept. */
-+	u8 *out_features = lg_features(desc) + desc->feature_len;
-+
-+	/* Give virtio_ring a chance to accept features. */
-+	vring_transport_features(vdev);
-+
-+	/*
-+	 * The vdev->feature array is a Linux bitmask: this isn't the same as a
-+	 * the simple array of bits used by lguest devices for features.  So we
-+	 * do this slow, manual conversion which is completely general.
-+	 */
-+	memset(out_features, 0, desc->feature_len);
-+	bits = min_t(unsigned, desc->feature_len, sizeof(vdev->features)) * 8;
-+	for (i = 0; i < bits; i++) {
-+		if (test_bit(i, vdev->features))
-+			out_features[i / 8] |= (1 << (i % 8));
-+	}
-+}
-+
-+/* Once they've found a field, getting a copy of it is easy. */
-+void lg_get(struct virtio_device *vdev, unsigned int offset,
-+	    void *buf, unsigned len)
-+{
-+	struct lguest_device_desc *desc = to_lgdev(vdev)->desc;
-+
-+	/* Check they didn't ask for more than the length of the config! */
-+	BUG_ON(offset + len > desc->config_len);
-+	memcpy(buf, lg_config(desc) + offset, len);
-+}
-+
-+/* Setting the contents is also trivial. */
-+void lg_set(struct virtio_device *vdev, unsigned int offset,
-+	    const void *buf, unsigned len)
-+{
-+	struct lguest_device_desc *desc = to_lgdev(vdev)->desc;
-+
-+	/* Check they didn't ask for more than the length of the config! */
-+	BUG_ON(offset + len > desc->config_len);
-+	memcpy(lg_config(desc) + offset, buf, len);
-+}
-+
-+/*
-+ * The operations to get and set the status word just access the status field
-+ * of the device descriptor.
-+ */
-+u8 lg_get_status(struct virtio_device *vdev)
-+{
-+	return to_lgdev(vdev)->desc->status;
-+}
-+
-+/*D:120
-+ * This is the core of the lguest bus: actually adding a new device.
-+ * It's a separate function because it's neater that way, and because an
-+ * earlier version of the code supported hotplug and unplug.  They were removed
-+ * early on because they were never used.
++ * Virtqueues
 + *
-+ * As Andrew Tridgell says, "Untested code is buggy code".
++ * The other piece of infrastructure virtio needs is a "virtqueue": a way of
++ * the Guest device registering buffers for the other side to read from or
++ * write into (ie. send and receive buffers).  Each device can have multiple
++ * virtqueues: for example the console driver uses one queue for sending and
++ * another for receiving.
 + *
-+ * It's worth reading this carefully: we start with a pointer to the new device
-+ * descriptor in the "lguest_devices" page, and the offset into the device
-+ * descriptor page so we can uniquely identify it if things go badly wrong.
++ * Fortunately for us, a very fast shared-memory-plus-descriptors virtqueue
++ * already exists in virtio_ring.c.  We just need to connect it up.
++ *
++ * We start with the information we need to keep about each virtqueue.
 + */
-+static void add_lguest_device(struct lguest_device_desc *d,
-+			      unsigned int offset,
-+			      struct device *root,
-+			      struct virtio_config_ops *ops)
-+{
-+	struct lguest_device *ldev;
 +
-+	/* Start with zeroed memory; Linux's device layer counts on it. */
-+	ldev = kzalloc(sizeof(*ldev), GFP_KERNEL);
-+	if (!ldev) {
-+		printk(KERN_EMERG "Cannot allocate lguest dev %u type %u\n",
-+		       offset, d->type);
-+		return;
-+	}
++/*D:140 This is the information we remember about each virtqueue. */
++struct lguest_vq_info {
++	/* A copy of the information contained in the device config. */
++	struct lguest_vqconfig config;
 +
-+	/* This devices' parent is the lguest/ dir. */
-+	ldev->vdev.dev.parent = root;
-+	/*
-+	 * The device type comes straight from the descriptor.  There's also a
-+	 * device vendor field in the virtio_device struct, which we leave as
-+	 * 0.
-+	 */
-+	ldev->vdev.id.device = d->type;
-+	/*
-+	 * We have a simple set of routines for querying the device's
-+	 * configuration information and setting its status.
-+	 */
-+	ldev->vdev.config = ops;
-+	/* And we remember the device's descriptor. */
-+	ldev->desc = d;
-+
-+	/*
-+	 * register_virtio_device() sets up the generic fields for the struct
-+	 * virtio_device and calls device_register().  This makes the bus
-+	 * infrastructure look for a matching driver.
-+	 */
-+	if (register_virtio_device(&ldev->vdev) != 0) {
-+		printk(KERN_ERR "Failed to register lguest dev %u type %u\n",
-+		       offset, d->type);
-+		kfree(ldev);
-+	}
-+}
-+
-+/*D:110
-+ * lg_scan_devices() simply iterates through the device page.  The type 0 is
-+ * reserved to mean "end of devices".
-+ */
-+void lg_scan_devices(void *lguest_devices,
-+		     struct device *root,
-+		     struct virtio_config_ops *ops)
-+{
-+	unsigned int i;
-+	struct lguest_device_desc *d;
-+
-+	/* We start at the page beginning, and skip over each entry. */
-+	for (i = 0; i < PAGE_SIZE; i += desc_size(d)) {
-+		d = lguest_devices + i;
-+
-+		/* Once we hit a zero, stop. */
-+		if (d->type == 0)
-+			break;
-+
-+		printk("Device at %i has size %u\n", i, desc_size(d));
-+		add_lguest_device(d, i, root, ops);
-+	}
-+}
---- 0001/include/linux/lguest.h
-+++ work/include/linux/lguest.h	2011-03-03 10:16:11.000000000 +0900
-@@ -71,5 +71,6 @@ struct lguest_data {
- 	unsigned int syscall_vec;
- };
- extern struct lguest_data lguest_data;
-+
- #endif /* __ASSEMBLY__ */
- #endif	/* _LINUX_LGUEST_H */
---- /dev/null
-+++ work/include/linux/lguest_device.h	2011-03-03 16:07:51.000000000 +0900
-@@ -0,0 +1,46 @@
-+#ifndef _LINUX_LGUEST_DEVICE_H
-+#define _LINUX_LGUEST_DEVICE_H
-+
-+#include <linux/virtio.h>
-+#include <linux/lguest_launcher.h>
-+
-+/*D:100
-+ * Each lguest device is just a virtio device plus a pointer to its entry
-+ * in the lguest_devices page.
-+ */
-+struct lguest_device {
-+	struct virtio_device vdev;
-+
-+	/* The entry in the lguest_devices page for this device. */
-+	struct lguest_device_desc *desc;
++	/* The address where we mapped the virtio ring, so we can unmap it. */
++	void __iomem *pages;
 +};
 +
-+u32 lg_get_features(struct virtio_device *vdev);
-+void lg_finalize_features(struct virtio_device *vdev);
-+void lg_get(struct virtio_device *vdev, unsigned int offset,
-+	    void *buf, unsigned len);
-+void lg_set(struct virtio_device *vdev, unsigned int offset,
-+	    const void *buf, unsigned len);
-+u8 lg_get_status(struct virtio_device *vdev);
-+void lg_scan_devices(void *lguest_devices,
-+		     struct device *root,
-+		     struct virtio_config_ops *ops);
-+
 +/*
-+ * A convenient routine to return the device's virtqueue config array:
-+ * immediately after the descriptor.
++ * When the virtio_ring code wants to prod the Host, it calls us here and we
++ * call the board specific callback.  We hand a pointer to the configuration
++ * so the board code knows which virtqueue we're talking about.
 + */
-+static inline struct lguest_vqconfig *
-+lg_vq(const struct lguest_device_desc *desc)
++static void lg_notify(struct virtqueue *vq)
 +{
-+	return (void *)(desc + 1);
++	struct platform_device *pdev = to_platform_device(vq->vdev->dev.parent);
++	struct virtio_platform_data *pdata = pdev->dev.platform_data;
++	struct lguest_vq_info *lvq = vq->priv;
++
++	pdata->notify_virtqueue(pdev, &lvq->config);
 +}
 +
 +/*
-+ * Since the virtio infrastructure hands us a pointer to the virtio_device all
-+ * the time, it helps to have a curt macro to get a pointer to the struct
-+ * lguest_device it's enclosed in.
++ * This routine finds the Nth virtqueue described in the configuration of
++ * this device and sets it up.
++ *
++ * This is kind of an ugly duckling.  It'd be nicer to have a standard
++ * representation of a virtqueue in the configuration space, but it seems that
++ * everyone wants to do it differently.  The KVM coders want the Guest to
++ * allocate its own pages and tell the Host where they are, but for lguest it's
++ * simpler for the Host to simply tell us where the pages are.
 + */
-+#define to_lgdev(vd) container_of(vd, struct lguest_device, vdev)
++static struct virtqueue *lg_find_vq(struct virtio_device *vdev,
++				    unsigned index,
++				    void (*callback)(struct virtqueue *vq),
++				    const char *name)
++{
++	struct lguest_device *ldev = to_lgdev(vdev);
++	struct lguest_vq_info *lvq;
++	struct virtqueue *vq;
++	int err;
 +
-+#endif	/* _LINUX_LGUEST_DEVICE_H */
++	/* We must have this many virtqueues. */
++	if (index >= ldev->desc->num_vq)
++		return ERR_PTR(-ENOENT);
++
++	lvq = kmalloc(sizeof(*lvq), GFP_KERNEL);
++	if (!lvq)
++		return ERR_PTR(-ENOMEM);
++
++	/*
++	 * Make a copy of the "struct lguest_vqconfig" entry, which sits after
++	 * the descriptor.  We need a copy because the config space might not
++	 * be aligned correctly.
++	 */
++	memcpy(&lvq->config, lg_vq(ldev->desc)+index, sizeof(lvq->config));
++
++	dev_info(&vdev->dev, "Mapping virtqueue %i addr %lx\n", index,
++		 (unsigned long)lvq->config.pfn << PAGE_SHIFT);
++	/* Figure out how many pages the ring will take, and map that memory */
++	lvq->pages = virtio_map((unsigned long)lvq->config.pfn << PAGE_SHIFT,
++				DIV_ROUND_UP(vring_size(lvq->config.num,
++							LGUEST_VRING_ALIGN),
++					     PAGE_SIZE));
++	if (!lvq->pages) {
++		err = -ENOMEM;
++		goto free_lvq;
++	}
++
++	/*
++	 * OK, tell virtio_ring.c to set up a virtqueue now we know its size
++	 * and we've got a pointer to its pages.
++	 */
++	vq = vring_new_virtqueue(lvq->config.num, LGUEST_VRING_ALIGN,
++				 vdev, lvq->pages, lg_notify, callback, name);
++	if (!vq) {
++		err = -ENOMEM;
++		goto unmap;
++	}
++
++	/*
++	 * Tell the interrupt for this virtqueue to go to the virtio_ring
++	 * interrupt handler.
++	 *
++	 * FIXME: We used to have a flag for the Host to tell us we could use
++	 * the interrupt as a source of randomness: it'd be nice to have that
++	 * back.
++	 */
++	err = request_irq(lvq->config.irq, vring_interrupt, IRQF_SHARED,
++			  dev_name(&vdev->dev), vq);
++	if (err)
++		goto destroy_vring;
++
++	/*
++	 * Last of all we hook up our 'struct lguest_vq_info" to the
++	 * virtqueue's priv pointer.
++	 */
++	vq->priv = lvq;
++	return vq;
++
++destroy_vring:
++	vring_del_virtqueue(vq);
++unmap:
++	virtio_unmap(lvq->pages);
++free_lvq:
++	kfree(lvq);
++	return ERR_PTR(err);
++}
++/*:*/
++
++/* Cleaning up a virtqueue is easy */
++static void lg_del_vq(struct virtqueue *vq)
++{
++	struct lguest_vq_info *lvq = vq->priv;
++
++	/* Release the interrupt */
++	free_irq(lvq->config.irq, vq);
++	/* Tell virtio_ring.c to free the virtqueue. */
++	vring_del_virtqueue(vq);
++	/* Unmap the pages containing the ring. */
++	virtio_unmap(lvq->pages);
++	/* Free our own queue information. */
++	kfree(lvq);
++}
++
++static void lg_del_vqs(struct virtio_device *vdev)
++{
++	struct virtqueue *vq, *n;
++
++	list_for_each_entry_safe(vq, n, &vdev->vqs, list)
++		lg_del_vq(vq);
++}
++
++static int lg_find_vqs(struct virtio_device *vdev, unsigned nvqs,
++		       struct virtqueue *vqs[],
++		       vq_callback_t *callbacks[],
++		       const char *names[])
++{
++	struct lguest_device *ldev = to_lgdev(vdev);
++	int i;
++
++	/* We must have this many virtqueues. */
++	if (nvqs > ldev->desc->num_vq)
++		return -ENOENT;
++
++	for (i = 0; i < nvqs; ++i) {
++		vqs[i] = lg_find_vq(vdev, i, callbacks[i], names[i]);
++		if (IS_ERR(vqs[i]))
++			goto error;
++	}
++	return 0;
++
++error:
++	lg_del_vqs(vdev);
++	return PTR_ERR(vqs[i]);
++}
++
++/* The ops structure which hooks everything together. */
++static struct virtio_config_ops lguest_config_ops = {
++	.get_features = lg_get_features,
++	.finalize_features = lg_finalize_features,
++	.get = lg_get,
++	.set = lg_set,
++	.get_status = lg_get_status,
++	.set_status = lg_set_status,
++	.reset = lg_reset,
++	.find_vqs = lg_find_vqs,
++	.del_vqs = lg_del_vqs,
++};
++
++static int virtio_platform_probe(struct platform_device *pdev)
++{
++	struct virtio_platform_data *pdata = pdev->dev.platform_data;
++	struct resource *res;
++	void *devices;
++
++	if (!pdata) {
++		dev_err(&pdev->dev, "no platform data defined\n");
++		return -EINVAL;
++	}
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (res == NULL) {
++		dev_err(&pdev->dev, "cannot find IO resource\n");
++		return -ENOENT;
++	}
++
++	/* Devices are pointed out using struct resource */
++	devices = virtio_map(res->start, resource_size(res) >> PAGE_SHIFT);
++	lg_scan_devices(devices, &pdev->dev, &lguest_config_ops);
++	return 0;
++}
++
++static int virtio_platform_remove(struct platform_device *pdev)
++{
++	return -ENOTSUPP;
++}
++
++static struct platform_driver virtio_platform_driver = {
++	.driver		= {
++		.name		= "virtio-platform",
++		.owner		= THIS_MODULE,
++	},
++	.probe		= virtio_platform_probe,
++	.remove		= virtio_platform_remove,
++};
++
++static int __init virtio_platform_init(void)
++{
++	return platform_driver_register(&virtio_platform_driver);
++}
++
++static void __exit virtio_platform_exit(void)
++{
++	platform_driver_unregister(&virtio_platform_driver);
++}
++
++module_init(virtio_platform_init);
++module_exit(virtio_platform_exit);
++
++MODULE_DESCRIPTION("VirtIO Platform Driver");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:virtio-platform");
+--- /dev/null
++++ work/include/linux/virtio_platform.h	2011-03-03 15:56:54.000000000 +0900
+@@ -0,0 +1,12 @@
++#ifndef _LINUX_VIRTIO_PLATFORM_H
++#define _LINUX_VIRTIO_PLATFORM_H
++#include <linux/platform_device.h>
++#include <linux/lguest_launcher.h>
++
++struct virtio_platform_data {
++	void (*notify_virtio)(struct platform_device *pdev);
++	void (*notify_virtqueue)(struct platform_device *pdev,
++				 struct lguest_vqconfig *config);
++};
++
++#endif /* _LINUX_VIRTIO_PLATFORM_H */
