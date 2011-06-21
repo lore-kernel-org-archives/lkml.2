@@ -1,126 +1,358 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932Ab1FUFtS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 01:49:18 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:33794 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab1FUFtQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 01:49:16 -0400
-Message-ID: <4E0030DB.6000208@cs.helsinki.fi>
-Date: Tue, 21 Jun 2011 08:49:15 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>
-Subject: Re: [Q] mm/memblock.c: cast truncates bits from RED_INACTIVE
-References: <ADE657CA350FB648AAC2C43247A983F001F382220E0F@AUSP01VMBX24.collaborationhost.net> <20110620170249.d5cd98b1.akpm@linux-foundation.org> <ADE657CA350FB648AAC2C43247A983F001F38227BF35@AUSP01VMBX24.collaborationhost.net>
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F001F38227BF35@AUSP01VMBX24.collaborationhost.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752374Ab1FUF4q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 01:56:46 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:53064 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750974Ab1FUF4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 01:56:44 -0400
+Date: Tue, 21 Jun 2011 15:56:35 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for June 21
+Message-Id: <20110621155635.1259658f.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__21_Jun_2011_15_56_35_+1000_MGXTVOReGMVc9Mv1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/21/11 3:31 AM, H Hartley Sweeten wrote:
-> On Monday, June 20, 2011 5:03 PM, Andrew Morton wrote:
->> On Tue, 14 Jun 2011 19:47:19 -0500 H Hartley Sweeten wrote:
->>
->>> Hello all,
->>>
->>> Sparse is reporting a couple warnings in mm/memblock.c:
->>>
->>> 	warning: cast truncates bits from constant value (9f911029d74e35b becomes 9d74e35b)
->>>
->>> The warnings are due to the cast of RED_INACTIVE in memblock_analyze():
->>>
->>> 	/* Check marker in the unused last array entry */
->>> 	WARN_ON(memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS].base
->>> 		!= (phys_addr_t)RED_INACTIVE);
->>> 	WARN_ON(memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS].base
->>> 		!= (phys_addr_t)RED_INACTIVE);
->>>
->>> And in memblock_init():
->>>
->>> 	/* Write a marker in the unused last array entry */
->>> 	memblock.memory.regions[INIT_MEMBLOCK_REGIONS].base = (phys_addr_t)RED_INACTIVE;
->>> 	memblock.reserved.regions[INIT_MEMBLOCK_REGIONS].base = (phys_addr_t)RED_INACTIVE;
->>>
->>> Could this cause any problems?  If not, is there anyway to quiet the sparse noise?
->>>
->>
->> It's all just a debugging check and that check will continue to work OK
->> despite this bug.
->>
->> But yes, it's ugly and should be fixed.
->>
->> I don't think that mm/memblock.c should have reused RED_INACTIVE.
->> That's a slab thing and wedging it into a phys_addr_t was
->> inappropriate.
->>
->> In fact I don't think RED_INACTIVE should exist.  It's just inviting
->> other subsystems to (ab)use it.  It should be replaced by a
->> slab-specific SLAB_RED_INACTIVE, as slub did with SLUB_RED_INACTIVE.
->>
->>
->> I'd suggest something like the below, which I didn't test.  Feel free to
->> send it back at me, or ignore it ;)
->>
->>
->> diff -puN include/linux/poison.h~a include/linux/poison.h
->> --- a/include/linux/poison.h~a
->> +++ a/include/linux/poison.h
->> @@ -40,6 +40,12 @@
->>   #define	RED_INACTIVE	0x09F911029D74E35BULL	/* when obj is inactive */
->>   #define	RED_ACTIVE	0xD84156C5635688C0ULL	/* when obj is active */
->>
->> +#ifdef CONFIG_PHYS_ADDR_T_64BIT
->> +#define MEMBLOCK_INACTIVE	0x3a84fb0144c9e71bULL
->> +#else
->> +#define MEMBLOCK_INACTIVE	0x44c9e71bUL
->> +#endif
->> +
->>   #define SLUB_RED_INACTIVE	0xbb
->>   #define SLUB_RED_ACTIVE		0xcc
->>
->> diff -puN mm/memblock.c~a mm/memblock.c
->> --- a/mm/memblock.c~a
->> +++ a/mm/memblock.c
->> @@ -758,9 +758,9 @@ void __init memblock_analyze(void)
->>
->>   	/* Check marker in the unused last array entry */
->>   	WARN_ON(memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS].base
->> -		!= (phys_addr_t)RED_INACTIVE);
->> +		!= MEMBLOCK_INACTIVE);
->>   	WARN_ON(memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS].base
->> -		!= (phys_addr_t)RED_INACTIVE);
->> +		!= MEMBLOCK_INACTIVE);
->>
->>   	memblock.memory_size = 0;
->>
->> @@ -786,8 +786,8 @@ void __init memblock_init(void)
->>   	memblock.reserved.max	= INIT_MEMBLOCK_REGIONS;
->>
->>   	/* Write a marker in the unused last array entry */
->> -	memblock.memory.regions[INIT_MEMBLOCK_REGIONS].base = (phys_addr_t)RED_INACTIVE;
->> -	memblock.reserved.regions[INIT_MEMBLOCK_REGIONS].base = (phys_addr_t)RED_INACTIVE;
->> +	memblock.memory.regions[INIT_MEMBLOCK_REGIONS].base = MEMBLOCK_INACTIVE;
->> +	memblock.reserved.regions[INIT_MEMBLOCK_REGIONS].base = MEMBLOCK_INACTIVE;
->>
->>   	/* Create a dummy zero size MEMBLOCK which will get coalesced away later.
->>   	 * This simplifies the memblock_add() code below...
->
-> FWIW, your patch above quiet's the sparse warnings on my system (arm ep93xx) and
-> the system boots and runs fine.
->
-> If you want it..
->
-> Tested-by: H Hartley Sweeten<hsweeten@visionengravers.com>
+--Signature=_Tue__21_Jun_2011_15_56_35_+1000_MGXTVOReGMVc9Mv1
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+Hi all,
+
+Changes since 20110620:
+
+Undropped tree: rcu
+
+The powerpc allyesconfig (and probably others) is still broken because we
+now build the staging drivers and because of a commit in Linus' tree.
+
+The xilinx tree lost its conflicts.
+
+The net tree lost its build failure.
+
+The wireless tree gained a conflict against the wireless-current tree.
+
+The bluetooth tree gained a conflict against the wireless-current tree.
+
+The mmc tree lost its build failure.
+
+The mfd tree gained a build failure so I used the version from
+next-20110620.
+
+The trivial tree gained a conflict against the s390 tree.
+
+The rcu tree lost its conflicts.
+
+The staging tree gained conflicts against the trivial and net trees.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 194 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging arm-lpae/for-next
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgalloc.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgtable.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/tlb.h
+CONFLICT (content): Merge conflict in arch/arm/mm/context.c
+CONFLICT (content): Merge conflict in arch/arm/mm/dma-mapping.c
+CONFLICT (content): Merge conflict in arch/arm/mm/proc-v7.S
+Merging at91/at91-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging linux-spec/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging xilinx/arm-next
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020ds.dts
+CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020rdb.dts
+CONFLICT (content): Merge conflict in arch/powerpc/sysdev/mpic.c
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+CONFLICT (content): Merge conflict in fs/ceph/export.c
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/dev
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging of-pci/of-pci
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging docs/docs-move
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
+Merging powertools/tools-test
+Merging cpupowerutils/master
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging slave-dma/next
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-agn-=
+rxon.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/rtlwifi/pci.c
+CONFLICT (content): Merge conflict in net/netfilter/ipvs/ip_vs_core.c
+Merging wireless/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/rtlwifi/pci.c
+CONFLICT (content): Merge conflict in net/bluetooth/l2cap_core.c
+Merging bluetooth/master
+CONFLICT (content): Merge conflict in net/bluetooth/l2cap_core.c
+Merging mtd/master
+Merging l2-mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+CONFLICT (delete/modify): drivers/mmc/host/sdhci-of-core.c deleted in mmc/m=
+mc-next and modified in HEAD. Version HEAD of drivers/mmc/host/sdhci-of-cor=
+e.c left in tree.
+$ git rm -f drivers/mmc/host/sdhci-of-core.c
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+$ git reset --hard HEAD^
+Merging refs/next/20110620/mfd
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+CONFLICT (delete/modify): arch/arm/mach-ep93xx/dma-m2p.c deleted in HEAD an=
+d modified in trivial/for-next. Version trivial/for-next of arch/arm/mach-e=
+p93xx/dma-m2p.c left in tree.
+CONFLICT (delete/modify): arch/s390/kvm/sie64a.S deleted in HEAD and modifi=
+ed in trivial/for-next. Version trivial/for-next of arch/s390/kvm/sie64a.S =
+left in tree.
+CONFLICT (content): Merge conflict in drivers/mtd/maps/pxa2xx-flash.c
+$ git rm -f arch/arm/mach-ep93xx/dma-m2p.c
+$ git rm -f arch/s390/kvm/sie64a.S
+Merging audit/for-next
+Merging suspend/linux-next
+Merging apm/for-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging gpio/gpio/next
+CONFLICT (content): Merge conflict in arch/arm/mach-ep93xx/Makefile
+CONFLICT (content): Merge conflict in drivers/gpio/gpio-ep93xx.c
+Merging tip/auto-latest
+Merging rcu/rcu/next
+Merging kvm/linux-next
+Merging oprofile/for-next
+Merging ptrace/ptrace
+Merging xen/upstream/xen
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging namespace/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+Merging staging/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/dh=
+d_linux.c
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/dh=
+d_sdio.c
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/wl=
+_cfg80211.h
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/wl=
+_iw.c
+CONFLICT (content): Merge conflict in drivers/staging/usbip/userspace/src/u=
+tils.h
+Merging bkl-config/config
+Merging tmem/linux-next
+Merging writeback/next
+Merging arm-dt/devicetree/arm-next
+Merging scsi-post-merge/merge-base:master
+
+--Signature=_Tue__21_Jun_2011_15_56_35_+1000_MGXTVOReGMVc9Mv1
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOADKTAAoJEDMEi1NhKgbsOyAH/jQk71/y1UYxIJzG0Hqp8SV2
+AY//Y2JZm18izEcSxY+7Jf/0nRM+rI8z0toCl5yWTzUa838luiCW0BsTVwxHHXlU
+DveFOn+YinKD4OPATSFMhg4WqiYFQVqdFed3FWbD1arEhFgGf9eyksIeXjTjybVo
+WnLtaILm049gZ5boZ7qxUI5NzUavQzlu7L85wJulsel+XDo8O2kK+Y0sfMxp8TKC
+w1XsfhJMl/gTGOqsAP60fLMrURxlEg8TnjAjwttE/PVZZn88VKgApHRUyG3Bg/32
+TnSNgqkONgUHxvF/ntw5PFzcLF5YLJJjlawD10dySa4Vo5q9RLauLFz2x2K4TXc=
+=U4zC
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__21_Jun_2011_15_56_35_+1000_MGXTVOReGMVc9Mv1--
