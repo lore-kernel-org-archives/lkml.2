@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab1FUKO4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 06:14:56 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35023 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755896Ab1FUKOw (ORCPT
+	id S1755873Ab1FUKRM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 06:17:12 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:36204 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754007Ab1FUKRL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 06:14:52 -0400
-Date: Tue, 21 Jun 2011 11:14:39 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: Re: [PATCHv4] x86, mrst: share APB timer code with other platforms
-Message-ID: <20110621101439.GH2647@pulham.picochip.com>
-References: <1307360587-302-1-git-send-email-jamie@jamieiles.com>
+	Tue, 21 Jun 2011 06:17:11 -0400
+Message-ID: <4E006FA0.7050508@ti.com>
+Date: Tue, 21 Jun 2011 15:47:04 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307360587-302-1-git-send-email-jamie@jamieiles.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH] ARM: smp: Fix the CPU hotplug race with scheduler.
+References: <20110620101438.GD2082@n2100.arm.linux.org.uk> <4DFF20B3.7010209@ti.com> <20110620104415.GF2082@n2100.arm.linux.org.uk> <4DFF255E.5030308@ti.com> <20110620111336.GG2082@n2100.arm.linux.org.uk> <4DFF2E37.8030602@ti.com> <20110620114019.GH2082@n2100.arm.linux.org.uk> <20110620142338.GL2082@n2100.arm.linux.org.uk> <4DFF5F29.2000904@ti.com> <4E005F92.8030208@ti.com> <20110621100057.GB23802@n2100.arm.linux.org.uk>
+In-Reply-To: <20110621100057.GB23802@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 12:43:07PM +0100, Jamie Iles wrote:
-> The APB timers are an IP block from Synopsys (DesignWare APB timers)
-> and are also found in other systems including ARM SoC's.  This patch
-> adds functions for creating clock_event_devices and clocksources from
-> APB timers but does not do the resource allocation.  This is handled
-> in a higher layer to allow the timers to be created from multiple
-> methods such as platform_devices.
-> 
-> Changes since v3:
-> 	- Add dw_apb_clocksource_unregister()
-> 	- Move kerneldoc to the implementation file
-> Changes since v2:
-> 	- Make eoi() for clock_event_device optional for x86 where eoi                                                                                                                                                                                                                                                         
-> 	  is handled in firmware.
-> Changes since v1:
-> 	- Use the correct timer for clocksource on x86
-> 	- Select the correct timer rating for x86
-> 	- Restore freerunning timer behaviour for oneshot event devices
-> 	- Reenable event irq correctly for hotplug
-> 
-> Cc: John Stultz <johnstul@us.ibm.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
-> ---
+On 6/21/2011 3:30 PM, Russell King - ARM Linux wrote:
+> On Tue, Jun 21, 2011 at 02:38:34PM +0530, Santosh Shilimkar wrote:
+>> Russell,
+>>
+>> On 6/20/2011 8:24 PM, Santosh Shilimkar wrote:
+>>> On 6/20/2011 7:53 PM, Russell King - ARM Linux wrote:
+>>>> So, as loops_per_jiffy is not local to this function, the compiler has
+>>>> to write out that zero value, before calling calibrate_delay_converge(),
+>>>> and loops_per_jiffy only becomes non-zero _after_
+>>>> calibrate_delay_converge()
+>>>> has returned. This opens the window and allows the spinlock debugging
+>>>> code to explode.
+>>>>
+>>>> This patch closes the window completely, by only writing to
+>>>> loops_per_jiffy
+>>>> only when we have a real value for it.
+>>>>
+>>>> This allows me to boot 3.0.0-rc3 on Versatile Express (4 CPU) whereas
+>>>> without this it fails with spinlock lockup and rcu problems.
+>>>>
+>>>> init/calibrate.c | 14 ++++++++------
+>>>> 1 files changed, 8 insertions(+), 6 deletions(-)
+>>>>
+>>> I am away from my board now. Will test this change.
+>> Have tested your change and it seems to fix the crash I
+>> was observing. Are you planning to send this fix for rc5?
+>
+> Yes.  I think sending CPUs into infinite loops in the spinlock code is
+> definitely sufficiently serious that it needs to go to Linus ASAP.
+> It'd be nice to have a tested-by line though.
+>
+Sure.
 
-Ping?
+>>> btw, the online-active race is still open even with this patch close
+>>> and should be fixed.
+>>>
+>> The only problem remains is waiting for active mask before
+>> marking CPU online. Shall I refresh my patch with only
+>> this change then ?
+>
+> I already have that as a separate change.
+Can you point me to both of these commits so that I have
+them in my tree for testing.
 
-Jamie
+Thanks for help.
+
+Regards
+Santosh
