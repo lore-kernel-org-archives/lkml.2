@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756300Ab1FULZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 07:25:26 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:64953 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755946Ab1FULZX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 07:25:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Pitre <nico@fluxnic.net>
-Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing the packed attribute
-Date: Tue, 21 Jun 2011 13:25:16 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        gregkh@suse.de, lkml <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>, Alexander Holler <holler@ahsoftware.de>
-References: <alpine.LFD.2.00.1106201306210.2142@xanadu.home> <201106202323.49513.arnd@arndb.de> <alpine.LFD.2.00.1106201814490.2142@xanadu.home>
-In-Reply-To: <alpine.LFD.2.00.1106201814490.2142@xanadu.home>
+	id S1751738Ab1FULgl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 07:36:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37739 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751234Ab1FULgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 07:36:39 -0400
+Date: Tue, 21 Jun 2011 13:36:29 +0200
+From: Frantisek Hrbata <fhrbata@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        CAI Qian <caiqian@redhat.com>, lwoodman@redhat.com
+Subject: Re: [PATCH] oom: add uid to "Killed process" message
+Message-ID: <20110621113629.GA2758@dhcp-26-164.brq.redhat.com>
+Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
+References: <1308567876-23581-1-git-send-email-fhrbata@redhat.com>
+ <alpine.DEB.2.00.1106201409090.2639@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106211325.16777.arnd@arndb.de>
-X-Provags-ID: V02:K0:VSwoJR5QfMUYngJHx+X8ZX5f/XZSH1yZfgWqYhv31gi
- zQROxUMSt9vwf9Z065jKGgt1p/+3AQZB7rsWBMlETzkEw8Dx8m
- 8QZSNmwsrIphXgNylz9//U/pi2jnFrHReMIx2Kvy8aEfdUoGNP
- 3vJt1uxlLIvsvXyU4QXuXpJe1ReFnV87ycLWigddvpMvNULj0X
- fNy2sYcTWNrxJFtj9H/Qg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1106201409090.2639@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 21 June 2011, Nicolas Pitre wrote:
-> On Mon, 20 Jun 2011, Arnd Bergmann wrote:
+On Mon, Jun 20, 2011 at 02:09:19PM -0700, David Rientjes wrote:
+> On Mon, 20 Jun 2011, Frantisek Hrbata wrote:
+> 
+> > Add user id to the oom killer's "Killed process" message, so the user of the
+> > killed process can be identified.
+> > 
+> 
+> Notified in what way?  Unless you are using the memory controller, there's 
+> no userspace notification that an oom event has happened so nothing would 
+> know to scrape the kernel log for this information.
 
-> This example is flawed. The DMA API documentation already forbids DMA to 
-> the stack because of cache line sharing issues.  If you declare your 
-> buffer outside of the function body, the compiler can't optimize away 
-> the buffer store anymore, and this example works as expected without any 
-> memory clobber.
+Agreed, but this is not primary about notification, but about the availability of
+the information at all, even if it's just in the kernel log and there is no
+realtime notification about it. If I'm not missing anything, now you are not
+notified if some process is killed neither(unless as you mentioned, you use
+eventfd for memory.oom_control). But you can always inspect the kernel log
+afterwards when you find out that some process is not running and you want to
+know what happened. And here you have the information that the process was
+killed by the oom killer.
 
-Ok, another example, even simpler:
+I guess the uid of the killed process can be identified from the dump_tasks
+output, where it is presented along with other info. I think it is handy
+to have the uid info directly in the "Killed process" message. 
 
-int f(int *dma_buf, volatile int *mmio_reg)
-{
-        (void) *mmio_reg; /* wait for DMA to complete */
-        return *dma_buf;
-}
+This is used/requested by one of our customers and since I think it's a good
+idea to have the uid info presented, I posted the patch here to see what do you
+think about it.
 
+Many thanks
 
-gcc-4.4, 4.5 and 4.6 all turn this into:
-
-        ldr     r0, [r0, #0]
-        ldr     r3, [r1, #0]
-        bx      lr
-
-which means that the dma_buf variable is dereferenced before the
-volatile mmio_reg variable, which opens up a race: An interrupt may have
-signalled us that a DMA is in progress, so we read a MMIO register from
-the device (this is guaranteed to flush the DMA on PCI and similar buses).
-If we read the dma_buf before we read the mmio register, the data we get
-back may be stale.
-
-Adding a barrier() between the two turns the assembly into the expected
-
-        ldr     r3, [r1, #0]
-        ldr     r0, [r0, #0]
-        bx      lr
+> 
+> We've had a long-time desire for an oom notifier, not only at the time of 
+> oom but when approaching it with configurable thresholds, that would 
+> wakeup a userspace daemon that might be polling on notifier.  That seems 
+> more useful for realtime notification of an oom event rather than relying 
+> on the kernel log?
 
 
-	Arnd
+-- 
+Frantisek Hrbata
