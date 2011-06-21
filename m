@@ -1,118 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756669Ab1FUMYI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 08:24:08 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:33406 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754858Ab1FUMWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756655Ab1FUMYF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 08:24:05 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:51706 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754910Ab1FUMWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 21 Jun 2011 08:22:43 -0400
-Message-Id: <20110621122242.497700003@sgi.com>
+Message-Id: <20110621122242.630995969@sgi.com>
 User-Agent: quilt/0.47-1
-Date: Tue, 21 Jun 2011 07:21:29 -0500
+Date: Tue, 21 Jun 2011 07:21:30 -0500
 From: cpw@sgi.com
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, x86@kernel.org
-Subject: [patch 4/8 v5] x86, UV: correct reset_with_ipi()
+Subject: [patch 5/8 v5] x86, UV: rename hubmask to pnmask
 References: <20110621122125.688884227@sgi.com>
-Content-Disposition: inline; filename=tlb_uv_ipiresetpnode
+Content-Disposition: inline; filename=tlb_uv_ipiresetpnmask
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix reset_with_ipi() to look up a cpu for a blade based on the
-distribution map being indexed by the potentially sparsely numbered pnode.
-
-This patch is critical to tlb shootdown on a partitioned UV system, or one
-with nonconsecutive blade numbers.
+Rename 'bau_targ_hubmask' to 'pnmask' for clarity.
 
 Signed-off-by: Cliff Wickman <cpw@sgi.com>
 ---
 
-The distribution map bits represent pnodes relative to the partition base
-pnode. Previous to this patch it had been assuming bits based on 0-based,
-consecutive blade ids.
+The BAU distribution bit mask is indexed by pnode number, not hub or
+blade number.  This important fact is not clear while the mask is
+called a 'hubmask'.
 
- arch/x86/platform/uv/tlb_uv.c |   33 +++++++++++++++++++++------------
- 1 file changed, 21 insertions(+), 12 deletions(-)
+ arch/x86/include/asm/uv/uv_bau.h |   12 ++++++------
+ arch/x86/platform/uv/tlb_uv.c    |    5 ++---
+ 2 files changed, 8 insertions(+), 9 deletions(-)
 
+Index: linux/arch/x86/include/asm/uv/uv_bau.h
+===================================================================
+--- linux.orig/arch/x86/include/asm/uv/uv_bau.h
++++ linux/arch/x86/include/asm/uv/uv_bau.h
+@@ -183,7 +183,7 @@
+  * 'base_dest_nasid' field of the header corresponds to the
+  * destination nodeID associated with that specified bit.
+  */
+-struct bau_targ_hubmask {
++struct pnmask {
+ 	unsigned long		bits[BITS_TO_LONGS(UV_DISTRIBUTION_SIZE)];
+ };
+ 
+@@ -314,7 +314,7 @@ struct bau_msg_header {
+  * Should be 64 bytes
+  */
+ struct bau_desc {
+-	struct bau_targ_hubmask	distribution;
++	struct pnmask			distribution;
+ 	/*
+ 	 * message template, consisting of header and payload:
+ 	 */
+@@ -596,20 +596,20 @@ static inline void write_mmr_data_config
+ 	uv_write_global_mmr64(pnode, UVH_BAU_DATA_CONFIG, mr);
+ }
+ 
+-static inline int bau_uvhub_isset(int uvhub, struct bau_targ_hubmask *dstp)
++static inline int bau_uvhub_isset(int uvhub, struct pnmask *dstp)
+ {
+ 	return constant_test_bit(uvhub, &dstp->bits[0]);
+ }
+-static inline void bau_uvhub_set(int pnode, struct bau_targ_hubmask *dstp)
++static inline void bau_uvhub_set(int pnode, struct pnmask *dstp)
+ {
+ 	__set_bit(pnode, &dstp->bits[0]);
+ }
+-static inline void bau_uvhubs_clear(struct bau_targ_hubmask *dstp,
++static inline void bau_uvhubs_clear(struct pnmask *dstp,
+ 				    int nbits)
+ {
+ 	bitmap_zero(&dstp->bits[0], nbits);
+ }
+-static inline int bau_uvhub_weight(struct bau_targ_hubmask *dstp)
++static inline int bau_uvhub_weight(struct pnmask *dstp)
+ {
+ 	return bitmap_weight((unsigned long *)&dstp->bits[0],
+ 				UV_DISTRIBUTION_SIZE);
 Index: linux/arch/x86/platform/uv/tlb_uv.c
 ===================================================================
 --- linux.orig/arch/x86/platform/uv/tlb_uv.c
 +++ linux/arch/x86/platform/uv/tlb_uv.c
-@@ -296,14 +296,18 @@ static void bau_process_message(struct m
- }
- 
- /*
-- * Determine the first cpu on a uvhub.
-+ * Determine the first cpu on a pnode.
-  */
--static int uvhub_to_first_cpu(int uvhub)
-+static int pnode_to_first_cpu(int pnode, struct bau_control *smaster)
- {
- 	int cpu;
--	for_each_present_cpu(cpu)
--		if (uvhub == uv_cpu_to_blade_id(cpu))
-+	struct hub_and_pnode *hpp;
-+
-+	for_each_present_cpu(cpu) {
-+		hpp = &smaster->thp[cpu];
-+		if (pnode == hpp->pnode)
- 			return cpu;
-+	}
- 	return -1;
- }
- 
-@@ -366,23 +370,28 @@ static void do_reset(void *ptr)
+@@ -370,8 +370,7 @@ static void do_reset(void *ptr)
   * Use IPI to get all target uvhubs to release resources held by
   * a given sending cpu number.
   */
--static void reset_with_ipi(struct bau_targ_hubmask *distribution, int sender)
-+static void reset_with_ipi(struct bau_targ_hubmask *distribution,
-+						struct bau_control *bcp)
+-static void reset_with_ipi(struct bau_targ_hubmask *distribution,
+-						struct bau_control *bcp)
++static void reset_with_ipi(struct pnmask *distribution, struct bau_control *bcp)
  {
--	int uvhub;
-+	int pnode;
-+	int apnode;
- 	int maskbits;
- 	cpumask_t mask;
-+	int sender = bcp->cpu;
-+	struct bau_control *smaster = bcp->socket_master;
- 	struct reset_args reset_args;
- 
+ 	int pnode;
+ 	int apnode;
+@@ -384,7 +383,7 @@ static void reset_with_ipi(struct bau_ta
  	reset_args.sender = sender;
  	cpus_clear(mask);
  	/* find a single cpu for each uvhub in this distribution mask */
- 	maskbits = sizeof(struct bau_targ_hubmask) * BITSPERBYTE;
--	for (uvhub = 0; uvhub < maskbits; uvhub++) {
-+	/* each bit is a pnode relative to the partition base pnode */
-+	for (pnode = 0; pnode < maskbits; pnode++) {
+-	maskbits = sizeof(struct bau_targ_hubmask) * BITSPERBYTE;
++	maskbits = sizeof(struct pnmask) * BITSPERBYTE;
+ 	/* each bit is a pnode relative to the partition base pnode */
+ 	for (pnode = 0; pnode < maskbits; pnode++) {
  		int cpu;
--		if (!bau_uvhub_isset(uvhub, distribution))
-+		if (!bau_uvhub_isset(pnode, distribution))
- 			continue;
--		/* find a cpu for this uvhub */
--		cpu = uvhub_to_first_cpu(uvhub);
-+		apnode = pnode + bcp->partition_base_pnode;
-+		cpu = pnode_to_first_cpu(apnode, smaster);
- 		cpu_set(cpu, mask);
- 	}
- 
-@@ -604,7 +613,7 @@ static void destination_plugged(struct b
- 		quiesce_local_uvhub(hmaster);
- 
- 		spin_lock(&hmaster->queue_lock);
--		reset_with_ipi(&bau_desc->distribution, bcp->cpu);
-+		reset_with_ipi(&bau_desc->distribution, bcp);
- 		spin_unlock(&hmaster->queue_lock);
- 
- 		end_uvhub_quiesce(hmaster);
-@@ -626,7 +635,7 @@ static void destination_timeout(struct b
- 		quiesce_local_uvhub(hmaster);
- 
- 		spin_lock(&hmaster->queue_lock);
--		reset_with_ipi(&bau_desc->distribution, bcp->cpu);
-+		reset_with_ipi(&bau_desc->distribution, bcp);
- 		spin_unlock(&hmaster->queue_lock);
- 
- 		end_uvhub_quiesce(hmaster);
 
