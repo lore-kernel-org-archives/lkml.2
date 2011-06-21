@@ -1,446 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711Ab1FUNgp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 09:36:45 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63884 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756679Ab1FUNgm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 09:36:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=QzrwtTfs4gjjgNNvml6DZ+i2Xa8vT+nK6Q6TnpttZqcP9Iw8/ilcV5EGJQHQrpOzbI
-         LVsSR6B7kF7oj0RSEbxqRbuiCFFV2aFz6QLI6W2f2wyySkt0oQP9SKfrasOn44KwG59z
-         ytUcEgGMIWqySi+NK55aaezRH8CWbq+Q4d75I=
-From: Nai Xia <nai.xia@gmail.com>
-Reply-To: nai.xia@gmail.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 2/2 V2] ksm: take dirty bit as reference to avoid volatile pages scanning
-Date: Tue, 21 Jun 2011 21:36:17 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.39; KDE/4.5.5; i686; ; )
-Cc: Izik Eidus <izik.eidus@ravellosystems.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
-        Rik van Riel <riel@redhat.com>, "linux-mm" <linux-mm@kvack.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <201106212055.25400.nai.xia@gmail.com>
-In-Reply-To: <201106212055.25400.nai.xia@gmail.com>
+	id S1751833Ab1FUOjs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 10:39:48 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51960 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750883Ab1FUOjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 10:39:44 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: linux-input@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>
+Subject: [PATCH v6 00/18] MFD/ASoC/Input: TWL4030/TWL60X0 changes
+Date: Tue, 21 Jun 2011 16:38:58 +0300
+Message-ID: <1308663556-29120-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.5.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106212136.17445.nai.xia@gmail.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduced ksm_page_changed() to reference the dirty bit of a pte. We clear 
-the dirty bit for each pte scanned but don't flush the tlb. For a huge page, 
-if one of the subpage has changed, we try to skip the whole huge page 
-assuming(this is true by now) that ksmd linearly scans the address space.
+Hello,
 
-A NEW_FLAG is also introduced as a status of rmap_item to make ksmd scan
-more aggressively for new VMAs - only skip the pages considered to be volatile
-by the dirty bits. This can be enabled/disabled through KSM's sysfs interface.
+Changes since v5:
+- Use alloc_workqueue in the twl6040-vibra driver (comment from Tejun Heo)
+- Allow user to change the headset power mode, but if the change is not allowed
+  by the use case the change is not written to the HW (comment from Mark Brown)
 
-Signed-off-by: Nai Xia <nai.xia@gmail.com>
-Acked-by: Izik Eidus <izik.eidus@ravellosystems.com>
+Mark: I have added your acks for the patches, except for patch 15, where you
+requested a change.
+
+Intro message from the v5 series:
+The series will do five major things, and they are in one series, because they
+pretty much depending on each other, so it is easier to handle them together.
+
+1. Move the common pmic related configurations out from the board files.
+New twl-common.c/h file has been created for this purpose.
+OMAP3 board files received two patches (pdata, and regualtor changes), OMAP4
+board files has been changed with one patch.
+
+2. Rename the twl4030-codec MFD driver to twl4030-audio
+Since the ASoC multicomponent introduction (2.6.37) the twl4030-codec MFD dirver
+had been using twl4030-audio to register (twl4030-codec is the ASoC codec
+driver). The documentation refers to this part of twl as audio block, so it is
+better to rename the driver as well to avoid confusion.
+
+3. Introduction of MFD driver for twl6040.
+The TWL6040 audio IC has codec and vibra functionality.
+Convert the existing ASoC codec driver to use the new MFD driver's interface.
+
+4. Vibrator driver for TWL6040 (Input/ForceFeedback driver)
+The driver itself, and support for the vibrators in SDP4430 board.
+
+5. Updates for twl6040 ASoC codec driver
+HS ramp configuration, new ABE dais, updated sample rate constraints, SDP4430
+configuration.
+
+Regards,
+Peter
+
 ---
- mm/ksm.c |  189 ++++++++++++++++++++++++++++++++++++++++++++++++++-----------
- 1 files changed, 155 insertions(+), 34 deletions(-)
+Axel Castaneda Gonzalez (1):
+  ASoC: twl6040: Configure ramp step based on platform
 
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 9a68b0c..021ae6f 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -108,6 +108,7 @@ struct ksm_scan {
- 	unsigned long address;
- 	struct rmap_item **rmap_list;
- 	unsigned long seqnr;
-+	unsigned long huge_skip; /* if a huge pte is dirty, skip subpages */
- };
- 
- /**
-@@ -151,6 +152,7 @@ struct rmap_item {
- #define SEQNR_MASK	0x0ff	/* low bits of unstable tree seqnr */
- #define UNSTABLE_FLAG	0x100	/* is a node of the unstable tree */
- #define STABLE_FLAG	0x200	/* is listed from the stable tree */
-+#define NEW_FLAG	0x400	/* this rmap_item is new */
- 
- /* The stable and unstable tree heads */
- static struct rb_root root_stable_tree = RB_ROOT;
-@@ -189,6 +191,13 @@ static unsigned int ksm_thread_pages_to_scan = 100;
- /* Milliseconds ksmd should sleep between batches */
- static unsigned int ksm_thread_sleep_millisecs = 20;
- 
-+/*
-+ * Skip page changed test and merge pages the first time we scan a page, this
-+ * is useful for speeding up the merging of very large VMAs, since the
-+ * scanning also allocs memory.
-+ */
-+static unsigned int ksm_merge_at_once = 0;
-+
- #define KSM_RUN_STOP	0
- #define KSM_RUN_MERGE	1
- #define KSM_RUN_UNMERGE	2
-@@ -374,10 +383,15 @@ static int break_ksm(struct vm_area_struct *vma, unsigned long addr)
- 	return (ret & VM_FAULT_OOM) ? -ENOMEM : 0;
- }
- 
-+static inline unsigned long get_address(struct rmap_item *rmap_item)
-+{
-+	return rmap_item->address & PAGE_MASK;
-+}
-+
- static void break_cow(struct rmap_item *rmap_item)
- {
- 	struct mm_struct *mm = rmap_item->mm;
--	unsigned long addr = rmap_item->address;
-+	unsigned long addr = get_address(rmap_item);
- 	struct vm_area_struct *vma;
- 
- 	/*
-@@ -416,7 +430,7 @@ static struct page *page_trans_compound_anon(struct page *page)
- static struct page *get_mergeable_page(struct rmap_item *rmap_item)
- {
- 	struct mm_struct *mm = rmap_item->mm;
--	unsigned long addr = rmap_item->address;
-+	unsigned long addr = get_address(rmap_item);
- 	struct vm_area_struct *vma;
- 	struct page *page;
- 
-@@ -454,7 +468,7 @@ static void remove_node_from_stable_tree(struct stable_node *stable_node)
- 		else
- 			ksm_pages_shared--;
- 		put_anon_vma(rmap_item->anon_vma);
--		rmap_item->address &= PAGE_MASK;
-+		rmap_item->address &= ~STABLE_FLAG;
- 		cond_resched();
- 	}
- 
-@@ -542,7 +556,7 @@ static void remove_rmap_item_from_tree(struct rmap_item *rmap_item)
- 			ksm_pages_shared--;
- 
- 		put_anon_vma(rmap_item->anon_vma);
--		rmap_item->address &= PAGE_MASK;
-+		rmap_item->address &= ~STABLE_FLAG;
- 
- 	} else if (rmap_item->address & UNSTABLE_FLAG) {
- 		unsigned char age;
-@@ -554,12 +568,14 @@ static void remove_rmap_item_from_tree(struct rmap_item *rmap_item)
- 		 * than left over from before.
- 		 */
- 		age = (unsigned char)(ksm_scan.seqnr - rmap_item->address);
--		BUG_ON(age > 1);
-+		BUG_ON (age > 1);
-+
- 		if (!age)
- 			rb_erase(&rmap_item->node, &root_unstable_tree);
- 
- 		ksm_pages_unshared--;
--		rmap_item->address &= PAGE_MASK;
-+		rmap_item->address &= ~UNSTABLE_FLAG;
-+		rmap_item->address &= ~SEQNR_MASK;
- 	}
- out:
- 	cond_resched();		/* we're called from many long loops */
-@@ -705,13 +721,14 @@ static int write_protect_page(struct vm_area_struct *vma, struct page *page,
- 	spinlock_t *ptl;
- 	int swapped;
- 	int err = -EFAULT;
-+	int need_pte_unmap;
- 
- 	addr = page_address_in_vma(page, vma);
- 	if (addr == -EFAULT)
- 		goto out;
- 
- 	BUG_ON(PageTransCompound(page));
--	ptep = page_check_address(page, mm, addr, &ptl, 0);
-+	ptep = page_check_address(page, mm, addr, &ptl, 0, &need_pte_unmap);
- 	if (!ptep)
- 		goto out;
- 
-@@ -747,7 +764,7 @@ static int write_protect_page(struct vm_area_struct *vma, struct page *page,
- 	err = 0;
- 
- out_unlock:
--	pte_unmap_unlock(ptep, ptl);
-+	page_check_address_unmap_unlock(ptl, ptep, need_pte_unmap);
- out:
- 	return err;
- }
-@@ -923,12 +940,13 @@ static int try_to_merge_with_ksm_page(struct rmap_item *rmap_item,
- 	struct mm_struct *mm = rmap_item->mm;
- 	struct vm_area_struct *vma;
- 	int err = -EFAULT;
-+	unsigned long address = get_address(rmap_item);
- 
- 	down_read(&mm->mmap_sem);
- 	if (ksm_test_exit(mm))
- 		goto out;
--	vma = find_vma(mm, rmap_item->address);
--	if (!vma || vma->vm_start > rmap_item->address)
-+	vma = find_vma(mm, address);
-+	if (!vma || vma->vm_start > address)
- 		goto out;
- 
- 	err = try_to_merge_one_page(vma, page, kpage);
-@@ -1159,6 +1177,94 @@ static void stable_tree_append(struct rmap_item *rmap_item,
- 		ksm_pages_shared++;
- }
- 
-+static inline unsigned long get_huge_end_addr(unsigned long address)
-+{
-+	return (address & HPAGE_PMD_MASK) + HPAGE_SIZE;
-+}
-+
-+static inline int ksm_ptep_test_and_clear_dirty(pte_t *ptep)
-+{
-+	int ret = 0;
-+
-+	if (pte_dirty(*ptep))
-+		ret = test_and_clear_bit(_PAGE_BIT_DIRTY,
-+					 (unsigned long *) &ptep->pte);
-+
-+	return ret;
-+}
-+
-+#define ksm_ptep_test_and_clear_dirty_notify(__mm, __address, __ptep)	\
-+({									\
-+	int __dirty;							\
-+	struct mm_struct *___mm = __mm;					\
-+	unsigned long ___address = __address;				\
-+	__dirty = ksm_ptep_test_and_clear_dirty(__ptep);		\
-+	__dirty |= mmu_notifier_test_and_clear_dirty(___mm,		\
-+						     ___address);	\
-+	__dirty;							\
-+})
-+
-+/*
-+ * ksm_page_changed - take the dirty bit of the pte as a hint for volatile
-+ * pages. We clear the dirty bit for each pte scanned but don't flush the
-+ * tlb. For huge pages, if one of the subpage has changed, we try to skip
-+ * the whole huge page.
-+ */
-+static int ksm_page_changed(struct page *page, struct rmap_item *rmap_item)
-+{
-+	int ret = 1;
-+	unsigned long address = get_address(rmap_item);
-+	struct mm_struct *mm = rmap_item->mm;
-+	pte_t *ptep;
-+	spinlock_t *ptl;
-+	int need_pte_unmap;
-+	unsigned int checksum;
-+
-+	/* If the the ptes are not updated by guest OS, we rely on checksum. */
-+	if (!mmu_notifier_dirty_update(mm)) {
-+		checksum = calc_checksum(page);
-+		if (rmap_item->oldchecksum != checksum)
-+			rmap_item->oldchecksum = checksum;
-+		else
-+			ret = 0;
-+		goto out;
-+	}
-+
-+	if (ksm_scan.huge_skip) {
-+		/* in process of skipping a huge page */
-+		if (ksm_scan.mm_slot->mm == rmap_item->mm &&
-+		    PageTail(page) && address < ksm_scan.huge_skip) {
-+			ret = 1;
-+			goto out;
-+		} else {
-+			ksm_scan.huge_skip = 0;
-+		}
-+	}
-+
-+	ptep = page_check_address(page, mm, address, &ptl, 0, &need_pte_unmap);
-+	if (!ptep)
-+		goto out;
-+
-+	if (ksm_ptep_test_and_clear_dirty_notify(mm, address, ptep)) {
-+		set_page_dirty(page);
-+		if (PageTransCompound(page))
-+			ksm_scan.huge_skip = get_huge_end_addr(address);
-+	} else {
-+		ret = 0;
-+	}
-+
-+	page_check_address_unmap_unlock(ptl, ptep, need_pte_unmap);
-+
-+out:
-+	/* This is simply to speed up merging in the first scan. */
-+	if (ksm_merge_at_once && rmap_item->address & NEW_FLAG) {
-+		rmap_item->address &= ~NEW_FLAG;
-+		ret = 0;
-+	}
-+
-+	return ret;
-+}
-+
- /*
-  * cmp_and_merge_page - first see if page can be merged into the stable tree;
-  * if not, compare checksum to previous and if it's the same, see if page can
-@@ -1174,7 +1280,6 @@ static void cmp_and_merge_page(struct page *page, struct rmap_item *rmap_item)
- 	struct page *tree_page = NULL;
- 	struct stable_node *stable_node;
- 	struct page *kpage;
--	unsigned int checksum;
- 	int err;
- 
- 	remove_rmap_item_from_tree(rmap_item);
-@@ -1196,17 +1301,8 @@ static void cmp_and_merge_page(struct page *page, struct rmap_item *rmap_item)
- 		return;
- 	}
- 
--	/*
--	 * If the hash value of the page has changed from the last time
--	 * we calculated it, this page is changing frequently: therefore we
--	 * don't want to insert it in the unstable tree, and we don't want
--	 * to waste our time searching for something identical to it there.
--	 */
--	checksum = calc_checksum(page);
--	if (rmap_item->oldchecksum != checksum) {
--		rmap_item->oldchecksum = checksum;
-+	if (ksm_page_changed(page, rmap_item))
- 		return;
--	}
- 
- 	tree_rmap_item =
- 		unstable_tree_search_insert(rmap_item, page, &tree_page);
-@@ -1252,9 +1348,9 @@ static struct rmap_item *get_next_rmap_item(struct mm_slot *mm_slot,
- 
- 	while (*rmap_list) {
- 		rmap_item = *rmap_list;
--		if ((rmap_item->address & PAGE_MASK) == addr)
-+		if (get_address(rmap_item) == addr)
- 			return rmap_item;
--		if (rmap_item->address > addr)
-+		if (get_address(rmap_item) > addr)
- 			break;
- 		*rmap_list = rmap_item->rmap_list;
- 		remove_rmap_item_from_tree(rmap_item);
-@@ -1266,6 +1362,7 @@ static struct rmap_item *get_next_rmap_item(struct mm_slot *mm_slot,
- 		/* It has already been zeroed */
- 		rmap_item->mm = mm_slot->mm;
- 		rmap_item->address = addr;
-+		rmap_item->address |= NEW_FLAG;
- 		rmap_item->rmap_list = *rmap_list;
- 		*rmap_list = rmap_item;
- 	}
-@@ -1608,12 +1705,12 @@ again:
- 		struct anon_vma *anon_vma = rmap_item->anon_vma;
- 		struct anon_vma_chain *vmac;
- 		struct vm_area_struct *vma;
-+		unsigned long address = get_address(rmap_item);
- 
- 		anon_vma_lock(anon_vma);
- 		list_for_each_entry(vmac, &anon_vma->head, same_anon_vma) {
- 			vma = vmac->vma;
--			if (rmap_item->address < vma->vm_start ||
--			    rmap_item->address >= vma->vm_end)
-+			if (address < vma->vm_start || address >= vma->vm_end)
- 				continue;
- 			/*
- 			 * Initially we examine only the vma which covers this
-@@ -1627,8 +1724,8 @@ again:
- 			if (memcg && !mm_match_cgroup(vma->vm_mm, memcg))
- 				continue;
- 
--			referenced += page_referenced_one(page, vma,
--				rmap_item->address, &mapcount, vm_flags);
-+			referenced += page_referenced_one(page, vma, address,
-+						&mapcount, vm_flags);
- 			if (!search_new_forks || !mapcount)
- 				break;
- 		}
-@@ -1661,12 +1758,12 @@ again:
- 		struct anon_vma *anon_vma = rmap_item->anon_vma;
- 		struct anon_vma_chain *vmac;
- 		struct vm_area_struct *vma;
-+		unsigned long address = get_address(rmap_item);
- 
- 		anon_vma_lock(anon_vma);
- 		list_for_each_entry(vmac, &anon_vma->head, same_anon_vma) {
- 			vma = vmac->vma;
--			if (rmap_item->address < vma->vm_start ||
--			    rmap_item->address >= vma->vm_end)
-+			if (address < vma->vm_start || address >= vma->vm_end)
- 				continue;
- 			/*
- 			 * Initially we examine only the vma which covers this
-@@ -1677,8 +1774,7 @@ again:
- 			if ((rmap_item->mm == vma->vm_mm) == search_new_forks)
- 				continue;
- 
--			ret = try_to_unmap_one(page, vma,
--					rmap_item->address, flags);
-+			ret = try_to_unmap_one(page, vma, address, flags);
- 			if (ret != SWAP_AGAIN || !page_mapped(page)) {
- 				anon_vma_unlock(anon_vma);
- 				goto out;
-@@ -1713,12 +1809,12 @@ again:
- 		struct anon_vma *anon_vma = rmap_item->anon_vma;
- 		struct anon_vma_chain *vmac;
- 		struct vm_area_struct *vma;
-+		unsigned long address = get_address(rmap_item);
- 
- 		anon_vma_lock(anon_vma);
- 		list_for_each_entry(vmac, &anon_vma->head, same_anon_vma) {
- 			vma = vmac->vma;
--			if (rmap_item->address < vma->vm_start ||
--			    rmap_item->address >= vma->vm_end)
-+			if (address < vma->vm_start || address >= vma->vm_end)
- 				continue;
- 			/*
- 			 * Initially we examine only the vma which covers this
-@@ -1729,7 +1825,7 @@ again:
- 			if ((rmap_item->mm == vma->vm_mm) == search_new_forks)
- 				continue;
- 
--			ret = rmap_one(page, vma, rmap_item->address, arg);
-+			ret = rmap_one(page, vma, address, arg);
- 			if (ret != SWAP_AGAIN) {
- 				anon_vma_unlock(anon_vma);
- 				goto out;
-@@ -1872,6 +1968,30 @@ static ssize_t pages_to_scan_store(struct kobject *kobj,
- }
- KSM_ATTR(pages_to_scan);
- 
-+static ssize_t merge_at_once_show(struct kobject *kobj,
-+				  struct kobj_attribute *attr, char *buf)
-+{
-+	return sprintf(buf, "%u\n", ksm_merge_at_once);
-+}
-+
-+static ssize_t merge_at_once_store(struct kobject *kobj,
-+				   struct kobj_attribute *attr,
-+				   const char *buf, size_t count)
-+{
-+	int err;
-+	unsigned long merge_at_once;
-+
-+	err = strict_strtoul(buf, 10, &merge_at_once);
-+	if (err || merge_at_once > UINT_MAX)
-+		return -EINVAL;
-+
-+	ksm_merge_at_once = merge_at_once;
-+
-+	return count;
-+}
-+KSM_ATTR(merge_at_once);
-+
-+
- static ssize_t run_show(struct kobject *kobj, struct kobj_attribute *attr,
- 			char *buf)
- {
-@@ -1975,6 +2095,7 @@ static struct attribute *ksm_attrs[] = {
- 	&pages_unshared_attr.attr,
- 	&pages_volatile_attr.attr,
- 	&full_scans_attr.attr,
-+	&merge_at_once_attr.attr,
- 	NULL,
- };
- 
+Liam Girdwood (3):
+  ASoC: twl6040: add all ABE DAIs
+  ASoC: twl6040: Support other sample rates in constraints.
+  ASoC: twl6040: set default constraints.
+
+Misael Lopez Cruz (5):
+  mfd: twl6040: Add initial support
+  ASoC: twl6040: Convert into TWL6040 MFD child
+  input: Add initial support for TWL6040 vibrator
+  ASoC: twl6040: Remove pll and headset mode dependency
+  OMAP4: SDP4430: Add twl6040 codec platform support
+
+Peter Ujfalusi (9):
+  OMAP: New twl-common for common TWL configuration
+  OMAP4: Move common twl6030 configuration to twl-common
+  OMAP3: Move common twl configuration to twl-common
+  OMAP3: Move common regulator configuration to twl-common
+  MFD: twl4030-codec: Rename internals from codec to audio
+  MFD: twl4030-codec -> twl4030-audio: Rename the driver
+  MFD: twl4030-audio: Rename platform data
+  MFD: twl6040: Change platform data for soc codec driver
+  OMAP4: SDP4430: Add twl6040 vibrator platform support
+
+ arch/arm/mach-omap2/Makefile                       |    2 +-
+ arch/arm/mach-omap2/board-3430sdp.c                |   89 +---
+ arch/arm/mach-omap2/board-4430sdp.c                |  187 ++----
+ arch/arm/mach-omap2/board-cm-t35.c                 |   48 +--
+ arch/arm/mach-omap2/board-devkit8000.c             |   37 +--
+ arch/arm/mach-omap2/board-igep0020.c               |   44 +--
+ arch/arm/mach-omap2/board-ldp.c                    |   15 +-
+ arch/arm/mach-omap2/board-omap3beagle.c            |   60 +--
+ arch/arm/mach-omap2/board-omap3evm.c               |   67 +--
+ arch/arm/mach-omap2/board-omap3pandora.c           |   59 +--
+ arch/arm/mach-omap2/board-omap3stalker.c           |   70 +--
+ arch/arm/mach-omap2/board-omap3touchbook.c         |   57 +--
+ arch/arm/mach-omap2/board-omap4panda.c             |  149 +-----
+ arch/arm/mach-omap2/board-overo.c                  |   59 +--
+ arch/arm/mach-omap2/board-rm680.c                  |    8 +-
+ arch/arm/mach-omap2/board-rx51-peripherals.c       |   44 +--
+ arch/arm/mach-omap2/board-zoom-peripherals.c       |   88 +---
+ arch/arm/mach-omap2/common-board-devices.c         |   21 -
+ arch/arm/mach-omap2/common-board-devices.h         |   26 +-
+ arch/arm/mach-omap2/twl-common.c                   |  304 ++++++++++
+ arch/arm/mach-omap2/twl-common.h                   |   59 ++
+ arch/arm/plat-omap/include/plat/irqs.h             |   12 +-
+ drivers/input/misc/Kconfig                         |   13 +-
+ drivers/input/misc/Makefile                        |    1 +
+ drivers/input/misc/twl4030-vibra.c                 |   12 +-
+ drivers/input/misc/twl6040-vibra.c                 |  416 +++++++++++++
+ drivers/mfd/Kconfig                                |    8 +-
+ drivers/mfd/Makefile                               |    3 +-
+ drivers/mfd/twl-core.c                             |   13 +-
+ drivers/mfd/twl4030-audio.c                        |  277 +++++++++
+ drivers/mfd/twl4030-codec.c                        |  277 ---------
+ drivers/mfd/twl6040-core.c                         |  601 +++++++++++++++++++
+ drivers/mfd/twl6040-irq.c                          |  205 +++++++
+ include/linux/i2c/twl.h                            |   25 +-
+ .../linux/mfd/{twl4030-codec.h => twl4030-audio.h} |   16 +-
+ include/linux/mfd/twl6040.h                        |  261 ++++++++
+ sound/soc/codecs/Kconfig                           |    3 +-
+ sound/soc/codecs/twl4030.c                         |   22 +-
+ sound/soc/codecs/twl6040.c                         |  628 ++++++++------------
+ sound/soc/codecs/twl6040.h                         |  118 ----
+ sound/soc/omap/sdp3430.c                           |    2 +-
+ sound/soc/omap/sdp4430.c                           |    2 +
+ sound/soc/omap/zoom2.c                             |    2 +-
+ 43 files changed, 2635 insertions(+), 1775 deletions(-)
+ create mode 100644 arch/arm/mach-omap2/twl-common.c
+ create mode 100644 arch/arm/mach-omap2/twl-common.h
+ create mode 100644 drivers/input/misc/twl6040-vibra.c
+ create mode 100644 drivers/mfd/twl4030-audio.c
+ delete mode 100644 drivers/mfd/twl4030-codec.c
+ create mode 100644 drivers/mfd/twl6040-core.c
+ create mode 100644 drivers/mfd/twl6040-irq.c
+ rename include/linux/mfd/{twl4030-codec.h => twl4030-audio.h} (96%)
+ create mode 100644 include/linux/mfd/twl6040.h
+
+-- 
+1.7.5.3
+
