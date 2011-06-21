@@ -1,285 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231Ab1FUEox (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 00:44:53 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:42823 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751567Ab1FUEow (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 00:44:52 -0400
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-To: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        alexander.stein@systec-electronic.com
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH v3] pch_gpio: Support interrupt function
-Date: Tue, 21 Jun 2011 13:44:28 +0900
-Message-Id: <1308631468-2376-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1751853Ab1FUEoa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 00:44:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35238 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750901Ab1FUEo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 00:44:29 -0400
+Subject: Re: [GIT PULL linux-firmware.git] OLPC libertas firmware blobs
+From: Dan Williams <dcbw@redhat.com>
+To: Daniel Drake <dsd@laptop.org>
+Cc: Andres Salomon <dilinger@queued.net>,
+        David Woodhouse <dwmw2@infradead.org>, cjb@laptop.org,
+        linux-kernel@vger.kernel.org, libertas-dev@lists.infradead.org
+Date: Mon, 20 Jun 2011 23:47:13 -0500
+In-Reply-To: <BANLkTimyFj+iTWAopPMEyohP2pop_=g=6g@mail.gmail.com>
+References: <20110618213803.521db1b3@debxo> <20110618214203.0028ba85@debxo>
+	 <BANLkTimyFj+iTWAopPMEyohP2pop_=g=6g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1308631634.31157.7.camel@dcbw.foobar.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support interrupt function using irq_chip_generic
+On Sun, 2011-06-19 at 10:41 +0100, Daniel Drake wrote:
+> On 19 June 2011 05:42, Andres Salomon <dilinger@queued.net> wrote:
+> >>  LICENCE.OLPC                 |   33 +++++++++++++++++++++++++++++++++
+> >>  WHENCE                       |   20 ++++++++++++++++++++
+> >>  libertas/lbtf_sdio.bin       |  Bin 0 -> 120924 bytes
+> >>  libertas/lbtf_usb.bin        |  Bin 0 -> 118888 bytes
+> >>  libertas/sd8686_v9_OLPC.bin  |  Bin 0 -> 124244 bytes
+> >>  libertas/usb8388_v5_OLPC.bin |  Bin 0 -> 127824 bytes
+> >
+> > Of course, if people would prefer the OLPC version to supersede the
+> > ones currently in the linux-firmware tree, I can do that instead.  I
+> > don't know what versions of sd8686.bin and usb8388.bin are actually in
+> > the tree.  I also don't know if the OLPC versions improve or make things
+> > worse for people using those chips on non-OLPC systems.
+> 
+> This overlaps with a submission I made the other day (of usb8388
+> firmware), sorry for the lack of coordination there.
+> 
+> I don't think the OLPC hardware has any quirks or special features
+> that mean it requires special firmware.
+> 
+> However, for the usb8388 we do use a special firmware developed by
+> Cozybit (not Marvell), the one you submitted, which has its own
+> versioning scheme. The main difference is that it includes mesh
+> support. I am pretty sure it would run on any usb8388 but OLPC is the
+> only user of the hardware anyway. See
+> http://lists.infradead.org/pipermail/libertas-dev/2010-November/003330.html
+> and the rest of the discussion.
+> 
+> As for sd8686, I thought our firmware was standard, from Marvell, and
+> simply a newer version of what is in linux-firmware. Do you have
+> reason to believe otherwise?
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/gpio/Kconfig    |    1 +
- drivers/gpio/pch_gpio.c |  173 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 174 insertions(+), 0 deletions(-)
+For usb8388 I don't think we really care which firmware is default since
+OLPC was about the only consumer of that chip that I've ever heard of.
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 2967002..bd64a55 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -352,6 +352,7 @@ config GPIO_LANGWELL
- config GPIO_PCH
- 	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR ML7223 IOH GPIO"
- 	depends on PCI && X86
-+	select GENERIC_IRQ_CHIP
- 	help
- 	  This driver is for PCH(Platform controller Hub) GPIO of Intel Topcliff
- 	  which is an IOH(Input/Output Hub) for x86 embedded processor.
-diff --git a/drivers/gpio/pch_gpio.c b/drivers/gpio/pch_gpio.c
-index 36919e7..c7fd65d 100644
---- a/drivers/gpio/pch_gpio.c
-+++ b/drivers/gpio/pch_gpio.c
-@@ -17,10 +17,21 @@
- #include <linux/kernel.h>
- #include <linux/pci.h>
- #include <linux/gpio.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
- 
- #define PCH_GPIO_ALL_PINS	0xfff /* Mask for GPIO pins 0 to 11 */
- #define GPIO_NUM_PINS	12	/* Specifies number of GPIO PINS GPIO0-GPIO11 */
- 
-+#define PCH_EDGE_FALLING	0
-+#define PCH_EDGE_RISING		BIT(0)
-+#define PCH_LEVEL_L		BIT(1)
-+#define PCH_LEVEL_H		(BIT(0) | BIT(1))
-+#define PCH_EDGE_BOTH		BIT(2)
-+#define PCH_IM_MASK		(BIT(0) | BIT(1) | BIT(2))
-+
-+#define PCH_IRQ_BASE		23
-+
- struct pch_regs {
- 	u32	ien;
- 	u32	istatus;
-@@ -55,6 +66,10 @@ struct pch_gpio_reg_data {
-  * @gpio:			Data for GPIO infrastructure.
-  * @pch_gpio_reg:		Memory mapped Register data is saved here
-  *				when suspend.
-+ * @lock:			mutex_lock variable
-+ * @irq_base:		Save base of IRQ number for interrupt
-+ * @spinlock:		spin_lock variable
-+ * @irq_mask:		IRQ mask variable
-  */
- struct pch_gpio {
- 	void __iomem *base;
-@@ -63,6 +78,9 @@ struct pch_gpio {
- 	struct gpio_chip gpio;
- 	struct pch_gpio_reg_data pch_gpio_reg;
- 	struct mutex lock;
-+	int irq_base;
-+	spinlock_t spinlock;
-+	unsigned int irq_mask;
- };
- 
- static void pch_gpio_set(struct gpio_chip *gpio, unsigned nr, int val)
-@@ -146,6 +164,12 @@ static void pch_gpio_restore_reg_conf(struct pch_gpio *chip)
- 	iowrite32(chip->pch_gpio_reg.pm_reg, &chip->reg->pm);
- }
- 
-+static int pch_gpio_to_irq(struct gpio_chip *gpio, unsigned offset)
-+{
-+	struct pch_gpio *chip =	container_of(gpio, struct pch_gpio, gpio);
-+	return chip->irq_base + offset;
-+}
-+
- static void pch_gpio_setup(struct pch_gpio *chip)
- {
- 	struct gpio_chip *gpio = &chip->gpio;
-@@ -160,6 +184,124 @@ static void pch_gpio_setup(struct pch_gpio *chip)
- 	gpio->base = -1;
- 	gpio->ngpio = GPIO_NUM_PINS;
- 	gpio->can_sleep = 0;
-+	gpio->to_irq = pch_gpio_to_irq;
-+}
-+
-+static int pch_irq_type(struct irq_data *d, unsigned int type)
-+{
-+	u32 im;
-+	u32 *im_reg;
-+	u32 ien;
-+	u32 im_pos;
-+	int ch;
-+	unsigned long flags;
-+	u32 val;
-+	int irq = d->irq;
-+	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-+	struct pch_gpio *chip = gc->private;
-+
-+	ch = irq - chip->irq_base;
-+	if (irq <= chip->irq_base + 7) {
-+		im_reg = &chip->reg->im0;
-+		im_pos = ch;
-+	} else {
-+		im_reg = &chip->reg->im1;
-+		im_pos = ch - 8;
-+	}
-+	dev_dbg(chip->dev, "%s:irq=%d type=%d ch=%d pos=%d\n",
-+		__func__, irq, type, ch, im_pos);
-+
-+	spin_lock_irqsave(&chip->spinlock, flags);
-+
-+	if (type == IRQ_TYPE_EDGE_RISING)
-+		val = PCH_EDGE_RISING;
-+	else if (type == IRQ_TYPE_EDGE_FALLING)
-+		val = PCH_EDGE_FALLING;
-+	else if (type == IRQ_TYPE_EDGE_BOTH)
-+		val = PCH_EDGE_BOTH;
-+	else if (type == IRQ_TYPE_LEVEL_HIGH)
-+		val = PCH_LEVEL_L;
-+	else if (type == IRQ_TYPE_LEVEL_LOW)
-+		val = PCH_LEVEL_H;
-+	else if (type == IRQ_TYPE_PROBE)
-+		goto end;
-+	else {
-+		dev_warn(chip->dev, "%s: unknown type(%dd)", __func__, type);
-+		goto end;
-+	}
-+
-+	/* Set interrupt mode */
-+	im = ioread32(im_reg) & ~(PCH_IM_MASK << (im_pos * 4));
-+	iowrite32(im | (val << (im_pos * 4)), im_reg);
-+
-+	/* iclr */
-+	iowrite32(BIT(ch), &chip->reg->iclr);
-+
-+	/* IMASKCLR */
-+	iowrite32(BIT(ch), &chip->reg->imaskclr);
-+
-+	/* Enable interrupt */
-+	ien = ioread32(&chip->reg->ien);
-+	iowrite32(ien | BIT(ch), &chip->reg->ien);
-+end:
-+	spin_unlock_irqrestore(&chip->spinlock, flags);
-+
-+	return 0;
-+}
-+
-+static void pch_irq_unmask(struct irq_data *d)
-+{
-+	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-+	struct pch_gpio *chip = gc->private;
-+
-+	chip->irq_mask |= 1 << (d->irq - chip->irq_base);
-+}
-+
-+static void pch_irq_mask(struct irq_data *d)
-+{
-+	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-+	struct pch_gpio *chip = gc->private;
-+
-+	chip->irq_mask &= ~(1 << (d->irq - chip->irq_base));
-+}
-+
-+static irqreturn_t pch_gpio_handler(int irq, void *dev_id)
-+{
-+	struct pch_gpio *chip = dev_id;
-+	u32 reg_val = ioread32(&chip->reg->istatus);
-+	int i;
-+	int ret = IRQ_NONE;
-+
-+	for (i = 0; i < GPIO_NUM_PINS; i++) {
-+		if (reg_val & BIT(i) & chip->irq_mask) {
-+			dev_dbg(chip->dev, "%s:[%d]:irq=%d  status=0x%x\n",
-+				__func__, i, irq, reg_val);
-+			iowrite32(BIT(i), &chip->reg->iclr);
-+			generic_handle_irq(chip->irq_base + i);
-+			ret = IRQ_HANDLED;
-+		}
-+	}
-+	return ret;
-+}
-+
-+static __devinit void
-+pch_gpio_alloc_generic_chip(struct pch_gpio *chip, unsigned int irq_start,
-+			    unsigned int num)
-+{
-+	struct irq_chip_generic *gc;
-+	struct irq_chip_type *ct;
-+
-+	gc = irq_alloc_generic_chip("pch_gpio", 1, irq_start, chip->base,
-+				    handle_simple_irq);
-+	gc->private = chip;
-+	ct = gc->chip_types;
-+
-+	ct->chip.irq_mask = pch_irq_mask;
-+	ct->chip.irq_unmask = pch_irq_unmask;
-+	ct->chip.irq_set_type = pch_irq_type;
-+
-+	irq_setup_generic_chip(gc, IRQ_MSK(num), IRQ_GC_INIT_MASK_CACHE,
-+			       IRQ_NOREQUEST | IRQ_NOPROBE, 0);
- }
- 
- static int __devinit pch_gpio_probe(struct pci_dev *pdev,
-@@ -167,6 +309,7 @@ static int __devinit pch_gpio_probe(struct pci_dev *pdev,
- {
- 	s32 ret;
- 	struct pch_gpio *chip;
-+	int irq_base;
- 
- 	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
- 	if (chip == NULL)
-@@ -202,8 +345,36 @@ static int __devinit pch_gpio_probe(struct pci_dev *pdev,
- 		goto err_gpiochip_add;
- 	}
- 
-+	irq_base = irq_alloc_descs(-1, PCH_IRQ_BASE, GPIO_NUM_PINS, GFP_KERNEL);
-+	if (irq_base < 0) {
-+		dev_err(&pdev->dev, "PCH gpio: Failed to get IRQ base num\n");
-+		goto err_irq_alloc_descs;
-+	}
-+	chip->irq_base = irq_base;
-+
-+	ret = request_irq(pdev->irq, pch_gpio_handler,
-+			     IRQF_SHARED, KBUILD_MODNAME, chip);
-+	if (ret != 0) {
-+		dev_err(&pdev->dev,
-+			"%s request_irq failed\n", __func__);
-+		goto err_request_irq;
-+	}
-+
-+	pch_gpio_alloc_generic_chip(chip, irq_base, GPIO_NUM_PINS);
-+
-+	/* Initialize interrupt ien register */
-+	iowrite32(0, &chip->reg->ien);
-+
- 	return 0;
- 
-+err_request_irq:
-+	irq_free_descs(irq_base, GPIO_NUM_PINS);
-+
-+err_irq_alloc_descs:
-+	ret = gpiochip_remove(&chip->gpio);
-+	if (ret)
-+		dev_err(&pdev->dev, "%s gpiochip_remove failed\n", __func__);
-+
- err_gpiochip_add:
- 	pci_iounmap(pdev, chip->base);
- 
-@@ -224,6 +395,8 @@ static void __devexit pch_gpio_remove(struct pci_dev *pdev)
- 	int err;
- 	struct pch_gpio *chip = pci_get_drvdata(pdev);
- 
-+	irq_free_descs(chip->irq_base, GPIO_NUM_PINS);
-+
- 	err = gpiochip_remove(&chip->gpio);
- 	if (err)
- 		dev_err(&pdev->dev, "Failed gpiochip_remove\n");
--- 
-1.7.4.4
+For the other firmware I periodically trawled Marvell's Extranet and
+grabbed latest firmware from there.  If you guys have a newer micro
+version of the firmware then great, push it.  Latest I have access to
+for 8686 is SD-8686-FEDORA26FC6-SYSKT-9.70.20.p0-26409.p64 so if you've
+got something newer great.
+
+Dan
+
 
