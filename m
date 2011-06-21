@@ -1,36 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757416Ab1FUSpx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 14:45:53 -0400
-Received: from mail.perches.com ([173.55.12.10]:3109 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757383Ab1FUSpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 14:45:35 -0400
-Subject: Re: [PATCH net-next V2] drivers/net: Remove casts of void *
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110617.151903.1203335395245647912.davem@davemloft.net>
-References: <3bea9d0803a4ebfee2bb0f6e42defbf76126dc86.1308287030.git.joe@perches.com>
-	 <20110617.151903.1203335395245647912.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Jun 2011 11:45:34 -0700
-Message-ID: <1308681934.3338.17.camel@Joe-Laptop>
+	id S1757256Ab1FUSu5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 14:50:57 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:35186 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752396Ab1FUSuy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 14:50:54 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=n0msQ+j+8h5aiKmQUEkSLeBHCHkKB3gA5dZYjHEfuiU31Gos8q9ma+X7zlh0/zzgNv7munr8B9uv+I61FJvlcpiV2nuTS9gSTwJv1mdURZuenmyuUgdq2sJ7jeBRZNMH;
+Date: Tue, 21 Jun 2011 11:50:43 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Ram Pai <linuxram@us.ibm.com>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        svenkatr@ti.com, yinghai@kernel.org, cjb@laptop.org,
+        linux-pci@vger.kernel.org, linux-net-drivers@solarflare.com,
+        bhutchings@solarflare.com
+Subject: Re: [PATCH 4/4] PCI: make cardbus-bridge resources nice-to-have
+Message-ID: <20110621115043.064871db@jbarnes-desktop>
+In-Reply-To: <20110621162321.GB22917@ram-laptop>
+References: <1308610037-6261-1-git-send-email-linuxram@us.ibm.com>
+	<1308610037-6261-5-git-send-email-linuxram@us.ibm.com>
+	<20110621075659.GA4620@comet.dominikbrodowski.net>
+	<20110621162321.GB22917@ram-laptop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-17 at 15:19 -0400, David Miller wrote:
-> From: Joe Perches <joe@perches.com>
-> Date: Thu, 16 Jun 2011 22:08:06 -0700
-> > Unnecessary casts of void * clutter the code.
-> > These are the remainder casts after several specific
-> > patches to remove netdev_priv and dev_priv.
-> > Done via coccinelle script (and a little editing):
-> Applied, thanks.
+On Tue, 21 Jun 2011 09:23:21 -0700
+Ram Pai <linuxram@us.ibm.com> wrote:
 
-Unapplied?  I don't see this in net-next.
+> On Tue, Jun 21, 2011 at 09:57:00AM +0200, Dominik Brodowski wrote:
+> > On Mon, Jun 20, 2011 at 03:47:17PM -0700, Ram Pai wrote:
+> > > Allocate resources to cardbus bridge only after all other genuine
+> > > resources requests are satisfied. Dont retry if resource allocation
+> > > for cardbus-bridge fails.
+> > 
+> > Well, for those who use cardbus cards, cardbus resources aren't "nice to
+> > have", they are absolutely required. Of course, not all cardbus cards need
+> > as many resources as are currently assigned, so I wouldn't oppose a patch
+> > which marks _some_ of the currently assigned resources as "nice to have".
+> > But this approach -- 0 required, all "nice to have" -- seems wrong to me.
+> 
+> Do you know how much minimal resource is good enough?  The value, before
+> this patch, was 256 for IO ports and  64M for memory.
+> 
+> BTW: If the BIOS has already assigned enough resources for all the devices on
+> the system, no devices will be starved including the cardbus. The OS intervenes
+> and is forced to make this hard choice only when it sees unassigned resources to
+> some devices along with resource contention.
 
+I just know this is going to trigger regressions, so I think Dominik's
+concern is valid.  We'll have some existing machine with a device whose
+resource was never assigned, but we didn't care because it was unused.
+Now this code will try to give it some address space at the expense of
+something that *is* being used.
+
+But OTOH this will at least try to allocate *some* space to cardbus, we
+just won't try as hard as with some other resources.  I'd mainly like
+to avoid the situation Dominik pointed out, where we have perfectly
+good cardbus resources assigned (unlike in Oliver's case) but they're
+stolen for a bridge that may get a hotplugged device or some other
+device that didn't have a BIOS assignment.
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
