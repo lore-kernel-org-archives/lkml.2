@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136Ab1FUGzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 02:55:54 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:45242 "EHLO e6.ny.us.ibm.com"
+	id S1752875Ab1FUHED (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 03:04:03 -0400
+Received: from smtp2.kfki.hu ([148.6.0.28]:59484 "EHLO smtp2.kfki.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751137Ab1FUGzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 02:55:51 -0400
-Date: Tue, 21 Jun 2011 12:25:42 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Ryan Mallon <rmallon@gmail.com>,
-        Petr Tesarik <ptesarik@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of
- arbitrary physical addresses
-Message-ID: <20110621065542.GA13432@linux.vnet.ibm.com>
-Reply-To: vatsa@linux.vnet.ibm.com
-References: <201106171038.25988.ptesarik@suse.cz>
- <20110617093032.GA19235@elte.hu>
- <4DFE7FF9.9070406@gmail.com>
- <4DFE89E0.5020509@zytor.com>
- <20110620074124.GB24716@elte.hu>
- <4DFF6E58.8090306@zytor.com>
+	id S1751266Ab1FUHD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 03:03:58 -0400
+X-Greylist: delayed 331 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Jun 2011 03:03:58 EDT
+Date: Tue, 21 Jun 2011 08:58:24 +0200 (CEST)
+From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+To: Jesper Juhl <jj@chaosbits.net>
+cc: netdev@vger.kernel.org, coreteam@netfilter.org,
+        linux-kernel@vger.kernel.org, Dmitry Kozlov <xeb@mail.ru>,
+        netfilter@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [netfilter-core] [PATCH] Remove redundant linux/version.h includes
+ from net/
+In-Reply-To: <alpine.LNX.2.00.1106210009520.27735@swampdragon.chaosbits.net>
+Message-ID: <alpine.DEB.2.00.1106210854370.23091@blackhole.kfki.hu>
+References: <alpine.LNX.2.00.1106210009520.27735@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DFF6E58.8090306@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 08:59:20AM -0700, H. Peter Anvin wrote:
-> We should either fix /dev/mem to work according to its specification or
-> rip it out.  The issue with test drivers is not spurious... I ran into
-> this one myself a few weeks ago while trying to do a memory test (by
-> limiting the amount of memory available to the kernel).  This is
-> something that is typically done on factory floors, and it would be nice
-> to be able to get those environments over to using Linux.
+On Tue, 21 Jun 2011, Jesper Juhl wrote:
 
-We came across a similar request from our manufacturing folks. They have a
-memory stress tool that needs to test how much bandwidth is possible between
-various cpus and memory modules. Essentially they want the tool to run on some
-chosen CPU and want it to drive traffic to some chosen memory module.
+> It was suggested by "make versioncheck" that the follwing includes of
+> linux/version.h are redundant:
+> 
+>   /home/jj/src/linux-2.6/net/caif/caif_dev.c: 14 linux/version.h not needed.
+>   /home/jj/src/linux-2.6/net/caif/chnl_net.c: 10 linux/version.h not needed.
+>   /home/jj/src/linux-2.6/net/ipv4/gre.c: 19 linux/version.h not needed.
+>   /home/jj/src/linux-2.6/net/netfilter/ipset/ip_set_core.c: 20 linux/version.h not needed.
+>   /home/jj/src/linux-2.6/net/netfilter/xt_set.c: 16 linux/version.h not needed.
+> 
+> and it seems that it is right.
+> 
+> Beyond manually inspecting the source files I also did a few build
+> tests with various configs to confirm that including the header in
+> those files is indeed not needed.
+> 
+> Here's a patch to remove the pointless includes.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  net/caif/caif_dev.c               |    1 -
+>  net/caif/chnl_net.c               |    1 -
+>  net/ipv4/gre.c                    |    1 -
+>  net/netfilter/ipset/ip_set_core.c |    1 -
+>  net/netfilter/xt_set.c            |    1 -
+>  5 files changed, 0 insertions(+), 5 deletions(-)
 
-/dev/mem would be handy for such test programs ..
+For ipset/xt_set.c:
 
-- vatsa
+Acked-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+
+Best regards,
+Jozsef
+-
+E-mail  : kadlec@blackhole.kfki.hu, kadlec@mail.kfki.hu
+PGP key : http://www.kfki.hu/~kadlec/pgp_public_key.txt
+Address : KFKI Research Institute for Particle and Nuclear Physics
+          H-1525 Budapest 114, POB. 49, Hungary
