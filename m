@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab1FUIL3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 04:11:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3891 "EHLO mx1.redhat.com"
+	id S1755707Ab1FUIM1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 04:12:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2860 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753270Ab1FUILZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 04:11:25 -0400
+	id S1753738Ab1FUIMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 04:12:22 -0400
 From: Amerigo Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, Amerigo Wang <amwang@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
         Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: [PATCH 3/4] mm: improve THP printk messages
-Date: Tue, 21 Jun 2011 16:10:44 +0800
-Message-Id: <1308643849-3325-3-git-send-email-amwang@redhat.com>
+        Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org
+Subject: [PATCH 4/4] mm: introduce no_ksm to disable totally KSM
+Date: Tue, 21 Jun 2011 16:10:45 +0800
+Message-Id: <1308643849-3325-4-git-send-email-amwang@redhat.com>
 In-Reply-To: <1308643849-3325-1-git-send-email-amwang@redhat.com>
 References: <1308643849-3325-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As Andrea suggested, use "THP:" prefix to avoid
-being confused with hugetlb.
+Introduce a new kernel parameter "no_ksm" to totally disable KSM.
 
 Signed-off-by: WANG Cong <amwang@redhat.com>
 ---
- mm/huge_memory.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ mm/ksm.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 126c96b..f9e720c 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -506,7 +506,7 @@ static int __init hugepage_init(void)
- 	if (no_hugepage_init) {
- 		err = 0;
- 		transparent_hugepage_flags = 0;
--		printk(KERN_INFO "hugepage: totally disabled\n");
-+		printk(KERN_INFO "THP: totally disabled\n");
- 		goto out;
- 	}
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 9a68b0c..eeb45a2 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -1984,11 +1984,24 @@ static struct attribute_group ksm_attr_group = {
+ };
+ #endif /* CONFIG_SYSFS */
  
-@@ -514,19 +514,19 @@ static int __init hugepage_init(void)
- 	err = -ENOMEM;
- 	hugepage_kobj = kobject_create_and_add("transparent_hugepage", mm_kobj);
- 	if (unlikely(!hugepage_kobj)) {
--		printk(KERN_ERR "hugepage: failed kobject create\n");
-+		printk(KERN_ERR "THP: failed kobject create\n");
- 		goto out;
- 	}
++static int no_ksm;
++static int __init setup_ksm(char *str)
++{
++	no_ksm = 1;
++	return 0;
++}
++__setup("no_ksm", setup_ksm);
++
+ static int __init ksm_init(void)
+ {
+ 	struct task_struct *ksm_thread;
+ 	int err;
  
- 	err = sysfs_create_group(hugepage_kobj, &hugepage_attr_group);
- 	if (err) {
--		printk(KERN_ERR "hugepage: failed register hugeage group\n");
-+		printk(KERN_ERR "THP: failed register hugeage group\n");
++	if (no_ksm) {
++		printk(KERN_INFO "ksm: disabled by cmdline\n");
++		return 0;
++	}
++
+ 	err = ksm_slab_init();
+ 	if (err)
  		goto out;
- 	}
- 
- 	err = sysfs_create_group(hugepage_kobj, &khugepaged_attr_group);
- 	if (err) {
--		printk(KERN_ERR "hugepage: failed register hugeage group\n");
-+		printk(KERN_ERR "THP: failed register hugeage group\n");
- 		goto out;
- 	}
- #endif
 -- 
 1.7.4.4
 
