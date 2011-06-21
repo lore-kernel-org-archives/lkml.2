@@ -1,79 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756875Ab1FUUDo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 16:03:44 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:43420 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753946Ab1FUUDn (ORCPT
+	id S1757195Ab1FUUHO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 16:07:14 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47902 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991Ab1FUUHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 16:03:43 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Jonas Bonn <jonas@southpole.se>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 14/19] OpenRISC: Module support
-In-Reply-To: Your message of "Sun, 19 Jun 2011 13:43:40 +0200."
-             <1308483825-6023-15-git-send-email-jonas@southpole.se>
-From: Valdis.Kletnieks@vt.edu
-References: <1308483825-6023-1-git-send-email-jonas@southpole.se>
-            <1308483825-6023-15-git-send-email-jonas@southpole.se>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1308686616_2609P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Tue, 21 Jun 2011 16:07:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=rl/oUaRL60Bux9aHB17ohVslKr6SQ7zAtkHcLw06mxu5qHBAwe8eSwHU3ZKvJUuX9w
+         S0mOcjses/xukXrA8BZqZLpbssc7YKOpvIJQUhl5de2JvZxr7KKCDP89VCHi7cbpscR1
+         OKXmCC5t89qeyTOFEpXtU25/XttkhLdau28EQ=
+Message-ID: <4E00F9ED.1020500@gmail.com>
+Date: Tue, 21 Jun 2011 15:07:09 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 3/5] drivers/amba: create devices from device tree
+References: <20110621181127.18176.1384.stgit@ponder> <20110621184503.18176.88260.stgit@ponder>
+In-Reply-To: <20110621184503.18176.88260.stgit@ponder>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Tue, 21 Jun 2011 16:03:36 -0400
-Message-ID: <31626.1308686616@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Info: (0) 
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020201.4E00F91A.002B,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1308686616_2609P
-Content-Type: text/plain; charset=us-ascii
+Grant,
 
-On Sun, 19 Jun 2011 13:43:40 +0200, Jonas Bonn said:
-
-Arnd already did a number of comments - two things I didn't see him note:
-
->  arch/openrisc/kernel/module.c |  126 +++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 126 insertions(+), 0 deletions(-)
->  create mode 100644 arch/openrisc/kernel/module.c
+On 06/21/2011 01:45 PM, Grant Likely wrote:
+> Add a function to create amba_devices (i.e. primecell peripherals)
+> from device tree nodes. The device tree scanning is done by the
+> of_platform_populate() function which can call of_amba_device_create
+> based on a match table entry.
 > 
-> diff --git a/arch/openrisc/kernel/module.c b/arch/openrisc/kernel/module.c
+> Nodes with a "arm,primecell-periphid" property can override the h/w
+> peripheral id value.
+> 
+> Based on the original work by Jeremy Kerr.
+> 
+> Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+> [grant.likely: add Jeremy's original s-o-b line, changes from review
+>                comments, and moved all code to drivers/of/platform.c]
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> ---
+>  .../devicetree/bindings/arm/primecell.txt          |   21 ++++++
+>  drivers/of/platform.c                              |   71 ++++++++++++++++++++
+>  2 files changed, 92 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/arm/primecell.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/primecell.txt b/Documentation/devicetree/bindings/arm/primecell.txt
 > new file mode 100644
-> index 0000000..952b129
+> index 0000000..1d5d7a8
 > --- /dev/null
-> +++ b/arch/openrisc/kernel/module.c
-> @@ -0,0 +1,126 @@
-> +/*
-> + * OpenRISC module.c
+> +++ b/Documentation/devicetree/bindings/arm/primecell.txt
+> @@ -0,0 +1,21 @@
+> +* ARM Primecell Peripherals
+> +
+> +ARM, Ltd. Primecell peripherals have a standard id register that can be used to
+> +identify the peripheral type, vendor, and revision. This value can be used for
+> +driver matching.
+> +
+> +Required properties:
+> +
+> +- compatible : should be a specific value for peripheral and "arm,primecell"
 
-Lose the filenames in the headers - you do this in multiple files.
+Can I review what I wrote... Perhaps we should put strings in for all
+existing drivers in the kernel. This should be a complete list:
 
-Also, do you even *need* a module.c? There isn't much in here, will the main
-kernel/module.c do the work needed?  Or did you end up with one because the
-arch you cloned had one?
+arm,pl010
+arm,pl011
+st,pl011
+arm,pl022
+st,pl022
+st,pl023
+arm,pl030
+arm,pl031
+st,pl031
+arm,pl061
+arm,pl050
+arm,pl080
+arm,pl081
+st,pl080
+arm,pl110
+arm,pl180
+arm,pl330
+arm,sp804
+arm,sp805
 
 
---==_Exmh_1308686616_2609P
-Content-Type: application/pgp-signature
+Otherwise, they may never get added.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOAPkYcC3lWbTT17ARAr1WAKDbPd0kTRmBqpa1sthVBIJxJLX2oACdH/N0
-Z+lsfkZdybWHFJo34Yk17Sc=
-=F8lN
------END PGP SIGNATURE-----
-
---==_Exmh_1308686616_2609P--
-
+Rob
