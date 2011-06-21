@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757123Ab1FUSWv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 14:22:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57076 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752125Ab1FUSWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 14:22:51 -0400
-References: <alpine.DEB.2.00.1106071849290.12963@kaball-desktop> <1307470409-7654-1-git-send-email-stefano.stabellini@eu.citrix.com> <4DFFCBAD.9040507@linux.intel.com> <alpine.DEB.2.00.1106211601570.12963@kaball-desktop>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <alpine.DEB.2.00.1106211601570.12963@kaball-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 1/3] x86: calculate precisely the memory needed by init_memory_mapping
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 21 Jun 2011 11:02:43 -0700
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>
-Message-ID: <18878791-c24a-4ca7-aa19-904805bc1314@email.android.com>
+	id S1757312Ab1FUSDT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 14:03:19 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:58357 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757150Ab1FUSDR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 14:03:17 -0400
+X-RZG-AUTH: :O2kGeEG7b/pS1EO8W3C+nMaWotNRcyCeCTTmQgOI2iYXpKw2M5aRJ08f0lpVYriOzQ==
+X-RZG-CLASS-ID: mo00
+Subject: Re: [PATCH 1/1] drm/radeon: Fix Asus M2A-VM HDMI EDID error
+ flooding problem
+From: Thomas Reim <thomas.reim@nepomuc.de>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Thomas Reim <reimth@googlemail.com>, Dave Airlie <airlied@redhat.com>,
+        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
+        Jean Delvare <khali@linux-fr.org>,
+        Tyson Whitehead <twhitehead@gmail.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Thomas Reim <rdratlos@yahoo.co.uk>
+In-Reply-To: <BANLkTi=cna6rLmwLCcPZsR-AMZKp4HVPDg@mail.gmail.com>
+References: <1308670305-7096-1-git-send-email-rdratlos@yahoo.co.uk>
+	 <BANLkTi=cna6rLmwLCcPZsR-AMZKp4HVPDg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 21 Jun 2011 20:03:03 +0200
+Message-ID: <1308679383.5981.7.camel@Mark-Aurel.gas.de>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+Dear Alex, 
 
->On Mon, 20 Jun 2011, H. Peter Anvin wrote:
->> On 06/07/2011 11:13 AM, stefano.stabellini@eu.citrix.com wrote:
->> > 
->> > - remove the extra page added on x86_32 for the fixmap because is
->not
->> > needed: the PMD entry is already allocated and contiguous for the
->whole
->> > range (a PMD page covers 4G of virtual addresses) and the pte entry
->is
->> > already allocated by early_ioremap_init.
->> > 
->> 
->> Hi Stefano,
->> 
->> I think this is wrong.  A PMD page covers *1G* of virtual addresses,
->and
->> in the 2+2 and 1+3 memory configurations, we may or may not need a
->> separate PMD for the fixmap.
->> 
->> Am I missing something?
->
->You are right, a PMD page covers 1G of virtual addresses so that part
->of
->the explanation in the comment is wrong.
->
->The reason why we don't need a separate PMD for the fixmap is that in
->both PAE and non-PAE cases the last gigabyte of virtual addresses is
->always covered by the initial allocation in head_32.S (swapper_pg_dir
->or
->initial_pg_pmd).
+yes, the proposed fix should also fix the 'drm/radeon: workaround a hw
+bug on some radeon chipsets with all-0 EDIDs.' issue. The trick is, that
+we check within the Radeon domain directly on i2c interface level, if an
+EDID can be retrieved at all, before we hand over to the main drm edid
+functions. 
 
-Ok, wasn't sure if Xen used the static allocation or not.
--- 
-Sent from my mobile phone. Please excuse my brevity and lack of formatting.
+If you can provide some logs from Dave, I can double-check.
+
+Regards,
+
+  Thomas
+
+> On Tue, Jun 21, 2011 at 11:31 AM, Thomas Reim <reimth@googlemail.com> wrote:
+> > Some integrated ATI Radeon chipset implementations
+> > (e. g. Asus M2A-VM HDMI) indicate the availability
+> > of a DDC even when there's no monitor connected.
+> > In this case, drm_get_edid and drm_edid_block_valid
+> > periodically dump data and kernel errors into system
+> > log files and onto terminals, which lead to an unacceptable
+> > system behaviour.
+> >
+> > Tested since kernel 2.35 on Asus M2A-VM HDMI board
+> >
+> > Signed-off-by: Thomas Reim <rdratlos@yahoo.co.uk>
+> 
+> Does this patch fix the issue:
+> http://git.kernel.org/?p=linux/kernel/git/airlied/drm-2.6.git;a=commitdiff;h=4a9a8b71e12d41abb71c4e741bff524f016cfef4
+> 
+> Alex
+> 
+> > ---
+> >  drivers/gpu/drm/radeon/radeon_connectors.c |   10 +++++
+> >  drivers/gpu/drm/radeon/radeon_display.c    |   11 +++++
+> >  drivers/gpu/drm/radeon/radeon_i2c.c        |   60 ++++++++++++++++++++++++++++
+> >  drivers/gpu/drm/radeon/radeon_mode.h       |    1 +
+> >  4 files changed, 82 insertions(+), 0 deletions(-)
+> >
+
+
