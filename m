@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab1FUKmA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 06:42:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63897 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753270Ab1FUKl5 (ORCPT
+	id S1755819Ab1FUKoB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 06:44:01 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38436 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751401Ab1FUKoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 06:41:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=L3/2hcQCYMdg1zaIKmAoQdJKu093ysC/ndcQNLeQWVbrROhigJ8CSkOlqy8V7Q7bW4
-         hPjby3a+QsTjg7LSPJJ59VJuDDioYtny21iR3ci9S8XUSBANNxWVRJ9+lQ+Lvq9tP9+y
-         /u+r702rJb/vuJtItnwcLvRtCNwHoU2LlyUHM=
-Date: Tue, 21 Jun 2011 03:41:49 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-input@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        rpurdie@rpsys.net, lethal@linux-sh.org, tglx@linutronix.de,
-        buytenh@secretlab.ca, Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] locomo: drop special locomo_{read/write}l in favor of
- io{read/write}16
-Message-ID: <20110621104148.GB8468@core.coreip.homeip.net>
-References: <201106201454.18070.hartleys@visionengravers.com>
+	Tue, 21 Jun 2011 06:44:00 -0400
+Date: Tue, 21 Jun 2011 11:43:57 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>, dg77.kim@samsung.com,
+        myungjoo.ham@gmail.com
+Subject: Re: [PATCH v2 1/5] Samsung SoC ADC: use regulator (VDD for ADC).
+Message-ID: <20110621104357.GE22177@opensource.wolfsonmicro.com>
+References: <20110620101737.GA31864@opensource.wolfsonmicro.com>
+ <1308621527-2457-1-git-send-email-myungjoo.ham@samsung.com>
+ <1308621527-2457-2-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201106201454.18070.hartleys@visionengravers.com>
+In-Reply-To: <1308621527-2457-2-git-send-email-myungjoo.ham@samsung.com>
+X-Cookie: Your ignorance cramps my conversation.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 02:54:17PM -0700, H Hartley Sweeten wrote:
-> All the locomo registers are 16-bit ioremap'ed memory addresses.  
-> 
-> Make the locomo drivers use generic purpose io routines: ioread16
-> and iowrite16 instead of directly accessing memory.
-> 
-> There are still a couple checkpatch warnings about lines exceeding
-> 79 characters.
-> 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+On Tue, Jun 21, 2011 at 10:58:43AM +0900, MyungJoo Ham wrote:
 
-Input parts look good to me.
+> +	ret = regulator_enable(adc->vdd);
+> +	if (!ret)
+> +		goto err_ioremap;
+> +
 
-Acked-by: Dmitry Torokhov <dtor@mail.ru>
+This test looks the wrong way round?  regulator_enable() should return 0
+on success but this will treat that as an error.
 
--- 
-Dmitry
+>  static int s3c_adc_resume(struct platform_device *pdev)
+>  {
+>  	struct adc_device *adc = platform_get_drvdata(pdev);
+> +	int ret;
+>  
+> +	ret = regulator_enable(adc->vdd);
+>  	clk_enable(adc->clk);
+>  	enable_irq(adc->irq);
+>  
+>  	writel(adc->prescale | S3C2410_ADCCON_PRSCEN,
+>  	       adc->regs + S3C2410_ADCCON);
+>  
+> -	return 0;
+> +	return ret;
+
+Seems better to return as soon as we notice the error, no point in
+starting anything else up if we don't have power.
