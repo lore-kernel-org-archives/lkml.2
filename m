@@ -1,108 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab1FUA2V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 20:28:21 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:63958 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756318Ab1FUA2U (ORCPT
+	id S1756548Ab1FUAba (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 20:31:30 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:52336 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755419Ab1FUAb3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 20:28:20 -0400
-X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=ogTdH59n8DkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=tHz9FfFoAAAA:8 a=wjQiPgO9Tk7QNIx8TbcA:9 a=1QxbqjE6Gvz6qidyCp0A:7 a=PUjeQqilurYA:10 a=6O0IECtVFhoA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 07/15] xen/trace: add xen_pgd_(un)pin tracepoints
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Xen Devel <Xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <cdfa49a00e83b62d4fbd0cab251c9c1571a3ce6f.1308607697.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1308607697.git.jeremy.fitzhardinge@citrix.com>
-	 <cdfa49a00e83b62d4fbd0cab251c9c1571a3ce6f.1308607697.git.jeremy.fitzhardinge@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 20 Jun 2011 20:28:18 -0400
-Message-ID: <1308616098.531.5.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 20 Jun 2011 20:31:29 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-4.tower-131.messagelabs.com!1308616287!10760226!1
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.72]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Date: Mon, 20 Jun 2011 19:31:26 -0500
+Subject: RE: [Q] mm/memblock.c: cast truncates bits from RED_INACTIVE
+Thread-Topic: [Q] mm/memblock.c: cast truncates bits from RED_INACTIVE
+Thread-Index: AcwvpsdmplHK+0PyQ+K9/4usR/Cd5AAAePWA
+Message-ID: <ADE657CA350FB648AAC2C43247A983F001F38227BF35@AUSP01VMBX24.collaborationhost.net>
+References: <ADE657CA350FB648AAC2C43247A983F001F382220E0F@AUSP01VMBX24.collaborationhost.net>
+ <20110620170249.d5cd98b1.akpm@linux-foundation.org>
+In-Reply-To: <20110620170249.d5cd98b1.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-20 at 15:15 -0700, Jeremy Fitzhardinge wrote:
-> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> 
-> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> ---
->  arch/x86/xen/mmu.c         |    4 ++++
->  include/trace/events/xen.h |   24 ++++++++++++++++++++++++
->  2 files changed, 28 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index 84c796f..8aaa398 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -884,6 +884,8 @@ static int xen_pin_page(struct mm_struct *mm, struct page *page,
->     read-only, and can be pinned. */
->  static void __xen_pgd_pin(struct mm_struct *mm, pgd_t *pgd)
->  {
-> +	trace_xen_mmu_pgd_pin(mm, pgd);
-> +
->  	xen_mc_batch();
+On Monday, June 20, 2011 5:03 PM, Andrew Morton wrote:
+> On Tue, 14 Jun 2011 19:47:19 -0500 H Hartley Sweeten wrote:
+>
+>> Hello all,
+>> 
+>> Sparse is reporting a couple warnings in mm/memblock.c:
+>> 
+>> 	warning: cast truncates bits from constant value (9f911029d74e35b becomes 9d74e35b)
+>> 
+>> The warnings are due to the cast of RED_INACTIVE in memblock_analyze():
+>> 
+>> 	/* Check marker in the unused last array entry */
+>> 	WARN_ON(memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS].base
+>> 		!= (phys_addr_t)RED_INACTIVE);
+>> 	WARN_ON(memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS].base
+>> 		!= (phys_addr_t)RED_INACTIVE);
+>> 
+>> And in memblock_init():
+>> 
+>> 	/* Write a marker in the unused last array entry */
+>> 	memblock.memory.regions[INIT_MEMBLOCK_REGIONS].base = (phys_addr_t)RED_INACTIVE;
+>> 	memblock.reserved.regions[INIT_MEMBLOCK_REGIONS].base = (phys_addr_t)RED_INACTIVE;
+>> 
+>> Could this cause any problems?  If not, is there anyway to quiet the sparse noise?
+>> 
+>
+> It's all just a debugging check and that check will continue to work OK
+> despite this bug.
+>
+> But yes, it's ugly and should be fixed.
+>
+> I don't think that mm/memblock.c should have reused RED_INACTIVE. 
+> That's a slab thing and wedging it into a phys_addr_t was
+> inappropriate.
+>
+> In fact I don't think RED_INACTIVE should exist.  It's just inviting
+> other subsystems to (ab)use it.  It should be replaced by a
+> slab-specific SLAB_RED_INACTIVE, as slub did with SLUB_RED_INACTIVE.
+>
+>
+> I'd suggest something like the below, which I didn't test.  Feel free to
+> send it back at me, or ignore it ;)
+>
+>
+> diff -puN include/linux/poison.h~a include/linux/poison.h
+> --- a/include/linux/poison.h~a
+> +++ a/include/linux/poison.h
+> @@ -40,6 +40,12 @@
+>  #define	RED_INACTIVE	0x09F911029D74E35BULL	/* when obj is inactive */
+>  #define	RED_ACTIVE	0xD84156C5635688C0ULL	/* when obj is active */
 >  
->  	if (__xen_pgd_walk(mm, pgd, xen_pin_page, USER_LIMIT)) {
-> @@ -1009,6 +1011,8 @@ static int xen_unpin_page(struct mm_struct *mm, struct page *page,
->  /* Release a pagetables pages back as normal RW */
->  static void __xen_pgd_unpin(struct mm_struct *mm, pgd_t *pgd)
->  {
-> +	trace_xen_mmu_pgd_unpin(mm, pgd);
+> +#ifdef CONFIG_PHYS_ADDR_T_64BIT
+> +#define MEMBLOCK_INACTIVE	0x3a84fb0144c9e71bULL
+> +#else
+> +#define MEMBLOCK_INACTIVE	0x44c9e71bUL
+> +#endif
 > +
->  	xen_mc_batch();
+>  #define SLUB_RED_INACTIVE	0xbb
+>  #define SLUB_RED_ACTIVE		0xcc
 >  
->  	xen_do_pin(MMUEXT_UNPIN_TABLE, PFN_DOWN(__pa(pgd)));
-> diff --git a/include/trace/events/xen.h b/include/trace/events/xen.h
-> index 16edcb7..5811c24 100644
-> --- a/include/trace/events/xen.h
-> +++ b/include/trace/events/xen.h
-> @@ -381,6 +381,30 @@ TRACE_EVENT(xen_mmu_release_ptpage,
->  		      __entry->pinned ? "" : "un")
->  	);
+> diff -puN mm/memblock.c~a mm/memblock.c
+> --- a/mm/memblock.c~a
+> +++ a/mm/memblock.c
+> @@ -758,9 +758,9 @@ void __init memblock_analyze(void)
 >  
-> +TRACE_EVENT(xen_mmu_pgd_pin,
-> +	    TP_PROTO(struct mm_struct *mm, pgd_t *pgd),
-> +	    TP_ARGS(mm, pgd),
-> +	    TP_STRUCT__entry(
-> +		    __field(struct mm_struct *, mm)
-> +		    __field(pgd_t *, pgd)
-> +		    ),
-> +	    TP_fast_assign(__entry->mm = mm;
-> +			   __entry->pgd = pgd),
-> +	    TP_printk("mm %p pgd %p", __entry->mm, __entry->pgd)
-> +	);
-> +
-> +TRACE_EVENT(xen_mmu_pgd_unpin,
-> +	    TP_PROTO(struct mm_struct *mm, pgd_t *pgd),
-> +	    TP_ARGS(mm, pgd),
-> +	    TP_STRUCT__entry(
-> +		    __field(struct mm_struct *, mm)
-> +		    __field(pgd_t *, pgd)
-> +		    ),
-> +	    TP_fast_assign(__entry->mm = mm;
-> +			   __entry->pgd = pgd),
-> +	    TP_printk("mm %p pgd %p", __entry->mm, __entry->pgd)
-> +	);
-> +
->  #endif /*  _TRACE_XEN_H */
-
-
-Looks like there's lots of candidates for DECLARE_EVENT_CLASS() and
-DEFINE_EVENT()s.
-
--- Steve
-
+>  	/* Check marker in the unused last array entry */
+>  	WARN_ON(memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS].base
+> -		!= (phys_addr_t)RED_INACTIVE);
+> +		!= MEMBLOCK_INACTIVE);
+>  	WARN_ON(memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS].base
+> -		!= (phys_addr_t)RED_INACTIVE);
+> +		!= MEMBLOCK_INACTIVE);
 >  
->  /* This part must be outside protection */
+>  	memblock.memory_size = 0;
+>  
+> @@ -786,8 +786,8 @@ void __init memblock_init(void)
+>  	memblock.reserved.max	= INIT_MEMBLOCK_REGIONS;
+>  
+>  	/* Write a marker in the unused last array entry */
+> -	memblock.memory.regions[INIT_MEMBLOCK_REGIONS].base = (phys_addr_t)RED_INACTIVE;
+> -	memblock.reserved.regions[INIT_MEMBLOCK_REGIONS].base = (phys_addr_t)RED_INACTIVE;
+> +	memblock.memory.regions[INIT_MEMBLOCK_REGIONS].base = MEMBLOCK_INACTIVE;
+> +	memblock.reserved.regions[INIT_MEMBLOCK_REGIONS].base = MEMBLOCK_INACTIVE;
+>  
+>  	/* Create a dummy zero size MEMBLOCK which will get coalesced away later.
+>  	 * This simplifies the memblock_add() code below...
 
+FWIW, your patch above quiet's the sparse warnings on my system (arm ep93xx) and
+the system boots and runs fine.
 
+If you want it..
+
+Tested-by: H Hartley Sweeten <hsweeten@visionengravers.com>
