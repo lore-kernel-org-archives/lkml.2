@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757389Ab1FUXEw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 19:04:52 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:58103 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756933Ab1FUXEs (ORCPT
+	id S1757419Ab1FUXFw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 19:05:52 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55208 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757015Ab1FUXFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 19:04:48 -0400
-Date: Tue, 21 Jun 2011 16:03:34 -0700 (PDT)
-Message-Id: <20110621.160334.1438754754048406782.davem@davemloft.net>
-To: jj@chaosbits.net
-Cc: netdev@vger.kernel.org, coreteam@netfilter.org, netfilter@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xeb@mail.ru
-Subject: Re: [PATCH] Remove redundant linux/version.h includes from net/
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LNX.2.00.1106210009520.27735@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1106210009520.27735@swampdragon.chaosbits.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 21 Jun 2011 19:05:51 -0400
+Date: Tue, 21 Jun 2011 16:05:28 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Arun Sharma <asharma@fb.com>, uclinux-dist-devel@blackfin.uclinux.org
+Subject: Re: [PATCH 6/6] Blackfin: SMP: convert to common
+ asm-generic/atomic.h
+Message-Id: <20110621160528.7c92cff0.akpm@linux-foundation.org>
+In-Reply-To: <1308347614-402-7-git-send-email-vapier@gentoo.org>
+References: <1308347614-402-1-git-send-email-vapier@gentoo.org>
+	<1308347614-402-7-git-send-email-vapier@gentoo.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 21 Jun 2011 16:03:36 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jesper Juhl <jj@chaosbits.net>
-Date: Tue, 21 Jun 2011 00:13:10 +0200 (CEST)
+On Fri, 17 Jun 2011 17:53:34 -0400
+Mike Frysinger <vapier@gentoo.org> wrote:
 
-> It was suggested by "make versioncheck" that the follwing includes of
-> linux/version.h are redundant:
-> 
->   /home/jj/src/linux-2.6/net/caif/caif_dev.c: 14 linux/version.h not needed.
->   /home/jj/src/linux-2.6/net/caif/chnl_net.c: 10 linux/version.h not needed.
->   /home/jj/src/linux-2.6/net/ipv4/gre.c: 19 linux/version.h not needed.
->   /home/jj/src/linux-2.6/net/netfilter/ipset/ip_set_core.c: 20 linux/version.h not needed.
->   /home/jj/src/linux-2.6/net/netfilter/xt_set.c: 16 linux/version.h not needed.
-> 
-> and it seems that it is right.
-> 
-> Beyond manually inspecting the source files I also did a few build
-> tests with various configs to confirm that including the header in
-> those files is indeed not needed.
-> 
-> Here's a patch to remove the pointless includes.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> Now that common code supports SMP systems, switch our SMP atomic logic
+> over to it to avoid code duplication.
 
-Applied, thanks.
+There were some rejects on this one, I think because lines 2, 3 and 4
+had non-ascii crap in them and because your patch was expecting
+inclusions of asm-generic/atomic-long.h and asm-generic/atomic64.h,
+which were removed.
+
+I ended up with the below but I don't know if it works.
+
+/*
+ * Copyright 2004-2011 Analog Devices Inc.
+_*
+_* Licensed under the GPL-2 or later.
+_*/
+
+#ifndef __ARCH_BLACKFIN_ATOMIC__
+#define __ARCH_BLACKFIN_ATOMIC__
+
+#ifdef CONFIG_SMP
+
+#include <linux/linkage.h>
+
+asmlinkage int __raw_uncached_fetch_asm(const volatile int *ptr);
+asmlinkage int __raw_atomic_update_asm(volatile int *ptr, int value);
+asmlinkage int __raw_atomic_clear_asm(volatile int *ptr, int value);
+asmlinkage int __raw_atomic_set_asm(volatile int *ptr, int value);
+asmlinkage int __raw_atomic_xor_asm(volatile int *ptr, int value);
+asmlinkage int __raw_atomic_test_asm(const volatile int *ptr, int value);
+
+#define atomic_read(v) __raw_uncached_fetch_asm(&(v)->counter)
+
+#define atomic_add_return(i, v) __raw_atomic_update_asm(&(v)->counter, i)
+#define atomic_sub_return(i, v) __raw_atomic_update_asm(&(v)->counter, -(i))
+#define atomic_clear_mask(m, v) __raw_atomic_clear_asm(&(v)->counter, m)
+#define atomic_set_mask(m, v)   __raw_atomic_set_asm(&(v)->counter, m)
+
+#endif
+
+#include <asm-generic/atomic.h>
+
+#endif
