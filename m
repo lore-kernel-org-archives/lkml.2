@@ -1,65 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757386Ab1FUTE4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 15:04:56 -0400
-Received: from rs35.luxsci.com ([66.216.127.90]:36335 "EHLO rs35.luxsci.com"
+	id S1757433Ab1FUTII (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 15:08:08 -0400
+Received: from mga03.intel.com ([143.182.124.21]:3993 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757310Ab1FUTEx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 15:04:53 -0400
-Message-ID: <4E00EB41.9080606@firmworks.com>
-Date: Tue, 21 Jun 2011 09:04:33 -1000
-From: Mitch Bradley <wmb@firmworks.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1757366Ab1FUTIE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 15:08:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,402,1304319600"; 
+   d="scan'208";a="16354697"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Marc Koschewski <marc@osknowledge.org>, "greg@kroah.com" <greg@kroah.com>
+CC: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>,
+        "Weil, Oren jer" <oren.jer.weil@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 21 Jun 2011 22:07:27 +0300
+Subject: RE: mei driver breaks suspend on 3.0git
+Thread-Topic: mei driver breaks suspend on 3.0git
+Thread-Index: AcwwQqSO3SZsGSleTKeAsGNDmqq6XQAAs4Xg
+Message-ID: <6F5C1D715B2DA5498A628E6B9C124F0401B87DC7EA@hasmsx504.ger.corp.intel.com>
+References: <201106121314.26394.a.miskiewicz@gmail.com>
+ <201106122016.33399.a.miskiewicz@gmail.com>
+ <201106122038.36623.a.miskiewicz@gmail.com>
+ <201106122040.21950.a.miskiewicz@gmail.com>
+ <6F5C1D715B2DA5498A628E6B9C124F0401AD318B15@hasmsx504.ger.corp.intel.com>
+ <20110621183954.GA17528@marc.osknowledge.org>
+In-Reply-To: <20110621183954.GA17528@marc.osknowledge.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Shawn Guo <shawn.guo@freescale.com>, patches@linaro.org,
-        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Jason Liu <jason.hui@linaro.org>, linux-kernel@vger.kernel.org,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] serial/imx: add device tree support
-References: <1308410354-21387-1-git-send-email-shawn.guo@linaro.org> <1308410354-21387-2-git-send-email-shawn.guo@linaro.org> <20110618161934.GH8195@ponder.secretlab.ca> <20110619073000.GA23171@S2100-06.ap.freescale.net> <20110621135558.GB9228@S2101-09.ap.freescale.net> <4E00E3D2.6050602@firmworks.com> <BANLkTiny9xDwiUww9Ys+jQZ0SHdQATABUA@mail.gmail.com>
-In-Reply-To: <BANLkTiny9xDwiUww9Ys+jQZ0SHdQATABUA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/21/2011 8:42 AM, Grant Likely wrote:
-> On Tue, Jun 21, 2011 at 12:32 PM, Mitch Bradley<wmb@firmworks.com>  wrote:
->> I wonder if it makes sense to create a new device node "/linux-devices" to express a desired mapping from device nodes to /dev entries?  The properties could be the names of device special files and the values the corresponding node phandles.
->
-> I've been trying /really/ hard to avoid doing something like that
-> because a lot of the time the desired Linux dev name is a
-> implementation detail, and a potentially unstable one at that.  If
-> Linux requires certain devices to have certain names because that is
-> how it hooks up clocks (which is the current situation on some
-> platforms), then I'd rather have Linux encode a lookup of the
-> preferred name, at least until the that particular implementation
-> detail goes away.
->
-> As for enumerating devices, I don't think this is a Linux-specific
-> thing.  In this case it is entirely reasonable to want to say /this
-> node/ is the second serial port, and /that node/ is the third, which
-> is information needed regardless of the client OS.
 
 
-This reminds me a little of the "slot-names" property defined by the PCI 
-bus binding.  It was intended to correlate PCI device numbers with the 
-corresponding externally-visible labeling of the slot, so that error 
-messages could identify a slot using a name that had some meaning to a user.
+> -----Original Message-----
+> From: Marc Koschewski [mailto:marc@osknowledge.org]
+> Sent: Tuesday, June 21, 2011 9:40 PM
+> To: Winkler, Tomas
+> Cc: Arkadiusz Miskiewicz; Weil, Oren jer; linux-kernel@vger.kernel.org
+> Subject: Re: mei driver breaks suspend on 3.0git
+> 
+> * Winkler, Tomas <tomas.winkler@intel.com> [2011-06-12 22:41:59 +0300]:
+> 
+> I suffer the same. After booting 3.0.0-r4 with that module not being loaded it
+> suspends, however, it doesn't resume (screen black, hard power-off
+> needed).
 
-The notion of "first" and "second" is, of course, rather difficult to 
-define precisely.  What aspect of the device establishes the order?
+The patch was already posted https://lkml.org/lkml/2011/6/13/148 but wasn't picked up for rc4 yet. 
+For now please apply it your by yourself.
 
-The "slot-names" property was useful for systems from e.g. Sun, where 
-one vendor controlled the whole system rollup.  It was almost useless 
-for cases where the one vendor supplied the motherboard and others put 
-it in various cases.
+ Greg, will you collect staging fixes for rc5 or shell it be picked up directly by Linus?
 
->
-> g.
->
->
+Thanks
+Tomas
+
+> Regards,
+> Marc
+> 
+> >
+> >
+> > > -----Original Message-----
+> > > From: Arkadiusz Miskiewicz [mailto:a.miskiewicz@gmail.com]
+> > > Sent: Sunday, June 12, 2011 9:40 PM
+> > > To: Winkler, Tomas
+> > > Cc: Weil, Oren jer; linux-kernel@vger.kernel.org
+> > > Subject: Re: mei driver breaks suspend on 3.0git
+> > >
+> > > On Sunday 12 of June 2011, Arkadiusz Miskiewicz wrote:
+> > > > On Sunday 12 of June 2011, Arkadiusz Miskiewicz wrote:
+> > > > > On Sunday 12 of June 2011, Winkler, Tomas wrote:
+> > > > > > > -----Original Message-----
+> > > > > > > From: Weil, Oren jer
+> > > > > > > Sent: Sunday, June 12, 2011 8:36 PM
+> > > > > > > To: Arkadiusz Miskiewicz
+> > > > > > > Cc: Winkler, Tomas; linux-kernel@vger.kernel.org
+> > > > > > > Subject: RE: mei driver breaks suspend on 3.0git
+> > > > > > >
+> > > > > > > >It's thinkpad t400 with
+> > > > > > > >00:03.0 Communication controller [0780]: Intel Corporation
+> > > > > > > >Mobile 4 Series Chipset MEI Controller [8086:2a44] (rev 07)
+> > > > > > >
+> > > > > > > Can you send us more details? Does it happened in stress?
+> > > > > > > How do I reproduce it?
+> > > > >
+> > > > > No stress. This is my daily use notebook and I simply suspend to
+> > > > > ram when sitting under X in kde4.
+> > > > >
+> > > > > > > Can you send us the debug prints?
+> > > > >
+> > > > > Attached. suspend starts, tries to resume devices, MEI suspend
+> > > > > fails causing whole suspend to be aborted.
+> > > >
+> > > > Shouldn't ret > 0 in mei_wd_stop to be "success"?
+> > >
+> > > I meant this one:
+> > >
+> > >         ret = wait_event_interruptible_timeout(dev->wait_stop_wd,
+> > >                                         dev->wd_stopped, 10 * HZ);
+> > >
+> > >
+> > > And that was possible untested solution that relies on wd being
+> > > stopped and not anything else.
+> > >
+> > > >
+> > > > diff --git a/drivers/staging/mei/wd.c b/drivers/staging/mei/wd.c
+> > > > index 2564b03..608245a 100644
+> > > > --- a/drivers/staging/mei/wd.c
+> > > > +++ b/drivers/staging/mei/wd.c
+> > > > @@ -171,8 +171,10 @@ int mei_wd_stop(struct mei_device *dev, bool
+> > > preserve)
+> > > >         mutex_lock(&dev->device_lock);
+> > > >         if (!dev->wd_stopped)
+> > > >                 dev_dbg(&dev->pdev->dev, "stop wd failed to complete.\n");
+> > > > -       else
+> > > > +       else {
+> > > > +               ret = 0;
+> > > >                 dev_dbg(&dev->pdev->dev, "stop wd complete.\n");
+> > > > +       }
+> > > >
+> > > >         if (preserve)
+> > > >                 dev->wd_timeout = wd_timeout;
+> > >
+> >
+> > Looks like your patch is correct
+> > wait_event_interruptible_timeout() returns  >0 on success unlike
+> > wait_even_interruptable()
+> >
+> > I wil check all the instances we have and issue a patch.
+> > Thanks for your effort
+> > Tomas
+> >
+> > ---------------------------------------------------------------------
+> > Intel Israel (74) Limited
+> >
+> > This e-mail and any attachments may contain confidential material for
+> > the sole use of the intended recipient(s). Any review or distribution
+> > by others is strictly prohibited. If you are not the intended
+> > recipient, please contact the sender and delete all copies.
+> 
+> --
+> Marc Koschewski
+---------------------------------------------------------------------
+Intel Israel (74) Limited
+
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+
