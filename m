@@ -1,70 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756658Ab1FUA2h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 20:28:37 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:40335 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756595Ab1FUA2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 20:28:36 -0400
-Date: Tue, 21 Jun 2011 01:27:57 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm radeon + nouveau fixes.
-Message-ID: <alpine.DEB.2.00.1106210124360.9507@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756640Ab1FUA2V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 20:28:21 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:63958 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756318Ab1FUA2U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 20:28:20 -0400
+X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=ogTdH59n8DkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=tHz9FfFoAAAA:8 a=wjQiPgO9Tk7QNIx8TbcA:9 a=1QxbqjE6Gvz6qidyCp0A:7 a=PUjeQqilurYA:10 a=6O0IECtVFhoA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 07/15] xen/trace: add xen_pgd_(un)pin tracepoints
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Xen Devel <Xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+In-Reply-To: <cdfa49a00e83b62d4fbd0cab251c9c1571a3ce6f.1308607697.git.jeremy.fitzhardinge@citrix.com>
+References: <cover.1308607697.git.jeremy.fitzhardinge@citrix.com>
+	 <cdfa49a00e83b62d4fbd0cab251c9c1571a3ce6f.1308607697.git.jeremy.fitzhardinge@citrix.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 20 Jun 2011 20:28:18 -0400
+Message-ID: <1308616098.531.5.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2011-06-20 at 15:15 -0700, Jeremy Fitzhardinge wrote:
+> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> 
+> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> ---
+>  arch/x86/xen/mmu.c         |    4 ++++
+>  include/trace/events/xen.h |   24 ++++++++++++++++++++++++
+>  2 files changed, 28 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> index 84c796f..8aaa398 100644
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -884,6 +884,8 @@ static int xen_pin_page(struct mm_struct *mm, struct page *page,
+>     read-only, and can be pinned. */
+>  static void __xen_pgd_pin(struct mm_struct *mm, pgd_t *pgd)
+>  {
+> +	trace_xen_mmu_pgd_pin(mm, pgd);
+> +
+>  	xen_mc_batch();
+>  
+>  	if (__xen_pgd_walk(mm, pgd, xen_pin_page, USER_LIMIT)) {
+> @@ -1009,6 +1011,8 @@ static int xen_unpin_page(struct mm_struct *mm, struct page *page,
+>  /* Release a pagetables pages back as normal RW */
+>  static void __xen_pgd_unpin(struct mm_struct *mm, pgd_t *pgd)
+>  {
+> +	trace_xen_mmu_pgd_unpin(mm, pgd);
+> +
+>  	xen_mc_batch();
+>  
+>  	xen_do_pin(MMUEXT_UNPIN_TABLE, PFN_DOWN(__pa(pgd)));
+> diff --git a/include/trace/events/xen.h b/include/trace/events/xen.h
+> index 16edcb7..5811c24 100644
+> --- a/include/trace/events/xen.h
+> +++ b/include/trace/events/xen.h
+> @@ -381,6 +381,30 @@ TRACE_EVENT(xen_mmu_release_ptpage,
+>  		      __entry->pinned ? "" : "un")
+>  	);
+>  
+> +TRACE_EVENT(xen_mmu_pgd_pin,
+> +	    TP_PROTO(struct mm_struct *mm, pgd_t *pgd),
+> +	    TP_ARGS(mm, pgd),
+> +	    TP_STRUCT__entry(
+> +		    __field(struct mm_struct *, mm)
+> +		    __field(pgd_t *, pgd)
+> +		    ),
+> +	    TP_fast_assign(__entry->mm = mm;
+> +			   __entry->pgd = pgd),
+> +	    TP_printk("mm %p pgd %p", __entry->mm, __entry->pgd)
+> +	);
+> +
+> +TRACE_EVENT(xen_mmu_pgd_unpin,
+> +	    TP_PROTO(struct mm_struct *mm, pgd_t *pgd),
+> +	    TP_ARGS(mm, pgd),
+> +	    TP_STRUCT__entry(
+> +		    __field(struct mm_struct *, mm)
+> +		    __field(pgd_t *, pgd)
+> +		    ),
+> +	    TP_fast_assign(__entry->mm = mm;
+> +			   __entry->pgd = pgd),
+> +	    TP_printk("mm %p pgd %p", __entry->mm, __entry->pgd)
+> +	);
+> +
+>  #endif /*  _TRACE_XEN_H */
 
-Hi Linus,
 
-just some nouveau and radeon fixes, nothing major, couple of fixes for 
-rv730 since I plugged in the 30" monitor and it didn't work, one fix for 
-the switchy GPU machines getting spammed when radeon shared an irq and 
-some nouveau regression fixes from Ben.
+Looks like there's lots of candidates for DECLARE_EVENT_CLASS() and
+DEFINE_EVENT()s.
 
-Dave.
+-- Steve
 
-The following changes since commit de505e709ffb09a7382ca8e0d8c7dbb171ba5830:
+>  
+>  /* This part must be outside protection */
 
-  Merge branch 'hwmon-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging (2011-06-18 20:33:31 -0700)
 
-are available in the git repository at:
-
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
-
-Alex Deucher (3):
-      drm/radeon/kms/atom: fix duallink on some early DCE3.2 cards
-      drm/radeon/kms: add missing param for dce3.2 DP transmitter setup
-      drm/radeon/kms/r6xx+: voltage fixes
-
-Ben Skeggs (3):
-      drm/nouveau: fix big-endian switch
-      drm/nv50/disp: fix gamma with page flipping overlay turned on
-      drm/nouveau: fix assumption that semaphore dmaobj is valid in x-chan sync
-
-Dave Airlie (3):
-      drm/radeon: avoid warnings from r600/eg irq handlers on powered off card.
-      Merge branch 'drm-nouveau-fixes' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
-      drm/nouveau: drop leftover debugging
-
-Emil Velikov (1):
-      drm/nouveau/pm: Prevent overflow in nouveau_perf_init()
-
- drivers/gpu/drm/nouveau/nouveau_acpi.c   |    1 -
- drivers/gpu/drm/nouveau/nouveau_fence.c  |   59 +++++++++++++-----------------
- drivers/gpu/drm/nouveau/nouveau_perf.c   |    5 +++
- drivers/gpu/drm/nouveau/nouveau_state.c  |    4 +-
- drivers/gpu/drm/nouveau/nv50_display.c   |   17 +++++++--
- drivers/gpu/drm/radeon/evergreen.c       |   23 +++++++-----
- drivers/gpu/drm/radeon/r600.c            |   18 +++++----
- drivers/gpu/drm/radeon/radeon_atombios.c |    4 ++
- drivers/gpu/drm/radeon/radeon_encoders.c |   11 ++++--
- drivers/gpu/drm/radeon/rv770.c           |    3 ++
- 10 files changed, 84 insertions(+), 61 deletions(-)
