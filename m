@@ -1,56 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757210Ab1FUR2L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 13:28:11 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19868 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757055Ab1FUR2J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 13:28:09 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 21 Jun 2011 10:27:59 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: John Bonesio <bones@secretlab.ca>, Ken Radtke <kradtke@nvidia.com>,
-        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        Rakesh Iyer <riyer@nvidia.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>
-Date: Tue, 21 Jun 2011 10:27:57 -0700
-Subject: RE: [PATCH] ARM: Tegra: i2c driver
-Thread-Topic: [PATCH] ARM: Tegra: i2c driver
-Thread-Index: AcwvqXAoR1eTTdk5ShmLzw20RAjhtwAjrsCw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF049D2EB8AD@HQMAIL01.nvidia.com>
-References: <20110621002318.8086.48367.stgit@riker>
-In-Reply-To: <20110621002318.8086.48367.stgit@riker>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1753485Ab1FURbB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 13:31:01 -0400
+Received: from claw.goop.org ([74.207.240.146]:52298 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751893Ab1FURa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 13:30:58 -0400
+Message-ID: <4E00D551.1040105@goop.org>
+Date: Tue, 21 Jun 2011 10:30:57 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Xen Devel <Xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 07/15] xen/trace: add xen_pgd_(un)pin tracepoints
+References: <cover.1308607697.git.jeremy.fitzhardinge@citrix.com>	 <cdfa49a00e83b62d4fbd0cab251c9c1571a3ce6f.1308607697.git.jeremy.fitzhardinge@citrix.com> <1308616098.531.5.camel@gandalf.stny.rr.com>
+In-Reply-To: <1308616098.531.5.camel@gandalf.stny.rr.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p5LHSKZI018258
 
-John Bonesio wrote at Monday, June 20, 2011 6:23 PM:
-> This patch modifies the tegra i2c driver so that it can be initiailized
-> using the device tree along with the devices connected to the i2c bus.
+On 06/20/2011 05:28 PM, Steven Rostedt wrote:
+> On Mon, 2011-06-20 at 15:15 -0700, Jeremy Fitzhardinge wrote:
+>> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>>
+>> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>> ---
+>>  arch/x86/xen/mmu.c         |    4 ++++
+>>  include/trace/events/xen.h |   24 ++++++++++++++++++++++++
+>>  2 files changed, 28 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+>> index 84c796f..8aaa398 100644
+>> --- a/arch/x86/xen/mmu.c
+>> +++ b/arch/x86/xen/mmu.c
+>> @@ -884,6 +884,8 @@ static int xen_pin_page(struct mm_struct *mm, struct page *page,
+>>     read-only, and can be pinned. */
+>>  static void __xen_pgd_pin(struct mm_struct *mm, pgd_t *pgd)
+>>  {
+>> +	trace_xen_mmu_pgd_pin(mm, pgd);
+>> +
+>>  	xen_mc_batch();
+>>  
+>>  	if (__xen_pgd_walk(mm, pgd, xen_pin_page, USER_LIMIT)) {
+>> @@ -1009,6 +1011,8 @@ static int xen_unpin_page(struct mm_struct *mm, struct page *page,
+>>  /* Release a pagetables pages back as normal RW */
+>>  static void __xen_pgd_unpin(struct mm_struct *mm, pgd_t *pgd)
+>>  {
+>> +	trace_xen_mmu_pgd_unpin(mm, pgd);
+>> +
+>>  	xen_mc_batch();
+>>  
+>>  	xen_do_pin(MMUEXT_UNPIN_TABLE, PFN_DOWN(__pa(pgd)));
+>> diff --git a/include/trace/events/xen.h b/include/trace/events/xen.h
+>> index 16edcb7..5811c24 100644
+>> --- a/include/trace/events/xen.h
+>> +++ b/include/trace/events/xen.h
+>> @@ -381,6 +381,30 @@ TRACE_EVENT(xen_mmu_release_ptpage,
+>>  		      __entry->pinned ? "" : "un")
+>>  	);
+>>  
+>> +TRACE_EVENT(xen_mmu_pgd_pin,
+>> +	    TP_PROTO(struct mm_struct *mm, pgd_t *pgd),
+>> +	    TP_ARGS(mm, pgd),
+>> +	    TP_STRUCT__entry(
+>> +		    __field(struct mm_struct *, mm)
+>> +		    __field(pgd_t *, pgd)
+>> +		    ),
+>> +	    TP_fast_assign(__entry->mm = mm;
+>> +			   __entry->pgd = pgd),
+>> +	    TP_printk("mm %p pgd %p", __entry->mm, __entry->pgd)
+>> +	);
+>> +
+>> +TRACE_EVENT(xen_mmu_pgd_unpin,
+>> +	    TP_PROTO(struct mm_struct *mm, pgd_t *pgd),
+>> +	    TP_ARGS(mm, pgd),
+>> +	    TP_STRUCT__entry(
+>> +		    __field(struct mm_struct *, mm)
+>> +		    __field(pgd_t *, pgd)
+>> +		    ),
+>> +	    TP_fast_assign(__entry->mm = mm;
+>> +			   __entry->pgd = pgd),
+>> +	    TP_printk("mm %p pgd %p", __entry->mm, __entry->pgd)
+>> +	);
+>> +
+>>  #endif /*  _TRACE_XEN_H */
+>
+> Looks like there's lots of candidates for DECLARE_EVENT_CLASS() and
+> DEFINE_EVENT()s.
 
-The patch title "ARM: Tegra: i2c driver" doesn't really describe what the
-patch does and has the wrong tag; It sounds like adding a new driver.
-Perhaps "i2c: Tegra: Add DeviceTree support"?
+Thanks for the pointer, that cleans things up a bit.
 
-The code looks fine.
-
--- 
-nvpublic
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+    J
