@@ -1,106 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab1FUEvO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 00:51:14 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:50497 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706Ab1FUEvJ (ORCPT
+	id S1752840Ab1FUE7u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 00:59:50 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:44969 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752658Ab1FUE7t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 00:51:09 -0400
-X-AuditID: b753bd60-a0a78ba0000050a4-4c-4e00233b006b
-X-AuditID: b753bd60-a0a78ba0000050a4-4c-4e00233b006b
-Message-ID: <4E002337.1010208@hitachi.com>
-Date: Tue, 21 Jun 2011 13:51:03 +0900
-From: Nao Nishijima <nao.nishijima.xt@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Tue, 21 Jun 2011 00:59:49 -0400
 MIME-Version: 1.0
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Greg KH <greg@kroah.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jcm@redhat.com, hare@suse.de,
-        stefanr@s5r6.in-berlin.de, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 1/3] [RFC] genhd: add a new attribute in device structure
-References: <20110616181943.GB1439@kroah.com> <1308256290.2436.143.camel@mulgrave> <BANLkTikfCMR_=5Jp7tLhM_Wr3vxihEL+rA@mail.gmail.com> <1308264321.2436.161.camel@mulgrave> <BANLkTinvfmU0dszQyu4U=Pw3_BtrmOUi_g@mail.gmail.com> <1308320844.2586.14.camel@mulgrave> <BANLkTikMa6vO4m3tk1O2mtj76k6s66f2gQ@mail.gmail.com> <1308322193.2586.30.camel@mulgrave> <BANLkTinywFK3yAxN51O7RDYyqeNRHBRThA@mail.gmail.com> <BANLkTinMzyQWZvxiRw4tvZBwW5xsxvMz-Q@mail.gmail.com> <20110617162247.GA16261@kroah.com> <1308426017.2586.1273.camel@mulgrave> <BANLkTin6xfEv85v2BnN1hOuCKtQfzc1Eiw@mail.gmail.com>
-In-Reply-To: <BANLkTin6xfEv85v2BnN1hOuCKtQfzc1Eiw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20110621002318.8086.48367.stgit@riker>
+References: <20110621002318.8086.48367.stgit@riker>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 20 Jun 2011 22:59:28 -0600
+X-Google-Sender-Auth: pydVXVdOpGkBGucP_oERlSDW7Oo
+Message-ID: <BANLkTi=aaSnT-incv3FhOZ0Yp8CtYf31mA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: Tegra: i2c driver
+To: John Bonesio <bones@secretlab.ca>
+Cc: kradtke@nvidia.com, swarren@nvidia.com, lucas.demarchi@profusion.mobi,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        riyer@nvidia.com, linux-i2c@vger.kernel.org, ben-linux@fluff.org,
+        khali@linux-fr.org, Olof Johansson <olofj@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/19 4:55), Kay Sievers wrote:
-> On Sat, Jun 18, 2011 at 21:40, James Bottomley
-> <James.Bottomley@hansenpartnership.com> wrote:
->> On Fri, 2011-06-17 at 09:22 -0700, Greg KH wrote:
->>> On Fri, Jun 17, 2011 at 06:12:14PM +0200, Kay Sievers wrote:
->>>> On Fri, Jun 17, 2011 at 17:39, Kay Sievers <kay.sievers@vrfy.org> wrote:
->>>>> On Fri, Jun 17, 2011 at 16:49, James Bottomley
->>>>
->>>>>> So this is subsystem specific.  For the case of a SCSI enclosure, I can
->>>>>> answer that it's actually burned into the enclosure firmware.  When you
->>>>>> build an enclosure with labels, the label names are stored in a
->>>>>> diagnostic page.  We can actually interrogate the enclosure directly or
->>>>>> use the ses driver to get these names mapped to current devices.
->>>>>
->>>>> To me this sounds like a nice name on top of the current bunch of
->>>>> names, not like a 'preferred' name.
->>>>>
->>>>> I still don't like to introduce any new facility to the kernel that
->>>>> can handle only one single name. Reality the last years has taught us
->>>>> a very different story, and we've walked a long way to get where we
->>>>> are. I really don't believe single names will ever work, it's just a
->>>>> nice theory.
->>>>
->>>> I might need to clarify this a bit.
->>>>
->>>> I have no problem in general to add a 'alias' to every disk, and use
->>>> that when stuff is logged. Just the same way the netifs have an alias.
->>>> Sure, it might be useful for some use cases. And if that helps to
->>>> solve any real problem, we should just do it.
->>>>
->>>> I just want to make clear, that I don't think that it is anywhere near
->>>> to a solution for the problems which are described here. And that
->>>> nobody should see this as an excuse not to get their stuff together
->>>> and work on the problem, which is that we don't have machine-readable
->>>> error and debug from the kernel and a smart syslog.
->>>>
->>>> If we had that, I'm very sure nobody would even ask for a 'pretty
->>>> name' in the kernel, and I think that is a good indication that we are
->>>> not on the right track here.
->>>
->>> And I totally agree here, which is why I don't want to accept this
->>> change to the driver core to add this, as it's not the correct solution.
->>
->> OK, fine ... we'll do it as gendisk only then.  I suppose that is the
->> 95% use case anyway.
-> 
-> Sounds fine. It's probably easier to have it domain-specific anyway.
-> Just like the netif alias already is.
-> 
+On Mon, Jun 20, 2011 at 6:23 PM, John Bonesio <bones@secretlab.ca> wrote:
+> This patch modifies the tegra i2c driver so that it can be initiailized
+> using the device tree along with the devices connected to the i2c bus.
+>
+> Signed-off-by: John Bonesio <bones@secretlab.ca>
 
-Agreed. Our purpose is to output disk's alias name in kernel messages.
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-> I would suggest not to call it 'preferred' though, but something
-> similar to 'alias'. Having /dev/disk/by-preferred/ doesn't sound too
-> convincing to me.
-> 
+> ---
+>
+>  drivers/i2c/busses/i2c-tegra.c |   17 ++++++++++++++++-
+>  1 files changed, 16 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
+> index 4d93196..d2393e6 100644
+> --- a/drivers/i2c/busses/i2c-tegra.c
+> +++ b/drivers/i2c/busses/i2c-tegra.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/delay.h>
+>  #include <linux/slab.h>
+>  #include <linux/i2c-tegra.h>
+> +#include <linux/of_i2c.h>
+>
+>  #include <asm/unaligned.h>
+>
+> @@ -540,6 +541,7 @@ static int tegra_i2c_probe(struct platform_device *pdev)
+>        struct resource *iomem;
+>        struct clk *clk;
+>        struct clk *i2c_clk;
+> +       const unsigned int *prop;
+>        void *base;
+>        int irq;
+>        int ret = 0;
+> @@ -597,7 +599,17 @@ static int tegra_i2c_probe(struct platform_device *pdev)
+>        i2c_dev->irq = irq;
+>        i2c_dev->cont_id = pdev->id;
+>        i2c_dev->dev = &pdev->dev;
+> -       i2c_dev->bus_clk_rate = pdata ? pdata->bus_clk_rate : 100000;
+> +
+> +       i2c_dev->bus_clk_rate = 100000; /* default clock rate */
+> +       if (pdata) {
+> +               i2c_dev->bus_clk_rate = pdata->bus_clk_rate;
+> +
+> +       } else if (i2c_dev->dev->of_node) {    /* if there is a device tree node ... */
+> +               prop = of_get_property(i2c_dev->dev->of_node,
+> +                               "clock-frequency", NULL);
+> +               if (prop)
+> +                       i2c_dev->bus_clk_rate = be32_to_cpup(prop);
+> +       }
+>
+>        if (pdev->id == 3)
+>                i2c_dev->is_dvc = 1;
+> @@ -627,6 +639,7 @@ static int tegra_i2c_probe(struct platform_device *pdev)
+>        i2c_dev->adapter.algo = &tegra_i2c_algo;
+>        i2c_dev->adapter.dev.parent = &pdev->dev;
+>        i2c_dev->adapter.nr = pdev->id;
+> +       i2c_dev->adapter.dev.of_node = pdev->dev.of_node;
+>
+>        ret = i2c_add_numbered_adapter(&i2c_dev->adapter);
+>        if (ret) {
+> @@ -634,6 +647,8 @@ static int tegra_i2c_probe(struct platform_device *pdev)
+>                goto err_free_irq;
+>        }
+>
+> +       of_i2c_register_devices(&i2c_dev->adapter);
+> +
+>        return 0;
+>  err_free_irq:
+>        free_irq(i2c_dev->irq, i2c_dev);
+>
+>
 
-OK, I will change 'preferred name' to 'alias name'.
 
-> An 'change' uevent when the alias is set sounds fine. I don't think a
-> set-once policy is needed.
-> 
-
-I will intent to implement as follows
-- Change the name from preferred to alias
-- Add alias_name in gendisk
-- Notify 'change' uevent when the alias is set
-
-Thanks,
 
 -- 
-Nao NISHIJIMA
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., YOKOHAMA Research  Laboratory
-Emailï¼š nao.nishijima.xt@hitachi.com
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
