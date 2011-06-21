@@ -1,123 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab1FUNzg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 09:55:36 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:60616 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623Ab1FUNzf (ORCPT
+	id S1756707Ab1FUNpw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 09:45:52 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:36183
+	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752978Ab1FUNpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 09:55:35 -0400
-Date: Tue, 21 Jun 2011 09:55:11 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Xen Devel <Xen-devel@lists.xensource.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 06/15] xen/trace: add ptpage alloc/release tracepoints
-Message-ID: <20110621135511.GB28229@dumpdata.com>
-References: <cover.1308607697.git.jeremy.fitzhardinge@citrix.com>
- <a92051a41ed96ad362d1f79c7b3e36c8cc4dd80b.1308607697.git.jeremy.fitzhardinge@citrix.com>
+	Tue, 21 Jun 2011 09:45:51 -0400
+X-SpamScore: -15
+X-BigFish: VS-15(zz179dN1432N98dKzz1202hzzz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Tue, 21 Jun 2011 21:55:59 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: <patches@linaro.org>, <netdev@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        Jason Liu <jason.hui@linaro.org>, <linux-kernel@vger.kernel.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/3] serial/imx: add device tree support
+Message-ID: <20110621135558.GB9228@S2101-09.ap.freescale.net>
+References: <1308410354-21387-1-git-send-email-shawn.guo@linaro.org>
+ <1308410354-21387-2-git-send-email-shawn.guo@linaro.org>
+ <20110618161934.GH8195@ponder.secretlab.ca>
+ <20110619073000.GA23171@S2100-06.ap.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <a92051a41ed96ad362d1f79c7b3e36c8cc4dd80b.1308607697.git.jeremy.fitzhardinge@citrix.com>
+In-Reply-To: <20110619073000.GA23171@S2100-06.ap.freescale.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4E00A2CD.0033:SCFMA922111,ss=1,re=-4.000,fgs=0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 03:15:02PM -0700, Jeremy Fitzhardinge wrote:
-> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Hi Grant,
+
+I just gave a try to use aliases node for identify the device index.
+Please take a look and let me know if it's what you expect.
+
+On Sun, Jun 19, 2011 at 03:30:02PM +0800, Shawn Guo wrote:
+[...]
+> > >  
+> > > +#ifdef CONFIG_OF
+> > > +static int serial_imx_probe_dt(struct imx_port *sport,
+> > > +		struct platform_device *pdev)
+> > > +{
+> > > +	struct device_node *node = pdev->dev.of_node;
+> > > +	const __be32 *line;
+> > > +
+> > > +	if (!node)
+> > > +		return -ENODEV;
+> > > +
+> > > +	line = of_get_property(node, "id", NULL);
+> > > +	if (!line)
+> > > +		return -ENODEV;
+> > > +
+> > > +	sport->port.line = be32_to_cpup(line) - 1;
+> > 
+> > Hmmm, I really would like to be rid of this.  Instead, if uarts must
+> > be enumerated, the driver should look for a /aliases/uart* property
+> > that matches the of_node.  Doing it that way is already established in
+> > the OpenFirmware documentation, and it ensures there are no overlaps
+> > in the global namespace.
+> > 
 > 
-> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> ---
->  arch/x86/xen/mmu.c         |   10 ++++++++--
->  include/trace/events/xen.h |   33 +++++++++++++++++++++++++++++++++
->  2 files changed, 41 insertions(+), 2 deletions(-)
+> I just gave one more try to avoid using 'aliases', and you gave a
+> 'no' again.  Now, I know how hard you are on this.  Okay, I start
+> thinking about your suggestion seriously :)
 > 
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index 90101c5..84c796f 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -1473,8 +1473,11 @@ static void __init xen_release_pmd_init(unsigned long pfn)
->  static void xen_alloc_ptpage(struct mm_struct *mm, unsigned long pfn, unsigned level)
->  {
->  	struct page *page = pfn_to_page(pfn);
-> +	int pinned = PagePinned(virt_to_page(mm->pgd));
+> > We do need some infrastructure to make that easier though.  Would you
+> > have time to help put that together?
+> > 
+> Ok, I will give it a try.
+> 
 
-Why not use 'bool' as you
-> + 
+diff --git a/arch/arm/boot/dts/imx51-babbage.dts b/arch/arm/boot/dts/imx51-babbage.dts
+index da0381a..f4a5c3c 100644
+--- a/arch/arm/boot/dts/imx51-babbage.dts
++++ b/arch/arm/boot/dts/imx51-babbage.dts
+@@ -18,6 +18,12 @@
+ 	compatible = "fsl,imx51-babbage", "fsl,imx51";
+ 	interrupt-parent = <&tzic>;
+ 
++	aliases {
++		serial0 = &uart0;
++		serial1 = &uart1;
++		serial2 = &uart2;
++	};
++
+ 	chosen {
+ 		bootargs = "console=ttymxc0,115200 root=/dev/mmcblk0p3 rootwait";
+ 	};
+@@ -47,29 +53,29 @@
+ 			reg = <0x70000000 0x40000>;
+ 			ranges;
+ 
+-			uart@7000c000 {
++			uart2: uart@7000c000 {
+ 				compatible = "fsl,imx51-uart", "fsl,imx21-uart";
+ 				reg = <0x7000c000 0x4000>;
+ 				interrupts = <33>;
+ 				id = <3>;
+-				fsl,has-rts-cts;
++				fsl,uart-has-rtscts;
+ 			};
+ 		};
+ 
+-		uart@73fbc000 {
++		uart0: uart@73fbc000 {
+ 			compatible = "fsl,imx51-uart", "fsl,imx21-uart";
+ 			reg = <0x73fbc000 0x4000>;
+ 			interrupts = <31>;
+ 			id = <1>;
+-			fsl,has-rts-cts;
++			fsl,uart-has-rtscts;
+ 		};
+ 
+-		uart@73fc0000 {
++		uart1: uart@73fc0000 {
+ 			compatible = "fsl,imx51-uart", "fsl,imx21-uart";
+ 			reg = <0x73fc0000 0x4000>;
+ 			interrupts = <32>;
+ 			id = <2>;
+-			fsl,has-rts-cts;
++			fsl,uart-has-rtscts;
+ 		};
+ 	};
+ 
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index 632ebae..13df5d2 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -737,6 +737,37 @@ err0:
+ EXPORT_SYMBOL(of_parse_phandles_with_args);
+ 
+ /**
++ *	of_get_device_index - Get device index by looking up "aliases" node
++ *	@np:	Pointer to device node that asks for device index
++ *	@name:	The device alias without index number
++ *
++ *	Returns the device index if find it, else returns -ENODEV.
++ */
++int of_get_device_index(struct device_node *np, const char *alias)
++{
++	struct device_node *aliases = of_find_node_by_name(NULL, "aliases");
++	struct property *prop;
++	char name[32];
++	int index = 0;
++
++	if (!aliases)
++		return -ENODEV;
++
++	while (1) {
++		snprintf(name, sizeof(name), "%s%d", alias, index);
++		prop = of_find_property(aliases, name, NULL);
++		if (!prop)
++			return -ENODEV;
++		if (np == of_find_node_by_path(prop->value))
++			break;
++		index++;
++	}
++
++	return index;
++}
++EXPORT_SYMBOL(of_get_device_index);
++
++/**
+  * prom_add_property - Add a property to a node
+  */
+ int prom_add_property(struct device_node *np, struct property *prop)
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index da436e0..852668f 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -1271,18 +1271,18 @@ static int serial_imx_probe_dt(struct imx_port *sport,
+ 	struct device_node *node = pdev->dev.of_node;
+ 	const struct of_device_id *of_id =
+ 			of_match_device(imx_uart_dt_ids, &pdev->dev);
+-	const __be32 *line;
++	int line;
+ 
+ 	if (!node)
+ 		return -ENODEV;
+ 
+-	line = of_get_property(node, "id", NULL);
+-	if (!line)
++	line = of_get_device_index(node, "serial");
++	if (IS_ERR_VALUE(line))
+ 		return -ENODEV;
+ 
+-	sport->port.line = be32_to_cpup(line) - 1;
++	sport->port.line = line;
+ 
+-	if (of_get_property(node, "fsl,has-rts-cts", NULL))
++	if (of_get_property(node, "fsl,uart-has-rtscts", NULL))
+ 		sport->have_rtscts = 1;
+ 
+ 	if (of_get_property(node, "fsl,irda-mode", NULL))
+diff --git a/include/linux/of.h b/include/linux/of.h
+index bfc0ed1..3153752 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -213,6 +213,8 @@ extern int of_parse_phandles_with_args(struct device_node *np,
+ 	const char *list_name, const char *cells_name, int index,
+ 	struct device_node **out_node, const void **out_args);
+ 
++extern int of_get_device_index(struct device_node *np, const char *alias);
++
+ extern int of_machine_is_compatible(const char *compat);
+ 
+ extern int prom_add_property(struct device_node* np, struct property* prop);
 
-^ this above has a space right after it.
-> +	trace_xen_mmu_alloc_ptpage(mm, pfn, level, pinned);
->  
-> -	if (PagePinned(virt_to_page(mm->pgd))) {
-> +	if (pinned) {
->  		SetPagePinned(page);
->  
->  		if (!PageHighMem(page)) {
-> @@ -1503,8 +1506,11 @@ static void xen_alloc_pmd(struct mm_struct *mm, unsigned long pfn)
->  static void xen_release_ptpage(unsigned long pfn, unsigned level)
->  {
->  	struct page *page = pfn_to_page(pfn);
-> +	bool pinned = PagePinned(page);
+-- 
+Regards,
+Shawn
 
-..do here?
->  
-> -	if (PagePinned(page)) {
-> +	trace_xen_mmu_release_ptpage(pfn, level, pinned);
-> +
-> +	if (pinned) {
->  		if (!PageHighMem(page)) {
->  			if (level == PT_PTE && USE_SPLIT_PTLOCKS)
->  				pin_pagetable_pfn(MMUEXT_UNPIN_TABLE, pfn);
-> diff --git a/include/trace/events/xen.h b/include/trace/events/xen.h
-> index 5c4e967..16edcb7 100644
-> --- a/include/trace/events/xen.h
-> +++ b/include/trace/events/xen.h
-> @@ -347,6 +347,39 @@ TRACE_EVENT(xen_mmu_ptep_modify_prot_commit,
->  		      (int)sizeof(pteval_t) * 2, (unsigned long long)__entry->pteval)
->  	);
->  
-> +TRACE_EVENT(xen_mmu_alloc_ptpage,
-> +	    TP_PROTO(struct mm_struct *mm, unsigned long pfn, unsigned level, bool pinned),
-> +	    TP_ARGS(mm, pfn, level, pinned),
-> +	    TP_STRUCT__entry(
-> +		    __field(struct mm_struct *, mm)
-> +		    __field(unsigned long, pfn)
-> +		    __field(unsigned, level)
-> +		    __field(bool, pinned)
-> +		    ),
-> +	    TP_fast_assign(__entry->mm = mm;
-> +			   __entry->pfn = pfn;
-> +			   __entry->level = level;
-> +			   __entry->pinned = pinned),
-> +	    TP_printk("mm %p  pfn %lx  level %d  %spinned",
-> +		      __entry->mm, __entry->pfn, __entry->level,
-> +		      __entry->pinned ? "" : "un")
-> +	);
-> +
-> +TRACE_EVENT(xen_mmu_release_ptpage,
-> +	    TP_PROTO(unsigned long pfn, unsigned level, bool pinned),
-> +	    TP_ARGS(pfn, level, pinned),
-> +	    TP_STRUCT__entry(
-> +		    __field(unsigned long, pfn)
-> +		    __field(unsigned, level)
-> +		    __field(bool, pinned)
-> +		    ),
-> +	    TP_fast_assign(__entry->pfn = pfn;
-> +			   __entry->level = level;
-> +			   __entry->pinned = pinned),
-> +	    TP_printk("pfn %lx  level %d  %spinned",
-> +		      __entry->pfn, __entry->level,
-> +		      __entry->pinned ? "" : "un")
-> +	);
->  
->  #endif /*  _TRACE_XEN_H */
->  
-> -- 
-> 1.7.5.4
