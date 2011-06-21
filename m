@@ -1,116 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756796Ab1FUPkq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 11:40:46 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52973 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756749Ab1FUPkm (ORCPT
+	id S1756885Ab1FUPl0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 11:41:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41578 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754777Ab1FUPkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 11:40:42 -0400
-Message-Id: <20110621153806.132761621@chello.nl>
+	Tue, 21 Jun 2011 11:40:36 -0400
+Message-Id: <20110621153806.185242734@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Tue, 21 Jun 2011 17:17:26 +0200
+Date: Tue, 21 Jun 2011 17:17:27 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, efault@gmx.de,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 1/4] printk: Release console_sem after logbuf_lock
+Subject: [PATCH 2/4] lockdep: Fix trace_{soft,hard}irqs_{on,off}() recursion
 References: <20110621151725.705140475@chello.nl>
-Content-Disposition: inline; filename=printk-up-after-unlock.patch
+Content-Disposition: inline; filename=lockdep-trace_irq-recursion.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Release console_sem after unlocking the logbuf_lock so that we don't
-generate wakeups while holding logbuf_lock. This avoids some lock
-inversion troubles once we remove the lockdep_off bits between
-logbuf_lock and rq->lock (prints while holding rq->lock vs doing
-wakeups while holding logbuf_lock).
-
-There's of course still an actual deadlock where the printk()s under
-rq->lock will issue a wakeup from the up() call, but lockdep won't
-warn about that since semaphores are not tracked.
-
-The reason for unlocking the console_sem under the logbuf_lock is that
-a concurrent printk() might full up the buffer but fail to acquire the
-console sem, resulting in a missed write to the console until a
-subsequent console_sem acquire/release cycle.
+Commit 1efc5da3 explains the reason for having raw_local_irq_*() and
+lockdep_off() in printk(). Instead of working around the broken
+recursion detection of interrupt state tracking, fix it.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- kernel/printk.c |   24 +++++++++++++++++++++---
- 1 file changed, 21 insertions(+), 3 deletions(-)
+ kernel/lockdep.c |   30 ++++++++++++++++++++----------
+ 1 file changed, 20 insertions(+), 10 deletions(-)
 
-Index: linux-2.6/kernel/printk.c
+Index: linux-2.6/kernel/lockdep.c
 ===================================================================
---- linux-2.6.orig/kernel/printk.c
-+++ linux-2.6/kernel/printk.c
-@@ -782,7 +782,7 @@ static inline int can_use_console(unsign
- static int console_trylock_for_printk(unsigned int cpu)
- 	__releases(&logbuf_lock)
+--- linux-2.6.orig/kernel/lockdep.c
++++ linux-2.6/kernel/lockdep.c
+@@ -2478,15 +2478,10 @@ mark_held_locks(struct task_struct *curr
+ /*
+  * Hardirqs will be enabled:
+  */
+-void trace_hardirqs_on_caller(unsigned long ip)
++static void __trace_hardirqs_on_caller(unsigned long ip)
  {
--	int retval = 0;
-+	int retval = 0, wake = 0;
+ 	struct task_struct *curr = current;
  
- 	if (console_trylock()) {
- 		retval = 1;
-@@ -795,12 +795,14 @@ static int console_trylock_for_printk(un
- 		 */
- 		if (!can_use_console(cpu)) {
- 			console_locked = 0;
--			up(&console_sem);
-+			wake = 1;
- 			retval = 0;
- 		}
+-	time_hardirqs_on(CALLER_ADDR0, ip);
+-
+-	if (unlikely(!debug_locks || current->lockdep_recursion))
+-		return;
+-
+ 	if (DEBUG_LOCKS_WARN_ON(unlikely(early_boot_irqs_disabled)))
+ 		return;
+ 
+@@ -2502,8 +2497,6 @@ void trace_hardirqs_on_caller(unsigned l
+ 	/* we'll do an OFF -> ON transition: */
+ 	curr->hardirqs_enabled = 1;
+ 
+-	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
+-		return;
+ 	if (DEBUG_LOCKS_WARN_ON(current->hardirq_context))
+ 		return;
+ 	/*
+@@ -2525,6 +2518,21 @@ void trace_hardirqs_on_caller(unsigned l
+ 	curr->hardirq_enable_event = ++curr->irq_events;
+ 	debug_atomic_inc(hardirqs_on_events);
+ }
++
++void trace_hardirqs_on_caller(unsigned long ip)
++{
++	time_hardirqs_on(CALLER_ADDR0, ip);
++
++	if (unlikely(!debug_locks || current->lockdep_recursion))
++		return;
++
++	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
++		return;
++
++	current->lockdep_recursion = 1;
++	__trace_hardirqs_on_caller(ip);
++	current->lockdep_recursion = 0;
++}
+ EXPORT_SYMBOL(trace_hardirqs_on_caller);
+ 
+ void trace_hardirqs_on(void)
+@@ -2574,7 +2582,7 @@ void trace_softirqs_on(unsigned long ip)
+ {
+ 	struct task_struct *curr = current;
+ 
+-	if (unlikely(!debug_locks))
++	if (unlikely(!debug_locks || current->lockdep_recursion))
+ 		return;
+ 
+ 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
+@@ -2585,6 +2593,7 @@ void trace_softirqs_on(unsigned long ip)
+ 		return;
  	}
- 	printk_cpu = UINT_MAX;
- 	spin_unlock(&logbuf_lock);
-+	if (wake)
-+		up(&console_sem);
- 	return retval;
+ 
++	current->lockdep_recursion = 1;
+ 	/*
+ 	 * We'll do an OFF -> ON transition:
+ 	 */
+@@ -2599,6 +2608,7 @@ void trace_softirqs_on(unsigned long ip)
+ 	 */
+ 	if (curr->hardirqs_enabled)
+ 		mark_held_locks(curr, SOFTIRQ);
++	current->lockdep_recursion = 0;
  }
- static const char recursion_bug_msg [] =
-@@ -1242,7 +1244,7 @@ void console_unlock(void)
+ 
+ /*
+@@ -2608,7 +2618,7 @@ void trace_softirqs_off(unsigned long ip
  {
- 	unsigned long flags;
- 	unsigned _con_start, _log_end;
--	unsigned wake_klogd = 0;
-+	unsigned wake_klogd = 0, retry = 0;
+ 	struct task_struct *curr = current;
  
- 	if (console_suspended) {
- 		up(&console_sem);
-@@ -1251,6 +1253,7 @@ void console_unlock(void)
+-	if (unlikely(!debug_locks))
++	if (unlikely(!debug_locks || current->lockdep_recursion))
+ 		return;
  
- 	console_may_schedule = 0;
- 
-+again:
- 	for ( ; ; ) {
- 		spin_lock_irqsave(&logbuf_lock, flags);
- 		wake_klogd |= log_start - log_end;
-@@ -1271,8 +1274,23 @@ void console_unlock(void)
- 	if (unlikely(exclusive_console))
- 		exclusive_console = NULL;
- 
-+	spin_unlock(&logbuf_lock);
-+
- 	up(&console_sem);
-+
-+	/*
-+	 * Someone could have filled up the buffer again, so re-check if there's
-+	 * something to flush. In case we cannot trylock the console_sem again,
-+	 * there's a new owner and the console_unlock() from them will do the
-+	 * flush, no worries.
-+	 */
-+	spin_lock(&logbuf_lock);
-+	if (con_start != log_end)
-+		retry = 1;
- 	spin_unlock_irqrestore(&logbuf_lock, flags);
-+	if (retry && console_trylock())
-+		goto again;
-+
- 	if (wake_klogd)
- 		wake_up_klogd();
- }
+ 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
 
 
