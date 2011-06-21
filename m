@@ -1,94 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757311Ab1FUWzN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 18:55:13 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:12293 "EHLO
+	id S1757371Ab1FUWzO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 18:55:14 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:12300 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752125Ab1FUWzL (ORCPT
+	with ESMTP id S1756893Ab1FUWzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 18:55:11 -0400
+	Tue, 21 Jun 2011 18:55:12 -0400
 From: Bryan Freed <bfreed@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: jic23@cam.ac.uk, jbrenner@taosinc.com, gregkh@suse.de, arnd@arndb.de,
         Bryan Freed <bfreed@chromium.org>
-Subject: [PATCH 1/3] light sensor: Add SMBUS support to the tsl2563 driver.
-Date: Tue, 21 Jun 2011 15:54:55 -0700
-Message-Id: <1308696897-25161-1-git-send-email-bfreed@chromium.org>
+Subject: [PATCH 2/3] light sensor: Fix a panic in the tsl2563 driver.
+Date: Tue, 21 Jun 2011 15:54:56 -0700
+Message-Id: <1308696897-25161-2-git-send-email-bfreed@chromium.org>
 X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1308696897-25161-1-git-send-email-bfreed@chromium.org>
+References: <1308696897-25161-1-git-send-email-bfreed@chromium.org>
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is so we can support it on x86 SMBUS adapters.
+Add a wrapper for this driver around the IIO_CHAN() wrapper to make channel
+parameters more readable.  This fixes a panic caused by the info_masks being
+accidentally passed in as channel2 parameters which easily surpass the size
+of the iio_modifier_names_light array.
 
 Signed-off-by: Bryan Freed <bfreed@chromium.org>
 ---
- drivers/staging/iio/light/tsl2563.c |   29 ++++++++++++++++++++++++++++-
- 1 files changed, 28 insertions(+), 1 deletions(-)
+ drivers/staging/iio/light/tsl2563.c |   17 +++++++++--------
+ 1 files changed, 9 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/staging/iio/light/tsl2563.c b/drivers/staging/iio/light/tsl2563.c
-index 9cffa2e..04aa155 100644
+index 04aa155..d9be19c 100644
 --- a/drivers/staging/iio/light/tsl2563.c
 +++ b/drivers/staging/iio/light/tsl2563.c
-@@ -137,6 +137,8 @@ struct tsl2563_chip {
- 	u32			data1;
- };
- 
-+static int use_smbus;
-+
- static int tsl2563_write(struct i2c_client *client, u8 reg, u8 value)
- {
- 	int ret;
-@@ -145,15 +147,35 @@ static int tsl2563_write(struct i2c_client *client, u8 reg, u8 value)
- 	buf[0] = TSL2563_CMD | reg;
- 	buf[1] = value;
- 
-+	if (use_smbus) {
-+		ret = i2c_smbus_write_byte_data(client, buf[0], value);
-+		return ret;
-+	}
-+
- 	ret = i2c_master_send(client, buf, sizeof(buf));
- 	return (ret == sizeof(buf)) ? 0 : ret;
+@@ -570,15 +570,16 @@ error_ret:
+ 	return ret;
  }
  
--static int tsl2563_read(struct i2c_client *client, u8 reg, void *buf, int len)
-+static int tsl2563_read(struct i2c_client *client, u8 reg, u8 *buf, int len)
- {
- 	int ret;
- 	u8 cmd = TSL2563_CMD | reg;
- 
-+	if (use_smbus) {
-+		if (len == 1) {
-+			ret = i2c_smbus_read_byte_data(client, cmd);
-+			buf[0] = ret & 0xff;
-+		} else if (len == 2) {
-+			ret = i2c_smbus_read_word_data(client, cmd);
-+			buf[0] = ret & 0xff;
-+			buf[1] = (ret >> 8) & 0xff;
-+		} else
-+			ret = -1;
-+		if (ret < 0)
-+			return 0; /* failure */
-+		return len; /* success */
-+	}
++#define INFO_MASK (1 << IIO_CHAN_INFO_CALIBSCALE_SEPARATE)
++#define EVENT_MASK (IIO_EV_BIT(IIO_EV_TYPE_THRESH, IIO_EV_DIR_RISING) | \
++		    IIO_EV_BIT(IIO_EV_TYPE_THRESH, IIO_EV_DIR_FALLING))
++#define IIO_CHAN_2563(type, mod, proc, chan, imask, emask) \
++	IIO_CHAN(type, mod, 1, proc, NULL, chan, 0, imask, 0, 0, {}, emask)
 +
- 	ret = i2c_master_send(client, &cmd, sizeof(cmd));
- 	if (ret != sizeof(cmd))
- 		return ret;
-@@ -712,6 +734,11 @@ static int __devinit tsl2563_probe(struct i2c_client *client,
- 	int err = 0;
- 	int ret;
- 	u8 id;
-+	u32 smbus_func = I2C_FUNC_SMBUS_BYTE_DATA | I2C_FUNC_SMBUS_WORD_DATA;
-+
-+	/* We support both I2C and SMBUS adapter interfaces. */
-+	if (i2c_check_functionality(client->adapter, smbus_func))
-+		use_smbus = 1;
+ static const struct iio_chan_spec tsl2563_channels[] = {
+-	IIO_CHAN(IIO_LIGHT, 0, 1, 1, NULL, 0, 0, 0, 0, 0, {}, 0),
+-	IIO_CHAN(IIO_INTENSITY, 1, 1, 0, "both", 0,
+-		 (1 << IIO_CHAN_INFO_CALIBSCALE_SEPARATE), 0, 0, 0, {},
+-		 IIO_EV_BIT(IIO_EV_TYPE_THRESH, IIO_EV_DIR_RISING) |
+-		 IIO_EV_BIT(IIO_EV_TYPE_THRESH, IIO_EV_DIR_FALLING)),
+-	IIO_CHAN(IIO_INTENSITY, 1, 1, 0, "ir", 1,
+-		 (1 << IIO_CHAN_INFO_CALIBSCALE_SEPARATE), 0, 0, 0, {},
+-		 0)
++	IIO_CHAN_2563(IIO_LIGHT,     0, 1, 0, 0, 0),
++	IIO_CHAN_2563(IIO_INTENSITY, 1, 0, 0, INFO_MASK, EVENT_MASK),
++	IIO_CHAN_2563(IIO_INTENSITY, 1, 0, 1, INFO_MASK, 0),
+ };
  
- 	indio_dev = iio_allocate_device(sizeof(*chip));
- 	if (!indio_dev)
+ static int tsl2563_read_thresh(struct iio_dev *indio_dev,
 -- 
 1.7.3.1
 
