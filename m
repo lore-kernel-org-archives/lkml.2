@@ -1,192 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757438Ab1FUTQi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 15:16:38 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48849 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757373Ab1FUTQh (ORCPT
+	id S1757442Ab1FUTXQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 15:23:16 -0400
+Received: from webbox4.loswebos.de ([213.187.93.205]:46975 "EHLO
+	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756933Ab1FUTXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 15:16:37 -0400
-Date: Tue, 21 Jun 2011 20:16:24 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        ARM Kernel <linux-arm-kernel@lists.infradead.org>, mikpe@it.uu.se,
-        ebiederm@xmission.com, vapier@gentoo.org, tony.luck@intel.com
-Subject: Re: [PATCH] ARM: quiet sparse noise due to
-	__ARCH_WANT_SYS_RT_SIG(ACTION|SUSPEND)
-Message-ID: <20110621191624.GK23234@n2100.arm.linux.org.uk>
-References: <201106211209.46462.hartleys@visionengravers.com>
+	Tue, 21 Jun 2011 15:23:13 -0400
+Date: Tue, 21 Jun 2011 21:23:09 +0200
+From: Marc Koschewski <marc@osknowledge.org>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: "greg@kroah.com" <greg@kroah.com>,
+        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>,
+        "Weil, Oren jer" <oren.jer.weil@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: mei driver breaks suspend on 3.0git
+Message-ID: <20110621192309.GB17528@marc.osknowledge.org>
+References: <201106121314.26394.a.miskiewicz@gmail.com>
+ <201106122016.33399.a.miskiewicz@gmail.com>
+ <201106122038.36623.a.miskiewicz@gmail.com>
+ <201106122040.21950.a.miskiewicz@gmail.com>
+ <6F5C1D715B2DA5498A628E6B9C124F0401AD318B15@hasmsx504.ger.corp.intel.com>
+ <20110621183954.GA17528@marc.osknowledge.org>
+ <6F5C1D715B2DA5498A628E6B9C124F0401B87DC7EA@hasmsx504.ger.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201106211209.46462.hartleys@visionengravers.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <6F5C1D715B2DA5498A628E6B9C124F0401B87DC7EA@hasmsx504.ger.corp.intel.com>
+X-PGP-Fingerprint: D514 7DC1 B5F5 8989 083E 38C9 5ECF E5BD 3430 ABF5
+X-PGP-Key: http://www.kosik.org/pubkey.asc
+X-Blog: http://www.kosik.org/blog/
+X-Operating-System: Linux marc 2.6.39-dezzy
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 12:09:45PM -0700, H Hartley Sweeten wrote:
-> ARM defines __ARCH_WANT_SYS_RT_SIG(ACTION|SUSPEND) which
-> produces the following sparse warnings in kernel/signal.c:
+* Winkler, Tomas <tomas.winkler@intel.com> [2011-06-21 22:07:27 +0300]:
+
+Tomas,
+
+what I was trying to say is that this might fix the suspend bug with 'mei',
+however, the box won't come up again even with 'mei' not playing anywhere.
+
+suspend/resume is actually broken even if this fix might help suspending a
+machine with 'mei' usage.
+
+Regards,
+Marc
+
 > 
->   warning: symbol 'sys_rt_sigaction' was not declared. Should it be static?
->   warning: symbol 'sys_rt_sigsuspend' was not declared. Should it be static?
 > 
-> Since ARM doesn't include <asm-generic/syscalls.h>, due to different
-> calling conventions for some system calls, prototype the functions
-> in <asm/unistd.h> to quiet the noise.
+> > -----Original Message-----
+> > From: Marc Koschewski [mailto:marc@osknowledge.org]
+> > Sent: Tuesday, June 21, 2011 9:40 PM
+> > To: Winkler, Tomas
+> > Cc: Arkadiusz Miskiewicz; Weil, Oren jer; linux-kernel@vger.kernel.org
+> > Subject: Re: mei driver breaks suspend on 3.0git
+> > 
+> > * Winkler, Tomas <tomas.winkler@intel.com> [2011-06-12 22:41:59 +0300]:
+> > 
+> > I suffer the same. After booting 3.0.0-r4 with that module not being loaded it
+> > suspends, however, it doesn't resume (screen black, hard power-off
+> > needed).
+> 
+> The patch was already posted https://lkml.org/lkml/2011/6/13/148 but wasn't picked up for rc4 yet. 
+> For now please apply it your by yourself.
+> 
+>  Greg, will you collect staging fixes for rc5 or shell it be picked up directly by Linus?
+> 
+> Thanks
+> Tomas
+> 
+> > Regards,
+> > Marc
+> > 
+> > >
+> > >
+> > > > -----Original Message-----
+> > > > From: Arkadiusz Miskiewicz [mailto:a.miskiewicz@gmail.com]
+> > > > Sent: Sunday, June 12, 2011 9:40 PM
+> > > > To: Winkler, Tomas
+> > > > Cc: Weil, Oren jer; linux-kernel@vger.kernel.org
+> > > > Subject: Re: mei driver breaks suspend on 3.0git
+> > > >
+> > > > On Sunday 12 of June 2011, Arkadiusz Miskiewicz wrote:
+> > > > > On Sunday 12 of June 2011, Arkadiusz Miskiewicz wrote:
+> > > > > > On Sunday 12 of June 2011, Winkler, Tomas wrote:
+> > > > > > > > -----Original Message-----
+> > > > > > > > From: Weil, Oren jer
+> > > > > > > > Sent: Sunday, June 12, 2011 8:36 PM
+> > > > > > > > To: Arkadiusz Miskiewicz
+> > > > > > > > Cc: Winkler, Tomas; linux-kernel@vger.kernel.org
+> > > > > > > > Subject: RE: mei driver breaks suspend on 3.0git
+> > > > > > > >
+> > > > > > > > >It's thinkpad t400 with
+> > > > > > > > >00:03.0 Communication controller [0780]: Intel Corporation
+> > > > > > > > >Mobile 4 Series Chipset MEI Controller [8086:2a44] (rev 07)
+> > > > > > > >
+> > > > > > > > Can you send us more details? Does it happened in stress?
+> > > > > > > > How do I reproduce it?
+> > > > > >
+> > > > > > No stress. This is my daily use notebook and I simply suspend to
+> > > > > > ram when sitting under X in kde4.
+> > > > > >
+> > > > > > > > Can you send us the debug prints?
+> > > > > >
+> > > > > > Attached. suspend starts, tries to resume devices, MEI suspend
+> > > > > > fails causing whole suspend to be aborted.
+> > > > >
+> > > > > Shouldn't ret > 0 in mei_wd_stop to be "success"?
+> > > >
+> > > > I meant this one:
+> > > >
+> > > >         ret = wait_event_interruptible_timeout(dev->wait_stop_wd,
+> > > >                                         dev->wd_stopped, 10 * HZ);
+> > > >
+> > > >
+> > > > And that was possible untested solution that relies on wd being
+> > > > stopped and not anything else.
+> > > >
+> > > > >
+> > > > > diff --git a/drivers/staging/mei/wd.c b/drivers/staging/mei/wd.c
+> > > > > index 2564b03..608245a 100644
+> > > > > --- a/drivers/staging/mei/wd.c
+> > > > > +++ b/drivers/staging/mei/wd.c
+> > > > > @@ -171,8 +171,10 @@ int mei_wd_stop(struct mei_device *dev, bool
+> > > > preserve)
+> > > > >         mutex_lock(&dev->device_lock);
+> > > > >         if (!dev->wd_stopped)
+> > > > >                 dev_dbg(&dev->pdev->dev, "stop wd failed to complete.\n");
+> > > > > -       else
+> > > > > +       else {
+> > > > > +               ret = 0;
+> > > > >                 dev_dbg(&dev->pdev->dev, "stop wd complete.\n");
+> > > > > +       }
+> > > > >
+> > > > >         if (preserve)
+> > > > >                 dev->wd_timeout = wd_timeout;
+> > > >
+> > >
+> > > Looks like your patch is correct
+> > > wait_event_interruptible_timeout() returns  >0 on success unlike
+> > > wait_even_interruptable()
+> > >
+> > > I wil check all the instances we have and issue a patch.
+> > > Thanks for your effort
+> > > Tomas
+> > >
+> > > ---------------------------------------------------------------------
+> > > Intel Israel (74) Limited
+> > >
+> > > This e-mail and any attachments may contain confidential material for
+> > > the sole use of the intended recipient(s). Any review or distribution
+> > > by others is strictly prohibited. If you are not the intended
+> > > recipient, please contact the sender and delete all copies.
+> > 
+> > --
+> > Marc Koschewski
+> ---------------------------------------------------------------------
+> Intel Israel (74) Limited
+> 
+> This e-mail and any attachments may contain confidential material for
+> the sole use of the intended recipient(s). Any review or distribution
+> by others is strictly prohibited. If you are not the intended
+> recipient, please contact the sender and delete all copies.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
-NAK.
-
-asm/unistd.h is an exported header.  Please don't pollute it with kernel
-internal stuff.  Instead, follow the hint in asm-generic and create a new
-header file to describe syscalls called... asm/syscalls.h.
-
-And.. the problem is a lot larger than you mention above:
-
-    arch/arm/kernel/signal.c:68:16: warning: symbol 'sys_sigsuspend' was not declared. Should it be static?
-    arch/arm/kernel/signal.c:84:1: warning: symbol 'sys_sigaction' was not declared. Should it be static?
-    arch/arm/kernel/signal.c:328:16: warning: symbol 'sys_sigreturn' was not declared. Should it be static?
-    arch/arm/kernel/signal.c:360:16: warning: symbol 'sys_rt_sigreturn' was not declared. Should it be static?
-    arch/arm/kernel/sys_arm.c:34:16: warning: symbol 'sys_fork' was not declared. Should it be static?
-    arch/arm/kernel/sys_arm.c:47:16: warning: symbol 'sys_clone' was not declared. Should it be static?
-    arch/arm/kernel/sys_arm.c:57:16: warning: symbol 'sys_vfork' was not declared. Should it be static?
-    arch/arm/kernel/sys_arm.c:65:16: warning: symbol 'sys_execve' was not declared. Should it be static?
-    arch/arm/kernel/sys_arm.c:129:17: warning: symbol 'sys_arm_fadvise64_64' was not declared. Should it be static?
-    arch/arm/kernel/sys_oabi-compat.c:144:17: warning: symbol 'sys_oabi_stat64' was not declared. Should it be static?
-    arch/arm/kernel/sys_oabi-compat.c:154:17: warning: symbol 'sys_oabi_lstat64' was not declared. Should it be static?
-    arch/arm/kernel/sys_oabi-compat.c:164:17: warning: symbol 'sys_oabi_fstat64' was not declared. Should it be static?
-    arch/arm/kernel/sys_oabi-compat.c:174:17: warning: symbol 'sys_oabi_fstatat64' was not declared. Should it be static?
-    arch/arm/kernel/sys_oabi-compat.c:196:17: warning: symbol 'sys_oabi_fcntl64' was not declared. Should it be static?
-    arch/arm/kernel/sys_oabi-compat.c:249:17: warning: symbol 'sys_oabi_epoll_ctl' was not declared. Should it be static?
-    arch/arm/kernel/sys_oabi-compat.c:270:17: warning: symbol 'sys_oabi_epoll_wait' was not declared. Should it be static?
-    arch/arm/kernel/sys_oabi-compat.c:304:17: warning: symbol 'sys_oabi_semtimedop' was not declared. Should it be static?
-    arch/arm/kernel/sys_oabi-compat.c:343:17: warning: symbol 'sys_oabi_semop' was not declared. Should it be static?
-    arch/arm/kernel/sys_oabi-compat.c:349:16: warning: symbol 'sys_oabi_ipc' was not declared. Should it be static?
-    arch/arm/kernel/sys_oabi-compat.c:367:17: warning: symbol 'sys_oabi_bind' was not declared. Should it be static?
-    arch/arm/kernel/sys_oabi-compat.c:377:17: warning: symbol 'sys_oabi_connect' was not declared. Should it be static?
-    arch/arm/kernel/sys_oabi-compat.c:387:17: warning: symbol 'sys_oabi_sendto' was not declared. Should it be static?
-    arch/arm/kernel/sys_oabi-compat.c:400:17: warning: symbol 'sys_oabi_sendmsg' was not declared. Should it be static?
-    arch/arm/kernel/sys_oabi-compat.c:426:17: warning: symbol 'sys_oabi_socketcall' was not declared. Should it be static?
-    arch/arm/kernel/traps.c:464:16: warning: symbol 'arm_syscall' was not declared. Should it be static?
-
-So you actually need something like this (pasted, so whitespace
-damaged).  I'll pull it out of my low priority queue and queue it up
-for the next merge window.
-
-diff --git a/arch/arm/include/asm/syscalls.h b/arch/arm/include/asm/syscalls.h
-new file mode 100644
-index 0000000..e775746
---- /dev/null
-+++ b/arch/arm/include/asm/syscalls.h
-@@ -0,0 +1,60 @@
-+#ifndef _ASM_ARM_SYSCALLS_H
-+#define _ASM_ARM_SYSCALLS_H
-+
-+#include <linux/linkage.h>
-+#include <linux/types.h>
-+
-+struct msghdr;
-+struct sockaddr;
-+
-+/* arch/arm/kernel/signal.c */
-+asmlinkage int sys_sigsuspend(int, unsigned long, old_sigset_t);
-+asmlinkage int sys_sigaction(int, const struct old_sigaction __user *,
-+             struct old_sigaction __user *);
-+asmlinkage int sys_sigreturn(struct pt_regs *);
-+asmlinkage int sys_rt_sigreturn(struct pt_regs *);
-+
-+/* arch/arm/kernel/sys_arm.c */
-+asmlinkage int sys_fork(struct pt_regs *);
-+asmlinkage int sys_clone(unsigned long, unsigned long, int __user *, int,
-+                        int __user *, struct pt_regs *);
-+asmlinkage int sys_vfork(struct pt_regs *);
-+asmlinkage int sys_execve(const char __user *,
-+                         const char __user *const __user *,
-+                         const char __user *const __user *, struct pt_regs *);
-+asmlinkage long sys_arm_fadvise64_64(int, int, loff_t, loff_t);
-+
-+/* arch/arm/kernel/sys_oabi-compat.c */
-+struct oldabi_stat64;
-+asmlinkage long sys_oabi_stat64(const char __user *,
-+                               struct oldabi_stat64 __user *);
-+asmlinkage long sys_oabi_lstat64(const char __user *,
-+                                struct oldabi_stat64 __user *);
-+asmlinkage long sys_oabi_fstat64(unsigned long, struct oldabi_stat64 __user *);+asmlinkage long sys_oabi_fstatat64(int, const char __user *,
-+                                  struct oldabi_stat64  __user *, int);
-+asmlinkage long sys_oabi_fcntl64(unsigned int, unsigned int, unsigned long);
-+
-+struct oabi_epoll_event;
-+asmlinkage long sys_oabi_epoll_ctl(int, int, int,
-+                                  struct oabi_epoll_event __user *);
-+asmlinkage long sys_oabi_epoll_wait(int, struct oabi_epoll_event __user *,
-+                                   int, int);
-+
-+struct oabi_sembuf;
-+asmlinkage long sys_oabi_semtimedop(int, struct oabi_sembuf __user *, unsigned,+                                   const struct timespec __user *);
-+asmlinkage long sys_oabi_semop(int, struct oabi_sembuf __user *,
-+                              unsigned);
-+asmlinkage int sys_oabi_ipc(uint, int, int, int, void __user *, long);
-+asmlinkage long sys_oabi_bind(int, struct sockaddr __user *, int);
-+asmlinkage long sys_oabi_connect(int, struct sockaddr __user *, int);
-+asmlinkage long sys_oabi_sendto(int, void __user *, size_t, unsigned,
-+                               struct sockaddr __user *, int);
-+asmlinkage long sys_oabi_sendmsg(int, struct msghdr __user *, unsigned);
-+asmlinkage long sys_oabi_socketcall(int, unsigned long __user *);
-+
-+/* arch/arm/kernel/traps.c */
-+asmlinkage int arm_syscall(int, struct pt_regs *);
-+
-+#endif
-diff --git a/arch/arm/kernel/signal.c b/arch/arm/kernel/signal.c
-index 0340224..9498fb5 100644
---- a/arch/arm/kernel/signal.c
-+++ b/arch/arm/kernel/signal.c
-@@ -16,6 +16,7 @@
-
- #include <asm/elf.h>
- #include <asm/cacheflush.h>
-+#include <asm/syscalls.h>
- #include <asm/ucontext.h>
- #include <asm/unistd.h>
- #include <asm/vfp.h>
-diff --git a/arch/arm/kernel/sys_arm.c b/arch/arm/kernel/sys_arm.c
-index 62e7c61..5bda298 100644
---- a/arch/arm/kernel/sys_arm.c
-+++ b/arch/arm/kernel/sys_arm.c
-@@ -28,6 +28,8 @@
- #include <linux/uaccess.h>
- #include <linux/slab.h>
-
-+#include <asm/syscalls.h>
-+
- /* Fork a new task - this creates a new program thread.
-  * This is called indirectly via a small wrapper
-  */
-diff --git a/arch/arm/kernel/sys_oabi-compat.c b/arch/arm/kernel/sys_oabi-compat.c
-index af0aaeb..e71a41c 100644
---- a/arch/arm/kernel/sys_oabi-compat.c
-+++ b/arch/arm/kernel/sys_oabi-compat.c
-@@ -85,6 +85,8 @@
- #include <linux/uaccess.h>
- #include <linux/slab.h>
-
-+#include <asm/syscalls.h>
-+
- struct oldabi_stat64 {
-        unsigned long long st_dev;
-        unsigned int    __pad1;
-diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-index d52eec2..d040421 100644
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -27,6 +27,7 @@
-
- #include <asm/atomic.h>
- #include <asm/cacheflush.h>
-+#include <asm/syscalls.h>
- #include <asm/system.h>
- #include <asm/unistd.h>
- #include <asm/traps.h>
-
+-- 
+Marc Koschewski
