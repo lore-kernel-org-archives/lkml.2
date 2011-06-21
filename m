@@ -1,124 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757530Ab1FUXsg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 19:48:36 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:47876 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756665Ab1FUXse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 19:48:34 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH] PCI / PM: Block races between runtime PM and system sleep
-Date: Wed, 22 Jun 2011 01:49:17 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1106211031410.2327-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1106211031410.2327-100000@iolanthe.rowland.org>
+	id S1757556Ab1FUXxM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 19:53:12 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:58496 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756933Ab1FUXxH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 19:53:07 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Meelis Roos <mroos@ut.ee>,
+        =?UTF-8?q?Toralf=20F=C3=B6rster?= <toralf.foerster@gmx.de>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 0/2] Alarmtimer fixes for 3.0
+Date: Tue, 21 Jun 2011 16:52:51 -0700
+Message-Id: <1308700373-18415-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106220149.17380.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 21, 2011, Alan Stern wrote:
-> On Mon, 20 Jun 2011, Rafael J. Wysocki wrote:
-> 
-> > > Ah, okay.  The PCI part makes sense then.
-> > 
-> > OK, so the appended patch is a modification of the $subject one using
-> > pm_runtime_put_sync() instead of pm_runtime_put_noidle().
-> 
-> Yes, it looks good.
+Hey Thomas,
+	Here are two alarmtimer fixes that should go in for 3.0.
+The first is a fix to check for rtc devices on demand, to better
+handle late rtc device driver loading. And the second makes sure
+we report an error to apps using alarmtiemrs if there is no backing
+RTC device.
 
-Cool, thanks!
+Let me know if you have any issues with these.
 
-> > So, your point is that while .suspend() or .resume() are running, the
-> > synchronization between runtime PM and system suspend/resume should be the
-> > subsystem's problem, right?
-> 
-> Almost but not quite.  I was talking about the time period between 
-> .prepare() and .suspend() (and also the time period between .resume() 
-> and .complete()).
-> 
-> It's probably okay to prevent pm_runtime_suspend() from working during
-> .suspend() or .resume(), but it's not a good idea to prevent
-> pm_runtime_resume() from working then.
+Both of these patches are available in the git repository at:
 
-OK, but taking a reference by means of pm_runtime_get_noresume() won't
-block pm_runtime_resume().
+  git://git.linaro.org/people/jstultz/linux.git fortglx/3.0/tip/timers/alarmtimers
 
-> > I actually see a reason for doing this.  Namely, I don't really think
-> > driver writers should be bothered with preventing races between different
-> > PM callbacks from happening.  Runtime PM takes care of that at run time,
-> > the design of the system suspend/resume code ensures that the callbacks
-> > for the same device are executed sequentially, but if we allow runtime PM
-> > callbacks to be executed in parallel with system suspend/resume callbacks,
-> > someone has to prevent those callbacks from racing with each other.
-> > 
-> > Now, if you agree that that shouldn't be a driver's task, then it has to
-> > be the subsystem's one and I'm not sure what a subsystem can do other than
-> > disabling runtime PM or at least taking a reference on every device before
-> > calling device drivers' .suspend() callbacks.
-> > 
-> > Please note, I think that .prepare() and .complete() are somewhat special,
-> > so perhaps we should allow those to race with runtime PM callbacks, but IMO
-> > allowing .suspend() and .resume() to race with .runtime_suspend() and
-> > .runtime_resume() is not a good idea.
-> 
-> Races in the period after .suspend() and before .resume() will be 
-> handled by disabling runtime PM when .suspend() returns and enabling it 
-> before calling .resume().
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Meelis Roos <mroos@ut.ee>
+CC: Toralf Förster <toralf.foerster@gmx.de>
+CC: Richard Weinberger <richard@nod.at
+CC: Peter Zijlstra <peterz@infradead.org>
+John Stultz (2):
+  alarmtimers: Handle late rtc module loading
+  alarmtimers: Return -ENOTSUPP if no RTC device is present
 
-OK
+ kernel/time/alarmtimer.c |  158 +++++++++++++++++++++++++--------------------
+ 1 files changed, 88 insertions(+), 70 deletions(-)
 
-> During the .suspend and .resume callbacks, races with
-> .runtime_suspend() can be prevented by calling
-> pm_runtime_get_noresume() just before .suspend() and then calling
-> pm_runtime_put_sync() just after .resume().
+-- 
+1.7.3.2.146.gca209
 
-So, you seem to suggest to call pm_runtime_get_noresume() in
-__device_suspend() and pm_runtime_put_sync() in device_resume().
-That would be fine by me, perhaps up to the "sync" part of the "put".
-
-> Races with .runtime_resume() can be handled to some extent by putting a
-> runtime barrier immediately after the pm_runtime_get_noresume() call,
-> but that's not a perfect solution.  Is it good enough?
-
-It's not worse than what we had before, so I guess it should be enough.
-
-> > > What I'm suggesting is to revert the commit but at the same time,
-> > > move the get_noresume() into __device_suspend() and the put_sync() into 
-> > > device_resume().
-> > 
-> > What about doing pm_runtime_get_noresume() and the pm_runtime_barrier()
-> > in dpm_prepare(), but _after_ calling device_prepare() and doing
-> > pm_runtime_put_noidle() in dpm_complete() _before_ calling .complete()
-> > from the subsystem
-> 
-> This does not address the issue of allowing runtime suspends in the 
-> windows between .prepare() - .suspend() and .resume() - .complete().
-
-OK
-
-> >  (a _put_sync() at this point will likely invoke
-> > .runtime_idle() from the subsystem before executing .complete(), which may
-> > not be desirable)?
-> 
-> It should be allowed.  The purpose of .complete() is not to re-enable
-> runtime power management of the device; it is to release resources
-> (like memory) allocated during .prepare() and perhaps also to allow new
-> children to be registered under the device.
-
-Right.  But does "allowed" mean the core _should_ do it at this point?
-We may as well call pm_runtime_idle() directly from rpm_complete(), but
-perhaps it's better to call it from device_resume(), so that it runs in
-parallel for async devices.
-
-Thanks,
-Rafael
