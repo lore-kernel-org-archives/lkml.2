@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757244Ab1FURpo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 13:45:44 -0400
-Received: from sh.osrg.net ([192.16.179.4]:41308 "EHLO sh.osrg.net"
+	id S1757276Ab1FURxz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 13:53:55 -0400
+Received: from mga02.intel.com ([134.134.136.20]:42283 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756977Ab1FURpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 13:45:41 -0400
-Date: Wed, 22 Jun 2011 02:44:47 +0900
-To: matthew@wil.cx
-Cc: shawn.guo@linaro.org, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        vinod.koul@intel.com, gregkh@suse.de, fujita.tomonori@lab.ntt.co.jp,
-        dan.j.williams@intel.com, cjb@laptop.org, per.forlin@linaro.org
-Subject: Re: [PATCH v3 RESEND] dma-mapping: add new API for
-	max_segment_number
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20110617124035.GA19693@parisc-linux.org>
-References: <BANLkTi=-t9HVc6U6QY07su+c3WztsGoq3Q@mail.gmail.com>
-	<1308227453-2034-1-git-send-email-shawn.guo@linaro.org>
-	<20110617124035.GA19693@parisc-linux.org>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20110622023929W.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 22 Jun 2011 02:44:51 +0900 (JST)
+	id S1757082Ab1FURxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 13:53:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,402,1304319600"; 
+   d="scan'208";a="17879931"
+Date: Tue, 21 Jun 2011 19:53:59 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Kevin Hilman <khilman@ti.com>
+Cc: Felipe Balbi <balbi@ti.com>, Keshava Munegowda <keshava_mgowda@ti.com>,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gadiyar@ti.com, parthab@india.ti.com
+Subject: Re: [PATCH] mfd: omap: fix the crash during omap ehci or ohci driver
+ initialization
+Message-ID: <20110621175359.GA22420@sortiz-mobl>
+References: <1307367739-20110-1-git-send-email-keshava_mgowda@ti.com>
+ <20110620132626.GJ22420@sortiz-mobl>
+ <20110620132851.GJ14262@legolas.emea.dhcp.ti.com>
+ <20110620145941.GQ22420@sortiz-mobl>
+ <87liww6tva.fsf@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87liww6tva.fsf@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Jun 2011 06:40:35 -0600
-Matthew Wilcox <matthew@wil.cx> wrote:
+Hi Kevin,
 
-> On Thu, Jun 16, 2011 at 08:30:53PM +0800, Shawn Guo wrote:
-> > Here is the user story that tells the need of the new api.  The
-> > mxs-mmc is the mmc host controller for Freescale MXS architecture.
-> > There are a pair of  mmc host specific parameters max_seg_size and
-> > max_segs that mxs-mmc host driver needs to tell mmc core, so that
-> > mmc core can know how big each data segment could be and how many
-> > segments could be handled one time in a scatter list by host driver.
-> > 
-> > The mxs-mmc driver is one user of dmaengine mxs-dma, and it will call
-> > mxs-dma to transfer data in scatter list.  That is to say mxs-mmc has
-> > no idea of what max_seg_size and max_segs should be, because they are
-> > all mxs-dma capability parameters, and mxs-mmc needs to query them
-> > from mxs-dma.
+On Mon, Jun 20, 2011 at 03:06:01PM -0700, Kevin Hilman wrote:
+> Samuel Ortiz <sameo@linux.intel.com> writes:
 > 
-> This approach would make sense if mxs-mmc were generic, but it's tied to
-> mxs-dma, so it can just as well call mxs-dma to find out how many segments
-> it supports.
+> > Hi Felipe,
+> >
+> > On Mon, Jun 20, 2011 at 04:28:52PM +0300, Felipe Balbi wrote:
+> >> Hi,
+> >> 
+> >> On Mon, Jun 20, 2011 at 03:26:26PM +0200, Samuel Ortiz wrote:
+> >> > On Mon, Jun 06, 2011 at 07:12:19PM +0530, Keshava Munegowda wrote:
+> >> > > From: Keshava Munegowda <Keshava_mgowda@ti.com>
+> >> > > 
+> >> > > Oops are produced during initialization of ehci and ohci
+> >> > > drivers. This is because the run time pm apis are used by
+> >> > > the driver but the corresponding hwmod structures and
+> >> > > initialization is not merged. 
+> >> > You mean they're currently checked in a different tree ? Is that a
+> >> > public one?
+> >> 
+> >> it was supposed to go via linux-omap tree but the patches got lost in
+> >> the limbo :-(
+> > Then shouldn't those patches be the ones to be sent to Linus as a fix for 3.0 ?
+> 
+> If they were ready, maybe.  But those patches still need important work
+> (and review) and are not "fix" material but need to wait until the next
+> merge window.
+Fair enough.
 
-SCSI HBA drivers stores the max number of sg entries in
-host->sg_tablesize (and scsi-ml tells the block layer about the
-limit)? So if we have the generic API to handle the value, scsi HBA
-drivers (and scsi-ml) could use it too?
+ 
+> Basically, the original patch should not have been submitted to mainline
+> until the runtime PM support was ready, so the correct short term fix is
+> to simply revert.
+>
+> Also, to echo the question from Dima Zavin:
+> 
+> Why isn't this just a simple revert of the original patch?
+I did a revert in my tree.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
