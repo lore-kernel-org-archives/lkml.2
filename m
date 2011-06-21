@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757187Ab1FURMD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 13:12:03 -0400
-Received: from 27.98.mail-out.ovh.net ([178.33.105.219]:59051 "EHLO
-	98.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756666Ab1FURMB (ORCPT
+	id S1756757Ab1FUOa4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 10:30:56 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:38853 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756747Ab1FUOay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 13:12:01 -0400
-X-Greylist: delayed 8936 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Jun 2011 13:12:01 EDT
-Date: Tue, 21 Jun 2011 16:28:40 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Patrice Vilchez <patrice.vilchez@atmel.com>,
-        Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH] atmel_serial: keep the platform_device unchanged
-Message-ID: <20110621142840.GW7881@game.jcrosoft.org>
-References: <1302724038-26236-1-git-send-email-plagnioj@jcrosoft.com>
- <1307522703.10626.9.camel@hcegtvedt.norway.atmel.com>
- <20110608134730.GA17584@game.jcrosoft.org>
- <1307541740.10626.15.camel@hcegtvedt.norway.atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307541740.10626.15.camel@hcegtvedt.norway.atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 12534362188607695870
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -330
+	Tue, 21 Jun 2011 10:30:54 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Tue, 21 Jun 2011 16:30:40 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: <linux-kernel@vger.kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Subject: 3.0-rc3: new sparse noise on module_param_named: "error: Syntax
+ error in unary expression"
+Message-ID: <20110621163040.717fd5ed@stein>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16:02 Wed 08 Jun     , Hans-Christian Egtvedt wrote:
-> On Wed, 2011-06-08 at 15:47 +0200, Jean-Christophe PLAGNIOL-VILLARD
-> wrote:
-> > On 10:45 Wed 08 Jun     , Hans-Christian Egtvedt wrote:
-> > > On Wed, 2011-04-13 at 21:47 +0200, Jean-Christophe PLAGNIOL-VILLARD
-> > > wrote:
-> 
-> <snipp>
-> 
-> > > > diff --git a/arch/avr32/mach-at32ap/at32ap700x.c b/arch/avr32/mach-at32ap/at32ap700x.c
-> > > > index bfc9d07..aa677e2 100644
-> > > > --- a/arch/avr32/mach-at32ap/at32ap700x.c
-> > > > +++ b/arch/avr32/mach-at32ap/at32ap700x.c
-> > > > @@ -1014,6 +1014,7 @@ static struct platform_device *__initdata at32_usarts[4];
-> > > >  void __init at32_map_usart(unsigned int hw_id, unsigned int line, int flags)
-> > > >  {
-> > > >  	struct platform_device *pdev;
-> > > > +	struct atmel_uart_data *pdata;
-> > > >  
-> > > >  	switch (hw_id) {
-> > > >  	case 0:
-> > > > @@ -1042,7 +1043,8 @@ void __init at32_map_usart(unsigned int hw_id, unsigned int line, int flags)
-> > > >  		data->regs = (void __iomem *)pdev->resource[0].start;
-> > > >  	}
-> > > >  
-> > > > -	pdev->id = line;
-> > > 
-> > > AVR32 needs this to be present to work independent of which USART
-> > > peripheral the user chooses to use for console.
-> > > 
-> > > > +	pdata = pdev->dev.platform_data;
-> > > > +	pdata->num = portnr;
-> > here supposed to be
-> > 	pdata->num = line;
-> 
-> I know, but that doesn't fix the problem about not able to find a
-> console, the platform data id must also be 0 (if console is on ttyS0)
-> AFAICT.
-I found the issue
-on at91 we always use the dbgu as console so I did not see it
+Hi,
 
-please try to repling patch
+make C=1 in 3.0-rc3 but not in 2.6.39 complains:
 
-Best Regards,
-J.
+  CHECK   drivers/firewire/ohci.c
+drivers/firewire/ohci.c:308:1: error: Syntax error in unary expression
+drivers/firewire/ohci.c:325:1: error: Syntax error in unary expression
+  CC [M]  drivers/firewire/ohci.o
+  CHECK   drivers/firewire/sbp2.c
+drivers/firewire/sbp2.c:70:1: error: Syntax error in unary expression
+drivers/firewire/sbp2.c:116:1: error: Syntax error in unary expression
+  CC [M]  drivers/firewire/sbp2.o
+
+These lines are the module_param_named lines of:
+
+static int param_quirks;
+module_param_named(quirks, param_quirks, int, 0644);
+MODULE_PARM_DESC(quirks, "Chip quirks (default = 0"
+[...]
+static int param_debug;
+module_param_named(debug, param_debug, int, 0644);
+MODULE_PARM_DESC(debug, "Verbose logging (default = 0"
+[...]
+
+and
+
+static int sbp2_param_exclusive_login = 1;
+module_param_named(exclusive_login, sbp2_param_exclusive_login, bool, 0644);
+MODULE_PARM_DESC(exclusive_login, "Exclusive login to sbp2 device "
+[...]
+static int sbp2_param_workarounds;
+module_param_named(workarounds, sbp2_param_workarounds, int, 0644);
+MODULE_PARM_DESC(workarounds, "Work around device bugs (default = 0"
+[...]
+
+Seen with an older version of sparse (perhaps 0.4.2) and the current from
+sparse.git (0.4.3 plus 13 commmits).
+
+There is only a single change to the kernel's include/linux/moduleparam.h
+after v2.6.39, "module: reorder kparam_array to remove alignment padding
+on 64 bit builds", and that one is apparently not the cause of the noise.
+
+Puzzled,
+-- 
+Stefan Richter
+-=====-==-== -==- =-=-=
+http://arcgraph.de/sr/
