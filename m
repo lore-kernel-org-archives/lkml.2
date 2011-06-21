@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915Ab1FUPRT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 11:17:19 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59965 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751407Ab1FUPRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 11:17:17 -0400
-Date: Tue, 21 Jun 2011 15:17:10 GMT
-From: "tip-bot for cpw@sgi.com" <cpw@sgi.com>
-Message-ID: <tip-9c9153db22870c3f37add83bea30500fcc268a73@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com, cpw@sgi.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        cpw@sgi.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110621122242.363757364@sgi.com>
-References: <20110621122242.363757364@sgi.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/uv] x86, UV: Allow for non-consecutive sockets
-Git-Commit-ID: 9c9153db22870c3f37add83bea30500fcc268a73
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 21 Jun 2011 15:17:10 +0000 (UTC)
+	id S1756664Ab1FUPki (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 11:40:38 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41577 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752792Ab1FUPkf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 11:40:35 -0400
+Message-Id: <20110621151725.705140475@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Tue, 21 Jun 2011 17:17:25 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, efault@gmx.de
+Subject: [PATCH 0/4] printk: Remove lockdep_off() and wakeups -v3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9c9153db22870c3f37add83bea30500fcc268a73
-Gitweb:     http://git.kernel.org/tip/9c9153db22870c3f37add83bea30500fcc268a73
-Author:     cpw@sgi.com <cpw@sgi.com>
-AuthorDate: Tue, 21 Jun 2011 07:21:28 -0500
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 21 Jun 2011 14:50:32 +0200
+Last iteration of the printk() rework which removes the lockdep_off() hackery
+and removes the need for printk() to issue wakeups, thereby increasing
+reliability from variuos contexts.
 
-x86, UV: Allow for non-consecutive sockets
+Patch 0b5e1c5255 from -tip needs to be reverted (or better dropped), due
+us discovering why doing up() under logbuf_lock was important -- thanks 
+Andrew, Ingo!
 
-Fix for the topology in which there is a socket 1 on a blade
-with no socket 0.
+This series was tested on a lockdep enabled kernel with the below hack
+included, which generated a nice splat.
 
-Only call make_per_cpu_thp() for present sockets.
-We have only seen this fail for internal configurations.
-
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-Link: http://lkml.kernel.org/r/20110621122242.363757364@sgi.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/platform/uv/tlb_uv.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/printk.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
-index 34be650..7623b08 100644
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -1752,10 +1752,10 @@ static int __init summarize_uvhub_sockets(int nuvhubs,
- 				sdp = &bdp->socket[socket];
- 				if (scan_sock(sdp, bdp, &smaster, &hmaster))
- 					return 1;
-+				make_per_cpu_thp(smaster);
- 			}
- 			socket++;
- 			socket_mask = (socket_mask >> 1);
--			make_per_cpu_thp(smaster);
- 		}
- 	}
- 	return 0;
+Index: linux-2.6/kernel/printk.c
+===================================================================
+--- linux-2.6.orig/kernel/printk.c
++++ linux-2.6/kernel/printk.c
+@@ -930,6 +930,11 @@ asmlinkage int vprintk(const char *fmt, 
+ 	spin_lock(&logbuf_lock);
+ 	printk_cpu = this_cpu;
+ 
++	if (panic_timeout) {
++		panic_timeout = 0;
++		local_irq_enable();
++	}
++
+ 	if (recursion_bug) {
+ 		recursion_bug = 0;
+ 		strcpy(printk_buf, recursion_bug_msg);
+
