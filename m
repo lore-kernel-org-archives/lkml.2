@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756813Ab1FUWNH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 18:13:07 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:55578 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755040Ab1FUWNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 18:13:04 -0400
-Date: Wed, 22 Jun 2011 00:13:01 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Ram Pai <linuxram@us.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, svenkatr@ti.com, yinghai@kernel.org,
-        cjb@laptop.org, linux-pci@vger.kernel.org,
-        linux-net-drivers@solarflare.com, bhutchings@solarflare.com
-Subject: Re: [PATCH 4/4] PCI: make cardbus-bridge resources nice-to-have
-Message-ID: <20110621221301.GA1814@isilmar-3.linta.de>
-Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-	Jesse Barnes <jbarnes@virtuousgeek.org>,
-	Ram Pai <linuxram@us.ibm.com>, linux-kernel@vger.kernel.org,
-	linux-mmc@vger.kernel.org, svenkatr@ti.com, yinghai@kernel.org,
-	cjb@laptop.org, linux-pci@vger.kernel.org,
-	linux-net-drivers@solarflare.com, bhutchings@solarflare.com
-References: <1308610037-6261-1-git-send-email-linuxram@us.ibm.com> <1308610037-6261-5-git-send-email-linuxram@us.ibm.com> <20110621075659.GA4620@comet.dominikbrodowski.net> <20110621162321.GB22917@ram-laptop> <20110621143622.1fae90b3@jbarnes-desktop>
+	id S1756362Ab1FUWV0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 18:21:26 -0400
+Received: from mta21.charter.net ([216.33.127.81]:35620 "EHLO
+	mta21.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751613Ab1FUWVX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 18:21:23 -0400
+X-Authority-Analysis: v=1.1 cv=1b2X7W/SifksZeClH/haT1SUt4udqxFGF00pZw2/jJk=
+ c=1 sm=1 a=p9YancsnzTcA:10 a=8DFDbwKGSZsA:10 a=0xc6OLWX_2kA:10
+ a=8nJEP1OIZ-IA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17 a=n6QB8HQGw4dP2UgOK_EA:9
+ a=wPNLvfGTeEIA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:117
+Message-ID: <4E01195F.8040000@gregd.org>
+Date: Tue, 21 Jun 2011 17:21:19 -0500
+From: Greg Dietsche <greg@gregd.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110505 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110621143622.1fae90b3@jbarnes-desktop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: 3.0 rc3 bug & warning fs/inode.c && fs/fs-writeback.c
+References: <4E008DD0.2090809@gregd.org> <20110621124556.GZ11521@ZenIV.linux.org.uk>
+In-Reply-To: <20110621124556.GZ11521@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+On 06/21/2011 07:45 AM, Al Viro wrote:
+> On Tue, Jun 21, 2011 at 07:25:52AM -0500, Greg Dietsche wrote:
+>> from the just missed rc4 department:
+>> I recieved this BUG last night on my laptop and it was shortly
+>> followed by a warning from the kernel. I doubt that I can reproduce
+>> this. It happened under a light load. I was doing some emailing
+>> using thunderbird (er.... icedove.....). let me know if there's
+>> anything I can do to help debug or if there's more info I can get
+>> that would help you figure out what went wrong.
+>
+> Which filesystems had been mounted?  That looks like a stray pointer
+> to struct inode (i.e. outliving the inode eviction on final iput());
+> might be the one fixed by commit 50338b889dc504c69e0cb316ac92d1b9e51f3c8a,
+> might be something else...
+>
+I'm leaning towards might be something else. Correct me if I'm wrong, 
+but it seems that 50338b889dc504c69e0cb316ac92d1b9e51f3c8a was included 
+in rc3.
 
-On Tue, Jun 21, 2011 at 02:36:22PM -0700, Jesse Barnes wrote:
-> On Tue, 21 Jun 2011 09:23:21 -0700
-> Ram Pai <linuxram@us.ibm.com> wrote:
-> 
-> > On Tue, Jun 21, 2011 at 09:57:00AM +0200, Dominik Brodowski wrote:
-> > > On Mon, Jun 20, 2011 at 03:47:17PM -0700, Ram Pai wrote:
-> > > > Allocate resources to cardbus bridge only after all other genuine
-> > > > resources requests are satisfied. Dont retry if resource allocation
-> > > > for cardbus-bridge fails.
-> > > 
-> > > Well, for those who use cardbus cards, cardbus resources aren't "nice to
-> > > have", they are absolutely required. Of course, not all cardbus cards need
-> > > as many resources as are currently assigned, so I wouldn't oppose a patch
-> > > which marks _some_ of the currently assigned resources as "nice to have".
-> > > But this approach -- 0 required, all "nice to have" -- seems wrong to me.
-> > 
-> > Do you know how much minimal resource is good enough?  The value, before
-> > this patch, was 256 for IO ports and  64M for memory.
-> > 
-> > BTW: If the BIOS has already assigned enough resources for all the devices on
-> > the system, no devices will be starved including the cardbus. The OS intervenes
-> > and is forced to make this hard choice only when it sees unassigned resources to
-> > some devices along with resource contention.
-> 
-> Dominik, presumably you have a few good cardbus test machines; can you
-> give Ram's patches a try?  If we know they break existing
-> configurations, I'm afraid we'll just have to revert the whole
-> re-allocation patch yet again.  If your stuff survives, I'll ping Linus
-> to see what he thinks, though he'll probably want to revert in any
-> case...
-
-Actually, I only have one cardbus-capable test machine, which does work in
-very most cases, and also I do care much more about the PCMCIA side of
-things than the PCI/CardBus side... Therefore, all I could do is some more
-or less informed guessing about how much minimal resource we should try to
-allocate...
-
-Best,
-	Dominik
+thanks,
+Greg
