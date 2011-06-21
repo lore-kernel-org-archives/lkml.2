@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391Ab1FUJUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 05:20:19 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:49409 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754261Ab1FUJUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 05:20:15 -0400
-Date: Tue, 21 Jun 2011 09:57:00 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: Ram Pai <linuxram@us.ibm.com>
-Cc: jbarnes@virtuousgeek.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, svenkatr@ti.com, yinghai@kernel.org,
-        cjb@laptop.org, linux-pci@vger.kernel.org,
-        linux-net-drivers@solarflare.com, bhutchings@solarflare.com
-Subject: Re: [PATCH 4/4] PCI: make cardbus-bridge resources nice-to-have
-Message-ID: <20110621075659.GA4620@comet.dominikbrodowski.net>
-Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-	Ram Pai <linuxram@us.ibm.com>, jbarnes@virtuousgeek.org,
-	linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-	svenkatr@ti.com, yinghai@kernel.org, cjb@laptop.org,
-	linux-pci@vger.kernel.org, linux-net-drivers@solarflare.com,
-	bhutchings@solarflare.com
-References: <1308610037-6261-1-git-send-email-linuxram@us.ibm.com>
- <1308610037-6261-5-git-send-email-linuxram@us.ibm.com>
+	id S1754462Ab1FUIFh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 04:05:37 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:58571 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752724Ab1FUIFe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 04:05:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=wWcyfnKYBz4ABZgJ7BfqoP2/oyDVXD6duLr/pzlDqY+gd3sNDNQgMUZr/j9wCtsr/K
+         dVJGlAL7R1vNjfj+w8BEuWCY7xlA8719eHBHKANN2k0TYzxJjPZjO25nGnO04/6sMiWE
+         qYwhQiI7jvD4+dkqrXXUwZZFlsF3CwZgZJXfs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308610037-6261-5-git-send-email-linuxram@us.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110621001805.1caecc82@queued.net>
+References: <20110618213803.521db1b3@debxo>
+	<20110618214203.0028ba85@debxo>
+	<BANLkTimyFj+iTWAopPMEyohP2pop_=g=6g@mail.gmail.com>
+	<1308631634.31157.7.camel@dcbw.foobar.com>
+	<20110621001805.1caecc82@queued.net>
+Date: Tue, 21 Jun 2011 09:05:33 +0100
+X-Google-Sender-Auth: 89CejdKdnHNEKopqe3GoUmOshnk
+Message-ID: <BANLkTi=CPEmFVbwuSBSsQjv4ZqHX+Ng8gw@mail.gmail.com>
+Subject: Re: [GIT PULL linux-firmware.git] OLPC libertas firmware blobs
+From: Daniel Drake <dsd@laptop.org>
+To: Andres Salomon <dilinger@queued.net>
+Cc: Dan Williams <dcbw@redhat.com>, David Woodhouse <dwmw2@infradead.org>,
+        cjb@laptop.org, linux-kernel@vger.kernel.org,
+        libertas-dev@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 03:47:17PM -0700, Ram Pai wrote:
-> Allocate resources to cardbus bridge only after all other genuine
-> resources requests are satisfied. Dont retry if resource allocation
-> for cardbus-bridge fails.
+On 21 June 2011 08:18, Andres Salomon <dilinger@queued.net> wrote:
+> Looks like the one on dev.l.o is older (9.70.7.p0).  Shall I redo the
+> pull request a) ignoring sd8686, b) replacing usb8388 v5 with the OLPC
+> version, and c) including both thinfirm blobs as well, then?
 
-Well, for those who use cardbus cards, cardbus resources aren't "nice to
-have", they are absolutely required. Of course, not all cardbus cards need
-as many resources as are currently assigned, so I wouldn't oppose a patch
-which marks _some_ of the currently assigned resources as "nice to have".
-But this approach -- 0 required, all "nice to have" -- seems wrong to me.
+That sounds good to me. The only thing I'm a bit unsure about is the
+usb8388 thing. If you replace usb8388_v5.bin with the latest OLPC one,
+we would like to have that at the top of the list, higher than
+usb8388_v9, so that OLPC firmware gets preferred. That might be a bit
+strange. On the other hand, if usb8388_olpc_v5.bin is at the top its
+less odd, since it looks like a separate branch.
 
-Best,
-	Dominik
+The other changes look fine, and we will figure out sd8686 and send a
+later pull request for that. Dan, can you send over
+SD-8686-FEDORA26FC6-SYSKT-9.70.20.p0-26409.p64, and any release
+notes/changelog you may have? I wasn't aware of this release.
+
+Thanks,
+Daniel
