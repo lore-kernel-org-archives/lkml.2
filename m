@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756579Ab1FUWHg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 18:07:36 -0400
-Received: from ozlabs.org ([203.10.76.45]:51094 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754959Ab1FUWHf convert rfc822-to-8bit (ORCPT
+	id S932197Ab1FUB6z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 21:58:55 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:13458 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932082Ab1FUB6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 18:07:35 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
-Subject: Re: module: sysfs - add 'uevent' file to allow coldplug
-In-Reply-To: <BANLkTink8YTe=-Tr5Ax3epiFoFCfzcex7w@mail.gmail.com>
-References: <1308434431.1050.5.camel@mop> <8739j59zib.fsf@rustcorp.com.au> <BANLkTink8YTe=-Tr5Ax3epiFoFCfzcex7w@mail.gmail.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Tue, 21 Jun 2011 11:23:05 +0930
-Message-ID: <87boxshrwe.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 20 Jun 2011 21:58:50 -0400
+X-AuditID: cbfee61a-b7c59ae000003b70-bf-4dfffad8375e
+Date: Tue, 21 Jun 2011 10:58:42 +0900
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: [PATCH v2 0/5] Update Samsung-SoC ADC (regulator / recent CPU support)
+In-reply-to: <20110620101737.GA31864@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, dg77.kim@samsung.com,
+        myungjoo.ham@gmail.com
+Message-id: <1308621527-2457-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+Content-transfer-encoding: 7BIT
+References: <20110620101737.GA31864@opensource.wolfsonmicro.com>
+X-OriginalArrivalTime: 21 Jun 2011 01:58:11.0803 (UTC)
+ FILETIME=[ACE342B0:01CC2FB6]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jun 2011 13:20:00 +0200, Kay Sievers <kay.sievers@vrfy.org> wrote:
-> On Mon, Jun 20, 2011 at 01:23, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> > On Sun, 19 Jun 2011 00:00:29 +0200, Kay Sievers <kay.sievers@vrfy.org> wrote:
-> >> From: Kay Sievers <kay.sievers@vrfy.org>
-> >> Subject: module: sysfs - add 'uevent' file to allow built-in coldplug
-> >>
-> >> Userspace wants to manage module parameters with udev rules.
-> >> This currently only works for loaded modules, but not for
-> >> built-in ones.
-> >
-> > I'm confused.  What does "manage" mean here?
-> 
-> Hook system management into module-load events, which might include
-> changing module parameters in /sys/module/*/parameters/*, or at
-> bootup/coldplug run it for built-in modules.
-> 
-> We do the same to set properties for buses, drivers or devices when they appear.
+Patch 1/5: Add regulator support in ADC driver.
+	If CONFIG_REGULATOR is enabled, "vdd" regulator for the ADC driver
+	(e.g., "s5p-adc") should exist for the adc driver.
 
-Sorry, that's another vague answer :(
+Patch 2/5: Channel selection method for S5PC110 and Exynos4
+	Recent Samsung SoCs have different register addresses for
+	channel selection. Use "s5p-adc" to support such chips.
 
-udev already knows about module load, and the parameters are created at
-that point; they are not *changed*.
+Patch 3/5: Support ADC at Exynos4
+	Define register addresses and device name for Exynos4
 
-What, *exactly* will this enable?  Don't use the word "hook" or
-"management": both vague terms which assume I know what you're talking
-about.  I don't.
+Patch 4/5: Support ADC at S5PC110/S5PV210
+	Correct ADC device name for S5PC110/S5PV210
 
-Show me exactly what udev will now be able to do that it can't do now,
-and how it will be used.  Preferably with examples.  Assume (correctly)
-that I have only a vague idea what udev does.
+Patch 5/5: Header file correction (plat/devs.h)
+	The long-overdue bugfix for compiler errors. ADC for Exynos4 fails to
+	be compiled without this patch.
 
-Thanks,
-Rusty.
+MyungJoo Ham (5):
+  Samsung SoC ADC: use regulator (VDD for ADC).
+  Samsung SoC ADC: Channel selection for S5PV210, S5PC110, and Exynos4
+  ARM: Exynos4: Support ADC
+  ARM: S5PC110/S5PV210: Support ADC
+  Samsung SoC: header file revised to prevent declaring duplicated.
+
+ arch/arm/mach-exynos4/Kconfig                 |    1 +
+ arch/arm/mach-exynos4/cpu.c                   |    4 ++
+ arch/arm/mach-exynos4/include/mach/irqs.h     |    8 ++++
+ arch/arm/mach-exynos4/include/mach/map.h      |    5 ++
+ arch/arm/mach-s5pv210/cpu.c                   |    2 +-
+ arch/arm/plat-samsung/adc.c                   |   55 +++++++++++++++++++-----
+ arch/arm/plat-samsung/include/plat/devs.h     |    5 ++
+ arch/arm/plat-samsung/include/plat/regs-adc.h |    1 +
+ 8 files changed, 68 insertions(+), 13 deletions(-)
+
+-- 
+1.7.4.1
+
