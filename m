@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab1FULHj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 07:07:39 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36835 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754529Ab1FULHh (ORCPT
+	id S1756253Ab1FULI5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 07:08:57 -0400
+Received: from mailgw1.uni-kl.de ([131.246.120.220]:53478 "EHLO
+	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755657Ab1FULI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 07:07:37 -0400
-Date: Tue, 21 Jun 2011 12:07:34 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, myungjoo.ham@gmail.com,
-        dg77.kim@samsung.com
-Subject: Re: [PATCH v2 1/4] Exynos4 NURI: configure regulators and PMIC
-Message-ID: <20110621110734.GG22177@opensource.wolfsonmicro.com>
-References: <20110620103124.GD31864@opensource.wolfsonmicro.com>
- <1308622033-2521-1-git-send-email-myungjoo.ham@samsung.com>
- <1308622033-2521-2-git-send-email-myungjoo.ham@samsung.com>
+	Tue, 21 Jun 2011 07:08:56 -0400
+Subject: [PATCH] Fix a memory leak reported by kmemleak.
+To: x86@kernel.org
+From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Cc: catalin.marinas@arm.com, linux-kernel@vger.kernel.org
+Date: Tue, 21 Jun 2011 13:08:53 +0200
+Message-ID: <20110621110853.2537133.20464.stgit@localhost.localdomain>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308622033-2521-2-git-send-email-myungjoo.ham@samsung.com>
-X-Cookie: Your ignorance cramps my conversation.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-ITWM-CharSet: utf-8
+X-ITWM-Scanned-By: mail2.itwm.fhg.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 11:07:10AM +0900, MyungJoo Ham wrote:
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Memory allocated by get_current_resources() will be never free'ed
+if 'pci_use_crs' is not set.
 
-This looks good, though you should also be able to make the supply lists
-into __initdata.
+Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+---
+ arch/x86/pci/acpi.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index 0972315..3ad040a 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -228,8 +228,11 @@ static void add_resources(struct pci_root_info *info)
+ 	int i;
+ 	struct resource *res, *root, *conflict;
+ 
+-	if (!pci_use_crs)
++	if (!pci_use_crs) {
++		kfree(info->res);
++		kfree(info->name);
+ 		return;
++	}
+ 
+ 	coalesce_windows(info, IORESOURCE_MEM);
+ 	coalesce_windows(info, IORESOURCE_IO);
+
