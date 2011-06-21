@@ -1,90 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426Ab1FUGAv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 02:00:51 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:36563 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974Ab1FUGAu (ORCPT
+	id S1752443Ab1FUGLu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 02:11:50 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:37834 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589Ab1FUGLs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 02:00:50 -0400
-Message-ID: <4E003369.3000006@linux.vnet.ibm.com>
-Date: Tue, 21 Jun 2011 11:30:09 +0530
-From: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc11 Thunderbird/3.0.5
+	Tue, 21 Jun 2011 02:11:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=oyFWZA1ItQlBVwn4ndjg550ngFCkynVZ1iYjvvHZsq+dUdpGrWk/+KzEsrap9I4HLr
+         hsITIXNTYRnYwUghMLsP+sH1PFEwlVzXb/cARKyNJic9Q99dIEgHPcLT94FohQtlTzN3
+         55/vZWaw07xRMyriGeD9PKetG6QA0spe/73QQ=
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: linux-pm@lists.linux-foundation.org, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH V1 4/7] cpuidle: (powerpc) Add cpu_idle_wait() to
- allow switching idle routines
-References: <20110607162847.6848.44707.stgit@tringupt.in.ibm.com> <20110607162959.6848.26918.stgit@tringupt.in.ibm.com> <1308285128.32158.8.camel@pasglop>
-In-Reply-To: <1308285128.32158.8.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201106201500.58617.arnd@arndb.de>
+References: <BANLkTi=ETn+LXtd20qkfcgrUngjqwVrVPg@mail.gmail.com>
+	<201106201500.58617.arnd@arndb.de>
+Date: Tue, 21 Jun 2011 15:11:47 +0900
+Message-ID: <BANLkTimhGiXaru3a1_rgUeDL9RZ4vqHjpQ@mail.gmail.com>
+Subject: Re: 'hweight_long' include/linux/bitops.h compile warning problem.
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Arnd.
+
+I attached patch for this warning issue.
+
+If there is a problem of patch, plz reply ....
+
+Thanks.
 
 
-On 06/17/2011 10:02 AM, Benjamin Herrenschmidt wrote:
-> On Tue, 2011-06-07 at 22:00 +0530, Trinabh Gupta wrote:
->
->> diff --git a/arch/powerpc/kernel/idle.c b/arch/powerpc/kernel/idle.c
->> index 39a2baa..932392b 100644
->> --- a/arch/powerpc/kernel/idle.c
->> +++ b/arch/powerpc/kernel/idle.c
->> @@ -102,6 +102,24 @@ void cpu_idle(void)
->>   	}
->>   }
+--------------------------------------------------------------------------------------------------------------------------------------
+
+>From 28589ea9aabb080020ab3c79adcecad5d7315f39 Mon Sep 17 00:00:00 2001
+From: Namjae Jeon <linkinjeon@gmail.com>
+Date: Tue, 21 Jun 2011 14:39:03 +0900
+Subject: [PATCH] compilation warning is caused when using hweight_long
+with -Wsign-compare option.
+ Warning message is '
+ include/linux/bitops.h: In function 'hweight_long':
+ include/linux/bitops.h:49: warning: signed and unsigned type in
+conditional expression
+ The reason is that the default return value of this macro is signed.
+So, need type casting to remove warning.
+
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+---
+ include/asm-generic/bitops/const_hweight.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/asm-generic/bitops/const_hweight.h
+b/include/asm-generic/bitops/const_hweight.h
+index fa2a50b..d91b1aa 100644
+--- a/include/asm-generic/bitops/const_hweight.h
++++ b/include/asm-generic/bitops/const_hweight.h
+@@ -4,7 +4,7 @@
+ /*
+  * Compile time versions of __arch_hweightN()
+  */
+-#define __const_hweight8(w)            \
++#define __const_hweight8(w) (unsigned long)    \
+       (        (!!((w) & (1ULL << 0))) +       \
+        (!!((w) & (1ULL << 1))) +       \
+        (!!((w) & (1ULL << 2))) +       \
+--
+1.7.4-rc2
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------
+2011/6/20 Arnd Bergmann <arnd@arndb.de>:
+> On Monday 20 June 2011, NamJae Jeon wrote:
+>> I found compile warning while compiling module when using -Wsign-compare option.
 >>
->> +static void do_nothing(void *unused)
->> +{
->> +}
->> +
->> +/*
->> + * cpu_idle_wait - Used to ensure that all the CPUs come out of the old
->> + * idle loop and start using the new idle loop.
->> + * Required while changing idle handler on SMP systems.
->> + * Caller must have changed idle handler to the new value before the call.
->> + */
->> +void cpu_idle_wait(void)
->> +{
->> +	smp_mb();
->> +	/* kick all the CPUs so that they exit out of old idle routine */
->> +	smp_call_function(do_nothing, NULL, 1);
->> +}
->> +EXPORT_SYMBOL_GPL(cpu_idle_wait);
->> +
->>   int powersave_nap;
+>> include/linux/bitops.h: In function 'hweight_long':
+>> include/linux/bitops.h:49: warning: signed and unsigned type in
+>> conditional expression
 >>
->>   #ifdef CONFIG_SYSCTL
+>> I found the reason of this problem that the default return value of
+>> the below macro is signed.
+>>
+>> #define __const_hweight8(w)        \
+>>       ( (!!((w) & (1ULL << 0))) +       \
+>>         (!!((w) & (1ULL << 1))) +       \
+>>         (!!((w) & (1ULL << 2))) +       \
+>>         (!!((w) & (1ULL << 3))) +       \
+>>         (!!((w) & (1ULL << 4))) +       \
+>>         (!!((w) & (1ULL << 5))) +       \
+>>         (!!((w) & (1ULL << 6))) +       \
+>>         (!!((w) & (1ULL << 7))) )
+>>
+>> So, I try to add (unsigned long) in __const_hweight8 like this.
+>>
+>> #define __const_hweight8(w)     (unsigned long )        \
+>>       ( (!!((w) & (1ULL << 0))) +       \
+>>         (!!((w) & (1ULL << 1))) +       \
+>>         (!!((w) & (1ULL << 2))) +       \
+>>         (!!((w) & (1ULL << 3))) +       \
+>>         (!!((w) & (1ULL << 4))) +       \
+>>         (!!((w) & (1ULL << 5))) +       \
+>>         (!!((w) & (1ULL << 6))) +       \
+>>         (!!((w) & (1ULL << 7))) )
+>>
+>> so, I can't see compile warning after fixing it, Would you plz check this ?
 >
-> This is gross :-)
-
-Well this is what exists today for x86; so didn't think too
-much into this. Maybe there is cleaner way. The requirement
-is to completely exit the idle loop and call cpuidle_idle_call()
-again. I think sending reschedule may be enough.
-
-With respect to current implementation the arch-independent cpuidle
-code needs a cpu_idle_wait() function for any architecture where
-CONFIG_SMP is defined. This cpu_idle_wait function is called
-whenever we have to pause usage of cpuidle; to switch driver
-or governor etc. So maybe there is a cleaner implementation of
-cpu_idle_wait instead of smp_call_function(do_nothing...); sending
-reschedule may work.
-
-Thanks
--Trinabh
-
+> Yes, this looks correct to me. Could you send the change as a proper patch
+> with your Signed-off-by:?
 >
-> Do you need to absolutely ensure the idle task has changed or just
-> kicking it with a send reschedule is enough ?
-
-
->
-> Cheers,
-> Ben.
->
+>        Arnd
 >
