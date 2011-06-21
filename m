@@ -1,254 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084Ab1FUTOO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 15:14:14 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:46263 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757272Ab1FUTOL convert rfc822-to-8bit (ORCPT
+	id S1757438Ab1FUTQi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 15:16:38 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48849 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757373Ab1FUTQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 15:14:11 -0400
+	Tue, 21 Jun 2011 15:16:37 -0400
+Date: Tue, 21 Jun 2011 20:16:24 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        ARM Kernel <linux-arm-kernel@lists.infradead.org>, mikpe@it.uu.se,
+        ebiederm@xmission.com, vapier@gentoo.org, tony.luck@intel.com
+Subject: Re: [PATCH] ARM: quiet sparse noise due to
+	__ARCH_WANT_SYS_RT_SIG(ACTION|SUSPEND)
+Message-ID: <20110621191624.GK23234@n2100.arm.linux.org.uk>
+References: <201106211209.46462.hartleys@visionengravers.com>
 MIME-Version: 1.0
-In-Reply-To: <20110621135558.GB9228@S2101-09.ap.freescale.net>
-References: <1308410354-21387-1-git-send-email-shawn.guo@linaro.org>
- <1308410354-21387-2-git-send-email-shawn.guo@linaro.org> <20110618161934.GH8195@ponder.secretlab.ca>
- <20110619073000.GA23171@S2100-06.ap.freescale.net> <20110621135558.GB9228@S2101-09.ap.freescale.net>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 21 Jun 2011 13:13:50 -0600
-X-Google-Sender-Auth: HFfMlT7mjPpU6vet3mNP3mgb0nY
-Message-ID: <BANLkTim4vunTm1176MRw3pqRZnunu4=9jg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] serial/imx: add device tree support
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: patches@linaro.org, netdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, Jason Liu <jason.hui@linaro.org>,
-        linux-kernel@vger.kernel.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        David Gibson <david@gibson.dropbear.id.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201106211209.46462.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 7:55 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
-> Hi Grant,
->
-> I just gave a try to use aliases node for identify the device index.
-> Please take a look and let me know if it's what you expect.
+On Tue, Jun 21, 2011 at 12:09:45PM -0700, H Hartley Sweeten wrote:
+> ARM defines __ARCH_WANT_SYS_RT_SIG(ACTION|SUSPEND) which
+> produces the following sparse warnings in kernel/signal.c:
+> 
+>   warning: symbol 'sys_rt_sigaction' was not declared. Should it be static?
+>   warning: symbol 'sys_rt_sigsuspend' was not declared. Should it be static?
+> 
+> Since ARM doesn't include <asm-generic/syscalls.h>, due to different
+> calling conventions for some system calls, prototype the functions
+> in <asm/unistd.h> to quiet the noise.
 
-Thanks Shawn.  This is definitely on track.  Comments below...
+NAK.
 
->
-> On Sun, Jun 19, 2011 at 03:30:02PM +0800, Shawn Guo wrote:
-> [...]
->> > >
->> > > +#ifdef CONFIG_OF
->> > > +static int serial_imx_probe_dt(struct imx_port *sport,
->> > > +         struct platform_device *pdev)
->> > > +{
->> > > + struct device_node *node = pdev->dev.of_node;
->> > > + const __be32 *line;
->> > > +
->> > > + if (!node)
->> > > +         return -ENODEV;
->> > > +
->> > > + line = of_get_property(node, "id", NULL);
->> > > + if (!line)
->> > > +         return -ENODEV;
->> > > +
->> > > + sport->port.line = be32_to_cpup(line) - 1;
->> >
->> > Hmmm, I really would like to be rid of this.  Instead, if uarts must
->> > be enumerated, the driver should look for a /aliases/uart* property
->> > that matches the of_node.  Doing it that way is already established in
->> > the OpenFirmware documentation, and it ensures there are no overlaps
->> > in the global namespace.
->> >
->>
->> I just gave one more try to avoid using 'aliases', and you gave a
->> 'no' again.  Now, I know how hard you are on this.  Okay, I start
->> thinking about your suggestion seriously :)
->>
->> > We do need some infrastructure to make that easier though.  Would you
->> > have time to help put that together?
->> >
->> Ok, I will give it a try.
->>
->
-> diff --git a/arch/arm/boot/dts/imx51-babbage.dts b/arch/arm/boot/dts/imx51-babbage.dts
-> index da0381a..f4a5c3c 100644
-> --- a/arch/arm/boot/dts/imx51-babbage.dts
-> +++ b/arch/arm/boot/dts/imx51-babbage.dts
-> @@ -18,6 +18,12 @@
->        compatible = "fsl,imx51-babbage", "fsl,imx51";
->        interrupt-parent = <&tzic>;
->
-> +       aliases {
-> +               serial0 = &uart0;
-> +               serial1 = &uart1;
-> +               serial2 = &uart2;
-> +       };
-> +
+asm/unistd.h is an exported header.  Please don't pollute it with kernel
+internal stuff.  Instead, follow the hint in asm-generic and create a new
+header file to describe syscalls called... asm/syscalls.h.
 
-Hmmm.  David Gibson had tossed out an idea of automatically generating
-aliases from labels.  It may be time to revisit that idea.
+And.. the problem is a lot larger than you mention above:
 
-David, perhaps using this format for a label should turn it into an
-alias (prefix label with an asterisk):
+    arch/arm/kernel/signal.c:68:16: warning: symbol 'sys_sigsuspend' was not declared. Should it be static?
+    arch/arm/kernel/signal.c:84:1: warning: symbol 'sys_sigaction' was not declared. Should it be static?
+    arch/arm/kernel/signal.c:328:16: warning: symbol 'sys_sigreturn' was not declared. Should it be static?
+    arch/arm/kernel/signal.c:360:16: warning: symbol 'sys_rt_sigreturn' was not declared. Should it be static?
+    arch/arm/kernel/sys_arm.c:34:16: warning: symbol 'sys_fork' was not declared. Should it be static?
+    arch/arm/kernel/sys_arm.c:47:16: warning: symbol 'sys_clone' was not declared. Should it be static?
+    arch/arm/kernel/sys_arm.c:57:16: warning: symbol 'sys_vfork' was not declared. Should it be static?
+    arch/arm/kernel/sys_arm.c:65:16: warning: symbol 'sys_execve' was not declared. Should it be static?
+    arch/arm/kernel/sys_arm.c:129:17: warning: symbol 'sys_arm_fadvise64_64' was not declared. Should it be static?
+    arch/arm/kernel/sys_oabi-compat.c:144:17: warning: symbol 'sys_oabi_stat64' was not declared. Should it be static?
+    arch/arm/kernel/sys_oabi-compat.c:154:17: warning: symbol 'sys_oabi_lstat64' was not declared. Should it be static?
+    arch/arm/kernel/sys_oabi-compat.c:164:17: warning: symbol 'sys_oabi_fstat64' was not declared. Should it be static?
+    arch/arm/kernel/sys_oabi-compat.c:174:17: warning: symbol 'sys_oabi_fstatat64' was not declared. Should it be static?
+    arch/arm/kernel/sys_oabi-compat.c:196:17: warning: symbol 'sys_oabi_fcntl64' was not declared. Should it be static?
+    arch/arm/kernel/sys_oabi-compat.c:249:17: warning: symbol 'sys_oabi_epoll_ctl' was not declared. Should it be static?
+    arch/arm/kernel/sys_oabi-compat.c:270:17: warning: symbol 'sys_oabi_epoll_wait' was not declared. Should it be static?
+    arch/arm/kernel/sys_oabi-compat.c:304:17: warning: symbol 'sys_oabi_semtimedop' was not declared. Should it be static?
+    arch/arm/kernel/sys_oabi-compat.c:343:17: warning: symbol 'sys_oabi_semop' was not declared. Should it be static?
+    arch/arm/kernel/sys_oabi-compat.c:349:16: warning: symbol 'sys_oabi_ipc' was not declared. Should it be static?
+    arch/arm/kernel/sys_oabi-compat.c:367:17: warning: symbol 'sys_oabi_bind' was not declared. Should it be static?
+    arch/arm/kernel/sys_oabi-compat.c:377:17: warning: symbol 'sys_oabi_connect' was not declared. Should it be static?
+    arch/arm/kernel/sys_oabi-compat.c:387:17: warning: symbol 'sys_oabi_sendto' was not declared. Should it be static?
+    arch/arm/kernel/sys_oabi-compat.c:400:17: warning: symbol 'sys_oabi_sendmsg' was not declared. Should it be static?
+    arch/arm/kernel/sys_oabi-compat.c:426:17: warning: symbol 'sys_oabi_socketcall' was not declared. Should it be static?
+    arch/arm/kernel/traps.c:464:16: warning: symbol 'arm_syscall' was not declared. Should it be static?
 
-        *thealias: i2c@12340000 { /*...*/ };
+So you actually need something like this (pasted, so whitespace
+damaged).  I'll pull it out of my low priority queue and queue it up
+for the next merge window.
 
-.... although that approach gets *really* hairy when considering that
-different boards will want different enumeration.  How would one
-override an automatic alias defined by an included .dts file?
+diff --git a/arch/arm/include/asm/syscalls.h b/arch/arm/include/asm/syscalls.h
+new file mode 100644
+index 0000000..e775746
+--- /dev/null
++++ b/arch/arm/include/asm/syscalls.h
+@@ -0,0 +1,60 @@
++#ifndef _ASM_ARM_SYSCALLS_H
++#define _ASM_ARM_SYSCALLS_H
++
++#include <linux/linkage.h>
++#include <linux/types.h>
++
++struct msghdr;
++struct sockaddr;
++
++/* arch/arm/kernel/signal.c */
++asmlinkage int sys_sigsuspend(int, unsigned long, old_sigset_t);
++asmlinkage int sys_sigaction(int, const struct old_sigaction __user *,
++             struct old_sigaction __user *);
++asmlinkage int sys_sigreturn(struct pt_regs *);
++asmlinkage int sys_rt_sigreturn(struct pt_regs *);
++
++/* arch/arm/kernel/sys_arm.c */
++asmlinkage int sys_fork(struct pt_regs *);
++asmlinkage int sys_clone(unsigned long, unsigned long, int __user *, int,
++                        int __user *, struct pt_regs *);
++asmlinkage int sys_vfork(struct pt_regs *);
++asmlinkage int sys_execve(const char __user *,
++                         const char __user *const __user *,
++                         const char __user *const __user *, struct pt_regs *);
++asmlinkage long sys_arm_fadvise64_64(int, int, loff_t, loff_t);
++
++/* arch/arm/kernel/sys_oabi-compat.c */
++struct oldabi_stat64;
++asmlinkage long sys_oabi_stat64(const char __user *,
++                               struct oldabi_stat64 __user *);
++asmlinkage long sys_oabi_lstat64(const char __user *,
++                                struct oldabi_stat64 __user *);
++asmlinkage long sys_oabi_fstat64(unsigned long, struct oldabi_stat64 __user *);+asmlinkage long sys_oabi_fstatat64(int, const char __user *,
++                                  struct oldabi_stat64  __user *, int);
++asmlinkage long sys_oabi_fcntl64(unsigned int, unsigned int, unsigned long);
++
++struct oabi_epoll_event;
++asmlinkage long sys_oabi_epoll_ctl(int, int, int,
++                                  struct oabi_epoll_event __user *);
++asmlinkage long sys_oabi_epoll_wait(int, struct oabi_epoll_event __user *,
++                                   int, int);
++
++struct oabi_sembuf;
++asmlinkage long sys_oabi_semtimedop(int, struct oabi_sembuf __user *, unsigned,+                                   const struct timespec __user *);
++asmlinkage long sys_oabi_semop(int, struct oabi_sembuf __user *,
++                              unsigned);
++asmlinkage int sys_oabi_ipc(uint, int, int, int, void __user *, long);
++asmlinkage long sys_oabi_bind(int, struct sockaddr __user *, int);
++asmlinkage long sys_oabi_connect(int, struct sockaddr __user *, int);
++asmlinkage long sys_oabi_sendto(int, void __user *, size_t, unsigned,
++                               struct sockaddr __user *, int);
++asmlinkage long sys_oabi_sendmsg(int, struct msghdr __user *, unsigned);
++asmlinkage long sys_oabi_socketcall(int, unsigned long __user *);
++
++/* arch/arm/kernel/traps.c */
++asmlinkage int arm_syscall(int, struct pt_regs *);
++
++#endif
+diff --git a/arch/arm/kernel/signal.c b/arch/arm/kernel/signal.c
+index 0340224..9498fb5 100644
+--- a/arch/arm/kernel/signal.c
++++ b/arch/arm/kernel/signal.c
+@@ -16,6 +16,7 @@
 
->        chosen {
->                bootargs = "console=ttymxc0,115200 root=/dev/mmcblk0p3 rootwait";
->        };
-> @@ -47,29 +53,29 @@
->                        reg = <0x70000000 0x40000>;
->                        ranges;
->
-> -                       uart@7000c000 {
-> +                       uart2: uart@7000c000 {
->                                compatible = "fsl,imx51-uart", "fsl,imx21-uart";
->                                reg = <0x7000c000 0x4000>;
->                                interrupts = <33>;
->                                id = <3>;
-> -                               fsl,has-rts-cts;
-> +                               fsl,uart-has-rtscts;
->                        };
->                };
->
-> -               uart@73fbc000 {
-> +               uart0: uart@73fbc000 {
->                        compatible = "fsl,imx51-uart", "fsl,imx21-uart";
->                        reg = <0x73fbc000 0x4000>;
->                        interrupts = <31>;
->                        id = <1>;
-> -                       fsl,has-rts-cts;
-> +                       fsl,uart-has-rtscts;
->                };
->
-> -               uart@73fc0000 {
-> +               uart1: uart@73fc0000 {
->                        compatible = "fsl,imx51-uart", "fsl,imx21-uart";
->                        reg = <0x73fc0000 0x4000>;
->                        interrupts = <32>;
->                        id = <2>;
-> -                       fsl,has-rts-cts;
-> +                       fsl,uart-has-rtscts;
->                };
->        };
->
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index 632ebae..13df5d2 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -737,6 +737,37 @@ err0:
->  EXPORT_SYMBOL(of_parse_phandles_with_args);
->
->  /**
-> + *     of_get_device_index - Get device index by looking up "aliases" node
-> + *     @np:    Pointer to device node that asks for device index
-> + *     @name:  The device alias without index number
-> + *
-> + *     Returns the device index if find it, else returns -ENODEV.
-> + */
-> +int of_get_device_index(struct device_node *np, const char *alias)
-> +{
-> +       struct device_node *aliases = of_find_node_by_name(NULL, "aliases");
-> +       struct property *prop;
-> +       char name[32];
-> +       int index = 0;
-> +
-> +       if (!aliases)
-> +               return -ENODEV;
-> +
-> +       while (1) {
-> +               snprintf(name, sizeof(name), "%s%d", alias, index);
-> +               prop = of_find_property(aliases, name, NULL);
-> +               if (!prop)
-> +                       return -ENODEV;
-> +               if (np == of_find_node_by_path(prop->value))
-> +                       break;
-> +               index++;
-> +       }
+ #include <asm/elf.h>
+ #include <asm/cacheflush.h>
++#include <asm/syscalls.h>
+ #include <asm/ucontext.h>
+ #include <asm/unistd.h>
+ #include <asm/vfp.h>
+diff --git a/arch/arm/kernel/sys_arm.c b/arch/arm/kernel/sys_arm.c
+index 62e7c61..5bda298 100644
+--- a/arch/arm/kernel/sys_arm.c
++++ b/arch/arm/kernel/sys_arm.c
+@@ -28,6 +28,8 @@
+ #include <linux/uaccess.h>
+ #include <linux/slab.h>
 
-Rather than parsing the alias strings everytime, it would probably be
-better to preprocess all the properties in the aliases node and create
-a lookup table of alias->node references that can be walked quickly
-and trivially.
++#include <asm/syscalls.h>
++
+ /* Fork a new task - this creates a new program thread.
+  * This is called indirectly via a small wrapper
+  */
+diff --git a/arch/arm/kernel/sys_oabi-compat.c b/arch/arm/kernel/sys_oabi-compat.c
+index af0aaeb..e71a41c 100644
+--- a/arch/arm/kernel/sys_oabi-compat.c
++++ b/arch/arm/kernel/sys_oabi-compat.c
+@@ -85,6 +85,8 @@
+ #include <linux/uaccess.h>
+ #include <linux/slab.h>
 
-Also, when obtaining an enumeration for a device, you'll need to be
-careful about what number gets returned.  If the node doesn't match a
-given alias, but aliases do exist for other devices of like type, then
-you need to be careful not to assign a number already assigned to
-another device via an alias (this of course assumes the driver
-supports dynamics enumeration, which many drivers will).  It would be
++#include <asm/syscalls.h>
++
+ struct oldabi_stat64 {
+        unsigned long long st_dev;
+        unsigned int    __pad1;
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index d52eec2..d040421 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -27,6 +27,7 @@
 
-\> +
-> +       return index;
-> +}
-> +EXPORT_SYMBOL(of_get_device_index);
-> +
-> +/**
->  * prom_add_property - Add a property to a node
->  */
->  int prom_add_property(struct device_node *np, struct property *prop)
-> diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
-> index da436e0..852668f 100644
-> --- a/drivers/tty/serial/imx.c
-> +++ b/drivers/tty/serial/imx.c
-> @@ -1271,18 +1271,18 @@ static int serial_imx_probe_dt(struct imx_port *sport,
->        struct device_node *node = pdev->dev.of_node;
->        const struct of_device_id *of_id =
->                        of_match_device(imx_uart_dt_ids, &pdev->dev);
-> -       const __be32 *line;
-> +       int line;
->
->        if (!node)
->                return -ENODEV;
->
-> -       line = of_get_property(node, "id", NULL);
-> -       if (!line)
-> +       line = of_get_device_index(node, "serial");
-> +       if (IS_ERR_VALUE(line))
->                return -ENODEV;
+ #include <asm/atomic.h>
+ #include <asm/cacheflush.h>
++#include <asm/syscalls.h>
+ #include <asm/system.h>
+ #include <asm/unistd.h>
+ #include <asm/traps.h>
 
-Personally, it an alias isn't present, then I'd dynamically assign a port id.
-
->
-> -       sport->port.line = be32_to_cpup(line) - 1;
-> +       sport->port.line = line;
->
-> -       if (of_get_property(node, "fsl,has-rts-cts", NULL))
-> +       if (of_get_property(node, "fsl,uart-has-rtscts", NULL))
->                sport->have_rtscts = 1;
->
->        if (of_get_property(node, "fsl,irda-mode", NULL))
-> diff --git a/include/linux/of.h b/include/linux/of.h
-> index bfc0ed1..3153752 100644
-> --- a/include/linux/of.h
-> +++ b/include/linux/of.h
-> @@ -213,6 +213,8 @@ extern int of_parse_phandles_with_args(struct device_node *np,
->        const char *list_name, const char *cells_name, int index,
->        struct device_node **out_node, const void **out_args);
->
-> +extern int of_get_device_index(struct device_node *np, const char *alias);
-> +
->  extern int of_machine_is_compatible(const char *compat);
->
->  extern int prom_add_property(struct device_node* np, struct property* prop);
->
-> --
-> Regards,
-> Shawn
->
->
-
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
