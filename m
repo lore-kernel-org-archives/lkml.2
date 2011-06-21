@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614Ab1FUDjf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 23:39:35 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:57058 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755145Ab1FUDje (ORCPT
+	id S1755600Ab1FUDu4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 23:50:56 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:63080 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752840Ab1FUDuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 23:39:34 -0400
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
-Cc: patches@linaro.org, lrg@ti.com, broonie@opensource.wolfsonmicro.com,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH] regulator: MAX8997: Fix for divide by zero error
-Date: Tue, 21 Jun 2011 09:08:59 +0530
-Message-Id: <1308627539-8980-1-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	Mon, 20 Jun 2011 23:50:54 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6383"; a="98796660"
+Message-ID: <4E00151B.90308@codeaurora.org>
+Date: Mon, 20 Jun 2011 21:50:51 -0600
+From: Kenneth Heitke <kheitke@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100722 Eudora/3.0.4
+MIME-Version: 1.0
+To: ben-linux@fluff.org
+CC: Kenneth Heitke <kheitke@codeaurora.org>, khali@linux-fr.org,
+        davidb@codeaurora.org, dwalker@fifo99.com,
+        linux-arm-msm@vger.kernel.org, bryanh@codeaurora.org,
+        tsoni@codeaurora.org, arve@android.com, swetland@google.com,
+        sdharia@codeaurora.org, linux-arm-kernel@lists.infradead.org,
+        seth.heasley@intel.com, tomoya-linux@dsn.okisemi.com,
+        guenter.roeck@ericsson.com, linus.walleij@stericsson.com,
+        w.sang@pengutronix.de, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] i2c: QUP based bus driver for Qualcomm MSM chipsets
+References: <1308018114-19709-1-git-send-email-kheitke@codeaurora.org>
+In-Reply-To: <1308018114-19709-1-git-send-email-kheitke@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, ramp_delay variable is used uninitialzed in
-max8997_set_voltage_ldobuck which gets called through
-regulator_register calls.
+On 06/13/2011 08:21 PM, Kenneth Heitke wrote:
+> This bus driver supports the QUP i2c hardware controller in the Qualcomm
+> MSM SOCs.  The Qualcomm Universal Peripheral Engine (QUP) is a general
+> purpose data path engine with input/output FIFOs and an embedded i2c
+> mini-core. The driver supports FIFO mode (for low bandwidth applications)
+> and block mode (interrupt generated for each block-size data transfer).
+> The driver currently does not support DMA transfers.
+>
+> Signed-off-by: Kenneth Heitke<kheitke@codeaurora.org>
+> ---
+> v2: updates to runtime PM calls (addresses comments from Mark Brown).
+>      Disable interrupts before setting completion object to NULL (bug fix).
+> ---
+>   drivers/i2c/busses/Kconfig                |   11 +
+>   drivers/i2c/busses/Makefile               |    1 +
+>   drivers/i2c/busses/i2c-qup.c              | 1175 +++++++++++++++++++++++++++++
+>   include/linux/platform_data/msm_qup_i2c.h |   24 +
+>   4 files changed, 1211 insertions(+), 0 deletions(-)
+>   create mode 100644 drivers/i2c/busses/i2c-qup.c
+>   create mode 100644 include/linux/platform_data/msm_qup_i2c.h
 
-To fix the problem, in max8997_pmic_probe, ramp_delay initialization
-code is moved before calls to regulator_register.
+Hi Ben,
 
-Cc: Liam Girdwood <lrg@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
----
- drivers/regulator/max8997.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+If there are no objections to this i2c driver, can it be pulled into 
+your -next tree?
 
-diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
-index 10d5a1d..0fc7b8c 100644
---- a/drivers/regulator/max8997.c
-+++ b/drivers/regulator/max8997.c
-@@ -1124,6 +1124,10 @@ static __devinit int max8997_pmic_probe(struct platform_device *pdev)
- 				0x3f);
- 	}
- 
-+	/* Misc Settings */
-+	max8997->ramp_delay = 10; /* set 10mV/us, which is the default */
-+	max8997_write_reg(i2c, MAX8997_REG_BUCKRAMP, (0xf << 4) | 0x9);
-+
- 	for (i = 0; i < pdata->num_regulators; i++) {
- 		const struct voltage_map_desc *desc;
- 		int id = pdata->regulators[i].id;
-@@ -1148,10 +1152,6 @@ static __devinit int max8997_pmic_probe(struct platform_device *pdev)
- 		}
- 	}
- 
--	/* Misc Settings */
--	max8997->ramp_delay = 10; /* set 10mV/us, which is the default */
--	max8997_write_reg(i2c, MAX8997_REG_BUCKRAMP, (0xf << 4) | 0x9);
--
- 	return 0;
- err:
- 	for (i = 0; i < max8997->num_regulators; i++)
+thank you,
+Ken
+
 -- 
-1.7.4.1
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
