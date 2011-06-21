@@ -1,191 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757550Ab1FUXqp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 19:46:45 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33157 "EHLO
+	id S1757588Ab1FUXrR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 19:47:17 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33156 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757475Ab1FUXqo (ORCPT
+	with ESMTP id S1757196Ab1FUXqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 19:46:44 -0400
-Message-Id: <20110621233648.806475812@chello.nl>
+	Tue, 21 Jun 2011 19:46:43 -0400
+Message-Id: <20110621233648.861571721@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Wed, 22 Jun 2011 01:34:45 +0200
+Date: Wed, 22 Jun 2011 01:34:46 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
         Jens Axboe <jaxboe@fusionio.com>
-Subject: [RFC][PATCH 1/3] sched, block: Move unplug
+Subject: [RFC][PATCH 2/3] sched, workqueue: Move WQ-sleeper wakeup
 References: <20110621233444.094372367@chello.nl>
-Content-Disposition: inline; filename=tglx1
+Content-Disposition: inline; filename=tglx2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas found that we're doing a horrendous amount of work in that scheduler
-unplug hook while having preempt and IRQs disabled.
+While Thomas was annoyed with the block bits, he found no reason for the WQ
+bits to be as they are, the signal thing can only avoid a wakeup, extra wakeups
+for the WQ bits increase concurrency (in as far as signals are relevant to
+kthreads at all).
 
-Move it to the head of schedule() where both preemption and IRQs are enabled
-such that we don't get these silly long IRQ/preempt disable times.
+Moving the WQ bits allow us to do away with try_to_wake_up_local, removing
+more lines.
 
-This allows us to remove a lot of special magic in the unplug path,
-simplifying that code as a bonus.
-
-Jens Axboe <jaxboe@fusionio.com>
+Cc: Tejun Heo <tj@kernel.org>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- block/blk-core.c       |   28 ++++++++--------------------
- include/linux/blkdev.h |   12 ++----------
- kernel/sched.c         |   26 ++++++++++++++++----------
- 3 files changed, 26 insertions(+), 40 deletions(-)
+ kernel/sched.c |   60 ++++++++++++---------------------------------------------
+ 1 file changed, 13 insertions(+), 47 deletions(-)
 
-Index: linux-2.6/block/blk-core.c
-===================================================================
---- linux-2.6.orig/block/blk-core.c
-+++ linux-2.6/block/blk-core.c
-@@ -2655,25 +2655,13 @@ static int plug_rq_cmp(void *priv, struc
-  * additional stack usage in driver dispatch, in places where the originally
-  * plugger did not intend it.
-  */
--static void queue_unplugged(struct request_queue *q, unsigned int depth,
--			    bool from_schedule)
-+static void queue_unplugged(struct request_queue *q, unsigned int depth)
- 	__releases(q->queue_lock)
- {
--	trace_block_unplug(q, depth, !from_schedule);
--
--	/*
--	 * If we are punting this to kblockd, then we can safely drop
--	 * the queue_lock before waking kblockd (which needs to take
--	 * this lock).
--	 */
--	if (from_schedule) {
--		spin_unlock(q->queue_lock);
--		blk_run_queue_async(q);
--	} else {
--		__blk_run_queue(q);
--		spin_unlock(q->queue_lock);
--	}
-+	trace_block_unplug(q, depth, true);
- 
-+	__blk_run_queue(q);
-+	spin_unlock(q->queue_lock);
- }
- 
- static void flush_plug_callbacks(struct blk_plug *plug)
-@@ -2694,7 +2682,7 @@ static void flush_plug_callbacks(struct 
- 	}
- }
- 
--void blk_flush_plug_list(struct blk_plug *plug, bool from_schedule)
-+void blk_flush_plug_list(struct blk_plug *plug)
- {
- 	struct request_queue *q;
- 	unsigned long flags;
-@@ -2732,7 +2720,7 @@ void blk_flush_plug_list(struct blk_plug
- 			 * This drops the queue lock
- 			 */
- 			if (q)
--				queue_unplugged(q, depth, from_schedule);
-+				queue_unplugged(q, depth);
- 			q = rq->q;
- 			depth = 0;
- 			spin_lock(q->queue_lock);
-@@ -2752,14 +2740,14 @@ void blk_flush_plug_list(struct blk_plug
- 	 * This drops the queue lock
- 	 */
- 	if (q)
--		queue_unplugged(q, depth, from_schedule);
-+		queue_unplugged(q, depth);
- 
- 	local_irq_restore(flags);
- }
- 
- void blk_finish_plug(struct blk_plug *plug)
- {
--	blk_flush_plug_list(plug, false);
-+	blk_flush_plug_list(plug);
- 
- 	if (plug == current->plug)
- 		current->plug = NULL;
-Index: linux-2.6/include/linux/blkdev.h
-===================================================================
---- linux-2.6.orig/include/linux/blkdev.h
-+++ linux-2.6/include/linux/blkdev.h
-@@ -870,22 +870,14 @@ struct blk_plug_cb {
- 
- extern void blk_start_plug(struct blk_plug *);
- extern void blk_finish_plug(struct blk_plug *);
--extern void blk_flush_plug_list(struct blk_plug *, bool);
-+extern void blk_flush_plug_list(struct blk_plug *);
- 
- static inline void blk_flush_plug(struct task_struct *tsk)
- {
- 	struct blk_plug *plug = tsk->plug;
- 
- 	if (plug)
--		blk_flush_plug_list(plug, false);
--}
--
--static inline void blk_schedule_flush_plug(struct task_struct *tsk)
--{
--	struct blk_plug *plug = tsk->plug;
--
--	if (plug)
--		blk_flush_plug_list(plug, true);
-+		blk_flush_plug_list(plug);
- }
- 
- static inline bool blk_needs_flush_plug(struct task_struct *tsk)
 Index: linux-2.6/kernel/sched.c
 ===================================================================
 --- linux-2.6.orig/kernel/sched.c
 +++ linux-2.6/kernel/sched.c
-@@ -4209,6 +4209,20 @@ pick_next_task(struct rq *rq)
- 	BUG(); /* the idle class will always have a runnable task */
+@@ -2703,40 +2703,6 @@ try_to_wake_up(struct task_struct *p, un
  }
  
-+static inline void sched_submit_work(void)
-+{
-+	struct task_struct *tsk = current;
-+
-+	if (tsk->state && !(preempt_count() & PREEMPT_ACTIVE)) {
-+		/*
-+		 * If we are going to sleep and we have plugged IO
-+		 * queued, make sure to submit it to avoid deadlocks.
-+		 */
-+		if (blk_needs_flush_plug(tsk))
-+			blk_flush_plug(tsk);
-+	}
-+}
-+
- /*
-  * schedule() is the main scheduler function.
-  */
-@@ -4219,6 +4233,8 @@ asmlinkage void __sched schedule(void)
- 	struct rq *rq;
- 	int cpu;
+ /**
+- * try_to_wake_up_local - try to wake up a local task with rq lock held
+- * @p: the thread to be awakened
+- *
+- * Put @p on the run-queue if it's not already there. The caller must
+- * ensure that this_rq() is locked, @p is bound to this_rq() and not
+- * the current task.
+- */
+-static void try_to_wake_up_local(struct task_struct *p)
+-{
+-	struct rq *rq = task_rq(p);
+-
+-	BUG_ON(rq != this_rq());
+-	BUG_ON(p == current);
+-	lockdep_assert_held(&rq->lock);
+-
+-	if (!raw_spin_trylock(&p->pi_lock)) {
+-		raw_spin_unlock(&rq->lock);
+-		raw_spin_lock(&p->pi_lock);
+-		raw_spin_lock(&rq->lock);
+-	}
+-
+-	if (!(p->state & TASK_NORMAL))
+-		goto out;
+-
+-	if (!p->on_rq)
+-		ttwu_activate(rq, p, ENQUEUE_WAKEUP);
+-
+-	ttwu_do_wakeup(rq, p, 0);
+-	ttwu_stat(p, smp_processor_id(), 0);
+-out:
+-	raw_spin_unlock(&p->pi_lock);
+-}
+-
+-/**
+  * wake_up_process - Wake up a specific process
+  * @p: The process to be woken up.
+  *
+@@ -4215,6 +4181,19 @@ static inline void sched_submit_work(voi
  
-+	sched_submit_work();
+ 	if (tsk->state && !(preempt_count() & PREEMPT_ACTIVE)) {
+ 		/*
++		 * If a worker went to sleep, notify and ask workqueue
++		 * whether it wants to wake up a task to maintain
++		 * concurrency.
++		 */
++		if (tsk->flags & PF_WQ_WORKER) {
++			struct task_struct *to_wakeup;
 +
- need_resched:
- 	preempt_disable();
- 	cpu = smp_processor_id();
-@@ -4253,16 +4269,6 @@ asmlinkage void __sched schedule(void)
- 				if (to_wakeup)
- 					try_to_wake_up_local(to_wakeup);
- 			}
++			to_wakeup = wq_worker_sleeping(tsk, smp_processor_id());
++			if (to_wakeup)
++				wake_up_process(to_wakeup);
++		}
++
++		/*
+ 		 * If we are going to sleep and we have plugged IO
+ 		 * queued, make sure to submit it to avoid deadlocks.
+ 		 */
+@@ -4256,19 +4235,6 @@ asmlinkage void __sched schedule(void)
+ 		} else {
+ 			deactivate_task(rq, prev, DEQUEUE_SLEEP);
+ 			prev->on_rq = 0;
 -
 -			/*
--			 * If we are going to sleep and we have plugged IO
--			 * queued, make sure to submit it to avoid deadlocks.
+-			 * If a worker went to sleep, notify and ask workqueue
+-			 * whether it wants to wake up a task to maintain
+-			 * concurrency.
 -			 */
--			if (blk_needs_flush_plug(prev)) {
--				raw_spin_unlock(&rq->lock);
--				blk_schedule_flush_plug(prev);
--				raw_spin_lock(&rq->lock);
+-			if (prev->flags & PF_WQ_WORKER) {
+-				struct task_struct *to_wakeup;
+-
+-				to_wakeup = wq_worker_sleeping(prev, cpu);
+-				if (to_wakeup)
+-					try_to_wake_up_local(to_wakeup);
 -			}
  		}
  		switch_count = &prev->nvcsw;
