@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910Ab1FUHWX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 03:22:23 -0400
+	id S1755992Ab1FUHX0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 03:23:26 -0400
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:59375 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932221Ab1FUHWR (ORCPT
+	with ESMTP id S1755855Ab1FUHWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 03:22:17 -0400
+	Tue, 21 Jun 2011 03:22:20 -0400
 From: Ohad Ben-Cohen <ohad@wizery.com>
 To: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
@@ -17,9 +17,9 @@ Cc: <akpm@linux-foundation.org>, Brian Swetland <swetland@google.com>,
 	<davinci-linux-open-source@linux.davincidsp.com>,
         Rusty Russell <rusty@rustcorp.com.au>, Mark Grosen <mgrosen@ti.com>,
         Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [RFC 5/8] remoteproc: add davinci implementation
-Date: Tue, 21 Jun 2011 10:18:31 +0300
-Message-Id: <1308640714-17961-6-git-send-email-ohad@wizery.com>
+Subject: [RFC 6/8] davinci: da850: add remoteproc dsp device
+Date: Tue, 21 Jun 2011 10:18:32 +0300
+Message-Id: <1308640714-17961-7-git-send-email-ohad@wizery.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1308640714-17961-1-git-send-email-ohad@wizery.com>
 References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
@@ -29,239 +29,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mark Grosen <mgrosen@ti.com>
 
-Add remoteproc implementation for da850, so we can boot its DSP.
+Add davinci remoteproc device for the da850's C674x dsp remote
+processor, and support it on the da850-evm and omapl138-hawk boards.
 
 Signed-off-by: Mark Grosen <mgrosen@ti.com>
 Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 ---
- arch/arm/mach-davinci/include/mach/remoteproc.h |   28 +++++
- drivers/remoteproc/Kconfig                      |   16 +++
- drivers/remoteproc/Makefile                     |    1 +
- drivers/remoteproc/davinci_remoteproc.c         |  147 +++++++++++++++++++++++
- 4 files changed, 192 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-davinci/include/mach/remoteproc.h
- create mode 100644 drivers/remoteproc/davinci_remoteproc.c
+It'd be nice to split this patch to the different components it changes,
+but it's probably not so important at this early stage.
 
-diff --git a/arch/arm/mach-davinci/include/mach/remoteproc.h b/arch/arm/mach-davinci/include/mach/remoteproc.h
-new file mode 100644
-index 0000000..af6e88c
---- /dev/null
-+++ b/arch/arm/mach-davinci/include/mach/remoteproc.h
-@@ -0,0 +1,28 @@
-+/*
-+ * Remote Processor
-+ *
-+ * Copyright (C) 2011 Texas Instruments, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
+ arch/arm/mach-davinci/board-da850-evm.c     |    4 ++++
+ arch/arm/mach-davinci/board-omapl138-hawk.c |    4 ++++
+ arch/arm/mach-davinci/da850.c               |   14 ++++++++++++++
+ arch/arm/mach-davinci/devices-da8xx.c       |   15 +++++++++++++++
+ arch/arm/mach-davinci/include/mach/da8xx.h  |    1 +
+ 5 files changed, 38 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index a7b41bf..6b35f0a 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -1176,6 +1176,10 @@ static __init void da850_evm_init(void)
+ 	i2c_register_board_info(1, da850_evm_i2c_devices,
+ 			ARRAY_SIZE(da850_evm_i2c_devices));
+ 
++	ret = da850_register_rproc();
++	if (ret)
++		pr_warning("dsp/rproc registration failed: %d\n", ret);
 +
-+#ifndef _DAVINCI_REMOTEPROC_H
-+#define _DAVINCI_REMOTEPROC_H
+ 	/*
+ 	 * shut down uart 0 and 1; they are not used on the board and
+ 	 * accessing them causes endless "too much work in irq53" messages
+diff --git a/arch/arm/mach-davinci/board-omapl138-hawk.c b/arch/arm/mach-davinci/board-omapl138-hawk.c
+index 67c38d0..52c8434 100644
+--- a/arch/arm/mach-davinci/board-omapl138-hawk.c
++++ b/arch/arm/mach-davinci/board-omapl138-hawk.c
+@@ -319,6 +319,10 @@ static __init void omapl138_hawk_init(void)
+ 		pr_warning("omapl138_hawk_init: "
+ 			"watchdog registration failed: %d\n",
+ 			ret);
 +
-+#include <linux/remoteproc.h>
-+
-+struct davinci_rproc_pdata {
-+	struct rproc_ops *ops;
-+	char *name;
-+	char *clk_name;
-+	char *firmware;
++	ret = da850_register_rproc();
++	if (ret)
++		pr_warning("dsp/rproc registration failed: %d\n", ret);
+ }
+ 
+ #ifdef CONFIG_SERIAL_8250_CONSOLE
+diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
+index 133aac4..9280b1e 100644
+--- a/arch/arm/mach-davinci/da850.c
++++ b/arch/arm/mach-davinci/da850.c
+@@ -74,6 +74,13 @@ static struct clk pll0_aux_clk = {
+ 	.flags		= CLK_PLL | PRE_PLL,
+ };
+ 
++static struct clk pll0_sysclk1 = {
++	.name		= "pll0_sysclk1",
++	.parent		= &pll0_clk,
++	.flags		= CLK_PLL,
++	.div_reg	= PLLDIV1,
 +};
 +
-+#endif /* _DAVINCI_REMOTEPROC_H */
-diff --git a/drivers/remoteproc/Kconfig b/drivers/remoteproc/Kconfig
-index 88421bd..1e594b5 100644
---- a/drivers/remoteproc/Kconfig
-+++ b/drivers/remoteproc/Kconfig
-@@ -26,3 +26,19 @@ config OMAP_REMOTE_PROC
+ static struct clk pll0_sysclk2 = {
+ 	.name		= "pll0_sysclk2",
+ 	.parent		= &pll0_clk,
+@@ -373,6 +380,12 @@ static struct clk spi1_clk = {
+ 	.flags		= DA850_CLK_ASYNC3,
+ };
  
- 	  It's safe to say n here if you're not interested in multimedia
- 	  offloading or just want a bare minimum kernel.
++static struct clk dsp_clk = {
++	.name		= "dsp",
++	.parent		= &pll0_sysclk1,
++	.lpsc		= DA8XX_LPSC0_GEM,
++};
 +
-+config DAVINCI_REMOTE_PROC
-+	tristate "Davinci remoteproc support"
-+	depends on ARCH_DAVINCI_DA850
-+	select REMOTE_PROC
-+	default y
-+	help
-+	  Say y here to support Davinci's DSP remote processor via the remote
-+	  processor framework (currently only da850 is supported).
-+
-+	  Usually you want to say y here, in order to enable multimedia
-+	  use-cases to run on your platform (multimedia codecs are
-+	  offloaded to remote DSP processors using this framework).
-+
-+	  It's safe to say n here if you're not interested in multimedia
-+	  offloading or just want a bare minimum kernel.
-diff --git a/drivers/remoteproc/Makefile b/drivers/remoteproc/Makefile
-index 0198b1d..e83dac9 100644
---- a/drivers/remoteproc/Makefile
-+++ b/drivers/remoteproc/Makefile
-@@ -4,3 +4,4 @@
+ static struct clk_lookup da850_clks[] = {
+ 	CLK(NULL,		"ref",		&ref_clk),
+ 	CLK(NULL,		"pll0",		&pll0_clk),
+@@ -419,6 +432,7 @@ static struct clk_lookup da850_clks[] = {
+ 	CLK(NULL,		"usb20",	&usb20_clk),
+ 	CLK("spi_davinci.0",	NULL,		&spi0_clk),
+ 	CLK("spi_davinci.1",	NULL,		&spi1_clk),
++	CLK(NULL,		"dsp",		&dsp_clk),
+ 	CLK(NULL,		NULL,		NULL),
+ };
  
- obj-$(CONFIG_REMOTE_PROC)		+= remoteproc.o
- obj-$(CONFIG_OMAP_REMOTE_PROC)		+= omap_remoteproc.o
-+obj-$(CONFIG_DAVINCI_REMOTE_PROC)	+= davinci_remoteproc.o
-diff --git a/drivers/remoteproc/davinci_remoteproc.c b/drivers/remoteproc/davinci_remoteproc.c
-new file mode 100644
-index 0000000..0e26fe9
---- /dev/null
-+++ b/drivers/remoteproc/davinci_remoteproc.c
-@@ -0,0 +1,147 @@
-+/*
-+ * Remote processor machine-specific module for Davinci
-+ *
-+ * Copyright (C) 2011 Texas Instruments, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#define pr_fmt(fmt)    "%s: " fmt, __func__
-+
-+#include <linux/kernel.h>
-+#include <linux/err.h>
-+#include <linux/printk.h>
-+#include <linux/bitops.h>
-+#include <linux/platform_device.h>
-+#include <linux/remoteproc.h>
-+#include <linux/clk.h>
-+#include <linux/io.h>
-+
-+#include <mach/da8xx.h>
-+#include <mach/cputype.h>
-+#include <mach/psc.h>
+diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
+index fc4e98e..3becfd1 100644
+--- a/arch/arm/mach-davinci/devices-da8xx.c
++++ b/arch/arm/mach-davinci/devices-da8xx.c
+@@ -20,6 +20,7 @@
+ #include <mach/time.h>
+ #include <mach/da8xx.h>
+ #include <mach/cpuidle.h>
 +#include <mach/remoteproc.h>
+ 
+ #include "clock.h"
+ 
+@@ -647,6 +648,20 @@ int __init da850_register_mmcsd1(struct davinci_mmc_config *config)
+ 	da850_mmcsd1_device.dev.platform_data = config;
+ 	return platform_device_register(&da850_mmcsd1_device);
+ }
 +
-+/*
-+ * Technical Reference:
-+ * OMAP-L138 Applications Processor System Reference Guide
-+ * http://www.ti.com/litv/pdf/sprugm7d
-+ */
-+
-+/* local reset bit (0 is asserted) in MDCTL15 register (section 9.6.18) */
-+#define LRST		BIT(8)
-+
-+/* next state bits in MDCTL15 register (section 9.6.18) */
-+#define NEXT_ENABLED	0x3
-+
-+/* register for DSP boot address in SYSCFG0 module (section 11.5.6) */
-+#define HOST1CFG	0x44
-+
-+static inline int davinci_rproc_start(struct rproc *rproc, u64 bootaddr)
++int __init da850_register_rproc(void)
 +{
-+	struct device *dev = rproc->dev;
-+	struct davinci_rproc_pdata *pdata = dev->platform_data;
-+	struct davinci_soc_info *soc_info = &davinci_soc_info;
-+	void __iomem *psc_base;
-+	struct clk *dsp_clk;
++	struct platform_device *rproc;
++	struct davinci_rproc_pdata rproc_pdata = {
++		.name		= "dsp",
++		.firmware	= "davinci-dsp.bin",
++		.clk_name	= "dsp",
++	};
 +
-+	/* hw requires the start (boot) address be on 1KB boundary */
-+	if (bootaddr & 0x3ff) {
-+		dev_err(dev, "invalid boot address: must be aligned to 1KB\n");
-+		return -EINVAL;
-+	}
-+
-+	dsp_clk = clk_get(dev, pdata->clk_name);
-+	if (IS_ERR_OR_NULL(dsp_clk)) {
-+		dev_err(dev, "clk_get error: %ld\n", PTR_ERR(dsp_clk));
-+		return PTR_ERR(dsp_clk);
-+	}
-+
-+	clk_enable(dsp_clk);
-+	rproc->priv = dsp_clk;
-+
-+	psc_base = ioremap(soc_info->psc_bases[0], SZ_4K);
-+
-+	/* insure local reset is asserted before writing start address */
-+	__raw_writel(NEXT_ENABLED, psc_base + MDCTL + 4 * DA8XX_LPSC0_GEM);
-+
-+	__raw_writel(bootaddr, DA8XX_SYSCFG0_VIRT(HOST1CFG));
-+
-+	/* de-assert local reset to start the dsp running */
-+	__raw_writel(LRST | NEXT_ENABLED, psc_base + MDCTL +
-+		4 * DA8XX_LPSC0_GEM);
-+
-+	iounmap(psc_base);
-+
-+	return 0;
-+}
-+
-+static inline int davinci_rproc_stop(struct rproc *rproc)
-+{
-+	struct davinci_soc_info *soc_info = &davinci_soc_info;
-+	void __iomem *psc_base;
-+	struct clk *dsp_clk = rproc->priv;
-+
-+	psc_base = ioremap(soc_info->psc_bases[0], SZ_4K);
-+
-+	/* halt the dsp by asserting local reset */
-+	__raw_writel(NEXT_ENABLED, psc_base + MDCTL + 4 * DA8XX_LPSC0_GEM);
-+
-+	clk_disable(dsp_clk);
-+	clk_put(dsp_clk);
-+
-+	iounmap(psc_base);
-+
-+	return 0;
-+}
-+
-+static struct rproc_ops davinci_rproc_ops = {
-+	.start = davinci_rproc_start,
-+	.stop = davinci_rproc_stop,
++	rproc = platform_device_register_data(NULL, "davinci-rproc", 0,
++					    &rproc_pdata, sizeof(rproc_pdata));
++	return PTR_RET(rproc);
 +};
-+
-+static int davinci_rproc_probe(struct platform_device *pdev)
-+{
-+	struct davinci_rproc_pdata *pdata = pdev->dev.platform_data;
-+
-+	return rproc_register(&pdev->dev, pdata->name, &davinci_rproc_ops,
-+				pdata->firmware, NULL, THIS_MODULE);
-+}
-+
-+static int __devexit davinci_rproc_remove(struct platform_device *pdev)
-+{
-+	struct davinci_rproc_pdata *pdata = pdev->dev.platform_data;
-+
-+	return rproc_unregister(pdata->name);
-+}
-+
-+static struct platform_driver davinci_rproc_driver = {
-+	.probe = davinci_rproc_probe,
-+	.remove = __devexit_p(davinci_rproc_remove),
-+	.driver = {
-+		.name = "davinci-rproc",
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+static int __init davinci_rproc_init(void)
-+{
-+	return platform_driver_register(&davinci_rproc_driver);
-+}
-+module_init(davinci_rproc_init);
-+
-+static void __exit davinci_rproc_exit(void)
-+{
-+	platform_driver_unregister(&davinci_rproc_driver);
-+}
-+module_exit(davinci_rproc_exit);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("Davinci Remote Processor control driver");
+ #endif
+ 
+ static struct resource da8xx_rtc_resources[] = {
+diff --git a/arch/arm/mach-davinci/include/mach/da8xx.h b/arch/arm/mach-davinci/include/mach/da8xx.h
+index ad64da7..a6f024f 100644
+--- a/arch/arm/mach-davinci/include/mach/da8xx.h
++++ b/arch/arm/mach-davinci/include/mach/da8xx.h
+@@ -74,6 +74,7 @@ void __init da850_init(void);
+ 
+ int da830_register_edma(struct edma_rsv_info *rsv);
+ int da850_register_edma(struct edma_rsv_info *rsv[2]);
++int da850_register_rproc(void);
+ int da8xx_register_i2c(int instance, struct davinci_i2c_platform_data *pdata);
+ int da8xx_register_spi(int instance, struct spi_board_info *info, unsigned len);
+ int da8xx_register_watchdog(void);
 -- 
 1.7.1
 
