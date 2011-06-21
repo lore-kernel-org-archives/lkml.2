@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576Ab1FUMXs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 08:23:48 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:35679 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755108Ab1FUMWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 08:22:44 -0400
-Message-Id: <20110621122243.117324443@sgi.com>
-User-Agent: quilt/0.47-1
-Date: Tue, 21 Jun 2011 07:21:33 -0500
-From: cpw@sgi.com
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, x86@kernel.org
-Subject: [patch 8/8 v5] x86, UV: correct UV2 BAU destination timeout
-References: <20110621122125.688884227@sgi.com>
-Content-Disposition: inline; filename=tlb_uv_uv2timeout
+	id S1756543Ab1FUMXa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 08:23:30 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:42262 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396Ab1FUMXO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 08:23:14 -0400
+Date: Tue, 21 Jun 2011 06:23:12 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Armin Schindler <armin@melware.de>,
+        Linux Kernel Mailinglist <linux-kernel@vger.kernel.org>,
+        linux-pci@vger.kernel.org
+Subject: Re: Map PCI resource to user space problem.
+Message-ID: <20110621122312.GG19693@parisc-linux.org>
+References: <alpine.DEB.2.00.1106201132170.14886@justus.melware.de> <alpine.DEB.2.00.1106201830260.17005@justus.melware.de> <BANLkTim9fBeY3L_+M9B5GECs8QtuAeUrTw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTim9fBeY3L_+M9B5GECs8QtuAeUrTw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct the UV2 broacast assist unit's destination timeout period.
-And the activation status register in UV2 should be tested for a destination
-timeout with a 4, not a 2.  The values for Active versus Timeout were reversed.
+On Mon, Jun 20, 2011 at 10:41:38AM -0600, Bjorn Helgaas wrote:
+> On Mon, Jun 20, 2011 at 10:38 AM, Armin Schindler <armin@melware.de> wrote:
+> > On Mon, 20 Jun 2011, Armin Schindler wrote:
+> >>
+> >> Hello,
+> >>
+> >> when I try to map PCI resource of size < PAGE_SIZE to user space
+> >> with e.g. remap_pfn_range() the mapping seems to be created,
+> >> but the access to the PCI device just doesn't work (read returns 0xff).
+> >>
+> >> The same happens when using sysfs. The device has
+> >> # ls -al /sys/bus/pci/devices/0000\:02\:09.0/resource*
+> >> -rw------- 1 root root ? ? 512 Jun 20 11:33
+> >> /sys/bus/pci/devices/0000:02:09.0/resource0
+> >> -rw------- 1 root root ? ? 256 Jun 20 11:33
+> >> /sys/bus/pci/devices/0000:02:09.0/resource1
+> >> -rw------- 1 root root 8388608 Jun 20 11:33
+> >> /sys/bus/pci/devices/0000:02:09.0/resource2
+> >> -rw------- 1 root root ?262144 Jun 20 11:33
+> >> /sys/bus/pci/devices/0000:02:09.0/resource3
+> >>
+> >> and when I mmap() resource0, a valid address is returned, but reading the
+> >> area always returns 0xff.
+> >>
+> >> Since a kernel driver can access resource0 here without problems when
+> >> using
+> >> ioremap(), I'm not sure what is wrong with the sysfs entry for user space
+> >> (or using remap_pfn_range() in own mmap function).
+> >> The only hint I have so far is the size, which is smaller than PAGE_SIZE.
+> >
+> > I found the reason. It is not the size of the resource.
+> > The resource0 is assigned to a not page-aligned address.
+> > Example, the pci resource0 has address 0xfe5ffc00. mmap()ing it will
+> > actually seems to map address 0xfe5ff000 and the user needs to add 0xc00 to
+> > the address returned by mmap().
 
-This patch is critical for TLB shootdown on an Altix UV2 system (i.e. the
-follow-on to the current Altix UV).
+Oh, ugh.  That's enforced outside the PCI layer.
+For example (from sys_x86_64.c):
 
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
----
+SYSCALL_DEFINE6(mmap, unsigned long, addr, unsigned long, len,
+                unsigned long, prot, unsigned long, flags,
+                unsigned long, fd, unsigned long, off)
+{
+        long error;
+        error = -EINVAL;
+        if (off & ~PAGE_MASK)
+                goto out;
 
- Destination timeout period:
-  The period is set in 4 bits of memory-mapped register MISC_CONTROL.
-  The left bit toggles base period between 10us and 80us.
-  The other 3 bits are the multiplier.
- Decimal 15, hex f, gives the maximum: 7 * 80us
+ie the very first check that the _arch specific_ code does is to check
+the offset is page-aligned.
 
- arch/x86/include/asm/uv/uv_bau.h |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+We can't fix this.  There may be other BARs mapped into the same page,
+so allowing the user to mmap this BAR would give them access to those
+other BARs that they may not be entitled to access.
 
-Index: linux/arch/x86/include/asm/uv/uv_bau.h
-===================================================================
---- linux.orig/arch/x86/include/asm/uv/uv_bau.h
-+++ linux/arch/x86/include/asm/uv/uv_bau.h
-@@ -67,7 +67,7 @@
-  *  we're using 655us, similar to UV1: 65 units of 10us
-  */
- #define UV1_INTD_SOFT_ACK_TIMEOUT_PERIOD (9UL)
--#define UV2_INTD_SOFT_ACK_TIMEOUT_PERIOD (65*10UL)
-+#define UV2_INTD_SOFT_ACK_TIMEOUT_PERIOD (15UL)
- 
- #define UV_INTD_SOFT_ACK_TIMEOUT_PERIOD	(is_uv1_hub() ?			\
- 		UV1_INTD_SOFT_ACK_TIMEOUT_PERIOD :			\
-@@ -106,12 +106,20 @@
- #define DS_SOURCE_TIMEOUT		3
- /*
-  * bits put together from HRP_LB_BAU_SB_ACTIVATION_STATUS_0/1/2
-- * values 1 and 5 will not occur
-+ * values 1 and 3 will not occur
-+ *        Decoded meaning              ERROR  BUSY    AUX ERR
-+ * -------------------------------     ----   -----   -------
-+ * IDLE                                 0       0        0
-+ * BUSY (active)                        0       1        0
-+ * SW Ack Timeout (destination)         1       0        0
-+ * SW Ack INTD rejected (strong NACK)   1       0        1
-+ * Source Side Time Out Detected        1       1        0
-+ * Destination Side PUT Failed          1       1        1
-  */
- #define UV2H_DESC_IDLE			0
--#define UV2H_DESC_DEST_TIMEOUT		2
--#define UV2H_DESC_DEST_STRONG_NACK	3
--#define UV2H_DESC_BUSY			4
-+#define UV2H_DESC_BUSY			2
-+#define UV2H_DESC_DEST_TIMEOUT		4
-+#define UV2H_DESC_DEST_STRONG_NACK	5
- #define UV2H_DESC_SOURCE_TIMEOUT	6
- #define UV2H_DESC_DEST_PUT_ERR		7
- 
-
+-- 
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
