@@ -1,136 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297Ab1FUTsv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 15:48:51 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:29140 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752125Ab1FUTst convert rfc822-to-8bit (ORCPT
+	id S1756790Ab1FUT6F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 15:58:05 -0400
+Received: from liberdade2.minaslivre.org ([74.50.53.203]:41423 "EHLO
+	liberdade.minaslivre.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753487Ab1FUT6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 15:48:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=CjL/Y6B3XP2eKj1BpA/hEhyWe3xYsrW/IZXTQlWoMOeH53OzWALAaTTsQlNF3sr/QX
-         ID6ba3tBsZN3WvS/iV7Q==
+	Tue, 21 Jun 2011 15:58:03 -0400
+X-Greylist: delayed 436 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Jun 2011 15:58:03 EDT
+Date: Tue, 21 Jun 2011 16:50:39 -0300
+From: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+To: Carlos Alberto Lopez Perez <clopez@igalia.com>
+Cc: Daniel Oliveira Nascimento <don@syst.com.br>,
+        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] x86/platform: classmate-laptop: Add cmpc_keys
+ support for new classmate laptops
+Message-ID: <20110621195038.GC2724@nautilus.holoscopio.com>
+References: <1308685201-15541-1-git-send-email-clopez@igalia.com>
 MIME-Version: 1.0
-In-Reply-To: <20110615053716.GA390@linux.vnet.ibm.com>
-References: <20110503092846.022272244@google.com> <20110607154542.GA2991@linux.vnet.ibm.com>
- <1307529966.4928.8.camel@dhcp-10-30-22-158.sw.ru> <20110608163234.GA23031@linux.vnet.ibm.com>
- <BANLkTim7a9uhH_K6sw4YdqWB6frT+HUqqQ@mail.gmail.com> <20110610181719.GA30330@linux.vnet.ibm.com>
- <BANLkTimE1b8HP-q4jgsv5jPD5S-dRoUi_g@mail.gmail.com> <20110615053716.GA390@linux.vnet.ibm.com>
-From: Paul Turner <pjt@google.com>
-Date: Tue, 21 Jun 2011 12:48:17 -0700
-Message-ID: <BANLkTi=7S2qdVjbJkDja+GAoD=pNo2gPsTFZMFkB8NWWkO1JVQ@mail.gmail.com>
-Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs unpinned
-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-Cc: Vladimir Davydov <vdavydov@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Pavel Emelianov <xemul@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HG+GLK89HZ1zG0kk"
+Content-Disposition: inline
+In-Reply-To: <1308685201-15541-1-git-send-email-clopez@igalia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kamalesh,
 
-Can you see what things look like under v7?
+--HG+GLK89HZ1zG0kk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-There's been a few improvements to quota re-distribution that should
-hopefully help your test case.
+On Tue, Jun 21, 2011 at 09:40:01PM +0200, Carlos Alberto Lopez Perez wrote:
+> The cmpc_keys ACPI driver from the classmate-laptop module fails to
+> recognize the device on the 4th generation of classmate laptops (Atom N45=
+0)
+> because the device ID is named "FNBT0000" (uppercase N) on this laptops.
+>=20
+> MODALIAS=3Dacpi:FNBT0000:
+>=20
+> This patch makes the driver cmpc_keys recognize it:
+>=20
+> input: cmpc_keys as /devices/LNXSYSTM:00/device:00/FNBT0000:00/input/inpu=
+t18
+>=20
+> Signed-off-by: Carlos Alberto Lopez Perez <clopez@igalia.com>
+> ---
+>  drivers/platform/x86/classmate-laptop.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+>=20
+> diff --git a/drivers/platform/x86/classmate-laptop.c b/drivers/platform/x=
+86/classmate-laptop.c
+> index 94f93b6..03896cd 100644
+> --- a/drivers/platform/x86/classmate-laptop.c
+> +++ b/drivers/platform/x86/classmate-laptop.c
+> @@ -40,6 +40,7 @@ struct cmpc_accel {
+>  #define CMPC_TABLET_HID		"TBLT0000"
+>  #define CMPC_IPML_HID	"IPML200"
+>  #define CMPC_KEYS_HID		"FnBT0000"
+> +#define CMPC_KEYS_4GEN_HID	"FNBT0000"
+> =20
+>  /*
+>   * Generic input device code.
+> @@ -683,6 +684,7 @@ static int cmpc_keys_remove(struct acpi_device *acpi,=
+ int type)
+> =20
+>  static const struct acpi_device_id cmpc_keys_device_ids[] =3D {
+>  	{CMPC_KEYS_HID, 0},
+> +	{CMPC_KEYS_4GEN_HID, 0},
+>  	{"", 0}
+>  };
+> =20
+> @@ -754,6 +756,7 @@ static const struct acpi_device_id cmpc_device_ids[] =
+=3D {
+>  	{CMPC_TABLET_HID, 0},
+>  	{CMPC_IPML_HID, 0},
+>  	{CMPC_KEYS_HID, 0},
+> +	{CMPC_KEYS_4GEN_HID, 0},
+>  	{"", 0}
+>  };
+> =20
+> --=20
+> 1.7.5.3
+>=20
 
-The remaining idle% I see on my machines appear to be a product of
-load-balancer inefficiency.
+Not-Acked-By: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
 
-Thanks!
+Recent Linux versions have "upper-cased" the device names, because ACPI
+spec says devices must have upper-case letters. This is probably related
+to this change, not because the device name has changed in recent
+versions of the device. So the correct fix would be to either revert
+this change in Linux or use only a single uppercase name for the device.
 
-- Paul
+Thanks anyway for this report. I have received one report in private a
+while back, but was too lazy to discuss this on the list. Any pointers
+on that? Easist way to go is to simply replace FnBT for FNBT.
 
-On Tue, Jun 14, 2011 at 10:37 PM, Kamalesh Babulal
-<kamalesh@linux.vnet.ibm.com> wrote:
-> * Paul Turner <pjt@google.com> [2011-06-13 17:00:08]:
->
->> Hi Kamalesh.
->>
->> I tried on both friday and again today to reproduce your results
->> without success.  Results are attached below.  The margin of error is
->> the same as the previous (2-level deep case), ~4%.  One minor nit, in
->> your script's input parsing you're calling shift; you don't need to do
->> this with getopts and it will actually lead to arguments being
->> dropped.
->>
->> Are you testing on top of a clean -tip?  Do you have any custom
->> load-balancer or scheduler settings?
->>
->> Thanks,
->>
->> - Paul
->>
->>
->> Hyper-threaded topology:
->> unpinned:
->> Average CPU Idle percentage 38.6333%
->> Bandwidth shared with remaining non-Idle 61.3667%
->>
->> pinned:
->> Average CPU Idle percentage 35.2766%
->> Bandwidth shared with remaining non-Idle 64.7234%
->> (The mask in the "unpinned" case is 0-3,6-9,12-15,18-21 which should
->> mirror your 2 socket 8x2 configuration.)
->>
->> 4-way NUMA topology:
->> unpinned:
->> Average CPU Idle percentage 5.26667%
->> Bandwidth shared with remaining non-Idle 94.73333%
->>
->> pinned:
->> Average CPU Idle percentage 0.242424%
->> Bandwidth shared with remaining non-Idle 99.757576%
->>
-> Hi Paul,
->
-> I tried tip 919c9baa9 + V6 patchset on 2 socket,quadcore with HT and
-> the Idle time seen is ~22% to ~23%. Kernel is not tuned to any custom
-> load-balancer/scheduler settings.
->
-> unpinned:
-> Average CPU Idle percentage 23.5333%
-> Bandwidth shared with remaining non-Idle 76.4667%
->
-> pinned:
-> Average CPU Idle percentage 0%
-> Bandwidth shared with remaining non-Idle 100%
->
-> Thanks,
->
->  Kamalesh
->>
->>
->>
->> On Fri, Jun 10, 2011 at 11:17 AM, Kamalesh Babulal
->> <kamalesh@linux.vnet.ibm.com> wrote:
->> > * Paul Turner <pjt@google.com> [2011-06-08 20:25:00]:
->> >
->> >> Hi Kamalesh,
->> >>
->> >> I'm unable to reproduce the results you describe.  One possibility is
->> >> load-balancer interaction -- can you describe the topology of the
->> >> platform you are running this on?
->> >>
->> >> On both a straight NUMA topology and a hyper-threaded platform I
->> >> observe a ~4% delta between the pinned and un-pinned cases.
->> >>
->> >> Thanks -- results below,
->> >>
->> >> - Paul
->> >>
->> >>
-> (snip)
->
+Regards,
+Cascardo.
+
+--HG+GLK89HZ1zG0kk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOAPYOAAoJEEWxSg7udFZI5HgP/jqkclsnpxAZwoZsleELdJ8h
+Cyv2762dpKlIfUzGJ+SE4zTKDFFIQJgvJgjo1l0YQlu4+oZgu4B0MCQPCHltWURe
+I052QogSd+f/EGrsce87xBbGpK1eiB8ME+INvJlQDM2u4nOlx3Pvjj0+q11y5kz8
+gtfk9RK1UIIStD9VQBTm0yJsI0ZwMA1MH0CsPxnyeN0rgg4Ad4Il3WqQI3yZe0ua
+yvb4R7IiYgKujOPcrioM1yz7FE71m87SKt3/YBLdAUtmxLkojmWo5n6noSIrNt1q
+jPU+m9qAj5L3bcVhCjkFDWthgAF19yFQwKAoLPAQjwDrUdstx0MBUYDllfmDpSgR
+113KL8ssP5qKT51htxnKIvUwH2u+tDMw2M9Eynr3gcybLHVyAEk4oH54wrRWDkYc
+yf/Dz2tErWMH9oBf9MDziH4ME0GCgo0dRT/MudixOOVvAMLwYzrAjD38ZutmPM11
+Y45rxMOT+dZnrZmW5DG+KUJ+W2zb4rnRzBUAjIIKK7jkb9n6+B6crnUCiRNvuFCZ
+rYVft6YwWDyzPJFwgwduybhynR9aLtoKEbs91D6NmanZsGcGoLIecAjItYBO1ALJ
+YinXWuhUuf+2SLUyEpgC8zl5zj9gsNs289iq8gQkGS1fSF+g+oJyds6Meu+k7oBt
+NCrHCslnK1a4siJ3q+MS
+=2p7q
+-----END PGP SIGNATURE-----
+
+--HG+GLK89HZ1zG0kk--
