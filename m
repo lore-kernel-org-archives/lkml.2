@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932173Ab1FUBqT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Jun 2011 21:46:19 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40915 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932082Ab1FUBqR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Jun 2011 21:46:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=E3f4DisDG6wxzyTZSNMbbdY+AIU+AofxxDF9pYpkPjhYMzTuqYIj4DjuSShr1wuaue
-         CZp3DGO8rl0o92se5C2wpTmq6FeKIy1b61xFXiFxpfqlu2sWR0r7ZeBtmRXJgJhMaQEw
-         FKCW3/+mWlNUjR/m+cCRGdc5NxiThDRIVLOwU=
-MIME-Version: 1.0
-In-Reply-To: <20110621003507.GG1905@opensource.wolfsonmicro.com>
-References: <20110617103218.GA29723@opensource.wolfsonmicro.com>
- <1308310831-27861-1-git-send-email-lars@metafoo.de> <4DFB53B3.8070806@ladisch.de>
- <BANLkTimWfT_LSLX36oLcSSYNqi4buBiJUQ@mail.gmail.com> <4DFB98EE.9000609@ladisch.de>
- <BANLkTi=idGOgMkBXF6p-Uo9ARAmgb1uR_g@mail.gmail.com> <20110621003507.GG1905@opensource.wolfsonmicro.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Mon, 20 Jun 2011 21:45:56 -0400
-X-Google-Sender-Auth: Ncg99RJ-MdiQ5mJqW4g-cN7rGXo
-Message-ID: <BANLkTinGMN8A99YZMVa1XDRuy3rUSO2UGg@mail.gmail.com>
-Subject: Re: [uclinux-dist-devel] [PATCH] firmware: Make firmware drivers
- generally available
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>, Lars-Peter Clausen <lars@metafoo.de>,
-        linux-ia64@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        x86@kernel.org, Clemens Ladisch <clemens@ladisch.de>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        uclinux-dist-devel@blackfin.uclinux.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S932137Ab1FUBuF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Jun 2011 21:50:05 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:51562 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932079Ab1FUBuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Jun 2011 21:50:04 -0400
+Date: Tue, 21 Jun 2011 11:49:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        Johan Hedberg <johan.hedberg@intel.com>
+Subject: linux-next: manual merge of the wireless tree with the
+ wireless-current tree
+Message-Id: <20110621114957.59fae11d.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 20:35, Mark Brown wrote:
-> On Fri, Jun 17, 2011 at 02:25:21PM -0400, Mike Frysinger wrote:
->> On Fri, Jun 17, 2011 at 14:11, Clemens Ladisch wrote:
->> > "drivers/firmware" is the obvious name for both, but that makes
->> > it ambiguous.  I'd suggest to split the two subsystems into
->> > "drivers/host-firmware" and "drivers/device-firmware".
->
->> i honestly dont see how this is better.  the drivers/firmware/ isnt
->> exactly overflowing, and differentiating between the two modes doesnt
->> seem to gain us anything.
->
-> Do we have anything like an actual subsystem in firmware?  If we do and
-> it's sensible to do things that affect all firmwares then splitting
-> seems reasonable but if not then it's less clear.
+Hi John,
 
-i dont think there is.  we havent hit enough critical mass yet to warrant it.
--mike
+Today's linux-next merge of the wireless tree got a conflict in
+net/bluetooth/l2cap_core.c between commit df3c3931ec58 ("Bluetooth: Fix
+accepting connect requests for defer_setup") from the wireless-current
+tree and commit ab07801d2898 ("Bluetooth: create channel timer to replace
+sk_timer") from the wireless tree.
+
+Jusr context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc net/bluetooth/l2cap_core.c
+index 56fdd91,dff9d76..0000000
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@@ -4002,24 -4205,15 +4205,24 @@@ static int l2cap_security_cfm(struct hc
+  			}
+  		} else if (sk->sk_state == BT_CONNECT2) {
+  			struct l2cap_conn_rsp rsp;
+ -			__u16 result;
+ +			__u16 res, stat;
+  
+  			if (!status) {
+ -				sk->sk_state = BT_CONFIG;
+ -				result = L2CAP_CR_SUCCESS;
+ +				if (bt_sk(sk)->defer_setup) {
+ +					struct sock *parent = bt_sk(sk)->parent;
+ +					res = L2CAP_CR_PEND;
+ +					stat = L2CAP_CS_AUTHOR_PEND;
+ +					parent->sk_data_ready(parent, 0);
+ +				} else {
+ +					sk->sk_state = BT_CONFIG;
+ +					res = L2CAP_CR_SUCCESS;
+ +					stat = L2CAP_CS_NO_INFO;
+ +				}
+  			} else {
+  				sk->sk_state = BT_DISCONN;
+- 				l2cap_sock_set_timer(sk, HZ / 10);
++ 				l2cap_chan_set_timer(chan, HZ / 10);
+ -				result = L2CAP_CR_SEC_BLOCK;
+ +				res = L2CAP_CR_SEC_BLOCK;
+ +				stat = L2CAP_CS_NO_INFO;
+  			}
+  
+  			rsp.scid   = cpu_to_le16(chan->dcid);
