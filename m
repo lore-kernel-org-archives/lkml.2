@@ -1,371 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756258Ab1FUKS2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 06:18:28 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54803 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755353Ab1FUKSY (ORCPT
+	id S1755461Ab1FUKar (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 06:30:47 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43331 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752478Ab1FUKap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 06:18:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:date:message-id:in-reply-to:references:subject;
-        b=gOHe2rT7X4Xt19//UKJzKSgvkgykO7JGBA+/5sIGNWcWB3Z46ygjx1rZ9Ghq3PXWGA
-         hjd8bi4QYQBUa+GEcEpDTVqUkD3NpUggvKTCzr95C4mIPwEwMInJMhckUSAg7jTs8kvT
-         zzdwnis/ZbsiYLGfTQp+XxOV28PhVXMiqi8Us=
-From: Magnus Damm <magnus.damm@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: vapier@gentoo.org, linux-sh@vger.kernel.org, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org, horms@verge.net.au,
-        mst@redhat.com, Magnus Damm <magnus.damm@gmail.com>,
-        iws@ovro.caltech.edu
-Date: Tue, 21 Jun 2011 19:26:23 +0900
-Message-Id: <20110621102623.1382.71841.sendpatchset@t400s>
-In-Reply-To: <20110621102605.1382.90232.sendpatchset@t400s>
-References: <20110621102605.1382.90232.sendpatchset@t400s>
-Subject: [PATCH 02/02] virtio: Add virtio platform driver
+	Tue, 21 Jun 2011 06:30:45 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4E0072AF.1090601@jp.fujitsu.com>
+Date: Tue, 21 Jun 2011 19:30:07 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Paul Turner <pjt@google.com>
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
+Subject: Re: [patch 16/16] sched: add documentation for bandwidth control
+References: <20110621071649.862846205@google.com> <20110621071701.268573809@google.com>
+In-Reply-To: <20110621071701.268573809@google.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Magnus Damm <damm@opensource.se>
+Minor typos/nitpicks:
 
-This patch adds a virtio platform driver. The code is based on
-the lguest implementation available in drivers/lguest/lguest_device.c
+(2011/06/21 16:17), Paul Turner wrote:
+> From: Bharata B Rao <bharata@linux.vnet.ibm.com>
+> 
+> Basic description of usage and effect for CFS Bandwidth Control.
+> 
+> Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
+> Signed-off-by: Paul Turner <pjt@google.com>
+> ---
+>  Documentation/scheduler/sched-bwc.txt |   98
+>  ++++++++++++++++++++++++++++++++++
+>  Documentation/scheduler/sched-bwc.txt |  110 ++++++++++++++++++++++++++++++++++
+>  1 file changed, 110 insertions(+)
+> 
+> Index: tip/Documentation/scheduler/sched-bwc.txt
+> ===================================================================
+> --- /dev/null
+> +++ tip/Documentation/scheduler/sched-bwc.txt
+> @@ -0,0 +1,110 @@
+> +CFS Bandwidth Control
+> +=====================
+> +
+> +[ This document talks about CPU bandwidth control for CFS groups only.
+> +  Bandwidth control for RT groups covered in:
+> +  Documentation/scheduler/sched-rt-group.txt ]
+> +
+> +CFS bandwidth control is a group scheduler extension that can be used to
+> +control the maximum CPU bandwidth obtained by a CPU cgroup.
+> +
+> +Bandwidth allowed for a group is specified using quota and period. Within
+> +a given "period" (microseconds), a group is allowed to consume up to "quota"
+> +microseconds of CPU time, which is the upper limit or the hard limit. When the
+> +CPU bandwidth consumption of a group exceeds the hard limit, the tasks in the
+> +group are throttled and are not allowed to run until the end of the period at
+> +which time the group's quota is replenished.
+> +
+> +Runtime available to the group is tracked globally. At the beginning of
+> +each period, the group's global runtime pool is replenished with "quota"
+> +microseconds worth of runtime.  This bandwidth is then transferred to cpu local
+> +"accounts" on a demand basis.  Thie size of this transfer is described as a
 
-The iomem resource is used to point out the lguest device descriptor,
-and the platform data contains two separate callbacks for notification.
+                                  The ?
 
-Signed-off-by: Magnus Damm <damm@opensource.se>
----
+> +"slice".
+> +
+> +Interface
+> +---------
+> +Quota and period can be set via cgroup files.
+> +
+> +cpu.cfs_quota_us: the enforcement interval (microseconds)
+> +cpu.cfs_period_us: the maximum allowed bandwidth (microseconds)
+> +
+> +Within a period of cpu.cfs_period_us, the group as a whole will not be allowed
+> +to consume more than cpu_cfs_quota_us worth of runtime.
+> +
+> +The default value of cpu.cfs_period_us is 100ms and the default value
+> +for cpu.cfs_quota_us is -1.
+> +
+> +A group with cpu.cfs_quota_us as -1 indicates that the group has infinite
+> +bandwidth, which means that it is not bandwidth controlled.
 
- drivers/virtio/Kconfig           |   11 +
- drivers/virtio/Makefile          |    1 
- drivers/virtio/virtio_platform.c |  282 ++++++++++++++++++++++++++++++++++++++
- include/linux/virtio_platform.h  |   12 +
- 4 files changed, 306 insertions(+)
+(I think it's better to use "unconstrained (bandwidth) group" as the
+ standardized expression instead of "infinite bandwidth group", so ...)
 
---- 0002/drivers/virtio/Kconfig
-+++ work/drivers/virtio/Kconfig	2011-03-03 15:56:53.000000000 +0900
-@@ -35,3 +35,14 @@ config VIRTIO_BALLOON
- 
- config VIRTIO_LGUEST
- 	tristate
-+
-+config VIRTIO_PLATFORM
-+	tristate "Platform driver for virtio devices (EXPERIMENTAL)"
-+	select VIRTIO
-+	select VIRTIO_RING
-+	select VIRTIO_LGUEST
-+	---help---
-+	 This drivers provides support for virtio based paravirtual device
-+	 drivers over a platform bus.
-+
-+	 If unsure, say N.
---- 0002/drivers/virtio/Makefile
-+++ work/drivers/virtio/Makefile	2011-03-03 15:56:53.000000000 +0900
-@@ -3,3 +3,4 @@ obj-$(CONFIG_VIRTIO_RING) += virtio_ring
- obj-$(CONFIG_VIRTIO_PCI) += virtio_pci.o
- obj-$(CONFIG_VIRTIO_BALLOON) += virtio_balloon.o
- obj-$(CONFIG_VIRTIO_LGUEST) += virtio_lguest.o
-+obj-$(CONFIG_VIRTIO_PLATFORM) += virtio_platform.o
---- /dev/null
-+++ work/drivers/virtio/virtio_platform.c	2011-03-03 16:07:31.000000000 +0900
-@@ -0,0 +1,282 @@
-+#include <linux/init.h>
-+#include <linux/virtio.h>
-+#include <linux/virtio_config.h>
-+#include <linux/virtio_ring.h>
-+#include <linux/lguest_device.h>
-+#include <linux/lguest_launcher.h>
-+#include <linux/virtio_platform.h>
-+#include <linux/platform_device.h>
-+#include <linux/interrupt.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/io.h>
-+
-+static void __iomem *virtio_map(unsigned long phys_addr, unsigned long pages)
-+{
-+	return ioremap_nocache(phys_addr, PAGE_SIZE*pages);
-+}
-+
-+static void virtio_unmap(void __iomem *addr)
-+{
-+	iounmap(addr);
-+}
-+
-+static void set_status(struct virtio_device *vdev, u8 status)
-+{
-+	struct platform_device *pdev = to_platform_device(vdev->dev.parent);
-+	struct virtio_platform_data *pdata = pdev->dev.platform_data;
-+
-+	to_lgdev(vdev)->desc->status = status;
-+	pdata->notify_virtio(pdev);
-+}
-+
-+static void lg_set_status(struct virtio_device *vdev, u8 status)
-+{
-+	BUG_ON(!status);
-+	set_status(vdev, status);
-+}
-+
-+static void lg_reset(struct virtio_device *vdev)
-+{
-+	set_status(vdev, 0);
-+}
-+
-+/*
-+ * Virtqueues
-+ *
-+ * The other piece of infrastructure virtio needs is a "virtqueue": a way of
-+ * the Guest device registering buffers for the other side to read from or
-+ * write into (ie. send and receive buffers).  Each device can have multiple
-+ * virtqueues: for example the console driver uses one queue for sending and
-+ * another for receiving.
-+ *
-+ * Fortunately for us, a very fast shared-memory-plus-descriptors virtqueue
-+ * already exists in virtio_ring.c.  We just need to connect it up.
-+ *
-+ * We start with the information we need to keep about each virtqueue.
-+ */
-+
-+/*D:140 This is the information we remember about each virtqueue. */
-+struct lguest_vq_info {
-+	/* A copy of the information contained in the device config. */
-+	struct lguest_vqconfig config;
-+
-+	/* The address where we mapped the virtio ring, so we can unmap it. */
-+	void __iomem *pages;
-+};
-+
-+/*
-+ * When the virtio_ring code wants to prod the Host, it calls us here and we
-+ * call the board specific callback.  We hand a pointer to the configuration
-+ * so the board code knows which virtqueue we're talking about.
-+ */
-+static void lg_notify(struct virtqueue *vq)
-+{
-+	struct platform_device *pdev = to_platform_device(vq->vdev->dev.parent);
-+	struct virtio_platform_data *pdata = pdev->dev.platform_data;
-+	struct lguest_vq_info *lvq = vq->priv;
-+
-+	pdata->notify_virtqueue(pdev, &lvq->config);
-+}
-+
-+/*
-+ * This routine finds the Nth virtqueue described in the configuration of
-+ * this device and sets it up.
-+ *
-+ * This is kind of an ugly duckling.  It'd be nicer to have a standard
-+ * representation of a virtqueue in the configuration space, but it seems that
-+ * everyone wants to do it differently.  The KVM coders want the Guest to
-+ * allocate its own pages and tell the Host where they are, but for lguest it's
-+ * simpler for the Host to simply tell us where the pages are.
-+ */
-+static struct virtqueue *lg_find_vq(struct virtio_device *vdev,
-+				    unsigned index,
-+				    void (*callback)(struct virtqueue *vq),
-+				    const char *name)
-+{
-+	struct lguest_device *ldev = to_lgdev(vdev);
-+	struct lguest_vq_info *lvq;
-+	struct virtqueue *vq;
-+	int err;
-+
-+	/* We must have this many virtqueues. */
-+	if (index >= ldev->desc->num_vq)
-+		return ERR_PTR(-ENOENT);
-+
-+	lvq = kmalloc(sizeof(*lvq), GFP_KERNEL);
-+	if (!lvq)
-+		return ERR_PTR(-ENOMEM);
-+
-+	/*
-+	 * Make a copy of the "struct lguest_vqconfig" entry, which sits after
-+	 * the descriptor.  We need a copy because the config space might not
-+	 * be aligned correctly.
-+	 */
-+	memcpy(&lvq->config, lg_vq(ldev->desc)+index, sizeof(lvq->config));
-+
-+	dev_info(&vdev->dev, "Mapping virtqueue %i addr %lx\n", index,
-+		 (unsigned long)lvq->config.pfn << PAGE_SHIFT);
-+	/* Figure out how many pages the ring will take, and map that memory */
-+	lvq->pages = virtio_map((unsigned long)lvq->config.pfn << PAGE_SHIFT,
-+				DIV_ROUND_UP(vring_size(lvq->config.num,
-+							LGUEST_VRING_ALIGN),
-+					     PAGE_SIZE));
-+	if (!lvq->pages) {
-+		err = -ENOMEM;
-+		goto free_lvq;
-+	}
-+
-+	/*
-+	 * OK, tell virtio_ring.c to set up a virtqueue now we know its size
-+	 * and we've got a pointer to its pages.
-+	 */
-+	vq = vring_new_virtqueue(lvq->config.num, LGUEST_VRING_ALIGN,
-+				 vdev, lvq->pages, lg_notify, callback, name);
-+	if (!vq) {
-+		err = -ENOMEM;
-+		goto unmap;
-+	}
-+
-+	/*
-+	 * Tell the interrupt for this virtqueue to go to the virtio_ring
-+	 * interrupt handler.
-+	 *
-+	 * FIXME: We used to have a flag for the Host to tell us we could use
-+	 * the interrupt as a source of randomness: it'd be nice to have that
-+	 * back.
-+	 */
-+	err = request_irq(lvq->config.irq, vring_interrupt, IRQF_SHARED,
-+			  dev_name(&vdev->dev), vq);
-+	if (err)
-+		goto destroy_vring;
-+
-+	/*
-+	 * Last of all we hook up our 'struct lguest_vq_info" to the
-+	 * virtqueue's priv pointer.
-+	 */
-+	vq->priv = lvq;
-+	return vq;
-+
-+destroy_vring:
-+	vring_del_virtqueue(vq);
-+unmap:
-+	virtio_unmap(lvq->pages);
-+free_lvq:
-+	kfree(lvq);
-+	return ERR_PTR(err);
-+}
-+/*:*/
-+
-+/* Cleaning up a virtqueue is easy */
-+static void lg_del_vq(struct virtqueue *vq)
-+{
-+	struct lguest_vq_info *lvq = vq->priv;
-+
-+	/* Release the interrupt */
-+	free_irq(lvq->config.irq, vq);
-+	/* Tell virtio_ring.c to free the virtqueue. */
-+	vring_del_virtqueue(vq);
-+	/* Unmap the pages containing the ring. */
-+	virtio_unmap(lvq->pages);
-+	/* Free our own queue information. */
-+	kfree(lvq);
-+}
-+
-+static void lg_del_vqs(struct virtio_device *vdev)
-+{
-+	struct virtqueue *vq, *n;
-+
-+	list_for_each_entry_safe(vq, n, &vdev->vqs, list)
-+		lg_del_vq(vq);
-+}
-+
-+static int lg_find_vqs(struct virtio_device *vdev, unsigned nvqs,
-+		       struct virtqueue *vqs[],
-+		       vq_callback_t *callbacks[],
-+		       const char *names[])
-+{
-+	struct lguest_device *ldev = to_lgdev(vdev);
-+	int i;
-+
-+	/* We must have this many virtqueues. */
-+	if (nvqs > ldev->desc->num_vq)
-+		return -ENOENT;
-+
-+	for (i = 0; i < nvqs; ++i) {
-+		vqs[i] = lg_find_vq(vdev, i, callbacks[i], names[i]);
-+		if (IS_ERR(vqs[i]))
-+			goto error;
-+	}
-+	return 0;
-+
-+error:
-+	lg_del_vqs(vdev);
-+	return PTR_ERR(vqs[i]);
-+}
-+
-+/* The ops structure which hooks everything together. */
-+static struct virtio_config_ops lguest_config_ops = {
-+	.get_features = lg_get_features,
-+	.finalize_features = lg_finalize_features,
-+	.get = lg_get,
-+	.set = lg_set,
-+	.get_status = lg_get_status,
-+	.set_status = lg_set_status,
-+	.reset = lg_reset,
-+	.find_vqs = lg_find_vqs,
-+	.del_vqs = lg_del_vqs,
-+};
-+
-+static int virtio_platform_probe(struct platform_device *pdev)
-+{
-+	struct virtio_platform_data *pdata = pdev->dev.platform_data;
-+	struct resource *res;
-+	void *devices;
-+
-+	if (!pdata) {
-+		dev_err(&pdev->dev, "no platform data defined\n");
-+		return -EINVAL;
-+	}
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (res == NULL) {
-+		dev_err(&pdev->dev, "cannot find IO resource\n");
-+		return -ENOENT;
-+	}
-+
-+	/* Devices are pointed out using struct resource */
-+	devices = virtio_map(res->start, resource_size(res) >> PAGE_SHIFT);
-+	lg_scan_devices(devices, &pdev->dev, &lguest_config_ops);
-+	return 0;
-+}
-+
-+static int virtio_platform_remove(struct platform_device *pdev)
-+{
-+	return -ENOTSUPP;
-+}
-+
-+static struct platform_driver virtio_platform_driver = {
-+	.driver		= {
-+		.name		= "virtio-platform",
-+		.owner		= THIS_MODULE,
-+	},
-+	.probe		= virtio_platform_probe,
-+	.remove		= virtio_platform_remove,
-+};
-+
-+static int __init virtio_platform_init(void)
-+{
-+	return platform_driver_register(&virtio_platform_driver);
-+}
-+
-+static void __exit virtio_platform_exit(void)
-+{
-+	platform_driver_unregister(&virtio_platform_driver);
-+}
-+
-+module_init(virtio_platform_init);
-+module_exit(virtio_platform_exit);
-+
-+MODULE_DESCRIPTION("VirtIO Platform Driver");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:virtio-platform");
---- /dev/null
-+++ work/include/linux/virtio_platform.h	2011-03-03 15:56:54.000000000 +0900
-@@ -0,0 +1,12 @@
-+#ifndef _LINUX_VIRTIO_PLATFORM_H
-+#define _LINUX_VIRTIO_PLATFORM_H
-+#include <linux/platform_device.h>
-+#include <linux/lguest_launcher.h>
-+
-+struct virtio_platform_data {
-+	void (*notify_virtio)(struct platform_device *pdev);
-+	void (*notify_virtqueue)(struct platform_device *pdev,
-+				 struct lguest_vqconfig *config);
-+};
-+
-+#endif /* _LINUX_VIRTIO_PLATFORM_H */
+                                               ... controlled. Such group is
+described as an unconstrained bandwidth group.
+
+> +
+> +Writing any negative value to cpu.cfs_quota_us will turn the group into
+> +an infinite bandwidth group. Reading cpu.cfs_quota_us for an unconstrained
+      ^^^^^^^^
+      unconstrained
+
+> +bandwidth group will always return -1.
+> +
+> +System wide settings
+> +--------------------
+> +The amount of runtime obtained from global pool every time a CPU wants the
+> +group quota locally is controlled by a sysctl parameter
+> +sched_cfs_bandwidth_slice_us. The current default is 5ms. This can be changed
+> +by writing to /proc/sys/kernel/sched_cfs_bandwidth_slice_us.
+> +
+> +Statistics
+> +----------
+> +cpu.stat file lists three different stats related to bandwidth control's
+> +activity.
+> +
+> +- nr_periods: Number of enforcement intervals that have elapsed.
+> +- nr_throttled: Number of times the group has been throttled/limited.
+> +- throttled_time: The total time duration (in nanoseconds) for which entities
+> +  of the group have been throttled.
+> +
+> +These files are read-only.
+> +
+> +Hierarchy considerations
+> +------------------------
+> +The interface enforces that an individual entity's bandwidth is always
+> +attainable, that is: max(c_i) <= C. However, over-subscription in the
+> +aggregate case is explicitly allowed:
+> +  e.g. \Sum (c_i) may exceed C
+> +[ Where C is the parent's bandwidth, and c_i its children ]
+> +
+> +There are two ways in which a group may become throttled:
+> +
+> +a. it fully consumes its own quota within a period
+> +b. a parent's quota is fully consumed within its period
+> +
+> +In case b above, even though the child may have runtime remaining it will not
+> +be allowed to un until the parent's runtime is refreshed.
+
+                 run ?
+
+> +
+> +Examples
+> +--------
+> +1. Limit a group to 1 CPU worth of runtime.
+> +
+> +	If period is 250ms and quota is also 250ms, the group will get
+> +	1 CPU worth of runtime every 250ms.
+> +
+> +	# echo 500000 > cpu.cfs_quota_us /* quota = 250ms */
+               ~~~~~~
+               250000 ?
+
+> +	# echo 250000 > cpu.cfs_period_us /* period = 250ms */
+> +
+> +2. Limit a group to 2 CPUs worth of runtime on a multi-CPU machine.
+> +
+> +	With 500ms period and 1000ms quota, the group can get 2 CPUs worth of
+> +	runtime every 500ms.
+> +
+> +	# echo 1000000 > cpu.cfs_quota_us /* quota = 1000ms */
+> +	# echo 500000 > cpu.cfs_period_us /* period = 500ms */
+> +
+> +	The larger period here allows for increased burst capacity.
+> +
+> +3. Limit a group to 20% of 1 CPU.
+> +
+> +	With 50ms period, 10ms quota will be equivalent to 20% of 1 CPU.
+> +
+> +	# echo 10000 > cpu.cfs_quota_us /* quota = 10ms */
+> +	# echo 50000 > cpu.cfs_period_us /* period = 50ms */
+> +
+> +	By using a small period her we are ensuring a consistent latency
+
+                                here ?
+
+> +	response at the expense of burst capacity.
+> +
+> +
+> +
+
+Blank lines at EOF ?
+
+
+Thank you for improving the document!  Especially I think it is pretty
+good that now it provide examples of how "period" is used.
+
+For the rests in the V7 set (overall it looks very good), give me some
+time to review & tests. ;-)
+
+
+Thanks,
+H.Seto
+
