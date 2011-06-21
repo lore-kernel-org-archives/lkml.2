@@ -1,41 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757190Ab1FUWw7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 18:52:59 -0400
-Received: from gate.crashing.org ([63.228.1.57]:42612 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752125Ab1FUWw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 18:52:57 -0400
-In-Reply-To: <BANLkTikBUo3jO=R0amkdxU1V3QMJoOUkEw@mail.gmail.com>
-References: <1308410354-21387-1-git-send-email-shawn.guo@linaro.org> <1308410354-21387-2-git-send-email-shawn.guo@linaro.org> <20110618161934.GH8195@ponder.secretlab.ca> <20110619073000.GA23171@S2100-06.ap.freescale.net> <20110621135558.GB9228@S2101-09.ap.freescale.net> <BANLkTim4vunTm1176MRw3pqRZnunu4=9jg@mail.gmail.com> <4E00F290.2010303@firmworks.com> <BANLkTik9LXTJ--fRwUBscokWraPwOZnpHA@mail.gmail.com> <4E011678.4030208@firmworks.com> <BANLkTikBUo3jO=R0amkdxU1V3QMJoOUkEw@mail.gmail.com>
-Mime-Version: 1.0 (Apple Message framework v624)
-Content-Type: text/plain; charset=US-ASCII; format=flowed
-Message-Id: <ba379b3b42f1659f4f6649c78b8bb1b2@kernel.crashing.org>
-Content-Transfer-Encoding: 7bit
-Cc: Jason Liu <jason.hui@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
-        Mitch Bradley <wmb@firmworks.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>, patches@linaro.org
-From: Segher Boessenkool <segher@kernel.crashing.org>
-Subject: Re: [PATCH 1/3] serial/imx: add device tree support
-Date: Wed, 22 Jun 2011 00:52:47 +0200
-To: Grant Likely <grant.likely@secretlab.ca>
-X-Mailer: Apple Mail (2.624)
+	id S1757311Ab1FUWzN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 18:55:13 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:12293 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752125Ab1FUWzL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 18:55:11 -0400
+From: Bryan Freed <bfreed@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: jic23@cam.ac.uk, jbrenner@taosinc.com, gregkh@suse.de, arnd@arndb.de,
+        Bryan Freed <bfreed@chromium.org>
+Subject: [PATCH 1/3] light sensor: Add SMBUS support to the tsl2563 driver.
+Date: Tue, 21 Jun 2011 15:54:55 -0700
+Message-Id: <1308696897-25161-1-git-send-email-bfreed@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Ah, we're having an impedance mismatch.  I'm thinking specifically
-> about the device tree compiler and some syntactic sugar for using the
-> label definition to generate /also/ create alias properties. The
-> hairiness is related to that and the way that dtc is implemented, not
-> with the final aliases themselves.
+This is so we can support it on x86 SMBUS adapters.
 
-You can generate DTC-style aliases from OFW-style aliases instead (or
-as well), it has other advantages (like being more readable, and having
-the aliases grouped together).
+Signed-off-by: Bryan Freed <bfreed@chromium.org>
+---
+ drivers/staging/iio/light/tsl2563.c |   29 ++++++++++++++++++++++++++++-
+ 1 files changed, 28 insertions(+), 1 deletions(-)
 
-
-Segher
+diff --git a/drivers/staging/iio/light/tsl2563.c b/drivers/staging/iio/light/tsl2563.c
+index 9cffa2e..04aa155 100644
+--- a/drivers/staging/iio/light/tsl2563.c
++++ b/drivers/staging/iio/light/tsl2563.c
+@@ -137,6 +137,8 @@ struct tsl2563_chip {
+ 	u32			data1;
+ };
+ 
++static int use_smbus;
++
+ static int tsl2563_write(struct i2c_client *client, u8 reg, u8 value)
+ {
+ 	int ret;
+@@ -145,15 +147,35 @@ static int tsl2563_write(struct i2c_client *client, u8 reg, u8 value)
+ 	buf[0] = TSL2563_CMD | reg;
+ 	buf[1] = value;
+ 
++	if (use_smbus) {
++		ret = i2c_smbus_write_byte_data(client, buf[0], value);
++		return ret;
++	}
++
+ 	ret = i2c_master_send(client, buf, sizeof(buf));
+ 	return (ret == sizeof(buf)) ? 0 : ret;
+ }
+ 
+-static int tsl2563_read(struct i2c_client *client, u8 reg, void *buf, int len)
++static int tsl2563_read(struct i2c_client *client, u8 reg, u8 *buf, int len)
+ {
+ 	int ret;
+ 	u8 cmd = TSL2563_CMD | reg;
+ 
++	if (use_smbus) {
++		if (len == 1) {
++			ret = i2c_smbus_read_byte_data(client, cmd);
++			buf[0] = ret & 0xff;
++		} else if (len == 2) {
++			ret = i2c_smbus_read_word_data(client, cmd);
++			buf[0] = ret & 0xff;
++			buf[1] = (ret >> 8) & 0xff;
++		} else
++			ret = -1;
++		if (ret < 0)
++			return 0; /* failure */
++		return len; /* success */
++	}
++
+ 	ret = i2c_master_send(client, &cmd, sizeof(cmd));
+ 	if (ret != sizeof(cmd))
+ 		return ret;
+@@ -712,6 +734,11 @@ static int __devinit tsl2563_probe(struct i2c_client *client,
+ 	int err = 0;
+ 	int ret;
+ 	u8 id;
++	u32 smbus_func = I2C_FUNC_SMBUS_BYTE_DATA | I2C_FUNC_SMBUS_WORD_DATA;
++
++	/* We support both I2C and SMBUS adapter interfaces. */
++	if (i2c_check_functionality(client->adapter, smbus_func))
++		use_smbus = 1;
+ 
+ 	indio_dev = iio_allocate_device(sizeof(*chip));
+ 	if (!indio_dev)
+-- 
+1.7.3.1
 
