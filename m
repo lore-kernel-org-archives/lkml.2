@@ -1,217 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757495Ab1FUTgW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 15:36:22 -0400
-Received: from mga14.intel.com ([143.182.124.37]:12379 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757441Ab1FUTgS convert rfc822-to-8bit (ORCPT
+	id S1757491Ab1FUTi1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 15:38:27 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:52885 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757441Ab1FUTiY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 15:36:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,402,1304319600"; 
-   d="scan'208";a="16369458"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Marc Koschewski <marc@osknowledge.org>
-CC: "greg@kroah.com" <greg@kroah.com>,
-        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>,
-        "Weil, Oren jer" <oren.jer.weil@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 21 Jun 2011 22:36:03 +0300
-Subject: RE: mei driver breaks suspend on 3.0git
-Thread-Topic: mei driver breaks suspend on 3.0git
-Thread-Index: AcwwSK5a5l2AD3QgRCy1//QMPxiGhwAAYI5g
-Message-ID: <6F5C1D715B2DA5498A628E6B9C124F0401B87DC813@hasmsx504.ger.corp.intel.com>
-References: <201106121314.26394.a.miskiewicz@gmail.com>
- <201106122016.33399.a.miskiewicz@gmail.com>
- <201106122038.36623.a.miskiewicz@gmail.com>
- <201106122040.21950.a.miskiewicz@gmail.com>
- <6F5C1D715B2DA5498A628E6B9C124F0401AD318B15@hasmsx504.ger.corp.intel.com>
- <20110621183954.GA17528@marc.osknowledge.org>
- <6F5C1D715B2DA5498A628E6B9C124F0401B87DC7EA@hasmsx504.ger.corp.intel.com>
- <20110621192309.GB17528@marc.osknowledge.org>
-In-Reply-To: <20110621192309.GB17528@marc.osknowledge.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 21 Jun 2011 15:38:24 -0400
 MIME-Version: 1.0
+In-Reply-To: <4E00F290.2010303@firmworks.com>
+References: <1308410354-21387-1-git-send-email-shawn.guo@linaro.org>
+ <1308410354-21387-2-git-send-email-shawn.guo@linaro.org> <20110618161934.GH8195@ponder.secretlab.ca>
+ <20110619073000.GA23171@S2100-06.ap.freescale.net> <20110621135558.GB9228@S2101-09.ap.freescale.net>
+ <BANLkTim4vunTm1176MRw3pqRZnunu4=9jg@mail.gmail.com> <4E00F290.2010303@firmworks.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 21 Jun 2011 13:38:03 -0600
+X-Google-Sender-Auth: 768Ztvm6ydCGE5_7VT-RKh15hh0
+Message-ID: <BANLkTik9LXTJ--fRwUBscokWraPwOZnpHA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] serial/imx: add device tree support
+To: Mitch Bradley <wmb@firmworks.com>
+Cc: patches@linaro.org, netdev@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, Jason Liu <jason.hui@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 21, 2011 at 1:35 PM, Mitch Bradley <wmb@firmworks.com> wrote:
+> What is the problem with
+>
+> aliases{
+>   serial0 = "/uart@7000c000";
+> }
+>
+> Properties in the alias node are supposed to have string values.
+
+?
+
+Not sure I follow.  Indeed, properties in the aliases node are string values.
+
+Are you referring to how I was proposing some dtc syntax for
+generating the alias strings?
+
+g.
+
+>
+>
+> On 6/21/2011 9:13 AM, Grant Likely wrote:
+>>
+>> On Tue, Jun 21, 2011 at 7:55 AM, Shawn Guo<shawn.guo@freescale.com>
+>>  wrote:
+>>>
+>>> Hi Grant,
+>>>
+>>> I just gave a try to use aliases node for identify the device index.
+>>> Please take a look and let me know if it's what you expect.
+>>
+>> Thanks Shawn.  This is definitely on track.  Comments below...
+>>
+>>>
+>>> On Sun, Jun 19, 2011 at 03:30:02PM +0800, Shawn Guo wrote:
+>>> [...]
+>>>>>>
+>>>>>> +#ifdef CONFIG_OF
+>>>>>> +static int serial_imx_probe_dt(struct imx_port *sport,
+>>>>>> +         struct platform_device *pdev)
+>>>>>> +{
+>>>>>> + struct device_node *node = pdev->dev.of_node;
+>>>>>> + const __be32 *line;
+>>>>>> +
+>>>>>> + if (!node)
+>>>>>> +         return -ENODEV;
+>>>>>> +
+>>>>>> + line = of_get_property(node, "id", NULL);
+>>>>>> + if (!line)
+>>>>>> +         return -ENODEV;
+>>>>>> +
+>>>>>> + sport->port.line = be32_to_cpup(line) - 1;
+>>>>>
+>>>>> Hmmm, I really would like to be rid of this.  Instead, if uarts must
+>>>>> be enumerated, the driver should look for a /aliases/uart* property
+>>>>> that matches the of_node.  Doing it that way is already established in
+>>>>> the OpenFirmware documentation, and it ensures there are no overlaps
+>>>>> in the global namespace.
+>>>>>
+>>>>
+>>>> I just gave one more try to avoid using 'aliases', and you gave a
+>>>> 'no' again.  Now, I know how hard you are on this.  Okay, I start
+>>>> thinking about your suggestion seriously :)
+>>>>
+>>>>> We do need some infrastructure to make that easier though.  Would you
+>>>>> have time to help put that together?
+>>>>>
+>>>> Ok, I will give it a try.
+>>>>
+>>>
+>>> diff --git a/arch/arm/boot/dts/imx51-babbage.dts
+>>> b/arch/arm/boot/dts/imx51-babbage.dts
+>>> index da0381a..f4a5c3c 100644
+>>> --- a/arch/arm/boot/dts/imx51-babbage.dts
+>>> +++ b/arch/arm/boot/dts/imx51-babbage.dts
+>>> @@ -18,6 +18,12 @@
+>>>        compatible = "fsl,imx51-babbage", "fsl,imx51";
+>>>        interrupt-parent =<&tzic>;
+>>>
+>>> +       aliases {
+>>> +               serial0 =&uart0;
+>>> +               serial1 =&uart1;
+>>> +               serial2 =&uart2;
+>>> +       };
+>>> +
+>>
+>> Hmmm.  David Gibson had tossed out an idea of automatically generating
+>> aliases from labels.  It may be time to revisit that idea.
+>>
+>> David, perhaps using this format for a label should turn it into an
+>> alias (prefix label with an asterisk):
+>>
+>>         *thealias: i2c@12340000 { /*...*/ };
+>>
+>> .... although that approach gets *really* hairy when considering that
+>> different boards will want different enumeration.  How would one
+>> override an automatic alias defined by an included .dts file?
+>>
+>>>        chosen {
+>>>                bootargs = "console=ttymxc0,115200 root=/dev/mmcblk0p3
+>>> rootwait";
+>>>        };
+>>> @@ -47,29 +53,29 @@
+>>>                        reg =<0x70000000 0x40000>;
+>>>                        ranges;
+>>>
+>>> -                       uart@7000c000 {
+>>> +                       uart2: uart@7000c000 {
+>>>                                compatible = "fsl,imx51-uart",
+>>> "fsl,imx21-uart";
+>>>                                reg =<0x7000c000 0x4000>;
+>>>                                interrupts =<33>;
+>>>                                id =<3>;
+>>> -                               fsl,has-rts-cts;
+>>> +                               fsl,uart-has-rtscts;
+>>>                        };
+>>>                };
+>>>
+>>> -               uart@73fbc000 {
+>>> +               uart0: uart@73fbc000 {
+>>>                        compatible = "fsl,imx51-uart", "fsl,imx21-uart";
+>>>                        reg =<0x73fbc000 0x4000>;
+>>>                        interrupts =<31>;
+>>>                        id =<1>;
+>>> -                       fsl,has-rts-cts;
+>>> +                       fsl,uart-has-rtscts;
+>>>                };
+>>>
+>>> -               uart@73fc0000 {
+>>> +               uart1: uart@73fc0000 {
+>>>                        compatible = "fsl,imx51-uart", "fsl,imx21-uart";
+>>>                        reg =<0x73fc0000 0x4000>;
+>>>                        interrupts =<32>;
+>>>                        id =<2>;
+>>> -                       fsl,has-rts-cts;
+>>> +                       fsl,uart-has-rtscts;
+>>>                };
+>>>        };
+>>>
+>>> diff --git a/drivers/of/base.c b/drivers/of/base.c
+>>> index 632ebae..13df5d2 100644
+>>> --- a/drivers/of/base.c
+>>> +++ b/drivers/of/base.c
+>>> @@ -737,6 +737,37 @@ err0:
+>>>  EXPORT_SYMBOL(of_parse_phandles_with_args);
+>>>
+>>>  /**
+>>> + *     of_get_device_index - Get device index by looking up "aliases"
+>>> node
+>>> + *     @np:    Pointer to device node that asks for device index
+>>> + *     @name:  The device alias without index number
+>>> + *
+>>> + *     Returns the device index if find it, else returns -ENODEV.
+>>> + */
+>>> +int of_get_device_index(struct device_node *np, const char *alias)
+>>> +{
+>>> +       struct device_node *aliases = of_find_node_by_name(NULL,
+>>> "aliases");
+>>> +       struct property *prop;
+>>> +       char name[32];
+>>> +       int index = 0;
+>>> +
+>>> +       if (!aliases)
+>>> +               return -ENODEV;
+>>> +
+>>> +       while (1) {
+>>> +               snprintf(name, sizeof(name), "%s%d", alias, index);
+>>> +               prop = of_find_property(aliases, name, NULL);
+>>> +               if (!prop)
+>>> +                       return -ENODEV;
+>>> +               if (np == of_find_node_by_path(prop->value))
+>>> +                       break;
+>>> +               index++;
+>>> +       }
+>>
+>> Rather than parsing the alias strings everytime, it would probably be
+>> better to preprocess all the properties in the aliases node and create
+>> a lookup table of alias->node references that can be walked quickly
+>> and trivially.
+>>
+>> Also, when obtaining an enumeration for a device, you'll need to be
+>> careful about what number gets returned.  If the node doesn't match a
+>> given alias, but aliases do exist for other devices of like type, then
+>> you need to be careful not to assign a number already assigned to
+>> another device via an alias (this of course assumes the driver
+>> supports dynamics enumeration, which many drivers will).  It would be
+>>
+>> \>  +
+>>>
+>>> +       return index;
+>>> +}
+>>> +EXPORT_SYMBOL(of_get_device_index);
+>>> +
+>>> +/**
+>>>  * prom_add_property - Add a property to a node
+>>>  */
+>>>  int prom_add_property(struct device_node *np, struct property *prop)
+>>> diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+>>> index da436e0..852668f 100644
+>>> --- a/drivers/tty/serial/imx.c
+>>> +++ b/drivers/tty/serial/imx.c
+>>> @@ -1271,18 +1271,18 @@ static int serial_imx_probe_dt(struct imx_port
+>>> *sport,
+>>>        struct device_node *node = pdev->dev.of_node;
+>>>        const struct of_device_id *of_id =
+>>>                        of_match_device(imx_uart_dt_ids,&pdev->dev);
+>>> -       const __be32 *line;
+>>> +       int line;
+>>>
+>>>        if (!node)
+>>>                return -ENODEV;
+>>>
+>>> -       line = of_get_property(node, "id", NULL);
+>>> -       if (!line)
+>>> +       line = of_get_device_index(node, "serial");
+>>> +       if (IS_ERR_VALUE(line))
+>>>                return -ENODEV;
+>>
+>> Personally, it an alias isn't present, then I'd dynamically assign a port
+>> id.
+>>
+>>>
+>>> -       sport->port.line = be32_to_cpup(line) - 1;
+>>> +       sport->port.line = line;
+>>>
+>>> -       if (of_get_property(node, "fsl,has-rts-cts", NULL))
+>>> +       if (of_get_property(node, "fsl,uart-has-rtscts", NULL))
+>>>                sport->have_rtscts = 1;
+>>>
+>>>        if (of_get_property(node, "fsl,irda-mode", NULL))
+>>> diff --git a/include/linux/of.h b/include/linux/of.h
+>>> index bfc0ed1..3153752 100644
+>>> --- a/include/linux/of.h
+>>> +++ b/include/linux/of.h
+>>> @@ -213,6 +213,8 @@ extern int of_parse_phandles_with_args(struct
+>>> device_node *np,
+>>>        const char *list_name, const char *cells_name, int index,
+>>>        struct device_node **out_node, const void **out_args);
+>>>
+>>> +extern int of_get_device_index(struct device_node *np, const char
+>>> *alias);
+>>> +
+>>>  extern int of_machine_is_compatible(const char *compat);
+>>>
+>>>  extern int prom_add_property(struct device_node* np, struct property*
+>>> prop);
+>>>
+>>> --
+>>> Regards,
+>>> Shawn
+>>>
+>>>
+>>
+>>
+>>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
 
 
-> -----Original Message-----
-> From: Marc Koschewski [mailto:marc@osknowledge.org]
-> Sent: Tuesday, June 21, 2011 10:23 PM
-> To: Winkler, Tomas
-> Cc: greg@kroah.com; Arkadiusz Miskiewicz; Weil, Oren jer; linux-
-> kernel@vger.kernel.org
-> Subject: Re: mei driver breaks suspend on 3.0git
-> 
-> * Winkler, Tomas <tomas.winkler@intel.com> [2011-06-21 22:07:27 +0300]:
-> 
-> Tomas,
-> 
-> what I was trying to say is that this might fix the suspend bug with 'mei',
-> however, the box won't come up again even with 'mei' not playing
-> anywhere.
-> 
-> suspend/resume is actually broken even if this fix might help suspending a
-> machine with 'mei' usage.
 
-I will try to reproduce this tomorrow, can you please send out the description of your machine 
-Thanks
-Tomas
-> 
-> Regards,
-> Marc
-> 
-> >
-> >
-> > > -----Original Message-----
-> > > From: Marc Koschewski [mailto:marc@osknowledge.org]
-> > > Sent: Tuesday, June 21, 2011 9:40 PM
-> > > To: Winkler, Tomas
-> > > Cc: Arkadiusz Miskiewicz; Weil, Oren jer;
-> > > linux-kernel@vger.kernel.org
-> > > Subject: Re: mei driver breaks suspend on 3.0git
-> > >
-> > > * Winkler, Tomas <tomas.winkler@intel.com> [2011-06-12 22:41:59
-> +0300]:
-> > >
-> > > I suffer the same. After booting 3.0.0-r4 with that module not being
-> > > loaded it suspends, however, it doesn't resume (screen black, hard
-> > > power-off needed).
-> >
-> > The patch was already posted https://lkml.org/lkml/2011/6/13/148 but
-> wasn't picked up for rc4 yet.
-> > For now please apply it your by yourself.
-> >
-> >  Greg, will you collect staging fixes for rc5 or shell it be picked up directly by
-> Linus?
-> >
-> > Thanks
-> > Tomas
-> >
-> > > Regards,
-> > > Marc
-> > >
-> > > >
-> > > >
-> > > > > -----Original Message-----
-> > > > > From: Arkadiusz Miskiewicz [mailto:a.miskiewicz@gmail.com]
-> > > > > Sent: Sunday, June 12, 2011 9:40 PM
-> > > > > To: Winkler, Tomas
-> > > > > Cc: Weil, Oren jer; linux-kernel@vger.kernel.org
-> > > > > Subject: Re: mei driver breaks suspend on 3.0git
-> > > > >
-> > > > > On Sunday 12 of June 2011, Arkadiusz Miskiewicz wrote:
-> > > > > > On Sunday 12 of June 2011, Arkadiusz Miskiewicz wrote:
-> > > > > > > On Sunday 12 of June 2011, Winkler, Tomas wrote:
-> > > > > > > > > -----Original Message-----
-> > > > > > > > > From: Weil, Oren jer
-> > > > > > > > > Sent: Sunday, June 12, 2011 8:36 PM
-> > > > > > > > > To: Arkadiusz Miskiewicz
-> > > > > > > > > Cc: Winkler, Tomas; linux-kernel@vger.kernel.org
-> > > > > > > > > Subject: RE: mei driver breaks suspend on 3.0git
-> > > > > > > > >
-> > > > > > > > > >It's thinkpad t400 with
-> > > > > > > > > >00:03.0 Communication controller [0780]: Intel
-> > > > > > > > > >Corporation Mobile 4 Series Chipset MEI Controller
-> > > > > > > > > >[8086:2a44] (rev 07)
-> > > > > > > > >
-> > > > > > > > > Can you send us more details? Does it happened in stress?
-> > > > > > > > > How do I reproduce it?
-> > > > > > >
-> > > > > > > No stress. This is my daily use notebook and I simply
-> > > > > > > suspend to ram when sitting under X in kde4.
-> > > > > > >
-> > > > > > > > > Can you send us the debug prints?
-> > > > > > >
-> > > > > > > Attached. suspend starts, tries to resume devices, MEI
-> > > > > > > suspend fails causing whole suspend to be aborted.
-> > > > > >
-> > > > > > Shouldn't ret > 0 in mei_wd_stop to be "success"?
-> > > > >
-> > > > > I meant this one:
-> > > > >
-> > > > >         ret = wait_event_interruptible_timeout(dev->wait_stop_wd,
-> > > > >                                         dev->wd_stopped, 10 *
-> > > > > HZ);
-> > > > >
-> > > > >
-> > > > > And that was possible untested solution that relies on wd being
-> > > > > stopped and not anything else.
-> > > > >
-> > > > > >
-> > > > > > diff --git a/drivers/staging/mei/wd.c
-> > > > > > b/drivers/staging/mei/wd.c index 2564b03..608245a 100644
-> > > > > > --- a/drivers/staging/mei/wd.c
-> > > > > > +++ b/drivers/staging/mei/wd.c
-> > > > > > @@ -171,8 +171,10 @@ int mei_wd_stop(struct mei_device *dev,
-> > > > > > bool
-> > > > > preserve)
-> > > > > >         mutex_lock(&dev->device_lock);
-> > > > > >         if (!dev->wd_stopped)
-> > > > > >                 dev_dbg(&dev->pdev->dev, "stop wd failed to
-> complete.\n");
-> > > > > > -       else
-> > > > > > +       else {
-> > > > > > +               ret = 0;
-> > > > > >                 dev_dbg(&dev->pdev->dev, "stop wd
-> > > > > > complete.\n");
-> > > > > > +       }
-> > > > > >
-> > > > > >         if (preserve)
-> > > > > >                 dev->wd_timeout = wd_timeout;
-> > > > >
-> > > >
-> > > > Looks like your patch is correct
-> > > > wait_event_interruptible_timeout() returns  >0 on success unlike
-> > > > wait_even_interruptable()
-> > > >
-> > > > I wil check all the instances we have and issue a patch.
-> > > > Thanks for your effort
-> > > > Tomas
-> > > >
-> > > > ------------------------------------------------------------------
-> > > > ---
-> > > > Intel Israel (74) Limited
-> > > >
-> > > > This e-mail and any attachments may contain confidential material
-> > > > for the sole use of the intended recipient(s). Any review or
-> > > > distribution by others is strictly prohibited. If you are not the
-> > > > intended recipient, please contact the sender and delete all copies.
-> > >
-> > > --
-> > > Marc Koschewski
-> > ---------------------------------------------------------------------
-> > Intel Israel (74) Limited
-> >
-> > This e-mail and any attachments may contain confidential material for
-> > the sole use of the intended recipient(s). Any review or distribution
-> > by others is strictly prohibited. If you are not the intended
-> > recipient, please contact the sender and delete all copies.
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe
-> > linux-kernel" in the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> >
-> >
-> 
-> --
-> Marc Koschewski
----------------------------------------------------------------------
-Intel Israel (74) Limited
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
