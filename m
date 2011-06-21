@@ -1,56 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756571Ab1FUNTA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 09:19:00 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:56978 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247Ab1FUNS4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 09:18:56 -0400
-Date: Tue, 21 Jun 2011 14:18:42 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 1/4] ACPI, APEI, GHES, Prevent GHES to be built as
- module
-Message-ID: <20110621131842.GA4902@srcf.ucam.org>
-References: <1308640587-24502-1-git-send-email-ying.huang@intel.com>
- <1308640587-24502-2-git-send-email-ying.huang@intel.com>
- <20110621072301.GA3263@one.firstfloor.org>
+	id S1756519Ab1FUNUQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 09:20:16 -0400
+Received: from mx1.melware.net ([78.47.171.162]:58536 "EHLO mx1.melware.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752394Ab1FUNUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 09:20:13 -0400
+Date: Tue, 21 Jun 2011 15:20:12 +0200 (CEST)
+From: Armin Schindler <armin@melware.de>
+To: Matthew Wilcox <matthew@wil.cx>
+cc: Linux Kernel Mailinglist <linux-kernel@vger.kernel.org>,
+        linux-pci@vger.kernel.org
+Subject: Re: Map PCI resource to user space problem.
+In-Reply-To: <20110621122312.GG19693@parisc-linux.org>
+Message-ID: <alpine.DEB.2.00.1106211510160.28972@justus.melware.de>
+References: <alpine.DEB.2.00.1106201132170.14886@justus.melware.de> <alpine.DEB.2.00.1106201830260.17005@justus.melware.de> <BANLkTim9fBeY3L_+M9B5GECs8QtuAeUrTw@mail.gmail.com> <20110621122312.GG19693@parisc-linux.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Organization: Cytronics & Melware
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110621072301.GA3263@one.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 09:23:01AM +0200, Andi Kleen wrote:
-> On Tue, Jun 21, 2011 at 03:16:24PM +0800, Huang Ying wrote:
-> > GHES (Generic Hardware Error Source) is used to process hardware error
-> > notification in firmware first mode.  But because firmware first mode
-> > can be turned on but can not be turned off, it is unreasonable to
-> > unload the GHES module with firmware first mode turned on.  To avoid
-> > confusion, this patch makes GHES can be enable/disable in
-> > configuration time, but not built as module and unload at run time.
-> 
-> It's better to keep it as a module, but disable unloading.
-> You can do that with a __module_get(THIS_MODULE) in the init code
-> when FFM is detected.
+On Tue, 21 Jun 2011, Matthew Wilcox wrote:
+> On Mon, Jun 20, 2011 at 10:41:38AM -0600, Bjorn Helgaas wrote:
+>> On Mon, Jun 20, 2011 at 10:38 AM, Armin Schindler <armin@melware.de> wrote:
+>>> On Mon, 20 Jun 2011, Armin Schindler wrote:
+>>>>
+>>>> Hello,
+>>>>
+>>>> when I try to map PCI resource of size < PAGE_SIZE to user space
+>>>> with e.g. remap_pfn_range() the mapping seems to be created,
+>>>> but the access to the PCI device just doesn't work (read returns 0xff).
+>>>>
+>>>> The same happens when using sysfs. The device has
+>>>> # ls -al /sys/bus/pci/devices/0000\:02\:09.0/resource*
+>>>> -rw------- 1 root root ? ? 512 Jun 20 11:33
+>>>> /sys/bus/pci/devices/0000:02:09.0/resource0
+>>>> -rw------- 1 root root ? ? 256 Jun 20 11:33
+>>>> /sys/bus/pci/devices/0000:02:09.0/resource1
+>>>> -rw------- 1 root root 8388608 Jun 20 11:33
+>>>> /sys/bus/pci/devices/0000:02:09.0/resource2
+>>>> -rw------- 1 root root ?262144 Jun 20 11:33
+>>>> /sys/bus/pci/devices/0000:02:09.0/resource3
+>>>>
+>>>> and when I mmap() resource0, a valid address is returned, but reading the
+>>>> area always returns 0xff.
+>>>>
+>>>> Since a kernel driver can access resource0 here without problems when
+>>>> using
+>>>> ioremap(), I'm not sure what is wrong with the sysfs entry for user space
+>>>> (or using remap_pfn_range() in own mmap function).
+>>>> The only hint I have so far is the size, which is smaller than PAGE_SIZE.
+>>>
+>>> I found the reason. It is not the size of the resource.
+>>> The resource0 is assigned to a not page-aligned address.
+>>> Example, the pci resource0 has address 0xfe5ffc00. mmap()ing it will
+>>> actually seems to map address 0xfe5ff000 and the user needs to add 0xc00 to
+>>> the address returned by mmap().
+>
+> Oh, ugh.  That's enforced outside the PCI layer.
+> For example (from sys_x86_64.c):
+>
+> SYSCALL_DEFINE6(mmap, unsigned long, addr, unsigned long, len,
+>                unsigned long, prot, unsigned long, flags,
+>                unsigned long, fd, unsigned long, off)
+> {
+>        long error;
+>        error = -EINVAL;
+>        if (off & ~PAGE_MASK)
+>                goto out;
+>
+> ie the very first check that the _arch specific_ code does is to check
+> the offset is page-aligned.
 
-Anything that's enabled by an _OSC call is expected to be available 
-immediately. So the choices are either to ensure that GHES support is 
-built in, or to make a second _OSC call when the GHES code is loaded. 
-We've seen in the PCIe case that many firmware implementations 
-misinterpret multiple attempts to set _OSC with the same UUID, and a 
-cursory examination of some implementations of the systemwide one 
-suggest that we'd see the same issue there.
+The offset given to mmap() is not the problem. When you want to mmap
+a PCI memory BAR via sysfs you normaly use offset=0 to get the BAR from 
+beginning. The problem is the base-address (physical address of that BAR
+assigned by PCI), which is not page-aligned.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+> We can't fix this.  There may be other BARs mapped into the same page,
+> so allowing the user to mmap this BAR would give them access to those
+> other BARs that they may not be entitled to access.
+
+If a page is 'reused' like that and remap functions for user
+are page aligned only, then yes.
+Besides the access problem to other BARs, the user doesn't get a correct
+address from mmap().
+
+Armin
+
