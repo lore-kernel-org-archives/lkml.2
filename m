@@ -1,83 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab1FUWsM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 18:48:12 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44890 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756774Ab1FUWsL convert rfc822-to-8bit (ORCPT
+	id S1757028Ab1FUWuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 18:50:14 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47938 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756411Ab1FUWuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 18:48:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=vrfy.org; s=google;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=LgvCOZMwblNvMjz5u6O9DN4ZY7DQVmDLphJyqVfl2DrhK2UKrbHpyqJYqGV9L4PyTa
-         x3gUSt8wDAid7ckJ4pkMAKfOBUBTE3Ub7mBvh2JmxsuISUSUc/bPIQq4j5q1kqTYu2NX
-         /k7S4wwWJVublDc+uj2pX+s/+vIDl4JtRhFzY=
-MIME-Version: 1.0
-In-Reply-To: <87boxshrwe.fsf@rustcorp.com.au>
-References: <1308434431.1050.5.camel@mop> <8739j59zib.fsf@rustcorp.com.au>
- <BANLkTink8YTe=-Tr5Ax3epiFoFCfzcex7w@mail.gmail.com> <87boxshrwe.fsf@rustcorp.com.au>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Wed, 22 Jun 2011 00:47:55 +0200
-Message-ID: <BANLkTinL4r3RfNuA5x6=UK4DCSSJNeZw7w@mail.gmail.com>
-Subject: Re: module: sysfs - add 'uevent' file to allow coldplug
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 21 Jun 2011 18:50:11 -0400
+Date: Tue, 21 Jun 2011 15:49:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: linux-kernel@vger.kernel.org, Vasiliy Kulikov <segooon@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH v2] taskstats: don't allow duplicate entries in listener
+ mode
+Message-Id: <20110621154900.ea6b8839.akpm@linux-foundation.org>
+In-Reply-To: <1308239759-4797-1-git-send-email-segoon@openwall.com>
+References: <1308239759-4797-1-git-send-email-segoon@openwall.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 03:53, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> On Mon, 20 Jun 2011 13:20:00 +0200, Kay Sievers <kay.sievers@vrfy.org> wrote:
->> On Mon, Jun 20, 2011 at 01:23, Rusty Russell <rusty@rustcorp.com.au> wrote:
->> > On Sun, 19 Jun 2011 00:00:29 +0200, Kay Sievers <kay.sievers@vrfy.org> wrote:
->> >> From: Kay Sievers <kay.sievers@vrfy.org>
->> >> Subject: module: sysfs - add 'uevent' file to allow built-in coldplug
->> >>
->> >> Userspace wants to manage module parameters with udev rules.
->> >> This currently only works for loaded modules, but not for
->> >> built-in ones.
->> >
->> > I'm confused.  What does "manage" mean here?
->>
->> Hook system management into module-load events, which might include
->> changing module parameters in /sys/module/*/parameters/*, or at
->> bootup/coldplug run it for built-in modules.
->>
->> We do the same to set properties for buses, drivers or devices when they appear.
->
-> Sorry, that's another vague answer :(
->
-> udev already knows about module load
+On Thu, 16 Jun 2011 19:55:59 +0400
+Vasiliy Kulikov <segoon@openwall.com> wrote:
 
-Not for built-ins.
+> Currently a single process may register exit handlers unlimited times.
+> It may lead to a bloated listeners chain and very slow process terminations.
+> E.g. after 10KK sent TASKSTATS_CMD_ATTR_REGISTER_CPUMASKs ~300 Mb of
+> kernel memory is stolen for the handlers chain and "time id" shows 2-7
+> seconds instead of normal 0.003.  It makes it possible to exhaust all
+> kernel memory and to eat much of CPU time by triggerring numerous exits
+> on a single CPU.
+> 
+> The patch limits the number of times a single process may register
+> itself on a single CPU to one.
+> 
+> One little issue is kept unfixed - as taskstats_exit() is called before
+> exit_files() in do_exit(), the orphaned listener entry (if it was not
+> explicitly deregistered) is kept until the next someone's exit() and
+> implicit deregistration in send_cpu_listeners().  So, if a process
+> registered itself as a listener exits and the next spawned process gets
+> the same pid, it would inherit taskstats attributes.
 
-> and the parameters are created at
-> that point; they are not *changed*.
+ow. That's an unprivileged operation, isn't it?
 
-The can be changed, and sometimes they need.
+> 
+> diff --git a/kernel/taskstats.c b/kernel/taskstats.c
+> index 9ffea36..fc0f220 100644
+> --- a/kernel/taskstats.c
+> +++ b/kernel/taskstats.c
+> @@ -285,16 +285,18 @@ ret:
+>  static int add_del_listener(pid_t pid, const struct cpumask *mask, int isadd)
+>  {
+>  	struct listener_list *listeners;
+> -	struct listener *s, *tmp;
+> +	struct listener *s, *tmp, *s2;
+>  	unsigned int cpu;
+>  
+>  	if (!cpumask_subset(mask, cpu_possible_mask))
+>  		return -EINVAL;
+>  
+> +	s = NULL;
+>  	if (isadd == REGISTER) {
+>  		for_each_cpu(cpu, mask) {
+> -			s = kmalloc_node(sizeof(struct listener), GFP_KERNEL,
+> -					 cpu_to_node(cpu));
+> +			if (!s)
+> +				s = kmalloc_node(sizeof(struct listener),
+> +						 GFP_KERNEL, cpu_to_node(cpu));
+>  			if (!s)
+>  				goto cleanup;
+>  			s->pid = pid;
+> @@ -303,9 +305,16 @@ static int add_del_listener(pid_t pid, const struct cpumask *mask, int isadd)
+>  
+>  			listeners = &per_cpu(listener_array, cpu);
+>  			down_write(&listeners->sem);
+> +			list_for_each_entry_safe(s2, tmp, &listeners->list, list) {
+> +				if (s2->pid == pid)
+> +					goto next_cpu;
+> +			}
+>  			list_add(&s->list, &listeners->list);
+> +			s = NULL;
+> +next_cpu:
+>  			up_write(&listeners->sem);
+>  		}
+> +		kfree(s);
+>  		return 0;
+>  	}
+>  
 
-> What, *exactly* will this enable?  Don't use the word "hook" or
-> "management": both vague terms which assume I know what you're talking
-> about.  I don't.
-
-Just used these words because it's absolutely generic infrastructure
-we use already everywhere in /sys. :) Just run a: find /sys -name
-uevent
-
-
-> Show me exactly what udev will now be able to do that it can't do now,
-> and how it will be used.  Preferably with examples.  Assume (correctly)
-> that I have only a vague idea what udev does.
-
-Set the polling interval of a always-built-in module parameter:
-
-SUBSYSTEM=="module", KERNEL=="block",
-ATTR{parameters/events_dfl_poll_msecs}="2000"
-
-http://git.kernel.org/?p=linux/hotplug/udev.git;a=commitdiff;h=c5a41da94916815ac14d950a0547bffc4411f7af
-
-Kay
