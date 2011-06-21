@@ -1,95 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757150Ab1FUSIb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 14:08:31 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61122 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752280Ab1FUSI3 convert rfc822-to-8bit (ORCPT
+	id S1757153Ab1FUSUJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 14:20:09 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:32802 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751929Ab1FUSUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 14:08:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=d1/2FyorE1peqwt3NiUYgVMhPz9JCViOE8xQ09JCAnnfZ6Racy7wtMFxlglBogH8Qy
-         6uvMLQaDuB+zupH2KG0VDPSyEHZVuJKvCtbpFY80MewAZ0l7jnAmCR7jYPzLhSsJamIc
-         1Oa651XC81I8ahPUMJxkxXx/QjGk7W0XGK7JQ=
+	Tue, 21 Jun 2011 14:20:07 -0400
+Date: Tue, 21 Jun 2011 15:20:24 -0300
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth-next-2.6 2011-06-21
+Message-ID: <20110621182024.GD2628@joana>
+Mail-Followup-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=H17HC29bCTncSbXXm+RjwOCP49g@mail.gmail.com>
-References: <BANLkTi=H17HC29bCTncSbXXm+RjwOCP49g@mail.gmail.com>
-Date: Tue, 21 Jun 2011 11:08:28 -0700
-Message-ID: <BANLkTikyjzQ-VZMn2_ZobEmHMLRafki9YQ@mail.gmail.com>
-Subject: Re: code sections beyond .text skipped from alternatives_smp_module_add
-From: Deep Debroy <ddebroy@gmail.com>
-To: linux-kernel@vger.kernel.org, kraxel@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 1:10 AM, Deep Debroy <ddebroy@gmail.com> wrote:
-> In x86-64, I am running into a scenario with certain kernel modules
-> where the patching of lock prefix instructions in sections other than
-> .text (e.g. .exit.text) is not occurring even though the .smp_locks
-> relocations in the .ko file specify instructions in sections other
-> than .text for patching. For example (down in the bottom), in
-> net/bluetooth/rfcomm.ko, we have a couple of entries in .exit.text for
-> patching. However, when I look in the memory page containing the
-> .exit.text section in a uni processor system, it doesn't appear the
-> lock prefix instructions in .exit.text were patched with NOPs the same
-> way other instructions from the .text section in the same page
-> underwent patching. This creates a subtle inconsistency where a page
-> contains the end of the .text section along with the .exit.text
-> section - lock prefixes in instructions from the former section gets
-> patched per .smp_locks entries while that doesn't happen for the
-> latter within the same page.
->
-> Looking at the code, in module_finalize for x86, only .text seems to
-> be getting picked for the patching of lock prefixes while other
-> sections such as .exit.text or .init.text are not. Is there a reason
-> we skip the other *.text code sections from the lock patches? Would
-> making the application of the patching of lock prefixes generic across
-> all code sections (rather than just .text) make sense?
->
-> Thanks,
-> Deep
->
->            for (s = sechdrs; s < sechdrs + hdr->e_shnum; s++) {
->                    if (!strcmp(".text", secstrings + s->sh_name))
->                            text = s;
->                    ...
->                    if (!strcmp(".smp_locks", secstrings + s->sh_name))
->                            locks = s;
->                    ...
->            }
->
->            if (locks && text) {
->                    void *lseg = (void *)locks->sh_addr;
->                    void *tseg = (void *)text->sh_addr;
->                    alternatives_smp_module_add(me, me->name,
->                                                lseg, lseg + locks->sh_size,
->                                                tseg, tseg + text->sh_size);
->            }
->
->
->
->> objdump -r kernel/net/bluetooth/rfcomm/rfcomm.ko
->
-> RELOCATION RECORDS FOR [.smp_locks]:
-> OFFSET           TYPE              VALUE
-> 0000000000000000 R_X86_64_64       .text+0x00000000000000ac
-> 0000000000000008 R_X86_64_64       .exit.text+0x0000000000000023
-> 0000000000000010 R_X86_64_64       .exit.text+0x0000000000000034
-> 0000000000000018 R_X86_64_64       .text+0x0000000000000619
-> 0000000000000020 R_X86_64_64       .text+0x000000000000061d
->
+Hi John,
 
-+ Gerd Hoffmann who introduced the SMP patching code below back in Jan
-2006 as part of 2.6.15.
+Another batch for 3.1. More L2CAP rewrite patches by myself, now we have an API
+that in the future will allow other pieces like l2cap_sock.c/rfcomm/AMP manager
+to use. It still an unfinished work. We also have here the first bit of the 
+Low Energy Security Manager Protocol by Vinicius Gomes and Another Briglia. And
+support for blacklist devices in the management interface by Antti Julku. The
+rest are just fixes and clean ups.
 
-Any comments on why patching of smp_lock prefixes should be restricted
-to .text and not other *.text code sections?
+Please pull, thanks!
 
-Thanks,
-Deep
+	Gustavo
+
+The following changes since commit e10542c447abf7c840931ff12f7d0dee976ca2ea:
+
+  rtlwifi: rtl8192{c,ce,cu,se}: Remove comparisons of booleans with true (2011-06-20 15:47:43 -0400)
+
+are available in the git repository at:
+  master.kernel.org:/pub/scm/linux/kernel/git/padovan/bluetooth-next-2.6.git master
+
+Anderson Briglia (6):
+      Bluetooth: Implement the first SMP commands
+      Bluetooth: Start SMP procedure
+      Bluetooth: Add simple SMP pairing negotiation
+      Bluetooth: Add LE SMP Cryptoolbox functions
+      Bluetooth: Add SMP confirmation structs
+      Bluetooth: Add SMP confirmation checks methods
+
+Anderson Lizardo (1):
+      Bluetooth: fix missing parameter for HCI_OP_DISCONNECT
+
+Antti Julku (2):
+      Bluetooth: Move blacklisting functions to hci_core
+      Bluetooth: Add blacklisting support for mgmt interface
+
+David Miller (1):
+      Bluetooth: Do not ignore errors returned from strict_strtol()
+
+Gustavo F. Padovan (13):
+      Bluetooth: Merge l2cap_chan_create() in the l2cap_sock_alloc()
+      Bluetooth: Add l2cap_chan_ops abstraction
+      Bluetooth: add recv() callback to l2cap_chan_ops
+      Bluetooth: add close() callback to l2cap_chan_ops
+      Bluetooth: Add state tracking to struct l2cap_chan
+      Bluetooth: Add refcnt to struct l2cap_chan
+      Bluetooth: Make timer functions generic
+      Bluetooth: keep reference if any ERTM timer is enabled
+      Bluetooth: Don't forget to check for LE_LINK
+      Bluetooth: use bit operation on conf_state
+      Bluetooth: Use bit operations on conn_state
+      Bluetooth: Fix locking in blacklist code
+      Merge master.kernel.org:/.../padovan/bluetooth-2.6
+
+Ilia Kolomisnky (1):
+      Bluetooth: Fix L2CAP connection establishment
+
+Johan Hedberg (1):
+      Bluetooth: Fix accepting connect requests for defer_setup
+
+Luiz Augusto von Dentz (2):
+      Bluetooth: fix shutdown on SCO sockets
+      Bluetooth: Fix L2CAP security check
+
+Ville Tervo (1):
+      Bluetooth: Do not send SET_EVENT_MASK for 1.1 and earlier devices
+
+Vinicius Costa Gomes (13):
+      Bluetooth: Add support for using the crypto subsystem
+      Bluetooth: Add support for LE Start Encryption
+      Bluetooth: Remove debug statements
+      Bluetooth: Add support for resuming socket when SMP is finished
+      Bluetooth: Fix initial security level of LE links
+      Bluetooth: Update the security level when link is encrypted
+      Bluetooth: Add support for building pairing commands
+      Bluetooth: Add support for Pairing features exchange
+      Bluetooth: Add support for SMP timeout
+      Bluetooth: Add key size checks for SMP
+      Bluetooth: Fix crash when setting a LE socket to ready
+      Bluetooth: Remove useless access to the socket
+      Bluetooth: Fix not setting the chan state
+
+ include/net/bluetooth/hci.h      |   34 ++
+ include/net/bluetooth/hci_core.h |   13 +
+ include/net/bluetooth/l2cap.h    |   95 ++++--
+ include/net/bluetooth/mgmt.h     |   10 +
+ include/net/bluetooth/smp.h      |   46 +++
+ net/bluetooth/Kconfig            |    8 +
+ net/bluetooth/Makefile           |    2 +-
+ net/bluetooth/hci_conn.c         |   56 +++-
+ net/bluetooth/hci_core.c         |  113 ++++++
+ net/bluetooth/hci_event.c        |   69 ++++
+ net/bluetooth/hci_sock.c         |   70 +----
+ net/bluetooth/l2cap_core.c       |  700 +++++++++++++++++++-------------------
+ net/bluetooth/l2cap_sock.c       |   97 +++++-
+ net/bluetooth/mgmt.c             |   72 ++++-
+ net/bluetooth/smp.c              |  533 +++++++++++++++++++++++++++++
+ 15 files changed, 1460 insertions(+), 458 deletions(-)
+ create mode 100644 net/bluetooth/smp.c
+
