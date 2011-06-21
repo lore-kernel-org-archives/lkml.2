@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932117Ab1FUKBY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 06:01:24 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37197 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111Ab1FUKBW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 06:01:22 -0400
-Date: Tue, 21 Jun 2011 11:00:57 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH] ARM: smp: Fix the CPU hotplug race with scheduler.
-Message-ID: <20110621100057.GB23802@n2100.arm.linux.org.uk>
-References: <20110620101438.GD2082@n2100.arm.linux.org.uk> <4DFF20B3.7010209@ti.com> <20110620104415.GF2082@n2100.arm.linux.org.uk> <4DFF255E.5030308@ti.com> <20110620111336.GG2082@n2100.arm.linux.org.uk> <4DFF2E37.8030602@ti.com> <20110620114019.GH2082@n2100.arm.linux.org.uk> <20110620142338.GL2082@n2100.arm.linux.org.uk> <4DFF5F29.2000904@ti.com> <4E005F92.8030208@ti.com>
+	id S932182Ab1FUKDS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 06:03:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39452 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932111Ab1FUKDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 06:03:15 -0400
+Subject: [PATCH 1/2] vhost: init used ring after backend was set
+To: netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mst@redhat.com
+From: Jason Wang <jasowang@redhat.com>
+Date: Tue, 21 Jun 2011 18:04:27 +0800
+Message-ID: <20110621100426.6777.68855.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E005F92.8030208@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 02:38:34PM +0530, Santosh Shilimkar wrote:
-> Russell,
->
-> On 6/20/2011 8:24 PM, Santosh Shilimkar wrote:
->> On 6/20/2011 7:53 PM, Russell King - ARM Linux wrote:
->>> So, as loops_per_jiffy is not local to this function, the compiler has
->>> to write out that zero value, before calling calibrate_delay_converge(),
->>> and loops_per_jiffy only becomes non-zero _after_
->>> calibrate_delay_converge()
->>> has returned. This opens the window and allows the spinlock debugging
->>> code to explode.
->>>
->>> This patch closes the window completely, by only writing to
->>> loops_per_jiffy
->>> only when we have a real value for it.
->>>
->>> This allows me to boot 3.0.0-rc3 on Versatile Express (4 CPU) whereas
->>> without this it fails with spinlock lockup and rcu problems.
->>>
->>> init/calibrate.c | 14 ++++++++------
->>> 1 files changed, 8 insertions(+), 6 deletions(-)
->>>
->> I am away from my board now. Will test this change.
-> Have tested your change and it seems to fix the crash I
-> was observing. Are you planning to send this fix for rc5?
+This patch move the used ring initialization after backend was set. This make us
+possible to disable the backend and tweak the used ring then restart. And it's
+also useful for log setting as used ring have been checked then.
 
-Yes.  I think sending CPUs into infinite loops in the spinlock code is
-definitely sufficiently serious that it needs to go to Linus ASAP.
-It'd be nice to have a tested-by line though.
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/vhost/net.c   |    4 ++++
+ drivers/vhost/vhost.c |   11 +++--------
+ drivers/vhost/vhost.h |    1 +
+ 3 files changed, 8 insertions(+), 8 deletions(-)
 
->> btw, the online-active race is still open even with this patch close
->> and should be fixed.
->>
-> The only problem remains is waiting for active mask before
-> marking CPU online. Shall I refresh my patch with only
-> this change then ?
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index e224a92..957421b 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -637,6 +637,10 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
+ 		vhost_net_enable_vq(n, vq);
+ 	}
+ 
++	r = init_used(vq);
++	if (r)
++		goto err_vq;
++
+ 	mutex_unlock(&vq->mutex);
+ 
+ 	if (oldsock) {
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 2a10786..43a3fc6 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -578,15 +578,14 @@ static long vhost_set_memory(struct vhost_dev *d, struct vhost_memory __user *m)
+ 	return 0;
+ }
+ 
+-static int init_used(struct vhost_virtqueue *vq,
+-		     struct vring_used __user *used)
++int init_used(struct vhost_virtqueue *vq)
+ {
+-	int r = put_user(vq->used_flags, &used->flags);
++	int r = put_user(vq->used_flags, &vq->used->flags);
+ 
+ 	if (r)
+ 		return r;
+ 	vq->signalled_used_valid = false;
+-	return get_user(vq->last_used_idx, &used->idx);
++	return get_user(vq->last_used_idx, &vq->used->idx);
+ }
+ 
+ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
+@@ -701,10 +700,6 @@ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
+ 			}
+ 		}
+ 
+-		r = init_used(vq, (struct vring_used __user *)(unsigned long)
+-			      a.used_user_addr);
+-		if (r)
+-			break;
+ 		vq->log_used = !!(a.flags & (0x1 << VHOST_VRING_F_LOG));
+ 		vq->desc = (void __user *)(unsigned long)a.desc_user_addr;
+ 		vq->avail = (void __user *)(unsigned long)a.avail_user_addr;
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index 64889d2..bd9f196 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -147,6 +147,7 @@ int vhost_get_vq_desc(struct vhost_dev *, struct vhost_virtqueue *,
+ 		      struct vhost_log *log, unsigned int *log_num);
+ void vhost_discard_vq_desc(struct vhost_virtqueue *, int n);
+ 
++int init_used(struct vhost_virtqueue *);
+ int vhost_add_used(struct vhost_virtqueue *, unsigned int head, int len);
+ int vhost_add_used_n(struct vhost_virtqueue *, struct vring_used_elem *heads,
+ 		     unsigned count);
 
-I already have that as a separate change.
