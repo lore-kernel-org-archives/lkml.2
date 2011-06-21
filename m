@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab1FUOnx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 10:43:53 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:51929 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750811Ab1FUOnt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 10:43:49 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=A/nlix059rFkuzz+ettmJbKhPkYXCUbqfnZxRm1b8ZhCsbtYTFOw96zEiZKz4Qjiwmxi2qdi3DuZc7/zYpRjEhl/D4Ex2M9/9h9M5o1JjEXLl1CV2YGIOUVfc9+Hcwr5;
-Date: Tue, 21 Jun 2011 07:43:44 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Stephen Boyd <bebarino@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] configs: Include MODULE_*() when CONFIG_IKCONFIG_PROC=n
-Message-Id: <20110621074344.990cde5f.rdunlap@xenotime.net>
-In-Reply-To: <1308636747-2360-1-git-send-email-bebarino@gmail.com>
-References: <1308636747-2360-1-git-send-email-bebarino@gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1756849Ab1FUOn7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 10:43:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54511 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754613Ab1FUOn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 10:43:56 -0400
+Date: Tue, 21 Jun 2011 16:43:46 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Cong Wang <amwang@redhat.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [PATCH 1/3] mm: completely disable THP by
+ transparent_hugepage=never
+Message-ID: <20110621144346.GQ20843@redhat.com>
+References: <20110620165844.GA9396@suse.de>
+ <4DFF7E3B.1040404@redhat.com>
+ <4DFF7F0A.8090604@redhat.com>
+ <4DFF8106.8090702@redhat.com>
+ <4DFF8327.1090203@redhat.com>
+ <4DFF84BB.3050209@redhat.com>
+ <4DFF8848.2060802@redhat.com>
+ <20110620182558.GF4749@redhat.com>
+ <20110620192117.GG20843@redhat.com>
+ <4E00192E.70901@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E00192E.70901@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jun 2011 23:12:27 -0700 Stephen Boyd wrote:
+On Tue, Jun 21, 2011 at 12:08:14PM +0800, Cong Wang wrote:
+> The thing is that we can save ~10K by adding 3 lines of code as this
+> patch showed, where else in kernel can you save 10K by 3 lines of code?
+> (except some kfree() cases, of course) So, again, why not have it? ;)
 
-> If CONFIG_IKCONFIG=m but CONFIG_IKCONFIG_PROC=n we get a module that has
-> no MODULE_LICENSE definition. Move the MODULE_*() definitions outside
-> the CONFIG_IKCONFIG_PROC #ifdef to prevent this configuration from
-> tainting the kernel.
-> 
-> Signed-off-by: Stephen Boyd <bebarino@gmail.com>
-> Cc: Randy Dunlap <rdunlap@xenotime.net>
+Because you could save it with a more complicated patch that doesn't
+cripple down functionality.
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+Sure you can save a ton more ram with one liner patches, just search
+the callers of alloc_large_system_hash and reduce the number of
+entries everywhere. Are you using dhash_entries=1 ihash_entries=1?
+That alone would save a ton more than ~10k so you should add it to
+command line if it isn't there but there are other hashes like these
+that don't have dhash_entries parameters. You could add
+khugepaged_hash_slots parameter too for example and set it == 1 with a
+parameter to avoid crippling down functionality, that wouldn't even
+increase complexity. Those kind of approaches that don't cripple down
+features, are ok. Remvoing sysfs register is not ok and there's no
+need of adding a =0 parameter when you can achieve the memory saving
+without totally losing functionality.
 
-Thanks.
+I booted with 128m ram and I get 128KB (not ~8KB) allocated in the
+dentry hash, 65KB allocated in the inode hash, 65KB in the TCP
+established hash, 8KB in the route cache hash, 262KB in the bind hash,
+10KB in the UDP hash, you can all reduce those to a few hundred bytes
+and it'll still work just fine. So yeah with one liner patches you can
+surely achieve more than this ~8KB gain, and with dhash_entries=1
+ihash_entries=1 you'll already save hugely more than by booting with
+transparent_hugepage=0 that avoids registering in sysfs and cripple
+down functionality. If you make the khugepaged slots hash configurable
+in size (keeping the current default) with a new param it will
+_increase_ functionality as it will also allow to _increase_ its size
+on huge systems or in special configurations that may benefit from a
+larger hash.
 
-> ---
->  kernel/configs.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/configs.c b/kernel/configs.c
-> index b4066b4..42e8fa0 100644
-> --- a/kernel/configs.c
-> +++ b/kernel/configs.c
-> @@ -92,8 +92,8 @@ static void __exit ikconfig_cleanup(void)
->  module_init(ikconfig_init);
->  module_exit(ikconfig_cleanup);
->  
-> +#endif /* CONFIG_IKCONFIG_PROC */
-> +
->  MODULE_LICENSE("GPL");
->  MODULE_AUTHOR("Randy Dunlap");
->  MODULE_DESCRIPTION("Echo the kernel .config file used to build the kernel");
-> -
-> -#endif /* CONFIG_IKCONFIG_PROC */
-> -- 
+Again if you want to optimize this ~8KB gain, I recommend to add a
+param to make the hash size dynamic not to prevent the feature to ever
+be enabled again, so by making the code more complex at least it will
+also be useful if we want to increase the size hash at boot time (not
+only to decrease it).
 
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+I guess however you may run into command line stringsize limit if you
+add things like dhash_entries=1 for every single hash in the kernel...
