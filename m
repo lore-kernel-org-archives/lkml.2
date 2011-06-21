@@ -1,93 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756519Ab1FUNUQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 09:20:16 -0400
-Received: from mx1.melware.net ([78.47.171.162]:58536 "EHLO mx1.melware.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752394Ab1FUNUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 09:20:13 -0400
-Date: Tue, 21 Jun 2011 15:20:12 +0200 (CEST)
-From: Armin Schindler <armin@melware.de>
-To: Matthew Wilcox <matthew@wil.cx>
-cc: Linux Kernel Mailinglist <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org
-Subject: Re: Map PCI resource to user space problem.
-In-Reply-To: <20110621122312.GG19693@parisc-linux.org>
-Message-ID: <alpine.DEB.2.00.1106211510160.28972@justus.melware.de>
-References: <alpine.DEB.2.00.1106201132170.14886@justus.melware.de> <alpine.DEB.2.00.1106201830260.17005@justus.melware.de> <BANLkTim9fBeY3L_+M9B5GECs8QtuAeUrTw@mail.gmail.com> <20110621122312.GG19693@parisc-linux.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-Organization: Cytronics & Melware
+	id S1756475Ab1FUNXL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 09:23:11 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:39066 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937Ab1FUNXI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 09:23:08 -0400
+Date: Tue, 21 Jun 2011 14:22:56 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 4/4] ACPI, APEI, Add APEI _OSC support
+Message-ID: <20110621132256.GB4902@srcf.ucam.org>
+References: <1308640587-24502-1-git-send-email-ying.huang@intel.com>
+ <1308640587-24502-5-git-send-email-ying.huang@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308640587-24502-5-git-send-email-ying.huang@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Jun 2011, Matthew Wilcox wrote:
-> On Mon, Jun 20, 2011 at 10:41:38AM -0600, Bjorn Helgaas wrote:
->> On Mon, Jun 20, 2011 at 10:38 AM, Armin Schindler <armin@melware.de> wrote:
->>> On Mon, 20 Jun 2011, Armin Schindler wrote:
->>>>
->>>> Hello,
->>>>
->>>> when I try to map PCI resource of size < PAGE_SIZE to user space
->>>> with e.g. remap_pfn_range() the mapping seems to be created,
->>>> but the access to the PCI device just doesn't work (read returns 0xff).
->>>>
->>>> The same happens when using sysfs. The device has
->>>> # ls -al /sys/bus/pci/devices/0000\:02\:09.0/resource*
->>>> -rw------- 1 root root ? ? 512 Jun 20 11:33
->>>> /sys/bus/pci/devices/0000:02:09.0/resource0
->>>> -rw------- 1 root root ? ? 256 Jun 20 11:33
->>>> /sys/bus/pci/devices/0000:02:09.0/resource1
->>>> -rw------- 1 root root 8388608 Jun 20 11:33
->>>> /sys/bus/pci/devices/0000:02:09.0/resource2
->>>> -rw------- 1 root root ?262144 Jun 20 11:33
->>>> /sys/bus/pci/devices/0000:02:09.0/resource3
->>>>
->>>> and when I mmap() resource0, a valid address is returned, but reading the
->>>> area always returns 0xff.
->>>>
->>>> Since a kernel driver can access resource0 here without problems when
->>>> using
->>>> ioremap(), I'm not sure what is wrong with the sysfs entry for user space
->>>> (or using remap_pfn_range() in own mmap function).
->>>> The only hint I have so far is the size, which is smaller than PAGE_SIZE.
->>>
->>> I found the reason. It is not the size of the resource.
->>> The resource0 is assigned to a not page-aligned address.
->>> Example, the pci resource0 has address 0xfe5ffc00. mmap()ing it will
->>> actually seems to map address 0xfe5ff000 and the user needs to add 0xc00 to
->>> the address returned by mmap().
->
-> Oh, ugh.  That's enforced outside the PCI layer.
-> For example (from sys_x86_64.c):
->
-> SYSCALL_DEFINE6(mmap, unsigned long, addr, unsigned long, len,
->                unsigned long, prot, unsigned long, flags,
->                unsigned long, fd, unsigned long, off)
-> {
->        long error;
->        error = -EINVAL;
->        if (off & ~PAGE_MASK)
->                goto out;
->
-> ie the very first check that the _arch specific_ code does is to check
-> the offset is page-aligned.
+On Tue, Jun 21, 2011 at 03:16:27PM +0800, Huang Ying wrote:
 
-The offset given to mmap() is not the problem. When you want to mmap
-a PCI memory BAR via sysfs you normaly use offset=0 to get the BAR from 
-beginning. The problem is the base-address (physical address of that BAR
-assigned by PCI), which is not page-aligned.
+> +	rc = apei_osc_setup();
+> +	if (rc)
+> +		pr_info(GHES_PFX "Evaluate APEI _OSC failed!\n");
 
-> We can't fix this.  There may be other BARs mapped into the same page,
-> so allowing the user to mmap this BAR would give them access to those
-> other BARs that they may not be entitled to access.
+Hm. This is maybe a little strong. It'd be valid for a machine to return 
+an error here but still have the GHES functionality enabled via the 
+generic call, but this message would still show up and potentially 
+confuse the user. Can we keep a flag to check whether the generic method 
+gave us control, and only give the error if both fail to enable it?
 
-If a page is 'reused' like that and remap functions for user
-are page aligned only, then yes.
-Besides the access problem to other BARs, the user doesn't get a correct
-address from mmap().
-
-Armin
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
