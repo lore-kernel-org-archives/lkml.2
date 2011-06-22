@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518Ab1FVJbS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 05:31:18 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:58462 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754242Ab1FVJbR convert rfc822-to-8bit (ORCPT
+	id S1755287Ab1FVJfJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 05:35:09 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:38431 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753849Ab1FVJfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 05:31:17 -0400
+	Wed, 22 Jun 2011 05:35:08 -0400
+X-IronPort-AV: E=Sophos;i="4.65,405,1304294400"; 
+   d="scan'208";a="6419252"
+Subject: Re: [PATCH x86 kvm] Fix register corruption in pvclock_scale_delta
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Avi Kivity <avi@redhat.com>
+CC: Zachary Amsden <zamsden@redhat.com>, kvm <kvm@vger.kernel.org>,
+        Linux-kernel <linux-kernel@vger.kernel.org>,
+        Ulrich Obergfell <uobergfe@redhat.com>
+In-Reply-To: <4DFDEF2A.7050307@redhat.com>
+References: <4DF97D6C.2080900@redhat.com>  <4DFDEF2A.7050307@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Wed, 22 Jun 2011 10:35:02 +0100
+Message-ID: <1308735302.6920.172.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTikqeKg=Mr9BxVYL7x=9k_jzGeLnQQ@mail.gmail.com>
-References: <1308699521-20556-1-git-send-email-per.forlin@linaro.org>
-	<1308699521-20556-3-git-send-email-per.forlin@linaro.org>
-	<BANLkTikqeKg=Mr9BxVYL7x=9k_jzGeLnQQ@mail.gmail.com>
-Date: Wed, 22 Jun 2011 11:31:16 +0200
-Message-ID: <BANLkTi=GT=1u0YEtUaJre24BOhRyDNGUSg@mail.gmail.com>
-Subject: Re: [PATCH v7 02/11] omap_hsmmc: add support for pre_req and post_req
-From: Per Forlin <per.forlin@linaro.org>
-To: Nickolay Nickolaev <nicknickolaev@gmail.com>
-Cc: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, Venkatraman S <svenkatr@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 June 2011 10:51, Nickolay Nickolaev <nicknickolaev@gmail.com> wrote:
-> Hello,
->
-> this one's causing me compilation trouble troubles when CONFIG_DMA_ENGINE is
-> not defined.
->
-I don't see this issue when I compile the kernel for a Pandaboard
-without CONFIG_DMA_ENGINE being set. Could you please clarify or show
-me your build log?
-I don't see how host->next_data.cookie is connected to DMA_ENGINE.
+On Sun, 2011-06-19 at 15:44 +0300, Avi Kivity wrote:
+> On 06/16/2011 06:50 AM, Zachary Amsden wrote:
+> > The 128-bit multiply in pvclock.h was missing an output constraint for 
+> > EDX which caused a register corruption to appear.
 
-> On Wed, Jun 22, 2011 at 2:38 AM, Per Forlin <per.forlin@linaro.org> wrote:
->>
->> @@ -2077,6 +2155,7 @@ static int __init omap_hsmmc_probe(struct
->> platform_device *pdev)
->>        host->mapbase   = res->start;
->>        host->base      = ioremap(host->mapbase, SZ_4K);
->>        host->power_mode = MMC_POWER_OFF;
->> +       host->next_data.cookie = 1;
->>
->>        platform_set_drvdata(pdev, host);
->>        INIT_WORK(&host->mmc_carddetect_work, omap_hsmmc_detect);
->> --
->> 1.7.4.1
->>
->>
->
-> Maybe we can wrap it in a function as the others.
->
-> regards,
-> Nikolay Nikolaev
->
+Was there any particular symptom associated with corruption at that
+particular point or just general badness?
 
-Regards,
-Per
+>   Thanks to Ulrich 
+> > for diagnosing the EDX corruption and Avi for providing this fix 
+> > (which now I am sending back to you Avi..)
+> 
+> Applied and queued, thanks.
+
+Seems like a stable candidate also?
+
+Ian.
+
