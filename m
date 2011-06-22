@@ -1,307 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758233Ab1FVPKH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 11:10:07 -0400
-Received: from gate.crashing.org ([63.228.1.57]:51786 "EHLO gate.crashing.org"
+	id S932279Ab1FVPN6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 11:13:58 -0400
+Received: from hera.kernel.org ([140.211.167.34]:38778 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758111Ab1FVPKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 11:10:06 -0400
-From: Kumar Gala <galak@kernel.crashing.org>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Subject: [PATCH v2 1/3] driver core: Add ability for arch code to setup pdev_archdata
-Date: Wed, 22 Jun 2011 10:09:56 -0500
-Message-Id: <1308755396-17988-1-git-send-email-galak@kernel.crashing.org>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1308744176-24491-1-git-send-email-galak@kernel.crashing.org>
-References: <1308744176-24491-1-git-send-email-galak@kernel.crashing.org>
+	id S932180Ab1FVPN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 11:13:56 -0400
+Date: Wed, 22 Jun 2011 15:13:41 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-dd4e5d3ac4a76b868daf30e35bd572def96c30ed@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20110621153806.185242734@chello.nl>
+References: <20110621153806.185242734@chello.nl>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/printk] lockdep: Fix trace_[soft,hard]irqs_[on,off]() recursion
+Git-Commit-ID: dd4e5d3ac4a76b868daf30e35bd572def96c30ed
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 22 Jun 2011 15:13:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some architectures we need to setup pdev_archdata before we add the
-device.  Waiting til a bus_notifier is too late since we might need the
-pdev_archdata in the bus notifier.  One example is setting up of dma_mask
-pointers such that it can be used in a bus_notifier.
+Commit-ID:  dd4e5d3ac4a76b868daf30e35bd572def96c30ed
+Gitweb:     http://git.kernel.org/tip/dd4e5d3ac4a76b868daf30e35bd572def96c30ed
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Tue, 21 Jun 2011 17:17:27 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 22 Jun 2011 11:39:34 +0200
 
-We add noop version of arch_setup_pdev_archdata() in
-<asm-generic/platform_device.h> and allow the arch code to override with
-access the full definitions of struct device, struct platform_device, and
-struct pdev_archdata.
+lockdep: Fix trace_[soft,hard]irqs_[on,off]() recursion
 
-Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+Commit:
+
+  1efc5da3cf56: [PATCH] order of lockdep off/on in vprintk() should be changed
+
+explains the reason for having raw_local_irq_*() and lockdep_off()
+in printk(). Instead of working around the broken recursion detection
+of interrupt state tracking, fix it.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: efault@gmx.de
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20110621153806.185242734@chello.nl
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
-* Added license, and comments about arch_setup_pdev_archdata()
-  per Mike's comments
+ kernel/lockdep.c |   30 ++++++++++++++++++++----------
+ 1 files changed, 20 insertions(+), 10 deletions(-)
 
- arch/alpha/include/asm/platform_device.h      |    1 +
- arch/arm/include/asm/platform_device.h        |    1 +
- arch/avr32/include/asm/platform_device.h      |    1 +
- arch/blackfin/include/asm/platform_device.h   |    1 +
- arch/cris/include/asm/platform_device.h       |    1 +
- arch/frv/include/asm/platform_device.h        |    1 +
- arch/h8300/include/asm/platform_device.h      |    1 +
- arch/ia64/include/asm/platform_device.h       |    1 +
- arch/m32r/include/asm/platform_device.h       |    1 +
- arch/m68k/include/asm/platform_device.h       |    1 +
- arch/microblaze/include/asm/platform_device.h |    1 +
- arch/mips/include/asm/platform_device.h       |    1 +
- arch/mn10300/include/asm/platform_device.h    |    1 +
- arch/parisc/include/asm/platform_device.h     |    1 +
- arch/powerpc/include/asm/platform_device.h    |    1 +
- arch/s390/include/asm/platform_device.h       |    1 +
- arch/score/include/asm/platform_device.h      |    1 +
- arch/sh/include/asm/platform_device.h         |    1 +
- arch/sparc/include/asm/platform_device.h      |    1 +
- arch/tile/include/asm/platform_device.h       |    1 +
- arch/unicore32/include/asm/platform_device.h  |    1 +
- arch/x86/include/asm/platform_device.h        |    1 +
- arch/xtensa/include/asm/platform_device.h     |    1 +
- drivers/base/platform.c                       |    2 +
- include/asm-generic/platform_device.h         |   30 +++++++++++++++++++++++++
- 25 files changed, 55 insertions(+), 0 deletions(-)
- create mode 100644 arch/alpha/include/asm/platform_device.h
- create mode 100644 arch/arm/include/asm/platform_device.h
- create mode 100644 arch/avr32/include/asm/platform_device.h
- create mode 100644 arch/blackfin/include/asm/platform_device.h
- create mode 100644 arch/cris/include/asm/platform_device.h
- create mode 100644 arch/frv/include/asm/platform_device.h
- create mode 100644 arch/h8300/include/asm/platform_device.h
- create mode 100644 arch/ia64/include/asm/platform_device.h
- create mode 100644 arch/m32r/include/asm/platform_device.h
- create mode 100644 arch/m68k/include/asm/platform_device.h
- create mode 100644 arch/microblaze/include/asm/platform_device.h
- create mode 100644 arch/mips/include/asm/platform_device.h
- create mode 100644 arch/mn10300/include/asm/platform_device.h
- create mode 100644 arch/parisc/include/asm/platform_device.h
- create mode 100644 arch/powerpc/include/asm/platform_device.h
- create mode 100644 arch/s390/include/asm/platform_device.h
- create mode 100644 arch/score/include/asm/platform_device.h
- create mode 100644 arch/sh/include/asm/platform_device.h
- create mode 100644 arch/sparc/include/asm/platform_device.h
- create mode 100644 arch/tile/include/asm/platform_device.h
- create mode 100644 arch/unicore32/include/asm/platform_device.h
- create mode 100644 arch/x86/include/asm/platform_device.h
- create mode 100644 arch/xtensa/include/asm/platform_device.h
- create mode 100644 include/asm-generic/platform_device.h
-
-diff --git a/arch/alpha/include/asm/platform_device.h b/arch/alpha/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/alpha/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/arm/include/asm/platform_device.h b/arch/arm/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/arm/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/avr32/include/asm/platform_device.h b/arch/avr32/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/avr32/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/blackfin/include/asm/platform_device.h b/arch/blackfin/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/blackfin/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/cris/include/asm/platform_device.h b/arch/cris/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/cris/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/frv/include/asm/platform_device.h b/arch/frv/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/frv/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/h8300/include/asm/platform_device.h b/arch/h8300/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/h8300/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/ia64/include/asm/platform_device.h b/arch/ia64/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/ia64/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/m32r/include/asm/platform_device.h b/arch/m32r/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/m32r/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/m68k/include/asm/platform_device.h b/arch/m68k/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/m68k/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/microblaze/include/asm/platform_device.h b/arch/microblaze/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/microblaze/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/mips/include/asm/platform_device.h b/arch/mips/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/mips/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/mn10300/include/asm/platform_device.h b/arch/mn10300/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/mn10300/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/parisc/include/asm/platform_device.h b/arch/parisc/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/parisc/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/powerpc/include/asm/platform_device.h b/arch/powerpc/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/powerpc/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/s390/include/asm/platform_device.h b/arch/s390/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/s390/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/score/include/asm/platform_device.h b/arch/score/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/score/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/sh/include/asm/platform_device.h b/arch/sh/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/sh/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/sparc/include/asm/platform_device.h b/arch/sparc/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/sparc/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/tile/include/asm/platform_device.h b/arch/tile/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/tile/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/unicore32/include/asm/platform_device.h b/arch/unicore32/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/unicore32/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/x86/include/asm/platform_device.h b/arch/x86/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/x86/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/arch/xtensa/include/asm/platform_device.h b/arch/xtensa/include/asm/platform_device.h
-new file mode 100644
-index 0000000..01452c3
---- /dev/null
-+++ b/arch/xtensa/include/asm/platform_device.h
-@@ -0,0 +1 @@
-+#include <asm-generic/platform_device.h>
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index 1c291af..c25e0c0 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -20,6 +20,7 @@
- #include <linux/err.h>
- #include <linux/slab.h>
- #include <linux/pm_runtime.h>
-+#include <asm/platform_device.h>
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 63437d0..81968a0 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -2478,15 +2478,10 @@ mark_held_locks(struct task_struct *curr, enum mark_type mark)
+ /*
+  * Hardirqs will be enabled:
+  */
+-void trace_hardirqs_on_caller(unsigned long ip)
++static void __trace_hardirqs_on_caller(unsigned long ip)
+ {
+ 	struct task_struct *curr = current;
  
- #include "base.h"
+-	time_hardirqs_on(CALLER_ADDR0, ip);
+-
+-	if (unlikely(!debug_locks || current->lockdep_recursion))
+-		return;
+-
+ 	if (DEBUG_LOCKS_WARN_ON(unlikely(early_boot_irqs_disabled)))
+ 		return;
  
-@@ -173,6 +174,7 @@ struct platform_device *platform_device_alloc(const char *name, int id)
- 		pa->pdev.id = id;
- 		device_initialize(&pa->pdev.dev);
- 		pa->pdev.dev.release = platform_device_release;
-+		arch_setup_pdev_archdata(&pa->pdev);
+@@ -2502,8 +2497,6 @@ void trace_hardirqs_on_caller(unsigned long ip)
+ 	/* we'll do an OFF -> ON transition: */
+ 	curr->hardirqs_enabled = 1;
+ 
+-	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
+-		return;
+ 	if (DEBUG_LOCKS_WARN_ON(current->hardirq_context))
+ 		return;
+ 	/*
+@@ -2525,6 +2518,21 @@ void trace_hardirqs_on_caller(unsigned long ip)
+ 	curr->hardirq_enable_event = ++curr->irq_events;
+ 	debug_atomic_inc(hardirqs_on_events);
+ }
++
++void trace_hardirqs_on_caller(unsigned long ip)
++{
++	time_hardirqs_on(CALLER_ADDR0, ip);
++
++	if (unlikely(!debug_locks || current->lockdep_recursion))
++		return;
++
++	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
++		return;
++
++	current->lockdep_recursion = 1;
++	__trace_hardirqs_on_caller(ip);
++	current->lockdep_recursion = 0;
++}
+ EXPORT_SYMBOL(trace_hardirqs_on_caller);
+ 
+ void trace_hardirqs_on(void)
+@@ -2574,7 +2582,7 @@ void trace_softirqs_on(unsigned long ip)
+ {
+ 	struct task_struct *curr = current;
+ 
+-	if (unlikely(!debug_locks))
++	if (unlikely(!debug_locks || current->lockdep_recursion))
+ 		return;
+ 
+ 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
+@@ -2585,6 +2593,7 @@ void trace_softirqs_on(unsigned long ip)
+ 		return;
  	}
  
- 	return pa ? &pa->pdev : NULL;
-diff --git a/include/asm-generic/platform_device.h b/include/asm-generic/platform_device.h
-new file mode 100644
-index 0000000..c543add
---- /dev/null
-+++ b/include/asm-generic/platform_device.h
-@@ -0,0 +1,30 @@
-+/*
-+ * include/asm-generic/platform_device.h
-+ *
-+ * Provides a callout when we allocate a platform device to architecture code
-+ * to update archdata.
-+ *
-+ * Copyright 2011 Freescale Semiconductor, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2, or (at your option)
-+ * any later version.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * (for example /usr/src/linux/COPYING); if not, write to the Free
-+ * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+#ifndef __ASM_GENERIC_PLATFORM_DEVICE_H_
-+#define __ASM_GENERIC_PLATFORM_DEVICE_H_
-+
-+struct platform_device;
-+
-+/*
-+ * an architecture can override to define arch_setup_pdev_archdata
-+ */
-+#ifndef arch_setup_pdev_archdata
-+static inline void arch_setup_pdev_archdata(struct platform_device *pdev) { }
-+#endif
-+
-+#endif /* __ASM_GENERIC_PLATFORM_DEVICE_H_ */
--- 
-1.7.3.4
-
++	current->lockdep_recursion = 1;
+ 	/*
+ 	 * We'll do an OFF -> ON transition:
+ 	 */
+@@ -2599,6 +2608,7 @@ void trace_softirqs_on(unsigned long ip)
+ 	 */
+ 	if (curr->hardirqs_enabled)
+ 		mark_held_locks(curr, SOFTIRQ);
++	current->lockdep_recursion = 0;
+ }
+ 
+ /*
+@@ -2608,7 +2618,7 @@ void trace_softirqs_off(unsigned long ip)
+ {
+ 	struct task_struct *curr = current;
+ 
+-	if (unlikely(!debug_locks))
++	if (unlikely(!debug_locks || current->lockdep_recursion))
+ 		return;
+ 
+ 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
