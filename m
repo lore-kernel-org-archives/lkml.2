@@ -1,145 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932384Ab1FVPwe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 11:52:34 -0400
-Received: from mail-gx0-f180.google.com ([209.85.161.180]:65211 "EHLO
-	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753924Ab1FVPwd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 11:52:33 -0400
-X-Greylist: delayed 1387 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Jun 2011 11:52:32 EDT
+	id S932449Ab1FVPxO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 11:53:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49476 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932297Ab1FVPxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 11:53:13 -0400
+Date: Wed, 22 Jun 2011 17:53:09 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
+Subject: Re: [PATCH 4/7] memcg: update numa information based on event counter
+Message-ID: <20110622155309.GH14343@tiehlicka.suse.cz>
+References: <20110616124730.d6960b8b.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110616125400.1145a4e2.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20110622153353.GA25799@S2100-06.ap.freescale.net>
-References: <1308410354-21387-1-git-send-email-shawn.guo@linaro.org>
- <1308410354-21387-2-git-send-email-shawn.guo@linaro.org> <20110618161934.GH8195@ponder.secretlab.ca>
- <20110619073000.GA23171@S2100-06.ap.freescale.net> <20110621135558.GB9228@S2101-09.ap.freescale.net>
- <BANLkTim4vunTm1176MRw3pqRZnunu4=9jg@mail.gmail.com> <20110622153353.GA25799@S2100-06.ap.freescale.net>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 22 Jun 2011 09:52:11 -0600
-X-Google-Sender-Auth: Kfi3oW_yib3Ll_25v_56KF54z_4
-Message-ID: <BANLkTimsk2eWKPi2hnHbaAn-vSMKmdYsGQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] serial/imx: add device tree support
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: patches@linaro.org, netdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, Jason Liu <jason.hui@linaro.org>,
-        linux-kernel@vger.kernel.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        David Gibson <david@gibson.dropbear.id.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110616125400.1145a4e2.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 9:33 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
-> On Tue, Jun 21, 2011 at 01:13:50PM -0600, Grant Likely wrote:
->> On Tue, Jun 21, 2011 at 7:55 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
->> > Hi Grant,
->> >
->> > I just gave a try to use aliases node for identify the device index.
->> > Please take a look and let me know if it's what you expect.
->>
->> Thanks Shawn.  This is definitely on track.  Comments below...
->>
->> >
->> > On Sun, Jun 19, 2011 at 03:30:02PM +0800, Shawn Guo wrote:
->> > [...]
->> >> > >
->> >> > > +#ifdef CONFIG_OF
->> >> > > +static int serial_imx_probe_dt(struct imx_port *sport,
->> >> > > +         struct platform_device *pdev)
->> >> > > +{
->> >> > > + struct device_node *node = pdev->dev.of_node;
->> >> > > + const __be32 *line;
->> >> > > +
->> >> > > + if (!node)
->> >> > > +         return -ENODEV;
->> >> > > +
->> >> > > + line = of_get_property(node, "id", NULL);
->> >> > > + if (!line)
->> >> > > +         return -ENODEV;
->> >> > > +
->> >> > > + sport->port.line = be32_to_cpup(line) - 1;
->> >> >
->> >> > Hmmm, I really would like to be rid of this.  Instead, if uarts must
->> >> > be enumerated, the driver should look for a /aliases/uart* property
->> >> > that matches the of_node.  Doing it that way is already established in
->> >> > the OpenFirmware documentation, and it ensures there are no overlaps
->> >> > in the global namespace.
->> >> >
->> >>
->> >> I just gave one more try to avoid using 'aliases', and you gave a
->> >> 'no' again.  Now, I know how hard you are on this.  Okay, I start
->> >> thinking about your suggestion seriously :)
->> >>
->> >> > We do need some infrastructure to make that easier though.  Would you
->> >> > have time to help put that together?
->> >> >
->> >> Ok, I will give it a try.
->> >>
->> >
->> > diff --git a/arch/arm/boot/dts/imx51-babbage.dts b/arch/arm/boot/dts/imx51-babbage.dts
->> > index da0381a..f4a5c3c 100644
->> > --- a/arch/arm/boot/dts/imx51-babbage.dts
->> > +++ b/arch/arm/boot/dts/imx51-babbage.dts
->> > @@ -18,6 +18,12 @@
->> >        compatible = "fsl,imx51-babbage", "fsl,imx51";
->> >        interrupt-parent = <&tzic>;
->> >
->> > +       aliases {
->> > +               serial0 = &uart0;
->> > +               serial1 = &uart1;
->> > +               serial2 = &uart2;
->> > +       };
->> > +
->>
->> Hmmm.  David Gibson had tossed out an idea of automatically generating
->> aliases from labels.  It may be time to revisit that idea.
->>
->> David, perhaps using this format for a label should turn it into an
->> alias (prefix label with an asterisk):
->>
->>         *thealias: i2c@12340000 { /*...*/ };
->>
->> .... although that approach gets *really* hairy when considering that
->> different boards will want different enumeration.  How would one
->> override an automatic alias defined by an included .dts file?
->>
-> Another dependency the patch has to wait for?  Or we can go ahead and
-> utilize the facility later when it gets ready?
+On Thu 16-06-11 12:54:00, KAMEZAWA Hiroyuki wrote:
+> From 88090fe10e225ad8769ba0ea01692b7314e8b973 Mon Sep 17 00:00:00 2001
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Date: Wed, 15 Jun 2011 16:19:46 +0900
+> Subject: [PATCH 4/7] memcg: update numa information based on event counter
+> 
+> commit 889976 adds an numa node round-robin for memcg. But the information
+> is updated once per 10sec.
+> 
+> This patch changes the update trigger from jiffies to memcg's event count.
+> After this patch, numa scan information will be updated when
+> 
+>   - the number of pagein/out events is larger than 3% of limit
+>   or
+>   - the number of pagein/out events is larger than 16k
+>     (==64MB pagein/pageout if pagesize==4k.)
+> 
+> The counter of mem->numascan_update the sum of percpu events counter.
+> When a task hits limit, it checks mem->numascan_update. If it's over
+> min(3% of limit, 16k), numa information will be updated.
 
-No, this isn't something you need to wait for.  Just musing on future
-enhancements.
+Yes, I like the event based approach more than the origin (time) based
+one.
 
->> Also, when obtaining an enumeration for a device, you'll need to be
->> careful about what number gets returned.  If the node doesn't match a
->> given alias, but aliases do exist for other devices of like type, then
->> you need to be careful not to assign a number already assigned to
->> another device via an alias (this of course assumes the driver
->> supports dynamics enumeration, which many drivers will).  It would be
->>
-> Some words not finished?
+> 
+> This patch also adds mutex for updating information. This will allow us
+> to avoid unnecessary scan.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/memcontrol.c |   51 +++++++++++++++++++++++++++++++++++++++++++++------
+>  1 file changed, 45 insertions(+), 6 deletions(-)
+> 
+> Index: mmotm-0615/mm/memcontrol.c
+> ===================================================================
+> --- mmotm-0615.orig/mm/memcontrol.c
+> +++ mmotm-0615/mm/memcontrol.c
+> @@ -108,10 +108,12 @@ enum mem_cgroup_events_index {
+>  enum mem_cgroup_events_target {
+>  	MEM_CGROUP_TARGET_THRESH,
+>  	MEM_CGROUP_TARGET_SOFTLIMIT,
+> +	MEM_CGROUP_TARGET_NUMASCAN,
 
-heh, that happens sometimes.  I tend to be a bit scattered when
-replying to email.  Just ignore the last sentence fragment.
+Shouldn't it be defined only for MAX_NUMNODES > 1
 
->> > -       line = of_get_property(node, "id", NULL);
->> > -       if (!line)
->> > +       line = of_get_device_index(node, "serial");
->> > +       if (IS_ERR_VALUE(line))
->> >                return -ENODEV;
->>
->> Personally, it an alias isn't present, then I'd dynamically assign a port id.
->>
-> We probably can not.  The driver works with being told the correct
-> port id which is defined by soc.  Instead of dynamically assigning
-> a port id, we have to tell the driver the exact hardware port id of
-> the device that is being probed.
+>  	MEM_CGROUP_NTARGETS,
+>  };
+>  #define THRESHOLDS_EVENTS_TARGET (128)
+>  #define SOFTLIMIT_EVENTS_TARGET (1024)
+> +#define NUMASCAN_EVENTS_TARGET  (1024)
+>  
+>  struct mem_cgroup_stat_cpu {
+>  	long count[MEM_CGROUP_STAT_NSTATS];
+> @@ -288,8 +290,9 @@ struct mem_cgroup {
+>  	int last_scanned_node;
+>  #if MAX_NUMNODES > 1
+>  	nodemask_t	scan_nodes;
+> -	unsigned long   next_scan_node_update;
+> +	struct mutex	numascan_mutex;
+>  #endif
+> +	atomic_t	numascan_update;
 
-Are you sure?  It doesn't look like the driver behaviour uses id for
-anything other than an index into the statically allocated serial port
-instance table.  I don't see any change of behaviour based on the port
-number anywhere.
+Why it is out of ifdef?
 
-g.
+>  	/*
+>  	 * Should the accounting and control be hierarchical, per subtree?
+>  	 */
+> @@ -741,6 +744,9 @@ static void __mem_cgroup_target_update(s
+>  	case MEM_CGROUP_TARGET_SOFTLIMIT:
+>  		next = val + SOFTLIMIT_EVENTS_TARGET;
+>  		break;
+> +	case MEM_CGROUP_TARGET_NUMASCAN:
+> +		next = val + NUMASCAN_EVENTS_TARGET;
+> +		break;
+
+MAX_NUMNODES > 1
+
+>  	default:
+>  		return;
+>  	}
+> @@ -764,6 +770,13 @@ static void memcg_check_events(struct me
+>  			__mem_cgroup_target_update(mem,
+>  				MEM_CGROUP_TARGET_SOFTLIMIT);
+>  		}
+> +		if (unlikely(__memcg_event_check(mem,
+> +			MEM_CGROUP_TARGET_NUMASCAN))) {
+> +			atomic_add(MEM_CGROUP_TARGET_NUMASCAN,
+> +				&mem->numascan_update);
+> +			__mem_cgroup_target_update(mem,
+> +				MEM_CGROUP_TARGET_NUMASCAN);
+> +		}
+>  	}
+
+again MAX_NUMNODES > 1
+
+>  }
+>  
+> @@ -1616,17 +1629,32 @@ mem_cgroup_select_victim(struct mem_cgro
+>  /*
+>   * Always updating the nodemask is not very good - even if we have an empty
+>   * list or the wrong list here, we can start from some node and traverse all
+> - * nodes based on the zonelist. So update the list loosely once per 10 secs.
+> + * nodes based on the zonelist.
+>   *
+> + * The counter of mem->numascan_update is updated once per
+> + * NUMASCAN_EVENTS_TARGET. We update the numa information when we see
+> + * the number of event is larger than 3% of limit or  64MB pagein/pageout.
+>   */
+> +#define NUMASCAN_UPDATE_RATIO	(3)
+> +#define NUMASCAN_UPDATE_THRESH	(16384UL) /* 16k events of pagein/pageout */
+>  static void mem_cgroup_may_update_nodemask(struct mem_cgroup *mem)
+>  {
+>  	int nid;
+> -
+> -	if (time_after(mem->next_scan_node_update, jiffies))
+> +	unsigned long long limit;
+> +	/* if no limit, we never reach here */
+> +	limit = res_counter_read_u64(&mem->res, RES_LIMIT);
+> +	limit /= PAGE_SIZE;
+> +	/* 3% of limit */
+> +	limit = (limit * NUMASCAN_UPDATE_RATIO/100UL);
+> +	limit = min_t(unsigned long long, limit, NUMASCAN_UPDATE_THRESH);
+> +	/*
+> +	 * If the number of pagein/out event is larger than 3% of limit or
+> +	 * 64MB pagein/out, refresh numa information.
+> +	 */
+> +	if (atomic_read(&mem->numascan_update) < limit ||
+> +	    !mutex_trylock(&mem->numascan_mutex))
+>  		return;
+
+I am not sure whether a mutex is not overkill here. What about using an
+atomic operation instead?
+
+> -
+> -	mem->next_scan_node_update = jiffies + 10*HZ;
+> +	atomic_set(&mem->numascan_update, 0);
+>  	/* make a nodemask where this memcg uses memory from */
+>  	mem->scan_nodes = node_states[N_HIGH_MEMORY];
+>  
+> @@ -1642,6 +1670,7 @@ static void mem_cgroup_may_update_nodema
+>  			continue;
+>  		node_clear(nid, mem->scan_nodes);
+>  	}
+> +	mutex_unlock(&mem->numascan_mutex);
+>  }
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
