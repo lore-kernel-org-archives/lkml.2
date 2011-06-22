@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757953Ab1FVCsz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 22:48:55 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53665 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757737Ab1FVCsx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 22:48:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=D3eBaVZmlnCqNxaS72g4Ww3WVQ3Uj9wIMp9V7i5UblWhukhJ6tRlWVTsc7qGFiyQBm
-         LragGR1MjYi2mx61ciQTa4zPTl8QM1O88p6mXrgZ+1Nlq+uXtIhuyQSmGoMQ8Zn+4+TE
-         R9MsI2gLaUSE9OkOAX2UK2zgxolMFADieyeSw=
+	id S1757924Ab1FVCmh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 22:42:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59351 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757816Ab1FVCmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 22:42:36 -0400
+Message-ID: <4E015672.2020407@redhat.com>
+Date: Wed, 22 Jun 2011 10:41:54 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <20110621104357.GE22177@opensource.wolfsonmicro.com>
-References: <20110620101737.GA31864@opensource.wolfsonmicro.com>
-	<1308621527-2457-1-git-send-email-myungjoo.ham@samsung.com>
-	<1308621527-2457-2-git-send-email-myungjoo.ham@samsung.com>
-	<20110621104357.GE22177@opensource.wolfsonmicro.com>
-Date: Wed, 22 Jun 2011 11:40:46 +0900
-X-Google-Sender-Auth: dIlbkfq64I1IDRVxxh6XSfxRLZo
-Message-ID: <BANLkTinQYV8FJsy+5_sU8sTBhYPC7AQPow@mail.gmail.com>
-Subject: Re: [PATCH v2 1/5] Samsung SoC ADC: use regulator (VDD for ADC).
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>, dg77.kim@samsung.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Mel Gorman <mgorman@suse.de>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [PATCH 2/3] mm: make the threshold of enabling THP configurable
+References: <1308587683-2555-1-git-send-email-amwang@redhat.com> <1308587683-2555-2-git-send-email-amwang@redhat.com> <20110620165955.GB9396@suse.de> <4DFF8050.9070201@redhat.com> <20110621093640.GD9396@suse.de>
+In-Reply-To: <20110621093640.GD9396@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 7:43 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Tue, Jun 21, 2011 at 10:58:43AM +0900, MyungJoo Ham wrote:
+于 2011年06月21日 17:36, Mel Gorman 写道:
+ >
+> Fragmentation avoidance benefits from tuning min_free_kbytes to a higher
+> value and minimising fragmentation-related problems is crucial if THP is
+> to allocate its necessary pages.
 >
->> +     ret = regulator_enable(adc->vdd);
->> +     if (!ret)
->> +             goto err_ioremap;
->> +
->
-> This test looks the wrong way round?  regulator_enable() should return 0
-> on success but this will treat that as an error.
-
-Whoops.. thanks for pointing that out!
-
->
->>  static int s3c_adc_resume(struct platform_device *pdev)
->>  {
->>       struct adc_device *adc = platform_get_drvdata(pdev);
->> +     int ret;
->>
->> +     ret = regulator_enable(adc->vdd);
->>       clk_enable(adc->clk);
->>       enable_irq(adc->irq);
->>
->>       writel(adc->prescale | S3C2410_ADCCON_PRSCEN,
->>              adc->regs + S3C2410_ADCCON);
->>
->> -     return 0;
->> +     return ret;
->
-> Seems better to return as soon as we notice the error, no point in
-> starting anything else up if we don't have power.
+> THP tunes min_free_kbytes automatically and this value is in part
+> related to the number of zones. At 512M on a single node machine, the
+> recommended min_free_kbytes is close to 10% of memory which is barely
+> tolerable as it is. At 256M, it's 17%, at 128M, it's 34% so tuning the
+> value lower has diminishing returns as the performance impact of giving
+> up such a high percentage of free memory is not going to be offset by
+> reduced TLB misses. Tuning it to a higher value might make some sense
+> if the higher min_free_kbytes was a problem but it would be much more
+> rational to tune it as a sysctl than making it a compile-time decision.
 >
 
-Ok. I see.
+What this patch changed is the check of total memory pages in hugepage_init(),
+which I don't think is suitable as a sysctl.
 
+If you mean min_free_kbytes could be tuned as a sysctl, that should be done
+in other patch, right? :)
 
-
--- 
-MyungJoo Ham (함명주), Ph.D.
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: 82-10-6714-2858
+Thanks.
