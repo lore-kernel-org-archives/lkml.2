@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757979Ab1FVQyy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 12:54:54 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:28251 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754189Ab1FVQyx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 12:54:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=aOGdqmvoYZl0naXZ5KnncY3XrD0WUV/vQZfIUGzzBcASFcCtNcgX5jJHVz4CtYLYXT
-         ug1PQL5QiDHS67kkFssQ==
+	id S1758027Ab1FVQ4O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 12:56:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36614 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754189Ab1FVQ4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 12:56:13 -0400
+Date: Wed, 22 Jun 2011 18:55:29 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Izik Eidus <izik.eidus@ravellosystems.com>, Avi Kivity <avi@redhat.com>,
+        nai.xia@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
+        linux-mm <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
+Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte
+ and mmu notifier to help KSM dirty bit tracking
+Message-ID: <20110622165529.GY20843@redhat.com>
+References: <201106212055.25400.nai.xia@gmail.com>
+ <201106212132.39311.nai.xia@gmail.com>
+ <4E01C752.10405@redhat.com>
+ <4E01CC77.10607@ravellosystems.com>
+ <4E01CDAD.3070202@redhat.com>
+ <4E01CFD2.6000404@ravellosystems.com>
+ <4E020CBC.7070604@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1308758870.1022.53.camel@twins>
-References: <20110621071649.862846205@google.com> <20110621071700.494088365@google.com>
- <1308758870.1022.53.camel@twins>
-From: Paul Turner <pjt@google.com>
-Date: Wed, 22 Jun 2011 09:54:20 -0700
-Message-ID: <BANLkTimaFNDfMj7FOW5V9PAq9b8XfCFbT7HdH6S33Mvj9kstgg@mail.gmail.com>
-Subject: Re: [patch 08/16] sched: throttle cfs_rq entities which exceed their
- local runtime
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Nikhil Rao <ncrao@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E020CBC.7070604@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 9:07 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Tue, 2011-06-21 at 00:16 -0700, Paul Turner wrote:
->> +static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
->
-> And yet this function isn't actually used, so the $subject is at best
-> somewhat misleading.
->
-> /me continues reading with the next patch :-)
->
+On Wed, Jun 22, 2011 at 11:39:40AM -0400, Rik van Riel wrote:
+> On 06/22/2011 07:19 AM, Izik Eidus wrote:
+> 
+> > So what we say here is: it is better to have little junk in the unstable
+> > tree that get flushed eventualy anyway, instead of make the guest
+> > slower....
+> > this race is something that does not reflect accurate of ksm anyway due
+> > to the full memcmp that we will eventualy perform...
+> 
+> With 2MB pages, I am not convinced they will get "flushed eventually",
+> because there is a good chance at least one of the 4kB pages inside
+> a 2MB page is in active use at all times.
+> 
+> I worry that the proposed changes may end up effectively preventing
+> KSM from scanning inside 2MB pages, when even one 4kB page inside
+> is in active use.  This could mean increased swapping on systems
+> that run low on memory, which can be a much larger performance penalty
+> than ksmd CPU use.
+> 
+> We need to scan inside 2MB pages when memory runs low, regardless
+> of the accessed or dirty bits.
 
-Sorry, I should fix up the title.  The throttling is now turned on
-after unthrottle support is also added so that bisections through this
-series are sane.
+I guess we could fallback to the cksum when a THP is encountered
+(repeating the test_and_clear_dirty also wouldn't give the expected
+result if it's repeated on the same hugepmd for the next 4k virtual
+address candidate for unstable tree insertion, so it'd need special
+handling during the virtual walk anyway).
+
+So it's getting a little hairy, skip on THP, skip on EPT, then I
+wonder what is the common case that would be left using it...
+
+Or we could evaluate with statistic how many less pages are inserted
+into the unstable tree using the 2m dirty bit but clearly it'd be less
+reliable, the algorithm really is meant to track the volatility of
+what is later merged, not of a bigger chunk with unrelated data in it.
+
+On a side note, khugepaged should also be changed to preserve the
+dirty bit if at least one dirty bit of the ptes is dirty (currently
+the hugepmd is always created dirty, it can never happen for an
+hugepmd to be clean today so it wasn't preserved in khugepaged so far).
