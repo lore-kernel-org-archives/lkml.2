@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757841Ab1FVMm2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 08:42:28 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:37516 "EHLO
+	id S1757721Ab1FVMsZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 08:48:25 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:47701 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372Ab1FVMm1 (ORCPT
+	with ESMTP id S1756698Ab1FVMsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 08:42:27 -0400
-Date: Wed, 22 Jun 2011 13:42:23 +0100
+	Wed, 22 Jun 2011 08:48:24 -0400
+Date: Wed, 22 Jun 2011 13:48:20 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Sangbeom Kim <sbkim73@samsung.com>
 Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] mfd: Add S5M8751 register definitions
-Message-ID: <20110622124222.GC23666@sirena.org.uk>
-References: <1308722037-6966-1-git-send-email-sbkim73@samsung.com> <1308722037-6966-2-git-send-email-sbkim73@samsung.com>
+Subject: Re: [PATCH 2/3] mfd: Add initial S5M8751 support
+Message-ID: <20110622124820.GD23666@sirena.org.uk>
+References: <1308722037-6966-1-git-send-email-sbkim73@samsung.com> <1308722037-6966-3-git-send-email-sbkim73@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1308722037-6966-2-git-send-email-sbkim73@samsung.com>
+In-Reply-To: <1308722037-6966-3-git-send-email-sbkim73@samsung.com>
 X-Cookie: Is it clean in other dimensions?
 User-Agent: Mutt/1.5.18 (2008-05-17)
 X-SA-Exim-Connect-IP: <locally generated>
@@ -27,78 +27,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 02:53:55PM +0900, Sangbeom Kim wrote:
-> This patch add S5M8751 PMIC register definitions.
-> Separated as large code size
+On Wed, Jun 22, 2011 at 02:53:56PM +0900, Sangbeom Kim wrote:
+> The WM8994 is a advanced PMIC with AUdio DAC
+> Since it includes regulators, Battery charger, audio dac,
+> it is represented as a multi-function device,
+> though the functionality will be provided by the each driver.
 
-These don't look like register definitions:
+I think you may have cut'n'pasted bits of this changelog from somewhere
+else without doing all the updates you meant to :)
 
-> +struct s5m8751;
+> +	if (event1 & S5M8751_MASK_PWRKEY1B)
+> +		s5m8751_irq_call_handler(s5m8751, S5M8751_IRQ_PWRKEY1B);
 > +
-> +struct s5m8751_irq {
-> +	void (*handler) (struct s5m8751 *, int, void *);
-> +	void *data;
-> +};
+> +	if (event1 & S5M8751_MASK_PWRKEY2B)
+> +		s5m8751_irq_call_handler(s5m8751, S5M8751_IRQ_PWRKEY2B);
 > +
-> +struct s5m8751 {
-> +	struct device *dev;
-> +
-> +	/* device IO */
-> +	struct i2c_client *i2c_client;
-> +
-> +	int (*read_dev)(struct s5m8751 *s5m8751, uint8_t reg, uint8_t *val);
-> +	int (*write_dev)(struct s5m8751 *s5m8751, uint8_t reg, uint8_t val);
-> +
-> +	int (*read_block_dev)(struct s5m8751 *s5m8751, uint8_t reg, int len,
-> +							uint8_t *val);
-> +	int (*write_block_dev)(struct s5m8751 *s5m8751, uint8_t reg, int len,
-> +							uint8_t *val);
-> +	u8 *reg_cache;
-> +
-> +	/* Interrupt handling */
-> +	struct work_struct irq_work;
-> +	struct mutex irq_mutex; /* IRQ table mutex */
-> +	struct s5m8751_irq irq[S5M8751_NUM_IRQ];
-> +	int chip_irq;
-> +
-> +	/* Client devices */
-> +};
+> +	if (event1 & S5M8751_MASK_PWRKEY3)
+> +		s5m8751_irq_call_handler(s5m8751, S5M8751_IRQ_PWRKEY3);
 
-> +/* S5M8751 Device IO */
-> +int s5m8751_clear_bits(struct s5m8751 *s5m8751, uint8_t reg, uint8_t mask);
-> +int s5m8751_set_bits(struct s5m8751 *s5m8751, uint8_t reg, uint8_t mask);
-> +int s5m8751_reg_read(struct s5m8751 *s5m8751, uint8_t reg, uint8_t *val);
-> +int s5m8751_reg_write(struct s5m8751 *s5m8751, uint8_t reg, uint8_t val);
-> +int s5m8751_block_read(struct s5m8751 *s5m8751, uint8_t reg, int len,
-> +							uint8_t *val);
-> +int s5m8751_block_write(struct s5m8751 *s5m8751, uint8_t reg, int len,
-> +							uint8_t *val);
+This looks like the IRQ handler code doesn't need to understand the
+specific events, it can just loop over the registers and fire off
+interrupts based on the bit numbers.
 
-I posted a series earlier this week which adds a generic API for
-handling register maps on I2C/SPI devices - I'll post another version of
-it shortly, it'd be nice if you could loook to see if this is usable for
-you.
+As I said for the first patch this should all be using genirq.
 
-> +/* S5M8751 internal interrupts */
-> +int s5m8751_register_irq(struct s5m8751 *s5m8751, int irq,
-> +			void (*handler) (struct s5m8751 *, int, void *),
-> +			void *data);
+> +static irqreturn_t s5m8751_irq(int irq, void *data)
+> +{
+> +	struct s5m8751 *s5m8751 = data;
 > +
-> +int s5m8751_free_irq(struct s5m8751 *s5m8751, int irq);
-> +int s5m8751_mask_irq(struct s5m8751 *s5m8751, int irq);
-> +int s5m8751_unmask_irq(struct s5m8751 *s5m8751, int irq);
-> +int s5m8751_clear_irq(struct s5m8751 *s5m8751);
-
-You should use genirq for this, it's supported this for quite some time
-now.  There's quite a few MFDs doing this which you can used for
-examples.
-
-> +/* S5M8751 sysfs functions */
-> +int s5m8751_uvlo_get(struct s5m8751 *s5m8751);
-> +int s5m8751_uvlo_set(struct s5m8751 *s5m8751, int voltage);
+> +	disable_irq_nosync(irq);
+> +	schedule_work(&s5m8751->irq_work);
 > +
-> +int s5m8751_audio_dev_register(struct s5m8751 *s5m8751,
-> +						const char *name,
-> +						struct platform_device **pdev);
+> +	return IRQ_HANDLED;
+> +}
 
-These shouldn't need to be in the header.
+Use a threaded IRQ handler.
+
+> +int s5m8751_device_init(struct s5m8751 *s5m8751, int irq,
+> +			struct s5m8751_platform_data *pdata)
+> +{
+> +	int ret = -EINVAL;
+> +	u8 chip_id;
+> +
+> +	if (pdata->init) {
+> +		ret = pdata->init(s5m8751);
+> +		if (ret != 0) {
+> +			dev_err(s5m8751->dev,
+> +			 "Platform init() failed: %d\n", ret);
+> +			goto err;
+> +		}
+> +	}
+> +
+> +	s5m8751_reg_read(s5m8751, S5M8751_CHIP_ID, &chip_id);
+> +	if (!chip_id)
+> +		dev_info(s5m8751->dev, "Found S5M8751 device\n");
+> +	else {
+> +		dev_info(s5m8751->dev, "Didn't Find S5M8751 device\n");
+> +		ret = -EINVAL;
+> +		goto err;
+> +	}
+
+I'd really expect the init() callback to run after we've checked that
+we can talk to the device.
