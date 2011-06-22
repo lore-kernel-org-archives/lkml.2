@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757769Ab1FVBNK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 21:13:10 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:49308 "EHLO smtps.tip.net.au"
+	id S1757768Ab1FVBR1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 21:17:27 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36083 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757545Ab1FVBNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 21:13:08 -0400
-Date: Wed, 22 Jun 2011 11:12:56 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: linux-next: manual merge of the m68knommu tree with the m68k tree
-Message-Id: <20110622111256.3857df1e.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__22_Jun_2011_11_12_56_+1000_PUpRYI5jolSR1UkJ"
+	id S1757545Ab1FVBR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 21:17:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=u0aMY7dq26izPbIct6u9qI5/NB7HuIw1fEQUBx37wJkJWEK0xFDireh75VTXXsAEKA
+         gc8/vvn2Glsf3vSXueaQ==
+Date: Tue, 21 Jun 2011 18:16:35 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Amerigo Wang <amwang@redhat.com>
+cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-doc@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v2 1/4] mm: completely disable THP by
+ transparent_hugepage=0
+In-Reply-To: <1308643849-3325-1-git-send-email-amwang@redhat.com>
+Message-ID: <alpine.DEB.2.00.1106211814250.5205@chino.kir.corp.google.com>
+References: <1308643849-3325-1-git-send-email-amwang@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [140.211.167.34]); Wed, 22 Jun 2011 01:17:25 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__22_Jun_2011_11_12_56_+1000_PUpRYI5jolSR1UkJ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 21 Jun 2011, Amerigo Wang wrote:
 
-Hi Greg,
+> Introduce "transparent_hugepage=0" to totally disable THP.
+> "transparent_hugepage=never" means setting THP to be partially
+> disabled, we need a new way to totally disable it.
+> 
 
-Today's linux-next merge of the m68knommu tree got a conflict in
-arch/m68k/include/asm/bitops_mm.h between commit 17c74432b88e
-("m68k/bitops: Make bitmap data pointer of atomic ops volatile") from the
-m68k tree and commit 2cb0d89e66b1 ("m68k: merge mmu and non-mmu
-bitops.h") from the m68knommu tree.
-
-The latter effectively deletes in the file and in doing the merge,
-removes the funtions that were modified by the former commit.  So I just
-removed the file.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__22_Jun_2011_11_12_56_+1000_PUpRYI5jolSR1UkJ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOAUGYAAoJEDMEi1NhKgbs5FAH/2yLZz1SckjQDHmnOuOMF4hU
-R084Vd1K6opccXAmQL9SzDa1k6gQ4T4CHO+rydrINRn2XE2QQij7AHeyCXH+VFKb
-mydIXocq50FGTuLgE6VvOrS8ixVryMw5o77ikimFN65vBTJAtSp6ebi5waVNA/gV
-eHj2LHa6ajt/oIgr2CMLgUJ3rgolRVj+3fCQScae64qvzM6kq7fQ3bIMoUTKSYgq
-1ea5DyjdGSWVnQ2BMj/8Ac9xXfcJRGH/UOdBi3vTFm+hF17YojfSRLMRsMh+rRY1
-Ae7NFGOfe35OP5XyHc62g08DYmi0BabEGesFWJLXuqkImztcnQ9bCod879nIBn4=
-=FIYc
------END PGP SIGNATURE-----
-
---Signature=_Wed__22_Jun_2011_11_12_56_+1000_PUpRYI5jolSR1UkJ--
+Why can't you just compile it off so you never even compile 
+mm/huge_memory.c in the first place and save the space in the kernel image 
+as well?  Having the interface available to enable the feature at runtime 
+is worth the savings this patch provides, in my opinion.
