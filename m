@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932518Ab1FVTZn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 15:25:43 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:42812 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757967Ab1FVTZm convert rfc822-to-8bit (ORCPT
+	id S1758351Ab1FVTaN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 15:30:13 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41551 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757493Ab1FVTaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 15:25:42 -0400
+	Wed, 22 Jun 2011 15:30:11 -0400
+Date: Wed, 22 Jun 2011 21:30:09 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [patch 4/4] sched: Distangle worker accounting from rq->lock
+In-Reply-To: <20110622174919.135236139@linutronix.de>
+Message-ID: <alpine.LFD.2.02.1106222128480.11814@ionos>
+References: <20110622174659.496793734@linutronix.de> <20110622174919.135236139@linutronix.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1308769914-15440-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1307713124-3946-1-git-send-email-carlos.chinea@nokia.com>
-	<1308769914-15440-1-git-send-email-sjur.brandeland@stericsson.com>
-Date: Wed, 22 Jun 2011 21:25:41 +0200
-Message-ID: <BANLkTikq-YnzwOjO=Ob4TjG3P8QJjAnNnQ@mail.gmail.com>
-Subject: Re: [RFC PATCHv5 1/7] HSI: hsi: Introducing HSI framework
-From: Linus Walleij <linus.walleij@linaro.org>
-To: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>
-Cc: Carlos Chinea <carlos.chinea@nokia.com>, sjurbren@gmail.com,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 9:11 PM, Sjur Brændeland
-<sjur.brandeland@stericsson.com> wrote:
->>+/*
->>+ * API for HSI clients
->>+ */
->>+int hsi_async(struct hsi_client *cl, struct hsi_msg *msg);
->>+
->>+/**
->
-> I'm pleased to see scatter list support. But is this supported by all HW?
-> What is the behavior if HW doesn't support this, will hsi_async fail, or
-> is the scatter-list handled 'under the hood'?
+On Wed, 22 Jun 2011, Thomas Gleixner wrote:
+> +void wq_worker_sleeping(struct task_struct *task)
+>  {
+> -	struct worker *worker = kthread_data(task), *to_wakeup = NULL;
+> -	struct global_cwq *gcwq = get_gcwq(cpu);
+> -	atomic_t *nr_running = get_gcwq_nr_running(cpu);
+> +	struct worker *worker = kthread_data(task);
+> +	struct global_cwq *gcwq;
+> +	int cpu;
+>  
+>  	if (worker->flags & WORKER_NOT_RUNNING)
+> -		return NULL;
+> +		return;
+>  
+> -	/* this can only happen on the local cpu */
+> -	BUG_ON(cpu != raw_smp_processor_id());
+> +	if (WARN_ON_ONCE(worker->sleeping))
+> +		return;
 
-I think it's pretty straight-forward even if you have to use PIO (IRQs and
-CPU-filling of FIFO). You simply use a memory iterator (sg_miter), so
-for example the MMC layer can only handle SGlists and in mmci.c we
-use sg_miter_start/next/stop to do this in the PIO case.
+Darn, forgot to add 
 
-If that kind of hardware would ever be fast enough for anyone using
-a HSI link is a good question though :-)
+      worker->sleeping = 1;
 
-Yours,
-Linus Walleij
+back when I added the WARN_ON.
+  
