@@ -1,75 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758299Ab1FVW7r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 18:59:47 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:52148 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599Ab1FVW7q (ORCPT
+	id S1758125Ab1FVXBF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 19:01:05 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52572 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab1FVXBD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 18:59:46 -0400
+	Wed, 22 Jun 2011 19:01:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=mpzdfLDgCHBzz9B7eMbuFwLk0G0iz9jLMfWKt++yHxD8o0XZaTyJYN6/Jg2Ae/hAlX
-         QH1eov3W2GoiClkk8fxQ==
-Date: Wed, 22 Jun 2011 15:59:40 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, caiqian@redhat.com, hughd@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, minchan.kim@gmail.com, oleg@redhat.com
-Subject: Re: [PATCH 2/6] oom: improve dump_tasks() show items
-In-Reply-To: <4E01C82A.7070702@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1106221558160.11759@chino.kir.corp.google.com>
-References: <4E01C7D5.3060603@jp.fujitsu.com> <4E01C82A.7070702@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=br6laJB6ojjCQdTsw5eFQZ+hKUDM4W/Z40P9Ab9qJF43Wpl+/VvQeCROtngW9saZpG
+         G8oj+xutIdh7d97y0K5FfS8azKsT1W9yAo2DVXsQjHJ36rWPS4GmlpNlb2SXk+NCgu11
+         7TJMVyBw26oAfL+XxGOMTplAKllr1aguzUIMc=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <1308783190.25875.25.camel@lade.trondhjem.org>
+References: <BANLkTik9J3qcdPcp+DdfRq9kj+DMKnjKZw@mail.gmail.com>
+	<1308767449.14997.10.camel@lade.trondhjem.org>
+	<BANLkTimyCA0QyF1TNc0SU2GYobOt-sAsNQ@mail.gmail.com>
+	<1308769054.14997.18.camel@lade.trondhjem.org>
+	<BANLkTi=b1UJzYinAeW2VJj2AHzsAnwUpGg@mail.gmail.com>
+	<1308779507.25875.7.camel@lade.trondhjem.org>
+	<BANLkTin0HnH7rufrHJGgEuPc-ZPjkZe3iw@mail.gmail.com>
+	<1308783190.25875.25.camel@lade.trondhjem.org>
+Date: Wed, 22 Jun 2011 16:01:01 -0700
+Message-ID: <BANLkTimvMeF94O_S0rpSgy=5Z4obU9pPfg@mail.gmail.com>
+Subject: Re: Issue with Race Condition on NFS4 with KRB
+From: Joshua Scoggins <theoretically.x64@gmail.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Jun 2011, KOSAKI Motohiro wrote:
+I just manually applied the patch as I'm using the gentoo sources.
 
-> Recently, oom internal logic was dramatically changed. Thus
-> dump_tasks() doesn't show enough information for bug report
-> analysis. it has some meaningless items and don't have some
-> oom socre related items.
-> 
-> This patch adapt displaying fields to new oom logic.
-> 
-> details
-> --------
-> removed: pid (we always kill process. don't need thread id),
->          signal->oom_adj (we no longer uses it internally)
-> 	 cpu (we no longer uses it)
-> added:  ppid (we often kill sacrifice child process)
->         swap (it's accounted)
-> modify: RSS (account mm->nr_ptes too)
-> 
-> <old>
-> [ pid ]   uid  tgid total_vm      rss cpu oom_adj oom_score_adj name
-> [ 3886]     0  3886     2893      441   1       0             0 bash
-> [ 3905]     0  3905    29361    25833   0       0             0 memtoy
-> 
-> <new>
-> [   pid]   ppid   uid euid total_vm      rss     swap score_adj name
-> [   417]      1     0    0     3298       12      184     -1000 udevd
-> [   830]      1     0    0     1776       11       16         0 system-setup-ke
-> [   973]      1     0    0    61179       35      116         0 rsyslogd
-> [  1733]   1732     0    0  1052337   958582        0         0 memtoy
-> 
+Josh
 
-I like this very much!  I'm always supportive of providing additional 
-information that will allow users to investigate oom conditions more 
-thoroughly.
-
-I'm not sure that we should be exporting the euid, however, since I 
-disagreed with using it in the badness heuristic of the first patch.  
-Let's talk about it there and then perhaps it can be removed from the 
-tasklist dump if we don't actually end up using it?
-
-Otherwise, it looks good!
+On Wed, Jun 22, 2011 at 3:53 PM, Trond Myklebust
+<Trond.Myklebust@netapp.com> wrote:
+> On Wed, 2011-06-22 at 15:40 -0700, Joshua Scoggins wrote:
+>> The patch isn't applying to the 2.6.39 kernel sources.
+>
+> It does for me:
+>
+> [trondmy@lade linux-2.6]$ git checkout v2.6.39
+> HEAD is now at 61c4f2c... Linux 2.6.39
+> [trondmy@lade linux-2.6]$ git am ~/Desktop/bugfixes/0001-SUNRPC-Fix-a-potential-race-in-between-xprt_complete.patch
+> Applying: SUNRPC: Fix a potential race in between xprt_complete_rqst and xprt_transmit
+> [trondmy@lade linux-2.6]$
+>
+> Are you perhaps using some distro kernel instead of the regular one from
+> Linus' repository?
+>
+> Cheers
+>  Trond
+>
+>> -Josh
+>>
+>> On Wed, Jun 22, 2011 at 2:51 PM, Trond Myklebust
+>> <Trond.Myklebust@netapp.com> wrote:
+>> > On Wed, 2011-06-22 at 12:18 -0700, Joshua Scoggins wrote:
+>> >> According to the it guys they are running solaris 10 as the server platform.
+>> >
+>> > Ok. That should not be subject to the race I was thinking of...
+>> >
+>> >> On Wed, Jun 22, 2011 at 11:57 AM, Trond Myklebust
+>> >> <Trond.Myklebust@netapp.com> wrote:
+>> >> > On Wed, 2011-06-22 at 11:37 -0700, Joshua Scoggins wrote:
+>> >> >> Here are our mount options from auto.master
+>> >> >>
+>> >> >> /user -fstype=nfs4,sec=krb5p,noresvport,noatime
+>> >> >> /group -fstype=nfs4,sec=krb5p,noresvport,noatime
+>> >> >>
+>> >> >> As for the server, we don't control it. It's actually run by the
+>> >> >> campus wide it department we are just lab support for CS. I can
+>> >> >> potentially get the server information but I need to know what you want
+>> >> >> specifically as they're pretty paranoid about giving out information about
+>> >> >> their servers.
+>> >> >
+>> >> > I would just want to know _what_ server platform you are running
+>> >> > against. I know of at least one server bug that might explain what you
+>> >> > are seeing, and I'd like to eliminate that as a possibility.
+>> >> >
+>> >> > Trond
+>> >> >
+>> >> >> Joshua Scoggins
+>> >> >>
+>> >> >> On Wed, Jun 22, 2011 at 11:30 AM, Trond Myklebust
+>> >> >> <Trond.Myklebust@netapp.com> wrote:
+>> >> >> > On Wed, 2011-06-22 at 11:21 -0700, Joshua Scoggins wrote:
+>> >> >> >> Hello,
+>> >> >> >>
+>> >> >> >> We are trying to update our linux images in our CS lab and have it a
+>> >> >> >> bit of an issue. We are
+>> >> >> >> using nfs to load user home folder. While testing the new image we
+>> >> >> >> found that the nfs4 module will
+>> >> >> >>  crash when using firefox 3.6.17 for an extended period of time. Some
+>> >> >> >> research via google yielded that
+>> >> >> >> it's a potential race condition specific to nfs with krb auth with
+>> >> >> >> newer kernels. Our old image doesn't have
+>> >> >> >> this issue and it seems that its due to it running a far older kernel version.
+>> >> >> >>
+>> >> >> >> We have two images and both are having this problem. One is running
+>> >> >> >> 2.6.39 and the other is 2.6.38.
+>> >> >> >> Here is what dmesg spit out from the machine running 2.6.39 on one occasion:
+>> >> >> >>
+>> >> >> >> [  678.632061] ------------[ cut here ]------------
+>> >> >> >> [  678.632068] WARNING: at net/sunrpc/clnt.c:1567 call_decode+0xb2/0x69c()
+>> >> >> >> [  678.632070] Hardware name: OptiPlex 755
+>> >> >> >> [  678.632072] Modules linked in: nvidia(P) scsi_wait_scan
+>> >> >> >> [  678.632078] Pid: 3882, comm: kworker/0:2 Tainted: P
+>> >> >> >> 2.6.39-gentoo-r1 #1
+>> >> >> >> [  678.632080] Call Trace:
+>> >> >> >> [  678.632086]  [<ffffffff81035b20>] warn_slowpath_common+0x80/0x98
+>> >> >> >> [  678.632091]  [<ffffffff8117231e>] ? nfs4_xdr_dec_readdir+0xba/0xba
+>> >> >> >> [  678.632094]  [<ffffffff81035b4d>] warn_slowpath_null+0x15/0x17
+>> >> >> >> [  678.632097]  [<ffffffff81426f48>] call_decode+0xb2/0x69c
+>> >> >> >> [  678.632101]  [<ffffffff8142d2b5>] __rpc_execute+0x78/0x24b
+>> >> >> >> [  678.632104]  [<ffffffff8142d4c9>] ? rpc_execute+0x41/0x41
+>> >> >> >> [  678.632107]  [<ffffffff8142d4d9>] rpc_async_schedule+0x10/0x12
+>> >> >> >> [  678.632111]  [<ffffffff8104a49d>] process_one_work+0x1d9/0x2e7
+>> >> >> >> [  678.632114]  [<ffffffff8104c402>] worker_thread+0x133/0x24f
+>> >> >> >> [  678.632118]  [<ffffffff8104c2cf>] ? manage_workers+0x18d/0x18d
+>> >> >> >> [  678.632121]  [<ffffffff8104f6a0>] kthread+0x7d/0x85
+>> >> >> >> [  678.632125]  [<ffffffff8145e314>] kernel_thread_helper+0x4/0x10
+>> >> >> >> [  678.632128]  [<ffffffff8104f623>] ? kthread_worker_fn+0x13a/0x13a
+>> >> >> >> [  678.632131]  [<ffffffff8145e310>] ? gs_change+0xb/0xb
+>> >> >> >> [  678.632133] ---[ end trace 6bfae002a63e020e ]---
+>> >
+>> > Looking at the code, there is only one way I can see for that warning to
+>> > occur, and that is if we put the request back on the 'xprt->recv' list
+>> > after it has already received a reply from the server.
+>> >
+>> > Can you reproduce the problem with the attached patch?
+>> >
+>> > Trond
+>> >
+>> > --
+>> > Trond Myklebust
+>> > Linux NFS client maintainer
+>> >
+>> > NetApp
+>> > Trond.Myklebust@netapp.com
+>> > www.netapp.com
+>> >
+>> >
+>
+> --
+> Trond Myklebust
+> Linux NFS client maintainer
+>
+> NetApp
+> Trond.Myklebust@netapp.com
+> www.netapp.com
+>
+>
