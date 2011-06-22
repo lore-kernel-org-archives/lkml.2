@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932334Ab1FVXTI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 19:19:08 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44522 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755096Ab1FVXTH convert rfc822-to-8bit (ORCPT
+	id S932348Ab1FVXWY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 19:22:24 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:23612 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755096Ab1FVXWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 19:19:07 -0400
+	Wed, 22 Jun 2011 19:22:23 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=mWlfnRuKzUFd7KMWeweNODBvrFCXaBct5UlNi6nR7DkmfwBage4ztH5DTWfvHMdncJ
-         2dnsAg+2U39gCieE04jE9r2iOLq1hPe1oDRvt7aXhSfAC4ddrQoTBqLPY0hJO7fg0zmY
-         T/CuZe7hVwnlJ8LDLya7bItrxOa/EGQGRsXW0=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=JHiMhNVj+MnKnJIYgcI5SQ2VXY55BFhnq4ex6gHMG+lS5I7bcShdwN3/9JgeGOJRl4
+         +ALnB89ssiXgZGLgwQEw==
+Date: Wed, 22 Jun 2011 16:22:17 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, caiqian@redhat.com, hughd@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, minchan.kim@gmail.com, oleg@redhat.com
+Subject: Re: [PATCH 5/6] oom: don't kill random process
+In-Reply-To: <4E01C88E.3070806@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1106221617280.11759@chino.kir.corp.google.com>
+References: <4E01C7D5.3060603@jp.fujitsu.com> <4E01C88E.3070806@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110622150350.GX20843@redhat.com>
-References: <201106212055.25400.nai.xia@gmail.com>
-	<201106212132.39311.nai.xia@gmail.com>
-	<20110622150350.GX20843@redhat.com>
-Date: Thu, 23 Jun 2011 07:19:06 +0800
-Message-ID: <BANLkTim85ghrK9D4f19Pt5v1+HTMzVXxnw@mail.gmail.com>
-Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte
- and mmu notifier to help KSM dirty bit tracking
-From: Nai Xia <nai.xia@gmail.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
-        Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 11:03 PM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> On Tue, Jun 21, 2011 at 09:32:39PM +0800, Nai Xia wrote:
->> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
->> index d48ec60..b407a69 100644
->> --- a/arch/x86/kvm/vmx.c
->> +++ b/arch/x86/kvm/vmx.c
->> @@ -4674,6 +4674,7 @@ static int __init vmx_init(void)
->>               kvm_mmu_set_mask_ptes(0ull, 0ull, 0ull, 0ull,
->>                               VMX_EPT_EXECUTABLE_MASK);
->>               kvm_enable_tdp();
->> +             kvm_dirty_update = 0;
->>       } else
->>               kvm_disable_tdp();
->>
->
-> Why not return !shadow_dirty_mask instead of adding a new var?
->
->>  struct mmu_notifier_ops {
->> +     int (*dirty_update)(struct mmu_notifier *mn,
->> +                          struct mm_struct *mm);
->> +
->
-> Needs some docu.
->
-> I think dirty_update isn't self explanatory name. I think
-> "has_test_and_clear_dirty" would be better.
->
-> If we don't flush the smp tlb don't we risk that we'll insert pages in
-> the unstable tree that are volatile just because the dirty bit didn't
-> get set again on the spte?
->
-> The first patch I guess it's a sign of hugetlbfs going a little over
-> the edge in trying to mix with the core VM... Passing that parameter
-> &need_pte_unmap all over the place not so nice, maybe it'd be possible
-> to fix within hugetlbfs to use a different method to walk the hugetlb
-> vmas. I'd prefer that if possible.
+On Wed, 22 Jun 2011, KOSAKI Motohiro wrote:
 
-OK, I'll have a try over other workarounds.
-I am not feeling good about need_pte_unmap myself. :-)
+> CAI Qian reported oom-killer killed all system daemons in his
+> system at first if he ran fork bomb as root. The problem is,
+> current logic give them bonus of 3% of system ram. Example,
+> he has 16GB machine, then root processes have ~500MB oom
+> immune. It bring us crazy bad result. _all_ processes have
+> oom-score=1 and then, oom killer ignore process memroy usage
+> and kill random process. This regression is caused by commit
+> a63d83f427 (oom: badness heuristic rewrite).
+> 
 
-Thanks for viewing!
+Isn't it better to give admin processes a proportional bonus instead of a 
+strict 3% bonus?  I suggested 1% per 10% of memory used earlier and I 
+think it would work quite well as an alternative to this.  The highest 
+bonus that would actually make any differences in which thread to kill 
+would be 5% when an admin process is using 50% of memory: in that case, 
+another non-admin thread would have to be using >45% of memory to be 
+killed instead.
 
--Nai
+Would you be satisfied with something like
 
->
-> Thanks,
-> Andrea
->
+	points -= (points * 10 / totalpages);
+
+be better?
