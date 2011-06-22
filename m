@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab1FVJfJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 05:35:09 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:38431 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753849Ab1FVJfI (ORCPT
+	id S932122Ab1FVJhM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 05:37:12 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34395 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754242Ab1FVJhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 05:35:08 -0400
-X-IronPort-AV: E=Sophos;i="4.65,405,1304294400"; 
-   d="scan'208";a="6419252"
-Subject: Re: [PATCH x86 kvm] Fix register corruption in pvclock_scale_delta
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Avi Kivity <avi@redhat.com>
-CC: Zachary Amsden <zamsden@redhat.com>, kvm <kvm@vger.kernel.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>,
-        Ulrich Obergfell <uobergfe@redhat.com>
-In-Reply-To: <4DFDEF2A.7050307@redhat.com>
-References: <4DF97D6C.2080900@redhat.com>  <4DFDEF2A.7050307@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Wed, 22 Jun 2011 10:35:02 +0100
-Message-ID: <1308735302.6920.172.camel@zakaz.uk.xensource.com>
+	Wed, 22 Jun 2011 05:37:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=pYunzVTt7sV4LxVK4fLJ4oWyc9VrzxBVjl79GqQX+OKmYRCpK13dm24DNjHEu/MfwX
+         /q45mQ2HSU+4YUKxzzurWei6+9Ck0rLmF2aOgK9RpKqAtj1f2o+c86EqGp4IMsf5MFi0
+         abJHPkpHeUmh71zN0AcH9u6wBFrPqxGTrWpso=
+Date: Wed, 22 Jun 2011 11:37:06 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [RFC][PATCH 2/3] sched, workqueue: Move WQ-sleeper wakeup
+Message-ID: <20110622093706.GB30101@htj.dyndns.org>
+References: <20110621233444.094372367@chello.nl>
+ <20110621233648.861571721@chello.nl>
+ <20110622092430.GA30101@htj.dyndns.org>
+ <1308734848.1022.16.camel@twins>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308734848.1022.16.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-06-19 at 15:44 +0300, Avi Kivity wrote:
-> On 06/16/2011 06:50 AM, Zachary Amsden wrote:
-> > The 128-bit multiply in pvclock.h was missing an output constraint for 
-> > EDX which caused a register corruption to appear.
-
-Was there any particular symptom associated with corruption at that
-particular point or just general badness?
-
->   Thanks to Ulrich 
-> > for diagnosing the EDX corruption and Avi for providing this fix 
-> > (which now I am sending back to you Avi..)
+On Wed, Jun 22, 2011 at 11:27:28AM +0200, Peter Zijlstra wrote:
+> On Wed, 2011-06-22 at 11:24 +0200, Tejun Heo wrote:
+> > Preemption could still be enabled here, right?  What prevents
+> > preemtion kicking after wq_worker_sleeping() and do it again thus
+> > breaking nr_running tracking.
 > 
-> Applied and queued, thanks.
+> Aren't all PF_WQ_WORKER threads cpu-bound?
 
-Seems like a stable candidate also?
+Hmmm... I don't see how that would matter.  Please consider the
+following scenario.
 
-Ian.
+* A work item calls schedule() for whatever reason.
 
+* schedule() calls sched_submit_work() which in turn calls
+  wq_worker_sleeping() which adjusts nr_running.  All this happens
+  with preemption enabled.
+
+* sched_submit_work() returns but before schedule() does
+  preempt_disable(), an IRQ is delivered.  By the time IRQ return path
+  is executed, TIF_NEED_RESCHED is set which in turn calls schedule()
+  again and repeats the above two steps for the same worker.
+
+Thanks.
+
+-- 
+tejun
