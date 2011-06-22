@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab1FVGhV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 02:37:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30747 "EHLO mx1.redhat.com"
+	id S1753441Ab1FVGgh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 02:36:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13584 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752444Ab1FVGhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 02:37:19 -0400
+	id S1751903Ab1FVGgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 02:36:36 -0400
 From: Amerigo Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        Amerigo Wang <amwang@redhat.com>, Andy Grover <andy.grover@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Brandon Philips <brandon@ifup.org>,
+        Amerigo Wang <amwang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Lucas De Marchi <lucas.demarchi@profusion.mobi>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>, rds-devel@oss.oracle.com
-Subject: [PATCH 1/5] cpu: move cpu notifiers into cpu.h
-Date: Wed, 22 Jun 2011 14:35:18 +0800
-Message-Id: <1308724522-32461-2-git-send-email-amwang@redhat.com>
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [PATCH 2/5] net: move netdevice notifiers into netdevice.h
+Date: Wed, 22 Jun 2011 14:35:19 +0800
+Message-Id: <1308724522-32461-3-git-send-email-amwang@redhat.com>
 In-Reply-To: <1308724522-32461-1-git-send-email-amwang@redhat.com>
 References: <1308724522-32461-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,119 +27,106 @@ It is not necessary to share the same notifier.h.
 
 Signed-off-by: WANG Cong <amwang@redhat.com>
 ---
- include/linux/cpu.h      |   33 +++++++++++++++++++++++++++++++++
- include/linux/notifier.h |   34 ++--------------------------------
- net/rds/page.c           |    1 +
- 3 files changed, 36 insertions(+), 32 deletions(-)
+ include/linux/netdevice.h |   36 +++++++++++++++++++++++++++++++++---
+ include/linux/notifier.h  |   28 +---------------------------
+ 2 files changed, 34 insertions(+), 30 deletions(-)
 
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index 5f09323..b1a635a 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -70,6 +70,39 @@ enum {
- 	CPU_PRI_WORKQUEUE	= 5,
- };
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 54b8b4d..7c2026b 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1566,6 +1566,39 @@ struct packet_type {
+ #include <linux/interrupt.h>
+ #include <linux/notifier.h>
  
-+#define CPU_ONLINE		0x0002 /* CPU (unsigned)v is up */
-+#define CPU_UP_PREPARE		0x0003 /* CPU (unsigned)v coming up */
-+#define CPU_UP_CANCELED		0x0004 /* CPU (unsigned)v NOT coming up */
-+#define CPU_DOWN_PREPARE	0x0005 /* CPU (unsigned)v going down */
-+#define CPU_DOWN_FAILED		0x0006 /* CPU (unsigned)v NOT going down */
-+#define CPU_DEAD		0x0007 /* CPU (unsigned)v dead */
-+#define CPU_DYING		0x0008 /* CPU (unsigned)v not running any task,
-+					* not handling interrupts, soon dead.
-+					* Called on the dying cpu, interrupts
-+					* are already disabled. Must not
-+					* sleep, must not fail */
-+#define CPU_POST_DEAD		0x0009 /* CPU (unsigned)v dead, cpu_hotplug
-+					* lock is dropped */
-+#define CPU_STARTING		0x000A /* CPU (unsigned)v soon running.
-+					* Called on the new cpu, just before
-+					* enabling interrupts. Must not sleep,
-+					* must not fail */
-+
-+/* Used for CPU hotplug events occurring while tasks are frozen due to a suspend
-+ * operation in progress
++/* netdevice notifier chain. Please remember to update the rtnetlink
++ * notification exclusion list in rtnetlink_event() when adding new
++ * types.
 + */
-+#define CPU_TASKS_FROZEN	0x0010
++#define NETDEV_UP	0x0001	/* For now you can't veto a device up/down */
++#define NETDEV_DOWN	0x0002
++#define NETDEV_REBOOT	0x0003	/* Tell a protocol stack a network interface
++				   detected a hardware crash and restarted
++				   - we can use this eg to kick tcp sessions
++				   once done */
++#define NETDEV_CHANGE	0x0004	/* Notify device state change */
++#define NETDEV_REGISTER 0x0005
++#define NETDEV_UNREGISTER	0x0006
++#define NETDEV_CHANGEMTU	0x0007
++#define NETDEV_CHANGEADDR	0x0008
++#define NETDEV_GOING_DOWN	0x0009
++#define NETDEV_CHANGENAME	0x000A
++#define NETDEV_FEAT_CHANGE	0x000B
++#define NETDEV_BONDING_FAILOVER 0x000C
++#define NETDEV_PRE_UP		0x000D
++#define NETDEV_PRE_TYPE_CHANGE	0x000E
++#define NETDEV_POST_TYPE_CHANGE	0x000F
++#define NETDEV_POST_INIT	0x0010
++#define NETDEV_UNREGISTER_BATCH 0x0011
++#define NETDEV_RELEASE		0x0012
++#define NETDEV_NOTIFY_PEERS	0x0013
++#define NETDEV_JOIN		0x0014
 +
-+#define CPU_ONLINE_FROZEN	(CPU_ONLINE | CPU_TASKS_FROZEN)
-+#define CPU_UP_PREPARE_FROZEN	(CPU_UP_PREPARE | CPU_TASKS_FROZEN)
-+#define CPU_UP_CANCELED_FROZEN	(CPU_UP_CANCELED | CPU_TASKS_FROZEN)
-+#define CPU_DOWN_PREPARE_FROZEN	(CPU_DOWN_PREPARE | CPU_TASKS_FROZEN)
-+#define CPU_DOWN_FAILED_FROZEN	(CPU_DOWN_FAILED | CPU_TASKS_FROZEN)
-+#define CPU_DEAD_FROZEN		(CPU_DEAD | CPU_TASKS_FROZEN)
-+#define CPU_DYING_FROZEN	(CPU_DYING | CPU_TASKS_FROZEN)
-+#define CPU_STARTING_FROZEN	(CPU_STARTING | CPU_TASKS_FROZEN)
++extern int register_netdevice_notifier(struct notifier_block *nb);
++extern int unregister_netdevice_notifier(struct notifier_block *nb);
++extern int call_netdevice_notifiers(unsigned long val, struct net_device *dev);
 +
 +
- #ifdef CONFIG_SMP
- /* Need to know about CPUs going up/down? */
- #if defined(CONFIG_HOTPLUG_CPU) || !defined(MODULE)
+ extern rwlock_t				dev_base_lock;		/* Device list lock */
+ 
+ 
+@@ -1648,12 +1681,9 @@ static inline void unregister_netdevice(struct net_device *dev)
+ extern int 		netdev_refcnt_read(const struct net_device *dev);
+ extern void		free_netdev(struct net_device *dev);
+ extern void		synchronize_net(void);
+-extern int 		register_netdevice_notifier(struct notifier_block *nb);
+-extern int		unregister_netdevice_notifier(struct notifier_block *nb);
+ extern int		init_dummy_netdev(struct net_device *dev);
+ extern void		netdev_resync_ops(struct net_device *dev);
+ 
+-extern int call_netdevice_notifiers(unsigned long val, struct net_device *dev);
+ extern struct net_device	*dev_get_by_index(struct net *net, int ifindex);
+ extern struct net_device	*__dev_get_by_index(struct net *net, int ifindex);
+ extern struct net_device	*dev_get_by_index_rcu(struct net *net, int ifindex);
 diff --git a/include/linux/notifier.h b/include/linux/notifier.h
-index c0688b0..9eb25fc 100644
+index 9eb25fc..e8a858a 100644
 --- a/include/linux/notifier.h
 +++ b/include/linux/notifier.h
-@@ -185,6 +185,8 @@ static inline int notifier_to_errno(int ret)
-  *	VC switch chains (for loadable kernel svgalib VC switch helpers) etc...
-  */
+@@ -187,33 +187,7 @@ static inline int notifier_to_errno(int ret)
   
-+/* CPU notfiers are defined in include/linux/cpu.h. */
-+
- /* netdevice notifier chain. Please remember to update the rtnetlink
-  * notification exclusion list in rtnetlink_event() when adding new
-  * types.
-@@ -220,38 +222,6 @@ static inline int notifier_to_errno(int ret)
+ /* CPU notfiers are defined in include/linux/cpu.h. */
  
- #define NETLINK_URELEASE	0x0001	/* Unicast netlink socket released */
- 
--#define CPU_ONLINE		0x0002 /* CPU (unsigned)v is up */
--#define CPU_UP_PREPARE		0x0003 /* CPU (unsigned)v coming up */
--#define CPU_UP_CANCELED		0x0004 /* CPU (unsigned)v NOT coming up */
--#define CPU_DOWN_PREPARE	0x0005 /* CPU (unsigned)v going down */
--#define CPU_DOWN_FAILED		0x0006 /* CPU (unsigned)v NOT going down */
--#define CPU_DEAD		0x0007 /* CPU (unsigned)v dead */
--#define CPU_DYING		0x0008 /* CPU (unsigned)v not running any task,
--					* not handling interrupts, soon dead.
--					* Called on the dying cpu, interrupts
--					* are already disabled. Must not
--					* sleep, must not fail */
--#define CPU_POST_DEAD		0x0009 /* CPU (unsigned)v dead, cpu_hotplug
--					* lock is dropped */
--#define CPU_STARTING		0x000A /* CPU (unsigned)v soon running.
--					* Called on the new cpu, just before
--					* enabling interrupts. Must not sleep,
--					* must not fail */
--
--/* Used for CPU hotplug events occurring while tasks are frozen due to a suspend
-- * operation in progress
+-/* netdevice notifier chain. Please remember to update the rtnetlink
+- * notification exclusion list in rtnetlink_event() when adding new
+- * types.
 - */
--#define CPU_TASKS_FROZEN	0x0010
--
--#define CPU_ONLINE_FROZEN	(CPU_ONLINE | CPU_TASKS_FROZEN)
--#define CPU_UP_PREPARE_FROZEN	(CPU_UP_PREPARE | CPU_TASKS_FROZEN)
--#define CPU_UP_CANCELED_FROZEN	(CPU_UP_CANCELED | CPU_TASKS_FROZEN)
--#define CPU_DOWN_PREPARE_FROZEN	(CPU_DOWN_PREPARE | CPU_TASKS_FROZEN)
--#define CPU_DOWN_FAILED_FROZEN	(CPU_DOWN_FAILED | CPU_TASKS_FROZEN)
--#define CPU_DEAD_FROZEN		(CPU_DEAD | CPU_TASKS_FROZEN)
--#define CPU_DYING_FROZEN	(CPU_DYING | CPU_TASKS_FROZEN)
--#define CPU_STARTING_FROZEN	(CPU_STARTING | CPU_TASKS_FROZEN)
--
- /* Hibernation and suspend events */
- #define PM_HIBERNATION_PREPARE	0x0001 /* Going to hibernate */
- #define PM_POST_HIBERNATION	0x0002 /* Hibernation finished */
-diff --git a/net/rds/page.c b/net/rds/page.c
-index d8acdeb..b82d63e 100644
---- a/net/rds/page.c
-+++ b/net/rds/page.c
-@@ -32,6 +32,7 @@
-  */
- #include <linux/highmem.h>
- #include <linux/gfp.h>
-+#include <linux/cpu.h>
+-#define NETDEV_UP	0x0001	/* For now you can't veto a device up/down */
+-#define NETDEV_DOWN	0x0002
+-#define NETDEV_REBOOT	0x0003	/* Tell a protocol stack a network interface
+-				   detected a hardware crash and restarted
+-				   - we can use this eg to kick tcp sessions
+-				   once done */
+-#define NETDEV_CHANGE	0x0004	/* Notify device state change */
+-#define NETDEV_REGISTER 0x0005
+-#define NETDEV_UNREGISTER	0x0006
+-#define NETDEV_CHANGEMTU	0x0007
+-#define NETDEV_CHANGEADDR	0x0008
+-#define NETDEV_GOING_DOWN	0x0009
+-#define NETDEV_CHANGENAME	0x000A
+-#define NETDEV_FEAT_CHANGE	0x000B
+-#define NETDEV_BONDING_FAILOVER 0x000C
+-#define NETDEV_PRE_UP		0x000D
+-#define NETDEV_PRE_TYPE_CHANGE	0x000E
+-#define NETDEV_POST_TYPE_CHANGE	0x000F
+-#define NETDEV_POST_INIT	0x0010
+-#define NETDEV_UNREGISTER_BATCH 0x0011
+-#define NETDEV_RELEASE		0x0012
+-#define NETDEV_NOTIFY_PEERS	0x0013
+-#define NETDEV_JOIN		0x0014
++/* netdevice notifiers are defined in include/linux/netdevice.h */
  
- #include "rds.h"
- 
+ #define SYS_DOWN	0x0001	/* Notify of system down */
+ #define SYS_RESTART	SYS_DOWN
 -- 
 1.7.4.4
 
