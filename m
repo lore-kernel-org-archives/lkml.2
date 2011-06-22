@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab1FVJQH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 05:16:07 -0400
-Received: from webbox687.server-home.net ([195.149.74.151]:37738 "EHLO
-	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007Ab1FVJQF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 05:16:05 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: Re: [PATCH v3] pch_gpio: Support interrupt function
-Date: Wed, 22 Jun 2011 11:15:31 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; x86_64; ; )
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com
-References: <1308631468-2376-1-git-send-email-tomoya-linux@dsn.okisemi.com> <201106220828.30516.alexander.stein@systec-electronic.com> <4E01A452.8060801@dsn.okisemi.com>
-In-Reply-To: <4E01A452.8060801@dsn.okisemi.com>
+	id S1754893Ab1FVJQV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 05:16:21 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:46653 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754187Ab1FVJQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 05:16:18 -0400
+Date: Wed, 22 Jun 2011 10:16:11 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Cong Wang <amwang@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Andrea Arcangeli <aarcange@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [PATCH 2/3] mm: make the threshold of enabling THP configurable
+Message-ID: <20110622091611.GB7585@csn.ul.ie>
+References: <1308587683-2555-1-git-send-email-amwang@redhat.com>
+ <1308587683-2555-2-git-send-email-amwang@redhat.com>
+ <20110620165955.GB9396@suse.de>
+ <4DFF8050.9070201@redhat.com>
+ <20110621093640.GD9396@suse.de>
+ <4E015672.2020407@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106221115.31885.alexander.stein@systec-electronic.com>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4E015672.2020407@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 22 June 2011 10:14:10 Tomoya MORINAGA wrote:
-> (2011/06/22 15:28), Alexander Stein wrote:
-> > On Wednesday 22 June 2011 02:10:28 Tomoya MORINAGA wrote:
-> >> (2011/06/21 18:10), Alexander Stein wrote:
-> >>> I wrote a small program which use poll(2) on value, after edge hase
-> >>> been configured from shell. I cannot test the edge detection
-> >>> appropriately due to debouncing using jumpers.
-> >> 
-> >> Really ?
-> >> In out test environment, my test program could detect edge interrupt
-> >> correctly.
-> > 
-> > My test program used poll/select on edge successfully. But I could not
-> > test the raising or falling feature actually, as my input is bouncing.
-> > So, it doesn't matter if I set both/raising/falling in edge, due to my
-> > inputs the effect is the same. Any input event will end in several
-> > raising and falling interrupts events.
-> > I hope I could make this more clear.
+On Wed, Jun 22, 2011 at 10:41:54AM +0800, Cong Wang wrote:
+> ??? 2011???06???21??? 17:36, Mel Gorman ??????:
+> >
+> >Fragmentation avoidance benefits from tuning min_free_kbytes to a higher
+> >value and minimising fragmentation-related problems is crucial if THP is
+> >to allocate its necessary pages.
+> >
+> >THP tunes min_free_kbytes automatically and this value is in part
+> >related to the number of zones. At 512M on a single node machine, the
+> >recommended min_free_kbytes is close to 10% of memory which is barely
+> >tolerable as it is. At 256M, it's 17%, at 128M, it's 34% so tuning the
+> >value lower has diminishing returns as the performance impact of giving
+> >up such a high percentage of free memory is not going to be offset by
+> >reduced TLB misses. Tuning it to a higher value might make some sense
+> >if the higher min_free_kbytes was a problem but it would be much more
+> >rational to tune it as a sysctl than making it a compile-time decision.
+> >
 > 
-> Our test program also uses poll (We don't use select().)
+> What this patch changed is the check of total memory pages in hugepage_init(),
+> which I don't think is suitable as a sysctl.
+> 
+> If you mean min_free_kbytes could be tuned as a sysctl, that should be done
+> in other patch, right? :)
+> 
 
-I noticed poll/select work nearly as the same. Both worked fine here.
+min_free_kbytes is already automatically tuned when THP is enabled.
 
-> BTW, is the above your saying related to your patch "[PATCH] pch_gpio:
-> transform mutex into spinlock" ?
+What I meant was that there is a rational reason why 512M is the
+default for enabling THP by default. Tuning it lower than that by any
+means makes very little sense. Tuning it higher might make some sense
+but it is more likely that THP would simply be disabled via sysctl. I
+see very little advantage to introducing this Kconfig option other
+than as a source of confusion when running make oldconfig.
 
-Should be unrelated. I did the GPIO interrupt test before stumbling on the 
-mutex/spinlock problem. The latter one was caused by setting a GPIO from 
-interrupt context (in a different driver).
-
-Alexander
+-- 
+Mel Gorman
+SUSE Labs
