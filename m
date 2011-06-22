@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758585Ab1FVTk7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 15:40:59 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:42043 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758211Ab1FVTk6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 15:40:58 -0400
-Date: Wed, 22 Jun 2011 20:40:49 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Ike Panhc <ike.pan@canonical.com>
-Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        corentin.chary@gmail.com, Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: [PATCH 3/3] ideapad: add backlight driver
-Message-ID: <20110622194049.GB8861@srcf.ucam.org>
-References: <1308729781-2590-1-git-send-email-ike.pan@canonical.com>
- <1308730058-2703-1-git-send-email-ike.pan@canonical.com>
+	id S1758555Ab1FVTma (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 15:42:30 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:52851 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758471Ab1FVTm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 15:42:29 -0400
+Message-ID: <4E0245A1.3090903@kernel.dk>
+Date: Wed, 22 Jun 2011 21:42:25 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308730058-2703-1-git-send-email-ike.pan@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Christoph Hellwig <hch@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [patch 1/4] sched: Separate the scheduler entry for preemption
+References: <20110622174659.496793734@linutronix.de> <20110622174918.813258321@linutronix.de> <20110622184328.GA6475@infradead.org>
+In-Reply-To: <20110622184328.GA6475@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 04:07:38PM +0800, Ike Panhc wrote:
+On 2011-06-22 20:43, Christoph Hellwig wrote:
+> On Wed, Jun 22, 2011 at 05:52:13PM -0000, Thomas Gleixner wrote:
+>> Block-IO and workqueues call into notifier functions from the
+>> scheduler core code with interrupts and preemption disabled. These
+>> calls should be made before entering the scheduler core.
+>>
+>> To simplify this, separate the scheduler core code into
+>> __schedule(). __schedule() is directly called from the places which
+>> set PREEMPT_ACTIVE and from schedule(). This allows us to add the work
+>> checks into schedule(), so they are only called when a task voluntary
+>> goes to sleep.
+> 
+> I don't think that works.  We'll need to flush the block requests even
+> for an involuntary schedule.
 
-> -static void ideapad_sync_rfk_state(struct acpi_device *adevice)
-> +static void ideapad_sync_rfk_state(struct ideapad_private *priv)
->  {
-
-This should be a separate patch.
-
-> -static void __devexit ideapad_unregister_rfkill(struct acpi_device *adevice,
-> -						int dev)
-> +static void ideapad_unregister_rfkill(struct acpi_device *adevice, int dev)
-
-This also seems unrelated.
-
-> +static int ideapad_backlight_get_brightness(struct backlight_device *blightdev)
-> +{
-> +	unsigned long now;
-> +
-> +	if (read_ec_data(ideapad_handle, 0x12, &now))
-> +		return -EAGAIN;
-
-Description says you're using commands on the VPC2004 device, but it 
-looks like you're just poking the embedded controller? Are you sure the 
-EC offsets are stable?
+Yep, doing it just for voluntary schedule() is pointless, since the
+caller should just do the flushing on his own. The whole point of the
+sched hook was to ensure that involuntary schedules flushed it.
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Jens Axboe
+
