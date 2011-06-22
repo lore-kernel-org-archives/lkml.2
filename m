@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191Ab1FVOGh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 10:06:37 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34773 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753411Ab1FVOGg (ORCPT
+	id S932238Ab1FVOHC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 10:07:02 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:34518 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932196Ab1FVOHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 10:06:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=BsIYJU8BpFFiaq777RD58VC8rxfDQIGQBLKrNIC5Mnk2CYe6bjnOnl1JHhl2e0J6rU
-         oB4LPH6I1TJGnsziigavsiNd067m/Un60obH2ZAo4ZVgIqw4ChyZ87O2Hba/yx0A4YyT
-         eKaw7uQUkOK7Qur2g8gotYIswbBRp6+U2axIw=
-Subject: [linux-next] Missing Makefile and Kconfig entry for
- drivers/mfd/tps65911-comparator.c?
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Jun 2011 22:06:26 +0800
-Message-ID: <1308751586.22715.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Jun 2011 10:07:00 -0400
+Date: Wed, 22 Jun 2011 10:06:42 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, dan.magenheimer@oracle.com
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the tmem tree with the xen-two tree
+Message-ID: <20110622140642.GD5574@dumpdata.com>
+References: <20110622144611.a900a000.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110622144611.a900a000.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090208.4E01F6FF.0002:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jun 22, 2011 at 02:46:11PM +1000, Stephen Rothwell wrote:
+> Hi Dan,
+> 
+> Today's linux-next merge of the tmem tree got a conflict in
+> drivers/xen/Kconfig drivers/xen/tmem.c between commit afec6e04922d ("xen:
+> prepare tmem shim to handle frontswap") from the xen-two tree and commit
+> ac33c46b42ba ("xen: enable frontswap for Xen tmem") from the tmem tree.
+> 
 
-Just found that there is no Makefile and Kconfig entry for
-drivers/mfd/tps65911-comparator.c, how to build this driver?
+Dan, can you please rebase your #linux-next branch on my #linux-next branch
+so that Stephen's awesome build engine can chug along for this?
 
-Regards,
-Axel
+Thanks!
+> I just used the xen-two versions of these files (as they look newer).
 
-
+OK, we will sort this out.
