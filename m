@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932486Ab1FVQEq (ORCPT <rfc822;w@1wt.eu>);
+	id S932505Ab1FVQEs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 12:04:48 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:46384 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932483Ab1FVQEq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 Jun 2011 12:04:46 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:51980 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932301Ab1FVQEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 12:04:44 -0400
-X-ASG-Debug-ID: 1308758683-03d6a510a691ca0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4E021297.4000505@fusionio.com>
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:content-type:to:cc:subject:references:date:mime-version
+         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
+        b=eQPrYVo9mAM006RoJjxh+GGLSpk8me8bpedq/1HjO/DmHS2gqFLlUzQoFmjmvXb/bK
+         yQISoENicXO7TxNs832RjERwPYBnrqZY1hDcxdv3zUHRDvUVT0EtrnBBmh8OcTMw8ZSh
+         YnqPXWXhTr5fEAuy2CyBFrT83x1XkGcRLIFbg=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        "Arnd Bergmann" <arnd@arndb.de>
+Cc: "'Hans Verkuil'" <hverkuil@xs4all.nl>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linaro-mm-sig@lists.linaro.org,
+        linux-mm@kvack.org, "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Subject: Re: [Linaro-mm-sig] [PATCH 08/10] mm: cma: Contiguous Memory
+ Allocator added
+References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
+ <201106221442.20848.arnd@arndb.de>
+ <003701cc30de$7a159710$6e40c530$%szyprowski@samsung.com>
+ <201106221539.24044.arnd@arndb.de>
 Date: Wed, 22 Jun 2011 18:04:39 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC][PATCH 1/3] sched, block: Move unplug
-References: <20110621233444.094372367@chello.nl> <20110621233648.806475812@chello.nl> <4E019353.6030902@fusionio.com> <alpine.LFD.2.02.1106221015320.11814@ionos> <4E01F5D6.1020107@fusionio.com> <alpine.LFD.2.02.1106221628560.11814@ionos> <1308753481.1022.27.camel@twins> <20110622150825.GE17010@redhat.com>
-X-ASG-Orig-Subj: Re: [RFC][PATCH 1/3] sched, block: Move unplug
-In-Reply-To: <20110622150825.GE17010@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1308758683
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.66807
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.vxhix1zu3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <201106221539.24044.arnd@arndb.de>
+User-Agent: Opera Mail/11.10 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-06-22 17:08, Vivek Goyal wrote:
-> On Wed, Jun 22, 2011 at 04:38:01PM +0200, Peter Zijlstra wrote:
->> On Wed, 2011-06-22 at 16:30 +0200, Thomas Gleixner wrote:
->>>> It is supposedly a real problem, not just an inkling. It's not about
->>>> recursing indefinitely, the plug is fairly bounded. But the IO dispatch
->>>> path can be pretty deep, and if you hit that deep inside the reclaim or
->>>> file system write path, then you get dangerously close. Dave Chinner
->>>> posted some numbers in the 2.6.39-rc1 time frame showing how close we
->>>> got.
->>>
->>> Fair enough.
->>
->>> Ok. So we move it out and keep the from_scheduler flag so that code
->>> does not go down the IO path from there. 
->>
->> Won't punting the plug to a worker thread wreck all kinds of io
->> accounting due to the wrong task doing the actual io submission?
-> 
-> I think all the accounting will the done in IO submission path and
-> while IO is added to plug. This is just plug flush so should not
-> have effect on accounting.
+On Wed, 22 Jun 2011 15:39:23 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
+> Why that? I would expect you can do the same that hugepages (used to) do
+> and just attempt high-order allocations. If they succeed, you can add  
+> them as a CMA region and free them again, into the movable set of pages,  
+> otherwise you just fail the  request from user space when the memory is
+> already fragmented.
 
-Exactly, this is just the insert operation, so no worries there. The
-request are fully "formulated".
+Problem with that is that CMA needs to have whole pageblocks allocated
+and buddy can allocate at most half a pageblock.
 
 -- 
-Jens Axboe
-
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
