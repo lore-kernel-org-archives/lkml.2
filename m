@@ -1,56 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758952Ab1FVVu4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 17:50:56 -0400
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:42080 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758211Ab1FVVuy (ORCPT
+	id S1759022Ab1FVVvc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 17:51:32 -0400
+Received: from mail.betterlinux.com ([199.58.199.50]:42582 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758919Ab1FVVva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 17:50:54 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org
-Subject: Re: [Update][PATCH 7/8] PM / Domains: System-wide transitions support for generic domains (v3)
-Organization: Texas Instruments, Inc.
-References: <201106112223.04972.rjw@sisk.pl> <201106112239.16285.rjw@sisk.pl>
-	<201106200006.07642.rjw@sisk.pl>
-Date: Wed, 22 Jun 2011 14:50:51 -0700
-In-Reply-To: <201106200006.07642.rjw@sisk.pl> (Rafael J. Wysocki's message of
-	"Mon, 20 Jun 2011 00:06:07 +0200")
-Message-ID: <8739j1lemc.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 22 Jun 2011 17:51:30 -0400
+From: Andrea Righi <andrea@betterlinux.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Jerry James <jamesjer@betterlinux.com>,
+        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH RFC] fadvise: move active pages to inactive list with POSIX_FADV_DONTNEED
+Date: Wed, 22 Jun 2011 23:51:20 +0200
+Message-Id: <1308779480-4950-1-git-send-email-andrea@betterlinux.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> writes:
+There were some reported problems in the past about trashing page cache
+when a backup software (i.e., rsync) touches a huge amount of pages (see
+for example [1]).
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
->
-> Make generic PM domains support system-wide power transitions
-> (system suspend and hibernation).  Add suspend, resume, freeze, thaw,
-> poweroff and restore callbacks to be associated with struct
-> generic_pm_domain objects and make pm_genpd_init() use them as
-> appropriate.
->
-> The new callbacks do nothing for devices belonging to power domains
-> that were powered down at run time (before the transition).  
+This problem has been almost fixed by the Minchan Kim's patch [2] and a
+proper use of fadvise() in the backup software. For example this patch
+set [3] has been proposed for inclusion in rsync.
 
-Great, this is the approach I prefer too, but...
+However, there can be still other similar trashing problems: when the
+backup software reads all the source files, some of them may be part of
+the actual working set of the system. When a
+posix_fadvise(POSIX_FADV_DONTNEED) is performed _all_ pages are evicted
+from pagecache, both the working set and the use-once pages touched only
+by the backup software.
 
-Now I'm confused.  Leaving runtime suspended devices alone is what I was
-doing in my subsystem but was told not to.  According to
+With the following solution when posix_fadvise(POSIX_FADV_DONTNEED) is
+called for an active page instead of removing it from the page cache it
+is added to the tail of the inactive list. Otherwise, if it's already in
+the inactive list the page is removed from the page cache.
 
-    http://www.mail-archive.com/linux-omap@vger.kernel.org/msg50690.html
+In this way if the backup was the only user of a page, that page will
+be immediately removed from the page cache by calling
+posix_fadvise(POSIX_FADV_DONTNEED). If the page was also touched by
+other processes it'll be moved to the inactive list, having another
+chance of being re-added to the working set, or simply reclaimed when
+memory is needed.
 
-"it's generally agreed that _all_ devices should return to full 
-power during system resume -- even if they were runtime suspended 
-before the system sleep."
+Testcase:
 
-Kevin
+  - create a 1GB file called "zero"
+  - run md5sum zero to read all the pages in page cache (this is to
+    simulate the user activity on this file)
+  - run "rsync zero zero_copy" (rsync is patched with [3])
+  - re-run md5sum zero (user activity on the working set) and measure
+    the time to complete this command
+
+The test has been performed using 3.0.0-rc4 vanilla and with this patch
+applied (3.0.0-rc4-fadvise).
+
+Results:
+                  avg elapsed time      block:block_bio_queue
+ 3.0.0-rc4                  4.127s                      8,214
+ 3.0.0-rc4-fadvise          2.146s                          0
+
+In the first case the file is evicted from page cache completely and we
+must re-read it from the disk. In the second case the file is still in
+page cache (in the inactive list) and we don't need any other additional
+I/O operation.
+
+[1] http://marc.info/?l=rsync&m=128885034930933&w=2
+[2] https://lkml.org/lkml/2011/2/20/57
+[3] http://lists.samba.org/archive/rsync/2010-November/025827.html
+
+Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+---
+ mm/swap.c     |    9 +++++----
+ mm/truncate.c |    5 ++++-
+ 2 files changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/mm/swap.c b/mm/swap.c
+index 3a442f1..fc8bb76 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -411,10 +411,11 @@ void add_page_to_unevictable_list(struct page *page)
+  *
+  * 1. active, mapped page -> none
+  * 2. active, dirty/writeback page -> inactive, head, PG_reclaim
+- * 3. inactive, mapped page -> none
+- * 4. inactive, dirty/writeback page -> inactive, head, PG_reclaim
+- * 5. inactive, clean -> inactive, tail
+- * 6. Others -> none
++ * 3. active, clean -> inactive, tail
++ * 4. inactive, mapped page -> none
++ * 5. inactive, dirty/writeback page -> inactive, head, PG_reclaim
++ * 6. inactive, clean -> inactive, tail
++ * 7. Others -> none
+  *
+  * In 4, why it moves inactive's head, the VM expects the page would
+  * be write it out by flusher threads as this is much more effective
+diff --git a/mm/truncate.c b/mm/truncate.c
+index 3a29a61..043aabd 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -357,7 +357,10 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
+ 			if (lock_failed)
+ 				continue;
+ 
+-			ret = invalidate_inode_page(page);
++			if (PageActive(page))
++				ret = 0;
++			else
++				ret = invalidate_inode_page(page);
+ 			unlock_page(page);
+ 			/*
+ 			 * Invalidation is a hint that the page is no longer
+-- 
+1.7.4.1
+
