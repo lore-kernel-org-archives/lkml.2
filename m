@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932377Ab1FVSND (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 14:13:03 -0400
-Received: from home.keithp.com ([63.227.221.253]:37013 "EHLO keithp.com"
+	id S932393Ab1FVSOH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 14:14:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49870 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932243Ab1FVSNC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 14:13:02 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Cc: Kernel development list <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: Oops in i915 intel_init_clock_gating
-In-Reply-To: <20110615133256.113293a0@jbarnes-desktop>
-References: <Pine.LNX.4.44L0.1106151555400.1650-100000@iolanthe.rowland.org> <20110615133256.113293a0@jbarnes-desktop>
-User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Wed, 22 Jun 2011 11:12:51 -0700
-Message-ID: <yun4o3h68gs.fsf@aiko.keithp.com>
+	id S932348Ab1FVSOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 14:14:06 -0400
+Message-ID: <4E0230CD.1030505@zytor.com>
+Date: Wed, 22 Jun 2011 11:13:33 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Stefan Assmann <sassmann@kpanic.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, tony.luck@intel.com, andi@firstfloor.org,
+        mingo@elte.hu, rick@vanrein.org, rdunlap@xenotime.net,
+        Nancy Yuen <yuenn@google.com>, Michael Ditto <mditto@google.com>
+Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
+References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de> <20110622110034.89ee399c.akpm@linux-foundation.org>
+In-Reply-To: <20110622110034.89ee399c.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On 06/22/2011 11:00 AM, Andrew Morton wrote:
+> : 
+> : Second, the BadRAM patch expands the address patterns from the command
+> : line into individual entries in the kernel's e820 table.  The e820
+> : table is a fixed buffer that supports a very small, hard coded number
+> : of entries (128).  We require a much larger number of entries (on
+> : the order of a few thousand), so much of the google kernel patch deals
+> : with expanding the e820 table.
 
-On Wed, 15 Jun 2011 13:32:56 -0700, Jesse Barnes <jbarnes@virtuousgeek.org>=
- wrote:
+This has not been true for a long time.
 
-> diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_=
-drv.c
-> index 0defd42..a1a28fb 100644
-> --- a/drivers/gpu/drm/i915/i915_drv.c
-> +++ b/drivers/gpu/drm/i915/i915_drv.c
-> @@ -429,6 +429,9 @@ static int i915_drm_thaw(struct drm_device *dev)
->  	/* KMS EnterVT equivalent */
->  	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
->  		mutex_lock(&dev->struct_mutex);
-> +
-> +		intel_init_clock_gating(dev);
-> +
->  		dev_priv->mm.suspended =3D 0;
->=20=20
->  		error =3D i915_gem_init_ringbuffer(dev);
-> diff --git a/drivers/gpu/drm/i915/i915_suspend.c b/drivers/gpu/drm/i915/i=
-915_suspend.c
-> index 60a94d2..b478d16 100644
-> --- a/drivers/gpu/drm/i915/i915_suspend.c
-> +++ b/drivers/gpu/drm/i915/i915_suspend.c
-> @@ -863,8 +863,6 @@ int i915_restore_state(struct drm_device *dev)
->  		I915_WRITE(IMR, dev_priv->saveIMR);
->  	}
->=20=20
-> -	intel_init_clock_gating(dev);
-> -
->  	if (IS_IRONLAKE_M(dev)) {
->  		ironlake_enable_drps(dev);
->  		intel_init_emon(dev);
->=20
+> I have a couple of thoughts here:
+> 
+> - If this patchset is merged and a major user such as google is
+>   unable to use it and has to continue to carry a separate patch then
+>   that's a regrettable situation for the upstream kernel.
+> 
+> - Google's is, afaik, the largest use case we know of: zillions of
+>   machines for a number of years.  And this real-world experience tells
+>   us that the badram patchset has shortcomings.  Shortcomings which we
+>   can expect other users to experience.
+> 
+> So.  What are your thoughts on these issues?
 
-I haven't seen any comments as to whether this patch needs to be merged
-into the kernel. Has anyone tested this?
+I think a binary structure fed as a linked list data object makes a lot
+more sense.  We already support feeding e820 entries in this way,
+bypassing the 128-entry limitation of the fixed table in the zeropage.
 
-=2D-=20
-keith.packard@intel.com
+The main issue then is priority; in particular memory marked UNUSABLE
+(type 5) in the fed-in e820 map will of course overlap entries with
+normal RAM (type 1) information in the native map; we need to make sure
+that the type 5 information takes priority.
 
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFOAjCjQp8BWwlsTdMRAtSrAJ9gPxv1FoxrUZY3M9dYDQDn3eqOBwCgok8E
-Rtx2ZIlvbXsSqfwS87k7P44=
-=Rj5S
------END PGP SIGNATURE-----
---=-=-=--
+	-hpa
