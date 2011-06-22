@@ -1,62 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758866Ab1FVUPT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 16:15:19 -0400
-Received: from www.linutronix.de ([62.245.132.108]:42647 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758537Ab1FVUPS (ORCPT
+	id S1758878Ab1FVUPa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 16:15:30 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:37814 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758537Ab1FVUP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 16:15:18 -0400
-Date: Wed, 22 Jun 2011 22:15:15 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jens Axboe <axboe@kernel.dk>
-cc: Christoph Hellwig <hch@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [patch 1/4] sched: Separate the scheduler entry for preemption
-In-Reply-To: <4E0245A1.3090903@kernel.dk>
-Message-ID: <alpine.LFD.2.02.1106222211140.11814@ionos>
-References: <20110622174659.496793734@linutronix.de> <20110622174918.813258321@linutronix.de> <20110622184328.GA6475@infradead.org> <4E0245A1.3090903@kernel.dk>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 22 Jun 2011 16:15:29 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EADxMAk5tgwPS/2dsb2JhbABTpxB4iHMCwQMOhh8EoXg
+Date: Wed, 22 Jun 2011 22:15:26 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 1/10 v2] Generic Watchdog Timer Driver
+Message-ID: <20110622201526.GF26745@infomag.iguana.be>
+References: <20110618171946.GB3441@infomag.iguana.be> <201106182058.14702.arnd@arndb.de> <20110619204400.d732e8aa.rdunlap@xenotime.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110619204400.d732e8aa.rdunlap@xenotime.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Jun 2011, Jens Axboe wrote:
+Hi Randy,
 
-> On 2011-06-22 20:43, Christoph Hellwig wrote:
-> > On Wed, Jun 22, 2011 at 05:52:13PM -0000, Thomas Gleixner wrote:
-> >> Block-IO and workqueues call into notifier functions from the
-> >> scheduler core code with interrupts and preemption disabled. These
-> >> calls should be made before entering the scheduler core.
-> >>
-> >> To simplify this, separate the scheduler core code into
-> >> __schedule(). __schedule() is directly called from the places which
-> >> set PREEMPT_ACTIVE and from schedule(). This allows us to add the work
-> >> checks into schedule(), so they are only called when a task voluntary
-> >> goes to sleep.
-> > 
-> > I don't think that works.  We'll need to flush the block requests even
-> > for an involuntary schedule.
+> This info in Documentation/ioctl/ioctl-number.txt does not change, correct?
 > 
-> Yep, doing it just for voluntary schedule() is pointless, since the
-> caller should just do the flushing on his own. The whole point of the
-> sched hook was to ensure that involuntary schedules flushed it.
+> 'W'	00-1F	linux/watchdog.h	conflict!
 
-I guess we talk about different things here. The involuntary is when
-you are preempted, which keeps state unchanged and the current code
-already excludes that case.
+Indeed, the goal is to extract common code out of all watchdog drivers.
+So the ioctl calls have stayed the same.
 
-If you block on a mutex, semaphore, completion or whatever that's a
-different thing. That code calls schedule() not __schedule() and that
-will flush your stuff as it does now.
+Kind regards,
+Wim.
 
-Thanks,
-
-	tglx
