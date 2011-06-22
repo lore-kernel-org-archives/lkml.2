@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716Ab1FVGiH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 02:38:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9702 "EHLO mx1.redhat.com"
+	id S1754039Ab1FVGhR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 02:37:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53797 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753364Ab1FVGiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 02:38:04 -0400
+	id S1753670Ab1FVGhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 02:37:13 -0400
 From: Amerigo Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        Amerigo Wang <amwang@redhat.com>, Chris Ball <cjb@laptop.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Philip Rakity <prakity@marvell.com>,
+        Amerigo Wang <amwang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Lucas De Marchi <lucas.demarchi@profusion.mobi>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>, linux-mmc@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org
-Subject: [PATCH 4/5] pm: move pm notifiers into suspend.h
-Date: Wed, 22 Jun 2011 14:35:21 +0800
-Message-Id: <1308724522-32461-5-git-send-email-amwang@redhat.com>
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [PATCH 5/5] vt: move vt notifiers into vt.h
+Date: Wed, 22 Jun 2011 14:35:22 +0800
+Message-Id: <1308724522-32461-6-git-send-email-amwang@redhat.com>
 In-Reply-To: <1308724522-32461-1-git-send-email-amwang@redhat.com>
 References: <1308724522-32461-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,66 +28,54 @@ It is not necessary to share the same notifier.h.
 Signed-off-by: WANG Cong <amwang@redhat.com>
 
 ---
- drivers/mmc/core/core.c  |    3 +++
- include/linux/notifier.h |   10 ++--------
- include/linux/suspend.h  |    8 ++++++++
- 3 files changed, 13 insertions(+), 8 deletions(-)
+ include/linux/notifier.h |    9 ++-------
+ include/linux/vt.h       |    7 +++++++
+ 2 files changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 68091dd..2cd4ec5 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -23,6 +23,9 @@
- #include <linux/log2.h>
- #include <linux/regulator/consumer.h>
- #include <linux/pm_runtime.h>
-+#ifdef CONFIG_PM
-+#include <linux/suspend.h>
-+#endif
- 
- #include <linux/mmc/card.h>
- #include <linux/mmc/host.h>
 diff --git a/include/linux/notifier.h b/include/linux/notifier.h
-index 145c436..ae8f7d9 100644
+index ae8f7d9..d65746e 100644
 --- a/include/linux/notifier.h
 +++ b/include/linux/notifier.h
-@@ -191,15 +191,9 @@ static inline int notifier_to_errno(int ret)
+@@ -193,6 +193,8 @@ static inline int notifier_to_errno(int ret)
  
- /* reboot notifiers are defined in include/linux/reboot.h. */
+ /* Hibernation and suspend events are defined in include/linux/suspend.h. */
  
--#define NETLINK_URELEASE	0x0001	/* Unicast netlink socket released */
-+/* Hibernation and suspend events are defined in include/linux/suspend.h. */
- 
--/* Hibernation and suspend events */
--#define PM_HIBERNATION_PREPARE	0x0001 /* Going to hibernate */
--#define PM_POST_HIBERNATION	0x0002 /* Hibernation finished */
--#define PM_SUSPEND_PREPARE	0x0003 /* Going to suspend the system */
--#define PM_POST_SUSPEND		0x0004 /* Suspend finished */
--#define PM_RESTORE_PREPARE	0x0005 /* Going to restore a saved image */
--#define PM_POST_RESTORE		0x0006 /* Restore failed */
-+#define NETLINK_URELEASE	0x0001	/* Unicast netlink socket released */
++/* Virtual Terminal events are defined in include/linux/vt.h. */
++
+ #define NETLINK_URELEASE	0x0001	/* Unicast netlink socket released */
  
  /* Console keyboard events.
-  * Note: KBD_KEYCODE is always sent before KBD_UNBOUND_KEYCODE, KBD_UNICODE and
-diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-index 083ffea..95bc81c 100644
---- a/include/linux/suspend.h
-+++ b/include/linux/suspend.h
-@@ -260,6 +260,14 @@ static inline int hibernate(void) { return -ENOSYS; }
- static inline bool system_entering_hibernation(void) { return false; }
- #endif /* CONFIG_HIBERNATION */
+@@ -206,12 +208,5 @@ static inline int notifier_to_errno(int ret)
  
-+/* Hibernation and suspend events */
-+#define PM_HIBERNATION_PREPARE	0x0001 /* Going to hibernate */
-+#define PM_POST_HIBERNATION	0x0002 /* Hibernation finished */
-+#define PM_SUSPEND_PREPARE	0x0003 /* Going to suspend the system */
-+#define PM_POST_SUSPEND		0x0004 /* Suspend finished */
-+#define PM_RESTORE_PREPARE	0x0005 /* Going to restore a saved image */
-+#define PM_POST_RESTORE		0x0006 /* Restore failed */
+ extern struct blocking_notifier_head reboot_notifier_list;
+ 
+-/* Virtual Terminal events. */
+-#define VT_ALLOCATE		0x0001 /* Console got allocated */
+-#define VT_DEALLOCATE		0x0002 /* Console will be deallocated */
+-#define VT_WRITE		0x0003 /* A char got output */
+-#define VT_UPDATE		0x0004 /* A bigger update occurred */
+-#define VT_PREWRITE		0x0005 /* A char is about to be written to the console */
+-
+ #endif /* __KERNEL__ */
+ #endif /* _LINUX_NOTIFIER_H */
+diff --git a/include/linux/vt.h b/include/linux/vt.h
+index d5dd0bc..30a8dd9 100644
+--- a/include/linux/vt.h
++++ b/include/linux/vt.h
+@@ -86,6 +86,13 @@ struct vt_setactivate {
+ 
+ #ifdef __KERNEL__
+ 
++/* Virtual Terminal events. */
++#define VT_ALLOCATE		0x0001 /* Console got allocated */
++#define VT_DEALLOCATE		0x0002 /* Console will be deallocated */
++#define VT_WRITE		0x0003 /* A char got output */
++#define VT_UPDATE		0x0004 /* A bigger update occurred */
++#define VT_PREWRITE		0x0005 /* A char is about to be written to the console */
 +
- #ifdef CONFIG_PM_SLEEP
- void save_processor_state(void);
- void restore_processor_state(void);
+ #ifdef CONFIG_VT_CONSOLE
+ 
+ extern int vt_kmsg_redirect(int new);
 -- 
 1.7.4.4
 
