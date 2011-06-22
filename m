@@ -1,138 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932590Ab1FVTW3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 15:22:29 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:55151 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932530Ab1FVTW1 (ORCPT
+	id S932518Ab1FVTZn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 15:25:43 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:42812 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757967Ab1FVTZm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 15:22:27 -0400
-Date: Wed, 22 Jun 2011 15:22:28 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Kirill Smelkov <kirr@mns.spb.ru>
-cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        <linux-uvc-devel@lists.berlios.de>, <linux-media@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC, PATCH] USB: EHCI: Allow users to override 80% max periodic
- bandwidth
-In-Reply-To: <1308758567-8205-1-git-send-email-kirr@mns.spb.ru>
-Message-ID: <Pine.LNX.4.44L0.1106221514350.1977-100000@iolanthe.rowland.org>
+	Wed, 22 Jun 2011 15:25:42 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1308769914-15440-1-git-send-email-sjur.brandeland@stericsson.com>
+References: <1307713124-3946-1-git-send-email-carlos.chinea@nokia.com>
+	<1308769914-15440-1-git-send-email-sjur.brandeland@stericsson.com>
+Date: Wed, 22 Jun 2011 21:25:41 +0200
+Message-ID: <BANLkTikq-YnzwOjO=Ob4TjG3P8QJjAnNnQ@mail.gmail.com>
+Subject: Re: [RFC PATCHv5 1/7] HSI: hsi: Introducing HSI framework
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>
+Cc: Carlos Chinea <carlos.chinea@nokia.com>, sjurbren@gmail.com,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Jun 2011, Kirill Smelkov wrote:
+On Wed, Jun 22, 2011 at 9:11 PM, Sjur Brændeland
+<sjur.brandeland@stericsson.com> wrote:
+>>+/*
+>>+ * API for HSI clients
+>>+ */
+>>+int hsi_async(struct hsi_client *cl, struct hsi_msg *msg);
+>>+
+>>+/**
+>
+> I'm pleased to see scatter list support. But is this supported by all HW?
+> What is the behavior if HW doesn't support this, will hsi_async fail, or
+> is the scatter-list handled 'under the hood'?
 
-> There are cases, when 80% max isochronous bandwidth is too limiting.
-> 
-> For example I have two USB video capture cards which stream uncompressed
-> video, and to stream full NTSC + PAL videos we'd need
-> 
->     NTSC 640x480 YUV422 @30fps      ~17.6 MB/s
->     PAL  720x576 YUV422 @25fps      ~19.7 MB/s
-> 
-> isoc bandwidth.
-> 
-> Now, due to limited alt settings in capture devices NTSC one ends up
-> streaming with max_pkt_size=2688  and  PAL with max_pkt_size=2892, both
-> with interval=1. In terms of microframe time allocation this gives
-> 
->     NTSC    ~53us
->     PAL     ~57us
-> 
-> and together
-> 
->     ~110us  >  100us == 80% of 125us uframe time.
-> 
-> So those two devices can't work together simultaneously because the'd
-> over allocate isochronous bandwidth.
-> 
-> 80% seemed a bit arbitrary to me, and I've tried to raise it to 90% and
-> both devices started to work together, so I though sometimes it would be
-> a good idea for users to override hardcoded default of max 80% isoc
-> bandwidth.
-> 
-> After all, isn't it a user who should decide how to load the bus? If I
-> can live with 10% or even 5% bulk bandwidth that should be ok. I'm a USB
-> newcomer, but that 80% seems to be chosen pretty arbitrary to me, just
-> to serve as a reasonable default.
+I think it's pretty straight-forward even if you have to use PIO (IRQs and
+CPU-filling of FIFO). You simply use a memory iterator (sg_miter), so
+for example the MMC layer can only handle SGlists and in mmci.c we
+use sg_miter_start/next/stop to do this in the PIO case.
 
-This seems like the sort of feature somebody might reasonably want to 
-use -- if they know exactly what they're doing.
+If that kind of hardware would ever be fast enough for anyone using
+a HSI link is a good question though :-)
 
-> NOTE: for two streams with max_pkt_size=3072 (worst case) both time
-> allocation would be 60us+60us=120us which is 96% periodic bandwidth
-> leaving 4% for bulk and control. I think this should work too.
-
-At 480 Mb/s, each microframe holds 7500 bytes (less if you count 
-bit-stuffing).  4% of that is 300 bytes, which is not enough for a 
-512-byte bulk packet.  I think you'd run into trouble trying to do any 
-serious bulk transfers on such a tight schedule.
-
-> Signed-off-by: Kirill Smelkov <kirr@mns.spb.ru>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> ---
->  drivers/usb/host/ehci-hcd.c   |   16 ++++++++++++++++
->  drivers/usb/host/ehci-sched.c |   17 +++++++----------
->  2 files changed, 23 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-> index c606b02..1d36e72 100644
-> --- a/drivers/usb/host/ehci-hcd.c
-> +++ b/drivers/usb/host/ehci-hcd.c
-> @@ -112,6 +112,14 @@ static unsigned int hird;
->  module_param(hird, int, S_IRUGO);
->  MODULE_PARM_DESC(hird, "host initiated resume duration, +1 for each 75us\n");
->  
-> +/*
-> + * max periodic time per microframe
-> + * (be careful, USB 2.0 requires it to be 100us = 80% of 125us)
-> + */
-> +static unsigned int uframe_periodic_max = 100;
-> +module_param(uframe_periodic_max, uint, S_IRUGO);
-> +MODULE_PARM_DESC(uframe_periodic_max, "maximum allowed periodic part of a microframe, us");
-> +
-
-This probably should be a sysfs attribute rather than a module 
-parameter, so that it can be applied to individual buses separately.
-
->  #define	INTR_MASK (STS_IAA | STS_FATAL | STS_PCD | STS_ERR | STS_INT)
->  
->  /*-------------------------------------------------------------------------*/
-> @@ -571,6 +579,14 @@ static int ehci_init(struct usb_hcd *hcd)
->  	hcc_params = ehci_readl(ehci, &ehci->caps->hcc_params);
->  
->  	/*
-> +	 * tell user, if using non-standard (80% == 100 usec/uframe) bandwidth
-> +	 */
-> +	if (uframe_periodic_max != 100)
-> +		ehci_info(ehci, "using non-standard max periodic bandwith "
-> +				"(%u%% == %u usec/uframe)",
-> +				100*uframe_periodic_max/125, uframe_periodic_max);
-> +
-> +	/*
-
-Check for invalid values.  This should never be less than 100 or 
-greater than 125.
-
->  	 * hw default: 1K periodic list heads, one per frame.
->  	 * periodic_size can shrink by USBCMD update if hcc_params allows.
->  	 */
-> diff --git a/drivers/usb/host/ehci-sched.c b/drivers/usb/host/ehci-sched.c
-> index d12426f..fb374f2 100644
-> --- a/drivers/usb/host/ehci-sched.c
-> +++ b/drivers/usb/host/ehci-sched.c
-> @@ -172,7 +172,7 @@ periodic_usecs (struct ehci_hcd *ehci, unsigned frame, unsigned uframe)
->  		}
->  	}
->  #ifdef	DEBUG
-> -	if (usecs > 100)
-> +	if (usecs > uframe_periodic_max)
-
-These changes all seem right.
-
-Alan Stern
-
+Yours,
+Linus Walleij
