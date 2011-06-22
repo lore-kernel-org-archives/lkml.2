@@ -1,66 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757945Ab1FVCn5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 22:43:57 -0400
-Received: from ozlabs.org ([203.10.76.45]:34240 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757816Ab1FVCnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 22:43:55 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Ohad Ben-Cohen <ohad@wizery.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: akpm@linux-foundation.org, Brian Swetland <swetland@google.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        davinci-linux-open-source 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: Re: [RFC 7/8] drivers: introduce rpmsg, a remote-processor messaging bus
-In-Reply-To: <1308640714-17961-8-git-send-email-ohad@wizery.com>
-References: <1308640714-17961-1-git-send-email-ohad@wizery.com> <1308640714-17961-8-git-send-email-ohad@wizery.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Wed, 22 Jun 2011 12:12:33 +0930
-Message-ID: <87liwu8u3q.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757965Ab1FVCtH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 22:49:07 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:59106 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757737Ab1FVCtF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 22:49:05 -0400
+X-AuditID: cbfee60b-b7c8bae000000f98-00-4e0158186813
+Date: Wed, 22 Jun 2011 02:48:56 +0000 (GMT)
+From: =?euc-kr?B?x9S47cHW?= <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH] regulator: MAX8997: Fix for divide by zero error
+To: Tushar Behera <tushar.behera@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>
+Cc: "patches@linaro.org" <patches@linaro.org>, "lrg@ti.com" <lrg@ti.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20110622024513074@myungjoo.ham
+Msgkey: 20110622024513074@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20110622024513074@myungjoo.ham
+X-ParentMTR: 
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <29765534.104601308710936223.JavaMail.weblogic@epml07>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p5M2nMFe020348
 
-On Tue, 21 Jun 2011 10:18:33 +0300, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> Add a virtio-based IPC bus, which enables kernel users to communicate
-> with remote processors over shared memory using a simple messaging
-> protocol.
+Sender : Tushar Behera<tushar.behera@linaro.org>
+Date : 2011-06-21 12:38 (GMT+09:00)
+> Currently, ramp_delay variable is used uninitialzed in
+> max8997_set_voltage_ldobuck which gets called through
+> regulator_register calls.
+> 
+> To fix the problem, in max8997_pmic_probe, ramp_delay initialization
+> code is moved before calls to regulator_register.
+> 
+> Cc: Liam Girdwood 
+> Cc: Mark Brown 
+> Cc: MyungJoo Ham 
+> Cc: Kyungmin Park 
+> Cc: Samuel Ortiz 
+> Signed-off-by: Tushar Behera 
 
-Wow, sometimes one writes a standard and people use it.  Thanks!
+Although I've never been reported such an issue, but I'm sure this will cause one any time. Thanks!
 
-I'm still digesting exactly what you're doing, but this is a bit
-unconventional:
+Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
-> +	/* Platform must supply pre-allocated uncached buffers for now */
-> +	vdev->config->get(vdev, VPROC_BUF_ADDR, &addr, sizeof(addr));
-> +	vdev->config->get(vdev, VPROC_BUF_NUM, &num_bufs, sizeof(num_bufs));
-> +	vdev->config->get(vdev, VPROC_BUF_SZ, &buf_size, sizeof(buf_size));
-> +	vdev->config->get(vdev, VPROC_BUF_PADDR, &vrp->phys_base,
-> +						sizeof(vrp->phys_base));
-
-The normal way is to think of the config space as a structure, and use
-offsets rather than using an enum value to distinguish the fields.
-
-> +#define RPMSG_NAME_SIZE			32
-> +#define RPMSG_DEVICE_MODALIAS_FMT	"rpmsg:%s"
+> ---
+> drivers/regulator/max8997.c |    8 ++++----
+> 1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
+> index 10d5a1d..0fc7b8c 100644
+> --- a/drivers/regulator/max8997.c
+> +++ b/drivers/regulator/max8997.c
+> @@ -1124,6 +1124,10 @@ static __devinit int max8997_pmic_probe(struct platform_device *pdev)
+> 0x3f);
+> }
+> 
+> + /* Misc Settings */
+> + max8997->ramp_delay = 10; /* set 10mV/us, which is the default */
+> + max8997_write_reg(i2c, MAX8997_REG_BUCKRAMP, (0xf << 4) | 0x9);
 > +
-> +struct rpmsg_device_id {
-> +	char name[RPMSG_NAME_SIZE];
-> +	kernel_ulong_t driver_data	/* Data private to the driver */
-> +			__attribute__((aligned(sizeof(kernel_ulong_t))));
-> +};
+> for (i = 0; i < pdata->num_regulators; i++) {
+> const struct voltage_map_desc *desc;
+> int id = pdata->regulators[i].id;
+> @@ -1148,10 +1152,6 @@ static __devinit int max8997_pmic_probe(struct platform_device *pdev)
+> }
+> }
+> 
+> - /* Misc Settings */
+> - max8997->ramp_delay = 10; /* set 10mV/us, which is the default */
+> - max8997_write_reg(i2c, MAX8997_REG_BUCKRAMP, (0xf << 4) | 0x9);
+> -
+> return 0;
+> err:
+> for (i = 0; i < max8997->num_regulators; i++)
+> -- 
+> 1.7.4.1
+> 
+> 
 
-This alignment directive seems overkill...
 
-> +#define VIRTIO_ID_RPMSG		10 /* virtio remote processor messaging */
 
-I think you want 6.  Plan 9 jumped ahead to grab 9 :)
-
-Cheers,
-Rusty.
+ MyungJoo Ham (ÇÔ¸íÁÖ)
+Mobile Software Platform Lab,
+Digital Media and Communications (DMC) Business
+Samsung Electronics
+cell: +82-10-6714-2858 / office: +82-31-279-8033ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
