@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573Ab1FVG24 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 02:28:56 -0400
-Received: from webbox687.server-home.net ([195.149.74.151]:60331 "EHLO
-	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462Ab1FVG2z (ORCPT
+	id S1752757Ab1FVGcm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 02:32:42 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:47880 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056Ab1FVGcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 02:28:55 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: Re: [PATCH v3] pch_gpio: Support interrupt function
-Date: Wed, 22 Jun 2011 08:28:28 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; x86_64; ; )
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com
-References: <1308631468-2376-1-git-send-email-tomoya-linux@dsn.okisemi.com> <201106211110.18171.alexander.stein@systec-electronic.com> <4E0132F4.7080506@dsn.okisemi.com>
-In-Reply-To: <4E0132F4.7080506@dsn.okisemi.com>
+	Wed, 22 Jun 2011 02:32:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=QtqJEaxtUSOCCZ9PYdybEmDXcdXLQ27Uw5F538HRxndIOej0LC+OHzQMcP8WsG2aFm
+         3Oa/2//YE+fOjTCbTaEw==
+Date: Tue, 21 Jun 2011 23:32:34 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Cong Wang <amwang@redhat.com>
+cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        dave@linux.vnet.ibm.com, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [PATCH v2 2/4] mm: make the threshold of enabling THP
+ configurable
+In-Reply-To: <4E018060.3050607@redhat.com>
+Message-ID: <alpine.DEB.2.00.1106212325400.14693@chino.kir.corp.google.com>
+References: <1308643849-3325-1-git-send-email-amwang@redhat.com> <1308643849-3325-2-git-send-email-amwang@redhat.com> <alpine.DEB.2.00.1106211817340.5205@chino.kir.corp.google.com> <4E015C36.2050005@redhat.com> <alpine.DEB.2.00.1106212024210.8712@chino.kir.corp.google.com>
+ <4E018060.3050607@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106220828.30516.alexander.stein@systec-electronic.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 22 June 2011 02:10:28 Tomoya MORINAGA wrote:
-> (2011/06/21 18:10), Alexander Stein wrote:
-> > I wrote a small program which use poll(2) on value, after edge hase been
-> > configured from shell. I cannot test the edge detection appropriately due
-> > to debouncing using jumpers.
+On Wed, 22 Jun 2011, Cong Wang wrote:
+
+> > Either way, this patch isn't needed since it has no benefit over doing it
+> > through an init script.
 > 
-> Really ?
-> In out test environment, my test program could detect edge interrupt
-> correctly.
+> If you were right, CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS is not needed,
+> you can do it through an init script.
+> 
 
-My test program used poll/select on edge successfully. But I could not test 
-the raising or falling feature actually, as my input is bouncing. So, it 
-doesn't matter if I set both/raising/falling in edge, due to my inputs the 
-effect is the same. Any input event will end in several raising and falling 
-interrupts events.
-I hope I could make this more clear.
+They are really two different things: config options like 
+CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS and CONFIG_SLUB_DEBUG_ON are shortcuts 
+for command line options when you want the _default_ behavior to be 
+specified.  They could easily be done on the command line just as they can 
+be done in the config.  They typically have far reaching consequences 
+depending on whether they are enabled or disabled and warrant the entry in 
+the config file.
 
-Alexander
+This patch, however, is not making the heuristic any easier to work with; 
+in fact, if the default were ever changed or the value is changed on your 
+kernel, then certain kernels will have THP enabled by default and others 
+will not.  That's why I suggested an override command line option like 
+transparent_hugepage=force to ignore any disabling heursitics either 
+present or future.
+
+> If you were right, the 512M limit is not needed neither, you have
+> transparent_hugepage=never boot parameter and do the check of
+> 512M later in an init script. (Actually, moving the 512M check to
+> user-space is really more sane to me.)
+> 
+
+It's quite obvious that the default behavior intended by the author is 
+that it is defaulted off for systems with less than 512M of memory.  
+Obfuscating that probably isn't a very good idea, but I'm always in favor 
+of command lines that allow users to override settings when they really do 
+know better.
