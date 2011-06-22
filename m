@@ -1,79 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758064Ab1FVOUb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 10:20:31 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42399 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755582Ab1FVOU3 (ORCPT
+	id S1758069Ab1FVOVd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 10:21:33 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:64740 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755582Ab1FVOVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 10:20:29 -0400
-Date: Wed, 22 Jun 2011 10:20:28 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH] PCI / PM: Block races between runtime PM and system
- sleep
-In-Reply-To: <201106220149.17380.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1106221011240.1977-100000@iolanthe.rowland.org>
+	Wed, 22 Jun 2011 10:21:32 -0400
+Message-ID: <4E01FA5A.1020307@aktendiener.de>
+Date: Wed, 22 Jun 2011 16:21:14 +0200
+From: Johannes Wiedersich <debian@aktendiener.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110606 Icedove/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: LKML <linux-kernel@vger.kernel.org>, 631255@bugs.debian.org
+Subject: Re: 3.0-rc3: kernel BUG at fs/inode.c:1368!
+References: <20110622063624.7374.9343.reportbug@johannes4.fritz.box> <1308750980.3093.470.camel@localhost>
+In-Reply-To: <1308750980.3093.470.camel@localhost>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:9MbsMVU8yy6ZD4/RmvmzBsQH2Ka/hl2Vcv1xW6zqWBB
+ VxQUQpitXRqA0ILaWOle2gB4UwNmiEBOir6GTgOECcnPIK+tG+
+ Z4rUw9By1N7UB6Iky/5BRmfjob/Gyb5+fcW+ueZGuZWZ/RPQ39
+ Wxt12nGrzOuKXhPOSDFcDkHnU+2onLVm1Z8cauTv6uo40wDbUJ
+ quFpav0U2zlsnplcIrqCCkibgi0D0GcmmeXQ3SH3QI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Jun 2011, Rafael J. Wysocki wrote:
-
-> > It's probably okay to prevent pm_runtime_suspend() from working during
-> > .suspend() or .resume(), but it's not a good idea to prevent
-> > pm_runtime_resume() from working then.
+On 2011-06-22 15:56, Ben Hutchings wrote:
+> On Wed, 2011-06-22 at 08:36 +0200, Johannes Wiedersich wrote:
+>> Package: linux-2.6
+>> Version: 3.0.0~rc3-1~experimental.1
+>> Severity: important
+>>
+>>
+>> aptitude installing a package triggers a kernel oops. I have no idea,
+>> what part of the installation process is to blame, but could try to
+>> reproduce, if I would get further instructions. 
+> [...]
 > 
-> OK, but taking a reference by means of pm_runtime_get_noresume() won't
-> block pm_runtime_resume().
+> I assume you haven't seen a similar crash in earlier versions?
 
-Exactly my point -- we don't need to (and don't want to) block 
-pm_runtime_resume during the .suspend() and .resume() callbacks.
+No, linux-image-2.6.39-2-amd64 and linux-image-2.6.38-2-amd64 from
+testing and unstable are fine, while I could reproduce this behaviour
+for 3.0.0~rc3-1.
 
-> > During the .suspend and .resume callbacks, races with
-> > .runtime_suspend() can be prevented by calling
-> > pm_runtime_get_noresume() just before .suspend() and then calling
-> > pm_runtime_put_sync() just after .resume().
+> Also, what type of filesystem where you installing on
+> (ext3/ext4/btrfs/xfs...)?
+
+$ mount
+/dev/mapper/johannes--fast-root--amd64 on / type ext4
+(rw,errors=remount-ro,commit=0)
+/dev/sdb1 on /boot type ext2 (rw)
+
+Some snippets from vgdisplay and lvdisplay:
+
+/===================16:17:19-root@johannes4:~# vgdisplay
+  --- Volume group ---
+  VG Name               johannes-fast
+  System ID
+  Format                lvm2
+  Metadata Areas        1
+  Metadata Sequence No  4
+  VG Access             read/write
+  VG Status             resizable
+  MAX LV                0
+  Cur LV                3
+  Open LV               2
+  Max PV                0
+  Cur PV                1
+  Act PV                1
+  VG Size               74.29 GiB
+  PE Size               4.00 MiB
+  Total PE              19018
+  Alloc PE / Size       19018 / 74.29 GiB
+  Free  PE / Size       0 / 0
+  VG UUID               YmvwSc-BDlh-YaXC-ac8z-98mo-5tMG-i27v6b
+
+  --- Volume group ---
+  VG Name               johannes4
+
+[....]
+
+16:17:22-root@johannes4:~# lvdisplay
+  --- Logical volume ---
+  LV Name                /dev/johannes-fast/root-amd64
+  VG Name                johannes-fast
+  LV UUID                nOzLXl-960W-3zX2-8m7b-A7iH-FWbG-H6j77T
+  LV Write Access        read/write
+  LV Status              available
+  # open                 1
+  LV Size                18.62 GiB
+  Current LE             4768
+  Segments               1
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     256
+  Block device           254:0
+
+  --- Logical volume ---
+  LV Name                /dev/johannes-fast/home-fast
+  VG Name                johannes-fast
+  LV UUID                PSStvE-11cT-VXRJ-K7xM-U9sY-fRN3-s2A6Yu
+  LV Write Access        read/write
+  LV Status              available
+  # open                 1
+  LV Size                46.56 GiB
+  Current LE             11920
+  Segments               1
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     256
+  Block device           254:2
+
+[...]
+
+  --- Logical volume ---
+  LV Name                /dev/johannes4/swap_1
+  VG Name                johannes4
+  LV UUID                b4HIrg-u4Ui-mUp1-7VMg-6LFA-0fFC-jTMCFT
+  LV Write Access        read/write
+  LV Status              available
+  # open                 2
+  LV Size                5.64 GiB
+  Current LE             1443
+  Segments               1
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     256
+  Block device           254:1
+
+
+\==============================================================
+
 > 
-> So, you seem to suggest to call pm_runtime_get_noresume() in
-> __device_suspend() and pm_runtime_put_sync() in device_resume().
+> Forwarding this to LKML.
 
-Yes.  Also perhaps call pm_runtime_barrier() immediately after 
-get_noresume.
+Thanks!
 
-> That would be fine by me, perhaps up to the "sync" part of the "put".
-
-The main feature of this design is that it allows runtime PM to work 
-between .resume() and .complete().  If you do a put_noidle instead of 
-put_sync then you may prevent runtime PM from working properly.
-
-> > >  (a _put_sync() at this point will likely invoke
-> > > .runtime_idle() from the subsystem before executing .complete(), which may
-> > > not be desirable)?
-> > 
-> > It should be allowed.  The purpose of .complete() is not to re-enable
-> > runtime power management of the device; it is to release resources
-> > (like memory) allocated during .prepare() and perhaps also to allow new
-> > children to be registered under the device.
-> 
-> Right.  But does "allowed" mean the core _should_ do it at this point?
-> We may as well call pm_runtime_idle() directly from rpm_complete(), but
-> perhaps it's better to call it from device_resume(), so that it runs in
-> parallel for async devices.
-
-Calling pm_runtime_put_noidle() followed by pm_runtime_idle() is 
-essentially the same as calling pm_runtime_put_sync() anyway.
-
-If a subsystem really does want to block runtime PM between the 
-.resume() and .complete() callbacks, it can do its own get_noresume and 
-put_sync -- just as you have done with PCI.
-
-Alan Stern
-
+Johannes
