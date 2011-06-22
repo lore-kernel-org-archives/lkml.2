@@ -1,112 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888Ab1FVK5I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 06:57:08 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48687 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138Ab1FVK5G (ORCPT
+	id S1756646Ab1FVLFj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 07:05:39 -0400
+Received: from na3sys010aog110.obsmtp.com ([74.125.245.88]:44492 "HELO
+	na3sys010aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754668Ab1FVLFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 06:57:06 -0400
-Date: Wed, 22 Jun 2011 11:55:50 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Subject: [PATCH] Fix CPU spinlock lockups on secondary CPU bringup
-Message-ID: <20110622105550.GQ23234@n2100.arm.linux.org.uk>
+	Wed, 22 Jun 2011 07:05:38 -0400
+Message-ID: <4E01CC77.10607@ravellosystems.com>
+Date: Wed, 22 Jun 2011 14:05:27 +0300
+From: Izik Eidus <izik.eidus@ravellosystems.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Avi Kivity <avi@redhat.com>
+CC: nai.xia@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
+        Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
+Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte
+ and mmu notifier to help KSM dirty bit tracking
+References: <201106212055.25400.nai.xia@gmail.com> <201106212132.39311.nai.xia@gmail.com> <4E01C752.10405@redhat.com>
+In-Reply-To: <4E01C752.10405@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+On 6/22/2011 1:43 PM, Avi Kivity wrote:
+> On 06/21/2011 04:32 PM, Nai Xia wrote:
+>> Introduced kvm_mmu_notifier_test_and_clear_dirty(), 
+>> kvm_mmu_notifier_dirty_update()
+>> and their mmu_notifier interfaces to support KSM dirty bit tracking, 
+>> which brings
+>> significant performance gain in volatile pages scanning in KSM.
+>> Currently, kvm_mmu_notifier_dirty_update() returns 0 if and only if 
+>> intel EPT is
+>> enabled to indicate that the dirty bits of underlying sptes are not 
+>> updated by
+>> hardware.
+>>
+>
+>
+> Can you quantify the performance gains?
+>
+>> +int kvm_test_and_clear_dirty_rmapp(struct kvm *kvm, unsigned long 
+>> *rmapp,
+>> +                   unsigned long data)
+>> +{
+>> +    u64 *spte;
+>> +    int dirty = 0;
+>> +
+>> +    if (!shadow_dirty_mask) {
+>> +        WARN(1, "KVM: do NOT try to test dirty bit in EPT\n");
+>> +        goto out;
+>> +    }
+>> +
+>> +    spte = rmap_next(kvm, rmapp, NULL);
+>> +    while (spte) {
+>> +        int _dirty;
+>> +        u64 _spte = *spte;
+>> +        BUG_ON(!(_spte&  PT_PRESENT_MASK));
+>> +        _dirty = _spte&  PT_DIRTY_MASK;
+>> +        if (_dirty) {
+>> +            dirty = 1;
+>> +            clear_bit(PT_DIRTY_SHIFT, (unsigned long *)spte);
+>> +        }
+>
+> Racy.  Also, needs a tlb flush eventually.
 
-Secondary CPU bringup typically calls calibrate_delay() during its
-initialization.  However, calibrate_delay() modifies a global variable
-(loops_per_jiffy) used for udelay() and __delay().
-
-A side effect of 71c696b1 (calibrate: extract fall-back calculation
-into own helper) introduced in the 2.6.39 merge window means that we
-end up with a substantial period where loops_per_jiffy is zero.  This
-causes the spinlock debugging code to malfunction:
-
-	u64 loops = loops_per_jiffy * HZ;
-	for (;;) {
-		for (i = 0; i < loops; i++) {
-			if (arch_spin_trylock(&lock->raw_lock))
-				return;
-			__delay(1);
-		}
-		...
-	}
-
-by never calling arch_spin_trylock() - resulting in the CPU locking
-up in an infinite loop inside __spin_lock_debug().
-
-Work around this by only writing to loops_per_jiffy only once we have
-completed all the calibration decisions.
-
-Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: <stable@kernel.org> (2.6.39-stable)
-
---
-Better solutions (such as omitting the calibration for secondary CPUs,
-or arranging for calibrate_delay() to return the LPJ value and leave
-it to the caller to decide where to store it) are a possibility, but
-would be much more invasive into each architecture.
-
-I think this is the best solution for -rc and stable, but it should be
-revisited for the next merge window.
-
- init/calibrate.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
-
-diff --git a/init/calibrate.c b/init/calibrate.c
-index 2568d22..aae2f40 100644
---- a/init/calibrate.c
-+++ b/init/calibrate.c
-@@ -245,30 +245,32 @@ static unsigned long __cpuinit calibrate_delay_converge(void)
- 
- void __cpuinit calibrate_delay(void)
- {
-+	unsigned long lpj;
- 	static bool printed;
- 
- 	if (preset_lpj) {
--		loops_per_jiffy = preset_lpj;
-+		lpj = preset_lpj;
- 		if (!printed)
- 			pr_info("Calibrating delay loop (skipped) "
- 				"preset value.. ");
- 	} else if ((!printed) && lpj_fine) {
--		loops_per_jiffy = lpj_fine;
-+		lpj = lpj_fine;
- 		pr_info("Calibrating delay loop (skipped), "
- 			"value calculated using timer frequency.. ");
--	} else if ((loops_per_jiffy = calibrate_delay_direct()) != 0) {
-+	} else if ((lpj = calibrate_delay_direct()) != 0) {
- 		if (!printed)
- 			pr_info("Calibrating delay using timer "
- 				"specific routine.. ");
- 	} else {
- 		if (!printed)
- 			pr_info("Calibrating delay loop... ");
--		loops_per_jiffy = calibrate_delay_converge();
-+		lpj = calibrate_delay_converge();
- 	}
- 	if (!printed)
- 		pr_cont("%lu.%02lu BogoMIPS (lpj=%lu)\n",
--			loops_per_jiffy/(500000/HZ),
--			(loops_per_jiffy/(5000/HZ)) % 100, loops_per_jiffy);
-+			lpj/(500000/HZ),
-+			(lpj/(5000/HZ)) % 100, lpj);
- 
-+	loops_per_jiffy = lpj;
- 	printed = true;
- }
+Hi, one of the issues is that the whole point of this patch is not do 
+tlb flush eventually,
+But I see your point, because other users will not expect such behavior, 
+so maybe there is need into a parameter
+flush_tlb=?, or add another mmu notifier call?
 
