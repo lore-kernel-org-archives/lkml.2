@@ -1,148 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932459Ab1FVP7A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 11:59:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49719 "EHLO mx2.suse.de"
+	id S932490Ab1FVQDv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 12:03:51 -0400
+Received: from mail.mnsspb.ru ([84.204.75.2]:40584 "EHLO mail.mnsspb.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932210Ab1FVP67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 11:58:59 -0400
-Date: Wed, 22 Jun 2011 17:58:57 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: Re: [PATCH 5/7] Fix not good check of mem_cgroup_local_usage()
-Message-ID: <20110622155856.GI14343@tiehlicka.suse.cz>
-References: <20110616124730.d6960b8b.kamezawa.hiroyu@jp.fujitsu.com>
- <20110616125443.23584d78.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110616125443.23584d78.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932471Ab1FVQDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 12:03:48 -0400
+From: Kirill Smelkov <kirr@mns.spb.ru>
+To: linux-usb@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-uvc-devel@lists.berlios.de,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kirill Smelkov <kirr@mns.spb.ru>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [RFC, PATCH] USB: EHCI: Allow users to override 80% max periodic bandwidth
+Date: Wed, 22 Jun 2011 20:02:47 +0400
+Message-Id: <1308758567-8205-1-git-send-email-kirr@mns.spb.ru>
+X-Mailer: git-send-email 1.7.6.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 16-06-11 12:54:43, KAMEZAWA Hiroyuki wrote:
-> From fcfc6ee9847b0b2571cd6e9847572d7c70e1e2b2 Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Thu, 16 Jun 2011 09:23:54 +0900
-> Subject: [PATCH 5/7] Fix not good check of mem_cgroup_local_usage()
-> 
-> Now, mem_cgroup_local_usage(memcg) is used as hint for scanning memory
-> cgroup hierarchy. If it returns true, the memcg has some reclaimable memory.
-> 
-> But this function doesn't take care of
->   - unevictable pages
->   - anon pages on swapless system.
-> 
-> This patch fixes the function to use LRU information.
-> For NUMA, for avoid scanning, numa scan bitmap is used. If it's
-> empty, some more precise check will be done.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/memcontrol.c |   43 +++++++++++++++++++++++++++++++++----------
->  1 files changed, 33 insertions(+), 10 deletions(-)
-> 
-> Index: mmotm-0615/mm/memcontrol.c
-> ===================================================================
-> --- mmotm-0615.orig/mm/memcontrol.c
-> +++ mmotm-0615/mm/memcontrol.c
-> @@ -632,15 +632,6 @@ static long mem_cgroup_read_stat(struct 
->  	return val;
->  }
->  
-> -static long mem_cgroup_local_usage(struct mem_cgroup *mem)
-> -{
-> -	long ret;
-> -
-> -	ret = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_RSS);
-> -	ret += mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_CACHE);
-> -	return ret;
-> -}
-> -
->  static void mem_cgroup_swap_statistics(struct mem_cgroup *mem,
->  					 bool charge)
->  {
-> @@ -1713,6 +1704,23 @@ static void mem_cgroup_numascan_init(str
->  	mutex_init(&mem->numascan_mutex);
->  }
->  
-> +static bool mem_cgroup_reclaimable(struct mem_cgroup *mem, bool noswap)
-> +{
-> +	if (!nodes_empty(mem->scan_nodes))
-> +		return true;
+There are cases, when 80% max isochronous bandwidth is too limiting.
 
-How the non empty node mask guarantees that there is some reclaimable memory?
+For example I have two USB video capture cards which stream uncompressed
+video, and to stream full NTSC + PAL videos we'd need
 
-> +	/* slow path */
-> +	if (mem_cgroup_get_local_zonestat(mem, LRU_INACTIVE_FILE))
-> +		return true;
-> +	if (mem_cgroup_get_local_zonestat(mem, LRU_ACTIVE_FILE))
-> +		return true;
-> +	if (noswap || !total_swap_pages)
-> +		return false;
-> +	if (mem_cgroup_get_local_zonestat(mem, LRU_INACTIVE_ANON))
-> +		return true;
-> +	if (mem_cgroup_get_local_zonestat(mem, LRU_ACTIVE_ANON))
-> +		return true;
-> +	return false;
-> +}
->  #else
->  int mem_cgroup_select_victim_node(struct mem_cgroup *mem)
->  {
-> @@ -1722,6 +1730,21 @@ static void mem_cgroup_numascan_init(str
->  {
->  	return 0;
->  }
-> +
-> +static bool mem_cgroup_reclaimable(struct mem_cgroup *mem, bool noswap)
-> +{
-> +	if (mem_cgroup_get_zonestat_node(mem, 0, LRU_INACTIVE_FILE))
-> +		return true;
-> +	if (mem_cgroup_get_zonestat_node(mem, 0, LRU_ACTIVE_FILE))
-> +		return true;
-> +	if (noswap || !total_swap_pages)
-> +		return false;
-> +	if (mem_cgroup_get_zonestat_node(mem, 0, LRU_INACTIVE_ANON))
-> +		return true;
-> +	if (mem_cgroup_get_zonestat_node(mem, 0, LRU_ACTIVE_ANON))
-> +		return true;
-> +	return false;
-> +}
->  #endif
+    NTSC 640x480 YUV422 @30fps      ~17.6 MB/s
+    PAL  720x576 YUV422 @25fps      ~19.7 MB/s
 
-Code duplication doesn't look good. What about a common helper?
->  
->  
-> @@ -1811,7 +1834,7 @@ again:
->  
->  	while (visit--) {
->  		victim = mem_cgroup_select_victim(root_mem);
-> -		if (!mem_cgroup_local_usage(victim)) {
-> +		if (!mem_cgroup_reclaimable(victim, noswap)) {
->  			/* this cgroup's local usage == 0 */
->  			css_put(&victim->css);
->  			continue;
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+isoc bandwidth.
 
+Now, due to limited alt settings in capture devices NTSC one ends up
+streaming with max_pkt_size=2688  and  PAL with max_pkt_size=2892, both
+with interval=1. In terms of microframe time allocation this gives
+
+    NTSC    ~53us
+    PAL     ~57us
+
+and together
+
+    ~110us  >  100us == 80% of 125us uframe time.
+
+So those two devices can't work together simultaneously because the'd
+over allocate isochronous bandwidth.
+
+80% seemed a bit arbitrary to me, and I've tried to raise it to 90% and
+both devices started to work together, so I though sometimes it would be
+a good idea for users to override hardcoded default of max 80% isoc
+bandwidth.
+
+After all, isn't it a user who should decide how to load the bus? If I
+can live with 10% or even 5% bulk bandwidth that should be ok. I'm a USB
+newcomer, but that 80% seems to be chosen pretty arbitrary to me, just
+to serve as a reasonable default.
+
+NOTE: for two streams with max_pkt_size=3072 (worst case) both time
+allocation would be 60us+60us=120us which is 96% periodic bandwidth
+leaving 4% for bulk and control. I think this should work too.
+
+Signed-off-by: Kirill Smelkov <kirr@mns.spb.ru>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+---
+ drivers/usb/host/ehci-hcd.c   |   16 ++++++++++++++++
+ drivers/usb/host/ehci-sched.c |   17 +++++++----------
+ 2 files changed, 23 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index c606b02..1d36e72 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -112,6 +112,14 @@ static unsigned int hird;
+ module_param(hird, int, S_IRUGO);
+ MODULE_PARM_DESC(hird, "host initiated resume duration, +1 for each 75us\n");
+ 
++/*
++ * max periodic time per microframe
++ * (be careful, USB 2.0 requires it to be 100us = 80% of 125us)
++ */
++static unsigned int uframe_periodic_max = 100;
++module_param(uframe_periodic_max, uint, S_IRUGO);
++MODULE_PARM_DESC(uframe_periodic_max, "maximum allowed periodic part of a microframe, us");
++
+ #define	INTR_MASK (STS_IAA | STS_FATAL | STS_PCD | STS_ERR | STS_INT)
+ 
+ /*-------------------------------------------------------------------------*/
+@@ -571,6 +579,14 @@ static int ehci_init(struct usb_hcd *hcd)
+ 	hcc_params = ehci_readl(ehci, &ehci->caps->hcc_params);
+ 
+ 	/*
++	 * tell user, if using non-standard (80% == 100 usec/uframe) bandwidth
++	 */
++	if (uframe_periodic_max != 100)
++		ehci_info(ehci, "using non-standard max periodic bandwith "
++				"(%u%% == %u usec/uframe)",
++				100*uframe_periodic_max/125, uframe_periodic_max);
++
++	/*
+ 	 * hw default: 1K periodic list heads, one per frame.
+ 	 * periodic_size can shrink by USBCMD update if hcc_params allows.
+ 	 */
+diff --git a/drivers/usb/host/ehci-sched.c b/drivers/usb/host/ehci-sched.c
+index d12426f..fb374f2 100644
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -172,7 +172,7 @@ periodic_usecs (struct ehci_hcd *ehci, unsigned frame, unsigned uframe)
+ 		}
+ 	}
+ #ifdef	DEBUG
+-	if (usecs > 100)
++	if (usecs > uframe_periodic_max)
+ 		ehci_err (ehci, "uframe %d sched overrun: %d usecs\n",
+ 			frame * 8 + uframe, usecs);
+ #endif
+@@ -709,11 +709,8 @@ static int check_period (
+ 	if (uframe >= 8)
+ 		return 0;
+ 
+-	/*
+-	 * 80% periodic == 100 usec/uframe available
+-	 * convert "usecs we need" to "max already claimed"
+-	 */
+-	usecs = 100 - usecs;
++	/* convert "usecs we need" to "max already claimed" */
++	usecs = uframe_periodic_max - usecs;
+ 
+ 	/* we "know" 2 and 4 uframe intervals were rejected; so
+ 	 * for period 0, check _every_ microframe in the schedule.
+@@ -1286,9 +1283,9 @@ itd_slot_ok (
+ {
+ 	uframe %= period;
+ 	do {
+-		/* can't commit more than 80% periodic == 100 usec */
++		/* can't commit more than uframe_periodic_max usec */
+ 		if (periodic_usecs (ehci, uframe >> 3, uframe & 0x7)
+-				> (100 - usecs))
++				> (uframe_periodic_max - usecs))
+ 			return 0;
+ 
+ 		/* we know urb->interval is 2^N uframes */
+@@ -1345,7 +1342,7 @@ sitd_slot_ok (
+ #endif
+ 
+ 		/* check starts (OUT uses more than one) */
+-		max_used = 100 - stream->usecs;
++		max_used = uframe_periodic_max - stream->usecs;
+ 		for (tmp = stream->raw_mask & 0xff; tmp; tmp >>= 1, uf++) {
+ 			if (periodic_usecs (ehci, frame, uf) > max_used)
+ 				return 0;
+@@ -1354,7 +1351,7 @@ sitd_slot_ok (
+ 		/* for IN, check CSPLIT */
+ 		if (stream->c_usecs) {
+ 			uf = uframe & 7;
+-			max_used = 100 - stream->c_usecs;
++			max_used = uframe_periodic_max - stream->c_usecs;
+ 			do {
+ 				tmp = 1 << uf;
+ 				tmp <<= 8;
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+1.7.6.rc1
+
