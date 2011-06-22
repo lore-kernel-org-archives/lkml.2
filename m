@@ -1,76 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932314Ab1FVSHw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 14:07:52 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47460 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758369Ab1FVSHv (ORCPT
+	id S932345Ab1FVSJO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 14:09:14 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:59378 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932243Ab1FVSJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 14:07:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=sW7W8gld+zq2ZBIhqqiktzBY28A5QRHkt8XsvnOJiKl7Xk9gApqL89wcaSG5KqxTkF
-         LXl/rPMiVhJWtLpaFtuEpcjsRvJRkTjxaJ96zBV6MDSLzS8Erw+sZ+UOiLcRv4HedtDp
-         cc5Gdmh6fpoRncX/4JJx/h8Ehe2DBj+qeWsy8=
-Subject: [PATCH] net: wimax: Remove of unused 'rfkill_input' pointer
-From: Vitaliy Ivanov <vitalivanov@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>,
-        Johannes Berg <johannes@sipsolutions.net>
-Cc: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Alan Jenkins <alan-jenkins@tuffmail.co.uk>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "John W. Linville" <linville@tuxdriver.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Jun 2011 21:06:44 +0300
-Message-ID: <1308766004.13761.32.camel@vivanov>
+	Wed, 22 Jun 2011 14:09:12 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=dSE60/90YEX4Pj44Qx2lQk35FGLf3M8pY0F756NWiz5339gUvW7Tu7+EG2H8C1FBN0BYiE33VAfSa3EWZm5z2JABeTn6+0tDEXQyxBFYhop3N9DhWEXPQgaTcBjKCrtX;
+Date: Wed, 22 Jun 2011 11:09:10 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Stefan Assmann <sassmann@kpanic.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, tony.luck@intel.com, andi@firstfloor.org,
+        mingo@elte.hu, hpa@zytor.com, rick@vanrein.org, rdunlap@xenotime.net,
+        Nancy Yuen <yuenn@google.com>, Michael Ditto <mditto@google.com>
+Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
+Message-Id: <20110622110910.c8e11eb7.rdunlap@xenotime.net>
+In-Reply-To: <20110622110034.89ee399c.akpm@linux-foundation.org>
+References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de>
+	<20110622110034.89ee399c.akpm@linux-foundation.org>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 22 Jun 2011 11:00:34 -0700 Andrew Morton wrote:
 
-David,
+> On Wed, 22 Jun 2011 13:18:51 +0200 Stefan Assmann <sassmann@kpanic.de> wrote:
+> 
+> > Following the RFC for the BadRAM feature here's the updated version with
+> > spelling fixes, thanks go to Randy Dunlap. Also the code is now less verbose,
+> > as requested by Andi Kleen.
+> > v2 with even more spelling fixes suggested by Randy.
+> > Patches are against vanilla 2.6.39.
+> > 
+> > The idea is to allow the user to specify RAM addresses that shouldn't be
+> > touched by the OS, because they are broken in some way. Not all machines have
+> > hardware support for hwpoison, ECC RAM, etc, so here's a solution that allows to
+> > use bitmasks to mask address patterns with the new "badram" kernel command line
+> > parameter.
+> > Memtest86 has an option to generate these patterns since v2.3 so the only thing
+> > for the user to do should be:
+> > - run Memtest86
+> > - note down the pattern
+> > - add badram=<pattern> to the kernel command line
+> > 
+> > The concerning pages are then marked with the hwpoison flag and thus won't be
+> > used by the memory managment system.
+> 
+> The google kernel has a similar capability.  I asked Nancy to comment
+> on these patches and she said:
+> 
+> : One, the bad addresses are passed via the kernel command line, which
+> : has a limited length.  It's okay if the addresses can be fit into a
+> : pattern, but that's not necessarily the case in the google kernel.  And
+> : even with patterns, the limit on the command line length limits the
+> : number of patterns that user can specify.  Instead we use lilo to pass
+> : a file containing the bad pages in e820 format to the kernel.
+> : 
+> : Second, the BadRAM patch expands the address patterns from the command
+> : line into individual entries in the kernel's e820 table.  The e820
+> : table is a fixed buffer that supports a very small, hard coded number
+> : of entries (128).  We require a much larger number of entries (on
+> : the order of a few thousand), so much of the google kernel patch deals
+> : with expanding the e820 table. Also, with the BadRAM patch, entries
+> : that don't fit in the table are silently dropped and this isn't
+> : appropriate for us.
+> : 
+> : Another caveat of mapping out too much bad memory in general.  If too
+> : much memory is removed from low memory, a system may not boot.  We
+> : solve this by generating good maps.  Our userspace tools do not map out
+> : memory below a certain limit, and it verifies against a system's iomap
+> : that only addresses from memory is mapped out.
+> 
+> I have a couple of thoughts here:
+> 
+> - If this patchset is merged and a major user such as google is
+>   unable to use it and has to continue to carry a separate patch then
+>   that's a regrettable situation for the upstream kernel.
+> 
+> - Google's is, afaik, the largest use case we know of: zillions of
+>   machines for a number of years.  And this real-world experience tells
+>   us that the badram patchset has shortcomings.  Shortcomings which we
+>   can expect other users to experience.
+> 
+> So.  What are your thoughts on these issues?
 
-Please apply.
 
-I added here all the peoples who took part in
-19d337dff95cbf76edd3ad95c0cee2732c3e1ec5 commit for any comments.
+Good comments, so where is google's patch submittal?
 
-Also performed all yes/no/mod config builds w/ no issues.
-
-
->From b93ca8947e85e4ff7e9f314675d4770b90b77548 Mon Sep 17 00:00:00 2001
-From: Vitaliy Ivanov <vitalivanov@gmail.com>
-Date: Wed, 22 Jun 2011 20:57:49 +0300
-Subject: [PATCH] net: wimax: Remove of unused 'rfkill_input' pointer
-
-Seems like this was not cleaned during the 'rfkill: rewrite' checkin
-19d337dff95cbf76edd3ad95c0cee2732c3e1ec5.
-
-Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
 ---
- include/net/wimax.h |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/include/net/wimax.h b/include/net/wimax.h
-index 7328d50..322ff4f 100644
---- a/include/net/wimax.h
-+++ b/include/net/wimax.h
-@@ -423,7 +423,6 @@ struct wimax_dev {
- 	int (*op_reset)(struct wimax_dev *wimax_dev);
- 
- 	struct rfkill *rfkill;
--	struct input_dev *rfkill_input;
- 	unsigned rf_hw;
- 	unsigned rf_sw;
- 	char name[32];
--- 
-1.7.0.4
-
-
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
