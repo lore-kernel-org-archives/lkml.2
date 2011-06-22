@@ -1,130 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932487Ab1FVTSO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 15:18:14 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:54635 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932248Ab1FVTSM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 15:18:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nh4Odc50u3bPGqw3qT+CRPrR7DGmtyu+wwFz0WmZ7CaVd5Ok+eC4Jzy1C52U/UJ23y
-         MXI9NdP6U+14XHIGI8OiqV5u9UN4cod2zrGGu/cpprdGQmfLAMpqGOiR7Vo4POq1TXgY
-         Fjjk0Sin1WBNLsWAny85HAsvUPkmzrSC+iduw=
-MIME-Version: 1.0
-In-Reply-To: <1308769054.14997.18.camel@lade.trondhjem.org>
-References: <BANLkTik9J3qcdPcp+DdfRq9kj+DMKnjKZw@mail.gmail.com>
-	<1308767449.14997.10.camel@lade.trondhjem.org>
-	<BANLkTimyCA0QyF1TNc0SU2GYobOt-sAsNQ@mail.gmail.com>
-	<1308769054.14997.18.camel@lade.trondhjem.org>
-Date: Wed, 22 Jun 2011 12:18:12 -0700
-Message-ID: <BANLkTi=b1UJzYinAeW2VJj2AHzsAnwUpGg@mail.gmail.com>
-Subject: Re: Issue with Race Condition on NFS4 with KRB
-From: Joshua Scoggins <theoretically.x64@gmail.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932539Ab1FVTUY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 15:20:24 -0400
+Received: from mga09.intel.com ([134.134.136.24]:39981 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932502Ab1FVTUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 15:20:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,407,1304319600"; 
+   d="scan'208";a="18420771"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, dehrenberg@google.com
+Subject: RFC: Micro-optimize direct IO submission path
+Date: Wed, 22 Jun 2011 12:18:36 -0700
+Message-Id: <1308770322-22565-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to the it guys they are running solaris 10 as the server platform.
+Inspired by the recent fast path DIO patch from Daniel
+Ehrenberg.
 
-On Wed, Jun 22, 2011 at 11:57 AM, Trond Myklebust
-<Trond.Myklebust@netapp.com> wrote:
-> On Wed, 2011-06-22 at 11:37 -0700, Joshua Scoggins wrote:
->> Here are our mount options from auto.master
->>
->> /user -fstype=nfs4,sec=krb5p,noresvport,noatime
->> /group -fstype=nfs4,sec=krb5p,noresvport,noatime
->>
->> As for the server, we don't control it. It's actually run by the
->> campus wide it department we are just lab support for CS. I can
->> potentially get the server information but I need to know what you want
->> specifically as they're pretty paranoid about giving out information about
->> their servers.
->
-> I would just want to know _what_ server platform you are running
-> against. I know of at least one server bug that might explain what you
-> are seeing, and I'd like to eliminate that as a possibility.
->
-> Trond
->
->> Joshua Scoggins
->>
->> On Wed, Jun 22, 2011 at 11:30 AM, Trond Myklebust
->> <Trond.Myklebust@netapp.com> wrote:
->> > On Wed, 2011-06-22 at 11:21 -0700, Joshua Scoggins wrote:
->> >> Hello,
->> >>
->> >> We are trying to update our linux images in our CS lab and have it a
->> >> bit of an issue. We are
->> >> using nfs to load user home folder. While testing the new image we
->> >> found that the nfs4 module will
->> >>  crash when using firefox 3.6.17 for an extended period of time. Some
->> >> research via google yielded that
->> >> it's a potential race condition specific to nfs with krb auth with
->> >> newer kernels. Our old image doesn't have
->> >> this issue and it seems that its due to it running a far older kernel version.
->> >>
->> >> We have two images and both are having this problem. One is running
->> >> 2.6.39 and the other is 2.6.38.
->> >> Here is what dmesg spit out from the machine running 2.6.39 on one occasion:
->> >>
->> >> [  678.632061] ------------[ cut here ]------------
->> >> [  678.632068] WARNING: at net/sunrpc/clnt.c:1567 call_decode+0xb2/0x69c()
->> >> [  678.632070] Hardware name: OptiPlex 755
->> >> [  678.632072] Modules linked in: nvidia(P) scsi_wait_scan
->> >> [  678.632078] Pid: 3882, comm: kworker/0:2 Tainted: P
->> >> 2.6.39-gentoo-r1 #1
->> >> [  678.632080] Call Trace:
->> >> [  678.632086]  [<ffffffff81035b20>] warn_slowpath_common+0x80/0x98
->> >> [  678.632091]  [<ffffffff8117231e>] ? nfs4_xdr_dec_readdir+0xba/0xba
->> >> [  678.632094]  [<ffffffff81035b4d>] warn_slowpath_null+0x15/0x17
->> >> [  678.632097]  [<ffffffff81426f48>] call_decode+0xb2/0x69c
->> >> [  678.632101]  [<ffffffff8142d2b5>] __rpc_execute+0x78/0x24b
->> >> [  678.632104]  [<ffffffff8142d4c9>] ? rpc_execute+0x41/0x41
->> >> [  678.632107]  [<ffffffff8142d4d9>] rpc_async_schedule+0x10/0x12
->> >> [  678.632111]  [<ffffffff8104a49d>] process_one_work+0x1d9/0x2e7
->> >> [  678.632114]  [<ffffffff8104c402>] worker_thread+0x133/0x24f
->> >> [  678.632118]  [<ffffffff8104c2cf>] ? manage_workers+0x18d/0x18d
->> >> [  678.632121]  [<ffffffff8104f6a0>] kthread+0x7d/0x85
->> >> [  678.632125]  [<ffffffff8145e314>] kernel_thread_helper+0x4/0x10
->> >> [  678.632128]  [<ffffffff8104f623>] ? kthread_worker_fn+0x13a/0x13a
->> >> [  678.632131]  [<ffffffff8145e310>] ? gs_change+0xb/0xb
->> >> [  678.632133] ---[ end trace 6bfae002a63e020e ]---
->> >>
->> >> Is there some sort of work around?
->> >
->> > Cced the linux-nfs mailing list.
->> >
->> > The above warning is not specific to krb5, but indicates a likely race
->> > between replies after a resend of the RPC call.
->> >
->> > Can you please tell us what your mount options are, and also tell us a
->> > bit more about what kind of server you are running against?
->> >
->> > Trond
->> > --
->> > Trond Myklebust
->> > Linux NFS client maintainer
->> >
->> > NetApp
->> > Trond.Myklebust@netapp.com
->> > www.netapp.com
->> >
->> >
->
-> --
-> Trond Myklebust
-> Linux NFS client maintainer
->
-> NetApp
-> Trond.Myklebust@netapp.com
-> www.netapp.com
->
->
+I spent some time micro optimizing the "slow" direct IO submission 
+part.  This should get rid of large parts of the memset and dio
+access costs that Dan noticed.
+
+I moved everything that isn't needed in the completion handler
+back into the stack, to make it more likely it's cache hot.
+
+It also inlines everything to allow the compiler to optimize more.
+In particular it can split up the sdio structure into individual
+variables now and then get rid of unnecessary initializations.
+This costs some text size, but I think it's worth for such a hot 
+path.
+
+And the dio is a slab now, which avoids some fast path overhead.
+
+Dan, could you please test this patch in your test case, comparing against
+the fast path again?
+
+Please test with CONFIG_CC_OPTIMIZE_FOR_SIZE and CONFIG_OPTIMIZE_INLINING
+both disabled.
+
+Thanks,
+
+-Andi
