@@ -1,58 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757907Ab1FVDLc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 23:11:32 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:33272 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932134Ab1FVDLb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 23:11:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=IB7uuyfRBRLMf1SM0gvLX4p/RZ0088rW26f1cNkrajn9W5YLYW9nDozZgUNCrDjM2P
-         pNDgMsW9u9h+xGXsCJtQtuIzeMjYzgheEMFP/4KuLytgE5diK0dSFaNZe1HVcboeJoSD
-         hO8sGNfegdR5NRDPU71vrzIgYl4VBqFunFrZA=
-Subject: Re: [RFC 7/8] drivers: introduce rpmsg, a remote-processor
- messaging bus
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        akpm@linux-foundation.org, Brian Swetland <swetland@google.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        davinci-linux-open-source 
-	<davinci-linux-open-source@linux.davincidsp.com>
-In-Reply-To: <87liwu8u3q.fsf@rustcorp.com.au>
-References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
-	 <1308640714-17961-8-git-send-email-ohad@wizery.com>
-	 <87liwu8u3q.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset="us-ascii"
-Date: Tue, 21 Jun 2011 23:11:27 -0400
-Message-ID: <1308712287.11435.4.camel@lappy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1757930Ab1FVDNs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 23:13:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50680 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757504Ab1FVDNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 23:13:48 -0400
+Message-ID: <4E015DCA.8040204@redhat.com>
+Date: Wed, 22 Jun 2011 11:13:14 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org
+Subject: Re: [PATCH 4/4] mm: introduce no_ksm to disable totally KSM
+References: <1308643849-3325-1-git-send-email-amwang@redhat.com> <1308643849-3325-4-git-send-email-amwang@redhat.com> <20110621133236.GP20843@redhat.com>
+In-Reply-To: <20110621133236.GP20843@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-22 at 12:12 +0930, Rusty Russell wrote:
-> > +#define VIRTIO_ID_RPMSG		10 /* virtio remote processor messaging */
-> 
-> I think you want 6.  Plan 9 jumped ahead to grab 9 :)
+于 2011年06月21日 21:32, Andrea Arcangeli 写道:
+> On Tue, Jun 21, 2011 at 04:10:45PM +0800, Amerigo Wang wrote:
+>> Introduce a new kernel parameter "no_ksm" to totally disable KSM.
+>
+> Here as well this is the wrong approach. If you want to save memory,
+> you should make ksmd quit when run=0 and start only when setting
+> ksm/run=1. And move the daemon hashes and slabs initializations to the
+> ksmd daemon start. Not registering in sysfs and crippling down the
+> feature despite you loaded the proper .text into memory isn't good.
 
-Maybe it's worth adding an appendix to the virtio spec as part of this
-(and really any) patch series which takes a virtio ID.
+1. Not only about saving memory, as I explained in other thread.
 
-Also, I understand that virtio itself as an idea isn't Linux specific,
-but maybe it's worth including the spec (or at least a variation of it)
-as part of the kernel documentation.
-
--- 
-
-Sasha.
-
-
+2. Recompiling kernel is not always acceptable, as I replied in other thread.
