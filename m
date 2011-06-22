@@ -1,69 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757886Ab1FVMnQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 08:43:16 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:64652 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753924Ab1FVMnO (ORCPT
+	id S1757841Ab1FVMm2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 08:42:28 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:37516 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753372Ab1FVMm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 08:43:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: [Linaro-mm-sig] [PATCH 08/10] mm: cma: Contiguous Memory Allocator added
-Date: Wed, 22 Jun 2011 14:42:20 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        "'Daniel Walker'" <dwalker@codeaurora.org>, linux-mm@kvack.org,
-        "'Mel Gorman'" <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-media@vger.kernel.org,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>
-References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com> <201106150937.18524.arnd@arndb.de> <201106220903.31065.hverkuil@xs4all.nl>
-In-Reply-To: <201106220903.31065.hverkuil@xs4all.nl>
+	Wed, 22 Jun 2011 08:42:27 -0400
+Date: Wed, 22 Jun 2011 13:42:23 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sangbeom Kim <sbkim73@samsung.com>
+Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] mfd: Add S5M8751 register definitions
+Message-ID: <20110622124222.GC23666@sirena.org.uk>
+References: <1308722037-6966-1-git-send-email-sbkim73@samsung.com> <1308722037-6966-2-git-send-email-sbkim73@samsung.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106221442.20848.arnd@arndb.de>
-X-Provags-ID: V02:K0:+unuqkcD9EtUr1QTDNiET/xTSl9XddzM0Uo/o3XE68+
- d6ZkKQ4m739ThXb/RdQ1SdlDh4GTjwF0lO0msQTBoP7NdiTfyy
- SjPV+jU/pr4PwpgGMgO02oakJbcFlYo4z+n1YysHZXsk4F+9r0
- vpOoUb/yLgE3GkuARWLvQ0fHzsiwP7bj/+XxZTsNvnN0DvX40X
- IcvuXczx7KDF3tCRgh18Q==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308722037-6966-2-git-send-email-sbkim73@samsung.com>
+X-Cookie: Is it clean in other dimensions?
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 22 June 2011, Hans Verkuil wrote:
-> > How about a Kconfig option that defines the percentage of memory
-> > to set aside for contiguous allocations?
-> 
-> I would actually like to see a cma_size kernel option of some sort. This would
-> be for the global CMA pool only as I don't think we should try to do anything
-> more complicated here.
+On Wed, Jun 22, 2011 at 02:53:55PM +0900, Sangbeom Kim wrote:
+> This patch add S5M8751 PMIC register definitions.
+> Separated as large code size
 
-A command line is probably good to override the compile-time default, yes.
+These don't look like register definitions:
 
-We could also go further and add a runtime sysctl mechanism like the one
-for hugepages, where you can grow the pool at run time as long as there is
-enough free contiguous memory (e.g. from init scripts), or shrink it later
-if you want to allow larger nonmovable allocations.
+> +struct s5m8751;
+> +
+> +struct s5m8751_irq {
+> +	void (*handler) (struct s5m8751 *, int, void *);
+> +	void *data;
+> +};
+> +
+> +struct s5m8751 {
+> +	struct device *dev;
+> +
+> +	/* device IO */
+> +	struct i2c_client *i2c_client;
+> +
+> +	int (*read_dev)(struct s5m8751 *s5m8751, uint8_t reg, uint8_t *val);
+> +	int (*write_dev)(struct s5m8751 *s5m8751, uint8_t reg, uint8_t val);
+> +
+> +	int (*read_block_dev)(struct s5m8751 *s5m8751, uint8_t reg, int len,
+> +							uint8_t *val);
+> +	int (*write_block_dev)(struct s5m8751 *s5m8751, uint8_t reg, int len,
+> +							uint8_t *val);
+> +	u8 *reg_cache;
+> +
+> +	/* Interrupt handling */
+> +	struct work_struct irq_work;
+> +	struct mutex irq_mutex; /* IRQ table mutex */
+> +	struct s5m8751_irq irq[S5M8751_NUM_IRQ];
+> +	int chip_irq;
+> +
+> +	/* Client devices */
+> +};
 
-My feeling is that we need to find a way to integrate the global settings
-for four kinds of allocations:
+> +/* S5M8751 Device IO */
+> +int s5m8751_clear_bits(struct s5m8751 *s5m8751, uint8_t reg, uint8_t mask);
+> +int s5m8751_set_bits(struct s5m8751 *s5m8751, uint8_t reg, uint8_t mask);
+> +int s5m8751_reg_read(struct s5m8751 *s5m8751, uint8_t reg, uint8_t *val);
+> +int s5m8751_reg_write(struct s5m8751 *s5m8751, uint8_t reg, uint8_t val);
+> +int s5m8751_block_read(struct s5m8751 *s5m8751, uint8_t reg, int len,
+> +							uint8_t *val);
+> +int s5m8751_block_write(struct s5m8751 *s5m8751, uint8_t reg, int len,
+> +							uint8_t *val);
 
-* nonmovable kernel pages
-* hugetlb pages
-* CMA
-* memory hotplug
+I posted a series earlier this week which adds a generic API for
+handling register maps on I2C/SPI devices - I'll post another version of
+it shortly, it'd be nice if you could loook to see if this is usable for
+you.
 
-These essentially fight over the same memory (though things are slightly
-different with dynamic hugepages), and they all face the same basic problem
-of getting as much for themselves without starving the other three.
+> +/* S5M8751 internal interrupts */
+> +int s5m8751_register_irq(struct s5m8751 *s5m8751, int irq,
+> +			void (*handler) (struct s5m8751 *, int, void *),
+> +			void *data);
+> +
+> +int s5m8751_free_irq(struct s5m8751 *s5m8751, int irq);
+> +int s5m8751_mask_irq(struct s5m8751 *s5m8751, int irq);
+> +int s5m8751_unmask_irq(struct s5m8751 *s5m8751, int irq);
+> +int s5m8751_clear_irq(struct s5m8751 *s5m8751);
 
-	Arnd
+You should use genirq for this, it's supported this for quite some time
+now.  There's quite a few MFDs doing this which you can used for
+examples.
 
+> +/* S5M8751 sysfs functions */
+> +int s5m8751_uvlo_get(struct s5m8751 *s5m8751);
+> +int s5m8751_uvlo_set(struct s5m8751 *s5m8751, int voltage);
+> +
+> +int s5m8751_audio_dev_register(struct s5m8751 *s5m8751,
+> +						const char *name,
+> +						struct platform_device **pdev);
+
+These shouldn't need to be in the header.
