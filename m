@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477Ab1FVTQq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 15:16:46 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:42645 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932248Ab1FVTQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 15:16:46 -0400
-Subject: Re: [PATCH] hwmon: LM95245 driver
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Alexander Stein <alexander.stein@systec-electronic.com>
-CC: Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1308649953-2774-1-git-send-email-alexander.stein@systec-electronic.com>
-References: <1308649953-2774-1-git-send-email-alexander.stein@systec-electronic.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Wed, 22 Jun 2011 12:15:49 -0700
-Message-ID: <1308770149.8271.600.camel@groeck-laptop>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S932454Ab1FVTP7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 15:15:59 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:46630 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932248Ab1FVTP7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 15:15:59 -0400
+Date: Wed, 22 Jun 2011 21:15:58 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stefan Assmann <sassmann@kpanic.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, tony.luck@intel.com, mingo@elte.hu,
+        rick@vanrein.org, rdunlap@xenotime.net, Nancy Yuen <yuenn@google.com>,
+        Michael Ditto <mditto@google.com>
+Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
+Message-ID: <20110622191558.GI3263@one.firstfloor.org>
+References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de> <20110622110034.89ee399c.akpm@linux-foundation.org> <20110622182445.GG3263@one.firstfloor.org> <20110622113851.471f116f.akpm@linux-foundation.org> <20110622185645.GH3263@one.firstfloor.org> <4E023CE3.70100@zytor.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E023CE3.70100@zytor.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-21 at 05:52 -0400, Alexander Stein wrote:
-> An hwmon driver for the National Semiconductor LM95245 dual temperature
-> sensors chip.
+On Wed, Jun 22, 2011 at 12:05:07PM -0700, H. Peter Anvin wrote:
+> On 06/22/2011 11:56 AM, Andi Kleen wrote:
+> > 
+> > You'll always have multiple ways. Whatever magic you come up for
+> > the google BIOS or for EFI won't help the majority of users with
+> > old crufty legacy BIOS.
+> > 
 > 
-> Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+> I don't think this has anything to do with this.
 
-Overall pretty well written, only I am a bit at loss why you try to deal
-with the unsigned temperature registers. That adds a bit of complexity
-to the driver. Given that the signed temperature value range is up to
-127 degrees C, and that the chip is only rated up to 125 degrees C, the
-added complexity doesn't seem to be worth it.
+Please elaborate.
 
-Can you elaborate ?
+How would you pass the bad page information instead in a fully backwards
+compatible way?
 
-Other comments:
-
-For the interval attribute, idea would be to write the value into the
-conversion rate register. Your code does not match the interval with the
-rate programmed into the chip (which is the idea), nor does it update
-the rate if the interval is changed.
-
-Chip address 0x29 is missing.
-
-It would be nice if the driver would support limit, hysteresis, alarm,
-and fault attributes.
-
-Thanks,
-Guenter
-
-
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
