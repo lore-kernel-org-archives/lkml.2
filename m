@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758551Ab1FVUEM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 16:04:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51254 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758041Ab1FVUEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 16:04:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] More power management fixes for 3.0
-Date: Wed, 22 Jun 2011 22:04:54 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc4+; KDE/4.6.0; x86_64; ; )
+	id S1758840Ab1FVUFR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 16:05:17 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:34078 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758244Ab1FVUFQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 16:05:16 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAIVKAk5tgwPS/2dsb2JhbABTpxB4iHMCwH0Ohh8EoXg
+Date: Wed, 22 Jun 2011 22:05:14 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Arnd Bergmann <arnd@arndb.de>
 Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-sh@vger.kernel.org, linux-pci@vger.kernel.org
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 9/10 v2] Generic Watchdog Timer Driver
+Message-ID: <20110622200513.GD26745@infomag.iguana.be>
+References: <20110618172727.GJ3441@infomag.iguana.be> <201106182117.49026.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106222204.54532.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201106182117.49026.arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Arnd,
 
-Please pull power management fixes for 3.0 from:
+> > watchdog: WatchDog Timer Driver Core - Part 9
+> > 
+> > Add support for extra ioctl calls by adding a
+> > ioctl watchdog operation. This operation will be
+> > called before we do our own handling of ioctl
+> > commands. This way we can override the internal
+> > ioctl command handling and we can also add
+> > extra ioctl commands. The ioctl watchdog operation
+> > should return the appropriate error codes or
+> > -ENOIOCTLCMD if the ioctl command should be handled
+> > through the internal ioctl handling of the framework.
+> > 
+> > Signed-off-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> > Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+> 
+> Hmm, I'm not sure about this one. It does make the conversion
+> of existing drivers easier but doesn't encourage doing a good
+> job there.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-fixes
+That's why we also have a maintainer and a mailing list to review
+patches... I can understand your concerns, but prefer the flexibility
+and simpleness here.
 
-They include:
+> How about instead providing a compatibility helper module that
+> provides helper functions like this:
+> 
+> int watchdog_compat_getstatus(struct watchdog_device *wdd)
+> {
+> 	int __user *tmp = compat_alloc_userspace(sizeof (int));
+> 	int ret;
+> 
+> 	ret = wdd->ops->ioctl(wdd, WDIOC_GETSTATUS, tmp);
+> 	if (ret)
+> 		return ret;
+> 
+> 	__get_user(ret, tmp);
+> 	return ret;
+> }
+> EXPORT_SYMBOL_GPL(watchdog_compat_getstatus);
+> 
+> This would let you use the common ioctl implementation for all
+> watchdogs without the option of an individual driver overriding
+> it, but a driver could still provide an ioctl method that only
+> gets called by the watchdog_compat_* functions.
 
-* Power management documentation fixes updating information on things that have
-  changed.
+Hmmm, not really in favour of that, this will creat a lot more overhead.
 
-* Fix for potential PCI PM regression related to interactions between system
-  suspend/hibernation and the runtime PM framework.
-
-* Fix for smobile regression related to the management of device clocks when
-  CONFIG_PM_RUNTIME is unset.
-
-* Fix for a long-standing issue in the async suspend error code path (accompanied
-  by a field rename in struct dev_pm_info).
-
-* Fix for a long-standing hibernation bug related to its user space interface.
-
-
- Documentation/power/devices.txt    |   67 +++++++----------------------------
- Documentation/power/runtime_pm.txt |    5 ---
- drivers/base/power/clock_ops.c     |    4 +-
- drivers/base/power/main.c          |   28 +++++++++++----
- drivers/pci/pci-driver.c           |    4 ++-
- drivers/usb/core/driver.c          |    6 ++--
- include/linux/device.h             |    4 +-
- include/linux/pm.h                 |    3 +-
- kernel/power/user.c                |    4 ++-
- 9 files changed, 50 insertions(+), 75 deletions(-)
-
----------------
-
-Alan Stern (2):
-      PM: Rename dev_pm_info.in_suspend to is_prepared
-      PM: Fix async resume following suspend failure
-
-Kevin Hilman (1):
-      PM / Runtime: Update doc: usage count no longer incremented across system PM
-
-Michal Kubecek (1):
-      PM: Free memory bitmaps if opening /dev/snapshot fails
-
-Rafael J. Wysocki (4):
-      PM: Update documentation regarding sysdevs
-      PM / Runtime: Handle clocks correctly if CONFIG_PM_RUNTIME is unset
-      PM / Domains: Update documentation
-      PCI / PM: Block races between runtime PM and system sleep
+Kind regards,
+Wim.
 
