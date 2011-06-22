@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757218Ab1FVLdz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 07:33:55 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:61925 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754668Ab1FVLdy (ORCPT
+	id S1757790Ab1FVMhj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 08:37:39 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:45087 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754944Ab1FVMhh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 07:33:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=I2Ii+8USgfZsSdHU89j6QfMULzAeZGIVEoUeAugot3dteMFj2Q52Abo8ydcxO1tCRY
-         LBMki7O8A4wcLRC7FOJTyndbfDl9aoI7eFoZNVHAJy2l379AxW4L8UhQnvs8DPbgDctq
-         RftbD+rOJnzTLVLpbvROi8uM9NC5teDCg4vIs=
-From: Nai Xia <nai.xia@gmail.com>
-Reply-To: nai.xia@gmail.com
-To: Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte and mmu notifier to help KSM dirty bit tracking
-Date: Wed, 22 Jun 2011 19:33:37 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.39; KDE/4.5.5; i686; ; )
-Cc: Izik Eidus <izik.eidus@ravellosystems.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
-        Rik van Riel <riel@redhat.com>, "linux-mm" <linux-mm@kvack.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        kvm <kvm@vger.kernel.org>
-References: <201106212055.25400.nai.xia@gmail.com> <4E01D0E3.9080508@redhat.com> <4E01D1C8.2050707@redhat.com>
-In-Reply-To: <4E01D1C8.2050707@redhat.com>
+	Wed, 22 Jun 2011 08:37:37 -0400
+From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "Girdwood, Liam" <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "Lopez Cruz, Misael" <misael.lopez@ti.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: Re: [PATCH v6 11/18] input: Add initial support for TWL6040 vibrator
+Date: Wed, 22 Jun 2011 14:37:05 +0300
+Message-ID: <9447778.OLKFu0QH6G@barack>
+User-Agent: KMail/4.6.0 (Linux/2.6.39-gentoo; KDE/4.6.4; x86_64; ; )
+In-Reply-To: <20110621203200.GA3731@core.coreip.homeip.net>
+References: <1308663556-29120-1-git-send-email-peter.ujfalusi@ti.com> <1308663556-29120-12-git-send-email-peter.ujfalusi@ti.com> <20110621203200.GA3731@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106221933.37691.nai.xia@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 22 June 2011 19:28:08 Avi Kivity wrote:
-> On 06/22/2011 02:24 PM, Avi Kivity wrote:
-> > On 06/22/2011 02:19 PM, Izik Eidus wrote:
-> >> On 6/22/2011 2:10 PM, Avi Kivity wrote:
-> >>> On 06/22/2011 02:05 PM, Izik Eidus wrote:
-> >>>>>> +    spte = rmap_next(kvm, rmapp, NULL);
-> >>>>>> +    while (spte) {
-> >>>>>> +        int _dirty;
-> >>>>>> +        u64 _spte = *spte;
-> >>>>>> +        BUG_ON(!(_spte&  PT_PRESENT_MASK));
-> >>>>>> +        _dirty = _spte&  PT_DIRTY_MASK;
-> >>>>>> +        if (_dirty) {
-> >>>>>> +            dirty = 1;
-> >>>>>> +            clear_bit(PT_DIRTY_SHIFT, (unsigned long *)spte);
-> >>>>>> +        }
-> >>>>>
-> >>>>> Racy.  Also, needs a tlb flush eventually.
-> >>>> +
-> >>>>
-> >>>> Hi, one of the issues is that the whole point of this patch is not 
-> >>>> do tlb flush eventually,
-> >>>> But I see your point, because other users will not expect such 
-> >>>> behavior, so maybe there is need into a parameter
-> >>>> flush_tlb=?, or add another mmu notifier call?
-> >>>>
-> >>>
-> >>> If you don't flush the tlb, a subsequent write will not see that 
-> >>> spte.d is clear and the write will happen.  So you'll see the page 
-> >>> as clean even though it's dirty.  That's not acceptable.
-> >>>
-> >>
-> >> Yes, but this is exactly what we want from this use case:
-> >> Right now ksm calculate the page hash to see if it was changed, the 
-> >> idea behind this patch is to use the dirty bit instead,
-> >> however the guest might not really like the fact that we will flush 
-> >> its tlb over and over again, specially in periodically scan like ksm 
-> >> does.
-> >
-> > I see.
-> 
-> Actually, this is dangerous.  If we use the dirty bit for other things, 
-> we will get data corruption.
+Hello Dmitry,
 
-Yeah,yeah, I actually clarified in a reply letter to Chris about his similar
-concern that we are currently the _only_ user. :)
-We can add the flushing when someone else should rely on this bit.
+On Tuesday 21 June 2011 22:32:01 Dmitry Torokhov wrote:
+> On Tue, Jun 21, 2011 at 04:39:09PM +0300, Peter Ujfalusi wrote:
+> > From: Misael Lopez Cruz <misael.lopez@ti.com>
+> > 
+> > Add twl6040_vibra as a child of MFD device twl6040_codec. This
+> > implementation covers the PCM-to-PWM mode of TWL6040 vibrator
+> > module.
+> > 
+> > Signed-off-by: Misael Lopez Cruz <misael.lopez@ti.com>
+> > Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> > CC: Tejun Heo <tj@kernel.org>
+> 
+> Peter,
+> 
+> As Tejun mentioned, there is no difference between having a "private"
+> workqueue created with alloc_workqueue() with default parameters and
+> using system-wide workqueue. Therefore please use system-wide one. If
+> your use shows that you indeed need high-priority workqueue it can be
+> added later.
 
+I have replaced the singlethreaded wq with the call suggested by Tejun:
+https://lkml.org/lkml/2011/6/17/99
+
+If this is a problem, I can rework this, and remove the code, which is not 
+going to be needed, when the system_wq is in use, but I would like to keep the 
+alloc_workqueue way, since it is going to be easier for us to experiment with 
+parameters, if we face with issues.
+ 
+> Otherwise:
 > 
-> For example we might want to map clean host pages as writeable-clean in 
-> the spte on a read fault so that we don't get a page fault when they get 
-> eventually written.
+>         Acked-by: Dmitry Torokhov <dtor@mail.ru>
 > 
-> 
+> Please feel free to merge this code with the rest of TWL6040 patches
+> (presumably throgh Samuel's MFD tree).
+
+Thank you,
+Péter
