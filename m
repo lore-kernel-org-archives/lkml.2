@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab1FVHLi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 03:11:38 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:45500 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056Ab1FVHLh (ORCPT
+	id S1751784Ab1FVHcW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 03:32:22 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35699 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945Ab1FVHcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 03:11:37 -0400
-Date: Wed, 22 Jun 2011 12:41:12 +0530
-From: Bharata B Rao <bharata@linux.vnet.ibm.com>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Nikhil Rao <ncrao@google.com>
-Subject: Re: [patch 08/16] sched: throttle cfs_rq entities which exceed their
- local runtime
-Message-ID: <20110622071112.GB2985@in.ibm.com>
-Reply-To: bharata@linux.vnet.ibm.com
-References: <20110621071649.862846205@google.com>
- <20110621071700.494088365@google.com>
+	Wed, 22 Jun 2011 03:32:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:content-type:to:cc:subject:references:date:mime-version
+         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
+        b=tStewBfXgydNXD3tCRhrwgzn8hhOURp6bJG8NmHoHd+gKn5LiQhs+HlbEQPjNdYGLr
+         +3V3crmjLvyOqvX1kNCBwcKjU7LcTtiPU13Y3H+IH2kBpv11uVf/1ZAlfQTlq+vajfAq
+         ZvZ3E4J8NHVoK4hixWElfPI7ID8y+S1+vmalc=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: linaro-mm-sig@lists.linaro.org, "Hans Verkuil" <hverkuil@xs4all.nl>
+Cc: "Arnd Bergmann" <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        "'Daniel Walker'" <dwalker@codeaurora.org>, linux-mm@kvack.org,
+        "'Mel Gorman'" <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-media@vger.kernel.org,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [Linaro-mm-sig] [PATCH 08/10] mm: cma: Contiguous Memory
+ Allocator added
+References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
+ <000501cc2b2b$789a54b0$69cefe10$%szyprowski@samsung.com>
+ <201106150937.18524.arnd@arndb.de> <201106220903.31065.hverkuil@xs4all.nl>
+Date: Wed, 22 Jun 2011 09:32:13 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110621071700.494088365@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.vxgu7zgo3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <201106220903.31065.hverkuil@xs4all.nl>
+User-Agent: Opera Mail/11.10 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 12:16:57AM -0700, Paul Turner wrote:
-> @@ -1505,7 +1559,17 @@ enqueue_task_fair(struct rq *rq, struct 
->  			break;
->  		cfs_rq = cfs_rq_of(se);
->  		enqueue_entity(cfs_rq, se, flags);
-> +
-> +		/*
-> +		 * end evaluation on encountering a throttled cfs_rq
-> +		 *
-> +		 * note: in the case of encountering a throttled cfs_rq we will
-> +		 * post the final h_nr_running decrement below.
+On Wed, 22 Jun 2011 09:03:30 +0200, Hans Verkuil <hverkuil@xs4all.nl>  
+wrote:
+> What I was wondering about is how this patch series changes the  
+> allocation in case it can't allocate from the CMA pool. Will it
+> attempt to fall back to a 'normal' allocation?
 
-You mean 'final h_nr_running increment' I suppose ?
+Unless Marek changed something since I wrote the code, which I doubt,
+if CMA cannot obtain memory from CMA region, it will fail.
 
-> +		*/
-> +		if (cfs_rq_throttled(cfs_rq))
-> +			break;
->  		cfs_rq->h_nr_running++;
-> +
->  		flags = ENQUEUE_WAKEUP;
->  	}
-> 
-> @@ -1513,11 +1577,15 @@ enqueue_task_fair(struct rq *rq, struct 
->  		cfs_rq = cfs_rq_of(se);
->  		cfs_rq->h_nr_running++;
+Part of the reason is that CMA lacks the knowledge where to allocate
+memory from.  For instance, with the case of several memory banks,
+it does not know which memory bank to allocate from.
 
-Regards,
-Bharata.
+It is, in my opinion, a task for a higher level functions (read:
+DMA layer) to try another mechanism if CMA fails.
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
