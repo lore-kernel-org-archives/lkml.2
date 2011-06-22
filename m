@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932337Ab1FVUgZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 16:36:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16726 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758077Ab1FVUgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 16:36:23 -0400
-Date: Wed, 22 Jun 2011 16:36:12 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Helge Hafting <helge.hafting@hist.no>,
-        Suresh Jayaraman <sjayaraman@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-cifs <linux-cifs@vger.kernel.org>
-Subject: Re: [2.6.39] CIFS write failures where 2.6.38 works
-Message-ID: <20110622163612.45744bc2@tlielax.poochiereds.net>
-In-Reply-To: <20110609182845.1ebfc678@tlielax.poochiereds.net>
-References: <4DE6103E.6010100@hist.no>
-	<4DE8B449.2000008@suse.de>
-	<4DE8F989.50208@hist.no>
-	<20110609182845.1ebfc678@tlielax.poochiereds.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758665Ab1FVUqg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 16:46:36 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:62250 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932180Ab1FVUqf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 16:46:35 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jonas Bonn <jonas@southpole.se>
+Subject: Re: [PATCH 14/19] OpenRISC: Module support
+Date: Wed, 22 Jun 2011 22:46:12 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+References: <1308483825-6023-1-git-send-email-jonas@southpole.se> <201106222158.11381.arnd@arndb.de> <1308773139.20122.5268.camel@localhost>
+In-Reply-To: <1308773139.20122.5268.camel@localhost>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201106222246.12593.arnd@arndb.de>
+X-Provags-ID: V02:K0:mSXeG+EaNb9bpDRSpOF8b14rnEEUwLuUe2gYdkks4Nf
+ FkiyCYDB5gpxJRtyB+uk4XDqLgGukQs1XEyLRlMJ3JaunY8vwH
+ PUwqNR1K0rCVURfCTgw8uaJhwriXzqfcyLBLdarzxPRRLTKDtZ
+ EwGYEh0t6zfQ7dFZK5OhqL2RhKB1JeFz6BZUqsh7uDmO1g7dkC
+ fkMLD+zoOUbgGOjT+GNFw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jun 2011 18:28:45 -0400
-Jeff Layton <jlayton@redhat.com> wrote:
-
-> On Fri, 03 Jun 2011 17:11:05 +0200
-> Helge Hafting <helge.hafting@hist.no> wrote:
-> 
-> > On 03. juni 2011 12:15, Suresh Jayaraman wrote:
-> > > [Cc linux-cifs@vger.kernel.org]
-> > >
-> > > On 06/01/2011 03:41 PM, Helge Hafting wrote:
-> > >> At work I use cifs for accessing a windows server. This has worked fine
-> > >> for a long time, up to and including Debian's 2.6.38-2.
-> > >>
-> > >> I just installed Debians's 2.6.39-1, and had to give up on it.
-> > >> Mounting CIFS works, and I can see the files. But if I
-> > >> try to make a new file (with cp), I get a long delay.
-> > >
-> > > What is the security mechanism you are using? If you seeing the problem
-> > > with ntlm, could you try using ntlmv2 and see whether the problem is
-> > > reproducible?
+On Wednesday 22 June 2011 22:05:39 Jonas Bonn wrote:
+> On Wed, 2011-06-22 at 21:58 +0200, Arnd Bergmann wrote:
+> > On Wednesday 22 June 2011 21:14:10 Jonas Bonn wrote:
+> > > What's an acceptable "comment title"?  Most other arch's seem to put the
+> > > filename there... I understand this is undesirable, but what can I put
+> > > there instead?  Is "OpenRISC Linux" acceptable, or is nothing at all
+> > > preferable?
+> > > 
+> > > Just want to be clear about what's allowed before I go changing all of
+> > > these...
 > > 
-> > In the beginning, I did not specify the mechanism. So, whatever the 
-> > default is.
-> > 
-> > The fstab entry was like this:
-> > \\servername\resource /mountpoint cifs 
-> > domain=MYDOMAIN,credentials=/etc/fstabcred,rw,noauto,iocharset=utf8,uid=username,gid=group,sockopt=TCP_NODELAY,users,file_mode=0640,dir_mode=0750,relatime 
-> > 0 0
-> > 
-> > I looked at cifs options, and tried to add "sign" and "sec=ntlmv2i". It 
-> > made no difference. Still failure with 2.6.39, and mounting with these 
-> > new options works fine with 2.6.38
+> > You don't really need anything in the comment, if you want to put something
+> > there, I'd recommend a one-line summary of what the file is used for.
 > > 
 > 
-> I think we need to understand what's happening on the wire. Are you
-> still able to reproduce this? If so, can you turn up debug logging and
-> reproduce this?. Instructions for how to do that are here:
-> 
->     http://wiki.samba.org/index.php/LinuxCIFS_troubleshooting#Enabling_Debugging
-> 
-> Also, it looks like someone opened a bug at kernel.org too:
-> 
->     https://bugzilla.kernel.org/show_bug.cgi?id=36952
-> 
-> ...so if you can attach the resulting log there, that would be great.
-> 
+> No license information, copyright, etc?  Nothing?  Would it be
+> preferable to delete the comments altogether...?
 
-I think that this is probably due to the change that added the
-page_mkwrite function to cifs.ko. Prior to that, cifs did single-page
-writes on signed connections. Now we do multi-page writes and windows
-servers apparently reject large write calls on signed connections.
+A lot of people like to have license and copyright information in there,
+but it's your choice when you wrote the file.
 
-One way to test this theory would be to set the wsize to something
-smaller when you mount. For instance:
+However, you should never remove someone else's copyright statement when
+the code written by that person remain, and you can not change the
+license without the author's permission, at least not to an incompatible
+one.
 
-    wsize=16384
-
-...assuming that doesn't go over the server's MaxBufferSize, then that
-should act as a workaround. Can you try that and let me know if it
-helps?
-
-Thanks,
--- 
-Jeff Layton <jlayton@redhat.com>
+	Arnd
