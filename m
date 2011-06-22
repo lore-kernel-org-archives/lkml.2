@@ -1,236 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758557Ab1FVXh3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 19:37:29 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:46925 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758211Ab1FVXh1 convert rfc822-to-8bit (ORCPT
+	id S1758663Ab1FVXht (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 19:37:49 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35387 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758591Ab1FVXhr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 19:37:27 -0400
+	Wed, 22 Jun 2011 19:37:47 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=wRgXs1h8HwSn/mbygWMleyXPedtjtE+ed90t8p0ydIySe0pUSD1XLEGKAYw6sdD0yX
-         wIowHrtGIrYSPA7N7vRVN88L3p5FbRZ3zlNDFtST1eRitNTISI7imbLHEhvpYTOOZZUC
-         P9C0D+wOPoz+gdYCEb2ZdB2f4saN/MSsfJfoE=
+        b=PwXSlEcZFXl3zo4MuPFKAsYy3Pg4o/8c3xFxLVeN327izSbmLS/oGZ+aOEydtSeLIQ
+         as6g3e2xixxO+qhQi2JOv6XtMNO/AZKz2S4L7VjT3/A99+lSioT4zg7qX3f7KYFUABBK
+         74HfqLmTUp03eDoV7aAuY4RaI345sp9i40frA=
 MIME-Version: 1.0
-In-Reply-To: <1308785675.30458.15.camel@lade.trondhjem.org>
-References: <BANLkTik9J3qcdPcp+DdfRq9kj+DMKnjKZw@mail.gmail.com>
-	<1308767449.14997.10.camel@lade.trondhjem.org>
-	<BANLkTimyCA0QyF1TNc0SU2GYobOt-sAsNQ@mail.gmail.com>
-	<1308769054.14997.18.camel@lade.trondhjem.org>
-	<BANLkTi=b1UJzYinAeW2VJj2AHzsAnwUpGg@mail.gmail.com>
-	<1308779507.25875.7.camel@lade.trondhjem.org>
-	<BANLkTin0HnH7rufrHJGgEuPc-ZPjkZe3iw@mail.gmail.com>
-	<1308783190.25875.25.camel@lade.trondhjem.org>
-	<BANLkTimvMeF94O_S0rpSgy=5Z4obU9pPfg@mail.gmail.com>
-	<1308784142.25875.37.camel@lade.trondhjem.org>
-	<BANLkTi=mQeMHG-Z=UhQdbR6fWbOpUZFtTQ@mail.gmail.com>
-	<1308785675.30458.15.camel@lade.trondhjem.org>
-Date: Wed, 22 Jun 2011 16:37:25 -0700
-Message-ID: <BANLkTin_ESgabt2zxeiJLYJGsDb8jJoA+A@mail.gmail.com>
-Subject: Re: Issue with Race Condition on NFS4 with KRB
-From: Joshua Scoggins <theoretically.x64@gmail.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+In-Reply-To: <20110622165529.GY20843@redhat.com>
+References: <201106212055.25400.nai.xia@gmail.com>
+	<201106212132.39311.nai.xia@gmail.com>
+	<4E01C752.10405@redhat.com>
+	<4E01CC77.10607@ravellosystems.com>
+	<4E01CDAD.3070202@redhat.com>
+	<4E01CFD2.6000404@ravellosystems.com>
+	<4E020CBC.7070604@redhat.com>
+	<20110622165529.GY20843@redhat.com>
+Date: Thu, 23 Jun 2011 07:37:47 +0800
+Message-ID: <BANLkTinRYr9Vg==C-qyCaRmO7C_aQqBPzw@mail.gmail.com>
+Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte
+ and mmu notifier to help KSM dirty bit tracking
+From: Nai Xia <nai.xia@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>, Izik Eidus <izik.eidus@ravellosystems.com>,
+        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
+        linux-mm <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I mean it compiled but when I rebooted into the patched kernel. I got
-the same nfs error output
-in dmesg.
-
-Sorry about not being specific.
-
--Josh
-
-On Wed, Jun 22, 2011 at 4:34 PM, Trond Myklebust
-<Trond.Myklebust@netapp.com> wrote:
-> On Wed, 2011-06-22 at 16:23 -0700, Joshua Scoggins wrote:
->> It's the same error.
->
-> What mailer are you using to save the attachment? I just grabbed the
-> patch from the reflected email that I received from
-> linux-nfs@vger.kernel.org and again, that applies just fine to both
-> v2.6.39 and the latest kernel from Linus' git tree:
->
-> [trondmy@lade linux-2.6]$ git checkout -f v2.6.39
-> Warning: you are leaving 1 commit behind, not connected to
-> any of your branches:
->
->  9895aa0 SUNRPC: Fix a potential race in between xprt_complete_rqst and xprt_transmit
->
-> If you want to keep it by creating a new branch, this may be a good time
-> to do so with:
->
->  git branch new_branch_name 9895aa06065dd9d457d465f2526a267bec5651a0
->
-> HEAD is now at 61c4f2c... Linux 2.6.39
-> [trondmy@lade linux-2.6]$ patch -p1 -s -i ~/Desktop/0001-SUNRPC-Fix-a-potential-race-in-between-xprt_complete.patch
-> [trondmy@lade linux-2.6]$
->
->
-> That part of the code has not changed for quite some time, so there
-> should be no compatibility problems.
->
->> -Josh
+On Thu, Jun 23, 2011 at 12:55 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> On Wed, Jun 22, 2011 at 11:39:40AM -0400, Rik van Riel wrote:
+>> On 06/22/2011 07:19 AM, Izik Eidus wrote:
 >>
->> On Wed, Jun 22, 2011 at 4:09 PM, Trond Myklebust
->> <Trond.Myklebust@netapp.com> wrote:
->> > On Wed, 2011-06-22 at 16:01 -0700, Joshua Scoggins wrote:
->> >> I just manually applied the patch as I'm using the gentoo sources.
->> >
->> > If they're not modifying the source, then it should just apply provided
->> > that your mailer saved it correctly. If gentoo are applying their own
->> > patches, then I suggest grabbing a copy of the original 2.6.39 from
->> > www.kernel.org.
->> >
->> >> Josh
->> >>
->> >> On Wed, Jun 22, 2011 at 3:53 PM, Trond Myklebust
->> >> <Trond.Myklebust@netapp.com> wrote:
->> >> > On Wed, 2011-06-22 at 15:40 -0700, Joshua Scoggins wrote:
->> >> >> The patch isn't applying to the 2.6.39 kernel sources.
->> >> >
->> >> > It does for me:
->> >> >
->> >> > [trondmy@lade linux-2.6]$ git checkout v2.6.39
->> >> > HEAD is now at 61c4f2c... Linux 2.6.39
->> >> > [trondmy@lade linux-2.6]$ git am ~/Desktop/bugfixes/0001-SUNRPC-Fix-a-potential-race-in-between-xprt_complete.patch
->> >> > Applying: SUNRPC: Fix a potential race in between xprt_complete_rqst and xprt_transmit
->> >> > [trondmy@lade linux-2.6]$
->> >> >
->> >> > Are you perhaps using some distro kernel instead of the regular one from
->> >> > Linus' repository?
->> >> >
->> >> > Cheers
->> >> >  Trond
->> >> >
->> >> >> -Josh
->> >> >>
->> >> >> On Wed, Jun 22, 2011 at 2:51 PM, Trond Myklebust
->> >> >> <Trond.Myklebust@netapp.com> wrote:
->> >> >> > On Wed, 2011-06-22 at 12:18 -0700, Joshua Scoggins wrote:
->> >> >> >> According to the it guys they are running solaris 10 as the server platform.
->> >> >> >
->> >> >> > Ok. That should not be subject to the race I was thinking of...
->> >> >> >
->> >> >> >> On Wed, Jun 22, 2011 at 11:57 AM, Trond Myklebust
->> >> >> >> <Trond.Myklebust@netapp.com> wrote:
->> >> >> >> > On Wed, 2011-06-22 at 11:37 -0700, Joshua Scoggins wrote:
->> >> >> >> >> Here are our mount options from auto.master
->> >> >> >> >>
->> >> >> >> >> /user -fstype=nfs4,sec=krb5p,noresvport,noatime
->> >> >> >> >> /group -fstype=nfs4,sec=krb5p,noresvport,noatime
->> >> >> >> >>
->> >> >> >> >> As for the server, we don't control it. It's actually run by the
->> >> >> >> >> campus wide it department we are just lab support for CS. I can
->> >> >> >> >> potentially get the server information but I need to know what you want
->> >> >> >> >> specifically as they're pretty paranoid about giving out information about
->> >> >> >> >> their servers.
->> >> >> >> >
->> >> >> >> > I would just want to know _what_ server platform you are running
->> >> >> >> > against. I know of at least one server bug that might explain what you
->> >> >> >> > are seeing, and I'd like to eliminate that as a possibility.
->> >> >> >> >
->> >> >> >> > Trond
->> >> >> >> >
->> >> >> >> >> Joshua Scoggins
->> >> >> >> >>
->> >> >> >> >> On Wed, Jun 22, 2011 at 11:30 AM, Trond Myklebust
->> >> >> >> >> <Trond.Myklebust@netapp.com> wrote:
->> >> >> >> >> > On Wed, 2011-06-22 at 11:21 -0700, Joshua Scoggins wrote:
->> >> >> >> >> >> Hello,
->> >> >> >> >> >>
->> >> >> >> >> >> We are trying to update our linux images in our CS lab and have it a
->> >> >> >> >> >> bit of an issue. We are
->> >> >> >> >> >> using nfs to load user home folder. While testing the new image we
->> >> >> >> >> >> found that the nfs4 module will
->> >> >> >> >> >>  crash when using firefox 3.6.17 for an extended period of time. Some
->> >> >> >> >> >> research via google yielded that
->> >> >> >> >> >> it's a potential race condition specific to nfs with krb auth with
->> >> >> >> >> >> newer kernels. Our old image doesn't have
->> >> >> >> >> >> this issue and it seems that its due to it running a far older kernel version.
->> >> >> >> >> >>
->> >> >> >> >> >> We have two images and both are having this problem. One is running
->> >> >> >> >> >> 2.6.39 and the other is 2.6.38.
->> >> >> >> >> >> Here is what dmesg spit out from the machine running 2.6.39 on one occasion:
->> >> >> >> >> >>
->> >> >> >> >> >> [  678.632061] ------------[ cut here ]------------
->> >> >> >> >> >> [  678.632068] WARNING: at net/sunrpc/clnt.c:1567 call_decode+0xb2/0x69c()
->> >> >> >> >> >> [  678.632070] Hardware name: OptiPlex 755
->> >> >> >> >> >> [  678.632072] Modules linked in: nvidia(P) scsi_wait_scan
->> >> >> >> >> >> [  678.632078] Pid: 3882, comm: kworker/0:2 Tainted: P
->> >> >> >> >> >> 2.6.39-gentoo-r1 #1
->> >> >> >> >> >> [  678.632080] Call Trace:
->> >> >> >> >> >> [  678.632086]  [<ffffffff81035b20>] warn_slowpath_common+0x80/0x98
->> >> >> >> >> >> [  678.632091]  [<ffffffff8117231e>] ? nfs4_xdr_dec_readdir+0xba/0xba
->> >> >> >> >> >> [  678.632094]  [<ffffffff81035b4d>] warn_slowpath_null+0x15/0x17
->> >> >> >> >> >> [  678.632097]  [<ffffffff81426f48>] call_decode+0xb2/0x69c
->> >> >> >> >> >> [  678.632101]  [<ffffffff8142d2b5>] __rpc_execute+0x78/0x24b
->> >> >> >> >> >> [  678.632104]  [<ffffffff8142d4c9>] ? rpc_execute+0x41/0x41
->> >> >> >> >> >> [  678.632107]  [<ffffffff8142d4d9>] rpc_async_schedule+0x10/0x12
->> >> >> >> >> >> [  678.632111]  [<ffffffff8104a49d>] process_one_work+0x1d9/0x2e7
->> >> >> >> >> >> [  678.632114]  [<ffffffff8104c402>] worker_thread+0x133/0x24f
->> >> >> >> >> >> [  678.632118]  [<ffffffff8104c2cf>] ? manage_workers+0x18d/0x18d
->> >> >> >> >> >> [  678.632121]  [<ffffffff8104f6a0>] kthread+0x7d/0x85
->> >> >> >> >> >> [  678.632125]  [<ffffffff8145e314>] kernel_thread_helper+0x4/0x10
->> >> >> >> >> >> [  678.632128]  [<ffffffff8104f623>] ? kthread_worker_fn+0x13a/0x13a
->> >> >> >> >> >> [  678.632131]  [<ffffffff8145e310>] ? gs_change+0xb/0xb
->> >> >> >> >> >> [  678.632133] ---[ end trace 6bfae002a63e020e ]---
->> >> >> >
->> >> >> > Looking at the code, there is only one way I can see for that warning to
->> >> >> > occur, and that is if we put the request back on the 'xprt->recv' list
->> >> >> > after it has already received a reply from the server.
->> >> >> >
->> >> >> > Can you reproduce the problem with the attached patch?
->> >> >> >
->> >> >> > Trond
->> >> >> >
->> >> >> > --
->> >> >> > Trond Myklebust
->> >> >> > Linux NFS client maintainer
->> >> >> >
->> >> >> > NetApp
->> >> >> > Trond.Myklebust@netapp.com
->> >> >> > www.netapp.com
->> >> >> >
->> >> >> >
->> >> >
->> >> > --
->> >> > Trond Myklebust
->> >> > Linux NFS client maintainer
->> >> >
->> >> > NetApp
->> >> > Trond.Myklebust@netapp.com
->> >> > www.netapp.com
->> >> >
->> >> >
->> >> --
->> >> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
->> >> the body of a message to majordomo@vger.kernel.org
->> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> >
->> > --
->> > Trond Myklebust
->> > Linux NFS client maintainer
->> >
->> > NetApp
->> > Trond.Myklebust@netapp.com
->> > www.netapp.com
->> >
->> >
+>> > So what we say here is: it is better to have little junk in the unstable
+>> > tree that get flushed eventualy anyway, instead of make the guest
+>> > slower....
+>> > this race is something that does not reflect accurate of ksm anyway due
+>> > to the full memcmp that we will eventualy perform...
+>>
+>> With 2MB pages, I am not convinced they will get "flushed eventually",
+>> because there is a good chance at least one of the 4kB pages inside
+>> a 2MB page is in active use at all times.
+>>
+>> I worry that the proposed changes may end up effectively preventing
+>> KSM from scanning inside 2MB pages, when even one 4kB page inside
+>> is in active use.  This could mean increased swapping on systems
+>> that run low on memory, which can be a much larger performance penalty
+>> than ksmd CPU use.
+>>
+>> We need to scan inside 2MB pages when memory runs low, regardless
+>> of the accessed or dirty bits.
 >
-> --
-> Trond Myklebust
-> Linux NFS client maintainer
+> I guess we could fallback to the cksum when a THP is encountered
+> (repeating the test_and_clear_dirty also wouldn't give the expected
+> result if it's repeated on the same hugepmd for the next 4k virtual
+> address candidate for unstable tree insertion, so it'd need special
+> handling during the virtual walk anyway).
 >
-> NetApp
-> Trond.Myklebust@netapp.com
-> www.netapp.com
+> So it's getting a little hairy, skip on THP, skip on EPT, then I
+> wonder what is the common case that would be left using it...
 >
+> Or we could evaluate with statistic how many less pages are inserted
+> into the unstable tree using the 2m dirty bit but clearly it'd be less
+> reliable, the algorithm really is meant to track the volatility of
+> what is later merged, not of a bigger chunk with unrelated data in it.
+
+On 2MB pages, I'd like to remind you and Rik that ksmd currently splits
+huge pages before their sub pages gets really merged to stable tree.
+So when there are many 2MB pages each having a 4kB subpage
+changed for all time, this is already a concern for ksmd to judge
+if it's worthwhile to split 2MB page and get its sub-pages merged.
+I think the policy for ksmd in a system should be "If you cannot do sth good,
+at least do nothing evil". So I really don't think we can satisfy _all_ people.
+Get a general method and give users one or two knobs to tune it when they
+are the corner cases. How do  you think of my proposal ?
+
 >
+> On a side note, khugepaged should also be changed to preserve the
+> dirty bit if at least one dirty bit of the ptes is dirty (currently
+> the hugepmd is always created dirty, it can never happen for an
+> hugepmd to be clean today so it wasn't preserved in khugepaged so far).
+>
+
+Thanks for the point that out. This is what I have overlooked!
+
+thanks,
+Nai
