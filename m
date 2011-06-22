@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932521Ab1FVVLU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 17:11:20 -0400
-Received: from smtp-out-224.synserver.de ([212.40.185.224]:1068 "HELO
+	id S1758944Ab1FVVLZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 17:11:25 -0400
+Received: from smtp-out-224.synserver.de ([212.40.185.224]:1074 "HELO
 	smtp-out-224.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758922Ab1FVVLS (ORCPT
+	with SMTP id S932181Ab1FVVLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 Jun 2011 17:11:18 -0400
 X-SynServer-TrustedSrc: 1
@@ -16,9 +16,9 @@ To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
 Cc: alsa-devel@alsa-project.org, device-drivers-devel@blackfin.uclinux.org,
         linux-kernel@vger.kernel.org, Mike Frysinger <vapier.adi@gmail.com>,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 3/4] ASoC: Add adav* drivers to the Analog Devices file patterns
-Date: Wed, 22 Jun 2011 23:09:56 +0200
-Message-Id: <1308776997-12959-3-git-send-email-lars@metafoo.de>
+Subject: [PATCH 4/4] Blackfin: bf537: Stamp: Register adav801 codec and ASoC machine driver
+Date: Wed, 22 Jun 2011 23:09:57 +0200
+Message-Id: <1308776997-12959-4-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1308776997-12959-1-git-send-email-lars@metafoo.de>
 References: <1308776997-12959-1-git-send-email-lars@metafoo.de>
@@ -26,23 +26,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There is already an entry in the spi device table for the codec, but the
+modalias was wrong. Also the config symbol name for the codec is wrong, so this
+is fixed as well.
+
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 ---
- MAINTAINERS |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ arch/blackfin/mach-bf537/boards/stamp.c |   19 ++++++++++++++++---
+ 1 files changed, 16 insertions(+), 3 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index a26e9ec..4f7665c 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -534,6 +534,7 @@ L:	alsa-devel@alsa-project.org (moderated for non-subscribers)
- W:	http://wiki.analog.com/
- S:	Supported
- F:	sound/soc/codecs/adau*
-+F:	sound/soc/codecs/adav*
- F:	sound/soc/codecs/ad1*
- F:	sound/soc/codecs/ssm*
+diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
+index 5d30566..198018e 100644
+--- a/arch/blackfin/mach-bf537/boards/stamp.c
++++ b/arch/blackfin/mach-bf537/boards/stamp.c
+@@ -1000,9 +1000,9 @@ static struct spi_board_info bfin_spi_board_info[] __initdata = {
+ 	},
+ #endif
  
+-#if defined(CONFIG_SND_BF5XX_SOC_ADAV80X) || defined(CONFIG_SND_BF5XX_SOC_ADAV80X_MODULE)
++#if defined(CONFIG_SND_SOC_ADAV80X) || defined(CONFIG_SND_SOC_ADV80X_MODULE)
+ 	{
+-		.modalias = "adav80x",
++		.modalias = "adav801",
+ 		.max_speed_hz = 3125000,     /* max spi clock (SCK) speed in HZ */
+ 		.bus_num = 0,
+ 		.chip_select = 1,
+@@ -2118,7 +2118,7 @@ static struct i2c_board_info __initdata bfin_i2c_board_info[] = {
+ 	},
+ #endif
+ 
+-#if defined(CONFIG_SND_BF5XX_SOC_ADAV80X) || defined(CONFIG_SND_BF5XX_SOC_ADAV80X_MODULE)
++#if defined(CONFIG_SND_SOC_ADAV80X) || defined(CONFIG_SND_SOC_ADAV80X_MODULE)
+ 	{
+ 		I2C_BOARD_INFO("adav803", 0x10),
+ 	},
+@@ -2553,6 +2553,14 @@ static struct platform_device bfin_ad73311_codec_device = {
+ };
+ #endif
+ 
++#if defined(CONFIG_SND_SOC_BFIN_EVAL_ADAV80X) || \
++	defined(CONFIG_SND_SOC_BFIN_EVAL_ADAV80X_MODULE)
++static struct platform_device bfin_eval_adav801_device = {
++	.name = "bfin-eval-adav801",
++	.id = -1,
++};
++#endif
++
+ #if defined(CONFIG_SND_BF5XX_SOC_I2S) || defined(CONFIG_SND_BF5XX_SOC_I2S_MODULE)
+ static struct platform_device bfin_i2s = {
+ 	.name = "bfin-i2s",
+@@ -2833,6 +2841,11 @@ static struct platform_device *stamp_devices[] __initdata = {
+ 	defined(CONFIG_SND_SOC_BFIN_EVAL_ADAU1701_MODULE)
+ 	&bf5xx_adau1701_device,
+ #endif
++
++#if defined(CONFIG_SND_SOC_BFIN_EVAL_ADAV80X) || \
++	defined(CONFIG_SND_SOC_BFIN_EVAL_ADAV80X_MODULE)
++	&bfin_eval_adav801_device,
++#endif
+ };
+ 
+ static int __init net2272_init(void)
 -- 
 1.7.2.5
 
