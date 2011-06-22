@@ -1,161 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932490Ab1FVQDv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 12:03:51 -0400
-Received: from mail.mnsspb.ru ([84.204.75.2]:40584 "EHLO mail.mnsspb.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932471Ab1FVQDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 12:03:48 -0400
-From: Kirill Smelkov <kirr@mns.spb.ru>
-To: linux-usb@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-uvc-devel@lists.berlios.de,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kirill Smelkov <kirr@mns.spb.ru>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [RFC, PATCH] USB: EHCI: Allow users to override 80% max periodic bandwidth
-Date: Wed, 22 Jun 2011 20:02:47 +0400
-Message-Id: <1308758567-8205-1-git-send-email-kirr@mns.spb.ru>
-X-Mailer: git-send-email 1.7.6.rc1
+	id S932473Ab1FVQDo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 12:03:44 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:60224 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932301Ab1FVQDj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 12:03:39 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Wpgewvpx49K2bePPtVLeNDatVEME1D+/7Bir0aE8V9kVWYx0ZjsFsdpZ88dJyvNHaM0ZnrVhyo7zhH6O+I3giv1I1FUEdndAh3SCMCilfCyd7c/lZgE9f3h0rVYL0Ca3;
+Date: Wed, 22 Jun 2011 09:03:31 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [RFC] ipc: introduce shm_rmid_forced sysctl
+Message-Id: <20110622090331.fd6a3cc7.rdunlap@xenotime.net>
+In-Reply-To: <20110622152514.GA9521@albatros>
+References: <20110622152514.GA9521@albatros>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are cases, when 80% max isochronous bandwidth is too limiting.
+On Wed, 22 Jun 2011 19:25:14 +0400 Vasiliy Kulikov wrote:
 
-For example I have two USB video capture cards which stream uncompressed
-video, and to stream full NTSC + PAL videos we'd need
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> ---
+> 
+>  Documentation/sysctl/kernel.txt |   22 ++++++++++
+>  include/linux/ipc_namespace.h   |    3 +
+>  include/linux/shm.h             |    5 ++
+>  ipc/ipc_sysctl.c                |   33 +++++++++++++++
+>  ipc/shm.c                       |   87 +++++++++++++++++++++++++++++++++++++--
+>  kernel/exit.c                   |    1 +
+>  6 files changed, 147 insertions(+), 4 deletions(-)
+> 
+> ---
+> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+> index 5e7cb39..7a0ecfd 100644
+> --- a/Documentation/sysctl/kernel.txt
+> +++ b/Documentation/sysctl/kernel.txt
+> @@ -62,6 +62,7 @@ show up in /proc/sys/kernel:
+>  - shmall
+>  - shmmax                      [ sysv ipc ]
+>  - shmmni
+> +- shm_rmid_forced
+>  - stop-a                      [ SPARC only ]
+>  - sysrq                       ==> Documentation/sysrq.txt
+>  - tainted
+> @@ -475,6 +476,27 @@ kernel.  This value defaults to SHMMAX.
+>  
+>  ==============================================================
+>  
+> +shm_rmid_forced:
+> +
+> +Linux lets you set resource limits, including on how much memory one
 
-    NTSC 640x480 YUV422 @30fps      ~17.6 MB/s
-    PAL  720x576 YUV422 @25fps      ~19.7 MB/s
+                                       including how much memory one
 
-isoc bandwidth.
+> +process can consume, via setrlimit(2).  Unfortunately, shared memory
+> +segments are allowed to exist without association with any process, and
+> +thus might not be counted against any resource limits.  If enabled,
+> +shared memory segments are automatically destroyed when their attach
+> +count becomes zero after a detach or a process termination.  It will
+> +also destroy segments that were created, but never attached to, on exit
+> +from the process.  The only use left for IPC_RMID is to immediately
+> +destroy an unattached segment.  Of course, this breaks the way things are
+> +defined, so some applications might stop working.  Note that this
+> +feature will do you no good unless you also configure your resource
+> +limits (in particular, RLIMIT_AS and RLIMIT_NPROC).  Most systems don't
+> +need this.
+> +
+> +Note that if you change this from 0 to 1, already created segments
+> +without users and with a dead originative process will be destroyed.
 
-Now, due to limited alt settings in capture devices NTSC one ends up
-streaming with max_pkt_size=2688  and  PAL with max_pkt_size=2892, both
-with interval=1. In terms of microframe time allocation this gives
+                                 originating (?)
 
-    NTSC    ~53us
-    PAL     ~57us
+> +
+> +==============================================================
+> +
+>  softlockup_thresh:
+>  
+>  This value can be used to lower the softlockup tolerance threshold.  The
 
-and together
 
-    ~110us  >  100us == 80% of 125us uframe time.
 
-So those two devices can't work together simultaneously because the'd
-over allocate isochronous bandwidth.
-
-80% seemed a bit arbitrary to me, and I've tried to raise it to 90% and
-both devices started to work together, so I though sometimes it would be
-a good idea for users to override hardcoded default of max 80% isoc
-bandwidth.
-
-After all, isn't it a user who should decide how to load the bus? If I
-can live with 10% or even 5% bulk bandwidth that should be ok. I'm a USB
-newcomer, but that 80% seems to be chosen pretty arbitrary to me, just
-to serve as a reasonable default.
-
-NOTE: for two streams with max_pkt_size=3072 (worst case) both time
-allocation would be 60us+60us=120us which is 96% periodic bandwidth
-leaving 4% for bulk and control. I think this should work too.
-
-Signed-off-by: Kirill Smelkov <kirr@mns.spb.ru>
-Cc: Alan Stern <stern@rowland.harvard.edu>
 ---
- drivers/usb/host/ehci-hcd.c   |   16 ++++++++++++++++
- drivers/usb/host/ehci-sched.c |   17 +++++++----------
- 2 files changed, 23 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index c606b02..1d36e72 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -112,6 +112,14 @@ static unsigned int hird;
- module_param(hird, int, S_IRUGO);
- MODULE_PARM_DESC(hird, "host initiated resume duration, +1 for each 75us\n");
- 
-+/*
-+ * max periodic time per microframe
-+ * (be careful, USB 2.0 requires it to be 100us = 80% of 125us)
-+ */
-+static unsigned int uframe_periodic_max = 100;
-+module_param(uframe_periodic_max, uint, S_IRUGO);
-+MODULE_PARM_DESC(uframe_periodic_max, "maximum allowed periodic part of a microframe, us");
-+
- #define	INTR_MASK (STS_IAA | STS_FATAL | STS_PCD | STS_ERR | STS_INT)
- 
- /*-------------------------------------------------------------------------*/
-@@ -571,6 +579,14 @@ static int ehci_init(struct usb_hcd *hcd)
- 	hcc_params = ehci_readl(ehci, &ehci->caps->hcc_params);
- 
- 	/*
-+	 * tell user, if using non-standard (80% == 100 usec/uframe) bandwidth
-+	 */
-+	if (uframe_periodic_max != 100)
-+		ehci_info(ehci, "using non-standard max periodic bandwith "
-+				"(%u%% == %u usec/uframe)",
-+				100*uframe_periodic_max/125, uframe_periodic_max);
-+
-+	/*
- 	 * hw default: 1K periodic list heads, one per frame.
- 	 * periodic_size can shrink by USBCMD update if hcc_params allows.
- 	 */
-diff --git a/drivers/usb/host/ehci-sched.c b/drivers/usb/host/ehci-sched.c
-index d12426f..fb374f2 100644
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -172,7 +172,7 @@ periodic_usecs (struct ehci_hcd *ehci, unsigned frame, unsigned uframe)
- 		}
- 	}
- #ifdef	DEBUG
--	if (usecs > 100)
-+	if (usecs > uframe_periodic_max)
- 		ehci_err (ehci, "uframe %d sched overrun: %d usecs\n",
- 			frame * 8 + uframe, usecs);
- #endif
-@@ -709,11 +709,8 @@ static int check_period (
- 	if (uframe >= 8)
- 		return 0;
- 
--	/*
--	 * 80% periodic == 100 usec/uframe available
--	 * convert "usecs we need" to "max already claimed"
--	 */
--	usecs = 100 - usecs;
-+	/* convert "usecs we need" to "max already claimed" */
-+	usecs = uframe_periodic_max - usecs;
- 
- 	/* we "know" 2 and 4 uframe intervals were rejected; so
- 	 * for period 0, check _every_ microframe in the schedule.
-@@ -1286,9 +1283,9 @@ itd_slot_ok (
- {
- 	uframe %= period;
- 	do {
--		/* can't commit more than 80% periodic == 100 usec */
-+		/* can't commit more than uframe_periodic_max usec */
- 		if (periodic_usecs (ehci, uframe >> 3, uframe & 0x7)
--				> (100 - usecs))
-+				> (uframe_periodic_max - usecs))
- 			return 0;
- 
- 		/* we know urb->interval is 2^N uframes */
-@@ -1345,7 +1342,7 @@ sitd_slot_ok (
- #endif
- 
- 		/* check starts (OUT uses more than one) */
--		max_used = 100 - stream->usecs;
-+		max_used = uframe_periodic_max - stream->usecs;
- 		for (tmp = stream->raw_mask & 0xff; tmp; tmp >>= 1, uf++) {
- 			if (periodic_usecs (ehci, frame, uf) > max_used)
- 				return 0;
-@@ -1354,7 +1351,7 @@ sitd_slot_ok (
- 		/* for IN, check CSPLIT */
- 		if (stream->c_usecs) {
- 			uf = uframe & 7;
--			max_used = 100 - stream->c_usecs;
-+			max_used = uframe_periodic_max - stream->c_usecs;
- 			do {
- 				tmp = 1 << uf;
- 				tmp <<= 8;
--- 
-1.7.6.rc1
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
