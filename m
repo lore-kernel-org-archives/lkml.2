@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756681Ab1FVKFw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 06:05:52 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45136 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756584Ab1FVKFu (ORCPT
+	id S1756448Ab1FVKFn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 06:05:43 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35677 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755286Ab1FVKFm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 06:05:50 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4E01BE6B.2090701@jp.fujitsu.com>
-Date: Wed, 22 Jun 2011 19:05:31 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
+	Wed, 22 Jun 2011 06:05:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=MQjW4cvduUY82gK5GAdVVskztly1pfxzEfLbP5VY1Dpfb/6qhKfcsp27njf/ANF98t
+         P5G/XOasZK2pzx8qgwOOiYPqeGAGbV/MOgjNV2hwDW190CvEJYxoOk7LfyDs0j19m6B2
+         pqasNTrDBAW7aXZVXrjBNl+6hF4LJuuv+XfzY=
 MIME-Version: 1.0
-To: Paul Turner <pjt@google.com>
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
-Subject: Re: [patch 00/16] CFS Bandwidth Control v7
-References: <20110621071649.862846205@google.com>
-In-Reply-To: <20110621071649.862846205@google.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1308640714-17961-3-git-send-email-ohad@wizery.com>
+References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
+	<1308640714-17961-3-git-send-email-ohad@wizery.com>
+Date: Wed, 22 Jun 2011 11:05:41 +0100
+Message-ID: <BANLkTimAf9EqSX-yHh_0RPaeewndOyNUYA@mail.gmail.com>
+Subject: Re: [RFC 2/8] remoteproc: add omap implementation
+From: Will Newton <will.newton@gmail.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        davinci-linux-open-source 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/21 16:16), Paul Turner wrote:
-> Hideotoshi, the following patches changed enough, or are new, and should be
-> looked over again before I can re-add your Reviewed-by.
-> 
-> [patch 04/16] sched: validate CFS quota hierarchies
-> [patch 06/16] sched: add a timer to handle CFS bandwidth refresh
-> [patch 07/16] sched: expire invalid runtime
-> [patch 10/16] sched: throttle entities exceeding their allowed bandwidth
-> [patch 15/16] sched: return unused runtime on voluntary sleep
+On Tue, Jun 21, 2011 at 8:18 AM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
 
-Done.
+> +/* bootaddr isn't needed for the dual M3's */
+> +static inline int omap_rproc_start(struct rproc *rproc, u64 bootaddr)
 
-Thank you very much again for your great work! 
+> +static inline int omap_rproc_stop(struct rproc *rproc)
 
-I'll continue my test/benchmark on this v7 for a while.
-Though I believe no more bug is there, I'll let you know if there is something.
+These two functions don't need to be inline as far as I can see.
 
-I think it's about time to have this set in upstream branch (at first, tip:sched/???).
-(How about having an update with correct words (say, v7.1?) within a few days?)
-
-
-Thanks,
-H.Seto
-
+> +static struct rproc_ops omap_rproc_ops = {
+> +       .start = omap_rproc_start,
+> +       .stop = omap_rproc_stop,
+> +};
