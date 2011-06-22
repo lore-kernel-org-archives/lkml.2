@@ -1,195 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab1FVLFn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 07:05:43 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:60564 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754668Ab1FVLFl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 07:05:41 -0400
+	id S1756353Ab1FVLII (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 07:08:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1374 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753210Ab1FVLIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 07:08:07 -0400
+Message-ID: <4E01CCED.5050609@redhat.com>
+Date: Wed, 22 Jun 2011 19:07:25 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <BANLkTinGRy5KRJLYmEzzeFhOm0WpngzhhA@mail.gmail.com>
-References: <1308699521-20556-1-git-send-email-per.forlin@linaro.org>
-	<1308699521-20556-2-git-send-email-per.forlin@linaro.org>
-	<BANLkTikhZRb5GWFvTVG0bFjD6rAyJPka1w@mail.gmail.com>
-	<BANLkTi=TY3wrH2GH1B2p+L506aUKOjg9uA@mail.gmail.com>
-	<BANLkTinW1Wrvq6ma6L7he5iCtVCeofL-cg@mail.gmail.com>
-	<BANLkTinGRy5KRJLYmEzzeFhOm0WpngzhhA@mail.gmail.com>
-Date: Wed, 22 Jun 2011 16:35:33 +0530
-Message-ID: <BANLkTimareJo2DCJkN9mH_oGFOuT_cZXpw@mail.gmail.com>
-Subject: Re: [PATCH v7 01/11] mmc: add non-blocking mmc request function
-From: "S, Venkatraman" <svenkatr@ti.com>
-To: Per Forlin <per.forlin@linaro.org>
-Cc: linaro-dev <linaro-dev@lists.linaro.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <cjb@laptop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: David Rientjes <rientjes@google.com>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        dave@linux.vnet.ibm.com, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [PATCH v2 2/4] mm: make the threshold of enabling THP configurable
+References: <1308643849-3325-1-git-send-email-amwang@redhat.com> <1308643849-3325-2-git-send-email-amwang@redhat.com> <alpine.DEB.2.00.1106211817340.5205@chino.kir.corp.google.com> <4E015C36.2050005@redhat.com> <alpine.DEB.2.00.1106212024210.8712@chino.kir.corp.google.com> <4E018060.3050607@redhat.com> <alpine.DEB.2.00.1106212325400.14693@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1106212325400.14693@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 2:38 PM, Per Forlin <per.forlin@linaro.org> wrote:
-> On 22 June 2011 10:53, S, Venkatraman <svenkatr@ti.com> wrote:
->> On Wed, Jun 22, 2011 at 2:15 PM, Per Forlin <per.forlin@linaro.org> wrote:
->>> On 22 June 2011 09:42, Venkatraman S <svenkatr@ti.com> wrote:
->>>> On Wed, Jun 22, 2011 at 5:08 AM, Per Forlin <per.forlin@linaro.org> wrote:
->>>>> Previously there has only been one function mmc_wait_for_req()
->>>>> to start and wait for a request. This patch adds
->>>>>  * mmc_start_req() - starts a request wihtout waiting
->>>>>   If there is on ongoing request wait for completion
->>>>>   of that request and start the new one and return.
->>>>>   Does not wait for the new command to complete.
->>>>>
->>>>> This patch also adds new function members in struct mmc_host_ops
->>>>> only called from core.c
->>>>>  * pre_req - asks the host driver to prepare for the next job
->>>>>  * post_req - asks the host driver to clean up after a completed job
->>>>>
->>>>> The intention is to use pre_req() and post_req() to do cache maintenance
->>>>> while a request is active. pre_req() can be called while a request is active
->>>>> to minimize latency to start next job. post_req() can be used after the next
->>>>> job is started to clean up the request. This will minimize the host driver
->>>>> request end latency. post_req() is typically used before ending the block
->>>>> request and handing over the buffer to the block layer.
->>>>>
->>>>> Add a host-private member in mmc_data to be used by
->>>>> pre_req to mark the data. The host driver will then
->>>>> check this mark to see if the data is prepared or not.
->>>>>
->>>>> Signed-off-by: Per Forlin <per.forlin@linaro.org>
->>>>> ---
->>>>>  drivers/mmc/core/core.c  |  110 +++++++++++++++++++++++++++++++++++++++++----
->>>>>  include/linux/mmc/core.h |    6 ++-
->>>>>  include/linux/mmc/host.h |   21 +++++++++
->>>>>  3 files changed, 126 insertions(+), 11 deletions(-)
->>>>>
->>>>> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
->>>>> index 68091dd..c82fa3b 100644
->>>>> --- a/drivers/mmc/core/core.c
->>>>> +++ b/drivers/mmc/core/core.c
->>>>> @@ -198,9 +198,106 @@ mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
->>>>>
->>>>>  static void mmc_wait_done(struct mmc_request *mrq)
->>>>>  {
->>>>> -       complete(mrq->done_data);
->>>>> +       complete(&mrq->completion);
->>>>>  }
->>>>>
->>>>> +static void __mmc_start_req(struct mmc_host *host, struct mmc_request *mrq)
->>>>> +{
->>>>> +       init_completion(&mrq->completion);
->>>>> +       mrq->done = mmc_wait_done;
->>>>> +       mmc_start_request(host, mrq);
->>>>> +}
->>>>> +
->>>>> +static void mmc_wait_for_req_done(struct mmc_host *host,
->>>>> +                                 struct mmc_request *mrq)
->>>>> +{
->>>>> +       wait_for_completion(&mrq->completion);
->>>>> +}
->>>>> +
->>>>> +/**
->>>>> + *     mmc_pre_req - Prepare for a new request
->>>>> + *     @host: MMC host to prepare command
->>>>> + *     @mrq: MMC request to prepare for
->>>>> + *     @is_first_req: true if there is no previous started request
->>>>> + *                     that may run in parellel to this call, otherwise false
->>>>> + *
->>>>> + *     mmc_pre_req() is called in prior to mmc_start_req() to let
->>>>> + *     host prepare for the new request. Preparation of a request may be
->>>>> + *     performed while another request is running on the host.
->>>>> + */
->>>>> +static void mmc_pre_req(struct mmc_host *host, struct mmc_request *mrq,
->>>>> +                bool is_first_req)
->>>>> +{
->>>>> +       if (host->ops->pre_req)
->>>>> +               host->ops->pre_req(host, mrq, is_first_req);
->>>>> +}
->>>>> +
->>>>> +/**
->>>>> + *     mmc_post_req - Post process a completed request
->>>>> + *     @host: MMC host to post process command
->>>>> + *     @mrq: MMC request to post process for
->>>>> + *     @err: Error, if non zero, clean up any resources made in pre_req
->>>>> + *
->>>>> + *     Let the host post process a completed request. Post processing of
->>>>> + *     a request may be performed while another reuqest is running.
->>>>> + */
->>>>> +static void mmc_post_req(struct mmc_host *host, struct mmc_request *mrq,
->>>>> +                        int err)
->>>>> +{
->>>>> +       if (host->ops->post_req)
->>>>> +               host->ops->post_req(host, mrq, err);
->>>>> +}
->>>>> +
->>>>> +/**
->>>>> + *     mmc_start_req - start a non-blocking request
->>>>> + *     @host: MMC host to start command
->>>>> + *     @areq: async request to start
->>>>> + *     @error: out parameter returns 0 for success, otherwise non zero
->>>>> + *
->>>>> + *     Start a new MMC custom command request for a host.
->>>>> + *     If there is on ongoing async request wait for completion
->>>>> + *     of that request and start the new one and return.
->>>>> + *     Does not wait for the new request to complete.
->>>>> + *
->>>>> + *     Returns the completed async request, NULL in case of none completed.
->>>>> + */
->>>>> +struct mmc_async_req *mmc_start_req(struct mmc_host *host,
->>>>> +                                   struct mmc_async_req *areq, int *error)
->>>>> +{
->>>>> +       int err = 0;
->>>>> +       struct mmc_async_req *data = host->areq;
->>>>> +
->>>>> +       /* Prepare a new request */
->>>>> +       if (areq)
->>>>> +               mmc_pre_req(host, areq->mrq, !host->areq);
->>>>> +
->>>>> +       if (host->areq) {
->>>>> +               mmc_wait_for_req_done(host, host->areq->mrq);
->>>>> +               err = host->areq->err_check(host->card, host->areq);
->>>>> +               if (err) {
->>>>> +                       mmc_post_req(host, host->areq->mrq, 0);
->>>>> +                       if (areq)
->>>>> +                               mmc_post_req(host, areq->mrq, -EINVAL);
->>>>> +
->>>>> +                       host->areq = NULL;
->>>>> +                       goto out;
->>>> In this sequence, would the return value (data) have the previous areq ?
->>>> Is that intentional - doesn't seem to fit with the description.
->>> It will return the data that belongs to the completed request. The
->>> completed request will be the same as the previous request. The
->>> mmc_start_req will start a new request and return data for the
->>> completed request, if any.
->>>
+äºŽ 2011å¹´06æœˆ22æ—¥ 14:32, David Rientjes å†™é“:
+> On Wed, 22 Jun 2011, Cong Wang wrote:
+>
+>>> Either way, this patch isn't needed since it has no benefit over doing it
+>>> through an init script.
 >>
->> I meant that in case of an error (err !=0), data is already assigned
->> to host->areq
->> and goto out returns 'data'. So my question was 'Does returning a non-null
->> pointer for a unsuccessful request doesn't fit with the description, does it ?'
+>> If you were right, CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS is not needed,
+>> you can do it through an init script.
 >>
-> Now I get it. Thanks for your patience :)
 >
->>>>> +       struct mmc_async_req *data = host->areq;
-> ...
->>>>> +               mmc_wait_for_req_done(host, host->areq->mrq);
->>>>> +               err = host->areq->err_check(host->card, host->areq);
-> in case of error host->areq is returned. Basically the failing request
-> is returned.
-> block.c needs the failing request in order to do error handling.
+> They are really two different things: config options like
+> CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS and CONFIG_SLUB_DEBUG_ON are shortcuts
+> for command line options when you want the _default_ behavior to be
+> specified.  They could easily be done on the command line just as they can
+> be done in the config.  They typically have far reaching consequences
+> depending on whether they are enabled or disabled and warrant the entry in
+> the config file.
 >
->>>>> + *     @error: out parameter returns 0 for success, otherwise non zero
-> This parameter indicates error.
->
-> Returning NULL is not error. NULL is returned when starting a new
-> request and there is no ongoing (previous) request.
->
-Thanks. This comment
->>>>> + *     Returns the completed async request, NULL in case of none completed.
+> This patch, however, is not making the heuristic any easier to work with;
+> in fact, if the default were ever changed or the value is changed on your
+> kernel, then certain kernels will have THP enabled by default and others
+> will not.  That's why I suggested an override command line option like
+> transparent_hugepage=force to ignore any disabling heursitics either
+> present or future.
 
-should be modified to reflect this, otherwise the patch looks good.
-Regards,
-Venkat.
+Actually, if we move this out of kernel, to user-space, everything
+you worried will be solved by just changing the user-space code.
+Just add the following pseudo code into your init script,
+
+if [ $total_memory -lt 512 ]
+then
+	echo never > /sys/kernel/mm/transparent_hugepage/enabled
+fi
+
+BTW, "=force" makes people confused with "=always", like "=never"
+actually means "=disabled".
+
+>
+>> If you were right, the 512M limit is not needed neither, you have
+>> transparent_hugepage=never boot parameter and do the check of
+>> 512M later in an init script. (Actually, moving the 512M check to
+>> user-space is really more sane to me.)
+>>
+>
+> It's quite obvious that the default behavior intended by the author is
+> that it is defaulted off for systems with less than 512M of memory.
+> Obfuscating that probably isn't a very good idea, but I'm always in favor
+> of command lines that allow users to override settings when they really do
+> know better.
+
+The better way to express this is to add one line in Kconfig help said
+"Please set CONFIG_THP_NEVER=y when you have less than 512M memory",
+rather than enforcing a decision in code.
+
+ From either aspect, I don't think the current 512M check code in kernel
+is a good thing.
+
+Thanks.
