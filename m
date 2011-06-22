@@ -1,98 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932271Ab1FVPP2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 11:15:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47703 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932180Ab1FVPP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 11:15:27 -0400
-Date: Wed, 22 Jun 2011 17:15:00 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: Re: [PATCH 1/7] Fix mem_cgroup_hierarchical_reclaim() to do stable
- hierarchy walk.
-Message-ID: <20110622151500.GF14343@tiehlicka.suse.cz>
-References: <20110616124730.d6960b8b.kamezawa.hiroyu@jp.fujitsu.com>
- <20110616125141.5fbd230f.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110616125141.5fbd230f.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932318Ab1FVPSG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 11:18:06 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:27216 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932297Ab1FVPSE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 11:18:04 -0400
+X-RZG-AUTH: :O2kGeEG7b/pS1EO8W3C+nMaWotNRcyCeCTTmQgOI2iYXpKw2M5aRJ08f0ltfYr+LLg==
+X-RZG-CLASS-ID: mo00
+Subject: Re: [PATCH 1/1] drm/radeon: Fix Asus M2A-VM HDMI EDID error
+ flooding problem
+From: Thomas Reim <thomas.reim@nepomuc.de>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: reimth@googlemail.com, Dave Airlie <airlied@redhat.com>,
+        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
+        Jean Delvare <khali@linux-fr.org>,
+        Tyson Whitehead <twhitehead@gmail.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Thomas Reim <rdratlos@yahoo.co.uk>
+In-Reply-To: <BANLkTin-04ki+BgW-d1HqS5oupsx05ThUQ@mail.gmail.com>
+References: <1308670305-7096-1-git-send-email-rdratlos@yahoo.co.uk>
+	 <1308705639-4215-1-git-send-email-reimth@gmail.com>
+	 <BANLkTin-04ki+BgW-d1HqS5oupsx05ThUQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Jun 2011 17:17:50 +0200
+Message-ID: <1308755870.3655.36.camel@Mark-Aurel.gas.de>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 16-06-11 12:51:41, KAMEZAWA Hiroyuki wrote:
-[...]
-> @@ -1667,41 +1668,28 @@ static int mem_cgroup_hierarchical_recla
->  	if (!check_soft && root_mem->memsw_is_minimum)
->  		noswap = true;
->  
-> -	while (1) {
-> +again:
-> +	if (!shrink) {
-> +		visit = 0;
-> +		for_each_mem_cgroup_tree(victim, root_mem)
-> +			visit++;
-> +	} else {
-> +		/*
-> +		 * At shrinking, we check the usage again in caller side.
-> +		 * so, visit children one by one.
-> +		 */
-> +		visit = 1;
-> +	}
-> +	/*
-> +	 * We are not draining per cpu cached charges during soft limit reclaim
-> +	 * because global reclaim doesn't care about charges. It tries to free
-> +	 * some memory and  charges will not give any.
-> +	 */
-> +	if (!check_soft)
-> +		drain_all_stock_async(root_mem);
-> +
-> +	while (visit--) {
+Dear Alex, 
 
-This is racy, isn't it? What prevents some groups to disapear in the
-meantime? We would reclaim from those that are left more that we want.
+> This is going to enable your quirk on every board with an HDMI port.
+> If we need to add a quirk for your board, let's make it board
+> specific.  It might be better to just disable edid polling for certain
+> connectors on certain boards if they cause problems when no monitor is
+> detected.
+> 
+> Alex
 
-Why cannot we simply do something like (totally untested):
+Initially, I made the quirk only for the Asus board, because I only have
+this one to test. But the quirk applies of course to all boards that use
+the RS690 type chipset.
 
-Index: linus_tree/mm/memcontrol.c
-===================================================================
---- linus_tree.orig/mm/memcontrol.c	2011-06-22 17:11:54.000000000 +0200
-+++ linus_tree/mm/memcontrol.c	2011-06-22 17:13:05.000000000 +0200
-@@ -1652,7 +1652,7 @@ static int mem_cgroup_hierarchical_recla
- 						unsigned long reclaim_options,
- 						unsigned long *total_scanned)
- {
--	struct mem_cgroup *victim;
-+	struct mem_cgroup *victim, *first_victim = NULL;
- 	int ret, total = 0;
- 	int loop = 0;
- 	bool noswap = reclaim_options & MEM_CGROUP_RECLAIM_NOSWAP;
-@@ -1669,6 +1669,11 @@ static int mem_cgroup_hierarchical_recla
- 
- 	while (1) {
- 		victim = mem_cgroup_select_victim(root_mem);
-+		if (!first_victim)
-+			first_victim = victim;
-+		else if (first_victim == victim)
-+			break;
-+
- 		if (victim == root_mem) {
- 			loop++;
- 			/*
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+I went through a couple of the many and various bugs that reported the
+EDID error/dump flooding problem. Beside of RS690, also at least RS630,
+RV770 and R350 are affected by this problem. In addition, I also found a
+bug report on Intel 945 GM that seems to have the same root cause.
+
+The majority of the bugs (ca. 80%) report a problem with the HDMI-A
+connector. 15% have a problem with the DVI-I connector and 5% have a
+problem with the LVDS connector. 
+
+The proposed patch currently concentrates on the HDMI-A connector, only.
+
+Based on Jean's proposal I updated the patch, so that
+radeon_ddc_edid_probe() now replaces radeon_ddc_probe() for all HDMI-A
+connectors. 
+
+According to the VESA standards we could also do this for all connector
+types in general. DDC is i2c plus EDID. Without the patch
+radeon_ddc_probe() probes DDC by checking, if data at all can be
+retrieved from i2c port 0x50 (where the EDID is provided). New
+radeon_ddc_edid_probe() just checks in addition, if the EDID header and
+version/revision information is available and according to the VESA
+standards. 
+
+Then and only then (for the HDMI-A connectors) we let drm_get_edid() and
+drm_edid_block_valid() check the EDID checksum and probe the validity of
+the EDID.
+
+According to VESA's implementation guide this is the right approach:
+Checking the exact match of the EDID header and that the revision number
+is in valid range is mandatory. 
+
+Based on Jean's comments, I believe that it makes sense to have EDID
+polling enabled as there might be temporary communication problems
+between graphics card and monitor. These should be logged. This also
+applies for the buggy HDMI-A connectors, as soon as a monitor is
+connected to them.
+
+Hope this helps you.
+
+Best regards
+
+Thomas
+
+
+
