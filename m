@@ -1,101 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751375Ab1FVEWw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 00:22:52 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47522 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab1FVEWu (ORCPT
+	id S1759206Ab1FWKBP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 06:01:15 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:55593 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759043Ab1FWKBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 00:22:50 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 22 Jun 2011 13:15:42 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        linux-arch@vger.kernel.org
-Subject: Re: mm: Fix page_end_pfn() implementations.
-Message-Id: <20110622131542.884cbbb1.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110621.211141.964267743068211890.davem@davemloft.net>
-References: <20110621.211141.964267743068211890.davem@davemloft.net>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Jun 2011 06:01:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=WUPpBMLY9lHUknJSB9/0k4eo46/Njpvpat4dsF+jiHyOubwbrvRJlKZ7qbkdmvrGSQ
+         jwB3gUvm5HVOygBdezmWIUcTDFMYn4Aw4dkM5yMriLMvsnUs3kfgs3s+UaTmwiagNWXz
+         VZggZfP9m9tM0f4Et4gQ24A8yjuOYbFbCpjho=
+From: Ankur Patel <bkankur@gmail.com>
+To: Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: linux-kernel@vger.kernel.org, Ankur Patel <ankur.patel@quipment.in>
+Subject: [PATCH 1/1] HWMON: TMP102 - Added support for 12 bit data
+Date: Wed, 22 Jun 2011 09:58:52 +0530
+Message-Id: <1308716932-25562-1-git-send-email-bkankur@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Jun 2011 21:11:41 -0700 (PDT)
-David Miller <davem@davemloft.net> wrote:
+From: Ankur Patel <ankur.patel@quipment.in>
 
-> 
-> Commit 37573e8c718277103f61f03741bdc5606d31b07e ("memcg: fix
-> init_page_cgroup nid with sparsemem") broke the build on sparc64
-> because this is the first time the page_end_pfn() interface has
-> actually been used in a long time, and sparc64's definition
-> referes to ->node_end_pfn which doesn't even exist.
-> 
-> While fixing this I noticed powerpc had the same problem, and
-> m32r's version had an off-by-one error.
-> 
-> These are all fixed here.
-> 
-> Signed-off-by: David S. Miller <davem@davemloft.net>
+In tmp102.ko driver support for 12 bit data is added.
 
-Sorry, a patch is now queued in mmotm, as
+Signed-off-by: Ankur Patel <ankur.patel@quipment.in>
+---
+ drivers/hwmon/tmp102.c |   28 ++++++++++++++++++++--------
+ 1 files changed, 20 insertions(+), 8 deletions(-)
 
-http://marc.info/?l=linux-mm-commits&m=130834703319994&w=2
-
-Thanks,
--Kame
-
-> 
-> diff --git a/arch/m32r/include/asm/mmzone.h b/arch/m32r/include/asm/mmzone.h
-> index 9f3b5ac..31238e0 100644
-> --- a/arch/m32r/include/asm/mmzone.h
-> +++ b/arch/m32r/include/asm/mmzone.h
-> @@ -18,7 +18,7 @@ extern struct pglist_data *node_data[];
->  #define node_end_pfn(nid)						\
->  ({									\
->  	pg_data_t *__pgdat = NODE_DATA(nid);				\
-> -	__pgdat->node_start_pfn + __pgdat->node_spanned_pages - 1;	\
-> +	__pgdat->node_start_pfn + __pgdat->node_spanned_pages;		\
->  })
->  
->  #define pmd_page(pmd)		(pfn_to_page(pmd_val(pmd) >> PAGE_SHIFT))
-> diff --git a/arch/powerpc/include/asm/mmzone.h b/arch/powerpc/include/asm/mmzone.h
-> index fd3fd58..86bf6ac 100644
-> --- a/arch/powerpc/include/asm/mmzone.h
-> +++ b/arch/powerpc/include/asm/mmzone.h
-> @@ -43,7 +43,8 @@ u64 memory_hotplug_max(void);
->   */
->  
->  #define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
-> -#define node_end_pfn(nid)	(NODE_DATA(nid)->node_end_pfn)
-> +#define node_end_pfn(nid)       (NODE_DATA(nid)->node_start_pfn +	\
-> +				 NODE_DATA(nid)->node_spanned_pages)
->  
->  #else
->  #define memory_hotplug_max() memblock_end_of_DRAM()
-> diff --git a/arch/sparc/include/asm/mmzone.h b/arch/sparc/include/asm/mmzone.h
-> index e8c6487..a321b04 100644
-> --- a/arch/sparc/include/asm/mmzone.h
-> +++ b/arch/sparc/include/asm/mmzone.h
-> @@ -9,7 +9,8 @@ extern struct pglist_data *node_data[];
->  
->  #define NODE_DATA(nid)		(node_data[nid])
->  #define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
-> -#define node_end_pfn(nid)	(NODE_DATA(nid)->node_end_pfn)
-> +#define node_end_pfn(nid)       (NODE_DATA(nid)->node_start_pfn +	\
-> +				 NODE_DATA(nid)->node_spanned_pages)
->  
->  extern int numa_cpu_lookup_table[];
->  extern cpumask_t numa_cpumask_lookup_table[];
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+diff --git a/drivers/hwmon/tmp102.c b/drivers/hwmon/tmp102.c
+index 5bd1949..6e03a87 100644
+--- a/drivers/hwmon/tmp102.c
++++ b/drivers/hwmon/tmp102.c
+@@ -47,6 +47,9 @@
+ #define	TMP102_TLOW_REG			0x02
+ #define	TMP102_THIGH_REG		0x03
+ 
++#define TMP102_CONFIG  (TMP102_CONF_TM | TMP102_CONF_EM | TMP102_CONF_CR1)
++#define TMP102_CONFIG_RD_ONLY (TMP102_CONF_R0 | TMP102_CONF_R1 | TMP102_CONF_AL)
++
+ struct tmp102 {
+ 	struct device *hwmon_dev;
+ 	struct mutex lock;
+@@ -68,16 +71,26 @@ static inline int tmp102_write_reg(struct i2c_client *client, u8 reg, u16 val)
+ 	return i2c_smbus_write_word_data(client, reg, swab16(val));
+ }
+ 
+-/* convert left adjusted 13-bit TMP102 register value to milliCelsius */
++/* convert left adjusted TMP102 register value to milliCelsius for 13 bit &
++ * 12 bit by dividing with 128 & 256 respectively*/
+ static inline int tmp102_reg_to_mC(s16 val)
+ {
+-	return ((val & ~0x01) * 1000) / 128;
++	#if TMP102_CONFIG & TMP102_CONF_EM
++		return ((val & ~0x01) * 1000) / 128;
++	#else
++		return ((val & ~0x01) * 1000) / 256;
++	#endif
+ }
+ 
+-/* convert milliCelsius to left adjusted 13-bit TMP102 register value */
++/* convert milliCelsius to left adjusted TMP102 register value for 13 bit &
++ * 12 bit by multiplying with 128 & 256 respectivley*/
+ static inline u16 tmp102_mC_to_reg(int val)
+ {
+-	return (val * 128) / 1000;
++	#if TMP102_CONFIG & TMP102_CONF_EM
++		return (val * 128) / 1000;
++	#else
++		return (val * 256) / 1000;
++	#endif
+ }
+ 
+ static const u8 tmp102_reg[] = {
+@@ -126,7 +139,9 @@ static ssize_t tmp102_set_temp(struct device *dev,
+ 
+ 	if (strict_strtol(buf, 10, &val) < 0)
+ 		return -EINVAL;
+-	val = SENSORS_LIMIT(val, -256000, 255000);
++	/* It will limit the Input temperature range to -55 Deg. Cel to
++	 * 150 Deg. Cel */
++	val = SENSORS_LIMIT(val, -55000, 150000);
+ 
+ 	mutex_lock(&tmp102->lock);
+ 	tmp102->temp[sda->index] = val;
+@@ -155,9 +170,6 @@ static const struct attribute_group tmp102_attr_group = {
+ 	.attrs = tmp102_attributes,
+ };
+ 
+-#define TMP102_CONFIG  (TMP102_CONF_TM | TMP102_CONF_EM | TMP102_CONF_CR1)
+-#define TMP102_CONFIG_RD_ONLY (TMP102_CONF_R0 | TMP102_CONF_R1 | TMP102_CONF_AL)
+-
+ static int __devinit tmp102_probe(struct i2c_client *client,
+ 				  const struct i2c_device_id *id)
+ {
+-- 
+1.7.0.4
 
