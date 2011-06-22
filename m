@@ -1,126 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759022Ab1FVVvc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 17:51:32 -0400
-Received: from mail.betterlinux.com ([199.58.199.50]:42582 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758919Ab1FVVva (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 17:51:30 -0400
-From: Andrea Righi <andrea@betterlinux.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH RFC] fadvise: move active pages to inactive list with POSIX_FADV_DONTNEED
-Date: Wed, 22 Jun 2011 23:51:20 +0200
-Message-Id: <1308779480-4950-1-git-send-email-andrea@betterlinux.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1759056Ab1FVVwN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 17:52:13 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:48317 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758911Ab1FVVwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 17:52:11 -0400
+X-IronPort-AV: E=Sophos;i="4.65,408,1304319600"; 
+   d="scan'208,223";a="557657467"
+Subject: Re: Issue with Race Condition on NFS4 with KRB
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Joshua Scoggins <theoretically.x64@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Date: Wed, 22 Jun 2011 17:51:47 -0400
+In-Reply-To: <BANLkTi=b1UJzYinAeW2VJj2AHzsAnwUpGg@mail.gmail.com>
+References: <BANLkTik9J3qcdPcp+DdfRq9kj+DMKnjKZw@mail.gmail.com>
+	 <1308767449.14997.10.camel@lade.trondhjem.org>
+	 <BANLkTimyCA0QyF1TNc0SU2GYobOt-sAsNQ@mail.gmail.com>
+	 <1308769054.14997.18.camel@lade.trondhjem.org>
+	 <BANLkTi=b1UJzYinAeW2VJj2AHzsAnwUpGg@mail.gmail.com>
+Organization: NetApp Inc
+Content-Type: multipart/mixed; boundary="=-pvUFRjM+3/UqvYlI3Qys"
+X-Mailer: Evolution 3.0.2 (3.0.2-2.fc15) 
+Message-ID: <1308779507.25875.7.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+X-OriginalArrivalTime: 22 Jun 2011 21:51:48.0344 (UTC) FILETIME=[9615EF80:01CC3126]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There were some reported problems in the past about trashing page cache
-when a backup software (i.e., rsync) touches a huge amount of pages (see
-for example [1]).
 
-This problem has been almost fixed by the Minchan Kim's patch [2] and a
-proper use of fadvise() in the backup software. For example this patch
-set [3] has been proposed for inclusion in rsync.
+--=-pvUFRjM+3/UqvYlI3Qys
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-However, there can be still other similar trashing problems: when the
-backup software reads all the source files, some of them may be part of
-the actual working set of the system. When a
-posix_fadvise(POSIX_FADV_DONTNEED) is performed _all_ pages are evicted
-from pagecache, both the working set and the use-once pages touched only
-by the backup software.
+On Wed, 2011-06-22 at 12:18 -0700, Joshua Scoggins wrote:=20
+> According to the it guys they are running solaris 10 as the server platfo=
+rm.
 
-With the following solution when posix_fadvise(POSIX_FADV_DONTNEED) is
-called for an active page instead of removing it from the page cache it
-is added to the tail of the inactive list. Otherwise, if it's already in
-the inactive list the page is removed from the page cache.
+Ok. That should not be subject to the race I was thinking of...
 
-In this way if the backup was the only user of a page, that page will
-be immediately removed from the page cache by calling
-posix_fadvise(POSIX_FADV_DONTNEED). If the page was also touched by
-other processes it'll be moved to the inactive list, having another
-chance of being re-added to the working set, or simply reclaimed when
-memory is needed.
+> On Wed, Jun 22, 2011 at 11:57 AM, Trond Myklebust
+> <Trond.Myklebust@netapp.com> wrote:
+> > On Wed, 2011-06-22 at 11:37 -0700, Joshua Scoggins wrote:
+> >> Here are our mount options from auto.master
+> >>
+> >> /user -fstype=3Dnfs4,sec=3Dkrb5p,noresvport,noatime
+> >> /group -fstype=3Dnfs4,sec=3Dkrb5p,noresvport,noatime
+> >>
+> >> As for the server, we don't control it. It's actually run by the
+> >> campus wide it department we are just lab support for CS. I can
+> >> potentially get the server information but I need to know what you wan=
+t
+> >> specifically as they're pretty paranoid about giving out information a=
+bout
+> >> their servers.
+> >
+> > I would just want to know _what_ server platform you are running
+> > against. I know of at least one server bug that might explain what you
+> > are seeing, and I'd like to eliminate that as a possibility.
+> >
+> > Trond
+> >
+> >> Joshua Scoggins
+> >>
+> >> On Wed, Jun 22, 2011 at 11:30 AM, Trond Myklebust
+> >> <Trond.Myklebust@netapp.com> wrote:
+> >> > On Wed, 2011-06-22 at 11:21 -0700, Joshua Scoggins wrote:
+> >> >> Hello,
+> >> >>
+> >> >> We are trying to update our linux images in our CS lab and have it =
+a
+> >> >> bit of an issue. We are
+> >> >> using nfs to load user home folder. While testing the new image we
+> >> >> found that the nfs4 module will
+> >> >>  crash when using firefox 3.6.17 for an extended period of time. So=
+me
+> >> >> research via google yielded that
+> >> >> it's a potential race condition specific to nfs with krb auth with
+> >> >> newer kernels. Our old image doesn't have
+> >> >> this issue and it seems that its due to it running a far older kern=
+el version.
+> >> >>
+> >> >> We have two images and both are having this problem. One is running
+> >> >> 2.6.39 and the other is 2.6.38.
+> >> >> Here is what dmesg spit out from the machine running 2.6.39 on one =
+occasion:
+> >> >>
+> >> >> [  678.632061] ------------[ cut here ]------------
+> >> >> [  678.632068] WARNING: at net/sunrpc/clnt.c:1567 call_decode+0xb2/=
+0x69c()
+> >> >> [  678.632070] Hardware name: OptiPlex 755
+> >> >> [  678.632072] Modules linked in: nvidia(P) scsi_wait_scan
+> >> >> [  678.632078] Pid: 3882, comm: kworker/0:2 Tainted: P
+> >> >> 2.6.39-gentoo-r1 #1
+> >> >> [  678.632080] Call Trace:
+> >> >> [  678.632086]  [<ffffffff81035b20>] warn_slowpath_common+0x80/0x98
+> >> >> [  678.632091]  [<ffffffff8117231e>] ? nfs4_xdr_dec_readdir+0xba/0x=
+ba
+> >> >> [  678.632094]  [<ffffffff81035b4d>] warn_slowpath_null+0x15/0x17
+> >> >> [  678.632097]  [<ffffffff81426f48>] call_decode+0xb2/0x69c
+> >> >> [  678.632101]  [<ffffffff8142d2b5>] __rpc_execute+0x78/0x24b
+> >> >> [  678.632104]  [<ffffffff8142d4c9>] ? rpc_execute+0x41/0x41
+> >> >> [  678.632107]  [<ffffffff8142d4d9>] rpc_async_schedule+0x10/0x12
+> >> >> [  678.632111]  [<ffffffff8104a49d>] process_one_work+0x1d9/0x2e7
+> >> >> [  678.632114]  [<ffffffff8104c402>] worker_thread+0x133/0x24f
+> >> >> [  678.632118]  [<ffffffff8104c2cf>] ? manage_workers+0x18d/0x18d
+> >> >> [  678.632121]  [<ffffffff8104f6a0>] kthread+0x7d/0x85
+> >> >> [  678.632125]  [<ffffffff8145e314>] kernel_thread_helper+0x4/0x10
+> >> >> [  678.632128]  [<ffffffff8104f623>] ? kthread_worker_fn+0x13a/0x13=
+a
+> >> >> [  678.632131]  [<ffffffff8145e310>] ? gs_change+0xb/0xb
+> >> >> [  678.632133] ---[ end trace 6bfae002a63e020e ]---
 
-Testcase:
+Looking at the code, there is only one way I can see for that warning to
+occur, and that is if we put the request back on the 'xprt->recv' list
+after it has already received a reply from the server.
 
-  - create a 1GB file called "zero"
-  - run md5sum zero to read all the pages in page cache (this is to
-    simulate the user activity on this file)
-  - run "rsync zero zero_copy" (rsync is patched with [3])
-  - re-run md5sum zero (user activity on the working set) and measure
-    the time to complete this command
+Can you reproduce the problem with the attached patch?
 
-The test has been performed using 3.0.0-rc4 vanilla and with this patch
-applied (3.0.0-rc4-fadvise).
+Trond
 
-Results:
-                  avg elapsed time      block:block_bio_queue
- 3.0.0-rc4                  4.127s                      8,214
- 3.0.0-rc4-fadvise          2.146s                          0
+--=20
+Trond Myklebust
+Linux NFS client maintainer
 
-In the first case the file is evicted from page cache completely and we
-must re-read it from the disk. In the second case the file is still in
-page cache (in the inactive list) and we don't need any other additional
-I/O operation.
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-[1] http://marc.info/?l=rsync&m=128885034930933&w=2
-[2] https://lkml.org/lkml/2011/2/20/57
-[3] http://lists.samba.org/archive/rsync/2010-November/025827.html
 
-Signed-off-by: Andrea Righi <andrea@betterlinux.com>
----
- mm/swap.c     |    9 +++++----
- mm/truncate.c |    5 ++++-
- 2 files changed, 9 insertions(+), 5 deletions(-)
+--=-pvUFRjM+3/UqvYlI3Qys
+Content-Disposition: attachment;
+	filename*0=0001-SUNRPC-Fix-a-potential-race-in-between-xprt_complete.pat;
+	filename*1=ch
+Content-Transfer-Encoding: base64
+Content-Type: text/x-patch;
+	name="0001-SUNRPC-Fix-a-potential-race-in-between-xprt_complete.patch";
+	charset="UTF-8"
 
-diff --git a/mm/swap.c b/mm/swap.c
-index 3a442f1..fc8bb76 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -411,10 +411,11 @@ void add_page_to_unevictable_list(struct page *page)
-  *
-  * 1. active, mapped page -> none
-  * 2. active, dirty/writeback page -> inactive, head, PG_reclaim
-- * 3. inactive, mapped page -> none
-- * 4. inactive, dirty/writeback page -> inactive, head, PG_reclaim
-- * 5. inactive, clean -> inactive, tail
-- * 6. Others -> none
-+ * 3. active, clean -> inactive, tail
-+ * 4. inactive, mapped page -> none
-+ * 5. inactive, dirty/writeback page -> inactive, head, PG_reclaim
-+ * 6. inactive, clean -> inactive, tail
-+ * 7. Others -> none
-  *
-  * In 4, why it moves inactive's head, the VM expects the page would
-  * be write it out by flusher threads as this is much more effective
-diff --git a/mm/truncate.c b/mm/truncate.c
-index 3a29a61..043aabd 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -357,7 +357,10 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
- 			if (lock_failed)
- 				continue;
- 
--			ret = invalidate_inode_page(page);
-+			if (PageActive(page))
-+				ret = 0;
-+			else
-+				ret = invalidate_inode_page(page);
- 			unlock_page(page);
- 			/*
- 			 * Invalidation is a hint that the page is no longer
--- 
-1.7.4.1
+RnJvbSA3ZmZmYjZiNDc5NDU0NTYwNTAzYmEzMTY2MTUxYjUwMTM4MWY1YTZkIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQ0KRnJvbTogVHJvbmQgTXlrbGVidXN0IDxUcm9uZC5NeWtsZWJ1c3RAbmV0
+YXBwLmNvbT4NCkRhdGU6IFdlZCwgMjIgSnVuIDIwMTEgMTc6Mjc6MTYgLTA0MDANClN1YmplY3Q6
+IFtQQVRDSF0gU1VOUlBDOiBGaXggYSBwb3RlbnRpYWwgcmFjZSBpbiBiZXR3ZWVuIHhwcnRfY29t
+cGxldGVfcnFzdA0KIGFuZCB4cHJ0X3RyYW5zbWl0DQoNCkluIHhwcnRfdHJhbnNtaXQsIGlmIHRo
+ZSB0ZXN0IGZvciBsaXN0X2VtcHR5KCZyZXEtPnJxX2xpc3QpIGlzIHRvIHJlbWFpbg0KbG9ja2xl
+c3MsIHdlIG5lZWQgdG8gdGVzdCBmb3Igd2hldGhlciBvciBub3QgcmVxLT5ycV9yZXBseV9ieXRl
+c19yZWN2ZCBpcw0Kc2V0IChpLmUuICB3ZSBhbHJlYWR5IGhhdmUgYSByZXBseSkgYWZ0ZXIgdGhh
+dCB0ZXN0Lg0KVGhlIHJlYXNvbiBpcyB0aGF0IHhwcnRfY29tcGxldGVfcnFzdCBvcmRlcnMgdGhl
+IGxpc3QgZGVsZXRpb24gYW5kDQp0aGUgc2V0dGluZyBvZiB0aGUgcmVxLT5ycV9yZXBseV9ieXRl
+c19yZWN2ZC4NCg0KQnkgZG9pbmcgdGhlIHRlc3Qgb2YgcmVxLT5ycV9yZXBseV9ieXRlc19yZWN2
+ZCB1bmRlciB0aGUgc3BpbmxvY2ssIHdlDQphdm9pZCBhbiBleHRyYSBzbXBfcm1iKCkuDQoNCkFs
+c28gZW5zdXJlIHRoYXQgd2UgdHVybiBvZmYgYXV0b2Rpc2Nvbm5lY3Qgd2hldGhlciBvciBub3Qg
+dGhlIFJQQyByZXF1ZXN0DQpleHBlY3RzIGEgcmVwbHkuDQoNClNpZ25lZC1vZmYtYnk6IFRyb25k
+IE15a2xlYnVzdCA8VHJvbmQuTXlrbGVidXN0QG5ldGFwcC5jb20+DQotLS0NCiBuZXQvc3VucnBj
+L3hwcnQuYyB8ICAgMzQgKysrKysrKysrKysrKysrKysrKysrLS0tLS0tLS0tLS0tLQ0KIDEgZmls
+ZXMgY2hhbmdlZCwgMjEgaW5zZXJ0aW9ucygrKSwgMTMgZGVsZXRpb25zKC0pDQoNCmRpZmYgLS1n
+aXQgYS9uZXQvc3VucnBjL3hwcnQuYyBiL25ldC9zdW5ycGMveHBydC5jDQppbmRleCBjZTVlYjY4
+Li4xMGUxZjIxIDEwMDY0NA0KLS0tIGEvbmV0L3N1bnJwYy94cHJ0LmMNCisrKyBiL25ldC9zdW5y
+cGMveHBydC5jDQpAQCAtODc4LDIzICs4NzgsMzEgQEAgdm9pZCB4cHJ0X3RyYW5zbWl0KHN0cnVj
+dCBycGNfdGFzayAqdGFzaykNCiANCiAJZHByaW50aygiUlBDOiAlNXUgeHBydF90cmFuc21pdCgl
+dSlcbiIsIHRhc2stPnRrX3BpZCwgcmVxLT5ycV9zbGVuKTsNCiANCi0JaWYgKCFyZXEtPnJxX3Jl
+cGx5X2J5dGVzX3JlY3ZkKSB7DQotCQlpZiAobGlzdF9lbXB0eSgmcmVxLT5ycV9saXN0KSAmJiBy
+cGNfcmVwbHlfZXhwZWN0ZWQodGFzaykpIHsNCi0JCQkvKg0KLQkJCSAqIEFkZCB0byB0aGUgbGlz
+dCBvbmx5IGlmIHdlJ3JlIGV4cGVjdGluZyBhIHJlcGx5DQotCQkJICovDQorCWlmIChsaXN0X2Vt
+cHR5KCZyZXEtPnJxX2xpc3QpKSB7DQorCQkvKg0KKwkJICogQWRkIHRvIHRoZSBsaXN0IG9ubHkg
+aWYgd2UncmUgZXhwZWN0aW5nIGEgcmVwbHkNCisJCSAqLw0KKwkJaWYgKHJwY19yZXBseV9leHBl
+Y3RlZCh0YXNrKSkgew0KIAkJCXNwaW5fbG9ja19iaCgmeHBydC0+dHJhbnNwb3J0X2xvY2spOw0K
+LQkJCS8qIFVwZGF0ZSB0aGUgc29mdGlycSByZWNlaXZlIGJ1ZmZlciAqLw0KLQkJCW1lbWNweSgm
+cmVxLT5ycV9wcml2YXRlX2J1ZiwgJnJlcS0+cnFfcmN2X2J1ZiwNCi0JCQkJCXNpemVvZihyZXEt
+PnJxX3ByaXZhdGVfYnVmKSk7DQotCQkJLyogQWRkIHJlcXVlc3QgdG8gdGhlIHJlY2VpdmUgbGlz
+dCAqLw0KLQkJCWxpc3RfYWRkX3RhaWwoJnJlcS0+cnFfbGlzdCwgJnhwcnQtPnJlY3YpOw0KKwkJ
+CS8qIERvbid0IHB1dCBiYWNrIG9uIHRoZSBsaXN0IGlmIHdlIGhhdmUgYSByZXBseQ0KKwkJCSAq
+IFdlIGRvIHRoaXMgdGVzdCB1bmRlciB0aGUgc3BpbiBsb2NrIHRvIGF2b2lkDQorCQkJICogYW4g
+ZXh0cmEgc21wX3JtYigpIGJldHdlZW50IHRoZSB0ZXN0cyBvZg0KKwkJCSAqIHJlcS0+cnFfbGlz
+dCBhbmQgcmVxLT5ycV9yZXBseV9ieXRlc19yZWN2ZA0KKwkJCSAqLw0KKwkJCWlmIChyZXEtPnJx
+X3JlcGx5X2J5dGVzX3JlY3ZkID09IDApIHsNCisJCQkJLyogVXBkYXRlIHRoZSBzb2Z0aXJxIHJl
+Y2VpdmUgYnVmZmVyICovDQorCQkJCW1lbWNweSgmcmVxLT5ycV9wcml2YXRlX2J1ZiwgJnJlcS0+
+cnFfcmN2X2J1ZiwNCisJCQkJCQlzaXplb2YocmVxLT5ycV9wcml2YXRlX2J1ZikpOw0KKwkJCQkv
+KiBBZGQgcmVxdWVzdCB0byB0aGUgcmVjZWl2ZSBsaXN0ICovDQorCQkJCWxpc3RfYWRkX3RhaWwo
+JnJlcS0+cnFfbGlzdCwgJnhwcnQtPnJlY3YpOw0KKwkJCX0NCiAJCQlzcGluX3VubG9ja19iaCgm
+eHBydC0+dHJhbnNwb3J0X2xvY2spOw0KIAkJCXhwcnRfcmVzZXRfbWFqb3J0aW1lbyhyZXEpOw0K
+LQkJCS8qIFR1cm4gb2ZmIGF1dG9kaXNjb25uZWN0ICovDQotCQkJZGVsX3NpbmdsZXNob3RfdGlt
+ZXJfc3luYygmeHBydC0+dGltZXIpOw0KIAkJfQ0KLQl9IGVsc2UgaWYgKCFyZXEtPnJxX2J5dGVz
+X3NlbnQpDQorCQkvKiBUdXJuIG9mZiBhdXRvZGlzY29ubmVjdCAqLw0KKwkJZGVsX3NpbmdsZXNo
+b3RfdGltZXJfc3luYygmeHBydC0+dGltZXIpOw0KKwl9DQorCWlmIChyZXEtPnJxX3JlcGx5X2J5
+dGVzX3JlY3ZkICE9IDAgJiYgcmVxLT5ycV9ieXRlc19zZW50ID09IDApDQogCQlyZXR1cm47DQog
+DQogCXJlcS0+cnFfY29ubmVjdF9jb29raWUgPSB4cHJ0LT5jb25uZWN0X2Nvb2tpZTsNCi0tIA0K
+MS43LjUuNA0KDQo=
 
+
+--=-pvUFRjM+3/UqvYlI3Qys--
