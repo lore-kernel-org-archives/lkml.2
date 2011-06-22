@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757924Ab1FVCmh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 22:42:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59351 "EHLO mx1.redhat.com"
+	id S1757945Ab1FVCn5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 22:43:57 -0400
+Received: from ozlabs.org ([203.10.76.45]:34240 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757816Ab1FVCmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 22:42:36 -0400
-Message-ID: <4E015672.2020407@redhat.com>
-Date: Wed, 22 Jun 2011 10:41:54 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S1757816Ab1FVCnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 22:43:55 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Ohad Ben-Cohen <ohad@wizery.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: akpm@linux-foundation.org, Brian Swetland <swetland@google.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        davinci-linux-open-source 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Subject: Re: [RFC 7/8] drivers: introduce rpmsg, a remote-processor messaging bus
+In-Reply-To: <1308640714-17961-8-git-send-email-ohad@wizery.com>
+References: <1308640714-17961-1-git-send-email-ohad@wizery.com> <1308640714-17961-8-git-send-email-ohad@wizery.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Wed, 22 Jun 2011 12:12:33 +0930
+Message-ID: <87liwu8u3q.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: Re: [PATCH 2/3] mm: make the threshold of enabling THP configurable
-References: <1308587683-2555-1-git-send-email-amwang@redhat.com> <1308587683-2555-2-git-send-email-amwang@redhat.com> <20110620165955.GB9396@suse.de> <4DFF8050.9070201@redhat.com> <20110621093640.GD9396@suse.de>
-In-Reply-To: <20110621093640.GD9396@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年06月21日 17:36, Mel Gorman 写道:
- >
-> Fragmentation avoidance benefits from tuning min_free_kbytes to a higher
-> value and minimising fragmentation-related problems is crucial if THP is
-> to allocate its necessary pages.
->
-> THP tunes min_free_kbytes automatically and this value is in part
-> related to the number of zones. At 512M on a single node machine, the
-> recommended min_free_kbytes is close to 10% of memory which is barely
-> tolerable as it is. At 256M, it's 17%, at 128M, it's 34% so tuning the
-> value lower has diminishing returns as the performance impact of giving
-> up such a high percentage of free memory is not going to be offset by
-> reduced TLB misses. Tuning it to a higher value might make some sense
-> if the higher min_free_kbytes was a problem but it would be much more
-> rational to tune it as a sysctl than making it a compile-time decision.
->
+On Tue, 21 Jun 2011 10:18:33 +0300, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> Add a virtio-based IPC bus, which enables kernel users to communicate
+> with remote processors over shared memory using a simple messaging
+> protocol.
 
-What this patch changed is the check of total memory pages in hugepage_init(),
-which I don't think is suitable as a sysctl.
+Wow, sometimes one writes a standard and people use it.  Thanks!
 
-If you mean min_free_kbytes could be tuned as a sysctl, that should be done
-in other patch, right? :)
+I'm still digesting exactly what you're doing, but this is a bit
+unconventional:
 
-Thanks.
+> +	/* Platform must supply pre-allocated uncached buffers for now */
+> +	vdev->config->get(vdev, VPROC_BUF_ADDR, &addr, sizeof(addr));
+> +	vdev->config->get(vdev, VPROC_BUF_NUM, &num_bufs, sizeof(num_bufs));
+> +	vdev->config->get(vdev, VPROC_BUF_SZ, &buf_size, sizeof(buf_size));
+> +	vdev->config->get(vdev, VPROC_BUF_PADDR, &vrp->phys_base,
+> +						sizeof(vrp->phys_base));
+
+The normal way is to think of the config space as a structure, and use
+offsets rather than using an enum value to distinguish the fields.
+
+> +#define RPMSG_NAME_SIZE			32
+> +#define RPMSG_DEVICE_MODALIAS_FMT	"rpmsg:%s"
+> +
+> +struct rpmsg_device_id {
+> +	char name[RPMSG_NAME_SIZE];
+> +	kernel_ulong_t driver_data	/* Data private to the driver */
+> +			__attribute__((aligned(sizeof(kernel_ulong_t))));
+> +};
+
+This alignment directive seems overkill...
+
+> +#define VIRTIO_ID_RPMSG		10 /* virtio remote processor messaging */
+
+I think you want 6.  Plan 9 jumped ahead to grab 9 :)
+
+Cheers,
+Rusty.
