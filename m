@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758580Ab1FVSjL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 14:39:11 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35355 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758164Ab1FVSjK (ORCPT
+	id S1758589Ab1FVSkM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 14:40:12 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:43537 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758022Ab1FVSkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 14:39:10 -0400
-Date: Wed, 22 Jun 2011 11:38:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Stefan Assmann <sassmann@kpanic.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, tony.luck@intel.com, mingo@elte.hu,
-        hpa@zytor.com, rick@vanrein.org, rdunlap@xenotime.net,
-        Nancy Yuen <yuenn@google.com>, Michael Ditto <mditto@google.com>
-Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
-Message-Id: <20110622113851.471f116f.akpm@linux-foundation.org>
-In-Reply-To: <20110622182445.GG3263@one.firstfloor.org>
-References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de>
-	<20110622110034.89ee399c.akpm@linux-foundation.org>
-	<20110622182445.GG3263@one.firstfloor.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 22 Jun 2011 14:40:11 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: "Greg Kroah-Hartman" <greg@kroah.com>
+Subject: [1/15] staging: ft1000-pcmcia: delete ft1000.conf
+Date: Wed, 22 Jun 2011 20:39:53 +0200
+User-Agent: KMail/1.9.10
+Cc: Marek Belisko <marek.belisko@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201106222039.56645.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Jun 2011 20:24:45 +0200
-Andi Kleen <andi@firstfloor.org> wrote:
+Remove useless ft1000.conf file.
 
-> > So.  What are your thoughts on these issues?
-> 
-> Sounds orthogonal to me. You have to crawl before you walk.
-> 
-> A better way to pass in the data would be nice, but can be always
-> added on top (e.g. some EFI environment variable) 
-> 
-> For a first try a command line argument is quite
-> appropiate and simple enough.
-> 
-> A check for removing too much memory would be nice though,
-> although it's just a choice between panicing early or later.
-> 
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-If something can be grafted on later then that's of course all good.  I
-do think we should have some sort of plan in which we work out how that
-will be done.  If we want to do it, that is.
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000.conf
++++ /dev/null
+@@ -1,14 +0,0 @@
+-device "ft1000_cs"
+-     class "network" module "ft1000","ft1000_cs"
+-
+-card "flarion FT1000"
+-     manfid 0x02cc, 0x0100
+-     bind "ft1000_cs"
+-
+-card "flarion FT1000"
+-     manfid 0x02cc, 0x1000
+-     bind "ft1000_cs"
+-
+-card "flarion FT1000"
+-     manfid 0x02cc, 0x1300
+-     bind "ft1000_cs"
 
-However if we go this way then there's a risk that we'll end up with
-two different ways of configuring the feature and we'll need to
-maintain the old way for ever.  That's a bad thing and we'd be better
-off implementing the fancier scheme on day one.
+-- 
+Ondrej Zary
