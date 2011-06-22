@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780Ab1FVJin (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 05:38:43 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:52206 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707Ab1FVJim convert rfc822-to-8bit (ORCPT
+	id S1756417Ab1FVJjT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 05:39:19 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41342 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756290Ab1FVJjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 05:38:42 -0400
+	Wed, 22 Jun 2011 05:39:14 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4E01B82F.6060101@jp.fujitsu.com>
+Date: Wed, 22 Jun 2011 18:38:55 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=GT=1u0YEtUaJre24BOhRyDNGUSg@mail.gmail.com>
-References: <1308699521-20556-1-git-send-email-per.forlin@linaro.org>
-	<1308699521-20556-3-git-send-email-per.forlin@linaro.org>
-	<BANLkTikqeKg=Mr9BxVYL7x=9k_jzGeLnQQ@mail.gmail.com>
-	<BANLkTi=GT=1u0YEtUaJre24BOhRyDNGUSg@mail.gmail.com>
-Date: Wed, 22 Jun 2011 11:38:41 +0200
-Message-ID: <BANLkTi=udZv3g-jB+FBWyaXqhQie3B2EaA@mail.gmail.com>
-Subject: Re: [PATCH v7 02/11] omap_hsmmc: add support for pre_req and post_req
-From: Per Forlin <per.forlin@linaro.org>
-To: Nickolay Nickolaev <nicknickolaev@gmail.com>
-Cc: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, Venkatraman S <svenkatr@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Paul Turner <pjt@google.com>
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
+Subject: Re: [patch 07/16] sched: expire invalid runtime
+References: <20110621071649.862846205@google.com> <20110621071700.395400025@google.com>
+In-Reply-To: <20110621071700.395400025@google.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 June 2011 11:31, Per Forlin <per.forlin@linaro.org> wrote:
-> On 22 June 2011 10:51, Nickolay Nickolaev <nicknickolaev@gmail.com> wrote:
->> Hello,
->>
->> this one's causing me compilation trouble troubles when CONFIG_DMA_ENGINE is
->> not defined.
->>
-> I don't see this issue when I compile the kernel for a Pandaboard
-> without CONFIG_DMA_ENGINE being set. Could you please clarify or show
-> me your build log?
-> I don't see how host->next_data.cookie is connected to DMA_ENGINE.
->
-I think you are referring to the mmci-patch. I'll fix the issue in mmci.
+(2011/06/21 16:16), Paul Turner wrote:
+> Since quota is managed using a global state but consumed on a per-cpu basis
+> we need to ensure that our per-cpu state is appropriately synchronized.  
+> Most importantly, runtime that is state (from a previous period) should not be
+> locally consumable.
+> 
+> We take advantage of existing sched_clock synchronization about the jiffy to
+> efficiently detect whether we have (globally) crossed a quota boundary above.
+> 
+> One catch is that the direction of spread on sched_clock is undefined, 
+> specifically, we don't know whether our local clock is behind or ahead
+> of the one responsible for the current expiration time.
+> 
+> Fortunately we can differentiate these by considering whether the
+> global deadline has advanced.  If it has not, then we assume our clock to be 
+> "fast" and advance our local expiration; otherwise, we know the deadline has
+> truly passed and we expire our local runtime.
+> 
+> Signed-off-by: Paul Turner <pjt@google.com>
+> Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+> 
+> ---
 
->> On Wed, Jun 22, 2011 at 2:38 AM, Per Forlin <per.forlin@linaro.org> wrote:
->>>
->>> @@ -2077,6 +2155,7 @@ static int __init omap_hsmmc_probe(struct
->>> platform_device *pdev)
->>>        host->mapbase   = res->start;
->>>        host->base      = ioremap(host->mapbase, SZ_4K);
->>>        host->power_mode = MMC_POWER_OFF;
->>> +       host->next_data.cookie = 1;
->>>
->>>        platform_set_drvdata(pdev, host);
->>>        INIT_WORK(&host->mmc_carddetect_work, omap_hsmmc_detect);
->>> --
->>> 1.7.4.1
->>>
->>>
->>
->> Maybe we can wrap it in a function as the others.
->>
->> regards,
->> Nikolay Nikolaev
->>
->
-> Regards,
-> Per
->
+Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+
+
+Thanks,
+H.Seto
+
