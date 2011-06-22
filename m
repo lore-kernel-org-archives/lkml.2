@@ -1,90 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969Ab1FVHFO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 03:05:14 -0400
-Received: from smtp-vbr11.xs4all.nl ([194.109.24.31]:2963 "EHLO
-	smtp-vbr11.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab1FVHFN (ORCPT
+	id S1752303Ab1FVHJu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 03:09:50 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57709 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab1FVHJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 03:05:13 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: linaro-mm-sig@lists.linaro.org
-Subject: Re: [Linaro-mm-sig] [PATCH 08/10] mm: cma: Contiguous Memory Allocator added
-Date: Wed, 22 Jun 2011 09:03:30 +0200
-User-Agent: KMail/1.13.5 (Linux/3.0.0-rc1-tschai; KDE/4.6.2; x86_64; ; )
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        "'Daniel Walker'" <dwalker@codeaurora.org>, linux-mm@kvack.org,
-        "'Mel Gorman'" <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-media@vger.kernel.org,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>
-References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com> <000501cc2b2b$789a54b0$69cefe10$%szyprowski@samsung.com> <201106150937.18524.arnd@arndb.de>
-In-Reply-To: <201106150937.18524.arnd@arndb.de>
+	Wed, 22 Jun 2011 03:09:49 -0400
+Date: Wed, 22 Jun 2011 09:09:47 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Arnaud Patard <arnaud.patard@rtp-net.org>
+Cc: Dinh.Nguyen@freescale.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        u.kleine-koenig@pengutronix.de, ra5478@freescale.com,
+        xiao-lizhang@freescale.com, festevam@gmail.com
+Subject: Re: [PATCHv7] ARM: mx51: Add support for low power suspend on MX51
+Message-ID: <20110622070947.GH6069@pengutronix.de>
+References: <1301325297-24126-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <87k4cfa550.fsf@lebrac.rtp-net.org>
+ <20110621223527.GF6069@pengutronix.de>
+ <874o3i9x89.fsf@lebrac.rtp-net.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106220903.31065.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <874o3i9x89.fsf@lebrac.rtp-net.org>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:08:58 up 12:56, 22 users,  load average: 0.50, 0.39, 0.24
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 15, 2011 09:37:18 Arnd Bergmann wrote:
-> On Wednesday 15 June 2011 09:11:39 Marek Szyprowski wrote:
-> > I see your concerns, but I really wonder how to determine the properties
-> > of the global/default cma pool. You definitely don't want to give all
-> > available memory o CMA, because it will have negative impact on kernel
-> > operation (kernel really needs to allocate unmovable pages from time to
-> > time). 
+On Wed, Jun 22, 2011 at 08:49:42AM +0200, Arnaud Patard wrote:
+> Sascha Hauer <s.hauer@pengutronix.de> writes:
+> Hi,
 > 
-> Exactly. This is a hard problem, so I would prefer to see a solution for
-> coming up with reasonable defaults.
-> 
-> > The only solution I see now is to provide Kconfig entry to determine
-> > the size of the global CMA pool, but this still have some issues,
-> > especially for multi-board kernels (each board probably will have
-> > different amount of RAM and different memory-consuming devices
-> > available). It looks that each board startup code still might need to
-> > tweak the size of CMA pool. I can add a kernel command line option for
-> > it, but such solution also will not solve all the cases (afair there
-> > was a discussion about kernel command line parameters for memory 
-> > configuration and the conclusion was that it should be avoided).
-> 
-> The command line option can be a last resort if the heuristics fail,
-> but it's not much better than a fixed Kconfig setting.
-> 
-> How about a Kconfig option that defines the percentage of memory
-> to set aside for contiguous allocations?
+> > On Tue, Jun 21, 2011 at 11:46:35AM +0200, Arnaud Patard wrote:
+> >> <Dinh.Nguyen@freescale.com> writes:
+> >> 
+> >> Hi,
+> >> 
+> >> > From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> >> >
+> >> > Adds initial low power suspend functionality to MX51.
+> >> > Supports "mem" and "standby" modes.
+> >> >
+> >> > Tested on mx51-babbage.
+> >> >
+> >> > Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> >> 
+> >> I fail to see this patch in imx tree. Did it get merged in some other
+> >> tree ?
+> >
+> > Not yet. Have you tested this patch?
+> >
+> Yes, it works fine on my platforms.
 
-I would actually like to see a cma_size kernel option of some sort. This would
-be for the global CMA pool only as I don't think we should try to do anything
-more complicated here.
+I took this as a tested-by and applied the patch.
 
-While it is relatively easy for embedded systems to do a recompile every time
-you need to change the pool size, this isn't an option on 'normal' desktop
-systems.
+Sascha
 
-While usually you have more than enough memory on such systems and don't need
-CMA, there are a number of cases where you do want to reserve sufficient
-memory. Usually these involve lots of video capture cards in one system.
 
-What I was wondering about is how this patch series changes the allocation
-in case it can't allocate from the CMA pool. Will it attempt to fall back
-to a 'normal' allocation?
-
-The reason I ask is that for desktop systems you could just start with a CMA
-pool of size 0. And only in specific situations would you need to add a
-cma_size kernel parameter depending on your needs. But this scheme would
-require a fallback scenario in case of a global CMA pool of size 0.
-
-Hmm, perhaps this fallback scenario is more driver specific. For SoC platform
-video devices you may not want a fallback, whereas for PCI(e)/USB devices you
-do. I don't know what's best, frankly.
-
-Regards,
-
-	Hans
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
