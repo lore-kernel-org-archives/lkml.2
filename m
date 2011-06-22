@@ -1,47 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab1FVGgJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 02:36:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58318 "EHLO mx1.redhat.com"
+	id S1754203Ab1FVGhV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 02:37:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30747 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751903Ab1FVGgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 02:36:08 -0400
+	id S1752444Ab1FVGhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 02:37:19 -0400
 From: Amerigo Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        WANG Cong <amwang@redhat.com>
-Subject: [PATCH 0/5] notifiers: split notifier.h into subsystem headers
-Date: Wed, 22 Jun 2011 14:35:17 +0800
-Message-Id: <1308724522-32461-1-git-send-email-amwang@redhat.com>
+        Amerigo Wang <amwang@redhat.com>, Andy Grover <andy.grover@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Brandon Philips <brandon@ifup.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>, rds-devel@oss.oracle.com
+Subject: [PATCH 1/5] cpu: move cpu notifiers into cpu.h
+Date: Wed, 22 Jun 2011 14:35:18 +0800
+Message-Id: <1308724522-32461-2-git-send-email-amwang@redhat.com>
+In-Reply-To: <1308724522-32461-1-git-send-email-amwang@redhat.com>
+References: <1308724522-32461-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we define all kinds of notifiers in notifier.h, this is not
-necessary at all, since different subsystems use different
-notifiers, they are almost non-related with each other.
-
-This can also save much build time. Suppose I add a new netdevice
-event, really I don't have to recompile all the source, just network
-related. Without this patch, all the source will be recompiled.
-
-I move the notify events near to their subsystem notifier registers,
-so that they can be found more easily.
-
-In case of conflicts, I hope Andrew Morton would take the whole
-patchset, rather than different subsystem maintainers take their own.
+It is not necessary to share the same notifier.h.
 
 Signed-off-by: WANG Cong <amwang@redhat.com>
-
 ---
- drivers/mmc/core/core.c   |    3 ++
- include/linux/cpu.h       |   33 ++++++++++++++++++
- include/linux/netdevice.h |   36 ++++++++++++++++++--
- include/linux/notifier.h  |   82 +++-----------------------------------------
- include/linux/reboot.h    |    5 +++
- include/linux/suspend.h   |    8 ++++
- include/linux/vt.h        |    7 ++++
- kernel/notifier.c         |   31 -----------------
- kernel/sys.c              |   32 +++++++++++++++++-
- net/rds/page.c            |    1 +
- 10 files changed, 127 insertions(+), 111 deletions(-)
+ include/linux/cpu.h      |   33 +++++++++++++++++++++++++++++++++
+ include/linux/notifier.h |   34 ++--------------------------------
+ net/rds/page.c           |    1 +
+ 3 files changed, 36 insertions(+), 32 deletions(-)
+
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index 5f09323..b1a635a 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -70,6 +70,39 @@ enum {
+ 	CPU_PRI_WORKQUEUE	= 5,
+ };
+ 
++#define CPU_ONLINE		0x0002 /* CPU (unsigned)v is up */
++#define CPU_UP_PREPARE		0x0003 /* CPU (unsigned)v coming up */
++#define CPU_UP_CANCELED		0x0004 /* CPU (unsigned)v NOT coming up */
++#define CPU_DOWN_PREPARE	0x0005 /* CPU (unsigned)v going down */
++#define CPU_DOWN_FAILED		0x0006 /* CPU (unsigned)v NOT going down */
++#define CPU_DEAD		0x0007 /* CPU (unsigned)v dead */
++#define CPU_DYING		0x0008 /* CPU (unsigned)v not running any task,
++					* not handling interrupts, soon dead.
++					* Called on the dying cpu, interrupts
++					* are already disabled. Must not
++					* sleep, must not fail */
++#define CPU_POST_DEAD		0x0009 /* CPU (unsigned)v dead, cpu_hotplug
++					* lock is dropped */
++#define CPU_STARTING		0x000A /* CPU (unsigned)v soon running.
++					* Called on the new cpu, just before
++					* enabling interrupts. Must not sleep,
++					* must not fail */
++
++/* Used for CPU hotplug events occurring while tasks are frozen due to a suspend
++ * operation in progress
++ */
++#define CPU_TASKS_FROZEN	0x0010
++
++#define CPU_ONLINE_FROZEN	(CPU_ONLINE | CPU_TASKS_FROZEN)
++#define CPU_UP_PREPARE_FROZEN	(CPU_UP_PREPARE | CPU_TASKS_FROZEN)
++#define CPU_UP_CANCELED_FROZEN	(CPU_UP_CANCELED | CPU_TASKS_FROZEN)
++#define CPU_DOWN_PREPARE_FROZEN	(CPU_DOWN_PREPARE | CPU_TASKS_FROZEN)
++#define CPU_DOWN_FAILED_FROZEN	(CPU_DOWN_FAILED | CPU_TASKS_FROZEN)
++#define CPU_DEAD_FROZEN		(CPU_DEAD | CPU_TASKS_FROZEN)
++#define CPU_DYING_FROZEN	(CPU_DYING | CPU_TASKS_FROZEN)
++#define CPU_STARTING_FROZEN	(CPU_STARTING | CPU_TASKS_FROZEN)
++
++
+ #ifdef CONFIG_SMP
+ /* Need to know about CPUs going up/down? */
+ #if defined(CONFIG_HOTPLUG_CPU) || !defined(MODULE)
+diff --git a/include/linux/notifier.h b/include/linux/notifier.h
+index c0688b0..9eb25fc 100644
+--- a/include/linux/notifier.h
++++ b/include/linux/notifier.h
+@@ -185,6 +185,8 @@ static inline int notifier_to_errno(int ret)
+  *	VC switch chains (for loadable kernel svgalib VC switch helpers) etc...
+  */
+  
++/* CPU notfiers are defined in include/linux/cpu.h. */
++
+ /* netdevice notifier chain. Please remember to update the rtnetlink
+  * notification exclusion list in rtnetlink_event() when adding new
+  * types.
+@@ -220,38 +222,6 @@ static inline int notifier_to_errno(int ret)
+ 
+ #define NETLINK_URELEASE	0x0001	/* Unicast netlink socket released */
+ 
+-#define CPU_ONLINE		0x0002 /* CPU (unsigned)v is up */
+-#define CPU_UP_PREPARE		0x0003 /* CPU (unsigned)v coming up */
+-#define CPU_UP_CANCELED		0x0004 /* CPU (unsigned)v NOT coming up */
+-#define CPU_DOWN_PREPARE	0x0005 /* CPU (unsigned)v going down */
+-#define CPU_DOWN_FAILED		0x0006 /* CPU (unsigned)v NOT going down */
+-#define CPU_DEAD		0x0007 /* CPU (unsigned)v dead */
+-#define CPU_DYING		0x0008 /* CPU (unsigned)v not running any task,
+-					* not handling interrupts, soon dead.
+-					* Called on the dying cpu, interrupts
+-					* are already disabled. Must not
+-					* sleep, must not fail */
+-#define CPU_POST_DEAD		0x0009 /* CPU (unsigned)v dead, cpu_hotplug
+-					* lock is dropped */
+-#define CPU_STARTING		0x000A /* CPU (unsigned)v soon running.
+-					* Called on the new cpu, just before
+-					* enabling interrupts. Must not sleep,
+-					* must not fail */
+-
+-/* Used for CPU hotplug events occurring while tasks are frozen due to a suspend
+- * operation in progress
+- */
+-#define CPU_TASKS_FROZEN	0x0010
+-
+-#define CPU_ONLINE_FROZEN	(CPU_ONLINE | CPU_TASKS_FROZEN)
+-#define CPU_UP_PREPARE_FROZEN	(CPU_UP_PREPARE | CPU_TASKS_FROZEN)
+-#define CPU_UP_CANCELED_FROZEN	(CPU_UP_CANCELED | CPU_TASKS_FROZEN)
+-#define CPU_DOWN_PREPARE_FROZEN	(CPU_DOWN_PREPARE | CPU_TASKS_FROZEN)
+-#define CPU_DOWN_FAILED_FROZEN	(CPU_DOWN_FAILED | CPU_TASKS_FROZEN)
+-#define CPU_DEAD_FROZEN		(CPU_DEAD | CPU_TASKS_FROZEN)
+-#define CPU_DYING_FROZEN	(CPU_DYING | CPU_TASKS_FROZEN)
+-#define CPU_STARTING_FROZEN	(CPU_STARTING | CPU_TASKS_FROZEN)
+-
+ /* Hibernation and suspend events */
+ #define PM_HIBERNATION_PREPARE	0x0001 /* Going to hibernate */
+ #define PM_POST_HIBERNATION	0x0002 /* Hibernation finished */
+diff --git a/net/rds/page.c b/net/rds/page.c
+index d8acdeb..b82d63e 100644
+--- a/net/rds/page.c
++++ b/net/rds/page.c
+@@ -32,6 +32,7 @@
+  */
+ #include <linux/highmem.h>
+ #include <linux/gfp.h>
++#include <linux/cpu.h>
+ 
+ #include "rds.h"
+ 
+-- 
+1.7.4.4
+
