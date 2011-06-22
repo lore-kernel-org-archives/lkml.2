@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758334Ab1FVRsV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 13:48:21 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49292 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757429Ab1FVRsU (ORCPT
+	id S1758364Ab1FVRwR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 13:52:17 -0400
+Received: from www.linutronix.de ([62.245.132.108]:50485 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757980Ab1FVRwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 13:48:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=DtdG8mAOHiaifrj6eOZK+9QiPKnb4y2a0u4Zc25gr7QVYuC4RcxJeSu68noHhiJ9A5
-         oCtfC4EXN6XHgyZ/3BiE8NMu4h8T5LMjnV9ma2O0RsTNYtm1PUtt4NDBzU+ovOuWmpMt
-         pqy+kRVTfUS6949j4Rr4Snh5iYW6fhVE5v1P0=
-Date: Wed, 22 Jun 2011 21:48:12 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
-        security@kernel.org
-Subject: Re: [PATCH] kernel: escape non-ASCII and control characters in
- printk()
-Message-ID: <20110622174812.GA13392@albatros>
-References: <20110622095341.GA3353@albatros>
- <1308760683.10423.16.camel@Joe-Laptop>
- <20110622165355.GB11803@albatros>
- <1308762841.10423.28.camel@Joe-Laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308762841.10423.28.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 22 Jun 2011 13:52:15 -0400
+Message-Id: <20110622174659.496793734@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Wed, 22 Jun 2011 17:52:12 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [patch 0/4] sched: Move work out of the scheduler core
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 10:14 -0700, Joe Perches wrote:
-> On Wed, 2011-06-22 at 20:53 +0400, Vasiliy Kulikov wrote:
-> > On Wed, Jun 22, 2011 at 09:38 -0700, Joe Perches wrote:
-> > > > +	if ((c >= ' ' && c < 127) || c == '\n')
-> > > 	if (isprint(c))
-> > #define isprint(c)	((__ismask(c)&(_P|_U|_L|_D|_SP)) != 0)
-> > It slightly differs from what I've written.  It (1) lacks '\n',
-> 
-> You still need tab,
+Block-IO and workqueues have hooks in the scheduler core which have no
+strict requirements for being called from irq disabled, preempt
+disabled and rq->lock held regions.
 
-Correct.
-
-> so:
-> 
-> if (isprint(c) || isspace(c))
-
-No, it also allows vertical tabs.  Looking into __ctype only ' ', '\n' and
-'\t' should be allowed among all _S, so
-
-if (isprint(c) || (c == '\n') || (c == '\t'))
-
+The following series moves them outside.
 
 Thanks,
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+	tglx
+---
+
+ block/blk-core.c         |   20 +++-----
+ kernel/sched.c           |  106 +++++++++++++++++------------------------------
+ kernel/workqueue.c       |   67 ++++++++++++-----------------
+ kernel/workqueue_sched.h |    5 --
+ 4 files changed, 79 insertions(+), 119 deletions(-)
+
+
