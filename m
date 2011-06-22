@@ -1,102 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514Ab1FVJxr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 05:53:47 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44167 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837Ab1FVJxq (ORCPT
+	id S1756005Ab1FVKB6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 06:01:58 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:42028 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752837Ab1FVKB4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 05:53:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=NWiaFdFaCBybdKI9357XWNRJHsOBY5yw4QLwtoeaccbtco/HQiDl/tQ3KIPakGhE5F
-         U49wO8nnO7qOejkCS2MYX8EOpLu7xai884u5nRq59TJb24hZnPIcAXO8xWz2ObcjgaXS
-         imiY+EPfvpb+K5WLD1tBSFWP/MsTbTo8dpKOU=
-Date: Wed, 22 Jun 2011 13:53:41 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org
-Cc: security@kernel.org
-Subject: [PATCH] kernel: escape non-ASCII and control characters in printk()
-Message-ID: <20110622095341.GA3353@albatros>
+	Wed, 22 Jun 2011 06:01:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1308699521-20556-4-git-send-email-per.forlin@linaro.org>
+References: <1308699521-20556-1-git-send-email-per.forlin@linaro.org>
+	<1308699521-20556-4-git-send-email-per.forlin@linaro.org>
+Date: Wed, 22 Jun 2011 12:01:56 +0200
+Message-ID: <BANLkTikU_gToOwzVrb3jUpJX9-XucLsNoQ@mail.gmail.com>
+Subject: Re: [PATCH v7 03/11] mmci: implement pre_req() and post_req()
+From: Per Forlin <per.forlin@linaro.org>
+To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, Venkatraman S <svenkatr@ti.com>,
+        Nickolay Nickolaev <nicknickolaev@gmail.com>
+Cc: Chris Ball <cjb@laptop.org>, Per Forlin <per.forlin@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch escapes all characters outside of allowed '\n' plus 0x20-0x7E
-charset passed to printk().
+On 22 June 2011 01:38, Per Forlin <per.forlin@linaro.org> wrote:
+> pre_req() runs dma_map_sg() and prepares the dma descriptor
+> for the next mmc data transfer. post_req() runs dma_unmap_sg.
+> If not calling pre_req() before mmci_request(), mmci_request()
+> will prepare the cache and dma just like it did it before.
+> It is optional to use pre_req() and post_req() for mmci.
+>
+> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+> ---
+>  drivers/mmc/host/mmci.c |  146 ++++++++++++++++++++++++++++++++++++++++++----
+>  drivers/mmc/host/mmci.h |    8 +++
+>  2 files changed, 141 insertions(+), 13 deletions(-)
+>
+...
+> @@ -1005,6 +1123,8 @@ static int __devinit mmci_probe(struct amba_device *dev,
+>        host->gpio_cd = -ENOSYS;
+>        host->gpio_cd_irq = -1;
+>
+> +       host->next_data.cookie = 1;
+> +
+Doesn't compile without DMA_ENGINE. Issue reported by Nickolay.
 
-There are numerous printk() instances with user supplied input as "%s"
-data, and unprivileged user may craft log messages with substrings
-containing control characters via these printk()s.  Control characters
-might fool root viewing the logs via tty.
+I simply move the initialization to mmci_dma_setup. I will update in
+the next patchset.
 
-Printing non-ASCII characters is not portable since not everyone sees
-the same characters after 0xFF.  If any driver use it to print some
-binary data, it should be fixed.  Not fixed code will print hex codes
-of the binary data.
-
-On testing Samsung Q310 laptop there are no users of chars outside of the
-restricted charset.
-
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
----
-
- This patch does nothing with crafted "%s" data with '\n' inside.  It
- allows unprivileged user to craft arbitrary log messages via breaking
- log lines boundaries.  It is a bit tricky to fix it compatible way.
- Limiting "%s" to one line in vscnprintf() would break legitimate users
- of the multiline feature.  Intoducing new "%S" format for single lines
- makes little sense as there are tons of printk() calls that should be
- already restricted to one line.
-
- Proposals about '\n' inside of '%s" are welcome.
-
-
- kernel/printk.c |   16 +++++++++++++++-
- 1 files changed, 15 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 3518539..1f23988 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -671,6 +671,20 @@ static void emit_log_char(char c)
- 		logged_chars++;
- }
- 
-+static void emit_log_char_escaped(char c)
-+{
-+	char buffer[8];
-+	int i, len;
+@@ -215,6 +215,9 @@ static void __devinit mmci_dma_setup(struct mmci_host *host)
++       /* initialize pre request cookie */
++       host->next_data.cookie = 1;
 +
-+	if ((c >= ' ' && c < 127) || c == '\n')
-+		emit_log_char(c);
-+	else {
-+		len = sprintf(buffer, "#%02x", c);
-+		for (i = 0; i < len; i++)
-+			emit_log_char(buffer[i]);
-+	}
-+}
-+
- /*
-  * Zap console related locks when oopsing. Only zap at most once
-  * every 10 seconds, to leave time for slow consoles to print a
-@@ -938,7 +952,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
- 				break;
- 		}
- 
--		emit_log_char(*p);
-+		emit_log_char_escaped(*p);
- 		if (*p == '\n')
- 			new_text_line = 1;
- 	}
--- 
-1.7.0.4
+@@ -1121,8 +1124,6 @@ static int __devinit mmci_probe(struct amba_device *dev,
+-       host->next_data.cookie = 1;
