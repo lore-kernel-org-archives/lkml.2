@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758639Ab1FVSwv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 14:52:51 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43879 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756602Ab1FVSwu (ORCPT
+	id S1758720Ab1FVS4r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 14:56:47 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:60497 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758452Ab1FVS4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 14:52:50 -0400
-Date: Wed, 22 Jun 2011 20:52:47 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Christoph Hellwig <hch@infradead.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [patch 1/4] sched: Separate the scheduler entry for preemption
-In-Reply-To: <20110622184328.GA6475@infradead.org>
-Message-ID: <alpine.LFD.2.02.1106222047400.11814@ionos>
-References: <20110622174659.496793734@linutronix.de> <20110622174918.813258321@linutronix.de> <20110622184328.GA6475@infradead.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 22 Jun 2011 14:56:46 -0400
+Date: Wed, 22 Jun 2011 20:56:45 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Stefan Assmann <sassmann@kpanic.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, tony.luck@intel.com,
+        mingo@elte.hu, hpa@zytor.com, rick@vanrein.org, rdunlap@xenotime.net,
+        Nancy Yuen <yuenn@google.com>, Michael Ditto <mditto@google.com>
+Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
+Message-ID: <20110622185645.GH3263@one.firstfloor.org>
+References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de> <20110622110034.89ee399c.akpm@linux-foundation.org> <20110622182445.GG3263@one.firstfloor.org> <20110622113851.471f116f.akpm@linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110622113851.471f116f.akpm@linux-foundation.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Jun 2011, Christoph Hellwig wrote:
-
-> On Wed, Jun 22, 2011 at 05:52:13PM -0000, Thomas Gleixner wrote:
-> > Block-IO and workqueues call into notifier functions from the
-> > scheduler core code with interrupts and preemption disabled. These
-> > calls should be made before entering the scheduler core.
-> > 
-> > To simplify this, separate the scheduler core code into
-> > __schedule(). __schedule() is directly called from the places which
-> > set PREEMPT_ACTIVE and from schedule(). This allows us to add the work
-> > checks into schedule(), so they are only called when a task voluntary
-> > goes to sleep.
+> If something can be grafted on later then that's of course all good.  I
+> do think we should have some sort of plan in which we work out how that
+> will be done.  If we want to do it, that is.
 > 
-> I don't think that works.  We'll need to flush the block requests even
-> for an involuntary schedule.
+> However if we go this way then there's a risk that we'll end up with
+> two different ways of configuring the feature and we'll need to
 
-We don't do that right now as that code conditional on:
+You'll always have multiple ways. Whatever magic you come up for
+the google BIOS or for EFI won't help the majority of users with
+old crufty legacy BIOS.
 
-    if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
+So you need a "everything included" way -- and the only straight forward
+way to do that that I can see is the command line.
 
-Also blk_flush_plug_list() when called from io_schedule() is
-preemptible, so you might be preempted in the middle of the list
-operations, so calling into it when preempted would result in an utter
-disaster.
-
-Thanks,
-
-	tglx
-
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
