@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758555Ab1FVTma (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 15:42:30 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:52851 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758471Ab1FVTm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 15:42:29 -0400
-Message-ID: <4E0245A1.3090903@kernel.dk>
-Date: Wed, 22 Jun 2011 21:42:25 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1758609Ab1FVTnA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 15:43:00 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:52503 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758550Ab1FVTm7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 15:42:59 -0400
+Date: Wed, 22 Jun 2011 20:42:55 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Peter Chubb <peter.chubb@nicta.com.au>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Acer Aspire One now hangs on reboot/shutdown
+Message-ID: <20110622194254.GC8861@srcf.ucam.org>
+References: <w4oc1qp2wf.wl%peter@chubb.wattle.id.au>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [patch 1/4] sched: Separate the scheduler entry for preemption
-References: <20110622174659.496793734@linutronix.de> <20110622174918.813258321@linutronix.de> <20110622184328.GA6475@infradead.org>
-In-Reply-To: <20110622184328.GA6475@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <w4oc1qp2wf.wl%peter@chubb.wattle.id.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-06-22 20:43, Christoph Hellwig wrote:
-> On Wed, Jun 22, 2011 at 05:52:13PM -0000, Thomas Gleixner wrote:
->> Block-IO and workqueues call into notifier functions from the
->> scheduler core code with interrupts and preemption disabled. These
->> calls should be made before entering the scheduler core.
->>
->> To simplify this, separate the scheduler core code into
->> __schedule(). __schedule() is directly called from the places which
->> set PREEMPT_ACTIVE and from schedule(). This allows us to add the work
->> checks into schedule(), so they are only called when a task voluntary
->> goes to sleep.
-> 
-> I don't think that works.  We'll need to flush the block requests even
-> for an involuntary schedule.
+On Wed, Jun 22, 2011 at 08:38:08PM +1000, Peter Chubb wrote:
 
-Yep, doing it just for voluntary schedule() is pointless, since the
-caller should just do the flushing on his own. The whole point of the
-sched hook was to ensure that involuntary schedules flushed it.
+>    I printed out the FADT bits that were relevant---it claims revision 4
+>    in the header, and the ACPI_FADT_RESET_REGISTER bit is set in the
+>    flags.  The values of the reset register's address and width look
+>    reasonable (address 3321 in IO space, width 8 offset 0)
+
+Irritating. Ok, let's see if we can figure this out. Can you put the 
+system's acpidump output somewhere? Also, if you boot with 
+init=/bin/bash, what does writing the FADT reset value to 3321 do?
 
 -- 
-Jens Axboe
-
+Matthew Garrett | mjg59@srcf.ucam.org
