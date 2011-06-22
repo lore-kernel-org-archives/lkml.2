@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932171Ab1FVDYV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 23:24:21 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:24525 "EHLO
+	id S1757784Ab1FVD3o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 23:29:44 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:25822 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757539Ab1FVDYT (ORCPT
+	with ESMTP id S1752019Ab1FVD3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 23:24:19 -0400
+	Tue, 21 Jun 2011 23:29:43 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
          :references:user-agent:mime-version:content-type;
-        b=Gd5AMW+eDeJrpe7Wib28xAlFi5OlEXjUt0syGj9LND2BkmTRA743YM1ASkx02SWA/J
-         Z0bADNd0NA0LEL9j4m6Q==
-Date: Tue, 21 Jun 2011 20:24:14 -0700 (PDT)
+        b=rS+ZHF8DwFpqLmfgUWBtf02OZPt5+UirwPAi3vhnslgueK/6vO46SR/+O9+lgzNOv0
+         dipSQyCpy7kpAjo/KEqg==
+Date: Tue, 21 Jun 2011 20:29:33 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
 To: Cong Wang <amwang@redhat.com>
 cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-doc@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v2 1/4] mm: completely disable THP by
- transparent_hugepage=0
-In-Reply-To: <4E015CB8.1010300@redhat.com>
-Message-ID: <alpine.DEB.2.00.1106212010520.8712@chino.kir.corp.google.com>
-References: <1308643849-3325-1-git-send-email-amwang@redhat.com> <alpine.DEB.2.00.1106211814250.5205@chino.kir.corp.google.com> <4E015CB8.1010300@redhat.com>
+        dave@linux.vnet.ibm.com, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [PATCH v2 2/4] mm: make the threshold of enabling THP
+ configurable
+In-Reply-To: <4E015C36.2050005@redhat.com>
+Message-ID: <alpine.DEB.2.00.1106212024210.8712@chino.kir.corp.google.com>
+References: <1308643849-3325-1-git-send-email-amwang@redhat.com> <1308643849-3325-2-git-send-email-amwang@redhat.com> <alpine.DEB.2.00.1106211817340.5205@chino.kir.corp.google.com> <4E015C36.2050005@redhat.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -38,23 +38,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, 22 Jun 2011, Cong Wang wrote:
 
-> > > Introduce "transparent_hugepage=0" to totally disable THP.
-> > > "transparent_hugepage=never" means setting THP to be partially
-> > > disabled, we need a new way to totally disable it.
-> > > 
-> > 
-> > Why can't you just compile it off so you never even compile
-> > mm/huge_memory.c in the first place and save the space in the kernel image
-> > as well?  Having the interface available to enable the feature at runtime
-> > is worth the savings this patch provides, in my opinion.
+> > I like the printk that notifies users why THP was disabled because it
+> > could potentially be a source of confusion (and fixing the existing typos
+> > in hugepage_init() would also be good).  However, I disagree that we need
+> > to have this as a config option: you either want the feature for your
+> > systems or you don't.  Perhaps add a "transparent_hugepage=force" option
+> > that will act as "always" but also force it to be enabled in all
+> > scenarios, even without X86_FEATURE_PSE, that will override all the logic
+> > that thinks it knows better?
 > 
-> https://lkml.org/lkml/2011/6/20/506
+> I think that is overkill, because we can still enable THP via /sys
+> for small systems.
 > 
 
-If you're proposing a patch for a specific purpose, it's appropriate to 
-include that in the changelog.
+That was already possible before your patch, your patch is only 
+introducing a configuration value that determines whether it is enabled by 
+default or not.  I was proposing a very simple interface that would 
+override all logic that could be used instead when you know for certain 
+that you want THP enabled by default regardless of its logic.  That's 
+extendable because it can bypass any additional code added later to 
+determine when it should default on or off without adding additional 
+config options.  I wouldn't support an additional command line option, but 
+rather only an additional option for transparent_hugepage=.
 
-But now that I know what you're proposing this for, it's an easy NACK: 
-transparent_hugepage=0 has no significant benefit over 
-transparent_hugepage=never for kdump because the memory savings is 
-negligible.
+Either way, this patch isn't needed since it has no benefit over doing it 
+through an init script.
