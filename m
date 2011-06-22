@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932153Ab1FVKRb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 06:17:31 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:34243 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707Ab1FVKRa (ORCPT
+	id S1756497Ab1FVKSL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 06:18:11 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:45119 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753330Ab1FVKSJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 06:17:30 -0400
+	Wed, 22 Jun 2011 06:18:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=nz20qGZz01Y7JbW6ibdXgD8O0661ywUHU8L4RAp+/CCB7VkMt+NyH8oL2swcywSaei
-         6kdcaNpP5IAcJ4cq5Dm2fyAHJSIcNaUGcQBLOzTZ2nDEKgVGmETHrmAJbuxwd/YJHSKc
-         F2btuxBqh4GTpupyM9h3EZzeAPgrvcTKT25fU=
-Date: Wed, 22 Jun 2011 14:17:24 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [RFC 0/5 v4] procfs: introduce hidepid=, hidenet=, gid= mount
- options
-Message-ID: <20110622101724.GA4278@albatros>
-References: <1308163895-5963-1-git-send-email-segoon@openwall.com>
- <20110621153102.762557f3.akpm@linux-foundation.org>
- <20110622064545.GA3605@albatros>
+        d=vrfy.org; s=google;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=DIO1bPMNJINDN0Q27fIhrMIW+eHrnmBdNboEOrjhcmDyq4S7AoM316CCiGxnaYcHPW
+         hwefG2NEAkkPsh9m8aqtotCYDIzA0J86MhlmBKntcZJ3vFDoJ8f56EPas3+iT0osWkLr
+         9a8DguYwc7fARuzmvKOgYALoOrS0i6d58C4E8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110622064545.GA3605@albatros>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <87r56m8w2b.fsf@rustcorp.com.au>
+References: <1308434431.1050.5.camel@mop> <8739j59zib.fsf@rustcorp.com.au>
+ <BANLkTink8YTe=-Tr5Ax3epiFoFCfzcex7w@mail.gmail.com> <87boxshrwe.fsf@rustcorp.com.au>
+ <BANLkTinL4r3RfNuA5x6=UK4DCSSJNeZw7w@mail.gmail.com> <87r56m8w2b.fsf@rustcorp.com.au>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 22 Jun 2011 12:17:49 +0200
+Message-ID: <BANLkTimNpDdp+JBXt0wUjuc0awypJSvXRg@mail.gmail.com>
+Subject: Re: module: sysfs - add 'uevent' file to allow coldplug
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 10:45 +0400, Vasiliy Kulikov wrote:
-> More generic solution (I'm not suggesting it, but merely discussing)
-> would use some user-supplied set of files to restrict access to (or,
-> better, the set of allowed files because white list is almost always
-> better than black list).  Maybe this one:
-> 
->     mount -t proc -o "pid_allow=exe,status,comm,oom_*" proc /proc
-> 
-> And without pid_allow it would behave like pid_allow=*.
+On Wed, Jun 22, 2011 at 04:00, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> On Wed, 22 Jun 2011 00:47:55 +0200, Kay Sievers <kay.sievers@vrfy.org> wrote:
+>> On Tue, Jun 21, 2011 at 03:53, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>> > Sorry, that's another vague answer :(
+>> >
+>> > udev already knows about module load
+>>
+>> Not for built-ins.
+>
+> OK, I re-read your commit message, and down the bottom it does say what
+> it *does*:
+>
+>>        This adds the currently missing /sys/module/<name>/uevent files
+>>        to all module entries.
+>
+> I apologize for skimming,
 
->  "pid_allow=."
-> would deny access to the whole /proc/PID.
+Absolutely no problem. Asking such questions can not be wrong.
 
-I mean "pid_allow=", of course.
+> but this should be the *title* of the patch!
 
-> This would be a bit inconsistent with current permissions because e.g.
-> if use pid_allow=environ then environ file would not be accessible
-> because of posix permissions.  Hierarchical mode (pid_allow=fd/1) is not
-> allowed too.
+Right, it's hard sometimes from 'inside' to make good titles that make
+titles that are properly understood 'outside'. If you have any better
+idea, please just change it.
 
-For hierarchical mode: attr_allowed, tgid_allowed, tid_allowed.
+> Then I saw your patch hit params.c and thought you were adding a uevent
+> file to /sys/module/<name>/parameters/.  I was even more confused when
+> you replied:
+>
+>> Hook system management into module-load events, which might include
+>> changing module parameters in /sys/module/*/parameters/*...
+>
+> Because loading a module might *create* module parameters, but it won't
+> *change* them.  If we want to have events for change, we need much
+> more...
+>
+> Now we've got that sorted, is there a reason why you changed all the
+> signatures rather than just using mod->mkobj in store_uevent()?
 
+Because we should be able to use the same 'struct module_attribute'
+for built-in modules and for loaded modules at the same time. The
+current 'struct module_attribute' has 'struct module' references, but
+'struct module' will never exist for built-in modules.
 
-Thanks,
+'Struct module_kobject' has nice back-pointer to 'struct module', so
+this was the simplest to do, and looks still fine, I thought.
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Kay
