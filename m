@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab1FVJKt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 05:10:49 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:15897 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007Ab1FVJKs (ORCPT
+	id S1753798Ab1FVJQH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 05:16:07 -0400
+Received: from webbox687.server-home.net ([195.149.74.151]:37738 "EHLO
+	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007Ab1FVJQF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 05:10:48 -0400
-X-AuditID: cbfee61a-b7c59ae000003b70-df-4e01b195cc8f
-Date: Wed, 22 Jun 2011 18:10:35 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH] Samsung SoC: header file revised to prevent declaring
- duplicated.
-In-reply-to: <1308214064-12796-1-git-send-email-myungjoo.ham@samsung.com>
-To: "'MyungJoo Ham'" <myungjoo.ham@samsung.com>,
-        linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Ben Dooks'" <ben-linux@fluff.org>, kyungmin.park@samsung.com,
-        myungjoo.ham@gmail.com, dg77.kim@samsung.com
-Message-id: <00be01cc30bc$450ee250$cf2ca6f0$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: AcwsAg7+2pfX5K94TwqzKstH4SbB8AEufxgQ
-References: <1308213184-6607-1-git-send-email-myungjoo.ham@samsung.com>
- <1308214064-12796-1-git-send-email-myungjoo.ham@samsung.com>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 22 Jun 2011 05:16:05 -0400
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: Re: [PATCH v3] pch_gpio: Support interrupt function
+Date: Wed, 22 Jun 2011 11:15:31 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; x86_64; ; )
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com
+References: <1308631468-2376-1-git-send-email-tomoya-linux@dsn.okisemi.com> <201106220828.30516.alexander.stein@systec-electronic.com> <4E01A452.8060801@dsn.okisemi.com>
+In-Reply-To: <4E01A452.8060801@dsn.okisemi.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106221115.31885.alexander.stein@systec-electronic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MyungJoo Ham wrote:
+On Wednesday 22 June 2011 10:14:10 Tomoya MORINAGA wrote:
+> (2011/06/22 15:28), Alexander Stein wrote:
+> > On Wednesday 22 June 2011 02:10:28 Tomoya MORINAGA wrote:
+> >> (2011/06/21 18:10), Alexander Stein wrote:
+> >>> I wrote a small program which use poll(2) on value, after edge hase
+> >>> been configured from shell. I cannot test the edge detection
+> >>> appropriately due to debouncing using jumpers.
+> >> 
+> >> Really ?
+> >> In out test environment, my test program could detect edge interrupt
+> >> correctly.
+> > 
+> > My test program used poll/select on edge successfully. But I could not
+> > test the raising or falling feature actually, as my input is bouncing.
+> > So, it doesn't matter if I set both/raising/falling in edge, due to my
+> > inputs the effect is the same. Any input event will end in several
+> > raising and falling interrupts events.
+> > I hope I could make this more clear.
 > 
-> There has been no #ifndef - #define - #endif protection for this header
-> file. The patch adds it for Exynos4-ADC support
-> 
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> ---
->  arch/arm/plat-samsung/include/plat/devs.h |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/plat-samsung/include/plat/devs.h b/arch/arm/plat-
-> samsung/include/plat/devs.h
-> index 4af108f..3c87779 100644
-> --- a/arch/arm/plat-samsung/include/plat/devs.h
-> +++ b/arch/arm/plat-samsung/include/plat/devs.h
-> @@ -12,6 +12,9 @@
->   * it under the terms of the GNU General Public License version 2 as
->   * published by the Free Software Foundation.
->  */
-> +#ifndef __PLAT_DEVS_H
-> +#define __PLAT_DEVS_H __FILE__
-> +
->  #include <linux/platform_device.h>
-> 
->  struct s3c24xx_uart_resources {
-> @@ -159,3 +162,5 @@ extern struct platform_device s3c_device_ac97;
->   */
->  extern void *s3c_set_platdata(void *pd, size_t pdsize,
->  			      struct platform_device *pdev);
-> +
-> +#endif /* __PLAT_DEVS_H */
-> --
-> 1.7.4.1
+> Our test program also uses poll (We don't use select().)
 
-OK, applied.
-Thanks.
+I noticed poll/select work nearly as the same. Both worked fine here.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+> BTW, is the above your saying related to your patch "[PATCH] pch_gpio:
+> transform mutex into spinlock" ?
 
+Should be unrelated. I did the GPIO interrupt test before stumbling on the 
+mutex/spinlock problem. The latter one was caused by setting a GPIO from 
+interrupt context (in a different driver).
+
+Alexander
