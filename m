@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243Ab1FVG6P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 02:58:15 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:55507 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab1FVG6O convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 02:58:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=bbrS3nPt4VX8V4P/r7uN+VVbrQR5WpZuXLo0PrQo5G9tESu6HVrtgjdyhXxh9mEKc1
-         njjOsJviGqMHKJNDPPsA==
+	id S1751618Ab1FVHBp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 03:01:45 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:49952 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750724Ab1FVHBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 03:01:44 -0400
+X-ASG-Debug-ID: 1308726103-03d6a510a98cb60001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E019353.6030902@fusionio.com>
+Date: Wed, 22 Jun 2011 09:01:39 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <20110622054340.GA2985@in.ibm.com>
-References: <20110621071649.862846205@google.com> <20110621071700.092877579@google.com>
- <20110622054340.GA2985@in.ibm.com>
-From: Paul Turner <pjt@google.com>
-Date: Tue, 21 Jun 2011 23:57:42 -0700
-Message-ID: <BANLkTi=i78qcL6ui93+We0jiEVNLn9d2TA@mail.gmail.com>
-Subject: Re: [patch 04/16] sched: validate CFS quota hierarchies
-To: bharata@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC][PATCH 1/3] sched, block: Move unplug
+References: <20110621233444.094372367@chello.nl> <20110621233648.806475812@chello.nl>
+X-ASG-Orig-Subj: Re: [RFC][PATCH 1/3] sched, block: Move unplug
+In-Reply-To: <20110621233648.806475812@chello.nl>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1308726103
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.66771
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 10:43 PM, Bharata B Rao
-<bharata@linux.vnet.ibm.com> wrote:
-> On Tue, Jun 21, 2011 at 12:16:53AM -0700, Paul Turner wrote:
->> Add constraints validation for CFS bandwidth hierarchies.
->>
->> Validate that:
->>    max(child bandwidth) <= parent_bandwidth
->>
->> In a quota limited hierarchy, an unconstrained entity
->> (e.g. bandwidth==RUNTIME_INF) inherits the bandwidth of its parent.
->>
->> This constraint is chosen over sum(child_bandwidth) as notion of over-commit is
->> valuable within SCHED_OTHER.  Some basic code from the RT case is re-factored
->> for reuse.
->>
->> Signed-off-by: Paul Turner <pjt@google.com>
->>
->> ---
->>  kernel/sched.c |  109 ++++++++++++++++++++++++++++++++++++++++++++++++++-------
->>  1 file changed, 96 insertions(+), 13 deletions(-)
->>
->> Index: tip/kernel/sched.c
->> ===================================================================
->> --- tip.orig/kernel/sched.c
->> +++ tip/kernel/sched.c
->> @@ -249,6 +249,7 @@ struct cfs_bandwidth {
->>       raw_spinlock_t lock;
->>       ktime_t period;
->>       u64 quota;
->> +     s64 hierarchal_quota;
->
-> You mean hierarchical I suppose.
->
+On 2011-06-22 01:34, Peter Zijlstra wrote:
+> Thomas found that we're doing a horrendous amount of work in that scheduler
+> unplug hook while having preempt and IRQs disabled.
+> 
+> Move it to the head of schedule() where both preemption and IRQs are enabled
+> such that we don't get these silly long IRQ/preempt disable times.
+> 
+> This allows us to remove a lot of special magic in the unplug path,
+> simplifying that code as a bonus.
 
-Yup!  Thanks
+The major change here is moving the queue running inline, instead of
+punting to a thread. The worry is/was that we risk blowing the stack if
+something ends up blocking inadvertently further down the call path.
+Since it's the unlikely way to unplug, a bit of latency was acceptable
+to prevent this problem.
 
-> Regards,
-> Bharata.
->
+I'm curious why you made that change? It seems orthogonal to the change
+you are actually describing in the commit message.
+
+-- 
+Jens Axboe
+
