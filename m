@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757872Ab1FVMkO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 08:40:14 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:45198 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757289Ab1FVMkM convert rfc822-to-8bit (ORCPT
+	id S932161Ab1FVLlk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 07:41:40 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:20492
+	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752552Ab1FVLli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 08:40:12 -0400
-From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "Girdwood, Liam" <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "Lopez Cruz, Misael" <misael.lopez@ti.com>
-Subject: Re: Re: [PATCH v6 15/18] ASoC: twl6040: Remove pll and headset mode dependency
-Date: Wed, 22 Jun 2011 14:39:46 +0300
-Message-ID: <9947082.diNasC8ni8@barack>
-User-Agent: KMail/4.6.0 (Linux/2.6.39-gentoo; KDE/4.6.4; x86_64; ; )
-In-Reply-To: <20110621173505.GC26592@opensource.wolfsonmicro.com>
-References: <1308663556-29120-1-git-send-email-peter.ujfalusi@ti.com> <1308663556-29120-16-git-send-email-peter.ujfalusi@ti.com> <20110621173505.GC26592@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+	Wed, 22 Jun 2011 07:41:38 -0400
+X-SpamScore: -14
+X-BigFish: VS-14(zz9371M1432N98dKzz1202hzz8275bhz2dh2a8h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Subject: Re: [PATCH 1/7] powerpc: make irq_choose_cpu() available to all PIC drivers
+MIME-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset="us-ascii"
+From: Kumar Gala <kumar.gala@freescale.com>
+In-Reply-To: <1305813272-31826-2-git-send-email-timur@freescale.com>
+Date: Wed, 22 Jun 2011 06:41:26 -0500
+CC: <benh@kernel.crashing.org>, <greg@kroah.com>, <akpm@kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-console@vger.kernel.org>
+Content-Transfer-Encoding: 7bit
+Message-ID: <9215F3F9-AA0A-4C76-B2F0-DF18A9FAAB35@freescale.com>
+References: <1305813272-31826-1-git-send-email-timur@freescale.com> <1305813272-31826-2-git-send-email-timur@freescale.com>
+To: Timur Tabi <timur@freescale.com>
+X-Mailer: Apple Mail (2.1084)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mark,
 
-On Tuesday 21 June 2011 19:35:05 Mark Brown wrote:
-> On Tue, Jun 21, 2011 at 04:39:13PM +0300, Peter Ujfalusi wrote:
-> > From: Misael Lopez Cruz <misael.lopez@ti.com>
-> > 
-> > Remove dependency between pll (hppll, lppll) and headset power
-> > mode (low-power, high-performance), as headset power mode can
-> > be used with any pll.
+On May 19, 2011, at 8:54 AM, Timur Tabi wrote:
+
+> From: Stuart Yoder <stuart.yoder@freescale.com>
 > 
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Move irq_choose_cpu() into arch/powerpc/kernel/irq.c so that it can be used
+> by other PIC drivers.  The function is not MPIC-specific.
 > 
-> but you should note that the code has been modified since Misael's
-> original version.
+> Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
+> Signed-off-by: Timur Tabi <timur@freescale.com>
+> ---
+> arch/powerpc/include/asm/irq.h |    2 ++
+> arch/powerpc/kernel/irq.c      |   35 +++++++++++++++++++++++++++++++++++
+> arch/powerpc/sysdev/mpic.c     |   36 ------------------------------------
+> 3 files changed, 37 insertions(+), 36 deletions(-)
 
-Oh.
-I did intended to put comments related to the changes has been done to this 
-patch. Obviously I forgot to do that.
-I did not added your ack to this patch, since I knew that I have changed a bit 
-more.
-Sorry.
+applied to next
 
--- 
-Péter
+- k
+
