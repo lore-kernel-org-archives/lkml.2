@@ -1,81 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497Ab1FVKSL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 06:18:11 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45119 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753330Ab1FVKSJ convert rfc822-to-8bit (ORCPT
+	id S1756770Ab1FVKTJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 06:19:09 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50091 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756646Ab1FVKTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 06:18:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=vrfy.org; s=google;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=DIO1bPMNJINDN0Q27fIhrMIW+eHrnmBdNboEOrjhcmDyq4S7AoM316CCiGxnaYcHPW
-         hwefG2NEAkkPsh9m8aqtotCYDIzA0J86MhlmBKntcZJ3vFDoJ8f56EPas3+iT0osWkLr
-         9a8DguYwc7fARuzmvKOgYALoOrS0i6d58C4E8=
+	Wed, 22 Jun 2011 06:19:07 -0400
+Date: Wed, 22 Jun 2011 13:19:02 +0300
+From: Amit Kucheria <amit.kucheria@linaro.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: Re: [RFC] Add Arm cpu topology definition
+Message-ID: <20110622101902.GC2402@matterhorn1>
+Mail-Followup-To: Catalin Marinas <catalin.marinas@arm.com>,
+	Stephen Boyd <sboyd@codeaurora.org>, linaro-dev@lists.linaro.org,
+	linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+	Vincent Guittot <vincent.guittot@linaro.org>
+References: <BANLkTinRGRUxKB=C_2Y2F93czWScEUo+Jw@mail.gmail.com>
+ <4DFA5C2E.40507@codeaurora.org>
+ <BANLkTi=ik=iRtDb3K__CPxSH_8GusoBHKA@mail.gmail.com>
+ <4E0100BF.6080500@codeaurora.org>
+ <20110622091727.GA1195@1n450.cable.virginmedia.net>
 MIME-Version: 1.0
-In-Reply-To: <87r56m8w2b.fsf@rustcorp.com.au>
-References: <1308434431.1050.5.camel@mop> <8739j59zib.fsf@rustcorp.com.au>
- <BANLkTink8YTe=-Tr5Ax3epiFoFCfzcex7w@mail.gmail.com> <87boxshrwe.fsf@rustcorp.com.au>
- <BANLkTinL4r3RfNuA5x6=UK4DCSSJNeZw7w@mail.gmail.com> <87r56m8w2b.fsf@rustcorp.com.au>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Wed, 22 Jun 2011 12:17:49 +0200
-Message-ID: <BANLkTimNpDdp+JBXt0wUjuc0awypJSvXRg@mail.gmail.com>
-Subject: Re: module: sysfs - add 'uevent' file to allow coldplug
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110622091727.GA1195@1n450.cable.virginmedia.net>
+X-URL: http://www.verdurent.com/
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 04:00, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> On Wed, 22 Jun 2011 00:47:55 +0200, Kay Sievers <kay.sievers@vrfy.org> wrote:
->> On Tue, Jun 21, 2011 at 03:53, Rusty Russell <rusty@rustcorp.com.au> wrote:
->> > Sorry, that's another vague answer :(
->> >
->> > udev already knows about module load
->>
->> Not for built-ins.
->
-> OK, I re-read your commit message, and down the bottom it does say what
-> it *does*:
->
->>        This adds the currently missing /sys/module/<name>/uevent files
->>        to all module entries.
->
-> I apologize for skimming,
+On 11 Jun 22, Catalin Marinas wrote:
+> On Tue, Jun 21, 2011 at 01:36:15PM -0700, Stephen Boyd wrote:
+> > On 06/16/2011 11:54 PM, Vincent Guittot wrote:
+> > > On 16 June 2011 21:40, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> > >> The ARM ARM says these fields are IMPLEMENTATION DEFINED meaning that
+> > >> different vendors may attribute different meaning to these fields if
+> > >> they wish. Does that mean this should be a platform_*() function?
+> > >>
+> > > The ARM ARM also provides a recommended use of the fields of this
+> > > register and the TRM of each Cortex adds some details. On the cortex
+> > > A9, each platform can only set the value of the Cluster ID with the
+> > > CLUSTERID pins. I have tried to consolidate the value of MPIDR  across
+> > > several platforms and they all match with the description.
+> > >
+> > > Have you got an example of a MPIDR register which doesn't match with
+> > > the implementation ?
+> > 
+> > Not that I know of. I'm more concerned with how the ARM ARM has two
+> > recommended usages for these fields depending on virtualization or not.
+> > I suppose we can handle that issue when it arises (or does your
+> > implementation already handle that?)
+> 
+> According to the ARM ARM:
+> 
+> 	MPIDR provides a mechanism with up to three levels of affinity
+> 	information, but the meaning of those levels of affinity is
+> 	entirely IMPLEMENTATION DEFINED.
+> 
+> So we can't really tell the meaning of the affinity bits. There are two
+> recommended ways indeed (with or without virtualisation) which are not
+> that different with regards to the topology (just introducing another
+> level for virtual CPUs).
+> 
+> But I think a more general solution would be for the CPU topology to be
+> provided via the FDT.
 
-Absolutely no problem. Asking such questions can not be wrong.
+Agreed. That will be the next step.
 
-> but this should be the *title* of the patch!
+We decided on doing it this way to allow non-DT-enabled platforms to be able
+to use the feature and to allow DT-enabled platforms to settle down in the
+mean time.
 
-Right, it's hard sometimes from 'inside' to make good titles that make
-titles that are properly understood 'outside'. If you have any better
-idea, please just change it.
-
-> Then I saw your patch hit params.c and thought you were adding a uevent
-> file to /sys/module/<name>/parameters/.  I was even more confused when
-> you replied:
->
->> Hook system management into module-load events, which might include
->> changing module parameters in /sys/module/*/parameters/*...
->
-> Because loading a module might *create* module parameters, but it won't
-> *change* them.  If we want to have events for change, we need much
-> more...
->
-> Now we've got that sorted, is there a reason why you changed all the
-> signatures rather than just using mod->mkobj in store_uevent()?
-
-Because we should be able to use the same 'struct module_attribute'
-for built-in modules and for loaded modules at the same time. The
-current 'struct module_attribute' has 'struct module' references, but
-'struct module' will never exist for built-in modules.
-
-'Struct module_kobject' has nice back-pointer to 'struct module', so
-this was the simplest to do, and looks still fine, I thought.
-
-Kay
