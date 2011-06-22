@@ -1,100 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757820Ab1FVBtv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 21:49:51 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59488 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757634Ab1FVBtt (ORCPT
+	id S1757832Ab1FVBu6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 21:50:58 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42899 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757737Ab1FVBu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 21:49:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=vBslHh6nNyT8TtCXRhVKLnZ0BADgNnVHrWmSzid/p4kq+z3I/D536lgvDhKcGObOl6
-         dUz+oWkYcfhfmBA/gUSXdtjzHJsz1NfnM/e4wFJnWCmxBXGBAEV5ZbvCpQLTRb6hAY8g
-         /EYemEHj6cmDvRRqtgPZqZEsBLdsUL/AkkjYc=
+	Tue, 21 Jun 2011 21:50:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <w3pzklcxchm.wl%kuninori.morimoto.gx@renesas.com>
-References: <Pine.LNX.4.64.1106201657280.11365@axis700.grange>
-	<w3pzklcxchm.wl%kuninori.morimoto.gx@renesas.com>
-Date: Wed, 22 Jun 2011 10:49:48 +0900
-Message-ID: <BANLkTingHGRRCOsVZDs1W+FfdL1s1NCxhw@mail.gmail.com>
-Subject: Re: [PATCH] dmaengine: failure to get a specific DMA channel is not critical
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>
+In-Reply-To: <BANLkTikkHsd4kLnHdtS7D8QGBQyFuYhFBg@mail.gmail.com>
+References: <m162nyn8jd.fsf@fess.ebiederm.org> <BANLkTikq0XRkvkX6O5C2yKf6rRvMWciZpA@mail.gmail.com>
+ <BANLkTikkHsd4kLnHdtS7D8QGBQyFuYhFBg@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 21 Jun 2011 18:50:04 -0700
+Message-ID: <BANLkTin-2x3csO_OHbyNhyZn4eURpYEoDQ@mail.gmail.com>
+Subject: Re: [GIT PULL] nsfd fixes
+To: Mike Snitzer <snitzer@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.osdl.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 9:19 AM, Kuninori Morimoto
-<kuninori.morimoto.gx@renesas.com> wrote:
+On Tue, Jun 21, 2011 at 6:29 PM, Mike Snitzer <snitzer@gmail.com> wrote:
 >
-> Dear Guennadi, all
+> I had to read it a couple times too: nSFd not nFSd.
 >
->> There exist systems with multiple DMA controllers with different
->> capabilities. For example, on some sh-mobile / rmobile systems there are
->> DMA controllers, whose channels can be configured to be used with
->> SD- and MMC-host controllers, serial ports etc. Besides there are also
->> DMA controllers, that can only be used for one special function, e.g.,
->> for USB. In such cases the DMA client filter function can just choose
->> to specify to the DMA driver, which channel it needs. Then the
->> .device_alloc_chan_resources() method of the DMA driver will check,
->> whether it can provide that dunction. If not, it will fail and the loop
->> in __dma_request_channel() will continue to the next DMA device, until
->> it finds a suitable one. This works fine with just one minor glitch:
->> the kernel logs error messages like
->>
->> dmaengine: failed to get <channel name>: (-<error code>)
->>
->> after each such non-critical failure. This patch lowers priority of
->> this message to the debug level.
->>
->> Reported-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
->> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
->> ---
->>
->> Morimoto-san, I don't expect this patch to fail;), but if you like, you
->> could give it a short spin and send your "tested-by" in reply to this
->> mail.
->
-> Thanks.
-> I tested this patch.
->
-> I don't know that the dmaengine design,
-> but this patch remove non-critical error message from USB-DMAC for me.
-> I tested it on mackerel board + renesas_usbhs + USB-DMAC
->
-> Tested-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+> As in Name Space File Descriptors.
 
-So I too gave the USBHS + USBHS-DMAC patches a go on top of
-linux-3.0-rc and they seem to work as expected.
-Without "[PATCH] dmaengine: failure to get a specific DMA channel is
-not critical" applied I get the following log:
+Ok, that's just even crazier.
 
-/ # echo /dev/mtdblock4 > /sys/devices/platform/renesas_usbhs.1/gadget/lun0/file
+Eric, stop making up random letter combinations that make sense to
+NOBODY but you. Ok?
 
-[hook up laptop to the USB gadget port]
+If you can't be bothered to write a few more letters and make things
+readable, why would you expect anybody else to bother spending the
+time looking at your emails?
 
-/ # dmaengine: failed to get dma0chan4: (-22)
-dmaengine: failed to get dma1chan0: (-22)
-dmaengine: failed to get dma2chan0: (-22)
-dmaengine: failed to get dma3chan0: (-22)
-dmaengine: failed to get dma0chan4: (-22)
-dmaengine: failed to get dma1chan0: (-22)
-dmaengine: failed to get dma2chan0: (-22)
-dmaengine: failed to get dma3chan0: (-22)
-g_mass_storage gadget: high speed config #1: Linux File-Backed Storage
-
-With this patch applied the "dmaengine: failed to get..." messages all go away.
-
-Tested-by: Magnus Damm <damm@opensource.se>
-
-Cheers,
-
-/ magnus
+                       Linus
