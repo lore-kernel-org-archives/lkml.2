@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab1FVGW2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 02:22:28 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:34769 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752999Ab1FVGW0 (ORCPT
+	id S1753201Ab1FVGXy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 02:23:54 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:16108 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752123Ab1FVGXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 02:22:26 -0400
-Message-ID: <4E018A70.1060706@ahsoftware.de>
-Date: Wed, 22 Jun 2011 08:23:44 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:2.0b13pre) Gecko/20110501 Thunderbird/3.3a3
+	Wed, 22 Jun 2011 02:23:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=h5WIu8xdpwDdtm2bMF+k4+KxvWMWFfo8ugnbE6D2jnSS4OSjxBAVMgAsfpDng6jF4l
+         c+natp5oZ82Z8hfQ2LRg==
+Date: Tue, 21 Jun 2011 23:23:47 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Cong Wang <amwang@redhat.com>
+cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-doc@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v2 1/4] mm: completely disable THP by
+ transparent_hugepage=0
+In-Reply-To: <4E01816A.3040309@redhat.com>
+Message-ID: <alpine.DEB.2.00.1106212322510.14693@chino.kir.corp.google.com>
+References: <1308643849-3325-1-git-send-email-amwang@redhat.com> <alpine.DEB.2.00.1106211814250.5205@chino.kir.corp.google.com> <4E015CB8.1010300@redhat.com> <alpine.DEB.2.00.1106212010520.8712@chino.kir.corp.google.com> <4E01816A.3040309@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Nicolas Pitre <nico@fluxnic.net>
-CC: Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        gregkh@suse.de, lkml <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>
-Subject: Re: [PATCH] USB: ehci: use packed,aligned(4) instead of removing
- the packed attribute
-References: <Pine.LNX.4.44L0.1106211054460.2327-100000@iolanthe.rowland.org> <alpine.LFD.2.00.1106211636190.2142@xanadu.home>
-In-Reply-To: <alpine.LFD.2.00.1106211636190.2142@xanadu.home>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 22 Jun 2011, Cong Wang wrote:
 
-On 21.06.2011 22:41, Nicolas Pitre wrote:
-
-> ... and also in this case, I was talking about proper use of the packed 
-> attribute in general, not at all about a specific case.  I wanted to 
-> provide a broader view to some people who expressed doubts and 
-> misunderstanding in the hope that the archive could keep this knowledge 
-> base available.
+> > If you're proposing a patch for a specific purpose, it's appropriate to
+> > include that in the changelog.
 > 
-> I apologize if that wasn't clear to you.
+> Sorry, I can't put everything you don't see into the changelog.
+> 
 
-If you meant the abomination writing one, thanks, but I never expressed
-doubts or misunderstandings.
+As far as changelogs go, yes, we can demand that.
 
-I said doubts may arise because the standard (C99) doesn't say anything
-about if or how structs are packed (or aligned).
+> > 
+> > But now that I know what you're proposing this for, it's an easy NACK:
+> > transparent_hugepage=0 has no significant benefit over
+> > transparent_hugepage=never for kdump because the memory savings is
+> > negligible.
+> 
+> I hate to repeat things, sorry, please go for the other thread where I
+> replied to Andrea.
+> 
 
-Alexander
+All of this needs to be in the changelog if you want your patches to even 
+be considered, thanks.
