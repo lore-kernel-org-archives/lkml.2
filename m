@@ -1,97 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab1FVL5N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 07:57:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35285 "EHLO mx2.suse.de"
+	id S1757453Ab1FVMDK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 08:03:10 -0400
+Received: from gate.crashing.org ([63.228.1.57]:37822 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757377Ab1FVL5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 07:57:12 -0400
-Subject: [rfc patch] x86,apic: fix DEBUG_PREEMPT gripe when booting with
- threadirqs=1
-From: Mike Galbraith <mgalbraith@suse.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Jun 2011 13:57:05 +0200
-Message-ID: <1308743825.8568.3.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1753450Ab1FVMDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 08:03:08 -0400
+From: Kumar Gala <galak@kernel.crashing.org>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+Subject: [PATCH 1/3] driver core: Add ability for arch code to setup pdev_archdata
+Date: Wed, 22 Jun 2011 07:02:54 -0500
+Message-Id: <1308744176-24491-1-git-send-email-galak@kernel.crashing.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86,apic: fix DEBUG_PREEMPT gripe when booting with threadirqs=1
+On some architectures we need to setup pdev_archdata before we add the
+device.  Waiting til a bus_notifier is too late since we might need the
+pdev_archdata in the bus notifier.  One example is setting up of dma_mask
+pointers such that it can be used in a bus_notifier.
 
-If CONFIG_PREEMPT and CONFIG_INTR_REMAP are both set, and a box is
-booted with threadirqs, the gripe below is emitted.  It was suggested
-that native_smp_prepare_cpus() shouldn't need to be run with preemption
-disabled, and indeed, box boots with no hint of trouble.  Remove it.
+We add noop version of arch_setup_pdev_archdata() in
+<asm-generic/platform_device.h> and allow the arch code to override with
+access the full definitions of struct device, struct platform_device, and
+struct pdev_archdata.
 
-[    0.131359] Enabled Interrupt-remapping
-[    0.135197] Switched APIC routing to physical flat.
-[    0.140350] BUG: scheduling while atomic: swapper/1/0x00000002
-[    0.146179] Modules linked in:
-[    0.146182] Pid: 1, comm: swapper Not tainted 3.0.0-tip-smp #3
-[    0.146183] Call Trace:
-[    0.146191]  [<ffffffff8107269c>] __schedule_bug+0x5c/0x60
-[    0.146195]  [<ffffffff8173f812>] schedule+0x7e2/0xa80
-[    0.146201]  [<ffffffff81401200>] ? wait_for_xmitr+0xa0/0xa0
-[    0.146205]  [<ffffffff8134a3e0>] ? delay_tsc+0x90/0xe0
-[    0.146208]  [<ffffffff817400e5>] schedule_timeout+0x1b5/0x210
-[    0.146211]  [<ffffffff8106f7a0>] ? hrtick_update+0x30/0x40
-[    0.146214]  [<ffffffff8173eef0>] wait_for_common+0xc0/0x150
-[    0.146218]  [<ffffffff81077cc0>] ? try_to_wake_up+0x270/0x270
-[    0.146221]  [<ffffffff8173f028>] wait_for_completion+0x18/0x20
-[    0.146225]  [<ffffffff8109b3cf>] kthread_create_on_node+0x9f/0x120
-[    0.146229]  [<ffffffff810d72b0>] ? irq_finalize_oneshot+0x120/0x120
-[    0.146234]  [<ffffffff8134dcfe>] ? bitmap_find_next_zero_area+0x3e/0x90
-[    0.146237]  [<ffffffff81741e02>] ? _raw_spin_lock_irqsave+0x22/0x50
-[    0.146240]  [<ffffffff810d831d>] __setup_irq+0x15d/0x3e0
-[    0.146243]  [<ffffffff810d9447>] ? __irq_set_handler+0x87/0x130
-[    0.146248]  [<ffffffff81375ee0>] ? __dmar_enable_qi+0xf0/0xf0
-[    0.146250]  [<ffffffff810d869c>] request_threaded_irq+0xfc/0x160
-[    0.146254]  [<ffffffff8137705a>] dmar_set_interrupt+0x7a/0xd0
-[    0.146257]  [<ffffffff81cd5ba8>] enable_drhd_fault_handling+0x1c/0x59
-[    0.146262]  [<ffffffff81cb889c>] bsp_end_local_APIC_setup+0x17/0x19
-[    0.146265]  [<ffffffff81cb6986>] native_smp_prepare_cpus+0x310/0x3f9
-[    0.146268]  [<ffffffff81ca9bfa>] kernel_init+0x77/0x168
-[    0.146273]  [<ffffffff817482d4>] kernel_thread_helper+0x4/0x10
-[    0.146276]  [<ffffffff81ca9b83>] ? start_kernel+0x374/0x374
-[    0.146279]  [<ffffffff817482d0>] ? gs_change+0xb/0xb
+Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+---
+ arch/alpha/include/asm/platform_device.h      |    1 +
+ arch/arm/include/asm/platform_device.h        |    1 +
+ arch/avr32/include/asm/platform_device.h      |    1 +
+ arch/blackfin/include/asm/platform_device.h   |    1 +
+ arch/cris/include/asm/platform_device.h       |    1 +
+ arch/frv/include/asm/platform_device.h        |    1 +
+ arch/h8300/include/asm/platform_device.h      |    1 +
+ arch/ia64/include/asm/platform_device.h       |    1 +
+ arch/m32r/include/asm/platform_device.h       |    1 +
+ arch/m68k/include/asm/platform_device.h       |    1 +
+ arch/microblaze/include/asm/platform_device.h |    1 +
+ arch/mips/include/asm/platform_device.h       |    1 +
+ arch/mn10300/include/asm/platform_device.h    |    1 +
+ arch/parisc/include/asm/platform_device.h     |    1 +
+ arch/powerpc/include/asm/platform_device.h    |    1 +
+ arch/s390/include/asm/platform_device.h       |    1 +
+ arch/score/include/asm/platform_device.h      |    1 +
+ arch/sh/include/asm/platform_device.h         |    1 +
+ arch/sparc/include/asm/platform_device.h      |    1 +
+ arch/tile/include/asm/platform_device.h       |    1 +
+ arch/unicore32/include/asm/platform_device.h  |    1 +
+ arch/x86/include/asm/platform_device.h        |    1 +
+ arch/xtensa/include/asm/platform_device.h     |    1 +
+ drivers/base/platform.c                       |    2 ++
+ include/asm-generic/platform_device.h         |   11 +++++++++++
+ 25 files changed, 36 insertions(+), 0 deletions(-)
+ create mode 100644 arch/alpha/include/asm/platform_device.h
+ create mode 100644 arch/arm/include/asm/platform_device.h
+ create mode 100644 arch/avr32/include/asm/platform_device.h
+ create mode 100644 arch/blackfin/include/asm/platform_device.h
+ create mode 100644 arch/cris/include/asm/platform_device.h
+ create mode 100644 arch/frv/include/asm/platform_device.h
+ create mode 100644 arch/h8300/include/asm/platform_device.h
+ create mode 100644 arch/ia64/include/asm/platform_device.h
+ create mode 100644 arch/m32r/include/asm/platform_device.h
+ create mode 100644 arch/m68k/include/asm/platform_device.h
+ create mode 100644 arch/microblaze/include/asm/platform_device.h
+ create mode 100644 arch/mips/include/asm/platform_device.h
+ create mode 100644 arch/mn10300/include/asm/platform_device.h
+ create mode 100644 arch/parisc/include/asm/platform_device.h
+ create mode 100644 arch/powerpc/include/asm/platform_device.h
+ create mode 100644 arch/s390/include/asm/platform_device.h
+ create mode 100644 arch/score/include/asm/platform_device.h
+ create mode 100644 arch/sh/include/asm/platform_device.h
+ create mode 100644 arch/sparc/include/asm/platform_device.h
+ create mode 100644 arch/tile/include/asm/platform_device.h
+ create mode 100644 arch/unicore32/include/asm/platform_device.h
+ create mode 100644 arch/x86/include/asm/platform_device.h
+ create mode 100644 arch/xtensa/include/asm/platform_device.h
+ create mode 100644 include/asm-generic/platform_device.h
 
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 9fd3137..5c81fd3 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1032,7 +1032,6 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
- {
- 	unsigned int i;
+diff --git a/arch/alpha/include/asm/platform_device.h b/arch/alpha/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/alpha/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/arm/include/asm/platform_device.h b/arch/arm/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/arm/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/avr32/include/asm/platform_device.h b/arch/avr32/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/avr32/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/blackfin/include/asm/platform_device.h b/arch/blackfin/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/blackfin/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/cris/include/asm/platform_device.h b/arch/cris/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/cris/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/frv/include/asm/platform_device.h b/arch/frv/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/frv/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/h8300/include/asm/platform_device.h b/arch/h8300/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/h8300/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/ia64/include/asm/platform_device.h b/arch/ia64/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/ia64/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/m32r/include/asm/platform_device.h b/arch/m32r/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/m32r/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/m68k/include/asm/platform_device.h b/arch/m68k/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/m68k/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/microblaze/include/asm/platform_device.h b/arch/microblaze/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/microblaze/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/mips/include/asm/platform_device.h b/arch/mips/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/mips/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/mn10300/include/asm/platform_device.h b/arch/mn10300/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/mn10300/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/parisc/include/asm/platform_device.h b/arch/parisc/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/parisc/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/powerpc/include/asm/platform_device.h b/arch/powerpc/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/powerpc/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/s390/include/asm/platform_device.h b/arch/s390/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/s390/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/score/include/asm/platform_device.h b/arch/score/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/score/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/sh/include/asm/platform_device.h b/arch/sh/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/sh/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/sparc/include/asm/platform_device.h b/arch/sparc/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/sparc/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/tile/include/asm/platform_device.h b/arch/tile/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/tile/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/unicore32/include/asm/platform_device.h b/arch/unicore32/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/unicore32/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/x86/include/asm/platform_device.h b/arch/x86/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/x86/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/xtensa/include/asm/platform_device.h b/arch/xtensa/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/xtensa/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index 1c291af..c25e0c0 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -20,6 +20,7 @@
+ #include <linux/err.h>
+ #include <linux/slab.h>
+ #include <linux/pm_runtime.h>
++#include <asm/platform_device.h>
  
--	preempt_disable();
- 	smp_cpu_index_default();
+ #include "base.h"
  
- 	/*
-@@ -1054,7 +1053,7 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
- 	if (smp_sanity_check(max_cpus) < 0) {
- 		printk(KERN_INFO "SMP disabled\n");
- 		disable_smp();
--		goto out;
-+		return;
+@@ -173,6 +174,7 @@ struct platform_device *platform_device_alloc(const char *name, int id)
+ 		pa->pdev.id = id;
+ 		device_initialize(&pa->pdev.dev);
+ 		pa->pdev.dev.release = platform_device_release;
++		arch_setup_pdev_archdata(&pa->pdev);
  	}
  
- 	default_setup_apic_routing();
-@@ -1098,8 +1097,6 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
- 		uv_system_init();
- 
- 	set_mtrr_aps_delayed_init();
--out:
--	preempt_enable();
- }
- 
- void arch_disable_nonboot_cpus_begin(void)
-
+ 	return pa ? &pa->pdev : NULL;
+diff --git a/include/asm-generic/platform_device.h b/include/asm-generic/platform_device.h
+new file mode 100644
+index 0000000..4a3f6a9
+--- /dev/null
++++ b/include/asm-generic/platform_device.h
+@@ -0,0 +1,11 @@
++#ifndef __ASM_GENERIC_PLATFORM_DEVICE_H_
++#define __ASM_GENERIC_PLATFORM_DEVICE_H_
++
++/*
++ * an architecture can override to define arch_setup_pdev_archdata
++ */
++#ifndef arch_setup_pdev_archdata
++static inline void arch_setup_pdev_archdata(struct platform_device *pdev) { }
++#endif
++
++#endif /* __ASM_GENERIC_PLATFORM_DEVICE_H_ */
+-- 
+1.7.3.4
 
