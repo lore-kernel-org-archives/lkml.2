@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932571Ab1FVTWH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 15:22:07 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:46168 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932437Ab1FVTWE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 15:22:04 -0400
-Message-ID: <4E024089.9040204@metafoo.de>
-Date: Wed, 22 Jun 2011 21:20:41 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110505 Icedove/3.0.11
+	id S1758545Ab1FVTkU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 15:40:20 -0400
+Received: from claw.goop.org ([74.207.240.146]:57826 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758080Ab1FVTkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 15:40:19 -0400
+Message-ID: <4E0240AC.9060603@goop.org>
+Date: Wed, 22 Jun 2011 12:21:16 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-kernel@vger.kernel.org,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>
-Subject: Re: [PATCH 1/8] regmap: Add generic non-memory mapped register access
- API
-References: <20110622184407.GC13847@sirena.org.uk> <1308768353-19372-1-git-send-email-broonie@opensource.wolfsonmicro.com> <4E023C72.3030109@metafoo.de> <20110622191145.GA19628@opensource.wolfsonmicro.com>
-In-Reply-To: <20110622191145.GA19628@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH RFC 0/7] x86: convert ticketlocks to C and remove duplicate
+ code
+References: <cover.1308259496.git.jeremy.fitzhardinge@citrix.com> <1308664868.26237.173.camel@twins>
+In-Reply-To: <1308664868.26237.173.camel@twins>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2011 09:11 PM, Mark Brown wrote:
-> On Wed, Jun 22, 2011 at 09:03:14PM +0200, Lars-Peter Clausen wrote:
->> On 06/22/2011 08:45 PM, Mark Brown wrote:
-> 
->>> +	if (map->bus->read_flag_bit)
->>> +		u8[0] |= 1 << map->bus->read_flag_bit;
-> 
->> Should be 1 << (map->bus->read_flag_bit - 1)
-> 
-> The code has the sematic I intended; you can debate if it's the best
-> semantic and looking at the documentation again it's not entirely clear
-> so at least that should be updated.
+On 06/21/2011 07:01 AM, Peter Zijlstra wrote:
+> One other thing you could contemplate is adding something like:
+>
+> #define xadd(ptr, inc)							\
+> do {									\
+> 	switch(sizeof(*(ptr))) {					\
+> 	case 1:								\
+> 		asm volatile (LOCK_PREFIX "xaddb %0, %1\n"		\
+>                              : "+r" (inc), "+m" (*(ptr))		\
+>                              : : "memory", "cc");			\
+> 	case 2:
+> 		... xaddw ...
+> 	case 4:
+> 		... xaddl ...
+> } while (0)
+>
+> and a similar something for inc. For both there seem to be various asm
+> bits left (we could even consider adding xadd to
+> arch/x86/include/asm/cmpxchg*.h).
 
-Well, then the spi regmap driver needs to use read_flag_bit = 7 instead of
-read_flag_bit = 8 and the BUG_ON should also be updated to read_flag_bit >= 8.
+A friend just pointed out that gcc has a "__sync_fetch_and_add()"
+intrinsic, which compiles to xadd when used in this context.  What's the
+general feeling about using these kinds of gcc features?
 
-And the current code also disallows to use the first bit as the read_flag. So
-in my opinion using a one-based index here is a good idea.
+It also has __sync_bool_compare_and_swap(), which would simplify a lot
+of asm/cmpxchg.h...
 
-> BTW, the reason I put you on the CCs was the hope that you could test on
-> OpenMoko (I have one but I've not got any kind of working environment
-> set up for it).  You're the nearest thing to a mainline maintainer for
-> stuff like the pcf driver.
-
-It's already on my todo list.
-
+    J
