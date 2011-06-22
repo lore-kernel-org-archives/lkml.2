@@ -1,87 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757320Ab1FVMGj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 08:06:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36513 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752552Ab1FVMGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 08:06:38 -0400
-Date: Wed, 22 Jun 2011 14:06:36 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>
-Subject: [PATCH] mm: Do not keep page locked during page fault while charging
- it for memcg
-Message-ID: <20110622120635.GB14343@tiehlicka.suse.cz>
+	id S1757532Ab1FVMHD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 08:07:03 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:59498 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552Ab1FVMHB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 08:07:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=w1Y+tjsNpdepavdhMrfFSiPphFPNpE0csKpzUMbaEQ+BBiurgNYSuK8Jh9ee1QEnaZ
+         4vS8RUrlItjnWOPV/IewGPU800GLVOa0TJ5h17rokl87LT+Bq3vJkglTolpdHhumTzaU
+         g1MFb9OQCXuRuGPjEHXp6xbLUrtQUBagKlhPI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTinSFErFBaZgeL4x1oiaw7woewUNVQ@mail.gmail.com>
+References: <BANLkTinSFErFBaZgeL4x1oiaw7woewUNVQ@mail.gmail.com>
+Date: Wed, 22 Jun 2011 15:07:00 +0300
+Message-ID: <BANLkTiksk02_SmP8ZWP8J4w0kPCdVr15mw@mail.gmail.com>
+Subject: Re: threading problem
+From: Daniel Baluta <daniel.baluta@gmail.com>
+To: "Murali K. Vemuri" <vemuri.muralikrishna@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        kernelnewbies <kernelnewbies@kernelnewbies.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we are keeping faulted page locked throughout whole __do_fault
-call (except for page_mkwrite code path). If we do early COW we allocate a
-new page which has to be charged for a memcg (mem_cgroup_newpage_charge).
-This function, however, might block for unbounded amount of time if memcg
-oom killer is disabled because the only way out of the OOM situation is
-either an external event (kill a process from the group or resize the group
-hard limit) or internal event (that would get us under the limit). Many
-times the external event is the only chance to move forward, though.
-In the end we are keeping the faulted page locked and blocking other
-processes from faulting it in which is not good at all because we are
-basically punishing potentially an unrelated process for OOM condition
-in a different group (I have seen stuck system because of ld-2.11.1.so being
-locked).
+Hello Murali,
 
-Let's unlock the faulted page while we are charging a new page and then
-recheck whether it wasn't truncated in the mean time. We should retry the
-fault in that case.
+> I have a device driver which provides the IOCTL function for the
+> application to interact.
+>
+> when the application sends the IOCTL CMD_GO, my driver has to toggle a
+> GPIO every 500 m Sec. until a 3 minute timeout occurs or a CMD_STOP
+> IOCTL is received.
+>
+> I tried the DECLARE_WORK, DECLARE_DELAYED_WORK and also
+> kernel_thread() to meet this requirement with no success.
+>
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memory.c |   18 +++++++++++++++++-
- 1 files changed, 17 insertions(+), 1 deletions(-)
+Could you please show us the code?
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 87d9353..12e7ccc 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3177,7 +3177,23 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 				ret = VM_FAULT_OOM;
- 				goto out;
- 			}
--			if (mem_cgroup_newpage_charge(page, mm, GFP_KERNEL)) {
-+
-+			/* We have to drop the page lock here because memcg
-+			 * charging might block for unbound time if memcg oom
-+			 * killer is disabled.
-+			 */
-+			unlock_page(vmf.page);
-+			ret = mem_cgroup_newpage_charge(page, mm, GFP_KERNEL);
-+			lock_page(vmf.page);
-+
-+			if (!vmf.page->mapping) {
-+				if (!ret)
-+					mem_cgroup_uncharge_page(page);
-+				page_cache_release(page);
-+				ret = 0; /* retry the fault */
-+				goto out;
-+			}
-+			if (ret) {
- 				ret = VM_FAULT_OOM;
- 				page_cache_release(page);
- 				goto out;
--- 
-1.7.5.4
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+thanks,
+Daniel.
