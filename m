@@ -1,142 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758069Ab1FVOVd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 10:21:33 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64740 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755582Ab1FVOVc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 10:21:32 -0400
-Message-ID: <4E01FA5A.1020307@aktendiener.de>
-Date: Wed, 22 Jun 2011 16:21:14 +0200
-From: Johannes Wiedersich <debian@aktendiener.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110606 Icedove/3.1.10
+	id S1758057Ab1FVOWo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 10:22:44 -0400
+Received: from hera.kernel.org ([140.211.167.34]:58889 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755582Ab1FVOWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 10:22:43 -0400
+Date: Wed, 22 Jun 2011 14:22:19 GMT
+From: tip-bot for Peter Zijlstra <peterz@infradead.org>
+Message-ID: <tip-4f2a8d3cf5e0486fd547633fa86c5d130ae98cad@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, a.p.zijlstra@chello.nl,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1308734409.1022.14.camel@twins>
+References: <1308734409.1022.14.camel@twins>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/printk] printk: Fix console_sem vs logbuf_lock unlock race
+Git-Commit-ID: 4f2a8d3cf5e0486fd547633fa86c5d130ae98cad
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: LKML <linux-kernel@vger.kernel.org>, 631255@bugs.debian.org
-Subject: Re: 3.0-rc3: kernel BUG at fs/inode.c:1368!
-References: <20110622063624.7374.9343.reportbug@johannes4.fritz.box> <1308750980.3093.470.camel@localhost>
-In-Reply-To: <1308750980.3093.470.camel@localhost>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:9MbsMVU8yy6ZD4/RmvmzBsQH2Ka/hl2Vcv1xW6zqWBB
- VxQUQpitXRqA0ILaWOle2gB4UwNmiEBOir6GTgOECcnPIK+tG+
- Z4rUw9By1N7UB6Iky/5BRmfjob/Gyb5+fcW+ueZGuZWZ/RPQ39
- Wxt12nGrzOuKXhPOSDFcDkHnU+2onLVm1Z8cauTv6uo40wDbUJ
- quFpav0U2zlsnplcIrqCCkibgi0D0GcmmeXQ3SH3QI=
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 22 Jun 2011 14:22:20 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-06-22 15:56, Ben Hutchings wrote:
-> On Wed, 2011-06-22 at 08:36 +0200, Johannes Wiedersich wrote:
->> Package: linux-2.6
->> Version: 3.0.0~rc3-1~experimental.1
->> Severity: important
->>
->>
->> aptitude installing a package triggers a kernel oops. I have no idea,
->> what part of the installation process is to blame, but could try to
->> reproduce, if I would get further instructions. 
-> [...]
-> 
-> I assume you haven't seen a similar crash in earlier versions?
+Commit-ID:  4f2a8d3cf5e0486fd547633fa86c5d130ae98cad
+Gitweb:     http://git.kernel.org/tip/4f2a8d3cf5e0486fd547633fa86c5d130ae98cad
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Wed, 22 Jun 2011 11:20:09 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 22 Jun 2011 11:39:34 +0200
 
-No, linux-image-2.6.39-2-amd64 and linux-image-2.6.38-2-amd64 from
-testing and unstable are fine, while I could reproduce this behaviour
-for 3.0.0~rc3-1.
+printk: Fix console_sem vs logbuf_lock unlock race
 
-> Also, what type of filesystem where you installing on
-> (ext3/ext4/btrfs/xfs...)?
+Fix up the fallout from commit 0b5e1c5255 ("printk: Release
+console_sem after logbuf_lock").
 
-$ mount
-/dev/mapper/johannes--fast-root--amd64 on / type ext4
-(rw,errors=remount-ro,commit=0)
-/dev/sdb1 on /boot type ext2 (rw)
+The reason for unlocking the console_sem under the logbuf_lock
+is that a concurrent printk() might fill up the buffer but fail
+to acquire the console sem, resulting in a missed write to the
+console until a subsequent console_sem acquire/release cycle.
 
-Some snippets from vgdisplay and lvdisplay:
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: efault@gmx.de
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1308734409.1022.14.camel@twins
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/printk.c |   20 ++++++++++++++++++--
+ 1 files changed, 18 insertions(+), 2 deletions(-)
 
-/===================16:17:19-root@johannes4:~# vgdisplay
-  --- Volume group ---
-  VG Name               johannes-fast
-  System ID
-  Format                lvm2
-  Metadata Areas        1
-  Metadata Sequence No  4
-  VG Access             read/write
-  VG Status             resizable
-  MAX LV                0
-  Cur LV                3
-  Open LV               2
-  Max PV                0
-  Cur PV                1
-  Act PV                1
-  VG Size               74.29 GiB
-  PE Size               4.00 MiB
-  Total PE              19018
-  Alloc PE / Size       19018 / 74.29 GiB
-  Free  PE / Size       0 / 0
-  VG UUID               YmvwSc-BDlh-YaXC-ac8z-98mo-5tMG-i27v6b
-
-  --- Volume group ---
-  VG Name               johannes4
-
-[....]
-
-16:17:22-root@johannes4:~# lvdisplay
-  --- Logical volume ---
-  LV Name                /dev/johannes-fast/root-amd64
-  VG Name                johannes-fast
-  LV UUID                nOzLXl-960W-3zX2-8m7b-A7iH-FWbG-H6j77T
-  LV Write Access        read/write
-  LV Status              available
-  # open                 1
-  LV Size                18.62 GiB
-  Current LE             4768
-  Segments               1
-  Allocation             inherit
-  Read ahead sectors     auto
-  - currently set to     256
-  Block device           254:0
-
-  --- Logical volume ---
-  LV Name                /dev/johannes-fast/home-fast
-  VG Name                johannes-fast
-  LV UUID                PSStvE-11cT-VXRJ-K7xM-U9sY-fRN3-s2A6Yu
-  LV Write Access        read/write
-  LV Status              available
-  # open                 1
-  LV Size                46.56 GiB
-  Current LE             11920
-  Segments               1
-  Allocation             inherit
-  Read ahead sectors     auto
-  - currently set to     256
-  Block device           254:2
-
-[...]
-
-  --- Logical volume ---
-  LV Name                /dev/johannes4/swap_1
-  VG Name                johannes4
-  LV UUID                b4HIrg-u4Ui-mUp1-7VMg-6LFA-0fFC-jTMCFT
-  LV Write Access        read/write
-  LV Status              available
-  # open                 2
-  LV Size                5.64 GiB
-  Current LE             1443
-  Segments               1
-  Allocation             inherit
-  Read ahead sectors     auto
-  - currently set to     256
-  Block device           254:1
-
-
-\==============================================================
-
-> 
-> Forwarding this to LKML.
-
-Thanks!
-
-Johannes
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 751e7b8..37dff34 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1244,7 +1244,7 @@ void console_unlock(void)
+ {
+ 	unsigned long flags;
+ 	unsigned _con_start, _log_end;
+-	unsigned wake_klogd = 0;
++	unsigned wake_klogd = 0, retry = 0;
+ 
+ 	if (console_suspended) {
+ 		up(&console_sem);
+@@ -1253,6 +1253,7 @@ void console_unlock(void)
+ 
+ 	console_may_schedule = 0;
+ 
++again:
+ 	for ( ; ; ) {
+ 		spin_lock_irqsave(&logbuf_lock, flags);
+ 		wake_klogd |= log_start - log_end;
+@@ -1273,8 +1274,23 @@ void console_unlock(void)
+ 	if (unlikely(exclusive_console))
+ 		exclusive_console = NULL;
+ 
+-	spin_unlock_irqrestore(&logbuf_lock, flags);
++	spin_unlock(&logbuf_lock);
++
+ 	up(&console_sem);
++
++	/*
++	 * Someone could have filled up the buffer again, so re-check if there's
++	 * something to flush. In case we cannot trylock the console_sem again,
++	 * there's a new owner and the console_unlock() from them will do the
++	 * flush, no worries.
++	 */
++	spin_lock(&logbuf_lock);
++	if (con_start != log_end)
++		retry = 1;
++	spin_unlock_irqrestore(&logbuf_lock, flags);
++	if (retry && console_trylock())
++		goto again;
++
+ 	if (wake_klogd)
+ 		wake_up_klogd();
+ }
