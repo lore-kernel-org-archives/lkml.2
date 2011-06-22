@@ -1,126 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757602Ab1FVMcI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 08:32:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38057 "EHLO mx2.suse.de"
+	id S1757735Ab1FVMfF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 08:35:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1032 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756555Ab1FVMcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 08:32:07 -0400
-Date: Wed, 22 Jun 2011 14:32:04 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH V2] mm: Do not keep page locked during page fault while
- charging it for memcg
-Message-ID: <20110622123204.GC14343@tiehlicka.suse.cz>
-References: <20110622120635.GB14343@tiehlicka.suse.cz>
- <20110622121516.GA28359@infradead.org>
+	id S1757502Ab1FVMfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 08:35:03 -0400
+Message-ID: <4E01E148.2080302@redhat.com>
+Date: Wed, 22 Jun 2011 20:34:16 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110622121516.GA28359@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mel Gorman <mgorman@suse.de>
+CC: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Andrea Arcangeli <aarcange@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [PATCH 2/3] mm: make the threshold of enabling THP configurable
+References: <1308587683-2555-1-git-send-email-amwang@redhat.com> <1308587683-2555-2-git-send-email-amwang@redhat.com> <20110620165955.GB9396@suse.de> <4DFF8050.9070201@redhat.com> <20110621093640.GD9396@suse.de> <4E015672.2020407@redhat.com> <20110622091611.GB7585@csn.ul.ie> <4E01C80F.8070605@redhat.com> <20110622111525.GK9396@suse.de>
+In-Reply-To: <20110622111525.GK9396@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 22-06-11 08:15:16, Christoph Hellwig wrote:
-> > +
-> > +			/* We have to drop the page lock here because memcg
-> > +			 * charging might block for unbound time if memcg oom
-> > +			 * killer is disabled.
-> > +			 */
-> > +			unlock_page(vmf.page);
-> > +			ret = mem_cgroup_newpage_charge(page, mm, GFP_KERNEL);
-> > +			lock_page(vmf.page);
-> 
-> This introduces a completely poinless unlock/lock cycle for non-memcg
-> pagefaults.  Please make sure it only happens when actually needed.
+于 2011年06月22日 19:15, Mel Gorman 写道:
+> On Wed, Jun 22, 2011 at 06:46:39PM +0800, Cong Wang wrote:
+>> ??? 2011???06???22??? 17:16, Mel Gorman ??????:
+>>>
+>>> What I meant was that there is a rational reason why 512M is the
+>>> default for enabling THP by default. Tuning it lower than that by any
+>>> means makes very little sense. Tuning it higher might make some sense
+>>> but it is more likely that THP would simply be disabled via sysctl. I
+>>> see very little advantage to introducing this Kconfig option other
+>>> than as a source of confusion when running make oldconfig.
+>>>
+>>
+>> The tunable range is (512, 8192), so 512M is the minimum.
+>>
+>> Sure, I knew it can be disabled via /sys, actually we can do even
+>> more in user-space, that is totally move the 512M check out of kernel,
+>> why we didn't?
+>>
+>
+> Because the reason why 512M is the default is not obvious and there
+> was no guarantee all distros would chose a reasonable default for
+> an init script (or know that an init script was even necessary).
+> This is one of the few cases where there is a sensible default that
+> is the least surprising.
+>
 
-Fair point. Thanks!
-What about the following?
-I realize that pushing more memcg logic into mm/memory.c is not nice but
-I found it better than pushing the old page into mem_cgroup_newpage_charge.
-We could also check whether the old page is in the root cgroup because
-memcg oom killer is not active there but that would add more code into
-this hot path so I guess it is not worth it.
-
-Changes since v1
-- do not unlock page when memory controller is disabled.
-
-8<------
->From 82d2b5ce6c38ad3d6df7ccf7010084c2d6658634 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Wed, 22 Jun 2011 13:56:54 +0200
-Subject: [PATCH] mm: Do not keep page locked during page fault while charging
- it for memcg
-
-Currently we are keeping faulted page locked throughout whole __do_fault
-call (except for page_mkwrite code path). If we do early COW we allocate a
-new page which has to be charged for a memcg (mem_cgroup_newpage_charge).
-This function, however, might block for unbounded amount of time if memcg
-oom killer is disabled because the only way out of the OOM situation is
-either an external event (kill a process from the group or resize the group
-hard limit) or internal event (that would get us under the limit). Many
-times the external event is the only chance to move forward, though.
-In the end we are keeping the faulted page locked and blocking other
-processes from faulting it in which is not good at all because we are
-basically punishing potentially an unrelated process for OOM condition
-in a different group (I have seen stuck system because of ld-2.11.1.so being
-locked).
-
-Let's unlock the faulted page while we are charging a new page and then
-recheck whether it wasn't truncated in the mean time. We should retry the
-fault in that case.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memory.c |   21 ++++++++++++++++++++-
- 1 files changed, 20 insertions(+), 1 deletions(-)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index 87d9353..627eb6a 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3177,7 +3177,26 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 				ret = VM_FAULT_OOM;
- 				goto out;
- 			}
--			if (mem_cgroup_newpage_charge(page, mm, GFP_KERNEL)) {
-+
-+			/* We have to drop the page lock here because memcg
-+			 * charging might block for unbound time if memcg oom
-+			 * killer is disabled.
-+			 */
-+			if (!mem_cgroup_disabled())
-+				unlock_page(vmf.page);
-+			ret = mem_cgroup_newpage_charge(page, mm, GFP_KERNEL);
-+			if (!mem_cgroup_disabled()) {
-+				lock_page(vmf.page);
-+
-+				if (!vmf.page->mapping) {
-+					if (!ret)
-+						mem_cgroup_uncharge_page(page);
-+					page_cache_release(page);
-+					ret = 0; /* retry the fault */
-+					goto out;
-+				}
-+			}
-+			if (ret) {
- 				ret = VM_FAULT_OOM;
- 				page_cache_release(page);
- 				goto out;
--- 
-1.7.5.4
-
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Putting a well-explained Kconfig help would solve this problem,
+so I don't think this is a surprising thing.
