@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757952Ab1FVDLh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 23:11:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16706 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757726Ab1FVDLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 23:11:35 -0400
-Message-ID: <4E015D5C.4010809@redhat.com>
-Date: Wed, 22 Jun 2011 11:11:24 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Randy Dunlap <rdunlap@xenotime.net>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-doc@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v2 1/4] mm: completely disable THP by transparent_hugepage=0
-References: <1308643849-3325-1-git-send-email-amwang@redhat.com> <20110621133053.GO20843@redhat.com>
-In-Reply-To: <20110621133053.GO20843@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1757907Ab1FVDLc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 23:11:32 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:33272 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932134Ab1FVDLb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 23:11:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=IB7uuyfRBRLMf1SM0gvLX4p/RZ0088rW26f1cNkrajn9W5YLYW9nDozZgUNCrDjM2P
+         pNDgMsW9u9h+xGXsCJtQtuIzeMjYzgheEMFP/4KuLytgE5diK0dSFaNZe1HVcboeJoSD
+         hO8sGNfegdR5NRDPU71vrzIgYl4VBqFunFrZA=
+Subject: Re: [RFC 7/8] drivers: introduce rpmsg, a remote-processor
+ messaging bus
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        akpm@linux-foundation.org, Brian Swetland <swetland@google.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        davinci-linux-open-source 
+	<davinci-linux-open-source@linux.davincidsp.com>
+In-Reply-To: <87liwu8u3q.fsf@rustcorp.com.au>
+References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
+	 <1308640714-17961-8-git-send-email-ohad@wizery.com>
+	 <87liwu8u3q.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset="us-ascii"
+Date: Tue, 21 Jun 2011 23:11:27 -0400
+Message-ID: <1308712287.11435.4.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年06月21日 21:30, Andrea Arcangeli 写道:
-> On Tue, Jun 21, 2011 at 04:10:42PM +0800, Amerigo Wang wrote:
->> Introduce "transparent_hugepage=0" to totally disable THP.
->> "transparent_hugepage=never" means setting THP to be partially
->> disabled, we need a new way to totally disable it.
->>
->
-> I think I already clarified this is not worth it. Removing sysfs
-> registration is just pointless. If you really want to save ~8k of RAM,
-> at most you can try to move the init of the khugepaged slots hash and
-> the kmem_cache_init to the khugepaged deamon start but even that isn't
-> so useful. Not registering into sysfs is just pointless and it's a
-> gratuitous loss of a feature.
+On Wed, 2011-06-22 at 12:12 +0930, Rusty Russell wrote:
+> > +#define VIRTIO_ID_RPMSG		10 /* virtio remote processor messaging */
+> 
+> I think you want 6.  Plan 9 jumped ahead to grab 9 :)
 
-Sorry, I replied to you in the other thread, so I don't want to dup
-it here.
+Maybe it's worth adding an appendix to the virtio spec as part of this
+(and really any) patch series which takes a virtio ID.
+
+Also, I understand that virtio itself as an idea isn't Linux specific,
+but maybe it's worth including the spec (or at least a variation of it)
+as part of the kernel documentation.
+
+-- 
+
+Sasha.
+
 
