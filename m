@@ -1,213 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758705Ab1FVSqF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 14:46:05 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33998 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758585Ab1FVSp7 (ORCPT
+	id S1758765Ab1FVSrD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 14:47:03 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:39573 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758746Ab1FVSqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 14:45:59 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: linux-kernel@vger.kernel.org
-Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Graeme Gregory <gg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 8/8] regulator: Convert tps65023 to use regmap API
-Date: Wed, 22 Jun 2011 19:45:53 +0100
-Message-Id: <1308768353-19372-8-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1308768353-19372-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <20110622184407.GC13847@sirena.org.uk>
- <1308768353-19372-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Wed, 22 Jun 2011 14:46:49 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=NKJh+8zZPfg7drfiD7DvTlBy6uHpHghligt8XY+jgoaGFQsZerOK4Zi+OeVvRfnePNi7nKQQACV6HkICsVNzvn6TRZ/5VWCXIpmPn4+8A7MASgx6XX5gRlhpxZvZ7p5p;
+Date: Wed, 22 Jun 2011 11:46:47 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Margarita Olaya <magi@slimlogic.co.uk>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -next] mfd: tps65912 needs MFD_CORE
+Message-Id: <20110622114647.0e8c1ec7.rdunlap@xenotime.net>
+In-Reply-To: <20110622182915.GA13847@sirena.org.uk>
+References: <20110622163651.7ebc407c.sfr@canb.auug.org.au>
+	<20110622100615.c79765ff.randy.dunlap@oracle.com>
+	<20110622182915.GA13847@sirena.org.uk>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+On Wed, 22 Jun 2011 19:29:15 +0100 Mark Brown wrote:
+
+> On Wed, Jun 22, 2011 at 10:06:15AM -0700, Randy Dunlap wrote:
+> > From: Randy Dunlap <randy.dunlap@oracle.com>
+> > 
+> > MFD_TPS65912 should select MFD_CORE so that mfd interfaces are
+> > available to it.  This fixes a build error when MFD_CORE=m and
+> > MFD_TPS65912=y (and no other TPS65912 kconfig symbols are enabled,
+> > so no other select MFD_CORE was done).
+> 
+> I posted a better patch for this earlier today - the bigger problem here
+> is that as with other MFD cores MFD_TPS65912 shouldn't be directly
+> selectable at all as it can't do anything useful without a bus
+> interface.
+
+Good.  Hopefully such a kconfig won't be possible in the
+future then.
+
 ---
- drivers/regulator/Kconfig              |    1 +
- drivers/regulator/tps65023-regulator.c |   98 +++++++++-----------------------
- 2 files changed, 28 insertions(+), 71 deletions(-)
-
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index a1dffd9..5e8707a 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -235,6 +235,7 @@ config REGULATOR_TPS6105X
- config REGULATOR_TPS65023
- 	tristate "TI TPS65023 Power regulators"
- 	depends on I2C
-+	select REGMAP
- 	help
- 	  This driver supports TPS65023 voltage regulator chips. TPS65023 provides
- 	  three step-down converters and two general-purpose LDO voltage regulators.
-diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
-index fbddc15..3fa3ba5 100644
---- a/drivers/regulator/tps65023-regulator.c
-+++ b/drivers/regulator/tps65023-regulator.c
-@@ -25,6 +25,7 @@
- #include <linux/i2c.h>
- #include <linux/delay.h>
- #include <linux/slab.h>
-+#include <linux/regmap.h>
- 
- /* Register definitions */
- #define	TPS65023_REG_VERSION		0
-@@ -125,93 +126,35 @@ struct tps_pmic {
- 	struct i2c_client *client;
- 	struct regulator_dev *rdev[TPS65023_NUM_REGULATOR];
- 	const struct tps_info *info[TPS65023_NUM_REGULATOR];
--	struct mutex io_lock;
-+	struct regmap *regmap;
- };
- 
--static inline int tps_65023_read(struct tps_pmic *tps, u8 reg)
--{
--	return i2c_smbus_read_byte_data(tps->client, reg);
--}
--
--static inline int tps_65023_write(struct tps_pmic *tps, u8 reg, u8 val)
--{
--	return i2c_smbus_write_byte_data(tps->client, reg, val);
--}
--
- static int tps_65023_set_bits(struct tps_pmic *tps, u8 reg, u8 mask)
- {
--	int err, data;
--
--	mutex_lock(&tps->io_lock);
--
--	data = tps_65023_read(tps, reg);
--	if (data < 0) {
--		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
--		err = data;
--		goto out;
--	}
--
--	data |= mask;
--	err = tps_65023_write(tps, reg, data);
--	if (err)
--		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
--
--out:
--	mutex_unlock(&tps->io_lock);
--	return err;
-+	return regmap_update_bits(tps->regmap, reg, mask, mask);
- }
- 
- static int tps_65023_clear_bits(struct tps_pmic *tps, u8 reg, u8 mask)
- {
--	int err, data;
--
--	mutex_lock(&tps->io_lock);
--
--	data = tps_65023_read(tps, reg);
--	if (data < 0) {
--		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
--		err = data;
--		goto out;
--	}
--
--	data &= ~mask;
--
--	err = tps_65023_write(tps, reg, data);
--	if (err)
--		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
--
--out:
--	mutex_unlock(&tps->io_lock);
--	return err;
--
-+	return regmap_update_bits(tps->regmap, reg, mask, 0);
- }
- 
- static int tps_65023_reg_read(struct tps_pmic *tps, u8 reg)
- {
--	int data;
-+	unsigned int val;
-+	int ret;
- 
--	mutex_lock(&tps->io_lock);
-+	ret = regmap_read(tps->regmap, reg, &val);
- 
--	data = tps_65023_read(tps, reg);
--	if (data < 0)
--		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
--
--	mutex_unlock(&tps->io_lock);
--	return data;
-+	if (ret != 0)
-+		return ret;
-+	else
-+		return val;
- }
- 
- static int tps_65023_reg_write(struct tps_pmic *tps, u8 reg, u8 val)
- {
--	int err;
--
--	mutex_lock(&tps->io_lock);
--
--	err = tps_65023_write(tps, reg, val);
--	if (err < 0)
--		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
--
--	mutex_unlock(&tps->io_lock);
--	return err;
-+	return regmap_write(tps->regmap, reg, val);
- }
- 
- static int tps65023_dcdc_is_enabled(struct regulator_dev *dev)
-@@ -463,6 +406,10 @@ static struct regulator_ops tps65023_ldo_ops = {
- 	.list_voltage = tps65023_ldo_list_voltage,
- };
- 
-+static struct regmap_config tps65023_regmap_config = {
-+	.reg_bits = 8, .val_bits = 8,
-+};
-+
- static int __devinit tps_65023_probe(struct i2c_client *client,
- 				     const struct i2c_device_id *id)
- {
-@@ -488,7 +435,13 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
- 	if (!tps)
- 		return -ENOMEM;
- 
--	mutex_init(&tps->io_lock);
-+	tps->regmap = regmap_init(&client->dev, &tps65023_regmap_config);
-+	if (IS_ERR(tps->regmap)) {
-+		error = PTR_ERR(tps->regmap);
-+		dev_err(&client->dev, "Failed to allocate register map: %d\n",
-+			error);
-+		goto fail_alloc;
-+	}
- 
- 	/* common for all regulators */
- 	tps->client = client;
-@@ -523,10 +476,12 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
- 
- 	return 0;
- 
-- fail:
-+fail:
- 	while (--i >= 0)
- 		regulator_unregister(tps->rdev[i]);
- 
-+	regmap_exit(tps->regmap);
-+fail_alloc:
- 	kfree(tps);
- 	return error;
- }
-@@ -545,6 +500,7 @@ static int __devexit tps_65023_remove(struct i2c_client *client)
- 	for (i = 0; i < TPS65023_NUM_REGULATOR; i++)
- 		regulator_unregister(tps->rdev[i]);
- 
-+	regmap_exit(tps->regmap);
- 	kfree(tps);
- 
- 	return 0;
--- 
-1.7.5.4
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
