@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163Ab1FVJRo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 05:17:44 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:19326 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398Ab1FVJRn (ORCPT
+	id S1754849Ab1FVJQc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 05:16:32 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54928 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754399Ab1FVJQa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 05:17:43 -0400
-X-AuditID: cbfee61a-b7c59ae000003b70-a2-4e01b32891d3
-Date: Wed, 22 Jun 2011 18:17:18 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH v2 1/4] Exynos4 NURI: configure regulators and PMIC
-In-reply-to: <4E0164E8.8060708@linaro.org>
-To: "'Tushar Behera'" <tushar.behera@linaro.org>, myungjoo.ham@gmail.com
-Cc: "'MyungJoo Ham'" <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
-        dg77.kim@samsung.com
-Message-id: <00bf01cc30bd$350b7fc0$9f227f40$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=UTF-8
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: AcwwjpnBQn22usCoRfOW5QU6EiJyCAALejGQ
-References: <20110620103124.GD31864@opensource.wolfsonmicro.com>
- <1308622033-2521-1-git-send-email-myungjoo.ham@samsung.com>
- <1308622033-2521-2-git-send-email-myungjoo.ham@samsung.com>
- <4E002D18.2080401@linaro.org>
- <BANLkTi=pv=y+1XC5bYEHgL1sy48JPztiOg@mail.gmail.com>
- <4E0164E8.8060708@linaro.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 22 Jun 2011 05:16:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=s8GUzjPZwOqS4w4s5QFPxsIuMf5oLE9WosIOkHxF64kZlmz13eBRWZ8qqHpqNmSTry
+         yqep2F1P73SX/uz67f9xAkFhfmqmsF5S90gbMoWHvHFc2rj6fNh+BBMryxjeww0Qiy9R
+         FCtGFp3ItlF7alUARdEZttSaXoea4iShdw/ZA=
+Date: Wed, 22 Jun 2011 10:17:27 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC] Add Arm cpu topology definition
+Message-ID: <20110622091727.GA1195@1n450.cable.virginmedia.net>
+References: <BANLkTinRGRUxKB=C_2Y2F93czWScEUo+Jw@mail.gmail.com>
+ <4DFA5C2E.40507@codeaurora.org>
+ <BANLkTi=ik=iRtDb3K__CPxSH_8GusoBHKA@mail.gmail.com>
+ <4E0100BF.6080500@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E0100BF.6080500@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tushar Behera wrote:
-> 
-> On Wednesday 22 June 2011 08:01 AM, MyungJoo Ham wrote:
-> > On Tue, Jun 21, 2011 at 2:33 PM, Tushar Behera<tushar.behera@linaro.org>
-> wrote:
-> >> On Tuesday 21 June 2011 07:37 AM, MyungJoo Ham wrote:
-> >>>
-> >>> Signed-off-by: MyungJoo Ham<myungjoo.ham@samsung.com>
-> >>> Signed-off-by: Kyungmin Park<kyungmin.park@samsung.com>
-> >>>
-> >>> --
-> >>> Changes from v1. Thanks so much for your valuable comments, Mark.
-> >>> - Removed unnecessary initialization data
-> >>> - Add __initdata where necessary
-> >>> - Corrected a regulator name for ADC
-> >>> ---
-> >>>   arch/arm/mach-exynos4/mach-nuri.c |  622
-> >>> ++++++++++++++++++++++++++++++++++++-
-> >>>   1 files changed, 621 insertions(+), 1 deletions(-)
-> >>>
-> >> Will it be possible to move PMIC specific defines to a common file and make
-> >> appropriate calls in the board-specific file?
+On Tue, Jun 21, 2011 at 01:36:15PM -0700, Stephen Boyd wrote:
+> On 06/16/2011 11:54 PM, Vincent Guittot wrote:
+> > On 16 June 2011 21:40, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> >> The ARM ARM says these fields are IMPLEMENTATION DEFINED meaning that
+> >> different vendors may attribute different meaning to these fields if
+> >> they wish. Does that mean this should be a platform_*() function?
 > >>
-> >> In that way, we can re-use this PMIC code on some other boards (e.g.
-> >> Insignal low-cost board Origen featuring Exynos4210 also features MAX8997).
-> >>
+> > The ARM ARM also provides a recommended use of the fields of this
+> > register and the TRM of each Cortex adds some details. On the cortex
+> > A9, each platform can only set the value of the Cluster ID with the
+> > CLUSTERID pins. I have tried to consolidate the value of MPIDR  across
+> > several platforms and they all match with the description.
 > >
-> > Yes, we have tried creating PMIC defines at a seperated file in our
-> > local repositories (still doing so in those repositories).
-> > However, that ended up creating multiple PMIC defines (one PMIC define
-> > file for each board); the connections between LDO# and devices are
-> > different.
-> >
-> In that case, we can first post the Origen board support and PMIC code
-> on the ML, then we would see if we can consolidate.
+> > Have you got an example of a MPIDR register which doesn't match with
+> > the implementation ?
 > 
-> That looks more logical as per Mark's suggestion also.
-> >>
+> Not that I know of. I'm more concerned with how the ARM ARM has two
+> recommended usages for these fields depending on virtualization or not.
+> I suppose we can handle that issue when it arises (or does your
+> implementation already handle that?)
 
-Hi Tushar,
+According to the ARM ARM:
 
-When you need to add similar or same functionality on your board, you can/should move it in common part.
-Maybe 'should'...basically, nobody will apply same function into both place...
+	MPIDR provides a mechanism with up to three levels of affinity
+	information, but the meaning of those levels of affinity is
+	entirely IMPLEMENTATION DEFINED.
 
-Thanks.
+So we can't really tell the meaning of the affinity bits. There are two
+recommended ways indeed (with or without virtualisation) which are not
+that different with regards to the topology (just introducing another
+level for virtual CPUs).
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+But I think a more general solution would be for the CPU topology to be
+provided via the FDT.
 
+-- 
+Catalin
