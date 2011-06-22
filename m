@@ -1,94 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758088Ab1FVOW6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 10:22:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53597 "EHLO mx1.redhat.com"
+	id S1758078Ab1FVOY0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 10:24:26 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6878 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758075Ab1FVOW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 10:22:56 -0400
-Date: Wed, 22 Jun 2011 16:22:39 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Cong Wang <amwang@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: Re: [PATCH 1/3] mm: completely disable THP by
- transparent_hugepage=never
-Message-ID: <20110622142239.GV20843@redhat.com>
-References: <4DFF7F0A.8090604@redhat.com>
- <4DFF8106.8090702@redhat.com>
- <4DFF8327.1090203@redhat.com>
- <4DFF84BB.3050209@redhat.com>
- <4DFF8848.2060802@redhat.com>
- <20110620182558.GF4749@redhat.com>
- <20110620192117.GG20843@redhat.com>
- <4E00192E.70901@redhat.com>
- <20110621144346.GQ20843@redhat.com>
- <4E0159E9.10800@redhat.com>
+	id S1757981Ab1FVOYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 10:24:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,406,1304319600"; 
+   d="scan'208";a="19286138"
+Date: Wed, 22 Jun 2011 22:24:21 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/7] writeback: introduce smoothed global dirty limit
+Message-ID: <20110622142421.GB4413@localhost>
+References: <20110619150108.691351746@intel.com>
+ <20110619150510.246140117@intel.com>
+ <20110621170444.541cb240.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4E0159E9.10800@redhat.com>
+In-Reply-To: <20110621170444.541cb240.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 10:56:41AM +0800, Cong Wang wrote:
-> 于 2011年06月21日 22:43, Andrea Arcangeli 写道:
-> > On Tue, Jun 21, 2011 at 12:08:14PM +0800, Cong Wang wrote:
-> >> The thing is that we can save ~10K by adding 3 lines of code as this
-> >> patch showed, where else in kernel can you save 10K by 3 lines of code?
-> >> (except some kfree() cases, of course) So, again, why not have it? ;)
-> >
-> > Because you could save it with a more complicated patch that doesn't
-> > cripple down functionality.
+On Wed, Jun 22, 2011 at 08:04:44AM +0800, Andrew Morton wrote:
+> On Sun, 19 Jun 2011 23:01:11 +0800
+> Wu Fengguang <fengguang.wu@intel.com> wrote:
 > 
+> > The start of a heavy weight application (ie. KVM) may instantly knock
+> > down determine_dirtyable_memory() and hence the global/bdi dirty
+> > thresholds.
+> > 
+> > So introduce global_dirty_limit for tracking the global dirty threshold
+> > with policies
+> > 
+> > - follow downwards slowly
+> > - follow up in one shot
+> > 
+> > global_dirty_limit can effectively mask out the impact of sudden drop of
+> > dirtyable memory. It will be used in the next patch for two new type of
+> > dirty limits.
+> > 
+> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > ---
+> >  include/linux/writeback.h |    2 +
+> >  mm/page-writeback.c       |   41 ++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 43 insertions(+)
+> > 
+> > --- linux-next.orig/include/linux/writeback.h	2011-06-19 22:56:18.000000000 +0800
+> > +++ linux-next/include/linux/writeback.h	2011-06-19 22:59:29.000000000 +0800
+> > @@ -88,6 +88,8 @@ static inline void laptop_sync_completio
+> >  #endif
+> >  void throttle_vm_writeout(gfp_t gfp_mask);
+> >  
+> > +extern unsigned long global_dirty_limit;
+> > +
+> >  /* These are exported to sysctl. */
+> >  extern int dirty_background_ratio;
+> >  extern unsigned long dirty_background_bytes;
+> > --- linux-next.orig/mm/page-writeback.c	2011-06-19 22:56:18.000000000 +0800
+> > +++ linux-next/mm/page-writeback.c	2011-06-19 22:59:29.000000000 +0800
+> > @@ -116,6 +116,7 @@ EXPORT_SYMBOL(laptop_mode);
+> >  
+> >  /* End of sysctl-exported parameters */
+> >  
+> > +unsigned long global_dirty_limit;
+> >  
+> >  /*
+> >   * Scale the writeback cache size proportional to the relative writeout speeds.
+> > @@ -510,6 +511,43 @@ static void bdi_update_write_bandwidth(s
+> >  	bdi->avg_write_bandwidth = avg;
+> >  }
+> >  
+> > +static void update_dirty_limit(unsigned long thresh,
+> > +				 unsigned long dirty)
+> > +{
+> > +	unsigned long limit = global_dirty_limit;
+> > +
+> > +	if (limit < thresh) {
+> > +		limit = thresh;
+> > +		goto update;
+> > +	}
+> > +
+> > +	if (limit > thresh &&
+> > +	    limit > dirty) {
+> > +		limit -= (limit - max(thresh, dirty)) >> 5;
+> > +		goto update;
+> > +	}
+> > +	return;
+> > +update:
+> > +	global_dirty_limit = limit;
+> > +}
 > 
-> Why do you prefer "more complicated" things to simple ones? ;-)
+> Are
+> you
+> using
+> a
+> 30
+> column
+> monitor
+> over
+> there?
 
-If they offer more features yes. Allowing to tune the size of the has
-will also allow to increase it, not only to decrease it. It's also not
-significantly more complicated.
+Err nope... fixed.
 
-> I realized this patch changed the original behavior of "=never",
-> thus proposed a new "=0" parameter.
 > 
-> But to be honest, "=never" should be renamed to "=disable".
-
-So in turn you're saying "=always" should be renamed to "=enabled". So
-your preference would be enabled=enabled and enabled=disabled and
-enabled=madvise? I think the current wording is nicer and breaking
-kabi just for this sounds bad.
-
-> Not only such things, the more serious thing is that you are
-> enforcing a policy to users, as long as I enable THP in Kconfig,
-> I have no way to disable it.
+> This function is just crazy.  It compares various things, applies
+> limits, churns them all together with magic constants and does it all
+> in a refreshingly documentation-free manner.
 > 
-> Why are you so sure that every user who has no chance to change
-> .config likes THP?
+> How the heck is anyone supposed to understand what you were thinking
+> when you typed it in?
 > 
-> And, what can I do if I want to prevent any process from having
-> a chance to enable THP? Because as long as THP exists in /sys,
-> any process has the right privilege can change it.
+> Please, write for an audience.
 
-You must be root to have the privilege to enable it, root also has the
-privilege to enable THP by writing in /dev/mem or by loading a kernel
-module to do it.
+Right, it's kind of playing black magics... hope the reposted patch
+make them more clear.
 
-I already told you how to save hundred kbytes of ram from you kernel
-setting dhash_entries=1 and ihash_entries=1 and how to achieve the ~8k
-ram saving in THP and KSM without crippling functionality with a patch
-that is more complex than your three liner, but not much more complex,
-and that it will _improve_ (not cripple down) functionality.
+> > +static void global_update_bandwidth(unsigned long thresh,
+> > +				    unsigned long dirty,
+> > +				    unsigned long now)
+> > +{
+> > +	static DEFINE_SPINLOCK(dirty_lock);
+> > +
+> > +	if (now - default_backing_dev_info.bw_time_stamp < MAX_PAUSE)
+> > +		return;
+> > +
+> > +	spin_lock(&dirty_lock);
+> > +	if (now - default_backing_dev_info.bw_time_stamp >= MAX_PAUSE) {
+> > +		update_dirty_limit(thresh, dirty);
+> > +		default_backing_dev_info.bw_time_stamp = now;
+> > +	}
+> > +	spin_unlock(&dirty_lock);
+> > +}
+> 
+> Why is it playing with default_backing_dev_info?  That's only there to
+> support filesystems which were too old-and-slack to implement
+> backing-devs properly and it really shouldn't exist at all.
 
-I'm also not interested into making the 512M param configurable. If
-you want to add a "=force" parameter ok but I doubt you will ever gain
-anything significant on a system with 512M of ram where each process
-will likely be smaller than 512M and 100M would get used by the
-anti-frag logic (reducing it to 400m).
+Good point!  So I replaced default_backing_dev_info.bw_time_stamp with
+a static local variable.
 
-I suggest just cleaning up the printk and if you want you can add a
-__setup("thp_mm_slots_hash_heads=", set_thp_mm_slots_hash_heads) but
-no other change needed.
+Thanks,
+Fengguang
