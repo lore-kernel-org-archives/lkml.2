@@ -1,171 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab1FVIx2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 04:53:28 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:57789 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753364Ab1FVIx1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 04:53:27 -0400
+	id S1754367Ab1FVJEZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 05:04:25 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:37903 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751963Ab1FVJEX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 05:04:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=qQFgPezhuwPGZ5/3I9zM4Up/SvcQdQ8WnOXzck1OJjQjG1oGl2P/t0Zb8cBxIQtYQ3
+         6Lu6yDtIzSlZ32wYKKxivBkqtmNdeyIwWMxt+0n97XSWs8EyKMMJLDLdMDAks3Lh04Xz
+         AnwXL3fnK5HQ+2apdSZY73RqeFT8YOz6ICZao=
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=TY3wrH2GH1B2p+L506aUKOjg9uA@mail.gmail.com>
-References: <1308699521-20556-1-git-send-email-per.forlin@linaro.org>
-	<1308699521-20556-2-git-send-email-per.forlin@linaro.org>
-	<BANLkTikhZRb5GWFvTVG0bFjD6rAyJPka1w@mail.gmail.com>
-	<BANLkTi=TY3wrH2GH1B2p+L506aUKOjg9uA@mail.gmail.com>
-Date: Wed, 22 Jun 2011 14:23:24 +0530
-Message-ID: <BANLkTinW1Wrvq6ma6L7he5iCtVCeofL-cg@mail.gmail.com>
-Subject: Re: [PATCH v7 01/11] mmc: add non-blocking mmc request function
-From: "S, Venkatraman" <svenkatr@ti.com>
-To: Per Forlin <per.forlin@linaro.org>
-Cc: linaro-dev <linaro-dev@lists.linaro.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <cjb@laptop.org>
+In-Reply-To: <1308722037-6966-4-git-send-email-sbkim73@samsung.com>
+References: <1308722037-6966-1-git-send-email-sbkim73@samsung.com>
+	<1308722037-6966-4-git-send-email-sbkim73@samsung.com>
+Date: Wed, 22 Jun 2011 09:56:06 +0100
+Message-ID: <BANLkTi=7ghz2QuZrEcEskQkNq0Tks8GbeA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] mfd: Add I2C control support for S5M8751
+From: Maxin B John <maxin.john@gmail.com>
+To: Sangbeom Kim <sbkim73@samsung.com>
+Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 2:15 PM, Per Forlin <per.forlin@linaro.org> wrote:
-> On 22 June 2011 09:42, Venkatraman S <svenkatr@ti.com> wrote:
->> On Wed, Jun 22, 2011 at 5:08 AM, Per Forlin <per.forlin@linaro.org> wrote:
->>> Previously there has only been one function mmc_wait_for_req()
->>> to start and wait for a request. This patch adds
->>>  * mmc_start_req() - starts a request wihtout waiting
->>>   If there is on ongoing request wait for completion
->>>   of that request and start the new one and return.
->>>   Does not wait for the new command to complete.
->>>
->>> This patch also adds new function members in struct mmc_host_ops
->>> only called from core.c
->>>  * pre_req - asks the host driver to prepare for the next job
->>>  * post_req - asks the host driver to clean up after a completed job
->>>
->>> The intention is to use pre_req() and post_req() to do cache maintenance
->>> while a request is active. pre_req() can be called while a request is active
->>> to minimize latency to start next job. post_req() can be used after the next
->>> job is started to clean up the request. This will minimize the host driver
->>> request end latency. post_req() is typically used before ending the block
->>> request and handing over the buffer to the block layer.
->>>
->>> Add a host-private member in mmc_data to be used by
->>> pre_req to mark the data. The host driver will then
->>> check this mark to see if the data is prepared or not.
->>>
->>> Signed-off-by: Per Forlin <per.forlin@linaro.org>
->>> ---
->>>  drivers/mmc/core/core.c  |  110 +++++++++++++++++++++++++++++++++++++++++----
->>>  include/linux/mmc/core.h |    6 ++-
->>>  include/linux/mmc/host.h |   21 +++++++++
->>>  3 files changed, 126 insertions(+), 11 deletions(-)
->>>
->>> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
->>> index 68091dd..c82fa3b 100644
->>> --- a/drivers/mmc/core/core.c
->>> +++ b/drivers/mmc/core/core.c
->>> @@ -198,9 +198,106 @@ mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
->>>
->>>  static void mmc_wait_done(struct mmc_request *mrq)
->>>  {
->>> -       complete(mrq->done_data);
->>> +       complete(&mrq->completion);
->>>  }
->>>
->>> +static void __mmc_start_req(struct mmc_host *host, struct mmc_request *mrq)
->>> +{
->>> +       init_completion(&mrq->completion);
->>> +       mrq->done = mmc_wait_done;
->>> +       mmc_start_request(host, mrq);
->>> +}
->>> +
->>> +static void mmc_wait_for_req_done(struct mmc_host *host,
->>> +                                 struct mmc_request *mrq)
->>> +{
->>> +       wait_for_completion(&mrq->completion);
->>> +}
->>> +
->>> +/**
->>> + *     mmc_pre_req - Prepare for a new request
->>> + *     @host: MMC host to prepare command
->>> + *     @mrq: MMC request to prepare for
->>> + *     @is_first_req: true if there is no previous started request
->>> + *                     that may run in parellel to this call, otherwise false
->>> + *
->>> + *     mmc_pre_req() is called in prior to mmc_start_req() to let
->>> + *     host prepare for the new request. Preparation of a request may be
->>> + *     performed while another request is running on the host.
->>> + */
->>> +static void mmc_pre_req(struct mmc_host *host, struct mmc_request *mrq,
->>> +                bool is_first_req)
->>> +{
->>> +       if (host->ops->pre_req)
->>> +               host->ops->pre_req(host, mrq, is_first_req);
->>> +}
->>> +
->>> +/**
->>> + *     mmc_post_req - Post process a completed request
->>> + *     @host: MMC host to post process command
->>> + *     @mrq: MMC request to post process for
->>> + *     @err: Error, if non zero, clean up any resources made in pre_req
->>> + *
->>> + *     Let the host post process a completed request. Post processing of
->>> + *     a request may be performed while another reuqest is running.
->>> + */
->>> +static void mmc_post_req(struct mmc_host *host, struct mmc_request *mrq,
->>> +                        int err)
->>> +{
->>> +       if (host->ops->post_req)
->>> +               host->ops->post_req(host, mrq, err);
->>> +}
->>> +
->>> +/**
->>> + *     mmc_start_req - start a non-blocking request
->>> + *     @host: MMC host to start command
->>> + *     @areq: async request to start
->>> + *     @error: out parameter returns 0 for success, otherwise non zero
->>> + *
->>> + *     Start a new MMC custom command request for a host.
->>> + *     If there is on ongoing async request wait for completion
->>> + *     of that request and start the new one and return.
->>> + *     Does not wait for the new request to complete.
->>> + *
->>> + *     Returns the completed async request, NULL in case of none completed.
->>> + */
->>> +struct mmc_async_req *mmc_start_req(struct mmc_host *host,
->>> +                                   struct mmc_async_req *areq, int *error)
->>> +{
->>> +       int err = 0;
->>> +       struct mmc_async_req *data = host->areq;
->>> +
->>> +       /* Prepare a new request */
->>> +       if (areq)
->>> +               mmc_pre_req(host, areq->mrq, !host->areq);
->>> +
->>> +       if (host->areq) {
->>> +               mmc_wait_for_req_done(host, host->areq->mrq);
->>> +               err = host->areq->err_check(host->card, host->areq);
->>> +               if (err) {
->>> +                       mmc_post_req(host, host->areq->mrq, 0);
->>> +                       if (areq)
->>> +                               mmc_post_req(host, areq->mrq, -EINVAL);
->>> +
->>> +                       host->areq = NULL;
->>> +                       goto out;
->> In this sequence, would the return value (data) have the previous areq ?
->> Is that intentional - doesn't seem to fit with the description.
-> It will return the data that belongs to the completed request. The
-> completed request will be the same as the previous request. The
-> mmc_start_req will start a new request and return data for the
-> completed request, if any.
+Hi,
+
+On Wed, Jun 22, 2011 at 6:53 AM, Sangbeom Kim <sbkim73@samsung.com> wrote:
+> Implement the I2C control interface for the S5M8751.
 >
+> Signed-off-by: Sangbeom Kim <sbkim73@samsung.com>
 
-I meant that in case of an error (err !=0), data is already assigned
-to host->areq
-and goto out returns 'data'. So my question was 'Does returning a non-null
-pointer for a unsuccessful request doesn't fit with the description, does it ?'
+> ---
+>  drivers/mfd/Kconfig       |    9 +++
+>  drivers/mfd/Makefile      |    2 +
+>  drivers/mfd/s5m8751-i2c.c |  141 +++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 152 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/mfd/s5m8751-i2c.c
+>
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index 85c91ac..4a8468c 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -388,6 +388,15 @@ config MFD_WM831X_SPI
+>  config MFD_S5M8751
+>        tristate
+>
+> +config MFD_S5M8751_I2C
+> +       tristate "Support Samsung S5M8751 PMIC/Audio DAC with I2C"
+> +       select MFD_S5M8751
+> +       select MFD_CORE
+> +       depends on I2C
+> +       help
+> +         S5M8751 is an advanced power management with AUDIO DAC. This option
+> +         enables chip support for the S5M8751 with I2C as the control interface.
+> +
+>  config MFD_WM8350
+>        bool
+>        depends on GENERIC_HARDIRQS
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index 27f99bb..b94476e 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -96,3 +96,5 @@ obj-$(CONFIG_MFD_PM8XXX_IRQ)  += pm8xxx-irq.o
+>  obj-$(CONFIG_MFD_TPS65910)     += tps65910.o tps65910-irq.o
+>  s5m8751-objs                   += s5m8751-core.o
+>  obj-$(CONFIG_MFD_S5M8751)      += s5m8751.o
+> +obj-$(CONFIG_MFD_S5M8751_I2C)  += s5m8751-i2c.o
+> +
+> diff --git a/drivers/mfd/s5m8751-i2c.c b/drivers/mfd/s5m8751-i2c.c
+> new file mode 100644
+> index 0000000..4ca680b
+> --- /dev/null
+> +++ b/drivers/mfd/s5m8751-i2c.c
+> @@ -0,0 +1,141 @@
+> +/* linux/drivers/mfd/s5m8751-i2s.c
+> + *
+> + * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
+> + *             http://www.samsung.com
+> + *
+> + * I2C driver for S5M8751
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> +*/
+> +
+> +#include <linux/module.h>
+> +#include <linux/moduleparam.h>
+> +#include <linux/init.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/i2c.h>
+> +#include <linux/mfd/s5m8751.h>
+> +#include <linux/slab.h>
+> +
+> +static int s5m8751_i2c_read_device(struct s5m8751 *s5m8751, uint8_t reg,
+> +                                       uint8_t *val)
+> +{
+> +       int ret;
+> +       ret = i2c_smbus_read_byte_data(s5m8751->i2c_client, reg);
+> +       if (ret < 0) {
+> +               dev_err(s5m8751->dev, "failed reading at 0x%02x\n", reg);
+> +               return ret;
+> +       }
+> +       *val = (uint8_t)ret;
+> +       return 0;
+> +}
+> +
+> +static int s5m8751_i2c_write_device(struct s5m8751 *s5m8751, uint8_t reg,
+> +                                       uint8_t val)
+> +{
+> +       int ret;
+> +       ret = i2c_smbus_write_byte_data(s5m8751->i2c_client, reg, val);
+> +       if (ret < 0) {
+> +               dev_err(s5m8751->dev, "failed writing 0x%02x to 0x%02x\n",
+> +                               val, reg);
+> +               return ret;
+> +       }
+> +       return 0;
+> +}
+> +
+> +static int s5m8751_i2c_write_block_device(struct s5m8751 *s5m8751, uint8_t reg,
+> +                                       int len, uint8_t *val)
+> +{
+> +       int ret;
+> +       ret = i2c_smbus_write_i2c_block_data(s5m8751->i2c_client, reg, len,
+> +                                                                       val);
+> +       if (ret < 0) {
+> +               dev_err(s5m8751->dev, "failed writings to 0x%02x\n", reg);
+> +               return ret;
+> +       }
+> +       return 0;
+> +}
+> +
+> +static int s5m8751_i2c_read_block_device(struct s5m8751 *s5m8751, uint8_t reg,
+> +                                       int len, uint8_t *val)
+> +{
+> +       int ret;
+> +       ret = i2c_smbus_read_i2c_block_data(s5m8751->i2c_client, reg, len, val);
+> +       if (ret < 0) {
+> +               dev_err(s5m8751->dev, "failed reading from 0x%02x\n", reg);
+> +               return ret;
+> +       }
+> +       return 0;
+> +}
+> +
+> +static int s5m8751_probe(struct i2c_client *i2c,
+> +                               const struct i2c_device_id *id)
+> +{
+> +       struct s5m8751 *s5m8751;
+> +       int ret = 0;
+> +
+> +       s5m8751 = kzalloc(sizeof(struct s5m8751), GFP_KERNEL);
+> +       if (s5m8751 == NULL)
+> +               goto err;
 
-Regards,
-Venkat.
+Just my 2 cents. I think we should return -ENOMEM here.
+
+> +
+> +       i2c_set_clientdata(i2c, s5m8751);
+> +
+> +       s5m8751->dev = &i2c->dev;
+> +       s5m8751->i2c_client = i2c;
+> +       s5m8751->read_dev = s5m8751_i2c_read_device;
+> +       s5m8751->write_dev = s5m8751_i2c_write_device;
+> +       s5m8751->read_block_dev = s5m8751_i2c_read_block_device;
+> +       s5m8751->write_block_dev = s5m8751_i2c_write_block_device;
+> +
+> +       ret = s5m8751_device_init(s5m8751, i2c->irq, i2c->dev.platform_data);
+> +       if (ret < 0)
+> +               goto err;
+> +
+> +       return 0;
+> +
+> +err:
+> +       return ret;
+> +}
+> +
+> +static int s5m8751_remove(struct i2c_client *i2c)
+> +{
+> +       struct s5m8751 *s5m8751 = i2c_get_clientdata(i2c);
+> +
+> +       s5m8751_device_exit(s5m8751);
+
+I think we should free the s5m8751 here to avoid memory leaks.
+
+> +
+> +       return 0;
+> +}
+> +
+> +static const struct i2c_device_id s5m8751_i2c_id[] = {
+> +       { "s5m8751", 0 },
+> +       { }
+> +};
+> +MODULE_DEVICE_TABLE(i2c, s5m8751_i2c_id);
+> +
+> +static struct i2c_driver s5m8751_driver = {
+> +       .driver = {
+> +               .name   = "s5m8751",
+> +               .owner  = THIS_MODULE,
+> +       },
+> +       .probe          = s5m8751_probe,
+> +       .remove         = s5m8751_remove,
+> +       .id_table       = s5m8751_i2c_id,
+> +};
+> +
+> +static int __init s5m8751_init(void)
+> +{
+> +       return i2c_add_driver(&s5m8751_driver);
+> +}
+> +module_init(s5m8751_init);
+> +
+> +static void __exit s5m8751_exit(void)
+> +{
+> +       i2c_del_driver(&s5m8751_driver);
+> +}
+> +module_exit(s5m8751_exit);
+> +
+> +MODULE_DESCRIPTION("I2C Driver for Samsung S5M8751");
+> +MODULE_AUTHOR("Sangbeom Kim <sbkim73@samsung.com>");
+> +MODULE_LICENSE("GPL");
+> --
+> 1.7.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
