@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757908Ab1FVCbj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 22:31:39 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41881 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757845Ab1FVCbh convert rfc822-to-8bit (ORCPT
+	id S1757917Ab1FVCgq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 22:36:46 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:58846 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757784Ab1FVCgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 22:31:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=js9jhhGC1A8kMwNgX4kjFCkezvTeR49h0N5Ph9iqo3E9SFvZ3vY8LThLsrClRXxLIg
-         sApmwqQCtOkRCmbd5Z6V1aNrVetEA+fl7TwRRMVxZ8a3vu8YJahaMjFcrQjN3vRpy7bS
-         8Jse+bfRoZkPnKfNfQnWZNaFoenB16P4+7XGw=
-MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <4E002D18.2080401@linaro.org>
-References: <20110620103124.GD31864@opensource.wolfsonmicro.com>
-	<1308622033-2521-1-git-send-email-myungjoo.ham@samsung.com>
-	<1308622033-2521-2-git-send-email-myungjoo.ham@samsung.com>
-	<4E002D18.2080401@linaro.org>
-Date: Wed, 22 Jun 2011 11:31:35 +0900
-X-Google-Sender-Auth: wS7BHQWHdqV775CSAPdfn8f8oLM
-Message-ID: <BANLkTi=pv=y+1XC5bYEHgL1sy48JPztiOg@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] Exynos4 NURI: configure regulators and PMIC
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, dg77.kim@samsung.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 21 Jun 2011 22:36:45 -0400
+Date: Tue, 21 Jun 2011 19:36:41 -0700 (PDT)
+Message-Id: <20110621.193641.1605224831578508501.davem@davemloft.net>
+To: greg@kroah.com
+CC: linux-kernel@vger.kernel.org
+Subject: brcm80211 build busted on big-endian
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 21 Jun 2011 19:36:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 2:33 PM, Tushar Behera <tushar.behera@linaro.org> wrote:
-> On Tuesday 21 June 2011 07:37 AM, MyungJoo Ham wrote:
->>
->> Signed-off-by: MyungJoo Ham<myungjoo.ham@samsung.com>
->> Signed-off-by: Kyungmin Park<kyungmin.park@samsung.com>
->>
->> --
->> Changes from v1. Thanks so much for your valuable comments, Mark.
->> - Removed unnecessary initialization data
->> - Add __initdata where necessary
->> - Corrected a regulator name for ADC
->> ---
->>  arch/arm/mach-exynos4/mach-nuri.c |  622
->> ++++++++++++++++++++++++++++++++++++-
->>  1 files changed, 621 insertions(+), 1 deletions(-)
->>
-> Will it be possible to move PMIC specific defines to a common file and make
-> appropriate calls in the board-specific file?
->
-> In that way, we can re-use this PMIC code on some other boards (e.g.
-> Insignal low-cost board Origen featuring Exynos4210 also features MAX8997).
->
 
-Yes, we have tried creating PMIC defines at a seperated file in our
-local repositories (still doing so in those repositories).
-However, that ended up creating multiple PMIC defines (one PMIC define
-file for each board); the connections between LDO# and devices are
-different.
+It tries to do "xor" operations on pointers because of how the
+R_REG() and W_REG() macros are defined.
 
->
-> --
-> Tushar Behera
->
+====================
+#define R_REG(r) (\
+        SELECT_BUS_READ( \
+                ({ \
+                        __typeof(*(r)) __osl_v; \
+				       		switch (sizeof(*(r))) { \
+                        case sizeof(u8): \
+                                __osl_v = \
+                                readb((volatile u8*)((r)^3)); \
+                                break; \
+                        case sizeof(u16): \
+                                __osl_v = \
+                                readw((volatile u16*)((r)^2)); \
+                                break; \
+                        case sizeof(u32): \
+                                __osl_v = readl((volatile u32*)(r)); \
+                                break; \
+                        } \
+                        __osl_v; \
+                }), \
+                OSL_READ_REG(r)) \
+)
+====================
 
+This driver is a crap fest of volatile pointers and not-compile-tested
+code.
 
--- 
-MyungJoo Ham (함명주), Ph.D.
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: 82-10-6714-2858
+I think turning on staging like this should have been done in the
+-next tree so that things like this could be shaken out before it hit
+Linus's tree.  Very few people were doing the necessary forced enable
+of this stuff.
