@@ -1,100 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758362Ab1FVSdf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 14:33:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55694 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757942Ab1FVSde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 14:33:34 -0400
-Date: Wed, 22 Jun 2011 20:33:31 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: Re: [PATCH 1/7] Fix mem_cgroup_hierarchical_reclaim() to do stable
- hierarchy walk.
-Message-ID: <20110622183249.GA27191@tiehlicka.suse.cz>
-References: <20110616124730.d6960b8b.kamezawa.hiroyu@jp.fujitsu.com>
- <20110616125141.5fbd230f.kamezawa.hiroyu@jp.fujitsu.com>
- <20110622151500.GF14343@tiehlicka.suse.cz>
+	id S1758368Ab1FVSiC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 14:38:02 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52032 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756602Ab1FVSiA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 14:38:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=W0QA/zWMPbTpRPXvefn92T6N2iMpKI/JN9VxjnZlyQbO4cJpsvjdXPMhI5usyFlev5
+         SEYkCo9a3ZWEVfKqdDkwJQjHVOUJzp8mrqSt49+dyz4tFiW3dCu3NNpof0psTMMoSv9n
+         8imNRIuJro4y8vrexdG1GdYFH6QFt3G058+GA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110622151500.GF14343@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1308767449.14997.10.camel@lade.trondhjem.org>
+References: <BANLkTik9J3qcdPcp+DdfRq9kj+DMKnjKZw@mail.gmail.com>
+	<1308767449.14997.10.camel@lade.trondhjem.org>
+Date: Wed, 22 Jun 2011 11:37:59 -0700
+Message-ID: <BANLkTimyCA0QyF1TNc0SU2GYobOt-sAsNQ@mail.gmail.com>
+Subject: Re: Issue with Race Condition on NFS4 with KRB
+From: Joshua Scoggins <theoretically.x64@gmail.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 22-06-11 17:15:00, Michal Hocko wrote:
-> On Thu 16-06-11 12:51:41, KAMEZAWA Hiroyuki wrote:
-> [...]
-> > @@ -1667,41 +1668,28 @@ static int mem_cgroup_hierarchical_recla
-> >  	if (!check_soft && root_mem->memsw_is_minimum)
-> >  		noswap = true;
-> >  
-> > -	while (1) {
-> > +again:
-> > +	if (!shrink) {
-> > +		visit = 0;
-> > +		for_each_mem_cgroup_tree(victim, root_mem)
-> > +			visit++;
-> > +	} else {
-> > +		/*
-> > +		 * At shrinking, we check the usage again in caller side.
-> > +		 * so, visit children one by one.
-> > +		 */
-> > +		visit = 1;
-> > +	}
-> > +	/*
-> > +	 * We are not draining per cpu cached charges during soft limit reclaim
-> > +	 * because global reclaim doesn't care about charges. It tries to free
-> > +	 * some memory and  charges will not give any.
-> > +	 */
-> > +	if (!check_soft)
-> > +		drain_all_stock_async(root_mem);
-> > +
-> > +	while (visit--) {
-> 
-> This is racy, isn't it? What prevents some groups to disapear in the
-> meantime? We would reclaim from those that are left more that we want.
-> 
-> Why cannot we simply do something like (totally untested):
-> 
-> Index: linus_tree/mm/memcontrol.c
-> ===================================================================
-> --- linus_tree.orig/mm/memcontrol.c	2011-06-22 17:11:54.000000000 +0200
-> +++ linus_tree/mm/memcontrol.c	2011-06-22 17:13:05.000000000 +0200
-> @@ -1652,7 +1652,7 @@ static int mem_cgroup_hierarchical_recla
->  						unsigned long reclaim_options,
->  						unsigned long *total_scanned)
->  {
-> -	struct mem_cgroup *victim;
-> +	struct mem_cgroup *victim, *first_victim = NULL;
->  	int ret, total = 0;
->  	int loop = 0;
->  	bool noswap = reclaim_options & MEM_CGROUP_RECLAIM_NOSWAP;
-> @@ -1669,6 +1669,11 @@ static int mem_cgroup_hierarchical_recla
->  
->  	while (1) {
->  		victim = mem_cgroup_select_victim(root_mem);
-> +		if (!first_victim)
-> +			first_victim = victim;
-> +		else if (first_victim == victim)
-> +			break;
+Here are our mount options from auto.master
 
-this will obviously need css_get and css_put to make sure that the group
-doesn't disappear in the meantime.
+/user -fstype=nfs4,sec=krb5p,noresvport,noatime
+/group -fstype=nfs4,sec=krb5p,noresvport,noatime
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+As for the server, we don't control it. It's actually run by the
+campus wide it department we are just lab support for CS. I can
+potentially get the server information but I need to know what you want
+specifically as they're pretty paranoid about giving out information about
+their servers.
+
+Joshua Scoggins
+
+On Wed, Jun 22, 2011 at 11:30 AM, Trond Myklebust
+<Trond.Myklebust@netapp.com> wrote:
+> On Wed, 2011-06-22 at 11:21 -0700, Joshua Scoggins wrote:
+>> Hello,
+>>
+>> We are trying to update our linux images in our CS lab and have it a
+>> bit of an issue. We are
+>> using nfs to load user home folder. While testing the new image we
+>> found that the nfs4 module will
+>>  crash when using firefox 3.6.17 for an extended period of time. Some
+>> research via google yielded that
+>> it's a potential race condition specific to nfs with krb auth with
+>> newer kernels. Our old image doesn't have
+>> this issue and it seems that its due to it running a far older kernel version.
+>>
+>> We have two images and both are having this problem. One is running
+>> 2.6.39 and the other is 2.6.38.
+>> Here is what dmesg spit out from the machine running 2.6.39 on one occasion:
+>>
+>> [  678.632061] ------------[ cut here ]------------
+>> [  678.632068] WARNING: at net/sunrpc/clnt.c:1567 call_decode+0xb2/0x69c()
+>> [  678.632070] Hardware name: OptiPlex 755
+>> [  678.632072] Modules linked in: nvidia(P) scsi_wait_scan
+>> [  678.632078] Pid: 3882, comm: kworker/0:2 Tainted: P
+>> 2.6.39-gentoo-r1 #1
+>> [  678.632080] Call Trace:
+>> [  678.632086]  [<ffffffff81035b20>] warn_slowpath_common+0x80/0x98
+>> [  678.632091]  [<ffffffff8117231e>] ? nfs4_xdr_dec_readdir+0xba/0xba
+>> [  678.632094]  [<ffffffff81035b4d>] warn_slowpath_null+0x15/0x17
+>> [  678.632097]  [<ffffffff81426f48>] call_decode+0xb2/0x69c
+>> [  678.632101]  [<ffffffff8142d2b5>] __rpc_execute+0x78/0x24b
+>> [  678.632104]  [<ffffffff8142d4c9>] ? rpc_execute+0x41/0x41
+>> [  678.632107]  [<ffffffff8142d4d9>] rpc_async_schedule+0x10/0x12
+>> [  678.632111]  [<ffffffff8104a49d>] process_one_work+0x1d9/0x2e7
+>> [  678.632114]  [<ffffffff8104c402>] worker_thread+0x133/0x24f
+>> [  678.632118]  [<ffffffff8104c2cf>] ? manage_workers+0x18d/0x18d
+>> [  678.632121]  [<ffffffff8104f6a0>] kthread+0x7d/0x85
+>> [  678.632125]  [<ffffffff8145e314>] kernel_thread_helper+0x4/0x10
+>> [  678.632128]  [<ffffffff8104f623>] ? kthread_worker_fn+0x13a/0x13a
+>> [  678.632131]  [<ffffffff8145e310>] ? gs_change+0xb/0xb
+>> [  678.632133] ---[ end trace 6bfae002a63e020e ]---
+>>
+>> Is there some sort of work around?
+>
+> Cced the linux-nfs mailing list.
+>
+> The above warning is not specific to krb5, but indicates a likely race
+> between replies after a resend of the RPC call.
+>
+> Can you please tell us what your mount options are, and also tell us a
+> bit more about what kind of server you are running against?
+>
+> Trond
+> --
+> Trond Myklebust
+> Linux NFS client maintainer
+>
+> NetApp
+> Trond.Myklebust@netapp.com
+> www.netapp.com
+>
+>
