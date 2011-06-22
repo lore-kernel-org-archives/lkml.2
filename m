@@ -1,39 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757930Ab1FVDNs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 23:13:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50680 "EHLO mx1.redhat.com"
+	id S1757943Ab1FVDQM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 23:16:12 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:35969 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757504Ab1FVDNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 23:13:48 -0400
-Message-ID: <4E015DCA.8040204@redhat.com>
-Date: Wed, 22 Jun 2011 11:13:14 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org
-Subject: Re: [PATCH 4/4] mm: introduce no_ksm to disable totally KSM
-References: <1308643849-3325-1-git-send-email-amwang@redhat.com> <1308643849-3325-4-git-send-email-amwang@redhat.com> <20110621133236.GP20843@redhat.com>
-In-Reply-To: <20110621133236.GP20843@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1757714Ab1FVDQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 23:16:11 -0400
+Date: Wed, 22 Jun 2011 13:16:00 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org
+Subject: Re: comedi doesn't build on several architectures
+Message-Id: <20110622131600.cd05d33a.sfr@canb.auug.org.au>
+In-Reply-To: <20110621.194925.1313933193955144936.davem@davemloft.net>
+References: <20110621.194925.1313933193955144936.davem@davemloft.net>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__22_Jun_2011_13_16_00_+1000_q2Fuk.y4+kyRcewI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年06月21日 21:32, Andrea Arcangeli 写道:
-> On Tue, Jun 21, 2011 at 04:10:45PM +0800, Amerigo Wang wrote:
->> Introduce a new kernel parameter "no_ksm" to totally disable KSM.
+--Signature=_Wed__22_Jun_2011_13_16_00_+1000_q2Fuk.y4+kyRcewI
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Dave,
+
+On Tue, 21 Jun 2011 19:49:25 -0700 (PDT) David Miller <davem@davemloft.net>=
+ wrote:
 >
-> Here as well this is the wrong approach. If you want to save memory,
-> you should make ksmd quit when run=0 and start only when setting
-> ksm/run=1. And move the daemon hashes and slabs initializations to the
-> ksmd daemon start. Not registering in sysfs and crippling down the
-> feature despite you loaded the proper .text into memory isn't good.
+> It depends upon PAGE_KERNEL_NOCACHE which only a handful of
+> platforms define.
+>=20
+> Really, enabling staging in Linus's tree with all this build fallout
+> was not the wisest.  It's blowing up all of my allmodconfig test
+> builds now.
+>=20
+> Stick it to -next first next time.
 
-1. Not only about saving memory, as I explained in other thread.
+It was (briefly :-() and I complained about build breakages.  There are
+still some (as you have seen).  And lots of new warnings (which I am
+ignoring mostly because there are so many warnings anyway).
 
-2. Recompiling kernel is not always acceptable, as I replied in other thread.
+See msgid <20110609172745.dfd3a298.sfr@canb.auug.org.au> on lkml from Jun 9.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__22_Jun_2011_13_16_00_+1000_q2Fuk.y4+kyRcewI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOAV5wAAoJEDMEi1NhKgbsX+gH/Rv5XOX6dw+iudy0RbZm87O1
+gpI3rV0H9vcTgKzUtL2LOt/WmZOxgLTKBfZAjJY5y4ZHQ6v2/SzZxr2yFjj2JVFS
+foM2ysv/iI+tMeEbpHnQmtap+wboajuUCJ+cNVPObyd59X+PvZsdMAd995gXu4YV
+QAlnofRLOnXTazOxiRJbmq2q0YvhcbGJL7AJfVuS+DvpB8M8rldaSVvB5aPAKzt5
+ohjRYrvofzh8WffY7TliIjACcEc/f31CQZngAA6frTrzkgHQhBbvLjD4qI0845hB
+jTeQpA0Y6MN9C1Mp1q3p8RWeBjP2x3ri66E4RZgK1H9IGM78UOE0Pq4djGZfblU=
+=jANZ
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__22_Jun_2011_13_16_00_+1000_q2Fuk.y4+kyRcewI--
