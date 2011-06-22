@@ -1,69 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222Ab1FVIkY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 04:40:24 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53373 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754184Ab1FVIkV (ORCPT
+	id S1753823Ab1FVIpU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 04:45:20 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:45460 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751398Ab1FVIpR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 04:40:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=MTmwftLuWhuWp9Hz/CgXXnhr6FIbQDwzarURU8SF/3dpCODkWPUkbNRh9B+iC9bTIK
-         WKcbxKIIFDaeVBRJmo8zFtXartXLgpheQAE4Ig3C3smsHPBCyXpz4++i9EUgo8lV28l6
-         NoppagDD9FzRgMfbD7QmpwaswPrk38PZdMzyo=
-Subject: Re: [PATCH 1/3] drivers:rtl8187se:remove the use of obsolete
- create_workqueue in ieee80211_softmac.c
-From: Wanlong Gao <wanlong.gao@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Stefan Weil <weil@mail.berlios.de>,
-        Xiaochen Wang <wangxiaochen0@gmail.com>,
-        Ilia Mirkin <imirkin@alum.mit.edu>, Dan Carpenter <error27@gmail.com>,
-        David Chosrova <dada2372@gmail.com>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Ben Hutchings <ben@decadent.org.uk>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1308478318-8462-1-git-send-email-wanlong.gao@gmail.com>
-References: <1308478318-8462-1-git-send-email-wanlong.gao@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Jun 2011 16:40:01 +0800
-Message-ID: <1308732001.2198.0.camel@Tux>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Wed, 22 Jun 2011 04:45:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <BANLkTikhZRb5GWFvTVG0bFjD6rAyJPka1w@mail.gmail.com>
+References: <1308699521-20556-1-git-send-email-per.forlin@linaro.org>
+	<1308699521-20556-2-git-send-email-per.forlin@linaro.org>
+	<BANLkTikhZRb5GWFvTVG0bFjD6rAyJPka1w@mail.gmail.com>
+Date: Wed, 22 Jun 2011 10:45:16 +0200
+Message-ID: <BANLkTi=TY3wrH2GH1B2p+L506aUKOjg9uA@mail.gmail.com>
+Subject: Re: [PATCH v7 01/11] mmc: add non-blocking mmc request function
+From: Per Forlin <per.forlin@linaro.org>
+To: Venkatraman S <svenkatr@ti.com>
+Cc: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On æ—¥, 2011-06-19 at 18:11 +0800, Wanlong Gao wrote:
-> Remove the use of obsolete create_workqueue(name, 0) in
-> ieee80211_softmac.c, since the create_workqueue interface has changed.
-> 
-> Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
-> ---
->  .../rtl8187se/ieee80211/ieee80211_softmac.c        |    5 +----
->  1 files changed, 1 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
-> index 736a140..8925989 100644
-> --- a/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
-> +++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
-> @@ -2568,11 +2568,8 @@ void ieee80211_softmac_init(struct ieee80211_device *ieee)
->  	ieee->beacon_timer.data = (unsigned long) ieee;
->  	ieee->beacon_timer.function = ieee80211_send_beacon_cb;
->  
-> -#ifdef PF_SYNCTHREAD
-> -	ieee->wq = create_workqueue(DRV_NAME,0);
-> -#else
->  	ieee->wq = create_workqueue(DRV_NAME);
-> -#endif
-> +
->  	INIT_DELAYED_WORK(&ieee->start_ibss_wq,(void*) ieee80211_start_ibss_wq);
->  	INIT_WORK(&ieee->associate_complete_wq,(void*) ieee80211_associate_complete_wq);
->  	INIT_WORK(&ieee->associate_procedure_wq,(void*) ieee80211_associate_procedure_wq);
-Any comments?
+On 22 June 2011 09:42, Venkatraman S <svenkatr@ti.com> wrote:
+> On Wed, Jun 22, 2011 at 5:08 AM, Per Forlin <per.forlin@linaro.org> wrote:
+>> Previously there has only been one function mmc_wait_for_req()
+>> to start and wait for a request. This patch adds
+>>  * mmc_start_req() - starts a request wihtout waiting
+>>   If there is on ongoing request wait for completion
+>>   of that request and start the new one and return.
+>>   Does not wait for the new command to complete.
+>>
+>> This patch also adds new function members in struct mmc_host_ops
+>> only called from core.c
+>>  * pre_req - asks the host driver to prepare for the next job
+>>  * post_req - asks the host driver to clean up after a completed job
+>>
+>> The intention is to use pre_req() and post_req() to do cache maintenance
+>> while a request is active. pre_req() can be called while a request is active
+>> to minimize latency to start next job. post_req() can be used after the next
+>> job is started to clean up the request. This will minimize the host driver
+>> request end latency. post_req() is typically used before ending the block
+>> request and handing over the buffer to the block layer.
+>>
+>> Add a host-private member in mmc_data to be used by
+>> pre_req to mark the data. The host driver will then
+>> check this mark to see if the data is prepared or not.
+>>
+>> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+>> ---
+>>  drivers/mmc/core/core.c  |  110 +++++++++++++++++++++++++++++++++++++++++----
+>>  include/linux/mmc/core.h |    6 ++-
+>>  include/linux/mmc/host.h |   21 +++++++++
+>>  3 files changed, 126 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+>> index 68091dd..c82fa3b 100644
+>> --- a/drivers/mmc/core/core.c
+>> +++ b/drivers/mmc/core/core.c
+>> @@ -198,9 +198,106 @@ mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
+>>
+>>  static void mmc_wait_done(struct mmc_request *mrq)
+>>  {
+>> -       complete(mrq->done_data);
+>> +       complete(&mrq->completion);
+>>  }
+>>
+>> +static void __mmc_start_req(struct mmc_host *host, struct mmc_request *mrq)
+>> +{
+>> +       init_completion(&mrq->completion);
+>> +       mrq->done = mmc_wait_done;
+>> +       mmc_start_request(host, mrq);
+>> +}
+>> +
+>> +static void mmc_wait_for_req_done(struct mmc_host *host,
+>> +                                 struct mmc_request *mrq)
+>> +{
+>> +       wait_for_completion(&mrq->completion);
+>> +}
+>> +
+>> +/**
+>> + *     mmc_pre_req - Prepare for a new request
+>> + *     @host: MMC host to prepare command
+>> + *     @mrq: MMC request to prepare for
+>> + *     @is_first_req: true if there is no previous started request
+>> + *                     that may run in parellel to this call, otherwise false
+>> + *
+>> + *     mmc_pre_req() is called in prior to mmc_start_req() to let
+>> + *     host prepare for the new request. Preparation of a request may be
+>> + *     performed while another request is running on the host.
+>> + */
+>> +static void mmc_pre_req(struct mmc_host *host, struct mmc_request *mrq,
+>> +                bool is_first_req)
+>> +{
+>> +       if (host->ops->pre_req)
+>> +               host->ops->pre_req(host, mrq, is_first_req);
+>> +}
+>> +
+>> +/**
+>> + *     mmc_post_req - Post process a completed request
+>> + *     @host: MMC host to post process command
+>> + *     @mrq: MMC request to post process for
+>> + *     @err: Error, if non zero, clean up any resources made in pre_req
+>> + *
+>> + *     Let the host post process a completed request. Post processing of
+>> + *     a request may be performed while another reuqest is running.
+>> + */
+>> +static void mmc_post_req(struct mmc_host *host, struct mmc_request *mrq,
+>> +                        int err)
+>> +{
+>> +       if (host->ops->post_req)
+>> +               host->ops->post_req(host, mrq, err);
+>> +}
+>> +
+>> +/**
+>> + *     mmc_start_req - start a non-blocking request
+>> + *     @host: MMC host to start command
+>> + *     @areq: async request to start
+>> + *     @error: out parameter returns 0 for success, otherwise non zero
+>> + *
+>> + *     Start a new MMC custom command request for a host.
+>> + *     If there is on ongoing async request wait for completion
+>> + *     of that request and start the new one and return.
+>> + *     Does not wait for the new request to complete.
+>> + *
+>> + *     Returns the completed async request, NULL in case of none completed.
+>> + */
+>> +struct mmc_async_req *mmc_start_req(struct mmc_host *host,
+>> +                                   struct mmc_async_req *areq, int *error)
+>> +{
+>> +       int err = 0;
+>> +       struct mmc_async_req *data = host->areq;
+>> +
+>> +       /* Prepare a new request */
+>> +       if (areq)
+>> +               mmc_pre_req(host, areq->mrq, !host->areq);
+>> +
+>> +       if (host->areq) {
+>> +               mmc_wait_for_req_done(host, host->areq->mrq);
+>> +               err = host->areq->err_check(host->card, host->areq);
+>> +               if (err) {
+>> +                       mmc_post_req(host, host->areq->mrq, 0);
+>> +                       if (areq)
+>> +                               mmc_post_req(host, areq->mrq, -EINVAL);
+>> +
+>> +                       host->areq = NULL;
+>> +                       goto out;
+> In this sequence, would the return value (data) have the previous areq ?
+> Is that intentional - doesn't seem to fit with the description.
+It will return the data that belongs to the completed request. The
+completed request will be the same as the previous request. The
+mmc_start_req will start a new request and return data for the
+completed request, if any.
 
+Do you think I should clarify the description?
+
+Regards,
+Per
