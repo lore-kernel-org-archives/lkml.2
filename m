@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932252Ab1FVPBA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 11:01:00 -0400
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:45840 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932181Ab1FVPA7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 11:00:59 -0400
-Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was
- Vpid:)
-From: Greg Kurz <gkurz@fr.ibm.com>
-To: Bryan Donlan <bdonlan@gmail.com>
-Cc: akpm@linux-foundation.org, containers@lists.osdl.org,
-        linux-kernel@vger.kernel.org, serge@hallyn.com, daniel.lezcano@free.fr,
-        ebiederm@xmission.com, oleg@redhat.com, xemul@openvz.org,
-        Cedric Le Goater <clg@vnet.ibm.com>
-In-Reply-To: <BANLkTiknqo0iKry7mjq+mc4iOWj_A_mrrw@mail.gmail.com>
-References: <20110615145527.4016.70157.stgit@bahia.local>
-	 <BANLkTimSC_OSrbekhM=wd2Gie4np3Q4F5A@mail.gmail.com>
-	 <1308570316.8230.140.camel@bahia.local>
-	 <BANLkTiknqo0iKry7mjq+mc4iOWj_A_mrrw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Jun 2011 17:00:37 +0200
-Message-ID: <1308754837.2959.58.camel@bahia.local>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1758180Ab1FVPEc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 11:04:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54379 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758020Ab1FVPEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 11:04:31 -0400
+Date: Wed, 22 Jun 2011 17:03:50 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Nai Xia <nai.xia@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
+        Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
+Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte
+ and mmu notifier to help KSM dirty bit tracking
+Message-ID: <20110622150350.GX20843@redhat.com>
+References: <201106212055.25400.nai.xia@gmail.com>
+ <201106212132.39311.nai.xia@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201106212132.39311.nai.xia@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-20 at 13:37 -0400, Bryan Donlan wrote:
-> On Mon, Jun 20, 2011 at 07:45, Greg Kurz <gkurz@fr.ibm.com> wrote:
-> > On Thu, 2011-06-16 at 13:54 -0400, Bryan Donlan wrote:
-> 
-> >> Although getting the in-namespace PID is a useful thing, wouldn't a
-> >> truly race-free API be preferable? Any access by PID has the race
-> >> condition in which the target process could die, and its PID get
-> >> recycled between retrieving the PID and doing something with it.
-> >
-> > Well the PID is a racy construct when used by another task than the
-> > parent... fortunately, most userland code can cope with it ! :)
-> 
-> That doesn't mean we shouldn't try to fix the race! :)
-> 
-> >> Perhaps a file-descriptor API would be better, such as something like
-> >> this:
-> >>
-> >> int openpid(int id, int flags);
-> >> int rt_sigqueueinfo_fd(int process_fd, int sig, siginfo_t *info);
-> >> int sigqueue_fd(int process_fd, int sig, const union sigval value); //
-> >> glibc wrapper
-> >>
-> >
-> > The race still exists: openpid() is being passed a PID... Only the
-> > parent can legitimately know that this PID identifies a specific
-> > unwaited child.
-> 
-> Yes, the idea would be either the parent process, or the target
-> process itself would open the PID, then pass the resulting file
-> descriptor to whatever process is actually doing the killing.
+On Tue, Jun 21, 2011 at 09:32:39PM +0800, Nai Xia wrote:
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index d48ec60..b407a69 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -4674,6 +4674,7 @@ static int __init vmx_init(void)
+>  		kvm_mmu_set_mask_ptes(0ull, 0ull, 0ull, 0ull,
+>  				VMX_EPT_EXECUTABLE_MASK);
+>  		kvm_enable_tdp();
+> +		kvm_dirty_update = 0;
+>  	} else
+>  		kvm_disable_tdp();
+>  
 
-Agreed. Such an API would be useful in a scenario where the task to be
-killed and the killing task can share a file descriptor: same thread
-group or inherited with clone() or connected with an AF_UNIX socket.
-My point was just that the racy pid based API will still be needed to
-handle all the other scenarios. But maybe it's fine to have two sets of
-process handling calls.
+Why not return !shadow_dirty_mask instead of adding a new var?
 
-> Alternately, one could add additional calls to help identify whether
-> the right process was opened (perhaps a call to get a directory handle
-> to the corresponding /proc directory?)
+>  struct mmu_notifier_ops {
+> +	int (*dirty_update)(struct mmu_notifier *mn,
+> +			     struct mm_struct *mm);
+> +
 
--- 
-Gregory Kurz                                     gkurz@fr.ibm.com
-Software Engineer @ IBM/Meiosys                  http://www.ibm.com
-Tel +33 (0)534 638 479                           Fax +33 (0)561 400 420
+Needs some docu.
 
-"Anarchy is about taking complete responsibility for yourself."
-        Alan Moore.
+I think dirty_update isn't self explanatory name. I think
+"has_test_and_clear_dirty" would be better.
 
+If we don't flush the smp tlb don't we risk that we'll insert pages in
+the unstable tree that are volatile just because the dirty bit didn't
+get set again on the spte?
+
+The first patch I guess it's a sign of hugetlbfs going a little over
+the edge in trying to mix with the core VM... Passing that parameter
+&need_pte_unmap all over the place not so nice, maybe it'd be possible
+to fix within hugetlbfs to use a different method to walk the hugetlb
+vmas. I'd prefer that if possible.
+
+Thanks,
+Andrea
