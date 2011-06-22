@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757944Ab1FVC51 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 22:57:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48588 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757915Ab1FVC5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 22:57:25 -0400
-Message-ID: <4E0159E9.10800@redhat.com>
-Date: Wed, 22 Jun 2011 10:56:41 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S932162Ab1FVDCO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 23:02:14 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38515 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757308Ab1FVDCN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Jun 2011 23:02:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ltErtNDwMwSgYSBMVC60zSSAYd6IfBrDe8vvmjIY00K1hZqA1SxY/0uePdzMtxJMLs
+         nvFicZHgioT5ucr73OMNMgOelEJ94foqrc1dLoD+ngPO5CN3+FhyP09wNYlQhVLgxLuF
+         LcP1FR+WQWWYnc4t3U/4dZuqB9ZnRWIF6KeEQ=
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: Vivek Goyal <vgoyal@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: Re: [PATCH 1/3] mm: completely disable THP by transparent_hugepage=never
-References: <20110620165844.GA9396@suse.de> <4DFF7E3B.1040404@redhat.com> <4DFF7F0A.8090604@redhat.com> <4DFF8106.8090702@redhat.com> <4DFF8327.1090203@redhat.com> <4DFF84BB.3050209@redhat.com> <4DFF8848.2060802@redhat.com> <20110620182558.GF4749@redhat.com> <20110620192117.GG20843@redhat.com> <4E00192E.70901@redhat.com> <20110621144346.GQ20843@redhat.com>
-In-Reply-To: <20110621144346.GQ20843@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1308708650-25509-1-git-send-email-loke.chetan@gmail.com>
+References: <1308708650-25509-1-git-send-email-loke.chetan@gmail.com>
+Date: Tue, 21 Jun 2011 23:02:11 -0400
+Message-ID: <BANLkTimisxLVdYJTK1NcR1vQi27CE20yxQ@mail.gmail.com>
+Subject: Re: [PATCH v2 net-next af-packet 0/2] Enhance af-packet to provide
+ (near zero)lossless packet capture functionality.
+From: chetan loke <loke.chetan@gmail.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: eric.dumazet@gmail.com, joe@perches.com, bhutchings@solarflare.com,
+        shemminger@vyatta.com, linux-kernel@vger.kernel.org,
+        Chetan Loke <loke.chetan@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年06月21日 22:43, Andrea Arcangeli 写道:
-> On Tue, Jun 21, 2011 at 12:08:14PM +0800, Cong Wang wrote:
->> The thing is that we can save ~10K by adding 3 lines of code as this
->> patch showed, where else in kernel can you save 10K by 3 lines of code?
->> (except some kfree() cases, of course) So, again, why not have it? ;)
+On Tue, Jun 21, 2011 at 10:10 PM, Chetan Loke <loke.chetan@gmail.com> wrote:
+> Hello,
 >
-> Because you could save it with a more complicated patch that doesn't
-> cripple down functionality.
-
-
-Why do you prefer "more complicated" things to simple ones? ;-)
-
-I realized this patch changed the original behavior of "=never",
-thus proposed a new "=0" parameter.
-
-But to be honest, "=never" should be renamed to "=disable".
-
-> Again if you want to optimize this ~8KB gain, I recommend to add a
-> param to make the hash size dynamic not to prevent the feature to ever
-> be enabled again, so by making the code more complex at least it will
-> also be useful if we want to increase the size hash at boot time (not
-> only to decrease it).
+> Please review the patchset.
+>
+> Changes from v1:
+>
+> 1) v1 was based on 2.6.38.9. v2 is rebased to net-next.
+> 2) Aligned bdqc members, pr_err to WARN, sob email      (Joe Perches)
+> 3) Added tp_padding                                     (Eric Dumazet)
+> 4) Nuked useless ;) white space                         (Stephen H)
+> 5) Use __u types in headers                             (Ben Hutchings)
+> 6) Added field for creating private area                (Chetan Loke)
 >
 
-Not only such things, the more serious thing is that you are
-enforcing a policy to users, as long as I enable THP in Kconfig,
-I have no way to disable it.
+Hi Dave,
 
-Why are you so sure that every user who has no chance to change
-.config likes THP?
+Is there a chance of getting this merged either in 3.0 or 3.1 or ever ;) ?
 
-And, what can I do if I want to prevent any process from having
-a chance to enable THP? Because as long as THP exists in /sys,
-any process has the right privilege can change it.
-
-Thanks.
+thanks
+Chetan
