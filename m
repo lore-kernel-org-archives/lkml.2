@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758063Ab1FVOiE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 10:38:04 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41521 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757961Ab1FVOiB (ORCPT
+	id S1758115Ab1FVOix (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 10:38:53 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59208 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753411Ab1FVOiw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 10:38:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=i6YGOjP2NUxv4CqNffTQ2VsXD2ATSTc2xtBkwcLyG1gIhPHNd9SUyGJDf0Ck0m1Pnc
-         BnDH5VZCI3Tk/zq1NA5NUAoFqKoFsWdUWQa65FUe6I9Ge9JeeypwM/NFabXjPA1W2tUC
-         XmKr8xaPlqRIADVe+x85eR2KgmjorOCQ4AzRk=
-MIME-Version: 1.0
-In-Reply-To: <1308744176-24491-1-git-send-email-galak@kernel.crashing.org>
-References: <1308744176-24491-1-git-send-email-galak@kernel.crashing.org>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Wed, 22 Jun 2011 10:37:40 -0400
-Message-ID: <BANLkTin+_G7HZgBTy-=EWZBR0hBAPyKv3w@mail.gmail.com>
-Subject: Re: [PATCH 1/3] driver core: Add ability for arch code to setup pdev_archdata
-To: Kumar Gala <galak@kernel.crashing.org>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 22 Jun 2011 10:38:52 -0400
+Subject: Re: [RFC][PATCH 1/3] sched, block: Move unplug
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>
+In-Reply-To: <alpine.LFD.2.02.1106221628560.11814@ionos>
+References: <20110621233444.094372367@chello.nl>
+	 <20110621233648.806475812@chello.nl> <4E019353.6030902@fusionio.com>
+	 <alpine.LFD.2.02.1106221015320.11814@ionos> <4E01F5D6.1020107@fusionio.com>
+	 <alpine.LFD.2.02.1106221628560.11814@ionos>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 22 Jun 2011 16:38:01 +0200
+Message-ID: <1308753481.1022.27.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 08:02, Kumar Gala wrote:
-> --- /dev/null
-> +++ b/include/asm-generic/platform_device.h
-> @@ -0,0 +1,11 @@
+On Wed, 2011-06-22 at 16:30 +0200, Thomas Gleixner wrote:
+> > It is supposedly a real problem, not just an inkling. It's not about
+> > recursing indefinitely, the plug is fairly bounded. But the IO dispatch
+> > path can be pretty deep, and if you hit that deep inside the reclaim or
+> > file system write path, then you get dangerously close. Dave Chinner
+> > posted some numbers in the 2.6.39-rc1 time frame showing how close we
+> > got.
+> 
+> Fair enough.
 
-missing header blob with explanation/copyright/license
+> Ok. So we move it out and keep the from_scheduler flag so that code
+> does not go down the IO path from there. 
 
-> +/*
-> + * an architecture can override to define arch_setup_pdev_archdata
-> + */
-> +#ifndef arch_setup_pdev_archdata
-> +static inline void arch_setup_pdev_archdata(struct platform_device *pdev) { }
-> +#endif
-
-missing explanation of what the func actually does, and this header
-lacks a forward struct decl for platform_device
--mike
+Won't punting the plug to a worker thread wreck all kinds of io
+accounting due to the wrong task doing the actual io submission?
