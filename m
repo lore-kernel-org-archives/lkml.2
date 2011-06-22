@@ -1,56 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758213Ab1FVPJO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 11:09:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15964 "EHLO mx1.redhat.com"
+	id S1758233Ab1FVPKH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 11:10:07 -0400
+Received: from gate.crashing.org ([63.228.1.57]:51786 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757975Ab1FVPJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 11:09:13 -0400
-Date: Wed, 22 Jun 2011 11:08:25 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jens Axboe <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC][PATCH 1/3] sched, block: Move unplug
-Message-ID: <20110622150825.GE17010@redhat.com>
-References: <20110621233444.094372367@chello.nl>
- <20110621233648.806475812@chello.nl>
- <4E019353.6030902@fusionio.com>
- <alpine.LFD.2.02.1106221015320.11814@ionos>
- <4E01F5D6.1020107@fusionio.com>
- <alpine.LFD.2.02.1106221628560.11814@ionos>
- <1308753481.1022.27.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308753481.1022.27.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758111Ab1FVPKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 11:10:06 -0400
+From: Kumar Gala <galak@kernel.crashing.org>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+Subject: [PATCH v2 1/3] driver core: Add ability for arch code to setup pdev_archdata
+Date: Wed, 22 Jun 2011 10:09:56 -0500
+Message-Id: <1308755396-17988-1-git-send-email-galak@kernel.crashing.org>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1308744176-24491-1-git-send-email-galak@kernel.crashing.org>
+References: <1308744176-24491-1-git-send-email-galak@kernel.crashing.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 04:38:01PM +0200, Peter Zijlstra wrote:
-> On Wed, 2011-06-22 at 16:30 +0200, Thomas Gleixner wrote:
-> > > It is supposedly a real problem, not just an inkling. It's not about
-> > > recursing indefinitely, the plug is fairly bounded. But the IO dispatch
-> > > path can be pretty deep, and if you hit that deep inside the reclaim or
-> > > file system write path, then you get dangerously close. Dave Chinner
-> > > posted some numbers in the 2.6.39-rc1 time frame showing how close we
-> > > got.
-> > 
-> > Fair enough.
-> 
-> > Ok. So we move it out and keep the from_scheduler flag so that code
-> > does not go down the IO path from there. 
-> 
-> Won't punting the plug to a worker thread wreck all kinds of io
-> accounting due to the wrong task doing the actual io submission?
+On some architectures we need to setup pdev_archdata before we add the
+device.  Waiting til a bus_notifier is too late since we might need the
+pdev_archdata in the bus notifier.  One example is setting up of dma_mask
+pointers such that it can be used in a bus_notifier.
 
-I think all the accounting will the done in IO submission path and
-while IO is added to plug. This is just plug flush so should not
-have effect on accounting.
+We add noop version of arch_setup_pdev_archdata() in
+<asm-generic/platform_device.h> and allow the arch code to override with
+access the full definitions of struct device, struct platform_device, and
+struct pdev_archdata.
 
-Thanks
-Vivek
+Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+---
+* Added license, and comments about arch_setup_pdev_archdata()
+  per Mike's comments
+
+ arch/alpha/include/asm/platform_device.h      |    1 +
+ arch/arm/include/asm/platform_device.h        |    1 +
+ arch/avr32/include/asm/platform_device.h      |    1 +
+ arch/blackfin/include/asm/platform_device.h   |    1 +
+ arch/cris/include/asm/platform_device.h       |    1 +
+ arch/frv/include/asm/platform_device.h        |    1 +
+ arch/h8300/include/asm/platform_device.h      |    1 +
+ arch/ia64/include/asm/platform_device.h       |    1 +
+ arch/m32r/include/asm/platform_device.h       |    1 +
+ arch/m68k/include/asm/platform_device.h       |    1 +
+ arch/microblaze/include/asm/platform_device.h |    1 +
+ arch/mips/include/asm/platform_device.h       |    1 +
+ arch/mn10300/include/asm/platform_device.h    |    1 +
+ arch/parisc/include/asm/platform_device.h     |    1 +
+ arch/powerpc/include/asm/platform_device.h    |    1 +
+ arch/s390/include/asm/platform_device.h       |    1 +
+ arch/score/include/asm/platform_device.h      |    1 +
+ arch/sh/include/asm/platform_device.h         |    1 +
+ arch/sparc/include/asm/platform_device.h      |    1 +
+ arch/tile/include/asm/platform_device.h       |    1 +
+ arch/unicore32/include/asm/platform_device.h  |    1 +
+ arch/x86/include/asm/platform_device.h        |    1 +
+ arch/xtensa/include/asm/platform_device.h     |    1 +
+ drivers/base/platform.c                       |    2 +
+ include/asm-generic/platform_device.h         |   30 +++++++++++++++++++++++++
+ 25 files changed, 55 insertions(+), 0 deletions(-)
+ create mode 100644 arch/alpha/include/asm/platform_device.h
+ create mode 100644 arch/arm/include/asm/platform_device.h
+ create mode 100644 arch/avr32/include/asm/platform_device.h
+ create mode 100644 arch/blackfin/include/asm/platform_device.h
+ create mode 100644 arch/cris/include/asm/platform_device.h
+ create mode 100644 arch/frv/include/asm/platform_device.h
+ create mode 100644 arch/h8300/include/asm/platform_device.h
+ create mode 100644 arch/ia64/include/asm/platform_device.h
+ create mode 100644 arch/m32r/include/asm/platform_device.h
+ create mode 100644 arch/m68k/include/asm/platform_device.h
+ create mode 100644 arch/microblaze/include/asm/platform_device.h
+ create mode 100644 arch/mips/include/asm/platform_device.h
+ create mode 100644 arch/mn10300/include/asm/platform_device.h
+ create mode 100644 arch/parisc/include/asm/platform_device.h
+ create mode 100644 arch/powerpc/include/asm/platform_device.h
+ create mode 100644 arch/s390/include/asm/platform_device.h
+ create mode 100644 arch/score/include/asm/platform_device.h
+ create mode 100644 arch/sh/include/asm/platform_device.h
+ create mode 100644 arch/sparc/include/asm/platform_device.h
+ create mode 100644 arch/tile/include/asm/platform_device.h
+ create mode 100644 arch/unicore32/include/asm/platform_device.h
+ create mode 100644 arch/x86/include/asm/platform_device.h
+ create mode 100644 arch/xtensa/include/asm/platform_device.h
+ create mode 100644 include/asm-generic/platform_device.h
+
+diff --git a/arch/alpha/include/asm/platform_device.h b/arch/alpha/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/alpha/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/arm/include/asm/platform_device.h b/arch/arm/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/arm/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/avr32/include/asm/platform_device.h b/arch/avr32/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/avr32/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/blackfin/include/asm/platform_device.h b/arch/blackfin/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/blackfin/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/cris/include/asm/platform_device.h b/arch/cris/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/cris/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/frv/include/asm/platform_device.h b/arch/frv/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/frv/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/h8300/include/asm/platform_device.h b/arch/h8300/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/h8300/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/ia64/include/asm/platform_device.h b/arch/ia64/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/ia64/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/m32r/include/asm/platform_device.h b/arch/m32r/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/m32r/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/m68k/include/asm/platform_device.h b/arch/m68k/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/m68k/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/microblaze/include/asm/platform_device.h b/arch/microblaze/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/microblaze/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/mips/include/asm/platform_device.h b/arch/mips/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/mips/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/mn10300/include/asm/platform_device.h b/arch/mn10300/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/mn10300/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/parisc/include/asm/platform_device.h b/arch/parisc/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/parisc/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/powerpc/include/asm/platform_device.h b/arch/powerpc/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/powerpc/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/s390/include/asm/platform_device.h b/arch/s390/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/s390/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/score/include/asm/platform_device.h b/arch/score/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/score/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/sh/include/asm/platform_device.h b/arch/sh/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/sh/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/sparc/include/asm/platform_device.h b/arch/sparc/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/sparc/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/tile/include/asm/platform_device.h b/arch/tile/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/tile/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/unicore32/include/asm/platform_device.h b/arch/unicore32/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/unicore32/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/x86/include/asm/platform_device.h b/arch/x86/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/x86/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/arch/xtensa/include/asm/platform_device.h b/arch/xtensa/include/asm/platform_device.h
+new file mode 100644
+index 0000000..01452c3
+--- /dev/null
++++ b/arch/xtensa/include/asm/platform_device.h
+@@ -0,0 +1 @@
++#include <asm-generic/platform_device.h>
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index 1c291af..c25e0c0 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -20,6 +20,7 @@
+ #include <linux/err.h>
+ #include <linux/slab.h>
+ #include <linux/pm_runtime.h>
++#include <asm/platform_device.h>
+ 
+ #include "base.h"
+ 
+@@ -173,6 +174,7 @@ struct platform_device *platform_device_alloc(const char *name, int id)
+ 		pa->pdev.id = id;
+ 		device_initialize(&pa->pdev.dev);
+ 		pa->pdev.dev.release = platform_device_release;
++		arch_setup_pdev_archdata(&pa->pdev);
+ 	}
+ 
+ 	return pa ? &pa->pdev : NULL;
+diff --git a/include/asm-generic/platform_device.h b/include/asm-generic/platform_device.h
+new file mode 100644
+index 0000000..c543add
+--- /dev/null
++++ b/include/asm-generic/platform_device.h
+@@ -0,0 +1,30 @@
++/*
++ * include/asm-generic/platform_device.h
++ *
++ * Provides a callout when we allocate a platform device to architecture code
++ * to update archdata.
++ *
++ * Copyright 2011 Freescale Semiconductor, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2, or (at your option)
++ * any later version.
++ *
++ * You should have received a copy of the GNU General Public License
++ * (for example /usr/src/linux/COPYING); if not, write to the Free
++ * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++#ifndef __ASM_GENERIC_PLATFORM_DEVICE_H_
++#define __ASM_GENERIC_PLATFORM_DEVICE_H_
++
++struct platform_device;
++
++/*
++ * an architecture can override to define arch_setup_pdev_archdata
++ */
++#ifndef arch_setup_pdev_archdata
++static inline void arch_setup_pdev_archdata(struct platform_device *pdev) { }
++#endif
++
++#endif /* __ASM_GENERIC_PLATFORM_DEVICE_H_ */
+-- 
+1.7.3.4
+
