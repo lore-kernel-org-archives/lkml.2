@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758832Ab1FVUDe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 16:03:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46915 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758551Ab1FVUDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 16:03:33 -0400
-Date: Wed, 22 Jun 2011 14:13:36 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 01/22] KVM: MMU: fix walking shadow page table
-Message-ID: <20110622171336.GA24700@amt.cnet>
-References: <4E01FBC9.3020009@cn.fujitsu.com>
- <4E01FBF4.9070004@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E01FBF4.9070004@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758175Ab1FVRN6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 13:13:58 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:37627 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754214Ab1FVRN5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 13:13:57 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=PPAOSA/S/kI5xutjuX/NkLc9Yddy07w7/U4nWojiLay4tlV63zg4WYNzpWdtGyl+l1jRt7NB8jfQ95TySb7MlUcMhqrUc3W/Lt7WQ3Z2hIHQitQceYkxJXlee2PFmOQI;
+Date: Wed, 22 Jun 2011 10:13:51 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Update reference to memory allocators in CodingStyle to
+ include vzalloc()
+Message-Id: <20110622101351.9a183856.rdunlap@xenotime.net>
+In-Reply-To: <alpine.LNX.2.00.1106221345001.11593@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1106221345001.11593@swampdragon.chaosbits.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 10:28:04PM +0800, Xiao Guangrong wrote:
-> Properly check the last mapping, and do not walk to the next level if last spte
-> is met
+On Wed, 22 Jun 2011 13:47:16 +0200 (CEST) Jesper Juhl wrote:
+
+> The list of available general purpose memory allocators in
+> Documentation/CodingStyle chapter 14 is incomplete. This patch adds
+> the missing vzalloc() to the list.
 > 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+
+Applied, thanks Jesper.
+
+
 > ---
->  arch/x86/kvm/mmu.c |    9 +++++----
->  1 files changed, 5 insertions(+), 4 deletions(-)
+>  Documentation/CodingStyle |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 9c629b5..f474e93 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -1517,10 +1517,6 @@ static bool shadow_walk_okay(struct kvm_shadow_walk_iterator *iterator)
->  	if (iterator->level < PT_PAGE_TABLE_LEVEL)
->  		return false;
+> diff --git a/Documentation/CodingStyle b/Documentation/CodingStyle
+> index 58b0bf9..fa6e25b 100644
+> --- a/Documentation/CodingStyle
+> +++ b/Documentation/CodingStyle
+> @@ -680,8 +680,8 @@ ones already enabled by DEBUG.
+>  		Chapter 14: Allocating memory
 >  
-> -	if (iterator->level == PT_PAGE_TABLE_LEVEL)
+>  The kernel provides the following general purpose memory allocators:
+> -kmalloc(), kzalloc(), kcalloc(), and vmalloc().  Please refer to the API
+> -documentation for further information about them.
+> +kmalloc(), kzalloc(), kcalloc(), vmalloc(), and vzalloc().  Please refer to
+> +the API documentation for further information about them.
+>  
+>  The preferred form for passing a size of a struct is the following:
+>  
+> -- 
 
-Change to >= PT_PAGE_TABLE_LEVEL, checks should be in shadow_walk_okay.
-
-> -		if (is_large_pte(*iterator->sptep))
-> -			return false;
-> -
->  	iterator->index = SHADOW_PT_INDEX(iterator->addr, iterator->level);
->  	iterator->sptep	= ((u64 *)__va(iterator->shadow_addr)) + iterator->index;
->  	return true;
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
