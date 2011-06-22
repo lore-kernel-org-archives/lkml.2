@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756518Ab1FVJjZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 05:39:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755071Ab1FVJjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 05:39:23 -0400
-Message-ID: <4E01B845.9010102@redhat.com>
-Date: Wed, 22 Jun 2011 12:39:17 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1756674Ab1FVJjt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 05:39:49 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59210 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755270Ab1FVJjr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 05:39:47 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4E01B84D.4040001@jp.fujitsu.com>
+Date: Wed, 22 Jun 2011 18:39:25 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-CC: Zachary Amsden <zamsden@redhat.com>, kvm <kvm@vger.kernel.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>,
-        Ulrich Obergfell <uobergfe@redhat.com>
-Subject: Re: [PATCH x86 kvm] Fix register corruption in pvclock_scale_delta
-References: <4DF97D6C.2080900@redhat.com>  <4DFDEF2A.7050307@redhat.com> <1308735302.6920.172.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1308735302.6920.172.camel@zakaz.uk.xensource.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Paul Turner <pjt@google.com>
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
+Subject: Re: [patch 10/16] sched: throttle entities exceeding their allowed
+ bandwidth
+References: <20110621071649.862846205@google.com> <20110621071700.700763369@google.com>
+In-Reply-To: <20110621071700.700763369@google.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2011 12:35 PM, Ian Campbell wrote:
-> On Sun, 2011-06-19 at 15:44 +0300, Avi Kivity wrote:
-> >  On 06/16/2011 06:50 AM, Zachary Amsden wrote:
-> >  >  The 128-bit multiply in pvclock.h was missing an output constraint for
-> >  >  EDX which caused a register corruption to appear.
->
-> Was there any particular symptom associated with corruption at that
-> particular point or just general badness?
->
-> >    Thanks to Ulrich
-> >  >  for diagnosing the EDX corruption and Avi for providing this fix
-> >  >  (which now I am sending back to you Avi..)
-> >
-> >  Applied and queued, thanks.
->
-> Seems like a stable candidate also?
+(2011/06/21 16:16), Paul Turner wrote:
+> Add conditional checks time of put_prev_entity() and enqueue_entity() to detect
+> when an active entity has exceeded its allowed bandwidth and requires
+> throttling.
+> 
+> Signed-off-by: Paul Turner <pjt@google.com>
+> 
+> ---
+(snip)
+> @@ -1403,7 +1412,7 @@ static void account_cfs_rq_runtime(struc
+>  	 * if we're unable to extend our runtime we resched so that the active
+>  	 * hierarchy can be throttled
+>  	 */
+> -	if (!assign_cfs_rq_runtime(cfs_rq))
+> +	if (!assign_cfs_rq_runtime(cfs_rq) && likely(cfs_rq->curr))
+>  		resched_task(rq_of(cfs_rq)->curr);
+>  }
+>  
 
-Yes.  I see it's merged; Marcelo, can you backport it?
+Nit: I think this hunk could be included in patch 08/16.
 
--- 
-error compiling committee.c: too many arguments to function
+The rest is good.
+
+Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+
+
+Thanks,
+H.Seto
 
