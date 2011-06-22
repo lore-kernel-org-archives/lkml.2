@@ -1,70 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab1FVJQV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 05:16:21 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:46653 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754187Ab1FVJQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 05:16:18 -0400
-Date: Wed, 22 Jun 2011 10:16:11 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Cong Wang <amwang@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Andrea Arcangeli <aarcange@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: Re: [PATCH 2/3] mm: make the threshold of enabling THP configurable
-Message-ID: <20110622091611.GB7585@csn.ul.ie>
-References: <1308587683-2555-1-git-send-email-amwang@redhat.com>
- <1308587683-2555-2-git-send-email-amwang@redhat.com>
- <20110620165955.GB9396@suse.de>
- <4DFF8050.9070201@redhat.com>
- <20110621093640.GD9396@suse.de>
- <4E015672.2020407@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4E015672.2020407@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754163Ab1FVJRo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 05:17:44 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:19326 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751398Ab1FVJRn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 05:17:43 -0400
+X-AuditID: cbfee61a-b7c59ae000003b70-a2-4e01b32891d3
+Date: Wed, 22 Jun 2011 18:17:18 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [PATCH v2 1/4] Exynos4 NURI: configure regulators and PMIC
+In-reply-to: <4E0164E8.8060708@linaro.org>
+To: "'Tushar Behera'" <tushar.behera@linaro.org>, myungjoo.ham@gmail.com
+Cc: "'MyungJoo Ham'" <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        dg77.kim@samsung.com
+Message-id: <00bf01cc30bd$350b7fc0$9f227f40$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=UTF-8
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcwwjpnBQn22usCoRfOW5QU6EiJyCAALejGQ
+References: <20110620103124.GD31864@opensource.wolfsonmicro.com>
+ <1308622033-2521-1-git-send-email-myungjoo.ham@samsung.com>
+ <1308622033-2521-2-git-send-email-myungjoo.ham@samsung.com>
+ <4E002D18.2080401@linaro.org>
+ <BANLkTi=pv=y+1XC5bYEHgL1sy48JPztiOg@mail.gmail.com>
+ <4E0164E8.8060708@linaro.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 10:41:54AM +0800, Cong Wang wrote:
-> ??? 2011???06???21??? 17:36, Mel Gorman ??????:
-> >
-> >Fragmentation avoidance benefits from tuning min_free_kbytes to a higher
-> >value and minimising fragmentation-related problems is crucial if THP is
-> >to allocate its necessary pages.
-> >
-> >THP tunes min_free_kbytes automatically and this value is in part
-> >related to the number of zones. At 512M on a single node machine, the
-> >recommended min_free_kbytes is close to 10% of memory which is barely
-> >tolerable as it is. At 256M, it's 17%, at 128M, it's 34% so tuning the
-> >value lower has diminishing returns as the performance impact of giving
-> >up such a high percentage of free memory is not going to be offset by
-> >reduced TLB misses. Tuning it to a higher value might make some sense
-> >if the higher min_free_kbytes was a problem but it would be much more
-> >rational to tune it as a sysctl than making it a compile-time decision.
-> >
+Tushar Behera wrote:
 > 
-> What this patch changed is the check of total memory pages in hugepage_init(),
-> which I don't think is suitable as a sysctl.
+> On Wednesday 22 June 2011 08:01 AM, MyungJoo Ham wrote:
+> > On Tue, Jun 21, 2011 at 2:33 PM, Tushar Behera<tushar.behera@linaro.org>
+> wrote:
+> >> On Tuesday 21 June 2011 07:37 AM, MyungJoo Ham wrote:
+> >>>
+> >>> Signed-off-by: MyungJoo Ham<myungjoo.ham@samsung.com>
+> >>> Signed-off-by: Kyungmin Park<kyungmin.park@samsung.com>
+> >>>
+> >>> --
+> >>> Changes from v1. Thanks so much for your valuable comments, Mark.
+> >>> - Removed unnecessary initialization data
+> >>> - Add __initdata where necessary
+> >>> - Corrected a regulator name for ADC
+> >>> ---
+> >>>   arch/arm/mach-exynos4/mach-nuri.c |  622
+> >>> ++++++++++++++++++++++++++++++++++++-
+> >>>   1 files changed, 621 insertions(+), 1 deletions(-)
+> >>>
+> >> Will it be possible to move PMIC specific defines to a common file and make
+> >> appropriate calls in the board-specific file?
+> >>
+> >> In that way, we can re-use this PMIC code on some other boards (e.g.
+> >> Insignal low-cost board Origen featuring Exynos4210 also features MAX8997).
+> >>
+> >
+> > Yes, we have tried creating PMIC defines at a seperated file in our
+> > local repositories (still doing so in those repositories).
+> > However, that ended up creating multiple PMIC defines (one PMIC define
+> > file for each board); the connections between LDO# and devices are
+> > different.
+> >
+> In that case, we can first post the Origen board support and PMIC code
+> on the ML, then we would see if we can consolidate.
 > 
-> If you mean min_free_kbytes could be tuned as a sysctl, that should be done
-> in other patch, right? :)
-> 
+> That looks more logical as per Mark's suggestion also.
+> >>
 
-min_free_kbytes is already automatically tuned when THP is enabled.
+Hi Tushar,
 
-What I meant was that there is a rational reason why 512M is the
-default for enabling THP by default. Tuning it lower than that by any
-means makes very little sense. Tuning it higher might make some sense
-but it is more likely that THP would simply be disabled via sysctl. I
-see very little advantage to introducing this Kconfig option other
-than as a source of confusion when running make oldconfig.
+When you need to add similar or same functionality on your board, you can/should move it in common part.
+Maybe 'should'...basically, nobody will apply same function into both place...
 
--- 
-Mel Gorman
-SUSE Labs
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
