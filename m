@@ -1,89 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab1FVP3j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 11:29:39 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:37474 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932343Ab1FVP3g (ORCPT
+	id S932413Ab1FVPii (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 11:38:38 -0400
+Received: from mail.kk.usm.my ([202.170.49.111]:41411 "EHLO mail.kk.usm.my"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932246Ab1FVPih convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 11:29:36 -0400
-Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was
- Vpid:)
-From: Greg Kurz <gkurz@fr.ibm.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Bryan Donlan <bdonlan@gmail.com>, akpm@linux-foundation.org,
-        containers@lists.osdl.org, linux-kernel@vger.kernel.org,
-        serge@hallyn.com, daniel.lezcano@free.fr, oleg@redhat.com,
-        xemul@openvz.org, Cedric Le Goater <clg@vnet.ibm.com>
-In-Reply-To: <m1ei2o9l7a.fsf@fess.ebiederm.org>
-References: <20110615145527.4016.70157.stgit@bahia.local>
-	 <BANLkTimSC_OSrbekhM=wd2Gie4np3Q4F5A@mail.gmail.com>
-	 <1308570316.8230.140.camel@bahia.local>
-	 <BANLkTiknqo0iKry7mjq+mc4iOWj_A_mrrw@mail.gmail.com>
-	 <m1ei2o9l7a.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Jun 2011 17:29:25 +0200
-Message-ID: <1308756565.2959.65.camel@bahia.local>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Jun 2011 11:38:37 -0400
+X-Greylist: delayed 408 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Jun 2011 11:38:36 EDT
+Content-Type: text/plain; charset=US-ASCII
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Transfe offer!!!
+To: Recipients <Mrsonglileinfo@yahoo.com.hk>
+From: Mr@mail.kk.usm.my, song@mail.kk.usm.my, lile@mail.kk.usm.my,
+        info@yahoo.com.hk
+Date: Wed, 22 Jun 2011 16:30:49 +0100
+Reply-To: mrsong.lile@yahoo.cn
+Message-Id: <20110622153120.733502E228E24@mail.kk.usm.my>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-20 at 15:44 -0700, Eric W. Biederman wrote:
-> Bryan Donlan <bdonlan@gmail.com> writes:
-> 
-> > On Mon, Jun 20, 2011 at 07:45, Greg Kurz <gkurz@fr.ibm.com> wrote:
-> >> On Thu, 2011-06-16 at 13:54 -0400, Bryan Donlan wrote:
-> >
-> >>> Although getting the in-namespace PID is a useful thing, wouldn't a
-> >>> truly race-free API be preferable? Any access by PID has the race
-> >>> condition in which the target process could die, and its PID get
-> >>> recycled between retrieving the PID and doing something with it.
-> >>
-> >> Well the PID is a racy construct when used by another task than the
-> >> parent... fortunately, most userland code can cope with it ! :)
-> >
-> > That doesn't mean we shouldn't try to fix the race! :)
-> >
-> >>> Perhaps a file-descriptor API would be better, such as something like
-> >>> this:
-> >>>
-> >>> int openpid(int id, int flags);
-> >>> int rt_sigqueueinfo_fd(int process_fd, int sig, siginfo_t *info);
-> >>> int sigqueue_fd(int process_fd, int sig, const union sigval value); //
-> >>> glibc wrapper
-> >>>
-> >>
-> >> The race still exists: openpid() is being passed a PID... Only the
-> >> parent can legitimately know that this PID identifies a specific
-> >> unwaited child.
-> >
-> > Yes, the idea would be either the parent process, or the target
-> > process itself would open the PID, then pass the resulting file
-> > descriptor to whatever process is actually doing the killing.
-> > Alternately, one could add additional calls to help identify whether
-> > the right process was opened (perhaps a call to get a directory handle
-> > to the corresponding /proc directory?)
-> 
-> fd = open("/proc/self/", O_DIRECTORY);
-> ?
-> 
-> Doing something based on proc files seems like a reasonable direction to
-> head if we are working on a race free api.
-> 
-> I suspect all we need is a sigqueue file.
-> 
-
-Are you referring to Bryan's rt_sigqueueinfo_fd() syscall or to a
-new /proc/self/sigqueue file ?
-
--- 
-Gregory Kurz                                     gkurz@fr.ibm.com
-Software Engineer @ IBM/Meiosys                  http://www.ibm.com
-Tel +33 (0)534 638 479                           Fax +33 (0)561 400 420
-
-"Anarchy is about taking complete responsibility for yourself."
-        Alan Moore.
-
+l am a Staff of Hang Seng Bank HongKong, I do not know if we can work
+together in transferring $19,500,000.USD from my bank to your bank
+account. Finally if you are interested I shall provide you with more
+details. Email: mrsong.lile@yahoo.cn
