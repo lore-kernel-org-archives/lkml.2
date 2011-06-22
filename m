@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747Ab1FVJud (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 05:50:33 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:59022 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752837Ab1FVJuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 05:50:32 -0400
-Date: Wed, 22 Jun 2011 11:50:23 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf tools: Don't corrupt PERF-VERSION-FILE with make
- debug
-Message-ID: <20110622095023.GB18277@elte.hu>
-References: <1308585228-3982-1-git-send-email-robert.richter@amd.com>
+	id S1756097Ab1FVJwG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 05:52:06 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:41207 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752837Ab1FVJwE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 05:52:04 -0400
+X-IronPort-AV: E=Sophos;i="4.65,405,1304294400"; 
+   d="scan'208";a="6419717"
+Subject: Re: [PATCH x86 kvm] Fix register corruption in pvclock_scale_delta
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Avi Kivity <avi@redhat.com>
+CC: Zachary Amsden <zamsden@redhat.com>, kvm <kvm@vger.kernel.org>,
+        Linux-kernel <linux-kernel@vger.kernel.org>,
+        Ulrich Obergfell <uobergfe@redhat.com>
+In-Reply-To: <4E01B89C.7050704@redhat.com>
+References: <4DF97D6C.2080900@redhat.com>  <4DFDEF2A.7050307@redhat.com>
+	 <1308735302.6920.172.camel@zakaz.uk.xensource.com>
+	 <4E01B89C.7050704@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Wed, 22 Jun 2011 10:52:01 +0100
+Message-ID: <1308736321.6920.174.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308585228-3982-1-git-send-email-robert.richter@amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Robert Richter <robert.richter@amd.com> wrote:
-
-> When running make with debug option -d the PERF-VERSION-FILE gets
-> corrupted because make is noisy:
+On Wed, 2011-06-22 at 10:40 +0100, Avi Kivity wrote:
+> On 06/22/2011 12:35 PM, Ian Campbell wrote:
+> > On Sun, 2011-06-19 at 15:44 +0300, Avi Kivity wrote:
+> > >  On 06/16/2011 06:50 AM, Zachary Amsden wrote:
+> > >  >  The 128-bit multiply in pvclock.h was missing an output constraint for
+> > >  >  EDX which caused a register corruption to appear.
+> >
+> > Was there any particular symptom associated with corruption at that
+> > particular point or just general badness?
+> >
 > 
->  PERF-VERSION-FILE:2: *** missing separator.  Stop.
-> 
-> Fixing this by not passing the make flags in the MAKEFLAGS environment
-> variable to the sub-make that generates the version string.
-> 
-> Signed-off-by: Robert Richter <robert.richter@amd.com>
-> ---
->  tools/perf/util/PERF-VERSION-GEN |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
-> index 9c5fb4d..ad73300 100755
-> --- a/tools/perf/util/PERF-VERSION-GEN
-> +++ b/tools/perf/util/PERF-VERSION-GEN
-> @@ -23,7 +23,7 @@ if test -d ../../.git -o -f ../../.git &&
->  then
->  	VN=$(echo "$VN" | sed -e 's/-/./g');
->  else
-> -	VN=$(make -sC ../.. kernelversion)
-> +	VN=$(MAKEFLAGS= make -sC ../.. kernelversion)
+> Time went backwards and forwards as vcpus were migrated across cpus.
 
-Yeah, and this has been fixed recently, via:
+Oops!
 
-  37aa9a2eb4d9: perf: clear out make flags when calling kernel make kernelver
+> The problem was in the host, not the guest, so Xen should not be affected.
 
-Thanks,
+Good to know, thanks!
 
-	Ingo
+Ian.
+
