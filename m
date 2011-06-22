@@ -1,43 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758446Ab1FVXRn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 19:17:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41275 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757381Ab1FVXRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 19:17:42 -0400
-Message-ID: <4E0277DE.5020008@zytor.com>
-Date: Wed, 22 Jun 2011 16:16:46 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S932334Ab1FVXTI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 19:19:08 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44522 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755096Ab1FVXTH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 19:19:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=mWlfnRuKzUFd7KMWeweNODBvrFCXaBct5UlNi6nR7DkmfwBage4ztH5DTWfvHMdncJ
+         2dnsAg+2U39gCieE04jE9r2iOLq1hPe1oDRvt7aXhSfAC4ddrQoTBqLPY0hJO7fg0zmY
+         T/CuZe7hVwnlJ8LDLya7bItrxOa/EGQGRsXW0=
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH RFC 0/7] x86: convert ticketlocks to C and remove duplicate
- code
-References: <cover.1308259496.git.jeremy.fitzhardinge@citrix.com> <1308664868.26237.173.camel@twins> <4E0240AC.9060603@goop.org> <4E024E5B.7090103@zytor.com> <4E0257BC.9050509@goop.org> <4E025983.4060106@zytor.com> <4E026036.1040609@goop.org>
-In-Reply-To: <4E026036.1040609@goop.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110622150350.GX20843@redhat.com>
+References: <201106212055.25400.nai.xia@gmail.com>
+	<201106212132.39311.nai.xia@gmail.com>
+	<20110622150350.GX20843@redhat.com>
+Date: Thu, 23 Jun 2011 07:19:06 +0800
+Message-ID: <BANLkTim85ghrK9D4f19Pt5v1+HTMzVXxnw@mail.gmail.com>
+Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte
+ and mmu notifier to help KSM dirty bit tracking
+From: Nai Xia <nai.xia@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
+        Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2011 02:35 PM, Jeremy Fitzhardinge wrote:
-> On 06/22/2011 02:07 PM, H. Peter Anvin wrote:
->> For x86, we support 3.4, 4.0 and 4.1.2 and above (not sure if 4.0.x
->> actually works).  Other architectures have different rules.  At some
->> point we'll probably drop anything below 4.1.2, but we apparently can't yet.
-> 
-> Looks like the intrinsics turned up in 4.1.0.
-> 
+On Wed, Jun 22, 2011 at 11:03 PM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> On Tue, Jun 21, 2011 at 09:32:39PM +0800, Nai Xia wrote:
+>> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+>> index d48ec60..b407a69 100644
+>> --- a/arch/x86/kvm/vmx.c
+>> +++ b/arch/x86/kvm/vmx.c
+>> @@ -4674,6 +4674,7 @@ static int __init vmx_init(void)
+>>               kvm_mmu_set_mask_ptes(0ull, 0ull, 0ull, 0ull,
+>>                               VMX_EPT_EXECUTABLE_MASK);
+>>               kvm_enable_tdp();
+>> +             kvm_dirty_update = 0;
+>>       } else
+>>               kvm_disable_tdp();
+>>
+>
+> Why not return !shadow_dirty_mask instead of adding a new var?
+>
+>>  struct mmu_notifier_ops {
+>> +     int (*dirty_update)(struct mmu_notifier *mn,
+>> +                          struct mm_struct *mm);
+>> +
+>
+> Needs some docu.
+>
+> I think dirty_update isn't self explanatory name. I think
+> "has_test_and_clear_dirty" would be better.
+>
+> If we don't flush the smp tlb don't we risk that we'll insert pages in
+> the unstable tree that are volatile just because the dirty bit didn't
+> get set again on the spte?
+>
+> The first patch I guess it's a sign of hugetlbfs going a little over
+> the edge in trying to mix with the core VM... Passing that parameter
+> &need_pte_unmap all over the place not so nice, maybe it'd be possible
+> to fix within hugetlbfs to use a different method to walk the hugetlb
+> vmas. I'd prefer that if possible.
 
-Yes, but they still don't do what we want...
+OK, I'll have a try over other workarounds.
+I am not feeling good about need_pte_unmap myself. :-)
 
-	-hpa
+Thanks for viewing!
 
+-Nai
+
+>
+> Thanks,
+> Andrea
+>
