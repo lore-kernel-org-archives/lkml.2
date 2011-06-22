@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab1FVJiz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 05:38:55 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41327 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756005Ab1FVJix (ORCPT
+	id S1755780Ab1FVJin (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 05:38:43 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:52206 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707Ab1FVJim convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 05:38:53 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4E01B81C.2030506@jp.fujitsu.com>
-Date: Wed, 22 Jun 2011 18:38:36 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
+	Wed, 22 Jun 2011 05:38:42 -0400
 MIME-Version: 1.0
-To: Paul Turner <pjt@google.com>
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
-Subject: Re: [patch 06/16] sched: add a timer to handle CFS bandwidth refresh
-References: <20110621071649.862846205@google.com> <20110621071700.284687900@google.com>
-In-Reply-To: <20110621071700.284687900@google.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <BANLkTi=GT=1u0YEtUaJre24BOhRyDNGUSg@mail.gmail.com>
+References: <1308699521-20556-1-git-send-email-per.forlin@linaro.org>
+	<1308699521-20556-3-git-send-email-per.forlin@linaro.org>
+	<BANLkTikqeKg=Mr9BxVYL7x=9k_jzGeLnQQ@mail.gmail.com>
+	<BANLkTi=GT=1u0YEtUaJre24BOhRyDNGUSg@mail.gmail.com>
+Date: Wed, 22 Jun 2011 11:38:41 +0200
+Message-ID: <BANLkTi=udZv3g-jB+FBWyaXqhQie3B2EaA@mail.gmail.com>
+Subject: Re: [PATCH v7 02/11] omap_hsmmc: add support for pre_req and post_req
+From: Per Forlin <per.forlin@linaro.org>
+To: Nickolay Nickolaev <nicknickolaev@gmail.com>
+Cc: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, Venkatraman S <svenkatr@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/21 16:16), Paul Turner wrote:
-> This patch adds a per-task_group timer which handles the refresh of the global
-> CFS bandwidth pool.
-> 
-> Since the RT pool is using a similar timer there's some small refactoring to
-> share this support.
-> 
-> Signed-off-by: Paul Turner <pjt@google.com>
-> Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-> 
-> ---
-(snip)
-> @@ -413,8 +444,26 @@ static void init_cfs_rq_runtime(struct c
->  	cfs_rq->runtime_enabled = 0;
->  }
->  
-> +/* requires cfs_b->lock */
-> +static void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
-> +{
-> +	/*
-> +	 * Handle the extremely unlikely case of trying to start the period
-> +	 * timer, while that timer is in the tear-down path from having
-> +	 * decided to no longer run.  In this case we must wait for the
-> +	 * (tail of the) callback to terminate so that we can re-enqueue it.
-> +	 */
-> +	if (unlikely(hrtimer_active(&cfs_b->period_timer)))
-> +		hrtimer_cancel(&cfs_b->period_timer);
-> +
-> +	cfs_b->timer_active = 1;
-> +	start_bandwidth_timer(&cfs_b->period_timer, cfs_b->period);
-> +}
-> +
+On 22 June 2011 11:31, Per Forlin <per.forlin@linaro.org> wrote:
+> On 22 June 2011 10:51, Nickolay Nickolaev <nicknickolaev@gmail.com> wrote:
+>> Hello,
+>>
+>> this one's causing me compilation trouble troubles when CONFIG_DMA_ENGINE is
+>> not defined.
+>>
+> I don't see this issue when I compile the kernel for a Pandaboard
+> without CONFIG_DMA_ENGINE being set. Could you please clarify or show
+> me your build log?
+> I don't see how host->next_data.cookie is connected to DMA_ENGINE.
+>
+I think you are referring to the mmci-patch. I'll fix the issue in mmci.
 
-Nice trick :-)
-
-(Again,)
-Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-
-
-Thanks,
-H.Seto
-
+>> On Wed, Jun 22, 2011 at 2:38 AM, Per Forlin <per.forlin@linaro.org> wrote:
+>>>
+>>> @@ -2077,6 +2155,7 @@ static int __init omap_hsmmc_probe(struct
+>>> platform_device *pdev)
+>>>        host->mapbase   = res->start;
+>>>        host->base      = ioremap(host->mapbase, SZ_4K);
+>>>        host->power_mode = MMC_POWER_OFF;
+>>> +       host->next_data.cookie = 1;
+>>>
+>>>        platform_set_drvdata(pdev, host);
+>>>        INIT_WORK(&host->mmc_carddetect_work, omap_hsmmc_detect);
+>>> --
+>>> 1.7.4.1
+>>>
+>>>
+>>
+>> Maybe we can wrap it in a function as the others.
+>>
+>> regards,
+>> Nikolay Nikolaev
+>>
+>
+> Regards,
+> Per
+>
