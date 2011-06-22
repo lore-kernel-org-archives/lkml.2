@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab1FVGyM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 02:54:12 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46204 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784Ab1FVGyL (ORCPT
+	id S1752243Ab1FVG6P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 02:58:15 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:55507 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902Ab1FVG6O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 02:54:11 -0400
+	Wed, 22 Jun 2011 02:58:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Mvo6LewAGw59BG0mZ1D1adpyrNbT30DuMpm3LeLUFA/RRKIrJHM/wdrpssyaI076qR
-         /hpjbuPl6wdrQTrgJqyNDZEQ6qOouVDN2l8sh62VzCP2oay1+JsBvXttbn4kAlNWEa6L
-         cU1Df1vET0BARqrQeTnp9n4HfNdAZa2MXVPyc=
-Date: Wed, 22 Jun 2011 10:54:06 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [PATCH v2] taskstats: don't allow duplicate entries in
- listener mode
-Message-ID: <20110622065406.GA4011@albatros>
-References: <1308239759-4797-1-git-send-email-segoon@openwall.com>
- <20110621154900.ea6b8839.akpm@linux-foundation.org>
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=bbrS3nPt4VX8V4P/r7uN+VVbrQR5WpZuXLo0PrQo5G9tESu6HVrtgjdyhXxh9mEKc1
+         njjOsJviGqMHKJNDPPsA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110621154900.ea6b8839.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110622054340.GA2985@in.ibm.com>
+References: <20110621071649.862846205@google.com> <20110621071700.092877579@google.com>
+ <20110622054340.GA2985@in.ibm.com>
+From: Paul Turner <pjt@google.com>
+Date: Tue, 21 Jun 2011 23:57:42 -0700
+Message-ID: <BANLkTi=i78qcL6ui93+We0jiEVNLn9d2TA@mail.gmail.com>
+Subject: Re: [patch 04/16] sched: validate CFS quota hierarchies
+To: bharata@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 15:49 -0700, Andrew Morton wrote:
-> On Thu, 16 Jun 2011 19:55:59 +0400
-> Vasiliy Kulikov <segoon@openwall.com> wrote:
-> 
-> > Currently a single process may register exit handlers unlimited times.
-> > It may lead to a bloated listeners chain and very slow process terminations.
-> > E.g. after 10KK sent TASKSTATS_CMD_ATTR_REGISTER_CPUMASKs ~300 Mb of
-> > kernel memory is stolen for the handlers chain and "time id" shows 2-7
-> > seconds instead of normal 0.003.  It makes it possible to exhaust all
-> > kernel memory and to eat much of CPU time by triggerring numerous exits
-> > on a single CPU.
-> > 
-> > The patch limits the number of times a single process may register
-> > itself on a single CPU to one.
-> > 
-> > One little issue is kept unfixed - as taskstats_exit() is called before
-> > exit_files() in do_exit(), the orphaned listener entry (if it was not
-> > explicitly deregistered) is kept until the next someone's exit() and
-> > implicit deregistration in send_cpu_listeners().  So, if a process
-> > registered itself as a listener exits and the next spawned process gets
-> > the same pid, it would inherit taskstats attributes.
-> 
-> ow. That's an unprivileged operation, isn't it?
+On Tue, Jun 21, 2011 at 10:43 PM, Bharata B Rao
+<bharata@linux.vnet.ibm.com> wrote:
+> On Tue, Jun 21, 2011 at 12:16:53AM -0700, Paul Turner wrote:
+>> Add constraints validation for CFS bandwidth hierarchies.
+>>
+>> Validate that:
+>>    max(child bandwidth) <= parent_bandwidth
+>>
+>> In a quota limited hierarchy, an unconstrained entity
+>> (e.g. bandwidth==RUNTIME_INF) inherits the bandwidth of its parent.
+>>
+>> This constraint is chosen over sum(child_bandwidth) as notion of over-commit is
+>> valuable within SCHED_OTHER.  Some basic code from the RT case is re-factored
+>> for reuse.
+>>
+>> Signed-off-by: Paul Turner <pjt@google.com>
+>>
+>> ---
+>>  kernel/sched.c |  109 ++++++++++++++++++++++++++++++++++++++++++++++++++-------
+>>  1 file changed, 96 insertions(+), 13 deletions(-)
+>>
+>> Index: tip/kernel/sched.c
+>> ===================================================================
+>> --- tip.orig/kernel/sched.c
+>> +++ tip/kernel/sched.c
+>> @@ -249,6 +249,7 @@ struct cfs_bandwidth {
+>>       raw_spinlock_t lock;
+>>       ktime_t period;
+>>       u64 quota;
+>> +     s64 hierarchal_quota;
+>
+> You mean hierarchical I suppose.
+>
 
-Yes.
+Yup!  Thanks
 
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+> Regards,
+> Bharata.
+>
