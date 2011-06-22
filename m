@@ -1,212 +1,488 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626Ab1FVGBw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 02:01:52 -0400
-Received: from ganesha.gnumonks.org ([213.95.27.120]:53397 "EHLO
-	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784Ab1FVGBs (ORCPT
+	id S1752675Ab1FVGC7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 02:02:59 -0400
+Received: from com01.servicemail24.de ([84.17.184.246]:36171 "EHLO
+	com01.servicemail24.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751234Ab1FVGC6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 02:01:48 -0400
-From: Sangbeom Kim <sbkim73@samsung.com>
-To: sameo@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, Sangbeom Kim <sbkim73@samsung.com>
-Subject: [PATCH 3/3] mfd: Add I2C control support for S5M8751
-Date: Wed, 22 Jun 2011 14:53:57 +0900
-Message-Id: <1308722037-6966-4-git-send-email-sbkim73@samsung.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1308722037-6966-1-git-send-email-sbkim73@samsung.com>
-References: <1308722037-6966-1-git-send-email-sbkim73@samsung.com>
+	Wed, 22 Jun 2011 02:02:58 -0400
+Date: Wed, 22 Jun 2011 08:00:27 +0200 (CEST)
+From: ALDI Newsletter <noreply@aldi.us>
+Reply-To: ALDI Newsletter <noreply@aldi.us>
+To: linux-kernel@vger.kernel.org
+Message-ID: <INX.1138ceb236a161155e0e02ba56f.2d1217.2af525.2cc2.130b5ef755b.gginx05@emarketing.servicemail24.de>
+Subject: =?ISO-8859-1?Q?ALDI_newsletter_&_top_picks_for_this_we?=
+ =?ISO-8859-1?Q?ek_=96_hurry,_limited_quantities_in_store?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Inxmail EE 3.5, build 070618
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement the I2C control interface for the S5M8751.
+################### ALDI Newsletter ###################
+___________________________________________________________
 
-Signed-off-by: Sangbeom Kim <sbkim73@samsung.com>
----
- drivers/mfd/Kconfig       |    9 +++
- drivers/mfd/Makefile      |    2 +
- drivers/mfd/s5m8751-i2c.c |  141 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 152 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/s5m8751-i2c.c
-
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 85c91ac..4a8468c 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -388,6 +388,15 @@ config MFD_WM831X_SPI
- config MFD_S5M8751
- 	tristate
+special buys for the week of june 22, 2011
+___________________________________________________________
  
-+config MFD_S5M8751_I2C
-+	tristate "Support Samsung S5M8751 PMIC/Audio DAC with I2C"
-+	select MFD_S5M8751
-+	select MFD_CORE
-+	depends on I2C
-+	help
-+	  S5M8751 is an advanced power management with AUDIO DAC. This option
-+	  enables chip support for the S5M8751 with I2C as the control interface.
-+
- config MFD_WM8350
- 	bool
- 	depends on GENERIC_HARDIRQS
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 27f99bb..b94476e 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -96,3 +96,5 @@ obj-$(CONFIG_MFD_PM8XXX_IRQ) 	+= pm8xxx-irq.o
- obj-$(CONFIG_MFD_TPS65910)	+= tps65910.o tps65910-irq.o
- s5m8751-objs			+= s5m8751-core.o
- obj-$(CONFIG_MFD_S5M8751)	+= s5m8751.o
-+obj-$(CONFIG_MFD_S5M8751_I2C)	+= s5m8751-i2c.o
-+
-diff --git a/drivers/mfd/s5m8751-i2c.c b/drivers/mfd/s5m8751-i2c.c
-new file mode 100644
-index 0000000..4ca680b
---- /dev/null
-+++ b/drivers/mfd/s5m8751-i2c.c
-@@ -0,0 +1,141 @@
-+/* linux/drivers/mfd/s5m8751-i2s.c
-+ *
-+ * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
-+ *		http://www.samsung.com
-+ *
-+ * I2C driver for S5M8751
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+*/
-+
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/platform_device.h>
-+#include <linux/i2c.h>
-+#include <linux/mfd/s5m8751.h>
-+#include <linux/slab.h>
-+
-+static int s5m8751_i2c_read_device(struct s5m8751 *s5m8751, uint8_t reg,
-+					uint8_t *val)
-+{
-+	int ret;
-+	ret = i2c_smbus_read_byte_data(s5m8751->i2c_client, reg);
-+	if (ret < 0) {
-+		dev_err(s5m8751->dev, "failed reading at 0x%02x\n", reg);
-+		return ret;
-+	}
-+	*val = (uint8_t)ret;
-+	return 0;
-+}
-+
-+static int s5m8751_i2c_write_device(struct s5m8751 *s5m8751, uint8_t reg,
-+					uint8_t val)
-+{
-+	int ret;
-+	ret = i2c_smbus_write_byte_data(s5m8751->i2c_client, reg, val);
-+	if (ret < 0) {
-+		dev_err(s5m8751->dev, "failed writing 0x%02x to 0x%02x\n",
-+				val, reg);
-+		return ret;
-+	}
-+	return 0;
-+}
-+
-+static int s5m8751_i2c_write_block_device(struct s5m8751 *s5m8751, uint8_t reg,
-+					int len, uint8_t *val)
-+{
-+	int ret;
-+	ret = i2c_smbus_write_i2c_block_data(s5m8751->i2c_client, reg, len,
-+									val);
-+	if (ret < 0) {
-+		dev_err(s5m8751->dev, "failed writings to 0x%02x\n", reg);
-+		return ret;
-+	}
-+	return 0;
-+}
-+
-+static int s5m8751_i2c_read_block_device(struct s5m8751 *s5m8751, uint8_t reg,
-+					int len, uint8_t *val)
-+{
-+	int ret;
-+	ret = i2c_smbus_read_i2c_block_data(s5m8751->i2c_client, reg, len, val);
-+	if (ret < 0) {
-+		dev_err(s5m8751->dev, "failed reading from 0x%02x\n", reg);
-+		return ret;
-+	}
-+	return 0;
-+}
-+
-+static int s5m8751_probe(struct i2c_client *i2c,
-+				const struct i2c_device_id *id)
-+{
-+	struct s5m8751 *s5m8751;
-+	int ret = 0;
-+
-+	s5m8751 = kzalloc(sizeof(struct s5m8751), GFP_KERNEL);
-+	if (s5m8751 == NULL)
-+		goto err;
-+
-+	i2c_set_clientdata(i2c, s5m8751);
-+
-+	s5m8751->dev = &i2c->dev;
-+	s5m8751->i2c_client = i2c;
-+	s5m8751->read_dev = s5m8751_i2c_read_device;
-+	s5m8751->write_dev = s5m8751_i2c_write_device;
-+	s5m8751->read_block_dev = s5m8751_i2c_read_block_device;
-+	s5m8751->write_block_dev = s5m8751_i2c_write_block_device;
-+
-+	ret = s5m8751_device_init(s5m8751, i2c->irq, i2c->dev.platform_data);
-+	if (ret < 0)
-+		goto err;
-+
-+	return 0;
-+
-+err:
-+	return ret;
-+}
-+
-+static int s5m8751_remove(struct i2c_client *i2c)
-+{
-+	struct s5m8751 *s5m8751 = i2c_get_clientdata(i2c);
-+
-+	s5m8751_device_exit(s5m8751);
-+
-+	return 0;
-+}
-+
-+static const struct i2c_device_id s5m8751_i2c_id[] = {
-+	{ "s5m8751", 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, s5m8751_i2c_id);
-+
-+static struct i2c_driver s5m8751_driver = {
-+	.driver	= {
-+		.name	= "s5m8751",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= s5m8751_probe,
-+	.remove		= s5m8751_remove,
-+	.id_table	= s5m8751_i2c_id,
-+};
-+
-+static int __init s5m8751_init(void)
-+{
-+	return i2c_add_driver(&s5m8751_driver);
-+}
-+module_init(s5m8751_init);
-+
-+static void __exit s5m8751_exit(void)
-+{
-+	i2c_del_driver(&s5m8751_driver);
-+}
-+module_exit(s5m8751_exit);
-+
-+MODULE_DESCRIPTION("I2C Driver for Samsung S5M8751");
-+MODULE_AUTHOR("Sangbeom Kim <sbkim73@samsung.com>");
-+MODULE_LICENSE("GPL");
--- 
-1.7.1
 
+
+outdoor
+
+
+ 
+
+
+
+http://www.aldi.us/us/html/offers/2827_14568_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Range Master
+Charcoal Grill
+
+
+$ 34.99 each
+
+
+
+http://www.aldi.us/us/html/offers/2827_14593_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Range Master
+Charcoal Briquets
+
+
+$ 4.69 each
+
+
+- 16.6 lb.
+
+http://www.aldi.us/us/html/offers/2827_14592_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Adventuridge
+Foldable Chair
+
+
+$ 8.99 each
+
+
+- steel frame
+- cupholder
+- carrying bag included
+- one-year manufacturer’s limited warranty
+
+http://www.aldi.us/us/html/offers/2827_14574_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+pantry
+
+
+ 
+
+
+
+http://www.aldi.us/us/html/offers/2827_14540_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Kraft
+Olive Oil Mayonnaise
+
+
+$ 2.49 each
+
+
+- 22 oz.
+
+http://www.aldi.us/us/html/offers/2827_14584_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+READ
+German Potato Salad
+
+
+99¢ each
+
+
+- 15 oz.
+
+http://www.aldi.us/us/html/offers/2827_14583_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Great Gherkins
+Dill Relish
+
+
+89¢ each
+
+
+- 10 oz.
+
+http://www.aldi.us/us/html/offers/2827_14582_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+frozen foods
+
+
+ 
+
+
+
+http://www.aldi.us/us/html/offers/2827_14539_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Grandessa Signature
+Baby Back Ribs
+
+
+$ 8.49 each
+
+
+- fully cooked honey and garlic or original BBQ
+- 24 oz.
+
+http://www.aldi.us/us/html/offers/2827_14595_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Fit & Active
+Turkey Tenderloin Mignon
+
+
+$ 6.99 each
+
+
+- 22 oz.
+
+http://www.aldi.us/us/html/offers/2827_14591_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Boca Burger
+Assortment
+
+
+$ 2.49 each
+
+
+- original vegan or all-american burger 
+- 10 oz.
+
+http://www.aldi.us/us/html/offers/2827_14590_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Grandessa Signature
+Sockeye Salmon Whole Fillet
+
+
+$ 8.99 each
+
+
+- 20 oz.
+
+http://www.aldi.us/us/html/offers/2827_14594_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Season's Choice
+Sliced Strawberries In Tub
+
+
+$ 1.99 each
+
+
+- 16 oz.
+
+http://www.aldi.us/us/html/offers/2827_14578_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Magnum
+Ice Cream Bars
+
+
+$ 2.99 each
+
+
+- double caramel or double chocolate
+- 10.1 oz.
+
+http://www.aldi.us/us/html/offers/2827_14580_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Sundae Shoppe Red, White & Blue Ice Cream Cake
+
+
+$ 9.99 each
+
+
+- 60 oz.
+
+http://www.aldi.us/us/html/offers/2827_14581_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Sundae Shoppe
+Red, White & Blue Pops
+
+
+$ 1.49 each
+
+
+- made with real cane sugar
+- 16 count
+- 28 oz.
+
+http://www.aldi.us/us/html/offers/2827_14579_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+beverages
+
+
+ 
+
+
+
+http://www.aldi.us/us/html/offers/2827_14617_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Bolthouse Farms
+100% Carrot Juice
+
+
+$ 2.69 each
+
+
+- 32 oz.
+
+http://www.aldi.us/us/html/offers/2827_14586_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Nature's Nectar
+White Cranberry Juice
+
+
+$ 1.89 each
+
+
+- white cranberry peach or white cranberry strawberry
+- 64 oz.
+
+http://www.aldi.us/us/html/offers/2827_14587_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Hawaiian Punch
+Fruit Juicy Red
+
+
+$ 2.39 per pack
+
+
+- six 10-oz. bottles
+
+http://www.aldi.us/us/html/offers/2827_14566_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Nature's Nectar 100% Juice
+Black Cherry
+
+
+$ 2.99 each
+
+
+- 64 oz.
+
+http://www.aldi.us/us/html/offers/2827_14571_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Nature's Nectar 100% Juice
+Mango Tangerine
+
+
+$ 2.99 each
+
+
+- 64 oz.
+
+http://www.aldi.us/us/html/offers/2827_14618_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Welch's
+Canned Drinks
+
+
+$ 2.49 per pack
+
+
+- assorted flavors
+- six 11.5-oz. cans
+
+http://www.aldi.us/us/html/offers/2827_14570_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+other
+
+
+ 
+
+
+
+http://www.aldi.us/us/html/offers/2827_14541_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Mama Cozzi's Pizza Kitchen
+Cheesy Breadsticks
+
+
+$ 3.79 each
+
+
+- 22.75 oz.
+
+http://www.aldi.us/us/html/offers/2827_14565_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+L'oven Fresh
+Hawaiian Sweet Rolls
+
+
+$ 1.79 each
+
+
+- 14 oz.
+
+http://www.aldi.us/us/html/offers/2827_14585_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Deutsche Küche Smoked
+Bratwurst or Knackwurst
+
+
+$ 2.49 each
+
+
+- 16 oz.
+
+http://www.aldi.us/us/html/offers/2827_14589_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Oscar Mayer
+Angus Beef Hot Dogs
+
+
+$ 2.79 each
+
+
+- 16 oz.
+
+http://www.aldi.us/us/html/offers/2827_14588_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Ghirardelli
+Brownie Mix
+
+
+$ 1.99 each
+
+
+- chocolate supreme or double chocolate
+- 18.75-20 oz.
+
+http://www.aldi.us/us/html/offers/2827_14577_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Fit & Active
+Drizzled Multigrain Crisps
+
+
+$ 1.19 each
+
+
+- chocolate or cinnamon streusel
+- 3.5 oz.
+
+http://www.aldi.us/us/html/offers/2827_14576_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Kitchen Living
+Pineapple Slicer
+
+
+$ 4.99 each
+
+
+- stainless steel
+- peels, cores and slices an entire pineapple in seconds
+- two-year manufacturer’s limited warranty
+
+http://www.aldi.us/us/html/offers/2827_14572_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+Cars 2
+Character Cars
+
+
+$ 2.99 each
+
+
+- die-cast assortment
+- 1:55 scale
+- features characters from Cars 2
+
+http://www.aldi.us/us/html/offers/2827_14575_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+-----------------------------------------------------------
+
+
+further information and offers
+http://www.aldi.us/us/html/offers/offers_6_22_2011_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45
+
+
+
+***********************************************************
+
+Available while quantities last. All products may not be available in all stores.
+Prices and labels may vary by location. We welcome cash, EBT and most debit cards. No checks please.
+
+This is an e-mail advertisement. ALDI INC. is very serious about protecting your privacy and is committed to avoiding
+any abuse of your e-mail address. View our Privacy Policy. (http://www.aldi.us/us/html/privacy_policy_ENU_HTML.htm)
+
+If you wish to stop receiving this newsletter, please click here to unsubscribe.
+(http://www.aldi.us/us/html/service/newsletter_ENU_HTML.htm?WT.mc_id=2011-06-21-21-45)
+
+Copyright 2011 ALDI INC. All Rights Reserved.
+
+ALDI Inc.,1200 N. Kirk Rd., Batavia, IL 60510
+http://www.aldi.us/?WT.mc_id=2011-06-21-21-45
+
+***********************************************************
