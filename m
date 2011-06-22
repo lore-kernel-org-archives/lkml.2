@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629Ab1FVFeh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 01:34:37 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62999 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724Ab1FVFef (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 01:34:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:date:in-reply-to:references
-         :content-type:x-mailer:content-transfer-encoding:message-id
-         :mime-version;
-        b=pegWEn5Dxp6BVZRB+PNZNzgG1UMqIwVeRzFUxrHL8znEtiqtt5giGdXw1a3wcvUKd+
-         skYsk8NQUqLSAGyKmq3Y8aA18Puv+EHEak64+MRwQgGbJcVnibw2L/LCs0csEiCZQ/W0
-         JhuXamIQ/Ea6jhP6W8ZcXXEmEFx1oiZRKCfw8=
-Subject: Re: [PATCH/Trivial] jffs2: Avoid unneeded 'if' before kfree
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        David Woodhouse <dwmw2@infradead.org>, trivial@kernel.org
-Date: Wed, 22 Jun 2011 08:35:17 +0300
-In-Reply-To: <alpine.LNX.2.00.1106132213500.30934@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1106132213500.30934@swampdragon.chaosbits.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-2.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1308720921.18119.33.camel@sauron>
-Mime-Version: 1.0
+	id S1752697Ab1FVFlc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 01:41:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61578 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751154Ab1FVFlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 01:41:32 -0400
+Message-ID: <4E018060.3050607@redhat.com>
+Date: Wed, 22 Jun 2011 13:40:48 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        dave@linux.vnet.ibm.com, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [PATCH v2 2/4] mm: make the threshold of enabling THP configurable
+References: <1308643849-3325-1-git-send-email-amwang@redhat.com> <1308643849-3325-2-git-send-email-amwang@redhat.com> <alpine.DEB.2.00.1106211817340.5205@chino.kir.corp.google.com> <4E015C36.2050005@redhat.com> <alpine.DEB.2.00.1106212024210.8712@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1106212024210.8712@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-13 at 22:16 +0200, Jesper Juhl wrote:
-> kfree() deals gracefully with NULL pointers, so it's pointless to test for 
-> one prior to calling it.
-> This removes such a test from jffs2_scan_medium().
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+于 2011年06月22日 11:29, David Rientjes 写道:
+>
+> Either way, this patch isn't needed since it has no benefit over doing it
+> through an init script.
 
-Pushed to l2-mtd-2.6.git, thanks!
+If you were right, CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS is not needed,
+you can do it through an init script.
 
--- 
-Best Regards,
-Artem Bityutskiy
+If you were right, the 512M limit is not needed neither, you have
+transparent_hugepage=never boot parameter and do the check of
+512M later in an init script. (Actually, moving the 512M check to
+user-space is really more sane to me.)
 
+I am quite sure you have lots of other things which both have a Kconfig
+and a boot parameter, why do we have it?
