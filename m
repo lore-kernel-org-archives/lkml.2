@@ -1,88 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758563Ab1FVXmQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 19:42:16 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:41831 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758222Ab1FVXmN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 19:42:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=E1KUzzgpwzXmzx8JO3sVJub8CEfA4uTY513ZGhgTZNH9psH7+ho5mPiDUGFzMER9Hh
-         CoFG7PZm1JCPuXy7ROFqnhKvTJJD1P+GYOZ9HGxB0MtNmkRmj955CeVFcgbMR2WkNYcF
-         TImzx+11M6R71Ss43c9A5L9FIztJPQrxricyY=
-MIME-Version: 1.0
-In-Reply-To: <20110622150350.GX20843@redhat.com>
-References: <201106212055.25400.nai.xia@gmail.com>
-	<201106212132.39311.nai.xia@gmail.com>
-	<20110622150350.GX20843@redhat.com>
-Date: Thu, 23 Jun 2011 07:42:11 +0800
-Message-ID: <BANLkTin1zB1mDOo1pJ3KWp8rNp7-2oMkQA@mail.gmail.com>
-Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte
- and mmu notifier to help KSM dirty bit tracking
-From: Nai Xia <nai.xia@gmail.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
+	id S1758718Ab1FVXpF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 19:45:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18155 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757743Ab1FVXpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 19:45:03 -0400
+Date: Thu, 23 Jun 2011 01:44:50 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Nai Xia <nai.xia@gmail.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Izik Eidus <izik.eidus@ravellosystems.com>,
         Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
         Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
         Johannes Weiner <hannes@cmpxchg.org>,
         linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte
+ and mmu notifier to help KSM dirty bit tracking
+Message-ID: <20110622234450.GB20843@redhat.com>
+References: <201106212055.25400.nai.xia@gmail.com>
+ <201106212132.39311.nai.xia@gmail.com>
+ <20110622150350.GX20843@redhat.com>
+ <BANLkTim85ghrK9D4f19Pt5v1+HTMzVXxnw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTim85ghrK9D4f19Pt5v1+HTMzVXxnw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 11:03 PM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> On Tue, Jun 21, 2011 at 09:32:39PM +0800, Nai Xia wrote:
->> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
->> index d48ec60..b407a69 100644
->> --- a/arch/x86/kvm/vmx.c
->> +++ b/arch/x86/kvm/vmx.c
->> @@ -4674,6 +4674,7 @@ static int __init vmx_init(void)
->>               kvm_mmu_set_mask_ptes(0ull, 0ull, 0ull, 0ull,
->>                               VMX_EPT_EXECUTABLE_MASK);
->>               kvm_enable_tdp();
->> +             kvm_dirty_update = 0;
->>       } else
->>               kvm_disable_tdp();
->>
->
-> Why not return !shadow_dirty_mask instead of adding a new var?
->
->>  struct mmu_notifier_ops {
->> +     int (*dirty_update)(struct mmu_notifier *mn,
->> +                          struct mm_struct *mm);
->> +
->
-> Needs some docu.
+On Thu, Jun 23, 2011 at 07:19:06AM +0800, Nai Xia wrote:
+> OK, I'll have a try over other workarounds.
+> I am not feeling good about need_pte_unmap myself. :-)
 
-OK. I'll add it.
+The usual way is to check VM_HUGETLB in the caller and to call another
+function that doesn't kmap. Casting pmd_t to pte_t isn't really nice
+(but hey we're also doing that exceptionally in smaps_pte_range for
+THP, but it safe there because we're casting the value of the pmd, not
+the pointer to the pmd, so the kmap is done by the pte version of the
+caller and not done by the pmd version of the caller).
 
->
-> I think dirty_update isn't self explanatory name. I think
-> "has_test_and_clear_dirty" would be better.
+Is it done for migrate? Surely it's not for swapout ;).
 
-Agreed.  So it will be the name in the next version. :)
+> Thanks for viewing!
 
-Thanks,
-Nai
+You're welcome!
 
->
-> If we don't flush the smp tlb don't we risk that we'll insert pages in
-> the unstable tree that are volatile just because the dirty bit didn't
-> get set again on the spte?
->
-> The first patch I guess it's a sign of hugetlbfs going a little over
-> the edge in trying to mix with the core VM... Passing that parameter
-> &need_pte_unmap all over the place not so nice, maybe it'd be possible
-> to fix within hugetlbfs to use a different method to walk the hugetlb
-> vmas. I'd prefer that if possible.
->
-> Thanks,
-> Andrea
->
+JFYI I'll be offline on vacation for a week, starting tomorrow, so if
+I don't answer in the next few days that's the reason but I'll follow
+the progress in a week.
+
+Thanks!
+Andrea
