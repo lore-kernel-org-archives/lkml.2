@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934Ab1FVLMD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 07:12:03 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:33435 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753210Ab1FVLMB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 07:12:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=ebWG+wxyzc2uYtfnBc2rRy/ujpkTEwGpoRxo3HfFPlN7UM5RjBOqLUmdc+NTQPm4e5
-         nEavT48HMKAJWfZTJERcU+tYcxqmfNnuIfCaG2I6yhorlW27CKE64qZKs+Ved3YN3RUS
-         VO246tP1uN4VBVCfgOgbEPxVOo9sD5Z/SLrDU=
-Date: Wed, 22 Jun 2011 14:11:11 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Wanlong Gao <wanlong.gao@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Stefan Weil <weil@mail.berlios.de>,
-        Xiaochen Wang <wangxiaochen0@gmail.com>,
-        Ilia Mirkin <imirkin@alum.mit.edu>,
-        David Chosrova <dada2372@gmail.com>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Ben Hutchings <ben@decadent.org.uk>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] drivers:rtl8187se:remove the use of obsolete
- create_workqueue in ieee80211_softmac.c
-Message-ID: <20110622111111.GK14591@shale.localdomain>
-References: <1308478318-8462-1-git-send-email-wanlong.gao@gmail.com>
- <1308732001.2198.0.camel@Tux>
+	id S1756733Ab1FVLPh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 07:15:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33519 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754944Ab1FVLPg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 07:15:36 -0400
+Date: Wed, 22 Jun 2011 12:15:25 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Cong Wang <amwang@redhat.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Andrea Arcangeli <aarcange@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [PATCH 2/3] mm: make the threshold of enabling THP configurable
+Message-ID: <20110622111525.GK9396@suse.de>
+References: <1308587683-2555-1-git-send-email-amwang@redhat.com>
+ <1308587683-2555-2-git-send-email-amwang@redhat.com>
+ <20110620165955.GB9396@suse.de>
+ <4DFF8050.9070201@redhat.com>
+ <20110621093640.GD9396@suse.de>
+ <4E015672.2020407@redhat.com>
+ <20110622091611.GB7585@csn.ul.ie>
+ <4E01C80F.8070605@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1308732001.2198.0.camel@Tux>
+In-Reply-To: <4E01C80F.8070605@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 04:40:01PM +0800, Wanlong Gao wrote:
-> On 日, 2011-06-19 at 18:11 +0800, Wanlong Gao wrote:
-> Any comments?
+On Wed, Jun 22, 2011 at 06:46:39PM +0800, Cong Wang wrote:
+> ??? 2011???06???22??? 17:16, Mel Gorman ??????:
+> >
+> >What I meant was that there is a rational reason why 512M is the
+> >default for enabling THP by default. Tuning it lower than that by any
+> >means makes very little sense. Tuning it higher might make some sense
+> >but it is more likely that THP would simply be disabled via sysctl. I
+> >see very little advantage to introducing this Kconfig option other
+> >than as a source of confusion when running make oldconfig.
+> >
+> 
+> The tunable range is (512, 8192), so 512M is the minimum.
+> 
+> Sure, I knew it can be disabled via /sys, actually we can do even
+> more in user-space, that is totally move the 512M check out of kernel,
+> why we didn't?
+> 
 
-It takes a while to get to patches.  If it's been two weeks and you
-haven't heard anything, then ask again.  Otherwise just assume that
-they're going to be applied.
+Because the reason why 512M is the default is not obvious and there
+was no guarantee all distros would chose a reasonable default for
+an init script (or know that an init script was even necessary).
+This is one of the few cases where there is a sensible default that
+is the least surprising.
 
-regards,
-dan carpenter
+> In short, I think we should either remove the 512M from kernel, or
+> make 512M to be tunable.
+> 
+
+That just hands them a different sort of rope to hang themselves with
+where THP gets enabled on small machines or botting with mem=128M
+and getting surprised later by the high min_free_kbytes.
+
+At this point, I don't really care if the Kconfig entry exists or
+not. I think it gains nothing but additional confusion for people
+who write .config files but it's not a topic I want to discuss for
+days either.
+
+-- 
+Mel Gorman
+SUSE Labs
