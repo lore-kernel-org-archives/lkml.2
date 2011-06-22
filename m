@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537Ab1FVU0L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 16:26:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34827 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932180Ab1FVU0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 16:26:10 -0400
-Message-ID: <4E024FC5.6020707@zytor.com>
-Date: Wed, 22 Jun 2011 13:25:41 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S932527Ab1FVUZt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 16:25:49 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:8366 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932180Ab1FVUZs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 16:25:48 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAENPAk5tgwPS/2dsb2JhbABTpxB4iHMCwH0Ohh8EoXg
+Date: Wed, 22 Jun 2011 22:25:46 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Chris Friesen <chris.friesen@genband.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 1/10 v2] Generic Watchdog Timer Driver
+Message-ID: <20110622202546.GH26745@infomag.iguana.be>
+References: <20110618171946.GB3441@infomag.iguana.be> <4E023455.8010606@genband.com>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Stefan Assmann <sassmann@kpanic.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, tony.luck@intel.com, mingo@elte.hu,
-        rick@vanrein.org, rdunlap@xenotime.net, Nancy Yuen <yuenn@google.com>,
-        Michael Ditto <mditto@google.com>
-Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
-References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de> <20110622110034.89ee399c.akpm@linux-foundation.org> <20110622182445.GG3263@one.firstfloor.org> <20110622113851.471f116f.akpm@linux-foundation.org> <20110622185645.GH3263@one.firstfloor.org> <4E023CE3.70100@zytor.com> <20110622191558.GI3263@one.firstfloor.org>
-In-Reply-To: <20110622191558.GI3263@one.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E023455.8010606@genband.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2011 12:15 PM, Andi Kleen wrote:
-> On Wed, Jun 22, 2011 at 12:05:07PM -0700, H. Peter Anvin wrote:
->> On 06/22/2011 11:56 AM, Andi Kleen wrote:
->>>
->>> You'll always have multiple ways. Whatever magic you come up for
->>> the google BIOS or for EFI won't help the majority of users with
->>> old crufty legacy BIOS.
->>>
+Hi Chris,
+
+>> watchdog: WatchDog Timer Driver Core - Part 1
 >>
->> I don't think this has anything to do with this.
-> 
-> Please elaborate.
-> 
-> How would you pass the bad page information instead in a fully backwards
-> compatible way?
-> 
+>> The WatchDog Timer Driver Core is a framework
+>> that contains the common code for all watchdog-driver's.
+>> It also introduces a watchdog device structure and the
+>> operations that go with it.
+>>
+>> This is the introduction of this framework. This part
+>> supports the minimal watchdog userspace API (or with
+>> other words: the functionality to use /dev/watchdog's
+>> open, release and write functionality as defined in
+>> the simplest watchdog API). Extra functionality will
+>> follow in the next set of patches.
+>
+>
+> Have you thought about callback support for systems that support a  
+> two-stage watchdog?  That way we could do something useful (preserve  
+> system memory using kdump, for instance) rather than just getting  
+> whacked by the hardware.
 
-Depends on what you mean with "fully backward compatible".  In some ways
-this is a nonsense statement since if we create anything new older
-kernels will not run.
+No, goal was to first have an API that reduces the existing functionality
+that we copy over in each driver.
+But it's indeed a feauture where we should look at in the future.
+Question will be: how will we implement it.
 
-However, the other discussions in this thread have been about injecting
-data in kernel-specific data structures and thus aren't dependent on the
-firmware layer used.
-
-The fully backward compatible way is "memmap=<address>$<length>".
-
-	-hpa
+Kind regards,
+Wim.
 
