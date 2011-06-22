@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758261Ab1FVX7X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 19:59:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6950 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757685Ab1FVX7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 19:59:21 -0400
-Date: Thu, 23 Jun 2011 01:59:06 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Nai Xia <nai.xia@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>, Izik Eidus <izik.eidus@ravellosystems.com>,
-        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
-        linux-mm <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
-Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte
- and mmu notifier to help KSM dirty bit tracking
-Message-ID: <20110622235906.GC20843@redhat.com>
-References: <201106212055.25400.nai.xia@gmail.com>
- <201106212132.39311.nai.xia@gmail.com>
- <4E01C752.10405@redhat.com>
- <4E01CC77.10607@ravellosystems.com>
- <4E01CDAD.3070202@redhat.com>
- <4E01CFD2.6000404@ravellosystems.com>
- <4E020CBC.7070604@redhat.com>
- <20110622165529.GY20843@redhat.com>
- <BANLkTinRYr9Vg==C-qyCaRmO7C_aQqBPzw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTinRYr9Vg==C-qyCaRmO7C_aQqBPzw@mail.gmail.com>
+	id S1758361Ab1FWAAL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 20:00:11 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:56648 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757748Ab1FWAAJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 20:00:09 -0400
+X-AuditID: cbfee61a-b7c59ae000003b70-a9-4e02820061f6
+Date: Thu, 23 Jun 2011 08:59:52 +0900
+From: Sangbeom Kim <sbkim73@samsung.com>
+Subject: RE: [PATCH 1/3] mfd: Add S5M8751 register definitions
+In-reply-to: <20110622124222.GC23666@sirena.org.uk>
+To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Message-id: <016c01cc3138$7eca0480$7c5e0d80$@com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: Acww2dgw3hXh2NGbRxCsStFGZ1m8dgAXbCYg
+References: <1308722037-6966-1-git-send-email-sbkim73@samsung.com>
+ <1308722037-6966-2-git-send-email-sbkim73@samsung.com>
+ <20110622124222.GC23666@sirena.org.uk>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 07:37:47AM +0800, Nai Xia wrote:
-> On 2MB pages, I'd like to remind you and Rik that ksmd currently splits
-> huge pages before their sub pages gets really merged to stable tree.
-> So when there are many 2MB pages each having a 4kB subpage
-> changed for all time, this is already a concern for ksmd to judge
-> if it's worthwhile to split 2MB page and get its sub-pages merged.
+Hi Mark,
 
-Hmm not sure to follow. KSM memory density with THP on and off should
-be identical. The cksum is computed on subpages so the fact the 4k
-subpage is actually mapped by a hugepmd is invisible to KSM up to the
-point we get a unstable_tree_search_insert/stable_tree_search lookup
-succeeding.
+On Wed, Jun 22, 2011 at 09:42PM +0900, Mark Brown wrote:
+> These don't look like register definitions:
 
-> I think the policy for ksmd in a system should be "If you cannot do sth good,
-> at least do nothing evil". So I really don't think we can satisfy _all_ people.
-> Get a general method and give users one or two knobs to tune it when they
-> are the corner cases. How do  you think of my proposal ?
-
-I'm neutral, but if we get two methods for deciding the unstable tree
-candidates, the default probably should prioritize on maximum merging
-even if it takes more CPU (if one cares about performance of the core
-dedicated to ksmd, KSM is likely going to be off or scanning at low
-rate in the first place).
-
-> > On a side note, khugepaged should also be changed to preserve the
-> > dirty bit if at least one dirty bit of the ptes is dirty (currently
-> > the hugepmd is always created dirty, it can never happen for an
-> > hugepmd to be clean today so it wasn't preserved in khugepaged so far).
-> >
+OK, I will move it,
 > 
-> Thanks for the point that out. This is what I have overlooked!
+> I posted a series earlier this week which adds a generic API for
+> handling register maps on I2C/SPI devices - I'll post another version of
+> it shortly, it'd be nice if you could loook to see if this is usable for
+> you.
+> 
+Thanks for your comments.
+After check the your patch, I will remake S5M8751 patch.
 
-No prob. And its default scan rate is very slow compared to ksmd so
-it was unlikely to generate too many false positive dirty bits even if
-you were splitting hugepages through swap.
+> > +/* S5M8751 internal interrupts */
+> > +int s5m8751_register_irq(struct s5m8751 *s5m8751, int irq,
+> > +			void (*handler) (struct s5m8751 *, int, void *),
+> > +			void *data);
+> > +
+> > +int s5m8751_free_irq(struct s5m8751 *s5m8751, int irq);
+> > +int s5m8751_mask_irq(struct s5m8751 *s5m8751, int irq);
+> > +int s5m8751_unmask_irq(struct s5m8751 *s5m8751, int irq);
+> > +int s5m8751_clear_irq(struct s5m8751 *s5m8751);
+> 
+> You should use genirq for this, it's supported this for quite some time
+> now.  There's quite a few MFDs doing this which you can used for
+> examples.
+OK I will check it.
+
+
+> > +/* S5M8751 sysfs functions */
+> > +int s5m8751_uvlo_get(struct s5m8751 *s5m8751);
+> > +int s5m8751_uvlo_set(struct s5m8751 *s5m8751, int voltage);
+> > +
+> > +int s5m8751_audio_dev_register(struct s5m8751 *s5m8751,
+> > +						const char *name,
+> > +						struct platform_device
+**pdev);
+> 
+> These shouldn't need to be in the header.
+OK, I will modify it.
+
+Thanks and regards,
+
