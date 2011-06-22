@@ -1,350 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab1FVGhD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 02:37:03 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:44742 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752444Ab1FVGg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 02:36:59 -0400
-Date: Wed, 22 Jun 2011 16:36:51 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for June 22
-Message-Id: <20110622163651.7ebc407c.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__22_Jun_2011_16_36_51_+1000_2CkdTz/Cd4Z6uB1/"
+	id S1753997Ab1FVGjL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 02:39:11 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33267 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752314Ab1FVGjJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 02:39:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=YojR4irpd+WwvAOoDxIrtrDOdXmcJiY6XYC7TNOz2eA77bPPK3YhaYkOZUORlx6fJF
+         KpEaGG8WA9KIKto/k9R//0k86mQgezxeqB/FKw+rnMJRNKBcnK94mtUrf8cmm4sSZGUS
+         wRuynmLIWz9nRgQBO62BPqvLJWiLYi3r0NrGc=
+From: Nai Xia <nai.xia@gmail.com>
+Reply-To: nai.xia@gmail.com
+To: Izik Eidus <izik.eidus@ravellosystems.com>
+Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte and mmu notifier to help KSM dirty bit tracking
+Date: Wed, 22 Jun 2011 14:38:55 +0800
+User-Agent: KMail/1.13.5 (Linux/2.6.39; KDE/4.5.5; i686; ; )
+Cc: Chris Wright <chrisw@sous-sol.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        "linux-mm" <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        kvm <kvm@vger.kernel.org>, mtosatti@redhat.com
+References: <201106212055.25400.nai.xia@gmail.com> <20110622002123.GP25383@sequoia.sous-sol.org> <4E018897.7040707@ravellosystems.com>
+In-Reply-To: <4E018897.7040707@ravellosystems.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106221438.55516.nai.xia@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__22_Jun_2011_16_36_51_+1000_2CkdTz/Cd4Z6uB1/
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wednesday 22 June 2011 14:15:51 Izik Eidus wrote:
+> On 6/22/2011 3:21 AM, Chris Wright wrote:
+> > * Nai Xia (nai.xia@gmail.com) wrote:
+> >> Introduced kvm_mmu_notifier_test_and_clear_dirty(), kvm_mmu_notifier_dirty_update()
+> >> and their mmu_notifier interfaces to support KSM dirty bit tracking, which brings
+> >> significant performance gain in volatile pages scanning in KSM.
+> >> Currently, kvm_mmu_notifier_dirty_update() returns 0 if and only if intel EPT is
+> >> enabled to indicate that the dirty bits of underlying sptes are not updated by
+> >> hardware.
+> > Did you test with each of EPT, NPT and shadow?
+> >
+> >> Signed-off-by: Nai Xia<nai.xia@gmail.com>
+> >> Acked-by: Izik Eidus<izik.eidus@ravellosystems.com>
+> >> ---
+> >>   arch/x86/include/asm/kvm_host.h |    1 +
+> >>   arch/x86/kvm/mmu.c              |   36 +++++++++++++++++++++++++++++
+> >>   arch/x86/kvm/mmu.h              |    3 +-
+> >>   arch/x86/kvm/vmx.c              |    1 +
+> >>   include/linux/kvm_host.h        |    2 +-
+> >>   include/linux/mmu_notifier.h    |   48 +++++++++++++++++++++++++++++++++++++++
+> >>   mm/mmu_notifier.c               |   33 ++++++++++++++++++++++++++
+> >>   virt/kvm/kvm_main.c             |   27 ++++++++++++++++++++++
+> >>   8 files changed, 149 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> >> index d2ac8e2..f0d7aa0 100644
+> >> --- a/arch/x86/include/asm/kvm_host.h
+> >> +++ b/arch/x86/include/asm/kvm_host.h
+> >> @@ -848,6 +848,7 @@ extern bool kvm_rebooting;
+> >>   int kvm_unmap_hva(struct kvm *kvm, unsigned long hva);
+> >>   int kvm_age_hva(struct kvm *kvm, unsigned long hva);
+> >>   int kvm_test_age_hva(struct kvm *kvm, unsigned long hva);
+> >> +int kvm_test_and_clear_dirty_hva(struct kvm *kvm, unsigned long hva);
+> >>   void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
+> >>   int cpuid_maxphyaddr(struct kvm_vcpu *vcpu);
+> >>   int kvm_cpu_has_interrupt(struct kvm_vcpu *vcpu);
+> >> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> >> index aee3862..a5a0c51 100644
+> >> --- a/arch/x86/kvm/mmu.c
+> >> +++ b/arch/x86/kvm/mmu.c
+> >> @@ -979,6 +979,37 @@ out:
+> >>   	return young;
+> >>   }
+> >>
+> >> +/*
+> >> + * Caller is supposed to SetPageDirty(), it's not done inside this.
+> >> + */
+> >> +static
+> >> +int kvm_test_and_clear_dirty_rmapp(struct kvm *kvm, unsigned long *rmapp,
+> >> +				   unsigned long data)
+> >> +{
+> >> +	u64 *spte;
+> >> +	int dirty = 0;
+> >> +
+> >> +	if (!shadow_dirty_mask) {
+> >> +		WARN(1, "KVM: do NOT try to test dirty bit in EPT\n");
+> >> +		goto out;
+> >> +	}
+> > This should never fire with the dirty_update() notifier test, right?
+> > And that means that this whole optimization is for the shadow mmu case,
+> > arguably the legacy case.
+> >
+> 
+> Hi Chris,
+> AMD npt does track the dirty bit in the nested page tables,
+> so the shadow_dirty_mask should not be 0 in that case...
+> 
+Hi Izik, 
+I think he meant that if the caller is doing right && (!shadow_dirty_mask), 
+the kvm_test_and_clear_dirty_rmapp() will never be called at all. So 
+this test inside kvm_test_and_clear_dirty_rmapp() is useless...as I said
+I added this test in any case of this interface abused by others, just like
+a softer BUG_ON() --- dirty bit is not that critical to bump into BUG().
 
-Hi all,
 
-[The kernel.org mirroring is being slow today]
 
-Changes since 20110621:
-
-The powerpc allyesconfig (and probably others) is still broken because we
-now build the staging drivers and because of a commit in Linus' tree.
-
-The m68knommu tree gained a conflict against the m68k tree.
-
-The net tree lost its conflicts.
-
-The mfd tree lost its build failure.
-
-The gpio tree gained a conflict against the mfd tree.
-
-The tmem tree gained a conflict against the xen-two tree.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 194 trees (counting Linus' and 28 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging kbuild-current/rc-fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging 52xx-and-virtex-current/powerpc/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging devicetree-current/devicetree/merge
-Merging spi-current/spi/merge
-Merging arm/for-next
-Merging arm-lpae/for-next
-CONFLICT (content): Merge conflict in arch/arm/include/asm/pgalloc.h
-CONFLICT (content): Merge conflict in arch/arm/include/asm/pgtable.h
-CONFLICT (content): Merge conflict in arch/arm/include/asm/tlb.h
-CONFLICT (content): Merge conflict in arch/arm/mm/context.c
-CONFLICT (content): Merge conflict in arch/arm/mm/dma-mapping.c
-CONFLICT (content): Merge conflict in arch/arm/mm/proc-v7.S
-Merging at91/at91-next
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging linux-spec/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging ux500-core/ux500-core
-Merging xilinx/arm-next
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-CONFLICT (delete/modify): arch/m68k/include/asm/bitops_mm.h deleted in m68k=
-nommu/for-next and modified in HEAD. Version HEAD of arch/m68k/include/asm/=
-bitops_mm.h left in tree.
-$ git rm -f arch/m68k/include/asm/bitops_mm.h
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/for-next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/powerpc/next
-Merging galak/next
-CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020ds.dts
-CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020rdb.dts
-CONFLICT (content): Merge conflict in arch/powerpc/sysdev/mpic.c
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-Merging sparc/master
-Merging tile/master
-Merging unicore32/unicore32
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-CONFLICT (content): Merge conflict in fs/ceph/export.c
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/dev
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-Merging pci/linux-next
-Merging of-pci/of-pci
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging docs/docs-move
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
-Merging powertools/tools-test
-Merging cpupowerutils/master
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging slave-dma/next
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-CONFLICT (content): Merge conflict in drivers/net/wireless/rtlwifi/pci.c
-CONFLICT (content): Merge conflict in net/bluetooth/l2cap_core.c
-Merging bluetooth/master
-CONFLICT (content): Merge conflict in net/bluetooth/l2cap_core.c
-Merging mtd/master
-Merging l2-mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging sound-asoc/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-Merging input-mt/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-CONFLICT (delete/modify): drivers/mmc/host/sdhci-of-core.c deleted in mmc/m=
-mc-next and modified in HEAD. Version HEAD of drivers/mmc/host/sdhci-of-cor=
-e.c left in tree.
-$ git rm -f drivers/mmc/host/sdhci-of-core.c
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging selinux/master
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-CONFLICT (delete/modify): arch/arm/mach-ep93xx/dma-m2p.c deleted in HEAD an=
-d modified in trivial/for-next. Version trivial/for-next of arch/arm/mach-e=
-p93xx/dma-m2p.c left in tree.
-CONFLICT (delete/modify): arch/s390/kvm/sie64a.S deleted in HEAD and modifi=
-ed in trivial/for-next. Version trivial/for-next of arch/s390/kvm/sie64a.S =
-left in tree.
-CONFLICT (content): Merge conflict in drivers/mtd/maps/pxa2xx-flash.c
-$ git rm -f arch/arm/mach-ep93xx/dma-m2p.c
-$ git rm -f arch/s390/kvm/sie64a.S
-Merging audit/for-next
-Merging suspend/linux-next
-Merging apm/for-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/devicetree/next
-Merging spi/spi/next
-Merging gpio/gpio/next
-CONFLICT (content): Merge conflict in arch/arm/mach-ep93xx/Makefile
-CONFLICT (content): Merge conflict in drivers/gpio/Makefile
-CONFLICT (content): Merge conflict in drivers/gpio/gpio-ep93xx.c
-Merging tip/auto-latest
-Merging rcu/rcu/next
-Merging kvm/linux-next
-Merging oprofile/for-next
-Merging ptrace/ptrace
-Merging xen/upstream/xen
-Merging xen-two/linux-next
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging namespace/master
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-Merging usb/usb-next
-Merging staging/staging-next
-CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/dh=
-d_linux.c
-CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/dh=
-d_sdio.c
-CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/wl=
-_cfg80211.h
-CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/wl=
-_iw.c
-CONFLICT (content): Merge conflict in drivers/staging/usbip/userspace/src/u=
-tils.h
-Merging bkl-config/config
-Merging tmem/linux-next
-CONFLICT (content): Merge conflict in drivers/xen/Kconfig
-CONFLICT (content): Merge conflict in drivers/xen/tmem.c
-Merging writeback/next
-Merging arm-dt/devicetree/arm-next
-Merging scsi-post-merge/merge-base:master
-
---Signature=_Wed__22_Jun_2011_16_36_51_+1000_2CkdTz/Cd4Z6uB1/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOAY2DAAoJEDMEi1NhKgbs7nwH/iHIR3gWXuFWPGR6kOSmn7Jd
-8lhX8cMGphWJyLdBzjubHXQ+eQpGPEac+OSfJcpqayuC3koggOxFEYPHxZ2oXtp/
-wSZckA9LfU5G0vH+GN6wD6GN7URrX5n/tiQ7VpO4yU44QQMpgL15Risax6f6RK8w
-dqCkkEbaHhBGrzhbEja+wEd54OOjocH7oFsg4J4ggeVflHeoNHv7ZMYFYyOAYl3G
-nT8V0lZMXZnfjmeVLDYRb7mH/uYv4p/BM9NOLlNSqdiCG+zIMwHALWxf155WLAO1
-LjTJWGhD2Q9glxS1gIFlpbIb6t22SR9DGpybohUNPKh6RWt6jSPM6iZugHdJ9bs=
-=HjdO
------END PGP SIGNATURE-----
-
---Signature=_Wed__22_Jun_2011_16_36_51_+1000_2CkdTz/Cd4Z6uB1/--
