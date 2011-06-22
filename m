@@ -1,33 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757813Ab1FVBXj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 21:23:39 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:19282 "EHLO
+	id S1757836Ab1FVBYH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 21:24:07 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:54200 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757729Ab1FVBXg (ORCPT
+	with ESMTP id S1757793Ab1FVBYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 21:23:36 -0400
+	Tue, 21 Jun 2011 21:24:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
          :references:user-agent:mime-version:content-type;
-        b=tOI51TqrKuWAu4KKp3JnCcnqzgbdVPe6A7mG2Bm2Zy9bjv+dpdcGLjTnPOIke1zGUb
-         v1PoeDPsgUdCZm73YTwA==
-Date: Tue, 21 Jun 2011 18:23:08 -0700 (PDT)
+        b=HkiAn622IVg256eJOxueQF8ELiGSwnkEccEnEsRZrzfaMwbfQg1jkCsQ6EjHJ7wfYt
+         yDnkxlEaii/acummbPAQ==
+Date: Tue, 21 Jun 2011 18:23:57 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
 To: Amerigo Wang <amwang@redhat.com>
 cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        dave@linux.vnet.ibm.com, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: Re: [PATCH v2 2/4] mm: make the threshold of enabling THP
- configurable
-In-Reply-To: <1308643849-3325-2-git-send-email-amwang@redhat.com>
-Message-ID: <alpine.DEB.2.00.1106211817340.5205@chino.kir.corp.google.com>
-References: <1308643849-3325-1-git-send-email-amwang@redhat.com> <1308643849-3325-2-git-send-email-amwang@redhat.com>
+Subject: Re: [PATCH 3/4] mm: improve THP printk messages
+In-Reply-To: <1308643849-3325-3-git-send-email-amwang@redhat.com>
+Message-ID: <alpine.DEB.2.00.1106211823310.5205@chino.kir.corp.google.com>
+References: <1308643849-3325-1-git-send-email-amwang@redhat.com> <1308643849-3325-3-git-send-email-amwang@redhat.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -38,20 +35,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, 21 Jun 2011, Amerigo Wang wrote:
 
-> Don't hard-code 512M as the threshold in kernel, make it configruable,
-> and set 512M by default.
-> 
-> And print info when THP is disabled automatically on small systems.
-> 
-> V2: Add more description in help messages, correct some typos,
-> print the mini threshold too.
-> 
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index 126c96b..f9e720c 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -506,7 +506,7 @@ static int __init hugepage_init(void)
+>  	if (no_hugepage_init) {
+>  		err = 0;
+>  		transparent_hugepage_flags = 0;
+> -		printk(KERN_INFO "hugepage: totally disabled\n");
+> +		printk(KERN_INFO "THP: totally disabled\n");
+>  		goto out;
+>  	}
+>  
+> @@ -514,19 +514,19 @@ static int __init hugepage_init(void)
+>  	err = -ENOMEM;
+>  	hugepage_kobj = kobject_create_and_add("transparent_hugepage", mm_kobj);
+>  	if (unlikely(!hugepage_kobj)) {
+> -		printk(KERN_ERR "hugepage: failed kobject create\n");
+> +		printk(KERN_ERR "THP: failed kobject create\n");
+>  		goto out;
+>  	}
+>  
+>  	err = sysfs_create_group(hugepage_kobj, &hugepage_attr_group);
+>  	if (err) {
+> -		printk(KERN_ERR "hugepage: failed register hugeage group\n");
+> +		printk(KERN_ERR "THP: failed register hugeage group\n");
+>  		goto out;
+>  	}
+>  
+>  	err = sysfs_create_group(hugepage_kobj, &khugepaged_attr_group);
+>  	if (err) {
+> -		printk(KERN_ERR "hugepage: failed register hugeage group\n");
+> +		printk(KERN_ERR "THP: failed register hugeage group\n");
+>  		goto out;
+>  	}
+>  #endif
 
-I like the printk that notifies users why THP was disabled because it 
-could potentially be a source of confusion (and fixing the existing typos 
-in hugepage_init() would also be good).  However, I disagree that we need 
-to have this as a config option: you either want the feature for your 
-systems or you don't.  Perhaps add a "transparent_hugepage=force" option 
-that will act as "always" but also force it to be enabled in all 
-scenarios, even without X86_FEATURE_PSE, that will override all the logic 
-that thinks it knows better?
+You're changing a printk() but not fixing the typos in it?
