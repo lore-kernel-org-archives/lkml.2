@@ -1,39 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758723Ab1FVTn3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 15:43:29 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:52514 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758665Ab1FVTn1 (ORCPT
+	id S1758566Ab1FVTqN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 15:46:13 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:5284 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758041Ab1FVTqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 15:43:27 -0400
-Date: Wed, 22 Jun 2011 20:43:24 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Peter Chubb <peter.chubb@nicta.com.au>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Acer Aspire One now hangs on reboot/shutdown
-Message-ID: <20110622194324.GD8861@srcf.ucam.org>
-References: <w4oc1qp2wf.wl%peter@chubb.wattle.id.au>
+	Wed, 22 Jun 2011 15:46:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=skTgV4oV/jzBSHyCZkCvC6juGTzW96X8PIDg9Al7zVTm9rCtoFMR8qpAN9qd+6Woy8
+         0KmQX+yo7BRCyeBFEMew==
+Message-ID: <4E02467C.6090106@google.com>
+Date: Wed, 22 Jun 2011 12:46:04 -0700
+From: Mike Ditto <mditto@google.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <w4oc1qp2wf.wl%peter@chubb.wattle.id.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Stefan Assmann <sassmann@kpanic.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, tony.luck@intel.com, andi@firstfloor.org,
+        mingo@elte.hu, hpa@zytor.com, rick@vanrein.org, rdunlap@xenotime.net,
+        Nancy Yuen <yuenn@google.com>
+Subject: [PATCH] x86: e820: Eliminate bubble sort from sanitize_e820_map
+References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de> <20110622110034.89ee399c.akpm@linux-foundation.org>
+In-Reply-To: <20110622110034.89ee399c.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 08:38:08PM +1000, Peter Chubb wrote:
-> 
-> Hi Matthew,
->    GIT commit  660e34cebf0a11d54f2d5dd8838607452355f321 x86: reorder
->    reboot method preferences causes my Acer Aspire One to hang on
->    shutdown/reboot. 
+Replace the bubble sort in sanitize_e820_map() with a call to the generic
+kernel sort function to avoid pathological performance with large maps.
 
-Also, shutdown? Really?
+On large (thousands of entries) E820 maps, the previous code took minutes
+to run; with this change it's now milliseconds.
 
+Signed-off-by: Mike Ditto <mditto@google.com>
+---
+This is a small independent part of Google's BadRAM changes mentioned in
+another thread.
+
+ arch/x86/kernel/e820.c |   59 +++++++++++++++++++----------------------------
+ 1 files changed, 24 insertions(+), 35 deletions(-)
+
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 3e2ef84..e2e212a 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -18,6 +18,7 @@
+ #include <linux/acpi.h>
+ #include <linux/firmware-map.h>
+ #include <linux/memblock.h>
++#include <linux/sort.h>
+
+ #include <asm/e820.h>
+ #include <asm/proto.h>
+@@ -226,22 +227,38 @@ void __init e820_print_map(char *who)
+  *	   ____________________33__
+  *	   ______________________4_
+  */
++struct change_member {
++	struct e820entry *pbios; /* pointer to original bios entry */
++	unsigned long long addr; /* address for this change point */
++};
++
++static int __init cpcompare(const void *a, const void *b)
++{
++	struct change_member * const *app = a, * const *bpp = b;
++	const struct change_member *ap = *app, *bp = *bpp;
++
++	/*
++	 * Inputs are pointers to two elements of change_point[].  If their
++	 * addresses are unequal, their difference dominates.  If the addresses
++	 * are equal, then consider one that represents the end of its region
++	 * to be greater than one that does not.
++	 */
++	if (ap->addr != bp->addr)
++		return ap->addr > bp->addr ? 1 : -1;
++
++	return (ap->addr != ap->pbios->addr) - (bp->addr != bp->pbios->addr);
++}
+
+ int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
+ 			     u32 *pnr_map)
+ {
+-	struct change_member {
+-		struct e820entry *pbios; /* pointer to original bios entry */
+-		unsigned long long addr; /* address for this change point */
+-	};
+ 	static struct change_member change_point_list[2*E820_X_MAX] __initdata;
+ 	static struct change_member *change_point[2*E820_X_MAX] __initdata;
+ 	static struct e820entry *overlap_list[E820_X_MAX] __initdata;
+ 	static struct e820entry new_bios[E820_X_MAX] __initdata;
+-	struct change_member *change_tmp;
+ 	unsigned long current_type, last_type;
+ 	unsigned long long last_addr;
+-	int chgidx, still_changing;
++	int chgidx;
+ 	int overlap_entries;
+ 	int new_bios_entry;
+ 	int old_nr, new_nr, chg_nr;
+@@ -278,35 +295,7 @@ int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
+ 	chg_nr = chgidx;
+
+ 	/* sort change-point list by memory addresses (low -> high) */
+-	still_changing = 1;
+-	while (still_changing)	{
+-		still_changing = 0;
+-		for (i = 1; i < chg_nr; i++)  {
+-			unsigned long long curaddr, lastaddr;
+-			unsigned long long curpbaddr, lastpbaddr;
+-
+-			curaddr = change_point[i]->addr;
+-			lastaddr = change_point[i - 1]->addr;
+-			curpbaddr = change_point[i]->pbios->addr;
+-			lastpbaddr = change_point[i - 1]->pbios->addr;
+-
+-			/*
+-			 * swap entries, when:
+-			 *
+-			 * curaddr > lastaddr or
+-			 * curaddr == lastaddr and curaddr == curpbaddr and
+-			 * lastaddr != lastpbaddr
+-			 */
+-			if (curaddr < lastaddr ||
+-			    (curaddr == lastaddr && curaddr == curpbaddr &&
+-			     lastaddr != lastpbaddr)) {
+-				change_tmp = change_point[i];
+-				change_point[i] = change_point[i-1];
+-				change_point[i-1] = change_tmp;
+-				still_changing = 1;
+-			}
+-		}
+-	}
++	sort(change_point, chg_nr, sizeof *change_point, cpcompare, 0);
+
+ 	/* create a new bios memory map, removing overlaps */
+ 	overlap_entries = 0;	 /* number of entries in the overlap table */
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.3.1
+
+
