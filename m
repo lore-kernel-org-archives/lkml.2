@@ -1,184 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932449Ab1FVPxO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 11:53:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49476 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932297Ab1FVPxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 11:53:13 -0400
-Date: Wed, 22 Jun 2011 17:53:09 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: Re: [PATCH 4/7] memcg: update numa information based on event counter
-Message-ID: <20110622155309.GH14343@tiehlicka.suse.cz>
-References: <20110616124730.d6960b8b.kamezawa.hiroyu@jp.fujitsu.com>
- <20110616125400.1145a4e2.kamezawa.hiroyu@jp.fujitsu.com>
+	id S932441Ab1FVPpu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 11:45:50 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:43578 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932210Ab1FVPpt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 11:45:49 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E02100C.2000408@cam.ac.uk>
+Date: Wed, 22 Jun 2011 16:53:48 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110616125400.1145a4e2.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jean Delvare <khali@linux-fr.org>
+CC: Bryan Freed <bfreed@chromium.org>, linux-kernel@vger.kernel.org,
+        jbrenner@taosinc.com, gregkh@suse.de, arnd@arndb.de,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Amit Kucheria <amit.kucheria@verdurent.com>
+Subject: Re: [PATCH 1/3] light sensor: Add SMBUS support to the tsl2563 driver.
+References: <1308696897-25161-1-git-send-email-bfreed@chromium.org>	<4E01B068.3090102@cam.ac.uk> <20110622161035.5bfe2a73@endymion.delvare>
+In-Reply-To: <20110622161035.5bfe2a73@endymion.delvare>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 16-06-11 12:54:00, KAMEZAWA Hiroyuki wrote:
-> From 88090fe10e225ad8769ba0ea01692b7314e8b973 Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Wed, 15 Jun 2011 16:19:46 +0900
-> Subject: [PATCH 4/7] memcg: update numa information based on event counter
+On 06/22/11 15:10, Jean Delvare wrote:
+> On Wed, 22 Jun 2011 10:05:44 +0100, Jonathan Cameron wrote:
+>> On 06/21/11 23:54, Bryan Freed wrote:
+>>> This is so we can support it on x86 SMBUS adapters.
+>> Hi Brian,
+>>
+>> Please cc linux-iio@vger.kernel.org for iio patches.  Also this driver has fairly
+>> clear authorship at the top, so more for your cc list. (added)
+>>>
+>>> Signed-off-by: Bryan Freed <bfreed@chromium.org>
+>>> ---
+>>>  drivers/staging/iio/light/tsl2563.c |   29 ++++++++++++++++++++++++++++-
+>>>  1 files changed, 28 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/drivers/staging/iio/light/tsl2563.c b/drivers/staging/iio/light/tsl2563.c
+>>> index 9cffa2e..04aa155 100644
+>>> --- a/drivers/staging/iio/light/tsl2563.c
+>>> +++ b/drivers/staging/iio/light/tsl2563.c
+>>> @@ -137,6 +137,8 @@ struct tsl2563_chip {
+>>>  	u32			data1;
+>>>  };
+>>>  
+>>> +static int use_smbus;
 > 
-> commit 889976 adds an numa node round-robin for memcg. But the information
-> is updated once per 10sec.
+> Global variables are bad.
++1
 > 
-> This patch changes the update trigger from jiffies to memcg's event count.
-> After this patch, numa scan information will be updated when
+>>> +
+>>>  static int tsl2563_write(struct i2c_client *client, u8 reg, u8 value)
+>>>  {
+>>>  	int ret;
+>>> @@ -145,15 +147,35 @@ static int tsl2563_write(struct i2c_client *client, u8 reg, u8 value)
+>>>  	buf[0] = TSL2563_CMD | reg;
+>>>  	buf[1] = value;
+>>>  
+>>> +	if (use_smbus) {
+>>> +		ret = i2c_smbus_write_byte_data(client, buf[0], value);
+>>> +		return ret;
+>>> +	}
+>>> +
+>> Here I'd prefer to see this in an else block to make the program flow clear. Same with the others.
+>> Actually, is there any reason we can't use the smbus_write_byte_data for all cases?  I 'think'
+>> it's emulated via i2c if that is available and smbus is not? (cc'd Jean to confirm this - though
+>> a quick code browse of i2c-core.c looks promising.)
+>>
+>> If smbus_xfer is not supplied by the adapter, i2c_smbus_xfer_emulated is called. 
 > 
->   - the number of pagein/out events is larger than 3% of limit
->   or
->   - the number of pagein/out events is larger than 16k
->     (==64MB pagein/pageout if pagesize==4k.)
+> You are totally right. Just use smbus all the time and be done with it.
 > 
-> The counter of mem->numascan_update the sum of percpu events counter.
-> When a task hits limit, it checks mem->numascan_update. If it's over
-> min(3% of limit, 16k), numa information will be updated.
-
-Yes, I like the event based approach more than the origin (time) based
-one.
-
+>> The only possible issue I can think of is that a device supports full i2c + a partial smbus
+>> support. (rather odd!)
 > 
-> This patch also adds mutex for updating information. This will allow us
-> to avoid unnecessary scan.
+> That would be up to the underlying I2C bus driver to handle, not the
+> I2C device drivers individually.
+Cool. Good to have that confirmed.
 > 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/memcontrol.c |   51 +++++++++++++++++++++++++++++++++++++++++++++------
->  1 file changed, 45 insertions(+), 6 deletions(-)
+>>>  	ret = i2c_master_send(client, buf, sizeof(buf));
+>>>  	return (ret == sizeof(buf)) ? 0 : ret;
+>>>  }
+>>>  
+>>> -static int tsl2563_read(struct i2c_client *client, u8 reg, void *buf, int len)
+>>> +static int tsl2563_read(struct i2c_client *client, u8 reg, u8 *buf, int len)
+>>>  {
+>>>  	int ret;
+>>>  	u8 cmd = TSL2563_CMD | reg;
+>>>  
+>>> +	if (use_smbus) {
+>>> +		if (len == 1) {
+>>> +			ret = i2c_smbus_read_byte_data(client, cmd);
+>>> +			buf[0] = ret & 0xff;
+>>> +		} else if (len == 2) {
+>>> +			ret = i2c_smbus_read_word_data(client, cmd);
+>>> +			buf[0] = ret & 0xff;
+>>> +			buf[1] = (ret >> 8) & 0xff;
 > 
-> Index: mmotm-0615/mm/memcontrol.c
-> ===================================================================
-> --- mmotm-0615.orig/mm/memcontrol.c
-> +++ mmotm-0615/mm/memcontrol.c
-> @@ -108,10 +108,12 @@ enum mem_cgroup_events_index {
->  enum mem_cgroup_events_target {
->  	MEM_CGROUP_TARGET_THRESH,
->  	MEM_CGROUP_TARGET_SOFTLIMIT,
-> +	MEM_CGROUP_TARGET_NUMASCAN,
+> swab16 is your friend (and the bogus SMBus byte order convention be
+> damned.)
+I would imagine the be16_to_cpu etc is even better as we don't know the
+cpu endianess. 
+> 
+>>> +		} else
+>>> +			ret = -1;
+>> If we hit this something has gone hideously wrong.  Hence please
+>> audit the driver to be sure this doesn't happen and don't bother
+>> with this extra option.
+> 
+> +1 In fact the whole tsl2563_read interface should be revisited.
+> Passing the length as a parameter makes no sense when using the SMBus
+> API. Just have tsl2563_read8() which reads a byte and tsl2563_read16()
+> which reads a word, this will be much more efficient, and you get
+> proper type checking for free.
+Agreed.
+> 
+>>> +		if (ret < 0)
+>>> +			return 0; /* failure */
+>> Please return the error, not 0 in event of failure.
+>>> +		return len; /* success */
+>>> +	}
+>>> +
+>>>  	ret = i2c_master_send(client, &cmd, sizeof(cmd));
+>>>  	if (ret != sizeof(cmd))
+>>>  		return ret;
+>>> @@ -712,6 +734,11 @@ static int __devinit tsl2563_probe(struct i2c_client *client,
+>>>  	int err = 0;
+>>>  	int ret;
+>>>  	u8 id;
+>>> +	u32 smbus_func = I2C_FUNC_SMBUS_BYTE_DATA | I2C_FUNC_SMBUS_WORD_DATA;
+>> Can this be const?  Oddly, the answer looks to be no.  Given its an inline
+> 
+> I see no reason why not.
+oops. as below, I was clearly asleep this morning...
+> 
+>> in i2c.h, can't see why this one isn't const.  Jean, am I missing something
+>> or wouldn't:
+>> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+>> index a6c652e..be5515d 100644
+>> --- a/include/linux/i2c.h
+>> +++ b/include/linux/i2c.h
+>> @@ -458,7 +458,7 @@ static inline u32 i2c_get_functionality(struct i2c_adapter *adap)
+>>  }
+>>  
+>>  /* Return 1 if adapter supports everything we need, 0 if not. */
+>> -static inline int i2c_check_functionality(struct i2c_adapter *adap, u32 func)
+>> +static inline int i2c_check_functionality(struct i2c_adapter *adap, const u32 func)
+>>  {
+>>         return (func & i2c_get_functionality(adap)) == func;
+>>  }
+>>
+>> Be a sensible change?
+> 
+> This is technically correct, as the function doesn't modify the
+> parameter, however this change has no effect on the caller. func is
+> passed by value, not address, so the caller doesn't care at all whether
+> i2c_check_functionality modifies it locally or not.
+Doh. I'm half asleep today and failed to notice it wasn't a pointer.
+> 
+> There are a lot of places where such by-value parameters could be made
+> const, however nobody bothers, because it makes the function
+> declarations harder to read for virtually no benefit (as opposed to
+> const pointers, which do have value for the caller.)
+> 
+>> For that matter, this code should probably just have that
+>> value inline in the function call as it isn't used anywhere else.
+> 
+> +1
+> 
+>>
+>>> +	/* We support both I2C and SMBUS adapter interfaces. */
+>>> +	if (i2c_check_functionality(client->adapter, smbus_func))
+>>> +		use_smbus = 1;
+>>>  
+>>>  	indio_dev = iio_allocate_device(sizeof(*chip));
+>>>  	if (!indio_dev)
+>>
+> 
+> 
 
-Shouldn't it be defined only for MAX_NUMNODES > 1
-
->  	MEM_CGROUP_NTARGETS,
->  };
->  #define THRESHOLDS_EVENTS_TARGET (128)
->  #define SOFTLIMIT_EVENTS_TARGET (1024)
-> +#define NUMASCAN_EVENTS_TARGET  (1024)
->  
->  struct mem_cgroup_stat_cpu {
->  	long count[MEM_CGROUP_STAT_NSTATS];
-> @@ -288,8 +290,9 @@ struct mem_cgroup {
->  	int last_scanned_node;
->  #if MAX_NUMNODES > 1
->  	nodemask_t	scan_nodes;
-> -	unsigned long   next_scan_node_update;
-> +	struct mutex	numascan_mutex;
->  #endif
-> +	atomic_t	numascan_update;
-
-Why it is out of ifdef?
-
->  	/*
->  	 * Should the accounting and control be hierarchical, per subtree?
->  	 */
-> @@ -741,6 +744,9 @@ static void __mem_cgroup_target_update(s
->  	case MEM_CGROUP_TARGET_SOFTLIMIT:
->  		next = val + SOFTLIMIT_EVENTS_TARGET;
->  		break;
-> +	case MEM_CGROUP_TARGET_NUMASCAN:
-> +		next = val + NUMASCAN_EVENTS_TARGET;
-> +		break;
-
-MAX_NUMNODES > 1
-
->  	default:
->  		return;
->  	}
-> @@ -764,6 +770,13 @@ static void memcg_check_events(struct me
->  			__mem_cgroup_target_update(mem,
->  				MEM_CGROUP_TARGET_SOFTLIMIT);
->  		}
-> +		if (unlikely(__memcg_event_check(mem,
-> +			MEM_CGROUP_TARGET_NUMASCAN))) {
-> +			atomic_add(MEM_CGROUP_TARGET_NUMASCAN,
-> +				&mem->numascan_update);
-> +			__mem_cgroup_target_update(mem,
-> +				MEM_CGROUP_TARGET_NUMASCAN);
-> +		}
->  	}
-
-again MAX_NUMNODES > 1
-
->  }
->  
-> @@ -1616,17 +1629,32 @@ mem_cgroup_select_victim(struct mem_cgro
->  /*
->   * Always updating the nodemask is not very good - even if we have an empty
->   * list or the wrong list here, we can start from some node and traverse all
-> - * nodes based on the zonelist. So update the list loosely once per 10 secs.
-> + * nodes based on the zonelist.
->   *
-> + * The counter of mem->numascan_update is updated once per
-> + * NUMASCAN_EVENTS_TARGET. We update the numa information when we see
-> + * the number of event is larger than 3% of limit or  64MB pagein/pageout.
->   */
-> +#define NUMASCAN_UPDATE_RATIO	(3)
-> +#define NUMASCAN_UPDATE_THRESH	(16384UL) /* 16k events of pagein/pageout */
->  static void mem_cgroup_may_update_nodemask(struct mem_cgroup *mem)
->  {
->  	int nid;
-> -
-> -	if (time_after(mem->next_scan_node_update, jiffies))
-> +	unsigned long long limit;
-> +	/* if no limit, we never reach here */
-> +	limit = res_counter_read_u64(&mem->res, RES_LIMIT);
-> +	limit /= PAGE_SIZE;
-> +	/* 3% of limit */
-> +	limit = (limit * NUMASCAN_UPDATE_RATIO/100UL);
-> +	limit = min_t(unsigned long long, limit, NUMASCAN_UPDATE_THRESH);
-> +	/*
-> +	 * If the number of pagein/out event is larger than 3% of limit or
-> +	 * 64MB pagein/out, refresh numa information.
-> +	 */
-> +	if (atomic_read(&mem->numascan_update) < limit ||
-> +	    !mutex_trylock(&mem->numascan_mutex))
->  		return;
-
-I am not sure whether a mutex is not overkill here. What about using an
-atomic operation instead?
-
-> -
-> -	mem->next_scan_node_update = jiffies + 10*HZ;
-> +	atomic_set(&mem->numascan_update, 0);
->  	/* make a nodemask where this memcg uses memory from */
->  	mem->scan_nodes = node_states[N_HIGH_MEMORY];
->  
-> @@ -1642,6 +1670,7 @@ static void mem_cgroup_may_update_nodema
->  			continue;
->  		node_clear(nid, mem->scan_nodes);
->  	}
-> +	mutex_unlock(&mem->numascan_mutex);
->  }
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
