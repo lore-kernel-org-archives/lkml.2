@@ -1,308 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756001Ab1FVKki (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 06:40:38 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:49450 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707Ab1FVKkg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 06:40:36 -0400
-X-AuditID: cbfee61a-b7c59ae000003b70-33-4e01c69d9102
-Date: Wed, 22 Jun 2011 19:40:06 +0900
-From: Donggeun Kim <dg77.kim@samsung.com>
-Subject: [PATCH] power_supply: Add charger driver for MAX8997/8966
-To: cbouatmailru@gmail.com
-Cc: sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com, dg77.kim@samsung.com
-Message-id: <1308739206-7802-1-git-send-email-dg77.kim@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-Content-transfer-encoding: 7BIT
-X-OriginalArrivalTime: 22 Jun 2011 10:39:46.0656 (UTC)
- FILETIME=[B47C9E00:01CC30C8]
-X-Brightmail-Tracker: AAAAAA==
+	id S1756629Ab1FVKoU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 06:44:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47945 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753330Ab1FVKoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 06:44:18 -0400
+Message-ID: <4E01C752.10405@redhat.com>
+Date: Wed, 22 Jun 2011 13:43:30 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: nai.xia@gmail.com
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
+        Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
+Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte
+ and mmu notifier to help KSM dirty bit tracking
+References: <201106212055.25400.nai.xia@gmail.com> <201106212132.39311.nai.xia@gmail.com>
+In-Reply-To: <201106212132.39311.nai.xia@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MAX8997/8966 chip is a multi-function device which includes
-PMIC, RTC, Fuel Gauge, MUIC, Haptic, Flash control, and
-Battery charging control.
-The driver for it is located at drivers/mfd.
+On 06/21/2011 04:32 PM, Nai Xia wrote:
+> Introduced kvm_mmu_notifier_test_and_clear_dirty(), kvm_mmu_notifier_dirty_update()
+> and their mmu_notifier interfaces to support KSM dirty bit tracking, which brings
+> significant performance gain in volatile pages scanning in KSM.
+> Currently, kvm_mmu_notifier_dirty_update() returns 0 if and only if intel EPT is
+> enabled to indicate that the dirty bits of underlying sptes are not updated by
+> hardware.
+>
 
-This patch supports battery charging control of MAX8997/8966 chip and
-provides power supply class information to userspace.
 
-Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: KyungMin Park <kyungmin.park@samsung.com>
----
- drivers/power/Kconfig           |    7 ++
- drivers/power/Makefile          |    1 +
- drivers/power/max8997_charger.c |  206 +++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/max8997.h     |    7 +-
- 4 files changed, 220 insertions(+), 1 deletions(-)
- create mode 100644 drivers/power/max8997_charger.c
+Can you quantify the performance gains?
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index e57b50b..2d1d0c1 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -235,4 +235,11 @@ config CHARGER_GPIO
- 	  This driver can be build as a module. If so, the module will be
- 	  called gpio-charger.
- 
-+config CHARGER_MAX8997
-+	tristate "Maxim MAX8997/MAX8966 PMIC battery charger driver"
-+	depends on MFD_MAX8997 && REGULATOR_MAX8997
-+	help
-+	  Say Y to enable support for the battery charger control sysfs and
-+	  platform data of MAX8997/LP3974 PMICs.
-+
- endif # POWER_SUPPLY
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index 009a90f..a98ffaa 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -36,3 +36,4 @@ obj-$(CONFIG_CHARGER_ISP1704)	+= isp1704_charger.o
- obj-$(CONFIG_CHARGER_MAX8903)	+= max8903_charger.o
- obj-$(CONFIG_CHARGER_TWL4030)	+= twl4030_charger.o
- obj-$(CONFIG_CHARGER_GPIO)	+= gpio-charger.o
-+obj-$(CONFIG_CHARGER_MAX8997)	+= max8997_charger.o
-diff --git a/drivers/power/max8997_charger.c b/drivers/power/max8997_charger.c
-new file mode 100644
-index 0000000..7106b49
---- /dev/null
-+++ b/drivers/power/max8997_charger.c
-@@ -0,0 +1,206 @@
-+/*
-+ * max8997_charger.c - Power supply consumer driver for the Maxim 8997/8966
-+ *
-+ *  Copyright (C) 2011 Samsung Electronics
-+ *  MyungJoo Ham <myungjoo.ham@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/power_supply.h>
-+#include <linux/mfd/max8997.h>
-+#include <linux/mfd/max8997-private.h>
-+
-+struct charger_data {
-+	struct device *dev;
-+	struct max8997_dev *iodev;
-+	struct power_supply battery;
-+};
-+
-+static enum power_supply_property max8997_battery_props[] = {
-+	POWER_SUPPLY_PROP_STATUS, /* "FULL" or "NOT FULL" only. */
-+	POWER_SUPPLY_PROP_PRESENT, /* the presence of battery */
-+	POWER_SUPPLY_PROP_ONLINE, /* charger is active or not */
-+};
-+
-+/* Note that the charger control is done by a current regulator "CHARGER" */
-+static int max8997_battery_get_property(struct power_supply *psy,
-+		enum power_supply_property psp,
-+		union power_supply_propval *val)
-+{
-+	struct charger_data *charger = container_of(psy,
-+			struct charger_data, battery);
-+	struct i2c_client *i2c = charger->iodev->i2c;
-+	int ret;
-+	u8 reg;
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_STATUS:
-+		val->intval = 0;
-+		ret = max8997_read_reg(i2c, MAX8997_REG_STATUS4, &reg);
-+		if (ret)
-+			return ret;
-+		if ((reg & (1 << 0)) == 0x1)
-+			val->intval = POWER_SUPPLY_STATUS_FULL;
-+
-+		break;
-+	case POWER_SUPPLY_PROP_PRESENT:
-+		val->intval = 0;
-+		ret = max8997_read_reg(i2c, MAX8997_REG_STATUS4, &reg);
-+		if (ret)
-+			return ret;
-+		if ((reg & (1 << 2)) == 0x0)
-+			val->intval = 1;
-+
-+		break;
-+	case POWER_SUPPLY_PROP_ONLINE:
-+		val->intval = 0;
-+		ret = max8997_read_reg(i2c, MAX8997_REG_STATUS4, &reg);
-+		if (ret)
-+			return ret;
-+		/* DCINOK */
-+		if (reg & (1 << 1))
-+			val->intval = 1;
-+
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static __devinit int max8997_battery_probe(struct platform_device *pdev)
-+{
-+	int ret = 0;
-+	struct charger_data *charger;
-+	struct max8997_dev *iodev = dev_get_drvdata(pdev->dev.parent);
-+	struct max8997_platform_data *pdata = dev_get_platdata(iodev->dev);
-+
-+	if (!pdata)
-+		return -EINVAL;
-+
-+	if (pdata->eoc_mA) {
-+		u8 val = (pdata->eoc_mA - 50) / 10;
-+		if (val < 0)
-+			val = 0;
-+		if (val > 0xf)
-+			val = 0xf;
-+
-+		ret = max8997_update_reg(iodev->i2c,
-+				MAX8997_REG_MBCCTRL5, val, 0xf);
-+		if (ret < 0) {
-+			dev_err(&pdev->dev, "Cannot use i2c bus.\n");
-+			return ret;
-+		}
-+	}
-+
-+	switch (pdata->timeout) {
-+	case 5:
-+		ret = max8997_update_reg(iodev->i2c, MAX8997_REG_MBCCTRL1,
-+				0x2 << 4, 0x7 << 4);
-+		break;
-+	case 6:
-+		ret = max8997_update_reg(iodev->i2c, MAX8997_REG_MBCCTRL1,
-+				0x3 << 4, 0x7 << 4);
-+		break;
-+	case 7:
-+		ret = max8997_update_reg(iodev->i2c, MAX8997_REG_MBCCTRL1,
-+				0x4 << 4, 0x7 << 4);
-+		break;
-+	case 0:
-+		ret = max8997_update_reg(iodev->i2c, MAX8997_REG_MBCCTRL1,
-+				0x7 << 4, 0x7 << 4);
-+		break;
-+	default:
-+		dev_err(&pdev->dev, "incorrect timeout value (%d)\n",
-+				pdata->timeout);
-+		return -EINVAL;
-+	}
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Cannot use i2c bus.\n");
-+		return ret;
-+	}
-+
-+	charger = kzalloc(sizeof(struct charger_data), GFP_KERNEL);
-+	if (charger == NULL) {
-+		dev_err(&pdev->dev, "Cannot allocate memory.\n");
-+		return -ENOMEM;
-+	}
-+
-+	platform_set_drvdata(pdev, charger);
-+
-+	charger->battery.name = "max8997_pmic";
-+	charger->battery.type = POWER_SUPPLY_TYPE_BATTERY;
-+	charger->battery.get_property = max8997_battery_get_property;
-+	charger->battery.properties = max8997_battery_props;
-+	charger->battery.num_properties = ARRAY_SIZE(max8997_battery_props);
-+
-+	charger->dev = &pdev->dev;
-+	charger->iodev = iodev;
-+
-+	ret = power_supply_register(&pdev->dev, &charger->battery);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed: power supply register\n");
-+		goto err;
-+	}
-+
-+	return 0;
-+err:
-+	kfree(charger);
-+	return ret;
-+}
-+
-+static int __devexit max8997_battery_remove(struct platform_device *pdev)
-+{
-+	struct charger_data *charger = platform_get_drvdata(pdev);
-+
-+	power_supply_unregister(&charger->battery);
-+	kfree(charger);
-+	return 0;
-+}
-+
-+static const struct platform_device_id max8997_battery_id[] = {
-+	{ "max8997-battery", 0 },
-+};
-+
-+static struct platform_driver max8997_battery_driver = {
-+	.driver = {
-+		.name = "max8997-battery",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = max8997_battery_probe,
-+	.remove = __devexit_p(max8997_battery_remove),
-+	.id_table = max8997_battery_id,
-+};
-+
-+static int __init max8997_battery_init(void)
-+{
-+	return platform_driver_register(&max8997_battery_driver);
-+}
-+subsys_initcall(max8997_battery_init);
-+
-+static void __exit max8997_battery_cleanup(void)
-+{
-+	platform_driver_unregister(&max8997_battery_driver);
-+}
-+module_exit(max8997_battery_cleanup);
-+
-+MODULE_DESCRIPTION("MAXIM 8997/8966 battery control driver");
-+MODULE_AUTHOR("MyungJoo Ham <myungjoo.ham@samsung.com>");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/mfd/max8997.h b/include/linux/mfd/max8997.h
-index 60931d0..0bbd13d 100644
---- a/include/linux/mfd/max8997.h
-+++ b/include/linux/mfd/max8997.h
-@@ -107,11 +107,16 @@ struct max8997_platform_data {
- 	unsigned int buck5_voltage[8];
- 	bool buck5_gpiodvs;
- 
-+	/* ---- Charger control ---- */
-+	/* eoc stands for 'end of charge' */
-+	int eoc_mA; /* 50 ~ 200mA by 10mA step */
-+	/* charge Full Timeout */
-+	int timeout; /* 0 (no timeout), 5, 6, 7 hours */
-+
- 	/* MUIC: Not implemented */
- 	/* HAPTIC: Not implemented */
- 	/* RTC: Not implemented */
- 	/* Flash: Not implemented */
--	/* Charger control: Not implemented */
- };
- 
- #endif /* __LINUX_MFD_MAX8998_H */
+> +int kvm_test_and_clear_dirty_rmapp(struct kvm *kvm, unsigned long *rmapp,
+> +				   unsigned long data)
+> +{
+> +	u64 *spte;
+> +	int dirty = 0;
+> +
+> +	if (!shadow_dirty_mask) {
+> +		WARN(1, "KVM: do NOT try to test dirty bit in EPT\n");
+> +		goto out;
+> +	}
+> +
+> +	spte = rmap_next(kvm, rmapp, NULL);
+> +	while (spte) {
+> +		int _dirty;
+> +		u64 _spte = *spte;
+> +		BUG_ON(!(_spte&  PT_PRESENT_MASK));
+> +		_dirty = _spte&  PT_DIRTY_MASK;
+> +		if (_dirty) {
+> +			dirty = 1;
+> +			clear_bit(PT_DIRTY_SHIFT, (unsigned long *)spte);
+> +		}
+
+Racy.  Also, needs a tlb flush eventually.
+
+> +		spte = rmap_next(kvm, rmapp, spte);
+> +	}
+> +out:
+> +	return dirty;
+> +}
+> +
+>   #define RMAP_RECYCLE_THRESHOLD 1000
+>
+>
+>   struct mmu_notifier_ops {
+> +	int (*dirty_update)(struct mmu_notifier *mn,
+> +			     struct mm_struct *mm);
+> +
+
+I prefer to have test_and_clear_dirty() always return 1 in this case (if 
+the spte is writeable), and drop this callback.
+> +int __mmu_notifier_dirty_update(struct mm_struct *mm)
+> +{
+> +	struct mmu_notifier *mn;
+> +	struct hlist_node *n;
+> +	int dirty_update = 0;
+> +
+> +	rcu_read_lock();
+> +	hlist_for_each_entry_rcu(mn, n,&mm->mmu_notifier_mm->list, hlist) {
+> +		if (mn->ops->dirty_update)
+> +			dirty_update |= mn->ops->dirty_update(mn, mm);
+> +	}
+> +	rcu_read_unlock();
+> +
+
+Should it not be &= instead?
+
+> +	return dirty_update;
+> +}
+> +
+>   /*
+>    * This function can't run concurrently against mmu_notifier_register
+>    * because mm->mm_users>  0 during mmu_notifier_register and exit_mmap
+
 -- 
-1.7.4.1
+error compiling committee.c: too many arguments to function
 
