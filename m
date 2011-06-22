@@ -1,75 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758006Ab1FVR1L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 13:27:11 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50197 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754465Ab1FVR1J (ORCPT
+	id S1758246Ab1FVRar (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 13:30:47 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58720 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757843Ab1FVRaq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 13:27:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=GilIFXPydXUDUCidl0QGtzVoWxadImZBRdSIFKjV3YyqbT8pLaM36bvci/4sIRSBI0
-         teOUTmu5cuafpGEi5vpp+5b3ajgNl64QOk3Mg0W2Y5/7puTOYQ3sCRhcCIBlLzOp/A1M
-         pRUz/ByjlEmUYJIgQs/4oTaVTKBdIrAzksLho=
-MIME-Version: 1.0
-In-Reply-To: <20110622132114.GA8656@dumpdata.com>
-References: <BANLkTi=H17HC29bCTncSbXXm+RjwOCP49g@mail.gmail.com>
-	<BANLkTikyjzQ-VZMn2_ZobEmHMLRafki9YQ@mail.gmail.com>
-	<20110622132114.GA8656@dumpdata.com>
-Date: Wed, 22 Jun 2011 10:27:08 -0700
-Message-ID: <BANLkTi=v7i04JhXRaf18_=nXKSgwHMDJjg@mail.gmail.com>
-Subject: Re: code sections beyond .text skipped from alternatives_smp_module_add
-From: Deep Debroy <ddebroy@gmail.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, kraxel@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 22 Jun 2011 13:30:46 -0400
+Subject: Re: [patch 09/16] sched: unthrottle cfs_rq(s) who ran out of quota
+ at period refresh
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
+        Nikhil Rao <ncrao@google.com>
+In-Reply-To: <20110621071700.599897751@google.com>
+References: <20110621071649.862846205@google.com>
+	 <20110621071700.599897751@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 22 Jun 2011 19:29:11 +0200
+Message-ID: <1308763751.1022.60.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 6:21 AM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
->> > Looking at the code, in module_finalize for x86, only .text seems to
->> > be getting picked for the patching of lock prefixes while other
->> > sections such as .exit.text or .init.text are not. Is there a reason
->> > we skip the other *.text code sections from the lock patches? Would
->> + Gerd Hoffmann who introduced the SMP patching code below back in Jan
->> 2006 as part of 2.6.15.
->
-> Whoa, long time ago.
->
->>
->> Any comments on why patching of smp_lock prefixes should be restricted
->> to .text and not other *.text code sections?
->
-> It could be that at that time the .exit.text or .init.text did not exist.
->
-> As in, the patching code just hasn't kept up. One way of checking that
-> is just finding the ancient 2.6.15 code and seeing if there is any
-> mention of those extra segments.
->
+On Tue, 2011-06-21 at 00:16 -0700, Paul Turner wrote:
+>  static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
+>  {
+> -       int idle = 1;
+> +       int idle = 1, throttled = 0;
+> +       u64 runtime, runtime_expires;
+> +
+>  
+>         raw_spin_lock(&cfs_b->lock);
+>         if (cfs_b->quota != RUNTIME_INF) {
+> -               idle = cfs_b->idle;
+> -               /* If we're going idle then defer handle the refill */
+> +               /* idle depends on !throttled in the case of a large deficit */
+> +               throttled = !list_empty(&cfs_b->throttled_cfs_rq);
+> +               idle = cfs_b->idle && !throttled;
+> +
+> +               /* If we're going idle then defer the refill */
+>                 if (!idle)
+>                         __refill_cfs_bandwidth_runtime(cfs_b);
+> +               if (throttled) {
+> +                       runtime = cfs_b->runtime;
+> +                       runtime_expires = cfs_b->runtime_expires;
+> +
+> +                       /* we must first distribute to throttled entities */
+> +                       cfs_b->runtime = 0;
+> +               }
 
-Thanks Konrad. One slight correction: after rechecking the kernel
-sources, it appears the smp lock prefix code first made it's
-appearance in the official trees during 2.6.18. In any case, going
-back even to 2.6.16 sources, layout_sections in module.c specially
-handled .init prefixed sections from the rest i.e. core sections.
-Further, the module struct in include/module/linux.h seems to have had
-members such as init_text_size which suggests atleast .init.text did
-exit back then as well. While I didn't find any crumbs in the code
-that point to the existence of a .exit.text (besides a function
-pointer called exit which most likely ended up in the .exit.text), the
-ELF headers for Centos 5.6 kernel objects (which uses the 2.6.18
-kernel) typically have a .exit.text.
+Why, whats so bad about letting someone take some concurrently and not
+getting throttled meanwhile? Starvation considerations? If so, that
+wants mentioning.
 
-> Do you have a patch to fix this?
->
+>  
+>                 /*
+> -                * mark this bandwidth pool as idle so that we may deactivate
+> -                * the timer at the next expiration if there is no usage.
+> +                * conditionally mark this bandwidth pool as idle so that we may
+> +                * deactivate the timer at the next expiration if there is no
+> +                * usage.
+>                  */
+> -               cfs_b->idle = 1;
+> +               cfs_b->idle = !throttled;
+>         }
+>  
+> -       if (idle)
+> +       if (idle) {
+>                 cfs_b->timer_active = 0;
+> +               goto out_unlock;
+> +       }
+> +       raw_spin_unlock(&cfs_b->lock);
+> +
+> +retry:
+> +       runtime = distribute_cfs_runtime(cfs_b, runtime, runtime_expires);
+> +
+> +       raw_spin_lock(&cfs_b->lock);
+> +       /* new bandwidth specification may exist */
+> +       if (unlikely(runtime_expires != cfs_b->runtime_expires))
+> +               goto out_unlock;
 
-I can work on that. Just wanted to first make sure that there wasn't
-any specific reason to avoid patching non .text sections.
+it might help to explain how, runtime_expires is taken from cfs_b after
+calling __refill_cfs_bandwidth_runtime, and we're in the replenishment
+timer, so nobody is going to be adding new runtime.
 
-Thanks,
-Deep
+> +       /* ensure no-one was throttled while we unthrottling */
+> +       if (unlikely(!list_empty(&cfs_b->throttled_cfs_rq)) && runtime > 0) {
+> +               raw_spin_unlock(&cfs_b->lock);
+> +               goto retry;
+> +       }
+
+OK, I can see that.
+
+> +
+> +       /* return remaining runtime */
+> +       cfs_b->runtime = runtime;
+> +out_unlock:
+>         raw_spin_unlock(&cfs_b->lock);
+>  
+>         return idle; 
+
+This function hurts my brain, code flow is horrid.
