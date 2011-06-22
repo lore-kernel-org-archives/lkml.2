@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759044Ab1FVWQJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 18:16:09 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51482 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758297Ab1FVWQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 18:16:07 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@ti.com>
-Subject: Re: [Update][PATCH 7/8] PM / Domains: System-wide transitions support for generic domains (v3)
-Date: Thu, 23 Jun 2011 00:16:46 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org
-References: <201106112223.04972.rjw@sisk.pl> <201106200006.07642.rjw@sisk.pl> <8739j1lemc.fsf@ti.com>
-In-Reply-To: <8739j1lemc.fsf@ti.com>
+	id S1759067Ab1FVWSH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 18:18:07 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:2200 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758297Ab1FVWSF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 18:18:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=UeoGXaevJgndTkAWlB7dWn8ywZJLGiABQ8ZFuCcinoV/RDZsaL8eu9cjQf1rnbNKm+
+         HUCjv9iK0q9gLwdng7cA==
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106230016.46704.rjw@sisk.pl>
+In-Reply-To: <20110622093903.GA1981@aepfle.de>
+References: <1308612129-12488-1-git-send-email-msb@chromium.org>
+	<20110622093903.GA1981@aepfle.de>
+Date: Wed, 22 Jun 2011 15:17:59 -0700
+X-Google-Sender-Auth: 9l66Y8zVkLJ2DAURe-z1GJs1Hms
+Message-ID: <BANLkTimc-+Zjtpz980bODMVL72OBWwQQNciEzs2ym-6HWADZag@mail.gmail.com>
+Subject: Re: [PATCH 1/2] panic: panic=-1 for immediate reboot
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Olaf Hering <olaf@aepfle.de>
+Cc: linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Huang Ying <ying.huang@intel.com>, Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 22, 2011, Kevin Hilman wrote:
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> 
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> >
-> > Make generic PM domains support system-wide power transitions
-> > (system suspend and hibernation).  Add suspend, resume, freeze, thaw,
-> > poweroff and restore callbacks to be associated with struct
-> > generic_pm_domain objects and make pm_genpd_init() use them as
-> > appropriate.
-> >
-> > The new callbacks do nothing for devices belonging to power domains
-> > that were powered down at run time (before the transition).  
-> 
-> Great, this is the approach I prefer too, but...
-> 
-> Now I'm confused.  Leaving runtime suspended devices alone is what I was
-> doing in my subsystem but was told not to.  According to
-> 
->     http://www.mail-archive.com/linux-omap@vger.kernel.org/msg50690.html
-> 
-> "it's generally agreed that _all_ devices should return to full 
-> power during system resume -- even if they were runtime suspended 
-> before the system sleep."
+On Wed, Jun 22, 2011 at 2:39 AM, Olaf Hering <olaf@aepfle.de> wrote:
+> On Mon, Jun 20, Mandeep Singh Baines wrote:
+>
+>> From: Hugh Dickins <hughd@chromium.org>
+>>
+>> When kernel BUG or oops occurs, ChromeOS intends to panic and immediately
+>> reboot, with stacktrace and other messages preserved in RAM across reboot.
+>> But the longer we delay, the more likely the user is to poweroff and lose
+>> the info.
+>
+> I have no strong opinion here, but:
+>
+> Is delaying one second (instead of say 180 like on powerpc) such a big
+> deal if the system is dead anyway?
+>
 
-Well, let's say this part of the documentation is slightly outdated.
+Our kernel is configured to preserve the panic in RAM. So we don't get
+any benefit in waiting. On the reboot following the crash, the panic gets
+logged. If the user hits the power button instead of waiting for the panic,
+we lose the crash data. For this reason, we even set our lockup
+thresholds as low as we can.
 
-It basically refers to the model in which system suspend is a separate global
-hardware or firmware operation, so the state of devices may be changed by the
-BIOS or whatever takes over control in the meantime.  In that case the kernel
-has to ensure that the states of devices are consistent with what it thinks
-about them and the simplest way to achieve that is to put the devices to
-full power during resume (and back to low power if that's desirable).
+Our system is almost stateless and our boot time is 8 seconds so a panic
+reboot cycle is not so bad. But the quicker we can get the system
+back up, the better.
 
-However, in the case of the systems this patchset is intended for system
-suspend is achieved by putting various hardware components into low-power
-states directly in a coordinated way and the system sleep state effectively
-follows from the low-power states the hardware components end up in.  The
-system is woken up from this state by an interrupt or another mechanism under
-the kernel's control.  As a result, the kernel never gives control away, so
-the state of devices after the resume is precisely known to it.
-In consequence, it need not ensure that the state of devices is consistent with
-its view, because it knows that this is the case. :-)
+Regards,
+Mandeep
 
-So the documentation should be updated to say what hardware model it is
-referring to.
-
-Thanks,
-Rafael
+> Olaf
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
