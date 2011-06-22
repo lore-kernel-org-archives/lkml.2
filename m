@@ -1,179 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758187Ab1FVPFh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 11:05:37 -0400
-Received: from webbox687.server-home.net ([195.149.74.151]:41208 "EHLO
-	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758020Ab1FVPFf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 11:05:35 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>
-Cc: linux-kernel@vger.kernel.org,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
-        Alexander Stein <alexander.stein@systec-electronic.com>
-Subject: [PATCH] pch_dma: Fix channel locking
-Date: Wed, 22 Jun 2011 17:05:33 +0200
-Message-Id: <1308755133-8605-1-git-send-email-alexander.stein@systec-electronic.com>
-X-Mailer: git-send-email 1.7.3.4
+	id S1758213Ab1FVPJO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 11:09:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15964 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757975Ab1FVPJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 11:09:13 -0400
+Date: Wed, 22 Jun 2011 11:08:25 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Jens Axboe <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC][PATCH 1/3] sched, block: Move unplug
+Message-ID: <20110622150825.GE17010@redhat.com>
+References: <20110621233444.094372367@chello.nl>
+ <20110621233648.806475812@chello.nl>
+ <4E019353.6030902@fusionio.com>
+ <alpine.LFD.2.02.1106221015320.11814@ionos>
+ <4E01F5D6.1020107@fusionio.com>
+ <alpine.LFD.2.02.1106221628560.11814@ionos>
+ <1308753481.1022.27.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308753481.1022.27.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix for the following INFO message
+On Wed, Jun 22, 2011 at 04:38:01PM +0200, Peter Zijlstra wrote:
+> On Wed, 2011-06-22 at 16:30 +0200, Thomas Gleixner wrote:
+> > > It is supposedly a real problem, not just an inkling. It's not about
+> > > recursing indefinitely, the plug is fairly bounded. But the IO dispatch
+> > > path can be pretty deep, and if you hit that deep inside the reclaim or
+> > > file system write path, then you get dangerously close. Dave Chinner
+> > > posted some numbers in the 2.6.39-rc1 time frame showing how close we
+> > > got.
+> > 
+> > Fair enough.
+> 
+> > Ok. So we move it out and keep the from_scheduler flag so that code
+> > does not go down the IO path from there. 
+> 
+> Won't punting the plug to a worker thread wreck all kinds of io
+> accounting due to the wrong task doing the actual io submission?
 
-=================================
-[ INFO: inconsistent lock state ]
-2.6.39+ #89
----------------------------------
-inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
-rs232/822 [HC1[1]:SC0[0]:HE0:SE1] takes:
- (&(&pd_chan->lock)->rlock){?.....}, at: [<c123b9a1>] pdc_desc_get+0x16/0xab
-{HARDIRQ-ON-W} state was registered at:
-  [<c104fe28>] mark_irqflags+0xbd/0x11a
-  [<c1050386>] __lock_acquire+0x501/0x6bb
-  [<c1050945>] lock_acquire+0x63/0x7b
-  [<c131c51d>] _raw_spin_lock_bh+0x43/0x51
-  [<c123bee4>] pd_alloc_chan_resources+0x92/0x11e
-  [<c123ad62>] dma_chan_get+0x9b/0x107
-  [<c123b2d1>] __dma_request_channel+0x61/0xdc
-  [<c11ba24b>] pch_request_dma+0x61/0x19e
-  [<c11bb3b8>] pch_uart_startup+0x16a/0x1a2
-  [<c11b8446>] uart_startup+0x87/0x147
-  [<c11b9183>] uart_open+0x117/0x13e
-  [<c11a5c7d>] tty_open+0x23c/0x34c
-  [<c1097705>] chrdev_open+0x140/0x15f
-  [<c10930a6>] __dentry_open.clone.14+0x14a/0x22b
-  [<c1093dfb>] nameidata_to_filp+0x36/0x40
-  [<c109f28b>] do_last+0x513/0x635
-  [<c109f4af>] path_openat+0x9c/0x2aa
-  [<c109f6e4>] do_filp_open+0x27/0x69
-  [<c1093f02>] do_sys_open+0xfd/0x184
-  [<c1093fad>] sys_open+0x24/0x2a
-  [<c131d58c>] sysenter_do_call+0x12/0x32
-irq event stamp: 2522
-hardirqs last  enabled at (2521): [<c131ca3b>] _raw_spin_unlock_irqrestore+0x36/0x52
-hardirqs last disabled at (2522): [<c131db27>] common_interrupt+0x27/0x34
-softirqs last  enabled at (2354): [<c102fa11>] __do_softirq+0x10a/0x11a
-softirqs last disabled at (2299): [<c10041a4>] do_softirq+0x57/0xa4
+I think all the accounting will the done in IO submission path and
+while IO is added to plug. This is just plug flush so should not
+have effect on accounting.
 
-other info that might help us debug this:
-2 locks held by rs232/822:
- #0:  (&tty->atomic_write_lock){+.+.+.}, at: [<c11a4b7a>] tty_write_lock+0x14/0x3c
- #1:  (&port_lock_key){-.....}, at: [<c11bad72>] pch_uart_interrupt+0x17/0x1e9
-
-stack backtrace:
-Pid: 822, comm: rs232 Not tainted 2.6.39+ #89
-Call Trace:
- [<c1319f90>] ? printk+0x19/0x1b
- [<c104f893>] print_usage_bug+0x184/0x18f
- [<c104e5b1>] ? print_irq_inversion_bug+0x10e/0x10e
- [<c104f943>] mark_lock_irq+0xa5/0x1f6
- [<c104fc9c>] mark_lock+0x208/0x2d7
- [<c104fdc0>] mark_irqflags+0x55/0x11a
- [<c1050386>] __lock_acquire+0x501/0x6bb
- [<c10042ee>] ? dump_trace+0x92/0xb6
- [<c1050945>] lock_acquire+0x63/0x7b
- [<c123b9a1>] ? pdc_desc_get+0x16/0xab
- [<c131c2d0>] _raw_spin_lock+0x3e/0x4c
- [<c123b9a1>] ? pdc_desc_get+0x16/0xab
- [<c123b9a1>] pdc_desc_get+0x16/0xab
- [<c10504d8>] ? __lock_acquire+0x653/0x6bb
- [<c123bb2c>] pd_prep_slave_sg+0x7c/0x1cb
- [<c1006c3f>] ? nommu_map_sg+0x6e/0x81
- [<c11bace6>] dma_handle_tx+0x2cf/0x344
- [<c11bad72>] ? pch_uart_interrupt+0x17/0x1e9
- [<c11baebb>] pch_uart_interrupt+0x160/0x1e9
- [<c10642fb>] handle_irq_event_percpu+0x25/0x127
- [<c1064429>] handle_irq_event+0x2c/0x43
- [<c1065e0d>] ? handle_fasteoi_irq+0x84/0x84
- [<c1065eb9>] handle_edge_irq+0xac/0xce
- <IRQ>  [<c1003ecb>] ? do_IRQ+0x38/0x9d
- [<c131db2e>] ? common_interrupt+0x2e/0x34
- [<c105007b>] ? __lock_acquire+0x1f6/0x6bb
- [<c131ca3d>] ? _raw_spin_unlock_irqrestore+0x38/0x52
- [<c11b798b>] ? uart_start+0x2d/0x32
- [<c11b7998>] ? uart_flush_chars+0x8/0xa
- [<c11a7962>] ? n_tty_write+0x12c/0x1c6
- [<c1027a73>] ? try_to_wake_up+0x251/0x251
- [<c11a4d0b>] ? tty_write+0x169/0x1dc
- [<c11a7836>] ? n_tty_ioctl+0xb7/0xb7
- [<c1094841>] ? vfs_write+0x91/0x10d
- [<c11a4ba2>] ? tty_write_lock+0x3c/0x3c
- [<c1094a69>] ? sys_write+0x3e/0x63
- [<c131d58c>] ? sysenter_do_call+0x12/0x32
-
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
----
-I'm not exactly sure if the dmaengine functions are allowed to be called from
-IRQ context. But I found amba-pl011 which also calls device_prep_slave_sg from
-IRQ context.
-
- drivers/dma/pch_dma.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
-index ff5b38f..bfb0f19 100644
---- a/drivers/dma/pch_dma.c
-+++ b/drivers/dma/pch_dma.c
-@@ -495,11 +495,11 @@ static int pd_alloc_chan_resources(struct dma_chan *chan)
- 		list_add_tail(&desc->desc_node, &tmp_list);
- 	}
- 
--	spin_lock_bh(&pd_chan->lock);
-+	spin_lock_irq(&pd_chan->lock);
- 	list_splice(&tmp_list, &pd_chan->free_list);
- 	pd_chan->descs_allocated = i;
- 	pd_chan->completed_cookie = chan->cookie = 1;
--	spin_unlock_bh(&pd_chan->lock);
-+	spin_unlock_irq(&pd_chan->lock);
- 
- 	pdc_enable_irq(chan, 1);
- 
-@@ -517,10 +517,10 @@ static void pd_free_chan_resources(struct dma_chan *chan)
- 	BUG_ON(!list_empty(&pd_chan->active_list));
- 	BUG_ON(!list_empty(&pd_chan->queue));
- 
--	spin_lock_bh(&pd_chan->lock);
-+	spin_lock_irq(&pd_chan->lock);
- 	list_splice_init(&pd_chan->free_list, &tmp_list);
- 	pd_chan->descs_allocated = 0;
--	spin_unlock_bh(&pd_chan->lock);
-+	spin_unlock_irq(&pd_chan->lock);
- 
- 	list_for_each_entry_safe(desc, _d, &tmp_list, desc_node)
- 		pci_pool_free(pd->pool, desc, desc->txd.phys);
-@@ -536,10 +536,10 @@ static enum dma_status pd_tx_status(struct dma_chan *chan, dma_cookie_t cookie,
- 	dma_cookie_t last_completed;
- 	int ret;
- 
--	spin_lock_bh(&pd_chan->lock);
-+	spin_lock_irq(&pd_chan->lock);
- 	last_completed = pd_chan->completed_cookie;
- 	last_used = chan->cookie;
--	spin_unlock_bh(&pd_chan->lock);
-+	spin_unlock_irq(&pd_chan->lock);
- 
- 	ret = dma_async_is_complete(cookie, last_completed, last_used);
- 
-@@ -654,7 +654,7 @@ static int pd_device_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 	if (cmd != DMA_TERMINATE_ALL)
- 		return -ENXIO;
- 
--	spin_lock_bh(&pd_chan->lock);
-+	spin_lock_irq(&pd_chan->lock);
- 
- 	pdc_set_mode(&pd_chan->chan, DMA_CTL0_DISABLE);
- 
-@@ -664,7 +664,7 @@ static int pd_device_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 	list_for_each_entry_safe(desc, _d, &list, desc_node)
- 		pdc_chain_complete(pd_chan, desc);
- 
--	spin_unlock_bh(&pd_chan->lock);
-+	spin_unlock_irq(&pd_chan->lock);
- 
- 	return 0;
- }
--- 
-1.7.3.4
-
+Thanks
+Vivek
