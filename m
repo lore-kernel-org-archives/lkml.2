@@ -1,280 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758429Ab1FVRwx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 13:52:53 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50496 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758340Ab1FVRwQ (ORCPT
+	id S1758477Ab1FVRxA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 13:53:00 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:36842
+	"EHLO CH1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758464Ab1FVRw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 13:52:16 -0400
-Message-Id: <20110622174919.135236139@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Wed, 22 Jun 2011 17:52:15 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [patch 4/4] sched: Distangle worker accounting from rq->lock
-References: <20110622174659.496793734@linutronix.de>
-Content-Disposition: inline; filename=sched-wq-sigh.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 22 Jun 2011 13:52:58 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 22 Jun 2011 12:52:52 -0500
+From: Scott Wood <scottwood@freescale.com>
+To: Kumar Gala <galak@kernel.crashing.org>
+CC: Greg KH <greg@kroah.com>, <linuxppc-dev@ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] driver core: Add ability for arch code to setup
+ pdev_archdata
+Message-ID: <20110622125252.66eceb46@schlenkerla.am.freescale.net>
+In-Reply-To: <1308755396-17988-1-git-send-email-galak@kernel.crashing.org>
+References: <1308744176-24491-1-git-send-email-galak@kernel.crashing.org>
+	<1308755396-17988-1-git-send-email-galak@kernel.crashing.org>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The worker accounting for cpu bound workers is plugged into the core
-scheduler code and the wakeup code. This is not a hard requirement and
-can be avoided by keeping track of the state in the workqueue code
-itself.
+On Wed, 22 Jun 2011 10:09:56 -0500
+Kumar Gala <galak@kernel.crashing.org> wrote:
 
-Keep track of the sleeping state in the worker itself and call the
-notifier before entering the core scheduler. There might be false
-positives when the task is woken between that call and actually
-scheduling, but that's not really different from scheduling and being
-woken immediately after switching away. There is also no harm from
-updating nr_running when the task returns from scheduling instead of
-accounting it in the wakeup code.
+> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> index 1c291af..c25e0c0 100644
+> --- a/drivers/base/platform.c
+> +++ b/drivers/base/platform.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/err.h>
+>  #include <linux/slab.h>
+>  #include <linux/pm_runtime.h>
+> +#include <asm/platform_device.h>
+>  
+>  #include "base.h"
+>  
+> @@ -173,6 +174,7 @@ struct platform_device *platform_device_alloc(const char *name, int id)
+>  		pa->pdev.id = id;
+>  		device_initialize(&pa->pdev.dev);
+>  		pa->pdev.dev.release = platform_device_release;
+> +		arch_setup_pdev_archdata(&pa->pdev);
+>  	}
+>  
+>  	return pa ? &pa->pdev : NULL;
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/sched.c           |   66 ++++++++++------------------------------------
- kernel/workqueue.c       |   67 ++++++++++++++++++++---------------------------
- kernel/workqueue_sched.h |    5 +--
- 3 files changed, 46 insertions(+), 92 deletions(-)
+Need to call this from platform_device_register() as well, for devices
+which are not dynamically allocated.
 
-Index: linux-2.6/kernel/sched.c
-===================================================================
---- linux-2.6.orig/kernel/sched.c
-+++ linux-2.6/kernel/sched.c
-@@ -2477,10 +2477,6 @@ static void ttwu_activate(struct rq *rq,
- {
- 	activate_task(rq, p, en_flags);
- 	p->on_rq = 1;
--
--	/* if a worker is waking up, notify workqueue */
--	if (p->flags & PF_WQ_WORKER)
--		wq_worker_waking_up(p, cpu_of(rq));
- }
- 
- /*
-@@ -2703,40 +2699,6 @@ out:
- }
- 
- /**
-- * try_to_wake_up_local - try to wake up a local task with rq lock held
-- * @p: the thread to be awakened
-- *
-- * Put @p on the run-queue if it's not already there. The caller must
-- * ensure that this_rq() is locked, @p is bound to this_rq() and not
-- * the current task.
-- */
--static void try_to_wake_up_local(struct task_struct *p)
--{
--	struct rq *rq = task_rq(p);
--
--	BUG_ON(rq != this_rq());
--	BUG_ON(p == current);
--	lockdep_assert_held(&rq->lock);
--
--	if (!raw_spin_trylock(&p->pi_lock)) {
--		raw_spin_unlock(&rq->lock);
--		raw_spin_lock(&p->pi_lock);
--		raw_spin_lock(&rq->lock);
--	}
--
--	if (!(p->state & TASK_NORMAL))
--		goto out;
--
--	if (!p->on_rq)
--		ttwu_activate(rq, p, ENQUEUE_WAKEUP);
--
--	ttwu_do_wakeup(rq, p, 0);
--	ttwu_stat(p, smp_processor_id(), 0);
--out:
--	raw_spin_unlock(&p->pi_lock);
--}
--
--/**
-  * wake_up_process - Wake up a specific process
-  * @p: The process to be woken up.
-  *
-@@ -4240,19 +4202,6 @@ need_resched:
- 		} else {
- 			deactivate_task(rq, prev, DEQUEUE_SLEEP);
- 			prev->on_rq = 0;
--
--			/*
--			 * If a worker went to sleep, notify and ask workqueue
--			 * whether it wants to wake up a task to maintain
--			 * concurrency.
--			 */
--			if (prev->flags & PF_WQ_WORKER) {
--				struct task_struct *to_wakeup;
--
--				to_wakeup = wq_worker_sleeping(prev, cpu);
--				if (to_wakeup)
--					try_to_wake_up_local(to_wakeup);
--			}
- 		}
- 		switch_count = &prev->nvcsw;
- 	}
-@@ -4295,6 +4244,14 @@ static inline void sched_submit_work(str
- {
- 	if (!tsk->state)
- 		return;
-+
-+	/*
-+	 * If a worker went to sleep, notify and ask workqueue whether
-+	 * it wants to wake up a task to maintain concurrency.
-+	 */
-+	if (tsk->flags & PF_WQ_WORKER)
-+		wq_worker_sleeping(tsk);
-+
- 	/*
- 	 * If we are going to sleep and we have plugged IO queued,
- 	 * make sure to submit it to avoid deadlocks.
-@@ -4303,12 +4260,19 @@ static inline void sched_submit_work(str
- 		blk_schedule_flush_plug(tsk);
- }
- 
-+static inline void sched_update_worker(struct task_struct *tsk)
-+{
-+	if (tsk->flags & PF_WQ_WORKER)
-+		wq_worker_running(tsk);
-+}
-+
- asmlinkage void schedule(void)
- {
- 	struct task_struct *tsk = current;
- 
- 	sched_submit_work(tsk);
- 	__schedule();
-+	sched_update_worker(tsk);
- }
- EXPORT_SYMBOL(schedule);
- 
-Index: linux-2.6/kernel/workqueue.c
-===================================================================
---- linux-2.6.orig/kernel/workqueue.c
-+++ linux-2.6/kernel/workqueue.c
-@@ -137,6 +137,7 @@ struct worker {
- 	unsigned int		flags;		/* X: flags */
- 	int			id;		/* I: worker id */
- 	struct work_struct	rebind_work;	/* L: rebind worker to cpu */
-+	int			sleeping;	/* None */
- };
- 
- /*
-@@ -657,66 +658,56 @@ static void wake_up_worker(struct global
- }
- 
- /**
-- * wq_worker_waking_up - a worker is waking up
-- * @task: task waking up
-- * @cpu: CPU @task is waking up to
-+ * wq_worker_running - a worker is running again
-+ * @task: task returning from sleep
-  *
-- * This function is called during try_to_wake_up() when a worker is
-- * being awoken.
-- *
-- * CONTEXT:
-- * spin_lock_irq(rq->lock)
-+ * This function is called when a worker returns from schedule()
-  */
--void wq_worker_waking_up(struct task_struct *task, unsigned int cpu)
-+void wq_worker_running(struct task_struct *task)
- {
- 	struct worker *worker = kthread_data(task);
- 
-+	if (!worker->sleeping)
-+		return;
- 	if (!(worker->flags & WORKER_NOT_RUNNING))
--		atomic_inc(get_gcwq_nr_running(cpu));
-+		atomic_inc(get_gcwq_nr_running(smp_processor_id()));
-+	worker->sleeping = 0;
- }
- 
- /**
-  * wq_worker_sleeping - a worker is going to sleep
-  * @task: task going to sleep
-- * @cpu: CPU in question, must be the current CPU number
-- *
-- * This function is called during schedule() when a busy worker is
-- * going to sleep.  Worker on the same cpu can be woken up by
-- * returning pointer to its task.
-- *
-- * CONTEXT:
-- * spin_lock_irq(rq->lock)
-  *
-- * RETURNS:
-- * Worker task on @cpu to wake up, %NULL if none.
-+ * This function is called from schedule() when a busy worker is
-+ * going to sleep.
-  */
--struct task_struct *wq_worker_sleeping(struct task_struct *task,
--				       unsigned int cpu)
-+void wq_worker_sleeping(struct task_struct *task)
- {
--	struct worker *worker = kthread_data(task), *to_wakeup = NULL;
--	struct global_cwq *gcwq = get_gcwq(cpu);
--	atomic_t *nr_running = get_gcwq_nr_running(cpu);
-+	struct worker *worker = kthread_data(task);
-+	struct global_cwq *gcwq;
-+	int cpu;
- 
- 	if (worker->flags & WORKER_NOT_RUNNING)
--		return NULL;
-+		return;
- 
--	/* this can only happen on the local cpu */
--	BUG_ON(cpu != raw_smp_processor_id());
-+	if (WARN_ON_ONCE(worker->sleeping))
-+		return;
- 
-+	cpu = smp_processor_id();
-+	gcwq = get_gcwq(cpu);
-+	spin_lock_irq(&gcwq->lock);
- 	/*
- 	 * The counterpart of the following dec_and_test, implied mb,
- 	 * worklist not empty test sequence is in insert_work().
- 	 * Please read comment there.
--	 *
--	 * NOT_RUNNING is clear.  This means that trustee is not in
--	 * charge and we're running on the local cpu w/ rq lock held
--	 * and preemption disabled, which in turn means that none else
--	 * could be manipulating idle_list, so dereferencing idle_list
--	 * without gcwq lock is safe.
--	 */
--	if (atomic_dec_and_test(nr_running) && !list_empty(&gcwq->worklist))
--		to_wakeup = first_worker(gcwq);
--	return to_wakeup ? to_wakeup->task : NULL;
-+	 */
-+	if (atomic_dec_and_test(get_gcwq_nr_running(cpu)) &&
-+	    !list_empty(&gcwq->worklist)) {
-+		worker = first_worker(gcwq);
-+		if (worker)
-+			wake_up_process(worker->task);
-+	}
-+	spin_unlock_irq(&gcwq->lock);
- }
- 
- /**
-Index: linux-2.6/kernel/workqueue_sched.h
-===================================================================
---- linux-2.6.orig/kernel/workqueue_sched.h
-+++ linux-2.6/kernel/workqueue_sched.h
-@@ -4,6 +4,5 @@
-  * Scheduler hooks for concurrency managed workqueue.  Only to be
-  * included from sched.c and workqueue.c.
-  */
--void wq_worker_waking_up(struct task_struct *task, unsigned int cpu);
--struct task_struct *wq_worker_sleeping(struct task_struct *task,
--				       unsigned int cpu);
-+void wq_worker_running(struct task_struct *task);
-+void wq_worker_sleeping(struct task_struct *task);
+> +/*
+> + * an architecture can override to define arch_setup_pdev_archdata
+> + */
+> +#ifndef arch_setup_pdev_archdata
+> +static inline void arch_setup_pdev_archdata(struct platform_device *pdev) { }
+> +#endif
 
+That's not a particularly useful comment.  More useful would be a statement
+of when this hook is called, examples of what it's meant to be used for,
+etc.
+
+-Scott
 
