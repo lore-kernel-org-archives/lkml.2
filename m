@@ -1,228 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751642Ab1FVEoJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 00:44:09 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:51517 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab1FVEoH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 00:44:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=R+As1+nj3jozNezmaicVnv+UtkcgBaFAJRl3H18ugJZEUyLFCsLYk4xOYFy+/26jpM
-         WYsSHm7yR63risQHUdFC4evX0QfycClWpe/aMNN4FMQoRPDFmb2ANK7MRzO1t0vOg45J
-         4qqqU7+GHcfYa+cirUuWblXO2ND/0fIJNLb+8=
-From: Nai Xia <nai.xia@gmail.com>
-Reply-To: nai.xia@gmail.com
-To: Chris Wright <chrisw@sous-sol.org>
-Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte and mmu notifier to help KSM dirty bit tracking
-Date: Wed, 22 Jun 2011 12:43:49 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.39; KDE/4.5.5; i686; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        "linux-mm" <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        kvm <kvm@vger.kernel.org>, mtosatti@redhat.com
-References: <201106212055.25400.nai.xia@gmail.com> <201106212132.39311.nai.xia@gmail.com> <20110622002123.GP25383@sequoia.sous-sol.org>
-In-Reply-To: <20110622002123.GP25383@sequoia.sous-sol.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106221243.49772.nai.xia@gmail.com>
+	id S1751887Ab1FVEq0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 00:46:26 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:55941 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751102Ab1FVEqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 00:46:24 -0400
+Date: Wed, 22 Jun 2011 14:46:11 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: linux-next: manual merge of the tmem tree with the xen-two tree
+Message-Id: <20110622144611.a900a000.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__22_Jun_2011_14_46_11_+1000_tJVE2w1K40frC__G"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 22 June 2011 08:21:23 Chris Wright wrote:
-> * Nai Xia (nai.xia@gmail.com) wrote:
-> > Introduced kvm_mmu_notifier_test_and_clear_dirty(), kvm_mmu_notifier_dirty_update()
-> > and their mmu_notifier interfaces to support KSM dirty bit tracking, which brings
-> > significant performance gain in volatile pages scanning in KSM.
-> > Currently, kvm_mmu_notifier_dirty_update() returns 0 if and only if intel EPT is
-> > enabled to indicate that the dirty bits of underlying sptes are not updated by
-> > hardware.
-> 
-> Did you test with each of EPT, NPT and shadow?
+--Signature=_Wed__22_Jun_2011_14_46_11_+1000_tJVE2w1K40frC__G
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I tested in EPT and pure softmmu. I have no NPT box and Izik told me that he 
-did not have one either, so help me ... :D
+Hi Dan,
 
-> 
-> > Signed-off-by: Nai Xia <nai.xia@gmail.com>
-> > Acked-by: Izik Eidus <izik.eidus@ravellosystems.com>
-> > ---
-> >  arch/x86/include/asm/kvm_host.h |    1 +
-> >  arch/x86/kvm/mmu.c              |   36 +++++++++++++++++++++++++++++
-> >  arch/x86/kvm/mmu.h              |    3 +-
-> >  arch/x86/kvm/vmx.c              |    1 +
-> >  include/linux/kvm_host.h        |    2 +-
-> >  include/linux/mmu_notifier.h    |   48 +++++++++++++++++++++++++++++++++++++++
-> >  mm/mmu_notifier.c               |   33 ++++++++++++++++++++++++++
-> >  virt/kvm/kvm_main.c             |   27 ++++++++++++++++++++++
-> >  8 files changed, 149 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> > index d2ac8e2..f0d7aa0 100644
-> > --- a/arch/x86/include/asm/kvm_host.h
-> > +++ b/arch/x86/include/asm/kvm_host.h
-> > @@ -848,6 +848,7 @@ extern bool kvm_rebooting;
-> >  int kvm_unmap_hva(struct kvm *kvm, unsigned long hva);
-> >  int kvm_age_hva(struct kvm *kvm, unsigned long hva);
-> >  int kvm_test_age_hva(struct kvm *kvm, unsigned long hva);
-> > +int kvm_test_and_clear_dirty_hva(struct kvm *kvm, unsigned long hva);
-> >  void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
-> >  int cpuid_maxphyaddr(struct kvm_vcpu *vcpu);
-> >  int kvm_cpu_has_interrupt(struct kvm_vcpu *vcpu);
-> > diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> > index aee3862..a5a0c51 100644
-> > --- a/arch/x86/kvm/mmu.c
-> > +++ b/arch/x86/kvm/mmu.c
-> > @@ -979,6 +979,37 @@ out:
-> >  	return young;
-> >  }
-> >  
-> > +/*
-> > + * Caller is supposed to SetPageDirty(), it's not done inside this.
-> > + */
-> > +static
-> > +int kvm_test_and_clear_dirty_rmapp(struct kvm *kvm, unsigned long *rmapp,
-> > +				   unsigned long data)
-> > +{
-> > +	u64 *spte;
-> > +	int dirty = 0;
-> > +
-> > +	if (!shadow_dirty_mask) {
-> > +		WARN(1, "KVM: do NOT try to test dirty bit in EPT\n");
-> > +		goto out;
-> > +	}
-> 
-> This should never fire with the dirty_update() notifier test, right?
-> And that means that this whole optimization is for the shadow mmu case,
-> arguably the legacy case.
+Today's linux-next merge of the tmem tree got a conflict in
+drivers/xen/Kconfig drivers/xen/tmem.c between commit afec6e04922d ("xen:
+prepare tmem shim to handle frontswap") from the xen-two tree and commit
+ac33c46b42ba ("xen: enable frontswap for Xen tmem") from the tmem tree.
 
-Yes, right. Actually I wrote this for potential abuse of this interface
-since its name only does not suggest this. It can be a comment to save
-some .text allocation and to compete with the "10k/3lines optimization"
-in the list :P
+I just used the xen-two versions of these files (as they look newer).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-> 
-> > +
-> > +	spte = rmap_next(kvm, rmapp, NULL);
-> > +	while (spte) {
-> > +		int _dirty;
-> > +		u64 _spte = *spte;
-> > +		BUG_ON(!(_spte & PT_PRESENT_MASK));
-> > +		_dirty = _spte & PT_DIRTY_MASK;
-> > +		if (_dirty) {
-> > +			dirty = 1;
-> > +			clear_bit(PT_DIRTY_SHIFT, (unsigned long *)spte);
-> 
-> Is this sufficient (not losing dirty state ever)?
+--Signature=_Wed__22_Jun_2011_14_46_11_+1000_tJVE2w1K40frC__G
+Content-Type: application/pgp-signature
 
-This does lose some dirty state. Not flushing TLB may prevent CPU update
-the dirty bit back to spte(I referred the Intel's manual x86 does not update 
-in this case). But we(Izik & me) think it ok, because it seems currently the 
-only user of dirty bit information is KSM. It's not critical to lose some 
-information. And if we do found problem with it in the future, we can add the
-flushing. How do you think?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> 
-> > +		}
-> > +		spte = rmap_next(kvm, rmapp, spte);
-> > +	}
-> > +out:
-> > +	return dirty;
-> > +}
-> > +
-> >  #define RMAP_RECYCLE_THRESHOLD 1000
-> >  
-> >  static void rmap_recycle(struct kvm_vcpu *vcpu, u64 *spte, gfn_t gfn)
-> > @@ -1004,6 +1035,11 @@ int kvm_test_age_hva(struct kvm *kvm, unsigned long hva)
-> >  	return kvm_handle_hva(kvm, hva, 0, kvm_test_age_rmapp);
-> >  
-> >  
-> > +int kvm_test_and_clear_dirty_hva(struct kvm *kvm, unsigned long hva)
-> > +{
-> > +	return kvm_handle_hva(kvm, hva, 0, kvm_test_and_clear_dirty_rmapp);
-> > +}
-> > +
-> >  #ifdef MMU_DEBUG
-> >  static int is_empty_shadow_page(u64 *spt)
-> >  {
-> > diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
-> > index 7086ca8..b8d01c3 100644
-> > --- a/arch/x86/kvm/mmu.h
-> > +++ b/arch/x86/kvm/mmu.h
-> > @@ -18,7 +18,8 @@
-> >  #define PT_PCD_MASK (1ULL << 4)
-> >  #define PT_ACCESSED_SHIFT 5
-> >  #define PT_ACCESSED_MASK (1ULL << PT_ACCESSED_SHIFT)
-> > -#define PT_DIRTY_MASK (1ULL << 6)
-> > +#define PT_DIRTY_SHIFT 6
-> > +#define PT_DIRTY_MASK (1ULL << PT_DIRTY_SHIFT)
-> >  #define PT_PAGE_SIZE_MASK (1ULL << 7)
-> >  #define PT_PAT_MASK (1ULL << 7)
-> >  #define PT_GLOBAL_MASK (1ULL << 8)
-> > diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> > index d48ec60..b407a69 100644
-> > --- a/arch/x86/kvm/vmx.c
-> > +++ b/arch/x86/kvm/vmx.c
-> > @@ -4674,6 +4674,7 @@ static int __init vmx_init(void)
-> >  		kvm_mmu_set_mask_ptes(0ull, 0ull, 0ull, 0ull,
-> >  				VMX_EPT_EXECUTABLE_MASK);
-> >  		kvm_enable_tdp();
-> > +		kvm_dirty_update = 0;
-> 
-> Doesn't the above shadow_dirty_mask==0ull tell us this same info?
+iQEcBAEBAgAGBQJOAXOTAAoJEDMEi1NhKgbs1NgH/1ITRD+eCuL3p/gybTErYwJw
+8kB8qJM7lQV7om2obgBfkYLtfEO/bGMk0/HkxWD52xgctbQEgQ6+PHP5IM4f9dmQ
+g1Wx7kpTXGKxJk+31ayZrfv3l0S4Bx23WKJRws7AcreyKiMPGrUjNH91HUrcLxUr
+JZYWld4JNO3xXgNvgpCRJcnBGrS3D+wVHgWFYn0WjiLqotxO88u94RaClm1t0fw0
+IAVLT0L7Ns9Nrk6o3PrVE5fAGZg5peUDENZ/oUq6MvoexnXrYcaVmohHyHfIWh4W
+CGVurRUK1wENkdm5EYwfbbGjb5aR81kSNjtHnW/cW0a/dmLfCAewCyDpMPqs6/I=
+=6JRP
+-----END PGP SIGNATURE-----
 
-Yes, it's nasty. I am not sure about making shadow_dirty_mask global or not
-actually since all other similar state var are all static. 
-
-> 
-> >  	} else
-> >  		kvm_disable_tdp();
-> >  
-> > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> > index 31ebb59..2036bae 100644
-> > --- a/include/linux/kvm_host.h
-> > +++ b/include/linux/kvm_host.h
-> > @@ -53,7 +53,7 @@
-> >  struct kvm;
-> >  struct kvm_vcpu;
-> >  extern struct kmem_cache *kvm_vcpu_cache;
-> > -
-> > +extern int kvm_dirty_update;
-> >  /*
-> >   * It would be nice to use something smarter than a linear search, TBD...
-> >   * Thankfully we dont expect many devices to register (famous last words :),
-> > diff --git a/include/linux/mmu_notifier.h b/include/linux/mmu_notifier.h
-> > index 1d1b1e1..bd6ba2d 100644
-> > --- a/include/linux/mmu_notifier.h
-> > +++ b/include/linux/mmu_notifier.h
-> > @@ -24,6 +24,9 @@ struct mmu_notifier_mm {
-> >  };
-> >  
-> >  struct mmu_notifier_ops {
-> 
-> Need to add a comment to describe it.  And why is it not next to
-> test_and_clear_dirty()?  I see how it's used, but seems as if the
-> test_and_clear_dirty() code could return -1 (as in dirty state unknown)
-> for the case where it can't track dirty bit and fall back to checksum.
-
-Actually I did consider this option. But I thought it's weird to test
-a bit as its name suggests and return -1 as a result. Should it be the 
-first one in human history to do so ? :D
-
-Thanks,
-Nai
-
-> 
-> > +	int (*dirty_update)(struct mmu_notifier *mn,
-> > +			     struct mm_struct *mm);
-> > +
-> >  	/*
+--Signature=_Wed__22_Jun_2011_14_46_11_+1000_tJVE2w1K40frC__G--
