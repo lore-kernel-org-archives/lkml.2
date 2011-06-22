@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab1FVJBm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 05:01:42 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:50696 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab1FVJBl (ORCPT
+	id S1753900Ab1FVJKt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 05:10:49 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:15897 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007Ab1FVJKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 05:01:41 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E01B154.6090704@cam.ac.uk>
-Date: Wed, 22 Jun 2011 10:09:40 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Bryan Freed <bfreed@chromium.org>
-CC: linux-kernel@vger.kernel.org, jbrenner@taosinc.com, gregkh@suse.de,
-        arnd@arndb.de, "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: [PATCH 3/3] light sensor: Fix a panic in the tsl2563 driver.
-References: <1308696897-25161-1-git-send-email-bfreed@chromium.org> <1308696897-25161-3-git-send-email-bfreed@chromium.org>
-In-Reply-To: <1308696897-25161-3-git-send-email-bfreed@chromium.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Jun 2011 05:10:48 -0400
+X-AuditID: cbfee61a-b7c59ae000003b70-df-4e01b195cc8f
+Date: Wed, 22 Jun 2011 18:10:35 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [PATCH] Samsung SoC: header file revised to prevent declaring
+ duplicated.
+In-reply-to: <1308214064-12796-1-git-send-email-myungjoo.ham@samsung.com>
+To: "'MyungJoo Ham'" <myungjoo.ham@samsung.com>,
+        linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Ben Dooks'" <ben-linux@fluff.org>, kyungmin.park@samsung.com,
+        myungjoo.ham@gmail.com, dg77.kim@samsung.com
+Message-id: <00be01cc30bc$450ee250$cf2ca6f0$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcwsAg7+2pfX5K94TwqzKstH4SbB8AEufxgQ
+References: <1308213184-6607-1-git-send-email-myungjoo.ham@samsung.com>
+ <1308214064-12796-1-git-send-email-myungjoo.ham@samsung.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/11 23:54, Bryan Freed wrote:
-> Add the required read/write_raw functions to the tsl2563_info_no_irq data
-> structure.  This structure is used insted of tsl2563_info when the I2C client
-> has no IRQ.
-> The absence of these functions causes a panic when reading or writing the
-> created sysfs files.
-Yikes.  Good spot.  I'd completely forgotten that no_irq version was there.
-
-Greg, please pick these two up as fixes.  Sorry for the rubbish
-conversion in the first place!
+MyungJoo Ham wrote:
 > 
-> Signed-off-by: Bryan Freed <bfreed@chromium.org>
-Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+> There has been no #ifndef - #define - #endif protection for this header
+> file. The patch adds it for Exynos4-ADC support
+> 
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 > ---
->  drivers/staging/iio/light/tsl2563.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+>  arch/arm/plat-samsung/include/plat/devs.h |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/staging/iio/light/tsl2563.c b/drivers/staging/iio/light/tsl2563.c
-> index d9be19c..bca99f1 100644
-> --- a/drivers/staging/iio/light/tsl2563.c
-> +++ b/drivers/staging/iio/light/tsl2563.c
-> @@ -713,6 +713,8 @@ static struct i2c_driver tsl2563_i2c_driver;
->  
->  static const struct iio_info tsl2563_info_no_irq = {
->  	.driver_module = THIS_MODULE,
-> +	.read_raw = &tsl2563_read_raw,
-> +	.write_raw = &tsl2563_write_raw,
->  };
->  
->  static const struct iio_info tsl2563_info = {
+> diff --git a/arch/arm/plat-samsung/include/plat/devs.h b/arch/arm/plat-
+> samsung/include/plat/devs.h
+> index 4af108f..3c87779 100644
+> --- a/arch/arm/plat-samsung/include/plat/devs.h
+> +++ b/arch/arm/plat-samsung/include/plat/devs.h
+> @@ -12,6 +12,9 @@
+>   * it under the terms of the GNU General Public License version 2 as
+>   * published by the Free Software Foundation.
+>  */
+> +#ifndef __PLAT_DEVS_H
+> +#define __PLAT_DEVS_H __FILE__
+> +
+>  #include <linux/platform_device.h>
+> 
+>  struct s3c24xx_uart_resources {
+> @@ -159,3 +162,5 @@ extern struct platform_device s3c_device_ac97;
+>   */
+>  extern void *s3c_set_platdata(void *pd, size_t pdsize,
+>  			      struct platform_device *pdev);
+> +
+> +#endif /* __PLAT_DEVS_H */
+> --
+> 1.7.4.1
+
+OK, applied.
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
