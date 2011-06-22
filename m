@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756770Ab1FVKTJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 06:19:09 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50091 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756646Ab1FVKTH (ORCPT
+	id S1756793Ab1FVKVt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 06:21:49 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:14915 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756190Ab1FVKVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 06:19:07 -0400
-Date: Wed, 22 Jun 2011 13:19:02 +0300
-From: Amit Kucheria <amit.kucheria@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: Re: [RFC] Add Arm cpu topology definition
-Message-ID: <20110622101902.GC2402@matterhorn1>
-Mail-Followup-To: Catalin Marinas <catalin.marinas@arm.com>,
-	Stephen Boyd <sboyd@codeaurora.org>, linaro-dev@lists.linaro.org,
-	linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-	Vincent Guittot <vincent.guittot@linaro.org>
-References: <BANLkTinRGRUxKB=C_2Y2F93czWScEUo+Jw@mail.gmail.com>
- <4DFA5C2E.40507@codeaurora.org>
- <BANLkTi=ik=iRtDb3K__CPxSH_8GusoBHKA@mail.gmail.com>
- <4E0100BF.6080500@codeaurora.org>
- <20110622091727.GA1195@1n450.cable.virginmedia.net>
+	Wed, 22 Jun 2011 06:21:47 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6384"; a="99293794"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: "'Sebastian Andrzej Siewior'" <bigeasy@linutronix.de>
+Cc: <balbi@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <1308731945-7601-1-git-send-email-tlinder@codeaurora.org> <1308731945-7601-2-git-send-email-tlinder@codeaurora.org> <20110622095205.GA24674@linutronix.de>
+In-Reply-To: <20110622095205.GA24674@linutronix.de>
+Subject: RE: [RFC/PATCH v2 1/2] usb:dummy_hcd: connect/disconnect test support
+Date: Wed, 22 Jun 2011 13:21:43 +0300
+Message-ID: <021101cc30c6$30dd7760$92986620$@org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110622091727.GA1195@1n450.cable.virginmedia.net>
-X-URL: http://www.verdurent.com/
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: AcwwwhYhuV+a8DTYSbWOoT5QPPTCwQAA25lg
+Content-Language: he
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 Jun 22, Catalin Marinas wrote:
-> On Tue, Jun 21, 2011 at 01:36:15PM -0700, Stephen Boyd wrote:
-> > On 06/16/2011 11:54 PM, Vincent Guittot wrote:
-> > > On 16 June 2011 21:40, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> > >> The ARM ARM says these fields are IMPLEMENTATION DEFINED meaning that
-> > >> different vendors may attribute different meaning to these fields if
-> > >> they wish. Does that mean this should be a platform_*() function?
-> > >>
-> > > The ARM ARM also provides a recommended use of the fields of this
-> > > register and the TRM of each Cortex adds some details. On the cortex
-> > > A9, each platform can only set the value of the Cluster ID with the
-> > > CLUSTERID pins. I have tried to consolidate the value of MPIDR  across
-> > > several platforms and they all match with the description.
-> > >
-> > > Have you got an example of a MPIDR register which doesn't match with
-> > > the implementation ?
-> > 
-> > Not that I know of. I'm more concerned with how the ARM ARM has two
-> > recommended usages for these fields depending on virtualization or not.
-> > I suppose we can handle that issue when it arises (or does your
-> > implementation already handle that?)
-> 
-> According to the ARM ARM:
-> 
-> 	MPIDR provides a mechanism with up to three levels of affinity
-> 	information, but the meaning of those levels of affinity is
-> 	entirely IMPLEMENTATION DEFINED.
-> 
-> So we can't really tell the meaning of the affinity bits. There are two
-> recommended ways indeed (with or without virtualisation) which are not
-> that different with regards to the topology (just introducing another
-> level for virtual CPUs).
-> 
-> But I think a more general solution would be for the CPU topology to be
-> provided via the FDT.
+Hi Sebastian,
 
-Agreed. That will be the next step.
+> * Tatyana Brokhman | 2011-06-22 11:39:00 [+0300]:
+> 
+> >This implementation adds a new proprietary device control requests (to
+> be
+> >handled by the dummy_hcd) that initiates a connect/disconnect
+> sequence.
+> >The bRequest value of the new control request is 0x52.
+> >It is used by the user-space Unit testing application.
+> >
+> >Signed-off-by: Tatyana Linder <tlinder@codeaurora.org>
+> 
+> As far as I understand this should be used to test real Hardware. Mind
+> moving this to composite_setup() so it can be re-used by other ucd as
+> well? usb_gadget_*nect() should do the pullup() trick.
+> 
 
-We decided on doing it this way to allow non-DT-enabled platforms to be able
-to use the feature and to allow DT-enabled platforms to settle down in the
-mean time.
+Felipe also suggested that on the last version of this patch. Here is a
+quote of his email on the subject:
+
+"actually, this is quite useful. Specially for the controllers which _can_
+do soft-connect by toggling data pullups. I would rather have these sort of
+thing maybe in composite.c, so that we can build tests with all gadget
+drivers/controllers, not only dummy_hcd.
+
+That said, I think now it's not the time to fiddle too much with these
+details right now. So best to keep this in dummy_hcd until we know the test
+tools are actually good."
+
+So, right now I'll leave it in dummy_hcd if it's ok with you.
+
+
+Thanks,
+Tanya Brokhman
+---
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
+
+
 
