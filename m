@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756764Ab1FVLKx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 07:10:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23179 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753372Ab1FVLKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 07:10:52 -0400
-Message-ID: <4E01CDAD.3070202@redhat.com>
-Date: Wed, 22 Jun 2011 14:10:37 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1756934Ab1FVLMD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 07:12:03 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:33435 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753210Ab1FVLMB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 07:12:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=ebWG+wxyzc2uYtfnBc2rRy/ujpkTEwGpoRxo3HfFPlN7UM5RjBOqLUmdc+NTQPm4e5
+         nEavT48HMKAJWfZTJERcU+tYcxqmfNnuIfCaG2I6yhorlW27CKE64qZKs+Ved3YN3RUS
+         VO246tP1uN4VBVCfgOgbEPxVOo9sD5Z/SLrDU=
+Date: Wed, 22 Jun 2011 14:11:11 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Wanlong Gao <wanlong.gao@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Stefan Weil <weil@mail.berlios.de>,
+        Xiaochen Wang <wangxiaochen0@gmail.com>,
+        Ilia Mirkin <imirkin@alum.mit.edu>,
+        David Chosrova <dada2372@gmail.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Ben Hutchings <ben@decadent.org.uk>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] drivers:rtl8187se:remove the use of obsolete
+ create_workqueue in ieee80211_softmac.c
+Message-ID: <20110622111111.GK14591@shale.localdomain>
+References: <1308478318-8462-1-git-send-email-wanlong.gao@gmail.com>
+ <1308732001.2198.0.camel@Tux>
 MIME-Version: 1.0
-To: Izik Eidus <izik.eidus@ravellosystems.com>
-CC: nai.xia@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
-        Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
-Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte
- and mmu notifier to help KSM dirty bit tracking
-References: <201106212055.25400.nai.xia@gmail.com> <201106212132.39311.nai.xia@gmail.com> <4E01C752.10405@redhat.com> <4E01CC77.10607@ravellosystems.com>
-In-Reply-To: <4E01CC77.10607@ravellosystems.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1308732001.2198.0.camel@Tux>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2011 02:05 PM, Izik Eidus wrote:
->>> +    spte = rmap_next(kvm, rmapp, NULL);
->>> +    while (spte) {
->>> +        int _dirty;
->>> +        u64 _spte = *spte;
->>> +        BUG_ON(!(_spte&  PT_PRESENT_MASK));
->>> +        _dirty = _spte&  PT_DIRTY_MASK;
->>> +        if (_dirty) {
->>> +            dirty = 1;
->>> +            clear_bit(PT_DIRTY_SHIFT, (unsigned long *)spte);
->>> +        }
->>
->> Racy.  Also, needs a tlb flush eventually.
-> +
->
-> Hi, one of the issues is that the whole point of this patch is not do 
-> tlb flush eventually,
-> But I see your point, because other users will not expect such 
-> behavior, so maybe there is need into a parameter
-> flush_tlb=?, or add another mmu notifier call?
->
+On Wed, Jun 22, 2011 at 04:40:01PM +0800, Wanlong Gao wrote:
+> On 日, 2011-06-19 at 18:11 +0800, Wanlong Gao wrote:
+> Any comments?
 
-If you don't flush the tlb, a subsequent write will not see that spte.d 
-is clear and the write will happen.  So you'll see the page as clean 
-even though it's dirty.  That's not acceptable.
+It takes a while to get to patches.  If it's been two weeks and you
+haven't heard anything, then ask again.  Otherwise just assume that
+they're going to be applied.
 
--- 
-error compiling committee.c: too many arguments to function
-
+regards,
+dan carpenter
