@@ -1,105 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759206Ab1FWKBP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 06:01:15 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:55593 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759043Ab1FWKBN (ORCPT
+	id S1751296Ab1FVEaa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 00:30:30 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38124 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab1FVEa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 06:01:13 -0400
+	Wed, 22 Jun 2011 00:30:28 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=WUPpBMLY9lHUknJSB9/0k4eo46/Njpvpat4dsF+jiHyOubwbrvRJlKZ7qbkdmvrGSQ
-         jwB3gUvm5HVOygBdezmWIUcTDFMYn4Aw4dkM5yMriLMvsnUs3kfgs3s+UaTmwiagNWXz
-         VZggZfP9m9tM0f4Et4gQ24A8yjuOYbFbCpjho=
-From: Ankur Patel <bkankur@gmail.com>
-To: Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: linux-kernel@vger.kernel.org, Ankur Patel <ankur.patel@quipment.in>
-Subject: [PATCH 1/1] HWMON: TMP102 - Added support for 12 bit data
-Date: Wed, 22 Jun 2011 09:58:52 +0530
-Message-Id: <1308716932-25562-1-git-send-email-bkankur@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+        h=subject:from:reply-to:to:cc:date:in-reply-to:references
+         :content-type:x-mailer:content-transfer-encoding:message-id
+         :mime-version;
+        b=gSPKW3nPAN+nQR9Rp/gvFk1NPny2V3CPOQ0ITiio8iY9/+AkQ2Q18DBvenxpMKO+f/
+         7LyuzBkkQ5Pd+yegaJJB+6JB6aNTH5XRQC38cXrvTKmKbgsRJ7PxoZr2TlQS48/stklv
+         V9D1u7l1YHSX3pORjRnwV2V1NqMC9cR94sZK4=
+Subject: Re: [GIT PULL] UBI changes for 2.6.40
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 22 Jun 2011 07:31:10 +0300
+In-Reply-To: <20110612064002.GA1712@x4.trippels.de>
+References: <20110524064147.4545.43792.sendpatchset@localhost.localdomain>
+	 <20110612064002.GA1712@x4.trippels.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-2.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1308717074.18119.16.camel@sauron>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ankur Patel <ankur.patel@quipment.in>
+Hi Markus,
 
-In tmp102.ko driver support for 12 bit data is added.
+yes, sorry, this patch was probably a mistake - I just stupidly followed
+the new trend.
 
-Signed-off-by: Ankur Patel <ankur.patel@quipment.in>
----
- drivers/hwmon/tmp102.c |   28 ++++++++++++++++++++--------
- 1 files changed, 20 insertions(+), 8 deletions(-)
+On Sun, 2011-06-12 at 08:40 +0200, Markus Trippelsdorf wrote:
+> Either reverting or using something like this fixes the problem:
 
-diff --git a/drivers/hwmon/tmp102.c b/drivers/hwmon/tmp102.c
-index 5bd1949..6e03a87 100644
---- a/drivers/hwmon/tmp102.c
-+++ b/drivers/hwmon/tmp102.c
-@@ -47,6 +47,9 @@
- #define	TMP102_TLOW_REG			0x02
- #define	TMP102_THIGH_REG		0x03
- 
-+#define TMP102_CONFIG  (TMP102_CONF_TM | TMP102_CONF_EM | TMP102_CONF_CR1)
-+#define TMP102_CONFIG_RD_ONLY (TMP102_CONF_R0 | TMP102_CONF_R1 | TMP102_CONF_AL)
-+
- struct tmp102 {
- 	struct device *hwmon_dev;
- 	struct mutex lock;
-@@ -68,16 +71,26 @@ static inline int tmp102_write_reg(struct i2c_client *client, u8 reg, u16 val)
- 	return i2c_smbus_write_word_data(client, reg, swab16(val));
- }
- 
--/* convert left adjusted 13-bit TMP102 register value to milliCelsius */
-+/* convert left adjusted TMP102 register value to milliCelsius for 13 bit &
-+ * 12 bit by dividing with 128 & 256 respectively*/
- static inline int tmp102_reg_to_mC(s16 val)
- {
--	return ((val & ~0x01) * 1000) / 128;
-+	#if TMP102_CONFIG & TMP102_CONF_EM
-+		return ((val & ~0x01) * 1000) / 128;
-+	#else
-+		return ((val & ~0x01) * 1000) / 256;
-+	#endif
- }
- 
--/* convert milliCelsius to left adjusted 13-bit TMP102 register value */
-+/* convert milliCelsius to left adjusted TMP102 register value for 13 bit &
-+ * 12 bit by multiplying with 128 & 256 respectivley*/
- static inline u16 tmp102_mC_to_reg(int val)
- {
--	return (val * 128) / 1000;
-+	#if TMP102_CONFIG & TMP102_CONF_EM
-+		return (val * 128) / 1000;
-+	#else
-+		return (val * 256) / 1000;
-+	#endif
- }
- 
- static const u8 tmp102_reg[] = {
-@@ -126,7 +139,9 @@ static ssize_t tmp102_set_temp(struct device *dev,
- 
- 	if (strict_strtol(buf, 10, &val) < 0)
- 		return -EINVAL;
--	val = SENSORS_LIMIT(val, -256000, 255000);
-+	/* It will limit the Input temperature range to -55 Deg. Cel to
-+	 * 150 Deg. Cel */
-+	val = SENSORS_LIMIT(val, -55000, 150000);
- 
- 	mutex_lock(&tmp102->lock);
- 	tmp102->temp[sda->index] = val;
-@@ -155,9 +170,6 @@ static const struct attribute_group tmp102_attr_group = {
- 	.attrs = tmp102_attributes,
- };
- 
--#define TMP102_CONFIG  (TMP102_CONF_TM | TMP102_CONF_EM | TMP102_CONF_CR1)
--#define TMP102_CONFIG_RD_ONLY (TMP102_CONF_R0 | TMP102_CONF_R1 | TMP102_CONF_AL)
--
- static int __devinit tmp102_probe(struct i2c_client *client,
- 				  const struct i2c_device_id *id)
- {
+However, I am a bit reluctant to revert it now because this would only
+hide the issue. And some googling shows that networking people had a
+similar error in the past and solved it by reverting before the change
+went upstream.
+
+> diff --git a/include/mtd/ubi-user.h b/include/mtd/ubi-user.h
+> index 3c41097..47a6c21 100644
+> --- a/include/mtd/ubi-user.h
+> +++ b/include/mtd/ubi-user.h
+> @@ -23,6 +23,10 @@
+>  
+>  #include <linux/types.h>
+>  
+> +#ifndef __packed
+> +#define __packed __attribute__((packed))
+> +#endif
+> +
+>  /*
+>   * UBI device creation (the same as MTD device attachment)
+>   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This would be a dirty hack. I think a better solution is to enhance the
+"scripts/headers_install.pl" script and teach it to substitute __packed
+with __attribute__((packed)). Then at "make headers_install" time this
+issue would be fixed up.
+
+Or may be the definition of __packed has to be somehow included in
+ubi-user.h ...
+
+Would you please try to make a patch and send it to lkml to hopefully
+generate some discussion and the right way to go would probably be
+found?
+
 -- 
-1.7.0.4
+Best Regards,
+Artem Bityutskiy
 
