@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932350Ab1FVPWs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 11:22:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53632 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932256Ab1FVPWr (ORCPT
+	id S932331Ab1FVPXl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 11:23:41 -0400
+Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:7349
+	"EHLO DB3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932180Ab1FVPXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 11:22:47 -0400
-Message-ID: <4E0208B4.2030107@oracle.com>
-Date: Wed, 22 Jun 2011 10:22:28 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110601 Lightning/1.0b2 OracleBeehiveExtension/1.0.0.2-OracleInternal ObetStats/UAFCAFCATUAFLAF_1301673577011-962016341 Thunderbird/3.1.10
+	Wed, 22 Jun 2011 11:23:39 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bhz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4E0208F4.4030800@freescale.com>
+Date: Wed, 22 Jun 2011 10:23:32 -0500
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org,
-        "jfs-discussion@lists.sourceforge.net" 
-	<jfs-discussion@lists.sourceforge.net>
-Subject: [GIT PULL] jfs fixes
-Content-Type: text/plain; charset=ISO-8859-1
+To: <kumar.gala@freescale.com>, <benh@kernel.crashing.org>, <greg@kroah.com>,
+        <akpm@kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-console@vger.kernel.org>,
+        <alan@lxorguk.ukuu.org.uk>, <arnd@arndb.de>
+Subject: Re: [PATCH 6/7] [v2] tty/powerpc: introduce the ePAPR embedded hypervisor
+ byte channel driver
+References: <1305830092-20104-1-git-send-email-timur@freescale.com>
+In-Reply-To: <1305830092-20104-1-git-send-email-timur@freescale.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4E0208BE.0013:SCFMA922111,ss=1,re=-4.000,fgs=0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull from
+Timur Tabi wrote:
+> The ePAPR embedded hypervisor specification provides an API for "byte
+> channels", which are serial-like virtual devices for sending and receiving
+> streams of bytes.  This driver provides Linux kernel support for byte
+> channels via three distinct interfaces:
+> 
+> 1) An early-console (udbg) driver.  This provides early console output
+> through a byte channel.  The byte channel handle must be specified in a
+> Kconfig option.
+> 
+> 2) A normal console driver.  Output is sent to the byte channel designated
+> for stdout in the device tree.  The console driver is for handling kernel
+> printk calls.
+> 
+> 3) A tty driver, which is used to handle user-space input and output.  The
+> byte channel used for the console is designated as the default tty.
+> 
+> Signed-off-by: Timur Tabi <timur@freescale.com>
 
-git://git.kernel.org/pub/scm/linux/kernel/git/shaggy/jfs-2.6.git for-linus
+I know you guys are busy, but can I get an ACK or two on this patch, if there
+are no issues with it?  It's the only one of the seven that doesn't have one.  I
+think v2 has addressed all of the concerns raised on version 1.
 
-This will update the following files:
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
 
- fs/jfs/file.c       |    6 +++---
- fs/jfs/jfs_imap.c   |   12 +++++-------
- fs/jfs/jfs_incore.h |    3 ++-
- fs/jfs/resize.c     |    2 +-
- 4 files changed, 11 insertions(+), 12 deletions(-)
-
-through these ChangeSets:
-
-commit ecc90462b428db2ad2ee5081c45496ed10f3a633
-Author: Dave Kleikamp <dave.kleikamp@oracle.com>
-Date:   Mon Jun 20 17:53:24 2011 -0500
-
-    jfs: agstart field must be 64 bits
-    
-    The previous patch added the agstart field to jfs_ip, but declared
-    it a long.  We need to make sure its 64 bits on every platform.
-    
-    Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-
-commit d31b53e3cd069e02290ed8a648aa8c7618d6fe77
-Author: Dave Kleikamp <dave.kleikamp@oracle.com>
-Date:   Mon Jun 20 10:53:46 2011 -0500
-
-    JFS: Don't save agno in the inode
-    
-    Resizing the file system can result in an in-memory inode being remapped
-    to a different aggregate group (AG). A cached AG number can cause
-    problems when trying to free or allocate inodes. Instead, save the IAG's
-    agstart address and calculate the agno when we need it.
-    
-    Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-
-commit 28e0fa894cd5996d3007ce82f07226f79beb7286
-Author: Dave Kleikamp <dave.kleikamp@oracle.com>
-Date:   Mon Jun 20 10:32:46 2011 -0500
-
-    jfs: Update agstart when resizing volume
-    
-    A comment indicates that the IAG's agstart does not need to be updated
-    since it will always point to a block in the same aggregate group, but
-    jfs_fsck isn't so forgiving and reports it as an error.
-    
-    I'm fixing this in jfsutils as well, so either a new kernel or new
-    utilities will be sufficient to fix the problem.
-    
-    Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-
-commit 206b6310fd0268a6ca50cf36f03b0f4eee5602ec
-Author: Dave Kleikamp <dave.kleikamp@oracle.com>
-Date:   Mon Jun 20 10:30:04 2011 -0500
-
-    jfs: old_agsize should be 64 bits in jfs_extendfs
-    
-    Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
