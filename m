@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932422Ab1FVPj4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 11:39:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7133 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932246Ab1FVPjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 11:39:55 -0400
-Message-ID: <4E020CBC.7070604@redhat.com>
-Date: Wed, 22 Jun 2011 11:39:40 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S932431Ab1FVPlf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 11:41:35 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:35825 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932246Ab1FVPlc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 11:41:32 -0400
+X-Sasl-enc: RnkKKRrYtdikgGXD5xi2tM+pu55x7AFi90dgdybOACle 1308757290
+Date: Wed, 22 Jun 2011 08:40:22 -0700
+From: Greg KH <greg@kroah.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: brcm80211 build busted on big-endian
+Message-ID: <20110622154022.GB19027@kroah.com>
+References: <20110621.193641.1605224831578508501.davem@davemloft.net>
 MIME-Version: 1.0
-To: Izik Eidus <izik.eidus@ravellosystems.com>
-CC: Avi Kivity <avi@redhat.com>, nai.xia@gmail.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
-        linux-mm <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
-Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte
- and mmu notifier to help KSM dirty bit tracking
-References: <201106212055.25400.nai.xia@gmail.com> <201106212132.39311.nai.xia@gmail.com> <4E01C752.10405@redhat.com> <4E01CC77.10607@ravellosystems.com> <4E01CDAD.3070202@redhat.com> <4E01CFD2.6000404@ravellosystems.com>
-In-Reply-To: <4E01CFD2.6000404@ravellosystems.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110621.193641.1605224831578508501.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2011 07:19 AM, Izik Eidus wrote:
+On Tue, Jun 21, 2011 at 07:36:41PM -0700, David Miller wrote:
+> 
+> It tries to do "xor" operations on pointers because of how the
+> R_REG() and W_REG() macros are defined.
+> 
+> ====================
+> #define R_REG(r) (\
+>         SELECT_BUS_READ( \
+>                 ({ \
+>                         __typeof(*(r)) __osl_v; \
+> 				       		switch (sizeof(*(r))) { \
+>                         case sizeof(u8): \
+>                                 __osl_v = \
+>                                 readb((volatile u8*)((r)^3)); \
+>                                 break; \
+>                         case sizeof(u16): \
+>                                 __osl_v = \
+>                                 readw((volatile u16*)((r)^2)); \
+>                                 break; \
+>                         case sizeof(u32): \
+>                                 __osl_v = readl((volatile u32*)(r)); \
+>                                 break; \
+>                         } \
+>                         __osl_v; \
+>                 }), \
+>                 OSL_READ_REG(r)) \
+> )
+> ====================
+> 
+> This driver is a crap fest of volatile pointers and not-compile-tested
+> code.
 
-> So what we say here is: it is better to have little junk in the unstable
-> tree that get flushed eventualy anyway, instead of make the guest
-> slower....
-> this race is something that does not reflect accurate of ksm anyway due
-> to the full memcmp that we will eventualy perform...
+For big endian, I agree, which is why I thought I fixed this up so it
+wouldn't build on other arches than MIPS for the moment.
 
-With 2MB pages, I am not convinced they will get "flushed eventually",
-because there is a good chance at least one of the 4kB pages inside
-a 2MB page is in active use at all times.
+Is this blowing up in -next or in Linus's tree right now?
 
-I worry that the proposed changes may end up effectively preventing
-KSM from scanning inside 2MB pages, when even one 4kB page inside
-is in active use.  This could mean increased swapping on systems
-that run low on memory, which can be a much larger performance penalty
-than ksmd CPU use.
+thanks,
 
-We need to scan inside 2MB pages when memory runs low, regardless
-of the accessed or dirty bits.
-
--- 
-All rights reversed
+greg k-h
