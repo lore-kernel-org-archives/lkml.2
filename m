@@ -1,113 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758582Ab1FVXSD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 19:18:03 -0400
-Received: from mail.gransy.com ([82.208.29.194]:57322 "EHLO mail.gransy.com"
+	id S1758256Ab1FVXKM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 19:10:12 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:57790 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758523Ab1FVXSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 19:18:01 -0400
-X-Greylist: delayed 591 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Jun 2011 19:18:00 EDT
-Message-ID: <4E0275D8.6000001@fuzzy.cz>
-Date: Thu, 23 Jun 2011 01:08:08 +0200
-From: Tomas Vondra <tv@fuzzy.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110619 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Nvidia MCP55 and WRITE FPDMA QUEUED failed commands
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	id S1757743Ab1FVXKL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 19:10:11 -0400
+X-IronPort-AV: E=Sophos;i="4.65,409,1304319600"; 
+   d="scan'208";a="557674385"
+Subject: Re: Issue with Race Condition on NFS4 with KRB
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Joshua Scoggins <theoretically.x64@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Date: Wed, 22 Jun 2011 19:09:02 -0400
+In-Reply-To: <BANLkTimvMeF94O_S0rpSgy=5Z4obU9pPfg@mail.gmail.com>
+References: <BANLkTik9J3qcdPcp+DdfRq9kj+DMKnjKZw@mail.gmail.com>
+	 <1308767449.14997.10.camel@lade.trondhjem.org>
+	 <BANLkTimyCA0QyF1TNc0SU2GYobOt-sAsNQ@mail.gmail.com>
+	 <1308769054.14997.18.camel@lade.trondhjem.org>
+	 <BANLkTi=b1UJzYinAeW2VJj2AHzsAnwUpGg@mail.gmail.com>
+	 <1308779507.25875.7.camel@lade.trondhjem.org>
+	 <BANLkTin0HnH7rufrHJGgEuPc-ZPjkZe3iw@mail.gmail.com>
+	 <1308783190.25875.25.camel@lade.trondhjem.org>
+	 <BANLkTimvMeF94O_S0rpSgy=5Z4obU9pPfg@mail.gmail.com>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2 (3.0.2-2.fc15) 
+Message-ID: <1308784142.25875.37.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+X-OriginalArrivalTime: 22 Jun 2011 23:09:02.0921 (UTC) FILETIME=[60824390:01CC3131]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Wed, 2011-06-22 at 16:01 -0700, Joshua Scoggins wrote: 
+> I just manually applied the patch as I'm using the gentoo sources.
 
-a few days ago I've bought a new SSD (Intel 320), and it didn't take
-long to get a bunch of I/O errors like this:
+If they're not modifying the source, then it should just apply provided
+that your mailer saved it correctly. If gentoo are applying their own
+patches, then I suggest grabbing a copy of the original 2.6.39 from
+www.kernel.org.
 
-ata6: EH in SWNCQ mode,QC:qc_active 0x7FFFFFFF sactive 0x7FFFFFFF
-ata6: SWNCQ:qc_active 0x1E031 defer_bits 0x7FFE1FCE last_issue_tag 0x10
-  dhfis 0xE031 dmafis 0x6010 sdbfis 0x0
-ata6: ATA_REG 0x40 ERR_REG 0x0
-ata6: tag : dhfis dmafis sdbfis sacitve
-ata6: tag 0x0: 1 0 0 1
-ata6: tag 0x4: 1 1 0 1
-ata6: tag 0x5: 1 0 0 1
-ata6: tag 0xd: 1 1 0 1
-ata6: tag 0xe: 1 1 0 1
-ata6: tag 0xf: 1 0 0 1
-ata6: tag 0x10: 0 0 0 1
-ata6.00: exception Emask 0x0 SAct 0x7fffffff SErr 0x0 action 0x6 frozen
-ata6.00: failed command: WRITE FPDMA QUEUED
-ata6.00: cmd 61/10:00:10:d7:f0/00:00:05:00:00/40 tag 0 ncq 8192 out
-         res 40/00:00:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout)
-ata6.00: status: { DRDY }
-ata6: hard resetting link
-ata6: nv: skipping hardreset on occupied port
-ata6: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-ata6.00: configured for UDMA/133
-ata6.00: device reported invalid CHS sector 0
+> Josh
+> 
+> On Wed, Jun 22, 2011 at 3:53 PM, Trond Myklebust
+> <Trond.Myklebust@netapp.com> wrote:
+> > On Wed, 2011-06-22 at 15:40 -0700, Joshua Scoggins wrote:
+> >> The patch isn't applying to the 2.6.39 kernel sources.
+> >
+> > It does for me:
+> >
+> > [trondmy@lade linux-2.6]$ git checkout v2.6.39
+> > HEAD is now at 61c4f2c... Linux 2.6.39
+> > [trondmy@lade linux-2.6]$ git am ~/Desktop/bugfixes/0001-SUNRPC-Fix-a-potential-race-in-between-xprt_complete.patch
+> > Applying: SUNRPC: Fix a potential race in between xprt_complete_rqst and xprt_transmit
+> > [trondmy@lade linux-2.6]$
+> >
+> > Are you perhaps using some distro kernel instead of the regular one from
+> > Linus' repository?
+> >
+> > Cheers
+> >  Trond
+> >
+> >> -Josh
+> >>
+> >> On Wed, Jun 22, 2011 at 2:51 PM, Trond Myklebust
+> >> <Trond.Myklebust@netapp.com> wrote:
+> >> > On Wed, 2011-06-22 at 12:18 -0700, Joshua Scoggins wrote:
+> >> >> According to the it guys they are running solaris 10 as the server platform.
+> >> >
+> >> > Ok. That should not be subject to the race I was thinking of...
+> >> >
+> >> >> On Wed, Jun 22, 2011 at 11:57 AM, Trond Myklebust
+> >> >> <Trond.Myklebust@netapp.com> wrote:
+> >> >> > On Wed, 2011-06-22 at 11:37 -0700, Joshua Scoggins wrote:
+> >> >> >> Here are our mount options from auto.master
+> >> >> >>
+> >> >> >> /user -fstype=nfs4,sec=krb5p,noresvport,noatime
+> >> >> >> /group -fstype=nfs4,sec=krb5p,noresvport,noatime
+> >> >> >>
+> >> >> >> As for the server, we don't control it. It's actually run by the
+> >> >> >> campus wide it department we are just lab support for CS. I can
+> >> >> >> potentially get the server information but I need to know what you want
+> >> >> >> specifically as they're pretty paranoid about giving out information about
+> >> >> >> their servers.
+> >> >> >
+> >> >> > I would just want to know _what_ server platform you are running
+> >> >> > against. I know of at least one server bug that might explain what you
+> >> >> > are seeing, and I'd like to eliminate that as a possibility.
+> >> >> >
+> >> >> > Trond
+> >> >> >
+> >> >> >> Joshua Scoggins
+> >> >> >>
+> >> >> >> On Wed, Jun 22, 2011 at 11:30 AM, Trond Myklebust
+> >> >> >> <Trond.Myklebust@netapp.com> wrote:
+> >> >> >> > On Wed, 2011-06-22 at 11:21 -0700, Joshua Scoggins wrote:
+> >> >> >> >> Hello,
+> >> >> >> >>
+> >> >> >> >> We are trying to update our linux images in our CS lab and have it a
+> >> >> >> >> bit of an issue. We are
+> >> >> >> >> using nfs to load user home folder. While testing the new image we
+> >> >> >> >> found that the nfs4 module will
+> >> >> >> >>  crash when using firefox 3.6.17 for an extended period of time. Some
+> >> >> >> >> research via google yielded that
+> >> >> >> >> it's a potential race condition specific to nfs with krb auth with
+> >> >> >> >> newer kernels. Our old image doesn't have
+> >> >> >> >> this issue and it seems that its due to it running a far older kernel version.
+> >> >> >> >>
+> >> >> >> >> We have two images and both are having this problem. One is running
+> >> >> >> >> 2.6.39 and the other is 2.6.38.
+> >> >> >> >> Here is what dmesg spit out from the machine running 2.6.39 on one occasion:
+> >> >> >> >>
+> >> >> >> >> [  678.632061] ------------[ cut here ]------------
+> >> >> >> >> [  678.632068] WARNING: at net/sunrpc/clnt.c:1567 call_decode+0xb2/0x69c()
+> >> >> >> >> [  678.632070] Hardware name: OptiPlex 755
+> >> >> >> >> [  678.632072] Modules linked in: nvidia(P) scsi_wait_scan
+> >> >> >> >> [  678.632078] Pid: 3882, comm: kworker/0:2 Tainted: P
+> >> >> >> >> 2.6.39-gentoo-r1 #1
+> >> >> >> >> [  678.632080] Call Trace:
+> >> >> >> >> [  678.632086]  [<ffffffff81035b20>] warn_slowpath_common+0x80/0x98
+> >> >> >> >> [  678.632091]  [<ffffffff8117231e>] ? nfs4_xdr_dec_readdir+0xba/0xba
+> >> >> >> >> [  678.632094]  [<ffffffff81035b4d>] warn_slowpath_null+0x15/0x17
+> >> >> >> >> [  678.632097]  [<ffffffff81426f48>] call_decode+0xb2/0x69c
+> >> >> >> >> [  678.632101]  [<ffffffff8142d2b5>] __rpc_execute+0x78/0x24b
+> >> >> >> >> [  678.632104]  [<ffffffff8142d4c9>] ? rpc_execute+0x41/0x41
+> >> >> >> >> [  678.632107]  [<ffffffff8142d4d9>] rpc_async_schedule+0x10/0x12
+> >> >> >> >> [  678.632111]  [<ffffffff8104a49d>] process_one_work+0x1d9/0x2e7
+> >> >> >> >> [  678.632114]  [<ffffffff8104c402>] worker_thread+0x133/0x24f
+> >> >> >> >> [  678.632118]  [<ffffffff8104c2cf>] ? manage_workers+0x18d/0x18d
+> >> >> >> >> [  678.632121]  [<ffffffff8104f6a0>] kthread+0x7d/0x85
+> >> >> >> >> [  678.632125]  [<ffffffff8145e314>] kernel_thread_helper+0x4/0x10
+> >> >> >> >> [  678.632128]  [<ffffffff8104f623>] ? kthread_worker_fn+0x13a/0x13a
+> >> >> >> >> [  678.632131]  [<ffffffff8145e310>] ? gs_change+0xb/0xb
+> >> >> >> >> [  678.632133] ---[ end trace 6bfae002a63e020e ]---
+> >> >
+> >> > Looking at the code, there is only one way I can see for that warning to
+> >> > occur, and that is if we put the request back on the 'xprt->recv' list
+> >> > after it has already received a reply from the server.
+> >> >
+> >> > Can you reproduce the problem with the attached patch?
+> >> >
+> >> > Trond
+> >> >
+> >> > --
+> >> > Trond Myklebust
+> >> > Linux NFS client maintainer
+> >> >
+> >> > NetApp
+> >> > Trond.Myklebust@netapp.com
+> >> > www.netapp.com
+> >> >
+> >> >
+> >
+> > --
+> > Trond Myklebust
+> > Linux NFS client maintainer
+> >
+> > NetApp
+> > Trond.Myklebust@netapp.com
+> > www.netapp.com
+> >
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-The machine just freezes for a few seconds and then everything works
-fine again. Until the next bunch of errors - sometimes it's a few
-minutes, sometimes a whole day.
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-The filesystem seems not to be corrupted (fsck finds no problem) and
-everything seems to be OK.
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-The full dmesg output (including the errors) is available here:
-
-  http://pastebin.com/uHvTVmss
-
-I've been searching for possible causes / fixes, but no matter what I do
-I still occassionally get those I/O errors :-(
-
-It seems to be somehow related to the controller on my mobo - I'm using
-Asus M2N-e with Nvidia MCP55, and I've found this:
-
-  http://marc.info/?l=linux-kernel&m=126847285022959&w=2
-
-which describes a similar issue (same failed command, a bit different
-result). I've been using this mobo for a few years, everything worked
-just fine till now (OK, I got a few panics, but in all cases it was my
-stupid fault). I've switched there various HDDs from various vendors,
-not a single problem.
-
-The post mentions the problems may be related to SMART - not sure how to
-confirm/refute this, but I'm somehow used that products from Intel work
-fine most of the time. OTOH after executing a long self-test, smartctl
-reports this (full output: http://pastebin.com/DwJfxdTK)
-
-SMART Self-test log structure revision number 1
-Num  Test_Description Status                  Remaining  ...
-  1  Vendor (0x78)    Completed without error 150%       ...
-
-That seems a bit fishy, of course. 150%? And how could it be already
-completed when there's still 150% remaining?
-
-What I've tried till today:
-
-  1) flashed BIOS to a recent version
-
-  2) switched from reiserfs 3.6 to ext4
-
-  3) disabled the NCQ (libata.force=noncq kernel parameter)
-
-  4) set DMA queue depth to 1 (hdparm -Q 1 /dev/sdb)
-
-  5) upgraded from 2.6.36.1 to 2.6.38
-
-None of those helped :-(
-
-Any ideas how to solve those issues? If those are "just" timing errors
-(i.e. the data are actually written but the drive does not notify that)
-or is there a danger of corruption?
-
-A bit more (possibly useful) info:
-
-.config http://pastebin.com/PYeLKaBL
-lspci output : http://pastebin.com/nQPS0rxU
-
-regards
-Tomas
