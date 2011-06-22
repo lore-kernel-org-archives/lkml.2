@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab1FUX7f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 19:59:35 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48767 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757407Ab1FUX7e (ORCPT
+	id S1757605Ab1FVACx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 20:02:53 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47719 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757402Ab1FVACu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 19:59:34 -0400
-Date: Tue, 21 Jun 2011 16:59:05 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/7] writeback: introduce smoothed global dirty limit
-Message-Id: <20110621165905.3c7180a4.akpm@linux-foundation.org>
-In-Reply-To: <20110619155546.GA14338@localhost>
-References: <20110619150108.691351746@intel.com>
-	<20110619150510.246140117@intel.com>
-	<20110619153636.GC20424@infradead.org>
-	<20110619155546.GA14338@localhost>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 21 Jun 2011 20:02:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:references:in-reply-to
+         :mime-version:message-id:x-uid:x-length:cc:content-type
+         :content-transfer-encoding;
+        b=cOrotyOtZkqV78E/uTBnvKXuZJ1R3JUFk7tmpRG3NaTqLi8lFcvzQ3d+Py6ErmBRt0
+         nAxaiMIyuzWjAXgGoO93/4K0n3w1aX47r7+yI0SlAoAIMxQP/m4MIZWdymKrJ/zzoSas
+         UL9LsFqWh6dSnjBQi4b+CB5SBiMw9r4PjnzLg=
+From: Nai Xia <nai.xia@gmail.com>
+Reply-To: nai.xia@gmail.com
+To: Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [PATCH 1/2 V2] ksm: take dirty bit as reference to avoid volatile pages scanning
+Date: Wed, 22 Jun 2011 08:02:35 +0800
+User-Agent: KMail/1.13.5 (Linux/2.6.39; KDE/4.5.5; i686; ; )
+References: <201106212055.25400.nai.xia@gmail.com> <201106212126.06726.nai.xia@gmail.com> <20110621214233.GN25383@sequoia.sous-sol.org>
+In-Reply-To: <20110621214233.GN25383@sequoia.sous-sol.org>
+MIME-Version: 1.0
+Message-Id: <201106220802.35349.nai.xia@gmail.com>
+X-Length: 1772
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
+        Rik van Riel <riel@redhat.com>, "linux-mm" <linux-mm@kvack.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 19 Jun 2011 23:55:47 +0800
-Wu Fengguang <fengguang.wu@intel.com> wrote:
-
-> On Sun, Jun 19, 2011 at 11:36:37PM +0800, Christoph Hellwig wrote:
-> > On Sun, Jun 19, 2011 at 11:01:11PM +0800, Wu Fengguang wrote:
-> > > The start of a heavy weight application (ie. KVM) may instantly knock
-> > > down determine_dirtyable_memory() and hence the global/bdi dirty
-> > > thresholds.
-> > > 
-> > > So introduce global_dirty_limit for tracking the global dirty threshold
-> > > with policies
-> > > 
-> > > - follow downwards slowly
-> > > - follow up in one shot
-> > > 
-> > > global_dirty_limit can effectively mask out the impact of sudden drop of
-> > > dirtyable memory. It will be used in the next patch for two new type of
-> > > dirty limits.
-> > 
-> > This needs to be explained in more detail in comments near the actual
-> > code.
+On Wednesday 22 June 2011 05:42:33 you wrote:
+> * Nai Xia (nai.xia@gmail.com) wrote:
+> > This patch makes the page_check_address() can validate if a subpage is
+> > in its place in a huge page pointed by the address. This can be useful when
+> > ksm does not split huge pages when looking up the subpages one by one.
 > 
-> Good point! This is the added comment for the update_dirty_limit() function.
+> Just a quick heads up...this patch does not compile by itself.  Could you
+> do a little patch cleanup?  Start with just making sure the Subject: is
+> correct for each patch.  Then make sure the 3 are part of same series.
+> And finally, make sure each is stand alone and complilable on its own.
+
+Oh, indeed, there is a kvm & mmu_notifier related patch not named in a series.
+But with a same email thread ID, I think.... I had thought it's ok...
+I'll reformat this patch set to fullfill these requirements. 
+Thanks for reviewing. 
+(Sorry for repeated mail, I forgot to Cc the list..)
+
+
+Nai
+
 > 
-> /*
->  * The global dirtyable memory and dirty threshold could be suddenly knocked
->  * down by a large amount (eg. on the startup of KVM). This may throw the
->  * system into deep dirty exceeded state and throttled to "death" for a couple
->  * of seconds. The solution is to maintain global_dirty_limit for tracking
->  * slowly down to the knocked down dirty threshold.
->  */
-> static void update_dirty_limit(unsigned long thresh,
->                                unsigned long dirty)
+> thanks,
+> -chris
 > 
-
-Neither this nor the changelog explain things well. 
-
-Looking at the code, KVM starts, allocates memory,
-global_page_state(NR_FREE_PAGES) decreases by N and
-global_reclaimable_pages() increases by N.  Nothing changed.
-
-So what's going on here?
