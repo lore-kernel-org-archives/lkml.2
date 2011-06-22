@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758351Ab1FVTaN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 15:30:13 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41551 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757493Ab1FVTaL (ORCPT
+	id S1758494Ab1FVTfa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 15:35:30 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:56594 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757971Ab1FVTf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 15:30:11 -0400
-Date: Wed, 22 Jun 2011 21:30:09 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [patch 4/4] sched: Distangle worker accounting from rq->lock
-In-Reply-To: <20110622174919.135236139@linutronix.de>
-Message-ID: <alpine.LFD.2.02.1106222128480.11814@ionos>
-References: <20110622174659.496793734@linutronix.de> <20110622174919.135236139@linutronix.de>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 22 Jun 2011 15:35:29 -0400
+Date: Wed, 22 Jun 2011 20:35:23 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Ike Panhc <ike.pan@canonical.com>
+Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH 1/3] ideapad: define cfg bits and create sysfs node for
+ cfg
+Message-ID: <20110622193523.GA8861@srcf.ucam.org>
+References: <1308729781-2590-1-git-send-email-ike.pan@canonical.com>
+ <1308729943-2624-1-git-send-email-ike.pan@canonical.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308729943-2624-1-git-send-email-ike.pan@canonical.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Jun 2011, Thomas Gleixner wrote:
-> +void wq_worker_sleeping(struct task_struct *task)
+On Wed, Jun 22, 2011 at 04:05:43PM +0800, Ike Panhc wrote:
+>  static int __devinit ideapad_acpi_add(struct acpi_device *adevice)
 >  {
-> -	struct worker *worker = kthread_data(task), *to_wakeup = NULL;
-> -	struct global_cwq *gcwq = get_gcwq(cpu);
-> -	atomic_t *nr_running = get_gcwq_nr_running(cpu);
-> +	struct worker *worker = kthread_data(task);
-> +	struct global_cwq *gcwq;
-> +	int cpu;
->  
->  	if (worker->flags & WORKER_NOT_RUNNING)
-> -		return NULL;
-> +		return;
->  
-> -	/* this can only happen on the local cpu */
-> -	BUG_ON(cpu != raw_smp_processor_id());
-> +	if (WARN_ON_ONCE(worker->sleeping))
-> +		return;
+> -	int ret, i, cfg;
+> +	int ret, i;
+> +	unsigned long cfg;
 
-Darn, forgot to add 
+You change this to an unsigned long, but you cast it to an int in 
+several places. Is that just to avoid casting to a long here?
 
-      worker->sleeping = 1;
+> -		if (test_bit(ideapad_rfk_data[i].cfgbit, (unsigned long *)&cfg))
+> +		if (test_bit(ideapad_rfk_data[i].cfgbit, &cfg))
 
-back when I added the WARN_ON.
-  
+I think it seems neater the other way around, but don't have terribly 
+strong opinions.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
