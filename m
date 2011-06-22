@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab1FVJQc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 05:16:32 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:54928 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754399Ab1FVJQa (ORCPT
+	id S1754310Ab1FVJTI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 05:19:08 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:35380 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287Ab1FVJTG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 05:16:30 -0400
+	Wed, 22 Jun 2011 05:19:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=s8GUzjPZwOqS4w4s5QFPxsIuMf5oLE9WosIOkHxF64kZlmz13eBRWZ8qqHpqNmSTry
-         yqep2F1P73SX/uz67f9xAkFhfmqmsF5S90gbMoWHvHFc2rj6fNh+BBMryxjeww0Qiy9R
-         FCtGFp3ItlF7alUARdEZttSaXoea4iShdw/ZA=
-Date: Wed, 22 Jun 2011 10:17:27 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC] Add Arm cpu topology definition
-Message-ID: <20110622091727.GA1195@1n450.cable.virginmedia.net>
-References: <BANLkTinRGRUxKB=C_2Y2F93czWScEUo+Jw@mail.gmail.com>
- <4DFA5C2E.40507@codeaurora.org>
- <BANLkTi=ik=iRtDb3K__CPxSH_8GusoBHKA@mail.gmail.com>
- <4E0100BF.6080500@codeaurora.org>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=PciXg/LYPoYxzj8WZQ6Rs3TkkHnW9zmJnLWbKMxoFzZq+nnAutxOlpIcMRSAIOMLM2
+         +iQAmN0qr2xn3swYGCKZurVv8SvyIqIYFxelUJbX7gGN0LRnBJCHHpkVn+vbjyjOMTcw
+         67Kxx/hllSZ1+KwuNG7SIWllrjn0iZFZR2qyQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E0100BF.6080500@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1308700373-18415-3-git-send-email-john.stultz@linaro.org>
+References: <1308700373-18415-1-git-send-email-john.stultz@linaro.org>
+	<1308700373-18415-3-git-send-email-john.stultz@linaro.org>
+Date: Wed, 22 Jun 2011 11:19:05 +0200
+Message-ID: <BANLkTinEgRe6GgPv=WwvNmCsmWjkupRqwA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] alarmtimers: Return -ENOTSUPP if no RTC device is present
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 01:36:15PM -0700, Stephen Boyd wrote:
-> On 06/16/2011 11:54 PM, Vincent Guittot wrote:
-> > On 16 June 2011 21:40, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> >> The ARM ARM says these fields are IMPLEMENTATION DEFINED meaning that
-> >> different vendors may attribute different meaning to these fields if
-> >> they wish. Does that mean this should be a platform_*() function?
-> >>
-> > The ARM ARM also provides a recommended use of the fields of this
-> > register and the TRM of each Cortex adds some details. On the cortex
-> > A9, each platform can only set the value of the Cluster ID with the
-> > CLUSTERID pins. I have tried to consolidate the value of MPIDR  across
-> > several platforms and they all match with the description.
-> >
-> > Have you got an example of a MPIDR register which doesn't match with
-> > the implementation ?
-> 
-> Not that I know of. I'm more concerned with how the ARM ARM has two
-> recommended usages for these fields depending on virtualization or not.
-> I suppose we can handle that issue when it arises (or does your
-> implementation already handle that?)
+2011/6/22 John Stultz <john.stultz@linaro.org>:
+> Toralf Förster and Richard Weinberger noted that if there is
+> no RTC device, the alarm timers core prints out an annoying
+> "ALARM timers will not wake from suspend" message.
+>
+> This warning has been removed in a previous patch, however
+> the issue still remains:  The original idea was to support
+> alarm timers even if there was no rtc device, as long as the
+> system didn't go into suspend.
+>
+> However, after further consideration, communicating to the application
+> that alarmtimers are not fully functional seems like the better
+> solution.
+>
+> So this patch makes it so we return -ENOTSUPP to any posix _ALARM
+> clockid calls if there is no backing RTC device on the system.
+>
+> Further this changes the behavior where when there is no rtc device
+> we will check for one on clock_getres, clock_gettime, timer_create,
+> and timer_nsleep instead of on suspend.
+>
+> CC: Toralf Förster <toralf.foerster@gmx.de>
+> CC: Richard Weinberger <richard@nod.at
 
-According to the ARM ARM:
-
-	MPIDR provides a mechanism with up to three levels of affinity
-	information, but the meaning of those levels of affinity is
-	entirely IMPLEMENTATION DEFINED.
-
-So we can't really tell the meaning of the affinity bits. There are two
-recommended ways indeed (with or without virtualisation) which are not
-that different with regards to the topology (just introducing another
-level for virtual CPUs).
-
-But I think a more general solution would be for the CPU topology to be
-provided via the FDT.
+Ahhh, the missing ">" explains why I didn't receive this mail. :-)
 
 -- 
-Catalin
+Thanks,
+//richard
