@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753857Ab1FVGhL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 02:37:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32396 "EHLO mx1.redhat.com"
+	id S1754716Ab1FVGiH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 02:38:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9702 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753555Ab1FVGhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 02:37:03 -0400
+	id S1753364Ab1FVGiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 02:38:04 -0400
 From: Amerigo Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        Amerigo Wang <amwang@redhat.com>,
+        Amerigo Wang <amwang@redhat.com>, Chris Ball <cjb@laptop.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Philip Rakity <prakity@marvell.com>,
         "David S. Miller" <davem@davemloft.net>,
         Lucas De Marchi <lucas.demarchi@profusion.mobi>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>, Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>
-Subject: [PATCH 3/5] sys: move reboot notifiers into reboot.h
-Date: Wed, 22 Jun 2011 14:35:20 +0800
-Message-Id: <1308724522-32461-4-git-send-email-amwang@redhat.com>
+        Josh Triplett <josh@joshtriplett.org>, linux-mmc@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org
+Subject: [PATCH 4/5] pm: move pm notifiers into suspend.h
+Date: Wed, 22 Jun 2011 14:35:21 +0800
+Message-Id: <1308724522-32461-5-git-send-email-amwang@redhat.com>
 In-Reply-To: <1308724522-32461-1-git-send-email-amwang@redhat.com>
 References: <1308724522-32461-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,143 +29,70 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 It is not necessary to share the same notifier.h.
-This patch already moves register_reboot_notifier()
-and unregister_reboot_notifier() from kernel/notifier.c to
-kernel/sys.c.
 
 Signed-off-by: WANG Cong <amwang@redhat.com>
 
 ---
- include/linux/notifier.h |    5 +----
- include/linux/reboot.h   |    5 +++++
- kernel/notifier.c        |   31 -------------------------------
- kernel/sys.c             |   32 +++++++++++++++++++++++++++++++-
- 4 files changed, 37 insertions(+), 36 deletions(-)
+ drivers/mmc/core/core.c  |    3 +++
+ include/linux/notifier.h |   10 ++--------
+ include/linux/suspend.h  |    8 ++++++++
+ 3 files changed, 13 insertions(+), 8 deletions(-)
 
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index 68091dd..2cd4ec5 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -23,6 +23,9 @@
+ #include <linux/log2.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/pm_runtime.h>
++#ifdef CONFIG_PM
++#include <linux/suspend.h>
++#endif
+ 
+ #include <linux/mmc/card.h>
+ #include <linux/mmc/host.h>
 diff --git a/include/linux/notifier.h b/include/linux/notifier.h
-index e8a858a..145c436 100644
+index 145c436..ae8f7d9 100644
 --- a/include/linux/notifier.h
 +++ b/include/linux/notifier.h
-@@ -189,10 +189,7 @@ static inline int notifier_to_errno(int ret)
+@@ -191,15 +191,9 @@ static inline int notifier_to_errno(int ret)
  
- /* netdevice notifiers are defined in include/linux/netdevice.h */
+ /* reboot notifiers are defined in include/linux/reboot.h. */
  
--#define SYS_DOWN	0x0001	/* Notify of system down */
--#define SYS_RESTART	SYS_DOWN
--#define SYS_HALT	0x0002	/* Notify of system halt */
--#define SYS_POWER_OFF	0x0003	/* Notify of system power off */
-+/* reboot notifiers are defined in include/linux/reboot.h. */
+-#define NETLINK_URELEASE	0x0001	/* Unicast netlink socket released */
++/* Hibernation and suspend events are defined in include/linux/suspend.h. */
  
- #define NETLINK_URELEASE	0x0001	/* Unicast netlink socket released */
+-/* Hibernation and suspend events */
+-#define PM_HIBERNATION_PREPARE	0x0001 /* Going to hibernate */
+-#define PM_POST_HIBERNATION	0x0002 /* Hibernation finished */
+-#define PM_SUSPEND_PREPARE	0x0003 /* Going to suspend the system */
+-#define PM_POST_SUSPEND		0x0004 /* Suspend finished */
+-#define PM_RESTORE_PREPARE	0x0005 /* Going to restore a saved image */
+-#define PM_POST_RESTORE		0x0006 /* Restore failed */
++#define NETLINK_URELEASE	0x0001	/* Unicast netlink socket released */
  
-diff --git a/include/linux/reboot.h b/include/linux/reboot.h
-index 3005d5a..e0879a7 100644
---- a/include/linux/reboot.h
-+++ b/include/linux/reboot.h
-@@ -39,6 +39,11 @@
+ /* Console keyboard events.
+  * Note: KBD_KEYCODE is always sent before KBD_UNBOUND_KEYCODE, KBD_UNICODE and
+diff --git a/include/linux/suspend.h b/include/linux/suspend.h
+index 083ffea..95bc81c 100644
+--- a/include/linux/suspend.h
++++ b/include/linux/suspend.h
+@@ -260,6 +260,14 @@ static inline int hibernate(void) { return -ENOSYS; }
+ static inline bool system_entering_hibernation(void) { return false; }
+ #endif /* CONFIG_HIBERNATION */
  
- #include <linux/notifier.h>
- 
-+#define SYS_DOWN	0x0001	/* Notify of system down */
-+#define SYS_RESTART	SYS_DOWN
-+#define SYS_HALT	0x0002	/* Notify of system halt */
-+#define SYS_POWER_OFF	0x0003	/* Notify of system power off */
++/* Hibernation and suspend events */
++#define PM_HIBERNATION_PREPARE	0x0001 /* Going to hibernate */
++#define PM_POST_HIBERNATION	0x0002 /* Hibernation finished */
++#define PM_SUSPEND_PREPARE	0x0003 /* Going to suspend the system */
++#define PM_POST_SUSPEND		0x0004 /* Suspend finished */
++#define PM_RESTORE_PREPARE	0x0005 /* Going to restore a saved image */
++#define PM_POST_RESTORE		0x0006 /* Restore failed */
 +
- extern int register_reboot_notifier(struct notifier_block *);
- extern int unregister_reboot_notifier(struct notifier_block *);
- 
-diff --git a/kernel/notifier.c b/kernel/notifier.c
-index 2488ba7..8d7b435 100644
---- a/kernel/notifier.c
-+++ b/kernel/notifier.c
-@@ -525,37 +525,6 @@ void srcu_init_notifier_head(struct srcu_notifier_head *nh)
- }
- EXPORT_SYMBOL_GPL(srcu_init_notifier_head);
- 
--/**
-- *	register_reboot_notifier - Register function to be called at reboot time
-- *	@nb: Info about notifier function to be called
-- *
-- *	Registers a function with the list of functions
-- *	to be called at reboot time.
-- *
-- *	Currently always returns zero, as blocking_notifier_chain_register()
-- *	always returns zero.
-- */
--int register_reboot_notifier(struct notifier_block *nb)
--{
--	return blocking_notifier_chain_register(&reboot_notifier_list, nb);
--}
--EXPORT_SYMBOL(register_reboot_notifier);
--
--/**
-- *	unregister_reboot_notifier - Unregister previously registered reboot notifier
-- *	@nb: Hook to be unregistered
-- *
-- *	Unregisters a previously registered reboot
-- *	notifier function.
-- *
-- *	Returns zero on success, or %-ENOENT on failure.
-- */
--int unregister_reboot_notifier(struct notifier_block *nb)
--{
--	return blocking_notifier_chain_unregister(&reboot_notifier_list, nb);
--}
--EXPORT_SYMBOL(unregister_reboot_notifier);
--
- static ATOMIC_NOTIFIER_HEAD(die_chain);
- 
- int notrace __kprobes notify_die(enum die_val val, const char *str,
-diff --git a/kernel/sys.c b/kernel/sys.c
-index e4128b2..a101ba3 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -8,7 +8,6 @@
- #include <linux/mm.h>
- #include <linux/utsname.h>
- #include <linux/mman.h>
--#include <linux/notifier.h>
- #include <linux/reboot.h>
- #include <linux/prctl.h>
- #include <linux/highuid.h>
-@@ -320,6 +319,37 @@ void kernel_restart_prepare(char *cmd)
- }
- 
- /**
-+ *	register_reboot_notifier - Register function to be called at reboot time
-+ *	@nb: Info about notifier function to be called
-+ *
-+ *	Registers a function with the list of functions
-+ *	to be called at reboot time.
-+ *
-+ *	Currently always returns zero, as blocking_notifier_chain_register()
-+ *	always returns zero.
-+ */
-+int register_reboot_notifier(struct notifier_block *nb)
-+{
-+	return blocking_notifier_chain_register(&reboot_notifier_list, nb);
-+}
-+EXPORT_SYMBOL(register_reboot_notifier);
-+
-+/**
-+ *	unregister_reboot_notifier - Unregister previously registered reboot notifier
-+ *	@nb: Hook to be unregistered
-+ *
-+ *	Unregisters a previously registered reboot
-+ *	notifier function.
-+ *
-+ *	Returns zero on success, or %-ENOENT on failure.
-+ */
-+int unregister_reboot_notifier(struct notifier_block *nb)
-+{
-+	return blocking_notifier_chain_unregister(&reboot_notifier_list, nb);
-+}
-+EXPORT_SYMBOL(unregister_reboot_notifier);
-+
-+/**
-  *	kernel_restart - reboot the system
-  *	@cmd: pointer to buffer containing command to execute for restart
-  *		or %NULL
+ #ifdef CONFIG_PM_SLEEP
+ void save_processor_state(void);
+ void restore_processor_state(void);
 -- 
 1.7.4.4
 
