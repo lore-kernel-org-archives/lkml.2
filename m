@@ -1,202 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932482Ab1FVTTv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 15:19:51 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:42456 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932248Ab1FVTTu (ORCPT
+	id S932571Ab1FVTWH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 15:22:07 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:46168 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932437Ab1FVTWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 15:19:50 -0400
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, peterz@infradead.org,
-        eric.dumazet@gmail.com, david@rgmadvisors.com,
-        linux-kernel@vger.kernel.org, zvonler@rgmadvisors.com,
-        hughd@google.com, tglx@linutronix.de, mingo@elte.hu,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>
-Subject: [PATCH RFC] futex: Fix regression with read only mappings
-Date: Wed, 22 Jun 2011 14:19:00 -0500
-Message-Id: <1308770340-21895-1-git-send-email-sbohrer@rgmadvisors.com>
-X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <4DF8FFF6.4060000@linux.intel.com>
-References: <4DF8FFF6.4060000@linux.intel.com>
+	Wed, 22 Jun 2011 15:22:04 -0400
+Message-ID: <4E024089.9040204@metafoo.de>
+Date: Wed, 22 Jun 2011 21:20:41 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110505 Icedove/3.0.11
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-kernel@vger.kernel.org,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: Re: [PATCH 1/8] regmap: Add generic non-memory mapped register access
+ API
+References: <20110622184407.GC13847@sirena.org.uk> <1308768353-19372-1-git-send-email-broonie@opensource.wolfsonmicro.com> <4E023C72.3030109@metafoo.de> <20110622191145.GA19628@opensource.wolfsonmicro.com>
+In-Reply-To: <20110622191145.GA19628@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 7485d0d3758e8e6491a5c9468114e74dc050785d (futexes: Remove rw
-parameter from get_futex_key()) in 2.6.33 introduced a user-mode
-regression in that it additionally prevented futex operations on a
-region within a read only memory mapped file.  For example this breaks
-workloads that have one or more reader processes doing a FUTEX_WAIT on a
-futex within a read only shared mapping, and a writer processes that has
-a writable mapping issuing the FUTEX_WAKE.
+On 06/22/2011 09:11 PM, Mark Brown wrote:
+> On Wed, Jun 22, 2011 at 09:03:14PM +0200, Lars-Peter Clausen wrote:
+>> On 06/22/2011 08:45 PM, Mark Brown wrote:
+> 
+>>> +	if (map->bus->read_flag_bit)
+>>> +		u8[0] |= 1 << map->bus->read_flag_bit;
+> 
+>> Should be 1 << (map->bus->read_flag_bit - 1)
+> 
+> The code has the sematic I intended; you can debate if it's the best
+> semantic and looking at the documentation again it's not entirely clear
+> so at least that should be updated.
 
-This fixes the regression for futex operations that should be valid on
-RO mappings by trying a RO get_user_pages_fast() when the RW
-get_user_pages_fast() fails so as not to slow down the common path of
-writable anonymous maps and bailing when we used the RO path on
-anonymous memory.
+Well, then the spi regmap driver needs to use read_flag_bit = 7 instead of
+read_flag_bit = 8 and the BUG_ON should also be updated to read_flag_bit >= 8.
 
-Patch based on Peter Zijlstra's initial patch with modifications to only
-allow RO mappings for futex operations that need VERIFY_READ access.
+And the current code also disallows to use the first bit as the read_flag. So
+in my opinion using a one-based index here is a good idea.
 
-Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
----
+> BTW, the reason I put you on the CCs was the hope that you could test on
+> OpenMoko (I have one but I've not got any kind of working environment
+> set up for it).  You're the nearest thing to a mainline maintainer for
+> stuff like the pcf driver.
 
-Interestingly this patch also allows doing a FUTEX_WAIT on a RO private
-mapping.  Where my tests on 2.6.18 show that this used to wait
-indefinitely.  Performing a FUTEX_WAIT on a RW private mapping waits
-indefinitely in 2.6.18, 3.0.0, and with this patch applied.  It is
-unclear to me if this is a good thing or a bug.
-
- kernel/futex.c |   38 ++++++++++++++++++++++++++------------
- 1 files changed, 26 insertions(+), 12 deletions(-)
-
-diff --git a/kernel/futex.c b/kernel/futex.c
-index fe28dc2..e8cd532 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -218,6 +218,8 @@ static void drop_futex_key_refs(union futex_key *key)
-  * @uaddr:	virtual address of the futex
-  * @fshared:	0 for a PROCESS_PRIVATE futex, 1 for PROCESS_SHARED
-  * @key:	address where result is stored.
-+ * @rw:		mapping needs to be read/write (values: VERIFY_READ,
-+ *		VERIFY_WRITE)
-  *
-  * Returns a negative error code or 0
-  * The key words are stored in *key on success.
-@@ -229,12 +231,12 @@ static void drop_futex_key_refs(union futex_key *key)
-  * lock_page() might sleep, the caller should not hold a spinlock.
-  */
- static int
--get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
-+get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key, int rw)
- {
- 	unsigned long address = (unsigned long)uaddr;
- 	struct mm_struct *mm = current->mm;
- 	struct page *page, *page_head;
--	int err;
-+	int err, ro = 0;
- 
- 	/*
- 	 * The futex address must be "naturally" aligned.
-@@ -262,6 +264,10 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
- 
- again:
- 	err = get_user_pages_fast(address, 1, 1, &page);
-+	if (err == -EFAULT && rw == VERIFY_READ) {
-+		err = get_user_pages_fast(address, 1, 0, &page);
-+		ro = 1;
-+	}
- 	if (err < 0)
- 		return err;
- 
-@@ -316,6 +322,11 @@ again:
- 	 * the object not the particular process.
- 	 */
- 	if (PageAnon(page_head)) {
-+		if (ro) {
-+			err = -EFAULT;
-+			goto out;
-+		}
-+
- 		key->both.offset |= FUT_OFF_MMSHARED; /* ref taken on mm */
- 		key->private.mm = mm;
- 		key->private.address = address;
-@@ -327,9 +338,11 @@ again:
- 
- 	get_futex_key_refs(key);
- 
-+	err = 0;
-+out:
- 	unlock_page(page_head);
- 	put_page(page_head);
--	return 0;
-+	return err;
- }
- 
- static inline void put_futex_key(union futex_key *key)
-@@ -940,7 +953,7 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
- 	if (!bitset)
- 		return -EINVAL;
- 
--	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key);
-+	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key, VERIFY_READ);
- 	if (unlikely(ret != 0))
- 		goto out;
- 
-@@ -986,10 +999,10 @@ futex_wake_op(u32 __user *uaddr1, unsigned int flags, u32 __user *uaddr2,
- 	int ret, op_ret;
- 
- retry:
--	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1);
-+	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
- 	if (unlikely(ret != 0))
- 		goto out;
--	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
-+	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2, VERIFY_WRITE);
- 	if (unlikely(ret != 0))
- 		goto out_put_key1;
- 
-@@ -1243,10 +1256,11 @@ retry:
- 		pi_state = NULL;
- 	}
- 
--	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1);
-+	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
- 	if (unlikely(ret != 0))
- 		goto out;
--	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
-+	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2,
-+			    requeue_pi ? VERIFY_WRITE : VERIFY_READ);
- 	if (unlikely(ret != 0))
- 		goto out_put_key1;
- 
-@@ -1790,7 +1804,7 @@ static int futex_wait_setup(u32 __user *uaddr, u32 val, unsigned int flags,
- 	 * while the syscall executes.
- 	 */
- retry:
--	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q->key);
-+	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q->key, VERIFY_READ);
- 	if (unlikely(ret != 0))
- 		return ret;
- 
-@@ -1941,7 +1955,7 @@ static int futex_lock_pi(u32 __user *uaddr, unsigned int flags, int detect,
- 	}
- 
- retry:
--	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q.key);
-+	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q.key, VERIFY_WRITE);
- 	if (unlikely(ret != 0))
- 		goto out;
- 
-@@ -2060,7 +2074,7 @@ retry:
- 	if ((uval & FUTEX_TID_MASK) != vpid)
- 		return -EPERM;
- 
--	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key);
-+	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key, VERIFY_WRITE);
- 	if (unlikely(ret != 0))
- 		goto out;
- 
-@@ -2249,7 +2263,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
- 	debug_rt_mutex_init_waiter(&rt_waiter);
- 	rt_waiter.task = NULL;
- 
--	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
-+	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2, VERIFY_WRITE);
- 	if (unlikely(ret != 0))
- 		goto out;
- 
--- 
-1.6.5.2
-
-
-
----------------------------------------------------------------
-This email, along with any attachments, is confidential. If you 
-believe you received this message in error, please contact the 
-sender immediately and delete all copies of the message.  
-Thank you.
+It's already on my todo list.
 
