@@ -1,138 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757669Ab1FVAFZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Jun 2011 20:05:25 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50518 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757594Ab1FVAFX (ORCPT
+	id S1757708Ab1FVAHB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Jun 2011 20:07:01 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:36378 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757562Ab1FVAG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Jun 2011 20:05:23 -0400
-Date: Tue, 21 Jun 2011 17:04:44 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/7] writeback: introduce smoothed global dirty limit
-Message-Id: <20110621170444.541cb240.akpm@linux-foundation.org>
-In-Reply-To: <20110619150510.246140117@intel.com>
-References: <20110619150108.691351746@intel.com>
-	<20110619150510.246140117@intel.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 21 Jun 2011 20:06:59 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6384"; a="99037046"
+Message-ID: <4E013222.6080208@codeaurora.org>
+Date: Tue, 21 Jun 2011 17:06:58 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH] ARM: smp: Fix the CPU hotplug race with scheduler.
+References: <20110620114019.GH2082@n2100.arm.linux.org.uk> <20110620142338.GL2082@n2100.arm.linux.org.uk> <4DFF5F29.2000904@ti.com> <4E005F92.8030208@ti.com> <20110621100057.GB23802@n2100.arm.linux.org.uk> <4E006FA0.7050508@ti.com> <20110621101900.GC23802@n2100.arm.linux.org.uk> <4E00708C.6050108@ti.com> <20110621102600.GD23802@n2100.arm.linux.org.uk> <4E00FC2F.1010400@codeaurora.org> <20110621231035.GE23802@n2100.arm.linux.org.uk>
+In-Reply-To: <20110621231035.GE23802@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 19 Jun 2011 23:01:11 +0800
-Wu Fengguang <fengguang.wu@intel.com> wrote:
+On 06/21/2011 04:10 PM, Russell King - ARM Linux wrote:
+> On Tue, Jun 21, 2011 at 01:16:47PM -0700, Stephen Boyd wrote:
+>> On 06/21/2011 03:26 AM, Russell King - ARM Linux wrote:
+>>> On Tue, Jun 21, 2011 at 03:51:00PM +0530, Santosh Shilimkar wrote:
+>>>> On 6/21/2011 3:49 PM, Russell King - ARM Linux wrote:
+>>>>> I won't be committing the init/calibrate.c change to a git tree - it
+>>>>> isn't ARM stuff so it goes in patch form.
+>>>> Patches with change log would be fine as well.
+>>> The answer is not at the moment, but maybe soon.
+>> Should we send those two patches to the stable trees as well? They seem
+>> to fix issues with cpu onlining that have existed for a long time.
+> Looks to me like the problem was introduced for 2.6.39-rc1, so we
+> should probably get the fix into the 2.6.39-stable tree too.
 
-> The start of a heavy weight application (ie. KVM) may instantly knock
-> down determine_dirtyable_memory() and hence the global/bdi dirty
-> thresholds.
-> 
-> So introduce global_dirty_limit for tracking the global dirty threshold
-> with policies
-> 
-> - follow downwards slowly
-> - follow up in one shot
-> 
-> global_dirty_limit can effectively mask out the impact of sudden drop of
-> dirtyable memory. It will be used in the next patch for two new type of
-> dirty limits.
-> 
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  include/linux/writeback.h |    2 +
->  mm/page-writeback.c       |   41 ++++++++++++++++++++++++++++++++++++
->  2 files changed, 43 insertions(+)
-> 
-> --- linux-next.orig/include/linux/writeback.h	2011-06-19 22:56:18.000000000 +0800
-> +++ linux-next/include/linux/writeback.h	2011-06-19 22:59:29.000000000 +0800
-> @@ -88,6 +88,8 @@ static inline void laptop_sync_completio
->  #endif
->  void throttle_vm_writeout(gfp_t gfp_mask);
->  
-> +extern unsigned long global_dirty_limit;
-> +
->  /* These are exported to sysctl. */
->  extern int dirty_background_ratio;
->  extern unsigned long dirty_background_bytes;
-> --- linux-next.orig/mm/page-writeback.c	2011-06-19 22:56:18.000000000 +0800
-> +++ linux-next/mm/page-writeback.c	2011-06-19 22:59:29.000000000 +0800
-> @@ -116,6 +116,7 @@ EXPORT_SYMBOL(laptop_mode);
->  
->  /* End of sysctl-exported parameters */
->  
-> +unsigned long global_dirty_limit;
->  
->  /*
->   * Scale the writeback cache size proportional to the relative writeout speeds.
-> @@ -510,6 +511,43 @@ static void bdi_update_write_bandwidth(s
->  	bdi->avg_write_bandwidth = avg;
->  }
->  
-> +static void update_dirty_limit(unsigned long thresh,
-> +				 unsigned long dirty)
-> +{
-> +	unsigned long limit = global_dirty_limit;
-> +
-> +	if (limit < thresh) {
-> +		limit = thresh;
-> +		goto update;
-> +	}
-> +
-> +	if (limit > thresh &&
-> +	    limit > dirty) {
-> +		limit -= (limit - max(thresh, dirty)) >> 5;
-> +		goto update;
-> +	}
-> +	return;
-> +update:
-> +	global_dirty_limit = limit;
-> +}
+Are we talking about the loops_per_jiffy problem or the cpu_active
+problem? I would think the cpu_active problem has been there since SMP
+support was added to ARM and the loops_per_jiffy problem has been there
+(depending on the compiler) since 8a9e1b0 ([PATCH] Platform SMIs and
+their interferance with tsc based delay calibration, 2005-06-23).
 
-Are
-you
-using
-a
-30
-column
-monitor
-over
-there?
+So pretty much every stable tree would want both of these patches.
 
-
-This function is just crazy.  It compares various things, applies
-limits, churns them all together with magic constants and does it all
-in a refreshingly documentation-free manner.
-
-How the heck is anyone supposed to understand what you were thinking
-when you typed it in?
-
-Please, write for an audience.
-
-> +static void global_update_bandwidth(unsigned long thresh,
-> +				    unsigned long dirty,
-> +				    unsigned long now)
-> +{
-> +	static DEFINE_SPINLOCK(dirty_lock);
-> +
-> +	if (now - default_backing_dev_info.bw_time_stamp < MAX_PAUSE)
-> +		return;
-> +
-> +	spin_lock(&dirty_lock);
-> +	if (now - default_backing_dev_info.bw_time_stamp >= MAX_PAUSE) {
-> +		update_dirty_limit(thresh, dirty);
-> +		default_backing_dev_info.bw_time_stamp = now;
-> +	}
-> +	spin_unlock(&dirty_lock);
-> +}
-
-Why is it playing with default_backing_dev_info?  That's only there to
-support filesystems which were too old-and-slack to implement
-backing-devs properly and it really shouldn't exist at all.
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
