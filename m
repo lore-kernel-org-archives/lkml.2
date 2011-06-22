@@ -1,92 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab1FVKqq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 06:46:46 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44921 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552Ab1FVKqp (ORCPT
+	id S1756860Ab1FVKrB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 06:47:01 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62956 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756777Ab1FVKq6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 06:46:45 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4E01C809.9020508@jp.fujitsu.com>
-Date: Wed, 22 Jun 2011 19:46:33 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	Wed, 22 Jun 2011 06:46:58 -0400
 MIME-Version: 1.0
-To: kosaki.motohiro@jp.fujitsu.com
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, caiqian@redhat.com, rientjes@google.com,
-        hughd@google.com, kamezawa.hiroyu@jp.fujitsu.com,
-        minchan.kim@gmail.com, oleg@redhat.com
-Subject: [PATCH 1/6] oom: use euid instead of CAP_SYS_ADMIN for protection
- root process
-References: <4E01C7D5.3060603@jp.fujitsu.com>
-In-Reply-To: <4E01C7D5.3060603@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [46.116.119.47]
+In-Reply-To: <87liwu8u3q.fsf@rustcorp.com.au>
+References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
+ <1308640714-17961-8-git-send-email-ohad@wizery.com> <87liwu8u3q.fsf@rustcorp.com.au>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 22 Jun 2011 13:46:37 +0300
+Message-ID: <BANLkTi=7TBMqnEf2qustrmSaubtTam79Bw@mail.gmail.com>
+Subject: Re: [RFC 7/8] drivers: introduce rpmsg, a remote-processor messaging bus
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        davinci-linux-open-source 
+	<davinci-linux-open-source@linux.davincidsp.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recently, many userland daemon prefer to use libcap-ng and drop
-all privilege just after startup. Because of (1) Almost privilege
-are necessary only when special file open, and aren't necessary
-read and write. (2) In general, privilege dropping brings better
-protection from exploit when bugs are found in the daemon.
+On Wed, Jun 22, 2011 at 5:42 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> On Tue, 21 Jun 2011 10:18:33 +0300, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+>> Add a virtio-based IPC bus, which enables kernel users to communicate
+>> with remote processors over shared memory using a simple messaging
+>> protocol.
+>
+> Wow, sometimes one writes a standard and people use it.  Thanks!
 
-But, it makes suboptimal oom-killer behavior. CAI Qian reported
-oom killer killed some important daemon at first on his fedora
-like distro. Because they've lost CAP_SYS_ADMIN.
+And we really liked it: virtio_rpmsg_bus.c, the virtio driver which
+does most of the magic here ended up pretty small thanks to virtio.
+and the performance numbers are really good, too.
 
-Of course, we recommend to drop privileges as far as possible
-instead of keeping them. Thus, oom killer don't have to check
-any capability. It implicitly suggest wrong programming style.
+>> +     /* Platform must supply pre-allocated uncached buffers for now */
+>> +     vdev->config->get(vdev, VPROC_BUF_ADDR, &addr, sizeof(addr));
+>> +     vdev->config->get(vdev, VPROC_BUF_NUM, &num_bufs, sizeof(num_bufs));
+>> +     vdev->config->get(vdev, VPROC_BUF_SZ, &buf_size, sizeof(buf_size));
+>> +     vdev->config->get(vdev, VPROC_BUF_PADDR, &vrp->phys_base,
+>> +                                             sizeof(vrp->phys_base));
+>
+> The normal way is to think of the config space as a structure, and use
+> offsets rather than using an enum value to distinguish the fields.
 
-This patch change root process check way from CAP_SYS_ADMIN to
-just euid==0.
+Yes, I was (mis-)using the config space for now to talk with
+platform-specific code (on the host), and not with the peer, so I
+opted for simplicity.
 
-Reported-by: CAI Qian <caiqian@redhat.com>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/oom_kill.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+But this is definitely one thing that is going away: I don't see any
+reason why not just use dma_alloc_coherent (or even dma_pool_create)
+directly from the driver here in order to get those buffers.
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index e4b0991..f552e39 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -203,7 +203,7 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
- 	 * Root processes get 3% bonus, just like the __vm_enough_memory()
- 	 * implementation used by LSMs.
- 	 */
--	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
-+	if (task_euid(p) == 0)
- 		points -= 30;
+>> +#define RPMSG_NAME_SIZE                      32
+>> +#define RPMSG_DEVICE_MODALIAS_FMT    "rpmsg:%s"
+>> +
+>> +struct rpmsg_device_id {
+>> +     char name[RPMSG_NAME_SIZE];
+>> +     kernel_ulong_t driver_data      /* Data private to the driver */
+>> +                     __attribute__((aligned(sizeof(kernel_ulong_t))));
+>> +};
+>
+> This alignment directive seems overkill...
 
- 	/*
-@@ -373,7 +373,7 @@ static void dump_tasks(const struct mem_cgroup *mem, const nodemask_t *nodemask)
- 	struct task_struct *p;
- 	struct task_struct *task;
+Yes, looks like I can remove this. thanks.
 
--	pr_info("[ pid ]   uid  tgid total_vm      rss cpu oom_adj oom_score_adj name\n");
-+	pr_info("[ pid ]   uid  euid  tgid total_vm      rss cpu oom_adj oom_score_adj name\n");
- 	for_each_process(p) {
- 		if (oom_unkillable_task(p, mem, nodemask))
- 			continue;
-@@ -388,8 +388,9 @@ static void dump_tasks(const struct mem_cgroup *mem, const nodemask_t *nodemask)
- 			continue;
- 		}
+>> +#define VIRTIO_ID_RPMSG              10 /* virtio remote processor messaging */
+>
+> I think you want 6.  Plan 9 jumped ahead to grab 9 :)
 
--		pr_info("[%5d] %5d %5d %8lu %8lu %3u     %3d         %5d %s\n",
--			task->pid, task_uid(task), task->tgid,
-+		pr_info("[%5d] %5d %5d %5d %8lu %8lu %3u     %3d         %5d %s\n",
-+			task->pid, task_uid(task), task_euid(task),
-+			task->tgid,
- 			task->mm->total_vm, get_mm_rss(task->mm),
- 			task_cpu(task), task->signal->oom_adj,
- 			task->signal->oom_score_adj, task->comm);
--- 
-1.7.3.1
+6 it is :)
 
-
-
+Thanks,
+Ohad.
