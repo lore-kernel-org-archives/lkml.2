@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757532Ab1FVMHD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 08:07:03 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:59498 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552Ab1FVMHB (ORCPT
+	id S1756584Ab1FVMPV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 08:15:21 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:42781
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752552Ab1FVMPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 08:07:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=w1Y+tjsNpdepavdhMrfFSiPphFPNpE0csKpzUMbaEQ+BBiurgNYSuK8Jh9ee1QEnaZ
-         4vS8RUrlItjnWOPV/IewGPU800GLVOa0TJ5h17rokl87LT+Bq3vJkglTolpdHhumTzaU
-         g1MFb9OQCXuRuGPjEHXp6xbLUrtQUBagKlhPI=
+	Wed, 22 Jun 2011 08:15:20 -0400
+Date: Wed, 22 Jun 2011 08:15:16 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH] mm: Do not keep page locked during page fault while
+ charging it for memcg
+Message-ID: <20110622121516.GA28359@infradead.org>
+References: <20110622120635.GB14343@tiehlicka.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTinSFErFBaZgeL4x1oiaw7woewUNVQ@mail.gmail.com>
-References: <BANLkTinSFErFBaZgeL4x1oiaw7woewUNVQ@mail.gmail.com>
-Date: Wed, 22 Jun 2011 15:07:00 +0300
-Message-ID: <BANLkTiksk02_SmP8ZWP8J4w0kPCdVr15mw@mail.gmail.com>
-Subject: Re: threading problem
-From: Daniel Baluta <daniel.baluta@gmail.com>
-To: "Murali K. Vemuri" <vemuri.muralikrishna@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        kernelnewbies <kernelnewbies@kernelnewbies.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110622120635.GB14343@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Murali,
+> +
+> +			/* We have to drop the page lock here because memcg
+> +			 * charging might block for unbound time if memcg oom
+> +			 * killer is disabled.
+> +			 */
+> +			unlock_page(vmf.page);
+> +			ret = mem_cgroup_newpage_charge(page, mm, GFP_KERNEL);
+> +			lock_page(vmf.page);
 
-> I have a device driver which provides the IOCTL function for the
-> application to interact.
->
-> when the application sends the IOCTL CMD_GO, my driver has to toggle a
-> GPIO every 500 m Sec. until a 3 minute timeout occurs or a CMD_STOP
-> IOCTL is received.
->
-> I tried the DECLARE_WORK, DECLARE_DELAYED_WORK and also
-> kernel_thread() to meet this requirement with no success.
->
+This introduces a completely poinless unlock/lock cycle for non-memcg
+pagefaults.  Please make sure it only happens when actually needed.
 
-Could you please show us the code?
-
-thanks,
-Daniel.
