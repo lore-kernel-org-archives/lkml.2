@@ -1,44 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501Ab1FVJwN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 05:52:13 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57309 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756160Ab1FVJwK (ORCPT
+	id S1755514Ab1FVJxr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 05:53:47 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44167 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752837Ab1FVJxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 05:52:10 -0400
-Date: Wed, 22 Jun 2011 11:52:05 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Tatyana Brokhman <tlinder@codeaurora.org>
-Cc: balbi@ti.com, linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        ablay@codeaurora.org, open list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/PATCH v2 1/2] usb:dummy_hcd: connect/disconnect test
- support
-Message-ID: <20110622095205.GA24674@linutronix.de>
-References: <1308731945-7601-1-git-send-email-tlinder@codeaurora.org>
- <1308731945-7601-2-git-send-email-tlinder@codeaurora.org>
+	Wed, 22 Jun 2011 05:53:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=NWiaFdFaCBybdKI9357XWNRJHsOBY5yw4QLwtoeaccbtco/HQiDl/tQ3KIPakGhE5F
+         U49wO8nnO7qOejkCS2MYX8EOpLu7xai884u5nRq59TJb24hZnPIcAXO8xWz2ObcjgaXS
+         imiY+EPfvpb+K5WLD1tBSFWP/MsTbTo8dpKOU=
+Date: Wed, 22 Jun 2011 13:53:41 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org
+Cc: security@kernel.org
+Subject: [PATCH] kernel: escape non-ASCII and control characters in printk()
+Message-ID: <20110622095341.GA3353@albatros>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1308731945-7601-2-git-send-email-tlinder@codeaurora.org>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tatyana Brokhman | 2011-06-22 11:39:00 [+0300]:
+This patch escapes all characters outside of allowed '\n' plus 0x20-0x7E
+charset passed to printk().
 
->This implementation adds a new proprietary device control requests (to be
->handled by the dummy_hcd) that initiates a connect/disconnect sequence.
->The bRequest value of the new control request is 0x52.
->It is used by the user-space Unit testing application.
->
->Signed-off-by: Tatyana Linder <tlinder@codeaurora.org>
+There are numerous printk() instances with user supplied input as "%s"
+data, and unprivileged user may craft log messages with substrings
+containing control characters via these printk()s.  Control characters
+might fool root viewing the logs via tty.
 
-As far as I understand this should be used to test real Hardware. Mind
-moving this to composite_setup() so it can be re-used by other ucd as
-well? usb_gadget_*nect() should do the pullup() trick.
+Printing non-ASCII characters is not portable since not everyone sees
+the same characters after 0xFF.  If any driver use it to print some
+binary data, it should be fixed.  Not fixed code will print hex codes
+of the binary data.
 
-Sebastian
+On testing Samsung Q310 laptop there are no users of chars outside of the
+restricted charset.
+
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+
+ This patch does nothing with crafted "%s" data with '\n' inside.  It
+ allows unprivileged user to craft arbitrary log messages via breaking
+ log lines boundaries.  It is a bit tricky to fix it compatible way.
+ Limiting "%s" to one line in vscnprintf() would break legitimate users
+ of the multiline feature.  Intoducing new "%S" format for single lines
+ makes little sense as there are tons of printk() calls that should be
+ already restricted to one line.
+
+ Proposals about '\n' inside of '%s" are welcome.
+
+
+ kernel/printk.c |   16 +++++++++++++++-
+ 1 files changed, 15 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 3518539..1f23988 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -671,6 +671,20 @@ static void emit_log_char(char c)
+ 		logged_chars++;
+ }
+ 
++static void emit_log_char_escaped(char c)
++{
++	char buffer[8];
++	int i, len;
++
++	if ((c >= ' ' && c < 127) || c == '\n')
++		emit_log_char(c);
++	else {
++		len = sprintf(buffer, "#%02x", c);
++		for (i = 0; i < len; i++)
++			emit_log_char(buffer[i]);
++	}
++}
++
+ /*
+  * Zap console related locks when oopsing. Only zap at most once
+  * every 10 seconds, to leave time for slow consoles to print a
+@@ -938,7 +952,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
+ 				break;
+ 		}
+ 
+-		emit_log_char(*p);
++		emit_log_char_escaped(*p);
+ 		if (*p == '\n')
+ 			new_text_line = 1;
+ 	}
+-- 
+1.7.0.4
