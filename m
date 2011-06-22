@@ -1,95 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621Ab1FVLTx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 07:19:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7468 "EHLO mx1.redhat.com"
+	id S1757252Ab1FVLT5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 07:19:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29738 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753924Ab1FVLTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 07:19:52 -0400
+	id S1753924Ab1FVLTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 07:19:54 -0400
 From: Stefan Assmann <sassmann@kpanic.de>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
         tony.luck@intel.com, andi@firstfloor.org, mingo@elte.hu, hpa@zytor.com,
         rick@vanrein.org, rdunlap@xenotime.net, sassmann@kpanic.de
-Subject: [PATCH v2 1/3] Add string parsing function get_next_ulong
-Date: Wed, 22 Jun 2011 13:18:52 +0200
-Message-Id: <1308741534-6846-2-git-send-email-sassmann@kpanic.de>
+Subject: [PATCH v2 2/3] support for broken memory modules (BadRAM)
+Date: Wed, 22 Jun 2011 13:18:53 +0200
+Message-Id: <1308741534-6846-3-git-send-email-sassmann@kpanic.de>
 In-Reply-To: <1308741534-6846-1-git-send-email-sassmann@kpanic.de>
 References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding this function to allow easy parsing of unsigned long values from the
-beginning of strings. Convenience function to parse pointers from the kernel
-command line.
+BadRAM is a mechanism to exclude memory addresses (pages) from being used by
+the system. The addresses are given to the kernel via kernel command line.
+This is useful for systems with defective RAM modules, especially if the RAM
+modules cannot be replaced.
+
+command line parameter: badram=<addr>,<mask>[,...]
+
+Patterns for the command line parameter can be obtained by running Memtest86.
+In Memtest86 press "c" for configuration, select "Error Report Mode" and
+finally "BadRAM Patterns"
+
+This has already been done by Rick van Rein a long time ago but it never found
+it's way into the kernel.
 
 Signed-off-by: Stefan Assmann <sassmann@kpanic.de>
 Acked-by: Tony Luck <tony.luck@intel.com>
 Acked-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/kernel.h |    1 +
- lib/cmdline.c          |   35 +++++++++++++++++++++++++++++++++++
- 2 files changed, 36 insertions(+), 0 deletions(-)
+ mm/memory-failure.c |  100 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 100 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 00cec4d..98c1916 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -280,6 +280,7 @@ extern int vsscanf(const char *, const char *, va_list)
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 2b9a5ee..97c7f7c 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -52,6 +52,8 @@
+ #include <linux/swapops.h>
+ #include <linux/hugetlb.h>
+ #include <linux/memory_hotplug.h>
++#include <linux/memblock.h>
++#include <linux/bootmem.h>
+ #include "internal.h"
  
- extern int get_option(char **str, int *pint);
- extern char *get_options(const char *str, int nints, int *ints);
-+extern int get_next_ulong(char **str, unsigned long *val, char sep, int base);
- extern unsigned long long memparse(const char *ptr, char **retptr);
- 
- extern int core_kernel_text(unsigned long addr);
-diff --git a/lib/cmdline.c b/lib/cmdline.c
-index f5f3ad8..82a6616 100644
---- a/lib/cmdline.c
-+++ b/lib/cmdline.c
-@@ -114,6 +114,41 @@ char *get_options(const char *str, int nints, int *ints)
+ int sysctl_memory_failure_early_kill __read_mostly = 0;
+@@ -1487,3 +1489,101 @@ done:
+ 	/* keep elevated page count for bad page */
+ 	return ret;
  }
- 
- /**
-+ *	get_next_ulong - Parse unsigned long at the beginning of a string
-+ *	@strp: (output) String to be parsed
-+ *	@val: (output) unsigned long carrying the result
-+ *	@sep: character specifying the separator
-+ *	@base: number system of the parsed value
-+ *
-+ *	This function parses an unsigned long value at the beginning of a
-+ *	string. The string may begin with a separator or an unsigned long
-+ *	value.
-+ *	After the function is run val will contain the parsed value and strp
-+ *	will point to the character *after* the parsed unsigned long.
-+ *
-+ *	In the error case 0 is returned, val and *strp stay unaltered.
-+ *	Otherwise return 1.
-+ */
-+int get_next_ulong(char **strp, unsigned long *val, char sep, int base)
++
++/*
++ * Return 0 if no address found else return 1, new address is stored in addrp.
++ **/
++static int __init next_masked_address(unsigned long *addrp, unsigned long mask)
 +{
-+	char *tmp;
++	unsigned long total_mem = (max_pfn + 1) << PAGE_SHIFT;
++	unsigned long tmp_addr = *addrp;
++	unsigned long inc = 1;
 +
-+	if (!strp || !(*strp))
-+		return 0;
++	while (inc & mask)
++		inc = inc << 1;
 +
-+	tmp = *strp;
-+	if (*tmp == sep)
-+		tmp++;
++	while (inc != 0) {
++		tmp_addr += inc;
++		tmp_addr &= ~mask;
++		tmp_addr |= ((*addrp) & mask);
 +
-+	*val = simple_strtoul(tmp, strp, base);
++		/* address is bigger than phys memory */
++		if (tmp_addr >= total_mem)
++			return 0;
 +
-+	if (tmp == *strp)
-+		return 0; /* no new value parsed */
-+	else
-+		return 1;
++		/* address found */
++		if (tmp_addr > *addrp) {
++			*addrp = tmp_addr;
++			return 1;
++		}
++
++		while (inc & ~mask)
++			inc = inc << 1;
++		inc = inc << 1;
++	}
++
++	return 0;
 +}
 +
-+/**
-  *	memparse - parse a string with mem suffixes into a number
-  *	@ptr: Where parse begins
-  *	@retptr: (output) Optional pointer to next char after parse completes
++/*
++ * Set hwpoison pageflag on all pages specified by addr/mask.
++ */
++static int __init badram_mark_pages(unsigned long addr, unsigned long mask)
++{
++	unsigned long pagecount = 0, is_reserved = 0;
++
++	mask |= ~PAGE_MASK; /* smallest chunk is a page */
++	addr &= mask;
++
++	printk(KERN_INFO "BadRAM: mark 0x%lx with mask 0x%0lx\n", addr, mask);
++
++	do {
++		unsigned long pfn = addr >> PAGE_SHIFT;
++		struct page *page = pfn_to_page(pfn);
++
++		if (!pfn_valid(pfn))
++			continue;
++		if (memblock_is_reserved(addr)) {
++			pr_debug("BadRAM: page %lu reserved by kernel\n", pfn);
++			is_reserved++;
++			continue;
++		}
++
++		SetPageHWPoison(page);
++		atomic_long_add(1, &mce_bad_pages);
++		pagecount++;
++		pr_debug("BadRAM: page %lu (addr 0x%0lx) marked bad "
++			 "[total %lu]\n", pfn, addr, pagecount);
++	} while (next_masked_address(&addr, mask));
++
++	if (is_reserved)
++		printk(KERN_WARNING "BadRAM: %lu page(s) already reserved and "
++		       "could not be marked bad\n", is_reserved);
++
++	return pagecount;
++}
++
++static int __init badram_setup(char *str)
++{
++	printk(KERN_DEBUG "BadRAM: cmdline option is %s\n", str);
++
++	if (*str++ != '=')
++		return 0;
++
++	while (*str) {
++		unsigned long addr = 0, mask = 0, pagecount = 0;
++
++		if (!get_next_ulong(&str, &addr, ',', 16)) {
++			printk(KERN_WARNING "BadRAM: parsing error\n");
++			return 0;
++		}
++		if (!get_next_ulong(&str, &mask, ',', 16))
++			mask = ~(0UL);
++
++		pagecount = badram_mark_pages(addr, mask);
++		printk(KERN_INFO "BadRAM: %lu page(s) bad\n", pagecount);
++	}
++
++	return 0;
++}
++__setup("badram", badram_setup);
 -- 
 1.7.4
 
