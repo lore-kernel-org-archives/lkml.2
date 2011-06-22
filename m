@@ -1,52 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779Ab1FVKw5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 06:52:57 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40124 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138Ab1FVKw4 convert rfc822-to-8bit (ORCPT
+	id S1756899Ab1FVK4C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 06:56:02 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48494 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138Ab1FVK4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 06:52:56 -0400
-Subject: Re: [patch 03/16] sched: introduce primitives to account for CFS
- bandwidth tracking
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Nikhil Rao <ncrao@google.com>
-In-Reply-To: <20110621071659.996203495@google.com>
-References: <20110621071649.862846205@google.com>
-	 <20110621071659.996203495@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 22 Jun 2011 12:52:04 +0200
-Message-ID: <1308739924.1022.19.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 22 Jun 2011 06:56:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=ga1fQyfUiD4HxO0rQNcNpslUcmAANHbbr90nb0IbE/yo7H7McLO3UlFD545WxzwZ7p
+         vbSIKFtaj31+ptpEOWAjUXLpeG9oyDzSb5P0/HN8UZXzTnwH9BCrIlu+WApScJ6UV+aC
+         +a5JIcp/4nww2njtJAt6ya7PD0f7+mUEQDyKE=
+From: Nai Xia <nai.xia@gmail.com>
+Reply-To: nai.xia@gmail.com
+To: Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [PATCH 2/2 V2] ksm: take dirty bit as reference to avoid volatile pages scanning
+Date: Wed, 22 Jun 2011 18:55:43 +0800
+User-Agent: KMail/1.13.5 (Linux/2.6.39; KDE/4.5.5; i686; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        "linux-mm" <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <201106212055.25400.nai.xia@gmail.com> <201106220804.12508.nai.xia@gmail.com> <20110622003536.GQ25383@sequoia.sous-sol.org>
+In-Reply-To: <20110622003536.GQ25383@sequoia.sous-sol.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106221855.43667.nai.xia@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-21 at 00:16 -0700, Paul Turner wrote:
-> +#ifdef CONFIG_CFS_BANDWIDTH
-> +       {
-> +               .name = "cfs_quota_us",
-> +               .read_s64 = cpu_cfs_quota_read_s64,
-> +               .write_s64 = cpu_cfs_quota_write_s64,
-> +       },
-> +       {
-> +               .name = "cfs_period_us",
-> +               .read_u64 = cpu_cfs_period_read_u64,
-> +               .write_u64 = cpu_cfs_period_write_u64,
-> +       },
-> +#endif 
+On Wednesday 22 June 2011 08:35:36 Chris Wright wrote:
+> * Nai Xia (nai.xia@gmail.com) wrote:
+> > (Sorry for repeated mail, I forgot to Cc the list..)
+> > 
+> > On Wednesday 22 June 2011 06:38:00 you wrote:
+> > > * Nai Xia (nai.xia@gmail.com) wrote:
+> > > > Introduced ksm_page_changed() to reference the dirty bit of a pte. We clear 
+> > > > the dirty bit for each pte scanned but don't flush the tlb. For a huge page, 
+> > > > if one of the subpage has changed, we try to skip the whole huge page 
+> > > > assuming(this is true by now) that ksmd linearly scans the address space.
+> > > 
+> > > This doesn't build w/ kvm as a module.
+> > 
+> > I think it's because of the name-error of a related kvm patch, which I only sent
+> > in a same email thread. http://marc.info/?l=linux-mm&m=130866318804277&w=2
+> > The patch split is not clean...I'll redo it.
+> > 
+> 
+> It needs an export as it is.
+> ERROR: "kvm_dirty_update" [arch/x86/kvm/kvm-intel.ko] undefined!
+> 
+> Although perhaps could be done w/out that dirty_update altogether (as I
+> mentioned in other email)?
+> 
+> > > 
+> > > > A NEW_FLAG is also introduced as a status of rmap_item to make ksmd scan
+> > > > more aggressively for new VMAs - only skip the pages considered to be volatile
+> > > > by the dirty bits. This can be enabled/disabled through KSM's sysfs interface.
+> > > 
+> > > This seems like it should be separated out.  And while it might be useful
+> > > to enable/disable for testing, I don't think it's worth supporting for
+> > > the long term.  Would also be useful to see the value of this flag.
+> > 
+> > I think it maybe useful for uses who want to turn on/off this scan policy explicitly
+> > according to their working sets? 
+> 
+> Can you split it out, and show the benefit of it directly?  I think it
+> only benefits:
+> 
+> p = mmap()
+> memset(p, $value, entire buffer);
+> ...
+> very slowly (w.r.t scan times) touch bits of buffer and trigger cow to
+> break sharing.
+> 
+> Would you agree?
 
-Did I miss a reply to:
-lkml.kernel.org/r/1305538202.2466.4047.camel@twins ? why does it make
-sense to have different periods per cgroup? what does it mean?
+The direct benefit of it is that when merging a very big area, the system
+does not be caught in a non-trivial period people see the free memory is 
+actually dropping by creating only rmap_items, despite he is 100% sure that
+his workset is very duplicated. I think it's puzzling to users and also 
+risky of OOM.
+
+Thanks,
+Nai
+
+> 
+> thanks,
+> -chris
+> 
