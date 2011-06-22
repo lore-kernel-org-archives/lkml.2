@@ -1,108 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758057Ab1FVOWo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 10:22:44 -0400
-Received: from hera.kernel.org ([140.211.167.34]:58889 "EHLO hera.kernel.org"
+	id S1758088Ab1FVOW6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 10:22:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53597 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755582Ab1FVOWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 10:22:43 -0400
-Date: Wed, 22 Jun 2011 14:22:19 GMT
-From: tip-bot for Peter Zijlstra <peterz@infradead.org>
-Message-ID: <tip-4f2a8d3cf5e0486fd547633fa86c5d130ae98cad@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1308734409.1022.14.camel@twins>
-References: <1308734409.1022.14.camel@twins>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/printk] printk: Fix console_sem vs logbuf_lock unlock race
-Git-Commit-ID: 4f2a8d3cf5e0486fd547633fa86c5d130ae98cad
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1758075Ab1FVOW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 10:22:56 -0400
+Date: Wed, 22 Jun 2011 16:22:39 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Cong Wang <amwang@redhat.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [PATCH 1/3] mm: completely disable THP by
+ transparent_hugepage=never
+Message-ID: <20110622142239.GV20843@redhat.com>
+References: <4DFF7F0A.8090604@redhat.com>
+ <4DFF8106.8090702@redhat.com>
+ <4DFF8327.1090203@redhat.com>
+ <4DFF84BB.3050209@redhat.com>
+ <4DFF8848.2060802@redhat.com>
+ <20110620182558.GF4749@redhat.com>
+ <20110620192117.GG20843@redhat.com>
+ <4E00192E.70901@redhat.com>
+ <20110621144346.GQ20843@redhat.com>
+ <4E0159E9.10800@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 22 Jun 2011 14:22:20 +0000 (UTC)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4E0159E9.10800@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4f2a8d3cf5e0486fd547633fa86c5d130ae98cad
-Gitweb:     http://git.kernel.org/tip/4f2a8d3cf5e0486fd547633fa86c5d130ae98cad
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 22 Jun 2011 11:20:09 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 22 Jun 2011 11:39:34 +0200
+On Wed, Jun 22, 2011 at 10:56:41AM +0800, Cong Wang wrote:
+> 于 2011年06月21日 22:43, Andrea Arcangeli 写道:
+> > On Tue, Jun 21, 2011 at 12:08:14PM +0800, Cong Wang wrote:
+> >> The thing is that we can save ~10K by adding 3 lines of code as this
+> >> patch showed, where else in kernel can you save 10K by 3 lines of code?
+> >> (except some kfree() cases, of course) So, again, why not have it? ;)
+> >
+> > Because you could save it with a more complicated patch that doesn't
+> > cripple down functionality.
+> 
+> 
+> Why do you prefer "more complicated" things to simple ones? ;-)
 
-printk: Fix console_sem vs logbuf_lock unlock race
+If they offer more features yes. Allowing to tune the size of the has
+will also allow to increase it, not only to decrease it. It's also not
+significantly more complicated.
 
-Fix up the fallout from commit 0b5e1c5255 ("printk: Release
-console_sem after logbuf_lock").
+> I realized this patch changed the original behavior of "=never",
+> thus proposed a new "=0" parameter.
+> 
+> But to be honest, "=never" should be renamed to "=disable".
 
-The reason for unlocking the console_sem under the logbuf_lock
-is that a concurrent printk() might fill up the buffer but fail
-to acquire the console sem, resulting in a missed write to the
-console until a subsequent console_sem acquire/release cycle.
+So in turn you're saying "=always" should be renamed to "=enabled". So
+your preference would be enabled=enabled and enabled=disabled and
+enabled=madvise? I think the current wording is nicer and breaking
+kabi just for this sounds bad.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: efault@gmx.de
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1308734409.1022.14.camel@twins
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/printk.c |   20 ++++++++++++++++++--
- 1 files changed, 18 insertions(+), 2 deletions(-)
+> Not only such things, the more serious thing is that you are
+> enforcing a policy to users, as long as I enable THP in Kconfig,
+> I have no way to disable it.
+> 
+> Why are you so sure that every user who has no chance to change
+> .config likes THP?
+> 
+> And, what can I do if I want to prevent any process from having
+> a chance to enable THP? Because as long as THP exists in /sys,
+> any process has the right privilege can change it.
 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 751e7b8..37dff34 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1244,7 +1244,7 @@ void console_unlock(void)
- {
- 	unsigned long flags;
- 	unsigned _con_start, _log_end;
--	unsigned wake_klogd = 0;
-+	unsigned wake_klogd = 0, retry = 0;
- 
- 	if (console_suspended) {
- 		up(&console_sem);
-@@ -1253,6 +1253,7 @@ void console_unlock(void)
- 
- 	console_may_schedule = 0;
- 
-+again:
- 	for ( ; ; ) {
- 		spin_lock_irqsave(&logbuf_lock, flags);
- 		wake_klogd |= log_start - log_end;
-@@ -1273,8 +1274,23 @@ void console_unlock(void)
- 	if (unlikely(exclusive_console))
- 		exclusive_console = NULL;
- 
--	spin_unlock_irqrestore(&logbuf_lock, flags);
-+	spin_unlock(&logbuf_lock);
-+
- 	up(&console_sem);
-+
-+	/*
-+	 * Someone could have filled up the buffer again, so re-check if there's
-+	 * something to flush. In case we cannot trylock the console_sem again,
-+	 * there's a new owner and the console_unlock() from them will do the
-+	 * flush, no worries.
-+	 */
-+	spin_lock(&logbuf_lock);
-+	if (con_start != log_end)
-+		retry = 1;
-+	spin_unlock_irqrestore(&logbuf_lock, flags);
-+	if (retry && console_trylock())
-+		goto again;
-+
- 	if (wake_klogd)
- 		wake_up_klogd();
- }
+You must be root to have the privilege to enable it, root also has the
+privilege to enable THP by writing in /dev/mem or by loading a kernel
+module to do it.
+
+I already told you how to save hundred kbytes of ram from you kernel
+setting dhash_entries=1 and ihash_entries=1 and how to achieve the ~8k
+ram saving in THP and KSM without crippling functionality with a patch
+that is more complex than your three liner, but not much more complex,
+and that it will _improve_ (not cripple down) functionality.
+
+I'm also not interested into making the 512M param configurable. If
+you want to add a "=force" parameter ok but I doubt you will ever gain
+anything significant on a system with 512M of ram where each process
+will likely be smaller than 512M and 100M would get used by the
+anti-frag logic (reducing it to 400m).
+
+I suggest just cleaning up the printk and if you want you can add a
+__setup("thp_mm_slots_hash_heads=", set_thp_mm_slots_hash_heads) but
+no other change needed.
