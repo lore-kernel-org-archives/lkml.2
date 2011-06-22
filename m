@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754473Ab1FVGhs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 02:37:48 -0400
-Received: from sncsmrelay2.nai.com ([67.97.80.206]:30496 "EHLO
-	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372Ab1FVGhU (ORCPT
+	id S1752999Ab1FVGep (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 02:34:45 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:33448 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462Ab1FVGen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 02:37:20 -0400
-Message-ID: <4E018CE3.7070101@snapgear.com>
-Date: Wed, 22 Jun 2011 16:34:11 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	Wed, 22 Jun 2011 02:34:43 -0400
+Date: Wed, 22 Jun 2011 08:34:41 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Mike Frysinger <vapier@gentoo.org>, Sam Ravnborg <sam@ravnborg.org>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Subject: __packed vs. __attribute__((packed)) in kernel headers
+Message-ID: <20110622063441.GA1740@x4.trippels.de>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: linux-next: manual merge of the m68knommu tree with the m68k
- tree
-References: <20110622111256.3857df1e.sfr@canb.auug.org.au>
-In-Reply-To: <20110622111256.3857df1e.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+A recent commit 3627924acf70a changed __attribute__ ((packed)) to
+__packed in some UBI headers. This breaks the build of busybox:
 
-On 22/06/11 11:12, Stephen Rothwell wrote:
-> Today's linux-next merge of the m68knommu tree got a conflict in
-> arch/m68k/include/asm/bitops_mm.h between commit 17c74432b88e
-> ("m68k/bitops: Make bitmap data pointer of atomic ops volatile") from the
-> m68k tree and commit 2cb0d89e66b1 ("m68k: merge mmu and non-mmu
-> bitops.h") from the m68knommu tree.
->
-> The latter effectively deletes in the file and in doing the merge,
-> removes the funtions that were modified by the former commit.  So I just
-> removed the file.
+  CC      miscutils/ubi_attach_detach.o
+In file included from miscutils/ubi_attach_detach.c:27:0:
+/usr/include/mtd/ubi-user.h:330:3: error: conflicting types for ‘__packed’
+/usr/include/mtd/ubi-user.h:314:3: note: previous declaration of ‘__packed’ was here
+/usr/include/mtd/ubi-user.h:372:3: error: conflicting types for ‘__packed’
+/usr/include/mtd/ubi-user.h:314:3: note: previous declaration of ‘__packed’ was here
+...
 
-That would be right. The changes that Geert's patch makes are in
-my merge patch.
+But this kind of change is suggested by checkpatch.pl:
+  WARN("__packed is preferred over __attribute__((packed))\n
 
-Geert: do you want me to hold of on merging the bitops.h files?
+One possible solution would be to let the "scripts/headers_install.pl"
+script automatically substitute __packed with __attribute__((packed)):
 
-Regards
-Greg
+diff --git a/scripts/headers_install.pl b/scripts/headers_install.pl
+index efb3be1..e0dc065 100644
+--- a/scripts/headers_install.pl
++++ b/scripts/headers_install.pl
+@@ -35,6 +35,7 @@ foreach my $file (@files) {
+ 		$line =~ s/([\s(])__iomem\s/$1/g;
+ 		$line =~ s/\s__attribute_const__\s/ /g;
+ 		$line =~ s/\s__attribute_const__$//g;
++		$line =~ s/\s__packed/__attribute__((packed))/g;
+ 		$line =~ s/^#include <linux\/compiler.h>//;
+ 		$line =~ s/(^|\s)(inline)\b/$1__$2__/g;
+ 		$line =~ s/(^|\s)(asm)\b(\s|[(]|$)/$1__$2__$3/g;
 
+Any thoughts?
 
 -- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+Markus
