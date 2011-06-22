@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758046Ab1FVRC2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 13:02:28 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63343 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599Ab1FVRC1 (ORCPT
+	id S932223Ab1FVRI4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 13:08:56 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:25394 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab1FVRIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 13:02:27 -0400
-Subject: Re: [linux-next] Missing Makefile and Kconfig entry for
- drivers/mfd/tps65911-comparator.c?
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>
-In-Reply-To: <1308751586.22715.1.camel@phoenix>
-References: <1308751586.22715.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Jun 2011 18:02:19 +0100
-Message-ID: <1308762139.2411.2.camel@CNA0741383>
+	Wed, 22 Jun 2011 13:08:55 -0400
+Date: Wed, 22 Jun 2011 10:06:15 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Margarita Olaya <magi@slimlogic.co.uk>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH -next] mfd: tps65912 needs MFD_CORE
+Message-Id: <20110622100615.c79765ff.randy.dunlap@oracle.com>
+In-Reply-To: <20110622163651.7ebc407c.sfr@canb.auug.org.au>
+References: <20110622163651.7ebc407c.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090207.4E02219F.00E3:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-22 at 22:06 +0800, Axel Lin wrote:
-> Hi,
-> 
-> Just found that there is no Makefile and Kconfig entry for
-> drivers/mfd/tps65911-comparator.c, how to build this driver?
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Ah, I may have missed that patch from the series.
+MFD_TPS65912 should select MFD_CORE so that mfd interfaces are
+available to it.  This fixes a build error when MFD_CORE=m and
+MFD_TPS65912=y (and no other TPS65912 kconfig symbols are enabled,
+so no other select MFD_CORE was done).
 
-Jorge/Axel, care to (re)submit the Makefile/Kconfig for this.
+drivers/built-in.o: In function `tps65912_device_exit':
+(.text+0x61124): undefined reference to `mfd_remove_devices'
+drivers/built-in.o: In function `tps65912_device_init':
+(.text+0x61216): undefined reference to `mfd_add_devices'
+drivers/built-in.o: In function `tps65912_device_init':
+(.text+0x61240): undefined reference to `mfd_remove_devices'
 
-Thanks
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/mfd/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-Liam
-
+--- linux-next-20110622.orig/drivers/mfd/Kconfig
++++ linux-next-20110622/drivers/mfd/Kconfig
+@@ -173,6 +173,7 @@ config MFD_TPS6586X
+ 
+ config MFD_TPS65912
+ 	bool "TPS65912 PMIC"
++	select MFD_CORE
+ 	depends on GPIOLIB
+ 
+ config MFD_TPS65912_I2C
