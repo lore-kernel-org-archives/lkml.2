@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758106Ab1FVPsq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 11:48:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44228 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753924Ab1FVPsp convert rfc822-to-8bit (ORCPT
+	id S1758195Ab1FVPuC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 11:50:02 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:44133 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753924Ab1FVPuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 11:48:45 -0400
-Subject: Re: [patch 07/16] sched: expire invalid runtime
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
-In-Reply-To: <20110621071700.395400025@google.com>
-References: <20110621071649.862846205@google.com>
-	 <20110621071700.395400025@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 22 Jun 2011 17:47:38 +0200
-Message-ID: <1308757658.1022.50.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 22 Jun 2011 11:50:01 -0400
+Date: Wed, 22 Jun 2011 16:49:48 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH 4/4] ACPI, APEI, Add APEI _OSC support
+Message-ID: <20110622154948.GA3219@srcf.ucam.org>
+References: <1308640587-24502-1-git-send-email-ying.huang@intel.com>
+ <1308640587-24502-5-git-send-email-ying.huang@intel.com>
+ <20110621132256.GB4902@srcf.ucam.org>
+ <4E0151A0.90505@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E0151A0.90505@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-21 at 00:16 -0700, Paul Turner wrote:
+On Wed, Jun 22, 2011 at 10:21:20AM +0800, Huang Ying wrote:
 
-> +	now = sched_clock_cpu(smp_processor_id());
-> +	cfs_b->runtime_expires = now + ktime_to_ns(cfs_b->period);
+> At least on some of my testing machine, generic _OSC call will not
+> return any error even it does not support APEI bit.  So I think
+> sometimes it may be helpful to printk something here.  To avoid
+> confusion, can we change the message as follow.
+> 
+> - generic _OSC succeeded, APEI _OSC failed: APEI firmware first mode is
+> enabled by APEI bit.
+> - generic _OSC failed, APEI _OSC succeeded: APEI firmware first mode is
+> enabled by APEI _OSC.
 
-> +	if ((s64)(rq->clock - cfs_rq->runtime_expires) < 0)
+"WHEA _OSC", I think. The UUID here is part of the Microsoft spec, not 
+the APEI one.
 
-Is there a good reason to mix these two (related) time sources?
+> - both succeeded: APEI firmware first mode is enabled by APEI bit and
+> APEI _OSC.
+> - both failed: Failed to enable APEI firmware first mode!
+
+Otherwise, looks good.
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
