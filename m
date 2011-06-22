@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758526Ab1FVSGh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 14:06:37 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56681 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758488Ab1FVSGg convert rfc822-to-8bit (ORCPT
+	id S932314Ab1FVSHw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 14:07:52 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47460 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758369Ab1FVSHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 14:06:36 -0400
+	Wed, 22 Jun 2011 14:07:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Uhy5+s596r6dY31LFVmS6YHKRIOHJ9XRl2XFkgl19gwbWjuihuMNJGve6LXBGHHI+l
-         X2scX/uUjEYrNdenzvhB3/F1OfQA9ZUaJydpOKZY6xc7rGtnPgRMhYOC9gw69fkPVI60
-         yjzqlL8ztd25EiyCuVr8RyjgR6WOJU8WUe4vs=
-MIME-Version: 1.0
-In-Reply-To: <20110622110034.89ee399c.akpm@linux-foundation.org>
-References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de>
-	<20110622110034.89ee399c.akpm@linux-foundation.org>
-Date: Wed, 22 Jun 2011 14:06:34 -0400
-Message-ID: <BANLkTimPMnuoBRT9897hc-qBttyRZn46+A@mail.gmail.com>
-Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
-From: Josh Boyer <jwboyer@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Stefan Assmann <sassmann@kpanic.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, tony.luck@intel.com, andi@firstfloor.org,
-        mingo@elte.hu, hpa@zytor.com, rick@vanrein.org, rdunlap@xenotime.net,
-        Nancy Yuen <yuenn@google.com>, Michael Ditto <mditto@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=sW7W8gld+zq2ZBIhqqiktzBY28A5QRHkt8XsvnOJiKl7Xk9gApqL89wcaSG5KqxTkF
+         LXl/rPMiVhJWtLpaFtuEpcjsRvJRkTjxaJ96zBV6MDSLzS8Erw+sZ+UOiLcRv4HedtDp
+         cc5Gdmh6fpoRncX/4JJx/h8Ehe2DBj+qeWsy8=
+Subject: [PATCH] net: wimax: Remove of unused 'rfkill_input' pointer
+From: Vitaliy Ivanov <vitalivanov@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>,
+        Johannes Berg <johannes@sipsolutions.net>
+Cc: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Alan Jenkins <alan-jenkins@tuffmail.co.uk>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "John W. Linville" <linville@tuxdriver.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Jun 2011 21:06:44 +0300
+Message-ID: <1308766004.13761.32.camel@vivanov>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 2:00 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:>
-> I have a couple of thoughts here:
->
-> - If this patchset is merged and a major user such as google is
->  unable to use it and has to continue to carry a separate patch then
->  that's a regrettable situation for the upstream kernel.
->
-> - Google's is, afaik, the largest use case we know of: zillions of
->  machines for a number of years.  And this real-world experience tells
->  us that the badram patchset has shortcomings.  Shortcomings which we
->  can expect other users to experience.
->
-> So.  What are your thoughts on these issues?
 
-Has Google submitted patches for their implementation?
+David,
 
-josh
+Please apply.
+
+I added here all the peoples who took part in
+19d337dff95cbf76edd3ad95c0cee2732c3e1ec5 commit for any comments.
+
+Also performed all yes/no/mod config builds w/ no issues.
+
+
+>From b93ca8947e85e4ff7e9f314675d4770b90b77548 Mon Sep 17 00:00:00 2001
+From: Vitaliy Ivanov <vitalivanov@gmail.com>
+Date: Wed, 22 Jun 2011 20:57:49 +0300
+Subject: [PATCH] net: wimax: Remove of unused 'rfkill_input' pointer
+
+Seems like this was not cleaned during the 'rfkill: rewrite' checkin
+19d337dff95cbf76edd3ad95c0cee2732c3e1ec5.
+
+Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
+---
+ include/net/wimax.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/include/net/wimax.h b/include/net/wimax.h
+index 7328d50..322ff4f 100644
+--- a/include/net/wimax.h
++++ b/include/net/wimax.h
+@@ -423,7 +423,6 @@ struct wimax_dev {
+ 	int (*op_reset)(struct wimax_dev *wimax_dev);
+ 
+ 	struct rfkill *rfkill;
+-	struct input_dev *rfkill_input;
+ 	unsigned rf_hw;
+ 	unsigned rf_sw;
+ 	char name[32];
+-- 
+1.7.0.4
+
+
+
