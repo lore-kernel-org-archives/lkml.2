@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932238Ab1FVOHC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 10:07:02 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:34518 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932196Ab1FVOHA (ORCPT
+	id S1758026Ab1FVOJM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 10:09:12 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:61177 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753411Ab1FVOJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 10:07:00 -0400
-Date: Wed, 22 Jun 2011 10:06:42 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, dan.magenheimer@oracle.com
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the tmem tree with the xen-two tree
-Message-ID: <20110622140642.GD5574@dumpdata.com>
-References: <20110622144611.a900a000.sfr@canb.auug.org.au>
+	Wed, 22 Jun 2011 10:09:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Miller <davem@davemloft.net>
+Subject: Re: comedi doesn't build on several architectures
+Date: Wed, 22 Jun 2011 16:08:59 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org
+References: <20110621.194925.1313933193955144936.davem@davemloft.net>
+In-Reply-To: <20110621.194925.1313933193955144936.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110622144611.a900a000.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090208.4E01F6FF.0002:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106221608.59978.arnd@arndb.de>
+X-Provags-ID: V02:K0:mDtIjH6jkB9kp1KW/PmfOyPhOw8hE5toB2Z5QnbZSah
+ ROo8b8s+4D7AgTWB/Ui/PiC2tkrymcj4HLpzZoeu/BjLxxElMm
+ puYMW9SYLPwU4jnMNByIXKjHgdf8eKjKOn0Rs0TOO9pGuszF+8
+ hQC/YhdTufuXei/+Ob6Q/RHCoWT2/z/hlGp6E9V2vNd1lzoUH0
+ L1nRKQqrDd+yHayogW3bw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 02:46:11PM +1000, Stephen Rothwell wrote:
-> Hi Dan,
+On Wednesday 22 June 2011, David Miller wrote:
+> It depends upon PAGE_KERNEL_NOCACHE which only a handful of
+> platforms define.
 > 
-> Today's linux-next merge of the tmem tree got a conflict in
-> drivers/xen/Kconfig drivers/xen/tmem.c between commit afec6e04922d ("xen:
-> prepare tmem shim to handle frontswap") from the xen-two tree and commit
-> ac33c46b42ba ("xen: enable frontswap for Xen tmem") from the tmem tree.
-> 
+> Really, enabling staging in Linus's tree with all this build fallout
+> was not the wisest.  It's blowing up all of my allmodconfig test
+> builds now.
 
-Dan, can you please rebase your #linux-next branch on my #linux-next branch
-so that Stephen's awesome build engine can chug along for this?
+Is staging supposed to compile on non-x86? I've done a lot of
+ARM randconfig builds, but I just disabled all of staging using
+KCONFIG_ALLCONFIG because I didn't see the point.
 
-Thanks!
-> I just used the xen-two versions of these files (as they look newer).
-
-OK, we will sort this out.
+	Arnd
