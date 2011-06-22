@@ -1,41 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758800Ab1FVTH0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 15:07:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60042 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758730Ab1FVTHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 15:07:25 -0400
-Message-ID: <4E023D3E.1090408@zytor.com>
-Date: Wed, 22 Jun 2011 12:06:38 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1758813Ab1FVTHt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 15:07:49 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42464 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758730Ab1FVTHs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 15:07:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=LSmG7uHCnd2MS5xNj4aC6YWB//FdpKEi5qpZWsa9fMw9Fhi9xfrDeRKNQQIRxeTGlD
+         NZGeIVBnRoYd2wiVkkC5rajLoatFmOwvGIeS36af3iLIg7yc1Fx8ub6psPw6y3t8rbfD
+         0zy3wVzM8uKer3N/TVGFscfJGKK1g1fUE5L7k=
+Date: Wed, 22 Jun 2011 23:07:39 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
+        security@kernel.org
+Subject: Re: [PATCH] kernel: escape non-ASCII and control characters in
+ printk()
+Message-ID: <20110622190739.GB14351@albatros>
+References: <20110622095341.GA3353@albatros>
+ <1308760683.10423.16.camel@Joe-Laptop>
+ <20110622191022.66135615@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-To: Nancy Yuen <yuenn@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Stefan Assmann <sassmann@kpanic.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, tony.luck@intel.com, andi@firstfloor.org,
-        mingo@elte.hu, rick@vanrein.org, rdunlap@xenotime.net,
-        Michael Ditto <mditto@google.com>
-Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
-References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de>	<20110622110034.89ee399c.akpm@linux-foundation.org>	<4E0230CD.1030505@zytor.com> <BANLkTinMrMcDw8KX3BxmZh12-kULmecT-s9gdRGpYUCfNjFO7Q@mail.gmail.com>
-In-Reply-To: <BANLkTinMrMcDw8KX3BxmZh12-kULmecT-s9gdRGpYUCfNjFO7Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110622191022.66135615@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2011 12:01 PM, Nancy Yuen wrote:
-> 
-> Good point.  There's the MAX_NODES that expands it, though it's still
-> hard coded, and as I understand, intended for NUMA node entries.  We
-> need anywhere from 8K to 64K 'bad' entries.  This creates holes and
-> translates to twice as many entries in the e820.  We only want to
-> allow this memory if it's needed, instead of hard coding it.
-> 
+Hi Alan,
 
-It should be dynamic, probably.  We can waste memory during early
-reclaim, but the memblock stuff should be dynamic.
+On Wed, Jun 22, 2011 at 19:10 +0100, Alan Cox wrote:
+> If that is set you shouldn't be filtering out unicode, just control codes.
 
-	-hpa
+OK.
+
+> Minor other nit is that you might want to allow BEL through and you
+> certainly want to allow tab through.
+
+In what situation do you think BEL makes sense in kernel log?  I cannot
+image the situation.  Alarms should use KERN_EMERG/KERN_ALERT log level.
+
+> The core code should not be hardcoding policy assumptions about symbol
+> sets and ASCII, for an awful lot of consoles today that assumption is
+> just plain wrong, for others it makes sense
+
+No problem, I don't insist.
+
+> So with tty maintainer hat on - NAK to the current approach but a good
+> idea to do it properly.
+
+
+The final check should be:
+
+    if (iscntrl(c) && (c != '\n') && (c != '\t'))
+
+Any comments against this variant?
+
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
