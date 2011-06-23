@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329Ab1FWGl2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 02:41:28 -0400
-Received: from mail.perches.com ([173.55.12.10]:3144 "EHLO mail.perches.com"
+	id S1758949Ab1FWGkj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 02:40:39 -0400
+Received: from mail.perches.com ([173.55.12.10]:3146 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755463Ab1FWGjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755520Ab1FWGjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Jun 2011 02:39:03 -0400
 From: Joe Perches <joe@perches.com>
 To: Geert Uytterhoeven <geert@linux-m68k.org>
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/8] ariadne: Update style, neaten, restructure to eliminate prototypes
-Date: Wed, 22 Jun 2011 23:38:53 -0700
-Message-Id: <d5bce509303adc7e6ae108c4decbaa93bb4ad744.1308810463.git.joe@perches.com>
+Subject: [PATCH 2/8] a2065: Use pr_fmt, pr_<level> and netdev_<level>
+Date: Wed, 22 Jun 2011 23:38:54 -0700
+Message-Id: <66a474027c1bd82e77b48431ff6ae8de199a0549.1308810463.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.rc3
 In-Reply-To: <cover.1308810463.git.joe@perches.com>
 References: <cover.1308810463.git.joe@perches.com>
@@ -19,1431 +19,717 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert to current logging styles.
-Move code blocks to eliminate need for prototypes.
-Use tabs for code indent and sandardize spacing.
-Comment neatening.
+Use current logging styles.
+
+Other miscellaneous cleanups:
+
+Space removal and additions for checkpatch warnings.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/ariadne.c | 1267 +++++++++++++++++++++++--------------------------
- 1 files changed, 601 insertions(+), 666 deletions(-)
+ drivers/net/a2065.c |  336 +++++++++++++++++++++++++--------------------------
+ 1 files changed, 162 insertions(+), 174 deletions(-)
 
-diff --git a/drivers/net/ariadne.c b/drivers/net/ariadne.c
-index b7f45cd..7ed78f4 100644
---- a/drivers/net/ariadne.c
-+++ b/drivers/net/ariadne.c
-@@ -34,6 +34,9 @@
-  *	- an MC68230 Parallel Interface/Timer configured as 2 parallel ports
+diff --git a/drivers/net/a2065.c b/drivers/net/a2065.c
+index 25ea98a..7d9a1a6 100644
+--- a/drivers/net/a2065.c
++++ b/drivers/net/a2065.c
+@@ -37,6 +37,11 @@
+  *	  both 10BASE-2 (thin coax) and AUI (DB-15) connectors
   */
  
 +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+/*#define DEBUG*/
 +
- #include <linux/module.h>
- #include <linux/stddef.h>
- #include <linux/kernel.h>
-@@ -54,802 +57,734 @@
++/*#define DEBUG*/
++/*#define TEST_HITS*/
++
+ #include <linux/errno.h>
+ #include <linux/netdevice.h>
+ #include <linux/etherdevice.h>
+@@ -58,29 +63,22 @@
  
- #include "ariadne.h"
- 
--
- #ifdef ARIADNE_DEBUG
- int ariadne_debug = ARIADNE_DEBUG;
- #else
- int ariadne_debug = 1;
- #endif
- 
-+/* Macros to Fix Endianness problems */
- 
--    /*
--     *	Macros to Fix Endianness problems
--     */
--
--				/* Swap the Bytes in a WORD */
--#define swapw(x)	(((x>>8)&0x00ff)|((x<<8)&0xff00))
--				/* Get the Low BYTE in a WORD */
--#define lowb(x)		(x&0xff)
--				/* Get the Swapped High WORD in a LONG */
--#define swhighw(x)	((((x)>>8)&0xff00)|(((x)>>24)&0x00ff))
--				/* Get the Swapped Low WORD in a LONG */
--#define swloww(x)	((((x)<<8)&0xff00)|(((x)>>8)&0x00ff))
-+/* Swap the Bytes in a WORD */
-+#define swapw(x)	(((x >> 8) & 0x00ff) | ((x << 8) & 0xff00))
-+/* Get the Low BYTE in a WORD */
-+#define lowb(x)		(x & 0xff)
-+/* Get the Swapped High WORD in a LONG */
-+#define swhighw(x)	((((x) >> 8) & 0xff00) | (((x) >> 24) & 0x00ff))
-+/* Get the Swapped Low WORD in a LONG */
-+#define swloww(x)	((((x) << 8) & 0xff00) | (((x) >> 8) & 0x00ff))
+ #include "a2065.h"
  
 -
--    /*
--     *	Transmit/Receive Ring Definitions
--     */
+-	/*
+-	 *		Transmit/Receive Ring Definitions
+-	 */
 +/* Transmit/Receive Ring Definitions */
  
- #define TX_RING_SIZE	5
- #define RX_RING_SIZE	16
+ #define LANCE_LOG_TX_BUFFERS	(2)
+ #define LANCE_LOG_RX_BUFFERS	(4)
  
- #define PKT_BUF_SIZE	1520
+-#define TX_RING_SIZE		(1<<LANCE_LOG_TX_BUFFERS)
+-#define RX_RING_SIZE		(1<<LANCE_LOG_RX_BUFFERS)
++#define TX_RING_SIZE		(1 << LANCE_LOG_TX_BUFFERS)
++#define RX_RING_SIZE		(1 << LANCE_LOG_RX_BUFFERS)
+ 
+-#define TX_RING_MOD_MASK	(TX_RING_SIZE-1)
+-#define RX_RING_MOD_MASK	(RX_RING_SIZE-1)
++#define TX_RING_MOD_MASK	(TX_RING_SIZE - 1)
++#define RX_RING_MOD_MASK	(RX_RING_SIZE - 1)
+ 
+ #define PKT_BUF_SIZE		(1544)
+ #define RX_BUFF_SIZE            PKT_BUF_SIZE
+ #define TX_BUFF_SIZE            PKT_BUF_SIZE
  
 -
--    /*
--     *	Private Device Data
--     */
+-	/*
+-	 *		Layout of the Lance's RAM Buffer
+-	 */
+-
++/* Layout of the Lance's RAM Buffer */
+ 
+ struct lance_init_block {
+ 	unsigned short mode;		/* Pre-set mode (reg. 15) */
+@@ -97,14 +95,11 @@ struct lance_init_block {
+ 	struct lance_rx_desc brx_ring[RX_RING_SIZE];
+ 	struct lance_tx_desc btx_ring[TX_RING_SIZE];
+ 
+-	char   rx_buf [RX_RING_SIZE][RX_BUFF_SIZE];
+-	char   tx_buf [TX_RING_SIZE][TX_BUFF_SIZE];
++	char rx_buf[RX_RING_SIZE][RX_BUFF_SIZE];
++	char tx_buf[TX_RING_SIZE][TX_BUFF_SIZE];
+ };
+ 
+-
+-	/*
+-	 *		Private Device Data
+-	 */
 +/* Private Device Data */
  
- struct ariadne_private {
--    volatile struct TDRE *tx_ring[TX_RING_SIZE];
--    volatile struct RDRE *rx_ring[RX_RING_SIZE];
--    volatile u_short *tx_buff[TX_RING_SIZE];
--    volatile u_short *rx_buff[RX_RING_SIZE];
--    int cur_tx, cur_rx;			/* The next free ring entry */
--    int dirty_tx;			/* The ring entries to be free()ed. */
--    char tx_full;
-+	volatile struct TDRE *tx_ring[TX_RING_SIZE];
-+	volatile struct RDRE *rx_ring[RX_RING_SIZE];
-+	volatile u_short *tx_buff[TX_RING_SIZE];
-+	volatile u_short *rx_buff[RX_RING_SIZE];
-+	int cur_tx, cur_rx;		/* The next free ring entry */
-+	int dirty_tx;			/* The ring entries to be free()ed */
-+	char tx_full;
+ struct lance_private {
+ 	char *name;
+@@ -129,21 +124,14 @@ struct lance_private {
+ 	struct timer_list         multicast_timer;
  };
  
+-#define TX_BUFFS_AVAIL ((lp->tx_old<=lp->tx_new)?\
+-			lp->tx_old+lp->tx_ring_mod_mask-lp->tx_new:\
+-			lp->tx_old - lp->tx_new-1)
 -
--    /*
--     *	Structure Created in the Ariadne's RAM Buffer
--     */
-+/* Structure Created in the Ariadne's RAM Buffer */
+-
+ #define LANCE_ADDR(x) ((int)(x) & ~0xff000000)
  
- struct lancedata {
--    struct TDRE tx_ring[TX_RING_SIZE];
--    struct RDRE rx_ring[RX_RING_SIZE];
--    u_short tx_buff[TX_RING_SIZE][PKT_BUF_SIZE/sizeof(u_short)];
--    u_short rx_buff[RX_RING_SIZE][PKT_BUF_SIZE/sizeof(u_short)];
-+	struct TDRE tx_ring[TX_RING_SIZE];
-+	struct RDRE rx_ring[RX_RING_SIZE];
-+	u_short tx_buff[TX_RING_SIZE][PKT_BUF_SIZE / sizeof(u_short)];
-+	u_short rx_buff[RX_RING_SIZE][PKT_BUF_SIZE / sizeof(u_short)];
- };
- 
--static int ariadne_open(struct net_device *dev);
--static void ariadne_init_ring(struct net_device *dev);
--static netdev_tx_t ariadne_start_xmit(struct sk_buff *skb,
--				      struct net_device *dev);
--static void ariadne_tx_timeout(struct net_device *dev);
--static int ariadne_rx(struct net_device *dev);
--static void ariadne_reset(struct net_device *dev);
--static irqreturn_t ariadne_interrupt(int irq, void *data);
--static int ariadne_close(struct net_device *dev);
--static struct net_device_stats *ariadne_get_stats(struct net_device *dev);
--static void set_multicast_list(struct net_device *dev);
--
--
- static void memcpyw(volatile u_short *dest, u_short *src, int len)
+ /* Load the CSR registers */
+-static void load_csrs (struct lance_private *lp)
++static void load_csrs(struct lance_private *lp)
  {
--    while (len >= 2) {
--	*(dest++) = *(src++);
--	len -= 2;
--    }
--    if (len == 1)
--	*dest = (*(u_char *)src)<<8;
-+	while (len >= 2) {
-+		*(dest++) = *(src++);
-+		len -= 2;
-+	}
-+	if (len == 1)
-+		*dest = (*(u_char *)src) << 8;
+ 	volatile struct lance_regs *ll = lp->ll;
+ 	volatile struct lance_init_block *aib = lp->lance_init_block;
+-	int leptr;
+-
+-	leptr = LANCE_ADDR (aib);
++	int leptr = LANCE_ADDR(aib);
+ 
+ 	ll->rap = LE_CSR1;
+ 	ll->rdp = (leptr & 0xFFFF);
+@@ -156,19 +144,16 @@ static void load_csrs (struct lance_private *lp)
+ 	ll->rap = LE_CSR0;
  }
  
-+static void ariadne_init_ring(struct net_device *dev)
-+{
-+	struct ariadne_private *priv = netdev_priv(dev);
-+	volatile struct lancedata *lancedata = (struct lancedata *)dev->mem_start;
-+	int i;
- 
--static int __devinit ariadne_init_one(struct zorro_dev *z,
--				      const struct zorro_device_id *ent);
--static void __devexit ariadne_remove_one(struct zorro_dev *z);
+-#define ZERO 0
 -
--
--static struct zorro_device_id ariadne_zorro_tbl[] __devinitdata = {
--    { ZORRO_PROD_VILLAGE_TRONIC_ARIADNE },
--    { 0 }
--};
--MODULE_DEVICE_TABLE(zorro, ariadne_zorro_tbl);
-+	netif_stop_queue(dev);
- 
--static struct zorro_driver ariadne_driver = {
--    .name	= "ariadne",
--    .id_table	= ariadne_zorro_tbl,
--    .probe	= ariadne_init_one,
--    .remove	= __devexit_p(ariadne_remove_one),
--};
-+	priv->tx_full = 0;
-+	priv->cur_rx = priv->cur_tx = 0;
-+	priv->dirty_tx = 0;
-+
-+	/* Set up TX Ring */
-+	for (i = 0; i < TX_RING_SIZE; i++) {
-+		volatile struct TDRE *t = &lancedata->tx_ring[i];
-+		t->TMD0 = swloww(ARIADNE_RAM +
-+				 offsetof(struct lancedata, tx_buff[i]));
-+		t->TMD1 = swhighw(ARIADNE_RAM +
-+				  offsetof(struct lancedata, tx_buff[i])) |
-+			TF_STP | TF_ENP;
-+		t->TMD2 = swapw((u_short)-PKT_BUF_SIZE);
-+		t->TMD3 = 0;
-+		priv->tx_ring[i] = &lancedata->tx_ring[i];
-+		priv->tx_buff[i] = lancedata->tx_buff[i];
-+		netdev_dbg(dev, "TX Entry %2d at %p, Buf at %p\n",
-+			   i, &lancedata->tx_ring[i], lancedata->tx_buff[i]);
-+	}
- 
--static const struct net_device_ops ariadne_netdev_ops = {
--	.ndo_open		= ariadne_open,
--	.ndo_stop		= ariadne_close,
--	.ndo_start_xmit		= ariadne_start_xmit,
--	.ndo_tx_timeout		= ariadne_tx_timeout,
--	.ndo_get_stats		= ariadne_get_stats,
--	.ndo_set_multicast_list	= set_multicast_list,
--	.ndo_validate_addr	= eth_validate_addr,
--	.ndo_change_mtu		= eth_change_mtu,
--	.ndo_set_mac_address	= eth_mac_addr,
--};
-+	/* Set up RX Ring */
-+	for (i = 0; i < RX_RING_SIZE; i++) {
-+		volatile struct RDRE *r = &lancedata->rx_ring[i];
-+		r->RMD0 = swloww(ARIADNE_RAM +
-+				 offsetof(struct lancedata, rx_buff[i]));
-+		r->RMD1 = swhighw(ARIADNE_RAM +
-+				  offsetof(struct lancedata, rx_buff[i])) |
-+			RF_OWN;
-+		r->RMD2 = swapw((u_short)-PKT_BUF_SIZE);
-+		r->RMD3 = 0x0000;
-+		priv->rx_ring[i] = &lancedata->rx_ring[i];
-+		priv->rx_buff[i] = lancedata->rx_buff[i];
-+		netdev_dbg(dev, "RX Entry %2d at %p, Buf at %p\n",
-+			   i, &lancedata->rx_ring[i], lancedata->rx_buff[i]);
-+	}
-+}
- 
--static int __devinit ariadne_init_one(struct zorro_dev *z,
--				      const struct zorro_device_id *ent)
-+static int ariadne_rx(struct net_device *dev)
+ /* Setup the Lance Rx and Tx rings */
+-static void lance_init_ring (struct net_device *dev)
++static void lance_init_ring(struct net_device *dev)
  {
--    unsigned long board = z->resource.start;
--    unsigned long base_addr = board+ARIADNE_LANCE;
--    unsigned long mem_start = board+ARIADNE_RAM;
--    struct resource *r1, *r2;
--    struct net_device *dev;
--    struct ariadne_private *priv;
--    int err;
--
--    r1 = request_mem_region(base_addr, sizeof(struct Am79C960), "Am79C960");
--    if (!r1)
--	return -EBUSY;
--    r2 = request_mem_region(mem_start, ARIADNE_RAM_SIZE, "RAM");
--    if (!r2) {
--	release_mem_region(base_addr, sizeof(struct Am79C960));
--	return -EBUSY;
--    }
--
--    dev = alloc_etherdev(sizeof(struct ariadne_private));
--    if (dev == NULL) {
--	release_mem_region(base_addr, sizeof(struct Am79C960));
--	release_mem_region(mem_start, ARIADNE_RAM_SIZE);
--	return -ENOMEM;
--    }
--
--    priv = netdev_priv(dev);
--
--    r1->name = dev->name;
--    r2->name = dev->name;
--
--    dev->dev_addr[0] = 0x00;
--    dev->dev_addr[1] = 0x60;
--    dev->dev_addr[2] = 0x30;
--    dev->dev_addr[3] = (z->rom.er_SerialNumber>>16) & 0xff;
--    dev->dev_addr[4] = (z->rom.er_SerialNumber>>8) & 0xff;
--    dev->dev_addr[5] = z->rom.er_SerialNumber & 0xff;
--    dev->base_addr = ZTWO_VADDR(base_addr);
--    dev->mem_start = ZTWO_VADDR(mem_start);
--    dev->mem_end = dev->mem_start+ARIADNE_RAM_SIZE;
--
--    dev->netdev_ops = &ariadne_netdev_ops;
--    dev->watchdog_timeo = 5*HZ;
--
--    err = register_netdev(dev);
--    if (err) {
--	release_mem_region(base_addr, sizeof(struct Am79C960));
--	release_mem_region(mem_start, ARIADNE_RAM_SIZE);
--	free_netdev(dev);
--	return err;
--    }
--    zorro_set_drvdata(z, dev);
-+	struct ariadne_private *priv = netdev_priv(dev);
-+	int entry = priv->cur_rx % RX_RING_SIZE;
-+	int i;
+ 	struct lance_private *lp = netdev_priv(dev);
+ 	volatile struct lance_init_block *ib = lp->init_block;
+-	volatile struct lance_init_block *aib; /* for LANCE_ADDR computations */
++	volatile struct lance_init_block *aib = lp->lance_init_block;
++					/* for LANCE_ADDR computations */
+ 	int leptr;
+ 	int i;
  
--    printk(KERN_INFO "%s: Ariadne at 0x%08lx, Ethernet Address %pM\n",
--           dev->name, board, dev->dev_addr);
-+	/* If we own the next entry, it's a new packet. Send it up */
-+	while (!(lowb(priv->rx_ring[entry]->RMD1) & RF_OWN)) {
-+		int status = lowb(priv->rx_ring[entry]->RMD1);
+-	aib = lp->lance_init_block;
+-
+ 	/* Lock out other processes while setting up hardware */
+ 	netif_stop_queue(dev);
+ 	lp->rx_new = lp->tx_new = 0;
+@@ -179,41 +164,38 @@ static void lance_init_ring (struct net_device *dev)
+ 	/* Copy the ethernet address to the lance init block
+ 	 * Note that on the sparc you need to swap the ethernet address.
+ 	 */
+-	ib->phys_addr [0] = dev->dev_addr [1];
+-	ib->phys_addr [1] = dev->dev_addr [0];
+-	ib->phys_addr [2] = dev->dev_addr [3];
+-	ib->phys_addr [3] = dev->dev_addr [2];
+-	ib->phys_addr [4] = dev->dev_addr [5];
+-	ib->phys_addr [5] = dev->dev_addr [4];
+-
+-	if (ZERO)
+-		printk(KERN_DEBUG "TX rings:\n");
++	ib->phys_addr[0] = dev->dev_addr[1];
++	ib->phys_addr[1] = dev->dev_addr[0];
++	ib->phys_addr[2] = dev->dev_addr[3];
++	ib->phys_addr[3] = dev->dev_addr[2];
++	ib->phys_addr[4] = dev->dev_addr[5];
++	ib->phys_addr[5] = dev->dev_addr[4];
+ 
+ 	/* Setup the Tx ring entries */
+-	for (i = 0; i <= (1<<lp->lance_log_tx_bufs); i++) {
++	netdev_dbg(dev, "TX rings:\n");
++	for (i = 0; i <= 1 << lp->lance_log_tx_bufs; i++) {
+ 		leptr = LANCE_ADDR(&aib->tx_buf[i][0]);
+-		ib->btx_ring [i].tmd0      = leptr;
+-		ib->btx_ring [i].tmd1_hadr = leptr >> 16;
+-		ib->btx_ring [i].tmd1_bits = 0;
+-		ib->btx_ring [i].length    = 0xf000; /* The ones required by tmd2 */
+-		ib->btx_ring [i].misc      = 0;
+-		if (i < 3 && ZERO)
+-			printk(KERN_DEBUG "%d: 0x%8.8x\n", i, leptr);
++		ib->btx_ring[i].tmd0      = leptr;
++		ib->btx_ring[i].tmd1_hadr = leptr >> 16;
++		ib->btx_ring[i].tmd1_bits = 0;
++		ib->btx_ring[i].length    = 0xf000; /* The ones required by tmd2 */
++		ib->btx_ring[i].misc      = 0;
++		if (i < 3)
++			netdev_dbg(dev, "%d: 0x%08x\n", i, leptr);
+ 	}
+ 
+ 	/* Setup the Rx ring entries */
+-	if (ZERO)
+-		printk(KERN_DEBUG "RX rings:\n");
+-	for (i = 0; i < (1<<lp->lance_log_rx_bufs); i++) {
++	netdev_dbg(dev, "RX rings:\n");
++	for (i = 0; i < 1 << lp->lance_log_rx_bufs; i++) {
+ 		leptr = LANCE_ADDR(&aib->rx_buf[i][0]);
+ 
+-		ib->brx_ring [i].rmd0      = leptr;
+-		ib->brx_ring [i].rmd1_hadr = leptr >> 16;
+-		ib->brx_ring [i].rmd1_bits = LE_R1_OWN;
+-		ib->brx_ring [i].length    = -RX_BUFF_SIZE | 0xf000;
+-		ib->brx_ring [i].mblength  = 0;
+-		if (i < 3 && ZERO)
+-			printk(KERN_DEBUG "%d: 0x%8.8x\n", i, leptr);
++		ib->brx_ring[i].rmd0      = leptr;
++		ib->brx_ring[i].rmd1_hadr = leptr >> 16;
++		ib->brx_ring[i].rmd1_bits = LE_R1_OWN;
++		ib->brx_ring[i].length    = -RX_BUFF_SIZE | 0xf000;
++		ib->brx_ring[i].mblength  = 0;
++		if (i < 3)
++			netdev_dbg(dev, "%d: 0x%08x\n", i, leptr);
+ 	}
+ 
+ 	/* Setup the initialization block */
+@@ -222,22 +204,20 @@ static void lance_init_ring (struct net_device *dev)
+ 	leptr = LANCE_ADDR(&aib->brx_ring);
+ 	ib->rx_len = (lp->lance_log_rx_bufs << 13) | (leptr >> 16);
+ 	ib->rx_ptr = leptr;
+-	if (ZERO)
+-		printk(KERN_DEBUG "RX ptr: %8.8x\n", leptr);
++	netdev_dbg(dev, "RX ptr: %08x\n", leptr);
+ 
+ 	/* Setup tx descriptor pointer */
+ 	leptr = LANCE_ADDR(&aib->btx_ring);
+ 	ib->tx_len = (lp->lance_log_tx_bufs << 13) | (leptr >> 16);
+ 	ib->tx_ptr = leptr;
+-	if (ZERO)
+-		printk(KERN_DEBUG "TX ptr: %8.8x\n", leptr);
++	netdev_dbg(dev, "TX ptr: %08x\n", leptr);
+ 
+ 	/* Clear the multicast filter */
+-	ib->filter [0] = 0;
+-	ib->filter [1] = 0;
++	ib->filter[0] = 0;
++	ib->filter[1] = 0;
+ }
+ 
+-static int init_restart_lance (struct lance_private *lp)
++static int init_restart_lance(struct lance_private *lp)
+ {
+ 	volatile struct lance_regs *ll = lp->ll;
+ 	int i;
+@@ -249,8 +229,7 @@ static int init_restart_lance (struct lance_private *lp)
+ 	for (i = 0; (i < 100) && !(ll->rdp & (LE_C0_ERR | LE_C0_IDON)); i++)
+ 		barrier();
+ 	if ((i == 100) || (ll->rdp & LE_C0_ERR)) {
+-		printk(KERN_ERR "LANCE unopened after %d ticks, csr0=%4.4x.\n",
+-		       i, ll->rdp);
++		pr_err("unopened after %d ticks, csr0=%04x\n", i, ll->rdp);
+ 		return -EIO;
+ 	}
+ 
+@@ -261,7 +240,7 @@ static int init_restart_lance (struct lance_private *lp)
+ 	return 0;
+ }
+ 
+-static int lance_rx (struct net_device *dev)
++static int lance_rx(struct net_device *dev)
+ {
+ 	struct lance_private *lp = netdev_priv(dev);
+ 	volatile struct lance_init_block *ib = lp->init_block;
+@@ -271,22 +250,24 @@ static int lance_rx (struct net_device *dev)
+ 
+ #ifdef TEST_HITS
+ 	int i;
+-	printk(KERN_DEBUG "[");
++	char buf[RX_RING_SIZE + 1];
 +
-+		if (status != (RF_STP | RF_ENP)) {	/* There was an error */
-+			/* There is a tricky error noted by
-+			 * John Murphy <murf@perftech.com> to Russ Nelson:
-+			 * Even with full-sized buffers it's possible for a
-+			 * jabber packet to use two buffers, with only the
-+			 * last correctly noting the error
-+			 */
-+			/* Only count a general error at the end of a packet */
-+			if (status & RF_ENP)
-+				dev->stats.rx_errors++;
-+			if (status & RF_FRAM)
-+				dev->stats.rx_frame_errors++;
-+			if (status & RF_OFLO)
-+				dev->stats.rx_over_errors++;
-+			if (status & RF_CRC)
-+				dev->stats.rx_crc_errors++;
-+			if (status & RF_BUFF)
+ 	for (i = 0; i < RX_RING_SIZE; i++) {
++		char r1_own = ib->brx_ring[i].rmd1_bits & LE_R1_OWN;
+ 		if (i == lp->rx_new)
+-			printk ("%s",
+-				ib->brx_ring [i].rmd1_bits & LE_R1_OWN ? "_" : "X");
++			buf[i] = r1_own ? '_' : 'X';
+ 		else
+-			printk ("%s",
+-				ib->brx_ring [i].rmd1_bits & LE_R1_OWN ? "." : "1");
++			buf[i] = r1_own ? '.' : '1';
+ 	}
+-	printk ("]\n");
++	buf[RX_RING_SIZE] = 0;
++
++	pr_debug("RxRing TestHits: [%s]\n", buf);
+ #endif
+ 
+-	ll->rdp = LE_C0_RINT|LE_C0_INEA;
+-	for (rd = &ib->brx_ring [lp->rx_new];
++	ll->rdp = LE_C0_RINT | LE_C0_INEA;
++	for (rd = &ib->brx_ring[lp->rx_new];
+ 	     !((bits = rd->rmd1_bits) & LE_R1_OWN);
+-	     rd = &ib->brx_ring [lp->rx_new]) {
++	     rd = &ib->brx_ring[lp->rx_new]) {
+ 
+ 		/* We got an incomplete frame? */
+ 		if ((bits & LE_R1_POK) != LE_R1_POK) {
+@@ -297,18 +278,22 @@ static int lance_rx (struct net_device *dev)
+ 			/* Count only the end frame as a rx error,
+ 			 * not the beginning
+ 			 */
+-			if (bits & LE_R1_BUF) dev->stats.rx_fifo_errors++;
+-			if (bits & LE_R1_CRC) dev->stats.rx_crc_errors++;
+-			if (bits & LE_R1_OFL) dev->stats.rx_over_errors++;
+-			if (bits & LE_R1_FRA) dev->stats.rx_frame_errors++;
+-			if (bits & LE_R1_EOP) dev->stats.rx_errors++;
++			if (bits & LE_R1_BUF)
 +				dev->stats.rx_fifo_errors++;
-+			priv->rx_ring[entry]->RMD1 &= 0xff00 | RF_STP | RF_ENP;
-+		} else {
-+			/* Malloc up new buffer, compatible with net-3 */
-+			short pkt_len = swapw(priv->rx_ring[entry]->RMD3);
-+			struct sk_buff *skb;
-+
-+			skb = dev_alloc_skb(pkt_len + 2);
-+			if (skb == NULL) {
++			if (bits & LE_R1_CRC)
++				dev->stats.rx_crc_errors++;
++			if (bits & LE_R1_OFL)
++				dev->stats.rx_over_errors++;
++			if (bits & LE_R1_FRA)
++				dev->stats.rx_frame_errors++;
++			if (bits & LE_R1_EOP)
++				dev->stats.rx_errors++;
+ 		} else {
+ 			int len = (rd->mblength & 0xfff) - 4;
+-			struct sk_buff *skb = dev_alloc_skb (len+2);
++			struct sk_buff *skb = dev_alloc_skb(len + 2);
+ 
+ 			if (!skb) {
+-				printk(KERN_WARNING "%s: Memory squeeze, "
+-				       "deferring packet.\n", dev->name);
 +				netdev_warn(dev, "Memory squeeze, deferring packet\n");
-+				for (i = 0; i < RX_RING_SIZE; i++)
-+					if (lowb(priv->rx_ring[(entry + i) % RX_RING_SIZE]->RMD1) & RF_OWN)
-+						break;
-+
-+				if (i > RX_RING_SIZE - 2) {
-+					dev->stats.rx_dropped++;
-+					priv->rx_ring[entry]->RMD1 |= RF_OWN;
-+					priv->cur_rx++;
-+				}
-+				break;
-+			}
-+
-+
-+			skb_reserve(skb, 2);	/* 16 byte align */
-+			skb_put(skb, pkt_len);	/* Make room */
-+			skb_copy_to_linear_data(skb,
-+						(const void *)priv->rx_buff[entry],
-+						pkt_len);
+ 				dev->stats.rx_dropped++;
+ 				rd->mblength = 0;
+ 				rd->rmd1_bits = LE_R1_OWN;
+@@ -316,13 +301,13 @@ static int lance_rx (struct net_device *dev)
+ 				return 0;
+ 			}
+ 
+-			skb_reserve (skb, 2);		/* 16 byte align */
+-			skb_put (skb, len);		/* make room */
++			skb_reserve(skb, 2);		/* 16 byte align */
++			skb_put(skb, len);		/* make room */
+ 			skb_copy_to_linear_data(skb,
+-					 (unsigned char *)&(ib->rx_buf [lp->rx_new][0]),
+-					 len);
+-			skb->protocol = eth_type_trans (skb, dev);
+-			netif_rx (skb);
++				 (unsigned char *)&ib->rx_buf[lp->rx_new][0],
++				 len);
 +			skb->protocol = eth_type_trans(skb, dev);
-+			netdev_dbg(dev, "RX pkt type 0x%04x from %pM to %pM data 0x%08x len %d\n",
-+				   ((u_short *)skb->data)[6],
-+				   skb->data + 6, skb->data,
-+				   (int)skb->data, (int)skb->len);
-+
 +			netif_rx(skb);
-+			dev->stats.rx_packets++;
-+			dev->stats.rx_bytes += pkt_len;
-+		}
- 
--    return 0;
--}
-+		priv->rx_ring[entry]->RMD1 |= RF_OWN;
-+		entry = (++priv->cur_rx) % RX_RING_SIZE;
-+	}
- 
-+	priv->cur_rx = priv->cur_rx % RX_RING_SIZE;
- 
--static int ariadne_open(struct net_device *dev)
--{
--    volatile struct Am79C960 *lance = (struct Am79C960*)dev->base_addr;
--    u_short in;
--    u_long version;
--    int i;
--
--    /* Reset the LANCE */
--    in = lance->Reset;
--
--    /* Stop the LANCE */
--    lance->RAP = CSR0;		/* PCnet-ISA Controller Status */
--    lance->RDP = STOP;
--
--    /* Check the LANCE version */
--    lance->RAP = CSR88;		/* Chip ID */
--    version = swapw(lance->RDP);
--    lance->RAP = CSR89;		/* Chip ID */
--    version |= swapw(lance->RDP)<<16;
--    if ((version & 0x00000fff) != 0x00000003) {
--	printk(KERN_WARNING "ariadne_open: Couldn't find AMD Ethernet Chip\n");
--	return -EAGAIN;
--    }
--    if ((version & 0x0ffff000) != 0x00003000) {
--	printk(KERN_WARNING "ariadne_open: Couldn't find Am79C960 (Wrong part "
--	       "number = %ld)\n", (version & 0x0ffff000)>>12);
--	return -EAGAIN;
--    }
--#if 0
--    printk(KERN_DEBUG "ariadne_open: Am79C960 (PCnet-ISA) Revision %ld\n",
--	   (version & 0xf0000000)>>28);
--#endif
-+	/* We should check that at least two ring entries are free.
-+	 * If not, we should free one and mark stats->rx_dropped++
-+	 */
- 
--    ariadne_init_ring(dev);
--
--    /* Miscellaneous Stuff */
--    lance->RAP = CSR3;		/* Interrupt Masks and Deferral Control */
--    lance->RDP = 0x0000;
--    lance->RAP = CSR4;		/* Test and Features Control */
--    lance->RDP = DPOLL|APAD_XMT|MFCOM|RCVCCOM|TXSTRTM|JABM;
--
--    /* Set the Multicast Table */
--    lance->RAP = CSR8;		/* Logical Address Filter, LADRF[15:0] */
--    lance->RDP = 0x0000;
--    lance->RAP = CSR9;		/* Logical Address Filter, LADRF[31:16] */
--    lance->RDP = 0x0000;
--    lance->RAP = CSR10;		/* Logical Address Filter, LADRF[47:32] */
--    lance->RDP = 0x0000;
--    lance->RAP = CSR11;		/* Logical Address Filter, LADRF[63:48] */
--    lance->RDP = 0x0000;
--
--    /* Set the Ethernet Hardware Address */
--    lance->RAP = CSR12;		/* Physical Address Register, PADR[15:0] */
--    lance->RDP = ((u_short *)&dev->dev_addr[0])[0];
--    lance->RAP = CSR13;		/* Physical Address Register, PADR[31:16] */
--    lance->RDP = ((u_short *)&dev->dev_addr[0])[1];
--    lance->RAP = CSR14;		/* Physical Address Register, PADR[47:32] */
--    lance->RDP = ((u_short *)&dev->dev_addr[0])[2];
--
--    /* Set the Init Block Mode */
--    lance->RAP = CSR15;		/* Mode Register */
--    lance->RDP = 0x0000;
--
--    /* Set the Transmit Descriptor Ring Pointer */
--    lance->RAP = CSR30;		/* Base Address of Transmit Ring */
--    lance->RDP = swloww(ARIADNE_RAM+offsetof(struct lancedata, tx_ring));
--    lance->RAP = CSR31;		/* Base Address of transmit Ring */
--    lance->RDP = swhighw(ARIADNE_RAM+offsetof(struct lancedata, tx_ring));
--
--    /* Set the Receive Descriptor Ring Pointer */
--    lance->RAP = CSR24;		/* Base Address of Receive Ring */
--    lance->RDP = swloww(ARIADNE_RAM+offsetof(struct lancedata, rx_ring));
--    lance->RAP = CSR25;		/* Base Address of Receive Ring */
--    lance->RDP = swhighw(ARIADNE_RAM+offsetof(struct lancedata, rx_ring));
--
--    /* Set the Number of RX and TX Ring Entries */
--    lance->RAP = CSR76;		/* Receive Ring Length */
--    lance->RDP = swapw(((u_short)-RX_RING_SIZE));
--    lance->RAP = CSR78;		/* Transmit Ring Length */
--    lance->RDP = swapw(((u_short)-TX_RING_SIZE));
--
--    /* Enable Media Interface Port Auto Select (10BASE-2/10BASE-T) */
--    lance->RAP = ISACSR2;	/* Miscellaneous Configuration */
--    lance->IDP = ASEL;
--
--    /* LED Control */
--    lance->RAP = ISACSR5;	/* LED1 Status */
--    lance->IDP = PSE|XMTE;
--    lance->RAP = ISACSR6;	/* LED2 Status */
--    lance->IDP = PSE|COLE;
--    lance->RAP = ISACSR7;	/* LED3 Status */
--    lance->IDP = PSE|RCVE;
--
--    netif_start_queue(dev);
--
--    i = request_irq(IRQ_AMIGA_PORTS, ariadne_interrupt, IRQF_SHARED,
--                    dev->name, dev);
--    if (i) return i;
--
--    lance->RAP = CSR0;		/* PCnet-ISA Controller Status */
--    lance->RDP = INEA|STRT;
--
--    return 0;
-+	return 0;
+ 			dev->stats.rx_packets++;
+ 			dev->stats.rx_bytes += len;
+ 		}
+@@ -335,7 +320,7 @@ static int lance_rx (struct net_device *dev)
+ 	return 0;
  }
  
--
--static void ariadne_init_ring(struct net_device *dev)
-+static irqreturn_t ariadne_interrupt(int irq, void *data)
+-static int lance_tx (struct net_device *dev)
++static int lance_tx(struct net_device *dev)
  {
--    struct ariadne_private *priv = netdev_priv(dev);
--    volatile struct lancedata *lancedata = (struct lancedata *)dev->mem_start;
--    int i;
--
--    netif_stop_queue(dev);
--
--    priv->tx_full = 0;
--    priv->cur_rx = priv->cur_tx = 0;
--    priv->dirty_tx = 0;
--
--    /* Set up TX Ring */
--    for (i = 0; i < TX_RING_SIZE; i++) {
--	volatile struct TDRE *t = &lancedata->tx_ring[i];
--	t->TMD0 = swloww(ARIADNE_RAM+offsetof(struct lancedata, tx_buff[i]));
--	t->TMD1 = swhighw(ARIADNE_RAM+offsetof(struct lancedata, tx_buff[i])) |
--		  TF_STP | TF_ENP;
--	t->TMD2 = swapw((u_short)-PKT_BUF_SIZE);
--	t->TMD3 = 0;
--	priv->tx_ring[i] = &lancedata->tx_ring[i];
--	priv->tx_buff[i] = lancedata->tx_buff[i];
--#if 0
--	printk(KERN_DEBUG "TX Entry %2d at %p, Buf at %p\n", i,
--	       &lancedata->tx_ring[i], lancedata->tx_buff[i]);
--#endif
--    }
--
--    /* Set up RX Ring */
--    for (i = 0; i < RX_RING_SIZE; i++) {
--	volatile struct RDRE *r = &lancedata->rx_ring[i];
--	r->RMD0 = swloww(ARIADNE_RAM+offsetof(struct lancedata, rx_buff[i]));
--	r->RMD1 = swhighw(ARIADNE_RAM+offsetof(struct lancedata, rx_buff[i])) |
--		  RF_OWN;
--	r->RMD2 = swapw((u_short)-PKT_BUF_SIZE);
--	r->RMD3 = 0x0000;
--	priv->rx_ring[i] = &lancedata->rx_ring[i];
--	priv->rx_buff[i] = lancedata->rx_buff[i];
--#if 0
--	printk(KERN_DEBUG "RX Entry %2d at %p, Buf at %p\n", i,
--	       &lancedata->rx_ring[i], lancedata->rx_buff[i]);
-+	struct net_device *dev = (struct net_device *)data;
-+	volatile struct Am79C960 *lance = (struct Am79C960 *)dev->base_addr;
-+	struct ariadne_private *priv;
-+	int csr0, boguscnt;
-+	int handled = 0;
-+
-+	lance->RAP = CSR0;		/* PCnet-ISA Controller Status */
-+
-+	if (!(lance->RDP & INTR))	/* Check if any interrupt has been */
-+		return IRQ_NONE;	/* generated by the board */
-+
-+	priv = netdev_priv(dev);
-+
-+	boguscnt = 10;
-+	while ((csr0 = lance->RDP) & (ERR | RINT | TINT) && --boguscnt >= 0) {
-+		/* Acknowledge all of the current interrupt sources ASAP */
-+		lance->RDP = csr0 & ~(INEA | TDMD | STOP | STRT | INIT);
-+
-+#ifdef DEBUG
-+		if (ariadne_debug > 5) {
-+			netdev_dbg(dev, "interrupt  csr0=%#02x new csr=%#02x [",
-+				   csr0, lance->RDP);
-+			if (csr0 & INTR)
-+				pr_cont(" INTR");
-+			if (csr0 & INEA)
-+				pr_cont(" INEA");
-+			if (csr0 & RXON)
-+				pr_cont(" RXON");
-+			if (csr0 & TXON)
-+				pr_cont(" TXON");
-+			if (csr0 & TDMD)
-+				pr_cont(" TDMD");
-+			if (csr0 & STOP)
-+				pr_cont(" STOP");
-+			if (csr0 & STRT)
-+				pr_cont(" STRT");
-+			if (csr0 & INIT)
-+				pr_cont(" INIT");
-+			if (csr0 & ERR)
-+				pr_cont(" ERR");
-+			if (csr0 & BABL)
-+				pr_cont(" BABL");
-+			if (csr0 & CERR)
-+				pr_cont(" CERR");
-+			if (csr0 & MISS)
-+				pr_cont(" MISS");
-+			if (csr0 & MERR)
-+				pr_cont(" MERR");
-+			if (csr0 & RINT)
-+				pr_cont(" RINT");
-+			if (csr0 & TINT)
-+				pr_cont(" TINT");
-+			if (csr0 & IDON)
-+				pr_cont(" IDON");
-+			pr_cont(" ]\n");
-+		}
- #endif
--    }
--}
+ 	struct lance_private *lp = netdev_priv(dev);
+ 	volatile struct lance_init_block *ib = lp->init_block;
+@@ -350,7 +335,7 @@ static int lance_tx (struct net_device *dev)
  
-+		if (csr0 & RINT) {	/* Rx interrupt */
-+			handled = 1;
-+			ariadne_rx(dev);
-+		}
+ 	j = lp->tx_old;
+ 	for (i = j; i != lp->tx_new; i = j) {
+-		td = &ib->btx_ring [i];
++		td = &ib->btx_ring[i];
  
--static int ariadne_close(struct net_device *dev)
--{
--    volatile struct Am79C960 *lance = (struct Am79C960*)dev->base_addr;
-+		if (csr0 & TINT) {	/* Tx-done interrupt */
-+			int dirty_tx = priv->dirty_tx;
-+
-+			handled = 1;
-+			while (dirty_tx < priv->cur_tx) {
-+				int entry = dirty_tx % TX_RING_SIZE;
-+				int status = lowb(priv->tx_ring[entry]->TMD1);
-+
-+				if (status & TF_OWN)
-+					break;	/* It still hasn't been Txed */
-+
-+				priv->tx_ring[entry]->TMD1 &= 0xff00;
-+
-+				if (status & TF_ERR) {
-+					/* There was an major error, log it */
-+					int err_status = priv->tx_ring[entry]->TMD3;
-+					dev->stats.tx_errors++;
-+					if (err_status & EF_RTRY)
-+						dev->stats.tx_aborted_errors++;
-+					if (err_status & EF_LCAR)
-+						dev->stats.tx_carrier_errors++;
-+					if (err_status & EF_LCOL)
-+						dev->stats.tx_window_errors++;
-+					if (err_status & EF_UFLO) {
-+						/* Ackk!  On FIFO errors the Tx unit is turned off! */
-+						dev->stats.tx_fifo_errors++;
-+						/* Remove this verbosity later! */
-+						netdev_err(dev, "Tx FIFO error! Status %04x\n",
-+							   csr0);
-+						/* Restart the chip */
-+						lance->RDP = STRT;
-+					}
-+				} else {
-+					if (status & (TF_MORE | TF_ONE))
-+						dev->stats.collisions++;
-+					dev->stats.tx_packets++;
-+				}
-+				dirty_tx++;
-+			}
+ 		/* If we hit a packet not owned by us, stop */
+ 		if (td->tmd1_bits & LE_T1_OWN)
+@@ -360,45 +345,44 @@ static int lance_tx (struct net_device *dev)
+ 			status = td->misc;
  
--    netif_stop_queue(dev);
-+#ifndef final_version
-+			if (priv->cur_tx - dirty_tx >= TX_RING_SIZE) {
-+				netdev_err(dev, "out-of-sync dirty pointer, %d vs. %d, full=%d\n",
-+					   dirty_tx, priv->cur_tx,
-+					   priv->tx_full);
-+				dirty_tx += TX_RING_SIZE;
-+			}
-+#endif
+ 			dev->stats.tx_errors++;
+-			if (status & LE_T3_RTY)  dev->stats.tx_aborted_errors++;
+-			if (status & LE_T3_LCOL) dev->stats.tx_window_errors++;
++			if (status & LE_T3_RTY)
++				dev->stats.tx_aborted_errors++;
++			if (status & LE_T3_LCOL)
++				dev->stats.tx_window_errors++;
  
--    lance->RAP = CSR112;	/* Missed Frame Count */
--    dev->stats.rx_missed_errors = swapw(lance->RDP);
--    lance->RAP = CSR0;		/* PCnet-ISA Controller Status */
-+			if (priv->tx_full && netif_queue_stopped(dev) &&
-+			    dirty_tx > priv->cur_tx - TX_RING_SIZE + 2) {
-+				/* The ring is no longer full */
-+				priv->tx_full = 0;
-+				netif_wake_queue(dev);
-+			}
+ 			if (status & LE_T3_CLOS) {
+ 				dev->stats.tx_carrier_errors++;
+ 				if (lp->auto_select) {
+ 					lp->tpe = 1 - lp->tpe;
+-					printk(KERN_ERR "%s: Carrier Lost, "
+-					       "trying %s\n", dev->name,
+-					       lp->tpe?"TPE":"AUI");
++					netdev_err(dev, "Carrier Lost, trying %s\n",
++						   lp->tpe ? "TPE" : "AUI");
+ 					/* Stop the lance */
+ 					ll->rap = LE_CSR0;
+ 					ll->rdp = LE_C0_STOP;
+-					lance_init_ring (dev);
+-					load_csrs (lp);
+-					init_restart_lance (lp);
++					lance_init_ring(dev);
++					load_csrs(lp);
++					init_restart_lance(lp);
+ 					return 0;
+ 				}
+ 			}
  
--    if (ariadne_debug > 1) {
--	printk(KERN_DEBUG "%s: Shutting down ethercard, status was %2.2x.\n",
--	       dev->name, lance->RDP);
--	printk(KERN_DEBUG "%s: %lu packets missed\n", dev->name,
--	       dev->stats.rx_missed_errors);
--    }
-+			priv->dirty_tx = dirty_tx;
-+		}
+-			/* buffer errors and underflows turn off the transmitter */
+-			/* Restart the adapter */
+-			if (status & (LE_T3_BUF|LE_T3_UFL)) {
++			/* buffer errors and underflows turn off
++			 * the transmitter, so restart the adapter
++			 */
++			if (status & (LE_T3_BUF | LE_T3_UFL)) {
+ 				dev->stats.tx_fifo_errors++;
  
--    /* We stop the LANCE here -- it occasionally polls memory if we don't. */
--    lance->RDP = STOP;
-+		/* Log misc errors */
-+		if (csr0 & BABL) {
-+			handled = 1;
-+			dev->stats.tx_errors++;	/* Tx babble */
-+		}
-+		if (csr0 & MISS) {
-+			handled = 1;
-+			dev->stats.rx_errors++;	/* Missed a Rx frame */
-+		}
-+		if (csr0 & MERR) {
-+			handled = 1;
-+			netdev_err(dev, "Bus master arbitration failure, status %04x\n",
-+				   csr0);
-+			/* Restart the chip */
-+			lance->RDP = STRT;
-+		}
-+	}
+-				printk(KERN_ERR "%s: Tx: ERR_BUF|ERR_UFL, "
+-				       "restarting\n", dev->name);
++				netdev_err(dev, "Tx: ERR_BUF|ERR_UFL, restarting\n");
+ 				/* Stop the lance */
+ 				ll->rap = LE_CSR0;
+ 				ll->rdp = LE_C0_STOP;
+-				lance_init_ring (dev);
+-				load_csrs (lp);
+-				init_restart_lance (lp);
++				lance_init_ring(dev);
++				load_csrs(lp);
++				init_restart_lance(lp);
+ 				return 0;
+ 			}
+ 		} else if ((td->tmd1_bits & LE_T1_POK) == LE_T1_POK) {
+-			/*
+-			 * So we don't count the packet more than once.
+-			 */
++			/* So we don't count the packet more than once. */
+ 			td->tmd1_bits &= ~(LE_T1_POK);
  
--    free_irq(IRQ_AMIGA_PORTS, dev);
-+	/* Clear any other interrupt, and set interrupt enable */
-+	lance->RAP = CSR0;		/* PCnet-ISA Controller Status */
-+	lance->RDP = INEA | BABL | CERR | MISS | MERR | IDON;
+ 			/* One collision before packet was sent. */
+@@ -419,7 +403,14 @@ static int lance_tx (struct net_device *dev)
+ 	return 0;
+ }
  
--    return 0;
--}
-+	if (ariadne_debug > 4)
-+		netdev_dbg(dev, "exiting interrupt, csr%d=%#04x\n",
-+			   lance->RAP, lance->RDP);
- 
-+	return IRQ_RETVAL(handled);
-+}
- 
--static inline void ariadne_reset(struct net_device *dev)
-+static int ariadne_open(struct net_device *dev)
- {
--    volatile struct Am79C960 *lance = (struct Am79C960*)dev->base_addr;
--
--    lance->RAP = CSR0;	/* PCnet-ISA Controller Status */
--    lance->RDP = STOP;
--    ariadne_init_ring(dev);
--    lance->RDP = INEA|STRT;
--    netif_start_queue(dev);
--}
-+	volatile struct Am79C960 *lance = (struct Am79C960 *)dev->base_addr;
-+	u_short in;
-+	u_long version;
-+	int i;
- 
-+	/* Reset the LANCE */
-+	in = lance->Reset;
-+
-+	/* Stop the LANCE */
-+	lance->RAP = CSR0;		/* PCnet-ISA Controller Status */
-+	lance->RDP = STOP;
-+
-+	/* Check the LANCE version */
-+	lance->RAP = CSR88;		/* Chip ID */
-+	version = swapw(lance->RDP);
-+	lance->RAP = CSR89;		/* Chip ID */
-+	version |= swapw(lance->RDP) << 16;
-+	if ((version & 0x00000fff) != 0x00000003) {
-+		pr_warn("Couldn't find AMD Ethernet Chip\n");
-+		return -EAGAIN;
-+	}
-+	if ((version & 0x0ffff000) != 0x00003000) {
-+		pr_warn("Couldn't find Am79C960 (Wrong part number = %ld)\n",
-+		       (version & 0x0ffff000) >> 12);
-+		return -EAGAIN;
-+	}
- 
--static irqreturn_t ariadne_interrupt(int irq, void *data)
--{
--    struct net_device *dev = (struct net_device *)data;
--    volatile struct Am79C960 *lance = (struct Am79C960*)dev->base_addr;
--    struct ariadne_private *priv;
--    int csr0, boguscnt;
--    int handled = 0;
-+	netdev_dbg(dev, "Am79C960 (PCnet-ISA) Revision %ld\n",
-+		   (version & 0xf0000000) >> 28);
- 
--    lance->RAP = CSR0;			/* PCnet-ISA Controller Status */
-+	ariadne_init_ring(dev);
- 
--    if (!(lance->RDP & INTR))		/* Check if any interrupt has been */
--	return IRQ_NONE;		/* generated by the board. */
-+	/* Miscellaneous Stuff */
-+	lance->RAP = CSR3;		/* Interrupt Masks and Deferral Control */
-+	lance->RDP = 0x0000;
-+	lance->RAP = CSR4;		/* Test and Features Control */
-+	lance->RDP = DPOLL | APAD_XMT | MFCOM | RCVCCOM | TXSTRTM | JABM;
- 
--    priv = netdev_priv(dev);
-+	/* Set the Multicast Table */
-+	lance->RAP = CSR8;		/* Logical Address Filter, LADRF[15:0] */
-+	lance->RDP = 0x0000;
-+	lance->RAP = CSR9;		/* Logical Address Filter, LADRF[31:16] */
-+	lance->RDP = 0x0000;
-+	lance->RAP = CSR10;		/* Logical Address Filter, LADRF[47:32] */
-+	lance->RDP = 0x0000;
-+	lance->RAP = CSR11;		/* Logical Address Filter, LADRF[63:48] */
-+	lance->RDP = 0x0000;
- 
--    boguscnt = 10;
--    while ((csr0 = lance->RDP) & (ERR|RINT|TINT) && --boguscnt >= 0) {
--	/* Acknowledge all of the current interrupt sources ASAP. */
--	lance->RDP = csr0 & ~(INEA|TDMD|STOP|STRT|INIT);
-+	/* Set the Ethernet Hardware Address */
-+	lance->RAP = CSR12;		/* Physical Address Register, PADR[15:0] */
-+	lance->RDP = ((u_short *)&dev->dev_addr[0])[0];
-+	lance->RAP = CSR13;		/* Physical Address Register, PADR[31:16] */
-+	lance->RDP = ((u_short *)&dev->dev_addr[0])[1];
-+	lance->RAP = CSR14;		/* Physical Address Register, PADR[47:32] */
-+	lance->RDP = ((u_short *)&dev->dev_addr[0])[2];
- 
--#if 0
--	if (ariadne_debug > 5) {
--	    printk(KERN_DEBUG "%s: interrupt  csr0=%#2.2x new csr=%#2.2x.",
--		   dev->name, csr0, lance->RDP);
--	    printk("[");
--	    if (csr0 & INTR)
--		printk(" INTR");
--	    if (csr0 & INEA)
--		printk(" INEA");
--	    if (csr0 & RXON)
--		printk(" RXON");
--	    if (csr0 & TXON)
--		printk(" TXON");
--	    if (csr0 & TDMD)
--		printk(" TDMD");
--	    if (csr0 & STOP)
--		printk(" STOP");
--	    if (csr0 & STRT)
--		printk(" STRT");
--	    if (csr0 & INIT)
--		printk(" INIT");
--	    if (csr0 & ERR)
--		printk(" ERR");
--	    if (csr0 & BABL)
--		printk(" BABL");
--	    if (csr0 & CERR)
--		printk(" CERR");
--	    if (csr0 & MISS)
--		printk(" MISS");
--	    if (csr0 & MERR)
--		printk(" MERR");
--	    if (csr0 & RINT)
--		printk(" RINT");
--	    if (csr0 & TINT)
--		printk(" TINT");
--	    if (csr0 & IDON)
--		printk(" IDON");
--	    printk(" ]\n");
--	}
--#endif
-+	/* Set the Init Block Mode */
-+	lance->RAP = CSR15;		/* Mode Register */
-+	lance->RDP = 0x0000;
- 
--	if (csr0 & RINT) {	/* Rx interrupt */
--	    handled = 1;
--	    ariadne_rx(dev);
--	}
-+	/* Set the Transmit Descriptor Ring Pointer */
-+	lance->RAP = CSR30;		/* Base Address of Transmit Ring */
-+	lance->RDP = swloww(ARIADNE_RAM + offsetof(struct lancedata, tx_ring));
-+	lance->RAP = CSR31;		/* Base Address of transmit Ring */
-+	lance->RDP = swhighw(ARIADNE_RAM + offsetof(struct lancedata, tx_ring));
-+
-+	/* Set the Receive Descriptor Ring Pointer */
-+	lance->RAP = CSR24;		/* Base Address of Receive Ring */
-+	lance->RDP = swloww(ARIADNE_RAM + offsetof(struct lancedata, rx_ring));
-+	lance->RAP = CSR25;		/* Base Address of Receive Ring */
-+	lance->RDP = swhighw(ARIADNE_RAM + offsetof(struct lancedata, rx_ring));
-+
-+	/* Set the Number of RX and TX Ring Entries */
-+	lance->RAP = CSR76;		/* Receive Ring Length */
-+	lance->RDP = swapw(((u_short)-RX_RING_SIZE));
-+	lance->RAP = CSR78;		/* Transmit Ring Length */
-+	lance->RDP = swapw(((u_short)-TX_RING_SIZE));
-+
-+	/* Enable Media Interface Port Auto Select (10BASE-2/10BASE-T) */
-+	lance->RAP = ISACSR2;		/* Miscellaneous Configuration */
-+	lance->IDP = ASEL;
-+
-+	/* LED Control */
-+	lance->RAP = ISACSR5;		/* LED1 Status */
-+	lance->IDP = PSE|XMTE;
-+	lance->RAP = ISACSR6;	/* LED2 Status */
-+	lance->IDP = PSE|COLE;
-+	lance->RAP = ISACSR7;	/* LED3 Status */
-+	lance->IDP = PSE|RCVE;
-+
-+	netif_start_queue(dev);
-+
-+	i = request_irq(IRQ_AMIGA_PORTS, ariadne_interrupt, IRQF_SHARED,
-+			dev->name, dev);
-+	if (i)
-+		return i;
-+
-+	lance->RAP = CSR0;		/* PCnet-ISA Controller Status */
-+	lance->RDP = INEA | STRT;
-+
-+	return 0;
-+}
- 
--	if (csr0 & TINT) {	/* Tx-done interrupt */
--	    int dirty_tx = priv->dirty_tx;
--
--	    handled = 1;
--	    while (dirty_tx < priv->cur_tx) {
--		int entry = dirty_tx % TX_RING_SIZE;
--		int status = lowb(priv->tx_ring[entry]->TMD1);
--
--		if (status & TF_OWN)
--		    break;	/* It still hasn't been Txed */
--
--		priv->tx_ring[entry]->TMD1 &= 0xff00;
--
--		if (status & TF_ERR) {
--		    /* There was an major error, log it. */
--		    int err_status = priv->tx_ring[entry]->TMD3;
--		    dev->stats.tx_errors++;
--		    if (err_status & EF_RTRY)
--			dev->stats.tx_aborted_errors++;
--		    if (err_status & EF_LCAR)
--			dev->stats.tx_carrier_errors++;
--		    if (err_status & EF_LCOL)
--			dev->stats.tx_window_errors++;
--		    if (err_status & EF_UFLO) {
--			/* Ackk!  On FIFO errors the Tx unit is turned off! */
--			dev->stats.tx_fifo_errors++;
--			/* Remove this verbosity later! */
--			printk(KERN_ERR "%s: Tx FIFO error! Status %4.4x.\n",
--			       dev->name, csr0);
--			/* Restart the chip. */
--			lance->RDP = STRT;
--		    }
--		} else {
--		    if (status & (TF_MORE|TF_ONE))
--			dev->stats.collisions++;
--		    dev->stats.tx_packets++;
--		}
--		dirty_tx++;
--	    }
-+static int ariadne_close(struct net_device *dev)
+-static irqreturn_t lance_interrupt (int irq, void *dev_id)
++static int lance_tx_buffs_avail(struct lance_private *lp)
 +{
-+	volatile struct Am79C960 *lance = (struct Am79C960 *)dev->base_addr;
++	if (lp->tx_old <= lp->tx_new)
++		return lp->tx_old + lp->tx_ring_mod_mask - lp->tx_new;
++	return lp->tx_old - lp->tx_new - 1;
++}
++
++static irqreturn_t lance_interrupt(int irq, void *dev_id)
+ {
+ 	struct net_device *dev = dev_id;
+ 	struct lance_private *lp = netdev_priv(dev);
+@@ -433,19 +424,19 @@ static irqreturn_t lance_interrupt (int irq, void *dev_id)
+ 		return IRQ_NONE;	/* been generated by the Lance. */
  
--#ifndef final_version
--	    if (priv->cur_tx - dirty_tx >= TX_RING_SIZE) {
--		printk(KERN_ERR "out-of-sync dirty pointer, %d vs. %d, "
--		       "full=%d.\n", dirty_tx, priv->cur_tx, priv->tx_full);
--		dirty_tx += TX_RING_SIZE;
--	    }
--#endif
-+	netif_stop_queue(dev);
+ 	/* Acknowledge all the interrupt sources ASAP */
+-	ll->rdp = csr0 & ~(LE_C0_INEA|LE_C0_TDMD|LE_C0_STOP|LE_C0_STRT|
++	ll->rdp = csr0 & ~(LE_C0_INEA | LE_C0_TDMD | LE_C0_STOP | LE_C0_STRT |
+ 			   LE_C0_INIT);
  
--	    if (priv->tx_full && netif_queue_stopped(dev) &&
--		dirty_tx > priv->cur_tx - TX_RING_SIZE + 2) {
--		/* The ring is no longer full. */
--		priv->tx_full = 0;
--		netif_wake_queue(dev);
--	    }
-+	lance->RAP = CSR112;		/* Missed Frame Count */
-+	dev->stats.rx_missed_errors = swapw(lance->RDP);
-+	lance->RAP = CSR0;		/* PCnet-ISA Controller Status */
- 
--	    priv->dirty_tx = dirty_tx;
-+	if (ariadne_debug > 1) {
-+		netdev_dbg(dev, "Shutting down ethercard, status was %02x\n",
-+			   lance->RDP);
-+		netdev_dbg(dev, "%lu packets missed\n",
-+			   dev->stats.rx_missed_errors);
+-	if ((csr0 & LE_C0_ERR)) {
++	if (csr0 & LE_C0_ERR) {
+ 		/* Clear the error condition */
+-		ll->rdp = LE_C0_BABL|LE_C0_ERR|LE_C0_MISS|LE_C0_INEA;
++		ll->rdp = LE_C0_BABL | LE_C0_ERR | LE_C0_MISS | LE_C0_INEA;
  	}
  
--	/* Log misc errors. */
--	if (csr0 & BABL) {
--	    handled = 1;
--	    dev->stats.tx_errors++;	/* Tx babble. */
--	}
--	if (csr0 & MISS) {
--	    handled = 1;
--	    dev->stats.rx_errors++;	/* Missed a Rx frame. */
--	}
--	if (csr0 & MERR) {
--	    handled = 1;
--	    printk(KERN_ERR "%s: Bus master arbitration failure, status "
--		   "%4.4x.\n", dev->name, csr0);
--	    /* Restart the chip. */
--	    lance->RDP = STRT;
--	}
--    }
-+	/* We stop the LANCE here -- it occasionally polls memory if we don't */
-+	lance->RDP = STOP;
+ 	if (csr0 & LE_C0_RINT)
+-		lance_rx (dev);
++		lance_rx(dev);
  
--    /* Clear any other interrupt, and set interrupt enable. */
--    lance->RAP = CSR0;		/* PCnet-ISA Controller Status */
--    lance->RDP = INEA|BABL|CERR|MISS|MERR|IDON;
-+	free_irq(IRQ_AMIGA_PORTS, dev);
+ 	if (csr0 & LE_C0_TINT)
+-		lance_tx (dev);
++		lance_tx(dev);
  
--#if 0
--    if (ariadne_debug > 4)
--	printk(KERN_DEBUG "%s: exiting interrupt, csr%d=%#4.4x.\n", dev->name,
--	       lance->RAP, lance->RDP);
--#endif
--    return IRQ_RETVAL(handled);
-+	return 0;
- }
- 
-+static inline void ariadne_reset(struct net_device *dev)
-+{
-+	volatile struct Am79C960 *lance = (struct Am79C960 *)dev->base_addr;
-+
-+	lance->RAP = CSR0;	/* PCnet-ISA Controller Status */
-+	lance->RDP = STOP;
-+	ariadne_init_ring(dev);
-+	lance->RDP = INEA | STRT;
-+	netif_start_queue(dev);
-+}
- 
- static void ariadne_tx_timeout(struct net_device *dev)
- {
--    volatile struct Am79C960 *lance = (struct Am79C960*)dev->base_addr;
-+	volatile struct Am79C960 *lance = (struct Am79C960 *)dev->base_addr;
- 
--    printk(KERN_ERR "%s: transmit timed out, status %4.4x, resetting.\n",
--	   dev->name, lance->RDP);
--    ariadne_reset(dev);
--    netif_wake_queue(dev);
-+	netdev_err(dev, "transmit timed out, status %04x, resetting\n",
-+		   lance->RDP);
-+	ariadne_reset(dev);
-+	netif_wake_queue(dev);
- }
- 
--
- static netdev_tx_t ariadne_start_xmit(struct sk_buff *skb,
- 				      struct net_device *dev)
- {
--    struct ariadne_private *priv = netdev_priv(dev);
--    volatile struct Am79C960 *lance = (struct Am79C960*)dev->base_addr;
--    int entry;
--    unsigned long flags;
--    int len = skb->len;
--
--#if 0
--    if (ariadne_debug > 3) {
--	lance->RAP = CSR0;	/* PCnet-ISA Controller Status */
--	printk(KERN_DEBUG "%s: ariadne_start_xmit() called, csr0 %4.4x.\n",
--	       dev->name, lance->RDP);
--	lance->RDP = 0x0000;
--    }
--#endif
--
--    /* FIXME: is the 79C960 new enough to do its own padding right ? */
--    if (skb->len < ETH_ZLEN)
--    {
--    	if (skb_padto(skb, ETH_ZLEN))
--    	    return NETDEV_TX_OK;
--    	len = ETH_ZLEN;
--    }
--
--    /* Fill in a Tx ring entry */
-+	struct ariadne_private *priv = netdev_priv(dev);
-+	volatile struct Am79C960 *lance = (struct Am79C960 *)dev->base_addr;
-+	int entry;
-+	unsigned long flags;
-+	int len = skb->len;
- 
- #if 0
--{
--    printk(KERN_DEBUG "TX pkt type 0x%04x from %pM to %pM "
--	   " data 0x%08x len %d\n",
--	   ((u_short *)skb->data)[6],
--	   skb->data + 6, skb->data,
--	   (int)skb->data, (int)skb->len);
--}
-+	if (ariadne_debug > 3) {
-+		lance->RAP = CSR0;	/* PCnet-ISA Controller Status */
-+		netdev_dbg(dev, "%s: csr0 %04x\n", __func__, lance->RDP);
-+		lance->RDP = 0x0000;
-+	}
- #endif
- 
--    local_irq_save(flags);
--
--    entry = priv->cur_tx % TX_RING_SIZE;
--
--    /* Caution: the write order is important here, set the base address with
--		the "ownership" bits last. */
--
--    priv->tx_ring[entry]->TMD2 = swapw((u_short)-skb->len);
--    priv->tx_ring[entry]->TMD3 = 0x0000;
--    memcpyw(priv->tx_buff[entry], (u_short *)skb->data, len);
--
--#if 0
--    {
--	int i, len;
--
--	len = skb->len > 64 ? 64 : skb->len;
--	len >>= 1;
--	for (i = 0; i < len; i += 8) {
--	    int j;
--	    printk(KERN_DEBUG "%04x:", i);
--	    for (j = 0; (j < 8) && ((i+j) < len); j++) {
--		if (!(j & 1))
--		    printk(" ");
--		printk("%04x", priv->tx_buff[entry][i+j]);
--	    }
--	    printk("\n");
-+	/* FIXME: is the 79C960 new enough to do its own padding right ? */
-+	if (skb->len < ETH_ZLEN) {
-+		if (skb_padto(skb, ETH_ZLEN))
-+			return NETDEV_TX_OK;
-+		len = ETH_ZLEN;
+ 	/* Log misc errors. */
+ 	if (csr0 & LE_C0_BABL)
+@@ -453,22 +444,22 @@ static irqreturn_t lance_interrupt (int irq, void *dev_id)
+ 	if (csr0 & LE_C0_MISS)
+ 		dev->stats.rx_errors++;       /* Missed a Rx frame. */
+ 	if (csr0 & LE_C0_MERR) {
+-		printk(KERN_ERR "%s: Bus master arbitration failure, status "
+-		       "%4.4x.\n", dev->name, csr0);
++		netdev_err(dev, "Bus master arbitration failure, status %04x\n",
++			   csr0);
+ 		/* Restart the chip. */
+ 		ll->rdp = LE_C0_STRT;
  	}
--    }
+ 
+-	if (netif_queue_stopped(dev) && TX_BUFFS_AVAIL > 0)
++	if (netif_queue_stopped(dev) && lance_tx_buffs_avail(lp) > 0)
+ 		netif_wake_queue(dev);
+ 
+ 	ll->rap = LE_CSR0;
+-	ll->rdp = LE_C0_BABL|LE_C0_CERR|LE_C0_MISS|LE_C0_MERR|
+-					LE_C0_IDON|LE_C0_INEA;
++	ll->rdp = (LE_C0_BABL | LE_C0_CERR | LE_C0_MISS | LE_C0_MERR |
++		   LE_C0_IDON | LE_C0_INEA);
+ 	return IRQ_HANDLED;
+ }
+ 
+-static int lance_open (struct net_device *dev)
++static int lance_open(struct net_device *dev)
+ {
+ 	struct lance_private *lp = netdev_priv(dev);
+ 	volatile struct lance_regs *ll = lp->ll;
+@@ -481,17 +472,18 @@ static int lance_open (struct net_device *dev)
+ 	/* Install the Interrupt handler */
+ 	ret = request_irq(IRQ_AMIGA_PORTS, lance_interrupt, IRQF_SHARED,
+ 			  dev->name, dev);
+-	if (ret) return ret;
++	if (ret)
++		return ret;
+ 
+-	load_csrs (lp);
+-	lance_init_ring (dev);
++	load_csrs(lp);
++	lance_init_ring(dev);
+ 
+ 	netif_start_queue(dev);
+ 
+-	return init_restart_lance (lp);
++	return init_restart_lance(lp);
+ }
+ 
+-static int lance_close (struct net_device *dev)
++static int lance_close(struct net_device *dev)
+ {
+ 	struct lance_private *lp = netdev_priv(dev);
+ 	volatile struct lance_regs *ll = lp->ll;
+@@ -507,7 +499,7 @@ static int lance_close (struct net_device *dev)
+ 	return 0;
+ }
+ 
+-static inline int lance_reset (struct net_device *dev)
++static inline int lance_reset(struct net_device *dev)
+ {
+ 	struct lance_private *lp = netdev_priv(dev);
+ 	volatile struct lance_regs *ll = lp->ll;
+@@ -517,16 +509,15 @@ static inline int lance_reset (struct net_device *dev)
+ 	ll->rap = LE_CSR0;
+ 	ll->rdp = LE_C0_STOP;
+ 
+-	load_csrs (lp);
++	load_csrs(lp);
+ 
+-	lance_init_ring (dev);
++	lance_init_ring(dev);
+ 	dev->trans_start = jiffies; /* prevent tx timeout */
+ 	netif_start_queue(dev);
+ 
+-	status = init_restart_lance (lp);
+-#ifdef DEBUG_DRIVER
+-	printk(KERN_DEBUG "Lance restart=%d\n", status);
 -#endif
++	status = init_restart_lance(lp);
++	netdev_dbg(dev, "Lance restart=%d\n", status);
++
+ 	return status;
+ }
  
--    priv->tx_ring[entry]->TMD1 = (priv->tx_ring[entry]->TMD1&0xff00)|TF_OWN|TF_STP|TF_ENP;
-+	/* Fill in a Tx ring entry */
+@@ -535,14 +526,13 @@ static void lance_tx_timeout(struct net_device *dev)
+ 	struct lance_private *lp = netdev_priv(dev);
+ 	volatile struct lance_regs *ll = lp->ll;
  
--    dev_kfree_skb(skb);
-+	netdev_dbg(dev, "TX pkt type 0x%04x from %pM to %pM data 0x%08x len %d\n",
-+		   ((u_short *)skb->data)[6],
-+		   skb->data + 6, skb->data,
-+		   (int)skb->data, (int)skb->len);
+-	printk(KERN_ERR "%s: transmit timed out, status %04x, reset\n",
+-	       dev->name, ll->rdp);
++	netdev_err(dev, "transmit timed out, status %04x, reset\n", ll->rdp);
+ 	lance_reset(dev);
+ 	netif_wake_queue(dev);
+ }
  
--    priv->cur_tx++;
--    if ((priv->cur_tx >= TX_RING_SIZE) && (priv->dirty_tx >= TX_RING_SIZE)) {
-+	local_irq_save(flags);
+-static netdev_tx_t lance_start_xmit (struct sk_buff *skb,
+-				     struct net_device *dev)
++static netdev_tx_t lance_start_xmit(struct sk_buff *skb,
++				    struct net_device *dev)
+ {
+ 	struct lance_private *lp = netdev_priv(dev);
+ 	volatile struct lance_regs *ll = lp->ll;
+@@ -557,33 +547,33 @@ static netdev_tx_t lance_start_xmit (struct sk_buff *skb,
  
--#if 0
--	printk(KERN_DEBUG "*** Subtracting TX_RING_SIZE from cur_tx (%d) and "
--	       "dirty_tx (%d)\n", priv->cur_tx, priv->dirty_tx);
--#endif
-+	entry = priv->cur_tx % TX_RING_SIZE;
+ 	local_irq_save(flags);
  
--	priv->cur_tx -= TX_RING_SIZE;
--	priv->dirty_tx -= TX_RING_SIZE;
--    }
--    dev->stats.tx_bytes += len;
-+	/* Caution: the write order is important here, set the base address with
-+	   the "ownership" bits last */
+-	if (!TX_BUFFS_AVAIL){
++	if (!lance_tx_buffs_avail(lp)) {
+ 		local_irq_restore(flags);
+ 		return NETDEV_TX_LOCKED;
+ 	}
  
--    /* Trigger an immediate send poll. */
--    lance->RAP = CSR0;		/* PCnet-ISA Controller Status */
--    lance->RDP = INEA|TDMD;
-+	priv->tx_ring[entry]->TMD2 = swapw((u_short)-skb->len);
-+	priv->tx_ring[entry]->TMD3 = 0x0000;
-+	memcpyw(priv->tx_buff[entry], (u_short *)skb->data, len);
- 
--    if (lowb(priv->tx_ring[(entry+1) % TX_RING_SIZE]->TMD1) != 0) {
--	netif_stop_queue(dev);
--	priv->tx_full = 1;
--    }
--    local_irq_restore(flags);
+-#ifdef DEBUG_DRIVER
 +#ifdef DEBUG
-+	print_hex_dump(KERN_DEBUG, "tx_buff: ", DUMP_PREFIX_OFFSET, 16, 1,
-+		       (void *)priv->tx_buff[entry],
-+		       skb->len > 64 ? 64 : skb->len, true);
-+#endif
+ 	/* dump the packet */
+ 	print_hex_dump(KERN_DEBUG, "skb->data: ", DUMP_PREFIX_NONE,
+ 		       16, 1, skb->data, 64, true);
+ #endif
+ 	entry = lp->tx_new & lp->tx_ring_mod_mask;
+-	ib->btx_ring [entry].length = (-skblen) | 0xf000;
+-	ib->btx_ring [entry].misc = 0;
++	ib->btx_ring[entry].length = (-skblen) | 0xf000;
++	ib->btx_ring[entry].misc = 0;
  
--    return NETDEV_TX_OK;
--}
-+	priv->tx_ring[entry]->TMD1 = (priv->tx_ring[entry]->TMD1 & 0xff00)
-+		| TF_OWN | TF_STP | TF_ENP;
+-	skb_copy_from_linear_data(skb, (void *)&ib->tx_buf [entry][0], skblen);
++	skb_copy_from_linear_data(skb, (void *)&ib->tx_buf[entry][0], skblen);
  
+ 	/* Now, give the packet to the lance */
+-	ib->btx_ring [entry].tmd1_bits = (LE_T1_POK|LE_T1_OWN);
++	ib->btx_ring[entry].tmd1_bits = (LE_T1_POK | LE_T1_OWN);
+ 	lp->tx_new = (lp->tx_new+1) & lp->tx_ring_mod_mask;
+ 	dev->stats.tx_bytes += skblen;
+ 
+-	if (TX_BUFFS_AVAIL <= 0)
++	if (lance_tx_buffs_avail(lp) <= 0)
+ 		netif_stop_queue(dev);
+ 
+ 	/* Kick the lance: transmit now */
+ 	ll->rdp = LE_C0_INEA | LE_C0_TDMD;
+-	dev_kfree_skb (skb);
 +	dev_kfree_skb(skb);
  
--static int ariadne_rx(struct net_device *dev)
--{
--    struct ariadne_private *priv = netdev_priv(dev);
--    int entry = priv->cur_rx % RX_RING_SIZE;
--    int i;
--
--    /* If we own the next entry, it's a new packet. Send it up. */
--    while (!(lowb(priv->rx_ring[entry]->RMD1) & RF_OWN)) {
--	int status = lowb(priv->rx_ring[entry]->RMD1);
--
--	if (status != (RF_STP|RF_ENP)) {	/* There was an error. */
--	    /* There is a tricky error noted by John Murphy,
--		<murf@perftech.com> to Russ Nelson: Even with full-sized
--		buffers it's possible for a jabber packet to use two
--		buffers, with only the last correctly noting the error. */
--	    if (status & RF_ENP)
--		/* Only count a general error at the end of a packet.*/
--		dev->stats.rx_errors++;
--	    if (status & RF_FRAM)
--		dev->stats.rx_frame_errors++;
--	    if (status & RF_OFLO)
--		dev->stats.rx_over_errors++;
--	    if (status & RF_CRC)
--		dev->stats.rx_crc_errors++;
--	    if (status & RF_BUFF)
--		dev->stats.rx_fifo_errors++;
--	    priv->rx_ring[entry]->RMD1 &= 0xff00|RF_STP|RF_ENP;
--	} else {
--	    /* Malloc up new buffer, compatible with net-3. */
--	    short pkt_len = swapw(priv->rx_ring[entry]->RMD3);
--	    struct sk_buff *skb;
--
--	    skb = dev_alloc_skb(pkt_len+2);
--	    if (skb == NULL) {
--		printk(KERN_WARNING "%s: Memory squeeze, deferring packet.\n",
--		       dev->name);
--		for (i = 0; i < RX_RING_SIZE; i++)
--		    if (lowb(priv->rx_ring[(entry+i) % RX_RING_SIZE]->RMD1) & RF_OWN)
--			break;
--
--		if (i > RX_RING_SIZE-2) {
--		    dev->stats.rx_dropped++;
--		    priv->rx_ring[entry]->RMD1 |= RF_OWN;
--		    priv->cur_rx++;
--		}
--		break;
--	    }
-+	priv->cur_tx++;
-+	if ((priv->cur_tx >= TX_RING_SIZE) &&
-+	    (priv->dirty_tx >= TX_RING_SIZE)) {
+ 	local_irq_restore(flags);
  
-+		netdev_dbg(dev, "*** Subtracting TX_RING_SIZE from cur_tx (%d) and dirty_tx (%d)\n",
-+			   priv->cur_tx, priv->dirty_tx);
+@@ -591,7 +581,7 @@ static netdev_tx_t lance_start_xmit (struct sk_buff *skb,
+ }
  
--	    skb_reserve(skb,2);		/* 16 byte align */
--	    skb_put(skb,pkt_len);	/* Make room */
--	    skb_copy_to_linear_data(skb, (char *)priv->rx_buff[entry], pkt_len);
--	    skb->protocol=eth_type_trans(skb,dev);
--#if 0
--{
--	    printk(KERN_DEBUG "RX pkt type 0x%04x from ",
--		   ((u_short *)skb->data)[6]);
--	    {
--		u_char *ptr = &((u_char *)skb->data)[6];
--		printk("%pM", ptr);
--	    }
--	    printk(" to ");
--	    {
--		u_char *ptr = (u_char *)skb->data;
--		printk("%pM", ptr);
--	    }
--	    printk(" data 0x%08x len %d\n", (int)skb->data, (int)skb->len);
--}
--#endif
--
--	    netif_rx(skb);
--	    dev->stats.rx_packets++;
--	    dev->stats.rx_bytes += pkt_len;
-+		priv->cur_tx -= TX_RING_SIZE;
-+		priv->dirty_tx -= TX_RING_SIZE;
+ /* taken from the depca driver */
+-static void lance_load_multicast (struct net_device *dev)
++static void lance_load_multicast(struct net_device *dev)
+ {
+ 	struct lance_private *lp = netdev_priv(dev);
+ 	volatile struct lance_init_block *ib = lp->init_block;
+@@ -601,14 +591,14 @@ static void lance_load_multicast (struct net_device *dev)
+ 	u32 crc;
+ 
+ 	/* set all multicast bits */
+-	if (dev->flags & IFF_ALLMULTI){
+-		ib->filter [0] = 0xffffffff;
+-		ib->filter [1] = 0xffffffff;
++	if (dev->flags & IFF_ALLMULTI) {
++		ib->filter[0] = 0xffffffff;
++		ib->filter[1] = 0xffffffff;
+ 		return;
  	}
-+	dev->stats.tx_bytes += len;
+ 	/* clear the multicast filter */
+-	ib->filter [0] = 0;
+-	ib->filter [1] = 0;
++	ib->filter[0] = 0;
++	ib->filter[1] = 0;
  
--	priv->rx_ring[entry]->RMD1 |= RF_OWN;
--	entry = (++priv->cur_rx) % RX_RING_SIZE;
--    }
-+	/* Trigger an immediate send poll */
-+	lance->RAP = CSR0;		/* PCnet-ISA Controller Status */
-+	lance->RDP = INEA | TDMD;
+ 	/* Add addresses */
+ 	netdev_for_each_mc_addr(ha, dev) {
+@@ -620,11 +610,11 @@ static void lance_load_multicast (struct net_device *dev)
  
--    priv->cur_rx = priv->cur_rx % RX_RING_SIZE;
--
--    /* We should check that at least two ring entries are free.	 If not,
--       we should free one and mark stats->rx_dropped++. */
-+	if (lowb(priv->tx_ring[(entry + 1) % TX_RING_SIZE]->TMD1) != 0) {
-+		netif_stop_queue(dev);
-+		priv->tx_full = 1;
-+	}
-+	local_irq_restore(flags);
- 
--    return 0;
-+	return NETDEV_TX_OK;
- }
- 
--
- static struct net_device_stats *ariadne_get_stats(struct net_device *dev)
- {
--    volatile struct Am79C960 *lance = (struct Am79C960*)dev->base_addr;
--    short saved_addr;
--    unsigned long flags;
--
--    local_irq_save(flags);
--    saved_addr = lance->RAP;
--    lance->RAP = CSR112;		/* Missed Frame Count */
--    dev->stats.rx_missed_errors = swapw(lance->RDP);
--    lance->RAP = saved_addr;
--    local_irq_restore(flags);
--
--    return &dev->stats;
-+	volatile struct Am79C960 *lance = (struct Am79C960 *)dev->base_addr;
-+	short saved_addr;
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+	saved_addr = lance->RAP;
-+	lance->RAP = CSR112;		/* Missed Frame Count */
-+	dev->stats.rx_missed_errors = swapw(lance->RDP);
-+	lance->RAP = saved_addr;
-+	local_irq_restore(flags);
-+
-+	return &dev->stats;
- }
- 
--
- /* Set or clear the multicast filter for this adaptor.
--    num_addrs == -1	Promiscuous mode, receive all packets
--    num_addrs == 0	Normal mode, clear multicast list
--    num_addrs > 0	Multicast mode, receive normal and MC packets, and do
--			best-effort filtering.
-+ * num_addrs == -1	Promiscuous mode, receive all packets
-+ * num_addrs == 0	Normal mode, clear multicast list
-+ * num_addrs > 0	Multicast mode, receive normal and MC packets,
-+ * 			and do best-effort filtering.
-  */
- static void set_multicast_list(struct net_device *dev)
- {
--    volatile struct Am79C960 *lance = (struct Am79C960*)dev->base_addr;
-+	volatile struct Am79C960 *lance = (struct Am79C960 *)dev->base_addr;
- 
--    if (!netif_running(dev))
--	return;
-+	if (!netif_running(dev))
-+		return;
- 
--    netif_stop_queue(dev);
-+	netif_stop_queue(dev);
- 
--    /* We take the simple way out and always enable promiscuous mode. */
--    lance->RAP = CSR0;			/* PCnet-ISA Controller Status */
--    lance->RDP = STOP;			/* Temporarily stop the lance. */
--    ariadne_init_ring(dev);
-+	/* We take the simple way out and always enable promiscuous mode */
-+	lance->RAP = CSR0;		/* PCnet-ISA Controller Status */
-+	lance->RDP = STOP;		/* Temporarily stop the lance */
-+	ariadne_init_ring(dev);
- 
--    if (dev->flags & IFF_PROMISC) {
--	lance->RAP = CSR15;		/* Mode Register */
--	lance->RDP = PROM;		/* Set promiscuous mode */
--    } else {
--	short multicast_table[4];
--	int num_addrs = netdev_mc_count(dev);
--	int i;
--	/* We don't use the multicast table, but rely on upper-layer filtering. */
--	memset(multicast_table, (num_addrs == 0) ? 0 : -1,
--	       sizeof(multicast_table));
--	for (i = 0; i < 4; i++) {
--	    lance->RAP = CSR8+(i<<8);	/* Logical Address Filter */
--	    lance->RDP = swapw(multicast_table[i]);
-+	if (dev->flags & IFF_PROMISC) {
-+		lance->RAP = CSR15;	/* Mode Register */
-+		lance->RDP = PROM;	/* Set promiscuous mode */
-+	} else {
-+		short multicast_table[4];
-+		int num_addrs = netdev_mc_count(dev);
-+		int i;
-+		/* We don't use the multicast table,
-+		 * but rely on upper-layer filtering
-+		 */
-+		memset(multicast_table, (num_addrs == 0) ? 0 : -1,
-+		       sizeof(multicast_table));
-+		for (i = 0; i < 4; i++) {
-+			lance->RAP = CSR8 + (i << 8);
-+					/* Logical Address Filter */
-+			lance->RDP = swapw(multicast_table[i]);
-+		}
-+		lance->RAP = CSR15;	/* Mode Register */
-+		lance->RDP = 0x0000;	/* Unset promiscuous mode */
+ 		crc = ether_crc_le(6, addrs);
+ 		crc = crc >> 26;
+-		mcast_table [crc >> 4] |= 1 << (crc & 0xf);
++		mcast_table[crc >> 4] |= 1 << (crc & 0xf);
  	}
--	lance->RAP = CSR15;		/* Mode Register */
--	lance->RDP = 0x0000;		/* Unset promiscuous mode */
--    }
- 
--    lance->RAP = CSR0;			/* PCnet-ISA Controller Status */
--    lance->RDP = INEA|STRT|IDON;	/* Resume normal operation. */
-+	lance->RAP = CSR0;		/* PCnet-ISA Controller Status */
-+	lance->RDP = INEA | STRT | IDON;/* Resume normal operation */
- 
--    netif_wake_queue(dev);
-+	netif_wake_queue(dev);
  }
  
- 
- static void __devexit ariadne_remove_one(struct zorro_dev *z)
+-static void lance_set_multicast (struct net_device *dev)
++static void lance_set_multicast(struct net_device *dev)
  {
--    struct net_device *dev = zorro_get_drvdata(z);
-+	struct net_device *dev = zorro_get_drvdata(z);
+ 	struct lance_private *lp = netdev_priv(dev);
+ 	volatile struct lance_init_block *ib = lp->init_block;
+@@ -643,16 +633,16 @@ static void lance_set_multicast (struct net_device *dev)
  
--    unregister_netdev(dev);
--    release_mem_region(ZTWO_PADDR(dev->base_addr), sizeof(struct Am79C960));
--    release_mem_region(ZTWO_PADDR(dev->mem_start), ARIADNE_RAM_SIZE);
--    free_netdev(dev);
-+	unregister_netdev(dev);
-+	release_mem_region(ZTWO_PADDR(dev->base_addr), sizeof(struct Am79C960));
-+	release_mem_region(ZTWO_PADDR(dev->mem_start), ARIADNE_RAM_SIZE);
-+	free_netdev(dev);
+ 	ll->rap = LE_CSR0;
+ 	ll->rdp = LE_C0_STOP;
+-	lance_init_ring (dev);
++	lance_init_ring(dev);
+ 
+ 	if (dev->flags & IFF_PROMISC) {
+ 		ib->mode |= LE_MO_PROM;
+ 	} else {
+ 		ib->mode &= ~LE_MO_PROM;
+-		lance_load_multicast (dev);
++		lance_load_multicast(dev);
+ 	}
+-	load_csrs (lp);
+-	init_restart_lance (lp);
++	load_csrs(lp);
++	init_restart_lance(lp);
+ 	netif_wake_queue(dev);
  }
  
-+static struct zorro_device_id ariadne_zorro_tbl[] __devinitdata = {
-+	{ ZORRO_PROD_VILLAGE_TRONIC_ARIADNE },
-+	{ 0 }
-+};
-+MODULE_DEVICE_TABLE(zorro, ariadne_zorro_tbl);
-+
-+static const struct net_device_ops ariadne_netdev_ops = {
-+	.ndo_open		= ariadne_open,
-+	.ndo_stop		= ariadne_close,
-+	.ndo_start_xmit		= ariadne_start_xmit,
-+	.ndo_tx_timeout		= ariadne_tx_timeout,
-+	.ndo_get_stats		= ariadne_get_stats,
-+	.ndo_set_multicast_list	= set_multicast_list,
-+	.ndo_validate_addr	= eth_validate_addr,
-+	.ndo_change_mtu		= eth_change_mtu,
-+	.ndo_set_mac_address	= eth_mac_addr,
-+};
-+
-+static int __devinit ariadne_init_one(struct zorro_dev *z,
-+				      const struct zorro_device_id *ent)
-+{
+@@ -692,14 +682,12 @@ static int __devinit a2065_init_one(struct zorro_dev *z,
+ {
+ 	struct net_device *dev;
+ 	struct lance_private *priv;
+-	unsigned long board, base_addr, mem_start;
 +	unsigned long board = z->resource.start;
-+	unsigned long base_addr = board + ARIADNE_LANCE;
-+	unsigned long mem_start = board + ARIADNE_RAM;
-+	struct resource *r1, *r2;
-+	struct net_device *dev;
-+	struct ariadne_private *priv;
-+	int err;
-+
-+	r1 = request_mem_region(base_addr, sizeof(struct Am79C960), "Am79C960");
-+	if (!r1)
-+		return -EBUSY;
-+	r2 = request_mem_region(mem_start, ARIADNE_RAM_SIZE, "RAM");
-+	if (!r2) {
-+		release_mem_region(base_addr, sizeof(struct Am79C960));
-+		return -EBUSY;
-+	}
-+
-+	dev = alloc_etherdev(sizeof(struct ariadne_private));
-+	if (dev == NULL) {
-+		release_mem_region(base_addr, sizeof(struct Am79C960));
-+		release_mem_region(mem_start, ARIADNE_RAM_SIZE);
-+		return -ENOMEM;
-+	}
-+
-+	priv = netdev_priv(dev);
-+
-+	r1->name = dev->name;
-+	r2->name = dev->name;
-+
-+	dev->dev_addr[0] = 0x00;
-+	dev->dev_addr[1] = 0x60;
-+	dev->dev_addr[2] = 0x30;
++	unsigned long base_addr = board + A2065_LANCE;
++	unsigned long mem_start = board + A2065_RAM;
+ 	struct resource *r1, *r2;
+ 	int err;
+ 
+-	board = z->resource.start;
+-	base_addr = board+A2065_LANCE;
+-	mem_start = board+A2065_RAM;
+-
+ 	r1 = request_mem_region(base_addr, sizeof(struct lance_regs),
+ 				"Am7990");
+ 	if (!r1)
+@@ -730,12 +718,12 @@ static int __devinit a2065_init_one(struct zorro_dev *z,
+ 		dev->dev_addr[1] = 0x00;
+ 		dev->dev_addr[2] = 0x9f;
+ 	}
+-	dev->dev_addr[3] = (z->rom.er_SerialNumber>>16) & 0xff;
+-	dev->dev_addr[4] = (z->rom.er_SerialNumber>>8) & 0xff;
 +	dev->dev_addr[3] = (z->rom.er_SerialNumber >> 16) & 0xff;
 +	dev->dev_addr[4] = (z->rom.er_SerialNumber >> 8) & 0xff;
-+	dev->dev_addr[5] = z->rom.er_SerialNumber & 0xff;
-+	dev->base_addr = ZTWO_VADDR(base_addr);
-+	dev->mem_start = ZTWO_VADDR(mem_start);
-+	dev->mem_end = dev->mem_start + ARIADNE_RAM_SIZE;
-+
-+	dev->netdev_ops = &ariadne_netdev_ops;
-+	dev->watchdog_timeo = 5 * HZ;
-+
-+	err = register_netdev(dev);
-+	if (err) {
-+		release_mem_region(base_addr, sizeof(struct Am79C960));
-+		release_mem_region(mem_start, ARIADNE_RAM_SIZE);
-+		free_netdev(dev);
-+		return err;
-+	}
-+	zorro_set_drvdata(z, dev);
-+
-+	netdev_info(dev, "Ariadne at 0x%08lx, Ethernet Address %pM\n",
+ 	dev->dev_addr[5] = z->rom.er_SerialNumber & 0xff;
+ 	dev->base_addr = ZTWO_VADDR(base_addr);
+ 	dev->mem_start = ZTWO_VADDR(mem_start);
+-	dev->mem_end = dev->mem_start+A2065_RAM_SIZE;
++	dev->mem_end = dev->mem_start + A2065_RAM_SIZE;
+ 
+ 	priv->ll = (volatile struct lance_regs *)dev->base_addr;
+ 	priv->init_block = (struct lance_init_block *)dev->mem_start;
+@@ -755,7 +743,7 @@ static int __devinit a2065_init_one(struct zorro_dev *z,
+ 	init_timer(&priv->multicast_timer);
+ 	priv->multicast_timer.data = (unsigned long) dev;
+ 	priv->multicast_timer.function =
+-		(void (*)(unsigned long)) &lance_set_multicast;
++		(void (*)(unsigned long))lance_set_multicast;
+ 
+ 	err = register_netdev(dev);
+ 	if (err) {
+@@ -766,8 +754,8 @@ static int __devinit a2065_init_one(struct zorro_dev *z,
+ 	}
+ 	zorro_set_drvdata(z, dev);
+ 
+-	printk(KERN_INFO "%s: A2065 at 0x%08lx, Ethernet Address "
+-	       "%pM\n", dev->name, board, dev->dev_addr);
++	netdev_info(dev, "A2065 at 0x%08lx, Ethernet Address %pM\n",
 +		    board, dev->dev_addr);
-+
-+	return 0;
-+}
-+
-+static struct zorro_driver ariadne_driver = {
-+	.name		= "ariadne",
-+	.id_table	= ariadne_zorro_tbl,
-+	.probe		= ariadne_init_one,
-+	.remove		= __devexit_p(ariadne_remove_one),
-+};
-+
- static int __init ariadne_init_module(void)
- {
--    return zorro_register_driver(&ariadne_driver);
-+	return zorro_register_driver(&ariadne_driver);
- }
  
- static void __exit ariadne_cleanup_module(void)
- {
--    zorro_unregister_driver(&ariadne_driver);
-+	zorro_unregister_driver(&ariadne_driver);
+ 	return 0;
  }
- 
- module_init(ariadne_init_module);
 -- 
 1.7.6.rc3
 
