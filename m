@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933805Ab1FWRid (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:38:33 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35506 "EHLO
+	id S933838Ab1FWRrO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:47:14 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35516 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933756Ab1FWRi1 (ORCPT
+	with ESMTP id S933787Ab1FWRi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:38:27 -0400
+	Thu, 23 Jun 2011 13:38:29 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Michal Schmidt <mschmidt@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
+Cc: stable-review@kernel.org, Dan Rosenberg <drosenberg@vsecurity.com>,
+        James Bottomley <James.Bottomley@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 222/247] PCI: return correct value when writing to the "reset" attribute
-Date: Thu, 23 Jun 2011 13:34:50 -0400
-Message-Id: <1308850515-15242-163-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 223/247] mpt2sas: prevent heap overflows and unchecked reads
+Date: Thu, 23 Jun 2011 13:34:51 -0400
+Message-Id: <1308850515-15242-164-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,46 +23,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Schmidt <mschmidt@redhat.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 447c5dd7338638f526e9bcf7dcf69b4da5835c7d upstream.
+commit a1f74ae82d133ebb2aabb19d181944b4e83e9960 upstream.
 
-A successful write() to the "reset" sysfs attribute should return the
-number of bytes written, not 0. Otherwise userspace (bash) retries the
-write over and over again.
+At two points in handling device ioctls via /dev/mpt2ctl, user-supplied
+length values are used to copy data from userspace into heap buffers
+without bounds checking, allowing controllable heap corruption and
+subsequently privilege escalation.
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Additionally, user-supplied values are used to determine the size of a
+copy_to_user() as well as the offset into the buffer to be read, with no
+bounds checking, allowing users to read arbitrary kernel memory.
+
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Acked-by: Eric Moore <eric.moore@lsi.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/pci/pci-sysfs.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+ drivers/scsi/mpt2sas/mpt2sas_ctl.c |   23 +++++++++++++++++++++--
+ 1 files changed, 21 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index e1783bb..4d49aea 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -971,7 +971,12 @@ static ssize_t reset_store(struct device *dev,
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_ctl.c b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
+index fa9bf83..3742ac9 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_ctl.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
+@@ -636,6 +636,13 @@ _ctl_do_mpt_command(struct MPT2SAS_ADAPTER *ioc,
+ 	data_out_sz = karg.data_out_size;
+ 	data_in_sz = karg.data_in_size;
  
- 	if (val != 1)
++	/* Check for overflow and wraparound */
++	if (karg.data_sge_offset * 4 > ioc->request_sz ||
++	    karg.data_sge_offset > (UINT_MAX / 4)) {
++		ret = -EINVAL;
++		goto out;
++	}
++
+ 	/* copy in request message frame from user */
+ 	if (copy_from_user(mpi_request, mf, karg.data_sge_offset*4)) {
+ 		printk(KERN_ERR "failure at %s:%d/%s()!\n", __FILE__, __LINE__,
+@@ -1877,7 +1884,7 @@ _ctl_diag_read_buffer(void __user *arg, enum block_state state)
+ 	Mpi2DiagBufferPostReply_t *mpi_reply;
+ 	int rc, i;
+ 	u8 buffer_type;
+-	unsigned long timeleft;
++	unsigned long timeleft, request_size, copy_size;
+ 	u16 smid;
+ 	u16 ioc_status;
+ 	u8 issue_reset = 0;
+@@ -1913,6 +1920,8 @@ _ctl_diag_read_buffer(void __user *arg, enum block_state state)
+ 		return -ENOMEM;
+ 	}
+ 
++	request_size = ioc->diag_buffer_sz[buffer_type];
++
+ 	if ((karg.starting_offset % 4) || (karg.bytes_to_read % 4)) {
+ 		printk(MPT2SAS_ERR_FMT "%s: either the starting_offset "
+ 		    "or bytes_to_read are not 4 byte aligned\n", ioc->name,
+@@ -1920,13 +1929,23 @@ _ctl_diag_read_buffer(void __user *arg, enum block_state state)
  		return -EINVAL;
--	return pci_reset_function(pdev);
-+
-+	result = pci_reset_function(pdev);
-+	if (result < 0)
-+		return result;
-+
-+	return count;
- }
+ 	}
  
- static struct device_attribute reset_attr = __ATTR(reset, 0200, NULL, reset_store);
++	if (karg.starting_offset > request_size)
++		return -EINVAL;
++
+ 	diag_data = (void *)(request_data + karg.starting_offset);
+ 	dctlprintk(ioc, printk(MPT2SAS_DEBUG_FMT "%s: diag_buffer(%p), "
+ 	    "offset(%d), sz(%d)\n", ioc->name, __func__,
+ 	    diag_data, karg.starting_offset, karg.bytes_to_read));
+ 
++	/* Truncate data on requests that are too large */
++	if ((diag_data + karg.bytes_to_read < diag_data) ||
++	    (diag_data + karg.bytes_to_read > request_data + request_size))
++		copy_size = request_size - karg.starting_offset;
++	else
++		copy_size = karg.bytes_to_read;
++
+ 	if (copy_to_user((void __user *)uarg->diagnostic_data,
+-	    diag_data, karg.bytes_to_read)) {
++	    diag_data, copy_size)) {
+ 		printk(MPT2SAS_ERR_FMT "%s: Unable to write "
+ 		    "mpt_diag_read_buffer_t data @ %p\n", ioc->name,
+ 		    __func__, diag_data);
 -- 
 1.7.4.4
 
