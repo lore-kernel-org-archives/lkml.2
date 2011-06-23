@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934344Ab1FWScd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:32:33 -0400
-Received: from mail.windriver.com ([147.11.1.11]:62741 "EHLO
+	id S1759831Ab1FWRV6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:21:58 -0400
+Received: from mail.windriver.com ([147.11.1.11]:62669 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759850Ab1FWRWC (ORCPT
+	with ESMTP id S1759756Ab1FWRVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:22:02 -0400
+	Thu, 23 Jun 2011 13:21:51 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: stable-review@kernel.org, Karsten Wiese <fzu@wemgehoertderstaat.de>,
+        Takashi Iwai <tiwai@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 003/247] rt2x00: add device id for windy31 usb device
-Date: Thu, 23 Jun 2011 13:17:26 -0400
-Message-Id: <1308849690-14530-4-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 004/247] ALSA: snd-usb-us122l: Fix missing NULL checks
+Date: Thu, 23 Jun 2011 13:17:27 -0400
+Message-Id: <1308849690-14530-5-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,43 +22,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Kroah-Hartman <gregkh@suse.de>
+From: Karsten Wiese <fzu@wemgehoertderstaat.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 9c4cf6d94fb362c27a24df5223ed6e327eb7279a upstream.
+commit cdce2db74e156fbd9a2dc3c7b246166f8b70955b upstream.
 
-This patch adds the device id for the windy31 USB device to the rt73usb
-driver.
+Fix missing NULL checks in usb_stream_hwdep_poll() and usb_stream_hwdep_ioctl().
+Wake up poll waiters before returning from usb_stream_hwdep_ioctl().
 
-Thanks to Ralf Flaxa for reporting this and providing testing and a
-sample device.
-
-Reported-by: Ralf Flaxa <rf@suse.de>
-Tested-by: Ralf Flaxa <rf@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Karsten Wiese <fzu@wemgehoertderstaat.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/wireless/rt2x00/rt73usb.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ sound/usb/usx2y/us122l.c |   41 ++++++++++++++++++++---------------------
+ 1 files changed, 20 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt73usb.c b/drivers/net/wireless/rt2x00/rt73usb.c
-index bb58d79..cecca1c 100644
---- a/drivers/net/wireless/rt2x00/rt73usb.c
-+++ b/drivers/net/wireless/rt2x00/rt73usb.c
-@@ -2399,6 +2399,7 @@ static struct usb_device_id rt73usb_device_table[] = {
- 	{ USB_DEVICE(0x04bb, 0x093d), USB_DEVICE_DATA(&rt73usb_ops) },
- 	{ USB_DEVICE(0x148f, 0x2573), USB_DEVICE_DATA(&rt73usb_ops) },
- 	{ USB_DEVICE(0x148f, 0x2671), USB_DEVICE_DATA(&rt73usb_ops) },
-+	{ USB_DEVICE(0x0812, 0x3101), USB_DEVICE_DATA(&rt73usb_ops) },
- 	/* Qcom */
- 	{ USB_DEVICE(0x18e8, 0x6196), USB_DEVICE_DATA(&rt73usb_ops) },
- 	{ USB_DEVICE(0x18e8, 0x6229), USB_DEVICE_DATA(&rt73usb_ops) },
+diff --git a/sound/usb/usx2y/us122l.c b/sound/usb/usx2y/us122l.c
+index 9ca9a13..886427b 100644
+--- a/sound/usb/usx2y/us122l.c
++++ b/sound/usb/usx2y/us122l.c
+@@ -272,29 +272,26 @@ static unsigned int usb_stream_hwdep_poll(struct snd_hwdep *hw,
+ 					  struct file *file, poll_table *wait)
+ {
+ 	struct us122l	*us122l = hw->private_data;
+-	struct usb_stream *s = us122l->sk.s;
+ 	unsigned	*polled;
+ 	unsigned int	mask;
+ 
+ 	poll_wait(file, &us122l->sk.sleep, wait);
+ 
+-	switch (s->state) {
+-	case usb_stream_ready:
+-		if (us122l->first == file)
+-			polled = &s->periods_polled;
+-		else
+-			polled = &us122l->second_periods_polled;
+-		if (*polled != s->periods_done) {
+-			*polled = s->periods_done;
+-			mask = POLLIN | POLLOUT | POLLWRNORM;
+-			break;
++	mask = POLLIN | POLLOUT | POLLWRNORM | POLLERR;
++	if (mutex_trylock(&us122l->mutex)) {
++		struct usb_stream *s = us122l->sk.s;
++		if (s && s->state == usb_stream_ready) {
++			if (us122l->first == file)
++				polled = &s->periods_polled;
++			else
++				polled = &us122l->second_periods_polled;
++			if (*polled != s->periods_done) {
++				*polled = s->periods_done;
++				mask = POLLIN | POLLOUT | POLLWRNORM;
++			} else
++				mask = 0;
+ 		}
+-		/* Fall through */
+-		mask = 0;
+-		break;
+-	default:
+-		mask = POLLIN | POLLOUT | POLLWRNORM | POLLERR;
+-		break;
++		mutex_unlock(&us122l->mutex);
+ 	}
+ 	return mask;
+ }
+@@ -380,6 +377,7 @@ static int usb_stream_hwdep_ioctl(struct snd_hwdep *hw, struct file *file,
+ {
+ 	struct usb_stream_config *cfg;
+ 	struct us122l *us122l = hw->private_data;
++	struct usb_stream *s;
+ 	unsigned min_period_frames;
+ 	int err = 0;
+ 	bool high_speed;
+@@ -425,18 +423,18 @@ static int usb_stream_hwdep_ioctl(struct snd_hwdep *hw, struct file *file,
+ 	snd_power_wait(hw->card, SNDRV_CTL_POWER_D0);
+ 
+ 	mutex_lock(&us122l->mutex);
++	s = us122l->sk.s;
+ 	if (!us122l->master)
+ 		us122l->master = file;
+ 	else if (us122l->master != file) {
+-		if (memcmp(cfg, &us122l->sk.s->cfg, sizeof(*cfg))) {
++		if (!s || memcmp(cfg, &s->cfg, sizeof(*cfg))) {
+ 			err = -EIO;
+ 			goto unlock;
+ 		}
+ 		us122l->slave = file;
+ 	}
+-	if (!us122l->sk.s ||
+-	    memcmp(cfg, &us122l->sk.s->cfg, sizeof(*cfg)) ||
+-	    us122l->sk.s->state == usb_stream_xrun) {
++	if (!s || memcmp(cfg, &s->cfg, sizeof(*cfg)) ||
++	    s->state == usb_stream_xrun) {
+ 		us122l_stop(us122l);
+ 		if (!us122l_start(us122l, cfg->sample_rate, cfg->period_frames))
+ 			err = -EIO;
+@@ -447,6 +445,7 @@ unlock:
+ 	mutex_unlock(&us122l->mutex);
+ free:
+ 	kfree(cfg);
++	wake_up_all(&us122l->sk.sleep);
+ 	return err;
+ }
+ 
 -- 
 1.7.4.4
 
