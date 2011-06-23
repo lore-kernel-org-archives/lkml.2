@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933475Ab1FWVn7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 17:43:59 -0400
-Received: from gate.crashing.org ([63.228.1.57]:36251 "EHLO gate.crashing.org"
+	id S933630Ab1FWVrV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 17:47:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56427 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933154Ab1FWVn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 17:43:56 -0400
-Subject: Re: [PATCH] libata/sas: only set FROZEN flag if new EH is supported
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Brian King <brking@linux.vnet.ibm.com>
-Cc: Nishanth Aravamudan <nacc@us.ibm.com>, Tejun Heo <tj@kernel.org>,
-        linuxppc-dev@lists.ozlabs.org, wayneb@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        mbizon@freebox.fr, jgarzik@pobox.com
-In-Reply-To: <4E039C95.3070907@linux.vnet.ibm.com>
-References: <20110615191747.GA6324@us.ibm.com>
-	 <4DF90FCA.1040706@linux.vnet.ibm.com> <20110615233417.GB6324@us.ibm.com>
-	 <20110616075114.GH8141@htj.dyndns.org>
-	 <4DFA0507.3090609@linux.vnet.ibm.com> <20110616152836.GA15268@us.ibm.com>
-	 <20110621160714.GA14174@us.ibm.com> <4E00FF58.7070802@linux.vnet.ibm.com>
-	 <1308803461.32158.191.camel@pasglop> <1308804120.32158.202.camel@pasglop>
-	 <20110623171502.GA11855@us.ibm.com>  <4E039C95.3070907@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 24 Jun 2011 07:43:33 +1000
-Message-ID: <1308865413.32158.214.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S933038Ab1FWVrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 17:47:19 -0400
+Date: Thu, 23 Jun 2011 14:44:21 -0700
+From: Greg KH <gregkh@suse.de>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@gmail.com>, kernel-hardening@lists.openwall.com,
+        linux-kernel@vger.kernel.org, security@kernel.org
+Subject: Re: [PATCH] kernel: escape non-ASCII and control characters in
+ printk()
+Message-ID: <20110623214421.GC7184@suse.de>
+References: <20110622095341.GA3353@albatros>
+ <20110622153742.GA18983@suse.de>
+ <20110623133605.GA28333@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110623133605.GA28333@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-23 at 15:05 -0500, Brian King wrote:
+On Thu, Jun 23, 2011 at 02:36:05PM +0100, Matthew Garrett wrote:
+> On Wed, Jun 22, 2011 at 08:37:42AM -0700, Greg KH wrote:
+> > On Wed, Jun 22, 2011 at 01:53:41PM +0400, Vasiliy Kulikov wrote:
+> > > This patch escapes all characters outside of allowed '\n' plus 0x20-0x7E
+> > > charset passed to printk().
+> > > 
+> > > There are numerous printk() instances with user supplied input as "%s"
+> > > data, and unprivileged user may craft log messages with substrings
+> > > containing control characters via these printk()s.  Control characters
+> > > might fool root viewing the logs via tty.
+> > 
+> > There are "numerous" places this could happen?
 > 
-> Same here.
-> 
-> When did this last work on this system? It seems like this is
-> completely
-> separate from the libata issue. 
+> USB product identifiers?
 
-It's separate. See my other internal message. This is a BML system and
-it's broken as far as 2.6.36 but the BML "patched" kernel works,
-anyways, moving that off list for now.
+That's one, sure, but the ability to overwrite something else that you
+don't want someone to see based on plugging in a USB device is pretty
+slim.  If I can plug any type of USB device I want into the system, odds
+are I just owned it anyway...
 
-Cheers,
-Ben.
-
-
+greg k-h
