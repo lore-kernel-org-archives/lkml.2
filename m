@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759926Ab1FWSjZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:39:25 -0400
-Received: from mail.perches.com ([173.55.12.10]:3172 "EHLO mail.perches.com"
+	id S1759939Ab1FWSj3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:39:29 -0400
+Received: from mail.perches.com ([173.55.12.10]:3175 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759904Ab1FWSjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 14:39:23 -0400
+	id S1759904Ab1FWSj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 14:39:26 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [Trivial next 1/2] treewide: Fix recieve/receive typos
-Date: Thu, 23 Jun 2011 11:39:19 -0700
-Message-Id: <878fc4b8ba243033d5d325e2d1b6578dde8d0e87.1308853652.git.joe@perches.com>
+Subject: [Trivial next 2/2] treewide: transciever/transceiver spelling fixes
+Date: Thu, 23 Jun 2011 11:39:20 -0700
+Message-Id: <58b7d01a9f272e86c8844f59e74e1d5a1543275d.1308853653.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.rc1
 In-Reply-To: <cover.1308853652.git.joe@perches.com>
 References: <cover.1308853652.git.joe@perches.com>
@@ -19,211 +19,195 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just spelling fixes.
+Just tyops.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/mmc/host/vub300.c     |    4 ++--
- drivers/net/caif/caif_hsi.c   |    2 +-
- drivers/net/wan/lmc/lmc_var.h |    2 +-
- drivers/usb/misc/ftdi-elan.c  |   28 ++++++++++++++--------------
- include/scsi/osd_initiator.h  |    2 +-
- sound/soc/omap/ams-delta.c    |    2 +-
- 6 files changed, 20 insertions(+), 20 deletions(-)
+ arch/arm/mach-pxa/include/mach/corgi.h        |    2 +-
+ arch/arm/mach-pxa/include/mach/pxa27x-udc.h   |    4 ++--
+ arch/arm/mach-ux500/board-mop500-regulators.c |    2 +-
+ drivers/i2c/busses/i2c-highlander.c           |    2 +-
+ drivers/net/eexpress.c                        |    2 +-
+ drivers/net/irda/toim3232-sir.c               |    2 +-
+ drivers/net/natsemi.c                         |    2 +-
+ drivers/tty/serial/8250_pci.c                 |    2 +-
+ drivers/usb/gadget/pxa27x_udc.h               |    4 ++--
+ drivers/usb/musb/musb_core.c                  |    2 +-
+ drivers/usb/otg/isp1301_omap.c                |    4 ++--
+ sound/pci/ice1712/ice1712.c                   |    2 +-
+ 12 files changed, 15 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/mmc/host/vub300.c b/drivers/mmc/host/vub300.c
-index d4455ff..e8f6e65 100644
---- a/drivers/mmc/host/vub300.c
-+++ b/drivers/mmc/host/vub300.c
-@@ -1625,8 +1625,8 @@ static void __vub300_command_response(struct vub300_mmc_host *vub300,
- 		cmd->error = respretval;
- 	} else if (cmd->error) {
- 		/*
--		 * the error occured sending the command
--		 * or recieving the response
-+		 * the error occurred sending the command
-+		 * or receiving the response
- 		 */
- 	} else if (vub300->command_out_urb->status) {
- 		vub300->usb_transport_fail = vub300->command_out_urb->status;
-diff --git a/drivers/net/caif/caif_hsi.c b/drivers/net/caif/caif_hsi.c
-index 7a8ce612..016108a 100644
---- a/drivers/net/caif/caif_hsi.c
-+++ b/drivers/net/caif/caif_hsi.c
-@@ -988,7 +988,7 @@ int cfhsi_probe(struct platform_device *pdev)
- 		goto err_alloc_rx;
- 	}
- 
--	/* Initialize recieve vaiables. */
-+	/* Initialize receive variables. */
- 	cfhsi->rx_ptr = cfhsi->rx_buf;
- 	cfhsi->rx_len = CFHSI_DESC_SZ;
- 
-diff --git a/drivers/net/wan/lmc/lmc_var.h b/drivers/net/wan/lmc/lmc_var.h
-index 01ad452..a1d202d 100644
---- a/drivers/net/wan/lmc/lmc_var.h
-+++ b/drivers/net/wan/lmc/lmc_var.h
-@@ -380,7 +380,7 @@ struct lmc___softc {
- /* CSR6 settings */
- #define OPERATION_MODE  0x00000200 /* Full Duplex      */
- #define PROMISC_MODE    0x00000040 /* Promiscuous Mode */
--#define RECIEVE_ALL     0x40000000 /* Receive All      */
-+#define RECEIVE_ALL     0x40000000 /* Receive All      */
- #define PASS_BAD_FRAMES 0x00000008 /* Pass Bad Frames  */
- 
- /* Dec control registers  CSR6 as well */
-diff --git a/drivers/usb/misc/ftdi-elan.c b/drivers/usb/misc/ftdi-elan.c
-index b16bd3c..2f41089c 100644
---- a/drivers/usb/misc/ftdi-elan.c
-+++ b/drivers/usb/misc/ftdi-elan.c
-@@ -187,7 +187,7 @@ struct usb_ftdi {
-         u32 controlreg;
-         u8 response[4 + 1024];
-         int expected;
--        int recieved;
-+        int received;
-         int ed_found;
+diff --git a/arch/arm/mach-pxa/include/mach/corgi.h b/arch/arm/mach-pxa/include/mach/corgi.h
+index 0011055..5dfd119 100644
+--- a/arch/arm/mach-pxa/include/mach/corgi.h
++++ b/arch/arm/mach-pxa/include/mach/corgi.h
+@@ -34,7 +34,7 @@
+ #define CORGI_GPIO_LCDCON_CS		(19) /* LCD Control Chip Select */
+ #define CORGI_GPIO_MAX1111_CS		(20) /* MAX1111 Chip Select */
+ #define CORGI_GPIO_ADC_TEMP_ON		(21) /* Select battery voltage or temperature */
+-#define CORGI_GPIO_IR_ON			(22) /* Enable IR Transciever */
++#define CORGI_GPIO_IR_ON			(22) /* Enable IR Transceiver */
+ #define CORGI_GPIO_ADS7846_CS		(24) /* ADS7846 Chip Select */
+ #define CORGI_GPIO_SD_PWR			(33) /* MMC/SD Power */
+ #define CORGI_GPIO_CHRG_ON			(38) /* Enable battery Charging */
+diff --git a/arch/arm/mach-pxa/include/mach/pxa27x-udc.h b/arch/arm/mach-pxa/include/mach/pxa27x-udc.h
+index ab1443f..4cf28f6 100644
+--- a/arch/arm/mach-pxa/include/mach/pxa27x-udc.h
++++ b/arch/arm/mach-pxa/include/mach/pxa27x-udc.h
+@@ -56,9 +56,9 @@
+ #define UDCFNR          __REG(0x40600014) /* UDC Frame Number Register */
+ #define UDCOTGICR	__REG(0x40600018) /* UDC On-The-Go interrupt control */
+ #define UDCOTGICR_IESF	(1 << 24)	/* OTG SET_FEATURE command recvd */
+-#define UDCOTGICR_IEXR	(1 << 17)	/* Extra Transciever Interrupt
++#define UDCOTGICR_IEXR	(1 << 17)	/* Extra Transceiver Interrupt
+ 					   Rising Edge Interrupt Enable */
+-#define UDCOTGICR_IEXF	(1 << 16)	/* Extra Transciever Interrupt
++#define UDCOTGICR_IEXF	(1 << 16)	/* Extra Transceiver Interrupt
+ 					   Falling Edge Interrupt Enable */
+ #define UDCOTGICR_IEVV40R (1 << 9)	/* OTG Vbus Valid 4.0V Rising Edge
+ 					   Interrupt Enable */
+diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
+index c0bc833..2735d03 100644
+--- a/arch/arm/mach-ux500/board-mop500-regulators.c
++++ b/arch/arm/mach-ux500/board-mop500-regulators.c
+@@ -77,7 +77,7 @@ static struct regulator_consumer_supply ab8500_vtvout_consumers[] = {
+ static struct regulator_consumer_supply ab8500_vintcore_consumers[] = {
+ 	/* SoC core supply, no device */
+ 	REGULATOR_SUPPLY("v-intcore", NULL),
+-	/* USB Transciever */
++	/* USB Transceiver */
+ 	REGULATOR_SUPPLY("vddulpivio18", "ab8500-usb.0"),
  };
- #define kref_to_usb_ftdi(d) container_of(d, struct usb_ftdi, kref)
-@@ -353,7 +353,7 @@ static void ftdi_elan_abandon_targets(struct usb_ftdi *ftdi)
-                         mutex_lock(&ftdi->u132_lock);
-                 }
-         }
--        ftdi->recieved = 0;
-+        ftdi->received = 0;
-         ftdi->expected = 4;
-         ftdi->ed_found = 0;
-         mutex_unlock(&ftdi->u132_lock);
-@@ -411,7 +411,7 @@ static void ftdi_elan_flush_targets(struct usb_ftdi *ftdi)
-                         }
-                 }
-         }
--        ftdi->recieved = 0;
-+        ftdi->received = 0;
-         ftdi->expected = 4;
-         ftdi->ed_found = 0;
-         mutex_unlock(&ftdi->u132_lock);
-@@ -447,7 +447,7 @@ static void ftdi_elan_cancel_targets(struct usb_ftdi *ftdi)
-                         }
-                 }
-         }
--        ftdi->recieved = 0;
-+        ftdi->received = 0;
-         ftdi->expected = 4;
-         ftdi->ed_found = 0;
-         mutex_unlock(&ftdi->u132_lock);
-@@ -874,7 +874,7 @@ static char *have_ed_set_response(struct usb_ftdi *ftdi,
-                         mutex_unlock(&ftdi->u132_lock);
-                         ftdi_elan_do_callback(ftdi, target, 4 + ftdi->response,
-                                 payload);
--                        ftdi->recieved = 0;
-+                        ftdi->received = 0;
-                         ftdi->expected = 4;
-                         ftdi->ed_found = 0;
-                         return ftdi->response;
-@@ -890,7 +890,7 @@ static char *have_ed_set_response(struct usb_ftdi *ftdi,
-                         mutex_unlock(&ftdi->u132_lock);
-                         ftdi_elan_do_callback(ftdi, target, 4 + ftdi->response,
-                                 payload);
--                        ftdi->recieved = 0;
-+                        ftdi->received = 0;
-                         ftdi->expected = 4;
-                         ftdi->ed_found = 0;
-                         return ftdi->response;
-@@ -905,7 +905,7 @@ static char *have_ed_set_response(struct usb_ftdi *ftdi,
-                 mutex_unlock(&ftdi->u132_lock);
-                 ftdi_elan_do_callback(ftdi, target, 4 + ftdi->response,
-                         payload);
--                ftdi->recieved = 0;
-+                ftdi->received = 0;
-                 ftdi->expected = 4;
-                 ftdi->ed_found = 0;
-                 return ftdi->response;
-@@ -914,7 +914,7 @@ static char *have_ed_set_response(struct usb_ftdi *ftdi,
-                 mutex_unlock(&ftdi->u132_lock);
-                 ftdi_elan_do_callback(ftdi, target, 4 + ftdi->response,
-                         payload);
--                ftdi->recieved = 0;
-+                ftdi->received = 0;
-                 ftdi->expected = 4;
-                 ftdi->ed_found = 0;
-                 return ftdi->response;
-@@ -934,7 +934,7 @@ static char *have_ed_get_response(struct usb_ftdi *ftdi,
-         if (target->active)
-                 ftdi_elan_do_callback(ftdi, target, NULL, 0);
-         target->abandoning = 0;
--        ftdi->recieved = 0;
-+        ftdi->received = 0;
-         ftdi->expected = 4;
-         ftdi->ed_found = 0;
-         return ftdi->response;
-@@ -951,7 +951,7 @@ static char *have_ed_get_response(struct usb_ftdi *ftdi,
- */
- static int ftdi_elan_respond_engine(struct usb_ftdi *ftdi)
- {
--        u8 *b = ftdi->response + ftdi->recieved;
-+        u8 *b = ftdi->response + ftdi->received;
-         int bytes_read = 0;
-         int retry_on_empty = 1;
-         int retry_on_timeout = 3;
-@@ -1043,11 +1043,11 @@ static int ftdi_elan_respond_engine(struct usb_ftdi *ftdi)
-                 u8 c = ftdi->bulk_in_buffer[++ftdi->bulk_in_last];
-                 bytes_read += 1;
-                 ftdi->bulk_in_left -= 1;
--                if (ftdi->recieved == 0 && c == 0xFF) {
-+                if (ftdi->received == 0 && c == 0xFF) {
-                         goto have;
-                 } else
-                         *b++ = c;
--                if (++ftdi->recieved < ftdi->expected) {
-+                if (++ftdi->received < ftdi->expected) {
-                         goto have;
-                 } else if (ftdi->ed_found) {
-                         int ed_number = (ftdi->response[0] >> 5) & 0x03;
-@@ -1069,7 +1069,7 @@ static int ftdi_elan_respond_engine(struct usb_ftdi *ftdi)
-                         }
-                         ftdi_elan_do_callback(ftdi, target, 4 + ftdi->response,
-                                 payload);
--                        ftdi->recieved = 0;
-+                        ftdi->received = 0;
-                         ftdi->expected = 4;
-                         ftdi->ed_found = 0;
-                         b = ftdi->response;
-@@ -1089,7 +1089,7 @@ static int ftdi_elan_respond_engine(struct usb_ftdi *ftdi)
-                         *respond->value = data;
-                         *respond->result = 0;
-                         complete(&respond->wait_completion);
--                        ftdi->recieved = 0;
-+                        ftdi->received = 0;
-                         ftdi->expected = 4;
-                         ftdi->ed_found = 0;
-                         b = ftdi->response;
-diff --git a/include/scsi/osd_initiator.h b/include/scsi/osd_initiator.h
-index 0a50799..572fb54 100644
---- a/include/scsi/osd_initiator.h
-+++ b/include/scsi/osd_initiator.h
-@@ -262,7 +262,7 @@ int osd_execute_request_async(struct osd_request *or,
-  * osd_req_decode_sense_full - Decode sense information after execution.
-  *
-  * @or:           - osd_request to examine
-- * @osi           - Recievs a more detailed error report information (optional).
-+ * @osi           - Receives a more detailed error report information (optional).
-  * @silent        - Do not print to dmsg (Even if enabled)
-  * @bad_obj_list  - Some commands act on multiple objects. Failed objects will
-  *                  be received here (optional)
-diff --git a/sound/soc/omap/ams-delta.c b/sound/soc/omap/ams-delta.c
-index b40095a..30fe0d0 100644
---- a/sound/soc/omap/ams-delta.c
-+++ b/sound/soc/omap/ams-delta.c
-@@ -330,7 +330,7 @@ static int cx81801_hangup(struct tty_struct *tty)
- 	return 0;
- }
  
--/* Line discipline .recieve_buf() */
-+/* Line discipline .receive_buf() */
- static void cx81801_receive(struct tty_struct *tty,
- 				const unsigned char *cp, char *fp, int count)
- {
+diff --git a/drivers/i2c/busses/i2c-highlander.c b/drivers/i2c/busses/i2c-highlander.c
+index 3df1bc8..3876a24 100644
+--- a/drivers/i2c/busses/i2c-highlander.c
++++ b/drivers/i2c/busses/i2c-highlander.c
+@@ -227,7 +227,7 @@ static int highlander_i2c_read(struct highlander_i2c_dev *dev)
+ 
+ 	/*
+ 	 * The R0P7780LC0011RL FPGA needs a significant delay between
+-	 * data read cycles, otherwise the transciever gets confused and
++	 * data read cycles, otherwise the transceiver gets confused and
+ 	 * garbage is returned when the read is subsequently aborted.
+ 	 *
+ 	 * It is not sufficient to wait for BBSY.
+diff --git a/drivers/net/eexpress.c b/drivers/net/eexpress.c
+index 48ee51b..a192285 100644
+--- a/drivers/net/eexpress.c
++++ b/drivers/net/eexpress.c
+@@ -365,7 +365,7 @@ static int __init do_express_probe(struct net_device *dev)
+ 			dev->irq = mca_irqmap[(pos1>>4)&0x7];
+ 
+ 			/*
+-			 * XXX: Transciever selection is done
++			 * XXX: Transceiver selection is done
+ 			 * differently on the MCA version.
+ 			 * How to get it to select something
+ 			 * other than external/AUI is currently
+diff --git a/drivers/net/irda/toim3232-sir.c b/drivers/net/irda/toim3232-sir.c
+index 99e1ec0..19ad460 100644
+--- a/drivers/net/irda/toim3232-sir.c
++++ b/drivers/net/irda/toim3232-sir.c
+@@ -78,7 +78,7 @@
+  * Target hardware: IRWave IR320ST-2
+  *
+  * 	The IRWave IR320ST-2 is a simple dongle based on the Vishay/Temic
+- * 	TOIM3232 SIR Endec and the Vishay/Temic TFDS4500 SIR IRDA transciever.
++ * 	TOIM3232 SIR Endec and the Vishay/Temic TFDS4500 SIR IRDA transceiver.
+  * 	It uses a hex inverter and some discrete components to buffer and
+  * 	line convert the RS232 down to 5V.
+  *
+diff --git a/drivers/net/natsemi.c b/drivers/net/natsemi.c
+index b78be08..ab28629 100644
+--- a/drivers/net/natsemi.c
++++ b/drivers/net/natsemi.c
+@@ -2919,7 +2919,7 @@ static int netdev_set_ecmd(struct net_device *dev, struct ethtool_cmd *ecmd)
+ 
+ 	/*
+ 	 * If we're ignoring the PHY then autoneg and the internal
+-	 * transciever are really not going to work so don't let the
++	 * transceiver are really not going to work so don't let the
+ 	 * user select them.
+ 	 */
+ 	if (np->ignore_phy && (ecmd->autoneg == AUTONEG_ENABLE ||
+diff --git a/drivers/tty/serial/8250_pci.c b/drivers/tty/serial/8250_pci.c
+index 2b9a642..6b887d9 100644
+--- a/drivers/tty/serial/8250_pci.c
++++ b/drivers/tty/serial/8250_pci.c
+@@ -769,7 +769,7 @@ pci_ni8430_setup(struct serial_private *priv,
+ 	len =  pci_resource_len(priv->dev, bar);
+ 	p = ioremap_nocache(base, len);
+ 
+-	/* enable the transciever */
++	/* enable the transceiver */
+ 	writeb(readb(p + offset + NI8430_PORTCON) | NI8430_PORTCON_TXVR_ENABLE,
+ 	       p + offset + NI8430_PORTCON);
+ 
+diff --git a/drivers/usb/gadget/pxa27x_udc.h b/drivers/usb/gadget/pxa27x_udc.h
+index cd16231..b01696e 100644
+--- a/drivers/usb/gadget/pxa27x_udc.h
++++ b/drivers/usb/gadget/pxa27x_udc.h
+@@ -88,9 +88,9 @@
+ #define UDCISR_INT_MASK	(UDCICR_FIFOERR | UDCICR_PKTCOMPL)
+ 
+ #define UDCOTGICR_IESF	(1 << 24)	/* OTG SET_FEATURE command recvd */
+-#define UDCOTGICR_IEXR	(1 << 17)	/* Extra Transciever Interrupt
++#define UDCOTGICR_IEXR	(1 << 17)	/* Extra Transceiver Interrupt
+ 					   Rising Edge Interrupt Enable */
+-#define UDCOTGICR_IEXF	(1 << 16)	/* Extra Transciever Interrupt
++#define UDCOTGICR_IEXF	(1 << 16)	/* Extra Transceiver Interrupt
+ 					   Falling Edge Interrupt Enable */
+ #define UDCOTGICR_IEVV40R (1 << 9)	/* OTG Vbus Valid 4.0V Rising Edge
+ 					   Interrupt Enable */
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index c71b037..bcbd1ab 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -1955,7 +1955,7 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
+ 	 *   - initializes musb->xceiv, usually by otg_get_transceiver()
+ 	 *   - stops powering VBUS
+ 	 *
+-	 * There are various transciever configurations.  Blackfin,
++	 * There are various transceiver configurations.  Blackfin,
+ 	 * DaVinci, TUSB60x0, and others integrate them.  OMAP3 uses
+ 	 * external/discrete ones in various flavors (twl4030 family,
+ 	 * isp1504, non-OTG, etc) mostly hooking up through ULPI.
+diff --git a/drivers/usb/otg/isp1301_omap.c b/drivers/usb/otg/isp1301_omap.c
+index 8c28225..ca9b690 100644
+--- a/drivers/usb/otg/isp1301_omap.c
++++ b/drivers/usb/otg/isp1301_omap.c
+@@ -660,7 +660,7 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 	int		ret = IRQ_NONE;
+ 	struct isp1301	*isp = _isp;
+ 
+-	/* update ISP1301 transciever from OTG controller */
++	/* update ISP1301 transceiver from OTG controller */
+ 	if (otg_irq & OPRT_CHG) {
+ 		omap_writew(OPRT_CHG, OTG_IRQ_SRC);
+ 		isp1301_defer_work(isp, WORK_UPDATE_ISP);
+@@ -755,7 +755,7 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 		omap_writew(A_VBUS_ERR, OTG_IRQ_SRC);
+ 		ret = IRQ_HANDLED;
+ 
+-	/* switch driver; the transciever code activates it,
++	/* switch driver; the transceiver code activates it,
+ 	 * ungating the udc clock or resuming OHCI.
+ 	 */
+ 	} else if (otg_irq & DRIVER_SWITCH) {
+diff --git a/sound/pci/ice1712/ice1712.c b/sound/pci/ice1712/ice1712.c
+index be06fb3..0ccc0eb 100644
+--- a/sound/pci/ice1712/ice1712.c
++++ b/sound/pci/ice1712/ice1712.c
+@@ -87,7 +87,7 @@ static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
+ static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;/* Enable this card */
+ static char *model[SNDRV_CARDS];
+ static int omni[SNDRV_CARDS];				/* Delta44 & 66 Omni I/O support */
+-static int cs8427_timeout[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS-1)] = 500}; /* CS8427 S/PDIF transciever reset timeout value in msec */
++static int cs8427_timeout[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS-1)] = 500}; /* CS8427 S/PDIF transceiver reset timeout value in msec */
+ static int dxr_enable[SNDRV_CARDS];			/* DXR enable for DMX6FIRE */
+ 
+ module_param_array(index, int, NULL, 0444);
 -- 
 1.7.6.rc1
 
