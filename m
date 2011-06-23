@@ -1,207 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933277Ab1FWRgN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:36:13 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34333 "EHLO
+	id S933306Ab1FWRgU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:36:20 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34339 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933265Ab1FWRgJ (ORCPT
+	with ESMTP id S933232Ab1FWRgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:36:09 -0400
+	Thu, 23 Jun 2011 13:36:10 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+Cc: stable-review@kernel.org,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 094/247] OHCI: work around for nVidia shutdown problem
-Date: Thu, 23 Jun 2011 13:32:42 -0400
-Message-Id: <1308850515-15242-35-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 095/247] x86/pvclock: Zero last_value on resume
+Date: Thu, 23 Jun 2011 13:32:43 -0400
+Message-Id: <1308850515-15242-36-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
  <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 3df7169e73fc1d71a39cffeacc969f6840cdf52b upstream.
+commit e7a3481c0246c8e45e79c629efd63b168e91fcda upstream.
 
-This patch (as1417) fixes a problem affecting some (or all) nVidia
-chipsets.  When the computer is shut down, the OHCI controllers
-continue to power the USB buses and evidently they drive a Reset
-signal out all their ports.  This prevents attached devices from going
-to low power.  Mouse LEDs stay on, for example, which is disconcerting
-for users and a drain on laptop batteries.
+If the guest domain has been suspend/resumed or migrated, then the
+system clock backing the pvclock clocksource may revert to a smaller
+value (ie, can be non-monotonic across the migration/save-restore).
 
-The fix involves leaving each OHCI controller in the OPERATIONAL state
-during system shutdown rather than putting it in the RESET state.
-Although this nominally means the controller is running, in fact it's
-not doing very much since all the schedules are all disabled.  However
-there is ongoing DMA to the Host Controller Communications Area, so
-the patch also disables the bus-master capability of all PCI USB
-controllers after the shutdown routine runs.
+Make sure we zero last_value in that case so that the domain
+continues to see clock updates.
 
-The fix is applied only to nVidia-based PCI OHCI controllers, so it
-shouldn't cause problems on systems using other hardware.  As an added
-safety measure, in case the kernel encounters one of these running
-controllers during boot, the patch changes quirk_usb_handoff_ohci()
-(which runs early on during PCI discovery) to reset the controller
-before anything bad can happen.
-
-Reported-by: Pali Rohár <pali.rohar@gmail.com>
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: David Brownell <david-b@pacbell.net>
-Tested-by: Pali Rohár <pali.rohar@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/core/hcd-pci.c    |    4 +++-
- drivers/usb/host/ohci-hcd.c   |    9 ++++++++-
- drivers/usb/host/ohci-pci.c   |   18 ++++++++++++++++++
- drivers/usb/host/ohci.h       |    1 +
- drivers/usb/host/pci-quirks.c |   18 +++++++++++-------
- 5 files changed, 41 insertions(+), 9 deletions(-)
+ arch/x86/include/asm/pvclock.h |    1 +
+ arch/x86/kernel/pvclock.c      |    5 +++++
+ arch/x86/xen/time.c            |    2 ++
+ 3 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
-index 1528653..93e1ce9 100644
---- a/drivers/usb/core/hcd-pci.c
-+++ b/drivers/usb/core/hcd-pci.c
-@@ -317,8 +317,10 @@ void usb_hcd_pci_shutdown(struct pci_dev *dev)
- 	if (!hcd)
- 		return;
+diff --git a/arch/x86/include/asm/pvclock.h b/arch/x86/include/asm/pvclock.h
+index 53235fd..daaacab 100644
+--- a/arch/x86/include/asm/pvclock.h
++++ b/arch/x86/include/asm/pvclock.h
+@@ -10,5 +10,6 @@ unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src);
+ void pvclock_read_wallclock(struct pvclock_wall_clock *wall,
+ 			    struct pvclock_vcpu_time_info *vcpu,
+ 			    struct timespec *ts);
++void pvclock_resume(void);
  
--	if (hcd->driver->shutdown)
-+	if (hcd->driver->shutdown) {
- 		hcd->driver->shutdown(hcd);
-+		pci_disable_device(dev);
-+	}
- }
- EXPORT_SYMBOL_GPL(usb_hcd_pci_shutdown);
+ #endif /* _ASM_X86_PVCLOCK_H */
+diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
+index dfdfe46..b12fe8d 100644
+--- a/arch/x86/kernel/pvclock.c
++++ b/arch/x86/kernel/pvclock.c
+@@ -111,6 +111,11 @@ unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src)
  
-diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
-index afe59be..d6b6a1f 100644
---- a/drivers/usb/host/ohci-hcd.c
-+++ b/drivers/usb/host/ohci-hcd.c
-@@ -398,7 +398,14 @@ ohci_shutdown (struct usb_hcd *hcd)
+ static atomic64_t last_value = ATOMIC64_INIT(0);
  
- 	ohci = hcd_to_ohci (hcd);
- 	ohci_writel (ohci, OHCI_INTR_MIE, &ohci->regs->intrdisable);
--	ohci_usb_reset (ohci);
-+	ohci->hc_control = ohci_readl(ohci, &ohci->regs->control);
-+
-+	/* If the SHUTDOWN quirk is set, don't put the controller in RESET */
-+	ohci->hc_control &= (ohci->flags & OHCI_QUIRK_SHUTDOWN ?
-+			OHCI_CTRL_RWC | OHCI_CTRL_HCFS :
-+			OHCI_CTRL_RWC);
-+	ohci_writel(ohci, ohci->hc_control, &ohci->regs->control);
-+
- 	/* flush the writes */
- 	(void) ohci_readl (ohci, &ohci->regs->control);
- }
-diff --git a/drivers/usb/host/ohci-pci.c b/drivers/usb/host/ohci-pci.c
-index b8a1148..948a353 100644
---- a/drivers/usb/host/ohci-pci.c
-+++ b/drivers/usb/host/ohci-pci.c
-@@ -201,6 +201,20 @@ static int ohci_quirk_amd700(struct usb_hcd *hcd)
- 	return 0;
- }
- 
-+/* nVidia controllers continue to drive Reset signalling on the bus
-+ * even after system shutdown, wasting power.  This flag tells the
-+ * shutdown routine to leave the controller OPERATIONAL instead of RESET.
-+ */
-+static int ohci_quirk_nvidia_shutdown(struct usb_hcd *hcd)
++void pvclock_resume(void)
 +{
-+	struct ohci_hcd	*ohci = hcd_to_ohci(hcd);
-+
-+	ohci->flags |= OHCI_QUIRK_SHUTDOWN;
-+	ohci_dbg(ohci, "enabled nVidia shutdown quirk\n");
-+
-+	return 0;
++	atomic64_set(&last_value, 0);
 +}
 +
- /*
-  * The hardware normally enables the A-link power management feature, which
-  * lets the system lower the power consumption in idle states.
-@@ -332,6 +346,10 @@ static const struct pci_device_id ohci_pci_quirks[] = {
- 		PCI_DEVICE(PCI_VENDOR_ID_ATI, 0x4399),
- 		.driver_data = (unsigned long)ohci_quirk_amd700,
- 	},
-+	{
-+		PCI_DEVICE(PCI_VENDOR_ID_NVIDIA, PCI_ANY_ID),
-+		.driver_data = (unsigned long) ohci_quirk_nvidia_shutdown,
-+	},
- 
- 	/* FIXME for some of the early AMD 760 southbridges, OHCI
- 	 * won't work at all.  blacklist them.
-diff --git a/drivers/usb/host/ohci.h b/drivers/usb/host/ohci.h
-index 5bf15fe..51facb9 100644
---- a/drivers/usb/host/ohci.h
-+++ b/drivers/usb/host/ohci.h
-@@ -403,6 +403,7 @@ struct ohci_hcd {
- #define	OHCI_QUIRK_HUB_POWER	0x100			/* distrust firmware power/oc setup */
- #define	OHCI_QUIRK_AMD_ISO	0x200			/* ISO transfers*/
- #define	OHCI_QUIRK_AMD_PREFETCH	0x400			/* pre-fetch for ISO transfer */
-+#define	OHCI_QUIRK_SHUTDOWN	0x800			/* nVidia power bug */
- 	// there are also chip quirks/bugs in init logic
- 
- 	struct work_struct	nec_work;	/* Worker for NEC quirk */
-diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-index 83b5f9c..464ed97 100644
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -169,6 +169,7 @@ static int __devinit mmio_resource_enabled(struct pci_dev *pdev, int idx)
- static void __devinit quirk_usb_handoff_ohci(struct pci_dev *pdev)
+ cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
  {
- 	void __iomem *base;
-+	u32 control;
+ 	struct pvclock_shadow_time shadow;
+diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+index e90360f..a05bda6 100644
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -425,6 +425,8 @@ void xen_timer_resume(void)
+ {
+ 	int cpu;
  
- 	if (!mmio_resource_enabled(pdev, 0))
++	pvclock_resume();
++
+ 	if (xen_clockevent != &xen_vcpuop_clockevent)
  		return;
-@@ -177,10 +178,14 @@ static void __devinit quirk_usb_handoff_ohci(struct pci_dev *pdev)
- 	if (base == NULL)
- 		return;
  
-+	control = readl(base + OHCI_CONTROL);
-+
- /* On PA-RISC, PDC can leave IR set incorrectly; ignore it there. */
--#ifndef __hppa__
--{
--	u32 control = readl(base + OHCI_CONTROL);
-+#ifdef __hppa__
-+#define	OHCI_CTRL_MASK		(OHCI_CTRL_RWC | OHCI_CTRL_IR)
-+#else
-+#define	OHCI_CTRL_MASK		OHCI_CTRL_RWC
-+
- 	if (control & OHCI_CTRL_IR) {
- 		int wait_time = 500; /* arbitrary; 5 seconds */
- 		writel(OHCI_INTR_OC, base + OHCI_INTRENABLE);
-@@ -194,13 +199,12 @@ static void __devinit quirk_usb_handoff_ohci(struct pci_dev *pdev)
- 			dev_warn(&pdev->dev, "OHCI: BIOS handoff failed"
- 					" (BIOS bug?) %08x\n",
- 					readl(base + OHCI_CONTROL));
--
--		/* reset controller, preserving RWC */
--		writel(control & OHCI_CTRL_RWC, base + OHCI_CONTROL);
- 	}
--}
- #endif
- 
-+	/* reset controller, preserving RWC (and possibly IR) */
-+	writel(control & OHCI_CTRL_MASK, base + OHCI_CONTROL);
-+
- 	/*
- 	 * disable interrupts
- 	 */
 -- 
 1.7.4.4
 
