@@ -1,59 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758049Ab1FWNR5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 09:17:57 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58351 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755646Ab1FWNRz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 09:17:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ImitLUehCErhz4cEDuJLsDdWllxA4PMKril4mTmM1d5U6eT74+H2Mg8PbVx7TnKgd7
-         gMlNg1pQfPLOYjsUTWsdZ59tB+epDTvQsIU1abHwLVegWPzo8819nROopFFtzk+xm8UN
-         vOqg685WlcdLTQbwKK9++lEi00zpBYofzX+3I=
+	id S1758201Ab1FWNSL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 09:18:11 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63540 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758100Ab1FWNSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 09:18:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,413,1304319600"; 
+   d="scan'208";a="19755112"
+Date: Thu, 23 Jun 2011 21:18:01 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/7] writeback: introduce max-pause and pass-good dirty
+ limits
+Message-ID: <20110623131801.GA11665@localhost>
+References: <20110619150108.691351746@intel.com>
+ <20110619150510.367141119@intel.com>
+ <20110621172043.51621aa9.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=y1roManmZGMLBXSFbBVqK_KqDZg@mail.gmail.com>
-References: <BANLkTi=y1roManmZGMLBXSFbBVqK_KqDZg@mail.gmail.com>
-Date: Thu, 23 Jun 2011 15:17:54 +0200
-Message-ID: <BANLkTinaPJM3LhEVwFxtEGKuVXOyVOzrzg@mail.gmail.com>
-Subject: Re: extra slash in current path
-From: Alessandro Suardi <alessandro.suardi@gmail.com>
-To: yuyichao-mit <yuyichao@mit.edu>
-Cc: linux-kernel@vger.kernel.org, linux-c-programming@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110621172043.51621aa9.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 3:14 PM, yuyichao-mit <yuyichao@mit.edu> wrote:
-> The problem is like this:
->
-> $ cd /
-> $ pwd
-> /
->
-> $ cd /
-> $ pwd
-> //
->
-> $ cd ///
-> $ pwd
-> /
->
-> Why can there be a extra slash (and exactly one) in current path? Is
-> this designed on purpose?
-> This is not really a big deal but I think it can confuse some program.
+Andrew,
 
-Multiple consecutive slashes should not confuse any program.
+On Wed, Jun 22, 2011 at 08:20:43AM +0800, Andrew Morton wrote:
+> On Sun, 19 Jun 2011 23:01:12 +0800
+> Wu Fengguang <fengguang.wu@intel.com> wrote:
+> 
+> > The max-pause limit helps to keep the sleep time inside
+> > balance_dirty_pages() within 200ms. The 200ms max sleep means per task
+> > rate limit of 8pages/200ms=160KB/s, which normally is enough to stop
+> > dirtiers from continue pushing the dirty pages high, unless there are
+> > a sufficient large number of slow dirtiers (ie. 500 tasks doing 160KB/s
+> > will still sum up to 80MB/s, reaching the write bandwidth of a slow disk).
+> > 
+> > The pass-good limit helps to let go of the good bdi's in the presence of
+> > a blocked bdi (ie. NFS server not responding) or slow USB disk which for
+> > some reason build up a large number of initial dirty pages that refuse
+> > to go away anytime soon.
+> 
+> The hard-wired numbers and hard-wired assumptions about device speeds
+> shouldn't be here at all.  They will be sub-optimal (and sometimes
+> extremely so) for all cases.  They will become wronger over time.  Or
+> less wrong, depending upon which way they were originally wrong.
 
-http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap03.html#tag_03_266
+Yeah the changelog contains many specific numbers as examples..
 
---alessandro
+The 200ms is mainly based on the maximum acceptable human perceptible
+delays. It may be too large in some cases, so the value will be
+decreased adaptively in a patch to be submitted later.
 
- "There's always a siren singing you to shipwreck"
+The DIRTY_MAXPAUSE and DIRTY_PASSGOOD are to get proportional values
+to dirty_thresh, so is reasonably taken as adaptive.
 
-   (Radiohead, "There There")
+> > +		dirty_thresh = hard_dirty_limit(dirty_thresh);
+> > +		if (nr_dirty < dirty_thresh + dirty_thresh / DIRTY_MAXPAUSE &&
+> > +		    jiffies - start_time > MAX_PAUSE)
+> > +			break;
+> > +		if (nr_dirty < dirty_thresh + dirty_thresh / DIRTY_PASSGOOD &&
+> > +		    bdi_dirty < bdi_thresh)
+> > +			break;
+> 
+> It appears that despite their similarity, DIRTY_MAXPAUSE is a
+> dimensionless value whereas the units of MAX_PAUSE is jiffies.  Perhaps
+> more care in naming choices would clarify things like this.
+
+OK. I'll add _AREA suffixes to the DIRTY_MAXPAUSE macros to tell the
+difference.
+
+> The first comparison might be clearer if it used time_after().
+
+Yeah, changed to time_after().
+
+> Both statements need comments explaining what they do and *why they
+
+Here is the patch with more comments :)
+
+Thanks,
+Fengguang
+---
+Subject: writeback: introduce max-pause and pass-good dirty limits
+Date: Sun Jun 19 22:18:42 CST 2011
+
+The max-pause limit helps to keep the sleep time inside
+balance_dirty_pages() within MAX_PAUSE=200ms. The 200ms max sleep means
+per task rate limit of 8pages/200ms=160KB/s when dirty exceeded, which
+normally is enough to stop dirtiers from continue pushing the dirty
+pages high, unless there are a sufficient large number of slow dirtiers
+(eg. 500 tasks doing 160KB/s will still sum up to 80MB/s, exceeding the
+write bandwidth of a slow disk and hence accumulating more and more dirty
+pages).
+
+The pass-good limit helps to let go of the good bdi's in the presence of
+a blocked bdi (ie. NFS server not responding) or slow USB disk which for
+some reason build up a large number of initial dirty pages that refuse
+to go away anytime soon.
+
+For example, given two bdi's A and B and the initial state
+
+	bdi_thresh_A = dirty_thresh / 2
+	bdi_thresh_B = dirty_thresh / 2
+	bdi_dirty_A  = dirty_thresh / 2
+	bdi_dirty_B  = dirty_thresh / 2
+
+Then A get blocked, after a dozen seconds
+
+	bdi_thresh_A = 0
+	bdi_thresh_B = dirty_thresh
+	bdi_dirty_A  = dirty_thresh / 2
+	bdi_dirty_B  = dirty_thresh / 2
+
+The (bdi_dirty_B < bdi_thresh_B) test is now useless and the dirty pages
+will be effectively throttled by condition (nr_dirty < dirty_thresh).
+This has two problems:
+(1) we lose the protections for light dirtiers
+(2) balance_dirty_pages() effectively becomes IO-less because the
+    (bdi_nr_reclaimable > bdi_thresh) test won't be true. This is good
+    for IO, but balance_dirty_pages() loses an important way to break
+    out of the loop which leads to more spread out throttle delays.
+
+DIRTY_PASSGOOD_AREA can eliminate the above issues. The only problem is,
+DIRTY_PASSGOOD_AREA needs to be defined as 2 to fully cover the above
+example while this patch uses the more conservative value 8 so as not to
+surprise people with too many dirty pages than expected.
+
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ include/linux/writeback.h |   21 +++++++++++++++++++++
+ mm/page-writeback.c       |   28 ++++++++++++++++++++++++++++
+ 2 files changed, 49 insertions(+)
+
+--- linux-next.orig/include/linux/writeback.h	2011-06-23 10:31:40.000000000 +0800
++++ linux-next/include/linux/writeback.h	2011-06-23 10:31:40.000000000 +0800
+@@ -7,6 +7,27 @@
+ #include <linux/sched.h>
+ #include <linux/fs.h>
+ 
++/*
++ * The 1/16 region above the global dirty limit will be put to maximum pauses:
++ *
++ *	(limit, limit + limit/DIRTY_MAXPAUSE_AREA)
++ *
++ * The 1/16 region above the max-pause region, dirty exceeded bdi's will be put
++ * to loops:
++ *
++ *	(limit + limit/DIRTY_MAXPAUSE_AREA, limit + limit/DIRTY_PASSGOOD_AREA)
++ *
++ * Further beyond, all dirtier tasks will enter a loop waiting (possibly long
++ * time) for the dirty pages to drop, unless written enough pages.
++ *
++ * The global dirty threshold is normally equal to the global dirty limit,
++ * except when the system suddenly allocates a lot of anonymous memory and
++ * knocks down the global dirty threshold quickly, in which case the global
++ * dirty limit will follow down slowly to prevent livelocking all dirtier tasks.
++ */
++#define DIRTY_MAXPAUSE_AREA		16
++#define DIRTY_PASSGOOD_AREA		8
++
+ struct backing_dev_info;
+ 
+ /*
+--- linux-next.orig/mm/page-writeback.c	2011-06-23 10:31:40.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-06-23 10:59:47.000000000 +0800
+@@ -399,6 +399,11 @@ unsigned long determine_dirtyable_memory
+ 	return x + 1;	/* Ensure that we never return 0 */
+ }
+ 
++static unsigned long hard_dirty_limit(unsigned long thresh)
++{
++	return max(thresh, global_dirty_limit);
++}
++
+ /*
+  * global_dirty_limits - background-writeback and dirty-throttling thresholds
+  *
+@@ -716,6 +721,29 @@ static void balance_dirty_pages(struct a
+ 		io_schedule_timeout(pause);
+ 		trace_balance_dirty_wait(bdi);
+ 
++		dirty_thresh = hard_dirty_limit(dirty_thresh);
++		/*
++		 * max-pause area. If dirty exceeded but still within this
++		 * area, no need to sleep for more than 200ms: (a) 8 pages per
++		 * 200ms is typically more than enough to curb heavy dirtiers;
++		 * (b) the pause time limit makes the dirtiers more responsive.
++		 */
++		if (nr_dirty < dirty_thresh +
++			       dirty_thresh / DIRTY_MAXPAUSE_AREA &&
++		    time_after(jiffies, start_time + MAX_PAUSE))
++			break;
++		/*
++		 * pass-good area. When some bdi gets blocked (eg. NFS server
++		 * not responding), or write bandwidth dropped dramatically due
++		 * to concurrent reads, or dirty threshold suddenly dropped and
++		 * the dirty pages cannot be brought down anytime soon (eg. on
++		 * slow USB stick), at least let go of the good bdi's.
++		 */
++		if (nr_dirty < dirty_thresh +
++			       dirty_thresh / DIRTY_PASSGOOD_AREA &&
++		    bdi_dirty < bdi_thresh)
++			break;
++
+ 		/*
+ 		 * Increase the delay for each loop, up to our previous
+ 		 * default of taking a 100ms nap.
