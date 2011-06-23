@@ -1,40 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760137Ab1FWWv0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 18:51:26 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35447 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760115Ab1FWWvY convert rfc822-to-8bit (ORCPT
+	id S934380Ab1FWXAJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 19:00:09 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:25023 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933303Ab1FWXAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 18:51:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=S0WO3qTCPdZw+MDAb7hMbxM3erMT+DJgn6k4askI0ssW7eKPita63uCCDOdQ5zNuQd
-         rgHIGhbJmpkyg3Z/jdnmAzRLTq3CJy85ejhUdZHqG5zfvutWzDHNt7jWN1Xg7l2qCZ99
-         8ske+wZtMwT7MXVHMc+3y+yAN5gtFTQGKizhc=
+	Thu, 23 Jun 2011 19:00:07 -0400
+Date: Fri, 24 Jun 2011 00:51:12 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: trivial@kernel.org, Tomas Winkler <tomas.winkler@intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        Mike Thomas <rmthomas@sciolus.org>
+Subject: [PATCH 25/37] Remove unneeded version.h includes (and add where
+ needed) for drivers/staging/easycap/
+In-Reply-To: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1106240050160.17688@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1106240032560.17688@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net> <alpine.LNX.2.00.1106240032560.17688@swampdragon.chaosbits.net>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Thu, 23 Jun 2011 18:51:04 -0400
-Message-ID: <BANLkTi=FAvr7nmRdKv6Ta5zvSJ82SeK0QA@mail.gmail.com>
-Subject: Re: [PATCH 18/37] Remove unneeded version.h includes from drivers/video/
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, trivial@kernel.org,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Richard Purdie <rpurdie@rpsys.net>, Paul Mundt <lethal@linux-sh.org>,
-        device-drivers-devel@blackfin.uclinux.org, linux-fbdev@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 18:35, Jesper Juhl wrote:
->  drivers/video/backlight/adp8860_bl.c |    1 -
->  drivers/video/backlight/adp8870_bl.c |    1 -
+It was pointed out by 'make versioncheck' that linux/version.h was not
+always being included where needed and sometimes included needlessly
+in drivers/staging/easycap/.
+This patch fixes up the includes.
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/staging/easycap/easycap.h       |    1 -
+ drivers/staging/easycap/easycap_ioctl.c |    1 +
+ 2 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/staging/easycap/easycap.h b/drivers/staging/easycap/easycap.h
+index 1f94e23..efbd61b 100644
+--- a/drivers/staging/easycap/easycap.h
++++ b/drivers/staging/easycap/easycap.h
+@@ -62,7 +62,6 @@
+ #include <linux/uaccess.h>
+ 
+ #include <linux/i2c.h>
+-#include <linux/version.h>
+ #include <linux/workqueue.h>
+ #include <linux/poll.h>
+ #include <linux/mm.h>
+diff --git a/drivers/staging/easycap/easycap_ioctl.c b/drivers/staging/easycap/easycap_ioctl.c
+index b3bd11d..f767f2e 100644
+--- a/drivers/staging/easycap/easycap_ioctl.c
++++ b/drivers/staging/easycap/easycap_ioctl.c
+@@ -25,6 +25,7 @@
+ */
+ /*****************************************************************************/
+ 
++#include <linux/version.h>
+ #include "easycap.h"
+ 
+ /*--------------------------------------------------------------------------*/
+-- 
+1.7.5.2
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
