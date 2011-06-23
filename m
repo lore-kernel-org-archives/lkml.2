@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932802Ab1FWRfe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:35:34 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34049 "EHLO
+	id S933204Ab1FWRfw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:35:52 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34183 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932776Ab1FWRfa (ORCPT
+	with ESMTP id S933188Ab1FWRft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:35:30 -0400
+	Thu, 23 Jun 2011 13:35:49 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: stable-review@kernel.org, Guy Martin <gmsoft@tuxicoman.be>,
+        James Bottomley <James.Bottomley@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 062/247] powerpc: Fix some 6xx/7xxx CPU setup functions
-Date: Thu, 23 Jun 2011 13:32:10 -0400
-Message-Id: <1308850515-15242-3-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 063/247] parisc : Remove broken line wrapping handling pdc_iodc_print()
+Date: Thu, 23 Jun 2011 13:32:11 -0400
+Message-Id: <1308850515-15242-4-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,146 +23,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Guy Martin <gmsoft@tuxicoman.be>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 1f1936ff3febf38d582177ea319eaa278f32c91f upstream.
+commit fbea668498e93bb38ac9226c7af9120a25957375 upstream.
 
-Some of those functions try to adjust the CPU features, for example
-to remove NAP support on some revisions. However, they seem to use
-r5 as an index into the CPU table entry, which might have been right
-a long time ago but no longer is. r4 is the right register to use.
+Remove the broken line wrapping handling in pdc_iodc_print().
+It is broken in 3 ways :
+  - It doesn't keep track of the current screen position, it just
+    assumes that the new buffer will be printed at the begining of the
+    screen.
+  - It doesn't take in account that non printable characters won't
+    increase the current position on the screen.
+  - And last but not least, it triggers a kernel panic if a backspace
+    is the first char in the provided buffer :
 
-This probably caused some off behaviours on some PowerMac variants
-using 750cx or 7455 processor revisions.
+ Backtrace:
+  [<0000000040128ec4>] pdc_console_write+0x44/0x78
+  [<0000000040128f18>] pdc_console_tty_write+0x20/0x38
+  [<000000004032f1ac>] n_tty_write+0x2a4/0x550
+  [<000000004032b158>] tty_write+0x1e0/0x2d8
+  [<00000000401bb420>] vfs_write+0xb8/0x188
+  [<00000000401bb630>] sys_write+0x68/0xb8
+  [<0000000040104eb8>] syscall_exit+0x0/0x14
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Most terminals handle the line wrapping just fine. I've confirmed that
+it works correctly on a C8000 with both vga and serial output.
+
+Signed-off-by: Guy Martin <gmsoft@tuxicoman.be>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/powerpc/kernel/cpu_setup_6xx.S |   40 +++++++++++++++++-----------------
- 1 files changed, 20 insertions(+), 20 deletions(-)
+ arch/parisc/kernel/firmware.c |   13 +------------
+ 1 files changed, 1 insertions(+), 12 deletions(-)
 
-diff --git a/arch/powerpc/kernel/cpu_setup_6xx.S b/arch/powerpc/kernel/cpu_setup_6xx.S
-index 55cba4a..f8cd9fb 100644
---- a/arch/powerpc/kernel/cpu_setup_6xx.S
-+++ b/arch/powerpc/kernel/cpu_setup_6xx.S
-@@ -18,7 +18,7 @@
- #include <asm/mmu.h>
+diff --git a/arch/parisc/kernel/firmware.c b/arch/parisc/kernel/firmware.c
+index df971fa..4896ed0 100644
+--- a/arch/parisc/kernel/firmware.c
++++ b/arch/parisc/kernel/firmware.c
+@@ -1126,15 +1126,13 @@ int pdc_iodc_print(const unsigned char *str, unsigned count)
+ 	unsigned int i;
+ 	unsigned long flags;
  
- _GLOBAL(__setup_cpu_603)
--	mflr	r4
-+	mflr	r5
- BEGIN_MMU_FTR_SECTION
- 	li	r10,0
- 	mtspr	SPRN_SPRG_603_LRU,r10		/* init SW LRU tracking */
-@@ -27,60 +27,60 @@ BEGIN_FTR_SECTION
- 	bl	__init_fpu_registers
- END_FTR_SECTION_IFCLR(CPU_FTR_FPU_UNAVAILABLE)
- 	bl	setup_common_caches
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_604)
--	mflr	r4
-+	mflr	r5
- 	bl	setup_common_caches
- 	bl	setup_604_hid0
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_750)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_750cx)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
- 	bl	setup_750cx
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_750fx)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
- 	bl	setup_750fx
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_7400)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_7400_workarounds
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_7410)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_7410_workarounds
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
- 	li	r3,0
- 	mtspr	SPRN_L2CR2,r3
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_745x)
--	mflr	r4
-+	mflr	r5
- 	bl	setup_common_caches
- 	bl	setup_745x_specifics
--	mtlr	r4
-+	mtlr	r5
- 	blr
+-	for (i = 0; i < count && i < 79;) {
++	for (i = 0; i < count;) {
+ 		switch(str[i]) {
+ 		case '\n':
+ 			iodc_dbuf[i+0] = '\r';
+ 			iodc_dbuf[i+1] = '\n';
+ 			i += 2;
+ 			goto print;
+-		case '\b':	/* BS */
+-			i--; /* overwrite last */
+ 		default:
+ 			iodc_dbuf[i] = str[i];
+ 			i++;
+@@ -1142,15 +1140,6 @@ int pdc_iodc_print(const unsigned char *str, unsigned count)
+ 		}
+ 	}
  
- /* Enable caches for 603's, 604, 750 & 7400 */
-@@ -194,10 +194,10 @@ setup_750cx:
- 	cror	4*cr0+eq,4*cr0+eq,4*cr1+eq
- 	cror	4*cr0+eq,4*cr0+eq,4*cr2+eq
- 	bnelr
--	lwz	r6,CPU_SPEC_FEATURES(r5)
-+	lwz	r6,CPU_SPEC_FEATURES(r4)
- 	li	r7,CPU_FTR_CAN_NAP
- 	andc	r6,r6,r7
--	stw	r6,CPU_SPEC_FEATURES(r5)
-+	stw	r6,CPU_SPEC_FEATURES(r4)
- 	blr
- 
- /* 750fx specific
-@@ -225,12 +225,12 @@ BEGIN_FTR_SECTION
- 	andis.	r11,r11,L3CR_L3E@h
- 	beq	1f
- END_FTR_SECTION_IFSET(CPU_FTR_L3CR)
--	lwz	r6,CPU_SPEC_FEATURES(r5)
-+	lwz	r6,CPU_SPEC_FEATURES(r4)
- 	andi.	r0,r6,CPU_FTR_L3_DISABLE_NAP
- 	beq	1f
- 	li	r7,CPU_FTR_CAN_NAP
- 	andc	r6,r6,r7
--	stw	r6,CPU_SPEC_FEATURES(r5)
-+	stw	r6,CPU_SPEC_FEATURES(r4)
- 1:
- 	mfspr	r11,SPRN_HID0
- 
+-	/* if we're at the end of line, and not already inserting a newline,
+-	 * insert one anyway. iodc console doesn't claim to support >79 char
+-	 * lines. don't account for this in the return value.
+-	 */
+-	if (i == 79 && iodc_dbuf[i-1] != '\n') {
+-		iodc_dbuf[i+0] = '\r';
+-		iodc_dbuf[i+1] = '\n';
+-	}
+-
+ print:
+         spin_lock_irqsave(&pdc_lock, flags);
+         real32_call(PAGE0->mem_cons.iodc_io,
 -- 
 1.7.4.4
 
