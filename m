@@ -1,90 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157Ab1FWFGW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 01:06:22 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:50634 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996Ab1FWFGV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 01:06:21 -0400
-References: <1308794413-11069-1-git-send-email-dirk.brandewie@gmail.com> <1308794413-11069-2-git-send-email-dirk.brandewie@gmail.com> <BANLkTin9Ouf76VEFRam+eo=H7Gw3Tv6OLA@mail.gmail.com> <4E02BA68.2010108@gmail.com> <127d80e7-0bb6-4961-891e-2ab791ac6368@email.android.com> <4E02C30A.5040106@gmail.com>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <4E02C30A.5040106@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 01/11] spi-dw: expose platform data stucture.
-From: "glikely@secretlab.ca" <grant.likely@secretlab.ca>
-Date: Wed, 22 Jun 2011 23:06:15 -0600
+	id S1752824Ab1FWFBi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 01:01:38 -0400
+Received: from mga09.intel.com ([134.134.136.24]:25711 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751733Ab1FWFBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 01:01:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,411,1304319600"; 
+   d="scan'208";a="17141986"
+Date: Thu, 23 Jun 2011 13:09:21 +0800
+From: Feng Tang <feng.tang@intel.com>
 To: Dirk Brandewie <dirk.brandewie@gmail.com>
-CC: linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net
-Message-ID: <8a51d0af-e018-40d4-8aa6-8c42caa5cccf@email.android.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>
+Subject: Re: [PATCH 09/11] spi-dw: Fix condition in spi_dw_{writer/reader}
+Message-ID: <20110623130921.574d299a@feng-i7>
+In-Reply-To: <4E02B33A.3060805@gmail.com>
+References: <1308794413-11069-1-git-send-email-dirk.brandewie@gmail.com>
+	<1308794413-11069-10-git-send-email-dirk.brandewie@gmail.com>
+	<20110623104506.3cfd55ce@feng-i7>
+	<4E02AE6E.5010307@gmail.com>
+	<20110623112552.6f22c3de@feng-i7>
+	<4E02B33A.3060805@gmail.com>
+Organization: intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
+On Thu, 23 Jun 2011 11:30:02 +0800
 Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
 
->On 06/22/2011 09:03 PM, glikely@secretlab.ca wrote:
->>
->>
->> Dirk Brandewie<dirk.brandewie@gmail.com>  wrote:
->>
->>> On 06/22/2011 08:47 PM, Grant Likely wrote:
->>>> On Wed, Jun 22, 2011 at 8:00 PM,<dirk.brandewie@gmail.com>   wrote:
->>>>> From: Dirk Brandewie<dirk.brandewie@gmail.com>
->>>>>
->>>>> Expose the platform data structure for use by client drivers. ATM
->>>>> there are not any in-tree drivers using the driver (that I can
->>>>> find). This patch exposes the platform data needed for client
->>> drivers.
->>>>
->>>> ?  Why would client drivers want to muck with this configuration? 
->I
->>>> can understand the dw_spi driver being able to have per-spi_device
->>>> configuration, but spi_drivers absolutely should not have
->visibility
->>>> into bus-specific details.  Am I misunderstanding something.
->>>>
->>>
->>> Most of these config options don't need to be client configurable
->IMHO
->>> but they
->>> are being used ATM by drivers that aren't upstream and the current
->>> controller
->>> driver uses them.  This patch is to give a smooth transition
->>> (bisectable) to my
->>> change that reworks the core message and transfer handling code.
->>>
->>> This allows me to provide patches to the developers of the out of
->tree
->>> drivers
->>> that should be coming in RSN and exposes the interface they are
->using
->>> now.
->>
->> My question still stands. Are you expecting spi_driver code to
->manipulate this data?
->>
->>
->
->The current drivers behaviour is driven by this data provided by the
->client. 
->This makes the current client drivers work since some have not picked
->picked up 
->your change moving dw_spi.h out of include/linux/spi (right answer
->IMHO) and 
->provides the interface they are using now.
+> This patch should have been:
+> 
+> spi-dw: Fix condition in spi_dw_{writer/reader}
+> 
+> From: Dirk Brandewie <dirk.brandewie@gmail.com>
+> 
+> Fix the condition based on whether the current transfer has a tx/rx
+> buffer.
+> 
+> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+> ---
+>   drivers/spi/spi-dw.c |   10 +++++-----
+>   1 files changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/spi/spi-dw.c b/drivers/spi/spi-dw.c
+> index 96ae4a7..0a848bc 100644
+> --- a/drivers/spi/spi-dw.c
+> +++ b/drivers/spi/spi-dw.c
+> @@ -193,15 +193,15 @@ static void spi_dw_writer(struct spi_dw *dws)
+>          u16 txw = 0;
+> 
+>          while (max--) {
+> -               /* Set the tx word if the transfer's original "tx" is
+> not null */
+> -               if (dws->tx_end - dws->len) {
+> +               /* Set the tx word if the transfer's "tx" is not null
+> */
+> +               if (dws->tx) {
+>                          if (dws->n_bytes == 1)
+>                                  txw = *(u8 *)(dws->tx);
+>                          else
+>                                  txw = *(u16 *)(dws->tx);
+> +                       dws->tx += dws->n_bytes;
+>                  }
+>                  dw_writew(dws, dr, txw);
+> -               dws->tx += dws->n_bytes;
+>          }
+>   }
 
-So the situation is that certain out-of-tree spi_drivers are reaching into internal details of a specific spi bus driver?  If so, then that is wrong and bad, and certainly will not be merged. Especially when there are no in tree users and neither does this series add any.
+emm, this patch still break the NULL original tx buf case, as it is used in
 
-g.
+/* Return the max entries we can fill into tx fifo */
+static inline u32 tx_max(struct dw_spi *dws)
+{
+	u32 tx_left, tx_room, rxtx_gap;
 
->
->--Dirk
+	tx_left = (dws->tx_end - dws->tx) / dws->n_bytes;
+	tx_room = dws->fifo_len - dw_readw(dws, txflr);
 
--- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+
+
+> 
+> @@ -213,13 +213,13 @@ static void spi_dw_reader(struct spi_dw *dws)
+>          while (max--) {
+>                  rxw = dw_readw(dws, dr);
+>                  /* Care rx only if the transfer's original "rx" is
+> not null */
+> -               if (dws->rx_end - dws->len) {
+> +               if (dws->rx) {
+>                          if (dws->n_bytes == 1)
+>                                  *(u8 *)(dws->rx) = rxw;
+>                          else
+>                                  *(u16 *)(dws->rx) = rxw;
+> +                       dws->rx += dws->n_bytes;
+>                  }
+> -               dws->rx += dws->n_bytes;
+>          }
+>   }
+> 
