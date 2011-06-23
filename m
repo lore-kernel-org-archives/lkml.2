@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758496Ab1FWAOa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 20:14:30 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:38635 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758238Ab1FWAO3 (ORCPT
+	id S1758606Ab1FWAOz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 20:14:55 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:35533 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758293Ab1FWAOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 20:14:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=N9i0ReFqNmVeK+PsQ00kVEAC2D2xhaZJRXalT4WBHQhBaZnYLJcdtq5D0/mNUO1tTW
-         EKquYkeXyVhIRimLl2zGbhi9xlmNQXztRRsh4aMFkQ38lrZT6jKI+yR/yu9mkRGaGHOB
-         JVx96syerfJxTbXEd9qfvp3+S7WYxl+dOETW4=
+	Wed, 22 Jun 2011 20:14:54 -0400
+Message-ID: <4E02857C.1010304@dsn.okisemi.com>
+Date: Thu, 23 Jun 2011 09:14:52 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110622234450.GB20843@redhat.com>
-References: <201106212055.25400.nai.xia@gmail.com>
-	<201106212132.39311.nai.xia@gmail.com>
-	<20110622150350.GX20843@redhat.com>
-	<BANLkTim85ghrK9D4f19Pt5v1+HTMzVXxnw@mail.gmail.com>
-	<20110622234450.GB20843@redhat.com>
-Date: Thu, 23 Jun 2011 08:14:28 +0800
-Message-ID: <BANLkTik2P95vxuUkRi5C+=Xaw7TkE3JR2w@mail.gmail.com>
-Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte
- and mmu notifier to help KSM dirty bit tracking
-From: Nai Xia <nai.xia@gmail.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
-        Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+CC: Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pch_uart: Add MSI support
+References: <1308736219-19975-1-git-send-email-alexander.stein@systec-electronic.com>
+In-Reply-To: <1308736219-19975-1-git-send-email-alexander.stein@systec-electronic.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 7:44 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> On Thu, Jun 23, 2011 at 07:19:06AM +0800, Nai Xia wrote:
->> OK, I'll have a try over other workarounds.
->> I am not feeling good about need_pte_unmap myself. :-)
->
-> The usual way is to check VM_HUGETLB in the caller and to call another
-> function that doesn't kmap. Casting pmd_t to pte_t isn't really nice
-> (but hey we're also doing that exceptionally in smaps_pte_range for
-> THP, but it safe there because we're casting the value of the pmd, not
-> the pointer to the pmd, so the kmap is done by the pte version of the
-> caller and not done by the pmd version of the caller).
->
-> Is it done for migrate? Surely it's not for swapout ;).
+(2011/06/22 18:50), Alexander Stein wrote:
+> Signed-off-by: Alexander Stein<alexander.stein@systec-electronic.com>
+> ---
+>   drivers/tty/serial/pch_uart.c |   12 ++++++++++++
+>   1 files changed, 12 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+> index 4652109..9db9773 100644
+> --- a/drivers/tty/serial/pch_uart.c
+> +++ b/drivers/tty/serial/pch_uart.c
+> @@ -234,6 +234,7 @@ struct eg20t_port {
+>   	int				tx_dma_use;
+>   	void				*rx_buf_virt;
+>   	dma_addr_t			rx_buf_dma;
+> +	int				use_msi;
+>   };
+> 
+>   /**
+> @@ -1429,6 +1430,12 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+>   		goto init_port_hal_free;
+>   	}
+> 
+> +	ret = pci_enable_msi(pdev);
+> +	if (ret)
+> +		priv->use_msi = 0;
+> +	else
+> +		priv->use_msi = 1;
+> +
+>   	iobase = pci_resource_start(pdev, 0);
+>   	mapbase = pci_resource_start(pdev, 1);
+>   	priv->mapbase = mapbase;
+> @@ -1485,6 +1492,9 @@ static void pch_uart_pci_remove(struct pci_dev *pdev)
+>   	struct eg20t_port *priv;
+> 
+>   	priv = (struct eg20t_port *)pci_get_drvdata(pdev);
+> +
+> +	if (priv->use_msi)
+> +		pci_disable_msi(pdev);
+>   	pch_uart_exit_port(priv);
+>   	pci_disable_device(pdev);
+>   	kfree(priv);
+> @@ -1568,6 +1578,8 @@ static int __devinit pch_uart_pci_probe(struct pci_dev *pdev,
+>   	return ret;
+> 
+>   probe_disable_device:
+> +	if (priv->use_msi)
+> +		pci_disable_msi(pdev);
+>   	pci_disable_device(pdev);
+>   probe_error:
+>   	return ret;
 
-Thanks for the hint. :-)
+Thank you for your updating.
 
-You know, another thing I am worried about is that I think I
-did make page_check_address()  return a pmd version for skipping the
-tail subpages ...
-I did detecte a schedule in atomic if I kunmap() the returned value. :-(
-
->
->> Thanks for viewing!
->
-> You're welcome!
->
-> JFYI I'll be offline on vacation for a week, starting tomorrow, so if
-> I don't answer in the next few days that's the reason but I'll follow
-> the progress in a week.
-
-Have a nice vacation man! Enjoy the sunlight, we all have enough
-of code in rooms. ;-)
-
-
-Thanks,
-Nai
-
->
-> Thanks!
-> Andrea
->
+-- 
+tomoya
+OKI SEMICONDUCTOR CO., LTD.
