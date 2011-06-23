@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933961Ab1FWRjV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:39:21 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35856 "EHLO
+	id S933971Ab1FWRji (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:39:38 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35863 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933947Ab1FWRjQ (ORCPT
+	with ESMTP id S933937Ab1FWRjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:39:16 -0400
+	Thu, 23 Jun 2011 13:39:18 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
 Cc: stable-review@kernel.org, Vasiliy Kulikov <segoon@openwall.com>,
-        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 244/247] ipv6: netfilter: ip6_tables: fix infoleak to userspace
-Date: Thu, 23 Jun 2011 13:35:12 -0400
-Message-Id: <1308850515-15242-185-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 245/247] econet: 4 byte infoleak to the network
+Date: Thu, 23 Jun 2011 13:35:13 -0400
+Message-Id: <1308850515-15242-186-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -30,55 +30,39 @@ From: Vasiliy Kulikov <segoon@openwall.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 6a8ab060779779de8aea92ce3337ca348f973f54 upstream.
+commit 67c5c6cb8129c595f21e88254a3fc6b3b841ae8e upstream.
 
-Structures ip6t_replace, compat_ip6t_replace, and xt_get_revision are
-copied from userspace.  Fields of these structs that are
-zero-terminated strings are not checked.  When they are used as argument
-to a format string containing "%s" in request_module(), some sensitive
-information is leaked to userspace via argument of spawned modprobe
-process.
+struct aunhdr has 4 padding bytes between 'pad' and 'handle' fields on
+x86_64.  These bytes are not initialized in the variable 'ah' before
+sending 'ah' to the network.  This leads to 4 bytes kernel stack
+infoleak.
 
-The first bug was introduced before the git epoch;  the second was
-introduced in 3bc3fe5e (v2.6.25-rc1);  the third is introduced by
-6b7d31fc (v2.6.15-rc1).  To trigger the bug one should have
-CAP_NET_ADMIN.
+This bug was introduced before the git epoch.
 
 Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Acked-by: Phil Blundell <philb@gnu.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/ipv6/netfilter/ip6_tables.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ net/econet/af_econet.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/net/ipv6/netfilter/ip6_tables.c b/net/ipv6/netfilter/ip6_tables.c
-index 9210e31..542edbf 100644
---- a/net/ipv6/netfilter/ip6_tables.c
-+++ b/net/ipv6/netfilter/ip6_tables.c
-@@ -1325,6 +1325,7 @@ do_replace(struct net *net, const void __user *user, unsigned int len)
- 	/* overflow check */
- 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
- 		return -ENOMEM;
-+	tmp.name[sizeof(tmp.name)-1] = 0;
+diff --git a/net/econet/af_econet.c b/net/econet/af_econet.c
+index 728d389..4a392c9 100644
+--- a/net/econet/af_econet.c
++++ b/net/econet/af_econet.c
+@@ -435,10 +435,10 @@ static int econet_sendmsg(struct kiocb *iocb, struct socket *sock,
+ 		udpdest.sin_addr.s_addr = htonl(network | addr.station);
+ 	}
  
- 	newinfo = xt_alloc_table_info(tmp.size);
- 	if (!newinfo)
-@@ -1871,6 +1872,7 @@ compat_do_replace(struct net *net, void __user *user, unsigned int len)
- 		return -ENOMEM;
- 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
- 		return -ENOMEM;
-+	tmp.name[sizeof(tmp.name)-1] = 0;
++	memset(&ah, 0, sizeof(ah));
+ 	ah.port = port;
+ 	ah.cb = cb & 0x7f;
+ 	ah.code = 2;		/* magic */
+-	ah.pad = 0;
  
- 	newinfo = xt_alloc_table_info(tmp.size);
- 	if (!newinfo)
-@@ -2100,6 +2102,7 @@ do_ip6t_get_ctl(struct sock *sk, int cmd, void __user *user, int *len)
- 			ret = -EFAULT;
- 			break;
- 		}
-+		rev.name[sizeof(rev.name)-1] = 0;
- 
- 		if (cmd == IP6T_SO_GET_REVISION_TARGET)
- 			target = 1;
+ 	/* tack our header on the front of the iovec */
+ 	size = sizeof(struct aunhdr);
 -- 
 1.7.4.4
 
