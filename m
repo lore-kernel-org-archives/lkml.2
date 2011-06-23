@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759054Ab1FWJLM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 05:11:12 -0400
-Received: from mail.southpole.se ([193.12.106.18]:47706 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754867Ab1FWJLK (ORCPT
+	id S1759231Ab1FWK07 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 06:26:59 -0400
+Received: from 173-14-103-237-nashville.hfc.comcastbusiness.net ([173.14.103.237]:59248
+	"EHLO bergen-net.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759211Ab1FWK06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 05:11:10 -0400
-Subject: Re: OpenRISC Architecture: Request for review
-From: Jonas Bonn <jonas@southpole.se>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, juliusbaxter@gmail.com
-In-Reply-To: <4E025D39.80600@zytor.com>
-References: <1308483825-6023-1-git-send-email-jonas@southpole.se>
-	 <4E025D39.80600@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: South Pole AB
-Date: Thu, 23 Jun 2011 11:10:55 +0200
-Message-ID: <1308820255.2737.70443.camel@needafix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Assp-Client-SSL: yes
+	Thu, 23 Jun 2011 06:26:58 -0400
+Message-ID: <679cce04e4432b09ff22d349c0a85c7a.squirrel@173.14.103.237>
+Date: Thu, 23 Jun 2011 04:12:23 -0500
+Subject: Confirmar su identidad Webmail
+From: "System Administrator" <info@webmaster.org>
+Reply-To: webmasterhelphesk2011@w.cn
+User-Agent: SquirrelMail/1.4.20
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Confirmar su identidad Webmail
 
-> Do you also have any ready-made ports for any common FPGA boards that
-> one can test it out on hardware with?
-> 
-> 	-hpa
+     Su cuota se ha superado el conjunto de Webmail cuota / Límite
+Lo que se está ejecutando en 20GB.Your 20.9GB porque la carpeta archivos
+ocultos en su mailbox.Please que debe seguir la siguiente información para
+validar su buzón de correo y aumentar su quota.To nos ayudan a volver a
+configurar su espacio en nuestra base de datos antes de mantener la cuenta
+de la Bandeja de entrada , debe responder a este e-mail
 
-Yes we do... there are the ORPSOC and minsoc projects that both provide
-complete board support for a large number of readily available boards.
+proporcionar a su continuación
+Información:
 
-Copying Julius Baxter on this response... hopefully he can fill in with
-some more details here.
+E-mail ()
+Nombre de usuario / ID ()
+Contraseña: ()
+Contraseña actual ()
 
-/Jonas
+
+Desde este punto usted no puede recibir mensajes de correo electrónico
+nuevo, se
+devuelto al remitente proporcionar la información anterior para nosotros
+ayuda ayuda restablece inmediatamente su webmail.
+
+Gracias
+HelpDesk
+Administrador del sistema
 
