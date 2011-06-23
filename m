@@ -1,120 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933823Ab1FWUxA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 16:53:00 -0400
-Received: from havoc.gtf.org ([69.61.125.42]:42487 "EHLO havoc.gtf.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932755Ab1FWUw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 16:52:58 -0400
-Date: Thu, 23 Jun 2011 16:52:57 -0400
-From: Jeff Garzik <jeff@garzik.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [git patches] libata fixes
-Message-ID: <20110623205257.GA2013@havoc.gtf.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	id S934017Ab1FWUz2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 16:55:28 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:55351 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932755Ab1FWUz1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 16:55:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E00F9ED.1020500@gmail.com>
+References: <20110621181127.18176.1384.stgit@ponder> <20110621184503.18176.88260.stgit@ponder>
+ <4E00F9ED.1020500@gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 23 Jun 2011 14:55:06 -0600
+X-Google-Sender-Auth: 6E8EBvHiMKZwdmUM5LMTIbKBGu8
+Message-ID: <BANLkTi=x0rPAg--t+_eP-JJ2uPEYgwPPLw@mail.gmail.com>
+Subject: Re: [PATCH 3/5] drivers/amba: create devices from device tree
+To: Rob Herring <robherring2@gmail.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 21, 2011 at 2:07 PM, Rob Herring <robherring2@gmail.com> wrote:
+> Grant,
+>
+> On 06/21/2011 01:45 PM, Grant Likely wrote:
+>> Add a function to create amba_devices (i.e. primecell peripherals)
+>> from device tree nodes. The device tree scanning is done by the
+>> of_platform_populate() function which can call of_amba_device_create
+>> based on a match table entry.
+>>
+>> Nodes with a "arm,primecell-periphid" property can override the h/w
+>> peripheral id value.
+>>
+>> Based on the original work by Jeremy Kerr.
+>>
+>> Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
+>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+>> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+>> [grant.likely: add Jeremy's original s-o-b line, changes from review
+>>                comments, and moved all code to drivers/of/platform.c]
+>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>> ---
+>>  .../devicetree/bindings/arm/primecell.txt          |   21 ++++++
+>>  drivers/of/platform.c                              |   71 ++++++++++++++++++++
+>>  2 files changed, 92 insertions(+), 0 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/arm/primecell.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/arm/primecell.txt b/Documentation/devicetree/bindings/arm/primecell.txt
+>> new file mode 100644
+>> index 0000000..1d5d7a8
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/arm/primecell.txt
+>> @@ -0,0 +1,21 @@
+>> +* ARM Primecell Peripherals
+>> +
+>> +ARM, Ltd. Primecell peripherals have a standard id register that can be used to
+>> +identify the peripheral type, vendor, and revision. This value can be used for
+>> +driver matching.
+>> +
+>> +Required properties:
+>> +
+>> +- compatible : should be a specific value for peripheral and "arm,primecell"
+>
+> Can I review what I wrote... Perhaps we should put strings in for all
+> existing drivers in the kernel. This should be a complete list:
+>
+> arm,pl010
+> arm,pl011
+> st,pl011
+> arm,pl022
+> st,pl022
+> st,pl023
+> arm,pl030
+> arm,pl031
+> st,pl031
+> arm,pl061
+> arm,pl050
+> arm,pl080
+> arm,pl081
+> st,pl080
+> arm,pl110
+> arm,pl180
+> arm,pl330
+> arm,sp804
+> arm,sp805
 
-1) regression fix for our SAS brethren still using the old EH (== ipr)
 
-2) new PCI IDs, for which apparently I screwed up the credit.  Do you
-want me to redo, or is there some way to annotate without rewriting git
-history?
+Yes, this whole list should be added.
 
-3) expand Pioneer CD-ROM quirks to cover all firmware versions for
-   each quirk'd CD-ROM model.
-
-4) speling fix
-
-
-Please pull from 'upstream-linus' branch of
-master.kernel.org:/pub/scm/linux/kernel/git/jgarzik/libata-dev.git upstream-linus
-
-to receive the following updates:
-
- drivers/ata/libata-core.c    |    6 +++---
- drivers/ata/libata-scsi.c    |    6 ++++++
- drivers/ata/pata_marvell.c   |    3 +++
- drivers/ata/sata_dwc_460ex.c |    2 +-
- 4 files changed, 13 insertions(+), 4 deletions(-)
-
-Justin P. Mattock (1):
-      drivers/ata/sata_dwc_460ex: Fix typo 'corrresponding'
-
-Linus Torvalds (1):
-      pata_marvell: Add support for 88SE91A0, 88SE91A4
-
-Nishanth Aravamudan (1):
-      libata/sas: only set FROZEN flag if new EH is supported
-
-Tejun Heo (1):
-      libata: apply NOSETXFER horkage to the affected Pioneer drives
-
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 736bee5..000d03a 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4143,9 +4143,9 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
- 	 * Devices which choke on SETXFER.  Applies only if both the
- 	 * device and controller are SATA.
- 	 */
--	{ "PIONEER DVD-RW  DVRTD08",	"1.00",	ATA_HORKAGE_NOSETXFER },
--	{ "PIONEER DVD-RW  DVR-212D",	"1.28", ATA_HORKAGE_NOSETXFER },
--	{ "PIONEER DVD-RW  DVR-216D",	"1.08", ATA_HORKAGE_NOSETXFER },
-+	{ "PIONEER DVD-RW  DVRTD08",	NULL,	ATA_HORKAGE_NOSETXFER },
-+	{ "PIONEER DVD-RW  DVR-212D",	NULL,	ATA_HORKAGE_NOSETXFER },
-+	{ "PIONEER DVD-RW  DVR-216D",	NULL,	ATA_HORKAGE_NOSETXFER },
- 
- 	/* End Marker */
- 	{ }
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index d51f979..927f968 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -3797,6 +3797,12 @@ EXPORT_SYMBOL_GPL(ata_sas_port_alloc);
-  */
- int ata_sas_port_start(struct ata_port *ap)
- {
-+	/*
-+	 * the port is marked as frozen at allocation time, but if we don't
-+	 * have new eh, we won't thaw it
-+	 */
-+	if (!ap->ops->error_handler)
-+		ap->pflags &= ~ATA_PFLAG_FROZEN;
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(ata_sas_port_start);
-diff --git a/drivers/ata/pata_marvell.c b/drivers/ata/pata_marvell.c
-index 75a6a0c..5d7f58a 100644
---- a/drivers/ata/pata_marvell.c
-+++ b/drivers/ata/pata_marvell.c
-@@ -161,6 +161,9 @@ static const struct pci_device_id marvell_pci_tbl[] = {
- 	{ PCI_DEVICE(0x11AB, 0x6121), },
- 	{ PCI_DEVICE(0x11AB, 0x6123), },
- 	{ PCI_DEVICE(0x11AB, 0x6145), },
-+	{ PCI_DEVICE(0x1B4B, 0x91A0), },
-+	{ PCI_DEVICE(0x1B4B, 0x91A4), },
-+
- 	{ }	/* terminate list */
- };
- 
-diff --git a/drivers/ata/sata_dwc_460ex.c b/drivers/ata/sata_dwc_460ex.c
-index 1c4b3aa..dc88a39 100644
---- a/drivers/ata/sata_dwc_460ex.c
-+++ b/drivers/ata/sata_dwc_460ex.c
-@@ -389,7 +389,7 @@ static void sata_dwc_tf_dump(struct ata_taskfile *tf)
- /*
-  * Function: get_burst_length_encode
-  * arguments: datalength: length in bytes of data
-- * returns value to be programmed in register corrresponding to data length
-+ * returns value to be programmed in register corresponding to data length
-  * This value is effectively the log(base 2) of the length
-  */
- static  int get_burst_length_encode(int datalength)
+g.
