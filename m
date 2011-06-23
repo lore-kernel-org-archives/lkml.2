@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933521Ab1FWRhP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:37:15 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34827 "EHLO
+	id S934091Ab1FWR4n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:56:43 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35165 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933509Ab1FWRhM (ORCPT
+	with ESMTP id S933632Ab1FWRho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:37:12 -0400
+	Thu, 23 Jun 2011 13:37:44 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Don Skidmore <donald.c.skidmore@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+Cc: stable-review@kernel.org, Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 153/247] ixgbe: fix for 82599 erratum on Header Splitting
-Date: Thu, 23 Jun 2011 13:33:41 -0400
-Message-Id: <1308850515-15242-94-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 154/247] mm: fix possible cause of a page_mapped BUG
+Date: Thu, 23 Jun 2011 13:33:42 -0400
+Message-Id: <1308850515-15242-95-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,52 +23,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Don Skidmore <donald.c.skidmore@intel.com>
+From: Hugh Dickins <hughd@google.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit a124339ad28389093ed15eca990d39c51c5736cc upstream.
+commit a3e8cc643d22d2c8ed36b9be7d9c9ca21efcf7f7 upstream.
 
-We have found a hardware erratum on 82599 hardware that can lead to
-unpredictable behavior when Header Splitting mode is enabled.  So
-we are no longer enabling this feature on affected hardware.
+Robert Swiecki reported a BUG_ON(page_mapped) from a fuzzer, punching
+a hole with madvise(,, MADV_REMOVE).  That path is under mutex, and
+cannot be explained by lack of serialization in unmap_mapping_range().
 
-Please see the 82599 Specification Update for more information.
+Reviewing the code, I found one place where vm_truncate_count handling
+should have been updated, when I switched at the last minute from one
+way of managing the restart_addr to another: mremap move changes the
+virtual addresses, so it ought to adjust the restart_addr.
 
-Signed-off-by: Don Skidmore <donald.c.skidmore@intel.com>
-Tested-by: Stephen Ko <stephen.s.ko@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+But rather than exporting the notion of restart_addr from memory.c, or
+converting to restart_pgoff throughout, simply reset vm_truncate_count
+to 0 to force a rescan if mremap move races with preempted truncation.
+
+We have no confirmation that this fixes Robert's BUG,
+but it is a fix that's worth making anyway.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/ixgbe/ixgbe_main.c |   11 +++++++++--
- 1 files changed, 9 insertions(+), 2 deletions(-)
+ mm/mremap.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ixgbe/ixgbe_main.c b/drivers/net/ixgbe/ixgbe_main.c
-index 156dfcb..f76f4f5 100644
---- a/drivers/net/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ixgbe/ixgbe_main.c
-@@ -2250,9 +2250,16 @@ static void ixgbe_configure_rx(struct ixgbe_adapter *adapter)
- 	int rx_buf_len;
+diff --git a/mm/mremap.c b/mm/mremap.c
+index cde56ee..10d5f62 100644
+--- a/mm/mremap.c
++++ b/mm/mremap.c
+@@ -91,9 +91,7 @@ static void move_ptes(struct vm_area_struct *vma, pmd_t *old_pmd,
+ 		 */
+ 		mapping = vma->vm_file->f_mapping;
+ 		spin_lock(&mapping->i_mmap_lock);
+-		if (new_vma->vm_truncate_count &&
+-		    new_vma->vm_truncate_count != vma->vm_truncate_count)
+-			new_vma->vm_truncate_count = 0;
++		new_vma->vm_truncate_count = 0;
+ 	}
  
- 	/* Decide whether to use packet split mode or not */
-+	/* On by default */
-+	adapter->flags |= IXGBE_FLAG_RX_PS_ENABLED;
-+
- 	/* Do not use packet split if we're in SR-IOV Mode */
--	if (!adapter->num_vfs)
--		adapter->flags |= IXGBE_FLAG_RX_PS_ENABLED;
-+	if (adapter->num_vfs)
-+		adapter->flags &= ~IXGBE_FLAG_RX_PS_ENABLED;
-+
-+	/* Disable packet split due to 82599 erratum #45 */
-+	if (hw->mac.type == ixgbe_mac_82599EB)
-+		adapter->flags &= ~IXGBE_FLAG_RX_PS_ENABLED;
- 
- 	/* Set the RX buffer length according to the mode */
- 	if (adapter->flags & IXGBE_FLAG_RX_PS_ENABLED) {
+ 	/*
 -- 
 1.7.4.4
 
