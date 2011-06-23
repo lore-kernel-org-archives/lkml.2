@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759738Ab1FWQwX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 12:52:23 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:51436 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759069Ab1FWQwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 12:52:22 -0400
-Date: Thu, 23 Jun 2011 18:52:12 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Keith Packard <keithp@keithp.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        <dri-devel@lists.freedesktop.org>
-Subject: Re: Oops in i915 intel_init_clock_gating
-Message-ID: <20110623185212.4ec716b6@schatten.dmk.lab>
-In-Reply-To: <Pine.LNX.4.44L0.1106221504070.1977-100000@iolanthe.rowland.org>
-References: <yun4o3h68gs.fsf@aiko.keithp.com>
-	<Pine.LNX.4.44L0.1106221504070.1977-100000@iolanthe.rowland.org>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1759764Ab1FWQzd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 12:55:33 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:62170 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759359Ab1FWQzc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 12:55:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=tUB2fA0MoSbzJiWyF4iGjBrjyY3+3L9r3YKjgnzfK4FiukmxRP/ARXIqUr3ShSmPgp
+         4cb0+rJjScZbOIwrMZYvTB8FLLpuR7CgTZ3WfaNX44fBLhpK0S9SHwnm7aSvz5e4FiQb
+         nEaJq0zZsPXTlN3POj4D3o40i6hc8PQ36FSFM=
+Message-ID: <4E037001.8090306@gmail.com>
+Date: Thu, 23 Jun 2011 18:55:29 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Alex Elder <aelder@sgi.com>
+CC: xfs-masters@oss.sgi.com, xfs@oss.sgi.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] xfs: Silence bounds checking compiler warning
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Jun 2011 15:04:56 -0400 (EDT)
-Alan Stern <stern@rowland.harvard.edu> wrote:
+gcc with -Warray-bounds generates a false positive on this
+since xfs defines the struct with u8 name[1]; to be able to
+add a tag at the end.
 
-> On Wed, 22 Jun 2011, Keith Packard wrote:
-> 
-> > On Wed, 15 Jun 2011 13:32:56 -0700, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> > 
-> > I haven't seen any comments as to whether this patch needs to be merged
-> > into the kernel. Has anyone tested this?
-> 
-> I have tested it, and it worked well on my system:
-> 
-> 	http://marc.info/?l=linux-kernel&m=130817292323254&w=2
-> 
-> Alan Stern
-> 
-Some clock-gating patch was also proposed here:
-https://bugzilla.kernel.org/show_bug.cgi?id=37252
+Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+---
+ fs/xfs/xfs_dir2_block.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Regards,
-Flo
+diff --git a/fs/xfs/xfs_dir2_block.c b/fs/xfs/xfs_dir2_block.c
+index 580d99c..2c5f287 100644
+--- a/fs/xfs/xfs_dir2_block.c
++++ b/fs/xfs/xfs_dir2_block.c
+@@ -1148,7 +1148,7 @@ xfs_dir2_sf_to_block(
+ 		((char *)block + XFS_DIR2_DATA_DOTDOT_OFFSET);
+ 	dep->inumber = cpu_to_be64(xfs_dir2_sf_get_inumber(sfp, &sfp->hdr.parent));
+ 	dep->namelen = 2;
+-	dep->name[0] = dep->name[1] = '.';
++	memset(dep->name, '.', 2);
+ 	tagp = xfs_dir2_data_entry_tag_p(dep);
+ 	*tagp = cpu_to_be16((char *)dep - (char *)block);
+ 	xfs_dir2_data_log_entry(tp, bp, dep);
+-- 
+1.7.5.4
+
+v2: memset looks like the cleanest solution, other options rely on ugly casts
+
