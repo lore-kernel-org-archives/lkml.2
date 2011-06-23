@@ -1,168 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759425Ab1FWMXj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 08:23:39 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33434 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759346Ab1FWMXh (ORCPT
+	id S932514Ab1FWM0y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 08:26:54 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34636 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932372Ab1FWM0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 08:23:37 -0400
-Message-ID: <4E033041.9090606@criticallink.com>
-Date: Thu, 23 Jun 2011 08:23:29 -0400
-From: Michael Williamson <michael.williamson@criticallink.com>
-Organization: Critical Link, LLC
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Thu, 23 Jun 2011 08:26:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=x5H2DArE2UKc85N7s4pwDtLSTrYraU6+WyLndGH0ghFBWZxSQQKMmZH8HUF8ALdb1w
+         WrrnHKk8UHZqQsQkD19Au6lOhrap3e2/ox/gegx3Mz20S4D09DK+RQfdfD6f/eSwWeM/
+         RE4vfwo+dHDAMpB/o6GB/QHpmLy/nWXFmGRiM=
+Date: Thu, 23 Jun 2011 16:26:48 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Stephane Eranian <eranian@google.com>, Don Zickus <dzickus@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Vince Weaver <vweaver1@eecs.utk.edu>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC -tip] perf, x86: Add PERF_COUNT_HW_NMI_WATCHDOG event v2
+Message-ID: <20110623122648.GI10238@sun>
+References: <20110622092134.GO21641@sun>
+ <20110623064835.GB10238@sun>
+ <BANLkTikVaOz5DYjKSU-jxVBw_Lw9ihV7BQ@mail.gmail.com>
+ <20110623095439.GC10238@sun>
+ <20110623110706.GE10238@sun>
+ <20110623114055.GV3765@redhat.com>
+ <BANLkTikR7j0iZ7SLsfkz=2bpTm2uaO_=5g@mail.gmail.com>
+ <20110623115327.GG10238@sun>
+ <BANLkTin5sN2FZaQYsnsEkH10OF-GES9MGw@mail.gmail.com>
+ <20110623120732.GH10238@sun>
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        davinci-linux-open-source 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Brian Swetland <swetland@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Grant Likely <grant.likely@secretlab.ca>, akpm@linux-foundation.org
-Subject: Re: [RFC 0/8] Introducing a generic AMP/IPC framework
-References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
-In-Reply-To: <1308640714-17961-1-git-send-email-ohad@wizery.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110623120732.GH10238@sun>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/21/2011 3:18 AM, Ohad Ben-Cohen wrote:
-> Modern SoCs typically employ a central symmetric multiprocessing (SMP)
-> application processor running Linux, with several other asymmetric
-> multiprocessing (AMP) heterogeneous processors running different instances
-> of operating system, whether Linux or any other flavor of real-time OS.
->
-> OMAP4, for example, has dual Cortex-A9, dual Cortex-M3 and a C64x+ DSP.
-> Typically, the dual cortex-A9 is running Linux in a SMP configuration, and
-> each of the other three cores (two M3 cores and a DSP) is running its own
-> instance of RTOS in an AMP configuration.
->
-> AMP remote processors typically employ dedicated DSP codecs and multimedia
-> hardware accelerators, and therefore are often used to offload cpu-intensive
-> multimedia tasks from the main application processor. They could also be
-> used to control latency-sensitive sensors, drive "random" hardware blocks,
-> or just perform background tasks while the main CPU is idling.
->
-> Users of those remote processors can either be userland apps (e.g.
-> multimedia frameworks talking with remote OMX components) or kernel drivers
-> (controlling hardware accessible only by the remote processor, reserving
-> kernel-controlled resources on behalf of the remote processor, etc..).
->
-> This patch set adds a generic AMP/IPC framework which makes it possible to
-> control (power on, boot, power off) and communicate (simply send and receive
-> messages) with those remote processors.
->
-> Specifically, we're adding:
->
-> * Rpmsg: a virtio-based messaging bus that allows kernel drivers to
-> communicate with remote processors available on the system. In turn,
-> drivers could then expose appropriate user space interfaces, if needed
-> (tasks running on remote processors often have direct access to sensitive
-> resources like the system's physical memory, gpios, i2c buses, dma
-> controllers, etc..  so one normally wouldn't want to allow userland to
-> send everything/everywhere it wants).
->
-> Every rpmsg device is a communication channel with a service running on a
-> remote processor (thus rpmsg devices are called channels). Channels are
-> identified by a textual name (which is used to match drivers to devices)
-> and have a local ("source") rpmsg address, and remote ("destination") rpmsg
-> address. When a driver starts listening on a channel (most commonly when it
-> is probed), the bus assigns the driver a unique rpmsg src address (a 32 bit
-> integer) and binds it with the driver's rx callback handler. This way
-> when inbound messages arrive to this src address, the rpmsg core dispatches
-> them to that driver, by invoking the driver's rx handler with the payload
-> of the incoming message.
->
-> Once probed, rpmsg drivers can also immediately start sending messages to the
-> remote rpmsg service by using simple sending API; no need even to specify
-> a destination address, since that's part of the rpmsg channel, and the rpmsg
-> bus uses the channel's dst address when it constructs the message (for
-> more demanding use cases, there's also an extended API, which does allow
-> full control of both the src and dst addresses).
->
-> The rpmsg bus is using virtio to send and receive messages: every pair
-> of processors share two vrings, which are used to send and receive the
-> messages over shared memory (one vring is used for tx, and the other one
-> for rx). Kicking the remote processor (i.e. letting it know it has a pending
-> message on its vring) is accomplished by means available on the platform we
-> run on (e.g. OMAP is using its mailbox to both interrupt the remote processor
-> and tell it which vring is kicked at the same time). The header of every
-> message sent on the rpmsg bus contains src and dst addresses, which make it
-> possible to multiplex several rpmsg channels on the same vring.
->
-> One nice property of the rpmsg bus is that device creation is completely
-> dynamic: remote processors can announce the existence of remote rpmsg
-> services by sending a "name service" messages (which contain the name and
-> rpmsg addr of the remote service). Those messages are picked by the rpmsg
-> bus, which in turn dynamically creates and registers the rpmsg channels
-> (i.e devices) which represents the remote services. If/when a relevant rpmsg
-> driver is registered, it will be immediately probed by the bus, and can then
-> start "talking" to the remote service.
->
-> Similarly, we can use this technique to dynamically create virtio devices
-> (and new vrings) which would then represent e.g. remote network, console
-> and block devices that will be driven by the existing virtio drivers
-> (this is still not implemented though; it requires some RTOS work as we're
-> not booting Linux on OMAP's remote processors). Creating new vrings might
-> also be desired by users who just don't want to use the shared rpmsg vrings
-> (for performance or any other functionality reasons).
->
-> In addition to dynamic creation of rpmsg channels, the rpmsg bus also
-> supports creation of static channels. This is needed in two cases:
-> - when a certain remote processor doesn't support sending those "name
->   service" announcements. In that case, a static table of remote rpmsg
->   services must be used to create the rpmsg channels.
-> - to support rpmsg server drivers, which aren't bound to a specific remote
->   rpmsg address. Instead, they just listen on a local address, waiting for
->   incoming messages. To send a message, those server drivers need to use
->   the rpmsg_sendto() API, so they can explicitly indicate the dst address
->   every time.
->
-> There are already several immediate use cases for rpmsg drivers: OMX
-> offloading (already being used on OMAP4), hardware resource manager (remote
-> processors on OMAP4 need to ask Linux to enable/disable hardware resources
-> on its behalf), remote display driver on Netra (dm8168), where the display
-> is controlled by a remote M3 processor (and a Linux v4l2/fbdev driver will
-> use rpmsg to communicate with that remote display driver).
->
-> * Remoteproc: a generic driver that maintains the state of the remote
-> processor(s). Simple rproc_get() and rproc_put() API is exposed, which
-> drivers can use when needed (first driver to call get() will load a firmware,
-> configure an iommu if needed, and boot the remote processor, while last
-> driver to call put() will power it down).
->
-> Hardware differences are abstracted as usual: a platform-specific driver
-> registers its own start/stop handlers in the generic remoteproc driver,
-> and those are invoked when its time to power up/down the processor. As a
-> reference, this patch set include remoteproc support for both OMAP4's
-> cortex-M3 and Davinci's DSP, tested on the pandaboard and hawkboard,
-> respectively.
->
-> The gory part of remoteproc is the firmware handling. We tried to come up
-> with a simple binary format that will require minimum kernel code to handle,
-> but at the same time be generic enough in the hopes that it would prove
-> useful to others as well. We're not at all hang onto the binary format
-> we picked: if there's any technical reason to change it to support other
-> platforms, please let us know. We do realize that a single binary firmware
-> structure might eventually not work for everyone. it did prove useful for
-> us though; we adopted both the OMAP and Davinci platforms (and their
-> completely different remote processor devices) to this simple binary
-> structure, so we don't have to duplicate the firmware handling code.
->
+On Thu, Jun 23, 2011 at 04:07:32PM +0400, Cyrill Gorcunov wrote:
+> On Thu, Jun 23, 2011 at 02:03:50PM +0200, Stephane Eranian wrote:
+> ...
+> > >
+> > No, first level in watchdog.c, the other callback has to be implemented
+> > from x86_pmu as you had it.
+> > 
+Something like below I suppose
 
-I'd like to kick the tires on this with a da850 based platform (MityDSP-L138).
-Any chance you might be able to share the stuff you did on the remote side
-(DSP/BIOS adaptations for rpmsg,  utils for ELF or COFF conversion to
-firmware format, etc.) for the DSP side of your tests done with the hawkboard?
+	Cyrill
+---
+ arch/x86/kernel/cpu/perf_event.c    |    7 +++++++
+ arch/x86/kernel/cpu/perf_event_p4.c |   26 ++++++++++++++++++++++++++
+ kernel/watchdog.c                   |    6 +++++-
+ 3 files changed, 38 insertions(+), 1 deletion(-)
 
-It looks like, at least for the da850, this subsumes or obsoletes DSPLINK in order
-to drive a more general purpose architecture (which looks great, so far, BTW). 
-Is that the intent?
-
--Mike
-
-
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
+===================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
+@@ -233,6 +233,7 @@ struct x86_pmu {
+ 	void		(*enable_all)(int added);
+ 	void		(*enable)(struct perf_event *);
+ 	void		(*disable)(struct perf_event *);
++	void		(*hw_watchdog_set_attr)(struct perf_event_attr *attr);
+ 	int		(*hw_config)(struct perf_event *event);
+ 	int		(*schedule_events)(struct cpu_hw_events *cpuc, int n, int *assign);
+ 	unsigned	eventsel;
+@@ -315,6 +316,12 @@ static u64 __read_mostly hw_cache_extra_
+ 				[PERF_COUNT_HW_CACHE_OP_MAX]
+ 				[PERF_COUNT_HW_CACHE_RESULT_MAX];
+ 
++void hw_nmi_watchdog_set_attr(struct perf_event_attr *wd_attr)
++{
++	if (x86_pmu.hw_watchdog_set_attr)
++		x86_pmu.hw_watchdog_set_attr(wd_attr);
++}
++
+ /*
+  * Propagate event elapsed time into the generic event.
+  * Can only be executed on the CPU where the event is active.
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+===================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -705,6 +705,31 @@ static int p4_validate_raw_event(struct 
+ 	return 0;
+ }
+ 
++static void p4_hw_watchdog_set_attr(struct perf_event_attr *wd_attr)
++{
++	/*
++	 * Watchdog ticks are special on Netburst, we use
++	 * that named "non-sleeping" ticks as recommended
++	 * by Intel SDM Vol3b.
++	 */
++	WARN_ON_ONCE(wd_attr->type	!= PERF_TYPE_HARDWARE ||
++		     wd_attr->config	!= PERF_COUNT_HW_CPU_CYCLES);
++
++	wd_attr->type	= PERF_TYPE_RAW;
++	wd_attr->config	=
++		p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_EXECUTION_EVENT)		|
++			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS0)		|
++			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS1)		|
++			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS2)		|
++			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS3)		|
++			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS0)		|
++			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS1)		|
++			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS2)		|
++			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS3))		|
++		p4_config_pack_cccr(P4_CCCR_THRESHOLD(15) | P4_CCCR_COMPLEMENT		|
++			P4_CCCR_COMPARE);
++}
++
+ static int p4_hw_config(struct perf_event *event)
+ {
+ 	int cpu = get_cpu();
+@@ -1179,6 +1204,7 @@ static __initconst const struct x86_pmu 
+ 	.cntval_bits		= ARCH_P4_CNTRVAL_BITS,
+ 	.cntval_mask		= ARCH_P4_CNTRVAL_MASK,
+ 	.max_period		= (1ULL << (ARCH_P4_CNTRVAL_BITS - 1)) - 1,
++	.hw_watchdog_set_attr	= p4_hw_watchdog_set_attr,
+ 	.hw_config		= p4_hw_config,
+ 	.schedule_events	= p4_pmu_schedule_events,
+ 	/*
+Index: linux-2.6.git/kernel/watchdog.c
+===================================================================
+--- linux-2.6.git.orig/kernel/watchdog.c
++++ linux-2.6.git/kernel/watchdog.c
+@@ -200,6 +200,8 @@ static int is_softlockup(unsigned long t
+ }
+ 
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
++void __weak hw_nmi_watchdog_set_attr(struct perf_event_attr *wd_attr) { }
++
+ static struct perf_event_attr wd_hw_attr = {
+ 	.type		= PERF_TYPE_HARDWARE,
+ 	.config		= PERF_COUNT_HW_CPU_CYCLES,
+@@ -368,9 +370,11 @@ static int watchdog_nmi_enable(int cpu)
+ 	if (event != NULL)
+ 		goto out_enable;
+ 
+-	/* Try to register using hardware perf events */
+ 	wd_attr = &wd_hw_attr;
+ 	wd_attr->sample_period = hw_nmi_get_sample_period(watchdog_thresh);
++	hw_nmi_watchdog_set_attr(wd_attr);
++
++	/* Try to register using hardware perf events */
+ 	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback);
+ 	if (!IS_ERR(event)) {
+ 		printk(KERN_INFO "NMI watchdog enabled, takes one hw-pmu counter.\n");
