@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759225Ab1FWPCM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 11:02:12 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:43891 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264Ab1FWPCL (ORCPT
+	id S1759466Ab1FWPCt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 11:02:49 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62035 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758185Ab1FWPCr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 11:02:11 -0400
-Date: Thu, 23 Jun 2011 17:02:09 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Frysinger <vapier@gentoo.org>, Sam Ravnborg <sam@ravnborg.org>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Subject: Re: __packed vs. __attribute__((packed)) in kernel headers
-Message-ID: <20110623150209.GA12413@x4.trippels.de>
-References: <20110622063441.GA1740@x4.trippels.de>
- <20110623134209.GA10813@elliptictech.com>
+	Thu, 23 Jun 2011 11:02:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :content-type:content-transfer-encoding;
+        b=gd1ANuj2Je6MlDdS4QxyT4kORq0PoRkRt2qffwilP37g8Me4mg28Gb7yGp3ueIeKqH
+         FOjtdw5amiWmTNJPZn70nhMy68NX3ZAdlg5XWR3Vt/iuP6nAm3Nw1/WrPbjc4ZhfjMgY
+         zyknPI7dlCuH5nvYQvHrvYdrlcQovV8+UE6io=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110623134209.GA10813@elliptictech.com>
+In-Reply-To: <BANLkTimdzyT6w2LoKtTjhHTKF5d6zWXFGw@mail.gmail.com>
+References: <BANLkTi=y1roManmZGMLBXSFbBVqK_KqDZg@mail.gmail.com>
+ <20110623153116.404f2a63.taeuber@bbaw.de> <BANLkTinOb-4Xm_W2fmzivk6jBJwjeHYKVA@mail.gmail.com>
+ <BANLkTimXH8K91cZ69oPRu=wbYt9JgBadfA@mail.gmail.com> <BANLkTin9bQ4hzs-odYU-Gxy-f-T+HLLAdQ@mail.gmail.com>
+ <4E034E2A.1010100@msgid.tls.msk.ru> <20110623165206.d88dcbb3.taeuber@bbaw.de> <BANLkTimdzyT6w2LoKtTjhHTKF5d6zWXFGw@mail.gmail.com>
+From: =?UTF-8?B?5L+e6aKQ6LaF?= <yyc1992@gmail.com>
+Date: Thu, 23 Jun 2011 11:02:26 -0400
+Message-ID: <BANLkTi=AeqT1CmiiNUXOcxYPe9=ORKME9g@mail.gmail.com>
+Subject: Re: extra slash in current path
+To: linux-kernel@vger.kernel.org, linux-c-programming@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.06.23 at 09:42 -0400, Nick Bowler wrote:
-> On 2011-06-22 08:34 +0200, Markus Trippelsdorf wrote:
-> > One possible solution would be to let the "scripts/headers_install.pl"
-> > script automatically substitute __packed with __attribute__((packed)):
-> > 
-> > diff --git a/scripts/headers_install.pl b/scripts/headers_install.pl
-> > index efb3be1..e0dc065 100644
-> > --- a/scripts/headers_install.pl
-> > +++ b/scripts/headers_install.pl
-> > @@ -35,6 +35,7 @@ foreach my $file (@files) {
-> >  		$line =~ s/([\s(])__iomem\s/$1/g;
-> >  		$line =~ s/\s__attribute_const__\s/ /g;
-> >  		$line =~ s/\s__attribute_const__$//g;
-> > +		$line =~ s/\s__packed/__attribute__((packed))/g;
-> >  		$line =~ s/^#include <linux\/compiler.h>//;
-> >  		$line =~ s/(^|\s)(inline)\b/$1__$2__/g;
-> >  		$line =~ s/(^|\s)(asm)\b(\s|[(]|$)/$1__$2__$3/g;
-> > 
-> > Any thoughts?
-> 
-> Without any comment on the approach itself, the above change will eat a
-> space character before __packed, which may break the header by merging a
-> preceding token into the __attribute__.  It may also change instances of
-> __packed that occur as a prefix of a longer token.
-> 
-> Note that the __attribute_const__ lines above it take some care to avoid
-> both of these situations.
+On Thu, Jun 23, 2011 at 10:52 AM, Lars Täuber <taeuber@bbaw.de> wrote:
+> Am Thu, 23 Jun 2011 18:31:06 +0400
+> Michael Tokarev <mjt@tls.msk.ru> schrieb:
+>> 23.06.2011 18:11, yuyichao-mit wrote:
+>>
+>> >>>> $ cd //
+>> >>>> $ pwd
+>> >>>> //
+>>
+>> The current directory is cached in $PWD environment
+>> variable by shell (bash at least).  This variable is
+>> checked in glibc (getcwd() et al) - if it is set and
+>> stat($PWD) is the same as stat("."), that value is used.
+>
+> It also is somehow cached inside bash/dash for it's built in commands.
+> $ cd //
+> $ export PWD=5
 
-Yes, you're right. But the patch was meant as a rough proof of concept
-and not as the final implementation. 
+this PWD=5 is not necessary.
 
-I'm not an expert of Perl regular expressions, but maybe this:
- $line =~ s/\s__packed;$/ __attribute__((packed));/g
-is a little bit closer to the intention?
+> $ pwd
+> //
+> $ /bin/pwd
+> /
 
--- 
-Markus
+$ export PWD=////
+$ /bin/pwd
+/
+$ pwd
+//
+$ echo $PWD
+////
+$ a.out (simply output get_current_dir_name())
+////
+so getcwd indeed use $PWD (for symlink?) but pwd and /bin/pwd both
+simplify the output although bash simplify it in a strange way~~~
+
+~~interesting
+
+>
+>
+> Regards
+> Lars
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
