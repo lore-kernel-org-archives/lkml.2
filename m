@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932835Ab1FWRWs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:22:48 -0400
-Received: from mail.windriver.com ([147.11.1.11]:63254 "EHLO
+	id S932722Ab1FWS2i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:28:38 -0400
+Received: from mail.windriver.com ([147.11.1.11]:63034 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932760Ab1FWRWp (ORCPT
+	with ESMTP id S932688Ab1FWRWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:22:45 -0400
+	Thu, 23 Jun 2011 13:22:20 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Vasanthakumar Thiagarajan <vasanth@atheros.com>,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: stable-review@kernel.org, James Bottomley <James.Bottomley@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 030/247] ath9k: Fix bug in delimiter padding computation
-Date: Thu, 23 Jun 2011 13:17:53 -0400
-Message-Id: <1308849690-14530-31-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 031/247] fix medium error problems with some arrays which can cause data corruption
+Date: Thu, 23 Jun 2011 13:17:54 -0400
+Message-Id: <1308849690-14530-32-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,41 +21,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vasanthakumar Thiagarajan <vasanth@atheros.com>
+From: James Bottomley <James.Bottomley@suse.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 39ec2997c374b528cdbf65099b6d6b8593a67f7f upstream.
+commit a8733c7baf457b071528e385a0b7d4aaec79287c upstream.
 
-There is a roundng error in delimiter padding computation
-which causes severe throughput drop with some of AR9003.
+Our current handling of medium error assumes that data is returned up
+to the bad sector.  This assumption holds good for all disk devices,
+all DIF arrays and most ordinary arrays.  However, an LSI array engine
+was recently discovered which reports a medium error without returning
+any data.  This means that when we report good data up to the medium
+error, we've reported junk originally in the buffer as good.  Worse,
+if the read consists of requested data plus a readahead, and the error
+occurs in readahead, we'll just strip off the readahead and report
+junk up to userspace as good data with no error.
 
-signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: Vasanthakumar Thiagarajan <vasanth@atheros.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The fix for this is to have the error position computation take into
+account the amount of data returned by the driver using the scsi
+residual data.  Unfortunately, not every driver fills in this data,
+but for those who don't, it's set to zero, which means we'll think a
+full set of data was transferred and the behaviour will be identical
+to the prior behaviour of the code (believe the buffer up to the error
+sector).  All modern drivers seem to set the residual, so that should
+fix up the LSI failure/corruption case.
+
+Reported-by: Douglas Gilbert <dgilbert@interlog.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/wireless/ath/ath9k/ath9k.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/sd.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/ath9k.h b/drivers/net/wireless/ath/ath9k/ath9k.h
-index 83c7ea4..7f36731 100644
---- a/drivers/net/wireless/ath/ath9k/ath9k.h
-+++ b/drivers/net/wireless/ath/ath9k/ath9k.h
-@@ -172,8 +172,8 @@ void ath_descdma_cleanup(struct ath_softc *sc, struct ath_descdma *dd,
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 892f446..18e6c59 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1109,6 +1109,12 @@ static unsigned int sd_completed_bytes(struct scsi_cmnd *scmd)
+ 	u64 end_lba = blk_rq_pos(scmd->request) + (scsi_bufflen(scmd) / 512);
+ 	u64 bad_lba;
+ 	int info_valid;
++	/*
++	 * resid is optional but mostly filled in.  When it's unused,
++	 * its value is zero, so we assume the whole buffer transferred
++	 */
++	unsigned int transferred = scsi_bufflen(scmd) - scsi_get_resid(scmd);
++	unsigned int good_bytes;
  
- /* returns delimiter padding required given the packet length */
- #define ATH_AGGR_GET_NDELIM(_len)					\
--	(((((_len) + ATH_AGGR_DELIM_SZ) < ATH_AGGR_MINPLEN) ?           \
--	  (ATH_AGGR_MINPLEN - (_len) - ATH_AGGR_DELIM_SZ) : 0) >> 2)
-+       (((_len) >= ATH_AGGR_MINPLEN) ? 0 :                             \
-+        DIV_ROUND_UP(ATH_AGGR_MINPLEN - (_len), ATH_AGGR_DELIM_SZ))
+ 	if (!blk_fs_request(scmd->request))
+ 		return 0;
+@@ -1142,7 +1148,8 @@ static unsigned int sd_completed_bytes(struct scsi_cmnd *scmd)
+ 	/* This computation should always be done in terms of
+ 	 * the resolution of the device's medium.
+ 	 */
+-	return (bad_lba - start_lba) * scmd->device->sector_size;
++	good_bytes = (bad_lba - start_lba) * scmd->device->sector_size;
++	return min(good_bytes, transferred);
+ }
  
- #define BAW_WITHIN(_start, _bawsz, _seqno) \
- 	((((_seqno) - (_start)) & 4095) < (_bawsz))
+ /**
 -- 
 1.7.4.4
 
