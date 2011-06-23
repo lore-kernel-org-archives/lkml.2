@@ -1,324 +1,355 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759373Ab1FWMQd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 08:16:33 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52467 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754028Ab1FWMQb convert rfc822-to-8bit (ORCPT
+	id S1759376Ab1FWMWF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 08:22:05 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:60022 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754028Ab1FWMWD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 08:16:31 -0400
+	Thu, 23 Jun 2011 08:22:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wTRXaPZ1E2WdU0t0Rv1PPnWu3KAANdoreOQPWPSAKM0dMakcQFjqdwoOQsQJEvGsQB
-         6jsqm2v6m5gKSn1dgX8DCGqy6tGsosGfGtR3VT0PprkryKL5G9iVijm8EwKrylssj6Oe
-         fGIUro2/UYYx4BbRN6ZKQDEHYvmyOU9skbAy0=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=MCKxQu3Q9AcPKIH/dK3LUV0kQeBHIvbKUmB6zdcXo/DHGEfHV7GCYDWu1RtSL7zHYu
+         f75gcw+Z3eRWs4HcSeOooeNbHz573Xz6db7bPDXQp/viOtiJ9zYtDItpNmsY1TgUW34o
+         3cyXgiTIRzBz3M0SvWj85MNEaN5ZxJjUiOde8=
 MIME-Version: 1.0
-In-Reply-To: <BLU158-w370CB20409B2C48E8D14C887530@phx.gbl>
+In-Reply-To: <BANLkTikSFnbmb-zcznRSKN4=2wCLsA1_Mg@mail.gmail.com>
 References: <BLU158-w185CA0272A5A3CC187AF1E876E0@phx.gbl>
 	<BANLkTi=B3uZ1qmL6oPyXXQ1n-BCAftND-A@mail.gmail.com>
 	<BLU158-w57EC92C4495F7C9645D7F187500@phx.gbl>
 	<BANLkTinubW6Pq7NHrpeG2pLf8SC3xLFdGg@mail.gmail.com>
 	<BLU158-w370CB20409B2C48E8D14C887530@phx.gbl>
-Date: Thu, 23 Jun 2011 17:46:28 +0530
-Message-ID: <BANLkTikSFnbmb-zcznRSKN4=2wCLsA1_Mg@mail.gmail.com>
+	<BANLkTikSFnbmb-zcznRSKN4=2wCLsA1_Mg@mail.gmail.com>
+Date: Thu, 23 Jun 2011 20:22:01 +0800
+X-Google-Sender-Auth: gQklwnPiGJSXBQs7KO4-2E8rnhI
+Message-ID: <BANLkTi=terT-=UbeJCp8Chb7tx0ymVT4Pg@mail.gmail.com>
 Subject: Re: [ath9k-devel] Disabling the third antenna for AR9380 in ath9k
-From: Mohammed Shafi <shafi.wireless@gmail.com>
-To: Fred Matthews <fredmm@hotmail.co.uk>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        ath9k-devel@venema.h4ckr.net, ath9k-devel@venema.h4ckr.net,
-        susinder@qca.qualcomm.com, adrian@freebsd.org
+From: Adrian Chadd <adrian@freebsd.org>
+To: Mohammed Shafi <shafi.wireless@gmail.com>
+Cc: Fred Matthews <fredmm@hotmail.co.uk>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+        ath9k-devel@venema.h4ckr.net, susinder@qca.qualcomm.com
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 5:26 PM, Fred Matthews <fredmm@hotmail.co.uk> wrote:
->
->
-> Hi,
->
-> Regarding streams used in Minstrel RC, I found that in "net/mac80211/rc80211_minstrel_ht.h", at line 16, there is "#define MINSTREL_MAX_STREAMS  3", that sets the number of streams for minstrel RC.
->
-> Now can someone help to pass this onto debugfs, so that we can change from 3 streams to 2 streams at runtime like the rx_chainmask. I tried creating a u8 stream_number and struct dentry *dbg_stream_number in the header file, then a debugfs_create_u8 in the c file. Then used it to redefine MINSTREL_MAX_STREAMS, but when I tested this I got errors, therefore, can anyone kindly share a patch to do this correctly.
+As I said, there's a value in the ath9k code that gets set based on
+the chipset type.
 
-hi,
+static void setup_ht_cap(struct ath_softc *sc,
+                         struct ieee80211_sta_ht_cap *ht_info)
 
-i am not familiar with the minstrel rate control, but as you had asked
-I grep'd for MINSTREL_MAX_STREAMS to see if we can quickly add a debug
-entry to change it. but usage like this below suggests we can quickly
-hack the macro to 2 rather than adding a debug entry
+in init.c
 
-const struct mcs_group minstrel_mcs_groups[] = {
-        MCS_GROUP(1, 0, 0),
-        MCS_GROUP(2, 0, 0),
-#if MINSTREL_MAX_STREAMS >= 3
-        MCS_GROUP(3, 0, 0),
-#endif
+That should be all you need to do to communicate to the higher layers
+that you only support 2 streams.
+
+You're checking the wrong place. You're seeing _TX_ errors, but what
+you're not seeing (likely because you don't have a 3 stream peer) is
+that you're still advertising supporting MCS0->24, so peers may send
+you MCS16->24 even though you can't receive it.
+
+The correct way is to patch the driver to only enable 2 streams in the
+HT capability setup, so mac80211 and the rate control code only
+advertises MCS0-15 and TX'es MCS0-15 respectively.
+
+(You have to do this as well as disabling the third chain btw.)
 
 
->
-> Thanks in advance
->
->
->
-> On Wed, Jun 22, 2011 at 3:57 PM, Mohammed Shafi wrote:
->> On Wed, Jun 22, 2011 at 6:12 PM, Fred Matthews wrote:
->>>
->>> Hi,
->>>
->>> I used that command to disable the third antenna, and applied it to both AP
->>> and STA AR9380 NICs.
->>> I then performed an IPerf test between both and then captured the statistics
->>> from the sender, (below) .
->>> You can see that in rc_stats (minstrel), the rate control actually
->>> "attempts" sending on 3 stream MCSs (16-23) around 256 times each.
+
+Adrian
+
+On 23 June 2011 20:16, Mohammed Shafi <shafi.wireless@gmail.com> wrote:
+> On Thu, Jun 23, 2011 at 5:26 PM, Fred Matthews <fredmm@hotmail.co.uk> wrote:
 >>
->> just a guess. as we are changing the chain mask via debugfs and there
->> may be a chance we may not have informed the minstrel rate control
->> which is maintained in upper layer(mac80211) and it might be taking
->> what we have configured the chain masks while we had initialized the
->> device and i have very little idea about ministrel rate control
 >>
->>>
->>> Is there any way to prevent the RC from even attempting those rates, as if I
->>> where to fully imitate an AR9280, it shouldnt attempt at those MCSs.
+>> Hi,
 >>
->> may be we can try with ath9k rate control, and see what happens which
->> is within the ath9k driver and affects xmit.c and it may have been
->> informed of the chain mask change.
+>> Regarding streams used in Minstrel RC, I found that in "net/mac80211/rc80211_minstrel_ht.h", at line 16, there is "#define MINSTREL_MAX_STREAMS  3", that sets the number of streams for minstrel RC.
 >>
->>>
->>> Can Susinders comments also be detailed.
->>>
->>> Thanks in advance
->>>
->>> # cat /sys/kernel/debug/ieee80211/phy0/netdev\:wlan0/stations/00\MAC/
->>>
->>> AUTH
->>> ASSOC
->>> AUTHORIZED
->>> WME
->>> ht supported
->>> cap: 0x11ce
->>>     HT20/HT40
->>>     SM Power Save disabled
->>>     RX HT40 SGI
->>>     TX STBC
->>>     RX STBC 1-stream
->>>     Max AMSDU length: 7935 bytes
->>>     DSSS/CCK HT40
->>> ampdu factor/density: 3/6
->>> MCS mask: ff ff ff 00 00 00 00 00 00 00
->>> MCS tx params: 1
->>> 792
->>> 150 ffff ffff ffff ffff ffff 60 ffff ffff ffff ffff ffff ffff ffff ffff ffff
->>> a40
->>> -77
->>> 0
->>> type      rate     throughput  ewma prob   this prob  this succ/attempt
->>> success    attempts
->>> HT20/LGI    MCS0        6.6       99.9      100.0          0(  0)        163
->>>         230
->>> HT20/LGI    MCS1       13.1      100.0      100.0          0(  0)         75
->>>          75
->>> HT20/LGI    MCS2       19.3      100.0      100.0          0(  0)        252
->>>         252
->>> HT20/LGI    MCS3       25.4      100.0      100.0          0(  0)         75
->>>          75
->>> HT20/LGI    MCS4       36.2       97.5      100.0          0(  0)        413
->>>         474
->>> HT20/LGI    MCS5        0.0        0.0        0.0          0(  0)          0
->>>          76
->>> HT20/LGI    MCS6        0.0        0.0        0.0          0(  0)          0
->>>          80
->>> HT20/LGI    MCS7        0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT20/LGI    MCS8       13.1      100.0      100.0          0(  0)         75
->>>          75
->>> HT20/LGI    MCS9       25.4      100.0      100.0          0(  0)         70
->>>          70
->>> HT20/LGI    MCS10      34.2       92.2      100.0          0(  0)         79
->>>          82
->>> HT20/LGI    MCS11       0.0        0.0        0.0          0(  0)          0
->>>          76
->>> HT20/LGI    MCS12       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT20/LGI    MCS13       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT20/LGI    MCS14       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT20/LGI    MCS15       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT20/LGI    MCS16       0.0        0.0        0.0          0(  0)          0
->>>          75
->>> HT20/LGI    MCS17       0.0        0.0        0.0          0(  0)          0
->>>          68
->>> HT20/LGI    MCS18       0.0        0.0        0.0          0(  0)          0
->>>          85
->>> HT20/LGI    MCS19       0.0        0.0        0.0          0(  0)          0
->>>         257
->>> HT20/LGI    MCS20       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT20/LGI    MCS21       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT20/LGI    MCS22       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT20/LGI    MCS23       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/LGI    MCS0       13.6      100.0      100.0          0(  0)         75
->>>          75
->>> HT40/LGI    MCS1       26.5      100.0      100.0          0(  0)         72
->>>          72
->>> HT40/LGI    MCS2       38.3      100.0      100.0          0(  0)         73
->>>          73
->>> HT40/LGI    MCS3       49.7       99.9      100.0          0(  0)         70
->>>          73
->>> HT40/LGI    MCS4        0.0        0.0        0.0          0(  0)         10
->>>        1220
->>> HT40/LGI    MCS5        0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/LGI    MCS6        0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/LGI    MCS7        0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/LGI    MCS8       26.2       98.9      100.0          0(  0)         73
->>>          74
->>> HT40/LGI    MCS9       49.3       99.2      100.0          0(  0)         67
->>>          69
->>> HT40/LGI    MCS10      20.5       28.9        0.0          0(  0)         14
->>>         255
->>> HT40/LGI    MCS11       0.0        0.0        0.0          0(  0)          0
->>>         257
->>> HT40/LGI    MCS12       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/LGI    MCS13       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/LGI    MCS14       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/LGI    MCS15       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/LGI    MCS16       0.0        0.0        0.0          0(  0)          0
->>>          74
->>> HT40/LGI    MCS17       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/LGI    MCS18       0.0        0.0        0.0          0(  0)          0
->>>         255
->>> HT40/LGI    MCS19       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/LGI    MCS20       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/LGI    MCS21       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/LGI    MCS22       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/LGI    MCS23       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/SGI    MCS0       15.1      100.0      100.0          0(  0)         70
->>>          70
->>> HT40/SGI    MCS1       29.2      100.0      100.0          0(  0)         72
->>>          72
->>> HT40/SGI  t MCS2       38.5       91.3      100.0          0(  0)         81
->>>          83
->>> HT40/SGI   PMCS3       54.3       99.5      100.0          0(  0)      66536
->>>       67803
->>> HT40/SGI    MCS4        0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/SGI    MCS5        0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/SGI    MCS6        0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/SGI    MCS7        0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/SGI    MCS8       29.2      100.0      100.0          0(  0)         67
->>>          67
->>> HT40/SGI T  MCS9       54.6       99.9      100.0          0(  0)     310227
->>>      312339
->>> HT40/SGI    MCS10      22.7       29.3      100.0          0(  0)         14
->>>     46.8 Mbits/sec    255
->>> HT40/SGI    MCS11       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/SGI    MCS12       0.0        0.0        0.0          0(  0)          0
->>>         255
->>> HT40/SGI    MCS13       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/SGI    MCS14       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/SGI    MCS15       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/SGI    MCS16       0.0        0.0        0.0          0(  0)          0
->>>          68
->>> HT40/SGI    MCS17       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/SGI    MCS18       0.0        0.0        0.0          0(  0)          0
->>>         255
->>> HT40/SGI    MCS19       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/SGI    MCS20       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/SGI    MCS21       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/SGI    MCS22       0.0        0.0        0.0          0(  0)          0
->>>         256
->>> HT40/SGI    MCS23       0.0        0.0        0.0          0(  0)          0
->>>         256
->>>
->>> Total packet count::    ideal 365056      lookaround 13702
->>> Average A-MPDU length: 5.4
->>>
->>>> Date: Tue, 21 Jun 2011 14:25:36 +0530
->>>> Subject: Re: [ath9k-devel] Disabling the third antenna for AR9380 in ath9k
->>>> From: shafi.wireless@gmail.com
->>>> To: fredmm@hotmail.co.uk
->>>> CC: linux-kernel@vger.kernel.org; linux-wireless@vger.kernel.org;
->>>> ath9k-devel@venema.h4ckr.net; ath9k-devel@lists.ath9k.org;
->>>> susinder@qca.qualcomm.com
->>>>
->>>> On Tue, Jun 21, 2011 at 2:07 AM, Fred Matthews
->>>> wrote:
->>>> > Hi all,
->>>> > I am installing the AR9380 NIC on laptops, but some only have two UFL
->>>> > connectors, and thus I was wondering if using only two of the UFL
->>>> > antenna
->>>> > ports will have any negative effect or difference than installing a 2x2
->>>> > NIC
->>>> > (AR9280 for example which has only 2 ports anyway). Please kindly
->>>> > explain
->>>> > with references if possible.
->>>> > Also for example is there anyway to disable transmission on the third
->>>> > UFL
->>>> > port (antenna) from ath9k or otherwise.
->>>> > Thank you all very much
->>>>
->>>> you can change the tx/rx chainmask for 3x3 AR9380 to disable
->>>> transmission on the third antenna
->>>> cd /sys/kernel/debug/ieee80211/phy0/ath9k# echo 0x3 > tx_chainmask
->>>> cd /sys/kernel/debug/ieee80211/phy0/ath9k# echo 0x3 > rx_chainmask
->>>>
->>>> after this, ideally it should operate as 2x2 device as per Susinders
->>>> comments. but if you got AR9280 please try to use that if 2 antenna is
->>>> the constraint.
->>>>
->>>>
->>>> > _______________________________________________
->>>> > ath9k-devel mailing list
->>>> > ath9k-devel@lists.ath9k.org
->>>> > https://lists.ath9k.org/mailman/listinfo/ath9k-devel
->>>> >
->>>> >
->>>>
->>>>
->>>>
->>>> --
->                                          --
-> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Now can someone help to pass this onto debugfs, so that we can change from 3 streams to 2 streams at runtime like the rx_chainmask. I tried creating a u8 stream_number and struct dentry *dbg_stream_number in the header file, then a debugfs_create_u8 in the c file. Then used it to redefine MINSTREL_MAX_STREAMS, but when I tested this I got errors, therefore, can anyone kindly share a patch to do this correctly.
 >
-
-
-
--- 
-shafi
+> hi,
+>
+> i am not familiar with the minstrel rate control, but as you had asked
+> I grep'd for MINSTREL_MAX_STREAMS to see if we can quickly add a debug
+> entry to change it. but usage like this below suggests we can quickly
+> hack the macro to 2 rather than adding a debug entry
+>
+> const struct mcs_group minstrel_mcs_groups[] = {
+>        MCS_GROUP(1, 0, 0),
+>        MCS_GROUP(2, 0, 0),
+> #if MINSTREL_MAX_STREAMS >= 3
+>        MCS_GROUP(3, 0, 0),
+> #endif
+>
+>
+>>
+>> Thanks in advance
+>>
+>>
+>>
+>> On Wed, Jun 22, 2011 at 3:57 PM, Mohammed Shafi wrote:
+>>> On Wed, Jun 22, 2011 at 6:12 PM, Fred Matthews wrote:
+>>>>
+>>>> Hi,
+>>>>
+>>>> I used that command to disable the third antenna, and applied it to both AP
+>>>> and STA AR9380 NICs.
+>>>> I then performed an IPerf test between both and then captured the statistics
+>>>> from the sender, (below) .
+>>>> You can see that in rc_stats (minstrel), the rate control actually
+>>>> "attempts" sending on 3 stream MCSs (16-23) around 256 times each.
+>>>
+>>> just a guess. as we are changing the chain mask via debugfs and there
+>>> may be a chance we may not have informed the minstrel rate control
+>>> which is maintained in upper layer(mac80211) and it might be taking
+>>> what we have configured the chain masks while we had initialized the
+>>> device and i have very little idea about ministrel rate control
+>>>
+>>>>
+>>>> Is there any way to prevent the RC from even attempting those rates, as if I
+>>>> where to fully imitate an AR9280, it shouldnt attempt at those MCSs.
+>>>
+>>> may be we can try with ath9k rate control, and see what happens which
+>>> is within the ath9k driver and affects xmit.c and it may have been
+>>> informed of the chain mask change.
+>>>
+>>>>
+>>>> Can Susinders comments also be detailed.
+>>>>
+>>>> Thanks in advance
+>>>>
+>>>> # cat /sys/kernel/debug/ieee80211/phy0/netdev\:wlan0/stations/00\MAC/
+>>>>
+>>>> AUTH
+>>>> ASSOC
+>>>> AUTHORIZED
+>>>> WME
+>>>> ht supported
+>>>> cap: 0x11ce
+>>>>     HT20/HT40
+>>>>     SM Power Save disabled
+>>>>     RX HT40 SGI
+>>>>     TX STBC
+>>>>     RX STBC 1-stream
+>>>>     Max AMSDU length: 7935 bytes
+>>>>     DSSS/CCK HT40
+>>>> ampdu factor/density: 3/6
+>>>> MCS mask: ff ff ff 00 00 00 00 00 00 00
+>>>> MCS tx params: 1
+>>>> 792
+>>>> 150 ffff ffff ffff ffff ffff 60 ffff ffff ffff ffff ffff ffff ffff ffff ffff
+>>>> a40
+>>>> -77
+>>>> 0
+>>>> type      rate     throughput  ewma prob   this prob  this succ/attempt
+>>>> success    attempts
+>>>> HT20/LGI    MCS0        6.6       99.9      100.0          0(  0)        163
+>>>>         230
+>>>> HT20/LGI    MCS1       13.1      100.0      100.0          0(  0)         75
+>>>>          75
+>>>> HT20/LGI    MCS2       19.3      100.0      100.0          0(  0)        252
+>>>>         252
+>>>> HT20/LGI    MCS3       25.4      100.0      100.0          0(  0)         75
+>>>>          75
+>>>> HT20/LGI    MCS4       36.2       97.5      100.0          0(  0)        413
+>>>>         474
+>>>> HT20/LGI    MCS5        0.0        0.0        0.0          0(  0)          0
+>>>>          76
+>>>> HT20/LGI    MCS6        0.0        0.0        0.0          0(  0)          0
+>>>>          80
+>>>> HT20/LGI    MCS7        0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT20/LGI    MCS8       13.1      100.0      100.0          0(  0)         75
+>>>>          75
+>>>> HT20/LGI    MCS9       25.4      100.0      100.0          0(  0)         70
+>>>>          70
+>>>> HT20/LGI    MCS10      34.2       92.2      100.0          0(  0)         79
+>>>>          82
+>>>> HT20/LGI    MCS11       0.0        0.0        0.0          0(  0)          0
+>>>>          76
+>>>> HT20/LGI    MCS12       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT20/LGI    MCS13       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT20/LGI    MCS14       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT20/LGI    MCS15       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT20/LGI    MCS16       0.0        0.0        0.0          0(  0)          0
+>>>>          75
+>>>> HT20/LGI    MCS17       0.0        0.0        0.0          0(  0)          0
+>>>>          68
+>>>> HT20/LGI    MCS18       0.0        0.0        0.0          0(  0)          0
+>>>>          85
+>>>> HT20/LGI    MCS19       0.0        0.0        0.0          0(  0)          0
+>>>>         257
+>>>> HT20/LGI    MCS20       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT20/LGI    MCS21       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT20/LGI    MCS22       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT20/LGI    MCS23       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/LGI    MCS0       13.6      100.0      100.0          0(  0)         75
+>>>>          75
+>>>> HT40/LGI    MCS1       26.5      100.0      100.0          0(  0)         72
+>>>>          72
+>>>> HT40/LGI    MCS2       38.3      100.0      100.0          0(  0)         73
+>>>>          73
+>>>> HT40/LGI    MCS3       49.7       99.9      100.0          0(  0)         70
+>>>>          73
+>>>> HT40/LGI    MCS4        0.0        0.0        0.0          0(  0)         10
+>>>>        1220
+>>>> HT40/LGI    MCS5        0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/LGI    MCS6        0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/LGI    MCS7        0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/LGI    MCS8       26.2       98.9      100.0          0(  0)         73
+>>>>          74
+>>>> HT40/LGI    MCS9       49.3       99.2      100.0          0(  0)         67
+>>>>          69
+>>>> HT40/LGI    MCS10      20.5       28.9        0.0          0(  0)         14
+>>>>         255
+>>>> HT40/LGI    MCS11       0.0        0.0        0.0          0(  0)          0
+>>>>         257
+>>>> HT40/LGI    MCS12       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/LGI    MCS13       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/LGI    MCS14       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/LGI    MCS15       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/LGI    MCS16       0.0        0.0        0.0          0(  0)          0
+>>>>          74
+>>>> HT40/LGI    MCS17       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/LGI    MCS18       0.0        0.0        0.0          0(  0)          0
+>>>>         255
+>>>> HT40/LGI    MCS19       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/LGI    MCS20       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/LGI    MCS21       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/LGI    MCS22       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/LGI    MCS23       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/SGI    MCS0       15.1      100.0      100.0          0(  0)         70
+>>>>          70
+>>>> HT40/SGI    MCS1       29.2      100.0      100.0          0(  0)         72
+>>>>          72
+>>>> HT40/SGI  t MCS2       38.5       91.3      100.0          0(  0)         81
+>>>>          83
+>>>> HT40/SGI   PMCS3       54.3       99.5      100.0          0(  0)      66536
+>>>>       67803
+>>>> HT40/SGI    MCS4        0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/SGI    MCS5        0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/SGI    MCS6        0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/SGI    MCS7        0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/SGI    MCS8       29.2      100.0      100.0          0(  0)         67
+>>>>          67
+>>>> HT40/SGI T  MCS9       54.6       99.9      100.0          0(  0)     310227
+>>>>      312339
+>>>> HT40/SGI    MCS10      22.7       29.3      100.0          0(  0)         14
+>>>>     46.8 Mbits/sec    255
+>>>> HT40/SGI    MCS11       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/SGI    MCS12       0.0        0.0        0.0          0(  0)          0
+>>>>         255
+>>>> HT40/SGI    MCS13       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/SGI    MCS14       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/SGI    MCS15       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/SGI    MCS16       0.0        0.0        0.0          0(  0)          0
+>>>>          68
+>>>> HT40/SGI    MCS17       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/SGI    MCS18       0.0        0.0        0.0          0(  0)          0
+>>>>         255
+>>>> HT40/SGI    MCS19       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/SGI    MCS20       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/SGI    MCS21       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/SGI    MCS22       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>> HT40/SGI    MCS23       0.0        0.0        0.0          0(  0)          0
+>>>>         256
+>>>>
+>>>> Total packet count::    ideal 365056      lookaround 13702
+>>>> Average A-MPDU length: 5.4
+>>>>
+>>>>> Date: Tue, 21 Jun 2011 14:25:36 +0530
+>>>>> Subject: Re: [ath9k-devel] Disabling the third antenna for AR9380 in ath9k
+>>>>> From: shafi.wireless@gmail.com
+>>>>> To: fredmm@hotmail.co.uk
+>>>>> CC: linux-kernel@vger.kernel.org; linux-wireless@vger.kernel.org;
+>>>>> ath9k-devel@venema.h4ckr.net; ath9k-devel@lists.ath9k.org;
+>>>>> susinder@qca.qualcomm.com
+>>>>>
+>>>>> On Tue, Jun 21, 2011 at 2:07 AM, Fred Matthews
+>>>>> wrote:
+>>>>> > Hi all,
+>>>>> > I am installing the AR9380 NIC on laptops, but some only have two UFL
+>>>>> > connectors, and thus I was wondering if using only two of the UFL
+>>>>> > antenna
+>>>>> > ports will have any negative effect or difference than installing a 2x2
+>>>>> > NIC
+>>>>> > (AR9280 for example which has only 2 ports anyway). Please kindly
+>>>>> > explain
+>>>>> > with references if possible.
+>>>>> > Also for example is there anyway to disable transmission on the third
+>>>>> > UFL
+>>>>> > port (antenna) from ath9k or otherwise.
+>>>>> > Thank you all very much
+>>>>>
+>>>>> you can change the tx/rx chainmask for 3x3 AR9380 to disable
+>>>>> transmission on the third antenna
+>>>>> cd /sys/kernel/debug/ieee80211/phy0/ath9k# echo 0x3 > tx_chainmask
+>>>>> cd /sys/kernel/debug/ieee80211/phy0/ath9k# echo 0x3 > rx_chainmask
+>>>>>
+>>>>> after this, ideally it should operate as 2x2 device as per Susinders
+>>>>> comments. but if you got AR9280 please try to use that if 2 antenna is
+>>>>> the constraint.
+>>>>>
+>>>>>
+>>>>> > _______________________________________________
+>>>>> > ath9k-devel mailing list
+>>>>> > ath9k-devel@lists.ath9k.org
+>>>>> > https://lists.ath9k.org/mailman/listinfo/ath9k-devel
+>>>>> >
+>>>>> >
+>>>>>
+>>>>>
+>>>>>
+>>>>> --
+>>                                          --
+>> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
+>
+>
+> --
+> shafi
+>
