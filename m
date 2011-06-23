@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933704Ab1FWRiK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:38:10 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35329 "EHLO
+	id S934129Ab1FWR7l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:59:41 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35057 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933518Ab1FWRiG (ORCPT
+	with ESMTP id S933584Ab1FWRhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:38:06 -0400
+	Thu, 23 Jun 2011 13:37:34 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Andrey Vagin <avagin@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+Cc: stable-review@kernel.org, Steven Rostedt <srostedt@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 170/247] x86/mm: Handle mm_fault_error() in kernel space
-Date: Thu, 23 Jun 2011 13:33:58 -0400
-Message-Id: <1308850515-15242-111-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 171/247] ftrace: Fix memory leak with function graph and cpu hotplug
+Date: Thu, 23 Jun 2011 13:33:59 -0400
+Message-Id: <1308850515-15242-112-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,64 +23,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Steven Rostedt <srostedt@redhat.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit f86268549f424f83b9eb0963989270e14fbfc3de upstream.
+commit 868baf07b1a259f5f3803c1dc2777b6c358f83cf upstream.
 
-mm_fault_error() should not execute oom-killer, if page fault
-occurs in kernel space.  E.g. in copy_from_user()/copy_to_user().
+When the fuction graph tracer starts, it needs to make a special
+stack for each task to save the real return values of the tasks.
+All running tasks have this stack created, as well as any new
+tasks.
 
-This would happen if we find ourselves in OOM on a
-copy_to_user(), or a copy_from_user() which faults.
+On CPU hot plug, the new idle task will allocate a stack as well
+when init_idle() is called. The problem is that cpu hotplug does
+not create a new idle_task. Instead it uses the idle task that
+existed when the cpu went down.
 
-Without this patch, the kernels hangs up in copy_from_user(),
-because OOM killer sends SIG_KILL to current process, but it
-can't handle a signal while in syscall, then the kernel returns
-to copy_from_user(), reexcute current command and provokes
-page_fault again.
+ftrace_graph_init_task() will add a new ret_stack to the task
+that is given to it. Because a clone will make the task
+have a stack of its parent it does not check if the task's
+ret_stack is already NULL or not. When the CPU hotplug code
+starts a CPU up again, it will allocate a new stack even
+though one already existed for it.
 
-With this patch the kernel return -EFAULT from copy_from_user().
+The solution is to treat the idle_task specially. In fact, the
+function_graph code already does, just not at init_idle().
+Instead of using the ftrace_graph_init_task() for the idle task,
+which that function expects the task to be a clone, have a
+separate ftrace_graph_init_idle_task(). Also, we will create a
+per_cpu ret_stack that is used by the idle task. When we call
+ftrace_graph_init_idle_task() it will check if the idle task's
+ret_stack is NULL, if it is, then it will assign it the per_cpu
+ret_stack.
 
-The code, which checks that page fault occurred in kernel space,
-has been copied from do_sigbus().
-
-This situation is handled by the same way on powerpc, xtensa,
-tile, ...
-
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-LKML-Reference: <201103092322.p29NMNPH001682@imap1.linux-foundation.org>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/mm/fault.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ include/linux/ftrace.h |    2 +
+ kernel/sched.c         |    2 +-
+ kernel/trace/ftrace.c  |   52 +++++++++++++++++++++++++++++++++++++++++------
+ 3 files changed, 48 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 4c4508e..544ed25 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -831,6 +831,13 @@ mm_fault_error(struct pt_regs *regs, unsigned long error_code,
- 	       unsigned long address, unsigned int fault)
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 01e6ade..95d9122 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -417,6 +417,7 @@ extern void unregister_ftrace_graph(void);
+ 
+ extern void ftrace_graph_init_task(struct task_struct *t);
+ extern void ftrace_graph_exit_task(struct task_struct *t);
++extern void ftrace_graph_init_idle_task(struct task_struct *t, int cpu);
+ 
+ static inline int task_curr_ret_stack(struct task_struct *t)
  {
- 	if (fault & VM_FAULT_OOM) {
-+		/* Kernel mode? Handle exceptions or die: */
-+		if (!(error_code & PF_USER)) {
-+			up_read(&current->mm->mmap_sem);
-+			no_context(regs, error_code, address);
-+			return;
-+		}
+@@ -440,6 +441,7 @@ static inline void unpause_graph_tracing(void)
+ 
+ static inline void ftrace_graph_init_task(struct task_struct *t) { }
+ static inline void ftrace_graph_exit_task(struct task_struct *t) { }
++static inline void ftrace_graph_init_idle_task(struct task_struct *t, int cpu) { }
+ 
+ static inline int task_curr_ret_stack(struct task_struct *tsk)
+ {
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 7e728cf..245458e 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -5252,7 +5252,7 @@ void __cpuinit init_idle(struct task_struct *idle, int cpu)
+ 	 * The idle tasks have their own, simple scheduling class:
+ 	 */
+ 	idle->sched_class = &idle_sched_class;
+-	ftrace_graph_init_task(idle);
++	ftrace_graph_init_idle_task(idle, cpu);
+ }
+ 
+ /*
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 73dedb3..e28af02 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3268,7 +3268,7 @@ static int start_graph_tracing(void)
+ 	/* The cpu_boot init_task->ret_stack will never be freed */
+ 	for_each_online_cpu(cpu) {
+ 		if (!idle_task(cpu)->ret_stack)
+-			ftrace_graph_init_task(idle_task(cpu));
++			ftrace_graph_init_idle_task(idle_task(cpu), cpu);
+ 	}
+ 
+ 	do {
+@@ -3358,6 +3358,49 @@ void unregister_ftrace_graph(void)
+ 	mutex_unlock(&ftrace_lock);
+ }
+ 
++static DEFINE_PER_CPU(struct ftrace_ret_stack *, idle_ret_stack);
 +
- 		out_of_memory(regs, error_code, address);
- 	} else {
- 		if (fault & (VM_FAULT_SIGBUS|VM_FAULT_HWPOISON))
++static void
++graph_init_task(struct task_struct *t, struct ftrace_ret_stack *ret_stack)
++{
++	atomic_set(&t->tracing_graph_pause, 0);
++	atomic_set(&t->trace_overrun, 0);
++	t->ftrace_timestamp = 0;
++	/* make curr_ret_stack visable before we add the ret_stack */
++	smp_wmb();
++	t->ret_stack = ret_stack;
++}
++
++/*
++ * Allocate a return stack for the idle task. May be the first
++ * time through, or it may be done by CPU hotplug online.
++ */
++void ftrace_graph_init_idle_task(struct task_struct *t, int cpu)
++{
++	t->curr_ret_stack = -1;
++	/*
++	 * The idle task has no parent, it either has its own
++	 * stack or no stack at all.
++	 */
++	if (t->ret_stack)
++		WARN_ON(t->ret_stack != per_cpu(idle_ret_stack, cpu));
++
++	if (ftrace_graph_active) {
++		struct ftrace_ret_stack *ret_stack;
++
++		ret_stack = per_cpu(idle_ret_stack, cpu);
++		if (!ret_stack) {
++			ret_stack = kmalloc(FTRACE_RETFUNC_DEPTH
++					    * sizeof(struct ftrace_ret_stack),
++					    GFP_KERNEL);
++			if (!ret_stack)
++				return;
++			per_cpu(idle_ret_stack, cpu) = ret_stack;
++		}
++		graph_init_task(t, ret_stack);
++	}
++}
++
+ /* Allocate a return stack for newly created task */
+ void ftrace_graph_init_task(struct task_struct *t)
+ {
+@@ -3373,12 +3416,7 @@ void ftrace_graph_init_task(struct task_struct *t)
+ 				GFP_KERNEL);
+ 		if (!ret_stack)
+ 			return;
+-		atomic_set(&t->tracing_graph_pause, 0);
+-		atomic_set(&t->trace_overrun, 0);
+-		t->ftrace_timestamp = 0;
+-		/* make curr_ret_stack visable before we add the ret_stack */
+-		smp_wmb();
+-		t->ret_stack = ret_stack;
++		graph_init_task(t, ret_stack);
+ 	}
+ }
+ 
 -- 
 1.7.4.4
 
