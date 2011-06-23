@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933298Ab1FWSYk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:24:40 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34143 "EHLO
+	id S933194Ab1FWRfu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:35:50 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34159 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932914Ab1FWRfn (ORCPT
+	with ESMTP id S932972Ab1FWRfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:35:43 -0400
+	Thu, 23 Jun 2011 13:35:45 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
 Cc: stable-review@kernel.org, Alex Deucher <alexdeucher@gmail.com>,
-        Dave Airlie <airlied@gmail.com>,
+        Dave Airlie <airlied@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 074/247] drm/radeon/kms: make the mac rv630 quirk generic
-Date: Thu, 23 Jun 2011 13:32:22 -0400
-Message-Id: <1308850515-15242-15-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 075/247] drm/radeon/kms: add pll debugging output
+Date: Thu, 23 Jun 2011 13:32:23 -0400
+Message-Id: <1308850515-15242-16-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -30,43 +30,30 @@ From: Alex Deucher <alexdeucher@gmail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit be23da8ad219650517cbbb7acbeaeb235667113a upstream.
+commit 51d4bf840a27fe02c883ddc6d9708af056773769 upstream.
 
-Seems some other boards do this as well.
-
-Reported-by: Andrea Merello <andrea.merello@gmail.com>
 Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |   14 +++++---------
- 1 files changed, 5 insertions(+), 9 deletions(-)
+ drivers/gpu/drm/radeon/radeon_display.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
-index 8e4031f..139f8ad 100644
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -272,15 +272,11 @@ static bool radeon_atom_apply_quirks(struct drm_device *dev,
- 			*line_mux = 0x90;
- 	}
+diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
+index c2848e0..40e11e4 100644
+--- a/drivers/gpu/drm/radeon/radeon_display.c
++++ b/drivers/gpu/drm/radeon/radeon_display.c
+@@ -618,6 +618,10 @@ static void radeon_compute_pll_legacy(struct radeon_pll *pll,
+ 	*frac_fb_div_p = best_frac_feedback_div;
+ 	*ref_div_p = best_ref_div;
+ 	*post_div_p = best_post_div;
++	DRM_DEBUG_KMS("%d %d, pll dividers - fb: %d.%d ref: %d, post %d\n",
++		      freq, best_freq / 1000, best_feedback_div, best_frac_feedback_div,
++		      best_ref_div, best_post_div);
++
+ }
  
--	/* mac rv630 */
--	if ((dev->pdev->device == 0x9588) &&
--	    (dev->pdev->subsystem_vendor == 0x106b) &&
--	    (dev->pdev->subsystem_device == 0x00a6)) {
--		if ((supported_device == ATOM_DEVICE_TV1_SUPPORT) &&
--		    (*connector_type == DRM_MODE_CONNECTOR_DVII)) {
--			*connector_type = DRM_MODE_CONNECTOR_9PinDIN;
--			*line_mux = CONNECTOR_7PIN_DIN_ENUM_ID1;
--		}
-+	/* mac rv630, rv730, others */
-+	if ((supported_device == ATOM_DEVICE_TV1_SUPPORT) &&
-+	    (*connector_type == DRM_MODE_CONNECTOR_DVII)) {
-+		*connector_type = DRM_MODE_CONNECTOR_9PinDIN;
-+		*line_mux = CONNECTOR_7PIN_DIN_ENUM_ID1;
- 	}
- 
- 	/* ASUS HD 3600 XT board lists the DVI port as HDMI */
+ static bool
 -- 
 1.7.4.4
 
