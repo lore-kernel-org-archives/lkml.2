@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759519Ab1FWOZd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 10:25:33 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:50353 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759507Ab1FWOZb (ORCPT
+	id S1759513Ab1FWO0k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 10:26:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39136 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758232Ab1FWO0j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 10:25:31 -0400
-Date: Thu, 23 Jun 2011 10:25:30 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Alexander Holler <holler@ahsoftware.de>
-cc: Arnd Bergmann <arnd@arndb.de>, <gregkh@suse.de>,
-        Nicolas Pitre <nico@fluxnic.net>, <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Rabin Vincent <rabin@rab.in>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] USB: ehci: use packed, aligned(4) instead of removing
- the packed attribute
-In-Reply-To: <4E030BA6.8060407@ahsoftware.de>
-Message-ID: <Pine.LNX.4.44L0.1106231022500.2033-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 23 Jun 2011 10:26:39 -0400
+Subject: Re: [PATCH] events: Ensure that timers are updated without
+ requiring read() call
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Eric B Munson <emunson@mgebm.net>
+Cc: mingo@elte.hu, borislav.petkov@amd.com, bblum@andrew.cmu.edu,
+        linux-kernel@vger.kernel.org, mhack@us.ibm.com
+In-Reply-To: <1308838537-6682-1-git-send-email-emunson@mgebm.net>
+References: <1308838537-6682-1-git-send-email-emunson@mgebm.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 23 Jun 2011 16:25:50 +0200
+Message-ID: <1308839150.1022.130.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Jun 2011, Alexander Holler wrote:
-
-> Sorry, I never wanted to talk about the issue itself (I've already said 
-> that), I just wanted to bring in some additional clarity for people 
-> looking at the code.
+On Thu, 2011-06-23 at 10:15 -0400, Eric B Munson wrote:
+> The event tracing infrastructure exposes two timers which should be updated
+> each time the value of the counter is updated.  Currently, these counters are
+> only updated when userspace calls read() on the fd associated with an event.
+> This means that counters which are read via the mmap'd page exclusively never
+> have their timers updated.  This patch adds ensures that the timers are updated
+> each time the values in the mmap'd page are updated.
 > 
-> I think if there is a packed,aligned(4) most people reading that are 
-> able to imaging how the struct looks like, whereas nothing (without 
-> packed) might leave doubts which than requires to read compiler docs or 
-> the generated code, if one searches a problem in that area.
+> Signed-off-by: Eric B Munson <emunson@mgebm.net>
+> ---
+>  kernel/events/core.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index 9efe710..3dd4ebe 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -3369,6 +3369,7 @@ void perf_event_update_userpage(struct perf_event *event)
+>  	struct perf_buffer *buffer;
+>  
+>  	rcu_read_lock();
+> +	update_event_times(event);
+>  	buffer = rcu_dereference(event->buffer);
+>  	if (!buffer)
+>  		goto unlock;
 
-I disagree.  If there are no annotations at all (no packed), there
-should be no doubts.  The compiler will add padding wherever it is
-needed for internal alignment and perhaps also at the end of the
-structure.  Nowhere else.
-
-Alan Stern
-
+Not that easy, perf_event_update_userpage() can happen from NMI context,
+and update_event_times() needs to be done under ctx->lock.
