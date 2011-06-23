@@ -1,98 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758913Ab1FWDzn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 23:55:43 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52582 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758406Ab1FWDzm convert rfc822-to-8bit (ORCPT
+	id S1758881Ab1FWD6f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 23:58:35 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:36542 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758599Ab1FWD6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 23:55:42 -0400
+	Wed, 22 Jun 2011 23:58:33 -0400
+Date: Wed, 22 Jun 2011 22:58:21 -0500
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, peterz@infradead.org,
+        eric.dumazet@gmail.com, david@rgmadvisors.com,
+        linux-kernel@vger.kernel.org, zvonler@rgmadvisors.com,
+        hughd@google.com, tglx@linutronix.de, mingo@elte.hu
+Subject: Re: [PATCH RFC] futex: Fix regression with read only mappings
+Message-ID: <20110623035821.GA2180@BohrerMBP.rgmadvisors.com>
+References: <4DF8FFF6.4060000@linux.intel.com>
+ <1308770340-21895-1-git-send-email-sbohrer@rgmadvisors.com>
+ <4E024D2D.6070308@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1308794413-11069-9-git-send-email-dirk.brandewie@gmail.com>
-References: <1308794413-11069-1-git-send-email-dirk.brandewie@gmail.com> <1308794413-11069-9-git-send-email-dirk.brandewie@gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 22 Jun 2011 21:55:22 -0600
-X-Google-Sender-Auth: sWx2HD1tRVDc-uqvVxK_8XXuxls
-Message-ID: <BANLkTi=Jv2aVuHqVXh77aGxMFV_Q_wXQCg@mail.gmail.com>
-Subject: Re: [PATCH 08/11] spi-dw: Ensure fifo lenght is set.
-To: dirk.brandewie@gmail.com
-Cc: linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E024D2D.6070308@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 8:00 PM,  <dirk.brandewie@gmail.com> wrote:
-> From: Dirk Brandewie <dirk.brandewie@gmail.com>
->
-> Bug on fifo_len not being set.  The fifo sizing routine does not work
-> since the txfltr register can not be written while the controller is
-> enabled. The max value of txfltr can be larger than the fifo.  The
-> register allows values upto 0x3f (63) the fifo depth on the Intel
-> SOC's if 40
->
-> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-> ---
->  drivers/spi/spi-dw.c |   18 ++----------------
->  1 files changed, 2 insertions(+), 16 deletions(-)
->
-> diff --git a/drivers/spi/spi-dw.c b/drivers/spi/spi-dw.c
-> index ad92826..cc38aa0 100644
-> --- a/drivers/spi/spi-dw.c
-> +++ b/drivers/spi/spi-dw.c
-> @@ -776,25 +776,11 @@ static int destroy_queue(struct spi_dw *dws)
->  /* Restart the controller, disable all interrupts, clean rx fifo */
->  static void spi_dw_hw_init(struct spi_dw *dws)
->  {
-> +       BUG_ON(!dws->fifo_len);
-> +
+On Wed, Jun 22, 2011 at 01:14:37PM -0700, Darren Hart wrote:
+> Hi Shawn,
+> 
+> Thanks for taking this up. Would you share your testcases as well?
 
-Ditto here.  BUG is too big a reaction.  Fail to initialize the
-device, sure, and print a warning, but don't BUG.
+I ran our proprietary application, and our test suite.  Which I
+unfortunately can't share.  Our code uses FUTEX_WAIT in shared RO
+mappings, and FUTEX_WAKE in shared RW mappings directly via syscalls.
+We also use pthread mutexes and pthread conditions as synchronization
+objects.
 
-g.
+I also hacked up a quick little racy test below just to see what
+worked and didn't on 2.6.18, 2.6.38, and with this patch.  However, I
+wouldn't consider our application or this little test a very thorough
+testing of all of the futex functionality.
 
->        spi_dw_disable(dws);
->        spi_dw_mask_intr(dws, 0xff);
->        spi_dw_enable(dws);
-> -
-> -       /*
-> -        * Try to detect the FIFO depth if not set by interface driver,
-> -        * the depth could be from 2 to 256 from HW spec
-> -        */
-> -       if (!dws->fifo_len) {
-> -               u32 fifo;
-> -               for (fifo = 2; fifo <= 257; fifo++) {
-> -                       dw_writew(dws, txfltr, fifo);
-> -                       if (fifo != dw_readw(dws, txfltr))
-> -                               break;
-> -               }
-> -
-> -               dws->fifo_len = (fifo == 257) ? 0 : fifo;
-> -               dw_writew(dws, txfltr, 0);
-> -       }
->  }
->
->  int __devinit spi_dw_add_host(struct spi_dw *dws)
-> --
-> 1.7.3.4
->
->
-> ------------------------------------------------------------------------------
-> Simplify data backup and recovery for your virtual environment with vRanger.
-> Installation's a snap, and flexible recovery options mean your data is safe,
-> secure and there when you need it. Data protection magic?
-> Nope - It's vRanger. Get your free trial download today.
-> http://p.sf.net/sfu/quest-sfdev2dev
-> _______________________________________________
-> spi-devel-general mailing list
-> spi-devel-general@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/spi-devel-general
->
+#include <sys/types.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdint.h>
+#include <linux/futex.h>
+#include <sys/mman.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#include <stdio.h>
+
+void child()
+{
+        int fd, *futex, rc, val = 42;
+        struct timespec ts = {.tv_sec = 2, .tv_nsec = 0 };
+
+        fd = open("/tmp/futex_test", O_RDWR|O_CREAT, 0644);
+        write(fd, &val, sizeof(val));
+        futex = (int *)mmap(0, sizeof(int), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+        rc = syscall(SYS_futex, futex, FUTEX_WAIT, val, &ts, 0, 0);
+        printf("Test FUTEX_WAIT RW MAP_SHARED: rc=%d errno=%d\n", rc, errno);
+        printf("-----\n");
+
+        lseek(fd, 0, SEEK_SET);
+        write(fd, &val, sizeof(val));
+        munmap(futex, sizeof(int));
+        futex = (int *)mmap(0, sizeof(int), PROT_READ, MAP_SHARED, fd, 0);
+        rc = syscall(SYS_futex, futex, FUTEX_WAIT, val, &ts, 0, 0);
+        printf("Test FUTEX_WAIT RO MAP_SHARED: rc=%d errno=%d\n", rc, errno);
+        printf("-----\n");
+
+        lseek(fd, 0, SEEK_SET);
+        write(fd, &val, sizeof(val));
+        munmap(futex, sizeof(int));
+        futex = (int *)mmap(0, sizeof(int), PROT_READ, MAP_PRIVATE, fd, 0);
+        rc = syscall(SYS_futex, futex, FUTEX_WAIT, val, &ts, 0, 0);
+        printf("Test FUTEX_WAIT RO MAP_PRIVATE: rc=%d errno=%d\n", rc, errno);
+        printf("-----\n");
+
+        lseek(fd, 0, SEEK_SET);
+        write(fd, &val, sizeof(val));
+        rc = syscall(SYS_futex, futex, FUTEX_WAIT, val, &ts, 0, 0);
+        printf("Test FUTEX_WAIT RO MAP_PRIVATE: rc=%d errno=%d\n", rc, errno);
+        printf("-----\n");
+
+        lseek(fd, 0, SEEK_SET);
+        write(fd, &val, sizeof(val));
+        munmap(futex, sizeof(int));
+        futex = (int *)mmap(0, sizeof(int), PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
+        rc = syscall(SYS_futex, futex, FUTEX_WAIT, val, &ts, 0, 0);
+        printf("Test FUTEX_WAIT RW MAP_PRIVATE (EXPECT errno=110): rc=%d errno=%d\n", rc, errno);
+        printf("-----\n");
+
+        lseek(fd, 0, SEEK_SET);
+        write(fd, &val, sizeof(val));
+        munmap(futex, sizeof(int));
+        futex = (int *)mmap(0, sizeof(int), PROT_READ, MAP_SHARED, fd, 0);
+        rc = syscall(SYS_futex, futex, FUTEX_WAIT, val, &ts, 0, 0);
+        printf("Test FUTEX_WAIT RO MAP_SHARED (EXPECT errno=110): rc=%d errno=%d\n", rc, errno);
+        printf("-----\n");
+
+        close(fd);
+        munmap(futex, sizeof(int));
+}
+
+void parent()
+{
+        int fd, *futex, rc, val = 41;
+
+        sleep(1);
+        fd = open("/tmp/futex_test", O_RDWR|O_CREAT, 0644);
+        write(fd, &val, sizeof(val));
+        futex = (int *)mmap(0, sizeof(int), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+        rc = syscall(SYS_futex, futex, FUTEX_WAKE, val, 0, 0, 0);
+        printf("Test FUTEX_WAKE RW MAP_SHARED: rc=%d errno=%d\n", rc, errno);
+
+        sleep(1);
+        lseek(fd, 0, SEEK_SET);
+        write(fd, &val, sizeof(val));
+        munmap(futex, sizeof(int));
+        futex = (int *)mmap(0, sizeof(int), PROT_READ, MAP_SHARED, fd, 0);
+        rc = syscall(SYS_futex, futex, FUTEX_WAKE, val, 0, 0, 0);
+        printf("Test FUTEX_WAKE RO MAP_SHARED: rc=%d errno=%d\n", rc, errno);
+
+        sleep(1);
+        lseek(fd, 0, SEEK_SET);
+        write(fd, &val, sizeof(val));
+        munmap(futex, sizeof(int));
+        futex = (int *)mmap(0, sizeof(int), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+        rc = syscall(SYS_futex, futex, FUTEX_WAKE, val, 0, 0, 0);
+        printf("Test FUTEX_WAKE RW MAP_SHARED: rc=%d errno=%d\n", rc, errno);
+
+        sleep(1);
+        lseek(fd, 0, SEEK_SET);
+        write(fd, &val, sizeof(val));
+        munmap(futex, sizeof(int));
+        futex = (int *)mmap(0, sizeof(int), PROT_READ, MAP_PRIVATE, fd, 0);
+        rc = syscall(SYS_futex, futex, FUTEX_WAKE, val, 0, 0, 0);
+        printf("Test FUTEX_WAKE RO MAP_PRIVATE: rc=%d errno=%d\n", rc, errno);
+
+        sleep(1);
+        lseek(fd, 0, SEEK_SET);
+        write(fd, &val, sizeof(val));
+        munmap(futex, sizeof(int));
+        futex = (int *)mmap(0, sizeof(int), PROT_READ, MAP_PRIVATE, fd, 0);
+        rc = syscall(SYS_futex, futex, FUTEX_WAKE, val, 0, 0, 0);
+        printf("Test FUTEX_WAKE RO MAP_PRIVATE (EXPECT rc=0): rc=%d errno=%d\n", rc, errno);
+
+        sleep(2);
+        lseek(fd, 0, SEEK_SET);
+        write(fd, &val, sizeof(val));
+        munmap(futex, sizeof(int));
+        futex = (int *)mmap(0, sizeof(int), PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
+        rc = syscall(SYS_futex, futex, FUTEX_WAKE, val, 0, 0, 0);
+        printf("Test FUTEX_WAKE RW MAP_PRIVATE (EXPECT rc=0): rc=%d errno=%d\n", rc, errno);
+
+        close(fd);
+        munmap(futex, sizeof(int));
+}
 
 
+int main(int argc, char *argv[])
+{
+        pid_t pid;
+        int status;
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+        pid = fork();
+        if (pid == -1)
+                perror("fork");
+        else if (!pid)
+                child();
+        else if (pid > 0)
+                parent();
+
+        wait(&status);
+        return 0;
+}
+
+
+> On 06/22/2011 12:19 PM, Shawn Bohrer wrote:
+> > commit 7485d0d3758e8e6491a5c9468114e74dc050785d (futexes: Remove rw
+> > parameter from get_futex_key()) in 2.6.33 introduced a user-mode
+> > regression in that it additionally prevented futex operations on a
+> > region within a read only memory mapped file.  For example this breaks
+> > workloads that have one or more reader processes doing a FUTEX_WAIT on a
+> > futex within a read only shared mapping, and a writer processes that has
+> > a writable mapping issuing the FUTEX_WAKE.
+> > 
+> > This fixes the regression for futex operations that should be valid on
+> > RO mappings by trying a RO get_user_pages_fast() when the RW
+> > get_user_pages_fast() fails so as not to slow down the common path of
+> > writable anonymous maps and bailing when we used the RO path on
+> > anonymous memory.
+> > 
+> > Patch based on Peter Zijlstra's initial patch with modifications to only
+> > allow RO mappings for futex operations that need VERIFY_READ access.
+> > 
+> > Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+> > ---
+> > 
+> > Interestingly this patch also allows doing a FUTEX_WAIT on a RO private
+> > mapping.
+> 
+> I don't see any harm in this.
+> 
+> >  Where my tests on 2.6.18 show that this used to wait
+> > indefinitely.  Performing a FUTEX_WAIT on a RW private mapping waits
+> > indefinitely in 2.6.18, 3.0.0, and with this patch applied.  It is
+> > unclear to me if this is a good thing or a bug.
+> > 
+> >  kernel/futex.c |   38 ++++++++++++++++++++++++++------------
+> >  1 files changed, 26 insertions(+), 12 deletions(-)
+> > 
+> > diff --git a/kernel/futex.c b/kernel/futex.c
+> > index fe28dc2..e8cd532 100644
+> > --- a/kernel/futex.c
+> > +++ b/kernel/futex.c
+> > @@ -218,6 +218,8 @@ static void drop_futex_key_refs(union futex_key *key)
+> >   * @uaddr:	virtual address of the futex
+> >   * @fshared:	0 for a PROCESS_PRIVATE futex, 1 for PROCESS_SHARED
+> >   * @key:	address where result is stored.
+> > + * @rw:		mapping needs to be read/write (values: VERIFY_READ,
+> > + *		VERIFY_WRITE)
+> >   *
+> 
+> 
+> I'm OK with this, but ideally I I'd prefer fshared and rw be replaced
+> with flags. We already have a FLAGS_SHARED, adding a FLAGS_WRITE would
+> be simple, and most call sites could be updated to send the bare flags
+> rather than a logical and with FLAGS_SHARED as they do now.
+
+Sure, I think that is a reasonable request.
+
+> >   * Returns a negative error code or 0
+> >   * The key words are stored in *key on success.
+> > @@ -229,12 +231,12 @@ static void drop_futex_key_refs(union futex_key *key)
+> >   * lock_page() might sleep, the caller should not hold a spinlock.
+> >   */
+> >  static int
+> > -get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
+> > +get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key, int rw)
+> >  {
+> >  	unsigned long address = (unsigned long)uaddr;
+> >  	struct mm_struct *mm = current->mm;
+> >  	struct page *page, *page_head;
+> > -	int err;
+> > +	int err, ro = 0;
+> >  
+> >  	/*
+> >  	 * The futex address must be "naturally" aligned.
+> > @@ -262,6 +264,10 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
+> >  
+> >  again:
+> >  	err = get_user_pages_fast(address, 1, 1, &page);
+> > +	if (err == -EFAULT && rw == VERIFY_READ) {
+> > +		err = get_user_pages_fast(address, 1, 0, &page);
+> 
+> I verified this is correct .... we ran into a little trouble a while
+> back mixing up the parameters of get_user_pages_fast. This is correct :)
+> 
+> > +		ro = 1;
+> > +	}
+> >  	if (err < 0)
+> >  		return err;
+> >  
+> > @@ -316,6 +322,11 @@ again:
+> >  	 * the object not the particular process.
+> >  	 */
+> >  	if (PageAnon(page_head)) {
+> > +		if (ro) {
+> > +			err = -EFAULT;
+> > +			goto out;
+> > +		}
+> 
+> This if block needs a comment as to why RO anonymous pages trigger a
+> failure. In fact... I thought you said with this patch FUTEX_WAIT
+> waits indefinitely on RO private mappings?  This test suggests that
+> it shouldn't. Are you testing this via glibc pthread_mutexes? If so,
+> and if I remember correctly, glibc loops forever on -EFAULT here,
+> unfortunately.
+
+No with this patch FUTEX_WAIT works with RO private mappings. Pre
+7485d0d3758 FUTEX_WAIT on RO private mappings would wait indefinitely.
+RW still waits indefinitely both pre 7485d0d3758 and with this patch.
+
+However, I have a confession to make.  That if block was taken from
+Peter's initial patch, and I originally thought it was preventing RO
+private mappings.  Now I'm not sure what it is doing.  Will PageAnon()
+ever return true on a RO private mapping?  Is the page only in
+anonymous memory after a COW has taken place?  Sorry this isn't
+exactly my area of expertise.
+
+> > +
+> >  		key->both.offset |= FUT_OFF_MMSHARED; /* ref taken on mm */
+> >  		key->private.mm = mm;
+> >  		key->private.address = address;
+> > @@ -327,9 +338,11 @@ again:
+> >  
+> >  	get_futex_key_refs(key);
+> >  
+> > +	err = 0;
+> 
+> Shouldn't this be 0 anyway? If it was non-zero, you would have jumped to
+> out: earlier, right?
+
+No, gup() should return the number of pages when successful.  Of
+course it would be more obvious what was going on here if we cleared
+this closer to the call site.
+
+I should be able to send a reworked patch sometime tomorrow.
+
+--
+Shawn
+
+
+---------------------------------------------------------------
+This email, along with any attachments, is confidential. If you 
+believe you received this message in error, please contact the 
+sender immediately and delete all copies of the message.  
+Thank you.
+
