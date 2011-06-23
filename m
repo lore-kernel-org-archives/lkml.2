@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760192Ab1FXBIW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 21:08:22 -0400
-Received: from claw.goop.org ([74.207.240.146]:40503 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753097Ab1FXBIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 21:08:21 -0400
-Message-ID: <4E03C510.5050801@goop.org>
-Date: Thu, 23 Jun 2011 15:58:24 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S934532Ab1FWXHk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 19:07:40 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:25242 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932730Ab1FWXHj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 19:07:39 -0400
+Date: Fri, 24 Jun 2011 00:58:44 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: trivial@kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Kulikov Vasiliy <segooon@gmail.com>, Willy Tarreau <w@1wt.eu>,
+        Arnd Bergmann <arnd@arndb.de>, Peter Huewe <peterhuewe@gmx.de>,
+        devel@driverdev.osuosl.org
+Subject: [PATCH 30/37] Remove unneeded version.h include from
+ drivers/staging/panel/panel.c 
+In-Reply-To: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1106240056280.17688@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Xen Devel <Xen-devel@lists.xensource.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 09/15] xen/trace: add tlb flush tracepoints
-References: <cover.1308607697.git.jeremy.fitzhardinge@citrix.com>	 <4db3e32a6b21efdb4d82646816ddb1bb82ff2259.1308607697.git.jeremy.fitzhardinge@citrix.com>	 <20110621140705.GD28229@dumpdata.com>  <4E03996B.9050904@goop.org> <1308860628.531.42.camel@gandalf.stny.rr.com>
-In-Reply-To: <1308860628.531.42.camel@gandalf.stny.rr.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2011 01:23 PM, Steven Rostedt wrote:
-> Ouch! I didn't notice this before. Do you really need this empty event?
-> Why not just use the function tracer for this? It should work.
+It was pointed out by 'make versioncheck' that include of
+linux/version.h is not needed in drivers/staging/panel/panel.c
+This patch removes it.
 
-Yes, it should, but it would be nice to present something that's
-consistent with all the other tlb-related tracepoints.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/staging/panel/panel.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-> If you really need something like this, maybe I'll add a
-> DEFINE_EVENT_NOARGS() that will not require arguments and can eliminate
-> a lot of code that TRACE_EVENT() adds.
+diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
+index 6885f9a..b303b7e 100644
+--- a/drivers/staging/panel/panel.c
++++ b/drivers/staging/panel/panel.c
+@@ -51,7 +51,6 @@
+ #include <linux/kernel.h>
+ #include <linux/ctype.h>
+ #include <linux/parport.h>
+-#include <linux/version.h>
+ #include <linux/list.h>
+ #include <linux/notifier.h>
+ #include <linux/reboot.h>
+-- 
+1.7.5.2
 
-If you like, but only if you think its worth the effort.  The empty
-string thing is a bit of an ugly hack, but its not like it makes a mess
-everywhere.
 
-    J
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
