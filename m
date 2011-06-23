@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934270Ab1FWSVq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:21:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50496 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932928Ab1FWSVn (ORCPT
+	id S933382Ab1FWSW4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:22:56 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:50895 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S934317Ab1FWSWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 14:21:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=UkjQC0NKzy4C+7bHZxjEkM10Gy7Lq2LrvMV/ushyWh11Re85b4+MohZRVrAQ7qHn+l
-         hm3tgWh212x5qsPmg1cleweNFcRE0X5PcrThwLT9dKmeW74s34iH0JScmxS5cmAfnZ/Y
-         8JaLRVqkkGrSE4xMFh+tJ9bBUhoS7wBzF8sOc=
-Date: Thu, 23 Jun 2011 11:21:26 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Olaf Hering <olaf@aepfle.de>, stable@kernel.org,
-        linux-kernel@vger.kernel.org, stable-review@kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [34-longterm 210/247] Input: xen-kbdfront - advertise either
- absolute or relative coordinates
-Message-ID: <20110623182125.GB14950@core.coreip.homeip.net>
-References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
- <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
- <1308850515-15242-151-git-send-email-paul.gortmaker@windriver.com>
- <20110623175725.GA21283@aepfle.de>
- <BANLkTi=5nCHt370=6ZWg4ePLi1qh0w51cg@mail.gmail.com>
+	Thu, 23 Jun 2011 14:22:20 -0400
+Date: Thu, 23 Jun 2011 14:22:18 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Kevin Hilman <khilman@ti.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
+        LKML <linux-kernel@vger.kernel.org>, <linux-sh@vger.kernel.org>
+Subject: Re: [Update][PATCH 7/8] PM / Domains: System-wide transitions support
+ for generic domains (v3)
+In-Reply-To: <201106231941.09429.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1106231421470.2033-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=5nCHt370=6ZWg4ePLi1qh0w51cg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 02:14:48PM -0400, Paul Gortmaker wrote:
-> On Thu, Jun 23, 2011 at 1:57 PM, Olaf Hering <olaf@aepfle.de> wrote:
-> > On Thu, Jun 23, Paul Gortmaker wrote:
-> >
-> >> From: Olaf Hering <olaf@aepfle.de>
-> >>
-> >>                    -------------------
-> >>     This is a commit scheduled for the next v2.6.34 longterm release.
-> >>     If you see a problem with using this for longterm, please comment.
-> >>                    -------------------
-> >>
-> >> commit 8c3c283e6bf463ab498d6e7823aff6c4762314b6 upstream.
-> >
-> > This one will introduce a regression, which will be fixed by upstream
-> > commit c36b58e8a9112017c2bcc322cc98e71241814303
-> >
-> >    Input: xen-kbdfront - fix mouse getting stuck after save/restore
-> >
-> > Olaf
+On Thu, 23 Jun 2011, Rafael J. Wysocki wrote:
+
+> > It should say "system suspend" rather than "system sleep".
 > 
-> Thanks Olaf,  it will appear here shortly.
+> It says "system sleep" to distinguish between the state of the system
+> ("system sleep") and the operation leading to that state ("system suspend").
+> That terminology is used all over the document, so I don't think it's a good
+> idea to change it just for this specific paragraph.
 > 
-> http://git.kernel.org/?p=linux/kernel/git/longterm/longterm-queue-2.6.34.git;a=summary
+> I agree that "suspend" should be used where it talks about starting, stopping
+> etc.
 > 
-> [PS: Dmitry - the mail.ru address you've been using in SOB lines always bounces]
+> > Then to drive the point home, the following sentence chould say 
+> > something like this:
+> > 
+> > If that is the case and none of the situations listed above takes place
+> > (in particular, if the system is waking up from suspend and not from
+> > hibernation), it may be more efficient to leave the devices that had
+> > been suspended before the system suspend began in the suspended state.
+> 
+> That's fine by me, except that I'd simply say "(in particular, if the system
+> is not waking up from hibernation)".
 
-Hmm, that is wierd. I am getting mail to that address, in fact I just
-reseived a letter from Jarod Wilson there...
+Okay.
 
-I am not sure why they don't like your mails but that is the reason I am
-keeping both mail.ru and gmail.com addresses.
+Alan Stern
 
-Thanks.
-
--- 
-Dmitry
