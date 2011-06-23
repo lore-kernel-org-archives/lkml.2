@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759050Ab1FWJGH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 05:06:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35169 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754867Ab1FWJGF convert rfc822-to-8bit (ORCPT
+	id S1759074Ab1FWJIW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 05:08:22 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:32404 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754867Ab1FWJIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 05:06:05 -0400
-Subject: Re: [patch 1/4] x86, mtrr: lock stop machine during MTRR
- rendezvous sequence
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, trenn@novell.com,
-        prarit@redhat.com, tj@kernel.org, rusty@rustcorp.com.au,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, youquan.song@intel.com,
-        stable@kernel.org
-In-Reply-To: <20110622222043.862589370@sbsiddha-MOBL3.sc.intel.com>
-References: <20110622222021.904952469@sbsiddha-MOBL3.sc.intel.com>
-	 <20110622222043.862589370@sbsiddha-MOBL3.sc.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 23 Jun 2011 11:05:05 +0200
-Message-ID: <1308819905.1022.70.camel@twins>
+	Thu, 23 Jun 2011 05:08:21 -0400
+Date: Thu, 23 Jun 2011 11:08:10 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Ankur Patel <bkankur@gmail.com>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] HWMON: TMP102 - Added support for 12 bit data
+Message-ID: <20110623110810.6aab0072@endymion.delvare>
+In-Reply-To: <BANLkTikYbpeSbt5VHndJnsWXax1MX+Xk-w@mail.gmail.com>
+References: <1308709299-24539-1-git-send-email-bkankur@gmail.com>
+	<20110623100616.4573741f@endymion.delvare>
+	<BANLkTikLSmXKG67NroavRb+FjzVE5ie21Q@mail.gmail.com>
+	<20110623104525.30718cd7@endymion.delvare>
+	<BANLkTikYbpeSbt5VHndJnsWXax1MX+Xk-w@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-22 at 15:20 -0700, Suresh Siddha wrote:
-> +#ifdef CONFIG_SMP
-> +       /*
-> +        * If we are not yet online, then there can be no stop_machine() in
-> +        * parallel. Stop machine ensures this by using get_online_cpus().
-> +        *
-> +        * If we are online, then we need to prevent a stop_machine() happening
-> +        * in parallel by taking the stop cpus mutex.
-> +        */
-> +       if (cpu_online(raw_smp_processor_id()))
-> +               mutex_lock(&stop_cpus_mutex);
-> +#endif 
+On Thu, 23 Jun 2011 14:35:31 +0530, Ankur Patel wrote:
+> On Thu, Jun 23, 2011 at 2:15 PM, Jean Delvare <khali@linux-fr.org> wrote:
+> 
+> > On Thu, 23 Jun 2011 13:56:53 +0530, Ankur Patel wrote:
+> > > On Thu, Jun 23, 2011 at 1:36 PM, Jean Delvare <khali@linux-fr.org>
+> > wrote:
+> > >
+> > > > On Wed, 22 Jun 2011 07:51:39 +0530, Ankur Patel wrote:
+> > > > > From: Ankur Patel <ankur.patel@quipment.in>
+> > > > >
+> > > > > In the tmp102.ko driver support for 12 bit data is added. Also, the
+> > > > > sysfs names are replaced with the actual chip supported fuctionality
+> > > > > names.
+> > > >
+> > > > Nack. These attribute names are standard, see
+> > > > Documentation/hwmon/sysfs-interface. You don't get to change them.
+> > > >
+> > > >
+> > > > What problem were you trying to solve? libsensors expects the attribute
+> > > > names which are in use today.
+> > > >
+> > > > Agree, But using temp1_max_hyst as an attribute for presenting low
+> > level
+> > > threshold, will it not more feasible to use temp1_low instead?.
+> >
+> > No. This isn't a min temperature limit. Please read the TMP102
+> > datasheet and in particular Figure 10 "Output Transfer Function
+> > Diagrams" and the description of the AL configuration bit.
+> >
+> > Understood. Thank you. I am reverting back the changes for sysfs attribute
+> names in the submitted patch to original. Do you have other Issue apart from
+> that?
 
-This reads like an optimization, is it really worth-while to not take
-the mutex in the rare offline case?
+I didn't read the patch, only the header. So I don't know yet. Just
+resubmit and wait for review.
+
+-- 
+Jean Delvare
