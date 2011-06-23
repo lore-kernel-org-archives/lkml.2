@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758361Ab1FWAAL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 20:00:11 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:56648 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757748Ab1FWAAJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 20:00:09 -0400
-X-AuditID: cbfee61a-b7c59ae000003b70-a9-4e02820061f6
-Date: Thu, 23 Jun 2011 08:59:52 +0900
-From: Sangbeom Kim <sbkim73@samsung.com>
-Subject: RE: [PATCH 1/3] mfd: Add S5M8751 register definitions
-In-reply-to: <20110622124222.GC23666@sirena.org.uk>
-To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Message-id: <016c01cc3138$7eca0480$7c5e0d80$@com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: Acww2dgw3hXh2NGbRxCsStFGZ1m8dgAXbCYg
-References: <1308722037-6966-1-git-send-email-sbkim73@samsung.com>
- <1308722037-6966-2-git-send-email-sbkim73@samsung.com>
- <20110622124222.GC23666@sirena.org.uk>
-X-Brightmail-Tracker: AAAAAA==
+	id S1758455Ab1FWAAg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 20:00:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29778 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758245Ab1FWAAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 20:00:35 -0400
+Message-ID: <4E028215.90107@redhat.com>
+Date: Wed, 22 Jun 2011 20:00:21 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Nai Xia <nai.xia@gmail.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
+        linux-mm <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
+Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte
+ and mmu notifier to help KSM dirty bit tracking
+References: <201106212055.25400.nai.xia@gmail.com>	<201106212132.39311.nai.xia@gmail.com>	<4E01C752.10405@redhat.com>	<4E01CC77.10607@ravellosystems.com>	<4E01CDAD.3070202@redhat.com>	<4E01CFD2.6000404@ravellosystems.com>	<4E020CBC.7070604@redhat.com>	<20110622165529.GY20843@redhat.com> <BANLkTinRYr9Vg==C-qyCaRmO7C_aQqBPzw@mail.gmail.com>
+In-Reply-To: <BANLkTinRYr9Vg==C-qyCaRmO7C_aQqBPzw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On 06/22/2011 07:37 PM, Nai Xia wrote:
 
-On Wed, Jun 22, 2011 at 09:42PM +0900, Mark Brown wrote:
-> These don't look like register definitions:
+> On 2MB pages, I'd like to remind you and Rik that ksmd currently splits
+> huge pages before their sub pages gets really merged to stable tree.
 
-OK, I will move it,
-> 
-> I posted a series earlier this week which adds a generic API for
-> handling register maps on I2C/SPI devices - I'll post another version of
-> it shortly, it'd be nice if you could loook to see if this is usable for
-> you.
-> 
-Thanks for your comments.
-After check the your patch, I will remake S5M8751 patch.
+Your proposal appears to add a condition that causes ksmd to skip
+doing that, which can cause the system to start using swap instead
+of sharing memory.
 
-> > +/* S5M8751 internal interrupts */
-> > +int s5m8751_register_irq(struct s5m8751 *s5m8751, int irq,
-> > +			void (*handler) (struct s5m8751 *, int, void *),
-> > +			void *data);
-> > +
-> > +int s5m8751_free_irq(struct s5m8751 *s5m8751, int irq);
-> > +int s5m8751_mask_irq(struct s5m8751 *s5m8751, int irq);
-> > +int s5m8751_unmask_irq(struct s5m8751 *s5m8751, int irq);
-> > +int s5m8751_clear_irq(struct s5m8751 *s5m8751);
-> 
-> You should use genirq for this, it's supported this for quite some time
-> now.  There's quite a few MFDs doing this which you can used for
-> examples.
-OK I will check it.
+> So when there are many 2MB pages each having a 4kB subpage
+> changed for all time, this is already a concern for ksmd to judge
+> if it's worthwhile to split 2MB page and get its sub-pages merged.
+> I think the policy for ksmd in a system should be "If you cannot do sth good,
+> at least do nothing evil". So I really don't think we can satisfy _all_ people.
+> Get a general method and give users one or two knobs to tune it when they
+> are the corner cases. How do  you think of my proposal ?
 
+I think your proposal makes sense for 4kB pages, but the ksmd
+policy for 2MB pages probably needs to be much more aggressive.
 
-> > +/* S5M8751 sysfs functions */
-> > +int s5m8751_uvlo_get(struct s5m8751 *s5m8751);
-> > +int s5m8751_uvlo_set(struct s5m8751 *s5m8751, int voltage);
-> > +
-> > +int s5m8751_audio_dev_register(struct s5m8751 *s5m8751,
-> > +						const char *name,
-> > +						struct platform_device
-**pdev);
-> 
-> These shouldn't need to be in the header.
-OK, I will modify it.
-
-Thanks and regards,
-
+-- 
+All rights reversed
