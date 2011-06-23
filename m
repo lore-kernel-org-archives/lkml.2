@@ -1,95 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933061Ab1FWTid (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 15:38:33 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:43076 "EHLO
+	id S933122Ab1FWTjo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 15:39:44 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:45657 "EHLO
 	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932702Ab1FWTic (ORCPT
+	with ESMTP id S932726Ab1FWTjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 15:38:32 -0400
-Subject: [PATCH 03/11] Remove useless debugging from ft1000_cs.c
+	Thu, 23 Jun 2011 15:39:42 -0400
+Subject: [PATCH 04/11] Remove misleading and template comments from ft1000_cs.c
 To: "Greg Kroah-Hartman" <greg@kroah.com>
 Cc: Marek Belisko <marek.belisko@gmail.com>,
         Kernel development list <linux-kernel@vger.kernel.org>
 From: Ondrej Zary <linux@rainbow-software.org>
-Date: Thu, 23 Jun 2011 21:38:22 +0200
+Date: Thu, 23 Jun 2011 21:39:33 +0200
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-Id: <201106232138.24293.linux@rainbow-software.org>
+Message-Id: <201106232139.36576.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove useless debugging from ft1000_cs.c
+Remove misleading, useless and template comments from ft1000_cs.c
 
 Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 ---
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c |   18 ------------------
- 1 files changed, 0 insertions(+), 18 deletions(-)
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c |   78 ++--------------------
+ 1 files changed, 5 insertions(+), 73 deletions(-)
 
 diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
-index a9b0cff..b99f07d 100644
+index b99f07d..34fc21f 100644
 --- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
 +++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
-@@ -65,11 +65,6 @@ MODULE_LICENSE("GPL");
-    left out.  If you compile with PCMCIA_DEBUG=0, the debug code will
-    be present but disabled.
- */
--#ifdef FT_DEBUG
--#define DEBUG(n, args...) printk(KERN_DEBUG args)
--#else
--#define DEBUG(n, args...)
--#endif
+@@ -54,18 +54,6 @@ MODULE_AUTHOR("Wai Chan");
+ MODULE_DESCRIPTION("FT1000 PCMCIA driver");
+ MODULE_LICENSE("GPL");
  
+-/* Newer, simpler way of listing specific interrupts */
+-
+-/* The old way: bit map of interrupts to choose from */
+-/* This means pick from 15, 14, 12, 11, 10, 9, 7, 5, 4, and 3 */
+-
+-/*
+-   All the PCMCIA modules use PCMCIA_DEBUG to control debugging.  If
+-   you do not define PCMCIA_DEBUG at all, all the debug code will be
+-   left out.  If you compile with PCMCIA_DEBUG=0, the debug code will
+-   be present but disabled.
+-*/
+-
  /*====================================================================*/
  
-@@ -103,8 +98,6 @@ static void ft1000_reset(struct pcmcia_device * link)
+ struct net_device *init_ft1000_card(struct pcmcia_device *link,
+@@ -74,13 +62,6 @@ void stop_ft1000_card(struct net_device *);
  
+ static int ft1000_config(struct pcmcia_device *link);
+ static void ft1000_release(struct pcmcia_device *link);
+-
+-/*
+-   The attach() and detach() entry points are used to create and destroy
+-   "instances" of the driver, where each instance represents everything
+-   needed to manage one actual PCMCIA card.
+-*/
+-
+ static void ft1000_detach(struct pcmcia_device *link);
+ static int  ft1000_attach(struct pcmcia_device *link);
+ 
+@@ -91,11 +72,6 @@ static void ft1000_reset(struct pcmcia_device * link)
+ 	pcmcia_reset_card(link->socket);
+ }
+ 
+-/*======================================================================
+-
+-
+-======================================================================*/
+-
  static int ft1000_attach(struct pcmcia_device *link)
  {
--	DEBUG(0, "ft1000_cs: ft1000_attach()\n");
--
  	link->priv = NULL;
- 	link->config_flags |= CONF_ENABLE_IRQ | CONF_AUTO_SET_IO;
+@@ -103,16 +79,7 @@ static int ft1000_attach(struct pcmcia_device *link)
  
-@@ -125,13 +118,6 @@ static void ft1000_detach(struct pcmcia_device *link)
+ 	return ft1000_config(link);
+ 
+-}				/* ft1000_attach */
+-
+-/*======================================================================
+-
+-    This deletes a driver "instance".  The device is de-registered
+-    with Card Services.  If it has been released, all local data
+-    structures are freed.  Otherwise, the structures will be freed
+-    when the device is released.
+-
+-======================================================================*/
++}
+ 
+ static void ft1000_detach(struct pcmcia_device *link)
  {
- 	struct net_device *dev = link->priv;
+@@ -126,18 +93,12 @@ static void ft1000_detach(struct pcmcia_device *link)
  
--	DEBUG(0, "ft1000_cs: ft1000_detach(0x%p)\n", link);
+ 	free_netdev(dev);
+ 
+-}				/* ft1000_detach */
 -
--	if (link == NULL) {
--		DEBUG(0,"ft1000_cs:ft1000_detach: Got a NULL pointer\n");
--		return;
--	}
+-/*======================================================================
 -
- 	if (dev) {
- 		stop_ft1000_card(dev);
- 	}
-@@ -207,8 +193,6 @@ failed:
+-   Check if the io window is configured
++}
+ 
+-======================================================================*/
+ int ft1000_confcheck(struct pcmcia_device *link, void *priv_data)
+ {
+-
+ 	return pcmcia_request_io(link);
+-}				/* ft1000_confcheck */
++}
+ 
+ /*======================================================================
+ 
+@@ -180,7 +141,7 @@ failed:
+ 	ft1000_release(link);
+ 	return -ENODEV;
+ 
+-}				/* ft1000_config */
++}
+ 
+ /*======================================================================
+ 
+@@ -192,33 +153,8 @@ failed:
+ 
  static void ft1000_release(struct pcmcia_device * link)
  {
- 
--	DEBUG(0, "ft1000_cs: ft1000_release(0x%p)\n", link);
 -
- 	/*
- 	   If the device is currently in use, we won't release until it
- 	   is actually closed, because until then, we can't be sure that
-@@ -277,13 +261,11 @@ static struct pcmcia_driver ft1000_cs_driver = {
+-	/*
+-	   If the device is currently in use, we won't release until it
+-	   is actually closed, because until then, we can't be sure that
+-	   no one will try to access the device or its data structures.
+-	 */
+-
+-	/*
+-	   In a normal driver, additional code may be needed to release
+-	   other kernel data structures associated with this device.
+-	 */
+-	/* Don't bother checking to see if these succeed or not */
+-
+ 	 pcmcia_disable_device(link);
+-}				/* ft1000_release */
+-
+-/*======================================================================
+-
+-    The card status event handler.  Mostly, this schedules other
+-    stuff to run after an event is received.
+-
+-    When a CARD_REMOVAL event is received, we immediately set a
+-    private flag to block future accesses to this device.  All the
+-    functions that actually access the device should check this flag
+-    to make sure the card is still present.
+-
+-======================================================================*/
++}
  
- static int __init init_ft1000_cs(void)
+ static int ft1000_suspend(struct pcmcia_device *link)
  {
--	DEBUG(0, "ft1000_cs: loading\n");
- 	return pcmcia_register_driver(&ft1000_cs_driver);
+@@ -231,13 +167,9 @@ static int ft1000_suspend(struct pcmcia_device *link)
+ 
+ static int ft1000_resume(struct pcmcia_device *link)
+ {
+-/*	struct net_device *dev = link->priv;
+- */
+ 	return 0;
  }
  
- static void __exit exit_ft1000_cs(void)
- {
--	DEBUG(0, "ft1000_cs: unloading\n");
- 	pcmcia_unregister_driver(&ft1000_cs_driver);
- }
+-
+-
+ /*====================================================================*/
  
+ static const struct pcmcia_device_id ft1000_ids[] = {
 -- 
 Ondrej Zary
 
