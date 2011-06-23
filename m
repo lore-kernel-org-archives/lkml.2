@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758606Ab1FWAOz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 20:14:55 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:35533 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758293Ab1FWAOy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 20:14:54 -0400
-Message-ID: <4E02857C.1010304@dsn.okisemi.com>
-Date: Thu, 23 Jun 2011 09:14:52 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1758587Ab1FWA5l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 20:57:41 -0400
+Received: from ozlabs.org ([203.10.76.45]:53285 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754341Ab1FWA5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 20:57:41 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
+Subject: Re: module: sysfs - add 'uevent' file to allow coldplug
+In-Reply-To: <BANLkTimNpDdp+JBXt0wUjuc0awypJSvXRg@mail.gmail.com>
+References: <1308434431.1050.5.camel@mop> <8739j59zib.fsf@rustcorp.com.au> <BANLkTink8YTe=-Tr5Ax3epiFoFCfzcex7w@mail.gmail.com> <87boxshrwe.fsf@rustcorp.com.au> <BANLkTinL4r3RfNuA5x6=UK4DCSSJNeZw7w@mail.gmail.com> <87r56m8w2b.fsf@rustcorp.com.au> <BANLkTimNpDdp+JBXt0wUjuc0awypJSvXRg@mail.gmail.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Thu, 23 Jun 2011 09:57:22 +0930
+Message-ID: <87fwn18k9h.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Alexander Stein <alexander.stein@systec-electronic.com>
-CC: Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pch_uart: Add MSI support
-References: <1308736219-19975-1-git-send-email-alexander.stein@systec-electronic.com>
-In-Reply-To: <1308736219-19975-1-git-send-email-alexander.stein@systec-electronic.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/22 18:50), Alexander Stein wrote:
-> Signed-off-by: Alexander Stein<alexander.stein@systec-electronic.com>
-> ---
->   drivers/tty/serial/pch_uart.c |   12 ++++++++++++
->   1 files changed, 12 insertions(+), 0 deletions(-)
+On Wed, 22 Jun 2011 12:17:49 +0200, Kay Sievers <kay.sievers@vrfy.org> wrote:
+> On Wed, Jun 22, 2011 at 04:00, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> > I apologize for skimming,
 > 
-> diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-> index 4652109..9db9773 100644
-> --- a/drivers/tty/serial/pch_uart.c
-> +++ b/drivers/tty/serial/pch_uart.c
-> @@ -234,6 +234,7 @@ struct eg20t_port {
->   	int				tx_dma_use;
->   	void				*rx_buf_virt;
->   	dma_addr_t			rx_buf_dma;
-> +	int				use_msi;
->   };
-> 
->   /**
-> @@ -1429,6 +1430,12 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
->   		goto init_port_hal_free;
->   	}
-> 
-> +	ret = pci_enable_msi(pdev);
-> +	if (ret)
-> +		priv->use_msi = 0;
-> +	else
-> +		priv->use_msi = 1;
-> +
->   	iobase = pci_resource_start(pdev, 0);
->   	mapbase = pci_resource_start(pdev, 1);
->   	priv->mapbase = mapbase;
-> @@ -1485,6 +1492,9 @@ static void pch_uart_pci_remove(struct pci_dev *pdev)
->   	struct eg20t_port *priv;
-> 
->   	priv = (struct eg20t_port *)pci_get_drvdata(pdev);
-> +
-> +	if (priv->use_msi)
-> +		pci_disable_msi(pdev);
->   	pch_uart_exit_port(priv);
->   	pci_disable_device(pdev);
->   	kfree(priv);
-> @@ -1568,6 +1578,8 @@ static int __devinit pch_uart_pci_probe(struct pci_dev *pdev,
->   	return ret;
-> 
->   probe_disable_device:
-> +	if (priv->use_msi)
-> +		pci_disable_msi(pdev);
->   	pci_disable_device(pdev);
->   probe_error:
->   	return ret;
+> Absolutely no problem. Asking such questions can not be wrong.
 
-Thank you for your updating.
+Sure, but as we know nothing is as abrupt as a hacker who has just
+encountered their own ignorance :)
 
--- 
-tomoya
-OKI SEMICONDUCTOR CO., LTD.
+> > but this should be the *title* of the patch!
+> 
+> Right, it's hard sometimes from 'inside' to make good titles that make
+> titles that are properly understood 'outside'. If you have any better
+> idea, please just change it.
+
+Good observation; for me writing documentation serves this purpose.  I
+renamed half the functions in the iptables code after I'd written the
+user docs...
+
+> > Now we've got that sorted, is there a reason why you changed all the
+> > signatures rather than just using mod->mkobj in store_uevent()?
+> 
+> Because we should be able to use the same 'struct module_attribute'
+> for built-in modules and for loaded modules at the same time. The
+> current 'struct module_attribute' has 'struct module' references, but
+> 'struct module' will never exist for built-in modules.
+> 
+> 'Struct module_kobject' has nice back-pointer to 'struct module', so
+> this was the simplest to do, and looks still fine, I thought.
+
+Yes, it's weird.  The only reason it currently works is because we don't
+use the mod parameter in param_attr_show and param_attr_store; it's NULL
+for built-in modules.
+
+I'd prefer that patch first, I think: it's a sensible cleanup.
+
+Thanks,
+Rusty.
