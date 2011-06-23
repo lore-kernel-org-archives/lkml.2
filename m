@@ -1,86 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758346Ab1FWAHL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 20:07:11 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:31626
-	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757685Ab1FWAHJ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 20:07:09 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Thu, 23 Jun 2011 08:12:35 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: <patches@linaro.org>, <netdev@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        Jason Liu <jason.hui@linaro.org>, <linux-kernel@vger.kernel.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>,
-        David Gibson <david@gibson.dropbear.id.au>
-Subject: Re: [PATCH 1/3] serial/imx: add device tree support
-Message-ID: <20110623001234.GB25799@S2100-06.ap.freescale.net>
-References: <1308410354-21387-1-git-send-email-shawn.guo@linaro.org>
- <1308410354-21387-2-git-send-email-shawn.guo@linaro.org>
- <20110618161934.GH8195@ponder.secretlab.ca>
- <20110619073000.GA23171@S2100-06.ap.freescale.net>
- <20110621135558.GB9228@S2101-09.ap.freescale.net>
- <BANLkTim4vunTm1176MRw3pqRZnunu4=9jg@mail.gmail.com>
- <20110622153353.GA25799@S2100-06.ap.freescale.net>
- <BANLkTimsk2eWKPi2hnHbaAn-vSMKmdYsGQ@mail.gmail.com>
+	id S1758496Ab1FWAOa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 20:14:30 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:38635 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758238Ab1FWAO3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 20:14:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=N9i0ReFqNmVeK+PsQ00kVEAC2D2xhaZJRXalT4WBHQhBaZnYLJcdtq5D0/mNUO1tTW
+         EKquYkeXyVhIRimLl2zGbhi9xlmNQXztRRsh4aMFkQ38lrZT6jKI+yR/yu9mkRGaGHOB
+         JVx96syerfJxTbXEd9qfvp3+S7WYxl+dOETW4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <BANLkTimsk2eWKPi2hnHbaAn-vSMKmdYsGQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20110622234450.GB20843@redhat.com>
+References: <201106212055.25400.nai.xia@gmail.com>
+	<201106212132.39311.nai.xia@gmail.com>
+	<20110622150350.GX20843@redhat.com>
+	<BANLkTim85ghrK9D4f19Pt5v1+HTMzVXxnw@mail.gmail.com>
+	<20110622234450.GB20843@redhat.com>
+Date: Thu, 23 Jun 2011 08:14:28 +0800
+Message-ID: <BANLkTik2P95vxuUkRi5C+=Xaw7TkE3JR2w@mail.gmail.com>
+Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte
+ and mmu notifier to help KSM dirty bit tracking
+From: Nai Xia <nai.xia@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
+        Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 09:52:11AM -0600, Grant Likely wrote:
-[...]
-> 
-> >> > -       line = of_get_property(node, "id", NULL);
-> >> > -       if (!line)
-> >> > +       line = of_get_device_index(node, "serial");
-> >> > +       if (IS_ERR_VALUE(line))
-> >> >                return -ENODEV;
-> >>
-> >> Personally, it an alias isn't present, then I'd dynamically assign a port id.
-> >>
-> > We probably can not.  The driver works with being told the correct
-> > port id which is defined by soc.  Instead of dynamically assigning
-> > a port id, we have to tell the driver the exact hardware port id of
-> > the device that is being probed.
-> 
-> Are you sure?  It doesn't look like the driver behaviour uses id for
-> anything other than an index into the statically allocated serial port
-> instance table.  I don't see any change of behaviour based on the port
-> number anywhere.
-> 
-Sorry, I did not make this clear.  In serial_imx_probe(), the port
-gets created and then saved as below.
+On Thu, Jun 23, 2011 at 7:44 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> On Thu, Jun 23, 2011 at 07:19:06AM +0800, Nai Xia wrote:
+>> OK, I'll have a try over other workarounds.
+>> I am not feeling good about need_pte_unmap myself. :-)
+>
+> The usual way is to check VM_HUGETLB in the caller and to call another
+> function that doesn't kmap. Casting pmd_t to pte_t isn't really nice
+> (but hey we're also doing that exceptionally in smaps_pte_range for
+> THP, but it safe there because we're casting the value of the pmd, not
+> the pointer to the pmd, so the kmap is done by the pte version of the
+> caller and not done by the pmd version of the caller).
+>
+> Is it done for migrate? Surely it's not for swapout ;).
 
-	imx_ports[sport->port.line] = sport;
+Thanks for the hint. :-)
 
-While in imx_console_setup(), it addresses the port as following.
+You know, another thing I am worried about is that I think I
+did make page_check_address()  return a pmd version for skipping the
+tail subpages ...
+I did detecte a schedule in atomic if I kunmap() the returned value. :-(
 
-	sport = imx_ports[co->index];
+>
+>> Thanks for viewing!
+>
+> You're welcome!
+>
+> JFYI I'll be offline on vacation for a week, starting tomorrow, so if
+> I don't answer in the next few days that's the reason but I'll follow
+> the progress in a week.
 
-When users specify their console as ttymxc0, they mean they are
-using the first i.mx uart hardware port, in turn ttymxc1 for the
-second port ...
+Have a nice vacation man! Enjoy the sunlight, we all have enough
+of code in rooms. ;-)
 
-That said, imx_port[0] has to be the first hardware port, imx_port[1]
-has to be the second one ...  That's why port id sport->port.line
-can not be dynamically assigned, otherwise console may not work.
 
--- 
-Regards,
-Shawn
+Thanks,
+Nai
 
+>
+> Thanks!
+> Andrea
+>
