@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934228Ab1FWSOD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:14:03 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:52819 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932777Ab1FWSOA (ORCPT
+	id S934231Ab1FWSOy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:14:54 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59857 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933379Ab1FWSOt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 14:14:00 -0400
+	Thu, 23 Jun 2011 14:14:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=aeysFW6eOAuVUE5II4ZlHh0APzDPLlZtuCeRFyfypa/wVOEsH5auQTekogDyn5vKg9
-         maPMA4SRJWXN9f77JIAqxECHM4W7+VbzPrJvBPgjYzALQP+mj+aQqfL76CTMzx1Gmjoj
-         HuOr/WQBq+VQpXRNsuOR7lkwFZL04TDGBGjUQ=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=MVwEQOeIGhb+ock9+4qbo2M2RPzeiM+xZTPsX6ILxwqA2JAhbTILuI1WiX6opGE8BX
+         BIuC5q1QhQZQWa6bQ023sbfOThLNIJMWLyEo5w2Izgg+kcatA4+zatzDLr36JQXoYSfk
+         5gbgmTTsbz4PDDGL9x1OQU2rv/ZMRJ0h7Rg9I=
 MIME-Version: 1.0
-In-Reply-To: <20110623091429.2d51b0f0.randy.dunlap@oracle.com>
-References: <20110623155431.6bfe3b40.sfr@canb.auug.org.au> <20110623091429.2d51b0f0.randy.dunlap@oracle.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Thu, 23 Jun 2011 14:13:38 -0400
-Message-ID: <BANLkTinTZzjALrTEgofbFEG_pMSQw6uGWg@mail.gmail.com>
-Subject: Re: linux-next: Tree for June 23 (net)
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110623175725.GA21283@aepfle.de>
+References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
+	<1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
+	<1308850515-15242-151-git-send-email-paul.gortmaker@windriver.com>
+	<20110623175725.GA21283@aepfle.de>
+Date: Thu, 23 Jun 2011 14:14:48 -0400
+X-Google-Sender-Auth: a32cpeByPgPJBH2Ued5l3HQ-ipU
+Message-ID: <BANLkTi=5nCHt370=6ZWg4ePLi1qh0w51cg@mail.gmail.com>
+Subject: Re: [34-longterm 210/247] Input: xen-kbdfront - advertise either
+ absolute or relative coordinates
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Olaf Hering <olaf@aepfle.de>
+Cc: stable@kernel.org, linux-kernel@vger.kernel.org, stable-review@kernel.org,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 12:14, Randy Dunlap wrote:
-> On Thu, 23 Jun 2011 15:54:31 +1000 Stephen Rothwell wrote:
->> Hi all,
->>
->> Changes since 20110622:
->>
->> The powerpc allyesconfig (and probably others) is still broken because we
->> now build the staging drivers and because of a commit in the net tree.
->> The breakage in Linus' tree is fixed by one of Andrew's patches above.
->>
->> The net tree gained 2 build failures that I have left (see above).
+On Thu, Jun 23, 2011 at 1:57 PM, Olaf Hering <olaf@aepfle.de> wrote:
+> On Thu, Jun 23, Paul Gortmaker wrote:
 >
+>> From: Olaf Hering <olaf@aepfle.de>
+>>
+>>                    -------------------
+>>     This is a commit scheduled for the next v2.6.34 longterm release.
+>>     If you see a problem with using this for longterm, please comment.
+>>                    -------------------
+>>
+>> commit 8c3c283e6bf463ab498d6e7823aff6c4762314b6 upstream.
 >
-> When CONFIG_INET is not enabled:
+> This one will introduce a regression, which will be fixed by upstream
+> commit c36b58e8a9112017c2bcc322cc98e71241814303
 >
-> net/core/dev.c:2535: error: implicit declaration of function 'ip_is_fragment'
+>    Input: xen-kbdfront - fix mouse getting stuck after save/restore
+>
+> Olaf
 
-i see this on two Blackfin defconfigs like CM-BF533
--mike
+Thanks Olaf,  it will appear here shortly.
+
+http://git.kernel.org/?p=linux/kernel/git/longterm/longterm-queue-2.6.34.git;a=summary
+
+[PS: Dmitry - the mail.ru address you've been using in SOB lines always bounces]
+
+Paul.
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
