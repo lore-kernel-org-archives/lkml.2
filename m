@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759335Ab1FWNg2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 09:36:28 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:48503 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754028Ab1FWNg1 (ORCPT
+	id S1758402Ab1FWNiO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 09:38:14 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33967 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753804Ab1FWNiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 09:36:27 -0400
-Date: Thu, 23 Jun 2011 14:36:05 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Greg KH <gregkh@suse.de>
-Cc: Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@gmail.com>, kernel-hardening@lists.openwall.com,
-        linux-kernel@vger.kernel.org, security@kernel.org
-Subject: Re: [PATCH] kernel: escape non-ASCII and control characters in
- printk()
-Message-ID: <20110623133605.GA28333@srcf.ucam.org>
-References: <20110622095341.GA3353@albatros>
- <20110622153742.GA18983@suse.de>
+	Thu, 23 Jun 2011 09:38:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=k//YNBO4WEDFICcOz55hE7RyP1jBrnAObkC+iYxU4a1xu/8ctXkmpSYsfFR6sckduR
+         HyG+q3qaK+7jaN+ufcgNK+hFHsh4mwPtbskst7IEJvVxrBQ5onqChDipP0o3YIinV0QJ
+         FjKbbUXLrT20ATW/9WqXF/7FfPCULL7NX/SqI=
+Date: Thu, 23 Jun 2011 15:38:08 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        hch@infradead.org
+Subject: Re: [PATCH 4/8] make do_notify_parent() __must_check, update the
+ callers
+Message-ID: <20110623133808.GP30101@htj.dyndns.org>
+References: <1308322240-8247-1-git-send-email-tj@kernel.org>
+ <1308322240-8247-7-git-send-email-tj@kernel.org>
+ <20110622210757.GA20549@redhat.com>
+ <20110622210909.GE20549@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110622153742.GA18983@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20110622210909.GE20549@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 08:37:42AM -0700, Greg KH wrote:
-> On Wed, Jun 22, 2011 at 01:53:41PM +0400, Vasiliy Kulikov wrote:
-> > This patch escapes all characters outside of allowed '\n' plus 0x20-0x7E
-> > charset passed to printk().
-> > 
-> > There are numerous printk() instances with user supplied input as "%s"
-> > data, and unprivileged user may craft log messages with substrings
-> > containing control characters via these printk()s.  Control characters
-> > might fool root viewing the logs via tty.
+On Wed, Jun 22, 2011 at 11:09:09PM +0200, Oleg Nesterov wrote:
+> Change other callers of do_notify_parent() to check the value it
+> returns, this makes the subsequent task_detached() unnecessary.
+> Mark do_notify_parent() as __must_check.
 > 
-> There are "numerous" places this could happen?
+> Use thread_group_leader() instead of !task_detached() to check
+> if we need to notify the real parent in wait_task_zombie().
+> 
+> Remove the stale comment in release_task(). "just for sanity" is
+> no longer true, we have to set EXIT_DEAD to avoid the races with
+> do_wait().
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-USB product identifiers?
+Acked-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+tejun
