@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759430Ab1FWMeM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 08:34:12 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33884 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759227Ab1FWMeK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 08:34:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Jd8cVRyhb9UekpPp/7i16HArCnT5pyrmwkq4RueOjNAD+xzjEFQ9YSXgm8IO/JJT8d
-         k/X5e+GnXFqNyEN/RQVgyE1eV+ksemqO8qb+WdIrIzsaITL6Wzuq+OBSYbmM8ynBt8fs
-         qHPmDqIz17Ixb6D7WyUIcM7GF6mKCmYseZgHs=
-Date: Thu, 23 Jun 2011 16:34:04 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Vince Weaver <vweaver1@eecs.utk.edu>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC -tip] perf, x86: Add PERF_COUNT_HW_NMI_WATCHDOG event v2
-Message-ID: <20110623123404.GA13050@sun>
-References: <BANLkTikVaOz5DYjKSU-jxVBw_Lw9ihV7BQ@mail.gmail.com>
- <20110623095439.GC10238@sun>
- <20110623110706.GE10238@sun>
- <20110623114055.GV3765@redhat.com>
- <BANLkTikR7j0iZ7SLsfkz=2bpTm2uaO_=5g@mail.gmail.com>
- <20110623115327.GG10238@sun>
- <BANLkTin5sN2FZaQYsnsEkH10OF-GES9MGw@mail.gmail.com>
- <20110623120732.GH10238@sun>
- <20110623122648.GI10238@sun>
- <BANLkTimKpnbus2rStk7V4-2sbv5cUbz8NA@mail.gmail.com>
+	id S1759453Ab1FWMef (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 08:34:35 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40237 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759436Ab1FWMee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 08:34:34 -0400
+Message-ID: <4E0332C5.7010608@ti.com>
+Date: Thu, 23 Jun 2011 13:34:13 +0100
+From: Liam Girdwood <lrg@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimKpnbus2rStk7V4-2sbv5cUbz8NA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier.adi@gmail.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "device-drivers-devel@blackfin.uclinux.org" 
+	<device-drivers-devel@blackfin.uclinux.org>
+Subject: Re: [alsa-devel] [PATCH 1/3] ASoC: Add ADAV80x codec driver
+References: <1308808818-26775-1-git-send-email-lars@metafoo.de>
+In-Reply-To: <1308808818-26775-1-git-send-email-lars@metafoo.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 02:31:14PM +0200, Stephane Eranian wrote:
-> Yes.
+On 23/06/11 07:00, Lars-Peter Clausen wrote:
+> This patch adds support for the Analog Devices ADAV801 and ADAV803 audio codec.
+> 
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> 
+> ---
+> Changes since v1:
+> * Sync register on resume
+> * Don't use arrays for the mux enums and controls
+> * Rework PLL handling. Use DAPM for powering the PLL and OSC down and use
+>   set_sysclk to select the system clock instead of doing this implicitly in
+>   set_pll.
+> ---
+>  MAINTAINERS                |    1 +
+>  sound/soc/codecs/Kconfig   |    4 +
+>  sound/soc/codecs/Makefile  |    2 +
+>  sound/soc/codecs/adav80x.c |  908 ++++++++++++++++++++++++++++++++++++++++++++
+>  sound/soc/codecs/adav80x.h |   31 ++
+>  5 files changed, 946 insertions(+), 0 deletions(-)
+>  create mode 100644 sound/soc/codecs/adav80x.c
+>  create mode 100644 sound/soc/codecs/adav80x.h
 > 
 
-OK, I prepare a final version and send out as a new mail, since thread
-is big enough already. Thanks!
+snip
 
-	Cyrill
+> +
+> +static int adav80x_probe(struct snd_soc_codec *codec)
+> +{
+> +       int ret;
+> +       struct adav80x *adav80x = snd_soc_codec_get_drvdata(codec);
+> +
+> +       ret = snd_soc_codec_set_cache_io(codec, 7, 9, adav80x->control_type);
+> +       if (ret) {
+> +               dev_err(codec->dev, "failed to set cache I/O: %d\n", ret);
+> +               return ret;
+> +       }
+> +
+> +       /* Power down SYSCLK output, power down S/PDIF receiver */
+> +       snd_soc_write(codec, ADAV80X_PLL_OUTE, 0x27);
+> +       /* Disable DAC zero flag */
+> +       snd_soc_write(codec, ADAV80X_DAC_CTRL3, 0x6);
+> +
+> +       return adav80x_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+> +}
+> +
+
+It's usually better disable things like sysclk output in your machine driver as others may depend on it for probing.
+
+Liam
