@@ -1,190 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933916Ab1FWRpd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:45:33 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:53570 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933066Ab1FWRp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:45:28 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH] PCI / PM: Block races between runtime PM and system sleep
-Date: Thu, 23 Jun 2011 19:46:29 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1106221011240.1977-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1106221011240.1977-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S933754Ab1FWRtm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:49:42 -0400
+Received: from mx1.vsecurity.com ([209.67.252.12]:62939 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932651Ab1FWRtk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 13:49:40 -0400
+Subject: Re: [34-longterm 238/247] xfs: prevent leaking uninitialized stack
+ memory in FSGEOMETRY_V1
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: stable@kernel.org, linux-kernel@vger.kernel.org, stable-review@kernel.org,
+        Alex Elder <aelder@sgi.com>
+In-Reply-To: <1308850515-15242-179-git-send-email-paul.gortmaker@windriver.com>
+References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
+	 <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
+	 <1308850515-15242-179-git-send-email-paul.gortmaker@windriver.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 23 Jun 2011 13:49:26 -0400
+Message-ID: <1308851366.5295.1.camel@dan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106231946.30004.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 22, 2011, Alan Stern wrote:
-> On Wed, 22 Jun 2011, Rafael J. Wysocki wrote:
+On Thu, 2011-06-23 at 13:35 -0400, Paul Gortmaker wrote:
+> From: Dan Rosenberg <drosenberg@vsecurity.com>
 > 
-> > > It's probably okay to prevent pm_runtime_suspend() from working during
-> > > .suspend() or .resume(), but it's not a good idea to prevent
-> > > pm_runtime_resume() from working then.
-> > 
-> > OK, but taking a reference by means of pm_runtime_get_noresume() won't
-> > block pm_runtime_resume().
+>                    -------------------
+>     This is a commit scheduled for the next v2.6.34 longterm release.
+>     If you see a problem with using this for longterm, please comment.
+>                    -------------------
 > 
-> Exactly my point -- we don't need to (and don't want to) block 
-> pm_runtime_resume during the .suspend() and .resume() callbacks.
+> commit 3a3675b7f23f83ca8c67c9c2b6edf707fd28d1ba upstream.
 > 
-> > > During the .suspend and .resume callbacks, races with
-> > > .runtime_suspend() can be prevented by calling
-> > > pm_runtime_get_noresume() just before .suspend() and then calling
-> > > pm_runtime_put_sync() just after .resume().
-> > 
-> > So, you seem to suggest to call pm_runtime_get_noresume() in
-> > __device_suspend() and pm_runtime_put_sync() in device_resume().
+> The FSGEOMETRY_V1 ioctl (and its compat equivalent) calls out to
+> xfs_fs_geometry() with a version number of 3.  This code path does not
+> fill in the logsunit member of the passed xfs_fsop_geom_t, leading to
+> the leaking of four bytes of uninitialized stack data to potentially
+> unprivileged callers.
 > 
-> Yes.  Also perhaps call pm_runtime_barrier() immediately after 
-> get_noresume.
+> v2 switches to memset() to avoid future issues if structure members
+> change, on suggestion of Dave Chinner.
 > 
-> > That would be fine by me, perhaps up to the "sync" part of the "put".
+> Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+> Reviewed-by: Eugene Teo <eugeneteo@kernel.org>
+> Signed-off-by: Alex Elder <aelder@sgi.com>
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> ---
+>  fs/xfs/xfs_fsops.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
 > 
-> The main feature of this design is that it allows runtime PM to work 
-> between .resume() and .complete().  If you do a put_noidle instead of 
-> put_sync then you may prevent runtime PM from working properly.
-> 
-> > > >  (a _put_sync() at this point will likely invoke
-> > > > .runtime_idle() from the subsystem before executing .complete(), which may
-> > > > not be desirable)?
-> > > 
-> > > It should be allowed.  The purpose of .complete() is not to re-enable
-> > > runtime power management of the device; it is to release resources
-> > > (like memory) allocated during .prepare() and perhaps also to allow new
-> > > children to be registered under the device.
-> > 
-> > Right.  But does "allowed" mean the core _should_ do it at this point?
-> > We may as well call pm_runtime_idle() directly from rpm_complete(), but
-> > perhaps it's better to call it from device_resume(), so that it runs in
-> > parallel for async devices.
-> 
-> Calling pm_runtime_put_noidle() followed by pm_runtime_idle() is 
-> essentially the same as calling pm_runtime_put_sync() anyway.
-> 
-> If a subsystem really does want to block runtime PM between the 
-> .resume() and .complete() callbacks, it can do its own get_noresume and 
-> put_sync -- just as you have done with PCI.
+> diff --git a/fs/xfs/xfs_fsops.c b/fs/xfs/xfs_fsops.c
+> index 37a6f62..4e7f02b 100644
+> --- a/fs/xfs/xfs_fsops.c
+> +++ b/fs/xfs/xfs_fsops.c
+> @@ -57,6 +57,9 @@ xfs_fs_geometry(
+>  	xfs_fsop_geom_t		*geo,
+>  	int			new_version)
+>  {
+> +
+> +	memset(geo, 0, sizeof(*geo));
+> +
+>  	geo->blocksize = mp->m_sb.sb_blocksize;
+>  	geo->rtextsize = mp->m_sb.sb_rextsize;
+>  	geo->agblocks = mp->m_sb.sb_agblocks;
+> -- 
+> 1.7.4.4
 
-OK, so what about the appended patch (the last hunk is necessary to make the
-SCSI error handling work when runtime PM is disabled, it should be a separate
-patch)?
+This introduced a regression which was fixed by commit
+af24ee9ea8d532e16883251a6684dfa1be8eec29.
 
-Rafael
+-Dan
 
----
- drivers/base/power/main.c    |   27 ++++++++++++++++++++++-----
- drivers/base/power/runtime.c |   10 ++++++----
- 2 files changed, 28 insertions(+), 9 deletions(-)
-
-Index: linux-2.6/drivers/base/power/main.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/main.c
-+++ linux-2.6/drivers/base/power/main.c
-@@ -505,6 +505,7 @@ static int legacy_resume(struct device *
- static int device_resume(struct device *dev, pm_message_t state, bool async)
- {
- 	int error = 0;
-+	bool put = false;
- 
- 	TRACE_DEVICE(dev);
- 	TRACE_RESUME(0);
-@@ -521,6 +522,9 @@ static int device_resume(struct device *
- 	if (!dev->power.is_suspended)
- 		goto Unlock;
- 
-+	pm_runtime_enable(dev);
-+	put = true;
-+
- 	if (dev->pwr_domain) {
- 		pm_dev_dbg(dev, state, "power domain ");
- 		error = pm_op(dev, &dev->pwr_domain->ops, state);
-@@ -563,6 +567,10 @@ static int device_resume(struct device *
- 	complete_all(&dev->power.completion);
- 
- 	TRACE_RESUME(error);
-+
-+	if (put)
-+		pm_runtime_put_sync(dev);
-+
- 	return error;
- }
- 
-@@ -843,16 +851,22 @@ static int __device_suspend(struct devic
- 	int error = 0;
- 
- 	dpm_wait_for_children(dev, async);
--	device_lock(dev);
- 
- 	if (async_error)
--		goto Unlock;
-+		return 0;
-+
-+	pm_runtime_get_noresume(dev);
-+	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
-+		pm_wakeup_event(dev, 0);
- 
- 	if (pm_wakeup_pending()) {
-+		pm_runtime_put_sync(dev);
- 		async_error = -EBUSY;
--		goto Unlock;
-+		return 0;
- 	}
- 
-+	device_lock(dev);
-+
- 	if (dev->pwr_domain) {
- 		pm_dev_dbg(dev, state, "power domain ");
- 		error = pm_op(dev, &dev->pwr_domain->ops, state);
-@@ -890,12 +904,15 @@ static int __device_suspend(struct devic
-  End:
- 	dev->power.is_suspended = !error;
- 
-- Unlock:
- 	device_unlock(dev);
- 	complete_all(&dev->power.completion);
- 
--	if (error)
-+	if (error) {
-+		pm_runtime_put_sync(dev);
- 		async_error = error;
-+	} else if (dev->power.is_suspended) {
-+		__pm_runtime_disable(dev, false);
-+	}
- 
- 	return error;
- }
-Index: linux-2.6/drivers/base/power/runtime.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/runtime.c
-+++ linux-2.6/drivers/base/power/runtime.c
-@@ -455,12 +455,14 @@ static int rpm_resume(struct device *dev
- 	dev_dbg(dev, "%s flags 0x%x\n", __func__, rpmflags);
- 
-  repeat:
--	if (dev->power.runtime_error)
-+	if (dev->power.runtime_error) {
- 		retval = -EINVAL;
--	else if (dev->power.disable_depth > 0)
--		retval = -EAGAIN;
--	if (retval)
- 		goto out;
-+	} else if (dev->power.disable_depth > 0) {
-+		if (!(rpmflags & RPM_GET_PUT))
-+			retval = -EAGAIN;
-+		goto out;
-+	}
- 
- 	/*
- 	 * Other scheduled or pending requests need to be canceled.  Small
