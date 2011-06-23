@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933370Ab1FWRgg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:36:36 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34488 "EHLO
+	id S933175Ab1FWRfr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:35:47 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34160 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933332Ab1FWRg2 (ORCPT
+	with ESMTP id S932973Ab1FWRfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:36:28 -0400
+	Thu, 23 Jun 2011 13:35:45 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Anton Blanchard <anton@samba.org>,
-        Milton Miller <miltonm@bga.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 064/247] kernel/smp.c: fix smp_call_function_many() SMP race
-Date: Thu, 23 Jun 2011 13:32:12 -0400
-Message-Id: <1308850515-15242-5-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 065/247] hostap_cs: fix sleeping function called from invalid context
+Date: Thu, 23 Jun 2011 13:32:13 -0400
+Message-Id: <1308850515-15242-6-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,204 +23,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anton Blanchard <anton@samba.org>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 6dc19899958e420a931274b94019e267e2396d3e upstream.
+commit 4e5518ca53be29c1ec3c00089c97bef36bfed515 upstream.
 
-I noticed a failure where we hit the following WARN_ON in
-generic_smp_call_function_interrupt:
+pcmcia_request_irq() and pcmcia_enable_device() are intended
+to be called from process context (first function allocate memory
+with GFP_KERNEL, second take a mutex). We can not take spin lock
+and call them.
 
-                if (!cpumask_test_and_clear_cpu(cpu, data->cpumask))
-                        continue;
+It's safe to move spin lock after pcmcia_enable_device() as we
+still hold off IRQ until dev->base_addr is 0 and driver will
+not proceed with interrupts when is not ready.
 
-                data->csd.func(data->csd.info);
+Patch resolves:
+https://bugzilla.redhat.com/show_bug.cgi?id=643758
 
-                refs = atomic_dec_return(&data->refs);
-                WARN_ON(refs < 0);      <-------------------------
-
-We atomically tested and cleared our bit in the cpumask, and yet the
-number of cpus left (ie refs) was 0.  How can this be?
-
-It turns out commit 54fdade1c3332391948ec43530c02c4794a38172
-("generic-ipi: make struct call_function_data lockless") is at fault.  It
-removes locking from smp_call_function_many and in doing so creates a
-rather complicated race.
-
-The problem comes about because:
-
- - The smp_call_function_many interrupt handler walks call_function.queue
-   without any locking.
- - We reuse a percpu data structure in smp_call_function_many.
- - We do not wait for any RCU grace period before starting the next
-   smp_call_function_many.
-
-Imagine a scenario where CPU A does two smp_call_functions back to back,
-and CPU B does an smp_call_function in between.  We concentrate on how CPU
-C handles the calls:
-
-CPU A            CPU B                  CPU C              CPU D
-
-smp_call_function
-                                        smp_call_function_interrupt
-                                            walks
-					call_function.queue sees
-					data from CPU A on list
-
-                 smp_call_function
-
-                                        smp_call_function_interrupt
-                                            walks
-
-                                        call_function.queue sees
-                                          (stale) CPU A on list
-							   smp_call_function int
-							   clears last ref on A
-							   list_del_rcu, unlock
-smp_call_function reuses
-percpu *data A
-                                         data->cpumask sees and
-                                         clears bit in cpumask
-                                         might be using old or new fn!
-                                         decrements refs below 0
-
-set data->refs (too late!)
-
-The important thing to note is since the interrupt handler walks a
-potentially stale call_function.queue without any locking, then another
-cpu can view the percpu *data structure at any time, even when the owner
-is in the process of initialising it.
-
-The following test case hits the WARN_ON 100% of the time on my PowerPC
-box (having 128 threads does help :)
-
-#include <linux/module.h>
-#include <linux/init.h>
-
-#define ITERATIONS 100
-
-static void do_nothing_ipi(void *dummy)
-{
-}
-
-static void do_ipis(struct work_struct *dummy)
-{
-	int i;
-
-	for (i = 0; i < ITERATIONS; i++)
-		smp_call_function(do_nothing_ipi, NULL, 1);
-
-	printk(KERN_DEBUG "cpu %d finished\n", smp_processor_id());
-}
-
-static struct work_struct work[NR_CPUS];
-
-static int __init testcase_init(void)
-{
-	int cpu;
-
-	for_each_online_cpu(cpu) {
-		INIT_WORK(&work[cpu], do_ipis);
-		schedule_work_on(cpu, &work[cpu]);
-	}
-
-	return 0;
-}
-
-static void __exit testcase_exit(void)
-{
-}
-
-module_init(testcase_init)
-module_exit(testcase_exit)
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Anton Blanchard");
-
-I tried to fix it by ordering the read and the write of ->cpumask and
-->refs.  In doing so I missed a critical case but Paul McKenney was able
-to spot my bug thankfully :) To ensure we arent viewing previous
-iterations the interrupt handler needs to read ->refs then ->cpumask then
-->refs _again_.
-
-Thanks to Milton Miller and Paul McKenney for helping to debug this issue.
-
-[miltonm@bga.com: add WARN_ON and BUG_ON, remove extra read of refs before initial read of mask that doesn't help (also noted by Peter Zijlstra), adjust comments, hopefully clarify scenario ]
-[miltonm@bga.com: remove excess tests]
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Milton Miller <miltonm@bga.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-and-tested-by: rbugz@biobind.com
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/smp.c |   30 ++++++++++++++++++++++++++++++
- 1 files changed, 30 insertions(+), 0 deletions(-)
+ drivers/net/wireless/hostap/hostap_cs.c |   15 ++++++---------
+ 1 files changed, 6 insertions(+), 9 deletions(-)
 
-diff --git a/kernel/smp.c b/kernel/smp.c
-index 3fc6973..0a9e6bd 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -194,6 +194,24 @@ void generic_smp_call_function_interrupt(void)
- 	list_for_each_entry_rcu(data, &call_function.queue, csd.list) {
- 		int refs;
+diff --git a/drivers/net/wireless/hostap/hostap_cs.c b/drivers/net/wireless/hostap/hostap_cs.c
+index f33e18e..e436aca 100644
+--- a/drivers/net/wireless/hostap/hostap_cs.c
++++ b/drivers/net/wireless/hostap/hostap_cs.c
+@@ -638,11 +638,10 @@ static int prism2_config(struct pcmcia_device *link)
+ 	link->dev_node = &hw_priv->node;
  
-+		/*
-+		 * Since we walk the list without any locks, we might
-+		 * see an entry that was completed, removed from the
-+		 * list and is in the process of being reused.
-+		 *
-+		 * We must check that the cpu is in the cpumask before
-+		 * checking the refs, and both must be set before
-+		 * executing the callback on this cpu.
-+		 */
-+
-+		if (!cpumask_test_cpu(cpu, data->cpumask))
-+			continue;
-+
-+		smp_rmb();
-+
-+		if (atomic_read(&data->refs) == 0)
-+			continue;
-+
- 		if (!cpumask_test_and_clear_cpu(cpu, data->cpumask))
- 			continue;
+ 	/*
+-	 * Make sure the IRQ handler cannot proceed until at least
+-	 * dev->base_addr is initialized.
++	 * We enable IRQ here, but IRQ handler will not proceed
++	 * until dev->base_addr is set below. This protect us from
++	 * receive interrupts when driver is not initialized.
+ 	 */
+-	spin_lock_irqsave(&local->irq_init_lock, flags);
+-
+ 	/*
+ 	 * Allocate an interrupt line.  Note that this does not assign a
+ 	 * handler to the interrupt, unless the 'Handler' member of the
+@@ -653,7 +652,7 @@ static int prism2_config(struct pcmcia_device *link)
+ 		link->irq.Handler = prism2_interrupt;
+ 		ret = pcmcia_request_irq(link, &link->irq);
+ 		if (ret)
+-			goto failed_unlock;
++			goto failed;
+ 	}
  
-@@ -202,6 +220,8 @@ void generic_smp_call_function_interrupt(void)
- 		refs = atomic_dec_return(&data->refs);
- 		WARN_ON(refs < 0);
- 		if (!refs) {
-+			WARN_ON(!cpumask_empty(data->cpumask));
-+
- 			raw_spin_lock(&call_function.lock);
- 			list_del_rcu(&data->csd.list);
- 			raw_spin_unlock(&call_function.lock);
-@@ -442,11 +462,21 @@ void smp_call_function_many(const struct cpumask *mask,
+ 	/*
+@@ -663,11 +662,11 @@ static int prism2_config(struct pcmcia_device *link)
+ 	 */
+ 	ret = pcmcia_request_configuration(link, &link->conf);
+ 	if (ret)
+-		goto failed_unlock;
++		goto failed;
  
- 	data = &__get_cpu_var(cfd_data);
- 	csd_lock(&data->csd);
-+	BUG_ON(atomic_read(&data->refs) || !cpumask_empty(data->cpumask));
++	spin_lock_irqsave(&local->irq_init_lock, flags);
+ 	dev->irq = link->irq.AssignedIRQ;
+ 	dev->base_addr = link->io.BasePort1;
+-
+ 	spin_unlock_irqrestore(&local->irq_init_lock, flags);
  
- 	data->csd.func = func;
- 	data->csd.info = info;
- 	cpumask_and(data->cpumask, mask, cpu_online_mask);
- 	cpumask_clear_cpu(this_cpu, data->cpumask);
-+
-+	/*
-+	 * To ensure the interrupt handler gets an complete view
-+	 * we order the cpumask and refs writes and order the read
-+	 * of them in the interrupt handler.  In addition we may
-+	 * only clear our own cpu bit from the mask.
-+	 */
-+	smp_wmb();
-+
- 	atomic_set(&data->refs, cpumask_weight(data->cpumask));
+ 	/* Finally, report what we've done */
+@@ -698,8 +697,6 @@ static int prism2_config(struct pcmcia_device *link)
+ 	}
+ 	return ret;
  
- 	raw_spin_lock_irqsave(&call_function.lock, flags);
+- failed_unlock:
+-	 spin_unlock_irqrestore(&local->irq_init_lock, flags);
+  failed:
+ 	kfree(hw_priv);
+ 	prism2_release((u_long)link);
 -- 
 1.7.4.4
 
