@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933436Ab1FWRgw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:36:52 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34643 "EHLO
+	id S934156Ab1FWSID (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:08:03 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34683 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933427Ab1FWRgs (ORCPT
+	with ESMTP id S933441Ab1FWRgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:36:48 -0400
+	Thu, 23 Jun 2011 13:36:53 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, NeilBrown <neilb@suse.de>,
+Cc: stable-review@kernel.org, Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Ingo Molnar <mingo@elte.hu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 131/247] md: correctly handle probe of an 'mdp' device.
-Date: Thu, 23 Jun 2011 13:33:19 -0400
-Message-Id: <1308850515-15242-72-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 132/247] x86 quirk: Fix polarity for IRQ0 pin2 override on SB800 systems
+Date: Thu, 23 Jun 2011 13:33:20 -0400
+Message-Id: <1308850515-15242-73-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,51 +23,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: NeilBrown <neilb@suse.de>
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 8f5f02c460b7ca74ce55ce126ce0c1e58a3f923d upstream.
+commit 7f74f8f28a2bd9db9404f7d364e2097a0c42cc12 upstream.
 
-'mdp' devices are md devices with preallocated device numbers
-for partitions. As such it is possible to mknod and open a partition
-before opening the whole device.
+On some SB800 systems polarity for IOAPIC pin2 is wrongly
+specified as low active by BIOS. This caused system hangs after
+resume from S3 when HPET was used in one-shot mode on such
+systems because a timer interrupt was missed (HPET signal is
+high active).
 
-this causes  md_probe() to be called with a device number of a
-partition, which in-turn calls mddev_find with such a number.
+For more details see:
 
-However mddev_find expects the number of a 'whole device' and
-does the wrong thing with partition numbers.
+  http://marc.info/?l=linux-kernel&m=129623757413868
 
-So add code to mddev_find to remove the 'partition' part of
-a device number and just work with the 'whole device'.
-
-This patch addresses https://bugzilla.kernel.org/show_bug.cgi?id=28652
-
-Reported-by: hkmaly@bigfoot.com
-Signed-off-by: NeilBrown <neilb@suse.de>
+Tested-by: Manoj Iyer <manoj.iyer@canonical.com>
+Tested-by: Andre Przywara <andre.przywara@amd.com>
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+LKML-Reference: <20110224145346.GD3658@alberich.amd.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/md/md.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/acpi.h    |    1 +
+ arch/x86/kernel/acpi/boot.c    |   14 ++++++++++----
+ arch/x86/kernel/early-quirks.c |   16 +++++++---------
+ 3 files changed, 18 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index 7db9ceb..f468ec6 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -410,6 +410,9 @@ static mddev_t * mddev_find(dev_t unit)
+diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+index 56f462c..60a8959 100644
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -89,6 +89,7 @@ extern int acpi_ht;
+ extern int acpi_pci_disabled;
+ extern int acpi_skip_timer_override;
+ extern int acpi_use_timer_override;
++extern int acpi_fix_pin2_polarity;
+ 
+ extern u8 acpi_sci_flags;
+ extern int acpi_sci_override_gsi;
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index cd40aba..37311ba 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -73,6 +73,7 @@ u8 acpi_sci_flags __initdata;
+ int acpi_sci_override_gsi __initdata;
+ int acpi_skip_timer_override __initdata;
+ int acpi_use_timer_override __initdata;
++int acpi_fix_pin2_polarity __initdata;
+ 
+ #ifdef CONFIG_X86_LOCAL_APIC
+ static u64 acpi_lapic_addr __initdata = APIC_DEFAULT_PHYS_BASE;
+@@ -363,10 +364,15 @@ acpi_parse_int_src_ovr(struct acpi_subtable_header * header,
+ 		return 0;
+ 	}
+ 
+-	if (acpi_skip_timer_override &&
+-	    intsrc->source_irq == 0 && intsrc->global_irq == 2) {
+-		printk(PREFIX "BIOS IRQ0 pin2 override ignored.\n");
+-		return 0;
++	if (intsrc->source_irq == 0 && intsrc->global_irq == 2) {
++		if (acpi_skip_timer_override) {
++			printk(PREFIX "BIOS IRQ0 pin2 override ignored.\n");
++			return 0;
++		}
++		if (acpi_fix_pin2_polarity && (intsrc->inti_flags & ACPI_MADT_POLARITY_MASK)) {
++			intsrc->inti_flags &= ~ACPI_MADT_POLARITY_MASK;
++			printk(PREFIX "BIOS IRQ0 pin2 override: forcing polarity to high active.\n");
++		}
+ 	}
+ 
+ 	mp_override_legacy_irq(intsrc->source_irq,
+diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
+index ebdb85c..ef01d3d 100644
+--- a/arch/x86/kernel/early-quirks.c
++++ b/arch/x86/kernel/early-quirks.c
+@@ -145,15 +145,10 @@ static void __init ati_bugs(int num, int slot, int func)
+ 
+ static u32 __init ati_sbx00_rev(int num, int slot, int func)
  {
- 	mddev_t *mddev, *new = NULL;
+-	u32 old, d;
++	u32 d;
  
-+	if (unit && MAJOR(unit) != MD_MAJOR)
-+		unit &= ~((1<<MdpMinorShift)-1);
+-	d = read_pci_config(num, slot, func, 0x70);
+-	old = d;
+-	d &= ~(1<<8);
+-	write_pci_config(num, slot, func, 0x70, d);
+ 	d = read_pci_config(num, slot, func, 0x8);
+ 	d &= 0xff;
+-	write_pci_config(num, slot, func, 0x70, old);
+ 
+ 	return d;
+ }
+@@ -162,13 +157,16 @@ static void __init ati_bugs_contd(int num, int slot, int func)
+ {
+ 	u32 d, rev;
+ 
+-	if (acpi_use_timer_override)
+-		return;
+-
+ 	rev = ati_sbx00_rev(num, slot, func);
++	if (rev >= 0x40)
++		acpi_fix_pin2_polarity = 1;
 +
-  retry:
- 	spin_lock(&all_mddevs_lock);
+ 	if (rev > 0x13)
+ 		return;
  
++	if (acpi_use_timer_override)
++		return;
++
+ 	/* check for IRQ0 interrupt swap */
+ 	d = read_pci_config(num, slot, func, 0x64);
+ 	if (!(d & (1<<14)))
 -- 
 1.7.4.4
 
