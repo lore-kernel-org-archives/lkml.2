@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933095Ab1FWRcj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:32:39 -0400
-Received: from mail.windriver.com ([147.11.1.11]:65246 "EHLO
+	id S933129Ab1FWRaz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:30:55 -0400
+Received: from mail.windriver.com ([147.11.1.11]:65532 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932978Ab1FWR3y (ORCPT
+	with ESMTP id S932977Ab1FWRaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:29:54 -0400
+	Thu, 23 Jun 2011 13:30:21 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Don Fry <donald.h.fry@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: stable-review@kernel.org, Thomas Taranowski <tom@baringforge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 049/247] iwlagn: Re-enable RF_KILL interrupt when down
-Date: Thu, 23 Jun 2011 13:25:48 -0400
-Message-Id: <1308850146-15061-8-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 050/247] rapidio: fix hang on RapidIO doorbell queue full condition
+Date: Thu, 23 Jun 2011 13:25:49 -0400
+Message-Id: <1308850146-15061-9-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850146-15061-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,52 +24,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Don Fry <donald.h.fry@intel.com>
+From: Thomas Taranowski <tom@baringforge.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 3dd823e6b86407aed1a025041d8f1df77e43a9c8 upstream.
+commit 12a4dc43911785f51a596f771ae0701b18d436f1 upstream.
 
-With commit 554d1d027b19265c4aa3f718b3126d2b86e09a08 only one RF_KILL
-interrupt will be seen by the driver when the interface is down.
+In fsl_rio_dbell_handler() the code currently simply acknowledges the QFI
+queue full interrupt, but does nothing to resolve the queue full
+condition.  Instead, it jumps to the end of the isr.  When a queue full
+condition occurs, the isr is then re-entered immediately and continually,
+forever.
 
-Re-enable the interrupt when it occurs to see all transitions.
+The fix is to just fall through and read out current doorbell entries.
 
-Signed-off-by: Don Fry <donald.h.fry@intel.com>
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Thomas Taranowski <tom@baringforge.com>
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Kumar Gala <galak@kernel.crashing.org>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Li Yang <leoli@freescale.com>
+Cc: Thomas Moll <thomas.moll@sysgo.com>
+Cc: Micha Nelissen <micha@neli.hopto.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/wireless/iwlwifi/iwl-agn.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ arch/powerpc/sysdev/fsl_rio.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-agn.c b/drivers/net/wireless/iwlwifi/iwl-agn.c
-index 2e55ed5..e1968a1 100644
---- a/drivers/net/wireless/iwlwifi/iwl-agn.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
-@@ -1231,6 +1231,9 @@ static void iwl_irq_tasklet_legacy(struct iwl_priv *priv)
- 	/* only Re-enable if diabled by irq */
- 	if (test_bit(STATUS_INT_ENABLED, &priv->status))
- 		iwl_enable_interrupts(priv);
-+	/* Re-enable RF_KILL if it occurred */
-+	else if (handled & CSR_INT_BIT_RF_KILL)
-+		iwl_enable_rfkill_int(priv);
+diff --git a/arch/powerpc/sysdev/fsl_rio.c b/arch/powerpc/sysdev/fsl_rio.c
+index 71fba88..2aa6c93 100644
+--- a/arch/powerpc/sysdev/fsl_rio.c
++++ b/arch/powerpc/sysdev/fsl_rio.c
+@@ -833,7 +833,6 @@ fsl_rio_dbell_handler(int irq, void *dev_instance)
+ 	if (dsr & DOORBELL_DSR_QFI) {
+ 		pr_info("RIO: doorbell queue full\n");
+ 		out_be32(&priv->msg_regs->dsr, DOORBELL_DSR_QFI);
+-		goto out;
+ 	}
  
- #ifdef CONFIG_IWLWIFI_DEBUG
- 	if (iwl_get_debug_level(priv) & (IWL_DL_ISR)) {
-@@ -1446,6 +1449,9 @@ static void iwl_irq_tasklet(struct iwl_priv *priv)
- 	/* only Re-enable if diabled by irq */
- 	if (test_bit(STATUS_INT_ENABLED, &priv->status))
- 		iwl_enable_interrupts(priv);
-+	/* Re-enable RF_KILL if it occurred */
-+	else if (handled & CSR_INT_BIT_RF_KILL)
-+		iwl_enable_rfkill_int(priv);
- }
- 
- 
+ 	/* XXX Need to check/dispatch until queue empty */
 -- 
 1.7.4.4
 
