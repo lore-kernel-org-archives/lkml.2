@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933306Ab1FWRgU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:36:20 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34339 "EHLO
+	id S933406Ab1FWRgn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:36:43 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34558 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933232Ab1FWRgK (ORCPT
+	with ESMTP id S933374Ab1FWRgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:36:10 -0400
+	Thu, 23 Jun 2011 13:36:36 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Ingo Molnar <mingo@elte.hu>,
+Cc: stable-review@kernel.org, David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 095/247] x86/pvclock: Zero last_value on resume
-Date: Thu, 23 Jun 2011 13:32:43 -0400
-Message-Id: <1308850515-15242-36-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 096/247] CRED: Fix get_task_cred() and task_state() to not resurrect dead credentials
+Date: Thu, 23 Jun 2011 13:32:44 -0400
+Message-Id: <1308850515-15242-37-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,71 +23,188 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+From: David Howells <dhowells@redhat.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit e7a3481c0246c8e45e79c629efd63b168e91fcda upstream.
+commit de09a9771a5346029f4d11e4ac886be7f9bfdd75 upstream.
 
-If the guest domain has been suspend/resumed or migrated, then the
-system clock backing the pvclock clocksource may revert to a smaller
-value (ie, can be non-monotonic across the migration/save-restore).
+It's possible for get_task_cred() as it currently stands to 'corrupt' a set of
+credentials by incrementing their usage count after their replacement by the
+task being accessed.
 
-Make sure we zero last_value in that case so that the domain
-continues to see clock updates.
+What happens is that get_task_cred() can race with commit_creds():
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+	TASK_1			TASK_2			RCU_CLEANER
+	-->get_task_cred(TASK_2)
+	rcu_read_lock()
+	__cred = __task_cred(TASK_2)
+				-->commit_creds()
+				old_cred = TASK_2->real_cred
+				TASK_2->real_cred = ...
+				put_cred(old_cred)
+				  call_rcu(old_cred)
+		[__cred->usage == 0]
+	get_cred(__cred)
+		[__cred->usage == 1]
+	rcu_read_unlock()
+							-->put_cred_rcu()
+							[__cred->usage == 1]
+							panic()
+
+However, since a tasks credentials are generally not changed very often, we can
+reasonably make use of a loop involving reading the creds pointer and using
+atomic_inc_not_zero() to attempt to increment it if it hasn't already hit zero.
+
+If successful, we can safely return the credentials in the knowledge that, even
+if the task we're accessing has released them, they haven't gone to the RCU
+cleanup code.
+
+We then change task_state() in procfs to use get_task_cred() rather than
+calling get_cred() on the result of __task_cred(), as that suffers from the
+same problem.
+
+Without this change, a BUG_ON in __put_cred() or in put_cred_rcu() can be
+tripped when it is noticed that the usage count is not zero as it ought to be,
+for example:
+
+kernel BUG at kernel/cred.c:168!
+invalid opcode: 0000 [#1] SMP
+last sysfs file: /sys/kernel/mm/ksm/run
+CPU 0
+Pid: 2436, comm: master Not tainted 2.6.33.3-85.fc13.x86_64 #1 0HR330/OptiPlex
+745
+RIP: 0010:[<ffffffff81069881>]  [<ffffffff81069881>] __put_cred+0xc/0x45
+RSP: 0018:ffff88019e7e9eb8  EFLAGS: 00010202
+RAX: 0000000000000001 RBX: ffff880161514480 RCX: 00000000ffffffff
+RDX: 00000000ffffffff RSI: ffff880140c690c0 RDI: ffff880140c690c0
+RBP: ffff88019e7e9eb8 R08: 00000000000000d0 R09: 0000000000000000
+R10: 0000000000000001 R11: 0000000000000040 R12: ffff880140c690c0
+R13: ffff88019e77aea0 R14: 00007fff336b0a5c R15: 0000000000000001
+FS:  00007f12f50d97c0(0000) GS:ffff880007400000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007f8f461bc000 CR3: 00000001b26ce000 CR4: 00000000000006f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process master (pid: 2436, threadinfo ffff88019e7e8000, task ffff88019e77aea0)
+Stack:
+ ffff88019e7e9ec8 ffffffff810698cd ffff88019e7e9ef8 ffffffff81069b45
+<0> ffff880161514180 ffff880161514480 ffff880161514180 0000000000000000
+<0> ffff88019e7e9f28 ffffffff8106aace 0000000000000001 0000000000000246
+Call Trace:
+ [<ffffffff810698cd>] put_cred+0x13/0x15
+ [<ffffffff81069b45>] commit_creds+0x16b/0x175
+ [<ffffffff8106aace>] set_current_groups+0x47/0x4e
+ [<ffffffff8106ac89>] sys_setgroups+0xf6/0x105
+ [<ffffffff81009b02>] system_call_fastpath+0x16/0x1b
+Code: 48 8d 71 ff e8 7e 4e 15 00 85 c0 78 0b 8b 75 ec 48 89 df e8 ef 4a 15 00
+48 83 c4 18 5b c9 c3 55 8b 07 8b 07 48 89 e5 85 c0 74 04 <0f> 0b eb fe 65 48 8b
+04 25 00 cc 00 00 48 3b b8 58 04 00 00 75
+RIP  [<ffffffff81069881>] __put_cred+0xc/0x45
+ RSP <ffff88019e7e9eb8>
+---[ end trace df391256a100ebdd ]---
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/include/asm/pvclock.h |    1 +
- arch/x86/kernel/pvclock.c      |    5 +++++
- arch/x86/xen/time.c            |    2 ++
- 3 files changed, 8 insertions(+), 0 deletions(-)
+ fs/proc/array.c      |    2 +-
+ include/linux/cred.h |   21 +--------------------
+ kernel/cred.c        |   25 +++++++++++++++++++++++++
+ 3 files changed, 27 insertions(+), 21 deletions(-)
 
-diff --git a/arch/x86/include/asm/pvclock.h b/arch/x86/include/asm/pvclock.h
-index 53235fd..daaacab 100644
---- a/arch/x86/include/asm/pvclock.h
-+++ b/arch/x86/include/asm/pvclock.h
-@@ -10,5 +10,6 @@ unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src);
- void pvclock_read_wallclock(struct pvclock_wall_clock *wall,
- 			    struct pvclock_vcpu_time_info *vcpu,
- 			    struct timespec *ts);
-+void pvclock_resume(void);
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index 885ab55..e9f7d54 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -176,7 +176,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+ 		if (tracer)
+ 			tpid = task_pid_nr_ns(tracer, ns);
+ 	}
+-	cred = get_cred((struct cred *) __task_cred(p));
++	cred = get_task_cred(p);
+ 	seq_printf(m,
+ 		"State:\t%s\n"
+ 		"Tgid:\t%d\n"
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index 52507c3..7e3c45a 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -153,6 +153,7 @@ struct cred {
+ extern void __put_cred(struct cred *);
+ extern void exit_creds(struct task_struct *);
+ extern int copy_creds(struct task_struct *, unsigned long);
++extern const struct cred *get_task_cred(struct task_struct *);
+ extern struct cred *cred_alloc_blank(void);
+ extern struct cred *prepare_creds(void);
+ extern struct cred *prepare_exec_creds(void);
+@@ -283,26 +284,6 @@ static inline void put_cred(const struct cred *_cred)
+ 	((const struct cred *)(rcu_dereference_check((task)->real_cred, rcu_read_lock_held() || lockdep_tasklist_lock_is_held())))
  
- #endif /* _ASM_X86_PVCLOCK_H */
-diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
-index dfdfe46..b12fe8d 100644
---- a/arch/x86/kernel/pvclock.c
-+++ b/arch/x86/kernel/pvclock.c
-@@ -111,6 +111,11 @@ unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src)
+ /**
+- * get_task_cred - Get another task's objective credentials
+- * @task: The task to query
+- *
+- * Get the objective credentials of a task, pinning them so that they can't go
+- * away.  Accessing a task's credentials directly is not permitted.
+- *
+- * The caller must make sure task doesn't go away, either by holding a ref on
+- * task or by holding tasklist_lock to prevent it from being unlinked.
+- */
+-#define get_task_cred(task)				\
+-({							\
+-	struct cred *__cred;				\
+-	rcu_read_lock();				\
+-	__cred = (struct cred *) __task_cred((task));	\
+-	get_cred(__cred);				\
+-	rcu_read_unlock();				\
+-	__cred;						\
+-})
+-
+-/**
+  * get_current_cred - Get the current task's subjective credentials
+  *
+  * Get the subjective credentials of the current task, pinning them so that
+diff --git a/kernel/cred.c b/kernel/cred.c
+index 8f3672a..791c431 100644
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -209,6 +209,31 @@ void exit_creds(struct task_struct *tsk)
+ 	}
+ }
  
- static atomic64_t last_value = ATOMIC64_INIT(0);
- 
-+void pvclock_resume(void)
++/**
++ * get_task_cred - Get another task's objective credentials
++ * @task: The task to query
++ *
++ * Get the objective credentials of a task, pinning them so that they can't go
++ * away.  Accessing a task's credentials directly is not permitted.
++ *
++ * The caller must also make sure task doesn't get deleted, either by holding a
++ * ref on task or by holding tasklist_lock to prevent it from being unlinked.
++ */
++const struct cred *get_task_cred(struct task_struct *task)
 +{
-+	atomic64_set(&last_value, 0);
++	const struct cred *cred;
++
++	rcu_read_lock();
++
++	do {
++		cred = __task_cred((task));
++		BUG_ON(!cred);
++	} while (!atomic_inc_not_zero(&((struct cred *)cred)->usage));
++
++	rcu_read_unlock();
++	return cred;
 +}
 +
- cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
- {
- 	struct pvclock_shadow_time shadow;
-diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index e90360f..a05bda6 100644
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -425,6 +425,8 @@ void xen_timer_resume(void)
- {
- 	int cpu;
- 
-+	pvclock_resume();
-+
- 	if (xen_clockevent != &xen_vcpuop_clockevent)
- 		return;
- 
+ /*
+  * Allocate blank credentials, such that the credentials can be filled in at a
+  * later date without risk of ENOMEM.
 -- 
 1.7.4.4
 
