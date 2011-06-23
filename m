@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759466Ab1FWPCt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 11:02:49 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62035 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758185Ab1FWPCr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 11:02:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :content-type:content-transfer-encoding;
-        b=gd1ANuj2Je6MlDdS4QxyT4kORq0PoRkRt2qffwilP37g8Me4mg28Gb7yGp3ueIeKqH
-         FOjtdw5amiWmTNJPZn70nhMy68NX3ZAdlg5XWR3Vt/iuP6nAm3Nw1/WrPbjc4ZhfjMgY
-         zyknPI7dlCuH5nvYQvHrvYdrlcQovV8+UE6io=
+	id S932380Ab1FWPHC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 11:07:02 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:36282 "EHLO duck.linux-mips.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758983Ab1FWPHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 11:07:00 -0400
+Date: Thu, 23 Jun 2011 16:05:57 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Kumar Gala <galak@kernel.crashing.org>
+Cc: Martyn Welch <martyn.welch@ge.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, linux-m32r@ml.linux-m32r.org,
+        linux-m32r-ja@ml.linux-m32r.org, linux-am33-list@redhat.com,
+        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-arch@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "linuxppc-dev@lists.ozlabs.org Tony Luck" <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org
+Subject: Re: [PATCH] STAGING: Comedi: Build only on arches providing
+ PAGE_KERNEL_NOCACHE
+Message-ID: <20110623150557.GA9258@linux-mips.org>
+References: <20110623114536.GA14011@linux-mips.org>
+ <4E032940.5010205@ge.com>
+ <20110623120234.GA22524@linux-mips.org>
+ <8B77EED3-D197-4AB9-9594-278DB7002D6D@kernel.crashing.org>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimdzyT6w2LoKtTjhHTKF5d6zWXFGw@mail.gmail.com>
-References: <BANLkTi=y1roManmZGMLBXSFbBVqK_KqDZg@mail.gmail.com>
- <20110623153116.404f2a63.taeuber@bbaw.de> <BANLkTinOb-4Xm_W2fmzivk6jBJwjeHYKVA@mail.gmail.com>
- <BANLkTimXH8K91cZ69oPRu=wbYt9JgBadfA@mail.gmail.com> <BANLkTin9bQ4hzs-odYU-Gxy-f-T+HLLAdQ@mail.gmail.com>
- <4E034E2A.1010100@msgid.tls.msk.ru> <20110623165206.d88dcbb3.taeuber@bbaw.de> <BANLkTimdzyT6w2LoKtTjhHTKF5d6zWXFGw@mail.gmail.com>
-From: =?UTF-8?B?5L+e6aKQ6LaF?= <yyc1992@gmail.com>
-Date: Thu, 23 Jun 2011 11:02:26 -0400
-Message-ID: <BANLkTi=AeqT1CmiiNUXOcxYPe9=ORKME9g@mail.gmail.com>
-Subject: Re: extra slash in current path
-To: linux-kernel@vger.kernel.org, linux-c-programming@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8B77EED3-D197-4AB9-9594-278DB7002D6D@kernel.crashing.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 10:52 AM, Lars Täuber <taeuber@bbaw.de> wrote:
-> Am Thu, 23 Jun 2011 18:31:06 +0400
-> Michael Tokarev <mjt@tls.msk.ru> schrieb:
->> 23.06.2011 18:11, yuyichao-mit wrote:
->>
->> >>>> $ cd //
->> >>>> $ pwd
->> >>>> //
->>
->> The current directory is cached in $PWD environment
->> variable by shell (bash at least).  This variable is
->> checked in glibc (getcwd() et al) - if it is set and
->> stat($PWD) is the same as stat("."), that value is used.
->
-> It also is somehow cached inside bash/dash for it's built in commands.
-> $ cd //
-> $ export PWD=5
+On Thu, Jun 23, 2011 at 07:10:29AM -0500, Kumar Gala wrote:
 
-this PWD=5 is not necessary.
+> > (Adding the PPC folks to cc.)
+> > 
+> > A "git grep -w PAGE_KERNEL_NOCACHE arch/powerpc/" doesn't find anything so
+> > I don't think the driver will build there.  I don't have a PPC toolchain
+> > to verify that.
+> 
+> I can verify it fails on PPC as well:
+> 
+> drivers/staging/comedi/drivers.c: In function 'comedi_buf_alloc':
+> drivers/staging/comedi/drivers.c:505:37: error: 'PAGE_KERNEL_NOCACHE' undeclared (first use in this function)
+> drivers/staging/comedi/drivers.c:505:37: note: each undeclared identifier is reported only once for each function it appears in
+> 
+> However, we do have a #define for PAGE_KERNEL_NC.
 
-> $ pwd
-> //
-> $ /bin/pwd
-> /
+Do you think this driver in it's current stage is so valuable that some
+ifdefery to get it to work on PPC is the way to go?
 
-$ export PWD=////
-$ /bin/pwd
-/
-$ pwd
-//
-$ echo $PWD
-////
-$ a.out (simply output get_current_dir_name())
-////
-so getcwd indeed use $PWD (for symlink?) but pwd and /bin/pwd both
-simplify the output although bash simplify it in a strange way~~~
+IA-64 has PAGE_KERNEL_UC, so basically the same question for IA-64, too.
 
-~~interesting
+But preferably the driver should be sorted out properly and until the v1
+of my patch which disables it on all architectures that don't provide a
+PAGE_KERNEL_NOCACHE definition will do just fine.
 
->
->
-> Regards
-> Lars
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+  Ralf
