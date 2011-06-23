@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934198Ab1FWSLt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:11:49 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:62763 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933235Ab1FWSLr convert rfc822-to-8bit (ORCPT
+	id S933421Ab1FWSNb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:13:31 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34188
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933337Ab1FWSN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 14:11:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ptlaA8tQGHgJHUxgD/cJOWDSguxqwyRgOMpoRiZWW6hJrrl8P13iTtMIfkx/A2cCzC
-         rFFBDjrg/RXQKcZV4ClWaYkhOHGZIp4YTZGKdc6deqtdRsErZrC7uyFoz7NOVDmn0mX9
-         cVF3bHXa/4Jk7ji36K4gl3a74j7ZlLeFHb/5s=
+	Thu, 23 Jun 2011 14:13:26 -0400
+Date: Thu, 23 Jun 2011 14:13:17 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Alex Elder <aelder@sgi.com>, xfs-masters@oss.sgi.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH v2] xfs: Silence bounds checking compiler warning
+Message-ID: <20110623181317.GA26945@infradead.org>
+References: <4E037001.8090306__42924.0493024283$1308849791$gmane$org@gmail.com>
+ <m2boxocvb5.fsf@firstfloor.org>
+ <20110623175533.GK11521@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20110622190739.GB14351@albatros>
-References: <20110622095341.GA3353@albatros>
-	<1308760683.10423.16.camel@Joe-Laptop>
-	<20110622191022.66135615@lxorguk.ukuu.org.uk>
-	<20110622190739.GB14351@albatros>
-Date: Thu, 23 Jun 2011 20:11:46 +0200
-X-Google-Sender-Auth: poHhVI2ComExMTPD5-rAbvWz2sA
-Message-ID: <BANLkTimQxzqstxLnO-_dDMoRbWbGPQJrvA@mail.gmail.com>
-Subject: Re: [PATCH] kernel: escape non-ASCII and control characters in printk()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
-        security@kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110623175533.GK11521@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 21:07, Vasiliy Kulikov <segoon@openwall.com> wrote:
-> On Wed, Jun 22, 2011 at 19:10 +0100, Alan Cox wrote:
->> If that is set you shouldn't be filtering out unicode, just control codes.
->
-> OK.
->
->> Minor other nit is that you might want to allow BEL through and you
->> certainly want to allow tab through.
->
-> In what situation do you think BEL makes sense in kernel log?  I cannot
-> image the situation.  Alarms should use KERN_EMERG/KERN_ALERT log level.
+On Thu, Jun 23, 2011 at 06:55:33PM +0100, Al Viro wrote:
+> ... and even better is to write in real C and have u8 name[]; in the
+> end of your structure.  That's the standard C99 for this kind of thing
+> (see 6.7.2.1p2, p16).  Zero-sized array is a gccism predating standard
+> flexible array members and since the standard syntax is accepted by
+> any gcc version that might be recent enough to build the kernel...
 
-Does BEL work? Last time I tried fancy things (e.g. color output
-depending on the
-message level), it didn't work. I only got strange characters.
+The situation is even more nasty - the one sized fake flex-array
+actually is in the middle of the structure.  Besides sizeof-expressions
+taking the one member array into account only members before the
+variable sized array are used.  I've started a series cleaning up the
+few structures that were done that way (for whatever reason), but it's
+pretty intrusive.  I don't think papering over these warnings at this
+point is a good idea.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
