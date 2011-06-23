@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934251Ab1FWSSi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:18:38 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34296 "EHLO
+	id S933414Ab1FWSSH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:18:07 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34346 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933257Ab1FWRgH (ORCPT
+	with ESMTP id S933267Ab1FWRgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:36:07 -0400
+	Thu, 23 Jun 2011 13:36:10 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+Cc: stable-review@kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 085/247] sched: suppress RCU lockdep splat in task_fork_fair
-Date: Thu, 23 Jun 2011 13:32:33 -0400
-Message-Id: <1308850515-15242-26-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 086/247] sched: fix RCU lockdep splat from task_group()
+Date: Thu, 23 Jun 2011 13:32:34 -0400
+Message-Id: <1308850515-15242-27-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,72 +24,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit b0a0f667a349247bd7f05f806b662a25653822bc upstream.
+commit 6506cf6ce68d78a5470a8360c965dafe8e4b78e3 upstream.
 
-> ===================================================
-> [ INFO: suspicious rcu_dereference_check() usage. ]
-> ---------------------------------------------------
-> /home/greearb/git/linux.wireless-testing/kernel/sched.c:618 invoked rcu_dereference_check() without protection!
->
-> other info that might help us debug this:
->
-> rcu_scheduler_active = 1, debug_locks = 1
-> 1 lock held by ifup/23517:
->   #0:  (&rq->lock){-.-.-.}, at: [<c042f782>] task_fork_fair+0x3b/0x108
->
-> stack backtrace:
-> Pid: 23517, comm: ifup Not tainted 2.6.36-rc6-wl+ #5
-> Call Trace:
->   [<c075e219>] ? printk+0xf/0x16
->   [<c0455842>] lockdep_rcu_dereference+0x74/0x7d
->   [<c0426854>] task_group+0x6d/0x79
->   [<c042686e>] set_task_rq+0xe/0x57
->   [<c042f79e>] task_fork_fair+0x57/0x108
->   [<c042e965>] sched_fork+0x82/0xf9
->   [<c04334b3>] copy_process+0x569/0xe8e
->   [<c0433ef0>] do_fork+0x118/0x262
->   [<c076302f>] ? do_page_fault+0x16a/0x2cf
->   [<c044b80c>] ? up_read+0x16/0x2a
->   [<c04085ae>] sys_clone+0x1b/0x20
->   [<c04030a5>] ptregs_clone+0x15/0x30
->   [<c0402f1c>] ? sysenter_do_call+0x12/0x38
+This addresses the following RCU lockdep splat:
 
-Here a newly created task is having its runqueue assigned.  The new task
-is not yet on the tasklist, so cannot go away.  This is therefore a false
-positive, suppress with an RCU read-side critical section.
+[0.051203] CPU0: AMD QEMU Virtual CPU version 0.12.4 stepping 03
+[0.052999] lockdep: fixing up alternatives.
+[0.054105]
+[0.054106] ===================================================
+[0.054999] [ INFO: suspicious rcu_dereference_check() usage. ]
+[0.054999] ---------------------------------------------------
+[0.054999] kernel/sched.c:616 invoked rcu_dereference_check() without protection!
+[0.054999]
+[0.054999] other info that might help us debug this:
+[0.054999]
+[0.054999]
+[0.054999] rcu_scheduler_active = 1, debug_locks = 1
+[0.054999] 3 locks held by swapper/1:
+[0.054999]  #0:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff814be933>] cpu_up+0x42/0x6a
+[0.054999]  #1:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff810400d8>] cpu_hotplug_begin+0x2a/0x51
+[0.054999]  #2:  (&rq->lock){-.-...}, at: [<ffffffff814be2f7>] init_idle+0x2f/0x113
+[0.054999]
+[0.054999] stack backtrace:
+[0.054999] Pid: 1, comm: swapper Not tainted 2.6.35 #1
+[0.054999] Call Trace:
+[0.054999]  [<ffffffff81068054>] lockdep_rcu_dereference+0x9b/0xa3
+[0.054999]  [<ffffffff810325c3>] task_group+0x7b/0x8a
+[0.054999]  [<ffffffff810325e5>] set_task_rq+0x13/0x40
+[0.054999]  [<ffffffff814be39a>] init_idle+0xd2/0x113
+[0.054999]  [<ffffffff814be78a>] fork_idle+0xb8/0xc7
+[0.054999]  [<ffffffff81068717>] ? mark_held_locks+0x4d/0x6b
+[0.054999]  [<ffffffff814bcebd>] do_fork_idle+0x17/0x2b
+[0.054999]  [<ffffffff814bc89b>] native_cpu_up+0x1c1/0x724
+[0.054999]  [<ffffffff814bcea6>] ? do_fork_idle+0x0/0x2b
+[0.054999]  [<ffffffff814be876>] _cpu_up+0xac/0x127
+[0.054999]  [<ffffffff814be946>] cpu_up+0x55/0x6a
+[0.054999]  [<ffffffff81ab562a>] kernel_init+0xe1/0x1ff
+[0.054999]  [<ffffffff81003854>] kernel_thread_helper+0x4/0x10
+[0.054999]  [<ffffffff814c353c>] ? restore_args+0x0/0x30
+[0.054999]  [<ffffffff81ab5549>] ? kernel_init+0x0/0x1ff
+[0.054999]  [<ffffffff81003850>] ? kernel_thread_helper+0x0/0x10
+[0.056074] Booting Node   0, Processors  #1lockdep: fixing up alternatives.
+[0.130045]  #2lockdep: fixing up alternatives.
+[0.203089]  #3 Ok.
+[0.275286] Brought up 4 CPUs
+[0.276005] Total of 4 processors activated (16017.17 BogoMIPS).
 
-Reported-by: Ben Greear <greearb@candelatech.com
+The cgroup_subsys_state structures referenced by idle tasks are never
+freed, because the idle tasks should be part of the root cgroup,
+which is not removable.
+
+The problem is that while we do in-fact hold rq->lock, the newly spawned
+idle thread's cpu is not yet set to the correct cpu so the lockdep check
+in task_group():
+
+  lockdep_is_held(&task_rq(p)->lock)
+
+will fail.
+
+But this is a chicken and egg problem.  Setting the CPU's runqueue requires
+that the CPU's runqueue already be set.  ;-)
+
+So insert an RCU read-side critical section to avoid the complaint.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Tested-by: Ben Greear <greearb@candelatech.com
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/sched_fair.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ kernel/sched.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 3a0f7ba..b0f68035 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -3592,8 +3592,11 @@ static void task_fork_fair(struct task_struct *p)
+diff --git a/kernel/sched.c b/kernel/sched.c
+index c3e891f..f7bc764 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -5235,7 +5235,19 @@ void __cpuinit init_idle(struct task_struct *idle, int cpu)
+ 	idle->se.exec_start = sched_clock();
  
- 	update_rq_clock(rq);
+ 	cpumask_copy(&idle->cpus_allowed, cpumask_of(cpu));
++	/*
++	 * We're having a chicken and egg problem, even though we are
++	 * holding rq->lock, the cpu isn't yet set to this cpu so the
++	 * lockdep check in task_group() will fail.
++	 *
++	 * Similar case to sched_fork(). / Alternatively we could
++	 * use task_rq_lock() here and obtain the other rq->lock.
++	 *
++	 * Silence PROVE_RCU
++	 */
++	rcu_read_lock();
+ 	__set_task_cpu(idle, cpu);
++	rcu_read_unlock();
  
--	if (unlikely(task_cpu(p) != this_cpu))
-+	if (unlikely(task_cpu(p) != this_cpu)) {
-+		rcu_read_lock();
- 		__set_task_cpu(p, this_cpu);
-+		rcu_read_unlock();
-+	}
- 
- 	update_curr(cfs_rq);
- 
+ 	rq->curr = rq->idle = idle;
+ #if defined(CONFIG_SMP) && defined(__ARCH_WANT_UNLOCKED_CTXSW)
 -- 
 1.7.4.4
 
