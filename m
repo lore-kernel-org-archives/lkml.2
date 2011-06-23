@@ -1,52 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758455Ab1FWAAg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 20:00:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29778 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758245Ab1FWAAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 20:00:35 -0400
-Message-ID: <4E028215.90107@redhat.com>
-Date: Wed, 22 Jun 2011 20:00:21 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1758397Ab1FWAL6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 20:11:58 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:12786 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757992Ab1FWAL4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 20:11:56 -0400
+Message-ID: <4E0284C7.30909@dsn.okisemi.com>
+Date: Thu, 23 Jun 2011 09:11:51 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Nai Xia <nai.xia@gmail.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
-        linux-mm <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
-Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte
- and mmu notifier to help KSM dirty bit tracking
-References: <201106212055.25400.nai.xia@gmail.com>	<201106212132.39311.nai.xia@gmail.com>	<4E01C752.10405@redhat.com>	<4E01CC77.10607@ravellosystems.com>	<4E01CDAD.3070202@redhat.com>	<4E01CFD2.6000404@ravellosystems.com>	<4E020CBC.7070604@redhat.com>	<20110622165529.GY20843@redhat.com> <BANLkTinRYr9Vg==C-qyCaRmO7C_aQqBPzw@mail.gmail.com>
-In-Reply-To: <BANLkTinRYr9Vg==C-qyCaRmO7C_aQqBPzw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Alexander Stein <alexander.stein@systec-electronic.com>,
+        "Wang, Yong Y" <yong.y.wang@intel.com>
+CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        linux-kernel@vger.kernel.org, "Wang, Qi" <qi.wang@intel.com>,
+        "toshiharu-linux@dsn.okisemi.com" <toshiharu-linux@dsn.okisemi.com>
+Subject: Re: [PATCH] pch_dma: Fix channel locking
+References: <1308755133-8605-1-git-send-email-alexander.stein@systec-electronic.com>
+In-Reply-To: <1308755133-8605-1-git-send-email-alexander.stein@systec-electronic.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2011 07:37 PM, Nai Xia wrote:
+(2011/06/23 0:05), Alexander Stein wrote:
+> Fix for the following INFO message
+> 
+> =================================
+> [ INFO: inconsistent lock state ]
+> 2.6.39+ #89
+> ---------------------------------
+> inconsistent {HARDIRQ-ON-W} ->  {IN-HARDIRQ-W} usage.
+> rs232/822 [HC1[1]:SC0[0]:HE0:SE1] takes:
+>   (&(&pd_chan->lock)->rlock){?.....}, at: [<c123b9a1>] pdc_desc_get+0x16/0xab
+> {HARDIRQ-ON-W} state was registered at:
+>    [<c104fe28>] mark_irqflags+0xbd/0x11a
+>    [<c1050386>] __lock_acquire+0x501/0x6bb
+>    [<c1050945>] lock_acquire+0x63/0x7b
+>    [<c131c51d>] _raw_spin_lock_bh+0x43/0x51
+>    [<c123bee4>] pd_alloc_chan_resources+0x92/0x11e
+>    [<c123ad62>] dma_chan_get+0x9b/0x107
+>    [<c123b2d1>] __dma_request_channel+0x61/0xdc
+>    [<c11ba24b>] pch_request_dma+0x61/0x19e
+>    [<c11bb3b8>] pch_uart_startup+0x16a/0x1a2
+>    [<c11b8446>] uart_startup+0x87/0x147
+>    [<c11b9183>] uart_open+0x117/0x13e
+>    [<c11a5c7d>] tty_open+0x23c/0x34c
+>    [<c1097705>] chrdev_open+0x140/0x15f
+>    [<c10930a6>] __dentry_open.clone.14+0x14a/0x22b
+>    [<c1093dfb>] nameidata_to_filp+0x36/0x40
+>    [<c109f28b>] do_last+0x513/0x635
+>    [<c109f4af>] path_openat+0x9c/0x2aa
+>    [<c109f6e4>] do_filp_open+0x27/0x69
+>    [<c1093f02>] do_sys_open+0xfd/0x184
+>    [<c1093fad>] sys_open+0x24/0x2a
+>    [<c131d58c>] sysenter_do_call+0x12/0x32
+> irq event stamp: 2522
+> hardirqs last  enabled at (2521): [<c131ca3b>] _raw_spin_unlock_irqrestore+0x36/0x52
+> hardirqs last disabled at (2522): [<c131db27>] common_interrupt+0x27/0x34
+> softirqs last  enabled at (2354): [<c102fa11>] __do_softirq+0x10a/0x11a
+> softirqs last disabled at (2299): [<c10041a4>] do_softirq+0x57/0xa4
+> 
+> other info that might help us debug this:
+> 2 locks held by rs232/822:
+>   #0:  (&tty->atomic_write_lock){+.+.+.}, at: [<c11a4b7a>] tty_write_lock+0x14/0x3c
+>   #1:  (&port_lock_key){-.....}, at: [<c11bad72>] pch_uart_interrupt+0x17/0x1e9
+> 
+> stack backtrace:
+> Pid: 822, comm: rs232 Not tainted 2.6.39+ #89
+> Call Trace:
+>   [<c1319f90>] ? printk+0x19/0x1b
+>   [<c104f893>] print_usage_bug+0x184/0x18f
+>   [<c104e5b1>] ? print_irq_inversion_bug+0x10e/0x10e
+>   [<c104f943>] mark_lock_irq+0xa5/0x1f6
+>   [<c104fc9c>] mark_lock+0x208/0x2d7
+>   [<c104fdc0>] mark_irqflags+0x55/0x11a
+>   [<c1050386>] __lock_acquire+0x501/0x6bb
+>   [<c10042ee>] ? dump_trace+0x92/0xb6
+>   [<c1050945>] lock_acquire+0x63/0x7b
+>   [<c123b9a1>] ? pdc_desc_get+0x16/0xab
+>   [<c131c2d0>] _raw_spin_lock+0x3e/0x4c
+>   [<c123b9a1>] ? pdc_desc_get+0x16/0xab
+>   [<c123b9a1>] pdc_desc_get+0x16/0xab
+>   [<c10504d8>] ? __lock_acquire+0x653/0x6bb
+>   [<c123bb2c>] pd_prep_slave_sg+0x7c/0x1cb
+>   [<c1006c3f>] ? nommu_map_sg+0x6e/0x81
+>   [<c11bace6>] dma_handle_tx+0x2cf/0x344
+>   [<c11bad72>] ? pch_uart_interrupt+0x17/0x1e9
+>   [<c11baebb>] pch_uart_interrupt+0x160/0x1e9
+>   [<c10642fb>] handle_irq_event_percpu+0x25/0x127
+>   [<c1064429>] handle_irq_event+0x2c/0x43
+>   [<c1065e0d>] ? handle_fasteoi_irq+0x84/0x84
+>   [<c1065eb9>] handle_edge_irq+0xac/0xce
+>   <IRQ>   [<c1003ecb>] ? do_IRQ+0x38/0x9d
+>   [<c131db2e>] ? common_interrupt+0x2e/0x34
+>   [<c105007b>] ? __lock_acquire+0x1f6/0x6bb
+>   [<c131ca3d>] ? _raw_spin_unlock_irqrestore+0x38/0x52
+>   [<c11b798b>] ? uart_start+0x2d/0x32
+>   [<c11b7998>] ? uart_flush_chars+0x8/0xa
+>   [<c11a7962>] ? n_tty_write+0x12c/0x1c6
+>   [<c1027a73>] ? try_to_wake_up+0x251/0x251
+>   [<c11a4d0b>] ? tty_write+0x169/0x1dc
+>   [<c11a7836>] ? n_tty_ioctl+0xb7/0xb7
+>   [<c1094841>] ? vfs_write+0x91/0x10d
+>   [<c11a4ba2>] ? tty_write_lock+0x3c/0x3c
+>   [<c1094a69>] ? sys_write+0x3e/0x63
+>   [<c131d58c>] ? sysenter_do_call+0x12/0x32
+> 
 
-> On 2MB pages, I'd like to remind you and Rik that ksmd currently splits
-> huge pages before their sub pages gets really merged to stable tree.
+To: Yong Y
+You wrote these spin_lock_bh(s), right ?
+Could you tell us your opinion ?
 
-Your proposal appears to add a condition that causes ksmd to skip
-doing that, which can cause the system to start using swap instead
-of sharing memory.
+To: Alexander
+Thank you for your report.
+How can I see the above kernel error log ?
+Let me know your test condition.
 
-> So when there are many 2MB pages each having a 4kB subpage
-> changed for all time, this is already a concern for ksmd to judge
-> if it's worthwhile to split 2MB page and get its sub-pages merged.
-> I think the policy for ksmd in a system should be "If you cannot do sth good,
-> at least do nothing evil". So I really don't think we can satisfy _all_ people.
-> Get a general method and give users one or two knobs to tune it when they
-> are the corner cases. How do  you think of my proposal ?
-
-I think your proposal makes sense for 4kB pages, but the ksmd
-policy for 2MB pages probably needs to be much more aggressive.
 
 -- 
-All rights reversed
+tomoya
+OKI SEMICONDUCTOR CO., LTD.
