@@ -1,86 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933136Ab1FWRZr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:25:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6951 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932917Ab1FWRZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:25:42 -0400
+	id S933022Ab1FWR35 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:29:57 -0400
+Received: from mail.windriver.com ([147.11.1.11]:65256 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933001Ab1FWR3z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 13:29:55 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: stable@kernel.org, linux-kernel@vger.kernel.org
+Cc: stable-review@kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [34-longterm 042/247] Input: i8042 - introduce 'notimeout' blacklist for Dell Vostro V13
 Date: Thu, 23 Jun 2011 13:25:41 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>
-Message-Id: <20110623172541.27789.40847.sendpatchset@prarit.bos.redhat.com>
-Content-Type: text/plain; charset=us-ascii
-Subject: [PATCH 34/35] sound/pci/hda changes for SMBIOS and System Firmware
+Message-Id: <1308850146-15061-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sound/pci/hda changes for SMBIOS and System Firmware
+From: Jiri Kosina <jkosina@suse.cz>
 
-As part of the new SMBIOS and System Firmware code:
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-- Replace old dmi* structures and functions with new sysfw* and smbios*
-structures and functions in individual drivers
+commit f8313ef1f448006207f12c107123522c8bc00f15 upstream.
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+i8042 controller present in Dell Vostro V13 errorneously signals spurious
+timeouts.
+
+Introduce i8042.notimeout parameter for ignoring i8042-signalled timeouts
+and apply this quirk automatically for Dell Vostro V13, based on DMI match.
+
+In addition to that, this machine also needs to be added to nomux blacklist.
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- sound/pci/hda/patch_sigmatel.c |   29 +++++++++++++----------------
- 1 files changed, 13 insertions(+), 16 deletions(-)
+ Documentation/kernel-parameters.txt   |    1 +
+ drivers/input/serio/i8042-x86ia64io.h |   21 +++++++++++++++++++++
+ drivers/input/serio/i8042.c           |    6 +++++-
+ 3 files changed, 27 insertions(+), 1 deletions(-)
 
-diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
-index 7f81cc2..271ea6a 100644
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -28,7 +28,7 @@
- #include <linux/delay.h>
- #include <linux/slab.h>
- #include <linux/pci.h>
--#include <linux/dmi.h>
-+#include <linux/smbios.h>
- #include <sound/core.h>
- #include <sound/asoundef.h>
- #include <sound/jack.h>
-@@ -4798,26 +4798,23 @@ static void set_hp_led_gpio(struct hda_codec *codec)
- static int find_mute_led_gpio(struct hda_codec *codec, int default_polarity)
- {
- 	struct sigmatel_spec *spec = codec->spec;
--	const struct dmi_device *dev = NULL;
-+	const char *str;
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index c3d1cea..d4ef133 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -900,6 +900,7 @@ and is between 256 and 4096 characters. It is defined in the file
+ 			     controller
+ 	i8042.nopnp	[HW] Don't use ACPIPnP / PnPBIOS to discover KBD/AUX
+ 			     controllers
++	i8042.notimeout	[HW] Ignore timeout condition signalled by conroller
+ 	i8042.panicblink=
+ 			[HW] Frequency with which keyboard LEDs should blink
+ 			     when kernel panics (default is 0.5 sec)
+diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
+index 8f46380..6fd2041 100644
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -416,6 +416,13 @@ static const struct dmi_system_id __initconst i8042_dmi_nomux_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_VERSION, "0100"),
+ 		},
+ 	},
++	{
++		/* Dell Vostro V13 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Vostro V13"),
++		},
++	},
+ 	{ }
+ };
  
- 	if ((codec->subsystem_id >> 16) == PCI_VENDOR_ID_HP) {
--		while ((dev = dmi_find_device(DMI_DEV_TYPE_OEM_STRING,
--								NULL, dev))) {
--			if (sscanf(dev->name, "HP_Mute_LED_%d_%d",
--				  &spec->gpio_led_polarity,
--				  &spec->gpio_led) == 2) {
--				spec->gpio_led = 1 << spec->gpio_led;
--				return 1;
--			}
--			if (sscanf(dev->name, "HP_Mute_LED_%d",
--				  &spec->gpio_led_polarity) == 1) {
--				set_hp_led_gpio(codec);
--				return 1;
--			}
-+		str = smbios_match_oem_string("HP_Mute_LED_");
-+		if (sscanf(str, "HP_Mute_LED_%d_%d", &spec->gpio_led_polarity,
-+			   &spec->gpio_led) == 2) {
-+			spec->gpio_led = 1 << spec->gpio_led;
-+			return 1;
-+		}
-+		if (sscanf(str, "HP_Mute_LED_%d",
-+			   &spec->gpio_led_polarity) == 1) {
-+			set_hp_led_gpio(codec);
-+			return 1;
- 		}
+@@ -537,6 +544,17 @@ static const struct dmi_system_id __initconst i8042_dmi_laptop_table[] = {
+ };
+ #endif
  
- 		/*
--		 * Fallback case - if we don't find the DMI strings,
-+		 * Fallback case - if we don't find the SMBIOS strings,
- 		 * we statically set the GPIO - if not a B-series system.
- 		 */
- 		if (!hp_blike_system(codec->subsystem_id)) {
++static const struct dmi_system_id __initconst i8042_dmi_notimeout_table[] = {
++	{
++		/* Dell Vostro V13 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Vostro V13"),
++		},
++	},
++	{ }
++};
++
+ /*
+  * Some Wistron based laptops need us to explicitly enable the 'Dritek
+  * keyboard extension' to make their extra keys start generating scancodes.
+@@ -869,6 +887,9 @@ static int __init i8042_platform_init(void)
+ 	if (dmi_check_system(i8042_dmi_nomux_table))
+ 		i8042_nomux = true;
+ 
++	if (dmi_check_system(i8042_dmi_notimeout_table))
++		i8042_notimeout = true;
++
+ 	if (dmi_check_system(i8042_dmi_dritek_table))
+ 		i8042_dritek = true;
+ #endif /* CONFIG_X86 */
+diff --git a/drivers/input/serio/i8042.c b/drivers/input/serio/i8042.c
+index f3c2bb7..250a41f 100644
+--- a/drivers/input/serio/i8042.c
++++ b/drivers/input/serio/i8042.c
+@@ -65,6 +65,10 @@ static unsigned int i8042_blink_frequency = 500;
+ module_param_named(panicblink, i8042_blink_frequency, uint, 0600);
+ MODULE_PARM_DESC(panicblink, "Frequency with which keyboard LEDs should blink when kernel panics");
+ 
++static bool i8042_notimeout;
++module_param_named(notimeout, i8042_notimeout, bool, 0);
++MODULE_PARM_DESC(notimeout, "Ignore timeouts signalled by i8042");
++
+ #ifdef CONFIG_X86
+ static bool i8042_dritek;
+ module_param_named(dritek, i8042_dritek, bool, 0);
+@@ -507,7 +511,7 @@ static irqreturn_t i8042_interrupt(int irq, void *dev_id)
+ 	} else {
+ 
+ 		dfl = ((str & I8042_STR_PARITY) ? SERIO_PARITY : 0) |
+-		      ((str & I8042_STR_TIMEOUT) ? SERIO_TIMEOUT : 0);
++		      ((str & I8042_STR_TIMEOUT && !i8042_notimeout) ? SERIO_TIMEOUT : 0);
+ 
+ 		port_no = (str & I8042_STR_AUXDATA) ?
+ 				I8042_AUX_PORT_NO : I8042_KBD_PORT_NO;
 -- 
-1.7.5.4
+1.7.4.4
 
