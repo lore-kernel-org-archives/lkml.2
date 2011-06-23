@@ -1,70 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934466Ab1FWUrJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 16:47:09 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49754 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933925Ab1FWUrF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 16:47:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=JE3y962puSHutnUJ4UZIP5xo+fr92jd4IyM4Iz2tGgOyLPrRiwmB5eU14UWt73WNgx
-         iy38l0v4xzIpFtEQObvcdYOFoPYjGPcxV9QJ6T/Lc4hqzfvVV32mg7ivBuZZCI2lddGT
-         u+f/hPpi+4jPd6XsfqoUAVsnNVQ5/mouzq0+Q=
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: ti@lists.linaro.org, linux-omap@vger.kernel.org, lrg@ti.com,
-        broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com,
-        Jassi Brar <jaswinder.singh@linaro.org>
-Subject: [PATCH] regulator: twl: Add 'fixed' set_voltage callback
-Date: Fri, 24 Jun 2011 02:16:54 +0530
-Message-Id: <1308862014-11212-1-git-send-email-jaswinder.singh@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	id S934041Ab1FWUsv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 16:48:51 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54257 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933753Ab1FWUsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 16:48:50 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH] PCI / PM: Block races between runtime PM and system sleep
+Date: Thu, 23 Jun 2011 22:49:34 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+References: <Pine.LNX.4.44L0.1106231433130.2033-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1106231433130.2033-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106232249.35053.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define dummy set_voltage callback for fixed lines,
-without which voltage constraints fail to apply.
+On Thursday, June 23, 2011, Alan Stern wrote:
+> On Thu, 23 Jun 2011, Rafael J. Wysocki wrote:
+> 
+> > OK, so what about the appended patch (the last hunk is necessary to make the
+> > SCSI error handling work when runtime PM is disabled, it should be a separate
+> > patch)?
+> > 
+> > Rafael
+> > 
+> > ---
+> >  drivers/base/power/main.c    |   27 ++++++++++++++++++++++-----
+> >  drivers/base/power/runtime.c |   10 ++++++----
+> >  2 files changed, 28 insertions(+), 9 deletions(-)
+> > 
+> > Index: linux-2.6/drivers/base/power/main.c
+> > ===================================================================
+> > --- linux-2.6.orig/drivers/base/power/main.c
+> > +++ linux-2.6/drivers/base/power/main.c
+> > @@ -505,6 +505,7 @@ static int legacy_resume(struct device *
+> >  static int device_resume(struct device *dev, pm_message_t state, bool async)
+> >  {
+> >  	int error = 0;
+> > +	bool put = false;
+> >  
+> >  	TRACE_DEVICE(dev);
+> >  	TRACE_RESUME(0);
+> > @@ -521,6 +522,9 @@ static int device_resume(struct device *
+> >  	if (!dev->power.is_suspended)
+> >  		goto Unlock;
+> >  
+> > +	pm_runtime_enable(dev);
+> > +	put = true;
+> > +
+> >  	if (dev->pwr_domain) {
+> >  		pm_dev_dbg(dev, state, "power domain ");
+> >  		error = pm_op(dev, &dev->pwr_domain->ops, state);
+> > @@ -563,6 +567,10 @@ static int device_resume(struct device *
+> >  	complete_all(&dev->power.completion);
+> >  
+> >  	TRACE_RESUME(error);
+> > +
+> > +	if (put)
+> > +		pm_runtime_put_sync(dev);
+> > +
+> >  	return error;
+> >  }
+> >  
+> > @@ -843,16 +851,22 @@ static int __device_suspend(struct devic
+> >  	int error = 0;
+> >  
+> >  	dpm_wait_for_children(dev, async);
+> > -	device_lock(dev);
+> >  
+> >  	if (async_error)
+> > -		goto Unlock;
+> > +		return 0;
+> > +
+> > +	pm_runtime_get_noresume(dev);
+> > +	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
+> > +		pm_wakeup_event(dev, 0);
+> >  
+> >  	if (pm_wakeup_pending()) {
+> > +		pm_runtime_put_sync(dev);
+> >  		async_error = -EBUSY;
+> > -		goto Unlock;
+> > +		return 0;
+> >  	}
+> >  
+> > +	device_lock(dev);
+> > +
+> >  	if (dev->pwr_domain) {
+> >  		pm_dev_dbg(dev, state, "power domain ");
+> >  		error = pm_op(dev, &dev->pwr_domain->ops, state);
+> > @@ -890,12 +904,15 @@ static int __device_suspend(struct devic
+> >   End:
+> >  	dev->power.is_suspended = !error;
+> >  
+> > - Unlock:
+> >  	device_unlock(dev);
+> >  	complete_all(&dev->power.completion);
+> >  
+> > -	if (error)
+> > +	if (error) {
+> > +		pm_runtime_put_sync(dev);
+> >  		async_error = error;
+> > +	} else if (dev->power.is_suspended) {
+> > +		__pm_runtime_disable(dev, false);
+> > +	}
+> >  
+> >  	return error;
+> >  }
+> 
+> Looks right.
 
-Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
----
- drivers/regulator/twl-regulator.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+Great!  I'll prepare a final version with a changelog and documentation
+update, then.
 
-diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
-index 87fe0f7..8223e49 100644
---- a/drivers/regulator/twl-regulator.c
-+++ b/drivers/regulator/twl-regulator.c
-@@ -591,10 +591,18 @@ static int twlfixed_get_voltage(struct regulator_dev *rdev)
- 	return info->min_mV * 1000;
- }
- 
-+static int twlfixed_set_voltage(struct regulator_dev *rdev,
-+	int min_uV, int max_uV, unsigned *selector)
-+{
-+	*selector = min_uV / 1000;
-+	return 0;
-+}
-+
- static struct regulator_ops twl4030fixed_ops = {
- 	.list_voltage	= twlfixed_list_voltage,
- 
- 	.get_voltage	= twlfixed_get_voltage,
-+	.set_voltage	= twlfixed_set_voltage,
- 
- 	.enable		= twl4030reg_enable,
- 	.disable	= twl4030reg_disable,
-@@ -609,6 +617,7 @@ static struct regulator_ops twl6030fixed_ops = {
- 	.list_voltage	= twlfixed_list_voltage,
- 
- 	.get_voltage	= twlfixed_get_voltage,
-+	.set_voltage	= twlfixed_set_voltage,
- 
- 	.enable		= twl6030reg_enable,
- 	.disable	= twl6030reg_disable,
--- 
-1.7.4.1
+> > Index: linux-2.6/drivers/base/power/runtime.c
+> > ===================================================================
+> > --- linux-2.6.orig/drivers/base/power/runtime.c
+> > +++ linux-2.6/drivers/base/power/runtime.c
+> > @@ -455,12 +455,14 @@ static int rpm_resume(struct device *dev
+> >  	dev_dbg(dev, "%s flags 0x%x\n", __func__, rpmflags);
+> >  
+> >   repeat:
+> > -	if (dev->power.runtime_error)
+> > +	if (dev->power.runtime_error) {
+> >  		retval = -EINVAL;
+> > -	else if (dev->power.disable_depth > 0)
+> > -		retval = -EAGAIN;
+> > -	if (retval)
+> >  		goto out;
+> > +	} else if (dev->power.disable_depth > 0) {
+> > +		if (!(rpmflags & RPM_GET_PUT))
+> > +			retval = -EAGAIN;
+> 
+> Do you also want to check the current status?  If it isn't RPM_ACTIVE 
+> then perhaps you should return an error.
 
+That depends on whether or not we want RPM_ACTIVE to have any meaning for
+devices whose power.disable_depth is nonzero.  My opinion is that if
+power.disable_depth is nonzero, the runtime PM status of the device
+shouldn't matter (it may be changed on the fly in ways that need not
+reflect the real status).
+
+Thanks,
+Rafael
