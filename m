@@ -1,130 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759701Ab1FWQiv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 12:38:51 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55026 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759363Ab1FWQiu (ORCPT
+	id S932596Ab1FWRER (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:04:17 -0400
+Received: from ubatuba.uniritter.edu.br ([200.162.109.21]:49618 "EHLO
+	ubatuba.uniritter.edu.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932313Ab1FWREQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 12:38:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Vty8o1qVzE6JK5eiKiywuFBfHhDO5CCLz2zaToUp1EIS+c8kVy9F2YI7+BdniiG5up
-         V1hqP4cxlQuETOdW7t+/5Mvf7IWgHbqZ4mLv6zqz4+JG/WZOS2IrWDUfTBcXkViXa8Xn
-         hmuih4b2boo4uH9GWk3dsEN+FkYooBZIk/eak=
-From: Rob Herring <robherring2@gmail.com>
-To: grant.likely@secretlab.ca
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH] dt: add of_get_property_value32 helper function
-Date: Thu, 23 Jun 2011 11:38:33 -0500
-Message-Id: <1308847113-5953-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 23 Jun 2011 13:04:16 -0400
+X-Greylist: delayed 1437 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Jun 2011 13:04:16 EDT
+Message-ID: <20110623134012.32707fwsa22318j0@webhorde.uniritter.edu.br>
+Date: Thu, 23 Jun 2011 13:40:12 -0300
+From: Promo Announcer =?iso-8859-1?b?qTIwMTE=?= 
+	<everson_santos@uniritter.edu.br>
+Reply-to: googlepromo.online@london.com
+To: undisclosed-recipients:;
+Subject: The Google-UK 12th Anniversary Giveaway P r o m o t i o n s
+ ***Confirm the usage of this email account***
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.2) / FreeBSD-5.5
+X-TM-AS-Product-Ver: IMSVA-8.0.0.1362-6.5.0.1024-18218.000
+X-TM-AS-User-Approved-Sender: Yes
+X-TMASE-MatchedRID: jtDsQRaldSHWNpYibJKdUe2rZX1eoLgMbnySHPJMJlIZLOAm79h6+j+o
+	eqvXKbbbuSzMXPJEsE1asG44azv9edq72IXmYAV7AM+6FTg/ncq2n130cCoRZbbmTp6pUQQVTQJ
+	VAH/iQLO5GzZrLHIFDozwBt6unPgVMgyHSBq8jGjmAId+2bAQwqkxFhNG6Fq2lI2+vMR3RwA38g
+	+AdQdV8Ll4n02jcY6KYo0TKOPYfqY0eSTnmYZTDf7URrmYtpMe6q1pdmF+0M8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
 
-A common use of of_get_property in driver is to just get a 32-bit integer
-value, but the interface is a bit complicated in that case. Add a helper
-function that just fills in the value.
 
-So something like this:
+We urgently wish to inform you again that your e-mail w o n  £850,000 UK Pounds {with L u c k y # :12-12-23-35-40-41(12) & T i c k e t # :008 695 757 336 64} in our on-going 12th Anniversary Online Giveaway draws .
 
-	int len;
-	u32 blah;
-	void *prop = of_get_property(node, "blah", &len);
-	if (prop && len == sizeof(blah))
-		blah = be32_to_cpup(prop);
+For further information to be provided, you have to reply this notice immediately to confirm this email account is still active.
+Reply to e-mail : googlepromo.online@london.com
 
-can become:
+Thanks for using G o o g l e
+Mrs Lisa ( Promo Announcer ©2011 )
 
-	u32 blah;
-	of_get_property_value32(node, "blah", &blah);
 
-The caller can check the return value if the property is required to be
-present.
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
----
-Grant,
 
-I noticed most callers of of_get_property don't do be32_to_cpup on the
-returned pointer. Most instances appear to be powerpc only drivers, but
-should of_get_property return ptr be __be32?
 
-Rob
 
- drivers/of/base.c  |   20 +++++++++++++++++++-
- include/linux/of.h |    9 +++++++++
- 2 files changed, 28 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 632ebae..58fe34e 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -186,7 +186,7 @@ EXPORT_SYMBOL(of_find_all_nodes);
- 
- /*
-  * Find a property with a given name for a given node
-- * and return the value.
-+ * and return a pointer to the value.
-  */
- const void *of_get_property(const struct device_node *np, const char *name,
- 			 int *lenp)
-@@ -197,6 +197,24 @@ const void *of_get_property(const struct device_node *np, const char *name,
- }
- EXPORT_SYMBOL(of_get_property);
- 
-+/*
-+ * Find a property with a given name for a given node
-+ * and return the 32-bit integer value. Returns non-zero if property with
-+ * valid length was found.
-+ */
-+int of_get_property_value32(const struct device_node *np, const char *name,
-+			 u32 *valuep)
-+{
-+	int len;
-+	u32 *p = of_get_property(np, name, &len);
-+	if (!p || len != sizeof(*p))
-+		return 0;
-+
-+	*value = be32_to_cpup(p);
-+	return 1;
-+}
-+EXPORT_SYMBOL(of_get_property_value32);
-+
- /** Checks if the given "compat" string matches one of the strings in
-  * the device's "compatible" property
-  */
-diff --git a/include/linux/of.h b/include/linux/of.h
-index bfc0ed1..fd10d37 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -201,6 +201,9 @@ extern int of_device_is_available(const struct device_node *device);
- extern const void *of_get_property(const struct device_node *node,
- 				const char *name,
- 				int *lenp);
-+extern int of_get_property_value32(const struct device_node *node,
-+				   const char *name,
-+				   u32 *valuep);
- extern int of_n_addr_cells(struct device_node *np);
- extern int of_n_size_cells(struct device_node *np);
- extern const struct of_device_id *of_match_node(
-@@ -234,5 +237,11 @@ static inline bool of_have_populated_dt(void)
- 	return false;
- }
- 
-+static inline int of_get_property_value32(const struct device_node *node,
-+					  const char *name, u32 *valuep)
-+{
-+	return 0;
-+}
-+
- #endif /* CONFIG_OF */
- #endif /* _LINUX_OF_H */
--- 
-1.7.4.1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
 
