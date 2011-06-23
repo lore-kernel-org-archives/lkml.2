@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934290Ab1FWSV7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:21:59 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34174 "EHLO
+	id S932952Ab1FWRfo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:35:44 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34125 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933176Ab1FWRfs (ORCPT
+	with ESMTP id S932829Ab1FWRfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:35:48 -0400
+	Thu, 23 Jun 2011 13:35:41 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Amitkumar Karwar <akarwar@marvell.com>,
-        Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: stable-review@kernel.org, Mike Snitzer <snitzer@redhat.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 070/247] ieee80211: correct IEEE80211_ADDBA_PARAM_BUF_SIZE_MASK macro
-Date: Thu, 23 Jun 2011 13:32:18 -0400
-Message-Id: <1308850515-15242-11-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 071/247] dm: dont take i_mutex to change device size
+Date: Thu, 23 Jun 2011 13:32:19 -0400
+Message-Id: <1308850515-15242-12-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,41 +24,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 8d661f1e462d50bd83de87ee628aaf820ce3c66c upstream.
+commit c217649bf2d60ac119afd71d938278cffd55962b upstream.
 
-It is defined in include/linux/ieee80211.h. As per IEEE spec.
-bit6 to bit15 in block ack parameter represents buffer size.
-So the bitmask should be 0xFFC0.
+No longer needlessly hold md->bdev->bd_inode->i_mutex when changing the
+size of a DM device.  This additional locking is unnecessary because
+i_size_write() is already protected by the existing critical section in
+dm_swap_table().  DM already has a reference on md->bdev so the
+associated bd_inode may be changed without lifetime concerns.
 
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+A negative side-effect of having held md->bdev->bd_inode->i_mutex was
+that a concurrent DM device resize and flush (via fsync) would deadlock.
+Dropping md->bdev->bd_inode->i_mutex eliminates this potential for
+deadlock.  The following reproducer no longer deadlocks:
+  https://www.redhat.com/archives/dm-devel/2009-July/msg00284.html
+
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/ieee80211.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/md/dm.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/ieee80211.h b/include/linux/ieee80211.h
-index 1998495..fd80eec 100644
---- a/include/linux/ieee80211.h
-+++ b/include/linux/ieee80211.h
-@@ -958,7 +958,7 @@ struct ieee80211_ht_info {
- /* block-ack parameters */
- #define IEEE80211_ADDBA_PARAM_POLICY_MASK 0x0002
- #define IEEE80211_ADDBA_PARAM_TID_MASK 0x003C
--#define IEEE80211_ADDBA_PARAM_BUF_SIZE_MASK 0xFFA0
-+#define IEEE80211_ADDBA_PARAM_BUF_SIZE_MASK 0xFFC0
- #define IEEE80211_DELBA_PARAM_TID_MASK 0xF000
- #define IEEE80211_DELBA_PARAM_INITIATOR_MASK 0x0800
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index 56d192d..c955f7f 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -2039,13 +2039,14 @@ static void event_callback(void *context)
+ 	wake_up(&md->eventq);
+ }
  
++/*
++ * Protected by md->suspend_lock obtained by dm_swap_table().
++ */
+ static void __set_size(struct mapped_device *md, sector_t size)
+ {
+ 	set_capacity(md->disk, size);
+ 
+-	mutex_lock(&md->bdev->bd_inode->i_mutex);
+ 	i_size_write(md->bdev->bd_inode, (loff_t)size << SECTOR_SHIFT);
+-	mutex_unlock(&md->bdev->bd_inode->i_mutex);
+ }
+ 
+ /*
 -- 
 1.7.4.4
 
