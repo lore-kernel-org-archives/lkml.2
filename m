@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758989Ab1FWI6U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 04:58:20 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60959 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667Ab1FWI6T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 04:58:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZXpgNAE6woKCk/GkV9r288GlGJvKot5DcHn63JtySxUhXfp40a+TAf/Ht5iWJeSFEx
-         804VgCOKuqh+IVNNV5qqtd3zhVtkIN1Niiw5FmH8Oic+t0fAlqYMm8URm6LA0gH8kOHZ
-         xL2UdPsIos6q7kUb2iS/EFsqV2ML6iJHRWJn4=
-Date: Thu, 23 Jun 2011 10:58:14 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, hch@infradead.org
-Subject: Re: [PATCH 3/7] ptrace: move SIGTRAP on exec(2) logic to
- ptrace_event()
-Message-ID: <20110623085814.GG30101@htj.dyndns.org>
-References: <1308322240-8247-1-git-send-email-tj@kernel.org>
- <1308322240-8247-4-git-send-email-tj@kernel.org>
- <20110620202504.GB17157@redhat.com>
- <BANLkTimuRogA6St5GP0sRd1CY5u=jBABBg@mail.gmail.com>
- <20110621204001.GB6738@redhat.com>
+	id S1758981Ab1FWJCL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 05:02:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55529 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755076Ab1FWJCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 05:02:09 -0400
+Date: Thu, 23 Jun 2011 11:02:04 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+        Lutz Vieweg <lvml@5t9.de>
+Subject: Re: [PATCH] memcg: unlock page before charging it. (WasRe: [PATCH
+ V2] mm: Do not keep page locked during page fault while charging it for
+ memcg
+Message-ID: <20110623090204.GE31593@tiehlicka.suse.cz>
+References: <20110622120635.GB14343@tiehlicka.suse.cz>
+ <20110622121516.GA28359@infradead.org>
+ <20110622123204.GC14343@tiehlicka.suse.cz>
+ <20110623150842.d13492cd.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110623074133.GA31593@tiehlicka.suse.cz>
+ <20110623170811.16f4435f.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110621204001.GB6738@redhat.com>
+In-Reply-To: <20110623170811.16f4435f.kamezawa.hiroyu@jp.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Tue, Jun 21, 2011 at 10:40:01PM +0200, Oleg Nesterov wrote:
-> > The intention is to concentrate ptrace specific logic in
-> > ptrace_event().  We'll have more of them, mostly dependent on
-> > PT_SEIZED and I don't think it's a good idea to scatter them across
-> > the kernel.  They're of no interest outside of ptrace after all.  I
-> > think it's better to have them collected in one place than scattered
-> > around.
+On Thu 23-06-11 17:08:11, KAMEZAWA Hiroyuki wrote:
+> On Thu, 23 Jun 2011 09:41:33 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
+[...]
+> > Other than that:
+> > Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> > 
 > 
-> This was one of the reasons for tracehooks ;)
+> I found the page is added to LRU before charging. (In this case,
+> memcg's LRU is ignored.) I'll post a new version with a fix.
 
-Yeah, sure.  The problem with tracehook is not that it's a
-fundamentally wrong thing to do but it's way over done than actually
-necessary and full of requirements which are of no interest to inside
-the upstream kernel.
+Yes, you are right. I have missed that.
+This means that we might race with reclaim which could evict the COWed
+page wich in turn would uncharge that page even though we haven't
+charged it yet.
 
-> OK, we can move this helper to ptrace.h although I do not think this
-> makes sense. As for "scattered around", imho the code which calculates
-> trace in do_fork() falls into the same category.
-> 
-> I still can't understand why ptrace_event() should check EVENT_EXEC.
-> This is the special case, it should be handled specially. And while
-> I think this is not that important, this is not friendly to do_fork,
-> compiler has to generate the code to check event.
-
-The generated code should be the same.  I didn't check all the cases
-but the few I check didn't really change.
-
-> But OK, I applied 1-5 and 7. This is minor, and we can reconsider this
-> later. I mean, right now I think I'll send the cleanup later, and you
-> will have to explain your nack ;)
-
-Yeah, yeah, it's a minor point one way or the other.  I was (and still
-is) thinking about folding most of ptrace-specific event logics into
-ptrace_event() and this was just a first step as I think adding more
-condition checks in fs/exec.c doesn't make much sense - ie. I might
-end up adding PT_SEZIED there too.
-
-Thanks.
+Can we postpone page_add_new_anon_rmap to the charging path or it would
+just race somewhere else?
 
 -- 
-tejun
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
