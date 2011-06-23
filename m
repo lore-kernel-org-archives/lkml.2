@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755154Ab1FWHAZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 03:00:25 -0400
-Received: from webbox687.server-home.net ([195.149.74.151]:36930 "EHLO
-	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753365Ab1FWHAX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 03:00:23 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Cc: Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Alexander Stein <alexander.stein@systec-electronic.com>
-Subject: [PATCH v2] pch_uart: Add MSI support
-Date: Thu, 23 Jun 2011 09:00:05 +0200
-Message-Id: <1308812405-5245-1-git-send-email-alexander.stein@systec-electronic.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <4E02857C.1010304@dsn.okisemi.com>
-References: <4E02857C.1010304@dsn.okisemi.com>
+	id S1754824Ab1FWHE7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 03:04:59 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:47530 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751486Ab1FWHE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 03:04:58 -0400
+Date: Thu, 23 Jun 2011 09:04:48 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: ling.ma@intel.com, hpa@zytor.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] [x86] Optimize copy-page by reducing impact from HW
+ prefetch
+Message-ID: <20110623070448.GA25707@elte.hu>
+References: <1308351117-32452-1-git-send-email-ling.ma@intel.com>
+ <m2fwn13a3u.fsf@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m2fwn13a3u.fsf@firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
----
-Changes in v2:
-* msi_enabled is stored in pci_dev already, skip it in our code
 
- drivers/tty/serial/pch_uart.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+* Andi Kleen <andi@firstfloor.org> wrote:
 
-diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-index a3d0c9e..ab34576 100644
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -1578,6 +1578,8 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
- 		goto init_port_hal_free;
- 	}
- 
-+	pci_enable_msi(pdev);
-+
- 	iobase = pci_resource_start(pdev, 0);
- 	mapbase = pci_resource_start(pdev, 1);
- 	priv->mapbase = mapbase;
-@@ -1640,6 +1642,8 @@ static void pch_uart_pci_remove(struct pci_dev *pdev)
- 	struct eg20t_port *priv;
- 
- 	priv = (struct eg20t_port *)pci_get_drvdata(pdev);
-+
-+	pci_disable_msi(pdev);
- #ifdef CONFIG_SERIAL_PCH_UART_CONSOLE
- 	pch_uart_ports[priv->port.line] = NULL;
- #endif
-@@ -1726,6 +1730,7 @@ static int __devinit pch_uart_pci_probe(struct pci_dev *pdev,
- 	return ret;
- 
- probe_disable_device:
-+	pci_disable_msi(pdev);
- 	pci_disable_device(pdev);
- probe_error:
- 	return ret;
--- 
-1.7.3.4
+> ling.ma@intel.com writes:
+>
+> > impact(DCU prefetcher), and simplify original code. The 
+> > performance is improved about 15% on core2, 36% on snb 
+> > respectively. (We use our micro-benchmark, and will do further 
+> > test according to your requirment)
+> 
+> This doesn't make a lot of sense because neither Core-2 nor SNB use 
+> the code path you patched. They all use the rep ; movs path
 
+Ling, mind double checking which one is the faster/better one on SNB, 
+in cold-cache and hot-cache situations, copy_page or copy_page_c?
+
+Also, while looking at this file please fix the countless pieces of 
+style excrements it has before modifying it:
+
+ - non-Linux comment style (and needless two comments - it can 
+   be in one comment block):
+
+  /* Don't use streaming store because it's better when the target
+     ends up in cache. */
+            
+  /* Could vary the prefetch distance based on SMP/UP */
+
+ - (there's other non-standard comment blocks in this file as well)
+
+ - The copy_page/copy_page_c naming is needlessly obfuscated, it 
+   should be copy_page, copy_page_norep or so - the _c postfix has no
+   obvious meaning.
+
+ - all #include's should be at the top
+
+ - please standardize it on the 'instrn %x, %y' pattern that we 
+   generally use in arch/x86/, not 'instrn %x,%y' pattern.
+
+and do this cleanup patch first and the speedup on top of it, and 
+keep the two in two separate patches so that the modification to the 
+assembly code can be reviewed more easily.
+
+Thanks,
+
+	Ingo
