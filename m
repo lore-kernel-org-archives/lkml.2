@@ -1,1923 +1,2652 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932740Ab1FWRW0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:22:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64561 "EHLO mx1.redhat.com"
+	id S932796Ab1FWRWh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:22:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53640 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932722Ab1FWRWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:22:23 -0400
-Date: Thu, 23 Jun 2011 13:22:19 -0400
+	id S932757Ab1FWRW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 13:22:28 -0400
+Date: Thu, 23 Jun 2011 13:22:26 -0400
 From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org, x86@kernel.org,
-        linux-acpi@vger.kernel.org, linux-ide@vger.kernel.org,
-        openipmi-developer@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-crypto@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, lm-sensors@lm-sensors.org,
-        linux-i2c@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-mmc@vger.kernel.org, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org, rtc-linux@googlegroups.com,
-        evel@driverdev.osuosl.org, linux-usb@vger.kernel.org,
-        device-drivers-devel@blackfin.uclinux.org,
-        linux-watchdog@vger.kernel.org
-Cc: grant.likely@secretlab.ca, dz@debian.org, rpurdie@rpsys.net,
-        eric.piel@tremplin-utc.net, abelay@mit.edu, johnpol@2ka.mipt.ru,
-        Prarit Bhargava <prarit@redhat.com>
-Message-Id: <20110623172219.27612.50001.sendpatchset@prarit.bos.redhat.com>
+To: linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org, x86@kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>
+Message-Id: <20110623172226.27617.45605.sendpatchset@prarit.bos.redhat.com>
 Content-Type: text/plain; charset=us-ascii
-Subject: [PATCH 02/35] New SMBIOS driver for x86 and ia64.
+Subject: [PATCH 03/35] arch specific changes for SMBIOS and System Firmware
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New SMBIOS driver for x86 and ia64.
+arch specific changes for SMBIOS and System Firmware
 
-This, along with the System Firmware (sysfw) interface replaces the existing
-DMI code in the kernel.
+As part of the new SMBIOS and System Firmware code:
 
-This subsystem provides functionality for individual drivers to access
-the SMBIOS structures for their own use, smbios_walk(), as well as some
-helper functions for some kernel modules.
+- add in ia64 and x86 calls to initialize SMBIOS
+- Replace old dmi* structures and functions with new sysfw* and smbios*
+structures and functions in individual drivers
+- cleanup sysfw_id lookup tables
+- cleanup of includes for dmi.h and mod_devicetable.h which were included in
+some files that did not need them
 
 Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 ---
- Documentation/ABI/obsolete/sysfs-dmi   |   40 ++
- Documentation/ABI/testing/sysfw-smbios |   36 ++
- arch/ia64/Kconfig                      |    5 +
- arch/ia64/include/asm/smbios.h         |   12 +
- arch/x86/Kconfig                       |   10 +
- arch/x86/include/asm/smbios.h          |   19 +
- drivers/firmware/Kconfig               |   20 +
- drivers/firmware/Makefile              |    2 +
- drivers/firmware/smbios-sysfs.c        |  700 ++++++++++++++++++++++++++++++++
- drivers/firmware/smbios.c              |  687 +++++++++++++++++++++++++++++++
- include/linux/smbios.h                 |  243 +++++++++++
- 11 files changed, 1774 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/obsolete/sysfs-dmi
- create mode 100644 Documentation/ABI/testing/sysfw-smbios
- create mode 100644 arch/ia64/include/asm/smbios.h
- create mode 100644 arch/x86/include/asm/smbios.h
- create mode 100644 drivers/firmware/smbios-sysfs.c
- create mode 100644 drivers/firmware/smbios.c
- create mode 100644 include/linux/smbios.h
+ arch/ia64/kernel/setup.c           |    8 +-
+ arch/x86/include/asm/mmconfig.h    |    4 +-
+ arch/x86/include/asm/pci_x86.h     |    6 +-
+ arch/x86/kernel/acpi/boot.c        |  177 ++++++++--------
+ arch/x86/kernel/acpi/sleep.c       |    1 -
+ arch/x86/kernel/apic/apic.c        |   20 +-
+ arch/x86/kernel/apic/bigsmp_32.c   |   37 ++--
+ arch/x86/kernel/apm_32.c           |  391 ++++++++++++++++++++++--------------
+ arch/x86/kernel/cpu/amd.c          |    2 +-
+ arch/x86/kernel/cpu/vmware.c       |   17 ++-
+ arch/x86/kernel/io_delay.c         |   42 ++--
+ arch/x86/kernel/mmconf-fam10h_64.c |   28 ++--
+ arch/x86/kernel/probe_roms.c       |    1 -
+ arch/x86/kernel/process.c          |    8 +-
+ arch/x86/kernel/reboot.c           |  128 +++++++------
+ arch/x86/kernel/setup.c            |   14 +-
+ arch/x86/kernel/tsc.c              |   16 +-
+ arch/x86/pci/acpi.c                |   18 +-
+ arch/x86/pci/broadcom_bus.c        |    1 -
+ arch/x86/pci/common.c              |  163 ++++++++--------
+ arch/x86/pci/direct.c              |    7 +-
+ arch/x86/pci/fixup.c               |   33 ++--
+ arch/x86/pci/init.c                |    4 +-
+ arch/x86/pci/irq.c                 |   26 ++--
+ arch/x86/pci/mmconfig-shared.c     |   10 +-
+ arch/x86/pci/mrst.c                |    1 -
+ drivers/cpufreq/acpi-cpufreq.c     |   16 +-
+ drivers/cpufreq/powernow-k7.c      |   14 +-
+ 28 files changed, 655 insertions(+), 538 deletions(-)
 
-diff --git a/Documentation/ABI/obsolete/sysfs-dmi b/Documentation/ABI/obsolete/sysfs-dmi
-new file mode 100644
-index 0000000..143aebc
---- /dev/null
-+++ b/Documentation/ABI/obsolete/sysfs-dmi
-@@ -0,0 +1,40 @@
-+What:		/sys/class/dmi
-+Date:		May 1 2011
-+KernelVersion:	2.6.39
-+Contact:	Prarit Bhargava <prarit@redhat.com>
-+Description:
-+		The dmi class is exported if CONFIG_SMBIOS_DMI_COMPAT is
-+		set.
-+
-+		The DMI code currently exposes several values via sysfs.
-+		These values are:
-+
-+		bios_date: The datestamp of the BIOS.
-+		bios_vendor: The company that wrote the BIOS.
-+		bios_version: The version of the BIOS.
-+		board_asset_tag: A unique identifier for the system
-+				 motherboard.
-+		board_name: The name of the type of motherboard.
-+		board_serial: The serial number of the motherboard.
-+		board_vendor: The company that designed the motherboard.
-+		board_version: The version of the motherboard.
-+		chassis_asset_tag: A unique identifier for the chassis.
-+		chassis_serial: The serial number of the chassis.
-+		chassis_type: The type of chassis.
-+		chassis_vendor: The company that designed the chassis.
-+		chassis_version: The version of the chassis.
-+		product_name: The name of the system as determined by the
-+			      OEM.
-+		product_serial: The serial number of the system.
-+		product_uuid: A unique UUID for the system.
-+		product_version: The version number of the system.
-+		sys_vendor: The OEM company for the system.
-+
-+		In addition to these the standard class files are exposed
-+		for DMI (uvent, power, subsystem) as well as a modalias
-+		file.
-+
-+		The dmi class is deprecated and should not be used by new
-+		code.  Existing code should be migrated to use
-+		/sys/class/smbios/* which exposes the same data.
-+		The dmi class link will be removed in December of 2012.
-diff --git a/Documentation/ABI/testing/sysfw-smbios b/Documentation/ABI/testing/sysfw-smbios
-new file mode 100644
-index 0000000..2a8758b
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfw-smbios
-@@ -0,0 +1,36 @@
-+What:		/sys/class/dmi
-+Date:		May 1 2011
-+KernelVersion:	2.6.39
-+Contact:	Prarit Bhargava <prarit@redhat.com>
-+Description:
-+		The dmi class is exported if CONFIG_SMBIOS is set.
-+
-+		The SMBIOS code currently exposes several values via sysfs
-+		primarily for use by module handling code.
-+
-+		These values are:
-+
-+		bios_date: The datestamp of the BIOS.
-+		bios_vendor: The company that wrote the BIOS.
-+		bios_version: The version of the BIOS.
-+		board_asset_tag: A unique identifier for the system
-+				 motherboard.
-+		board_name: The name of the type of motherboard.
-+		board_serial: The serial number of the motherboard.
-+		board_vendor: The company that designed the motherboard.
-+		board_version: The version of the motherboard.
-+		chassis_asset_tag: A unique identifier for the chassis.
-+		chassis_serial: The serial number of the chassis.
-+		chassis_type: The type of chassis.
-+		chassis_vendor: The company that designed the chassis.
-+		chassis_version: The version of the chassis.
-+		product_name: The name of the system as determined by the
-+			      OEM.
-+		product_serial: The serial number of the system.
-+		product_uuid: A unique UUID for the system.
-+		product_version: The version number of the system.
-+		sys_vendor: The OEM company for the system.
-+
-+		In addition to these the standard class files are exposed
-+		for SMBIOS (uvent, power, subsystem) as well as a modalias
-+		file.
-diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
-index 38280ef..ac14d3c 100644
---- a/arch/ia64/Kconfig
-+++ b/arch/ia64/Kconfig
-@@ -93,6 +93,11 @@ config DMI
- 	bool
- 	default y
- 
-+config SMBIOS
-+	bool
-+	default y
-+	depends on SYSTEM_FIRMWARE
-+
- config EFI
- 	bool
- 	default y
-diff --git a/arch/ia64/include/asm/smbios.h b/arch/ia64/include/asm/smbios.h
-new file mode 100644
-index 0000000..19c0019
---- /dev/null
-+++ b/arch/ia64/include/asm/smbios.h
-@@ -0,0 +1,12 @@
-+#ifndef _ASM_SMBIOS_H
-+#define _ASM_SMBIOS_H 1
-+
-+#include <linux/slab.h>
-+#include <asm/io.h>
-+
-+/* Use normal IO mappings for SMBIOS */
-+#define smbios_ioremap ioremap
-+#define smbios_iounmap(x, l) iounmap(x)
-+#define smbios_alloc(l) kmalloc(l, GFP_ATOMIC)
-+
-+#endif
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index da34972..e7cdde8 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -635,6 +635,16 @@ config DMI
- 	  affected by entries in the DMI blacklist. Required by PNP
- 	  BIOS code.
- 
-+config SMBIOS
-+	depends on SYSTEM_FIRMWARE
-+	bool "Enable SMBIOS scanning" if EXPERT
-+	default y
-+	---help---
-+	  Enabled scanning of SMBIOS to identify machine quirks. Say Y
-+	  here unless you have verified that your setup is not
-+	  affected by entries in the SMBIOS blacklist. Required by PNP
-+	  BIOS code.
-+
- config GART_IOMMU
- 	bool "GART IOMMU support" if EXPERT
- 	default y
-diff --git a/arch/x86/include/asm/smbios.h b/arch/x86/include/asm/smbios.h
-new file mode 100644
-index 0000000..767270b
---- /dev/null
-+++ b/arch/x86/include/asm/smbios.h
-@@ -0,0 +1,19 @@
-+#ifndef _ASM_X86_SMBIOS_H
-+#define _ASM_X86_SMBIOS_H
-+
-+#include <linux/compiler.h>
-+#include <linux/init.h>
-+
-+#include <asm/io.h>
-+#include <asm/setup.h>
-+
-+static __always_inline __init void *smbios_alloc(unsigned len)
-+{
-+	return extend_brk(len, sizeof(int));
-+}
-+
-+/* Use early IO mappings for SMBIOS because it's initialized early */
-+#define smbios_ioremap early_ioremap
-+#define smbios_iounmap early_iounmap
-+
-+#endif /* _ASM_X86_SMBIOS_H */
-diff --git a/drivers/firmware/Kconfig b/drivers/firmware/Kconfig
-index 79a1b9d..23066d8 100644
---- a/drivers/firmware/Kconfig
-+++ b/drivers/firmware/Kconfig
-@@ -182,6 +182,26 @@ config SYSTEM_FIRMWARE_DMI_COMPAT
- 	  should not be used in new user space software.  Please see
- 	  Documentation/ABI for details.
- 
-+config SYSTEM_FIRMWARE_DMI_COMPAT
-+	bool "Export dmi compatibility class in sysfs"
-+	depends on SMBIOSID
-+	default y
-+	help
-+	  This exposes /sys/class/dmi/* as a pointer to the sysfw class for
-+	  old software.  This is purely a backwards compatability feature and
-+	  should not be used in new user space software.  Please see
-+	  Documentation/ABI for details.
-+
-+config SMBIOS_SYSFS
-+	tristate "SMBIOS table support in sysfs"
-+	depends on SYSFS && SMBIOS
-+	help
-+	  Say Y or M here to enable the exporting of the raw SMBIOS table
-+	  data via sysfs.  This is useful for consuming the data without
-+	  requiring any access to /dev/mem at all.  Tables are found
-+	  under /sys/firmware/smbios when this option is enabled and
-+	  loaded.
-+
- source "drivers/firmware/google/Kconfig"
- 
- endmenu
-diff --git a/drivers/firmware/Makefile b/drivers/firmware/Makefile
-index 41bc64a..5c9d81f 100644
---- a/drivers/firmware/Makefile
-+++ b/drivers/firmware/Makefile
-@@ -16,3 +16,5 @@ obj-$(CONFIG_SIGMA)		+= sigma.o
- obj-$(CONFIG_GOOGLE_FIRMWARE)	+= google/
- obj-$(CONFIG_SYSTEM_FIRMWARE)	+= sysfw.o
- obj-$(CONFIG_SYSTEM_FIRMWARE_SYSFS)	+= sysfw-sysfs.o
-+obj-$(CONFIG_SMBIOS)		+= smbios.o
-+obj-$(CONFIG_SMBIOS_SYSFS)	+= smbios-sysfs.o
-diff --git a/drivers/firmware/smbios-sysfs.c b/drivers/firmware/smbios-sysfs.c
-new file mode 100644
-index 0000000..59b4a79
---- /dev/null
-+++ b/drivers/firmware/smbios-sysfs.c
-@@ -0,0 +1,700 @@
-+/*
-+ * smbios-sysfs.c
-+ *
-+ * This module exports the SMBIOS tables read-only to userspace through the
-+ * sysfs file system.
-+ *
-+ * Data is currently found below
-+ *    /sys/firmware/smbios/...
-+ *
-+ * SMBIOS attributes are presented in attribute files with names
-+ * formatted using %d-%d, so that the first integer indicates the
-+ * structure type (0-255), and the second field is the instance of that
-+ * entry.
-+ *
-+ * Copyright 2011 Google, Inc.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/kobject.h>
+diff --git a/arch/ia64/kernel/setup.c b/arch/ia64/kernel/setup.c
+index 5e2c724..e170fcc 100644
+--- a/arch/ia64/kernel/setup.c
++++ b/arch/ia64/kernel/setup.c
+@@ -36,7 +36,7 @@
+ #include <linux/string.h>
+ #include <linux/threads.h>
+ #include <linux/screen_info.h>
+-#include <linux/dmi.h>
 +#include <linux/smbios.h>
-+#include <linux/capability.h>
-+#include <linux/slab.h>
-+#include <linux/list.h>
-+#include <linux/io.h>
-+
-+#define MAX_ENTRY_TYPE 255 /* Most of these aren't used, but we consider
-+			      the top entry type is only 8 bits */
-+
-+struct smbios_sysfs_entry {
-+	struct smbios_header dh;
-+	struct kobject kobj;
-+	int instance;
-+	int position;
-+	struct list_head list;
-+	struct kobject *child;
-+};
-+
-+/*
-+ * Global list of smbios_sysfs_entry.  Even though this should only be
-+ * manipulated at setup and teardown, the lazy nature of the kobject
-+ * system means we get lazy removes.
-+ */
-+static LIST_HEAD(entry_list);
-+static DEFINE_SPINLOCK(entry_list_lock);
-+
-+/* smbios_sysfs_attribute - Top level attribute. used by all entries. */
-+struct smbios_sysfs_attribute {
-+	struct attribute attr;
-+	ssize_t (*show)(struct smbios_sysfs_entry *entry, char *buf);
-+};
-+
-+#define SMBIOS_SYSFS_ATTR(_entry, _name) \
-+struct smbios_sysfs_attribute smbios_sysfs_attr_##_entry##_##_name = { \
-+	.attr = {.name = __stringify(_name), .mode = 0400}, \
-+	.show = smbios_sysfs_##_entry##_##_name, \
-+}
-+
-+/*
-+ * smbios_sysfs_mapped_attribute - Attribute where we require the entry be
-+ * mapped in.  Use in conjunction with smbios_sysfs_specialize_attr_ops.
-+ */
-+struct smbios_sysfs_mapped_attribute {
-+	struct attribute attr;
-+	ssize_t (*show)(struct smbios_sysfs_entry *entry,
-+			const struct smbios_header *dh,
-+			char *buf);
-+};
-+
-+#define SMBIOS_SYSFS_MAPPED_ATTR(_entry, _name) \
-+struct smbios_sysfs_mapped_attribute smbios_sysfs_attr_##_entry##_##_name = { \
-+	.attr = {.name = __stringify(_name), .mode = 0400}, \
-+	.show = smbios_sysfs_##_entry##_##_name, \
-+}
-+
-+/*************************************************
-+ * Generic SMBIOS entry support.
-+ *************************************************/
-+static void smbios_entry_free(struct kobject *kobj)
-+{
-+	kfree(kobj);
-+}
-+
-+static struct smbios_sysfs_entry *to_entry(struct kobject *kobj)
-+{
-+	return container_of(kobj, struct smbios_sysfs_entry, kobj);
-+}
-+
-+static struct smbios_sysfs_attribute *to_attr(struct attribute *attr)
-+{
-+	return container_of(attr, struct smbios_sysfs_attribute, attr);
-+}
-+
-+static ssize_t smbios_sysfs_attr_show(struct kobject *kobj,
-+				      struct attribute *_attr, char *buf)
-+{
-+	struct smbios_sysfs_entry *entry = to_entry(kobj);
-+	struct smbios_sysfs_attribute *attr = to_attr(_attr);
-+
-+	/* SMBIOS stuff is only ever admin visible */
-+	if (!capable(CAP_SYS_ADMIN))
-+		return -EACCES;
-+
-+	return attr->show(entry, buf);
-+}
-+
-+static const struct sysfs_ops smbios_sysfs_attr_ops = {
-+	.show = smbios_sysfs_attr_show,
-+};
-+
-+typedef ssize_t (*smbios_callback)(struct smbios_sysfs_entry *,
-+				   const struct smbios_header *dh, void *);
-+
-+struct find_smbios_data {
-+	struct smbios_sysfs_entry	*entry;
-+	smbios_callback		callback;
-+	void			*private;
-+	int			instance_countdown;
-+	ssize_t			ret;
-+};
-+
-+static int find_smbios_entry_helper(const union smbios_struct *ss, void *_data)
-+{
-+	struct find_smbios_data *data = _data;
-+	struct smbios_sysfs_entry *entry = data->entry;
-+
-+	/* Is this the entry we want? */
-+	if (ss->header.type != entry->dh.type)
-+		return SMBIOS_WALK_CONTINUE;
-+
-+	if (data->instance_countdown != 0) {
-+		/* try the next instance? */
-+		data->instance_countdown--;
-+		return SMBIOS_WALK_CONTINUE;
-+	}
-+
-+	/*
-+	 * Don't ever revisit the instance.  Short circuit later
-+	 * instances by letting the instance_countdown run negative
-+	 */
-+	data->instance_countdown--;
-+
-+	/* Found the entry */
-+	data->ret = data->callback(entry, &ss->header, data->private);
-+
-+	return SMBIOS_WALK_STOP;
-+}
-+
-+/* State for passing the read parameters through smbios_find_entry() */
-+struct smbios_read_state {
-+	char *buf;
-+	loff_t pos;
-+	size_t count;
-+};
-+
-+static ssize_t find_smbios_entry(struct smbios_sysfs_entry *entry,
-+				 smbios_callback callback, void *private)
-+{
-+	struct find_smbios_data data = {
-+		.entry = entry,
-+		.callback = callback,
-+		.private = private,
-+		.instance_countdown = entry->instance,
-+		.ret = -EIO,  /* To signal the entry disappeared */
-+	};
-+	const union smbios_struct *ss;
-+
-+	ss = smbios_walk(find_smbios_entry_helper, &data);
-+	if (!ss)
-+		return -EINVAL;
-+	return data.ret;
-+}
-+
-+/*
-+ * Calculate and return the byte length of the smbios entry identified by
-+ * dh.  This includes both the formatted portion as well as the
-+ * unformatted string space, including the two trailing nul characters.
-+ */
-+static size_t smbios_entry_length(const struct smbios_header *dh)
-+{
-+	const char *p = (const char *)dh;
-+
-+	p += dh->length;
-+
-+	while (p[0] || p[1])
-+		p++;
-+
-+	return 2 + p - (const char *)dh;
-+}
-+
-+/*************************************************
-+ * Support bits for specialized SMBIOS entry support
-+ *************************************************/
-+struct smbios_entry_attr_show_data {
-+	struct attribute *attr;
-+	char *buf;
-+};
-+
-+static ssize_t smbios_entry_attr_show_helper(struct smbios_sysfs_entry *entry,
-+					     const struct smbios_header *dh,
-+					     void *_data)
-+{
-+	struct smbios_entry_attr_show_data *data = _data;
-+	struct smbios_sysfs_mapped_attribute *attr;
-+
-+	attr = container_of(data->attr,
-+			    struct smbios_sysfs_mapped_attribute, attr);
-+	return attr->show(entry, dh, data->buf);
-+}
-+
-+static ssize_t smbios_entry_attr_show(struct kobject *kobj,
-+				      struct attribute *attr,
-+				      char *buf)
-+{
-+	struct smbios_entry_attr_show_data data = {
-+		.attr = attr,
-+		.buf  = buf,
-+	};
-+	/* Find the entry according to our parent and call the
-+	 * normalized show method hanging off of the attribute */
-+	return find_smbios_entry(to_entry(kobj->parent),
-+				 smbios_entry_attr_show_helper, &data);
-+}
-+
-+static const struct sysfs_ops smbios_sysfs_specialize_attr_ops = {
-+	.show = smbios_entry_attr_show,
-+};
-+
-+/*************************************************
-+ * Specialized SMBIOS entry support.
-+ *************************************************/
-+
-+/*** Type 15 - System Event Table ***/
-+
-+#define SMBIOS_SEL_ACCESS_METHOD_IO8	0x00
-+#define SMBIOS_SEL_ACCESS_METHOD_IO2x8	0x01
-+#define SMBIOS_SEL_ACCESS_METHOD_IO16	0x02
-+#define SMBIOS_SEL_ACCESS_METHOD_PHYS32	0x03
-+#define SMBIOS_SEL_ACCESS_METHOD_GPNV	0x04
-+
-+struct smbios_system_event_log {
-+	struct smbios_header header;
-+	u16	area_length;
-+	u16	header_start_offset;
-+	u16	data_start_offset;
-+	u8	access_method;
-+	u8	status;
-+	u32	change_token;
-+	union {
-+		struct {
-+			u16 index_addr;
-+			u16 data_addr;
-+		} io;
-+		u32	phys_addr32;
-+		u16	gpnv_handle;
-+		u32	access_method_address;
-+	};
-+	u8	header_format;
-+	u8	type_descriptors_supported_count;
-+	u8	per_log_type_descriptor_length;
-+	u8	supported_log_type_descriptos[0];
-+} __packed;
-+
-+#define SMBIOS_SYSFS_SEL_FIELD(_field) \
-+static ssize_t smbios_sysfs_sel_##_field(struct smbios_sysfs_entry *entry, \
-+					 const struct smbios_header *dh, \
-+					 char *buf) \
-+{ \
-+	struct smbios_system_event_log sel; \
-+	if (sizeof(sel) > smbios_entry_length(dh)) \
-+		return -EIO; \
-+	memcpy(&sel, dh, sizeof(sel)); \
-+	return sprintf(buf, "%u\n", sel._field); \
-+} \
-+static SMBIOS_SYSFS_MAPPED_ATTR(sel, _field)
-+
-+SMBIOS_SYSFS_SEL_FIELD(area_length);
-+SMBIOS_SYSFS_SEL_FIELD(header_start_offset);
-+SMBIOS_SYSFS_SEL_FIELD(data_start_offset);
-+SMBIOS_SYSFS_SEL_FIELD(access_method);
-+SMBIOS_SYSFS_SEL_FIELD(status);
-+SMBIOS_SYSFS_SEL_FIELD(change_token);
-+SMBIOS_SYSFS_SEL_FIELD(access_method_address);
-+SMBIOS_SYSFS_SEL_FIELD(header_format);
-+SMBIOS_SYSFS_SEL_FIELD(type_descriptors_supported_count);
-+SMBIOS_SYSFS_SEL_FIELD(per_log_type_descriptor_length);
-+
-+static struct attribute *smbios_sysfs_sel_attrs[] = {
-+	&smbios_sysfs_attr_sel_area_length.attr,
-+	&smbios_sysfs_attr_sel_header_start_offset.attr,
-+	&smbios_sysfs_attr_sel_data_start_offset.attr,
-+	&smbios_sysfs_attr_sel_access_method.attr,
-+	&smbios_sysfs_attr_sel_status.attr,
-+	&smbios_sysfs_attr_sel_change_token.attr,
-+	&smbios_sysfs_attr_sel_access_method_address.attr,
-+	&smbios_sysfs_attr_sel_header_format.attr,
-+	&smbios_sysfs_attr_sel_type_descriptors_supported_count.attr,
-+	&smbios_sysfs_attr_sel_per_log_type_descriptor_length.attr,
-+	NULL,
-+};
-+
-+
-+static struct kobj_type smbios_system_event_log_ktype = {
-+	.release = smbios_entry_free,
-+	.sysfs_ops = &smbios_sysfs_specialize_attr_ops,
-+	.default_attrs = smbios_sysfs_sel_attrs,
-+};
-+
-+typedef u8 (*sel_io_reader)(const struct smbios_system_event_log *sel,
-+			    loff_t offset);
-+
-+static DEFINE_MUTEX(io_port_lock);
-+
-+static u8 read_sel_8bit_indexed_io(const struct smbios_system_event_log *sel,
-+				   loff_t offset)
-+{
-+	u8 ret;
-+
-+	mutex_lock(&io_port_lock);
-+	outb((u8)offset, sel->io.index_addr);
-+	ret = inb(sel->io.data_addr);
-+	mutex_unlock(&io_port_lock);
-+	return ret;
-+}
-+
-+static u8 read_sel_2x8bit_indexed_io(const struct smbios_system_event_log *sel,
-+				     loff_t offset)
-+{
-+	u8 ret;
-+
-+	mutex_lock(&io_port_lock);
-+	outb((u8)offset, sel->io.index_addr);
-+	outb((u8)(offset >> 8), sel->io.index_addr + 1);
-+	ret = inb(sel->io.data_addr);
-+	mutex_unlock(&io_port_lock);
-+	return ret;
-+}
-+
-+static u8 read_sel_16bit_indexed_io(const struct smbios_system_event_log *sel,
-+				    loff_t offset)
-+{
-+	u8 ret;
-+
-+	mutex_lock(&io_port_lock);
-+	outw((u16)offset, sel->io.index_addr);
-+	ret = inb(sel->io.data_addr);
-+	mutex_unlock(&io_port_lock);
-+	return ret;
-+}
-+
-+static sel_io_reader sel_io_readers[] = {
-+	[SMBIOS_SEL_ACCESS_METHOD_IO8]	= read_sel_8bit_indexed_io,
-+	[SMBIOS_SEL_ACCESS_METHOD_IO2x8]	= read_sel_2x8bit_indexed_io,
-+	[SMBIOS_SEL_ACCESS_METHOD_IO16]	= read_sel_16bit_indexed_io,
-+};
-+
-+static ssize_t smbios_sel_raw_read_io(struct smbios_sysfs_entry *entry,
-+				      const struct smbios_system_event_log *sel,
-+				      char *buf, loff_t pos, size_t count)
-+{
-+	ssize_t wrote = 0;
-+
-+	sel_io_reader io_reader = sel_io_readers[sel->access_method];
-+
-+	while (count && pos < sel->area_length) {
-+		count--;
-+		*(buf++) = io_reader(sel, pos++);
-+		wrote++;
-+	}
-+
-+	return wrote;
-+}
-+
-+static ssize_t smbios_sel_raw_read_phys32(struct smbios_sysfs_entry *entry,
-+				      const struct smbios_system_event_log *sel,
-+					  char *buf, loff_t pos, size_t count)
-+{
-+	u8 __iomem *mapped;
-+	ssize_t wrote = 0;
-+
-+	mapped = ioremap(sel->access_method_address, sel->area_length);
-+	if (!mapped)
-+		return -EIO;
-+
-+	while (count && pos < sel->area_length) {
-+		count--;
-+		*(buf++) = readb(mapped + pos++);
-+		wrote++;
-+	}
-+
-+	iounmap(mapped);
-+	return wrote;
-+}
-+
-+static ssize_t smbios_sel_raw_read_helper(struct smbios_sysfs_entry *entry,
-+					  const struct smbios_header *dh,
-+					  void *_state)
-+{
-+	struct smbios_read_state *state = _state;
-+	struct smbios_system_event_log sel;
-+
-+	if (sizeof(sel) > smbios_entry_length(dh))
-+		return -EIO;
-+
-+	memcpy(&sel, dh, sizeof(sel));
-+
-+	switch (sel.access_method) {
-+	case SMBIOS_SEL_ACCESS_METHOD_IO8:
-+	case SMBIOS_SEL_ACCESS_METHOD_IO2x8:
-+	case SMBIOS_SEL_ACCESS_METHOD_IO16:
-+		return smbios_sel_raw_read_io(entry, &sel, state->buf,
-+					      state->pos, state->count);
-+	case SMBIOS_SEL_ACCESS_METHOD_PHYS32:
-+		return smbios_sel_raw_read_phys32(entry, &sel, state->buf,
-+						  state->pos, state->count);
-+	case SMBIOS_SEL_ACCESS_METHOD_GPNV:
-+		pr_info("smbios-sysfs: GPNV support missing.\n");
-+		return -EIO;
-+	default:
-+		pr_info("smbios-sysfs: Unknown access method %02x\n",
-+			sel.access_method);
-+		return -EIO;
-+	}
-+}
-+
-+static ssize_t smbios_sel_raw_read(struct file *filp, struct kobject *kobj,
-+				   struct bin_attribute *bin_attr,
-+				   char *buf, loff_t pos, size_t count)
-+{
-+	struct smbios_sysfs_entry *entry = to_entry(kobj->parent);
-+	struct smbios_read_state state = {
-+		.buf = buf,
-+		.pos = pos,
-+		.count = count,
-+	};
-+
-+	return find_smbios_entry(entry, smbios_sel_raw_read_helper, &state);
-+}
-+
-+static struct bin_attribute smbios_sel_raw_attr = {
-+	.attr = {.name = "raw_event_log", .mode = 0400},
-+	.read = smbios_sel_raw_read,
-+};
-+
-+static int smbios_system_event_log(struct smbios_sysfs_entry *entry)
-+{
-+	int ret;
-+
-+	entry->child = kzalloc(sizeof(*entry->child), GFP_KERNEL);
-+	if (!entry->child)
-+		return -ENOMEM;
-+	ret = kobject_init_and_add(entry->child,
-+				   &smbios_system_event_log_ktype,
-+				   &entry->kobj,
-+				   "system_event_log");
-+	if (ret)
-+		goto out_free;
-+
-+	ret = sysfs_create_bin_file(entry->child, &smbios_sel_raw_attr);
-+	if (ret)
-+		goto out_del;
-+
-+	return 0;
-+
-+out_del:
-+	kobject_del(entry->child);
-+out_free:
-+	kfree(entry->child);
-+	return ret;
-+}
-+
-+/*************************************************
-+ * Generic SMBIOS entry support.
-+ *************************************************/
-+
-+static ssize_t smbios_sysfs_entry_length(struct smbios_sysfs_entry *entry,
-+					 char *buf)
-+{
-+	return sprintf(buf, "%d\n", entry->dh.length);
-+}
-+
-+static ssize_t smbios_sysfs_entry_handle(struct smbios_sysfs_entry *entry,
-+					 char *buf)
-+{
-+	return sprintf(buf, "%d\n", entry->dh.handle);
-+}
-+
-+static ssize_t smbios_sysfs_entry_type(struct smbios_sysfs_entry *entry,
-+				       char *buf)
-+{
-+	return sprintf(buf, "%d\n", entry->dh.type);
-+}
-+
-+static ssize_t smbios_sysfs_entry_instance(struct smbios_sysfs_entry *entry,
-+					   char *buf)
-+{
-+	return sprintf(buf, "%d\n", entry->instance);
-+}
-+
-+static ssize_t smbios_sysfs_entry_position(struct smbios_sysfs_entry *entry,
-+					   char *buf)
-+{
-+	return sprintf(buf, "%d\n", entry->position);
-+}
-+
-+static SMBIOS_SYSFS_ATTR(entry, length);
-+static SMBIOS_SYSFS_ATTR(entry, handle);
-+static SMBIOS_SYSFS_ATTR(entry, type);
-+static SMBIOS_SYSFS_ATTR(entry, instance);
-+static SMBIOS_SYSFS_ATTR(entry, position);
-+
-+static struct attribute *smbios_sysfs_entry_attrs[] = {
-+	&smbios_sysfs_attr_entry_length.attr,
-+	&smbios_sysfs_attr_entry_handle.attr,
-+	&smbios_sysfs_attr_entry_type.attr,
-+	&smbios_sysfs_attr_entry_instance.attr,
-+	&smbios_sysfs_attr_entry_position.attr,
-+	NULL,
-+};
-+
-+static ssize_t smbios_entry_raw_read_helper(struct smbios_sysfs_entry *entry,
-+					    const struct smbios_header *dh,
-+					    void *_state)
-+{
-+	struct smbios_read_state *state = _state;
-+	size_t entry_length;
-+
-+	entry_length = smbios_entry_length(dh);
-+
-+	return memory_read_from_buffer(state->buf, state->count,
-+				       &state->pos, dh, entry_length);
-+}
-+
-+static ssize_t smbios_entry_raw_read(struct file *filp,
-+				     struct kobject *kobj,
-+				     struct bin_attribute *bin_attr,
-+				     char *buf, loff_t pos, size_t count)
-+{
-+	struct smbios_sysfs_entry *entry = to_entry(kobj);
-+	struct smbios_read_state state = {
-+		.buf = buf,
-+		.pos = pos,
-+		.count = count,
-+	};
-+
-+	return find_smbios_entry(entry, smbios_entry_raw_read_helper, &state);
-+}
-+
-+static const struct bin_attribute smbios_entry_raw_attr = {
-+	.attr = {.name = "raw", .mode = 0400},
-+	.read = smbios_entry_raw_read,
-+};
-+
-+static void smbios_sysfs_entry_release(struct kobject *kobj)
-+{
-+	struct smbios_sysfs_entry *entry = to_entry(kobj);
-+	sysfs_remove_bin_file(&entry->kobj, &smbios_entry_raw_attr);
-+	spin_lock(&entry_list_lock);
-+	list_del(&entry->list);
-+	spin_unlock(&entry_list_lock);
-+	kfree(entry);
-+}
-+
-+static struct kobj_type smbios_sysfs_entry_ktype = {
-+	.release = smbios_sysfs_entry_release,
-+	.sysfs_ops = &smbios_sysfs_attr_ops,
-+	.default_attrs = smbios_sysfs_entry_attrs,
-+};
-+
-+static struct kobject *smbios_kobj;
-+static struct kset *smbios_kset;
-+
-+/* Global count of all instances seen.  Only for setup */
-+static int __initdata instance_counts[MAX_ENTRY_TYPE + 1];
-+
-+/* Global positional count of all entries seen.  Only for setup */
-+static int __initdata position_count;
-+
-+static int __init smbios_sysfs_register_handle(const union smbios_struct *ss,
-+					       void *_ret)
-+{
-+	struct smbios_sysfs_entry *entry;
-+	int *ret = _ret;
-+
-+	/* Allocate and register a new entry into the entries set */
-+	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
-+	if (!entry) {
-+		*ret = -ENOMEM;
-+		return SMBIOS_WALK_STOP;
-+	}
-+
-+	/* Set the key */
-+	memcpy(&entry->dh, &ss->header, sizeof(struct smbios_header));
-+	entry->instance = instance_counts[ss->header.type]++;
-+	entry->position = position_count++;
-+
-+	entry->kobj.kset = smbios_kset;
-+	*ret = kobject_init_and_add(&entry->kobj, &smbios_sysfs_entry_ktype,
-+				    NULL,
-+				    "%d-%d", ss->header.type, entry->instance);
-+
-+	if (*ret) {
-+		kfree(entry);
-+		return SMBIOS_WALK_STOP;
-+	}
-+
-+	/* Thread on the global list for cleanup */
-+	spin_lock(&entry_list_lock);
-+	list_add_tail(&entry->list, &entry_list);
-+	spin_unlock(&entry_list_lock);
-+
-+	/* Handle specializations by type */
-+	switch (ss->header.type) {
-+	case 15:
-+		/* System Event Log */
-+		*ret = smbios_system_event_log(entry);
-+		break;
-+	default:
-+		/* No specialization */
-+		break;
-+	}
-+	if (*ret)
-+		goto out_err;
-+
-+	/* Create the raw binary file to access the entry */
-+	*ret = sysfs_create_bin_file(&entry->kobj, &smbios_entry_raw_attr);
-+	if (*ret)
-+		goto out_err;
-+
-+	return SMBIOS_WALK_CONTINUE;
-+out_err:
-+	kobject_put(entry->child);
-+	kobject_put(&entry->kobj);
-+	return SMBIOS_WALK_STOP;
-+}
-+
-+static void cleanup_entry_list(void)
-+{
-+	struct smbios_sysfs_entry *entry, *next;
-+
-+	/* No locks, we are on our way out */
-+	list_for_each_entry_safe(entry, next, &entry_list, list) {
-+		kobject_put(entry->child);
-+		kobject_put(&entry->kobj);
-+	}
-+}
-+
-+static int __init smbios_sysfs_init(void)
-+{
-+	int error = -ENOMEM;
-+	int val;
-+	const union smbios_struct *ss;
-+
-+	/* Set up our directory */
-+	smbios_kobj = kobject_create_and_add("smbios", firmware_kobj);
-+	if (!smbios_kobj)
-+		goto err;
-+
-+	smbios_kset = kset_create_and_add("entries", NULL, smbios_kobj);
-+	if (!smbios_kset)
-+		goto err;
-+
-+	val = 0;
-+	ss = smbios_walk(smbios_sysfs_register_handle, &val);
-+	if (ss) {
-+		error = -EIO;
-+		goto err;
-+	}
-+	if (val) {
-+		error = val;
-+		goto err;
-+	}
-+
-+	pr_debug("smbios-sysfs: loaded.\n");
-+
-+	return 0;
-+err:
-+	cleanup_entry_list();
-+	kset_unregister(smbios_kset);
-+	kobject_put(smbios_kobj);
-+	return error;
-+}
-+
-+/* clean up everything. */
-+static void __exit smbios_sysfs_exit(void)
-+{
-+	pr_debug("smbios-sysfs: unloading.\n");
-+	cleanup_entry_list();
-+	kset_unregister(smbios_kset);
-+	kobject_put(smbios_kobj);
-+}
-+
-+module_init(smbios_sysfs_init);
-+module_exit(smbios_sysfs_exit);
-+
-+MODULE_AUTHOR("Mike Waychison <mikew@google.com>");
-+MODULE_DESCRIPTION("SMBIOS sysfs support");
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/firmware/smbios.c b/drivers/firmware/smbios.c
-new file mode 100644
-index 0000000..ff83ae5
---- /dev/null
-+++ b/drivers/firmware/smbios.c
-@@ -0,0 +1,687 @@
-+/*
-+ * SMBIOS support
-+ *
-+ * started by Prarit Bhargava, Copyright (C) 2011 Red Hat, Inc.
-+ *
-+ * SMBIOS interpretation
-+ *
-+ * Some bits copied directly from original dmi*.c files
-+ */
-+#include <linux/types.h>
-+#include <linux/string.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/ctype.h>
-+#include <linux/smbios.h>
-+#include <linux/efi.h>
-+#include <linux/bootmem.h>
+ #include <linux/serial.h>
+ #include <linux/serial_core.h>
+ #include <linux/efi.h>
+@@ -1043,9 +1043,9 @@ check_bugs (void)
+ 			       (unsigned long) __end___mckinley_e9_bundles);
+ }
+ 
+-static int __init run_dmi_scan(void)
++static int __init run_smbios_scan(void)
+ {
+-	dmi_scan_machine();
++	smbios_init();
+ 	return 0;
+ }
+-core_initcall(run_dmi_scan);
++core_initcall(run_smbios_scan);
+diff --git a/arch/x86/include/asm/mmconfig.h b/arch/x86/include/asm/mmconfig.h
+index 9b119da..1831965 100644
+--- a/arch/x86/include/asm/mmconfig.h
++++ b/arch/x86/include/asm/mmconfig.h
+@@ -3,10 +3,10 @@
+ 
+ #ifdef CONFIG_PCI_MMCONFIG
+ extern void __cpuinit fam10h_check_enable_mmcfg(void);
+-extern void __cpuinit check_enable_amd_mmconf_dmi(void);
++extern void __cpuinit check_enable_amd_pci_mmconf(void);
+ #else
+ static inline void fam10h_check_enable_mmcfg(void) { }
+-static inline void check_enable_amd_mmconf_dmi(void) { }
++static inline void check_enable_amd_pci_mmconf(void) { }
+ #endif
+ 
+ #endif /* _ASM_X86_MMCONFIG_H */
+diff --git a/arch/x86/include/asm/pci_x86.h b/arch/x86/include/asm/pci_x86.h
+index 7045267..28e3f3a 100644
+--- a/arch/x86/include/asm/pci_x86.h
++++ b/arch/x86/include/asm/pci_x86.h
+@@ -39,7 +39,7 @@ enum pci_bf_sort_state {
+ 	pci_bf_sort_default,
+ 	pci_force_nobf,
+ 	pci_force_bf,
+-	pci_dmi_bf,
++	pci_smbios_bf,
+ };
+ 
+ /* pci-i386.c */
+@@ -109,8 +109,8 @@ extern bool port_cf9_safe;
+ extern int pci_direct_probe(void);
+ extern void pci_direct_init(int type);
+ extern void pci_pcbios_init(void);
+-extern void __init dmi_check_pciprobe(void);
+-extern void __init dmi_check_skip_isa_align(void);
++extern void __init smbios_check_pciprobe(void);
++extern void __init smbios_check_skip_isa_align(void);
+ 
+ /* some common used subsys_initcalls */
+ extern int __init pci_acpi_init(void);
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 4558f0d..180d4c7 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -29,7 +29,7 @@
+ #include <linux/efi.h>
+ #include <linux/cpumask.h>
+ #include <linux/module.h>
+-#include <linux/dmi.h>
 +#include <linux/sysfw.h>
-+#include <linux/pci.h>
+ #include <linux/irq.h>
+ #include <linux/slab.h>
+ #include <linux/bootmem.h>
+@@ -1294,7 +1294,7 @@ static void __init acpi_process_madt(void)
+ 	return;
+ }
+ 
+-static int __init disable_acpi_irq(const struct dmi_system_id *d)
++static int __init disable_acpi_irq(const struct sysfw_id *d)
+ {
+ 	if (!acpi_force) {
+ 		printk(KERN_NOTICE "%s detected: force use of acpi=noirq\n",
+@@ -1304,7 +1304,7 @@ static int __init disable_acpi_irq(const struct dmi_system_id *d)
+ 	return 0;
+ }
+ 
+-static int __init disable_acpi_pci(const struct dmi_system_id *d)
++static int __init disable_acpi_pci(const struct sysfw_id *d)
+ {
+ 	if (!acpi_force) {
+ 		printk(KERN_NOTICE "%s detected: force use of pci=noacpi\n",
+@@ -1314,14 +1314,14 @@ static int __init disable_acpi_pci(const struct dmi_system_id *d)
+ 	return 0;
+ }
+ 
+-static int __init dmi_disable_acpi(const struct dmi_system_id *d)
++static int __init id_disable_acpi(const struct sysfw_id *d)
+ {
+ 	if (!acpi_force) {
+ 		printk(KERN_NOTICE "%s detected: acpi off\n", d->ident);
+ 		disable_acpi();
+ 	} else {
+-		printk(KERN_NOTICE
+-		       "Warning: DMI blacklist says broken, but acpi forced\n");
++		printk(KERN_NOTICE "Warning: SMBIOS blacklist says broken, "
++		       "but acpi forced\n");
+ 	}
+ 	return 0;
+ }
+@@ -1329,7 +1329,8 @@ static int __init dmi_disable_acpi(const struct dmi_system_id *d)
+ /*
+  * Force ignoring BIOS IRQ0 pin2 override
+  */
+-static int __init dmi_ignore_irq0_timer_override(const struct dmi_system_id *d)
++static int __init
++id_ignore_irq0_timer_override(const struct sysfw_id *d)
+ {
+ 	/*
+ 	 * The ati_ixp4x0_rev() early PCI quirk should have set
+@@ -1348,33 +1349,32 @@ static int __init dmi_ignore_irq0_timer_override(const struct dmi_system_id *d)
+  * If your system is blacklisted here, but you find that acpi=force
+  * works for you, please contact linux-acpi@vger.kernel.org
+  */
+-static struct dmi_system_id __initdata acpi_dmi_table[] = {
++static struct sysfw_id __initdata acpi_id_table[] = {
+ 	/*
+ 	 * Boxes that need ACPI disabled
+ 	 */
+ 	{
+-	 .callback = dmi_disable_acpi,
+-	 .ident = "IBM Thinkpad",
+-	 .matches = {
+-		     DMI_MATCH(DMI_BOARD_VENDOR, "IBM"),
+-		     DMI_MATCH(DMI_BOARD_NAME, "2629H1G"),
+-		     },
++		.callback = id_disable_acpi,
++		.ident = "IBM Thinkpad",
++		.matches = {
++			     SYSFW_MATCH(SYSFW_BOARD_VENDOR, "IBM"),
++			     SYSFW_MATCH(SYSFW_BOARD_NAME, "2629H1G"),
++		},
+ 	 },
+-
+ 	/*
+ 	 * Boxes that need ACPI PCI IRQ routing disabled
+ 	 */
+ 	{
+-	 .callback = disable_acpi_irq,
+-	 .ident = "ASUS A7V",
+-	 .matches = {
+-		     DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC"),
+-		     DMI_MATCH(DMI_BOARD_NAME, "<A7V>"),
+-		     /* newer BIOS, Revision 1011, does work */
+-		     DMI_MATCH(DMI_BIOS_VERSION,
+-			       "ASUS A7V ACPI BIOS Revision 1007"),
+-		     },
+-	 },
++		.callback = disable_acpi_irq,
++		.ident = "ASUS A7V",
++		.matches = {
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "ASUSTeK Computer INC"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "<A7V>"),
++			/* newer BIOS, Revision 1011, does work */
++			SYSFW_MATCH(SYSFW_BIOS_VERSION,
++				    "ASUS A7V ACPI BIOS Revision 1007"),
++			},
++	},
+ 	{
+ 		/*
+ 		 * Latest BIOS for IBM 600E (1.16) has bad pcinum
+@@ -1382,48 +1382,49 @@ static struct dmi_system_id __initdata acpi_dmi_table[] = {
+ 		 * interrupt links to work. DSDT fix is in bug 5966.
+ 		 * 2645, 2646 model numbers are shared with 600/600E/600X
+ 		 */
+-	 .callback = disable_acpi_irq,
+-	 .ident = "IBM Thinkpad 600 Series 2645",
+-	 .matches = {
+-		     DMI_MATCH(DMI_BOARD_VENDOR, "IBM"),
+-		     DMI_MATCH(DMI_BOARD_NAME, "2645"),
+-		     },
+-	 },
++		.callback = disable_acpi_irq,
++		.ident = "IBM Thinkpad 600 Series 2645",
++		.matches = {
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "IBM"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "2645"),
++		},
++	},
+ 	{
+-	 .callback = disable_acpi_irq,
+-	 .ident = "IBM Thinkpad 600 Series 2646",
+-	 .matches = {
+-		     DMI_MATCH(DMI_BOARD_VENDOR, "IBM"),
+-		     DMI_MATCH(DMI_BOARD_NAME, "2646"),
+-		     },
+-	 },
++		.callback = disable_acpi_irq,
++		.ident = "IBM Thinkpad 600 Series 2646",
++		.matches = {
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "IBM"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "2646"),
++		},
++	},
+ 	/*
+ 	 * Boxes that need ACPI PCI IRQ routing and PCI scan disabled
+ 	 */
+ 	{			/* _BBN 0 bug */
+-	 .callback = disable_acpi_pci,
+-	 .ident = "ASUS PR-DLS",
+-	 .matches = {
+-		     DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
+-		     DMI_MATCH(DMI_BOARD_NAME, "PR-DLS"),
+-		     DMI_MATCH(DMI_BIOS_VERSION,
+-			       "ASUS PR-DLS ACPI BIOS Revision 1010"),
+-		     DMI_MATCH(DMI_BIOS_DATE, "03/21/2003")
+-		     },
+-	 },
++		.callback = disable_acpi_pci,
++		.ident = "ASUS PR-DLS",
++		.matches = {
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR,
++				    "ASUSTeK Computer INC."),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "PR-DLS"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION,
++				    "ASUS PR-DLS ACPI BIOS Revision 1010"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "03/21/2003")
++		},
++	},
+ 	{
+-	 .callback = disable_acpi_pci,
+-	 .ident = "Acer TravelMate 36x Laptop",
+-	 .matches = {
+-		     DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+-		     DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 360"),
+-		     },
+-	 },
++		.callback = disable_acpi_pci,
++		.ident = "Acer TravelMate 36x Laptop",
++		.matches = {
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Acer"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "TravelMate 360"),
++			},
++		},
+ 	{}
+ };
+ 
+-/* second table for DMI checks that should run after early-quirks */
+-static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
++/* second table for SMBIOS checks that should run after early-quirks */
++static struct sysfw_id __initdata acpi_id_late[] = {
+ 	/*
+ 	 * HP laptops which use a DSDT reporting as HP/SB400/10000,
+ 	 * which includes some code which overrides all temperature
+@@ -1435,37 +1436,37 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
+ 	 * override in that cases.
+ 	 */
+ 	{
+-	 .callback = dmi_ignore_irq0_timer_override,
+-	 .ident = "HP nx6115 laptop",
+-	 .matches = {
+-		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-		     DMI_MATCH(DMI_PRODUCT_NAME, "HP Compaq nx6115"),
+-		     },
+-	 },
++		.callback = id_ignore_irq0_timer_override,
++		.ident = "HP nx6115 laptop",
++		.matches = {
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Hewlett-Packard"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "HP Compaq nx6115"),
++		},
++	},
+ 	{
+-	 .callback = dmi_ignore_irq0_timer_override,
+-	 .ident = "HP NX6125 laptop",
+-	 .matches = {
+-		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-		     DMI_MATCH(DMI_PRODUCT_NAME, "HP Compaq nx6125"),
+-		     },
+-	 },
++		.callback = id_ignore_irq0_timer_override,
++		.ident = "HP NX6125 laptop",
++		.matches = {
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Hewlett-Packard"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "HP Compaq nx6125"),
++		},
++	},
+ 	{
+-	 .callback = dmi_ignore_irq0_timer_override,
+-	 .ident = "HP NX6325 laptop",
+-	 .matches = {
+-		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-		     DMI_MATCH(DMI_PRODUCT_NAME, "HP Compaq nx6325"),
+-		     },
+-	 },
++		.callback = id_ignore_irq0_timer_override,
++		.ident = "HP NX6325 laptop",
++		.matches = {
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Hewlett-Packard"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "HP Compaq nx6325"),
++		},
++	},
+ 	{
+-	 .callback = dmi_ignore_irq0_timer_override,
+-	 .ident = "HP 6715b laptop",
+-	 .matches = {
+-		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-		     DMI_MATCH(DMI_PRODUCT_NAME, "HP Compaq 6715b"),
+-		     },
+-	 },
++		.callback = id_ignore_irq0_timer_override,
++		.ident = "HP 6715b laptop",
++		.matches = {
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Hewlett-Packard"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "HP Compaq 6715b"),
++		},
++	},
+ 	{}
+ };
+ 
+@@ -1490,7 +1491,7 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
+ 
+ void __init acpi_boot_table_init(void)
+ {
+-	dmi_check_system(acpi_dmi_table);
++	sysfw_callback(acpi_id_table);
+ 
+ 	/*
+ 	 * If acpi_disabled, bail out
+@@ -1541,7 +1542,7 @@ int __init early_acpi_boot_init(void)
+ int __init acpi_boot_init(void)
+ {
+ 	/* those are executed after early-quirks are executed */
+-	dmi_check_system(acpi_dmi_table_late);
++	sysfw_callback(acpi_id_late);
+ 
+ 	/*
+ 	 * If acpi_disabled, bail out
+diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
+index 18a857b..09a2588 100644
+--- a/arch/x86/kernel/acpi/sleep.c
++++ b/arch/x86/kernel/acpi/sleep.c
+@@ -8,7 +8,6 @@
+ #include <linux/acpi.h>
+ #include <linux/bootmem.h>
+ #include <linux/memblock.h>
+-#include <linux/dmi.h>
+ #include <linux/cpumask.h>
+ #include <asm/segment.h>
+ #include <asm/desc.h>
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index b9338b8..a3a176d 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -30,7 +30,7 @@
+ #include <linux/dmar.h>
+ #include <linux/init.h>
+ #include <linux/cpu.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include <linux/smp.h>
+ #include <linux/mm.h>
+ 
+@@ -162,7 +162,7 @@ early_param("nox2apic", setup_nox2apic);
+ 
+ unsigned long mp_lapic_addr;
+ int disable_apic;
+-/* Disable local APIC timer from the kernel commandline or via dmi quirk */
++/* Disable local APIC timer from the kernel commandline or via smbios quirk */
+ static int disable_apic_timer __initdata;
+ /* Local APIC timer works in C2 */
+ int local_apic_timer_c2_ok;
+@@ -2231,7 +2231,7 @@ static int __cpuinit apic_cluster_num(void)
+ static int __cpuinitdata multi_checked;
+ static int __cpuinitdata multi;
+ 
+-static int __cpuinit set_multi(const struct dmi_system_id *d)
++static int __cpuinit set_multi(const struct sysfw_id *d)
+ {
+ 	if (multi)
+ 		return 0;
+@@ -2240,24 +2240,24 @@ static int __cpuinit set_multi(const struct dmi_system_id *d)
+ 	return 0;
+ }
+ 
+-static const __cpuinitconst struct dmi_system_id multi_dmi_table[] = {
++static const __cpuinitconst struct sysfw_id set_multi_table[] = {
+ 	{
+ 		.callback = set_multi,
+ 		.ident = "IBM System Summit2",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "IBM"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Summit2"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "IBM"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Summit2"),
+ 		},
+ 	},
+ 	{}
+ };
+ 
+-static void __cpuinit dmi_check_multi(void)
++static void __cpuinit check_set_multi(void)
+ {
+ 	if (multi_checked)
+ 		return;
+ 
+-	dmi_check_system(multi_dmi_table);
++	sysfw_callback(set_multi_table);
+ 	multi_checked = 1;
+ }
+ 
+@@ -2267,11 +2267,11 @@ static void __cpuinit dmi_check_multi(void)
+  * Thus far, the major user of this is IBM's Summit2 series:
+  * Clustered boxes may have unsynced TSC problems if they are
+  * multi-chassis.
+- * Use DMI to check them
++ * Use SMBIOS to check them
+  */
+ __cpuinit int apic_is_clustered_box(void)
+ {
+-	dmi_check_multi();
++	check_set_multi();
+ 	if (multi)
+ 		return 1;
+ 
+diff --git a/arch/x86/kernel/apic/bigsmp_32.c b/arch/x86/kernel/apic/bigsmp_32.c
+index efd737e..76bee5d 100644
+--- a/arch/x86/kernel/apic/bigsmp_32.c
++++ b/arch/x86/kernel/apic/bigsmp_32.c
+@@ -7,7 +7,7 @@
+ #include <linux/cpumask.h>
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include <linux/smp.h>
+ 
+ #include <asm/apicdef.h>
+@@ -151,30 +151,35 @@ static void bigsmp_send_IPI_all(int vector)
+ 	bigsmp_send_IPI_mask(cpu_online_mask, vector);
+ }
+ 
+-static int dmi_bigsmp; /* can be set by dmi scanners */
++static int smbios_bigsmp; /* can be set by smbios scanners */
+ 
+-static int hp_ht_bigsmp(const struct dmi_system_id *d)
++static int hp_ht_bigsmp(const struct sysfw_id *d)
+ {
+ 	printk(KERN_NOTICE "%s detected: force use of apic=bigsmp\n", d->ident);
+-	dmi_bigsmp = 1;
++	smbios_bigsmp = 1;
+ 
+ 	return 0;
+ }
+ 
+ 
+-static const struct dmi_system_id bigsmp_dmi_table[] = {
+-	{ hp_ht_bigsmp, "HP ProLiant DL760 G2",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "HP"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "P44-"),
++static const struct sysfw_id bigsmp_id_table[] = {
++	{
++		.callback = hp_ht_bigsmp,
++		.ident = "HP ProLiant DL760 G2",
++		{
++			SYSFW_MATCH(SYSFW_BIOS_VENDOR, "HP"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "P44-"),
+ 		}
+ 	},
+-
+-	{ hp_ht_bigsmp, "HP ProLiant DL740",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "HP"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "P47-"),
++	{
++		.callback = hp_ht_bigsmp,
++		.ident = "HP ProLiant DL740",
++		{
++			SYSFW_MATCH(SYSFW_BIOS_VENDOR, "HP"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "P47-"),
+ 		}
+ 	},
+-	{ } /* NULL entry stops DMI scanning */
++	{} /* NULL entry stops SMBIOS scanning */
+ };
+ 
+ static void bigsmp_vector_allocation_domain(int cpu, struct cpumask *retmask)
+@@ -186,11 +191,11 @@ static void bigsmp_vector_allocation_domain(int cpu, struct cpumask *retmask)
+ static int probe_bigsmp(void)
+ {
+ 	if (def_to_bigsmp)
+-		dmi_bigsmp = 1;
++		smbios_bigsmp = 1;
+ 	else
+-		dmi_check_system(bigsmp_dmi_table);
++		sysfw_callback(bigsmp_id_table);
+ 
+-	return dmi_bigsmp;
++	return smbios_bigsmp;
+ }
+ 
+ static struct apic apic_bigsmp = {
+diff --git a/arch/x86/kernel/apm_32.c b/arch/x86/kernel/apm_32.c
+index 965a766..dd804ef 100644
+--- a/arch/x86/kernel/apm_32.c
++++ b/arch/x86/kernel/apm_32.c
+@@ -223,7 +223,7 @@
+ #include <linux/kernel.h>
+ #include <linux/freezer.h>
+ #include <linux/smp.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include <linux/suspend.h>
+ #include <linux/kthread.h>
+ #include <linux/jiffies.h>
+@@ -1931,7 +1931,7 @@ static struct miscdevice apm_device = {
+ 
+ 
+ /* Simple "print if true" callback */
+-static int __init print_if_true(const struct dmi_system_id *d)
++static int __init print_if_true(const struct sysfw_id *d)
+ {
+ 	printk("%s\n", d->ident);
+ 	return 0;
+@@ -1941,7 +1941,7 @@ static int __init print_if_true(const struct dmi_system_id *d)
+  * Some Bioses enable the PS/2 mouse (touchpad) at resume, even if it was
+  * disabled before the suspend. Linux used to get terribly confused by that.
+  */
+-static int __init broken_ps2_resume(const struct dmi_system_id *d)
++static int __init broken_ps2_resume(const struct sysfw_id *d)
+ {
+ 	printk(KERN_INFO "%s machine detected. Mousepad Resume Bug "
+ 	       "workaround hopefully not needed.\n", d->ident);
+@@ -1949,7 +1949,7 @@ static int __init broken_ps2_resume(const struct dmi_system_id *d)
+ }
+ 
+ /* Some bioses have a broken protected mode poweroff and need to use realmode */
+-static int __init set_realmode_power_off(const struct dmi_system_id *d)
++static int __init set_realmode_power_off(const struct sysfw_id *d)
+ {
+ 	if (apm_info.realmode_power_off == 0) {
+ 		apm_info.realmode_power_off = 1;
+@@ -1960,7 +1960,7 @@ static int __init set_realmode_power_off(const struct dmi_system_id *d)
+ }
+ 
+ /* Some laptops require interrupts to be enabled during APM calls */
+-static int __init set_apm_ints(const struct dmi_system_id *d)
++static int __init set_apm_ints(const struct sysfw_id *d)
+ {
+ 	if (apm_info.allow_ints == 0) {
+ 		apm_info.allow_ints = 1;
+@@ -1971,7 +1971,7 @@ static int __init set_apm_ints(const struct dmi_system_id *d)
+ }
+ 
+ /* Some APM bioses corrupt memory or just plain do not work */
+-static int __init apm_is_horked(const struct dmi_system_id *d)
++static int __init apm_is_horked(const struct sysfw_id *d)
+ {
+ 	if (apm_info.disabled == 0) {
+ 		apm_info.disabled = 1;
+@@ -1981,7 +1981,7 @@ static int __init apm_is_horked(const struct dmi_system_id *d)
+ 	return 0;
+ }
+ 
+-static int __init apm_is_horked_d850md(const struct dmi_system_id *d)
++static int __init apm_is_horked_d850md(const struct sysfw_id *d)
+ {
+ 	if (apm_info.disabled == 0) {
+ 		apm_info.disabled = 1;
+@@ -1994,7 +1994,7 @@ static int __init apm_is_horked_d850md(const struct dmi_system_id *d)
+ }
+ 
+ /* Some APM bioses hang on APM idle calls */
+-static int __init apm_likes_to_melt(const struct dmi_system_id *d)
++static int __init apm_likes_to_melt(const struct sysfw_id *d)
+ {
+ 	if (apm_info.forbid_idle == 0) {
+ 		apm_info.forbid_idle = 1;
+@@ -2019,7 +2019,7 @@ static int __init apm_likes_to_melt(const struct dmi_system_id *d)
+  *	Phoenix A04  08/24/2000 is known bad (Dell Inspiron 5000e)
+  *	Phoenix A07  09/29/2000 is known good (Dell Inspiron 5000)
+  */
+-static int __init broken_apm_power(const struct dmi_system_id *d)
++static int __init broken_apm_power(const struct sysfw_id *d)
+ {
+ 	apm_info.get_power_status_broken = 1;
+ 	printk(KERN_WARNING "BIOS strings suggest APM bugs, "
+@@ -2031,7 +2031,7 @@ static int __init broken_apm_power(const struct dmi_system_id *d)
+  * This bios swaps the APM minute reporting bytes over (Many sony laptops
+  * have this problem).
+  */
+-static int __init swab_apm_power_in_minutes(const struct dmi_system_id *d)
++static int __init swab_apm_power_in_minutes(const struct sysfw_id *d)
+ {
+ 	apm_info.get_power_status_swabinminutes = 1;
+ 	printk(KERN_WARNING "BIOS strings suggest APM reports battery life "
+@@ -2039,215 +2039,314 @@ static int __init swab_apm_power_in_minutes(const struct dmi_system_id *d)
+ 	return 0;
+ }
+ 
+-static struct dmi_system_id __initdata apm_dmi_table[] = {
++static struct sysfw_id __initdata apm_id_table[] = {
+ 	{
+-		print_if_true,
++		.callback = print_if_true,
+ 		KERN_WARNING "IBM T23 - BIOS 1.03b+ and controller firmware 1.02+ may be needed for Linux APM.",
+-		{	DMI_MATCH(DMI_SYS_VENDOR, "IBM"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "1AET38WW (1.01b)"), },
++		{	SYSFW_MATCH(SYSFW_SYS_VENDOR, "IBM"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "1AET38WW (1.01b)"),
++		},
+ 	},
+ 	{	/* Handle problems with APM on the C600 */
+-		broken_ps2_resume, "Dell Latitude C600",
+-		{	DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude C600"), },
++		.callback = broken_ps2_resume,
++		.ident = "Dell Latitude C600",
++		{	SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Latitude C600")
++		},
+ 	},
+ 	{	/* Allow interrupts during suspend on Dell Latitude laptops*/
+-		set_apm_ints, "Dell Latitude",
+-		{	DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude C510"), }
++		.callback = set_apm_ints,
++		.ident = "Dell Latitude",
++		{	SYSFW_MATCH(SYSFW_SYS_VENDOR,
++				    "Dell Computer Corporation"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Latitude C510"),
++		},
+ 	},
+ 	{	/* APM crashes */
+-		apm_is_horked, "Dell Inspiron 2500",
+-		{	DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 2500"),
+-			DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "A11"), },
++		.callback = apm_is_horked,
++		.ident = "Dell Inspiron 2500",
++		{	SYSFW_MATCH(SYSFW_SYS_VENDOR,
++				    "Dell Computer Corporation"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Inspiron 2500"),
++			SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Phoenix Technologies LTD"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "A11"), },
+ 	},
+ 	{	/* Allow interrupts during suspend on Dell Inspiron laptops*/
+-		set_apm_ints, "Dell Inspiron", {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 4000"), },
++		.callback = set_apm_ints,
++		.ident = "Dell Inspiron", {
++			SYSFW_MATCH(SYSFW_SYS_VENDOR,
++				    "Dell Computer Corporation"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Inspiron 4000"),
++		},
+ 	},
+ 	{	/* Handle problems with APM on Inspiron 5000e */
+-		broken_apm_power, "Dell Inspiron 5000e",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "A04"),
+-			DMI_MATCH(DMI_BIOS_DATE, "08/24/2000"), },
++		.callback = broken_apm_power,
++		.ident = "Dell Inspiron 5000e",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Phoenix Technologies LTD"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "A04"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "08/24/2000"),
++		},
+ 	},
+ 	{	/* Handle problems with APM on Inspiron 2500 */
+-		broken_apm_power, "Dell Inspiron 2500",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "A12"),
+-			DMI_MATCH(DMI_BIOS_DATE, "02/04/2002"), },
++		.callback = broken_apm_power,
++		.ident = "Dell Inspiron 2500",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				     "Phoenix Technologies LTD"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "A12"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "02/04/2002"),
++		},
+ 	},
+ 	{	/* APM crashes */
+-		apm_is_horked, "Dell Dimension 4100",
+-		{	DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "XPS-Z"),
+-			DMI_MATCH(DMI_BIOS_VENDOR, "Intel Corp."),
+-			DMI_MATCH(DMI_BIOS_VERSION, "A11"), },
++		.callback = apm_is_horked,
++		.ident = "Dell Dimension 4100",
++		{	SYSFW_MATCH(SYSFW_SYS_VENDOR,
++				    "Dell Computer Corporation"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "XPS-Z"),
++			SYSFW_MATCH(SYSFW_BIOS_VENDOR, "Intel Corp."),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "A11"),
++		},
+ 	},
+ 	{	/* Allow interrupts during suspend on Compaq Laptops*/
+-		set_apm_ints, "Compaq 12XL125",
+-		{	DMI_MATCH(DMI_SYS_VENDOR, "Compaq"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Compaq PC"),
+-			DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "4.06"), },
++		.callback = set_apm_ints,
++		.ident = "Compaq 12XL125",
++		{	SYSFW_MATCH(SYSFW_SYS_VENDOR, "Compaq"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Compaq PC"),
++			SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Phoenix Technologies LTD"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "4.06"),
++		},
+ 	},
+ 	{	/* Allow interrupts during APM or the clock goes slow */
+-		set_apm_ints, "ASUSTeK",
+-		{	DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "L8400K series Notebook PC"), },
++		.callback = set_apm_ints,
++		.ident = "ASUSTeK",
++		{	SYSFW_MATCH(SYSFW_SYS_VENDOR,
++				    "ASUSTeK Computer Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME,
++				    "L8400K series Notebook PC"),
++		},
+ 	},
+ 	{	/* APM blows on shutdown */
+-		apm_is_horked, "ABIT KX7-333[R]",
+-		{	DMI_MATCH(DMI_BOARD_VENDOR, "ABIT"),
+-			DMI_MATCH(DMI_BOARD_NAME, "VT8367-8233A (KX7-333[R])"), },
++		.callback = apm_is_horked,
++		.ident = "ABIT KX7-333[R]",
++		{	SYSFW_MATCH(SYSFW_BOARD_VENDOR, "ABIT"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME,
++				    "VT8367-8233A (KX7-333[R])"), },
+ 	},
+ 	{	/* APM crashes */
+-		apm_is_horked, "Trigem Delhi3",
+-		{	DMI_MATCH(DMI_SYS_VENDOR, "TriGem Computer, Inc"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Delhi3"), },
++		.callback = apm_is_horked,
++		.ident = "Trigem Delhi3",
++		{	SYSFW_MATCH(SYSFW_SYS_VENDOR, "TriGem Computer, Inc"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Delhi3"),
++		},
+ 	},
+ 	{	/* APM crashes */
+-		apm_is_horked, "Fujitsu-Siemens",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "hoenix/FUJITSU SIEMENS"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "Version1.01"), },
++		.callback = apm_is_horked,
++		.ident = "Fujitsu-Siemens",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "hoenix/FUJITSU SIEMENS"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "Version1.01")
++		},
+ 	},
+ 	{	/* APM crashes */
+-		apm_is_horked_d850md, "Intel D850MD",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "Intel Corp."),
+-			DMI_MATCH(DMI_BIOS_VERSION, "MV85010A.86A.0016.P07.0201251536"), },
++		.callback = apm_is_horked_d850md,
++		.ident = "Intel D850MD",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR, "Intel Corp."),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION,
++				    "MV85010A.86A.0016.P07.0201251536"),
++		},
+ 	},
+ 	{	/* APM crashes */
+-		apm_is_horked, "Intel D810EMO",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "Intel Corp."),
+-			DMI_MATCH(DMI_BIOS_VERSION, "MO81010A.86A.0008.P04.0004170800"), },
++		.callback = apm_is_horked,
++		.ident = "Intel D810EMO",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR, "Intel Corp."),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION,
++				    "MO81010A.86A.0008.P04.0004170800"),
++		},
+ 	},
+ 	{	/* APM crashes */
+-		apm_is_horked, "Dell XPS-Z",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "Intel Corp."),
+-			DMI_MATCH(DMI_BIOS_VERSION, "A11"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "XPS-Z"), },
++		.callback = apm_is_horked,
++		.ident = "Dell XPS-Z",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR, "Intel Corp."),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "A11"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "XPS-Z"),
++		},
+ 	},
+ 	{	/* APM crashes */
+-		apm_is_horked, "Sharp PC-PJ/AX",
+-		{	DMI_MATCH(DMI_SYS_VENDOR, "SHARP"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "PC-PJ/AX"),
+-			DMI_MATCH(DMI_BIOS_VENDOR, "SystemSoft"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "Version R2.08"), },
++		.callback = apm_is_horked,
++		.ident = "Sharp PC-PJ/AX",
++		{	SYSFW_MATCH(SYSFW_SYS_VENDOR, "SHARP"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "PC-PJ/AX"),
++			SYSFW_MATCH(SYSFW_BIOS_VENDOR, "SystemSoft"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "Version R2.08"),
++		},
+ 	},
+ 	{	/* APM crashes */
+-		apm_is_horked, "Dell Inspiron 2500",
+-		{	DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 2500"),
+-			DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "A11"), },
++		.callback = apm_is_horked,
++		.ident = "Dell Inspiron 2500",
++		{	SYSFW_MATCH(SYSFW_SYS_VENDOR,
++				    "Dell Computer Corporation"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Inspiron 2500"),
++			SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Phoenix Technologies LTD"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "A11"),
++		},
+ 	},
+ 	{	/* APM idle hangs */
+-		apm_likes_to_melt, "Jabil AMD",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "American Megatrends Inc."),
+-			DMI_MATCH(DMI_BIOS_VERSION, "0AASNP06"), },
++		.callback = apm_likes_to_melt,
++		.ident = "Jabil AMD",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "American Megatrends Inc."),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "0AASNP06"),
++		},
+ 	},
+ 	{	/* APM idle hangs */
+-		apm_likes_to_melt, "AMI Bios",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "American Megatrends Inc."),
+-			DMI_MATCH(DMI_BIOS_VERSION, "0AASNP05"), },
++		.callback = apm_likes_to_melt,
++		.ident = "AMI Bios",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "American Megatrends Inc."),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "0AASNP05"),
++		},
+ 	},
+ 	{	/* Handle problems with APM on Sony Vaio PCG-N505X(DE) */
+-		swab_apm_power_in_minutes, "Sony VAIO",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "R0206H"),
+-			DMI_MATCH(DMI_BIOS_DATE, "08/23/99"), },
++		.callback = swab_apm_power_in_minutes,
++		.ident = "Sony VAIO",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Phoenix Technologies LTD"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0206H"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "08/23/99"),
++		},
+ 	},
+ 	{	/* Handle problems with APM on Sony Vaio PCG-N505VX */
+-		swab_apm_power_in_minutes, "Sony VAIO",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "W2K06H0"),
+-			DMI_MATCH(DMI_BIOS_DATE, "02/03/00"), },
++		.callback = swab_apm_power_in_minutes,
++		.ident = "Sony VAIO",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Phoenix Technologies LTD"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "W2K06H0"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "02/03/00"),
++		},
+ 	},
+ 	{	/* Handle problems with APM on Sony Vaio PCG-XG29 */
+-		swab_apm_power_in_minutes, "Sony VAIO",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "R0117A0"),
+-			DMI_MATCH(DMI_BIOS_DATE, "04/25/00"), },
++		.callback = swab_apm_power_in_minutes,
++		.ident = "Sony VAIO",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Phoenix Technologies LTD"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0117A0"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "04/25/00"),
++		},
+ 	},
+ 	{	/* Handle problems with APM on Sony Vaio PCG-Z600NE */
+-		swab_apm_power_in_minutes, "Sony VAIO",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "R0121Z1"),
+-			DMI_MATCH(DMI_BIOS_DATE, "05/11/00"), },
++		.callback = swab_apm_power_in_minutes,
++		.ident = "Sony VAIO",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Phoenix Technologies LTD"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0121Z1"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "05/11/00"),
++		},
+ 	},
+ 	{	/* Handle problems with APM on Sony Vaio PCG-Z600NE */
+-		swab_apm_power_in_minutes, "Sony VAIO",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "WME01Z1"),
+-			DMI_MATCH(DMI_BIOS_DATE, "08/11/00"), },
++		.callback = swab_apm_power_in_minutes,
++		.ident = "Sony VAIO",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Phoenix Technologies LTD"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "WME01Z1"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "08/11/00"),
++		},
+ 	},
+ 	{	/* Handle problems with APM on Sony Vaio PCG-Z600LEK(DE) */
+-		swab_apm_power_in_minutes, "Sony VAIO",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "R0206Z3"),
+-			DMI_MATCH(DMI_BIOS_DATE, "12/25/00"), },
++		.callback = swab_apm_power_in_minutes,
++		.ident = "Sony VAIO",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Phoenix Technologies LTD"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0206Z3"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "12/25/00"),
++		},
+ 	},
+ 	{	/* Handle problems with APM on Sony Vaio PCG-Z505LS */
+-		swab_apm_power_in_minutes, "Sony VAIO",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "R0203D0"),
+-			DMI_MATCH(DMI_BIOS_DATE, "05/12/00"), },
++		.callback = swab_apm_power_in_minutes,
++		.ident = "Sony VAIO",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Phoenix Technologies LTD"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0203D0"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "05/12/00"),
++		},
+ 	},
+ 	{	/* Handle problems with APM on Sony Vaio PCG-Z505LS */
+-		swab_apm_power_in_minutes, "Sony VAIO",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "R0203Z3"),
+-			DMI_MATCH(DMI_BIOS_DATE, "08/25/00"), },
++		.callback = swab_apm_power_in_minutes,
++		.ident = "Sony VAIO",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Phoenix Technologies LTD"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0203Z3"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "08/25/00"),
++		},
+ 	},
+ 	{	/* Handle problems with APM on Sony Vaio PCG-Z505LS (with updated BIOS) */
+-		swab_apm_power_in_minutes, "Sony VAIO",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "R0209Z3"),
+-			DMI_MATCH(DMI_BIOS_DATE, "05/12/01"), },
++		.callback = swab_apm_power_in_minutes,
++		.ident = "Sony VAIO",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Phoenix Technologies LTD"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0209Z3"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "05/12/01"),
++		},
+ 	},
+ 	{	/* Handle problems with APM on Sony Vaio PCG-F104K */
+-		swab_apm_power_in_minutes, "Sony VAIO",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "R0204K2"),
+-			DMI_MATCH(DMI_BIOS_DATE, "08/28/00"), },
++		.callback = swab_apm_power_in_minutes,
++		.ident = "Sony VAIO",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Phoenix Technologies LTD"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0204K2"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "08/28/00"),
++		},
+ 	},
+ 
+ 	{	/* Handle problems with APM on Sony Vaio PCG-C1VN/C1VE */
+-		swab_apm_power_in_minutes, "Sony VAIO",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "R0208P1"),
+-			DMI_MATCH(DMI_BIOS_DATE, "11/09/00"), },
++		.callback = swab_apm_power_in_minutes,
++		.ident = "Sony VAIO",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Phoenix Technologies LTD"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0208P1"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "11/09/00"),
++		},
+ 	},
+ 	{	/* Handle problems with APM on Sony Vaio PCG-C1VE */
+-		swab_apm_power_in_minutes, "Sony VAIO",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "R0204P1"),
+-			DMI_MATCH(DMI_BIOS_DATE, "09/12/00"), },
++		.callback = swab_apm_power_in_minutes,
++		.ident = "Sony VAIO",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Phoenix Technologies LTD"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0204P1"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "09/12/00"),
++		},
+ 	},
+ 	{	/* Handle problems with APM on Sony Vaio PCG-C1VE */
+-		swab_apm_power_in_minutes, "Sony VAIO",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "WXPO1Z3"),
+-			DMI_MATCH(DMI_BIOS_DATE, "10/26/01"), },
++		.callback = swab_apm_power_in_minutes,
++		.ident = "Sony VAIO",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Phoenix Technologies LTD"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "WXPO1Z3"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "10/26/01"),
++		},
+ 	},
+ 	{	/* broken PM poweroff bios */
+-		set_realmode_power_off, "Award Software v4.60 PGMA",
+-		{	DMI_MATCH(DMI_BIOS_VENDOR, "Award Software International, Inc."),
+-			DMI_MATCH(DMI_BIOS_VERSION, "4.60 PGMA"),
+-			DMI_MATCH(DMI_BIOS_DATE, "134526184"), },
++		.callback = set_realmode_power_off,
++		.ident = "Award Software v4.60 PGMA",
++		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Award Software International, Inc."),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "4.60 PGMA"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "134526184"),
++		},
+ 	},
+ 
+ 	/* Generic per vendor APM settings  */
+ 
+ 	{	/* Allow interrupts during suspend on IBM laptops */
+-		set_apm_ints, "IBM",
+-		{	DMI_MATCH(DMI_SYS_VENDOR, "IBM"), },
++		.callback = set_apm_ints,
++		.ident = "IBM",
++		{
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "IBM"),
++		},
+ 	},
+-
+-	{ }
++	{}
+ };
+ 
+ /*
+@@ -2265,7 +2364,7 @@ static int __init apm_init(void)
+ 	struct desc_struct *gdt;
+ 	int err;
+ 
+-	dmi_check_system(apm_dmi_table);
++	sysfw_callback(apm_id_table);
+ 
+ 	if (apm_info.bios.version == 0 || paravirt_enabled() || machine_is_olpc()) {
+ 		printk(KERN_INFO "apm: BIOS not found.\n");
+@@ -2288,7 +2387,7 @@ static int __init apm_init(void)
+ 		apm_info.get_power_status_broken = 1;
+ 	if (realmode_power_off)
+ 		apm_info.realmode_power_off = 1;
+-	/* User can override, but default is to trust DMI */
++	/* User can override, but default is to trust SMBIOS */
+ 	if (apm_disabled != -1)
+ 		apm_info.disabled = apm_disabled;
+ 
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index b13ed39..79fd786 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -587,7 +587,7 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 	if (c->x86 == 0x10) {
+ 		/* do this for boot cpu */
+ 		if (c == &boot_cpu_data)
+-			check_enable_amd_mmconf_dmi();
++			check_enable_amd_pci_mmconf();
+ 
+ 		fam10h_check_enable_mmcfg();
+ 	}
+diff --git a/arch/x86/kernel/cpu/vmware.c b/arch/x86/kernel/cpu/vmware.c
+index d22d0c4..e427451 100644
+--- a/arch/x86/kernel/cpu/vmware.c
++++ b/arch/x86/kernel/cpu/vmware.c
+@@ -21,7 +21,7 @@
+  *
+  */
+ 
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include <linux/module.h>
+ #include <asm/div64.h>
+ #include <asm/x86_init.h>
+@@ -85,8 +85,18 @@ static void __init vmware_platform_setup(void)
+ 		       "Failed to get TSC freq from the hypervisor\n");
+ }
+ 
++static struct sysfw_id vmware_id_table[] = {
++	{
++		 .ident = "VMware",
++		.matches = {
++			SYSFW_MATCH(SYSFW_PRODUCT_SERIAL, "VMWare"),
++		},
++	},
++	{},
++};
 +
+ /*
+- * While checking the dmi string information, just checking the product
++ * While checking the smbios string information, just checking the product
+  * serial key should be enough, as this will always have a VMware
+  * specific string when running under VMware hypervisor.
+  */
+@@ -100,8 +110,7 @@ static bool __init vmware_platform(void)
+ 		      &hyper_vendor_id[1], &hyper_vendor_id[2]);
+ 		if (!memcmp(hyper_vendor_id, "VMwareVMware", 12))
+ 			return true;
+-	} else if (dmi_available && dmi_name_in_serial("VMware") &&
+-		   __vmware_platform())
++	} else if (sysfw_callback(vmware_id_table) && __vmware_platform())
+ 		return true;
+ 
+ 	return false;
+diff --git a/arch/x86/kernel/io_delay.c b/arch/x86/kernel/io_delay.c
+index a979b5b..27c0390 100644
+--- a/arch/x86/kernel/io_delay.c
++++ b/arch/x86/kernel/io_delay.c
+@@ -1,7 +1,7 @@
+ /*
+  * I/O delay strategies for inb_p/outb_p
+  *
+- * Allow for a DMI based override of port 0x80, needed for certain HP laptops
++ * Allow for a SMBIOS based override of port 0x80, needed for certain HP laptops
+  * and possibly other systems. Also allow for the gradual elimination of
+  * outb_p/inb_p API uses.
+  */
+@@ -9,7 +9,7 @@
+ #include <linux/module.h>
+ #include <linux/delay.h>
+ #include <linux/init.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include <linux/io.h>
+ 
+ int io_delay_type __read_mostly = CONFIG_DEFAULT_IO_DELAY_TYPE;
+@@ -44,7 +44,7 @@ void native_io_delay(void)
+ }
+ EXPORT_SYMBOL(native_io_delay);
+ 
+-static int __init dmi_io_delay_0xed_port(const struct dmi_system_id *id)
++static int __init io_delay_0xed_port(const struct sysfw_id *id)
+ {
+ 	if (io_delay_type == CONFIG_IO_DELAY_TYPE_0X80) {
+ 		pr_notice("%s: using 0xed I/O delay port\n", id->ident);
+@@ -58,54 +58,54 @@ static int __init dmi_io_delay_0xed_port(const struct dmi_system_id *id)
+  * Quirk table for systems that misbehave (lock up, etc.) if port
+  * 0x80 is used:
+  */
+-static struct dmi_system_id __initdata io_delay_0xed_port_dmi_table[] = {
++static struct sysfw_id __initdata io_delay_0xed_port_table[] = {
+ 	{
+-		.callback	= dmi_io_delay_0xed_port,
++		.callback	= io_delay_0xed_port,
+ 		.ident		= "Compaq Presario V6000",
+ 		.matches	= {
+-			DMI_MATCH(DMI_BOARD_VENDOR,	"Quanta"),
+-			DMI_MATCH(DMI_BOARD_NAME,	"30B7")
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR,	"Quanta"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME,	"30B7")
+ 		}
+ 	},
+ 	{
+-		.callback	= dmi_io_delay_0xed_port,
++		.callback	= io_delay_0xed_port,
+ 		.ident		= "HP Pavilion dv9000z",
+ 		.matches	= {
+-			DMI_MATCH(DMI_BOARD_VENDOR,	"Quanta"),
+-			DMI_MATCH(DMI_BOARD_NAME,	"30B9")
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR,	"Quanta"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME,	"30B9")
+ 		}
+ 	},
+ 	{
+-		.callback	= dmi_io_delay_0xed_port,
++		.callback	= io_delay_0xed_port,
+ 		.ident		= "HP Pavilion dv6000",
+ 		.matches	= {
+-			DMI_MATCH(DMI_BOARD_VENDOR,	"Quanta"),
+-			DMI_MATCH(DMI_BOARD_NAME,	"30B8")
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR,	"Quanta"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME,	"30B8")
+ 		}
+ 	},
+ 	{
+-		.callback	= dmi_io_delay_0xed_port,
++		.callback	= io_delay_0xed_port,
+ 		.ident		= "HP Pavilion tx1000",
+ 		.matches	= {
+-			DMI_MATCH(DMI_BOARD_VENDOR,	"Quanta"),
+-			DMI_MATCH(DMI_BOARD_NAME,	"30BF")
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR,	"Quanta"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME,	"30BF")
+ 		}
+ 	},
+ 	{
+-		.callback	= dmi_io_delay_0xed_port,
++		.callback	= io_delay_0xed_port,
+ 		.ident		= "Presario F700",
+ 		.matches	= {
+-			DMI_MATCH(DMI_BOARD_VENDOR,	"Quanta"),
+-			DMI_MATCH(DMI_BOARD_NAME,	"30D3")
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR,	"Quanta"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME,	"30D3")
+ 		}
+ 	},
+-	{ }
++	{}
+ };
+ 
+ void __init io_delay_init(void)
+ {
+ 	if (!io_delay_override)
+-		dmi_check_system(io_delay_0xed_port_dmi_table);
++		sysfw_callback(io_delay_0xed_port_table);
+ }
+ 
+ static int __init io_delay_param(char *s)
+diff --git a/arch/x86/kernel/mmconf-fam10h_64.c b/arch/x86/kernel/mmconf-fam10h_64.c
+index ac861b8..f24400a 100644
+--- a/arch/x86/kernel/mmconf-fam10h_64.c
++++ b/arch/x86/kernel/mmconf-fam10h_64.c
+@@ -6,7 +6,7 @@
+ #include <linux/mm.h>
+ #include <linux/string.h>
+ #include <linux/pci.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include <linux/range.h>
+ 
+ #include <asm/pci-direct.h>
+@@ -213,25 +213,25 @@ void __cpuinit fam10h_check_enable_mmcfg(void)
+ 	wrmsrl(address, val);
+ }
+ 
+-static int __init set_check_enable_amd_mmconf(const struct dmi_system_id *d)
++static int __init set_check_enable_amd_mmconf(const struct sysfw_id *d)
+ {
+-        pci_probe |= PCI_CHECK_ENABLE_AMD_MMCONF;
+-        return 0;
++	pci_probe |= PCI_CHECK_ENABLE_AMD_MMCONF;
++	return 0;
+ }
+ 
+-static const struct dmi_system_id __initconst mmconf_dmi_table[] = {
+-        {
+-                .callback = set_check_enable_amd_mmconf,
+-                .ident = "Sun Microsystems Machine",
+-                .matches = {
+-                        DMI_MATCH(DMI_SYS_VENDOR, "Sun Microsystems"),
+-                },
+-        },
++static const struct sysfw_id __initconst mmconf_id_table[] = {
++	{
++		.callback = set_check_enable_amd_mmconf,
++		.ident = "Sun Microsystems Machine",
++		.matches = {
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Sun Microsystems"),
++		},
++	},
+ 	{}
+ };
+ 
+ /* Called from a __cpuinit function, but only on the BSP. */
+-void __ref check_enable_amd_mmconf_dmi(void)
++void __ref check_enable_amd_pci_mmconf(void)
+ {
+-	dmi_check_system(mmconf_dmi_table);
++	sysfw_callback(mmconf_id_table);
+ }
+diff --git a/arch/x86/kernel/probe_roms.c b/arch/x86/kernel/probe_roms.c
+index ba0a4cc..e36d641 100644
+--- a/arch/x86/kernel/probe_roms.c
++++ b/arch/x86/kernel/probe_roms.c
+@@ -7,7 +7,6 @@
+ #include <linux/console.h>
+ #include <linux/init.h>
+ #include <linux/edd.h>
+-#include <linux/dmi.h>
+ #include <linux/pfn.h>
+ #include <linux/pci.h>
+ #include <asm/pci-direct.h>
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index e1ba8cb..c1d7c54 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -10,7 +10,7 @@
+ #include <linux/clockchips.h>
+ #include <linux/random.h>
+ #include <linux/user-return-notifier.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include <linux/utsname.h>
+ #include <trace/events/power.h>
+ #include <linux/hw_breakpoint.h>
+@@ -94,15 +94,15 @@ void show_regs_common(void)
+ {
+ 	const char *vendor, *product, *board;
+ 
+-	vendor = dmi_get_system_info(DMI_SYS_VENDOR);
++	vendor = sysfw_lookup(SYSFW_SYS_VENDOR);
+ 	if (!vendor)
+ 		vendor = "";
+-	product = dmi_get_system_info(DMI_PRODUCT_NAME);
++	product = sysfw_lookup(SYSFW_PRODUCT_NAME);
+ 	if (!product)
+ 		product = "";
+ 
+ 	/* Board Name is optional */
+-	board = dmi_get_system_info(DMI_BOARD_NAME);
++	board = sysfw_lookup(SYSFW_BOARD_NAME);
+ 
+ 	printk(KERN_CONT "\n");
+ 	printk(KERN_DEFAULT "Pid: %d, comm: %.20s %s %s %.*s",
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 0c016f7..7f68e78 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -3,7 +3,7 @@
+ #include <linux/init.h>
+ #include <linux/pm.h>
+ #include <linux/efi.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include <linux/sched.h>
+ #include <linux/tboot.h>
+ #include <linux/delay.h>
+@@ -127,7 +127,7 @@ __setup("reboot=", reboot_setup);
+  * Some machines require the "reboot=b"  commandline option,
+  * this quirk makes that automatic.
+  */
+-static int __init set_bios_reboot(const struct dmi_system_id *d)
++static int __init set_bios_reboot(const struct sysfw_id *d)
+ {
+ 	if (reboot_type != BOOT_BIOS) {
+ 		reboot_type = BOOT_BIOS;
+@@ -136,170 +136,178 @@ static int __init set_bios_reboot(const struct dmi_system_id *d)
+ 	return 0;
+ }
+ 
+-static struct dmi_system_id __initdata reboot_dmi_table[] = {
++static struct sysfw_id __initdata reboot_id_table[] = {
+ 	{	/* Handle problems with rebooting on Dell E520's */
+ 		.callback = set_bios_reboot,
+ 		.ident = "Dell E520",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Dell DM061"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Dell DM061"),
+ 		},
+ 	},
+ 	{	/* Handle problems with rebooting on Dell 1300's */
+ 		.callback = set_bios_reboot,
+ 		.ident = "Dell PowerEdge 1300",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 1300/"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR,
++				    "Dell Computer Corporation"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "PowerEdge 1300/"),
+ 		},
+ 	},
+ 	{	/* Handle problems with rebooting on Dell 300's */
+ 		.callback = set_bios_reboot,
+ 		.ident = "Dell PowerEdge 300",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 300/"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR,
++				    "Dell Computer Corporation"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "PowerEdge 300/"),
+ 		},
+ 	},
+ 	{       /* Handle problems with rebooting on Dell Optiplex 745's SFF*/
+ 		.callback = set_bios_reboot,
+ 		.ident = "Dell OptiPlex 745",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 745"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "OptiPlex 745"),
+ 		},
+ 	},
+ 	{       /* Handle problems with rebooting on Dell Optiplex 745's DFF*/
+ 		.callback = set_bios_reboot,
+ 		.ident = "Dell OptiPlex 745",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 745"),
+-			DMI_MATCH(DMI_BOARD_NAME, "0MM599"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "OptiPlex 745"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "0MM599"),
+ 		},
+ 	},
+ 	{       /* Handle problems with rebooting on Dell Optiplex 745 with 0KW626 */
+ 		.callback = set_bios_reboot,
+ 		.ident = "Dell OptiPlex 745",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 745"),
+-			DMI_MATCH(DMI_BOARD_NAME, "0KW626"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "OptiPlex 745"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "0KW626"),
+ 		},
+ 	},
+ 	{   /* Handle problems with rebooting on Dell Optiplex 330 with 0KP561 */
+ 		.callback = set_bios_reboot,
+ 		.ident = "Dell OptiPlex 330",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 330"),
+-			DMI_MATCH(DMI_BOARD_NAME, "0KP561"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "OptiPlex 330"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "0KP561"),
+ 		},
+ 	},
+ 	{   /* Handle problems with rebooting on Dell Optiplex 360 with 0T656F */
+ 		.callback = set_bios_reboot,
+ 		.ident = "Dell OptiPlex 360",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 360"),
+-			DMI_MATCH(DMI_BOARD_NAME, "0T656F"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "OptiPlex 360"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "0T656F"),
+ 		},
+ 	},
+ 	{	/* Handle problems with rebooting on Dell OptiPlex 760 with 0G919G*/
+ 		.callback = set_bios_reboot,
+ 		.ident = "Dell OptiPlex 760",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 760"),
+-			DMI_MATCH(DMI_BOARD_NAME, "0G919G"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "OptiPlex 760"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "0G919G"),
+ 		},
+ 	},
+ 	{	/* Handle problems with rebooting on Dell 2400's */
+ 		.callback = set_bios_reboot,
+ 		.ident = "Dell PowerEdge 2400",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 2400"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR,
++				    "Dell Computer Corporation"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "PowerEdge 2400"),
+ 		},
+ 	},
+ 	{	/* Handle problems with rebooting on Dell T5400's */
+ 		.callback = set_bios_reboot,
+ 		.ident = "Dell Precision T5400",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Precision WorkStation T5400"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME,
++				    "Precision WorkStation T5400"),
+ 		},
+ 	},
+ 	{	/* Handle problems with rebooting on Dell T7400's */
+ 		.callback = set_bios_reboot,
+ 		.ident = "Dell Precision T7400",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Precision WorkStation T7400"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME,
++				    "Precision WorkStation T7400"),
+ 		},
+ 	},
+ 	{	/* Handle problems with rebooting on HP laptops */
+ 		.callback = set_bios_reboot,
+ 		.ident = "HP Compaq Laptop",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "HP Compaq"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Hewlett-Packard"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "HP Compaq"),
+ 		},
+ 	},
+ 	{	/* Handle problems with rebooting on Dell XPS710 */
+ 		.callback = set_bios_reboot,
+ 		.ident = "Dell XPS710",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Dell XPS710"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Dell XPS710"),
+ 		},
+ 	},
+ 	{	/* Handle problems with rebooting on Dell DXP061 */
+ 		.callback = set_bios_reboot,
+ 		.ident = "Dell DXP061",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Dell DXP061"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Dell DXP061"),
+ 		},
+ 	},
+ 	{	/* Handle problems with rebooting on Sony VGN-Z540N */
+ 		.callback = set_bios_reboot,
+ 		.ident = "Sony VGN-Z540N",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "VGN-Z540N"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Sony Corporation"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "VGN-Z540N"),
+ 		},
+ 	},
+ 	{	/* Handle problems with rebooting on CompuLab SBC-FITPC2 */
+ 		.callback = set_bios_reboot,
+ 		.ident = "CompuLab SBC-FITPC2",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "CompuLab"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "SBC-FITPC2"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "CompuLab"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "SBC-FITPC2"),
+ 		},
+ 	},
+ 	{       /* Handle problems with rebooting on ASUS P4S800 */
+ 		.callback = set_bios_reboot,
+ 		.ident = "ASUS P4S800",
+ 		.matches = {
+-			DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
+-			DMI_MATCH(DMI_BOARD_NAME, "P4S800"),
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR,
++				    "ASUSTeK Computer INC."),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "P4S800"),
+ 		},
+ 	},
+ 	{	/* Handle problems with rebooting on VersaLogic Menlow boards */
+ 		.callback = set_bios_reboot,
+ 		.ident = "VersaLogic Menlow based board",
+ 		.matches = {
+-			DMI_MATCH(DMI_BOARD_VENDOR, "VersaLogic Corporation"),
+-			DMI_MATCH(DMI_BOARD_NAME, "VersaLogic Menlow board"),
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR,
++				    "VersaLogic Corporation"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME,
++				    "VersaLogic Menlow board"),
+ 		},
+ 	},
+-	{ }
++	{}
+ };
+ 
+ static int __init reboot_init(void)
+ {
+-	dmi_check_system(reboot_dmi_table);
++	sysfw_callback(reboot_id_table);
+ 	return 0;
+ }
+ core_initcall(reboot_init);
+@@ -368,7 +376,7 @@ EXPORT_SYMBOL(machine_real_restart);
+ /*
+  * Some Apple MacBook and MacBookPro's needs reboot=p to be able to reboot
+  */
+-static int __init set_pci_reboot(const struct dmi_system_id *d)
++static int __init set_pci_reboot(const struct sysfw_id *d)
+ {
+ 	if (reboot_type != BOOT_CF9) {
+ 		reboot_type = BOOT_CF9;
+@@ -378,45 +386,45 @@ static int __init set_pci_reboot(const struct dmi_system_id *d)
+ 	return 0;
+ }
+ 
+-static struct dmi_system_id __initdata pci_reboot_dmi_table[] = {
++static struct sysfw_id __initdata pci_reboot_id_table[] = {
+ 	{	/* Handle problems with rebooting on Apple MacBook5 */
+ 		.callback = set_pci_reboot,
+ 		.ident = "Apple MacBook5",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "MacBook5"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Apple Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "MacBook5"),
+ 		},
+ 	},
+ 	{	/* Handle problems with rebooting on Apple MacBookPro5 */
+ 		.callback = set_pci_reboot,
+ 		.ident = "Apple MacBookPro5",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro5"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Apple Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "MacBookPro5"),
+ 		},
+ 	},
+ 	{	/* Handle problems with rebooting on Apple Macmini3,1 */
+ 		.callback = set_pci_reboot,
+ 		.ident = "Apple Macmini3,1",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Macmini3,1"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Apple Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Macmini3,1"),
+ 		},
+ 	},
+ 	{	/* Handle problems with rebooting on the iMac9,1. */
+ 		.callback = set_pci_reboot,
+ 		.ident = "Apple iMac9,1",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "iMac9,1"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Apple Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "iMac9,1"),
+ 		},
+ 	},
+-	{ }
++	{}
+ };
+ 
+ static int __init pci_reboot_init(void)
+ {
+-	dmi_check_system(pci_reboot_dmi_table);
++	sysfw_callback(pci_reboot_id_table);
+ 	return 0;
+ }
+ core_initcall(pci_reboot_init);
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index afaf384..8b74838 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -44,7 +44,7 @@
+ #include <linux/iscsi_ibft.h>
+ #include <linux/nodemask.h>
+ #include <linux/kexec.h>
+-#include <linux/dmi.h>
++#include <linux/smbios.h>
+ #include <linux/pfn.h>
+ #include <linux/pci.h>
+ #include <asm/pci-direct.h>
+@@ -81,7 +81,7 @@
+ #include <asm/timer.h>
+ #include <asm/i8259.h>
+ #include <asm/sections.h>
+-#include <asm/dmi.h>
 +#include <asm/smbios.h>
-+
-+/*
-+ * "The SMBIOS Specification addresses how motherboard and system vendors
-+ * present management information about their products in a standard format by
-+ * extending the BIOS interface on x86 architecture systems. The information is
-+ * intended to allow generic instrumentation to deliver this information to
-+ * management applications that use DMI, CIM or direct access, eliminating the
-+ * need for error prone operations like probing system hardware for presence
-+ * detection."
-+ *
-+ * From http://www.dmtf.org/standards/smbios
-+ *
-+ * ... Grab the Spec.  It'll help.
-+ */
-+
-+/*
-+ * SMBIOS Structure Table Entry Point, STEP
-+ */
-+struct smbios_step {
-+	char	anchor_string[4];	/* 0x0, always is "_SM_" */
-+	u8	checksum;
-+	u8	length;
-+	u8	major;
-+	u8	minor;
-+	u16	max_size;
-+	u8	eps_revision;
-+	u8	reserved[5];
-+	u8	dmi_string[5];		/* 0x10, always is "_DMI_" */
-+	u8	intermediate_chksum;
-+	u16	struct_len;
-+	u32	struct_addr;
-+	u16	num_structs;
-+	u8	bcd_revision;
-+} __packed;
-+static struct smbios_step smbios_step;
-+
-+/* is there an SMBIOS? */
-+int smbios_available;
-+EXPORT_SYMBOL_GPL(smbios_available);
-+
-+/* Address of the actual SMBIOS struct */
-+static unsigned long smbios_addr;
-+
-+/* Start address of the SMBIOS tables */
-+static u32 smbios_base;
-+/* Length of the all the SMBIOS tables */
-+static u16 smbios_len;
-+/* Number of SMBIOS tables */
-+static u16 smbios_num;
-+/*
-+ * This is the BRK space or IO mapped address of the SMBIOS table.  SMBIOS is
-+ * switched from BRK space and into the IO map in smbios_init_late().  After
-+ * it is IO mapped, it MUST NOT be unmapped (o/w very bad things will happen).
-+ */
-+static u8 *smbios_map;
-+
-+/* We need to store the type field and the UUID somewhere. */
-+static char smbios_type3_type[4];
-+static char smbios_type1_uuid[16*2+4+1];
-+
-+/** find the first SMBIOS structure of a specific type */
-+const union smbios_struct *smbios_find_struct(int type)
-+{
-+	int size = sizeof(struct smbios_header);
-+	int i = 0;
-+	u8 *data = smbios_map;
-+	struct smbios_header *dm = NULL;
-+
-+	/*
-+	 *	Stop when we see all the items the table claimed to have
-+	 *	OR we run off the end of the table (also happens)
-+	 */
-+	while ((i < smbios_num) &&
-+	       (data - smbios_map + size) <= smbios_len) {
-+		dm = (struct smbios_header *)data;
-+
-+		/*
-+		 *  We want to know the total length (formatted area and
-+		 *  strings) before returning to make sure we don't return
-+		 *  a partial structure
-+		 */
-+		data += dm->length;
-+		while ((data - smbios_map < smbios_len - 1) &&
-+		       (data[0] || data[1]))
-+			data++;
-+		if ((data - smbios_map < smbios_len - 1) &&
-+		    (type == dm->type)) {
-+			break;
-+		}
-+		data += 2;
-+		i++;
-+	}
-+	/* just return the address */
-+	return (const union smbios_struct *)dm;
-+}
-+
-+static const char smbios_empty_string[] = "        ";
-+
-+/**
-+ * smbios_get_string -- return a string from an SMBIOS structure
-+ * @ss: pointer to structure being examined
-+ * @s: number of string being examined
-+ *
-+ * This function returns a string within the structure ss.  Many SMBIOS
-+ * structures have their strings at the end of the structure, and the location
-+ * of each string is enumerated throughout the structure.
-+ *
-+ * For example,  The BIOS Information structure, type0, has the BIOS Version
-+ * at offset 0x6, which contains a number enumerating the strings at the end
-+ * of the structure.
-+ *
-+ * ie) s is an actual _number_, not a pointer.
-+ */
-+const char *smbios_get_string(const union smbios_struct *ss, u8 s)
-+{
-+	const u8 *bp = ((u8 *) ss) + ss->header.length;
-+
-+	if (s) {
-+		s--;
-+		while (s > 0 && *bp) {
-+			bp += strlen(bp) + 1;
-+			s--;
-+		}
-+
-+		if (*bp != 0) {
-+			size_t len = strlen(bp)+1;
-+			size_t cmp_len = len > 8 ? 8 : len;
-+
-+			if (!memcmp(bp, smbios_empty_string, cmp_len))
-+				return smbios_empty_string;
-+			return bp;
-+		}
-+	}
-+
-+	return "";
-+}
-+EXPORT_SYMBOL(smbios_get_string);
-+
-+#define smbios_find_ptr(_ptr, _struct_name, _type, _field)		 \
-+	_struct_name = smbios_find_struct(_type);			 \
-+	_ptr = smbios_get_string(_struct_name,				 \
-+				 _struct_name->type##_type._field);
-+
-+static const char *smbios_sysfw_lookup(int field)
-+{
-+	const union smbios_struct *ss;
-+	const u8 *ptr;
-+
-+	switch (field) {
-+	case SYSFW_BIOS_VENDOR:
-+		smbios_find_ptr(ptr, ss, 0, vendor);
-+		break;
-+	case SYSFW_BIOS_VERSION:
-+		smbios_find_ptr(ptr, ss, 0, bios_version);
-+		break;
-+	case SYSFW_BIOS_DATE:
-+		smbios_find_ptr(ptr, ss, 0, bios_release_date);
-+		break;
-+	case SYSFW_SYS_VENDOR:
-+		smbios_find_ptr(ptr, ss, 1, manufacturer);
-+		break;
-+	case SYSFW_PRODUCT_NAME:
-+		smbios_find_ptr(ptr, ss, 1, product_name);
-+		break;
-+	case SYSFW_PRODUCT_VERSION:
-+		smbios_find_ptr(ptr, ss, 1, version);
-+		break;
-+	case SYSFW_PRODUCT_SERIAL:
-+		smbios_find_ptr(ptr, ss, 1, serial_number);
-+		break;
-+	case SYSFW_PRODUCT_UUID:
-+		ptr = smbios_type1_uuid;
-+		break;
-+	case SYSFW_BOARD_VENDOR:
-+		smbios_find_ptr(ptr, ss, 2, manufacturer);
-+		break;
-+	case SYSFW_BOARD_NAME:
-+		smbios_find_ptr(ptr, ss, 2, product);
-+		break;
-+	case SYSFW_BOARD_VERSION:
-+		smbios_find_ptr(ptr, ss, 2, version);
-+		break;
-+	case SYSFW_BOARD_SERIAL:
-+		smbios_find_ptr(ptr, ss, 2, serial_number);
-+		break;
-+	case SYSFW_BOARD_ASSET_TAG:
-+		smbios_find_ptr(ptr, ss, 2, asset_tag);
-+		break;
-+	case SYSFW_CHASSIS_VENDOR:
-+		smbios_find_ptr(ptr, ss, 3, manufacturer);
-+		break;
-+	case SYSFW_CHASSIS_TYPE:
-+		ptr = smbios_type3_type;
-+		break;
-+	case SYSFW_CHASSIS_VERSION:
-+		smbios_find_ptr(ptr, ss, 3, version);
-+		break;
-+	case SYSFW_CHASSIS_SERIAL:
-+		smbios_find_ptr(ptr, ss, 3, serial_number);
-+		break;
-+	case SYSFW_CHASSIS_ASSET_TAG:
-+		smbios_find_ptr(ptr, ss, 3, asset_tag_number);
-+		break;
-+	case SYSFW_STRING_MAX:
-+	case SYSFW_NONE:
-+	default:
-+		ptr = NULL;
-+		break;
-+	}
-+
-+	return (const char *)ptr;
-+}
-+
-+/* returns date in formation YYYYMMDD for easy comparisons */
-+static int smbios_sysfw_get_date(void)
-+{
-+	const char *smbios_date;
-+	int date, d, m, y;
-+
-+	/* SMBIOS BIOS DATE is in DD/MM/YYYY format */
-+	smbios_date = smbios_sysfw_lookup(SYSFW_BIOS_DATE);
-+	if (!smbios_date)
-+		return 0;
-+
-+	sscanf(smbios_date, "%d/%d/%d", &d, &m, &y);
-+	date = (y * 10000 + m * 100 + d);
-+	return date;
-+}
-+
-+static int __init smbios_sysfw_late(void)
-+{
-+	if (!smbios_available)
-+		return -1;
-+
-+	/* This looks strange but we're unmapping the BRK space and
-+	 * then mapping into memory after the memory subsystem has been
-+	 * initialized. */
-+	smbios_iounmap(smbios_map, smbios_len);
-+	smbios_map = ioremap(smbios_base, smbios_len);
-+	if (!smbios_map) {
-+		smbios_available = 0;
-+		WARN(1, "SMBIOS ioremap failed.");
-+		return -ENOMEM;
-+	}
-+	return 0;
-+}
-+
-+/* print pretty things */
-+static void __init print_filtered(const char *info)
-+{
-+	const char *p;
-+
-+	if (!info)
-+		return;
-+
-+	for (p = info; *p; p++)
-+		if (isprint(*p))
-+			printk(KERN_CONT "%c", *p);
-+		else
-+			printk(KERN_CONT "\\x%02x", *p & 0xff);
-+}
-+
-+/* Dump some basic system information at the beginning of boot */
-+static void __init smbios_boot_display(void)
-+{
-+	const char *board;	/* Board Name is optional */
-+
-+	if (smbios_available)
-+		printk(KERN_DEBUG "SMBIOS: ");
-+	else
-+		printk(KERN_DEBUG "DMI: ");
-+	print_filtered(smbios_sysfw_lookup(SYSFW_SYS_VENDOR));
-+	printk(KERN_CONT " ");
-+	print_filtered(smbios_sysfw_lookup(SYSFW_PRODUCT_NAME));
-+	board = smbios_sysfw_lookup(SYSFW_BOARD_NAME);
-+	if (board) {
-+		printk(KERN_CONT "/");
-+		print_filtered(board);
-+	}
-+	printk(KERN_CONT ", BIOS ");
-+	print_filtered(smbios_sysfw_lookup(SYSFW_BIOS_VERSION));
-+	printk(KERN_CONT " ");
-+	print_filtered(smbios_sysfw_lookup(SYSFW_BIOS_DATE));
-+	printk(KERN_CONT "\n");
-+}
-+
-+static int __init smbios_sysfw_init(void)
-+{
-+	smbios_boot_display();
-+	printk(KERN_INFO "Registered SMBIOS sysfw driver\n");
-+	return 0;
-+}
-+
-+static struct sysfw_driver __refdata smbios_sysfw_driver = {
-+	.name = "smbios",
-+	.init = smbios_sysfw_init,
-+	.late = smbios_sysfw_late,
-+	.lookup = smbios_sysfw_lookup,
-+	.date = smbios_sysfw_get_date,
-+};
-+
-+/*
-+ * There are two special "core" values, that require their own strings.
-+ * These are SYSFW_CHASSIS_TYPE(ss->type3->type) and
-+ * SYSFW_PRODUCT_UUID(ss->type1->uuid).
-+ */
-+static void smbios_decode_core(void)
-+{
-+	const union smbios_struct *ss;
-+
-+	/* SYSFW_CHASSIS_TYPE */
-+	ss = smbios_find_struct(3);
-+	sprintf(smbios_type3_type, "%u", ss->type3.type & 0x7f);
-+	/* SYSFW_PRODUCT_UUID */
-+	ss = smbios_find_struct(1);
-+	sprintf(smbios_type1_uuid, "%pUB", ss->type1.uuid);
-+}
-+
-+/* This is only useful for legacy DMI table decoding. */
-+static int __init dmi_checksum(const u8 *buf)
-+{
-+	u8 sum = 0;
-+	int a;
-+
-+	for (a = 0; a < 15; a++)
-+		sum += buf[a];
-+
-+	return sum == 0;
-+}
-+
-+/* This is only useful for legacy DMI table decoding. */
-+static int __init dmi_present(const char __iomem *p)
-+{
-+	u8 buf[15];
-+
-+	memcpy_fromio(buf, p, 15);
-+	if ((memcmp(buf, "_DMI_", 5) == 0) && dmi_checksum(buf)) {
-+		/* use smbios_ even though it's really dmi_ */
-+		smbios_num = (buf[13] << 8) | buf[12];
-+		smbios_len = (buf[7] << 8) | buf[6];
-+		smbios_base = (buf[11] << 24) | (buf[10] << 16) |
-+			(buf[9] << 8) | buf[8];
-+
-+		printk(KERN_INFO "DMI %d.%d present.\n", buf[14] >> 4,
-+		       buf[14] & 0xF);
-+
-+		smbios_map = smbios_ioremap(smbios_base, smbios_len);
-+		if (!smbios_map)
-+			return -ENOMEM;
-+		smbios_boot_display();
-+	}
-+	return 1;
-+}
-+
-+/* Check and decode the SMBIOS STEP function */
-+static int __init smbios_decode_step(void)
-+{
-+	u8 chksum1, chksum2, *buf, fp;
-+
-+	if (!smbios_addr)
-+		return -ENODEV;
-+
-+	buf = smbios_ioremap(smbios_addr, sizeof(struct smbios_step));
-+	if (!buf)
-+		return -ENODEV;
-+
-+	memcpy(&smbios_step, buf, sizeof(struct smbios_step));
-+
-+	/* checksum the entire STEP structure */
-+	chksum1 = 0;
-+	for (fp = 0; fp < smbios_step.length; fp++)
-+		chksum1 += buf[fp];
-+	if (chksum1) {
-+		smbios_iounmap(buf, sizeof(struct smbios_step));
-+		WARN(1, "SMBIOS: Invalid STEP table checksum = %u\n", chksum1);
-+		return -EINVAL;
-+	}
-+
-+	/* checksum the Intermediate structure */
-+	chksum2 = 0;
-+	for (fp = 0x10; fp < smbios_step.length; fp++)
-+		chksum2 += buf[fp];
-+	if (chksum2) {
-+		smbios_iounmap(buf, sizeof(struct smbios_step));
-+		WARN(1, "SMBIOS: Invalid Intermediate checksum = %u\n",
-+		     chksum2);
-+		return -EINVAL;
-+	}
-+
-+	smbios_iounmap(buf, sizeof(struct smbios_step));
-+
-+	printk(KERN_INFO "SMBIOS: version %u.%u @ 0x%lX | %d structures\n",
-+	       smbios_step.major, smbios_step.minor, smbios_addr,
-+	       smbios_step.num_structs);
-+
-+	smbios_num = smbios_step.num_structs;
-+	smbios_len = smbios_step.struct_len;
-+	smbios_base = smbios_step.struct_addr;
-+
-+	/*
-+	 * Need to map smbios_map for the smbios_walk() and other potential
-+	 * early callers.  This is unmapped, and ioremap'ed in the late call.
-+	 */
-+	smbios_map = smbios_ioremap(smbios_base, smbios_len);
-+	if (!smbios_map) {
-+		printk(KERN_INFO "SMBIOS tables are invalid.\n");
-+		return -ENOMEM;
-+	}
-+	smbios_available = 1;
-+
-+	return 0;
-+}
-+
-+/**
-+ * smbios_init - Initialize the SMBIOS code and register a sysfw driver
-+ *
-+ * This function looks for the SMBIOS tables, maps them, and registers a
-+ * System Firmware driver.
-+ */
-+int __init smbios_init(void)
-+{
-+	u8 *buf;
-+	int fp = 0, rc;
-+	int ret = 0;
-+	int smbios_present = 0;
-+
-+	if (efi_enabled) {
-+		if (efi.smbios == EFI_INVALID_TABLE_ADDR) {
-+			ret = -ENODEV;
-+			goto error;
-+		}
-+		smbios_addr = efi.smbios;
-+	} else {
-+		/*
-+		 * Legacy SMBIOS is mapped @ 0xF0000, but may not
-+		 * necessarily be _at_ 0xF0000
-+		 */
-+		smbios_addr = 0xF0000;
-+	}
-+	buf = smbios_ioremap(smbios_addr, SMBIOS_SIZE);
-+	if (!buf) {
-+		ret = -ENODEV;
-+		goto error;
-+	}
-+
-+	/* Find the SMBIOS entry point */
-+	for (fp = 0; fp <= 0xFFF0; fp += 0x10) {
-+		if (!memcmp(buf + fp, "_SM_", 4)) {
-+			smbios_addr += fp;
-+			smbios_present = 1;
-+			break;
-+		}
-+	}
-+	smbios_iounmap(buf, SMBIOS_SIZE);
-+
-+	if (smbios_present) {
-+		rc = smbios_decode_step();
-+		if (rc)
-+			return -ENODEV;
-+		rc = sysfw_driver_register(&smbios_sysfw_driver);
-+		if (rc)
-+			return rc;
-+		smbios_decode_core();
-+	} else {
-+		/*
-+		 * SMBIOS has been around since the 1990s.  The likelihood
-+		 * of there being a DMI table not embedded in a SMBIOS table
-+		 * is extremely unlikely, but the old code did look for this
-+		 * and there is at least a possibility of a system out there
-+		 * like this ... so check to see if an old legacy _DMI_ table
-+		 * is available.
-+		 *
-+		 * XXX: Hopefully we can get rid of this one day.
-+		 */
-+		buf = smbios_ioremap(smbios_addr, SMBIOS_SIZE);
-+		if (!buf) {
-+			ret = -ENODEV;
-+			goto error;
-+		}
-+
-+		/* Find the DMI entry point */
-+		for (fp = 0; fp <= 0xFFF0; fp += 0x10) {
-+			if (dmi_present(buf + fp)) {
-+				smbios_addr += fp;
-+				break;
-+			}
-+		}
-+		smbios_iounmap(buf, SMBIOS_SIZE);
-+	}
-+error:
-+	if (!smbios_present)
-+		printk(KERN_INFO "SMBIOS not present.");
-+	return ret;
-+
-+}
-+
-+/**
-+ * smbios_walk - executes a function for each SMBIOS structure
-+ * @decode: Function to execute
-+ * private_data: data passed into decode function
-+ *
-+ * This function walks the SMBIOS structures and executes decode on each
-+ * structure.  This should have minimal usage in the kernel.  Unless you have
-+ * need to access the raw SMBIOS data, you should use sysfw_lookup() or
-+ * sysfw_callback().
-+ */
-+const union smbios_struct
-+*smbios_walk(int (*decode)(const union smbios_struct *, void *),
-+			   void *private_data)
-+{
-+	u8 *data = smbios_map;
-+	int size = sizeof(struct smbios_header);
-+	int i = 0;
-+	int ret = SMBIOS_WALK_CONTINUE;
-+	const union smbios_struct *ss = NULL;
-+
-+	/*
-+	 * Stop when we see all the items the table claimed to have
-+	 * OR we run off the end of the table (also happens)
-+	 */
-+	while ((i < smbios_num) &&
-+	       (data - smbios_map + size) <= smbios_len) {
-+		const struct smbios_header *dm;
-+
-+		/*
-+		 *  We want to know the total length (formatted area and
-+		 *  strings) before decoding to make sure we won't run off the
-+		 *  table
-+		 */
-+		dm = (const struct smbios_header *)data;
-+		data += dm->length;
-+		while ((data - smbios_map < smbios_len - 1) &&
-+		       (data[0] || data[1]))
-+			data++;
-+		if (data - smbios_map < smbios_len - 1) {
-+			ret = decode((union smbios_struct *)dm, private_data);
-+			if (ret == SMBIOS_WALK_STOP) {
-+				ss = (union smbios_struct *)dm;
-+				break;
-+			}
-+		}
-+		data += 2;
-+		i++;
-+	}
-+
-+	return ss;
-+}
-+EXPORT_SYMBOL_GPL(smbios_walk);
-+
-+/*
-+ * Helper Functions -- We really don't want a lot of these, but structs like
-+ * the OEM Strings have a lot of elements and multiple drivers need to
-+ * grep through them for string matches.  Might as well do all of this in
-+ * one place.
-+ */
-+
-+/*
-+ * This seems really general and currently has only two specific needs
-+ * in the kernel (type10 and type11).  But looking at other structs we'll need
-+ * this for those as well.
-+ */
-+struct _smbios_strings {
-+	int type;
-+	int (*count_fn)(const union smbios_struct *ss);
-+	const char *in;
-+	const char *out;
-+};
-+
-+/* returns SMBIOS_WALK_STOP & match->out != NULL on string match success */
-+static int _match_string(const union smbios_struct *ss, void *_match)
-+{
-+	int i;
-+	const char *str;
-+	struct _smbios_strings *match = (struct _smbios_strings *)_match;
-+
-+	if (ss->header.type != match->type)
+ #include <asm/io_apic.h>
+ #include <asm/ist.h>
+ #include <asm/setup_arch.h>
+@@ -123,8 +123,8 @@
+ unsigned long max_low_pfn_mapped;
+ unsigned long max_pfn_mapped;
+ 
+-#ifdef CONFIG_DMI
+-RESERVE_BRK(dmi_alloc, 65536);
++#ifdef CONFIG_SMBIOS
++RESERVE_BRK(smbios_alloc, SMBIOS_SIZE);
+ #endif
+ 
+ 
+@@ -834,11 +834,11 @@ void __init setup_arch(char **cmdline_p)
+ 	if (efi_enabled)
+ 		efi_init();
+ 
+-	dmi_scan_machine();
++	smbios_init();
+ 
+ 	/*
+-	 * VMware detection requires dmi to be available, so this
+-	 * needs to be done after dmi_scan_machine, for the BP.
++	 * VMware detection requires smbios to be available, so this
++	 * needs to be done after smbios_init(), for the BP.
+ 	 */
+ 	init_hypervisor_platform();
+ 
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index 6cc6922..36c4160 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -5,7 +5,7 @@
+ #include <linux/timer.h>
+ #include <linux/acpi_pmtmr.h>
+ #include <linux/cpufreq.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include <linux/delay.h>
+ #include <linux/clocksource.h>
+ #include <linux/percpu.h>
+@@ -800,22 +800,22 @@ void mark_tsc_unstable(char *reason)
+ 
+ EXPORT_SYMBOL_GPL(mark_tsc_unstable);
+ 
+-static int __init dmi_mark_tsc_unstable(const struct dmi_system_id *d)
++static int __init quirk_mark_tsc_unstable(const struct sysfw_id *d)
+ {
+ 	printk(KERN_NOTICE "%s detected: marking TSC unstable.\n",
+-			d->ident);
++	       d->ident);
+ 	tsc_unstable = 1;
+ 	return 0;
+ }
+ 
+ /* List of systems that have known TSC problems */
+-static struct dmi_system_id __initdata bad_tsc_dmi_table[] = {
++static struct sysfw_id __initdata bad_tsc_table[] = {
+ 	{
+-		.callback = dmi_mark_tsc_unstable,
++		.callback = quirk_mark_tsc_unstable,
+ 		.ident = "IBM Thinkpad 380XD",
+ 		.matches = {
+-			DMI_MATCH(DMI_BOARD_VENDOR, "IBM"),
+-			DMI_MATCH(DMI_BOARD_NAME, "2635FA0"),
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "IBM"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "2635FA0"),
+ 		},
+ 	},
+ 	{}
+@@ -1011,7 +1011,7 @@ void __init tsc_init(void)
+ 
+ 	use_tsc_delay();
+ 	/* Check and install the TSC clocksource */
+-	dmi_check_system(bad_tsc_dmi_table);
++	sysfw_callback(bad_tsc_table);
+ 
+ 	if (unsynchronized_tsc())
+ 		mark_tsc_unstable("TSCs unsynchronized");
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index 0972315..2319617 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -2,7 +2,7 @@
+ #include <linux/acpi.h>
+ #include <linux/init.h>
+ #include <linux/irq.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include <linux/slab.h>
+ #include <asm/numa.h>
+ #include <asm/pci_x86.h>
+@@ -18,20 +18,20 @@ struct pci_root_info {
+ 
+ static bool pci_use_crs = true;
+ 
+-static int __init set_use_crs(const struct dmi_system_id *id)
++static int __init set_use_crs(const struct sysfw_id *id)
+ {
+ 	pci_use_crs = true;
+ 	return 0;
+ }
+ 
+-static const struct dmi_system_id pci_use_crs_table[] __initconst = {
++static const struct sysfw_id pci_use_crs_table[] __initconst = {
+ 	/* http://bugzilla.kernel.org/show_bug.cgi?id=14183 */
+ 	{
+ 		.callback = set_use_crs,
+ 		.ident = "IBM System x3800",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "IBM"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "x3800"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "IBM"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "x3800"),
+ 		},
+ 	},
+ 	/* https://bugzilla.kernel.org/show_bug.cgi?id=16007 */
+@@ -40,7 +40,7 @@ static const struct dmi_system_id pci_use_crs_table[] __initconst = {
+ 		.callback = set_use_crs,
+ 		.ident = "ASRock ALiveSATA2-GLAN",
+ 		.matches = {
+-			DMI_MATCH(DMI_PRODUCT_NAME, "ALiveSATA2-GLAN"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ALiveSATA2-GLAN"),
+                 },
+         },
+ 	{}
+@@ -48,12 +48,10 @@ static const struct dmi_system_id pci_use_crs_table[] __initconst = {
+ 
+ void __init pci_acpi_crs_quirks(void)
+ {
+-	int year;
+-
+-	if (dmi_get_date(DMI_BIOS_DATE, &year, NULL, NULL) && year < 2008)
++	if (!(sysfw_get_date() >= 20080000))
+ 		pci_use_crs = false;
+ 
+-	dmi_check_system(pci_use_crs_table);
++	sysfw_callback(pci_use_crs_table);
+ 
+ 	/*
+ 	 * If the user specifies "pci=use_crs" or "pci=nocrs" explicitly, that
+diff --git a/arch/x86/pci/broadcom_bus.c b/arch/x86/pci/broadcom_bus.c
+index ab8269b..c332b7b 100644
+--- a/arch/x86/pci/broadcom_bus.c
++++ b/arch/x86/pci/broadcom_bus.c
+@@ -11,7 +11,6 @@
+ 
+ #include <linux/acpi.h>
+ #include <linux/delay.h>
+-#include <linux/dmi.h>
+ #include <linux/pci.h>
+ #include <linux/init.h>
+ #include <asm/pci_x86.h>
+diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
+index 5fe7502..ee193bd 100644
+--- a/arch/x86/pci/common.c
++++ b/arch/x86/pci/common.c
+@@ -8,7 +8,8 @@
+ #include <linux/pci.h>
+ #include <linux/ioport.h>
+ #include <linux/init.h>
+-#include <linux/dmi.h>
++#include <linux/smbios.h>
++#include <linux/sysfw.h>
+ #include <linux/slab.h>
+ 
+ #include <asm/acpi.h>
+@@ -79,14 +80,15 @@ struct pci_ops pci_root_ops = {
+  */
+ DEFINE_RAW_SPINLOCK(pci_config_lock);
+ 
+-static int __devinit can_skip_ioresource_align(const struct dmi_system_id *d)
++static int __devinit can_skip_ioresource_align(const struct sysfw_id *d)
+ {
+ 	pci_probe |= PCI_CAN_SKIP_ISA_ALIGN;
+ 	printk(KERN_INFO "PCI: %s detected, can skip ISA alignment\n", d->ident);
+ 	return 0;
+ }
+ 
+-static const struct dmi_system_id can_skip_pciprobe_dmi_table[] __devinitconst = {
++static const struct sysfw_id
++can_skip_pciprobe_smbios_table[] __devinitconst = {
+ /*
+  * Systems where PCI IO resource ISA alignment can be skipped
+  * when the ISA enable bit in the bridge control is not set
+@@ -95,32 +97,32 @@ static const struct dmi_system_id can_skip_pciprobe_dmi_table[] __devinitconst =
+ 		.callback = can_skip_ioresource_align,
+ 		.ident = "IBM System x3800",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "IBM"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "x3800"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "IBM"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "x3800"),
+ 		},
+ 	},
+ 	{
+ 		.callback = can_skip_ioresource_align,
+ 		.ident = "IBM System x3850",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "IBM"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "x3850"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "IBM"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "x3850"),
+ 		},
+ 	},
+ 	{
+ 		.callback = can_skip_ioresource_align,
+ 		.ident = "IBM System x3950",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "IBM"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "x3950"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "IBM"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "x3950"),
+ 		},
+ 	},
+ 	{}
+ };
+ 
+-void __init dmi_check_skip_isa_align(void)
++void __init smbios_check_skip_isa_align(void)
+ {
+-	dmi_check_system(can_skip_pciprobe_dmi_table);
++	sysfw_callback(can_skip_pciprobe_smbios_table);
+ }
+ 
+ static void __devinit pcibios_fixup_device_resources(struct pci_dev *dev)
+@@ -173,32 +175,37 @@ void __devinit pcibios_fixup_bus(struct pci_bus *b)
+ }
+ 
+ /*
+- * Only use DMI information to set this if nothing was passed
++ * Only use SMBIOS information to set this if nothing was passed
+  * on the kernel command line (which was parsed earlier).
+  */
+ 
+-static int __devinit set_bf_sort(const struct dmi_system_id *d)
++static int __devinit set_bf_sort(const struct sysfw_id *d)
+ {
+ 	if (pci_bf_sort == pci_bf_sort_default) {
+-		pci_bf_sort = pci_dmi_bf;
++		pci_bf_sort = pci_smbios_bf;
+ 		printk(KERN_INFO "PCI: %s detected, enabling pci=bfsort.\n", d->ident);
+ 	}
+ 	return 0;
+ }
+ 
+-static void __devinit read_dmi_type_b1(const struct dmi_header *dm,
+-				       void *private_data)
++static int __devinit dell_sort_method_decode(const union smbios_struct *ss,
++					     void *data)
+ {
+-	u8 *d = (u8 *)dm + 4;
++	u8 *p;
++	const struct sysfw_id *d = (const struct sysfw_id *)data;
+ 
+-	if (dm->type != 0xB1)
+-		return;
+-	switch (((*(u32 *)d) >> 9) & 0x03) {
++	if ((ss->header.type) != 0xb1)
 +		return SMBIOS_WALK_CONTINUE;
 +
-+	BUG_ON(!match->count_fn);
-+
-+	for (i = 1; i <= match->count_fn(ss); i++) {
-+		str = smbios_get_string(ss, i);
-+		if (!strncmp(match->in, str, strlen(match->in))) {
-+			match->out = str;
-+			return SMBIOS_WALK_STOP;
-+		}
-+	}
-+
-+	return SMBIOS_WALK_CONTINUE;
++	p = (u8 *)ss + 4;
++	switch (((*(u32 *)p) >> 9) & 0x03) {
+ 	case 0x00:
+-		printk(KERN_INFO "dmi type 0xB1 record - unknown flag\n");
++		printk(KERN_INFO "smbios type 0xB1 record - unknown flag\n");
+ 		break;
+ 	case 0x01: /* set pci=bfsort */
+ 		smbios_type_b1_flag = 1;
++		set_bf_sort(d);
++		return SMBIOS_WALK_STOP;
+ 		break;
+ 	case 0x02: /* do not set pci=bfsort */
+ 		smbios_type_b1_flag = 2;
+@@ -206,24 +213,22 @@ static void __devinit read_dmi_type_b1(const struct dmi_header *dm,
+ 	default:
+ 		break;
+ 	}
+-}
+ 
+-static int __devinit find_sort_method(const struct dmi_system_id *d)
+-{
+-	dmi_walk(read_dmi_type_b1, NULL);
++	return SMBIOS_WALK_STOP;
+ 
+-	if (smbios_type_b1_flag == 1) {
+-		set_bf_sort(d);
+-		return 0;
+-	}
+-	return -1;
 +}
-+
-+static int type10_count_fn(const union smbios_struct *ss)
++static int __devinit find_sort_method(const struct sysfw_id *d)
 +{
-+	/*
-+	 * From SMBIOS Specification: The user of this structure determines the
-+	 * the number of devices as (Length - 4)/2.
-+	 */
-+	return (ss->header.length - 4) / 2;
-+}
-+
-+const char *smbios_match_type10_string(const char *match, int check_disabled)
-+{
-+	struct _smbios_strings _match = {
-+		.in = match,
-+		.out = NULL,
-+		.type = 10,
-+		.count_fn = type10_count_fn,
-+	};
-+	const union smbios_struct *ss;
-+
-+	ss = smbios_walk(_match_string, (void *)&_match);
-+	if ((ss && check_disabled) || (ss && (ss->type10.device_type & 0x80)))
-+		return _match.out;
-+	return NULL;
-+}
-+
-+/** smbios_is_onboard_device - Determines if a device is on (soldered on)
-+ * @match: string to match
-+ * @check_disabled_devices: match against devices marked disabled in structure
-+ *
-+ * This function returns true if the string passed in matches a device
-+ * that the SMBIOS recognizes as being on board (soldered on).  The function
-+ * also can ignore SMBIOS's information about whether or not a device is
-+ * disabled in order to workaround broken BIOSes.
-+ *
-+ * Note: This currently only looks at the type 10 structure.
-+ */
-+bool smbios_is_onboard_device(const char *match, int check_disabled_devices)
-+{
-+	const char *ret;
-+
-+	ret = smbios_match_type10_string(match, check_disabled_devices);
-+	if (ret)
-+		return true;
-+	return false;
-+}
-+EXPORT_SYMBOL_GPL(smbios_is_onboard_device);
-+
-+static int type11_count_fn(const union smbios_struct *ss)
-+{
-+	return ss->type11.count;
-+}
-+
-+/**
-+ * smbios_match_oem_string - match a string with the OEM strings provided by
-+ * @match: string to match
-+ *
-+ * This function returns the matching SMBIOS string if the string passed in
-+ * matches the OEM strings provided by the SMBIOS.
-+ */
-+const char *smbios_match_oem_string(const char *match)
-+{
-+	struct _smbios_strings _match = {
-+		.in = match,
-+		.out = NULL,
-+		.type = 11,
-+		.count_fn = type11_count_fn,
-+	};
-+	const union smbios_struct *ss;
-+
-+	ss = smbios_walk(_match_string, (void *)&_match);
-+	if (ss)
-+		return _match.out;
-+	return NULL;
-+}
-+EXPORT_SYMBOL_GPL(smbios_match_oem_string);
-diff --git a/include/linux/smbios.h b/include/linux/smbios.h
-new file mode 100644
-index 0000000..180a5d8
---- /dev/null
-+++ b/include/linux/smbios.h
-@@ -0,0 +1,243 @@
-+/*
-+ * linux/include/smbios.h
-+ *
-+ * "The SMBIOS Specification addresses how motherboard and system vendors
-+ * present management information about their products in a standard format by
-+ * extending the BIOS interface on x86 architecture systems. The information is
-+ * intended to allow generic instrumentation to deliver this information to
-+ * management applications that use DMI, CIM or direct access, eliminating the
-+ * need for error prone operations like probing system hardware for presence
-+ * detection."
-+ *
-+ * From http://www.dmtf.org/standards/smbios
-+ *
-+ * ... Grab the Spec.  It'll help.
-+ */
-+#ifndef __SMBIOS_H__
-+#define __SMBIOS_H__
-+
-+#include <linux/mod_devicetable.h>
-+
-+/* struct smbios_step (SMBIOS STEP) is defined in drivers/firmware/smbios.c */
-+/* enum sysfw_field (SYSFW_BIOS_VENDOR, etc.) is in mod_devicetable.h */
-+
-+/* max size of SMBIOS as specified in SMBIOS Specification */
-+#define SMBIOS_SIZE 0x10000
-+
-+struct smbios_header {
-+	u8 type;
-+	u8 length;
-+	u16 handle;
-+} __attribute__((__packed__));
-+
-+/* UNION of SMBIOS types as listed in SMBIOS Specification. */
-+union smbios_struct {
-+	struct smbios_header header;
-+	struct { /* BIOS Information */
-+		struct smbios_header header;
-+		u8 vendor;
-+		u8 bios_version;
-+		u16 bios_starting_address_segment;
-+		u8 bios_release_date;
-+		u8 bios_rom_size;
-+		u32 bios_characteristics;
-+		u16 bios_characteristics_extension_bytes;
-+		u8 system_bios_major_release;
-+		u8 system_bios_minor_release;
-+		u8 embedded_controller_firmware_major_release;
-+		u8 embedded_controller_firmware_minor_release;
-+	} __attribute__((__packed__)) type0;
-+	struct { /* System Information */
-+		struct smbios_header header;
-+		u8 manufacturer;
-+		u8 product_name;
-+		u8 version;
-+		u8 serial_number;
-+		u8 uuid[16];
-+		u8 wake_up_type;
-+		u8 sku_number;
-+	} __attribute__((__packed__)) type1;
-+	struct { /* Baseboard (or Module) Information */
-+		struct smbios_header header;
-+		u8 manufacturer;
-+		u8 product;
-+		u8 version;
-+		u8 serial_number;
-+		u8 asset_tag;
-+		u8 feature_flags;
-+	} __attribute__((__packed__)) type2;
-+	struct { /* System Enclosure of Chassis */
-+		struct smbios_header header;
-+		u8 manufacturer;
-+		u8 type;
-+		u8 version;
-+		u8 serial_number;
-+		u8 asset_tag_number;
-+		u8 boot_up_state;
-+		u8 power_supply_state;
-+		u8 thermal_state;
-+		u8 security_status;
-+		u8 oem_defined;
-+		u8 height;
-+		u8 number_of_power_cords;
-+		u8 contained_element_count;
-+		u8 contained_element_record;
-+		/* contained elements = contained_element_count X */
-+		/*			contained_element_record  */
-+		u8 contained_elements;
-+		/* u8 sku_number is allocated after that	  */
-+	} __attribute__((__packed__)) type3;
-+	struct { /* System Slots */
-+		struct smbios_header header;
-+		u8 slot_designation;
-+		u8 slot_type;
-+		u8 slot_data_bus_width;
-+		u8 current_usage;
-+		u8 slot_length;
-+		u16 slot_id;
-+		u8 slot_characteristics_1;
-+		u8 slot_characteristics_2;
-+		u16 segment_group_number;
-+		u8 bus_number;
-+		u8 device_function_number;
-+	} __attribute__((__packed__)) type9;
-+	struct { /* On Board Devices Information (Obsolete) */
-+		struct smbios_header header;	/* count = (length - 4)/2 */
-+		u8 device_type;			/* one for each device */
-+		/* strings at end of struct, one per device */
-+	} __attribute__((__packed__)) type10;
-+	struct { /* OEM Strings */
-+		struct smbios_header header;
-+		u8 count;
-+		u8 start;
-+		/* variable number (equal to count) strings listed here */
-+	} __attribute__((__packed__)) type11;
-+	struct { /* IPMI Device Information - BMC Interface Type */
-+		struct smbios_header header;
-+		u8 interface_type;
-+		u8 ipmi_specification_revision;
-+		u8 i2c_slave_address;
-+		u8 nv_storage_device_address;
-+		u32 base_address;
-+		union {
-+			u8 base_address_modifier;
-+			u8 interrupt_info;
-+		};
-+		u8 interrupt_number;
-+	} __attribute__((__packed__)) type38;
-+	struct { /* Onboard Devices Extended Information */
-+		struct smbios_header header;
-+		u8 reference_designation; /* "silkscreen label */
-+		u8 device_type;
-+		u8 device_type_instance;
-+		u16 segment_group_number;
-+		u8 bus_number;
-+		u8 device_function_number;
-+	} __attribute__((__packed__)) type41;
-+};
-+
-+/* enum used for returns in smbios_walk decode() function */
-+enum smbios_walk_value {
-+	SMBIOS_WALK_CONTINUE = 0,	/* continue executing in smbios_walk */
-+	SMBIOS_WALK_STOP,		/* stop executing and return */
-+};
-+
-+#ifdef CONFIG_SMBIOS
-+
-+/* is there an SMBIOS on this system? */
-+extern int smbios_available;
-+
-+/**
-+ * smbios_get_string -- return a string from an SMBIOS structure
-+ * @ss: pointer to structure being examined
-+ * @s: number of string being examined
-+ *
-+ * This function returns a string within the structure ss.  Many SMBIOS
-+ * structures have their strings at the end of the structure, and the location
-+ * of each string is enumerated throughout the structure.
-+ *
-+ * For example,  The BIOS Information structure, type0, has the BIOS Version
-+ * at offset 0x6, which contains a number enumerating the strings at the end
-+ * of the structure.
-+ *
-+ * ie) s is an actual _number_, not a pointer.
-+ */
-+extern const char *smbios_get_string(const union smbios_struct *ss, u8 s);
-+
-+/**
-+ * smbios_init - Initialize the SMBIOS code and register a sysfw driver
-+ *
-+ * This function looks for the SMBIOS tables, maps them, and registers a
-+ * System Firmware driver.
-+ */
-+extern int smbios_init(void);
-+
-+/**
-+ * smbios_walk - executes a function for each SMBIOS structure
-+ * @decode: Function to execute
-+ * private_data: data passed into decode function
-+ *
-+ * This function walks the SMBIOS structures and executes decode on each
-+ * structure.  If you are looking for a specific unique type of structure,
-+ * you should use smbios_find_struct().
-+ *
-+ * This should have minimal usage in the kernel.  The only reason this should
-+ * be used is if you need access the raw SMBIOS data.  Otherwise you should
-+ * use sysfw_lookup() or sysfw_callback().
-+ */
-+extern const union smbios_struct *
-+smbios_walk(int (*decode)(const union smbios_struct *, void *),
-+	    void *private_data);
-+
-+/* Helper Functions */
-+
-+/** smbios_is_onboard_device - Determines if a device is on (soldered on)
-+ * @match: string to match
-+ * @check_disabled_devices: match against devices marked disabled in structure
-+ *
-+ * This function returns true if the string passed in matches a device
-+ * that the SMBIOS recognizes as being on board (soldered on).  The function
-+ * also can ignore SMBIOS's information about whether or not a device is
-+ * disabled in order to workaround broken BIOSes.
-+ *
-+ * XXX: Fix me.  This currently only looks at the type 10 structure.
-+ */
-+extern bool smbios_is_onboard_device(const char *match,
-+				     int check_disabled_devices);
-+
-+/**
-+ * smbios_match_oem_string - match a string with the OEM strings provided by
-+ * @match: string to match
-+ *
-+ * This function returns the matching SMBIOS string if the string passed in
-+ * matches the OEM strings provided by the SMBIOS.
-+ */
-+extern const char *smbios_match_oem_string(const char *match);
-+
-+#else
-+#define smbios_available 0
-+static inline const char *smbios_get_string(const union smbios_struct *ss, u8 s)
-+{
-+	return NULL;
-+}
-+static inline void smbios_init(void)
-+{
-+	return;
-+}
-+static inline const union smbios_struct
-+*smbios_walk(int (*decode)(const union smbios_struct *, void *),
-+	     void *private_data)
-+{
-+	return NULL;
-+}
-+static inline bool smbios_is_onboard_device(const char *match,
-+					    int check_disabled_devices)
-+{
++	if (smbios_walk(dell_sort_method_decode, (void *)d))
++		return 1;
 +	return 0;
-+}
-+static inline const char *smbios_match_oem_string(const char *match)
-+{
-+	return NULL;
-+}
-+#endif
-+#endif	/* __SMBIOS_H__ */
+ }
+ 
+ /*
+  * Enable renumbering of PCI bus# ranges to reach all PCI busses (Cardbus)
+  */
+ #ifdef __i386__
+-static int __devinit assign_all_busses(const struct dmi_system_id *d)
++static int __devinit assign_all_busses(const struct sysfw_id *d)
+ {
+ 	pci_probe |= PCI_ASSIGN_ALL_BUSSES;
+ 	printk(KERN_INFO "%s detected: enabling PCI bus# renumbering"
+@@ -232,7 +237,7 @@ static int __devinit assign_all_busses(const struct dmi_system_id *d)
+ }
+ #endif
+ 
+-static const struct dmi_system_id __devinitconst pciprobe_dmi_table[] = {
++static const struct sysfw_id __devinitconst pciprobe_smbios_table[] = {
+ #ifdef __i386__
+ /*
+  * Laptops which need pci=assign-busses to see Cardbus cards
+@@ -241,8 +246,8 @@ static const struct dmi_system_id __devinitconst pciprobe_dmi_table[] = {
+ 		.callback = assign_all_busses,
+ 		.ident = "Samsung X20 Laptop",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Samsung Electronics"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "SX20S"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Samsung Electronics"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "SX20S"),
+ 		},
+ 	},
+ #endif		/* __i386__ */
+@@ -250,151 +255,151 @@ static const struct dmi_system_id __devinitconst pciprobe_dmi_table[] = {
+ 		.callback = find_sort_method,
+ 		.ident = "Dell System",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc"),
+ 		},
+ 	},
+ 	{
+ 		.callback = set_bf_sort,
+ 		.ident = "Dell PowerEdge 1950",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 1950"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "PowerEdge 1950"),
+ 		},
+ 	},
+ 	{
+ 		.callback = set_bf_sort,
+ 		.ident = "Dell PowerEdge 1955",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 1955"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "PowerEdge 1955"),
+ 		},
+ 	},
+ 	{
+ 		.callback = set_bf_sort,
+ 		.ident = "Dell PowerEdge 2900",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 2900"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "PowerEdge 2900"),
+ 		},
+ 	},
+ 	{
+ 		.callback = set_bf_sort,
+ 		.ident = "Dell PowerEdge 2950",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 2950"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "PowerEdge 2950"),
+ 		},
+ 	},
+ 	{
+ 		.callback = set_bf_sort,
+ 		.ident = "Dell PowerEdge R900",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge R900"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "PowerEdge R900"),
+ 		},
+ 	},
+ 	{
+ 		.callback = set_bf_sort,
+ 		.ident = "HP ProLiant BL20p G3",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL20p G3"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL20p G3"),
+ 		},
+ 	},
+ 	{
+ 		.callback = set_bf_sort,
+ 		.ident = "HP ProLiant BL20p G4",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL20p G4"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL20p G4"),
+ 		},
+ 	},
+ 	{
+ 		.callback = set_bf_sort,
+ 		.ident = "HP ProLiant BL30p G1",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL30p G1"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL30p G1"),
+ 		},
+ 	},
+ 	{
+ 		.callback = set_bf_sort,
+ 		.ident = "HP ProLiant BL25p G1",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL25p G1"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL25p G1"),
+ 		},
+ 	},
+ 	{
+ 		.callback = set_bf_sort,
+ 		.ident = "HP ProLiant BL35p G1",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL35p G1"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL35p G1"),
+ 		},
+ 	},
+ 	{
+ 		.callback = set_bf_sort,
+ 		.ident = "HP ProLiant BL45p G1",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL45p G1"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL45p G1"),
+ 		},
+ 	},
+ 	{
+ 		.callback = set_bf_sort,
+ 		.ident = "HP ProLiant BL45p G2",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL45p G2"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL45p G2"),
+ 		},
+ 	},
+ 	{
+ 		.callback = set_bf_sort,
+ 		.ident = "HP ProLiant BL460c G1",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL460c G1"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL460c G1"),
+ 		},
+ 	},
+ 	{
+ 		.callback = set_bf_sort,
+ 		.ident = "HP ProLiant BL465c G1",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL465c G1"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL465c G1"),
+ 		},
+ 	},
+ 	{
+ 		.callback = set_bf_sort,
+ 		.ident = "HP ProLiant BL480c G1",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL480c G1"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL480c G1"),
+ 		},
+ 	},
+ 	{
+ 		.callback = set_bf_sort,
+ 		.ident = "HP ProLiant BL685c G1",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL685c G1"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL685c G1"),
+ 		},
+ 	},
+ 	{
+ 		.callback = set_bf_sort,
+ 		.ident = "HP ProLiant DL360",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant DL360"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant DL360"),
+ 		},
+ 	},
+ 	{
+ 		.callback = set_bf_sort,
+ 		.ident = "HP ProLiant DL380",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant DL380"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant DL380"),
+ 		},
+ 	},
+ #ifdef __i386__
+@@ -402,8 +407,8 @@ static const struct dmi_system_id __devinitconst pciprobe_dmi_table[] = {
+ 		.callback = assign_all_busses,
+ 		.ident = "Compaq EVO N800c",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Compaq"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "EVO N800c"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Compaq"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "EVO N800c"),
+ 		},
+ 	},
+ #endif
+@@ -411,24 +416,24 @@ static const struct dmi_system_id __devinitconst pciprobe_dmi_table[] = {
+ 		.callback = set_bf_sort,
+ 		.ident = "HP ProLiant DL385 G2",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant DL385 G2"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant DL385 G2"),
+ 		},
+ 	},
+ 	{
+ 		.callback = set_bf_sort,
+ 		.ident = "HP ProLiant DL585 G2",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant DL585 G2"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant DL585 G2"),
+ 		},
+ 	},
+ 	{}
+ };
+ 
+-void __init dmi_check_pciprobe(void)
++void __init smbios_check_pciprobe(void)
+ {
+-	dmi_check_system(pciprobe_dmi_table);
++	sysfw_callback(pciprobe_smbios_table);
+ }
+ 
+ struct pci_bus * __devinit pcibios_scan_root(int busnum)
+diff --git a/arch/x86/pci/direct.c b/arch/x86/pci/direct.c
+index e6fd847..217d788 100644
+--- a/arch/x86/pci/direct.c
++++ b/arch/x86/pci/direct.c
+@@ -4,7 +4,7 @@
+ 
+ #include <linux/pci.h>
+ #include <linux/init.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include <asm/pci_x86.h>
+ 
+ /*
+@@ -192,14 +192,13 @@ struct pci_raw_ops pci_direct_conf2 = {
+ static int __init pci_sanity_check(struct pci_raw_ops *o)
+ {
+ 	u32 x = 0;
+-	int year, devfn;
++	int devfn;
+ 
+ 	if (pci_probe & PCI_NO_CHECKS)
+ 		return 1;
+ 	/* Assume Type 1 works for newer systems.
+ 	   This handles machines that don't have anything on PCI Bus 0. */
+-	dmi_get_date(DMI_BIOS_DATE, &year, NULL, NULL);
+-	if (year >= 2001)
++	if (sysfw_get_date() >= 20010000)
+ 		return 1;
+ 
+ 	for (devfn = 0; devfn < 0x100; devfn++) {
+diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
+index 6dd8955..381c136 100644
+--- a/arch/x86/pci/fixup.c
++++ b/arch/x86/pci/fixup.c
+@@ -3,7 +3,7 @@
+  */
+ 
+ #include <linux/delay.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include <linux/pci.h>
+ #include <linux/init.h>
+ #include <asm/pci_x86.h>
+@@ -356,12 +356,12 @@ static void __devinit pci_fixup_video(struct pci_dev *pdev)
+ DECLARE_PCI_FIXUP_FINAL(PCI_ANY_ID, PCI_ANY_ID, pci_fixup_video);
+ 
+ 
+-static const struct dmi_system_id __devinitconst msi_k8t_dmi_table[] = {
++static const struct sysfw_id __devinitconst msi_k8t_quirk_table[] = {
+ 	{
+ 		.ident = "MSI-K8T-Neo2Fir",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "MSI"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "MS-6702E"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "MSI"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "MS-6702E"),
+ 		},
+ 	},
+ 	{}
+@@ -375,12 +375,12 @@ static const struct dmi_system_id __devinitconst msi_k8t_dmi_table[] = {
+  * the corresponding register-value to enable the soundcard.
+  *
+  * The soundcard is only enabled, if the mainborad is identified
+- * via DMI-tables and the soundcard is detected to be off.
++ * via SMBIOS tables and the soundcard is detected to be off.
+  */
+ static void __devinit pci_fixup_msi_k8t_onboard_sound(struct pci_dev *dev)
+ {
+ 	unsigned char val;
+-	if (!dmi_check_system(msi_k8t_dmi_table))
++	if (!sysfw_callback(msi_k8t_quirk_table))
+ 		return; /* only applies to MSI K8T Neo2-FIR */
+ 
+ 	pci_read_config_byte(dev, 0x50, &val);
+@@ -413,34 +413,35 @@ DECLARE_PCI_FIXUP_RESUME(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8237,
+  */
+ static u16 toshiba_line_size;
+ 
+-static const struct dmi_system_id __devinitconst toshiba_ohci1394_dmi_table[] = {
++static const struct sysfw_id __devinitconst
++toshiba_ohci1394_quirk_table[] = {
+ 	{
+ 		.ident = "Toshiba PS5 based laptop",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
+-			DMI_MATCH(DMI_PRODUCT_VERSION, "PS5"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "TOSHIBA"),
++			SYSFW_MATCH(SYSFW_PRODUCT_VERSION, "PS5"),
+ 		},
+ 	},
+ 	{
+ 		.ident = "Toshiba PSM4 based laptop",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
+-			DMI_MATCH(DMI_PRODUCT_VERSION, "PSM4"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "TOSHIBA"),
++			SYSFW_MATCH(SYSFW_PRODUCT_VERSION, "PSM4"),
+ 		},
+ 	},
+ 	{
+ 		.ident = "Toshiba A40 based laptop",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
+-			DMI_MATCH(DMI_PRODUCT_VERSION, "PSA40U"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "TOSHIBA"),
++			SYSFW_MATCH(SYSFW_PRODUCT_VERSION, "PSA40U"),
+ 		},
+ 	},
+-	{ }
++	{}
+ };
+ 
+ static void __devinit pci_pre_fixup_toshiba_ohci1394(struct pci_dev *dev)
+ {
+-	if (!dmi_check_system(toshiba_ohci1394_dmi_table))
++	if (!sysfw_callback(toshiba_ohci1394_quirk_table))
+ 		return; /* only applies to certain Toshibas (so far) */
+ 
+ 	dev->current_state = PCI_D3cold;
+@@ -451,7 +452,7 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_TI, 0x8032,
+ 
+ static void __devinit pci_post_fixup_toshiba_ohci1394(struct pci_dev *dev)
+ {
+-	if (!dmi_check_system(toshiba_ohci1394_dmi_table))
++	if (!sysfw_callback(toshiba_ohci1394_quirk_table))
+ 		return; /* only applies to certain Toshibas (so far) */
+ 
+ 	/* Restore config space on Toshiba laptops */
+diff --git a/arch/x86/pci/init.c b/arch/x86/pci/init.c
+index adb62aa..9afdbc3 100644
+--- a/arch/x86/pci/init.c
++++ b/arch/x86/pci/init.c
+@@ -35,9 +35,9 @@ static __init int pci_arch_init(void)
+ 		printk(KERN_ERR
+ 		"PCI: Fatal: No config space access function found\n");
+ 
+-	dmi_check_pciprobe();
++	smbios_check_pciprobe();
+ 
+-	dmi_check_skip_isa_align();
++	smbios_check_skip_isa_align();
+ 
+ 	return 0;
+ }
+diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
+index 372e9b8..3e2ac8f 100644
+--- a/arch/x86/pci/irq.c
++++ b/arch/x86/pci/irq.c
+@@ -9,7 +9,7 @@
+ #include <linux/pci.h>
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include <linux/io.h>
+ #include <linux/smp.h>
+ #include <asm/io_apic.h>
+@@ -1070,7 +1070,7 @@ void __init pcibios_fixup_irqs(void)
+  * Work around broken HP Pavilion Notebooks which assign USB to
+  * IRQ 9 even though it is actually wired to IRQ 11
+  */
+-static int __init fix_broken_hp_bios_irq9(const struct dmi_system_id *d)
++static int __init fix_broken_hp_bios_irq9(const struct sysfw_id *d)
+ {
+ 	if (!broken_hp_bios_irq9) {
+ 		broken_hp_bios_irq9 = 1;
+@@ -1084,7 +1084,7 @@ static int __init fix_broken_hp_bios_irq9(const struct dmi_system_id *d)
+  * Work around broken Acer TravelMate 360 Notebooks which assign
+  * Cardbus to IRQ 11 even though it is actually wired to IRQ 10
+  */
+-static int __init fix_acer_tm360_irqrouting(const struct dmi_system_id *d)
++static int __init fix_acer_tm360_irqrouting(const struct sysfw_id *d)
+ {
+ 	if (!acer_tm360_irqrouting) {
+ 		acer_tm360_irqrouting = 1;
+@@ -1094,27 +1094,27 @@ static int __init fix_acer_tm360_irqrouting(const struct dmi_system_id *d)
+ 	return 0;
+ }
+ 
+-static struct dmi_system_id __initdata pciirq_dmi_table[] = {
++static struct sysfw_id __initdata pciirq_quirk_table[] = {
+ 	{
+ 		.callback = fix_broken_hp_bios_irq9,
+ 		.ident = "HP Pavilion N5400 Series Laptop",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "GE.M1.03"),
+-			DMI_MATCH(DMI_PRODUCT_VERSION,
+-				"HP Pavilion Notebook Model GE"),
+-			DMI_MATCH(DMI_BOARD_VERSION, "OmniBook N32N-736"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Hewlett-Packard"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "GE.M1.03"),
++			SYSFW_MATCH(SYSFW_PRODUCT_VERSION,
++				    "HP Pavilion Notebook Model GE"),
++			SYSFW_MATCH(SYSFW_BOARD_VERSION, "OmniBook N32N-736"),
+ 		},
+ 	},
+ 	{
+ 		.callback = fix_acer_tm360_irqrouting,
+ 		.ident = "Acer TravelMate 36x Laptop",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 360"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Acer"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "TravelMate 360"),
+ 		},
+ 	},
+-	{ }
++	{}
+ };
+ 
+ void __init pcibios_irq_init(void)
+@@ -1124,7 +1124,7 @@ void __init pcibios_irq_init(void)
+ 	if (raw_pci_ops == NULL)
+ 		return;
+ 
+-	dmi_check_system(pciirq_dmi_table);
++	sysfw_callback(pciirq_quirk_table);
+ 
+ 	pirq_table = pirq_find_routing_table();
+ 
+diff --git a/arch/x86/pci/mmconfig-shared.c b/arch/x86/pci/mmconfig-shared.c
+index 750c346..730b36b 100644
+--- a/arch/x86/pci/mmconfig-shared.c
++++ b/arch/x86/pci/mmconfig-shared.c
+@@ -15,7 +15,7 @@
+ #include <linux/acpi.h>
+ #include <linux/sfi_acpi.h>
+ #include <linux/bitmap.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include <linux/slab.h>
+ #include <asm/e820.h>
+ #include <asm/pci_x86.h>
+@@ -514,19 +514,15 @@ static int __initdata known_bridge;
+ static int __init acpi_mcfg_check_entry(struct acpi_table_mcfg *mcfg,
+ 					struct acpi_mcfg_allocation *cfg)
+ {
+-	int year;
+-
+ 	if (cfg->address < 0xFFFFFFFF)
+ 		return 0;
+ 
+ 	if (!strcmp(mcfg->header.oem_id, "SGI"))
+ 		return 0;
+ 
+-	if (mcfg->header.revision >= 1) {
+-		if (dmi_get_date(DMI_BIOS_DATE, &year, NULL, NULL) &&
+-		    year >= 2010)
++	if (mcfg->header.revision >= 1)
++		if (sysfw_get_date() >= 20100000)
+ 			return 0;
+-	}
+ 
+ 	printk(KERN_ERR PREFIX "MCFG region for %04x [bus %02x-%02x] at %#llx "
+ 	       "is above 4GB, ignored\n", cfg->pci_segment,
+diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
+index cb29191..741dbb0 100644
+--- a/arch/x86/pci/mrst.c
++++ b/arch/x86/pci/mrst.c
+@@ -22,7 +22,6 @@
+ #include <linux/pci.h>
+ #include <linux/ioport.h>
+ #include <linux/init.h>
+-#include <linux/dmi.h>
+ 
+ #include <asm/acpi.h>
+ #include <asm/segment.h>
+diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
+index 4e04e12..95cb493 100644
+--- a/drivers/cpufreq/acpi-cpufreq.c
++++ b/drivers/cpufreq/acpi-cpufreq.c
+@@ -32,7 +32,7 @@
+ #include <linux/sched.h>
+ #include <linux/cpufreq.h>
+ #include <linux/compiler.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include <linux/slab.h>
+ 
+ #include <linux/acpi.h>
+@@ -462,23 +462,23 @@ static int __init acpi_cpufreq_early_init(void)
+  */
+ static int bios_with_sw_any_bug;
+ 
+-static int sw_any_bug_found(const struct dmi_system_id *d)
++static int sw_any_bug_found(const struct sysfw_id *d)
+ {
+ 	bios_with_sw_any_bug = 1;
+ 	return 0;
+ }
+ 
+-static const struct dmi_system_id sw_any_bug_dmi_table[] = {
++static const struct sysfw_id sw_any_bug_table[] = {
+ 	{
+ 		.callback = sw_any_bug_found,
+ 		.ident = "Supermicro Server X6DLP",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Supermicro"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "080010"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "X6DLP"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Supermicro"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "080010"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "X6DLP"),
+ 		},
+ 	},
+-	{ }
++	{}
+ };
+ 
+ static int acpi_cpufreq_blacklist(struct cpuinfo_x86 *c)
+@@ -554,7 +554,7 @@ static int acpi_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 	cpumask_copy(policy->related_cpus, perf->shared_cpu_map);
+ 
+ #ifdef CONFIG_SMP
+-	dmi_check_system(sw_any_bug_dmi_table);
++	sysfw_callback(sw_any_bug_table);
+ 	if (bios_with_sw_any_bug && cpumask_weight(policy->cpus) == 1) {
+ 		policy->shared_type = CPUFREQ_SHARED_TYPE_ALL;
+ 		cpumask_copy(policy->cpus, cpu_core_mask(cpu));
+diff --git a/drivers/cpufreq/powernow-k7.c b/drivers/cpufreq/powernow-k7.c
+index d71d9f3..ce33c9f 100644
+--- a/drivers/cpufreq/powernow-k7.c
++++ b/drivers/cpufreq/powernow-k7.c
+@@ -21,7 +21,7 @@
+ #include <linux/cpufreq.h>
+ #include <linux/slab.h>
+ #include <linux/string.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include <linux/timex.h>
+ #include <linux/io.h>
+ 
+@@ -598,7 +598,7 @@ static unsigned int powernow_get(unsigned int cpu)
+ }
+ 
+ 
+-static int __cpuinit acer_cpufreq_pst(const struct dmi_system_id *d)
++static int __cpuinit acer_cpufreq_pst(const struct sysfw_id *d)
+ {
+ 	printk(KERN_WARNING PFX
+ 		"%s laptop with broken PST tables in BIOS detected.\n",
+@@ -616,16 +616,16 @@ static int __cpuinit acer_cpufreq_pst(const struct dmi_system_id *d)
+  * A BIOS update is all that can save them.
+  * Mention this, and disable cpufreq.
+  */
+-static struct dmi_system_id __cpuinitdata powernow_dmi_table[] = {
++static struct sysfw_id __cpuinitdata powernow_id_table[] = {
+ 	{
+ 		.callback = acer_cpufreq_pst,
+ 		.ident = "Acer Aspire",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Insyde Software"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "3A71"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Insyde Software"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "3A71"),
+ 		},
+ 	},
+-	{ }
++	{}
+ };
+ 
+ static int __cpuinit powernow_cpu_init(struct cpufreq_policy *policy)
+@@ -647,7 +647,7 @@ static int __cpuinit powernow_cpu_init(struct cpufreq_policy *policy)
+ 	}
+ 	pr_debug("FSB: %3dMHz\n", fsb/1000);
+ 
+-	if (dmi_check_system(powernow_dmi_table) || acpi_force) {
++	if (sysfw_callback(powernow_id_table) || acpi_force) {
+ 		printk(KERN_INFO PFX "PSB/PST known to be broken.  "
+ 				"Trying ACPI instead\n");
+ 		result = powernow_acpi_init();
 -- 
 1.7.5.4
 
