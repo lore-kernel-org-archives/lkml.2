@@ -1,114 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964788Ab1FWRv1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:51:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30434 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933718Ab1FWRvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:51:22 -0400
-Date: Thu, 23 Jun 2011 13:51:18 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cfq-iosched: queue groups more gracefully
-Message-ID: <20110623175118.GD20763@redhat.com>
-References: <20110623162206.3222.3312.stgit@localhost6>
+	id S964798Ab1FWRzN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:55:13 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:61592 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932967Ab1FWRzH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 13:55:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=onLh4qOHnUXjT4wTV9MRLCB9BHi3dbCHUhyHvnpYKLZMyX1TUoh3JTcu6n0rpqJf8O
+         fF+612Gf4gjF52D0iSVYDPwYF4JOlNUWSPOhxkuV41El06aMzEG465qIrdm79w7ZwUBJ
+         ikJ1Dejr/N6RQ6ynDQayEUiOFEixXUdTrVjEU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110623162206.3222.3312.stgit@localhost6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110622063441.GA1740@x4.trippels.de>
+References: <20110622063441.GA1740@x4.trippels.de>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Thu, 23 Jun 2011 13:54:46 -0400
+X-Google-Sender-Auth: jCcW5_nUPTHG4082cC4bWG751RI
+Message-ID: <BANLkTimO1xvGUQyUbEPn3U230Hr4-M+RQg@mail.gmail.com>
+Subject: Re: __packed vs. __attribute__((packed)) in kernel headers
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 08:22:06PM +0400, Konstantin Khlebnikov wrote:
-> This patch queue awakened cfq-groups according its current vdisktime,
-> it try to save upto one group timeslice from unused virtual disk time.
-> Thus group does not loses everything, if it was not continuously backlogged.
-> 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+On Wed, Jun 22, 2011 at 02:34, Markus Trippelsdorf wrote:
+> One possible solution would be to let the "scripts/headers_install.pl"
+> script automatically substitute __packed with __attribute__((packed)):
 
-I think this patch is not required till we start preemption across
-groups? Any more details of actual use will help.
-
-> ---
->  block/cfq-iosched.c |   36 ++++++++++++++++++++++++++++++------
->  1 files changed, 30 insertions(+), 6 deletions(-)
-> 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index c71533e..d5c7c79 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -592,6 +592,26 @@ cfq_group_slice(struct cfq_data *cfqd, struct cfq_group *cfqg)
->  	return cfq_target_latency * cfqg->weight / st->total_weight;
->  }
->  
-> +static inline u64
-> +cfq_group_vslice(struct cfq_data *cfqd, struct cfq_group *cfqg)
-> +{
-> +	struct cfq_rb_root *st = &cfqd->grp_service_tree;
-> +	u64 vslice;
-> +
-> +	/* There no group slices in iops mode */
-> +	if (iops_mode(cfqd))
-> +		return 0;
-> +
-> +	/*
-> +	 * Equal to cfq_scale_slice(cfq_group_slice(cfqd, cfqg), cfqg).
-> +	 * Add group weight beacuse it currently not in service tree.
-> +	 */
-> +	vslice = (u64)cfq_target_latency << CFQ_SERVICE_SHIFT;
-> +	vslice *= BLKIO_WEIGHT_DEFAULT;
-> +	do_div(vslice, st->total_weight + cfqg->weight);
-
-Above is not equivalent to cfq_scale_slice(cfq_group_slice(cfqd, cfqg),
-cfqg) as comment says.
-
-you are not calculating cfq_group_slice(). Instead using cfq_target_latency.
-
-Also it does not make sense. A higher weight group gets lower vslice
-and in turn gets put further away on the tree. This is reverse of what
-you want.
-
-> +	return vslice;
-> +}
-> +
->  static inline unsigned
->  cfq_scaled_cfqq_slice(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->  {
-> @@ -884,16 +904,20 @@ cfq_group_notify_queue_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
->  		return;
->  
->  	/*
-> -	 * Currently put the group at the end. Later implement something
-> -	 * so that groups get lesser vtime based on their weights, so that
-> -	 * if group does not loose all if it was not continuously backlogged.
-> +	 * Bump vdisktime to be greater or equal min_vdisktime.
-> +	 */
-> +	cfqg->vdisktime = max_vdisktime(cfqg->vdisktime, st->min_vdisktime);
-> +
-
-why do we need to do this?
-
-> +	/*
-> +	 * Put the group at the end, but save one slice from unused time.
->  	 */
->  	n = rb_last(&st->rb);
->  	if (n) {
->  		__cfqg = rb_entry_cfqg(n);
-> -		cfqg->vdisktime = __cfqg->vdisktime + CFQ_IDLE_DELAY;
-> -	} else
-> -		cfqg->vdisktime = st->min_vdisktime;
-> +		cfqg->vdisktime = max_vdisktime(cfqg->vdisktime,
-						 ^^^^^^^
-I think you meant st->min_vdisktime here?
-> +				__cfqg->vdisktime -
-> +					cfq_group_vslice(cfqd, cfqg));
-> +	}
->  	cfq_group_service_tree_add(st, cfqg);
->  }
-> 
-
-Thanks
-Vivek 
+until we install compiler.h and friends, this is probably the only way
+-mike
