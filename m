@@ -1,128 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932504Ab1FWP0w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 11:26:52 -0400
-Received: from mga11.intel.com ([192.55.52.93]:5902 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757484Ab1FWP0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 11:26:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,413,1304319600"; 
-   d="scan'208";a="21986260"
-Message-ID: <4E035B39.1080207@linux.intel.com>
-Date: Thu, 23 Jun 2011 08:26:49 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1759570Ab1FWP3m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 11:29:42 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61751 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754110Ab1FWP3k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 11:29:40 -0400
+Message-ID: <4E035B78.3080200@mvista.com>
+Date: Thu, 23 Jun 2011 19:27:52 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: sbohrer@rgmadvisors.com, peterz@infradead.org, eric.dumazet@gmail.com,
-        david@rgmadvisors.com, linux-kernel@vger.kernel.org,
-        zvonler@rgmadvisors.com, hughd@google.com, tglx@linutronix.de,
-        mingo@elte.hu
-Subject: Re: [PATCH RFC] futex: Fix regression with read only mappings
-References: <4DF8FFF6.4060000@linux.intel.com> <1308770340-21895-1-git-send-email-sbohrer@rgmadvisors.com> <4E024D2D.6070308@linux.intel.com> <4E02AA40.30203@jp.fujitsu.com>
-In-Reply-To: <4E02AA40.30203@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        davinci-linux-open-source 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Brian Swetland <swetland@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Grant Likely <grant.likely@secretlab.ca>, akpm@linux-foundation.org
+Subject: Re: [RFC 5/8] remoteproc: add davinci implementation
+References: <1308640714-17961-1-git-send-email-ohad@wizery.com> <1308640714-17961-6-git-send-email-ohad@wizery.com>
+In-Reply-To: <1308640714-17961-6-git-send-email-ohad@wizery.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
+Ohad Ben-Cohen wrote:
 
-On 06/22/2011 07:51 PM, KOSAKI Motohiro wrote:
-> (2011/06/23 5:14), Darren Hart wrote:
->> Hi Shawn,
->>
->> Thanks for taking this up. Would you share your testcases as well?
->>
->> On 06/22/2011 12:19 PM, Shawn Bohrer wrote:
->>> commit 7485d0d3758e8e6491a5c9468114e74dc050785d (futexes: Remove rw
->>> parameter from get_futex_key()) in 2.6.33 introduced a user-mode
->>> regression in that it additionally prevented futex operations on a
->>> region within a read only memory mapped file.  For example this breaks
->>> workloads that have one or more reader processes doing a FUTEX_WAIT on a
->>> futex within a read only shared mapping, and a writer processes that has
->>> a writable mapping issuing the FUTEX_WAKE.
->>>
->>> This fixes the regression for futex operations that should be valid on
->>> RO mappings by trying a RO get_user_pages_fast() when the RW
->>> get_user_pages_fast() fails so as not to slow down the common path of
->>> writable anonymous maps and bailing when we used the RO path on
->>> anonymous memory.
->>>
->>> Patch based on Peter Zijlstra's initial patch with modifications to only
->>> allow RO mappings for futex operations that need VERIFY_READ access.
->>>
->>> Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
->>> ---
->>>
->>> Interestingly this patch also allows doing a FUTEX_WAIT on a RO private
->>> mapping.
->>
->> I don't see any harm in this.
-> 
-> Hi
-> 
-> I have no objection. However I'd like to explain why I decided to
-> prefer to refuse RO private mappings and used prefault.
-> 
-> private mapping semantics is, to write access makes process private pages
-> (ie PageAnon=1).
-> 
-> So, this patch introduce following another corner case.
-> 
-> Thread-A: call futex(FUTEX_WAIT, memory-region-A).
->           get_futex_key() return inode based key.
->           sleep on the key
-> Thread-B: call mprotect(PROT_READ|PROT_WRITE, memory-region-A)
-> Thread-B: write memory-region-A.
->           COW happen. This process's memory-region-A become related
->           to new COWed private (ie PageAnon=1) page.
-> Thread-B: call futex(FUETX_WAKE, memory-region-A).
->           get_futex_key() return mm based key.
->           IOW, we fail to wake up Thread-A.
-> 
-> It's unclear real world issue or not. But I hope everybody realize it.
-> So, Probably it would be great if you add some comments for this issue.
-> 
-> 2.6.18 had an another trick. It used vma walk for avoiding this issue.
-> and, unfortunately, it's slow.
+> From: Mark Grosen <mgrosen@ti.com>
 
+> Add remoteproc implementation for da850, so we can boot its DSP.
 
-Let me try and restate, please tell me if I have this correct:
+> Signed-off-by: Mark Grosen <mgrosen@ti.com>
+> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+> ---
+>  arch/arm/mach-davinci/include/mach/remoteproc.h |   28 +++++
+>  drivers/remoteproc/Kconfig                      |   16 +++
+>  drivers/remoteproc/Makefile                     |    1 +
+>  drivers/remoteproc/davinci_remoteproc.c         |  147 +++++++++++++++++++++++
+>  4 files changed, 192 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/arm/mach-davinci/include/mach/remoteproc.h
+>  create mode 100644 drivers/remoteproc/davinci_remoteproc.c
 
-RO file backed private mappings can be converted to a RW mapping between
-FUTEX_WAIT and FUTEX_WAKE, resulting in the use of different keys (as
-the RO mapping finds an inode key and the RW mapping returns an
-anonymous key). The way to fix this is to use the virtual address
-instead of the physical address, like shared futexes, but this has to be
-done all the time as there is no way to know if the RO mapping will be
-changed after a key is looked up, so it would eliminate the gains of the
-private futexes.
+> diff --git a/arch/arm/mach-davinci/include/mach/remoteproc.h b/arch/arm/mach-davinci/include/mach/remoteproc.h
+> new file mode 100644
+> index 0000000..af6e88c
+> --- /dev/null
+> +++ b/arch/arm/mach-davinci/include/mach/remoteproc.h
+> @@ -0,0 +1,28 @@
+> +/*
+> + * Remote Processor
+> + *
+> + * Copyright (C) 2011 Texas Instruments, Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#ifndef _DAVINCI_REMOTEPROC_H
+> +#define _DAVINCI_REMOTEPROC_H
+> +
+> +#include <linux/remoteproc.h>
+> +
+> +struct davinci_rproc_pdata {
+> +	struct rproc_ops *ops;
+> +	char *name;
+> +	char *clk_name;
+> +	char *firmware;
+> +};
+> +
+> +#endif /* _DAVINCI_REMOTEPROC_H */
+> diff --git a/drivers/remoteproc/Kconfig b/drivers/remoteproc/Kconfig
+> index 88421bd..1e594b5 100644
+> --- a/drivers/remoteproc/Kconfig
+> +++ b/drivers/remoteproc/Kconfig
+> @@ -26,3 +26,19 @@ config OMAP_REMOTE_PROC
+>  
+>  	  It's safe to say n here if you're not interested in multimedia
+>  	  offloading or just want a bare minimum kernel.
+> +
+> +config DAVINCI_REMOTE_PROC
+> +	tristate "Davinci remoteproc support"
+> +	depends on ARCH_DAVINCI_DA850
 
-A RO private mapping doesn't make a lot of sense to me since at least
-one thread of the process will have to have write permission in order
-for the mechanism to be useful, so the approach taken in the patch
-(EFAULT on RO anonymous private mappings) seems reasonable.
+    It should work on DA830 as well, but not on real DaVinci, so the name is 
+misleading...
 
-Do I have this right?
+[...]
+> diff --git a/drivers/remoteproc/davinci_remoteproc.c b/drivers/remoteproc/davinci_remoteproc.c
+> new file mode 100644
+> index 0000000..0e26fe9
+> --- /dev/null
+> +++ b/drivers/remoteproc/davinci_remoteproc.c
+> @@ -0,0 +1,147 @@
+> +/*
+> + * Remote processor machine-specific module for Davinci
+> + *
+> + * Copyright (C) 2011 Texas Instruments, Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#define pr_fmt(fmt)    "%s: " fmt, __func__
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/err.h>
+> +#include <linux/printk.h>
+> +#include <linux/bitops.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/remoteproc.h>
+> +#include <linux/clk.h>
+> +#include <linux/io.h>
+> +
+> +#include <mach/da8xx.h>
+> +#include <mach/cputype.h>
+> +#include <mach/psc.h>
+> +#include <mach/remoteproc.h>
+> +
+> +/*
+> + * Technical Reference:
+> + * OMAP-L138 Applications Processor System Reference Guide
+> + * http://www.ti.com/litv/pdf/sprugm7d
+> + */
+> +
+> +/* local reset bit (0 is asserted) in MDCTL15 register (section 9.6.18) */
+> +#define LRST		BIT(8)
 
---
-Darren
-> 
-> 
->>
->>>  Where my tests on 2.6.18 show that this used to wait
->>> indefinitely.  Performing a FUTEX_WAIT on a RW private mapping waits
->>> indefinitely in 2.6.18, 3.0.0, and with this patch applied.  It is
->>> unclear to me if this is a good thing or a bug.
->>>
->>>  kernel/futex.c |   38 ++++++++++++++++++++++++++------------
->>>  1 files changed, 26 insertions(+), 12 deletions(-)
-> 
+    Perhaps this should be named nLRST or something if the sense is inverted?
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+> +/* next state bits in MDCTL15 register (section 9.6.18) */
+> +#define NEXT_ENABLED	0x3
+
+    Isn't this already declared in <mach/psc.h> as PSC_STATE_ENABLED?
+
+> +/* register for DSP boot address in SYSCFG0 module (section 11.5.6) */
+> +#define HOST1CFG	0x44
+
+    Worth declaring in <mach/da8xx.h> instead...
+
+> +static inline int davinci_rproc_start(struct rproc *rproc, u64 bootaddr)
+> +{
+> +	struct device *dev = rproc->dev;
+> +	struct davinci_rproc_pdata *pdata = dev->platform_data;
+> +	struct davinci_soc_info *soc_info = &davinci_soc_info;
+> +	void __iomem *psc_base;
+> +	struct clk *dsp_clk;
+> +
+> +	/* hw requires the start (boot) address be on 1KB boundary */
+> +	if (bootaddr & 0x3ff) {
+> +		dev_err(dev, "invalid boot address: must be aligned to 1KB\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	dsp_clk = clk_get(dev, pdata->clk_name);
+
+    We could match using clkdev functionality, but the clock entry would need to 
+be changed then...
+
+> +	if (IS_ERR_OR_NULL(dsp_clk)) {
+> +		dev_err(dev, "clk_get error: %ld\n", PTR_ERR(dsp_clk));
+> +		return PTR_ERR(dsp_clk);
+> +	}
+> +
+> +	clk_enable(dsp_clk);
+
+     This seems rather senseless activity as on DA8xx the DSP core boots the ARM 
+core, so the DSP clock will be already enabled.
+
+> +	rproc->priv = dsp_clk;
+> +
+> +	psc_base = ioremap(soc_info->psc_bases[0], SZ_4K);
+> +
+> +	/* insure local reset is asserted before writing start address */
+> +	__raw_writel(NEXT_ENABLED, psc_base + MDCTL + 4 * DA8XX_LPSC0_GEM);
+> +
+> +	__raw_writel(bootaddr, DA8XX_SYSCFG0_VIRT(HOST1CFG));
+
+    DA8XX_SYSCFG0_VIRT() is not supposed to be used outside mach-davinci. The 
+variable it refers is not exported, so driver module won't work.
+
+> +	/* de-assert local reset to start the dsp running */
+> +	__raw_writel(LRST | NEXT_ENABLED, psc_base + MDCTL +
+> +		4 * DA8XX_LPSC0_GEM);
+> +
+> +	iounmap(psc_base);
+> +
+> +	return 0;
+> +}
+> +
+> +static inline int davinci_rproc_stop(struct rproc *rproc)
+> +{
+> +	struct davinci_soc_info *soc_info = &davinci_soc_info;
+> +	void __iomem *psc_base;
+> +	struct clk *dsp_clk = rproc->priv;
+> +
+> +	psc_base = ioremap(soc_info->psc_bases[0], SZ_4K);
+> +
+> +	/* halt the dsp by asserting local reset */
+> +	__raw_writel(NEXT_ENABLED, psc_base + MDCTL + 4 * DA8XX_LPSC0_GEM);
+> +
+> +	clk_disable(dsp_clk);
+> +	clk_put(dsp_clk);
+> +
+> +	iounmap(psc_base);
+> +
+> +	return 0;
+> +}
+
+    All this is DA8xx specific code which won't fly on real DaVincis, so I 
+suggest that you rename the file to da8xx_remoteproc.c for clarity; and rename 
+the patch as well...
+
+WBR, Sergei
