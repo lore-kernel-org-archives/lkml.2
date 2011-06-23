@@ -1,137 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759664Ab1FWPcf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 11:32:35 -0400
-Received: from mail.betterlinux.com ([199.58.199.50]:33379 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759652Ab1FWPce (ORCPT
+	id S1759624Ab1FWPdz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 11:33:55 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:37687 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758288Ab1FWPdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 11:32:34 -0400
-Date: Thu, 23 Jun 2011 17:32:29 +0200
-From: Andrea Righi <andrea@betterlinux.com>
-To: =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC] fadvise: move active pages to inactive list with
- POSIX_FADV_DONTNEED
-Message-ID: <20110623153229.GB8164@thinkpad>
-References: <1308779480-4950-1-git-send-email-andrea@betterlinux.com>
- <4E03200D.60704@draigBrady.com>
- <20110623135713.GB1479@thinkpad>
- <4E034A61.2000300@draigBrady.com>
+	Thu, 23 Jun 2011 11:33:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=rrc3SjlsRf5nAZIJDIbGEDeBZxdaEOvnKi4SCQHSad47uft2Otv7EivUQ1XyzKtREX
+         Uo54SrboCzkQDM/PSn1BeKq8wRyH+wIx/FgIrFNQM30BzFx+oJyPa8iE/IdHVv5+ISCo
+         SPZTJ9FVeLcKYiBb2I+A3EaG7QBgmCqiOZVk4=
+Message-ID: <4E035CDE.5090304@gmail.com>
+Date: Thu, 23 Jun 2011 17:33:50 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4E034A61.2000300@draigBrady.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alex Elder <aelder@sgi.com>
+CC: xfs-masters@oss.sgi.com, xfs@oss.sgi.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xfs: Silence bounds checking compiler warning
+References: <4E0356E6.30104@gmail.com>
+In-Reply-To: <4E0356E6.30104@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 03:14:57PM +0100, Pádraig Brady wrote:
-> On 23/06/11 14:57, Andrea Righi wrote:
-> > On Thu, Jun 23, 2011 at 12:14:21PM +0100, Pádraig Brady wrote:
-> >> On 22/06/11 22:51, Andrea Righi wrote:
-> >>> There were some reported problems in the past about trashing page cache
-> >>> when a backup software (i.e., rsync) touches a huge amount of pages (see
-> >>> for example [1]).
-> >>>
-> >>> This problem has been almost fixed by the Minchan Kim's patch [2] and a
-> >>> proper use of fadvise() in the backup software. For example this patch
-> >>> set [3] has been proposed for inclusion in rsync.
-> >>>
-> >>> However, there can be still other similar trashing problems: when the
-> >>> backup software reads all the source files, some of them may be part of
-> >>> the actual working set of the system. When a
-> >>> posix_fadvise(POSIX_FADV_DONTNEED) is performed _all_ pages are evicted
-> >>> from pagecache, both the working set and the use-once pages touched only
-> >>> by the backup software.
-> >>>
-> >>> With the following solution when posix_fadvise(POSIX_FADV_DONTNEED) is
-> >>> called for an active page instead of removing it from the page cache it
-> >>> is added to the tail of the inactive list. Otherwise, if it's already in
-> >>> the inactive list the page is removed from the page cache.
-> >>>
-> >>> In this way if the backup was the only user of a page, that page will
-> >>> be immediately removed from the page cache by calling
-> >>> posix_fadvise(POSIX_FADV_DONTNEED). If the page was also touched by
-> >>> other processes it'll be moved to the inactive list, having another
-> >>> chance of being re-added to the working set, or simply reclaimed when
-> >>> memory is needed.
-> >>>
-> >>> Testcase:
-> >>>
-> >>>   - create a 1GB file called "zero"
-> >>>   - run md5sum zero to read all the pages in page cache (this is to
-> >>>     simulate the user activity on this file)
-> >>>   - run "rsync zero zero_copy" (rsync is patched with [3])
-> >>>   - re-run md5sum zero (user activity on the working set) and measure
-> >>>     the time to complete this command
-> >>>
-> >>> The test has been performed using 3.0.0-rc4 vanilla and with this patch
-> >>> applied (3.0.0-rc4-fadvise).
-> >>>
-> >>> Results:
-> >>>                   avg elapsed time      block:block_bio_queue
-> >>>  3.0.0-rc4                  4.127s                      8,214
-> >>>  3.0.0-rc4-fadvise          2.146s                          0
-> >>>
-> >>> In the first case the file is evicted from page cache completely and we
-> >>> must re-read it from the disk. In the second case the file is still in
-> >>> page cache (in the inactive list) and we don't need any other additional
-> >>> I/O operation.
-> >>>
-> >>> [1] http://marc.info/?l=rsync&m=128885034930933&w=2
-> >>> [2] https://lkml.org/lkml/2011/2/20/57
-> >>> [3] http://lists.samba.org/archive/rsync/2010-November/025827.html
-> >>>
-> >>> Signed-off-by: Andrea Righi <andrea@betterlinux.com>
-> >>
-> >> Hmm, What if you do want to evict it from the cache for testing purposes?
-> >> Perhaps this functionality should be associated with POSIX_FADV_NOREUSE?
-> >> dd has been recently modified to support invalidating the cache for a file,
-> >> and it uses POSIX_FADV_DONTNEED for that.
-> >> http://git.sv.gnu.org/gitweb/?p=coreutils.git;a=commitdiff;h=5f311553
-> > 
-> > I don't have any objection to associate POSIX_FADV_NOREUSE to this
-> > functionality. Actually maintaining a specific functionality to drop
-> > file cache pages can be useful, indeed.
-> > 
-> > However, I'm not sure if POSIX_FADV_NOREUSE or POSIX_FADV_DONTNEED
-> > either are suitable.
-> > 
-> > According to the standard:
-> > 
-> >  POSIX_FADV_NOREUSE = data will be accessed only once
-> >  POSIX_FADV_DONTNEED = data will not be accessed in the near future
-> 
-> 
-> > So, associating the "drop the page cache" semantic sounds like an
-> > implementation detail and applications shouldn't implicitly rely on this
-> > behaviour.
-> 
-> Well the "standard" really is what has been implemented up to now.
-> POSIX_FADV_NOREUSE currently does nothing so, associating this
-> new behavior with it seems less problematic for user space.
+On 06/23/2011 05:08 PM, Maarten Lankhorst wrote:
+> gcc with -Warray-bounds generates a false positive on this
+> since xfs defines the struct with u8 name[1]; to be able to
+> add a tag at the end.
+>
+> Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+> ---
+>  fs/xfs/xfs_dir2_block.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/fs/xfs/xfs_dir2_block.c b/fs/xfs/xfs_dir2_block.c
+> index 580d99c..09b4aed 100644
+> --- a/fs/xfs/xfs_dir2_block.c
+> +++ b/fs/xfs/xfs_dir2_block.c
+> @@ -1148,7 +1148,7 @@ xfs_dir2_sf_to_block(
+>  		((char *)block + XFS_DIR2_DATA_DOTDOT_OFFSET);
+>  	dep->inumber = cpu_to_be64(xfs_dir2_sf_get_inumber(sfp, &sfp->hdr.parent));
+>  	dep->namelen = 2;
+> -	dep->name[0] = dep->name[1] = '.';
+> +	dep->name[0] = ((__u8 *)dep->name)[1] = '.';
+>  	tagp = xfs_dir2_data_entry_tag_p(dep);
+>  	*tagp = cpu_to_be16((char *)dep - (char *)block);
+>  	xfs_dir2_data_log_entry(tp, bp, dep);
+Oops, that still gives a warning, I used (u8*) first which works, but it seems the type
+conversion was what made it shut up. Is there any type I can cast __u8 to safely,
+or is memset preferred? gcc was too smart and saw through my __u8 cast.
 
-mmmh.. yes, we would also respect backward compatibility. The behaviour
-of invalidate_mapping_pages() would remain the same: drop page cache if
-possible.
-
-> Also the names fit pretty well I think.
-> 
->   POSIX_FADV_DONTNEED = drop if possible
->   POSIX_FADV_NOREUSE = current app won't reuse so reduce cache eligibility
-
-Agreed.
-
--Andrea
+~Maarten
