@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758708Ab1FWB2p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 21:28:45 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48475 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758317Ab1FWB2n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 21:28:43 -0400
-Date: Thu, 23 Jun 2011 02:28:41 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sangbeom Kim <sbkim73@samsung.com>
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] mfd: Add I2C control support for S5M8751
-Message-ID: <20110623012841.GF20949@opensource.wolfsonmicro.com>
-References: <1308722037-6966-1-git-send-email-sbkim73@samsung.com>
- <1308722037-6966-4-git-send-email-sbkim73@samsung.com>
- <20110622125050.GE23666@sirena.org.uk>
- <017201cc3144$74e343d0$5ea9cb70$@com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <017201cc3144$74e343d0$5ea9cb70$@com>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932310Ab1FWB3R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 21:29:17 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:43631 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758238Ab1FWB3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 21:29:16 -0400
+Date: Thu, 23 Jun 2011 11:29:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: brcm80211 build busted on big-endian
+Message-Id: <20110623112903.1d7f9e9b.sfr@canb.auug.org.au>
+In-Reply-To: <20110622.132301.937541188453252019.davem@davemloft.net>
+References: <20110621.193641.1605224831578508501.davem@davemloft.net>
+	<20110622154022.GB19027@kroah.com>
+	<20110622.132301.937541188453252019.davem@davemloft.net>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__23_Jun_2011_11_29_03_+1000_u4gYHxrvrIDUZu4E"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 10:25:37AM +0900, Sangbeom Kim wrote:
+--Signature=_Thu__23_Jun_2011_11_29_03_+1000_u4gYHxrvrIDUZu4E
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Thank for your comment,
-> We have a few PMIC (S5M8751, S5M8752 and others).
-> They have different features. And Each one will have separate core file.
-> But i2c interface is same.
-> So, I try to separate i2s code.
-> I would modify prefix like s5m87xx.
+Hi Greg,
 
-In that case you should definitely take a look at the regmap API I've
-been posting.  It factors all the device I/O stuff out so you should be
-able to just tell it that you have a device with n bit registers and n
-bit values and it'll provide all the I/O functions you need.  I just
-reposted it today, though it needs another round for some SPI stuff.
+On Wed, 22 Jun 2011 13:23:01 -0700 (PDT) David Miller <davem@davemloft.net>=
+ wrote:
+>
+> From: Greg KH <greg@kroah.com>
+> Date: Wed, 22 Jun 2011 08:40:22 -0700
+>=20
+> > For big endian, I agree, which is why I thought I fixed this up so it
+> > wouldn't build on other arches than MIPS for the moment.
+> >=20
+> > Is this blowing up in -next or in Linus's tree right now?
+>=20
+> Yes, on sparc64.
 
-> > > +static int s5m8751_i2c_read_device(struct s5m8751 *s5m8751, uint8_t
-> reg,
-> > > +					uint8_t *val)
-> > > +{
-> > > +	int ret;
-> > > +	ret = i2c_smbus_read_byte_data(s5m8751->i2c_client, reg);
-> > > +	if (ret < 0) {
-> > > +		dev_err(s5m8751->dev, "failed reading at 0x%02x\n", reg);
-> > > +		return ret;
-> > > +	}
-> > > +	*val = (uint8_t)ret;
+Yesterday's linux-next allmodconfig build on sparc64:
 
-> > Why is this case required?
+http://kisskb.ellerman.id.au/kisskb/buildresult/4241857/
 
-> I want pass the read value by val
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Sorry, typo - why is this *cast* required?
+--Signature=_Thu__23_Jun_2011_11_29_03_+1000_u4gYHxrvrIDUZu4E
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOApbfAAoJEDMEi1NhKgbsr9sH/0NBeRVgzr8GhGWZ9j0t5q8o
+2DkLRtgcLOATDOik+XYrktbXiJb32gfsA0jz0I22v4RefwhfScRm2TwlKEUh7nv7
+i9kRhWrRj+UZmoXEWlIaxO7B2gFrjQ9KjzLChEvDI0piD6WBqjc2QXlquYbouVNy
+fih2QFW3fo8+UAErJxovd7HKYCR8PzUbgoTaxP+u7q8acQ3sm6V3neoGMXCtui26
+uxz4lfU9IsbL8mEuQTr56/LqaymO7m2diqu/2wo5twbAjBHLXul3xY2Fe3OzLJuY
+WqgyXjiTSA9moiSZPHhpecrsYSh7dg9prJrEGj0STuqP33ddjp8dd54qpyOMQp4=
+=/FkJ
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__23_Jun_2011_11_29_03_+1000_u4gYHxrvrIDUZu4E--
